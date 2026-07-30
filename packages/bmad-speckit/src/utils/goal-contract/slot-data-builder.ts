@@ -22,7 +22,7 @@ function repoPath(filePath) {
   return String(filePath).replace(/\\/g, '/');
 }
 
-function makeRegistries(obligations) {
+function legacyRegistries(obligations) {
   const commandObligations = obligations.filter(
     (obligation) => obligation.kind === 'command_block'
   );
@@ -43,12 +43,122 @@ function makeRegistries(obligations) {
     };
   });
   return {
+    projectionMode: 'legacy',
     sourceObligations,
     tasks: sourceObligations.map((obligation) => obligation.goalTaskRefs[0]),
     acceptance: sourceObligations.map((obligation) => obligation.acceptanceRefs[0]),
     commands: [...new Set(sourceObligations.map((obligation) => obligation.commandRefs[0]))],
     evidence: sourceObligations.map((obligation) => obligation.evidenceRefs[0]),
   };
+}
+
+function declaredRecordId(obligation) {
+  if (typeof obligation.declaredSourceId === 'string') {
+    return obligation.declaredSourceId;
+  }
+  return obligation.declaredId ? obligation.id : null;
+}
+
+function isExplicitTaskHeading(obligation) {
+  const declaredId = declaredRecordId(obligation);
+  if (!declaredId) return false;
+  const escapedId = declaredId.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+  const sourceText = String(obligation.exactText || obligation.text || '').trim();
+  return new RegExp(`^(?:#{1,6}\\s+)?Task\\s+${escapedId}\\b`, 'u').test(sourceText);
+}
+
+function headingPathStartsWith(candidate, prefix) {
+  return (
+    prefix.length > 0 &&
+    prefix.length <= candidate.length &&
+    prefix.every((heading, index) => heading === candidate[index])
+  );
+}
+
+function taskOwners(obligation, tasks) {
+  const declaredId = declaredRecordId(obligation);
+  const scoped = tasks
+    .filter(
+      (task) =>
+        task.headingPath.some((heading) => heading.includes(task.id)) &&
+        headingPathStartsWith(obligation.headingPath || [], task.headingPath)
+    )
+    .sort((left, right) => right.headingPath.length - left.headingPath.length);
+  if (scoped.length > 0) return [scoped[0].id];
+  const referenced = tasks
+    .filter(
+      (task) =>
+        declaredId === task.id ||
+        (declaredId &&
+          new RegExp(`(?:^|-)${task.id.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}(?:-|$)`, 'u').test(
+            declaredId
+          ))
+    )
+    .map((task) => task.id);
+  if (referenced.length > 0) return referenced;
+  const sliceId =
+    [...(obligation.headingPath || [])]
+      .reverse()
+      .map((heading) =>
+        /^([A-Z][A-Z0-9]*)\s+(?:required\s+tests|required\s+commands|exit\s+gate)\b/iu.exec(
+          String(heading)
+        )
+      )
+      .find(Boolean)?.[1]
+      ?.toUpperCase() || null;
+  const sliceTasks = sliceId
+    ? tasks.filter((task) => task.id.startsWith(`${sliceId}-`)).map((task) => task.id)
+    : [];
+  return sliceTasks.length > 0 ? sliceTasks : tasks.length > 0 ? [tasks[0].id] : [];
+}
+
+function makeStructuredRegistries(obligations, taskObligations) {
+  const tasks = taskObligations.map((obligation) => ({
+    id: declaredRecordId(obligation),
+    headingPath: [...(obligation.headingPath || [])],
+  }));
+  const typed = (kind) =>
+    obligations.filter((obligation) => obligation.kind === kind && declaredRecordId(obligation));
+  const acceptanceObligations = typed('acceptance_condition');
+  const commandObligations = typed('verification_command');
+  const evidenceObligations = typed('evidence_contract');
+  const ownersBySourceId = new Map(
+    obligations.map((obligation) => [obligation.id, taskOwners(obligation, tasks)])
+  );
+  const ownedIds = (records, ownerIds) =>
+    records
+      .filter((record) =>
+        ownersBySourceId.get(record.id)?.some((ownerId) => ownerIds.includes(ownerId))
+      )
+      .map(declaredRecordId);
+  const sourceObligations = obligations.map((obligation) => {
+    const goalTaskRefs = ownersBySourceId.get(obligation.id) || [];
+    return {
+      ...obligation,
+      goalTaskRefs,
+      acceptanceRefs: ownedIds(acceptanceObligations, goalTaskRefs),
+      commandRefs: ownedIds(commandObligations, goalTaskRefs),
+      evidenceRefs: ownedIds(evidenceObligations, goalTaskRefs),
+    };
+  });
+  return {
+    projectionMode: 'typed',
+    sourceObligations,
+    tasks: tasks.map(({ id }) => id),
+    acceptance: acceptanceObligations.map(declaredRecordId),
+    commands: commandObligations.map(declaredRecordId),
+    evidence: evidenceObligations.map(declaredRecordId),
+  };
+}
+
+function makeRegistries(obligations) {
+  const taskObligations = obligations.filter(
+    (obligation) =>
+      obligation.kind === 'declared_execution_task' && isExplicitTaskHeading(obligation)
+  );
+  return taskObligations.length > 0
+    ? makeStructuredRegistries(obligations, taskObligations)
+    : legacyRegistries(obligations);
 }
 
 function isCodeObligation(obligation) {
@@ -68,7 +178,8 @@ function commandTextFromFence(text) {
 
 function implementationProofAudit(sourceObligations) {
   const commandBlocks = sourceObligations.filter(
-    (obligation) => obligation.kind === 'command_block'
+    (obligation) =>
+      obligation.kind === 'command_block' || obligation.kind === 'verification_command'
   );
   const codeObligations = sourceObligations.filter(isCodeObligation);
   const blockingReasons = [];
@@ -125,8 +236,17 @@ function frontMatter(metadata) {
       .map((field) => `${field}: ${authorityBindings[field]}`),
     `runtimeRecordId: ${metadata.runtimeRecordId}`,
     'entryFlow: goal_contract_generate',
-    `taskRange: G001-${metadata.lastTaskId}`,
-    `acceptanceRange: ACC001-${metadata.lastAcceptanceId}`,
+    `projectionMode: ${metadata.projectionMode}`,
+    `taskRange: ${
+      metadata.projectionMode === 'typed'
+        ? `${metadata.firstTaskId}..${metadata.lastTaskId}`
+        : `G001-${metadata.lastTaskId}`
+    }`,
+    `acceptanceRange: ${
+      metadata.projectionMode === 'typed'
+        ? `${metadata.firstAcceptanceId}..${metadata.lastAcceptanceId}`
+        : `ACC001-${metadata.lastAcceptanceId}`
+    }`,
     'completionGate: all_acceptance_items_and_required_commands_pass',
     'repairPolicy: execute_declared_tasks_only_and_stop_on_scope_or_semantic_gap',
     'stopPolicy: stop_on_contract_gap_scope_expansion_source_coverage_gap_or_hash_mismatch',
@@ -176,6 +296,69 @@ function buildImplementationTasks(sourceObligations) {
     .join('\n\n');
 }
 
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+}
+
+function declaredRecordDescription(obligation, declaredId, prefix = '') {
+  const text = String(obligation?.exactText || obligation?.text || '')
+    .replace(/^[-*]\s+/u, '')
+    .trim();
+  const declaration = new RegExp(
+    `^${prefix ? `${escapeRegExp(prefix)}\\s+` : ''}${escapeRegExp(declaredId)}\\b\\s*[:：]?\\s*`,
+    'u'
+  );
+  return text.replace(declaration, '').trim() || declaredId;
+}
+
+function typedRecord(registries, recordId, kind) {
+  return registries.sourceObligations.find(
+    (obligation) => obligation.kind === kind && declaredRecordId(obligation) === recordId
+  );
+}
+
+function typedTaskRefs(registries, taskId, field) {
+  return [
+    ...new Set(
+      registries.sourceObligations
+        .filter((obligation) => (obligation.goalTaskRefs || []).includes(taskId))
+        .flatMap((obligation) => obligation[field] || [])
+    ),
+  ];
+}
+
+function buildTypedImplementationTasks(registries) {
+  return registries.tasks
+    .map((taskId, index) => {
+      const task = typedRecord(registries, taskId, 'declared_execution_task');
+      const acceptanceRefs = typedTaskRefs(registries, taskId, 'acceptanceRefs');
+      const commandRefs = typedTaskRefs(registries, taskId, 'commandRefs');
+      const evidenceRefs = typedTaskRefs(registries, taskId, 'evidenceRefs');
+      return [
+        `### ${taskId} ${declaredRecordDescription(task, taskId, 'Task')}`,
+        '',
+        `**Purpose:** Execute the source-declared task \`${taskId}\` without splitting its task-owned obligations into synthetic tasks.`,
+        '',
+        '**Files:**',
+        `- Use only the target modification paths declared by \`${taskId}\` in \`${task.sourcePlanPath}\`.`,
+        '',
+        '**Steps:**',
+        `- Implement the exact task semantics bound to \`${taskId}\` and its Source Coverage Matrix rows.`,
+        `- Resolve the task declaration through SpecSpan refs \`${(task.specSpanRefs || []).join(', ')}\`.`,
+        '',
+        '**Validation:**',
+        `- Required commands: \`${commandRefs.join(', ')}\`.`,
+        '',
+        '**Acceptance:**',
+        `- Acceptance: \`${acceptanceRefs.join(', ')}\`.`,
+        `- Evidence: \`${evidenceRefs.join(', ')}\`.`,
+        '',
+        `<!-- source-order:${index + 1} -->`,
+      ].join('\n');
+    })
+    .join('\n\n');
+}
+
 function buildAcceptance(sourceObligations) {
   return sourceObligations
     .map(
@@ -186,6 +369,20 @@ function buildAcceptance(sourceObligations) {
             : ''
         }`
     )
+    .join('\n');
+}
+
+function buildTypedAcceptance(registries) {
+  return registries.acceptance
+    .map((acceptanceId) => {
+      const acceptance = typedRecord(registries, acceptanceId, 'acceptance_condition');
+      return `- [ ] ${acceptanceId}: ${declaredRecordDescription(
+        acceptance,
+        acceptanceId
+      )} Tasks: ${(acceptance.goalTaskRefs || []).join(', ')}. Evidence: ${(
+        acceptance.evidenceRefs || []
+      ).join(', ')}. Commands: ${(acceptance.commandRefs || []).join(', ')}.`;
+    })
     .join('\n');
 }
 
@@ -204,21 +401,36 @@ function buildTrace(sourceObligations) {
   ].join('\n');
 }
 
+function buildTypedTrace(registries) {
+  return [
+    '| Acceptance ID | Task IDs | Evidence command and artifact | Pass condition |',
+    '| --- | --- | --- | --- |',
+    ...registries.acceptance.map((acceptanceId) => {
+      const acceptance = typedRecord(registries, acceptanceId, 'acceptance_condition');
+      return `| ${acceptanceId} | ${(acceptance.goalTaskRefs || []).join(
+        ', '
+      )} | ${(acceptance.commandRefs || []).join(', ')}; ${(acceptance.evidenceRefs || []).join(
+        ', '
+      )} | ${declaredRecordDescription(acceptance, acceptanceId)} |`;
+    }),
+  ].join('\n');
+}
+
 function buildCanonicalSourceCoverageMatrix(sourceObligations) {
   return [
     '| Source ID | Intent Record | Declared ID | Source Artifact | Namespace | SpecSpan Refs | Parent Tasks | Goal Tasks | Acceptance | Commands | Evidence |',
     '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
     ...sourceObligations.map(
       (obligation) =>
-        `| ${obligation.id} | ${obligation.canonicalIntentRecordId} | ${
+        `| ${obligation.id} | ${obligation.canonicalIntentRecordId || 'none'} | ${
           obligation.declaredSourceId || 'none'
         } | ${obligation.sourceArtifactId} | ${obligation.namespace} | ${obligation.specSpanRefs.join(
           ', '
-        )} | ${(obligation.parentTaskRefs || []).join(', ') || 'none'} | ${
-          obligation.goalTaskRefs[0]
-        } | ${obligation.acceptanceRefs[0]} | ${
-          obligation.commandRefs[0]
-        } | ${obligation.evidenceRefs[0]} |`
+        )} | ${(obligation.parentTaskRefs || []).join(', ') || 'none'} | ${(
+          obligation.goalTaskRefs || []
+        ).join(', ')} | ${(obligation.acceptanceRefs || []).join(', ')} | ${(
+          obligation.commandRefs || []
+        ).join(', ')} | ${(obligation.evidenceRefs || []).join(', ')} |`
     ),
   ].join('\n');
 }
@@ -244,6 +456,39 @@ function buildCommands(sourceObligations, coverageReceiptPath) {
           : `Expected pass condition: Command exits \`0\` and proves ${obligation.id} remains source-covered without serving as code implementation proof.`,
       ].join('\n')
     )
+    .join('\n\n');
+}
+
+function commandTextFromInlineRun(text) {
+  return /\bRun\s+`([^`\r\n]+)`/u.exec(String(text || ''))?.[1]?.trim() || '';
+}
+
+function buildTypedCommands(registries) {
+  return registries.commands
+    .map((commandId, index) => {
+      const command = typedRecord(registries, commandId, 'verification_command');
+      const executable = commandTextFromInlineRun(command?.exactText || command?.text);
+      if (!executable) {
+        const error = new Error(
+          'verification_command_executable_missing'
+        ) as GoalContractBuilderError;
+        error.code = 'verification_command_executable_missing';
+        error.failureClass = 'verification_command_executable_missing';
+        throw error;
+      }
+      return [
+        `### ${index + 1}. COMMAND ${commandId}`,
+        '',
+        '```powershell',
+        executable,
+        '```',
+        '',
+        `Expected pass condition: Command exits \`0\` and proves ${declaredRecordDescription(
+          command,
+          commandId
+        )}`,
+      ].join('\n');
+    })
     .join('\n\n');
 }
 
@@ -333,8 +578,11 @@ function buildSlotData({
     error.coverageAudit = coverageAudit;
     throw error;
   }
+  const firstTaskId = registries.tasks.at(0);
   const lastTaskId = registries.tasks.at(-1);
+  const firstAcceptanceId = registries.acceptance.at(0);
   const lastAcceptanceId = registries.acceptance.at(-1);
+  const typedProjection = registries.projectionMode === 'typed';
   const projectionSlots = evidenceGraph ? buildProjectionSlotData(evidenceGraph) : null;
   const slotData = {
     frontMatter: frontMatter({
@@ -343,7 +591,10 @@ function buildSlotData({
       source,
       coverageReceiptPath,
       generationReceiptPath,
+      projectionMode: registries.projectionMode,
+      firstTaskId,
       lastTaskId,
+      firstAcceptanceId,
       lastAcceptanceId,
       generatedAt,
       runtimeRecordId,
@@ -368,29 +619,36 @@ function buildSlotData({
     domainAddenda: [
       '### Source coverage contract',
       '',
-      '- Every `SRC` row MUST map to at least one `G`, one `ACC`, one `CMD`, and one `EVD` row.',
+      `- Every source row MUST map to at least one ${
+        typedProjection ? 'declared Task' : '`G`'
+      }, one acceptance, one command, and one evidence record.`,
       '- Coverage receipt rows MUST match the Markdown `Source Coverage Matrix` rows.',
       '- `unmappedSourceObligations` MUST equal `0`.',
     ].join('\n'),
-    implementationTasks: buildImplementationTasks(registries.sourceObligations),
+    implementationTasks: typedProjection
+      ? buildTypedImplementationTasks(registries)
+      : buildImplementationTasks(registries.sourceObligations),
     traceSliceTrackingMatrix:
-      projectionSlots?.traceSliceTrackingMatrix || buildTrace(registries.sourceObligations),
+      projectionSlots?.traceSliceTrackingMatrix ||
+      (typedProjection ? buildTypedTrace(registries) : buildTrace(registries.sourceObligations)),
     strictAcceptanceChecklist:
-      projectionSlots?.strictAcceptanceChecklist || buildAcceptance(registries.sourceObligations),
+      projectionSlots?.strictAcceptanceChecklist ||
+      (typedProjection
+        ? buildTypedAcceptance(registries)
+        : buildAcceptance(registries.sourceObligations)),
     acceptanceTraceabilityMatrix:
-      projectionSlots?.acceptanceTraceabilityMatrix || buildTrace(registries.sourceObligations),
+      projectionSlots?.acceptanceTraceabilityMatrix ||
+      (typedProjection ? buildTypedTrace(registries) : buildTrace(registries.sourceObligations)),
     sourceCoverageMatrix:
       projectionSlots?.sourceCoverageMatrix ||
-      (registries.sourceObligations.some(
-        ({ canonicalIntentRecordId }) => canonicalIntentRecordId
-      )
-        ? buildCanonicalSourceCoverageMatrix(
-            registries.sourceObligations
-          )
+      (registries.sourceObligations.some(({ canonicalIntentRecordId }) => canonicalIntentRecordId)
+        ? buildCanonicalSourceCoverageMatrix(registries.sourceObligations)
         : buildSourceCoverageMatrix({
             sourceObligations: registries.sourceObligations,
           })),
-    requiredTestCommands: buildCommands(registries.sourceObligations, coverageReceiptPath),
+    requiredTestCommands: typedProjection
+      ? buildTypedCommands(registries)
+      : buildCommands(registries.sourceObligations, coverageReceiptPath),
     manualVerificationScenarios:
       projectionSlots?.manualVerificationScenarios ||
       '- MV001: Inspect the coverage receipt and confirm `decision` is `pass` and `unmappedSourceObligations` is empty.',
@@ -577,9 +835,7 @@ function assertSelectedPartitionScope(selectedScope) {
     'commands',
     'inheritedConstraints',
   ];
-  const invalidFields = requiredArrays.filter(
-    (field) => !Array.isArray(selectedScope?.[field])
-  );
+  const invalidFields = requiredArrays.filter((field) => !Array.isArray(selectedScope?.[field]));
   if (
     !selectedScope?.partition?.partitionId ||
     invalidFields.length > 0 ||
@@ -626,42 +882,32 @@ function partitionFrontMatter({
 }) {
   const partition = selectedScope.partition;
   const planBound = Boolean(bindings.partitionPlanHash);
+  const primarySourceObligations = selectedScope.primarySourceObligations || [];
   const namespacedObligations =
     bindings.namespacedObligations ||
     selectedScope.namespacedObligations ||
     partition.namespacedObligations ||
     [];
-  const uniqueStrings = (values) =>
-    [...new Set((values || []).filter(Boolean).map(String))].sort();
+  const uniqueStrings = (values) => [...new Set((values || []).filter(Boolean).map(String))].sort();
   const obligationRefs = uniqueStrings(
     bindings.obligationRefs || [
-      ...(selectedScope.primarySourceObligations || []).map(
-        ({ id }) => id
-      ),
-      ...namespacedObligations.map(
-        ({ declaredSourceId }) => declaredSourceId
-      ),
+      ...(selectedScope.primarySourceObligations || []).map(({ id }) => id),
+      ...namespacedObligations.map(({ declaredSourceId }) => declaredSourceId),
     ]
   );
   const namespaceRefs = uniqueStrings(
-    bindings.namespaceRefs ||
-      namespacedObligations.map(({ namespace }) => namespace)
+    bindings.namespaceRefs || namespacedObligations.map(({ namespace }) => namespace)
   );
   const sourceArtifactRefs = uniqueStrings(
     bindings.sourceArtifactRefs ||
-      namespacedObligations.map(
-        ({ sourceArtifactId }) => sourceArtifactId
-      )
+      namespacedObligations.map(({ sourceArtifactId }) => sourceArtifactId)
   );
-  const specSpanRefs = uniqueStrings(
-    bindings.specSpanRefs ||
-      namespacedObligations.flatMap(
-        ({ specSpanRefs: refs }) => refs || []
-      )
-  );
-  const governedPaths = uniqueStrings(
-    bindings.governedPaths || partition.ownedArtifactPaths || []
-  );
+  const specSpanRefs = uniqueStrings([
+    ...(bindings.specSpanRefs || []),
+    ...primarySourceObligations.flatMap(({ specSpanRefs: refs }) => refs || []),
+    ...namespacedObligations.flatMap(({ specSpanRefs: refs }) => refs || []),
+  ]);
+  const governedPaths = uniqueStrings(bindings.governedPaths || partition.ownedArtifactPaths || []);
   const finalAuthorityLines = planBound
     ? [
         `sourceCompositionPolicyHash: ${bindings.sourceCompositionPolicyHash}`,
@@ -672,9 +918,7 @@ function partitionFrontMatter({
         `subordinateCoverageReceiptHashes: ${JSON.stringify(
           bindings.subordinateCoverageReceiptHashes || []
         )}`,
-        ...(bindings.displayOrdinal
-          ? [`displayOrdinal: ${bindings.displayOrdinal}`]
-          : []),
+        ...(bindings.displayOrdinal ? [`displayOrdinal: ${bindings.displayOrdinal}`] : []),
         `obligationRefs: ${JSON.stringify(obligationRefs)}`,
         `namespaceRefs: ${JSON.stringify(namespaceRefs)}`,
         `sourceArtifactRefs: ${JSON.stringify(sourceArtifactRefs)}`,
@@ -688,34 +932,22 @@ function partitionFrontMatter({
   const selectionAuthorityLines = planBound
     ? [
         ...(bindings.selectionReceiptPath
-          ? [
-              `selectionReceiptPath: ${repoPath(
-                bindings.selectionReceiptPath
-              )}`,
-            ]
+          ? [`selectionReceiptPath: ${repoPath(bindings.selectionReceiptPath)}`]
           : []),
         ...(bindings.selectionReceiptHash
           ? [`selectionReceiptHash: ${bindings.selectionReceiptHash}`]
           : []),
         ...(bindings.globalCoverageReceiptPath
-          ? [
-              `globalCoverageReceiptPath: ${repoPath(
-                bindings.globalCoverageReceiptPath
-              )}`,
-            ]
+          ? [`globalCoverageReceiptPath: ${repoPath(bindings.globalCoverageReceiptPath)}`]
           : []),
         ...(bindings.globalCoverageReceiptHash
-          ? [
-              `globalCoverageReceiptHash: ${bindings.globalCoverageReceiptHash}`,
-            ]
+          ? [`globalCoverageReceiptHash: ${bindings.globalCoverageReceiptHash}`]
           : []),
       ]
     : [
         `selectionReceiptPath: ${repoPath(bindings.selectionReceiptPath)}`,
         `selectionReceiptHash: ${bindings.selectionReceiptHash}`,
-        `globalCoverageReceiptPath: ${repoPath(
-          bindings.globalCoverageReceiptPath
-        )}`,
+        `globalCoverageReceiptPath: ${repoPath(bindings.globalCoverageReceiptPath)}`,
         `globalCoverageReceiptHash: ${bindings.globalCoverageReceiptHash}`,
       ];
   return [
@@ -810,11 +1042,15 @@ function buildPartitionSlotData({
   const acceptanceTraceRows = selectedScope.completionPredicates
     .map(
       (predicate) =>
-        `| ${predicate.predicateId} | ${(predicate.sourceIds || []).join(', ')} | ${
-          (predicate.taskIds || predicate.goalIds || registries.tasks).join(', ')
-        } | ${(predicate.evidenceContractIds || predicate.expectedEvidenceIds || []).join(
-          ', '
-        )} |`
+        `| ${predicate.predicateId} | ${(predicate.sourceIds || []).join(', ')} | ${(
+          predicate.taskIds ||
+          predicate.goalIds ||
+          registries.tasks
+        ).join(', ')} | ${(
+          predicate.evidenceContractIds ||
+          predicate.expectedEvidenceIds ||
+          []
+        ).join(', ')} |`
     )
     .join('\n');
   const sourceRows = registries.sourceObligations
@@ -822,9 +1058,9 @@ function buildPartitionSlotData({
       (item) =>
         `| ${item.id} | ${(item.goalTaskRefs || []).join(', ')} | ${(
           item.acceptanceRefs || []
-        ).join(', ')} | ${(item.commandRefs || []).join(', ')} | ${(
-          item.evidenceRefs || []
-        ).join(', ')} |`
+        ).join(', ')} | ${(item.commandRefs || []).join(', ')} | ${(item.evidenceRefs || []).join(
+          ', '
+        )} | ${(item.specSpanRefs || []).join(', ')} |`
     )
     .join('\n');
   const commandRows = selectedScope.commands
@@ -838,9 +1074,9 @@ function buildPartitionSlotData({
   const evidenceRows = selectedScope.evidenceContracts
     .map(
       (contract) =>
-        `- \`${contract.evidenceContractId}\`: producers=${(
-          contract.producerTaskIds || []
-        ).join(', ')}; freshness=${contract.freshnessRule || 'current'}.`
+        `- \`${contract.evidenceContractId}\`: producers=${(contract.producerTaskIds || []).join(
+          ', '
+        )}; freshness=${contract.freshnessRule || 'current'}.`
     )
     .join('\n');
   const inheritedRows =
@@ -858,29 +1094,19 @@ function buildPartitionSlotData({
         `- \`sourceCompositionPolicyHash\`: \`${bindings.sourceCompositionPolicyHash}\`.`,
         `- \`sourceAuthorityBundleHash\`: \`${bindings.sourceAuthorityBundleHash}\`.`,
         `- \`partitionSetHash\`: \`${bindings.partitionSetHash}\`.`,
-        `- \`selectionSetHash\`: \`${
-          partition.selectionSetHash || bindings.selectionSetHash
-        }\`.`,
-        `- \`coverageReceiptPath\`: \`${repoPath(
-          receiptPaths.coverageReceiptPath
-        )}\`.`,
-        `- \`generationReceiptPath\`: \`${repoPath(
-          receiptPaths.generationReceiptPath
-        )}\`.`,
+        `- \`selectionSetHash\`: \`${partition.selectionSetHash || bindings.selectionSetHash}\`.`,
+        `- \`coverageReceiptPath\`: \`${repoPath(receiptPaths.coverageReceiptPath)}\`.`,
+        `- \`generationReceiptPath\`: \`${repoPath(receiptPaths.generationReceiptPath)}\`.`,
       ]
     : [
         `- \`partitionManifestPath\`: \`${repoPath(bindings.partitionManifestPath)}\`.`,
         `- \`partitionManifestHash\`: \`${bindings.partitionManifestHash}\`.`,
         `- \`selectionReceiptPath\`: \`${repoPath(bindings.selectionReceiptPath)}\`.`,
         `- \`selectionReceiptHash\`: \`${bindings.selectionReceiptHash}\`.`,
-        `- \`globalCoverageReceiptPath\`: \`${repoPath(
-          bindings.globalCoverageReceiptPath
-        )}\`.`,
+        `- \`globalCoverageReceiptPath\`: \`${repoPath(bindings.globalCoverageReceiptPath)}\`.`,
         `- \`globalCoverageReceiptHash\`: \`${bindings.globalCoverageReceiptHash}\`.`,
         `- \`coverageReceiptPath\`: \`${repoPath(receiptPaths.coverageReceiptPath)}\`.`,
-        `- \`generationReceiptPath\`: \`${repoPath(
-          receiptPaths.generationReceiptPath
-        )}\`.`,
+        `- \`generationReceiptPath\`: \`${repoPath(receiptPaths.generationReceiptPath)}\`.`,
       ];
   return {
     slotData: {
@@ -916,8 +1142,7 @@ function buildPartitionSlotData({
         '',
         `- Partition: \`${partition.partitionId}\` (${partition.partitionRole}).`,
         `- Dependencies: ${
-          (partition.dependencyPartitionIds || []).map((id) => `\`${id}\``).join(', ') ||
-          'none'
+          (partition.dependencyPartitionIds || []).map((id) => `\`${id}\``).join(', ') || 'none'
         }.`,
         '',
         '### Inherited partition constraints',
@@ -937,8 +1162,8 @@ function buildPartitionSlotData({
         acceptanceTraceRows,
       ].join('\n'),
       sourceCoverageMatrix: [
-        '| Source ID | Tasks | Acceptance | Commands | Evidence |',
-        '| --- | --- | --- | --- | --- |',
+        '| Source ID | Tasks | Acceptance | Commands | Evidence | SpecSpan Refs |',
+        '| --- | --- | --- | --- | --- | --- |',
         sourceRows,
       ].join('\n'),
       requiredTestCommands: commandRows,

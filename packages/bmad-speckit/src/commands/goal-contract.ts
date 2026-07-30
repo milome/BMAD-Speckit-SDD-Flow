@@ -13,22 +13,12 @@ function firstExistingPath(candidates) {
 
 function resolvePartitionCompilerIdentityAssetPath(relativePath) {
   const sourceRuntime = __filename.endsWith('.ts');
-  const runtimeRoot = path.join(
-    PACKAGE_ROOT,
-    sourceRuntime ? 'src' : 'dist',
-    relativePath
-  );
+  const runtimeRoot = path.join(PACKAGE_ROOT, sourceRuntime ? 'src' : 'dist', relativePath);
   const extension = sourceRuntime ? '.ts' : '.js';
-  const candidates = [
-    `${runtimeRoot}${extension}`,
-    path.join(runtimeRoot, `index${extension}`),
-  ];
+  const candidates = [`${runtimeRoot}${extension}`, path.join(runtimeRoot, `index${extension}`)];
   if (sourceRuntime) {
     const distRoot = path.join(PACKAGE_ROOT, 'dist', relativePath);
-    candidates.push(
-      `${distRoot}.js`,
-      path.join(distRoot, 'index.js')
-    );
+    candidates.push(`${distRoot}.js`, path.join(distRoot, 'index.js'));
   }
   return firstExistingPath(candidates);
 }
@@ -62,6 +52,7 @@ function loadWholeSourceDependencies() {
   const { extractSourceObligations } = loadDistModule(
     'utils/goal-contract/source-obligation-extractor'
   );
+  const { buildSourceSnapshot } = loadPartitionModule('utils/goal-contract/dual-view-derivation');
   const { resolveEntryScenario, validateEntryAuthority } = loadDistModule(
     'utils/goal-contract/entry-scenarios'
   );
@@ -76,9 +67,7 @@ function loadWholeSourceDependencies() {
     compileGoalContractPolicy,
     createGoalContractCompilationReceipt,
     goalContractCompilerIdentity,
-  } = loadPartitionModule(
-    'utils/goal-contract/control-plane/goal-contract-compiler'
-  );
+  } = loadPartitionModule('utils/goal-contract/control-plane/goal-contract-compiler');
   const { hashControlPlaneValue } = loadPartitionModule(
     'utils/goal-contract/control-plane/canonical-hash'
   );
@@ -98,6 +87,7 @@ function loadWholeSourceDependencies() {
     'utils/goal-contract/standalone-audit-controller'
   );
   return {
+    buildSourceSnapshot,
     compileCanonicalIntent,
     compileCompositeSourceAuthorityBundle,
     compileGoalContract,
@@ -169,9 +159,7 @@ function sha256Text(value) {
 }
 
 function sha256FileBytes(filePath) {
-  return `sha256:${createHash('sha256')
-    .update(fs.readFileSync(filePath))
-    .digest('hex')}`;
+  return `sha256:${createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')}`;
 }
 
 function compileStandaloneGoalContract({
@@ -202,9 +190,7 @@ function compileStandaloneGoalContract({
     authoritySourceId,
     declaredMode: 'single_source',
     requiredSubordinateBindings,
-    declaredRequiredBindingsHash: hashControlPlaneValue(
-      requiredSubordinateBindings
-    ),
+    declaredRequiredBindingsHash: hashControlPlaneValue(requiredSubordinateBindings),
     authorityEvidenceHash: hashControlPlaneValue({
       authoritySourceId,
       mode: 'single_source',
@@ -215,9 +201,7 @@ function compileStandaloneGoalContract({
     authorityRecord,
   });
   const sourceArtifactId = `standalone-source-${source.sourcePlanHash.slice(7)}`;
-  const sourceNamespace = `STANDALONE_${source.sourcePlanHash
-    .slice(7)
-    .toUpperCase()}`;
+  const sourceNamespace = `STANDALONE_${source.sourcePlanHash.slice(7).toUpperCase()}`;
   const orderedSourceSnapshotSet = compileOrderedSourceSnapshotSet({
     sources: [
       {
@@ -231,19 +215,18 @@ function compileStandaloneGoalContract({
       },
     ],
   });
-  const compositeSourceAuthorityBundle =
-    compileCompositeSourceAuthorityBundle({
-      sourceCompositionPolicy,
-      orderedSourceSnapshotSet,
-      primarySource: {
-        role: 'primary_implementation_authority',
-        namespace: sourceNamespace,
-        sourceArtifactId,
-        ownedSemanticDomains: [],
-        parentTaskRefs: [],
-      },
-      subordinateSources: [],
-    });
+  const compositeSourceAuthorityBundle = compileCompositeSourceAuthorityBundle({
+    sourceCompositionPolicy,
+    orderedSourceSnapshotSet,
+    primarySource: {
+      role: 'primary_implementation_authority',
+      namespace: sourceNamespace,
+      sourceArtifactId,
+      ownedSemanticDomains: [],
+      parentTaskRefs: [],
+    },
+    subordinateSources: [],
+  });
   const candidateIntent = compileCanonicalIntent({
     sourceCompositionPolicy,
     orderedSourceSnapshotSet,
@@ -252,20 +235,15 @@ function compileStandaloneGoalContract({
   });
   const intentAuthorityEnvelope = compileIntentAuthorityEnvelope({
     subject: {
-      sourceSnapshotHash:
-        orderedSourceSnapshotSet.orderedSourceSnapshotSetHash,
-      canonicalIntentSemanticHash:
-        candidateIntent.canonicalIntentSemanticHash,
-      specSpanRegistryHash:
-        candidateIntent.specSpanRegistry.specSpanRegistryHash,
+      sourceSnapshotHash: orderedSourceSnapshotSet.orderedSourceSnapshotSetHash,
+      canonicalIntentSemanticHash: candidateIntent.canonicalIntentSemanticHash,
+      specSpanRegistryHash: candidateIntent.specSpanRegistry.specSpanRegistryHash,
     },
     compositeSourceAuthorityBundle,
     authorityBasis: {
       kind: 'direct_source_declaration',
-      sourceDeclarationHash:
-        orderedSourceSnapshotSet.sourceSnapshots[0].sourceSnapshotHash,
-      declaringUserAuthorityIdentity:
-        'user:standalone-goal-contract-command',
+      sourceDeclarationHash: orderedSourceSnapshotSet.sourceSnapshots[0].sourceSnapshotHash,
+      declaringUserAuthorityIdentity: 'user:standalone-goal-contract-command',
       entryScenario: 'standalone_goal_contract',
     },
   });
@@ -302,35 +280,19 @@ function compileStandaloneGoalContract({
     orderedSourceSnapshotSet,
     compositeSourceAuthorityBundle,
     canonicalIntentBundle,
-    subordinateCoverageReceipts:
-      bundle.subordinateSourceCoverageReceipts,
+    subordinateCoverageReceipts: bundle.subordinateSourceCoverageReceipts,
   };
 }
 
 function resolveGoalContractAssetPath(...segments) {
   return firstExistingPath([
-    path.join(
-      SOURCE_ROOT,
-      '_bmad',
-      'shared',
-      'goal-contract',
-      ...segments
-    ),
-    path.join(
-      PACKAGE_ROOT,
-      '_bmad',
-      'shared',
-      'goal-contract',
-      ...segments
-    ),
+    path.join(SOURCE_ROOT, '_bmad', 'shared', 'goal-contract', ...segments),
+    path.join(PACKAGE_ROOT, '_bmad', 'shared', 'goal-contract', ...segments),
   ]);
 }
 
 function resolveRendererPath() {
-  return resolveGoalContractAssetPath(
-    'scripts',
-    'render-goal-contract.js'
-  );
+  return resolveGoalContractAssetPath('scripts', 'render-goal-contract.js');
 }
 
 function loadRenderer() {
@@ -338,10 +300,7 @@ function loadRenderer() {
 }
 
 function resolveCommandPortabilityCheckerPath() {
-  return resolveGoalContractAssetPath(
-    'scripts',
-    'check-contract-command-portability.js'
-  );
+  return resolveGoalContractAssetPath('scripts', 'check-contract-command-portability.js');
 }
 
 function loadCommandPortabilityChecker() {
@@ -405,6 +364,7 @@ function generateWholeSource(args) {
   assertPartitionGenerationArgsComplete(args);
   const dependencies = loadWholeSourceDependencies();
   const {
+    buildSourceSnapshot,
     createGoalContractCompilationReceipt,
     defaultReceiptPaths,
     extractSourceObligations,
@@ -450,7 +410,12 @@ function generateWholeSource(args) {
     take(args, '--generation-receipt', receipts.generationReceiptPath)
   );
   const sourceText = fs.readFileSync(sourcePath, 'utf8');
-  const source = extractSourceObligations({ sourcePath: normalize(sourcePath), sourceText });
+  const sourceSnapshot = buildSourceSnapshot({
+    sourceType: 'source_plan',
+    sourcePath: normalize(sourcePath),
+    rawBytes: Buffer.from(sourceText, 'utf8'),
+  });
+  const source = extractSourceObligations({ snapshot: sourceSnapshot });
   const profilePath = firstExistingPath([
     path.join(SOURCE_ROOT, '_bmad', 'shared', 'goal-contract', 'goal-contract-profile.json'),
     path.join(PACKAGE_ROOT, '_bmad', 'shared', 'goal-contract', 'goal-contract-profile.json'),
@@ -473,17 +438,16 @@ function generateWholeSource(args) {
   ]);
   const profileBytes = fs.readFileSync(profilePath);
   const templateBytes = fs.readFileSync(templatePath);
-  const { bundle: compilation, sourceCompositionPolicy } =
-    compileStandaloneGoalContract({
-      source,
-      sourceText,
-      resolvedOut,
-      coverageReceiptPath,
-      generationReceiptPath,
-      profileBytes,
-      templateBytes,
-      dependencies,
-    });
+  const { bundle: compilation, sourceCompositionPolicy } = compileStandaloneGoalContract({
+    source,
+    sourceText,
+    resolvedOut,
+    coverageReceiptPath,
+    generationReceiptPath,
+    profileBytes,
+    templateBytes,
+    dependencies,
+  });
   const registries = compilation.registries;
   const implementationProofAudit = compilation.implementationProofAudit;
   const rendered = {
@@ -594,12 +558,9 @@ function generateWholeSource(args) {
       actualHash: goalContractDocumentHash,
     });
   }
-  const compilationReceipt = createGoalContractCompilationReceipt(
-    compilation,
-    {
-      compiledAt: new Date().toISOString(),
-    }
-  );
+  const compilationReceipt = createGoalContractCompilationReceipt(compilation, {
+    compiledAt: new Date().toISOString(),
+  });
   const goalContractHash = compilation.goalContractHash;
   const coverageReceipt = {
     schemaVersion: 'goal-contract-source-coverage-receipt/v1',
@@ -630,28 +591,20 @@ function generateWholeSource(args) {
     goalContractDocumentHash,
     runtimeRecordId: compilation.runtimeRecordId,
     sourceCompositionMode: sourceCompositionPolicy.mode,
-    sourceCompositionPolicyHash:
-      compilation.sourceCompositionPolicyHash,
-    orderedSourceSnapshotSetHash:
-      compilation.orderedSourceSnapshotSetHash,
-    sourceAuthorityBundleHash:
-      compilation.sourceAuthorityBundleHash,
-    canonicalIntentSemanticHash:
-      compilation.canonicalIntentSemanticHash,
-    canonicalIntentBundleHash:
-      compilation.canonicalIntentBundleHash,
-    authorityAttestationHash:
-      compilation.authorityAttestationHash,
+    sourceCompositionPolicyHash: compilation.sourceCompositionPolicyHash,
+    orderedSourceSnapshotSetHash: compilation.orderedSourceSnapshotSetHash,
+    sourceAuthorityBundleHash: compilation.sourceAuthorityBundleHash,
+    canonicalIntentSemanticHash: compilation.canonicalIntentSemanticHash,
+    canonicalIntentBundleHash: compilation.canonicalIntentBundleHash,
+    authorityAttestationHash: compilation.authorityAttestationHash,
     compilePolicyHash: compilation.compilePolicyHash,
     compilerIdentityHash: compilation.compilerIdentityHash,
-    subordinateSourceCoverageReceiptHashes:
-      compilationReceipt.subordinateCoverageReceiptHashes,
+    subordinateSourceCoverageReceiptHashes: compilationReceipt.subordinateCoverageReceiptHashes,
     compilationReceipt,
     coverageReceiptPath: normalize(coverageReceiptPath),
     generationReceiptPath: normalize(generationReceiptPath),
     sourceObligationCount: registries.sourceObligations.length,
-    unmappedSourceObligations:
-      coverageAudit.unmappedSourceObligations.length,
+    unmappedSourceObligations: coverageAudit.unmappedSourceObligations.length,
     rendererAudit: rendered.audit,
     coverageAudit,
     implementationProofAudit,
@@ -703,9 +656,7 @@ function selectedCommandRecords(graphInput, commandIds) {
 }
 
 function enrichSelectedScope({ selectedScope, reconciliation }) {
-  const sourceIds = new Set(
-    selectedScope.selectionReceipt.selectedPrimarySourceObligationIds
-  );
+  const sourceIds = new Set(selectedScope.selectionReceipt.selectedPrimarySourceObligationIds);
   const primarySourceObligations = (reconciliation.graphInput.sourceObligations || [])
     .filter((source) => sourceIds.has(source.id))
     .map((source) => structuredClone(source));
@@ -731,24 +682,19 @@ async function generatePartitionBound(args) {
     writePartitionChildCoverageReceipt,
     writePartitionChildGenerationReceipt,
   } = loadPartitionModule('utils/goal-contract/goal-contract-receipts');
-  const {
-    readValidatedPartitionReceipt,
-  } = loadPartitionModule('utils/goal-contract/partition-receipts');
-  const {
-    buildGlobalPartitionCoverageReceipt,
-    selectPartitionScope,
-  } = loadPartitionModule('utils/goal-contract/partition-selector');
-  const { buildPartitionSlotData } = loadPartitionModule(
-    'utils/goal-contract/slot-data-builder'
+  const { readValidatedPartitionReceipt } = loadPartitionModule(
+    'utils/goal-contract/partition-receipts'
   );
-  const {
-    resolveEntryScenario,
-    validateEntryAuthority,
-  } = loadPartitionModule('utils/goal-contract/entry-scenarios');
-  const {
-    resolveAuditProfile,
-    runStandaloneDeterministicPreflight,
-  } = loadPartitionModule('utils/goal-contract/standalone-audit-controller');
+  const { buildGlobalPartitionCoverageReceipt, selectPartitionScope } = loadPartitionModule(
+    'utils/goal-contract/partition-selector'
+  );
+  const { buildPartitionSlotData } = loadPartitionModule('utils/goal-contract/slot-data-builder');
+  const { resolveEntryScenario, validateEntryAuthority } = loadPartitionModule(
+    'utils/goal-contract/entry-scenarios'
+  );
+  const { resolveAuditProfile, runStandaloneDeterministicPreflight } = loadPartitionModule(
+    'utils/goal-contract/standalone-audit-controller'
+  );
   const { safeWriteText, sha256File } = loadWholeSourceDependencies();
 
   const entry = resolveEntryScenario(takeAll(args, '--entry'));
@@ -774,11 +720,7 @@ async function generatePartitionBound(args) {
   const partitionId = take(args, '--partition-id');
   const resolvedOut = path.resolve(outPath);
   const receiptsDir = path.resolve(
-    take(
-      args,
-      '--receipts-dir',
-      path.join(path.dirname(manifestPath), '.goal-contract-receipts')
-    )
+    take(args, '--receipts-dir', path.join(path.dirname(manifestPath), '.goal-contract-receipts'))
   );
   const receiptPaths = defaultReceiptPaths(resolvedOut);
   const coverageReceiptPath = path.resolve(
@@ -842,10 +784,7 @@ async function generatePartitionBound(args) {
   if (stableStringify(globalCoverageReceipt) !== stableStringify(expectedGlobalCoverage)) {
     throw partitionFailure('partition_global_coverage_receipt_stale');
   }
-  if (
-    stableStringify(selectionReceipt) !==
-    stableStringify(selectedScope.selectionReceipt)
-  ) {
+  if (stableStringify(selectionReceipt) !== stableStringify(selectedScope.selectionReceipt)) {
     throw partitionFailure('partition_selection_receipt_stale', { partitionId });
   }
 
@@ -885,8 +824,7 @@ async function generatePartitionBound(args) {
     globalCoverageReceiptHash,
     sourceSnapshotHash: manifest.sourceSnapshotHash,
     methodologyProfileHash: manifest.methodologyProfileHash,
-    methodologyProfileArtifactHash:
-      authority.methodology.methodologyProfileArtifactHash,
+    methodologyProfileArtifactHash: authority.methodology.methodologyProfileArtifactHash,
     executionProjectionHash: manifest.executionProjectionHash,
     taskDagHash: manifest.taskDagHash,
     sequenceMode: manifest.sequenceMode,
@@ -895,8 +833,7 @@ async function generatePartitionBound(args) {
     sequenceClosureStatus: manifest.sequenceClosureStatus,
     childContractAuthority: manifest.childContractAuthority,
     partitionPolicyHash: manifest.partitionPolicyHash,
-    partitionPolicyArtifactHash:
-      authority.optimizerPolicyBinding.partitionPolicyArtifactHash,
+    partitionPolicyArtifactHash: authority.optimizerPolicyBinding.partitionPolicyArtifactHash,
   };
   const source = {
     sourcePlanPath: manifest.masterSourcePath,
@@ -904,12 +841,7 @@ async function generatePartitionBound(args) {
     sourceBytes: authority.snapshot.sourceBytes,
     sourceLines: authority.snapshot.sourceLines,
   };
-  const {
-    slotData,
-    registries,
-    coverageAudit,
-    implementationProofAudit,
-  } = buildPartitionSlotData({
+  const { slotData, registries, coverageAudit, implementationProofAudit } = buildPartitionSlotData({
     source,
     profile,
     selectedScope,
@@ -938,14 +870,9 @@ async function generatePartitionBound(args) {
   for (const field of sequenceStateFields) {
     if (
       bindings[field] !== manifest[field] ||
-      !new RegExp(`^${field}: ${manifest[field]}$`, 'mu').test(
-        rendered.document
-      )
+      !new RegExp(`^${field}: ${manifest[field]}$`, 'mu').test(rendered.document)
     ) {
-      throw partitionFailure(
-        'partition_child_generation_sequence_state_mismatch',
-        { field }
-      );
+      throw partitionFailure('partition_child_generation_sequence_state_mismatch', { field });
     }
   }
   const { auditCommandPortability } = loadCommandPortabilityChecker();
@@ -971,8 +898,7 @@ async function generatePartitionBound(args) {
         id: 'partition_selected_coverage',
         run: () => ({
           decision:
-            coverageAudit.decision === 'pass' &&
-            implementationProofAudit.decision === 'pass'
+            coverageAudit.decision === 'pass' && implementationProofAudit.decision === 'pass'
               ? 'pass'
               : 'block',
           issues: [],
@@ -1015,8 +941,7 @@ async function generatePartitionBound(args) {
     partitionManifestHash: authority.compiled.partitionManifestHash,
     selectionReceiptHash,
     globalCoverageReceiptHash,
-    selectedPrimaryObligationIds:
-      selectionReceipt.selectedPrimarySourceObligationIds,
+    selectedPrimaryObligationIds: selectionReceipt.selectedPrimarySourceObligationIds,
     inheritedConstraintIds: selectionReceipt.inheritedConstraintIds,
     excludedObligationIds: uniqueStrings([
       ...selectionReceipt.excludedSourceObligationIds,
@@ -1045,8 +970,7 @@ async function generatePartitionBound(args) {
     masterSourceHash: manifest.masterSourceHash,
     sourceSnapshotHash: manifest.sourceSnapshotHash,
     methodologyProfileHash: manifest.methodologyProfileHash,
-    methodologyProfileArtifactHash:
-      authority.methodology.methodologyProfileArtifactHash,
+    methodologyProfileArtifactHash: authority.methodology.methodologyProfileArtifactHash,
     executionProjectionHash: manifest.executionProjectionHash,
     taskDagHash: manifest.taskDagHash,
     sequenceMode: manifest.sequenceMode,
@@ -1055,8 +979,7 @@ async function generatePartitionBound(args) {
     sequenceClosureStatus: manifest.sequenceClosureStatus,
     childContractAuthority: manifest.childContractAuthority,
     partitionPolicyHash: manifest.partitionPolicyHash,
-    partitionPolicyArtifactHash:
-      authority.optimizerPolicyBinding.partitionPolicyArtifactHash,
+    partitionPolicyArtifactHash: authority.optimizerPolicyBinding.partitionPolicyArtifactHash,
     partitionManifestPath: normalize(manifestPath),
     partitionManifestHash: authority.compiled.partitionManifestHash,
     partitionAnalysisReceiptHash: manifest.partitionAnalysisReceiptHash,
@@ -1081,10 +1004,7 @@ async function generatePartitionBound(args) {
   });
   for (const field of sequenceStateFields) {
     if (generation.payload[field] !== manifest[field]) {
-      throw partitionFailure(
-        'partition_child_generation_sequence_state_mismatch',
-        { field }
-      );
+      throw partitionFailure('partition_child_generation_sequence_state_mismatch', { field });
     }
   }
   if (generation.payload.decision !== 'pass') {
@@ -1175,12 +1095,8 @@ function commandLiteral(obligation) {
 
 function executableFence(obligation) {
   const text = String(obligation.exactText || obligation.text || '').trim();
-  const normalizedText = text
-    .replace(/^\\`\\`\\`/u, '```')
-    .replace(/\\`\\`\\`$/u, '```');
-  const match = /^```([A-Za-z0-9_-]+)\r?\n([\s\S]*?)\r?\n```$/u.exec(
-    normalizedText
-  );
+  const normalizedText = text.replace(/^\\`\\`\\`/u, '```').replace(/\\`\\`\\`$/u, '```');
+  const match = /^```([A-Za-z0-9_-]+)\r?\n([\s\S]*?)\r?\n```$/u.exec(normalizedText);
   if (!match) return null;
   const shell = match[1].toLowerCase();
   if (
@@ -1279,34 +1195,28 @@ function structuredTaskOwner(obligation, declaredTasks) {
         );
       })
       .sort(
-        (left, right) =>
-          (right.headingPath?.length || 0) - (left.headingPath?.length || 0)
+        (left, right) => (right.headingPath?.length || 0) - (left.headingPath?.length || 0)
       )[0] || null
   );
 }
 
 function explicitDependencyBody(obligation) {
-  const text = String(obligation.exactText || obligation.text || '').trim();
-  const match =
-    /^\*{0,2}(?:依赖|dependencies?)\s*[:：]\*{0,2}\s*(.*)$/iu.exec(text);
+  const text = String(obligation.exactText || obligation.text || '')
+    .trim()
+    .replace(/^(?:[-*]|\d+\.)\s+(?:\[[ xX]\]\s*)?/u, '')
+    .trim();
+  const match = /^\*{0,2}(?:依赖|dependencies?)\s*[:：]\*{0,2}\s*(.*)$/iu.exec(text);
   return match?.[1]?.trim() || null;
 }
 
-function structuredTaskDependencies({
-  task,
-  scopedObligations,
-  knownTaskIds,
-}) {
+function structuredTaskDependencies({ task, scopedObligations, knownTaskIds }) {
   const declared = scopedObligations.flatMap((obligation) => {
     const body = explicitDependencyBody(obligation);
     if (!body) return [];
-    return [
-      ...body.matchAll(/\b[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-T\d+[A-Z]?\b/gu),
-    ]
-      .map((match) => ({
-        sourceId: obligation.id,
-        dependencyId: match[0],
-      }));
+    return [...body.matchAll(/\b[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-T\d+[A-Z]?\b/gu)].map((match) => ({
+      sourceId: obligation.id,
+      dependencyId: match[0],
+    }));
   });
   const unknownDependencies = declared.filter(
     ({ dependencyId }) => !knownTaskIds.has(dependencyId)
@@ -1326,10 +1236,7 @@ function structuredTaskSliceId(taskId) {
   return /^(.+)-T\d+[A-Z]?$/u.exec(String(taskId))?.[1] || null;
 }
 
-function structuredSliceTerminals({
-  declaredTasks,
-  directDependenciesByTaskId,
-}) {
+function structuredSliceTerminals({ declaredTasks, directDependenciesByTaskId }) {
   const tasksBySlice = new Map<string, string[]>();
   for (const task of declaredTasks) {
     const sliceId = structuredTaskSliceId(task.id);
@@ -1343,31 +1250,26 @@ function structuredSliceTerminals({
       const taskIdSet = new Set(taskIds);
       const consumedTaskIds = new Set(
         taskIds.flatMap((taskId) =>
-          (directDependenciesByTaskId.get(taskId) || []).filter(
-            (dependencyId) => taskIdSet.has(dependencyId)
+          (directDependenciesByTaskId.get(taskId) || []).filter((dependencyId) =>
+            taskIdSet.has(dependencyId)
           )
         )
       );
-      const terminalTaskIds = taskIds.filter(
-        (taskId) => !consumedTaskIds.has(taskId)
-      );
+      const terminalTaskIds = taskIds.filter((taskId) => !consumedTaskIds.has(taskId));
       return [sliceId, terminalTaskIds.length > 0 ? terminalTaskIds : taskIds];
     })
   );
 }
 
-function structuredSliceDependencyRefs({
-  scopedObligations,
-  sliceOrder,
-}) {
+function structuredSliceDependencyRefs({ scopedObligations, sliceOrder }) {
   const knownSliceIds = new Set(sliceOrder);
   const refs = [];
   for (const obligation of scopedObligations) {
     const body = explicitDependencyBody(obligation);
     if (!body) continue;
-    const declaredRefs = [
-      ...body.matchAll(/\bSlice\s+([A-Z][A-Z0-9]*)\b/giu),
-    ].map((match) => match[1].toUpperCase());
+    const declaredRefs = [...body.matchAll(/\bSlice\s+([A-Z][A-Z0-9]*)\b/giu)].map((match) =>
+      match[1].toUpperCase()
+    );
     const unknownDependencies = declaredRefs
       .filter((sliceId) => !knownSliceIds.has(sliceId))
       .map((sliceId) => ({
@@ -1393,22 +1295,17 @@ function structuredSliceDependencyRefs({
   return uniqueStrings(refs);
 }
 
-function deriveStructuredTaskDependencyMap({
-  declaredTasks,
-  scopedObligationsByTask,
-}) {
+function deriveStructuredTaskDependencyMap({ declaredTasks, scopedObligationsByTask }) {
   const knownTaskIds = new Set(declaredTasks.map((task) => task.id));
   const directDependenciesByTaskId = new Map<string, string[]>(
-    declaredTasks.map(
-      (task): [string, string[]] => [
-        task.id,
-        structuredTaskDependencies({
-          task,
-          scopedObligations: scopedObligationsByTask.get(task.id) || [],
-          knownTaskIds,
-        }),
-      ]
-    )
+    declaredTasks.map((task): [string, string[]] => [
+      task.id,
+      structuredTaskDependencies({
+        task,
+        scopedObligations: scopedObligationsByTask.get(task.id) || [],
+        knownTaskIds,
+      }),
+    ])
   );
   const sliceOrder = uniqueStrings(
     declaredTasks.map((task) => structuredTaskSliceId(task.id)).filter(Boolean)
@@ -1425,9 +1322,7 @@ function deriveStructuredTaskDependencyMap({
       });
       const dependencies = uniqueStrings([
         ...(directDependenciesByTaskId.get(task.id) || []),
-        ...sliceRefs.flatMap(
-          (sliceId) => terminalTaskIdsBySlice.get(sliceId) || []
-        ),
+        ...sliceRefs.flatMap((sliceId) => terminalTaskIdsBySlice.get(sliceId) || []),
       ]).filter((dependencyId) => dependencyId !== task.id);
       return [task.id, dependencies];
     })
@@ -1440,9 +1335,10 @@ function structuredSliceIdFromHeadingPath(headingPath) {
       String(heading)
     );
     if (traceSlice) return traceSlice[1].toUpperCase();
-    const sliceSection = /^([A-Z][A-Z0-9]*)\s+(?:required\s+tests|required\s+commands|exit\s+gate)\b/iu.exec(
-      String(heading)
-    );
+    const sliceSection =
+      /^([A-Z][A-Z0-9]*)\s+(?:required\s+tests|required\s+commands|exit\s+gate)\b/iu.exec(
+        String(heading)
+      );
     if (sliceSection) return sliceSection[1].toUpperCase();
   }
   return null;
@@ -1477,14 +1373,18 @@ function structuredTaskSourceSectionLines(snapshot, task) {
 
 function hasStructuredInspectPathAuthority(snapshot, task) {
   return structuredTaskSourceSectionLines(snapshot, task).some((line) =>
-    /^\s*[-*]\s+(?:inspect|检查|审阅)\s*[:：]\s*`[^`\r\n]+[\\/][^`\r\n]+`/iu.test(
-      line
-    )
+    /^\s*[-*]\s+(?:inspect|检查|审阅)\s*[:：]\s*`[^`\r\n]+[\\/][^`\r\n]+`/iu.test(line)
   );
 }
 
 function isStructuredWriteMarker(obligation) {
-  return /^\s*\*{0,2}(?:modify|create|add|delete|regenerate|修改|创建|新增|删除|重新生成)(?:\s+(?:or\s+)?(?:modify|create|add|delete|regenerate|修改|创建|新增|删除|重新生成))?\s*[:：]\*{0,2}\s*$/iu.test(
+  return /^\s*(?:[-*]\s+)?\*{0,2}(?:(?:target\s+)?modification\s+paths?|modify|create|add|delete|regenerate|修改|创建|新增|删除|重新生成)(?:\s+(?:or\s+)?(?:modify|create|add|delete|regenerate|修改|创建|新增|删除|重新生成))?\s*[:：]\*{0,2}\s*$/iu.test(
+    String(obligation.exactText || obligation.text || '')
+  );
+}
+
+function isStructuredReadOnlyMarker(obligation) {
+  return /^\s*(?:[-*]\s+)?\*{0,2}(?:read[-\s]?only\s+(?:dependency\s+)?paths?|只读(?:依赖)?路径)\s*[:：]\*{0,2}\s*$/iu.test(
     String(obligation.exactText || obligation.text || '')
   );
 }
@@ -1492,9 +1392,7 @@ function isStructuredWriteMarker(obligation) {
 function isStructuredWritePathListObligation(obligation) {
   const text = String(obligation.exactText || obligation.text || '');
   return (
-    /^\s*[-*]\s+(?:\[[ xX]\]\s*)?`[^`\r\n]+[\\/][^`\r\n]+`\s*$/u.test(
-      text
-    ) &&
+    /^\s*[-*]\s+(?:\[[ xX]\]\s*)?`[^`\r\n]+[\\/][^`\r\n]+`\s*$/u.test(text) &&
     declaredPathsFromObligations([obligation]).length > 0
   );
 }
@@ -1521,33 +1419,41 @@ function writePathsFromObligations(obligations) {
 
 function deriveStructuredWritePathObligations(scopedObligations, taskId) {
   const writePathObligations = [];
-  let writeMarkerActive = false;
+  const readOnlyPathIds = new Set();
+  let pathMarker = null;
   for (const obligation of scopedObligations) {
     if (isStructuredWritePathObligation(obligation)) {
       writePathObligations.push(obligation);
-      writeMarkerActive = false;
+      pathMarker = null;
       continue;
     }
     if (isStructuredWriteMarker(obligation)) {
-      writeMarkerActive = true;
+      pathMarker = 'write';
       continue;
     }
-    if (writeMarkerActive && isStructuredWritePathListObligation(obligation)) {
-      writePathObligations.push(obligation);
+    if (isStructuredReadOnlyMarker(obligation)) {
+      pathMarker = 'read_only';
       continue;
     }
-    if (writeMarkerActive && isStructuredListObligation(obligation)) {
+    if (pathMarker && isStructuredWritePathListObligation(obligation)) {
+      if (pathMarker === 'write') {
+        writePathObligations.push(obligation);
+      } else {
+        readOnlyPathIds.add(obligation.id);
+      }
       continue;
     }
-    writeMarkerActive = false;
+    if (pathMarker && isStructuredListObligation(obligation)) {
+      continue;
+    }
+    pathMarker = null;
   }
-  const writePathIds = new Set(
-    writePathObligations.map((obligation) => obligation.id)
-  );
+  const writePathIds = new Set(writePathObligations.map((obligation) => obligation.id));
   const unboundPathObligations = scopedObligations.filter(
     (obligation) =>
       isStructuredWritePathListObligation(obligation) &&
-      !writePathIds.has(obligation.id)
+      !writePathIds.has(obligation.id) &&
+      !readOnlyPathIds.has(obligation.id)
   );
   if (unboundPathObligations.length > 0) {
     throw partitionFailure('source_obligation_write_scope_unbound', {
@@ -1578,6 +1484,20 @@ function packStructuredWritePathObligations(obligations, maximumPaths) {
   return groups;
 }
 
+function hasStructuredNoSplitAuthority(scopedObligations) {
+  return scopedObligations.some((obligation) => {
+    const match = /^\s*[-*]\s+split\s+rule\s*[:：]\s*(.+)$/iu.exec(
+      String(obligation.exactText || obligation.text || '')
+    );
+    if (!match) return false;
+    return (
+      /\batomic\b/iu.test(match[1]) ||
+      /\b(?:remain|stay|form)\s+(?:in\s+)?one\b/iu.test(match[1]) ||
+      /\bone\s+(?:ownership\s+)?(?:task|owner|unit|boundary|protocol|authority)\b/iu.test(match[1])
+    );
+  });
+}
+
 function deriveStructuredAtomicTasks({
   declaredTasks,
   scopedObligationsByTask,
@@ -1587,117 +1507,82 @@ function deriveStructuredAtomicTasks({
 }) {
   const blueprints = declaredTasks.map((task) => {
     const scopedObligations = scopedObligationsByTask.get(task.id) || [];
-    const writePathObligations = deriveStructuredWritePathObligations(
-      scopedObligations,
-      task.id
-    );
-    const writePathCount = uniqueStrings(
-      writePathsFromObligations(writePathObligations)
-    ).length;
+    const writePathObligations = deriveStructuredWritePathObligations(scopedObligations, task.id);
+    const writePathCount = uniqueStrings(writePathsFromObligations(writePathObligations)).length;
+    const noSplitAuthority = hasStructuredNoSplitAuthority(scopedObligations);
+    const atomicGroupRefs = uniqueStrings([
+      ...(task.atomicGroupRefs || []),
+      ...(noSplitAuthority
+        ? [`source-atomic-${sha256Text(`${task.id}:${task.textHash}`).slice(7, 23)}`]
+        : []),
+    ]);
     const groups =
       writePathCount > maximumWriteScopesPerTask &&
-      (task.atomicGroupRefs || []).length === 0
-        ? packStructuredWritePathObligations(
-            writePathObligations,
-            maximumWriteScopesPerTask
-          )
+      atomicGroupRefs.length === 0 &&
+      !noSplitAuthority
+        ? packStructuredWritePathObligations(writePathObligations, maximumWriteScopesPerTask)
         : [writePathObligations];
     const atomicTaskIds =
       groups.length === 1
         ? [task.id]
-        : groups.map(
-            (_group, index) =>
-              `${task.id}-A${String(index + 1).padStart(2, '0')}`
-          );
+        : groups.map((_group, index) => `${task.id}-A${String(index + 1).padStart(2, '0')}`);
     return {
       task,
       scopedObligations,
       writePathObligations,
       groups,
       atomicTaskIds,
+      atomicGroupRefs,
     };
   });
   const terminalTaskIdBySourceTask = new Map(
-    blueprints.map((blueprint) => [
-      blueprint.task.id,
-      blueprint.atomicTaskIds.at(-1),
-    ])
+    blueprints.map((blueprint) => [blueprint.task.id, blueprint.atomicTaskIds.at(-1)])
   );
   const sourceTaskIdByAtomicTaskId = new Map(
     blueprints.flatMap((blueprint) =>
-      blueprint.atomicTaskIds.map((atomicTaskId) => [
-        atomicTaskId,
-        blueprint.task.id,
-      ])
+      blueprint.atomicTaskIds.map((atomicTaskId) => [atomicTaskId, blueprint.task.id])
     )
   );
   const tasks = [];
   const allowedPathsByTaskId = new Map();
-  for (
-    let sourceTaskIndex = 0;
-    sourceTaskIndex < blueprints.length;
-    sourceTaskIndex += 1
-  ) {
+  for (let sourceTaskIndex = 0; sourceTaskIndex < blueprints.length; sourceTaskIndex += 1) {
     const blueprint = blueprints[sourceTaskIndex];
     const writeSourceIds = new Set(
       blueprint.writePathObligations.map((obligation) => obligation.id)
     );
     const nonWriteSourceIds = blueprint.scopedObligations
       .filter(
-        (obligation) =>
-          obligation.id !== blueprint.task.id &&
-          !writeSourceIds.has(obligation.id)
+        (obligation) => obligation.id !== blueprint.task.id && !writeSourceIds.has(obligation.id)
       )
       .map((obligation) => obligation.id);
-    const sourceDependencies =
-      sourceTaskDependenciesByTaskId.get(blueprint.task.id) || [];
+    const sourceDependencies = sourceTaskDependenciesByTaskId.get(blueprint.task.id) || [];
     const resolvedSourceDependencies = sourceDependencies.map(
-      (dependencyId) =>
-        terminalTaskIdBySourceTask.get(dependencyId) || dependencyId
+      (dependencyId) => terminalTaskIdBySourceTask.get(dependencyId) || dependencyId
     );
-    for (
-      let atomicIndex = 0;
-      atomicIndex < blueprint.atomicTaskIds.length;
-      atomicIndex += 1
-    ) {
+    for (let atomicIndex = 0; atomicIndex < blueprint.atomicTaskIds.length; atomicIndex += 1) {
       const atomicTaskId = blueprint.atomicTaskIds[atomicIndex];
       const group = blueprint.groups[atomicIndex];
-      const finalAtomicTask =
-        atomicIndex === blueprint.atomicTaskIds.length - 1;
+      const finalAtomicTask = atomicIndex === blueprint.atomicTaskIds.length - 1;
       const sourceIds = uniqueStrings([
         ...(atomicIndex === 0 ? [blueprint.task.id] : []),
         ...group.map((obligation) => obligation.id),
         ...(finalAtomicTask ? nonWriteSourceIds : []),
-        ...(sourceTaskIndex === 0 && finalAtomicTask
-          ? unscopedSourceIds
-          : []),
+        ...(sourceTaskIndex === 0 && finalAtomicTask ? unscopedSourceIds : []),
       ]);
       const dependencies =
-        atomicIndex === 0
-          ? resolvedSourceDependencies
-          : [blueprint.atomicTaskIds[atomicIndex - 1]];
-      const allowedPaths = uniqueStrings(
-        writePathsFromObligations(group)
-      );
+        atomicIndex === 0 ? resolvedSourceDependencies : [blueprint.atomicTaskIds[atomicIndex - 1]];
+      const allowedPaths = uniqueStrings(writePathsFromObligations(group));
       tasks.push({
         id: atomicTaskId,
         title:
           blueprint.atomicTaskIds.length === 1
-            ? String(
-                blueprint.task.exactText ||
-                  blueprint.task.text ||
-                  blueprint.task.id
-              )
+            ? String(blueprint.task.exactText || blueprint.task.text || blueprint.task.id)
             : `${String(
-                blueprint.task.exactText ||
-                  blueprint.task.text ||
-                  blueprint.task.id
+                blueprint.task.exactText || blueprint.task.text || blueprint.task.id
               )} [atomic ${atomicIndex + 1}/${blueprint.atomicTaskIds.length}]`,
         sourceIds,
         dependencies,
-        atomicGroupRefs: uniqueStrings(
-          blueprint.task.atomicGroupRefs || []
-        ),
+        atomicGroupRefs: uniqueStrings(blueprint.atomicGroupRefs),
       });
       allowedPathsByTaskId.set(atomicTaskId, allowedPaths);
     }
@@ -1729,10 +1614,7 @@ function normalizeBoundedPermissionText(text) {
       /只允许(?=\s*(?:`[^`]+`|通过 deterministic audit units|一个 semantic Judge invocation|：))/gu,
       '只许可'
     )
-    .replace(
-      /才允许(?=\s*(?:hard-cut|authoritative confirmation|atomic acceptance))/gu,
-      '才许可'
-    )
+    .replace(/才允许(?=\s*(?:hard-cut|authoritative confirmation|atomic acceptance))/gu, '才许可')
     .replace(/表示允许(?=调用 Judge)/gu, '表示许可')
     .replace(/允许(?=\s*`requestedModel`\s*缺失)/gu, '许可')
     .replace(/允许后(?=\s*发生)/gu, '许可后')
@@ -1740,10 +1622,7 @@ function normalizeBoundedPermissionText(text) {
       /可以(?=\s*(?:审阅和修订|写 execution evidence|选择 (?:Claude CLI|Codex CLI|OpenAI-compatible HTTP|Anthropic-compatible HTTP)|使用 (?:OpenAI-compatible|Anthropic-compatible)|在不改 production code|追溯到|在 crash recovery 后复用|产生后续修复轮|去重|作为独立 oracle|进行只读搜索|打开 Judge))/gu,
       '能够'
     )
-    .replace(
-      /\boptional(?=\s+draft preview\s+必须明确标记 non-authoritative)/giu,
-      'conditional'
-    );
+    .replace(/\boptional(?=\s+draft preview\s+必须明确标记 non-authoritative)/giu, 'conditional');
 }
 
 function commandClassificationSnapshot(snapshot) {
@@ -1788,9 +1667,7 @@ function fallbackStructuredKind(headingPath, currentKind) {
   if (/implementation tasks?|task breakdown/u.test(nearest)) {
     return 'heading_execution_segment';
   }
-  return currentKind === 'declared_execution_task'
-    ? 'heading_requirement'
-    : currentKind;
+  return currentKind === 'declared_execution_task' ? 'heading_requirement' : currentKind;
 }
 
 function restoreCommandExtractionAuthority({
@@ -1807,20 +1684,12 @@ function restoreCommandExtractionAuthority({
   const restored = extracted.sourceObligations.map((obligation) => {
     const rawLine = lines[obligation.lineStart - 1] || '';
     const text = originalObligationText(lines, obligation);
-    const headingPath = [
-      ...(headingPaths[obligation.lineStart - 1] || obligation.headingPath),
-    ];
+    const headingPath = [...(headingPaths[obligation.lineStart - 1] || obligation.headingPath)];
     const localizedTaskHeading =
-      /^#{1,6}\s+(?:Task\s+)?([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-T\d+[A-Z]?)\s*[:：]/u.exec(
-        rawLine
-      );
+      /^#{1,6}\s+(?:Task\s+)?([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-T\d+[A-Z]?)\s*[:：]/u.exec(rawLine);
     const listDeclaration =
-      /^(?:\s*[-*]|\s*\d+\.)\s+(\[[ xX]\]\s*)?([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+)\b/u.exec(
-        rawLine
-      );
-    const listRemainder = listDeclaration
-      ? rawLine.slice(listDeclaration[0].length)
-      : '';
+      /^(?:\s*[-*]|\s*\d+\.)\s+(\[[ xX]\]\s*)?([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+)\b/u.exec(rawLine);
+    const listRemainder = listDeclaration ? rawLine.slice(listDeclaration[0].length) : '';
     const taskDeclarationSection =
       /^(?:implementation tasks?|implementation task breakdown|task breakdown)$/iu.test(
         String(headingPath.at(-1) || '').trim()
@@ -1840,9 +1709,7 @@ function restoreCommandExtractionAuthority({
           : null;
     const id =
       declaredId ||
-      `SRC-${sha256Text(
-        `${snapshot.aggregateHash}:${obligation.lineStart}:${text}`
-      )
+      `SRC-${sha256Text(`${snapshot.aggregateHash}:${obligation.lineStart}:${text}`)
         .slice(7, 19)
         .toUpperCase()}`;
     const textHash = sha256Text(text);
@@ -1890,9 +1757,7 @@ function restoreCommandExtractionAuthority({
     ...extracted,
     sourceObligations: restored,
     sourceObligationGraph,
-    sourceObligationGraphHash: hashSourceObligationGraph(
-      sourceObligationGraph
-    ),
+    sourceObligationGraphHash: hashSourceObligationGraph(sourceObligationGraph),
   };
 }
 
@@ -1909,17 +1774,13 @@ function extractCommandSourceObligations({
   const ambiguousLocalizedObligation = extracted.sourceObligations.find(
     (obligation) =>
       (obligation.headingPath || []).some((heading) =>
-        /^(?:Task\s+)?[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-T\d+[A-Z]?\s*[:：]/u.test(
-          String(heading)
-        )
+        /^(?:Task\s+)?[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-T\d+[A-Z]?\s*[:：]/u.test(String(heading))
       ) && findNonDeterministicPhrase(obligation.text)
   );
   if (ambiguousLocalizedObligation) {
     throw partitionFailure('source_obligation_classification_ambiguous', {
       sourceId: ambiguousLocalizedObligation.id,
-      matchedPhrase: findNonDeterministicPhrase(
-        ambiguousLocalizedObligation.text
-      ),
+      matchedPhrase: findNonDeterministicPhrase(ambiguousLocalizedObligation.text),
       sourceExcerpt: String(ambiguousLocalizedObligation.text).slice(0, 500),
     });
   }
@@ -1935,16 +1796,10 @@ function selectCommandStructuredBindings(sourceObligations) {
   const applicable = sourceObligations.filter(
     (obligation) => obligation.applicabilityState === 'applicable'
   );
-  const tasks = applicable.filter(
-    (obligation) => obligation.kind === 'declared_execution_task'
-  );
+  const tasks = applicable.filter((obligation) => obligation.kind === 'declared_execution_task');
   const select = (primaryKind, fallbackKind) => {
-    const primary = applicable.filter(
-      (obligation) => obligation.kind === primaryKind
-    );
-    const fallback = applicable.filter(
-      (obligation) => obligation.kind === fallbackKind
-    );
+    const primary = applicable.filter((obligation) => obligation.kind === primaryKind);
+    const fallback = applicable.filter((obligation) => obligation.kind === fallbackKind);
     const selected = primary.length > 0 ? primary : fallback;
     const seen = new Set();
     return selected.filter((obligation) => {
@@ -1960,9 +1815,7 @@ function selectCommandStructuredBindings(sourceObligations) {
     explicitCommands.length > 0
       ? explicitCommands
       : applicable.filter(
-          (obligation) =>
-            obligation.kind === 'command_block' &&
-            commandDescriptor(obligation)
+          (obligation) => obligation.kind === 'command_block' && commandDescriptor(obligation)
         );
   commands.forEach(compileTypedCommandRecord);
   return {
@@ -1986,9 +1839,7 @@ function deriveStructuredViews({
   );
   const sourceIds = uniqueStrings(applicable.map((obligation) => obligation.id));
   const declaredTasks = structuredBindings.tasks;
-  const declaredTaskById = new Map(
-    declaredTasks.map((task) => [task.id, task])
-  );
+  const declaredTaskById = new Map(declaredTasks.map((task) => [task.id, task]));
   const declaredAcceptance = structuredBindings.acceptance;
   const declaredCommands = structuredBindings.commands;
   const declaredEvidence = structuredBindings.evidence;
@@ -2005,39 +1856,28 @@ function deriveStructuredViews({
   const unscopedSourceIds = applicable
     .filter((obligation) => !ownerBySourceId.has(obligation.id))
     .map((obligation) => obligation.id);
-  const sourceTaskDependenciesByTaskId =
-    deriveStructuredTaskDependencyMap({
-      declaredTasks,
-      scopedObligationsByTask,
-    });
-  const {
-    tasks,
-    allowedPathsByTaskId,
-    sourceTaskIdByAtomicTaskId,
-    terminalTaskIdBySourceTask,
-  } = deriveStructuredAtomicTasks({
+  const sourceTaskDependenciesByTaskId = deriveStructuredTaskDependencyMap({
     declaredTasks,
     scopedObligationsByTask,
-    sourceTaskDependenciesByTaskId,
-    unscopedSourceIds,
-    maximumWriteScopesPerTask:
-      partitionLimits.maxPrimaryWriteScopeOwnersPerPartition,
   });
+  const { tasks, allowedPathsByTaskId, sourceTaskIdByAtomicTaskId, terminalTaskIdBySourceTask } =
+    deriveStructuredAtomicTasks({
+      declaredTasks,
+      scopedObligationsByTask,
+      sourceTaskDependenciesByTaskId,
+      unscopedSourceIds,
+      maximumWriteScopesPerTask: partitionLimits.maxPrimaryWriteScopeOwnersPerPartition,
+    });
   const taskById = new Map(tasks.map((task) => [task.id, task]));
-  const hasScopedBindings = [
-    ...declaredAcceptance,
-    ...declaredEvidence,
-  ].some((obligation) => ownerBySourceId.has(obligation.id));
+  const hasScopedBindings = [...declaredAcceptance, ...declaredEvidence].some((obligation) =>
+    ownerBySourceId.has(obligation.id)
+  );
   const sourceTaskOwnerFor = (obligation) =>
     ownerBySourceId.get(obligation.id) ||
-    (!hasScopedBindings || declaredTasks.length === 1
-      ? declaredTasks[0].id
-      : null);
+    (!hasScopedBindings || declaredTasks.length === 1 ? declaredTasks[0].id : null);
   const ownerFor = (obligation) => {
     const sourceTaskId = sourceTaskOwnerFor(obligation);
-    return sourceTaskId
-      ? terminalTaskIdBySourceTask.get(sourceTaskId) || null
-      : null;
+    return sourceTaskId ? terminalTaskIdBySourceTask.get(sourceTaskId) || null : null;
   };
   const localBindings = (bindings, taskId) =>
     bindings.filter((obligation) => ownerFor(obligation) === taskId);
@@ -2048,18 +1888,12 @@ function deriveStructuredViews({
     return declaredCommands.filter((obligation) => {
       const explicitOwner = ownerBySourceId.get(obligation.id);
       if (explicitOwner) return explicitOwner === sourceTaskId;
-      const commandSliceId = structuredSliceIdFromHeadingPath(
-        obligation.headingPath
-      );
-      return commandSliceId
-        ? Boolean(sourceSliceId && commandSliceId === sourceSliceId)
-        : true;
+      const commandSliceId = structuredSliceIdFromHeadingPath(obligation.headingPath);
+      return commandSliceId ? Boolean(sourceSliceId && commandSliceId === sourceSliceId) : true;
     });
   };
   const evidenceIdsForTask = (taskId) => {
-    const explicit = localBindings(declaredEvidence, taskId).map(
-      (obligation) => obligation.id
-    );
+    const explicit = localBindings(declaredEvidence, taskId).map((obligation) => obligation.id);
     return explicit.length > 0 ? explicit : [`EVD-DERIVED-${taskId}`];
   };
   const commandRecords = declaredCommands.map((obligation) => ({
@@ -2078,9 +1912,7 @@ function deriveStructuredViews({
   });
   const traceSlices = tasks.map((task, index) => {
     const taskAcceptance = localBindings(declaredAcceptance, task.id);
-    const taskCommands = commandBindingsForTask(task.id).map(
-      (obligation) => obligation.id
-    );
+    const taskCommands = commandBindingsForTask(task.id).map((obligation) => obligation.id);
     const sourceTaskId = sourceTaskIdByAtomicTaskId.get(task.id);
     const taskAllowedPaths = allowedPathsByTaskId.get(task.id) || [];
     const integrationVerificationOnly =
@@ -2088,23 +1920,16 @@ function deriveStructuredViews({
       task.dependencies.length > 0 &&
       taskCommands.length > 0 &&
       taskAcceptance.length > 0 &&
-      hasStructuredInspectPathAuthority(
-        snapshot,
-        declaredTaskById.get(sourceTaskId)
-      );
+      hasStructuredInspectPathAuthority(snapshot, declaredTaskById.get(sourceTaskId));
     return {
       id: `TRACE-${task.id}`,
       goalIds: [task.id],
       sourceIds: task.sourceIds,
       acceptanceIds: taskAcceptance.map((obligation) => obligation.id),
       evidenceIds: evidenceIdsForTask(task.id),
-      classification: integrationVerificationOnly
-        ? 'evidence_only'
-        : 'code_bearing',
+      classification: integrationVerificationOnly ? 'evidence_only' : 'code_bearing',
       verificationOnly: integrationVerificationOnly,
-      productionSymbols: integrationVerificationOnly
-        ? []
-        : ['goalContractCommand'],
+      productionSymbols: integrationVerificationOnly ? [] : ['goalContractCommand'],
       allowedPaths: taskAllowedPaths,
       directCommands: taskCommands,
       impactedCommands: taskCommands,
@@ -2124,27 +1949,16 @@ function deriveStructuredViews({
       if (!ownerTask) return null;
       return {
         id: obligation.id,
-        statement: String(
-          obligation.exactText || obligation.text || obligation.id
-        ),
+        statement: String(obligation.exactText || obligation.text || obligation.id),
         sourceIds: ownerTask.sourceIds,
         goalIds: [ownerTask.id],
         traceIds: [`TRACE-${ownerTask.id}`],
-        requiredCommands: commandBindingsForTask(ownerTask.id).map(
-          (command) => command.id
-        ),
-        expectedEvidenceIds: localBindings(
-          declaredEvidence,
-          ownerTask.id
-        ).length
-          ? localBindings(declaredEvidence, ownerTask.id).map(
-              (evidence) => evidence.id
-            )
+        requiredCommands: commandBindingsForTask(ownerTask.id).map((command) => command.id),
+        expectedEvidenceIds: localBindings(declaredEvidence, ownerTask.id).length
+          ? localBindings(declaredEvidence, ownerTask.id).map((evidence) => evidence.id)
           : evidenceIdsForTask(ownerTask.id),
         requiredEvidenceStrength: 'behavior',
-        passCondition: String(
-          obligation.exactText || obligation.text || obligation.id
-        ),
+        passCondition: String(obligation.exactText || obligation.text || obligation.id),
       };
     })
     .filter(Boolean);
@@ -2161,16 +1975,12 @@ function deriveStructuredViews({
         admissibleTypes: ['behavior'],
         requiredProvenanceFields: ['argv', 'cwd', 'exitCode'],
         freshnessRule: 'current source roots',
-        expectedResult: String(
-          obligation.exactText || obligation.text || obligation.id
-        ),
+        expectedResult: String(obligation.exactText || obligation.text || obligation.id),
       };
     })
     .filter(Boolean);
   const derivedExpectedEvidence = tasks
-    .filter(
-      (task) => localBindings(declaredEvidence, task.id).length === 0
-    )
+    .filter((task) => localBindings(declaredEvidence, task.id).length === 0)
     .map((task) => ({
       id: evidenceIdsForTask(task.id)[0],
       sourceIds: task.sourceIds,
@@ -2180,10 +1990,9 @@ function deriveStructuredViews({
       freshnessRule: 'current source roots',
       expectedResult: `The observable outcome for ${task.id} is verified.`,
     }));
-  const expectedEvidence = [
-    ...explicitExpectedEvidence,
-    ...derivedExpectedEvidence,
-  ].sort((left, right) => left.id.localeCompare(right.id));
+  const expectedEvidence = [...explicitExpectedEvidence, ...derivedExpectedEvidence].sort(
+    (left, right) => left.id.localeCompare(right.id)
+  );
   const implementationView = {
     tasks,
     traceSlices,
@@ -2401,14 +2210,8 @@ function resolveSequenceConstraintBranch({
       sequenceExecutionState,
     });
   }
-  if (
-    sequenceExecutionState.shouldResolveProducer &&
-    !producerAvailable
-  ) {
-    throw partitionFailure(
-      'sequence_closure_required_unavailable',
-      sequenceExecutionState
-    );
+  if (sequenceExecutionState.shouldResolveProducer && !producerAvailable) {
+    throw partitionFailure('sequence_closure_required_unavailable', sequenceExecutionState);
   }
   if (producerAvailable) {
     try {
@@ -2463,17 +2266,12 @@ async function compilePartitionAuthority(args) {
   const { loadPartitionMethodologyProfile } = loadPartitionModule(
     'utils/goal-contract/partition-methodology-profile'
   );
-  const {
-    canonicalSourceObligationGraph,
-    extractSourceObligations,
-    hashSourceObligationGraph,
-  } = loadPartitionModule('utils/goal-contract/source-obligation-extractor');
+  const { canonicalSourceObligationGraph, extractSourceObligations, hashSourceObligationGraph } =
+    loadPartitionModule('utils/goal-contract/source-obligation-extractor');
   const { findNonDeterministicPhrase } = loadPartitionModule(
     'utils/goal-contract/non-deterministic-source-validator'
   );
-  const { loadPartitionPolicy } = loadPartitionModule(
-    'utils/goal-contract/partition-policy'
-  );
+  const { loadPartitionPolicy } = loadPartitionModule('utils/goal-contract/partition-policy');
   const { compilePartitionManifest } = loadPartitionModule(
     'utils/goal-contract/partition-manifest'
   );
@@ -2488,13 +2286,10 @@ async function compilePartitionAuthority(args) {
   const { deriveSequenceArchitectureFacts } = loadPartitionModule(
     'utils/goal-contract/sequence-applicability-adapter'
   );
-  const {
-    deriveSequenceExecutionState,
-    resolveSequenceMode,
-  } = loadPartitionModule('utils/goal-contract/sequence-mode');
-  const sequenceMode = resolveSequenceMode(
-    take(args, '--sequence-mode', 'auto')
+  const { deriveSequenceExecutionState, resolveSequenceMode } = loadPartitionModule(
+    'utils/goal-contract/sequence-mode'
   );
+  const sequenceMode = resolveSequenceMode(take(args, '--sequence-mode', 'auto'));
   const { compileLegacySingleSourcePartitions } = loadPartitionModule(
     'utils/goal-contract/control-plane/partition-compiler'
   );
@@ -2525,9 +2320,7 @@ async function compilePartitionAuthority(args) {
       : sha256Text('repository-facts:not-provided'),
     allowlistedAnalyzers: ['repository-analyzer@1.0.0'],
   });
-  const structuredBindings = selectCommandStructuredBindings(
-    extracted.sourceObligations
-  );
+  const structuredBindings = selectCommandStructuredBindings(extracted.sourceObligations);
   const hasCompleteStructuredBindings = Object.values(structuredBindings).every(
     (bindings) => bindings.length > 0
   );
@@ -2626,15 +2419,12 @@ async function compilePartitionAuthority(args) {
         args,
         '--receipts-dir',
         requestedOut
-          ? path.join(
-              path.dirname(path.resolve(requestedOut)),
-              '.goal-contract-receipts'
-            )
+          ? path.join(path.dirname(path.resolve(requestedOut)), '.goal-contract-receipts')
           : path.join(path.dirname(sourcePath), '.goal-contract-receipts')
       );
-      const {
-        writeSequenceApplicabilityBoundaryReceipt,
-      } = loadPartitionModule('utils/goal-contract/partition-receipts');
+      const { writeSequenceApplicabilityBoundaryReceipt } = loadPartitionModule(
+        'utils/goal-contract/partition-receipts'
+      );
       const persisted = writeSequenceApplicabilityBoundaryReceipt({
         applicabilityReceipt: applicability,
         methodologyProfileHash: methodology.methodologyProfileHash,
@@ -2673,40 +2463,27 @@ async function compilePartitionAuthority(args) {
     });
     const partitionSourceSnapshot = {
       ...snapshot,
-      aggregateHash:
-        partitionBundle.partitionPlan.orderedSourceSnapshotSetHash,
+      aggregateHash: partitionBundle.partitionPlan.orderedSourceSnapshotSetHash,
     };
     Object.assign(boundaryContext, {
-      sourceCompositionMode:
-        partitionBundle.partitionPlan.sourceCompositionMode,
-      sourceCompositionPolicyHash:
-        partitionBundle.partitionPlan.sourceCompositionPolicyHash,
-      orderedSourceSnapshotSetHash:
-        partitionBundle.partitionPlan.orderedSourceSnapshotSetHash,
-      sourceAuthorityBundleHash:
-        partitionBundle.partitionPlan.sourceAuthorityBundleHash,
-      canonicalIntentSemanticHash:
-        partitionBundle.partitionPlan.canonicalIntentSemanticHash,
-      canonicalIntentBundleHash:
-        partitionBundle.partitionPlan.canonicalIntentBundleHash,
-      specSpanRegistryHash:
-        partitionBundle.partitionPlan.specSpanRegistryHash,
-      intentAuthorityAttestationHash:
-        partitionBundle.partitionPlan.intentAuthorityAttestationHash,
-      goalContractSemanticHash:
-        partitionBundle.partitionPlan.goalContractSemanticHash,
-      goalContractHash:
-        partitionBundle.partitionPlan.goalContractHash,
+      sourceCompositionMode: partitionBundle.partitionPlan.sourceCompositionMode,
+      sourceCompositionPolicyHash: partitionBundle.partitionPlan.sourceCompositionPolicyHash,
+      orderedSourceSnapshotSetHash: partitionBundle.partitionPlan.orderedSourceSnapshotSetHash,
+      sourceAuthorityBundleHash: partitionBundle.partitionPlan.sourceAuthorityBundleHash,
+      canonicalIntentSemanticHash: partitionBundle.partitionPlan.canonicalIntentSemanticHash,
+      canonicalIntentBundleHash: partitionBundle.partitionPlan.canonicalIntentBundleHash,
+      specSpanRegistryHash: partitionBundle.partitionPlan.specSpanRegistryHash,
+      intentAuthorityAttestationHash: partitionBundle.partitionPlan.intentAuthorityAttestationHash,
+      goalContractSemanticHash: partitionBundle.partitionPlan.goalContractSemanticHash,
+      goalContractHash: partitionBundle.partitionPlan.goalContractHash,
     });
     compiled = compilePartitionManifest({
       sourceSnapshot: partitionSourceSnapshot,
       sourceObligationGraph: extracted.sourceObligationGraph,
-      sourceObligationGraphHash:
-        partitionBundle.executionProjection.sourceObligationGraphHash,
+      sourceObligationGraphHash: partitionBundle.executionProjection.sourceObligationGraphHash,
       methodologyProfileHash: methodology.methodologyProfileHash,
       reconciledGraph: partitionBundle.reconciledGraphAuthority,
-      reconciledGraphHash:
-        partitionBundle.executionProjection.reconciledGraphHash,
+      reconciledGraphHash: partitionBundle.executionProjection.reconciledGraphHash,
       reconciliationReceiptHash: sha256Text(
         stableStringify({
           graphInputHash: reconciliation.graphInputHash,
@@ -2726,11 +2503,9 @@ async function compilePartitionAuthority(args) {
     });
   } catch (error) {
     Object.assign(error, boundaryContext, {
-      executionProjectionHash:
-        partitionBundle?.executionProjection?.executionProjectionHash,
+      executionProjectionHash: partitionBundle?.executionProjection?.executionProjectionHash,
       taskDagHash: partitionBundle?.executionProjection?.taskDagHash,
-      integrationJoinGraphHash:
-        partitionBundle?.executionProjection?.integrationJoinGraphHash,
+      integrationJoinGraphHash: partitionBundle?.executionProjection?.integrationJoinGraphHash,
     });
     throw error;
   }
@@ -2781,9 +2556,7 @@ function partitionCompilerIdentityAssetPaths() {
   ];
   return [
     __filename,
-    resolvePartitionCompilerIdentityAssetPath(
-      'utils/goal-contract/control-plane/canonical-hash'
-    ),
+    resolvePartitionCompilerIdentityAssetPath('utils/goal-contract/control-plane/canonical-hash'),
     resolvePartitionCompilerIdentityAssetPath(
       'utils/goal-contract/control-plane/partition-compiler'
     ),
@@ -2793,9 +2566,7 @@ function partitionCompilerIdentityAssetPaths() {
     resolvePartitionCompilerIdentityAssetPath(
       'utils/goal-contract/control-plane/campaign-activation'
     ),
-    resolvePartitionCompilerIdentityAssetPath(
-      'utils/goal-contract/control-plane/campaign-closure'
-    ),
+    resolvePartitionCompilerIdentityAssetPath('utils/goal-contract/control-plane/campaign-closure'),
     resolvePartitionCompilerIdentityAssetPath(
       'utils/goal-contract/control-plane/campaign-receipt-store'
     ),
@@ -2808,33 +2579,16 @@ function partitionCompilerIdentityAssetPaths() {
     resolvePartitionCompilerIdentityAssetPath(
       'utils/goal-contract/control-plane/subcontract-evidence'
     ),
-    resolvePartitionCompilerIdentityAssetPath(
-      'utils/goal-contract/goal-contract-receipts'
-    ),
-    resolvePartitionCompilerIdentityAssetPath(
-      'utils/goal-contract/partition-receipts'
-    ),
-    resolvePartitionCompilerIdentityAssetPath(
-      'utils/goal-contract/partition-manifest'
-    ),
-    resolvePartitionCompilerIdentityAssetPath(
-      'utils/goal-contract/partition-selector'
-    ),
-    resolvePartitionCompilerIdentityAssetPath(
-      'utils/goal-contract/slot-data-builder'
-    ),
-    resolvePartitionCompilerIdentityAssetPath(
-      'utils/goal-contract/release-gate'
-    ),
+    resolvePartitionCompilerIdentityAssetPath('utils/goal-contract/goal-contract-receipts'),
+    resolvePartitionCompilerIdentityAssetPath('utils/goal-contract/partition-receipts'),
+    resolvePartitionCompilerIdentityAssetPath('utils/goal-contract/partition-manifest'),
+    resolvePartitionCompilerIdentityAssetPath('utils/goal-contract/partition-selector'),
+    resolvePartitionCompilerIdentityAssetPath('utils/goal-contract/slot-data-builder'),
+    resolvePartitionCompilerIdentityAssetPath('utils/goal-contract/release-gate'),
     resolveRendererPath(),
     resolveCommandPortabilityCheckerPath(),
-    ...assetNames.map((assetName) =>
-      resolveGoalContractAssetPath(assetName)
-    ),
-  ].filter(
-    (assetPath, index, paths) =>
-      paths.indexOf(assetPath) === index
-  );
+    ...assetNames.map((assetName) => resolveGoalContractAssetPath(assetName)),
+  ].filter((assetPath, index, paths) => paths.indexOf(assetPath) === index);
 }
 
 function currentPartitionCompilerIdentityHash() {
@@ -2852,47 +2606,23 @@ function currentPartitionCompilerIdentityHash() {
 }
 
 async function supersedeAuthority(args) {
-  const sourcePath = path.resolve(
-    requireSupersessionArg(args, '--source')
-  );
-  const finalRoot = path.resolve(
-    requireSupersessionArg(args, '--out-root')
-  );
+  const sourcePath = path.resolve(requireSupersessionArg(args, '--source'));
+  const finalRoot = path.resolve(requireSupersessionArg(args, '--out-root'));
   const authority = await compilePartitionAuthority(args);
   const partitionPlan = authority.partitionPlan;
-  const {
-    projectExecutionArtifacts,
-  } = loadPartitionModule(
+  const { projectExecutionArtifacts } = loadPartitionModule(
     'utils/goal-contract/control-plane/partition-compiler'
   );
   const {
     prepareAuthoritySupersession,
     promoteAuthoritySupersessionAttempt,
     stageAuthoritySupersessionAttempt,
-  } = loadPartitionModule(
-    'utils/goal-contract/control-plane/authority-supersession'
-  );
-  const {
-    buildPartitionSlotData,
-  } = loadPartitionModule('utils/goal-contract/slot-data-builder');
-  const {
-    selectPartitionScope,
-  } = loadPartitionModule('utils/goal-contract/partition-selector');
+  } = loadPartitionModule('utils/goal-contract/control-plane/authority-supersession');
+  const { buildPartitionSlotData } = loadPartitionModule('utils/goal-contract/slot-data-builder');
+  const { selectPartitionScope } = loadPartitionModule('utils/goal-contract/partition-selector');
   const profilePath = firstExistingPath([
-    path.join(
-      SOURCE_ROOT,
-      '_bmad',
-      'shared',
-      'goal-contract',
-      'goal-contract-profile.json'
-    ),
-    path.join(
-      PACKAGE_ROOT,
-      '_bmad',
-      'shared',
-      'goal-contract',
-      'goal-contract-profile.json'
-    ),
+    path.join(SOURCE_ROOT, '_bmad', 'shared', 'goal-contract', 'goal-contract-profile.json'),
+    path.join(PACKAGE_ROOT, '_bmad', 'shared', 'goal-contract', 'goal-contract-profile.json'),
   ]);
   const templatePath = firstExistingPath([
     path.join(
@@ -2913,15 +2643,11 @@ async function supersedeAuthority(args) {
   const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
   const templateText = fs.readFileSync(templatePath, 'utf8');
   const { renderGoalContract } = loadRenderer();
-  const { auditCommandPortability } =
-    loadCommandPortabilityChecker();
+  const { auditCommandPortability } = loadCommandPortabilityChecker();
   const renderEvidence = [];
   const projected = projectExecutionArtifacts({
     partitionPlan,
-    renderChildContract({
-      childProjectionInput,
-      displayOrdinal,
-    }) {
+    renderChildContract({ childProjectionInput, displayOrdinal }) {
       const legacySelectedScope = selectPartitionScope({
         executionProjection: authority.projection,
         partitionManifest: authority.compiled.manifest,
@@ -2936,18 +2662,13 @@ async function supersedeAuthority(args) {
         'ownedArtifactPaths',
       ]) {
         if (
-          stableStringify(
-            legacySelectedScope.partition[field] || []
-          ) !==
+          stableStringify(legacySelectedScope.partition[field] || []) !==
           stableStringify(childProjectionInput[field] || [])
         ) {
-          throw partitionFailure(
-            'partition_child_projection_mismatch',
-            {
-              partitionId: childProjectionInput.partitionId,
-              mismatchedFields: [field],
-            }
-          );
+          throw partitionFailure('partition_child_projection_mismatch', {
+            partitionId: childProjectionInput.partitionId,
+            mismatchedFields: [field],
+          });
         }
       }
       const selectedScope = enrichSelectedScope({
@@ -2955,29 +2676,23 @@ async function supersedeAuthority(args) {
           ...legacySelectedScope,
           partition: {
             ...legacySelectedScope.partition,
-            primarySourceObligationIds:
-              childProjectionInput.primarySourceObligationIds,
-            selectionSetHash:
-              childProjectionInput.selectionHash,
+            primarySourceObligationIds: childProjectionInput.primarySourceObligationIds,
+            selectionSetHash: childProjectionInput.selectionHash,
           },
           selectionReceipt: {
             ...legacySelectedScope.selectionReceipt,
-            selectedPrimarySourceObligationIds:
-              childProjectionInput.primarySourceObligationIds,
+            selectedPrimarySourceObligationIds: childProjectionInput.primarySourceObligationIds,
           },
         },
         reconciliation: authority.reconciliation,
       });
       const ordinal = String(displayOrdinal).padStart(2, '0');
       const childContractPath =
-        `children/p${ordinal}-${childProjectionInput.partitionId}` +
-        '-goal-execution-plan.md';
+        `children/p${ordinal}-${childProjectionInput.partitionId}` + '-goal-execution-plan.md';
       const coverageReceiptPath =
-        `receipts/children/${childProjectionInput.partitionId}` +
-        '.coverage.json';
+        `receipts/children/${childProjectionInput.partitionId}` + '.coverage.json';
       const generationReceiptPath =
-        `receipts/children/${childProjectionInput.partitionId}` +
-        '.generation.json';
+        `receipts/children/${childProjectionInput.partitionId}` + '.generation.json';
       const relativeCoveragePath = path.posix.relative(
         path.posix.dirname(childContractPath),
         coverageReceiptPath
@@ -2986,70 +2701,52 @@ async function supersedeAuthority(args) {
         path.posix.dirname(childContractPath),
         generationReceiptPath
       );
-      const { slotData, coverageAudit, implementationProofAudit } =
-        buildPartitionSlotData({
-          source: {
-            sourcePlanPath: normalize(sourcePath),
-            sourcePlanHash: sha256FileBytes(sourcePath),
-            sourceBytes: authority.snapshot.sourceBytes,
-            sourceLines: authority.snapshot.sourceLines,
-          },
-          profile,
-          selectedScope,
-          receiptPaths: {
-            outPath: childContractPath,
-            coverageReceiptPath: relativeCoveragePath,
-            generationReceiptPath: relativeGenerationPath,
-          },
-          bindings: {
-            partitionPlanHash: partitionPlan.partitionPlanHash,
-            sourceCompositionPolicyHash:
-              partitionPlan.sourceCompositionPolicyHash,
-            goalContractHash: partitionPlan.goalContractHash,
-            partitionSetHash: partitionPlan.partitionSetHash,
-            selectionSetHash: childProjectionInput.selectionHash,
-            orderedSourceSnapshotSetHash:
-              partitionPlan.orderedSourceSnapshotSetHash,
-            sourceAuthorityBundleHash:
-              partitionPlan.sourceAuthorityBundleHash,
-            subordinateCoverageReceiptHashes:
-              childProjectionInput.subordinateCoverageReceiptHashes,
-            displayOrdinal,
-            obligationRefs:
-              childProjectionInput.primarySourceObligationIds,
-            namespacedObligations:
-              childProjectionInput.namespacedObligations,
-            namespaceRefs: childProjectionInput.namespaceRefs,
-            sourceArtifactRefs:
-              childProjectionInput.sourceArtifactRefs,
-            specSpanRefs: childProjectionInput.specSpanRefs,
-            governedPaths: childProjectionInput.ownedArtifactPaths,
-            sourceSnapshotHash:
-              partitionPlan.orderedSourceSnapshotSetHash,
-            methodologyProfileHash:
-              partitionPlan.methodologyProfileHash,
-            methodologyProfileArtifactHash:
-              authority.methodology.methodologyProfileArtifactHash,
-            executionProjectionHash:
-              partitionPlan.executionProjectionHash,
-            taskDagHash: partitionPlan.taskDagHash,
-            partitionPolicyHash: partitionPlan.partitionPolicyHash,
-            partitionPolicyArtifactHash:
-              authority.optimizerPolicyBinding
-                .partitionPolicyArtifactHash,
-            partitionAnalysisReceiptHash:
-              partitionPlan.partitionPlanHash,
-            sequenceMode: partitionPlan.sequenceMode,
-            sequenceApplicability:
-              partitionPlan.sequenceApplicability,
-            sequenceCoverage: partitionPlan.sequenceCoverage,
-            sequenceClosureStatus:
-              partitionPlan.sequenceClosureStatus,
-            childContractAuthority:
-              partitionPlan.childContractAuthority,
-          },
-          generatedAt: '1970-01-01T00:00:00.000Z',
-        });
+      const { slotData, coverageAudit, implementationProofAudit } = buildPartitionSlotData({
+        source: {
+          sourcePlanPath: normalize(sourcePath),
+          sourcePlanHash: sha256FileBytes(sourcePath),
+          sourceBytes: authority.snapshot.sourceBytes,
+          sourceLines: authority.snapshot.sourceLines,
+        },
+        profile,
+        selectedScope,
+        receiptPaths: {
+          outPath: childContractPath,
+          coverageReceiptPath: relativeCoveragePath,
+          generationReceiptPath: relativeGenerationPath,
+        },
+        bindings: {
+          partitionPlanHash: partitionPlan.partitionPlanHash,
+          sourceCompositionPolicyHash: partitionPlan.sourceCompositionPolicyHash,
+          goalContractHash: partitionPlan.goalContractHash,
+          partitionSetHash: partitionPlan.partitionSetHash,
+          selectionSetHash: childProjectionInput.selectionHash,
+          orderedSourceSnapshotSetHash: partitionPlan.orderedSourceSnapshotSetHash,
+          sourceAuthorityBundleHash: partitionPlan.sourceAuthorityBundleHash,
+          subordinateCoverageReceiptHashes: childProjectionInput.subordinateCoverageReceiptHashes,
+          displayOrdinal,
+          obligationRefs: childProjectionInput.primarySourceObligationIds,
+          namespacedObligations: childProjectionInput.namespacedObligations,
+          namespaceRefs: childProjectionInput.namespaceRefs,
+          sourceArtifactRefs: childProjectionInput.sourceArtifactRefs,
+          specSpanRefs: childProjectionInput.specSpanRefs,
+          governedPaths: childProjectionInput.ownedArtifactPaths,
+          sourceSnapshotHash: partitionPlan.orderedSourceSnapshotSetHash,
+          methodologyProfileHash: partitionPlan.methodologyProfileHash,
+          methodologyProfileArtifactHash: authority.methodology.methodologyProfileArtifactHash,
+          executionProjectionHash: partitionPlan.executionProjectionHash,
+          taskDagHash: partitionPlan.taskDagHash,
+          partitionPolicyHash: partitionPlan.partitionPolicyHash,
+          partitionPolicyArtifactHash: authority.optimizerPolicyBinding.partitionPolicyArtifactHash,
+          partitionAnalysisReceiptHash: partitionPlan.partitionPlanHash,
+          sequenceMode: partitionPlan.sequenceMode,
+          sequenceApplicability: partitionPlan.sequenceApplicability,
+          sequenceCoverage: partitionPlan.sequenceCoverage,
+          sequenceClosureStatus: partitionPlan.sequenceClosureStatus,
+          childContractAuthority: partitionPlan.childContractAuthority,
+        },
+        generatedAt: '1970-01-01T00:00:00.000Z',
+      });
       const rendered = renderGoalContract({
         templateText,
         profile,
@@ -3058,22 +2755,14 @@ async function supersedeAuthority(args) {
         generationMode: 'partition_selected_scope',
       });
       const embeddedFrontMatter = slotData.frontMatter.trim();
-      if (
-        !rendered.document.includes(
-          `\n${embeddedFrontMatter}\n`
-        )
-      ) {
-        throw partitionFailure(
-          'partition_child_front_matter_projection_missing',
-          { partitionId: childProjectionInput.partitionId }
-        );
+      if (!rendered.document.includes(`\n${embeddedFrontMatter}\n`)) {
+        throw partitionFailure('partition_child_front_matter_projection_missing', {
+          partitionId: childProjectionInput.partitionId,
+        });
       }
       const childContractBytes =
         `${embeddedFrontMatter}\n\n` +
-        rendered.document.replace(
-          `\n${embeddedFrontMatter}\n`,
-          '\n'
-        );
+        rendered.document.replace(`\n${embeddedFrontMatter}\n`, '\n');
       const commandPortabilityAudit = auditCommandPortability({
         content: childContractBytes,
         targetPath: childContractPath,
@@ -3139,63 +2828,35 @@ async function supersedeAuthority(args) {
   const prepared = prepareAuthoritySupersession({
     repositoryRoot: process.cwd(),
     attemptId: requireSupersessionArg(args, '--attempt-id'),
-    supersessionMode: take(
-      args,
-      '--supersession-mode',
-      'strict_equivalence'
-    ),
+    supersessionMode: take(args, '--supersession-mode', 'strict_equivalence'),
     supersededAuthority: {
       parentPlanPath: sourcePath,
-      parentPlanHash: requireSupersessionArg(
-        args,
-        '--superseded-parent-hash'
-      ),
-      partitionManifestPath: path.resolve(
-        requireSupersessionArg(args, '--superseded-manifest')
-      ),
-      partitionManifestHash: requireSupersessionArg(
-        args,
-        '--superseded-manifest-hash'
-      ),
-      partitionSetHash: requireSupersessionArg(
-        args,
-        '--superseded-partition-set-hash'
-      ),
-      childrenSummaryPath: path.resolve(
-        requireSupersessionArg(args, '--children-summary')
-      ),
-      childrenSummaryHash: requireSupersessionArg(
-        args,
-        '--children-summary-hash'
-      ),
+      parentPlanHash: requireSupersessionArg(args, '--superseded-parent-hash'),
+      partitionManifestPath: path.resolve(requireSupersessionArg(args, '--superseded-manifest')),
+      partitionManifestHash: requireSupersessionArg(args, '--superseded-manifest-hash'),
+      partitionSetHash: requireSupersessionArg(args, '--superseded-partition-set-hash'),
+      childrenSummaryPath: path.resolve(requireSupersessionArg(args, '--children-summary')),
+      childrenSummaryHash: requireSupersessionArg(args, '--children-summary-hash'),
     },
     successorAuthority: {
       partitionPlan,
       partitionPlanBytes: authority.partitionPlanBytes,
       executionProjectionBundle: projected,
       successorSelectionManifest: authority.compiled.manifest,
-      compilerIdentityHash:
-        currentPartitionCompilerIdentityHash(),
+      compilerIdentityHash: currentPartitionCompilerIdentityHash(),
       sourceIdentity: {
         sourcePath: normalize(sourcePath),
         sourceHash: sha256FileBytes(sourcePath),
         sourceSnapshotHash: authority.snapshot.aggregateHash,
       },
       releaseContext: {
-        methodologyProfileArtifactHash:
-          authority.methodology.methodologyProfileArtifactHash,
-        partitionPolicyArtifactHash:
-          authority.optimizerPolicyBinding
-            .partitionPolicyArtifactHash,
-        sequenceApplicabilityReceipt:
-          authority.boundaryContext
-            .sequenceApplicabilityReceipt,
+        methodologyProfileArtifactHash: authority.methodology.methodologyProfileArtifactHash,
+        partitionPolicyArtifactHash: authority.optimizerPolicyBinding.partitionPolicyArtifactHash,
+        sequenceApplicabilityReceipt: authority.boundaryContext.sequenceApplicabilityReceipt,
         renderEvidence,
       },
     },
-    checkpointPaths: takeAll(args, '--checkpoint').map((value) =>
-      path.resolve(value)
-    ),
+    checkpointPaths: takeAll(args, '--checkpoint').map((value) => path.resolve(value)),
   });
   const staged = stageAuthoritySupersessionAttempt({
     prepared,
@@ -3204,56 +2865,41 @@ async function supersedeAuthority(args) {
       {
         relativePath: 'receipts/render-evidence.json',
         bytes: `${stableStringify({
-          schemaVersion:
-            'goal-contract-authority-supersession-render-evidence/v1',
+          schemaVersion: 'goal-contract-authority-supersession-render-evidence/v1',
           renderEvidence,
         })}\n`,
       },
     ],
   });
-  const promoted =
-    promoteAuthoritySupersessionAttempt({ staged });
-  const finalManifestPath = path.join(
-    finalRoot,
-    'partition-manifest.json'
-  );
-  const finalManifest = JSON.parse(
-    fs.readFileSync(finalManifestPath, 'utf8')
-  );
+  const promoted = promoteAuthoritySupersessionAttempt({ staged });
+  const finalManifestPath = path.join(finalRoot, 'partition-manifest.json');
+  const finalManifest = JSON.parse(fs.readFileSync(finalManifestPath, 'utf8'));
   return Object.freeze({
     ok: true,
-    schemaVersion:
-      'goal-contract-authority-supersession-command-receipt/v1',
+    schemaVersion: 'goal-contract-authority-supersession-command-receipt/v1',
     attemptId: prepared.attemptId,
     attemptKey: prepared.attemptKey,
     supersessionMode: prepared.supersessionMode,
     activationMode: prepared.activationMode,
-    sourceCoverageAuthority:
-      prepared.sourceCoverageAuthority,
-    supersededDisposition:
-      prepared.supersededDisposition,
+    sourceCoverageAuthority: prepared.sourceCoverageAuthority,
+    supersededDisposition: prepared.supersededDisposition,
     authorityRoot: normalize(finalRoot),
     authoritySupersessionReceiptPath: normalize(
       path.join(finalRoot, 'authority-supersession.receipt.json')
     ),
     authoritySupersessionReceiptHash: promoted.receiptHash,
-    partitionPlanPath: normalize(
-      path.join(finalRoot, 'partition-plan.json')
-    ),
+    partitionPlanPath: normalize(path.join(finalRoot, 'partition-plan.json')),
     partitionPlanHash: partitionPlan.partitionPlanHash,
     partitionManifestPath: normalize(finalManifestPath),
     partitionManifestHash: projected.partitionManifestHash,
-    partitionManifestDocumentHash:
-      projected.partitionManifestDocumentHash,
+    partitionManifestDocumentHash: projected.partitionManifestDocumentHash,
     partitionSetHash: partitionPlan.partitionSetHash,
     partitionCount: finalManifest.partitionCount,
-    orderedChildContractHashes:
-      projected.orderedChildContractHashes,
+    orderedChildContractHashes: projected.orderedChildContractHashes,
     partitionMappings: prepared.partitionMappings,
     checkpointMappings: prepared.checkpointMappings,
     equivalence: prepared.equivalence,
-    sourceGroundedCoverage:
-      prepared.sourceGroundedCoverage,
+    sourceGroundedCoverage: prepared.sourceGroundedCoverage,
     atomicPromotion: true,
     idempotent: promoted.idempotent,
     modelInvocationCounters: {
@@ -3267,23 +2913,14 @@ async function supersedeAuthority(args) {
 
 async function partition(args) {
   const authority = await compilePartitionAuthority(args);
-  const {
-    projection,
-    compiled,
-  } = authority;
-  const {
-    assertOutputPathIsolation,
-    stagePartitionSolution,
-  } = loadPartitionModule(
+  const { projection, compiled } = authority;
+  const { assertOutputPathIsolation, stagePartitionSolution } = loadPartitionModule(
     'utils/goal-contract/partition-manifest'
   );
-  const {
-    buildGlobalPartitionCoverageReceipt,
-    selectPartitionScope,
-  } = loadPartitionModule('utils/goal-contract/partition-selector');
-  const { finalizePartitionRun } = loadPartitionModule(
-    'utils/goal-contract/partition-receipts'
+  const { buildGlobalPartitionCoverageReceipt, selectPartitionScope } = loadPartitionModule(
+    'utils/goal-contract/partition-selector'
   );
+  const { finalizePartitionRun } = loadPartitionModule('utils/goal-contract/partition-receipts');
   const requestedOut = take(args, '--out');
   if (!requestedOut) {
     throw partitionFailure('partition_output_missing');
@@ -3294,28 +2931,17 @@ async function partition(args) {
     path.join(path.dirname(path.resolve(requestedOut)), '.goal-contract-receipts')
   );
   assertOutputPathIsolation(receiptsDir, requestedOut);
-  const partitionPlanPath = path.join(
-    path.resolve(receiptsDir),
-    'partition-plan.json'
-  );
+  const partitionPlanPath = path.join(path.resolve(receiptsDir), 'partition-plan.json');
   fs.mkdirSync(path.dirname(partitionPlanPath), { recursive: true });
-  fs.writeFileSync(
-    partitionPlanPath,
-    authority.partitionPlanBytes,
-    'utf8'
+  fs.writeFileSync(partitionPlanPath, authority.partitionPlanBytes, 'utf8');
+  const partitionPlanDocumentHash = sha256Text(authority.partitionPlanBytes);
+  const { writeSequenceApplicabilityReceipt } = loadPartitionModule(
+    'utils/goal-contract/partition-receipts'
   );
-  const partitionPlanDocumentHash = sha256Text(
-    authority.partitionPlanBytes
-  );
-  const {
-    writeSequenceApplicabilityReceipt,
-  } = loadPartitionModule('utils/goal-contract/partition-receipts');
-  const sequenceApplicabilityEvidence =
-    writeSequenceApplicabilityReceipt({
-      applicabilityReceipt:
-        authority.boundaryContext.sequenceApplicabilityReceipt,
-      receiptsDir,
-    });
+  const sequenceApplicabilityEvidence = writeSequenceApplicabilityReceipt({
+    applicabilityReceipt: authority.boundaryContext.sequenceApplicabilityReceipt,
+    receiptsDir,
+  });
   const staged = stagePartitionSolution({
     compiled,
     receiptsDir,
@@ -3360,28 +2986,20 @@ async function partition(args) {
     executionProjectionHash: projection.executionProjectionHash,
     partitionCount: finalized.manifest.partitionCount,
     partitionSetHash: finalized.manifest.partitionSetHash,
-    partitionPlanPartitionSetHash:
-      authority.partitionPlan.partitionSetHash,
-    sourceCompositionPolicyHash:
-      authority.partitionPlan.sourceCompositionPolicyHash,
+    partitionPlanPartitionSetHash: authority.partitionPlan.partitionSetHash,
+    sourceCompositionPolicyHash: authority.partitionPlan.sourceCompositionPolicyHash,
     globalCoverageDecision: globalCoverage.decision,
     selectionReceiptCount: selections.length,
     sequenceMode: authority.boundaryContext.sequenceMode,
     sequenceApplicability: authority.boundaryContext.sequenceApplicability,
     sequenceCoverage: authority.boundaryContext.sequenceCoverage,
-    sequenceClosureStatus:
-      authority.boundaryContext.sequenceClosureStatus,
-    childContractAuthority:
-      authority.boundaryContext.childContractAuthority,
-    sequenceApplicabilityReceipt:
-      sequenceApplicabilityEvidence.payload,
-    sequenceApplicabilityReceiptPath:
-      sequenceApplicabilityEvidence.path,
-    sequenceApplicabilityReceiptHash:
-      sequenceApplicabilityEvidence.receiptHash,
+    sequenceClosureStatus: authority.boundaryContext.sequenceClosureStatus,
+    childContractAuthority: authority.boundaryContext.childContractAuthority,
+    sequenceApplicabilityReceipt: sequenceApplicabilityEvidence.payload,
+    sequenceApplicabilityReceiptPath: sequenceApplicabilityEvidence.path,
+    sequenceApplicabilityReceiptHash: sequenceApplicabilityEvidence.receiptHash,
     semanticDerivationMode: authority.boundaryContext.semanticDerivationMode,
-    semanticProviderCallCount:
-      authority.boundaryContext.semanticProviderCallCount,
+    semanticProviderCallCount: authority.boundaryContext.semanticProviderCallCount,
   });
 }
 
@@ -3391,73 +3009,51 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
   const json = has(args, '--json') || _opts.json;
   try {
     if (subcommand === 'release-gate') {
-      const {
-        goalContractReleaseGateCommand,
-        parseGoalContractBinding,
-      } = loadPartitionModule('utils/goal-contract/release-gate');
+      const { goalContractReleaseGateCommand, parseGoalContractBinding } = loadPartitionModule(
+        'utils/goal-contract/release-gate'
+      );
       const goalPath = take(args, '--goal');
       const binding = parseGoalContractBinding(goalPath);
       let partitionAuthority = null;
       if (binding.mode === 'partition') {
         const manifestPath = path.resolve(
-          take(args, '--partition-manifest') ||
-            binding.fields.partitionManifestPath ||
-            ''
+          take(args, '--partition-manifest') || binding.fields.partitionManifestPath || ''
         );
         let manifest = null;
         if (fs.existsSync(manifestPath)) {
           try {
-            manifest = JSON.parse(
-              fs.readFileSync(manifestPath, 'utf8')
-            );
+            manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
           } catch {
-            throw partitionFailure(
-              'partition_manifest_invalid_json'
-            );
+            throw partitionFailure('partition_manifest_invalid_json');
           }
         }
         const successorBound =
-          manifest?.schemaVersion ===
-            'goal-contract-partition-manifest/v2' &&
-          manifest?.manifestAuthorityMode ===
-            'final_child_membership';
+          manifest?.schemaVersion === 'goal-contract-partition-manifest/v2' &&
+          manifest?.manifestAuthorityMode === 'final_child_membership';
         if (successorBound) {
-          const {
-            loadAuthoritySupersessionForRelease,
-          } = loadPartitionModule(
+          const { loadAuthoritySupersessionForRelease } = loadPartitionModule(
             'utils/goal-contract/control-plane/authority-supersession'
           );
-          const inferredAuthorityRoot =
-            path.dirname(manifestPath);
-          const explicitAuthorityRoot = take(
-            args,
-            '--authority-root'
-          );
+          const inferredAuthorityRoot = path.dirname(manifestPath);
+          const explicitAuthorityRoot = take(args, '--authority-root');
           if (
             explicitAuthorityRoot &&
-            path.resolve(explicitAuthorityRoot) !==
-              inferredAuthorityRoot
+            path.resolve(explicitAuthorityRoot) !== inferredAuthorityRoot
           ) {
-            throw partitionFailure(
-              'successor_authority_root_mismatch'
-            );
+            throw partitionFailure('successor_authority_root_mismatch');
           }
-          partitionAuthority =
-            loadAuthoritySupersessionForRelease({
-              authorityRoot: inferredAuthorityRoot,
-              partitionManifestPath: manifestPath,
-              goalPath,
-              expectedPartitionPlanHash:
-                binding.fields.partitionPlanHash,
-            });
+          partitionAuthority = loadAuthoritySupersessionForRelease({
+            authorityRoot: inferredAuthorityRoot,
+            partitionManifestPath: manifestPath,
+            goalPath,
+            expectedPartitionPlanHash: binding.fields.partitionPlanHash,
+          });
         } else {
           const authorityArgs = [
             '--entry',
-            binding.fields.entryScenario ||
-              'standalone_goal_contract',
+            binding.fields.entryScenario || 'standalone_goal_contract',
             '--source',
-            take(args, '--source') ||
-              binding.fields.masterSourcePath,
+            take(args, '--source') || binding.fields.masterSourcePath,
           ];
           for (const flag of [
             '--sequence-mode',
@@ -3468,22 +3064,14 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
             const value = take(args, flag);
             if (value) authorityArgs.push(flag, value);
           }
-          partitionAuthority = await compilePartitionAuthority(
-            authorityArgs
-          );
+          partitionAuthority = await compilePartitionAuthority(authorityArgs);
         }
       }
       return await goalContractReleaseGateCommand(_opts, args, {
         partitionAuthority,
       });
     }
-    if (
-      ![
-        'generate',
-        'partition',
-        'supersede-authority',
-      ].includes(subcommand)
-    ) {
+    if (!['generate', 'partition', 'supersede-authority'].includes(subcommand)) {
       throw Object.assign(
         new Error(
           'Usage: bmad-speckit goal-contract <generate|partition|supersede-authority> --entry standalone_goal_contract --source <plan.md> --out <artifact> [--sequence-mode auto|required|disabled] --json'
@@ -3592,14 +3180,12 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
         : {}),
       ...(error.sequenceApplicabilityReceiptPath
         ? {
-            sequenceApplicabilityReceiptPath:
-              error.sequenceApplicabilityReceiptPath,
+            sequenceApplicabilityReceiptPath: error.sequenceApplicabilityReceiptPath,
           }
         : {}),
       ...(error.sequenceApplicabilityReceiptHash
         ? {
-            sequenceApplicabilityReceiptHash:
-              error.sequenceApplicabilityReceiptHash,
+            sequenceApplicabilityReceiptHash: error.sequenceApplicabilityReceiptHash,
           }
         : {}),
       ...(error.executionProjectionHash
@@ -3624,29 +3210,19 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
             partitionAnalysisReceiptHash: error.partitionAnalysisReceiptHash,
           }
         : {}),
-      ...(error.stagedManifestPath
-        ? { stagedManifestPath: error.stagedManifestPath }
-        : {}),
+      ...(error.stagedManifestPath ? { stagedManifestPath: error.stagedManifestPath } : {}),
       ...(error.partitionManifestHash
         ? { partitionManifestHash: error.partitionManifestHash }
         : {}),
-      ...(Number.isInteger(error.partitionCount)
-        ? { partitionCount: error.partitionCount }
-        : {}),
-      ...(error.selectedCandidateId
-        ? { selectedCandidateId: error.selectedCandidateId }
-        : {}),
+      ...(Number.isInteger(error.partitionCount) ? { partitionCount: error.partitionCount } : {}),
+      ...(error.selectedCandidateId ? { selectedCandidateId: error.selectedCandidateId } : {}),
       ...(typeof error.activeManifestWritten === 'boolean'
         ? { activeManifestWritten: error.activeManifestWritten }
         : {}),
       ...(error.staleFields ? { staleFields: error.staleFields } : {}),
-      ...(error.mismatchedFields
-        ? { mismatchedFields: error.mismatchedFields }
-        : {}),
+      ...(error.mismatchedFields ? { mismatchedFields: error.mismatchedFields } : {}),
       ...(error.invalidFields ? { invalidFields: error.invalidFields } : {}),
-      ...(error.validationErrors
-        ? { validationErrors: error.validationErrors }
-        : {}),
+      ...(error.validationErrors ? { validationErrors: error.validationErrors } : {}),
       ...(error.field ? { field: error.field } : {}),
       ...(error.reason ? { reason: error.reason } : {}),
       ...(error.expected ? { expected: error.expected } : {}),

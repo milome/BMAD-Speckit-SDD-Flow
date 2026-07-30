@@ -6,31 +6,26 @@ const {
   goalContractSchemaArtifactHash,
   validateGoalContractSchema,
 } = require('./schema-registry.ts');
-const {
-  hashControlPlaneValue,
-} = require('./canonical-hash.ts');
-const {
-  verifyIntentAuthorityEnvelope,
-} = require('./intent-authority.ts');
-const {
-  verifyOrderedSourceSnapshotSet,
-} = require('./source-snapshot.ts');
-const {
-  verifySourceCompositionPolicy,
-} = require('./source-composition-policy.ts');
-const {
-  compileSpecSpanRegistry,
-  resolveSpecSpan,
-} = require('./spec-span-registry.ts');
-const {
-  extractSourceObligations,
-} = require('../source-obligation-extractor.ts');
+const { hashControlPlaneValue } = require('./canonical-hash.ts');
+const { verifyIntentAuthorityEnvelope } = require('./intent-authority.ts');
+const { verifyOrderedSourceSnapshotSet } = require('./source-snapshot.ts');
+const { verifySourceCompositionPolicy } = require('./source-composition-policy.ts');
+const { compileSpecSpanRegistry, resolveSpecSpan } = require('./spec-span-registry.ts');
+const { extractSourceObligations } = require('../source-obligation-extractor.ts');
 
 export type GoalContractCanonicalIntentCompilerModule = never;
 
 interface CanonicalIntentRecordShape {
   intentRecordId: string;
   declaredSourceId: string | null;
+  classification:
+    | 'positive'
+    | 'negative'
+    | 'boundary'
+    | 'evidence'
+    | 'dependency'
+    | 'applicability'
+    | 'context';
   ownership: 'owned_obligation' | 'cross_source_reference';
   referenceTargetId: string | null;
   polarity: 'positive' | 'negative';
@@ -80,13 +75,10 @@ type CanonicalIntentBundleWithoutHash = Omit<
 
 type CanonicalIntentBundleCore = Omit<
   CanonicalIntentBundleWithoutHash,
-  | 'canonicalIntentSemanticHash'
-  | 'intentAuthorityEnvelope'
-  | 'authorityAttestationHash'
+  'canonicalIntentSemanticHash' | 'intentAuthorityEnvelope' | 'authorityAttestationHash'
 >;
 
-const CANONICAL_INTENT_SCHEMA =
-  'goal-contract-canonical-intent-bundle.schema.json';
+const CANONICAL_INTENT_SCHEMA = 'goal-contract-canonical-intent-bundle.schema.json';
 const SCHEMA_NAMES = [
   CANONICAL_INTENT_SCHEMA,
   'goal-contract-composite-source-authority-bundle.schema.json',
@@ -94,8 +86,7 @@ const SCHEMA_NAMES = [
   'goal-contract-source-composition-policy.schema.json',
   'goal-contract-subordinate-source-coverage-receipt.schema.json',
 ].sort();
-const DECLARED_ID_PATTERN =
-  /\b[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+\b/gu;
+const DECLARED_ID_PATTERN = /\b[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+\b/gu;
 
 function failure(failureClass, details = {}) {
   return Object.assign(new Error(failureClass), {
@@ -104,9 +95,7 @@ function failure(failureClass, details = {}) {
   });
 }
 
-function isRecord(
-  value: unknown
-): value is Record<string, unknown> {
+function isRecord(value: unknown): value is Record<string, unknown> {
   return (
     value !== null &&
     typeof value === 'object' &&
@@ -142,33 +131,21 @@ function normalizedSemanticToken(value, fallback) {
 }
 
 function extractDeclaredIds(value) {
-  return [
-    ...new Set(normalizedText(value).match(DECLARED_ID_PATTERN) ?? []),
-  ].sort();
+  return [...new Set(normalizedText(value).match(DECLARED_ID_PATTERN) ?? [])].sort();
 }
 
 function containsAuthorityRef(value, authorityRef) {
   const escaped = authorityRef.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
-  return new RegExp(
-    `(?:^|[^A-Z0-9_-])${escaped}(?:$|[^A-Z0-9_-])`,
-    'u'
-  ).test(normalizedText(value));
+  return new RegExp(`(?:^|[^A-Z0-9_-])${escaped}(?:$|[^A-Z0-9_-])`, 'u').test(
+    normalizedText(value)
+  );
 }
 
 function stripDeclaredPrefix(text, declaredSourceId) {
-  let body = normalizedText(text).replace(
-    /^(?:[-*]|\d+\.)\s+(?:\[[ xX]\]\s*)?/u,
-    ''
-  );
+  let body = normalizedText(text).replace(/^(?:[-*]|\d+\.)\s+(?:\[[ xX]\]\s*)?/u, '');
   if (declaredSourceId) {
-    const escaped = declaredSourceId.replace(
-      /[.*+?^${}()|[\]\\]/gu,
-      '\\$&'
-    );
-    body = body.replace(
-      new RegExp(`^${escaped}\\b\\s*(?::|：|-)?\\s*`, 'u'),
-      ''
-    );
+    const escaped = declaredSourceId.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+    body = body.replace(new RegExp(`^${escaped}\\b\\s*(?::|：|-)?\\s*`, 'u'), '');
   }
   return normalizedText(body);
 }
@@ -177,17 +154,15 @@ function classifyRecord(obligation) {
   const heading = normalizedText(obligation.headingPath.join(' '));
   const text = normalizedText(obligation.exactText);
   const combined = `${heading} ${text}`;
+  if (/^(?:>\s*)+$/u.test(text)) {
+    return 'context';
+  }
   if (
-    /deterministic\s+not\s+done|\bnot\s+done\b|\bexcluded\b|out[\s-]+of[\s-]+scope/iu.test(
-      combined
-    )
+    /deterministic\s+not\s+done|\bnot\s+done\b|\bexcluded\b|out[\s-]+of[\s-]+scope/iu.test(combined)
   ) {
     return 'boundary';
   }
-  if (
-    obligation.dependencyRefs.length > 0 ||
-    /\bdependencies?\b|依赖/u.test(heading)
-  ) {
+  if (obligation.dependencyRefs.length > 0 || /\bdependencies?\b|依赖/u.test(heading)) {
     return 'dependency';
   }
   if (
@@ -199,45 +174,28 @@ function classifyRecord(obligation) {
       'observability',
       'verification_command',
     ].includes(obligation.kind) ||
-    /\bacceptance\b|\bevidence\b|\breceipt\b|\bcommands?\b/u.test(
-      heading.toLowerCase()
-    )
+    /\bacceptance\b|\bevidence\b|\breceipt\b|\bcommands?\b/u.test(heading.toLowerCase())
   ) {
     return 'evidence';
   }
-  if (
-    /\bapplicability\b|\bapplicable\b|\bapplies\b|sequence\s+mode/iu.test(
-      combined
-    )
-  ) {
+  if (/\bapplicability\b|\bapplicable\b|\bapplies\b|sequence\s+mode/iu.test(combined)) {
     return 'applicability';
   }
-  if (
-    /\bMUST\s+NOT\b|\bSHALL\s+NOT\b|\bforbidden\b|\bdeny\b|\breject\b/iu.test(
-      text
-    )
-  ) {
+  if (/\bMUST\s+NOT\b|\bSHALL\s+NOT\b|\bforbidden\b|\bdeny\b|\breject\b/iu.test(text)) {
     return 'negative';
   }
   return 'positive';
 }
 
 function semanticFields(obligation, classification) {
-  const polarity =
-    /\bMUST\s+NOT\b|\bSHALL\s+NOT\b|\bforbidden\b|\bdeny\b|\breject\b/iu.test(
-      obligation.exactText
-    )
-      ? 'negative'
-      : 'positive';
-  const withoutId = stripDeclaredPrefix(
-    obligation.exactText,
-    obligation.declaredSourceId
-  );
+  const polarity = /\bMUST\s+NOT\b|\bSHALL\s+NOT\b|\bforbidden\b|\bdeny\b|\breject\b/iu.test(
+    obligation.exactText
+  )
+    ? 'negative'
+    : 'positive';
+  const withoutId = stripDeclaredPrefix(obligation.exactText, obligation.declaredSourceId);
   const modalFree = normalizedText(
-    withoutId.replace(
-      /^(?:MUST\s+NOT|SHALL\s+NOT|MUST|SHALL|SHOULD|MAY)\b\s*/iu,
-      ''
-    )
+    withoutId.replace(/^(?:MUST\s+NOT|SHALL\s+NOT|MUST|SHALL|SHOULD|MAY)\b\s*/iu, '')
   );
   const requiredOutcome = normalizedSemanticToken(
     modalFree,
@@ -259,9 +217,7 @@ function semanticFields(obligation, classification) {
       `${obligation.namespace}:${obligation.kind}`
     );
   const applicabilityCondition =
-    classification === 'applicability'
-      ? requiredOutcome
-      : 'applicable';
+    classification === 'applicability' ? requiredOutcome : 'applicable';
   const coordinate = {
     subject,
     action,
@@ -315,23 +271,16 @@ function verifyAuthorityInputs(policy, snapshotSet, bundle) {
   if (bundle.sourceCompositionPolicyHash !== policy.sourceCompositionPolicyHash) {
     throw failure('source_composition_policy_mismatch');
   }
-  if (
-    bundle.orderedSourceSnapshotSetHash !==
-    snapshotSet.orderedSourceSnapshotSetHash
-  ) {
+  if (bundle.orderedSourceSnapshotSetHash !== snapshotSet.orderedSourceSnapshotSetHash) {
     throw failure('source_authority_bundle_stale');
   }
-  const descriptors = [
-    bundle.primarySource,
-    ...bundle.subordinateSources,
-  ];
+  const descriptors = [bundle.primarySource, ...bundle.subordinateSources];
   if (descriptors.length !== snapshotSet.sourceSnapshots.length) {
     throw failure('source_authority_bundle_stale');
   }
   for (const snapshot of snapshotSet.sourceSnapshots) {
     const descriptor = descriptors.find(
-      ({ sourceArtifactId }) =>
-        sourceArtifactId === snapshot.sourceArtifactId
+      ({ sourceArtifactId }) => sourceArtifactId === snapshot.sourceArtifactId
     );
     if (
       !descriptor ||
@@ -387,9 +336,7 @@ function crossSourceDraft(base, targetId, owner, descriptor) {
   const sourceContext = `${base.headingPath.join(' ')} ${base.exactText}`;
   if (
     descriptor.parentTaskRefs.length > 0 &&
-    !descriptor.parentTaskRefs.some((taskRef) =>
-      containsAuthorityRef(sourceContext, taskRef)
-    )
+    !descriptor.parentTaskRefs.some((taskRef) => containsAuthorityRef(sourceContext, taskRef))
   ) {
     throw failure('subordinate_scope_escape', {
       sourceArtifactId: base.sourceArtifactId,
@@ -440,13 +387,13 @@ function assertSemanticOwnership(drafts) {
   const coordinateOwners = new Map();
   for (const draft of drafts) {
     const record = draft.record;
+    if (record.classification === 'context') {
+      continue;
+    }
     const duplicate = semanticOwners.get(record.semanticOwnershipKey);
     if (duplicate) {
       throw failure('source_semantic_duplication', {
-        sourceObligationIds: [
-          duplicate.intentRecordId,
-          record.intentRecordId,
-        ].sort(),
+        sourceObligationIds: [duplicate.intentRecordId, record.intentRecordId].sort(),
       });
     }
     semanticOwners.set(record.semanticOwnershipKey, record);
@@ -457,10 +404,7 @@ function assertSemanticOwnership(drafts) {
         coordinate.requiredOutcome !== record.requiredOutcome)
     ) {
       throw failure('source_authority_conflict', {
-        sourceObligationIds: [
-          coordinate.intentRecordId,
-          record.intentRecordId,
-        ].sort(),
+        sourceObligationIds: [coordinate.intentRecordId, record.intentRecordId].sort(),
       });
     }
     coordinateOwners.set(record.semanticCoordinateKey, record);
@@ -503,10 +447,7 @@ function bindSpecSpans(snapshotSet, drafts) {
 function recordIndexByDeclaredId(records) {
   const index = new Map();
   for (const record of records) {
-    if (
-      record.ownership !== 'owned_obligation' ||
-      !record.declaredSourceId
-    ) {
+    if (record.ownership !== 'owned_obligation' || !record.declaredSourceId) {
       continue;
     }
     const owners = index.get(record.declaredSourceId) ?? [];
@@ -563,8 +504,7 @@ function buildSourceObligationGraph(snapshotSet, records, registry) {
     });
   return {
     schemaVersion: 'goal-contract-unified-source-obligation-graph/v1',
-    orderedSourceSnapshotSetHash:
-      snapshotSet.orderedSourceSnapshotSetHash,
+    orderedSourceSnapshotSetHash: snapshotSet.orderedSourceSnapshotSetHash,
     specSpanRegistryHash: registry.specSpanRegistryHash,
     obligations: records,
     dependencyEdges: dependencyEdges.sort((left, right) =>
@@ -573,12 +513,11 @@ function buildSourceObligationGraph(snapshotSet, records, registry) {
         'en'
       )
     ),
-    crossSourceReferenceEdges: crossSourceReferenceEdges.sort(
-      (left, right) =>
-        `${left.fromId}|${left.toId}|${left.targetId}`.localeCompare(
-          `${right.fromId}|${right.toId}|${right.targetId}`,
-          'en'
-        )
+    crossSourceReferenceEdges: crossSourceReferenceEdges.sort((left, right) =>
+      `${left.fromId}|${left.toId}|${left.targetId}`.localeCompare(
+        `${right.fromId}|${right.toId}|${right.targetId}`,
+        'en'
+      )
     ),
   };
 }
@@ -609,18 +548,14 @@ function compileCoverage(bundle, records) {
   });
   if (receipts.length === 1) return receipts[0];
   return {
-    schemaVersion:
-      'goal-contract-subordinate-source-coverage-receipt-set/v1',
+    schemaVersion: 'goal-contract-subordinate-source-coverage-receipt-set/v1',
     receipts,
     receiptSetHash: hashControlPlaneValue(receipts),
   };
 }
 
 function compilerIdentity() {
-  const partial: Omit<
-    CompilerIdentityShape,
-    'compilerIdentityHash'
-  > = {
+  const partial: Omit<CompilerIdentityShape, 'compilerIdentityHash'> = {
     compilerVersion: 'goal-contract-canonical-intent-compiler/v1',
     schemaArtifactHashes: SCHEMA_NAMES.map((schemaName) => ({
       schemaName,
@@ -653,10 +588,7 @@ function bundlePayload(bundle) {
 }
 
 function verifyCoverageReceipt(coverage) {
-  if (
-    coverage.schemaVersion ===
-    'goal-contract-subordinate-source-coverage-receipt-set/v1'
-  ) {
+  if (coverage.schemaVersion === 'goal-contract-subordinate-source-coverage-receipt-set/v1') {
     if (
       !Array.isArray(coverage.receipts) ||
       hashControlPlaneValue(coverage.receipts) !== coverage.receiptSetHash
@@ -675,10 +607,7 @@ function verifyCoverageReceipt(coverage) {
 }
 
 function verifyCompilerIdentity(identity) {
-  const partial: Omit<
-    CompilerIdentityShape,
-    'compilerIdentityHash'
-  > = {
+  const partial: Omit<CompilerIdentityShape, 'compilerIdentityHash'> = {
     compilerVersion: identity.compilerVersion,
     schemaArtifactHashes: identity.schemaArtifactHashes,
   };
@@ -694,34 +623,23 @@ function verifyCompilerIdentity(identity) {
   }
 }
 
-function verifyCanonicalIntentBundle(
-  bundle: CanonicalIntentBundleShape
-) {
+function verifyCanonicalIntentBundle(bundle: CanonicalIntentBundleShape) {
   if (
     !isRecord(bundle) ||
-    hashControlPlaneValue(bundlePayload(bundle)) !==
-      bundle.canonicalIntentBundleHash
+    hashControlPlaneValue(bundlePayload(bundle)) !== bundle.canonicalIntentBundleHash
   ) {
     throw failure('canonical_intent_bundle_hash_mismatch');
   }
   validateGoalContractSchema(CANONICAL_INTENT_SCHEMA, bundle);
   verifyCompilerIdentity(bundle.compilerIdentity);
   verifyCoverageReceipt(bundle.subordinateCoverage);
-  if (
-    hashControlPlaneValue(bundle.sourceObligationGraph) !==
-    bundle.sourceObligationGraphHash
-  ) {
+  if (hashControlPlaneValue(bundle.sourceObligationGraph) !== bundle.sourceObligationGraphHash) {
     throw failure('source_obligation_graph_hash_mismatch');
   }
-  if (
-    hashControlPlaneValue(semanticPayload(bundle)) !==
-    bundle.canonicalIntentSemanticHash
-  ) {
+  if (hashControlPlaneValue(semanticPayload(bundle)) !== bundle.canonicalIntentSemanticHash) {
     throw failure('canonical_intent_semantic_hash_mismatch');
   }
-  const spanIds = new Set(
-    bundle.specSpanRegistry.specSpans.map(({ specSpanId }) => specSpanId)
-  );
+  const spanIds = new Set(bundle.specSpanRegistry.specSpans.map(({ specSpanId }) => specSpanId));
   for (const record of bundle.canonicalIntentIR) {
     for (const specSpanId of record.specSpanRefs) {
       if (!spanIds.has(specSpanId)) {
@@ -746,35 +664,25 @@ function verifyCanonicalIntentBundle(
   );
   const expectedGraph = buildSourceObligationGraph(
     {
-      orderedSourceSnapshotSetHash:
-        bundle.orderedSourceSnapshotSetHash,
+      orderedSourceSnapshotSetHash: bundle.orderedSourceSnapshotSetHash,
     },
     bundle.canonicalIntentIR,
     bundle.specSpanRegistry
   );
   if (
-    hashControlPlaneValue(expectedGraph) !==
-    hashControlPlaneValue(bundle.sourceObligationGraph)
+    hashControlPlaneValue(expectedGraph) !== hashControlPlaneValue(bundle.sourceObligationGraph)
   ) {
     throw failure('source_obligation_graph_projection_mismatch');
   }
   if (bundle.authorityState === 'authoritative') {
-    const envelope = verifyIntentAuthorityEnvelope(
-      bundle.intentAuthorityEnvelope
-    );
+    const envelope = verifyIntentAuthorityEnvelope(bundle.intentAuthorityEnvelope);
     if (
-      envelope.authorityAttestationHash !==
-        bundle.authorityAttestationHash ||
-      envelope.subject.sourceSnapshotHash !==
-        bundle.orderedSourceSnapshotSetHash ||
-      envelope.subject.canonicalIntentSemanticHash !==
-        bundle.canonicalIntentSemanticHash ||
-      envelope.subject.specSpanRegistryHash !==
-        bundle.specSpanRegistry.specSpanRegistryHash ||
-      envelope.subject.sourceCompositionPolicyHash !==
-        bundle.sourceCompositionPolicyHash ||
-      envelope.subject.sourceAuthorityBundleHash !==
-        bundle.sourceAuthorityBundleHash
+      envelope.authorityAttestationHash !== bundle.authorityAttestationHash ||
+      envelope.subject.sourceSnapshotHash !== bundle.orderedSourceSnapshotSetHash ||
+      envelope.subject.canonicalIntentSemanticHash !== bundle.canonicalIntentSemanticHash ||
+      envelope.subject.specSpanRegistryHash !== bundle.specSpanRegistry.specSpanRegistryHash ||
+      envelope.subject.sourceCompositionPolicyHash !== bundle.sourceCompositionPolicyHash ||
+      envelope.subject.sourceAuthorityBundleHash !== bundle.sourceAuthorityBundleHash
     ) {
       throw failure('authority_subject_mismatch');
     }
@@ -784,34 +692,21 @@ function verifyCanonicalIntentBundle(
 
 function compileCanonicalIntent(request: unknown = {}) {
   if (!isRecord(request)) throw failure('canonical_intent_request_invalid');
-  const policy = verifySourceCompositionPolicy(
-    request.sourceCompositionPolicy
+  const policy = verifySourceCompositionPolicy(request.sourceCompositionPolicy);
+  const snapshotSet = verifyOrderedSourceSnapshotSet(request.orderedSourceSnapshotSet);
+  const sourceAuthorityBundle = verifyCompositeSourceAuthorityBundle(
+    request.compositeSourceAuthorityBundle
   );
-  const snapshotSet = verifyOrderedSourceSnapshotSet(
-    request.orderedSourceSnapshotSet
-  );
-  const sourceAuthorityBundle =
-    verifyCompositeSourceAuthorityBundle(
-      request.compositeSourceAuthorityBundle
-    );
   verifyAuthorityInputs(policy, snapshotSet, sourceAuthorityBundle);
-  if (
-    request.authorityState !== 'candidate_only' &&
-    request.authorityState !== 'authoritative'
-  ) {
+  if (request.authorityState !== 'candidate_only' && request.authorityState !== 'authoritative') {
     throw failure('authority_state_invalid');
   }
   const authorityState = request.authorityState;
-  if (
-    authorityState === 'candidate_only' &&
-    request.intentAuthorityEnvelope !== undefined
-  ) {
+  if (authorityState === 'candidate_only' && request.intentAuthorityEnvelope !== undefined) {
     throw failure('authority_state_mismatch');
   }
 
-  const bases = snapshotSet.sourceSnapshots.flatMap(
-    extractSnapshotObligations
-  );
+  const bases = snapshotSet.sourceSnapshots.flatMap(extractSnapshotObligations);
   const subordinateDescriptors = new Map(
     sourceAuthorityBundle.subordinateSources.map((descriptor) => [
       descriptor.sourceArtifactId,
@@ -839,10 +734,7 @@ function compileCanonicalIntent(request: unknown = {}) {
   const subordinateOwners = new Map();
   for (const draft of ownedDrafts) {
     const record = draft.record;
-    if (
-      record.sourceRole !== 'subordinate_component_specification' ||
-      !record.declaredSourceId
-    ) {
+    if (record.sourceRole !== 'subordinate_component_specification' || !record.declaredSourceId) {
       continue;
     }
     const owners = subordinateOwners.get(record.declaredSourceId) ?? [];
@@ -850,10 +742,7 @@ function compileCanonicalIntent(request: unknown = {}) {
     subordinateOwners.set(record.declaredSourceId, owners);
   }
   for (const descriptor of sourceAuthorityBundle.subordinateSources) {
-    for (const id of [
-      ...descriptor.requiredRequirementIds,
-      ...descriptor.requiredTaskIds,
-    ]) {
+    for (const id of [...descriptor.requiredRequirementIds, ...descriptor.requiredTaskIds]) {
       const owners = subordinateOwners.get(id) ?? [];
       if (owners.length === 0) {
         throw failure(
@@ -873,8 +762,7 @@ function compileCanonicalIntent(request: unknown = {}) {
 
   const crossSourceDrafts = [];
   for (const base of bases.filter(
-    ({ sourceRole }) =>
-      sourceRole === 'primary_implementation_authority'
+    ({ sourceRole }) => sourceRole === 'primary_implementation_authority'
   )) {
     for (const targetId of extractDeclaredIds(base.exactText)) {
       const owners = subordinateOwners.get(targetId);
@@ -884,12 +772,8 @@ function compileCanonicalIntent(request: unknown = {}) {
           referenceTargetId: targetId,
         });
       }
-      const descriptor = subordinateDescriptors.get(
-        owners[0].record.sourceArtifactId
-      );
-      crossSourceDrafts.push(
-        crossSourceDraft(base, targetId, owners[0], descriptor)
-      );
+      const descriptor = subordinateDescriptors.get(owners[0].record.sourceArtifactId);
+      crossSourceDrafts.push(crossSourceDraft(base, targetId, owners[0], descriptor));
     }
   }
   const allDrafts = [...ownedDrafts, ...crossSourceDrafts].sort(
@@ -898,35 +782,18 @@ function compileCanonicalIntent(request: unknown = {}) {
       left.base.startByte - right.base.startByte ||
       left.base.endByteExclusive - right.base.endByteExclusive ||
       left.record.ownership.localeCompare(right.record.ownership, 'en') ||
-      left.record.intentRecordId.localeCompare(
-        right.record.intentRecordId,
-        'en'
-      )
+      left.record.intentRecordId.localeCompare(right.record.intentRecordId, 'en')
   );
-  const { records, specSpanRegistry } = bindSpecSpans(
-    snapshotSet,
-    allDrafts
-  );
-  const sourceObligationGraph = buildSourceObligationGraph(
-    snapshotSet,
-    records,
-    specSpanRegistry
-  );
-  const sourceObligationGraphHash = hashControlPlaneValue(
-    sourceObligationGraph
-  );
-  const subordinateCoverage = compileCoverage(
-    sourceAuthorityBundle,
-    records
-  );
+  const { records, specSpanRegistry } = bindSpecSpans(snapshotSet, allDrafts);
+  const sourceObligationGraph = buildSourceObligationGraph(snapshotSet, records, specSpanRegistry);
+  const sourceObligationGraphHash = hashControlPlaneValue(sourceObligationGraph);
+  const subordinateCoverage = compileCoverage(sourceAuthorityBundle, records);
   const partial: CanonicalIntentBundleCore = {
     schemaVersion: 'goal-contract-canonical-intent-bundle/v1',
     authorityState,
     sourceCompositionPolicyHash: policy.sourceCompositionPolicyHash,
-    orderedSourceSnapshotSetHash:
-      snapshotSet.orderedSourceSnapshotSetHash,
-    sourceAuthorityBundleHash:
-      sourceAuthorityBundle.sourceAuthorityBundleHash,
+    orderedSourceSnapshotSetHash: snapshotSet.orderedSourceSnapshotSetHash,
+    sourceAuthorityBundleHash: sourceAuthorityBundle.sourceAuthorityBundleHash,
     canonicalIntentIR: records,
     specSpanRegistry,
     sourceObligationGraph,
@@ -934,22 +801,15 @@ function compileCanonicalIntent(request: unknown = {}) {
     subordinateCoverage,
     compilerIdentity: compilerIdentity(),
   };
-  const canonicalIntentSemanticHash = hashControlPlaneValue(
-    semanticPayload(partial)
-  );
+  const canonicalIntentSemanticHash = hashControlPlaneValue(semanticPayload(partial));
 
   if (Array.isArray(request.projectionObligations)) {
     const knownIds = new Set(
-      records.flatMap((record) => [
-        record.intentRecordId,
-        record.declaredSourceId,
-      ]).filter(Boolean)
+      records.flatMap((record) => [record.intentRecordId, record.declaredSourceId]).filter(Boolean)
     );
     const expanded = request.projectionObligations.filter(
       (projection) =>
-        !isRecord(projection) ||
-        typeof projection.id !== 'string' ||
-        !knownIds.has(projection.id)
+        !isRecord(projection) || typeof projection.id !== 'string' || !knownIds.has(projection.id)
     );
     if (expanded.length > 0) {
       throw failure('projection_semantic_expansion');
@@ -966,27 +826,19 @@ function compileCanonicalIntent(request: unknown = {}) {
     if (!request.intentAuthorityEnvelope) {
       throw failure('authority_missing');
     }
-    const envelope = verifyIntentAuthorityEnvelope(
-      request.intentAuthorityEnvelope
-    );
+    const envelope = verifyIntentAuthorityEnvelope(request.intentAuthorityEnvelope);
     if (
-      envelope.subject.sourceSnapshotHash !==
-        snapshotSet.orderedSourceSnapshotSetHash ||
-      envelope.subject.canonicalIntentSemanticHash !==
-        canonicalIntentSemanticHash ||
-      envelope.subject.specSpanRegistryHash !==
-        specSpanRegistry.specSpanRegistryHash ||
-      envelope.subject.sourceCompositionPolicyHash !==
-        policy.sourceCompositionPolicyHash ||
-      envelope.subject.sourceAuthorityBundleHash !==
-        sourceAuthorityBundle.sourceAuthorityBundleHash
+      envelope.subject.sourceSnapshotHash !== snapshotSet.orderedSourceSnapshotSetHash ||
+      envelope.subject.canonicalIntentSemanticHash !== canonicalIntentSemanticHash ||
+      envelope.subject.specSpanRegistryHash !== specSpanRegistry.specSpanRegistryHash ||
+      envelope.subject.sourceCompositionPolicyHash !== policy.sourceCompositionPolicyHash ||
+      envelope.subject.sourceAuthorityBundleHash !== sourceAuthorityBundle.sourceAuthorityBundleHash
     ) {
       throw failure('authority_subject_mismatch');
     }
     authorityFields = {
       intentAuthorityEnvelope: envelope,
-      authorityAttestationHash:
-        envelope.authorityAttestationHash,
+      authorityAttestationHash: envelope.authorityAttestationHash,
     };
   }
   const bundle: CanonicalIntentBundleWithoutHash = {
@@ -996,9 +848,7 @@ function compileCanonicalIntent(request: unknown = {}) {
   };
   return verifyCanonicalIntentBundle({
     ...bundle,
-    canonicalIntentBundleHash: hashControlPlaneValue(
-      bundlePayload(bundle)
-    ),
+    canonicalIntentBundleHash: hashControlPlaneValue(bundlePayload(bundle)),
   });
 }
 

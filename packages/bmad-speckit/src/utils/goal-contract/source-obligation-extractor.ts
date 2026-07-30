@@ -4,24 +4,17 @@ const { sha256Text, stableStringify } = require(
     ? '../large-document-writer/receipts.ts'
     : '../large-document-writer/receipts'
 );
-const {
-  compileOrderedSourceSnapshotSet,
-  compileSourceSnapshot,
-} = require(
+const { compileOrderedSourceSnapshotSet, compileSourceSnapshot } = require(
   __filename.endsWith('.ts')
     ? './control-plane/source-snapshot.ts'
     : './control-plane/source-snapshot'
 );
-const {
-  compileSpecSpanRegistry,
-} = require(
+const { compileSpecSpanRegistry } = require(
   __filename.endsWith('.ts')
     ? './control-plane/spec-span-registry.ts'
     : './control-plane/spec-span-registry'
 );
-const {
-  validateDeterministicSourceObligations,
-} = require(
+const { validateDeterministicSourceObligations } = require(
   __filename.endsWith('.ts')
     ? './non-deterministic-source-validator.ts'
     : './non-deterministic-source-validator'
@@ -34,7 +27,9 @@ function failure(failureClass, extra = {}) {
 }
 
 function normalizeLineEndings(text) {
-  return String(text ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  return String(text ?? '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n');
 }
 
 function frozenSnapshotBytes(snapshot) {
@@ -56,8 +51,7 @@ function canonicalSnapshotSet(snapshot) {
       {
         sourceKind: snapshot.sourceKind || 'source_plan',
         sourceArtifactId: snapshot.sourceArtifactId || snapshot.sourcePath,
-        sourceRole:
-          snapshot.sourceRole || 'primary_implementation_authority',
+        sourceRole: snapshot.sourceRole || 'primary_implementation_authority',
         namespace: snapshot.namespace || 'PRIMARY',
         sourceOrder: snapshot.sourceOrder ?? 0,
         pathOrSegmentId: snapshot.pathOrSegmentId || snapshot.sourcePath,
@@ -73,9 +67,7 @@ function lineText(snapshot, lineNumber, sourceBytes) {
   if (!line) {
     throw failure('source_obligation_range_invalid', { lineNumber });
   }
-  return sourceBytes
-    .subarray(line.startByte, line.contentEndByte)
-    .toString('utf8');
+  return sourceBytes.subarray(line.startByte, line.contentEndByte).toString('utf8');
 }
 
 function sourceByteRange(snapshot, sourceBytes, base) {
@@ -105,21 +97,15 @@ function sourceByteRange(snapshot, sourceBytes, base) {
     const authorityText = exactLine.trim();
     const authorityCharacterOffset = exactLine.indexOf(authorityText);
     const startByte =
-      firstLine.startByte +
-      Buffer.byteLength(
-        exactLine.slice(0, authorityCharacterOffset),
-        'utf8'
-      );
+      firstLine.startByte + Buffer.byteLength(exactLine.slice(0, authorityCharacterOffset), 'utf8');
     return {
       startByte,
-      endByteExclusive:
-        startByte + Buffer.byteLength(authorityText, 'utf8'),
+      endByteExclusive: startByte + Buffer.byteLength(authorityText, 'utf8'),
       authorityText,
     };
   }
   const startByte =
-    firstLine.startByte +
-    Buffer.byteLength(exactLine.slice(0, characterOffset), 'utf8');
+    firstLine.startByte + Buffer.byteLength(exactLine.slice(0, characterOffset), 'utf8');
   return {
     startByte,
     endByteExclusive: startByte + Buffer.byteLength(needle, 'utf8'),
@@ -130,16 +116,14 @@ function sourceByteRange(snapshot, sourceBytes, base) {
 function classifyHeading(headingPath) {
   const nearest = String(headingPath.at(-1) || '').toLowerCase();
   if (/file map|files? to (add|modify)|path list/u.test(nearest)) return 'file_map';
-  if (/completion evidence|completion criteria|acceptance criteria/u.test(nearest)) return 'completion_criteria';
+  if (/completion evidence|completion criteria|acceptance criteria/u.test(nearest))
+    return 'completion_criteria';
   if (/release|public release/u.test(nearest)) return 'release_gate';
   if (/risk|failure|rollback|stop condition|recovery/u.test(nearest)) return 'failure_handling';
   if (/observability|receipt|evidence|log/u.test(nearest)) return 'observability';
-  if (/public[- ]surface|install surface|skill surface/u.test(nearest)) return 'public_surface_scan';
-  if (
-    /\btasks?\b|implementation (?:rules?|steps?|tasks?)|task breakdown/u.test(
-      nearest
-    )
-  ) {
+  if (/public[- ]surface|install surface|skill surface/u.test(nearest))
+    return 'public_surface_scan';
+  if (/\btasks?\b|implementation (?:rules?|steps?|tasks?)|task breakdown/u.test(nearest)) {
     return 'heading_execution_segment';
   }
   return 'heading_requirement';
@@ -149,7 +133,8 @@ function classifyText(text, headingPath) {
   const lower = `${headingPath.at(-1) || ''} ${text}`.toLowerCase();
   if (/```|npm |npx |node |pwsh|powershell|vitest|rg /u.test(lower)) return 'command_block';
   if (/file map|create `|modify `|path|packages\/|_bmad\/|tests\//u.test(lower)) return 'file_map';
-  if (/completion evidence|completion criteria|acceptance|must exist|done/u.test(lower)) return 'completion_criteria';
+  if (/completion evidence|completion criteria|acceptance|must exist|done/u.test(lower))
+    return 'completion_criteria';
   if (/release|publication|publish/u.test(lower)) return 'release_gate';
   if (/risk|fail|failure|stop|rollback|recover|blocked/u.test(lower)) return 'failure_handling';
   if (/observability|receipt|evidence|log|hash/u.test(lower)) return 'observability';
@@ -158,17 +143,27 @@ function classifyText(text, headingPath) {
 }
 
 function parseDeclaredId(text) {
-  const listMatch =
-    /^(?:[-*]|\d+\.)\s+(?:\[[ xX]\]\s*)?([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+)\b/u.exec(
-      text
-    );
-  if (listMatch) return listMatch[1];
-  const taskHeadingMatch =
-    /^Task\s+([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+)\b/u.exec(text);
+  const listMatch = /^(?:[-*]|\d+\.)\s+(\[[ xX]\]\s*)?([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+)\b(.*)$/u.exec(
+    text
+  );
+  if (listMatch && (listMatch[1] || /^\s*[:：]/u.test(listMatch[3]))) {
+    return listMatch[2];
+  }
+  const taskHeadingMatch = /^Task\s+([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+)\b/u.exec(text);
   return taskHeadingMatch?.[1] || null;
 }
 
 function classifyDeclaredObligation(text, headingPath, fallbackKind) {
+  const declaredId = parseDeclaredId(text);
+  if (/^AC-/u.test(declaredId || '')) return 'acceptance_condition';
+  if (/^EVD-/u.test(declaredId || '')) return 'evidence_contract';
+  if (/^CMD-/u.test(declaredId || '')) return 'verification_command';
+  if (
+    declaredId &&
+    new RegExp(`^Task\\s+${declaredId.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}\\b`, 'u').test(text)
+  ) {
+    return 'declared_execution_task';
+  }
   const nearestHeading = String(headingPath.at(-1) || '').toLowerCase();
   if (/^task\s+[a-z][a-z0-9]*(?:-[a-z0-9]+)+\b/u.test(nearestHeading)) {
     return 'declared_execution_task';
@@ -192,6 +187,12 @@ function classifyDeclaredObligation(text, headingPath, fallbackKind) {
   return fallbackKind;
 }
 
+function isExplicitTaskHeading(obligation) {
+  if (!obligation.declaredId) return false;
+  const escapedId = obligation.id.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+  return new RegExp(`^Task\\s+${escapedId}\\b`, 'u').test(obligation.exactText);
+}
+
 function extractReferencedIds(text, declaredId) {
   return [
     ...new Set(
@@ -210,9 +211,7 @@ function extractDependencyRefs(text, declaredId) {
   return [
     ...new Set(
       relationPatterns.flatMap((pattern) =>
-        [...text.matchAll(pattern)].flatMap((match) =>
-          extractReferencedIds(match[1], declaredId)
-        )
+        [...text.matchAll(pattern)].flatMap((match) => extractReferencedIds(match[1], declaredId))
       )
     ),
   ].sort();
@@ -237,9 +236,7 @@ function validateStructuredSourceObligations(sourceObligations) {
   try {
     validateDeterministicSourceObligations(validationObligations);
   } catch (error) {
-    const original = sourceObligations.find(
-      (obligation) => obligation.id === error.sourceId
-    );
+    const original = sourceObligations.find((obligation) => obligation.id === error.sourceId);
     if (original) error.sourceExcerpt = original.text.slice(0, 500);
     throw error;
   }
@@ -255,9 +252,7 @@ function normativeStrength(text) {
 function makeObligation(index, base, snapshot, legacyIds) {
   const exactText = normalizeLineEndings(base.text).trim();
   const text = exactText;
-  const identityText = normalizeLineEndings(
-    base.authorityText || exactText
-  ).trim();
+  const identityText = normalizeLineEndings(base.authorityText || exactText).trim();
   const textHash = sha256Text(text);
   const sourceRef = `${base.sourcePlanPath}:${base.lineStart}-${base.lineEnd}`;
   const declaredId = legacyIds ? null : parseDeclaredId(text);
@@ -267,17 +262,13 @@ function makeObligation(index, base, snapshot, legacyIds) {
     ? declaredId
     : legacyIds
       ? `SRC${String(index + 1).padStart(3, '0')}`
-      : `SRC-${sha256Text(
-          `${snapshot.aggregateHash}:${base.lineStart}:${identityText}`
-        )
+      : `SRC-${sha256Text(`${snapshot.aggregateHash}:${base.lineStart}:${identityText}`)
           .slice(7, 19)
           .toUpperCase()}`;
   return {
     id,
     declaredId: Boolean(declaredId),
-    kind: declaredId
-      ? classifyDeclaredObligation(text, base.headingPath, base.kind)
-      : base.kind,
+    kind: declaredId ? classifyDeclaredObligation(text, base.headingPath, base.kind) : base.kind,
     normativeStrength: normativeStrength(text),
     sourcePlanPath: base.sourcePlanPath,
     sourceSnapshotHash: snapshot.aggregateHash,
@@ -312,17 +303,12 @@ function canonicalSourceObligationGraph({
   sourceObligations,
   specSpanRegistryHash,
 }) {
-  if (
-    typeof sourceSnapshotHash !== 'string' ||
-    !Array.isArray(sourceObligations)
-  ) {
+  if (typeof sourceSnapshotHash !== 'string' || !Array.isArray(sourceObligations)) {
     throw failure('source_obligation_graph_invalid');
   }
   const obligationRegistryHashes = [
     ...new Set(
-      sourceObligations
-        .map((obligation) => obligation.specSpanRegistryHash)
-        .filter(Boolean)
+      sourceObligations.map((obligation) => obligation.specSpanRegistryHash).filter(Boolean)
     ),
   ];
   if (obligationRegistryHashes.length > 1) {
@@ -330,8 +316,7 @@ function canonicalSourceObligationGraph({
       reason: 'multiple_spec_span_registries',
     });
   }
-  const effectiveSpecSpanRegistryHash =
-    specSpanRegistryHash || obligationRegistryHashes[0];
+  const effectiveSpecSpanRegistryHash = specSpanRegistryHash || obligationRegistryHashes[0];
   return {
     schemaVersion: 'goal-contract-source-obligation-graph/v1',
     sourceSnapshotHash,
@@ -534,17 +519,23 @@ function extractSourceObligations(
     });
   }
 
-  const sourceObligations = rawObligations
+  let sourceObligations = rawObligations
     .filter((item) => item.text && item.text.trim())
     .map((item, index) => makeObligation(index, item, snapshot, legacyIds));
+  if (sourceObligations.some(isExplicitTaskHeading)) {
+    sourceObligations = sourceObligations.map((obligation) =>
+      obligation.kind === 'declared_execution_task' && !isExplicitTaskHeading(obligation)
+        ? {
+            ...obligation,
+            kind: classifyText(obligation.exactText, obligation.headingPath),
+          }
+        : obligation
+    );
+  }
 
-  const declaredIds = sourceObligations
-    .filter((item) => item.declaredId)
-    .map((item) => item.id);
+  const declaredIds = sourceObligations.filter((item) => item.declaredId).map((item) => item.id);
   const duplicateIds = [
-    ...new Set(
-      declaredIds.filter((id, index) => declaredIds.indexOf(id) !== index)
-    ),
+    ...new Set(declaredIds.filter((id, index) => declaredIds.indexOf(id) !== index)),
   ].sort();
   if (duplicateIds.length > 0) {
     throw failure('source_obligation_id_duplicate', { duplicateIds });
@@ -567,8 +558,11 @@ function extractSourceObligations(
     if (!legacyIds && error.failureClass === 'non_deterministic_source_obligation') {
       throw failure('source_obligation_classification_ambiguous', {
         sourceId: error.sourceId,
+        lineStart: error.lineStart,
+        lineEnd: error.lineEnd,
         matchedPhrase: error.matchedPhrase,
         sourceExcerpt: error.sourceExcerpt,
+        repairHint: error.repairHint,
       });
     }
     throw error;
@@ -587,9 +581,7 @@ function extractSourceObligations(
     })),
   });
   const spanByObligationId = new Map(
-    specSpanRegistry.specSpans.flatMap((span) =>
-      span.sourceObligationIds.map((id) => [id, span])
-    )
+    specSpanRegistry.specSpans.flatMap((span) => span.sourceObligationIds.map((id) => [id, span]))
   );
   const boundSourceObligations = sourceObligations.map((obligation) => {
     const span = spanByObligationId.get(obligation.id);
@@ -630,9 +622,7 @@ function extractSourceObligations(
     specSpanRegistry,
     specSpanRegistryHash: specSpanRegistry.specSpanRegistryHash,
     sourceObligationGraph,
-    sourceObligationGraphHash: hashSourceObligationGraph(
-      sourceObligationGraph
-    ),
+    sourceObligationGraphHash: hashSourceObligationGraph(sourceObligationGraph),
     diagnostics: {
       obligationCount: sourceObligations.length,
     },

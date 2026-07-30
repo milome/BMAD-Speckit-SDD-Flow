@@ -3,9 +3,7 @@ const {
   assertCanonicalComponentGraph,
   deriveEffectiveComponentDependencies,
 } = require('./partition-components.ts');
-const {
-  compileExecutionProjection,
-} = require('./execution-projection.ts');
+const { compileExecutionProjection } = require('./execution-projection.ts');
 
 export type GoalContractPartitionOptimizerModule = never;
 
@@ -30,23 +28,15 @@ function sha256(value) {
   return `sha256:${createHash('sha256').update(String(value)).digest('hex')}`;
 }
 
-function assertCanonicalExecutionProjection({
-  executionProjection,
-  projectionAuthority,
-}) {
+function assertCanonicalExecutionProjection({ executionProjection, projectionAuthority }) {
   if (!projectionAuthority || typeof projectionAuthority !== 'object') {
     throw failure('execution_projection_authority_missing');
   }
   const canonicalProjection = compileExecutionProjection(projectionAuthority);
-  if (
-    stableStringify(executionProjection) !==
-    stableStringify(canonicalProjection)
-  ) {
+  if (stableStringify(executionProjection) !== stableStringify(canonicalProjection)) {
     throw failure('execution_projection_currentness_mismatch', {
-      expectedExecutionProjectionHash:
-        canonicalProjection.executionProjectionHash,
-      actualExecutionProjectionHash:
-        executionProjection?.executionProjectionHash || null,
+      expectedExecutionProjectionHash: canonicalProjection.executionProjectionHash,
+      actualExecutionProjectionHash: executionProjection?.executionProjectionHash || null,
     });
   }
   return canonicalProjection;
@@ -91,6 +81,19 @@ function sum(values) {
   return values.reduce((total, value) => total + value, 0);
 }
 
+function sharedAtomicGroupRefs(taskIds, executionProjection) {
+  const taskById = new Map(
+    (executionProjection.atomicTasks || []).map((task) => [task.taskId, task])
+  );
+  const groups = taskIds.map((taskId) => new Set(taskById.get(taskId)?.atomicGroupRefs || []));
+  if (groups.length === 0 || groups.some((refs) => refs.size === 0)) return [];
+  return [...groups[0]].filter((groupRef) => groups.slice(1).every((refs) => refs.has(groupRef)));
+}
+
+function hasAtomicWriteScopeAuthority(taskIds, executionProjection) {
+  return sharedAtomicGroupRefs(taskIds, executionProjection).length > 0;
+}
+
 function canonicalGraphSeed(componentGraph) {
   return {
     components: [...componentGraph.components]
@@ -109,32 +112,22 @@ function canonicalGraphSeed(componentGraph) {
         toComponentId: edge.toComponentId,
         reasonCodes: unique(edge.reasonCodes || []),
       }))
-      .sort((left, right) =>
-        stableStringify(left).localeCompare(stableStringify(right))
-      ),
+      .sort((left, right) => stableStringify(left).localeCompare(stableStringify(right))),
     sharedArtifactOwnership: [...(componentGraph.sharedArtifactOwnership || [])]
       .map((ownership) => ({
         fileScopeId: ownership.fileScopeId,
         path: ownership.path,
         ownerComponentId: ownership.ownerComponentId,
-        participatingComponentIds: unique(
-          ownership.participatingComponentIds || []
-        ),
+        participatingComponentIds: unique(ownership.participatingComponentIds || []),
       }))
-      .sort((left, right) =>
-        stableStringify(left).localeCompare(stableStringify(right))
-      ),
-    integrationFanInOwnership: [
-      ...(componentGraph.integrationFanInOwnership || []),
-    ]
+      .sort((left, right) => stableStringify(left).localeCompare(stableStringify(right))),
+    integrationFanInOwnership: [...(componentGraph.integrationFanInOwnership || [])]
       .map((ownership) => ({
         joinId: ownership.joinId,
         ownerComponentId: ownership.ownerComponentId,
         inputComponentIds: unique(ownership.inputComponentIds || []),
       }))
-      .sort((left, right) =>
-        stableStringify(left).localeCompare(stableStringify(right))
-      ),
+      .sort((left, right) => stableStringify(left).localeCompare(stableStringify(right))),
   };
 }
 
@@ -144,13 +137,9 @@ function assertExecutionProjectionIdentity(executionProjection) {
       reason: 'execution_projection_missing',
     });
   }
-  const {
-    executionProjectionHash: actualExecutionProjectionHash,
-    ...semanticProjection
-  } = executionProjection;
-  const expectedExecutionProjectionHash = sha256(
-    stableStringify(semanticProjection)
-  );
+  const { executionProjectionHash: actualExecutionProjectionHash, ...semanticProjection } =
+    executionProjection;
+  const expectedExecutionProjectionHash = sha256(stableStringify(semanticProjection));
   if (actualExecutionProjectionHash !== expectedExecutionProjectionHash) {
     throw failure('partition_policy_compilation_identity_mismatch', {
       reason: 'execution_projection_hash_mismatch',
@@ -198,32 +187,24 @@ function expectedComponentProjectionSemantic({
 }) {
   const traceSliceIds = unique(component.traceSliceIds || []);
   const slices = traceSliceIds.map((sliceId) => sliceById.get(sliceId));
-  const atomicTaskIds = unique(
-    slices.flatMap((slice) => slice?.taskIds || [])
-  );
+  const atomicTaskIds = unique(slices.flatMap((slice) => slice?.taskIds || []));
   const taskIdSet = new Set(atomicTaskIds);
   const sourceIds = unique(slices.flatMap((slice) => slice?.sourceIds || []));
   const completionPredicateIds = unique(
     slices.flatMap((slice) => slice?.completionPredicateIds || [])
   );
-  const evidenceContractIds = unique(
-    slices.flatMap((slice) => slice?.evidenceContractIds || [])
-  );
+  const evidenceContractIds = unique(slices.flatMap((slice) => slice?.evidenceContractIds || []));
   const sequenceConstraintIds = unique(
     slices.flatMap((slice) => slice?.sequenceConstraintIds || [])
   );
   const productionEntryIds = unique(
     (executionProjection.productionEntryIndex || [])
-      .filter((entry) =>
-        (entry.taskIds || []).some((taskId) => taskIdSet.has(taskId))
-      )
+      .filter((entry) => (entry.taskIds || []).some((taskId) => taskIdSet.has(taskId)))
       .map((entry) => entry.productionEntryId)
   );
   const fileScopeIds = unique(
     (executionProjection.fileScopeIndex || [])
-      .filter((entry) =>
-        (entry.taskIds || []).some((taskId) => taskIdSet.has(taskId))
-      )
+      .filter((entry) => (entry.taskIds || []).some((taskId) => taskIdSet.has(taskId)))
       .map((entry) => entry.fileScopeId)
   );
   let declaredTaskMinutes = 0;
@@ -231,35 +212,22 @@ function expectedComponentProjectionSemantic({
   let derivedTaskCount = 0;
   for (const taskId of atomicTaskIds) {
     const task = taskById.get(taskId);
-    if (
-      Number.isInteger(task?.estimatedClosureMinutes) &&
-      task.estimatedClosureMinutes > 0
-    ) {
+    if (Number.isInteger(task?.estimatedClosureMinutes) && task.estimatedClosureMinutes > 0) {
       declaredTaskMinutes += task.estimatedClosureMinutes;
       continue;
     }
     derivedTaskCount += 1;
     derivedTaskMinutes +=
-      30 +
-      (task?.dependencyIds?.length || 0) * 5 +
-      (task?.sequenceConstraintIds?.length || 0) * 5;
+      30 + (task?.dependencyIds?.length || 0) * 5 + (task?.sequenceConstraintIds?.length || 0) * 5;
   }
   const verificationMinutes =
-    derivedTaskCount === 0
-      ? 0
-      : completionPredicateIds.length * 5 +
-        evidenceContractIds.length * 5;
+    derivedTaskCount === 0 ? 0 : completionPredicateIds.length * 5 + evidenceContractIds.length * 5;
   const coordinationMinutes =
     derivedTaskCount === 0
       ? 0
-      : fileScopeIds.length * 3 +
-        productionEntryIds.length * 5 +
-        sequenceConstraintIds.length * 5;
+      : fileScopeIds.length * 3 + productionEntryIds.length * 5 + sequenceConstraintIds.length * 5;
   const totalMinutes =
-    declaredTaskMinutes +
-    derivedTaskMinutes +
-    verificationMinutes +
-    coordinationMinutes;
+    declaredTaskMinutes + derivedTaskMinutes + verificationMinutes + coordinationMinutes;
   return {
     atomicTaskIds,
     sourceIds,
@@ -268,9 +236,7 @@ function expectedComponentProjectionSemantic({
     sequenceConstraintIds,
     productionEntryIds,
     fileScopeIds,
-    verificationOnly: slices.every(
-      (slice) => slice?.verificationOnly === true
-    ),
+    verificationOnly: slices.every((slice) => slice?.verificationOnly === true),
     estimatedClosureMinutes: totalMinutes,
     closureMinuteBreakdown: {
       declaredTaskMinutes,
@@ -282,18 +248,11 @@ function expectedComponentProjectionSemantic({
   };
 }
 
-function assertComponentProjectionSemantics({
-  componentGraph,
-  executionProjection,
-}) {
+function assertComponentProjectionSemantics({ componentGraph, executionProjection }) {
   const slices = executionProjection.traceSlices || [];
   const tasks = executionProjection.atomicTasks || [];
-  const sliceById = new Map(
-    slices.map((slice) => [slice.sliceId, slice] as const)
-  );
-  const taskById = new Map(
-    tasks.map((task) => [task.taskId, task] as const)
-  );
+  const sliceById = new Map(slices.map((slice) => [slice.sliceId, slice] as const));
+  const taskById = new Map(tasks.map((task) => [task.taskId, task] as const));
   for (const component of componentGraph.components || []) {
     const expected = expectedComponentProjectionSemantic({
       component,
@@ -304,13 +263,9 @@ function assertComponentProjectionSemantics({
     const actual = {
       atomicTaskIds: unique(component.atomicTaskIds || []),
       sourceIds: unique(component.sourceIds || []),
-      completionPredicateIds: unique(
-        component.completionPredicateIds || []
-      ),
+      completionPredicateIds: unique(component.completionPredicateIds || []),
       evidenceContractIds: unique(component.evidenceContractIds || []),
-      sequenceConstraintIds: unique(
-        component.sequenceConstraintIds || []
-      ),
+      sequenceConstraintIds: unique(component.sequenceConstraintIds || []),
       productionEntryIds: unique(component.productionEntryIds || []),
       fileScopeIds: unique(component.fileScopeIds || []),
       verificationOnly: component.verificationOnly === true,
@@ -325,14 +280,8 @@ function assertComponentProjectionSemantics({
       'sequenceConstraintIds',
       'productionEntryIds',
       'fileScopeIds',
-    ].some(
-      (field) =>
-        (component[field] || []).length !== actual[field].length
-    );
-    if (
-      hasDuplicateSemanticIds ||
-      stableStringify(actual) !== stableStringify(expected)
-    ) {
+    ].some((field) => (component[field] || []).length !== actual[field].length);
+    if (hasDuplicateSemanticIds || stableStringify(actual) !== stableStringify(expected)) {
       throw failure('partition_policy_compilation_identity_mismatch', {
         reason: 'component_projection_semantic_mismatch',
         componentId: component.componentId,
@@ -350,10 +299,7 @@ function assertOptimizerInputs({
   projectionAuthority,
 }) {
   assertExecutionProjectionIdentity(executionProjection);
-  const requiresProjectionAuthority = Object.hasOwn(
-    executionProjection,
-    'traceGraphHash'
-  );
+  const requiresProjectionAuthority = Object.hasOwn(executionProjection, 'traceGraphHash');
   if (requiresProjectionAuthority && !projectionAuthority) {
     throw failure('partition_policy_compilation_identity_mismatch', {
       reason: 'execution_projection_authority_missing',
@@ -376,27 +322,24 @@ function assertOptimizerInputs({
     'sourceSnapshotHash',
     'semanticModelHash',
     'executionProjectionHash',
-  ].filter(
-    (field) => policyBinding?.[field] !== executionProjection?.[field]
-  );
-  if (
-    componentGraph?.executionProjectionHash !==
-    executionProjection?.executionProjectionHash
-  ) {
+  ].filter((field) => policyBinding?.[field] !== executionProjection?.[field]);
+  if (componentGraph?.executionProjectionHash !== executionProjection?.executionProjectionHash) {
     mismatchedFields.push('componentGraph.executionProjectionHash');
   }
   if (mismatchedFields.length > 0) {
     throw failure('partition_policy_compilation_identity_mismatch', {
       mismatchedFields,
       expected: Object.fromEntries(
-        ['sourceSnapshotHash', 'semanticModelHash', 'executionProjectionHash'].map(
-          (field) => [field, executionProjection?.[field]]
-        )
+        ['sourceSnapshotHash', 'semanticModelHash', 'executionProjectionHash'].map((field) => [
+          field,
+          executionProjection?.[field],
+        ])
       ),
       actual: Object.fromEntries(
-        ['sourceSnapshotHash', 'semanticModelHash', 'executionProjectionHash'].map(
-          (field) => [field, policyBinding?.[field]]
-        )
+        ['sourceSnapshotHash', 'semanticModelHash', 'executionProjectionHash'].map((field) => [
+          field,
+          policyBinding?.[field],
+        ])
       ),
     });
   }
@@ -430,10 +373,7 @@ function assertOptimizerInputs({
   const sliceOwners = new Map();
   const taskOwners = new Map();
   for (const component of componentGraph.components || []) {
-    if (
-      Object.hasOwn(component, 'partitionRole') ||
-      Object.hasOwn(component, 'finalIntegration')
-    ) {
+    if (Object.hasOwn(component, 'partitionRole') || Object.hasOwn(component, 'finalIntegration')) {
       throw failure('partition_role_authority_override_forbidden');
     }
     if (
@@ -505,16 +445,13 @@ function assertOptimizerInputs({
     const componentTaskIds = new Set(component.atomicTaskIds || []);
     const expectedFileScopeIds = unique(
       (executionProjection.fileScopeIndex || [])
-        .filter((entry) =>
-          (entry.taskIds || []).some((taskId) => componentTaskIds.has(taskId))
-        )
+        .filter((entry) => (entry.taskIds || []).some((taskId) => componentTaskIds.has(taskId)))
         .map((entry) => entry.fileScopeId)
     );
     const actualFileScopeIds = component.fileScopeIds || [];
     if (
       new Set(actualFileScopeIds).size !== actualFileScopeIds.length ||
-      stableStringify(unique(actualFileScopeIds)) !==
-        stableStringify(expectedFileScopeIds)
+      stableStringify(unique(actualFileScopeIds)) !== stableStringify(expectedFileScopeIds)
     ) {
       throw failure('partition_policy_compilation_identity_mismatch', {
         reason: 'component_file_scope_projection_mismatch',
@@ -560,9 +497,7 @@ function aggregateMinuteBreakdown(components) {
 
 function deriveRole(componentIds, componentGraph, effectiveDependencies) {
   const finalOwners = new Set(
-    (componentGraph.integrationFanInOwnership || []).map(
-      (ownership) => ownership.ownerComponentId
-    )
+    (componentGraph.integrationFanInOwnership || []).map((ownership) => ownership.ownerComponentId)
   );
   if (componentIds.some((componentId) => finalOwners.has(componentId))) {
     return 'final_integration';
@@ -575,19 +510,14 @@ function deriveRole(componentIds, componentGraph, effectiveDependencies) {
     components.length > 0 &&
     components.every(
       (component) =>
-        component.verificationOnly === true &&
-        (component.fileScopeIds || []).length === 0
+        component.verificationOnly === true && (component.fileScopeIds || []).length === 0
     );
   if (!verificationOnly) return 'implementation';
   const incoming = (effectiveDependencies || []).some(
-    (edge) =>
-      componentIdSet.has(edge.toComponentId) &&
-      !componentIdSet.has(edge.fromComponentId)
+    (edge) => componentIdSet.has(edge.toComponentId) && !componentIdSet.has(edge.fromComponentId)
   );
   const outgoing = (effectiveDependencies || []).some(
-    (edge) =>
-      componentIdSet.has(edge.fromComponentId) &&
-      !componentIdSet.has(edge.toComponentId)
+    (edge) => componentIdSet.has(edge.fromComponentId) && !componentIdSet.has(edge.toComponentId)
   );
   if (!incoming) return 'implementation';
   return outgoing ? 'integration' : 'final_integration';
@@ -602,26 +532,18 @@ function buildCandidate({
   policyBinding,
 }) {
   const componentById = new Map(
-    orderedComponents.map(
-      (component) => [component.componentId, component] as const
-    )
+    orderedComponents.map((component) => [component.componentId, component] as const)
   );
   const componentToPartition = new Map();
   const partitions = groups.map((componentIds, index) => {
     for (const componentId of componentIds) {
       componentToPartition.set(componentId, index);
     }
-    const components = componentIds.map((componentId) =>
-      componentById.get(componentId)
-    );
+    const components = componentIds.map((componentId) => componentById.get(componentId));
     const estimatedClosureMinutes = sum(
       components.map((component) => component.estimatedClosureMinutes)
     );
-    const partitionRole = deriveRole(
-      componentIds,
-      componentGraph,
-      effectiveDependencies
-    );
+    const partitionRole = deriveRole(componentIds, componentGraph, effectiveDependencies);
     return {
       componentIds,
       components,
@@ -709,34 +631,19 @@ function deriveCandidateMembershipState({
   );
   const projectionSlices = executionProjection?.traceSlices || [];
   const projectionTasks = executionProjection?.atomicTasks || [];
-  const projectionSliceById = new Map<
-    string,
-    { taskIds?: string[] }
-  >(
-    projectionSlices.map(
-      (slice) =>
-        [slice.sliceId, slice] as [string, { taskIds?: string[] }]
-    )
+  const projectionSliceById = new Map<string, { taskIds?: string[] }>(
+    projectionSlices.map((slice) => [slice.sliceId, slice] as [string, { taskIds?: string[] }])
   );
-  const projectionTaskById = new Map<
-    string,
-    { ownerSliceId?: string }
-  >(
-    projectionTasks.map(
-      (task) =>
-        [task.taskId, task] as [string, { ownerSliceId?: string }]
-    )
+  const projectionTaskById = new Map<string, { ownerSliceId?: string }>(
+    projectionTasks.map((task) => [task.taskId, task] as [string, { ownerSliceId?: string }])
   );
   const graphTraceSliceIds = unique(
     components.flatMap((component) => component.traceSliceIds || [])
   );
-  const graphTaskIds = unique(
-    components.flatMap((component) => component.atomicTaskIds || [])
-  );
+  const graphTaskIds = unique(components.flatMap((component) => component.atomicTaskIds || []));
   if (
     projectionSliceById.size !== projectionSlices.length ||
-    stableStringify(graphTraceSliceIds) !==
-      stableStringify(unique(projectionSliceById.keys()))
+    stableStringify(graphTraceSliceIds) !== stableStringify(unique(projectionSliceById.keys()))
   ) {
     throw failure('partition_no_valid_solution', {
       reason: 'candidate_trace_slice_projection_mismatch',
@@ -744,8 +651,7 @@ function deriveCandidateMembershipState({
   }
   if (
     projectionTaskById.size !== projectionTasks.length ||
-    stableStringify(graphTaskIds) !==
-      stableStringify(unique(projectionTaskById.keys()))
+    stableStringify(graphTaskIds) !== stableStringify(unique(projectionTaskById.keys()))
   ) {
     throw failure('partition_no_valid_solution', {
       reason: 'candidate_atomic_task_projection_mismatch',
@@ -753,12 +659,8 @@ function deriveCandidateMembershipState({
   }
 
   for (const component of components) {
-    const componentTraceSliceIds = new Set<string>(
-      (component.traceSliceIds || []) as string[]
-    );
-    const componentTaskIds = new Set<string>(
-      (component.atomicTaskIds || []) as string[]
-    );
+    const componentTraceSliceIds = new Set<string>((component.traceSliceIds || []) as string[]);
+    const componentTaskIds = new Set<string>((component.atomicTaskIds || []) as string[]);
     for (const traceSliceId of componentTraceSliceIds) {
       const traceSlice = projectionSliceById.get(traceSliceId);
       if (
@@ -774,10 +676,7 @@ function deriveCandidateMembershipState({
     }
     for (const taskId of componentTaskIds) {
       const task = projectionTaskById.get(taskId);
-      if (
-        !task ||
-        (task.ownerSliceId && !componentTraceSliceIds.has(task.ownerSliceId))
-      ) {
+      if (!task || (task.ownerSliceId && !componentTraceSliceIds.has(task.ownerSliceId))) {
         throw failure('partition_no_valid_solution', {
           reason: 'candidate_component_projection_mismatch',
           componentId: component.componentId,
@@ -805,10 +704,7 @@ function deriveCandidateMembershipState({
       });
     }
     for (const componentId of componentIds) {
-      if (
-        !componentById.has(componentId) ||
-        partitionByComponent.has(componentId)
-      ) {
+      if (!componentById.has(componentId) || partitionByComponent.has(componentId)) {
         throw failure('partition_no_valid_solution', {
           reason: 'candidate_component_coverage_mismatch',
           componentId,
@@ -838,16 +734,10 @@ function deriveCandidateMembershipState({
       primaryTaskIds: unique(
         partitionComponents.flatMap((component) => component.atomicTaskIds || [])
       ),
-      partitionRole: deriveRole(
-        primaryComponentIds,
-        componentGraph,
-        effectiveDependencies
-      ),
+      partitionRole: deriveRole(primaryComponentIds, componentGraph, effectiveDependencies),
       partitionRoleDerived: true,
       estimatedClosureMinutes: sum(
-        partitionComponents.map(
-          (component) => component.estimatedClosureMinutes
-        )
+        partitionComponents.map((component) => component.estimatedClosureMinutes)
       ),
       closureMinuteBreakdown: aggregateMinuteBreakdown(partitionComponents),
       primaryWriteScopeOwnerCount: unique(
@@ -867,13 +757,12 @@ function validatePartitionCandidate({
   partitionPolicyHash,
   effectiveDependencies = deriveEffectiveComponentDependencies(componentGraph),
 }) {
-  const { expectedPartitions, partitionByComponent } =
-    deriveCandidateMembershipState({
-      candidate,
-      componentGraph,
-      executionProjection,
-      effectiveDependencies,
-    });
+  const { expectedPartitions, partitionByComponent } = deriveCandidateMembershipState({
+    candidate,
+    componentGraph,
+    executionProjection,
+    effectiveDependencies,
+  });
   const maximum = policy.limits.maxClosureMinutesPerPartition;
   for (const partition of candidate.partitions || []) {
     if (partition.estimatedClosureMinutes > maximum) {
@@ -885,7 +774,8 @@ function validatePartitionCandidate({
     }
     if (
       partition.primaryWriteScopeOwnerCount >
-      policy.limits.maxPrimaryWriteScopeOwnersPerPartition
+        policy.limits.maxPrimaryWriteScopeOwnersPerPartition &&
+      !hasAtomicWriteScopeAuthority(partition.primaryTaskIds, executionProjection)
     ) {
       throw failure('partition_no_valid_solution', {
         partitionId: partition.partitionId,
@@ -894,11 +784,8 @@ function validatePartitionCandidate({
     }
     if (partition.partitionRole === 'final_integration') {
       const justified =
-        deriveRole(
-          partition.primaryComponentIds || [],
-          componentGraph,
-          effectiveDependencies
-        ) === 'final_integration';
+        deriveRole(partition.primaryComponentIds || [], componentGraph, effectiveDependencies) ===
+        'final_integration';
       if (!justified) {
         throw failure('partition_final_integration_not_required', {
           partitionId: partition.partitionId,
@@ -912,10 +799,7 @@ function validatePartitionCandidate({
   for (const edge of effectiveDependencies) {
     const predecessorIndex = partitionByComponent.get(edge.fromComponentId);
     const dependentIndex = partitionByComponent.get(edge.toComponentId);
-    if (
-      !Number.isInteger(predecessorIndex) ||
-      !Number.isInteger(dependentIndex)
-    ) {
+    if (!Number.isInteger(predecessorIndex) || !Number.isInteger(dependentIndex)) {
       throw failure('partition_atomic_component_split', {
         fromComponentId: edge.fromComponentId,
         toComponentId: edge.toComponentId,
@@ -961,16 +845,11 @@ function validatePartitionCandidate({
   const expectedPartitionIds = [];
   const expectedDependencyPartitionIdsByPartition = [];
   for (let index = 0; index < candidate.partitions.length; index += 1) {
-    const expectedDependencyPartitionIds = [
-      ...expectedDependencyIndexes[index],
-    ]
+    const expectedDependencyPartitionIds = [...expectedDependencyIndexes[index]]
       .sort((left, right) => left - right)
       .map((predecessorIndex) => expectedPartitionIds[predecessorIndex]);
-    expectedDependencyPartitionIdsByPartition.push(
-      expectedDependencyPartitionIds
-    );
-    const actualDependencyPartitionIds =
-      candidate.partitions[index].dependencyPartitionIds;
+    expectedDependencyPartitionIdsByPartition.push(expectedDependencyPartitionIds);
+    const actualDependencyPartitionIds = candidate.partitions[index].dependencyPartitionIds;
     if (
       !Array.isArray(actualDependencyPartitionIds) ||
       stableStringify(actualDependencyPartitionIds) !==
@@ -1005,8 +884,7 @@ function validatePartitionCandidate({
     graphSeed: canonicalGraphSeed(componentGraph),
     partitions: expectedPartitions.map((partition, index) => ({
       primaryComponentIds: partition.primaryComponentIds,
-      dependencyPartitionIds:
-        expectedDependencyPartitionIdsByPartition[index],
+      dependencyPartitionIds: expectedDependencyPartitionIdsByPartition[index],
       partitionRole: partition.partitionRole,
     })),
   };
@@ -1032,46 +910,32 @@ function validatePartitionCandidate({
   const expectedCrossPartitionDependencyCount = sum(
     expectedDependencyIndexes.map((dependencies) => dependencies.size)
   );
-  if (
-    candidate.crossPartitionDependencyCount !==
-    expectedCrossPartitionDependencyCount
-  ) {
+  if (candidate.crossPartitionDependencyCount !== expectedCrossPartitionDependencyCount) {
     throw failure('partition_no_valid_solution', {
       reason: 'cross_partition_dependency_count_mismatch',
       expectedCrossPartitionDependencyCount,
-      actualCrossPartitionDependencyCount:
-        candidate.crossPartitionDependencyCount,
+      actualCrossPartitionDependencyCount: candidate.crossPartitionDependencyCount,
     });
   }
   const maximumPartitionDependencyCount = Math.max(
     0,
     ...expectedDependencyIndexes.map((dependencies) => dependencies.size)
   );
-  if (
-    maximumPartitionDependencyCount >
-    policy.limits.maxCrossPartitionDependencies
-  ) {
+  if (maximumPartitionDependencyCount > policy.limits.maxCrossPartitionDependencies) {
     throw failure('partition_no_valid_solution', {
       reason: 'cross_partition_dependency_limit_exceeded',
       maximumPartitionDependencyCount,
       maximum: policy.limits.maxCrossPartitionDependencies,
     });
   }
-  const metrics = deriveCandidateMetrics(
-    candidate,
-    componentGraph,
-    effectiveDependencies
-  );
+  const metrics = deriveCandidateMetrics(candidate, componentGraph, effectiveDependencies);
   if (
-    candidate.compatibilityReceiptRequirementCount !==
-    metrics.compatibilityReceiptRequirementCount
+    candidate.compatibilityReceiptRequirementCount !== metrics.compatibilityReceiptRequirementCount
   ) {
     throw failure('partition_no_valid_solution', {
       reason: 'compatibility_requirement_count_mismatch',
-      expectedCompatibilityReceiptRequirementCount:
-        metrics.compatibilityReceiptRequirementCount,
-      actualCompatibilityReceiptRequirementCount:
-        candidate.compatibilityReceiptRequirementCount,
+      expectedCompatibilityReceiptRequirementCount: metrics.compatibilityReceiptRequirementCount,
+      actualCompatibilityReceiptRequirementCount: candidate.compatibilityReceiptRequirementCount,
     });
   }
   return Object.freeze({ decision: 'pass' });
@@ -1082,10 +946,7 @@ function deriveCandidateMetrics(
   componentGraph,
   effectiveDependencies = deriveEffectiveComponentDependencies(componentGraph)
 ) {
-  const componentById = new Map<
-    string,
-    { estimatedClosureMinutes: number; sourceIds?: unknown[] }
-  >(
+  const componentById = new Map<string, { estimatedClosureMinutes: number; sourceIds?: unknown[] }>(
     componentGraph.components.map(
       (component) =>
         [component.componentId, component] as [
@@ -1097,10 +958,7 @@ function deriveCandidateMetrics(
   const partitionByComponent = new Map<string, number>();
   for (let index = 0; index < candidate.partitions.length; index += 1) {
     for (const componentId of candidate.partitions[index].primaryComponentIds) {
-      if (
-        !componentById.has(componentId) ||
-        partitionByComponent.has(componentId)
-      ) {
+      if (!componentById.has(componentId) || partitionByComponent.has(componentId)) {
         throw failure('partition_no_valid_solution', {
           reason: 'candidate_component_coverage_mismatch',
           componentId,
@@ -1119,10 +977,7 @@ function deriveCandidateMetrics(
   for (const edge of effectiveDependencies) {
     const predecessorIndex = partitionByComponent.get(edge.fromComponentId);
     const dependentIndex = partitionByComponent.get(edge.toComponentId);
-    if (
-      !Number.isInteger(predecessorIndex) ||
-      !Number.isInteger(dependentIndex)
-    ) {
+    if (!Number.isInteger(predecessorIndex) || !Number.isInteger(dependentIndex)) {
       throw failure('partition_no_valid_solution', {
         reason: 'candidate_component_coverage_mismatch',
       });
@@ -1163,9 +1018,7 @@ function deriveCandidateMetrics(
     })
   );
   const finalOwners = new Set(
-    (componentGraph.integrationFanInOwnership || []).map(
-      (ownership) => ownership.ownerComponentId
-    )
+    (componentGraph.integrationFanInOwnership || []).map((ownership) => ownership.ownerComponentId)
   );
   return {
     compatibilityReceiptRequirementCount,
@@ -1173,14 +1026,10 @@ function deriveCandidateMetrics(
       partitionDependencies.map((dependencies) => dependencies.size)
     ),
     cohesionUnits: sum(
-      candidate.partitions.map((partition) =>
-        Math.max(0, partition.primaryComponentIds.length - 1)
-      )
+      candidate.partitions.map((partition) => Math.max(0, partition.primaryComponentIds.length - 1))
     ),
     finalIntegrationCount: candidate.partitions.filter((partition) =>
-      partition.primaryComponentIds.some((componentId) =>
-        finalOwners.has(componentId)
-      )
+      partition.primaryComponentIds.some((componentId) => finalOwners.has(componentId))
     ).length,
     partitionMinutes,
     sharedFileChurnUnits,
@@ -1193,11 +1042,7 @@ function scoreCandidate(
   componentGraph,
   policy,
   effectiveDependencies = deriveEffectiveComponentDependencies(componentGraph),
-  metrics = deriveCandidateMetrics(
-    candidate,
-    componentGraph,
-    effectiveDependencies
-  )
+  metrics = deriveCandidateMetrics(candidate, componentGraph, effectiveDependencies)
 ) {
   const target = policy.limits.targetClosureMinutesPerPartition;
   const closureDistance = sum(
@@ -1210,27 +1055,18 @@ function scoreCandidate(
   const imbalance =
     metrics.partitionMinutes.length < 2
       ? 0
-      : Math.max(...metrics.partitionMinutes) -
-        Math.min(...metrics.partitionMinutes);
+      : Math.max(...metrics.partitionMinutes) - Math.min(...metrics.partitionMinutes);
   const breakdown = {
-    dependencyCutCost:
-      metrics.crossPartitionDependencyCount * policy.weights.dependencyCut,
-    sharedFileChurnCost:
-      metrics.sharedFileChurnUnits * policy.weights.sharedFileChurn,
-    auditOverheadCost:
-      candidate.partitions.length * policy.weights.auditOverhead,
-    closureFragmentationCost:
-      closureDistance * policy.weights.closureFragmentation,
+    dependencyCutCost: metrics.crossPartitionDependencyCount * policy.weights.dependencyCut,
+    sharedFileChurnCost: metrics.sharedFileChurnUnits * policy.weights.sharedFileChurn,
+    auditOverheadCost: candidate.partitions.length * policy.weights.auditOverhead,
+    closureFragmentationCost: closureDistance * policy.weights.closureFragmentation,
     effortImbalanceCost: imbalance * policy.weights.effortImbalance,
     sourceBoundaryViolationCost:
-      metrics.sourceBoundaryViolationUnits *
-      policy.weights.sourceBoundaryViolation,
-    finalIntegrationCost:
-      metrics.finalIntegrationCount * policy.weights.finalIntegration,
-    semanticCohesionBenefit:
-      metrics.cohesionUnits * policy.weights.semanticCohesionBenefit,
-    evidenceLocalityBenefit:
-      metrics.cohesionUnits * policy.weights.evidenceLocalityBenefit,
+      metrics.sourceBoundaryViolationUnits * policy.weights.sourceBoundaryViolation,
+    finalIntegrationCost: metrics.finalIntegrationCount * policy.weights.finalIntegration,
+    semanticCohesionBenefit: metrics.cohesionUnits * policy.weights.semanticCohesionBenefit,
+    evidenceLocalityBenefit: metrics.cohesionUnits * policy.weights.evidenceLocalityBenefit,
   };
   const total =
     breakdown.dependencyCutCost +
@@ -1251,32 +1087,18 @@ function canonicalizeCandidateForSelection({
   policy,
   effectiveDependencies = deriveEffectiveComponentDependencies(componentGraph),
 }) {
-  const metrics = deriveCandidateMetrics(
-    candidate,
-    componentGraph,
-    effectiveDependencies
-  );
+  const metrics = deriveCandidateMetrics(candidate, componentGraph, effectiveDependencies);
   return Object.freeze({
     ...candidate,
     crossPartitionDependencyCount: metrics.crossPartitionDependencyCount,
-    compatibilityReceiptRequirementCount:
-      metrics.compatibilityReceiptRequirementCount,
-    score: scoreCandidate(
-      candidate,
-      componentGraph,
-      policy,
-      effectiveDependencies,
-      metrics
-    ),
+    compatibilityReceiptRequirementCount: metrics.compatibilityReceiptRequirementCount,
+    score: scoreCandidate(candidate, componentGraph, policy, effectiveDependencies, metrics),
   });
 }
 
 function predecessorMap(componentGraph, effectiveDependencies) {
   const predecessors: Map<string, Set<string>> = new Map(
-    componentGraph.components.map((component) => [
-      component.componentId,
-      new Set(),
-    ])
+    componentGraph.components.map((component) => [component.componentId, new Set()])
   );
   for (const edge of effectiveDependencies) {
     predecessors.get(edge.toComponentId)!.add(edge.fromComponentId);
@@ -1295,6 +1117,7 @@ function enumerateNextClosedGroups({
     max: maximumClosureMinutes,
   },
   maximumWriteScopes = Number.MAX_SAFE_INTEGER,
+  executionProjection = null,
   enumerationStats = null,
 }) {
   const assigned = new Set(assignedComponentIds);
@@ -1302,25 +1125,18 @@ function enumerateNextClosedGroups({
   const components = new Map<string, { estimatedClosureMinutes: number }>(
     componentGraph.components.map(
       (component) =>
-        [component.componentId, component] as [
-          string,
-          { estimatedClosureMinutes: number },
-        ]
+        [component.componentId, component] as [string, { estimatedClosureMinutes: number }]
     )
   );
   const predecessors = predecessorMap(componentGraph, effectiveDependencies);
   const anchor = orderedIds.find(
     (componentId) =>
       !assigned.has(componentId) &&
-      [...predecessors.get(componentId)!].every((dependencyId) =>
-        assigned.has(dependencyId)
-      )
+      [...predecessors.get(componentId)!].every((dependencyId) => assigned.has(dependencyId))
   );
   if (!anchor) return [];
   const finiteMaximumGroups =
-    Number.isInteger(maximumGroups) && maximumGroups > 0
-      ? maximumGroups
-      : 256;
+    Number.isInteger(maximumGroups) && maximumGroups > 0 ? maximumGroups : 256;
   let states = [{ selected: new Set<string>(), closureMinutes: 0 }];
 
   for (const componentId of orderedIds) {
@@ -1329,11 +1145,9 @@ function enumerateNextClosedGroups({
     const component = components.get(componentId)!;
     for (const state of states) {
       if (componentId !== anchor) nextStates.push(state);
-      const nextMinutes =
-        state.closureMinutes + component.estimatedClosureMinutes;
+      const nextMinutes = state.closureMinutes + component.estimatedClosureMinutes;
       const dependenciesClosed = [...predecessors.get(componentId)!].every(
-        (dependencyId) =>
-          assigned.has(dependencyId) || state.selected.has(dependencyId)
+        (dependencyId) => assigned.has(dependencyId) || state.selected.has(dependencyId)
       );
       if (dependenciesClosed && nextMinutes <= maximumClosureMinutes) {
         nextStates.push({
@@ -1353,22 +1167,20 @@ function enumerateNextClosedGroups({
         components,
         effectiveDependencies,
         targetClosureMinutes,
-        maximumWriteScopes
+        maximumWriteScopes,
+        executionProjection
       )
     );
     if (states.length > finiteMaximumGroups) {
       if (enumerationStats) {
-        enumerationStats.groupBeamPrunedCount +=
-          states.length - finiteMaximumGroups;
+        enumerationStats.groupBeamPrunedCount += states.length - finiteMaximumGroups;
       }
       states = states.slice(0, finiteMaximumGroups);
     }
   }
   return states
     .filter((state) => state.selected.has(anchor))
-    .map((state) =>
-      orderedIds.filter((componentId) => state.selected.has(componentId))
-    )
+    .map((state) => orderedIds.filter((componentId) => state.selected.has(componentId)))
     .sort((left, right) =>
       compareClosedGroups(
         left,
@@ -1376,9 +1188,10 @@ function enumerateNextClosedGroups({
         components,
         effectiveDependencies,
         targetClosureMinutes,
-        maximumWriteScopes
+        maximumWriteScopes,
+        executionProjection
       )
-  );
+    );
 }
 
 function componentSetKey(componentIds) {
@@ -1391,22 +1204,25 @@ function compareClosedGroups(
   componentById,
   effectiveDependencies,
   target,
-  maximumWriteScopes
+  maximumWriteScopes,
+  executionProjection = null
 ) {
   const minutes = (group) =>
     sum(group.map((componentId) => componentById.get(componentId).estimatedClosureMinutes));
-  const writeScopeCount = (group) =>
-    unique(
-      group.flatMap(
-        (componentId) => componentById.get(componentId).fileScopeIds || []
-      )
-    ).length;
+  const writeScopeCount = (group) => {
+    const taskIds = unique(
+      group.flatMap((componentId) => componentById.get(componentId).atomicTaskIds || [])
+    );
+    if (executionProjection && hasAtomicWriteScopeAuthority(taskIds, executionProjection)) {
+      return 0;
+    }
+    return unique(group.flatMap((componentId) => componentById.get(componentId).fileScopeIds || []))
+      .length;
+  };
   const internalDependencyCount = (group) => {
     const componentIds = new Set(group);
     return effectiveDependencies.filter(
-      (edge) =>
-        componentIds.has(edge.fromComponentId) &&
-        componentIds.has(edge.toComponentId)
+      (edge) => componentIds.has(edge.fromComponentId) && componentIds.has(edge.toComponentId)
     ).length;
   };
   const distance = (value) => {
@@ -1421,10 +1237,7 @@ function compareClosedGroups(
       Math.max(0, writeScopeCount(left) - maximumWriteScopes),
       Math.max(0, writeScopeCount(right) - maximumWriteScopes),
     ],
-    [
-      -internalDependencyCount(left),
-      -internalDependencyCount(right),
-    ],
+    [-internalDependencyCount(left), -internalDependencyCount(right)],
     [distance(leftMinutes), distance(rightMinutes)],
     [-leftMinutes, -rightMinutes],
     [stableStringify(left), stableStringify(right)],
@@ -1441,22 +1254,12 @@ function compareCandidates(left, right) {
     [left.score.total, right.score.total],
     [left.partitions.length, right.partitions.length],
     [left.crossPartitionDependencyCount, right.crossPartitionDependencyCount],
+    [left.compatibilityReceiptRequirementCount, right.compatibilityReceiptRequirementCount],
     [
-      left.compatibilityReceiptRequirementCount,
-      right.compatibilityReceiptRequirementCount,
+      stableStringify(left.partitions.map((partition) => partition.primaryTraceSliceIds)),
+      stableStringify(right.partitions.map((partition) => partition.primaryTraceSliceIds)),
     ],
-    [
-      stableStringify(
-        left.partitions.map((partition) => partition.primaryTraceSliceIds)
-      ),
-      stableStringify(
-        right.partitions.map((partition) => partition.primaryTraceSliceIds)
-      ),
-    ],
-    [
-      stableStringify(left.canonicalManifestSeed),
-      stableStringify(right.canonicalManifestSeed),
-    ],
+    [stableStringify(left.canonicalManifestSeed), stableStringify(right.canonicalManifestSeed)],
   ];
   for (const [leftValue, rightValue] of keys) {
     if (leftValue < rightValue) return -1;
@@ -1478,9 +1281,7 @@ function optimizePartitions({
     projectionAuthority,
   });
   const componentById = new Map(
-    componentGraph.components.map(
-      (component) => [component.componentId, component] as const
-    )
+    componentGraph.components.map((component) => [component.componentId, component] as const)
   );
   const orderedComponents = componentGraph.topologicalOrder.map((componentId) =>
     componentById.get(componentId)
@@ -1495,22 +1296,10 @@ function optimizePartitions({
   const frontiers = new Map();
   const boundedSearch = orderedComponents.length > 8;
   const maximumCandidateResults = boundedSearch
-    ? Math.max(
-        1,
-        Math.floor(
-          policy.limits.maxSearchStates /
-            policy.limits.maxCandidateFrontiers
-        )
-      )
+    ? Math.max(1, Math.floor(policy.limits.maxSearchStates / policy.limits.maxCandidateFrontiers))
     : Number.MAX_SAFE_INTEGER;
   const maximumGroupsPerFrontier = boundedSearch
-    ? Math.max(
-        1,
-        Math.floor(
-          policy.limits.maxSearchStates /
-            policy.limits.maxCandidateFrontiers
-        )
-      )
+    ? Math.max(1, Math.floor(policy.limits.maxSearchStates / policy.limits.maxCandidateFrontiers))
     : policy.limits.maxCandidateFrontiers;
   const minimumSearchStates = orderedComponents.length + 1;
   if (policy.limits.maxSearchStates < minimumSearchStates) {
@@ -1522,10 +1311,7 @@ function optimizePartitions({
   }
   const maxPrefixesPerFrontier = Math.max(
     1,
-    Math.floor(
-      policy.limits.maxSearchStates /
-        policy.limits.maxCandidateFrontiers
-    )
+    Math.floor(policy.limits.maxSearchStates / policy.limits.maxCandidateFrontiers)
   );
   const prefixKeysByFrontier = new Map();
   const nextGroupsByFrontier = new Map();
@@ -1581,10 +1367,8 @@ function optimizePartitions({
       });
       const candidate = {
         ...baseCandidate,
-        compatibilityReceiptRequirementCount: deriveCandidateMetrics(
-          baseCandidate,
-          componentGraph
-        ).compatibilityReceiptRequirementCount,
+        compatibilityReceiptRequirementCount: deriveCandidateMetrics(baseCandidate, componentGraph)
+          .compatibilityReceiptRequirementCount,
         candidateId: deriveCandidateId({
           partitionPolicyHash: policyBinding.partitionPolicyHash,
           canonicalManifestSeed: baseCandidate.canonicalManifestSeed,
@@ -1621,9 +1405,7 @@ function optimizePartitions({
             failureClass: error.failureClass,
             reason: error.reason || error.failureClass,
             partitionCount: candidate.partitions.length,
-            partitionIds: candidate.partitions.map(
-              (partition) => partition.partitionId
-            ),
+            partitionIds: candidate.partitions.map((partition) => partition.partitionId),
           })
         );
       }
@@ -1641,23 +1423,24 @@ function optimizePartitions({
         effectiveDependencies,
         maximumClosureMinutes: maximum,
         maximumGroups: maximumGroupsPerFrontier,
-        targetClosureMinutes:
-          policy.limits.targetClosureMinutesPerPartition,
-        maximumWriteScopes:
-          policy.limits.maxPrimaryWriteScopeOwnersPerPartition,
+        targetClosureMinutes: policy.limits.targetClosureMinutesPerPartition,
+        maximumWriteScopes: policy.limits.maxPrimaryWriteScopeOwnersPerPartition,
+        executionProjection,
         enumerationStats,
       });
       nextGroups = enumeratedGroups
-        .filter(
-          (group) =>
-            unique(
-              group.flatMap(
-                (componentId) =>
-                  componentById.get(componentId).fileScopeIds || []
-              )
-            ).length <=
-            policy.limits.maxPrimaryWriteScopeOwnersPerPartition
-        )
+        .filter((group) => {
+          const writeScopeCount = unique(
+            group.flatMap((componentId) => componentById.get(componentId).fileScopeIds || [])
+          ).length;
+          const taskIds = unique(
+            group.flatMap((componentId) => componentById.get(componentId).atomicTaskIds || [])
+          );
+          return (
+            writeScopeCount <= policy.limits.maxPrimaryWriteScopeOwnersPerPartition ||
+            hasAtomicWriteScopeAuthority(taskIds, executionProjection)
+          );
+        })
         .sort((left, right) =>
           compareClosedGroups(
             left,
@@ -1665,7 +1448,8 @@ function optimizePartitions({
             componentById,
             effectiveDependencies,
             policy.limits.targetClosureMinutesPerPartition,
-            policy.limits.maxPrimaryWriteScopeOwnersPerPartition
+            policy.limits.maxPrimaryWriteScopeOwnersPerPartition,
+            executionProjection
           )
         );
       hardRejectedGroupCount += enumeratedGroups.length - nextGroups.length;
@@ -1673,10 +1457,7 @@ function optimizePartitions({
     }
     for (const nextGroup of nextGroups) {
       if (boundedCandidateLimitReached) break;
-      visit(
-        new Set([...assignedComponentIds, ...nextGroup]),
-        [...groups, nextGroup]
-      );
+      visit(new Set([...assignedComponentIds, ...nextGroup]), [...groups, nextGroup]);
     }
   }
 
@@ -1731,9 +1512,7 @@ function optimizePartitions({
     selectedCandidateId: selected.candidateId,
     partitionCount: selected.partitions.length,
     partitions: selected.partitions.map((partition) => Object.freeze(partition)),
-    topologicalOrder: selected.partitions.map(
-      (partition) => partition.partitionId
-    ),
+    topologicalOrder: selected.partitions.map((partition) => partition.partitionId),
     candidates,
     rejectedCandidateSummaries: Object.freeze(rejectedCandidateSummaries),
     searchReceipt: Object.freeze({
@@ -1751,8 +1530,7 @@ function optimizePartitions({
       boundedCandidateLimitReached,
       maximumCandidateResults,
       maximumGroupsPerFrontier,
-      groupBeamPrunedCount:
-        enumerationStats.groupBeamPrunedCount,
+      groupBeamPrunedCount: enumerationStats.groupBeamPrunedCount,
     }),
   });
 }
