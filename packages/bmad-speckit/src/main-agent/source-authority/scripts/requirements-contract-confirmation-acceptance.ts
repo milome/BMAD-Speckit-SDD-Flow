@@ -22,6 +22,10 @@ import {
   projectControlledIngestWriterRegistry,
   type ControlledIngestWriterRegistrySnapshot,
 } from './requirements-contract-controlled-ingest-writer-registry';
+import {
+  validateRequirementsEffectivePassReceipt,
+  type RequirementsEffectivePassReceipt,
+} from './requirements-contract-requirements-effective-pass-gate';
 
 const CONFIRMATION_WRITER_ID = 'requirements-confirmation-ingest';
 const MODELS = [
@@ -63,9 +67,7 @@ function text(value: unknown): string {
 }
 
 function object(value: unknown): JsonObject {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as JsonObject)
-    : {};
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonObject) : {};
 }
 
 function objects(value: unknown): JsonObject[] {
@@ -111,6 +113,53 @@ function parseConfirmationHashes(confirmationText: string): JsonObject {
   return result;
 }
 
+function effectivePassReceiptRef(
+  root: string,
+  args: ConfirmationArgs,
+  confirmation: ImplementationConfirmation
+):
+  | {
+      ref: JsonObject;
+      receipt: RequirementsEffectivePassReceipt;
+    }
+  | {
+      mismatches: string[];
+      error?: string;
+    } {
+  const receiptArg = text(args.requirementsEffectivePassReceipt);
+  if (!receiptArg) return { mismatches: ['requirements_effective_pass_receipt_missing'] };
+  const receiptPath = resolvePath(root, receiptArg);
+  let receipt: RequirementsEffectivePassReceipt;
+  try {
+    receipt = validateRequirementsEffectivePassReceipt(readJson(receiptPath));
+  } catch (error) {
+    return {
+      mismatches: ['requirements_effective_pass_receipt_invalid'],
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+  const drilldown = object(confirmation.preConfirmationDrilldown);
+  const criticalAuditor = object(drilldown.criticalAuditor);
+  const latestReceiptHash = text(criticalAuditor.latestReceiptHash);
+  if (!latestReceiptHash) {
+    return { mismatches: ['requirements_effective_pass_receipt_missing'] };
+  }
+  if (latestReceiptHash !== receipt.receiptHash) {
+    return { mismatches: ['requirements_effective_pass_receipt_stale'] };
+  }
+  return {
+    receipt,
+    ref: {
+      path: normalizePath(receiptPath),
+      schemaVersion: receipt.schemaVersion,
+      receiptHash: receipt.receiptHash,
+      actorClass: receipt.actorClass,
+      judgeRole: receipt.judgeRole,
+      decision: receipt.decision,
+    },
+  };
+}
+
 function reportArtifactPath(root: string, reportPath: string, value: unknown): string {
   const candidate =
     typeof value === 'string'
@@ -119,9 +168,7 @@ function reportArtifactPath(root: string, reportPath: string, value: unknown): s
         ? text((value as JsonObject).path)
         : '';
   if (!candidate) return '';
-  return path.isAbsolute(candidate)
-    ? candidate
-    : path.resolve(path.dirname(reportPath), candidate);
+  return path.isAbsolute(candidate) ? candidate : path.resolve(path.dirname(reportPath), candidate);
 }
 
 function buildGlobalContractTraceabilityPolicy(
@@ -282,10 +329,7 @@ function prepareDraftRecord(input: {
   const history = objects(existing.confirmationHistory);
   const status = text(existing.status);
   if (status === 'draft' && history.length === 0) {
-    if (
-      text(existing.recordId) &&
-      text(existing.recordId) !== text(input.draft.recordId)
-    ) {
+    if (text(existing.recordId) && text(existing.recordId) !== text(input.draft.recordId)) {
       throw new Error('confirmation_record_id_mismatch');
     }
     if (
@@ -409,14 +453,9 @@ export function runRequirementsContractConfirmationAcceptance(
     );
   }
 
-  const sourceDocumentHash = sourceDocumentHashFor(
-    sourceText,
-    extracted.blockText,
-    confirmation
-  );
+  const sourceDocumentHash = sourceDocumentHashFor(sourceText, extracted.blockText, confirmation);
   const implementationConfirmationHash = implementationConfirmationHashFor(confirmation);
-  const recordId =
-    text(args.recordId) || text(report.recordId) || text(confirmation.recordId);
+  const recordId = text(args.recordId) || text(report.recordId) || text(confirmation.recordId);
   if (!recordId) throw new Error('confirm-scope requires recordId');
   const requirementSetId =
     text(args.requirementSetId) ||
@@ -429,16 +468,27 @@ export function runRequirementsContractConfirmationAcceptance(
   );
   const recordPath = resolvePath(
     root,
-    text(args.requirementRecord) ||
-      path.join(runtimeRoot, recordId, 'requirement-record.json')
+    text(args.requirementRecord) || path.join(runtimeRoot, recordId, 'requirement-record.json')
   );
-  const htmlPath = reportArtifactPath(
-    root,
-    renderReportPath,
-    report.artifactRef ?? report.outPath
-  );
+  const htmlPath = reportArtifactPath(root, renderReportPath, report.artifactRef ?? report.outPath);
   const provided = parseConfirmationHashes(confirmationText);
   const mismatches: string[] = [];
+  if (
+    (text(args.recordId) && text(args.recordId) !== text(report.recordId)) ||
+    (text(args.recordId) && text(args.recordId) !== text(confirmation.recordId)) ||
+    (text(report.recordId) &&
+      text(confirmation.recordId) &&
+      text(report.recordId) !== text(confirmation.recordId)) ||
+    (text(args.requirementSetId) &&
+      text(args.requirementSetId) !== text(report.requirementSetId)) ||
+    (text(args.requirementSetId) &&
+      text(args.requirementSetId) !== text(confirmation.requirementSetId)) ||
+    (text(report.requirementSetId) &&
+      text(confirmation.requirementSetId) &&
+      text(report.requirementSetId) !== text(confirmation.requirementSetId))
+  ) {
+    mismatches.push('confirmation_record_identity_mismatch');
+  }
   if (report.confirmability !== 'confirmable') {
     mismatches.push('render_report_not_confirmable');
   }
@@ -463,17 +513,24 @@ export function runRequirementsContractConfirmationAcceptance(
   }
   if (htmlPath && fs.existsSync(htmlPath)) {
     const actualHtmlFileHash = sha256Text(fs.readFileSync(htmlPath, 'utf8'));
-    if (
-      text(report.actualHtmlFileHash) &&
-      text(report.actualHtmlFileHash) !== actualHtmlFileHash
-    ) {
+    if (text(report.actualHtmlFileHash) && text(report.actualHtmlFileHash) !== actualHtmlFileHash) {
       mismatches.push('render_report_actual_html_hash_mismatch');
     }
   } else {
     mismatches.push('confirmation_html_artifact_missing');
   }
   if (args.updateSource === 'false') mismatches.push('atomic_source_update_required');
-  if (mismatches.length > 0) return failure({ recordPath, reportPath: renderReportPath }, mismatches);
+  const effectivePass = effectivePassReceiptRef(root, args, confirmation);
+  if ('mismatches' in effectivePass) {
+    mismatches.push(...effectivePass.mismatches);
+  }
+  if (mismatches.length > 0) {
+    return failure(
+      { recordPath, reportPath: renderReportPath },
+      mismatches,
+      'mismatches' in effectivePass ? effectivePass.error : undefined
+    );
+  }
 
   const confirmedAt = text(args.confirmedAt) || new Date().toISOString();
   const confirmedBy = text(args.confirmedBy) || 'main-agent-orchestration';
@@ -491,11 +548,20 @@ export function runRequirementsContractConfirmationAcceptance(
   });
   const htmlText = fs.readFileSync(htmlPath, 'utf8');
   const renderReportText = fs.readFileSync(renderReportPath, 'utf8');
-  const writerRegistry = projectControlledIngestWriterRegistry(
-    confirmation,
-    sourceDocumentHash,
-    implementationConfirmationHash
-  );
+  let writerRegistry: ControlledIngestWriterRegistrySnapshot;
+  try {
+    writerRegistry = projectControlledIngestWriterRegistry(
+      confirmation,
+      sourceDocumentHash,
+      implementationConfirmationHash
+    );
+  } catch (error) {
+    return failure(
+      { recordPath, reportPath: renderReportPath },
+      ['controlled_ingest_writer_invalid'],
+      error instanceof Error ? error.message : String(error)
+    );
+  }
   const draft = initialDraftRecord({
     recordId,
     requirementSetId,
@@ -544,6 +610,23 @@ export function runRequirementsContractConfirmationAcceptance(
   const frozenConfirmation = object(
     frozenIr.implementationConfirmation
   ) as ImplementationConfirmation;
+  const confirmedAuthorityIdentity: JsonObject = {
+    schemaVersion: 'requirements-confirmed-authority-identity/v1',
+    frozenConfirmationIrRef: {
+      path: normalizePath(frozenIrPath),
+      semanticHash: frozenIrHash,
+      contentHash: frozenIrContentHash,
+    },
+  };
+  const requirementsEffectivePassReceiptRef = effectivePass.ref;
+  const confirmationAuthorityTupleInput: JsonObject = {
+    schemaVersion: 'requirements-confirmation-authority-tuple-input/v1',
+    requirementRecordId: recordId,
+    sourceSnapshotHash: sourceDocumentHash,
+    implementationConfirmationSemanticHash: implementationConfirmationHash,
+    confirmedAuthorityIdentity,
+    RequirementsEffectivePassReceiptRef: requirementsEffectivePassReceiptRef,
+  };
   const authorityArtifactBindings = [
     {
       role: 'source_document',
@@ -571,8 +654,7 @@ export function runRequirementsContractConfirmationAcceptance(
     sourcePath: normalizePath(sourcePath),
     sourceDocumentHash,
     sourceDocumentHashScope:
-      text(report.sourceDocumentHashScope) ||
-      'semantic_source_excluding_confirmation_bookkeeping',
+      text(report.sourceDocumentHashScope) || 'semantic_source_excluding_confirmation_bookkeeping',
     implementationConfirmationHash,
     implementationConfirmationHashScope:
       text(report.implementationConfirmationHashScope) ||
@@ -586,6 +668,9 @@ export function runRequirementsContractConfirmationAcceptance(
       semanticHash: frozenIrHash,
       contentHash: frozenIrContentHash,
     },
+    confirmedAuthorityIdentity,
+    requirementsEffectivePassReceiptRef,
+    confirmationAuthorityTupleInput,
     authorityArtifactBindings,
     entryFlow: text(confirmation.entryFlow) || 'standalone_tasks',
     ...(text(confirmation.entryFlowClass)
@@ -594,9 +679,7 @@ export function runRequirementsContractConfirmationAcceptance(
     ...(text(confirmation.workflowAdapter)
       ? { workflowAdapter: text(confirmation.workflowAdapter) }
       : {}),
-    ...(confirmation.contractAuthoringRequired === true
-      ? { contractAuthoringRequired: true }
-      : {}),
+    ...(confirmation.contractAuthoringRequired === true ? { contractAuthoringRequired: true } : {}),
     globalContractTraceabilityPolicy: buildGlobalContractTraceabilityPolicy(confirmation),
     traceStatusPolicy: buildTraceStatusPolicy(),
     writerId: CONFIRMATION_WRITER_ID,
@@ -625,6 +708,15 @@ export function runRequirementsContractConfirmationAcceptance(
       contentHash: frozenIrContentHash,
       receiptPath: normalizePath(eventPath),
     },
+    {
+      artifactType: 'requirements_effective_pass_receipt',
+      sourceOfTruthRole: 'evidence',
+      recordId,
+      requirementSetId,
+      path: text(requirementsEffectivePassReceiptRef.path),
+      contentHash: text(requirementsEffectivePassReceiptRef.receiptHash),
+      receiptPath: normalizePath(eventPath),
+    },
     ...authorityArtifactBindings.map((binding) => ({
       artifactType: binding.role,
       sourceOfTruthRole: 'acceptance_transaction_input',
@@ -637,137 +729,137 @@ export function runRequirementsContractConfirmationAcceptance(
   ];
   let commit: ControlCommitResult;
   try {
-    commit = appendControlEventAndReplay({
-      recordPath,
-      writerId: CONFIRMATION_WRITER_ID,
-      eventType: 'confirmation_recorded',
-      eventId,
-      payload: eventPayload,
-      recordedAt: confirmedAt,
-      payloadSchemaVersion: 'confirmation_recorded/v1',
-      bootstrapConfirmation: prepared.bootstrap,
-      bootstrapRecord: prepared.record,
-      artifactIndexUpdates: [
-        { path: localArtifactIndexPath, entries: artifactEntries },
-        {
-          path: globalArtifactIndexPath,
-          entries: artifactEntries.map((entry) => ({ ...entry, indexScope: 'global' })),
-        },
-      ],
-      artifactWrites: [
-        {
-          path: sourcePath,
-          content: updatedSourceText,
-          contentHash: sha256Text(updatedSourceText),
-          expectedBeforeHash: sha256Text(sourceText),
-        },
-        {
-          path: htmlPath,
-          content: htmlText,
-          contentHash: sha256Text(htmlText),
-          expectedBeforeHash: sha256Text(htmlText),
-        },
-        {
-          path: renderReportPath,
-          content: renderReportText,
-          contentHash: sha256Text(renderReportText),
-          expectedBeforeHash: sha256Text(renderReportText),
-        },
-        {
-          path: frozenIrPath,
-          content: frozenIrText,
-          contentHash: frozenIrContentHash,
-        },
-      ],
-      reduce: (record, payload) => {
-        const sixModelResults: JsonObject = {};
-        for (const model of MODELS) {
-          sixModelResults[model] = modelResult(
+    commit = appendControlEventAndReplay(
+      {
+        recordPath,
+        writerId: CONFIRMATION_WRITER_ID,
+        eventType: 'confirmation_recorded',
+        eventId,
+        payload: eventPayload,
+        recordedAt: confirmedAt,
+        payloadSchemaVersion: 'confirmation_recorded/v1',
+        bootstrapConfirmation: prepared.bootstrap,
+        bootstrapRecord: prepared.record,
+        artifactIndexUpdates: [
+          { path: localArtifactIndexPath, entries: artifactEntries },
+          {
+            path: globalArtifactIndexPath,
+            entries: artifactEntries.map((entry) => ({ ...entry, indexScope: 'global' })),
+          },
+        ],
+        artifactWrites: [
+          {
+            path: sourcePath,
+            content: updatedSourceText,
+            contentHash: sha256Text(updatedSourceText),
+            expectedBeforeHash: sha256Text(sourceText),
+          },
+          {
+            path: htmlPath,
+            content: htmlText,
+            contentHash: sha256Text(htmlText),
+            expectedBeforeHash: sha256Text(htmlText),
+          },
+          {
+            path: renderReportPath,
+            content: renderReportText,
+            contentHash: sha256Text(renderReportText),
+            expectedBeforeHash: sha256Text(renderReportText),
+          },
+          {
+            path: frozenIrPath,
+            content: frozenIrText,
+            contentHash: frozenIrContentHash,
+          },
+        ],
+        reduce: (record, payload) => {
+          const sixModelResults: JsonObject = {};
+          for (const model of MODELS) {
+            sixModelResults[model] = modelResult(
+              recordId,
+              requirementSetId,
+              sourceDocumentHash,
+              implementationConfirmationHash,
+              confirmationPageHash,
+              model,
+              model === 'requirement_confirmation' ? 'pass' : 'not_established',
+              confirmedAt,
+              confirmedBy,
+              renderReportPath,
+              htmlPath
+            );
+          }
+          const historyEvent: JsonObject = {
+            eventType: 'confirmation_recorded',
             recordId,
             requirementSetId,
+            confirmedAt,
+            confirmedBy,
+            sourcePath: normalizePath(sourcePath),
+            sourceDocumentHash,
+            sourceDocumentHashScope:
+              text(payload.sourceDocumentHashScope) ||
+              'semantic_source_excluding_confirmation_bookkeeping',
+            implementationConfirmationHash,
+            implementationConfirmationHashScope:
+              text(payload.implementationConfirmationHashScope) ||
+              'semantic_implementation_confirmation_excluding_bookkeeping',
+            confirmationPageHash,
+            confirmationText,
+            renderReportPath: normalizePath(renderReportPath),
+            htmlPath: normalizePath(htmlPath),
+            entryFlow: text(frozenConfirmation.entryFlow) || 'standalone_tasks',
+            ...(text(frozenConfirmation.entryFlowClass)
+              ? { entryFlowClass: text(frozenConfirmation.entryFlowClass) }
+              : {}),
+            ...(text(frozenConfirmation.workflowAdapter)
+              ? { workflowAdapter: text(frozenConfirmation.workflowAdapter) }
+              : {}),
+            ...(frozenConfirmation.contractAuthoringRequired === true
+              ? { contractAuthoringRequired: true }
+              : {}),
+            globalContractTraceabilityPolicy:
+              buildGlobalContractTraceabilityPolicy(frozenConfirmation),
+            traceStatusPolicy: buildTraceStatusPolicy(),
+          };
+          const history = [...objects(record.confirmationHistory), historyEvent];
+          return {
+            ...record,
+            status: 'user_confirmed',
+            recordId,
+            requirementSetId,
+            sourcePath: normalizePath(sourcePath),
             sourceDocumentHash,
             implementationConfirmationHash,
             confirmationPageHash,
-            model,
-            model === 'requirement_confirmation' ? 'pass' : 'not_established',
-            confirmedAt,
-            confirmedBy,
-            renderReportPath,
-            htmlPath
-          );
-        }
-        const historyEvent: JsonObject = {
-          eventType: 'confirmation_recorded',
-          recordId,
-          requirementSetId,
-          confirmedAt,
-          confirmedBy,
-          sourcePath: normalizePath(sourcePath),
-          sourceDocumentHash,
-          sourceDocumentHashScope:
-            text(payload.sourceDocumentHashScope) ||
-            'semantic_source_excluding_confirmation_bookkeeping',
-          implementationConfirmationHash,
-          implementationConfirmationHashScope:
-            text(payload.implementationConfirmationHashScope) ||
-            'semantic_implementation_confirmation_excluding_bookkeeping',
-          confirmationPageHash,
-          confirmationText,
-          renderReportPath: normalizePath(renderReportPath),
-          htmlPath: normalizePath(htmlPath),
-          entryFlow: text(frozenConfirmation.entryFlow) || 'standalone_tasks',
-          ...(text(frozenConfirmation.entryFlowClass)
-            ? { entryFlowClass: text(frozenConfirmation.entryFlowClass) }
-            : {}),
-          ...(text(frozenConfirmation.workflowAdapter)
-            ? { workflowAdapter: text(frozenConfirmation.workflowAdapter) }
-            : {}),
-          ...(frozenConfirmation.contractAuthoringRequired === true
-            ? { contractAuthoringRequired: true }
-            : {}),
-          globalContractTraceabilityPolicy:
-            buildGlobalContractTraceabilityPolicy(frozenConfirmation),
-          traceStatusPolicy: buildTraceStatusPolicy(),
-        };
-        const history = [...objects(record.confirmationHistory), historyEvent];
-        return {
-          ...record,
-          status: 'user_confirmed',
-          recordId,
-          requirementSetId,
-          sourcePath: normalizePath(sourcePath),
-          sourceDocumentHash,
-          implementationConfirmationHash,
-          confirmationPageHash,
-          latestConfirmationProjectionHash: confirmationPageHash,
-          confirmationHistory: history,
-          sixModelResults,
-          flow:
-            text(frozenConfirmation.entryFlow) || text(record.flow) || 'standalone_tasks',
-          stage: 'requirement_confirmation',
-          currentStage: 'requirement_confirmation',
-          currentMentalModel: 'requirement_confirmation',
-          entryFlow:
-            text(frozenConfirmation.entryFlow) ||
-            text(record.entryFlow) ||
-            'standalone_tasks',
-          ...(text(frozenConfirmation.entryFlowClass)
-            ? { entryFlowClass: text(frozenConfirmation.entryFlowClass) }
-            : {}),
-          ...(text(frozenConfirmation.workflowAdapter)
-            ? { workflowAdapter: text(frozenConfirmation.workflowAdapter) }
-            : {}),
-          ...(frozenConfirmation.contractAuthoringRequired === true
-            ? { contractAuthoringRequired: true }
-            : {}),
-          globalContractTraceabilityPolicy:
-            buildGlobalContractTraceabilityPolicy(frozenConfirmation),
-          traceStatusPolicy: buildTraceStatusPolicy(),
-          lastEventType: 'confirmation_recorded',
-          updatedAt: confirmedAt,
-        };
+            latestConfirmationProjectionHash: confirmationPageHash,
+            confirmationHistory: history,
+            sixModelResults,
+            flow: text(frozenConfirmation.entryFlow) || text(record.flow) || 'standalone_tasks',
+            stage: 'requirement_confirmation',
+            currentStage: 'requirement_confirmation',
+            currentMentalModel: 'requirement_confirmation',
+            entryFlow:
+              text(frozenConfirmation.entryFlow) || text(record.entryFlow) || 'standalone_tasks',
+            ...(text(frozenConfirmation.entryFlowClass)
+              ? { entryFlowClass: text(frozenConfirmation.entryFlowClass) }
+              : {}),
+            ...(text(frozenConfirmation.workflowAdapter)
+              ? { workflowAdapter: text(frozenConfirmation.workflowAdapter) }
+              : {}),
+            ...(frozenConfirmation.contractAuthoringRequired === true
+              ? { contractAuthoringRequired: true }
+              : {}),
+            globalContractTraceabilityPolicy:
+              buildGlobalContractTraceabilityPolicy(frozenConfirmation),
+            traceStatusPolicy: buildTraceStatusPolicy(),
+            lastEventType: 'confirmation_recorded',
+            updatedAt: confirmedAt,
+          };
+        },
       },
-    }, input.controlStoreDeps);
+      input.controlStoreDeps
+    );
   } catch (error) {
     return failure(
       { recordPath, reportPath: renderReportPath },
@@ -819,9 +911,7 @@ export function mainRequirementsContractConfirmationAcceptance(argv: string[]): 
 
 if (
   require.main === module &&
-  /(^|[\\/])requirements-contract-confirmation-acceptance\.[cm]?js$/u.test(
-    process.argv[1] ?? ''
-  )
+  /(^|[\\/])requirements-contract-confirmation-acceptance\.[cm]?js$/u.test(process.argv[1] ?? '')
 ) {
   try {
     process.exitCode = mainRequirementsContractConfirmationAcceptance(process.argv.slice(2));
