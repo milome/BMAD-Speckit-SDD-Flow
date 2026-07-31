@@ -18,7 +18,16 @@ interface AdapterRequest {
   headers: Record<string, string>;
   body: string;
   timeoutMs: number;
+  transportEvidence: {
+    schemaVersion: 'requirements-contract-http-judge-transport-evidence/v1';
+    endpointOrigin: string;
+    operationPath: '/messages';
+    credentialRedaction: 'redacted';
+    requestBodyHash: string;
+  };
 }
+
+const OBSERVED_PROVIDER_REQUEST_IDS = new Set<string>();
 
 function record(value: unknown, code: string): JsonRecord {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(code);
@@ -110,6 +119,19 @@ function buildRequest(input: AdapterInput): AdapterRequest {
     throw new Error('judge_adapter_explicit_operation_path_forbidden');
   }
   if (typeof endpoint.baseUrl !== 'string') throw new Error('judge_adapter_base_url_invalid');
+  const baseUrl = new URL(endpoint.baseUrl);
+  const allowedOperationOrigins = endpoint.allowedOperationOrigins;
+  if (allowedOperationOrigins !== undefined) {
+    if (
+      !Array.isArray(allowedOperationOrigins) ||
+      allowedOperationOrigins.some((origin) => typeof origin !== 'string')
+    ) {
+      throw new Error('judge_adapter_endpoint_allowlist_invalid');
+    }
+    if (!allowedOperationOrigins.includes(baseUrl.origin)) {
+      throw new Error('judge_adapter_endpoint_not_allowlisted');
+    }
+  }
   const authentication = record(provider.authentication, 'judge_adapter_authentication_invalid');
   const apiKey = secret(input.credential);
   const headers: Record<string, string> = { 'content-type': 'application/json' };
@@ -118,12 +140,20 @@ function buildRequest(input: AdapterInput): AdapterRequest {
   else throw new Error('judge_adapter_authentication_invalid');
   const body = requestBody(input, provider);
   const requestPolicy = record(provider.requestPolicy, 'judge_adapter_request_policy_invalid');
+  const serializedBody = JSON.stringify(body);
   return {
-    url: new URL('/messages', endpoint.baseUrl).toString(),
+    url: new URL('/messages', baseUrl).toString(),
     method: 'POST',
     headers,
-    body: JSON.stringify(body),
+    body: serializedBody,
     timeoutMs: typeof requestPolicy.timeoutMs === 'number' ? requestPolicy.timeoutMs : 10_000,
+    transportEvidence: {
+      schemaVersion: 'requirements-contract-http-judge-transport-evidence/v1',
+      endpointOrigin: baseUrl.origin,
+      operationPath: '/messages',
+      credentialRedaction: 'redacted',
+      requestBodyHash: hash(serializedBody),
+    },
   };
 }
 
@@ -133,14 +163,29 @@ async function execute(input: AdapterInput) {
   const request = buildRequest(input);
   const transport = input.fetch ?? globalThis.fetch;
   if (typeof transport !== 'function') throw new Error('judge_adapter_fetch_unavailable');
-  const response = await transport(request.url, {
-    method: request.method,
-    headers: request.headers,
-    body: request.body,
-    signal: AbortSignal.timeout(request.timeoutMs),
-  });
+  let response: Response;
+  try {
+    response = await transport(request.url, {
+      method: request.method,
+      headers: request.headers,
+      body: request.body,
+      signal: AbortSignal.timeout(request.timeoutMs),
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('judge_adapter_timeout');
+    }
+    throw error;
+  }
   if (!response.ok) throw new Error(`judge_adapter_transport_failed:${response.status}`);
+  if (
+    response.headers.get('x-judge-partial-body') === 'true' ||
+    response.headers.get('content-range')
+  ) {
+    throw new Error('judge_adapter_partial_body');
+  }
   const text = await response.text();
+  if (text.trim().length === 0) throw new Error('judge_adapter_partial_body');
   let payload: unknown;
   try {
     payload = JSON.parse(text);
@@ -185,6 +230,10 @@ async function judge(input: AdapterInput): Promise<unknown> {
   if (typeof payload.id !== 'string' || payload.id.length === 0) {
     throw new Error('judge_adapter_response_schema_invalid');
   }
+  if (OBSERVED_PROVIDER_REQUEST_IDS.has(payload.id)) {
+    throw new Error('judge_adapter_replay_detected');
+  }
+  OBSERVED_PROVIDER_REQUEST_IDS.add(payload.id);
   if (!Array.isArray(payload.content) || payload.content.length !== 1) {
     throw new Error('judge_adapter_response_schema_invalid');
   }
