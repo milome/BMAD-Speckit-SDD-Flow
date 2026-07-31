@@ -40280,3 +40280,128 @@ if (require.main === module && isDirectMainAgentOrchestrationCli()) {
     process.exit(code);
   });
 }
+
+export interface MainAgentJudgeReviewCampaignBridgeInput {
+  roleInput: unknown;
+  confirmedRequirementsAuthority: unknown;
+  judgeReviewCampaign: unknown;
+  controlledDispatchRef: unknown;
+  callerVerdict?: unknown;
+  callerFindings?: unknown;
+  callerScope?: unknown;
+  callerEffectivePass?: unknown;
+  callerCloseoutAuthority?: unknown;
+  directAdapterDispatch?: unknown;
+}
+
+export interface MainAgentJudgeReviewCampaignBridge {
+  schemaVersion: 'main-agent-judge-review-campaign-bridge/v1';
+  roleInput: 'requirements_judge';
+  requirementsAuthorityTupleHash: string;
+  requirementsEffectivePassReceiptHash: string;
+  judgeReviewCampaignOutputHash: string;
+  cleanSemanticInvocationCount: 2;
+  remediatedSemanticInvocationCount: 3;
+  reviewerInvocationCount: 1;
+  controlledDispatchHash: string;
+  roleInference: false;
+  directAdapterDispatch: false;
+  callerAuthorityInjection: false;
+  bridgeHash: string;
+  decision: 'pass';
+}
+
+function rejectMainAgentJudgeBridgeAuthorityInjection(
+  input: MainAgentJudgeReviewCampaignBridgeInput
+): void {
+  for (const key of [
+    'callerVerdict',
+    'callerFindings',
+    'callerScope',
+    'callerEffectivePass',
+    'callerCloseoutAuthority',
+  ] as const) {
+    if (input[key] !== undefined) {
+      throw new Error('main_agent_judge_bridge_caller_authority_injection');
+    }
+  }
+  if (input.directAdapterDispatch === true) {
+    throw new Error('main_agent_judge_bridge_direct_adapter_forbidden');
+  }
+}
+
+function requireMainAgentHash(value: unknown, code: string): string {
+  const normalized = normalizeText(value);
+  if (!/^sha256:[a-f0-9]{64}$/u.test(normalized)) {
+    throw new Error(code);
+  }
+  return normalized;
+}
+
+export function resolveMainAgentJudgeReviewCampaignBridge(
+  input: MainAgentJudgeReviewCampaignBridgeInput
+): MainAgentJudgeReviewCampaignBridge {
+  rejectMainAgentJudgeBridgeAuthorityInjection(input);
+  if (input.roleInput !== 'requirements_judge') {
+    throw new Error('main_agent_judge_bridge_role_explicit_required');
+  }
+  const confirmedRequirementsAuthority = recordObject(input.confirmedRequirementsAuthority);
+  const judgeReviewCampaign = recordObject(input.judgeReviewCampaign);
+  const effectivePassRef = recordObject(
+    confirmedRequirementsAuthority.RequirementsEffectivePassReceiptRef
+  );
+  if (
+    confirmedRequirementsAuthority.schemaVersion !==
+      'requirements-contract-confirmed-authority-projection/v1' ||
+    effectivePassRef.schemaVersion !== 'requirements-effective-pass-receipt/v1' ||
+    effectivePassRef.decision !== 'pass'
+  ) {
+    throw new Error('main_agent_judge_bridge_requirements_authority_invalid');
+  }
+  if (
+    judgeReviewCampaign.schemaVersion !==
+      'requirements-contract-judge-review-campaign-j06-output/v1' ||
+    judgeReviewCampaign.cleanSemanticInvocationCount !== 2 ||
+    judgeReviewCampaign.remediatedSemanticInvocationCount !== 3 ||
+    judgeReviewCampaign.reviewerInvocationCount !== 1 ||
+    judgeReviewCampaign.secondReviewerPath !== false
+  ) {
+    throw new Error('main_agent_judge_bridge_campaign_output_invalid');
+  }
+  const controlledDispatch = recordObject(input.controlledDispatchRef);
+  if (!normalizeText(controlledDispatch.packetId) || !normalizeText(controlledDispatch.packetKind)) {
+    throw new Error('main_agent_judge_bridge_controlled_dispatch_invalid');
+  }
+  const requirementsAuthorityTupleHash = requireMainAgentHash(
+    confirmedRequirementsAuthority.authorityTupleHash,
+    'main_agent_judge_bridge_requirements_authority_invalid'
+  );
+  const requirementsEffectivePassReceiptHash = requireMainAgentHash(
+    effectivePassRef.receiptHash,
+    'main_agent_judge_bridge_requirements_authority_invalid'
+  );
+  const judgeReviewCampaignOutputHash = requireMainAgentHash(
+    judgeReviewCampaign.outputHash,
+    'main_agent_judge_bridge_campaign_output_invalid'
+  );
+  const controlledDispatchHash = sha256Json({
+    packetId: normalizeText(controlledDispatch.packetId),
+    packetKind: normalizeText(controlledDispatch.packetKind),
+    route: controlledDispatch.route ?? null,
+  });
+  const payload = {
+    schemaVersion: 'main-agent-judge-review-campaign-bridge/v1' as const,
+    roleInput: 'requirements_judge' as const,
+    requirementsAuthorityTupleHash,
+    requirementsEffectivePassReceiptHash,
+    judgeReviewCampaignOutputHash,
+    cleanSemanticInvocationCount: 2 as const,
+    remediatedSemanticInvocationCount: 3 as const,
+    reviewerInvocationCount: 1 as const,
+    controlledDispatchHash,
+    roleInference: false as const,
+    directAdapterDispatch: false as const,
+    callerAuthorityInjection: false as const,
+  };
+  return { ...payload, bridgeHash: sha256Json(payload), decision: 'pass' as const };
+}

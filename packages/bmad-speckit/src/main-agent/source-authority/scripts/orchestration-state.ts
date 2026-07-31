@@ -127,6 +127,15 @@ export interface OrchestrationState {
     evidence: string[];
     driftFlags?: string[];
   } | null;
+  judgeReviewCampaignBridge?: MainAgentJudgeReviewCampaignBridgePointer | null;
+}
+
+export interface MainAgentJudgeReviewCampaignBridgePointer {
+  schemaVersion: 'main-agent-judge-review-campaign-bridge-pointer/v1';
+  bridgeHash: string;
+  requirementsAuthorityTupleHash: string;
+  judgeReviewCampaignOutputHash: string;
+  controlledDispatchHash: string;
 }
 
 export interface CreateOrchestrationStateInput {
@@ -441,6 +450,48 @@ export function recordGatesLoopRetry(
       activePacketId: input.activePacketId ?? current.gatesLoop?.activePacketId ?? null,
       lastResult: input.lastResult ?? current.gatesLoop?.lastResult ?? null,
     },
+  }));
+}
+
+const HASH_PATTERN = /^sha256:[a-f0-9]{64}$/u;
+
+function requireHash(value: unknown, code: string): string {
+  const normalized = text(value);
+  if (!HASH_PATTERN.test(normalized)) {
+    throw new Error(code);
+  }
+  return normalized;
+}
+
+export function recordMainAgentJudgeReviewCampaignBridgePointer(
+  projectRoot: string,
+  sessionId: string,
+  input: {
+    bridgeHash: string;
+    requirementsAuthorityTupleHash: string;
+    judgeReviewCampaignOutputHash: string;
+    controlledDispatchHash: string;
+  }
+): OrchestrationState {
+  const pointer: MainAgentJudgeReviewCampaignBridgePointer = {
+    schemaVersion: 'main-agent-judge-review-campaign-bridge-pointer/v1',
+    bridgeHash: requireHash(input.bridgeHash, 'main_agent_judge_bridge_pointer_hash_invalid'),
+    requirementsAuthorityTupleHash: requireHash(
+      input.requirementsAuthorityTupleHash,
+      'main_agent_judge_bridge_pointer_hash_invalid'
+    ),
+    judgeReviewCampaignOutputHash: requireHash(
+      input.judgeReviewCampaignOutputHash,
+      'main_agent_judge_bridge_pointer_hash_invalid'
+    ),
+    controlledDispatchHash: requireHash(
+      input.controlledDispatchHash,
+      'main_agent_judge_bridge_pointer_hash_invalid'
+    ),
+  };
+  return updateOrchestrationState(projectRoot, sessionId, (current) => ({
+    ...current,
+    judgeReviewCampaignBridge: pointer,
   }));
 }
 

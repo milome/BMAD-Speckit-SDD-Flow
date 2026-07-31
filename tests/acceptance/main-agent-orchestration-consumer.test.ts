@@ -3,6 +3,7 @@ import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import * as yaml from 'js-yaml';
 import type {
   ExecutionPacket,
   RecommendationPacket,
@@ -21,6 +22,7 @@ import {
   markMainAgentPacketDispatched,
   resolveMainAgentOrchestrationSurface,
   writeMainAgentRunLoopTaskReport,
+  resolveMainAgentJudgeReviewCampaignBridge,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import { runUnifiedIngressAsync } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-unified-ingress';
 import { mainImplementationReadinessGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate';
@@ -58,6 +60,8 @@ import {
   sourceDocumentHashFor,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-implementation-confirmation-codec';
 import { prepareAuditDispatchRuntime } from './helpers/prompt-transaction-audit-dispatch-fixture';
+import type { ConfirmedRequirementsAuthorityProjection } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-confirmed-authority-projection';
+import type { RequirementsContractJudgeReviewCampaignJ06Output } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-review-campaign';
 import { compiledPromptRunnerFor } from './helpers/prompt-transaction-compiled-runner-fixture';
 import {
   materializePromptPublicationFixture,
@@ -110,6 +114,24 @@ function writeTextFixture(filePath: string, value: string): void {
 
 function writeJsonFixture(filePath: string, value: unknown): void {
   writeTextFixture(filePath, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+function normalizeFixtureJudgeRuntimePolicy(root: string): void {
+  const configPath = path.join(root, '_bmad', '_config', 'governance-remediation.yaml');
+  const config = yaml.load(readFileSync(configPath, 'utf8')) as Record<string, any>;
+  const judgeRuntime = config.judgeRuntime as Record<string, any>;
+  const activeProviderRef = String(judgeRuntime.activeProviderRef ?? '');
+  const providers = judgeRuntime.providers as Record<string, any>;
+  const provider = providers[activeProviderRef] as Record<string, any>;
+  provider.requestPolicy = provider.requestPolicy ?? judgeRuntime.requestPolicy ?? {
+    timeoutMs: 1_800_000,
+    maximumAttempts: 1,
+    structuredResponseRequired: true,
+    maxBudgetUsd: 5,
+  };
+  delete judgeRuntime.requestPolicy;
+  delete judgeRuntime.requirementsConvergence;
+  writeFileSync(configPath, `${yaml.dump(config, { lineWidth: -1 })}\n`, 'utf8');
 }
 
 function removeTempRoot(root: string): void {
@@ -611,6 +633,176 @@ function writeConfirmedReadinessRecord(root: string): string {
 }
 
 describe('main-agent orchestration consumer', () => {
+  it('bridges typed J03 and J05 Judge outputs without caller authority injection', () => {
+    const hash = (label: string) => sha256Text(label);
+    const requirementsAuthority = {
+      schemaVersion: 'requirements-contract-confirmed-authority-projection/v1',
+      requirementRecordId: 'REQ-001',
+      sourceSnapshotHash: hash('source'),
+      implementationConfirmationSemanticHash: hash('implementation-confirmation'),
+      controlledConfirmationEventHash: hash('confirmation-event'),
+      confirmedAuthorityIdentity: {
+        path: 'docs/requirements/source.md',
+        semanticHash: hash('identity-semantic'),
+        contentHash: hash('identity-content'),
+      },
+      RequirementsEffectivePassReceiptRef: {
+        path: 'receipts/requirements-effective-pass.json',
+        schemaVersion: 'requirements-effective-pass-receipt/v1',
+        receiptHash: hash('requirements-effective-pass'),
+        actorClass: 'requirements_critical_auditor_judge',
+        judgeRole: 'requirements_critical_auditor',
+        decision: 'pass',
+      },
+      writerId: 'requirements-confirmation-ingest',
+      controlReceiptHash: hash('control-receipt'),
+      authorityTupleHash: hash('authority-tuple'),
+      projectionHash: hash('projection'),
+    } satisfies ConfirmedRequirementsAuthorityProjection;
+    const judgeReviewCampaign = {
+      schemaVersion: 'requirements-contract-judge-review-campaign-j06-output/v1',
+      campaignId: 'goal-campaign-001',
+      campaignLineageKey: hash('lineage'),
+      initialReviewAttemptKey: hash('attempt'),
+      campaignInputHash: hash('campaign-input'),
+      controllerHash: hash('controller'),
+      cleanTrace: {
+        schemaVersion: 'requirements-contract-judge-review-campaign-j06-trace-output/v1',
+        campaignId: 'goal-campaign-001',
+        campaignLineageKey: hash('lineage'),
+        initialReviewAttemptKey: hash('attempt'),
+        mode: 'clean',
+        semanticInvocationCount: 2,
+        reviewerInvocationCount: 1,
+        finalJudgeInvocationCount: 1,
+        completeReceiptSet: true,
+        traceHash: hash('clean-trace'),
+        outputHash: hash('clean-output'),
+      },
+      remediatedTrace: {
+        schemaVersion: 'requirements-contract-judge-review-campaign-j06-trace-output/v1',
+        campaignId: 'goal-campaign-001',
+        campaignLineageKey: hash('lineage'),
+        initialReviewAttemptKey: hash('attempt'),
+        mode: 'remediated',
+        semanticInvocationCount: 3,
+        reviewerInvocationCount: 1,
+        finalJudgeInvocationCount: 2,
+        completeReceiptSet: true,
+        traceHash: hash('remediated-trace'),
+        outputHash: hash('remediated-output'),
+      },
+      cleanSemanticInvocationCount: 2,
+      remediatedSemanticInvocationCount: 3,
+      reviewerInvocationCount: 1,
+      secondReviewerPath: false,
+      outputHash: hash('j06-output'),
+    } satisfies RequirementsContractJudgeReviewCampaignJ06Output;
+
+    const bridge = resolveMainAgentJudgeReviewCampaignBridge({
+      roleInput: 'requirements_judge',
+      confirmedRequirementsAuthority: requirementsAuthority,
+      judgeReviewCampaign,
+      controlledDispatchRef: {
+        packetId: 'packet-001',
+        packetKind: 'execution',
+        route: 'implementation-worker',
+      },
+    });
+
+    expect(bridge.requirementsAuthorityTupleHash).toBe(requirementsAuthority.authorityTupleHash);
+    expect(bridge.judgeReviewCampaignOutputHash).toBe(judgeReviewCampaign.outputHash);
+    expect(bridge.directAdapterDispatch).toBe(false);
+    expect(bridge.roleInference).toBe(false);
+    expect(bridge.callerAuthorityInjection).toBe(false);
+    expect(bridge.decision).toBe('pass');
+  });
+
+  it('rejects caller verdicts, findings, scope, EffectivePass, and direct adapter dispatch', () => {
+    const hash = (label: string) => sha256Text(label);
+    const valid = {
+      roleInput: 'requirements_judge',
+      confirmedRequirementsAuthority: {
+        schemaVersion: 'requirements-contract-confirmed-authority-projection/v1',
+        requirementRecordId: 'REQ-001',
+        sourceSnapshotHash: hash('source'),
+        implementationConfirmationSemanticHash: hash('implementation-confirmation'),
+        controlledConfirmationEventHash: hash('confirmation-event'),
+        confirmedAuthorityIdentity: {
+          path: 'docs/requirements/source.md',
+          semanticHash: hash('identity-semantic'),
+          contentHash: hash('identity-content'),
+        },
+        RequirementsEffectivePassReceiptRef: {
+          path: 'receipts/requirements-effective-pass.json',
+          schemaVersion: 'requirements-effective-pass-receipt/v1',
+          receiptHash: hash('requirements-effective-pass'),
+          actorClass: 'requirements_critical_auditor_judge',
+          judgeRole: 'requirements_critical_auditor',
+          decision: 'pass',
+        },
+        writerId: 'requirements-confirmation-ingest',
+        controlReceiptHash: hash('control-receipt'),
+        authorityTupleHash: hash('authority-tuple'),
+        projectionHash: hash('projection'),
+      },
+      judgeReviewCampaign: {
+        schemaVersion: 'requirements-contract-judge-review-campaign-j06-output/v1',
+        campaignId: 'goal-campaign-001',
+        campaignLineageKey: hash('lineage'),
+        initialReviewAttemptKey: hash('attempt'),
+        campaignInputHash: hash('campaign-input'),
+        controllerHash: hash('controller'),
+        cleanTrace: {
+          schemaVersion: 'requirements-contract-judge-review-campaign-j06-trace-output/v1',
+          campaignId: 'goal-campaign-001',
+          campaignLineageKey: hash('lineage'),
+          initialReviewAttemptKey: hash('attempt'),
+          mode: 'clean',
+          semanticInvocationCount: 2,
+          reviewerInvocationCount: 1,
+          finalJudgeInvocationCount: 1,
+          completeReceiptSet: true,
+          traceHash: hash('clean-trace'),
+          outputHash: hash('clean-output'),
+        },
+        remediatedTrace: {
+          schemaVersion: 'requirements-contract-judge-review-campaign-j06-trace-output/v1',
+          campaignId: 'goal-campaign-001',
+          campaignLineageKey: hash('lineage'),
+          initialReviewAttemptKey: hash('attempt'),
+          mode: 'remediated',
+          semanticInvocationCount: 3,
+          reviewerInvocationCount: 1,
+          finalJudgeInvocationCount: 2,
+          completeReceiptSet: true,
+          traceHash: hash('remediated-trace'),
+          outputHash: hash('remediated-output'),
+        },
+        cleanSemanticInvocationCount: 2,
+        remediatedSemanticInvocationCount: 3,
+        reviewerInvocationCount: 1,
+        secondReviewerPath: false,
+        outputHash: hash('j06-output'),
+      },
+      controlledDispatchRef: {
+        packetId: 'packet-001',
+        packetKind: 'execution',
+        route: 'implementation-worker',
+      },
+    };
+
+    expect(() =>
+      resolveMainAgentJudgeReviewCampaignBridge({ ...valid, callerVerdict: 'pass' })
+    ).toThrow('main_agent_judge_bridge_caller_authority_injection');
+    expect(() =>
+      resolveMainAgentJudgeReviewCampaignBridge({ ...valid, directAdapterDispatch: true })
+    ).toThrow('main_agent_judge_bridge_direct_adapter_forbidden');
+    expect(() =>
+      resolveMainAgentJudgeReviewCampaignBridge({ ...valid, roleInput: null })
+    ).toThrow('main_agent_judge_bridge_role_explicit_required');
+  });
+
   it('keeps audit finalization bound to the gate-owned commit snapshot', () => {
     const sourcePath = path.resolve(
       'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts'
@@ -1685,6 +1877,7 @@ describe('main-agent orchestration consumer', () => {
       );
       setPromptPublicationReadiness(fixture, { decision: 'pass' });
       prepareAuditDispatchRuntime(fixture);
+      normalizeFixtureJudgeRuntimePolicy(fixture.root);
       const record = JSON.parse(readFileSync(fixture.paths.recordPath, 'utf8'));
       record.taskBindings = [
         {
@@ -1709,6 +1902,7 @@ describe('main-agent orchestration consumer', () => {
         { runCompiledPrompt }
       ).finally(() => stdout.mockRestore());
       expect(publishCode, publisherOutput.join('')).toBe(0);
+      normalizeFixtureJudgeRuntimePolicy(fixture.root);
 
       const instruction = buildMainAgentDispatchInstruction({
         projectRoot: fixture.root,
@@ -1745,6 +1939,7 @@ describe('main-agent orchestration consumer', () => {
       );
       setPromptPublicationReadiness(fixture, { decision: 'pass' });
       prepareAuditDispatchRuntime(fixture);
+      normalizeFixtureJudgeRuntimePolicy(fixture.root);
       const publisherOutput: string[] = [];
       const stdout = vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
         publisherOutput.push(String(chunk));
@@ -1760,6 +1955,7 @@ describe('main-agent orchestration consumer', () => {
         { runCompiledPrompt }
       ).finally(() => stdout.mockRestore());
       expect(publishCode, publisherOutput.join('')).toBe(0);
+      normalizeFixtureJudgeRuntimePolicy(fixture.root);
 
       const loop = runMainAgentAutomaticLoop({
         projectRoot: fixture.root,
@@ -1844,6 +2040,7 @@ describe('main-agent orchestration consumer', () => {
         );
         setPromptPublicationReadiness(fixture, { decision: 'pass' });
         prepareAuditDispatchRuntime(fixture);
+        normalizeFixtureJudgeRuntimePolicy(fixture.root);
         const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
         const runCompiledPrompt = compiledPromptRunnerFor(fixture, {
           extraPacket: {
@@ -1855,6 +2052,7 @@ describe('main-agent orchestration consumer', () => {
           { runCompiledPrompt }
         ).finally(() => stdout.mockRestore());
         expect(publishCode).toBe(0);
+        normalizeFixtureJudgeRuntimePolicy(fixture.root);
 
         const fakeBin = path.join(fixture.root, 'readonly-auditor-codex-bin');
         const codexEntry = path.join(
@@ -1940,6 +2138,7 @@ describe('main-agent orchestration consumer', () => {
         );
         setPromptPublicationReadiness(fixture, { decision: 'pass' });
         prepareAuditDispatchRuntime(fixture);
+        normalizeFixtureJudgeRuntimePolicy(fixture.root);
         const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
         const runCompiledPrompt = compiledPromptRunnerFor(fixture, {
           extraPacket: {
@@ -1951,6 +2150,7 @@ describe('main-agent orchestration consumer', () => {
           { runCompiledPrompt }
         ).finally(() => stdout.mockRestore());
         expect(publishCode).toBe(0);
+        normalizeFixtureJudgeRuntimePolicy(fixture.root);
 
         const fakeBin = path.join(fixture.root, 'readonly-auditor-schema-bin');
         const codexEntry = path.join(
@@ -2054,6 +2254,7 @@ describe('main-agent orchestration consumer', () => {
         );
         setPromptPublicationReadiness(fixture, { decision: 'pass' });
         prepareAuditDispatchRuntime(fixture);
+        normalizeFixtureJudgeRuntimePolicy(fixture.root);
         const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
         const runCompiledPrompt = compiledPromptRunnerFor(fixture, {
           extraPacket: {
@@ -2065,6 +2266,7 @@ describe('main-agent orchestration consumer', () => {
           { runCompiledPrompt }
         ).finally(() => stdout.mockRestore());
         expect(publishCode).toBe(0);
+        normalizeFixtureJudgeRuntimePolicy(fixture.root);
 
         const fakeBin = path.join(fixture.root, 'readonly-auditor-stdout-only-bin');
         const codexEntry = path.join(
@@ -2171,6 +2373,7 @@ describe('main-agent orchestration consumer', () => {
       );
       setPromptPublicationReadiness(fixture, { decision: 'pass' });
       prepareAuditDispatchRuntime(fixture);
+      normalizeFixtureJudgeRuntimePolicy(fixture.root);
       const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
       const runCompiledPrompt = compiledPromptRunnerFor(fixture, {
         extraPacket: {
@@ -2182,6 +2385,7 @@ describe('main-agent orchestration consumer', () => {
         { runCompiledPrompt }
       ).finally(() => stdout.mockRestore());
       expect(publishCode).toBe(0);
+      normalizeFixtureJudgeRuntimePolicy(fixture.root);
 
       const first = runMainAgentAutomaticLoop({
         projectRoot: fixture.root,
@@ -2270,6 +2474,7 @@ describe('main-agent orchestration consumer', () => {
       );
       setPromptPublicationReadiness(fixture, { decision: 'pass' });
       prepareAuditDispatchRuntime(fixture);
+      normalizeFixtureJudgeRuntimePolicy(fixture.root);
       const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
       const runCompiledPrompt = compiledPromptRunnerFor(fixture, {
         extraPacket: {
@@ -2281,6 +2486,7 @@ describe('main-agent orchestration consumer', () => {
         { runCompiledPrompt }
       ).finally(() => stdout.mockRestore());
       expect(publishCode).toBe(0);
+      normalizeFixtureJudgeRuntimePolicy(fixture.root);
 
       const loopInput = {
         projectRoot: fixture.root,
@@ -2377,6 +2583,7 @@ describe('main-agent orchestration consumer', () => {
       );
       setPromptPublicationReadiness(fixture, { decision: 'pass' });
       prepareAuditDispatchRuntime(fixture);
+      normalizeFixtureJudgeRuntimePolicy(fixture.root);
       const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
       const runCompiledPrompt = compiledPromptRunnerFor(fixture, {
         extraPacket: {
@@ -2388,6 +2595,7 @@ describe('main-agent orchestration consumer', () => {
         { runCompiledPrompt }
       ).finally(() => stdout.mockRestore());
       expect(publishCode).toBe(0);
+      normalizeFixtureJudgeRuntimePolicy(fixture.root);
 
       const auditAdapters = createFixtureAuditAdapterCommands({
         root: fixture.root,
@@ -3007,6 +3215,7 @@ describe('main-agent orchestration consumer', () => {
         { runCompiledPrompt }
       ).finally(() => stdout.mockRestore());
       expect(publishCode).toBe(0);
+      normalizeFixtureJudgeRuntimePolicy(fixture.root);
 
       const loopInput = {
         projectRoot: fixture.root,
