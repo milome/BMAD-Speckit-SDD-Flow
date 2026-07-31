@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-final-acceptance-judge-request.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "actorClass",
+    "judgeRole",
+    "scopeManifestHash",
+    "attemptKey",
+    "promptTemplateHash",
+    "assessmentSchemaHash",
+    "providerAuthority",
+    "ledgerAuthority"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-final-acceptance-judge-request/v1"
+    },
+    "actorClass": { "const": "final_acceptance_judge" },
+    "judgeRole": { "const": "final_acceptance_judge" },
+    "scopeManifestHash": { "$ref": "#/$defs/hash" },
+    "attemptKey": { "$ref": "#/$defs/hash" },
+    "promptTemplateHash": { "$ref": "#/$defs/hash" },
+    "assessmentSchemaHash": { "$ref": "#/$defs/hash" },
+    "providerAuthority": { "$ref": "#/$defs/providerAuthority" },
+    "ledgerAuthority": { "$ref": "#/$defs/ledgerAuthority" }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "providerAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "providerRef",
+        "providerRegistryHash",
+        "providerConfigurationHash",
+        "credentialRevision"
+      ],
+      "properties": {
+        "providerRef": { "type": "string", "minLength": 1 },
+        "providerRegistryHash": { "$ref": "#/$defs/hash" },
+        "providerConfigurationHash": { "$ref": "#/$defs/hash" },
+        "credentialRevision": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "ledgerAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ledgerRef", "ledgerHash"],
+      "properties": {
+        "ledgerRef": { "type": "string", "minLength": 1 },
+        "ledgerHash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}
