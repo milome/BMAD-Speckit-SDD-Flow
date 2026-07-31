@@ -73,11 +73,19 @@ judgeRuntime:
         allowedTools:
           - Read
         implementationWritesAllowed: false
-      requestPolicy:
-        timeoutMs: 1800000
-        maximumAttempts: 1
-        structuredResponseRequired: true
-        maxBudgetUsd: 5
+  requestPolicy:
+    timeoutMs: 1800000
+    maximumAttempts: 1
+    structuredResponseRequired: true
+    maxBudgetUsd: 5
+  requirementsConvergence:
+    requiredCleanRounds: 1
+    maxSemanticAttempts: 3
+    noProgressAttemptLimit: 2
+    clock:
+      monotonicRequired: true
+      committedWallClockAnchorRequired: true
+      restartCreatesProgress: false
 provider:
   mode: openai-compatible
   id: openai-governance
