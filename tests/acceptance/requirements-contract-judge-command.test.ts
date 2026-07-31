@@ -8,6 +8,7 @@ import {
   requirementsContractJudgeRunCommand,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-command';
 import { evaluateRequirementsContractJudgeInvocationReadiness } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-invocation-readiness-gate';
+import type { RequirementsContractJudgeRole } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-role';
 import { sha256 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-governed-write';
 
 type JsonRecord = Record<string, unknown>;
@@ -100,17 +101,22 @@ function judgeRuntime(transport: string, adapterRef: string, command?: string): 
   };
 }
 
-function materializeCommandFixture(transport: string, adapterRef: string, command?: string) {
+function materializeCommandFixture(
+  transport: string,
+  adapterRef: string,
+  command?: string,
+  role: RequirementsContractJudgeRole = 'requirements_critical_auditor'
+) {
   const root = createRoot();
   const runtime = judgeRuntime(transport, adapterRef, command);
   const providerRef = String(runtime.activeProviderRef);
   const scopeHash = sha256(`scope-${randomUUID()}`);
   const request = {
     schemaVersion: 'requirements-contract-canonical-judge-request/v1',
-    role: 'requirements',
+    role,
     attemptKey: {
       schemaVersion: 'requirements-contract-judge-attempt-key/v1',
-      role: 'requirements',
+      role,
       attemptId: `attempt-${randomUUID()}`,
       sourceDocumentHash: sha256(`source-${randomUUID()}`),
       semanticModelHash: sha256(`semantic-${randomUUID()}`),
@@ -283,7 +289,7 @@ describe('canonical requirements contract judge run command', () => {
         projectRoot: fixture.root,
         config: 'config.yaml',
         request: 'request.json',
-        role: 'requirements',
+        role: 'requirements_critical_auditor',
         attemptId: String((fixture.request.attemptKey as JsonRecord).attemptId),
         outputDir,
         json: true,
@@ -306,7 +312,7 @@ describe('canonical requirements contract judge run command', () => {
       expect(result).toMatchObject({
         schemaVersion: 'requirements-contract-judge-command-result/v1',
         command: 'bmad-speckit judge run',
-        role: 'requirements',
+        role: 'requirements_critical_auditor',
         processExitCode: 0,
         jsonDecision: 'pass',
         processStatusParity: true,
@@ -326,6 +332,69 @@ describe('canonical requirements contract judge run command', () => {
     }
   );
 
+  it('runs Final Acceptance when the expected-role pin matches the request authority', async () => {
+    const fixture = materializeCommandFixture(
+      'cli',
+      'CodexCliJudgeAdapter',
+      'codex',
+      'final_acceptance_judge'
+    );
+    let invocationCount = 0;
+    const result = await requirementsContractJudgeRunCommand({
+      projectRoot: fixture.root,
+      config: 'config.yaml',
+      request: 'request.json',
+      role: 'final_acceptance_judge',
+      attemptId: String((fixture.request.attemptKey as JsonRecord).attemptId),
+      outputDir: 'out',
+      invokeJudge: async ({ payload }) => {
+        invocationCount += 1;
+        expect(payload.request.role).toBe('final_acceptance_judge');
+        return {
+          schemaVersion: 'requirements-contract-normalized-judge-response/v1',
+          decision: 'pass',
+          findings: [],
+          challengeRequests: [],
+          evidenceRefs: [],
+        };
+      },
+    });
+
+    expect(invocationCount).toBe(1);
+    expect(result).toMatchObject({
+      role: 'final_acceptance_judge',
+      processExitCode: 0,
+      jsonDecision: 'pass',
+      processStatusParity: true,
+    });
+  });
+
+  it('fails closed before provider invocation when the expected-role pin mismatches', async () => {
+    const fixture = materializeCommandFixture(
+      'cli',
+      'CodexCliJudgeAdapter',
+      'codex',
+      'final_acceptance_judge'
+    );
+    let invocationCount = 0;
+
+    await expect(
+      requirementsContractJudgeRunCommand({
+        projectRoot: fixture.root,
+        config: 'config.yaml',
+        request: 'request.json',
+        role: 'requirements_critical_auditor',
+        attemptId: String((fixture.request.attemptKey as JsonRecord).attemptId),
+        outputDir: 'out',
+        invokeJudge: async () => {
+          invocationCount += 1;
+          throw new Error('provider_must_not_be_invoked');
+        },
+      })
+    ).rejects.toThrow('requirements_contract_judge_command_role_pin_mismatch');
+    expect(invocationCount).toBe(0);
+  });
+
   it('rejects every authority override before provider invocation', async () => {
     const fixture = materializeCommandFixture('cli', 'CodexCliJudgeAdapter', 'codex');
     await expect(
@@ -333,7 +402,7 @@ describe('canonical requirements contract judge run command', () => {
         projectRoot: fixture.root,
         config: 'config.yaml',
         request: 'request.json',
-        role: 'requirements',
+        role: 'requirements_critical_auditor',
         attemptId: String((fixture.request.attemptKey as JsonRecord).attemptId),
         outputDir: 'out',
         provider: 'attacker',
@@ -354,7 +423,7 @@ describe('canonical requirements contract judge run command', () => {
         '--request',
         'request.json',
         '--role',
-        'requirements',
+        'requirements_critical_auditor',
         '--attempt-id',
         'attempt-1',
         '--output-dir',
@@ -365,7 +434,7 @@ describe('canonical requirements contract judge run command', () => {
       projectRoot: 'repo',
       config: 'config.yaml',
       request: 'request.json',
-      role: 'requirements',
+      role: 'requirements_critical_auditor',
       attemptId: 'attempt-1',
       outputDir: 'out',
       json: true,
@@ -379,7 +448,7 @@ describe('canonical requirements contract judge run command', () => {
         '--request',
         'request.json',
         '--role',
-        'requirements',
+        'requirements_critical_auditor',
         '--attempt-id',
         'attempt-1',
         '--output-dir',

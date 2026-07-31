@@ -5,6 +5,10 @@ import {
   type RequirementsContractJudgeJsonRecord,
 } from './requirements-contract-judge-invocation';
 import { assertRequirementsContractJudgeInvocationReadiness } from './requirements-contract-judge-invocation-readiness-gate';
+import {
+  REQUIREMENTS_CONTRACT_JUDGE_ROLES,
+  type RequirementsContractJudgeRole,
+} from './requirements-contract-judge-role';
 import { canonicalJson, sha256, writeGovernedJson } from './requirements-contract-governed-write';
 
 type JsonRecord = Record<string, unknown>;
@@ -14,7 +18,7 @@ export interface RequirementsContractJudgeRunCommandOptions {
   projectRoot: string;
   config: string;
   request: string;
-  role: 'requirements';
+  role: RequirementsContractJudgeRole;
   attemptId: string;
   outputDir: string;
   json?: boolean;
@@ -58,6 +62,14 @@ function record(value: unknown, code: string): JsonRecord {
 function text(value: unknown, code: string): string {
   if (typeof value !== 'string' || value.length === 0) throw new Error(code);
   return value;
+}
+
+function judgeRole(value: unknown, missingCode: string): RequirementsContractJudgeRole {
+  const role = text(value, missingCode);
+  if (!REQUIREMENTS_CONTRACT_JUDGE_ROLES.includes(role as RequirementsContractJudgeRole)) {
+    throw new Error('requirements_contract_judge_command_role_pin_mismatch');
+  }
+  return role as RequirementsContractJudgeRole;
 }
 
 function rejectObjectOverrides(input: JsonRecord): void {
@@ -133,7 +145,7 @@ export function parseRequirementsContractJudgeRunArgv(
     ),
     config: text(parsed.config, 'requirements_contract_judge_command_config_missing'),
     request: text(parsed.request, 'requirements_contract_judge_command_request_missing'),
-    role: text(parsed.role, 'requirements_contract_judge_command_role_missing') as 'requirements',
+    role: judgeRole(parsed.role, 'requirements_contract_judge_command_role_missing'),
     attemptId: text(parsed['attempt-id'], 'requirements_contract_judge_command_attempt_missing'),
     outputDir: text(parsed['output-dir'], 'requirements_contract_judge_command_output_missing'),
     json: parsed.json === true,
@@ -144,17 +156,18 @@ export async function requirementsContractJudgeRunCommand(
   options: RequirementsContractJudgeRunCommandOptions
 ) {
   rejectObjectOverrides(options as unknown as JsonRecord);
-  if (options.role !== 'requirements') {
-    throw new Error('requirements_contract_judge_command_role_pin_mismatch');
-  }
   const root = path.resolve(options.projectRoot);
   const requestPath = resolveWithin(root, options.request);
   const requestEnvelope = readJson(requestPath);
-  const requestRole = text(
+  const requestRole = judgeRole(
     requestEnvelope.role,
     'requirements_contract_judge_command_request_role_missing'
   );
-  if (requestRole !== options.role) {
+  const expectedRole = judgeRole(
+    options.role,
+    'requirements_contract_judge_command_role_missing'
+  );
+  if (requestRole !== expectedRole) {
     throw new Error('requirements_contract_judge_command_role_pin_mismatch');
   }
   const attemptKey = record(
@@ -194,7 +207,7 @@ export async function requirementsContractJudgeRunCommand(
       requestPath,
       outputDir: resolveWithin(root, options.outputDir),
       command: 'bmad-speckit judge run',
-      role: options.role,
+      role: requestRole,
       attemptId: options.attemptId,
     },
     ...(requestEnvelope.structuredOutputSchema
@@ -218,7 +231,7 @@ export async function requirementsContractJudgeRunCommand(
   const result = {
     schemaVersion: 'requirements-contract-judge-command-result/v1',
     command: 'bmad-speckit judge run',
-    role: options.role,
+    role: requestRole,
     attemptId: options.attemptId,
     providerRef: prepared.providerRef,
     transport: provider.transport,
