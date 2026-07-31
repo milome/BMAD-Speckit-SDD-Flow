@@ -77,9 +77,7 @@ function withInvocationStateHash(value: JsonRecord): JsonRecord {
   delete withoutHash.stateHash;
   return {
     ...withoutHash,
-    stateHash: `sha256:${createHash('sha256')
-      .update(JSON.stringify(withoutHash))
-      .digest('hex')}`,
+    stateHash: `sha256:${createHash('sha256').update(JSON.stringify(withoutHash)).digest('hex')}`,
   };
 }
 
@@ -135,10 +133,7 @@ function rewriteCommittedBundle(input: {
   const receiptPath = path.join(input.outputDir, 'judge-provider-invocation-receipt.json');
   const statePath = path.join(input.outputDir, 'judge-provider-invocation-state.json');
   const commitPath = path.join(input.outputDir, 'judge-provider-invocation-commit.json');
-  const commit = record(
-    JSON.parse(readFileSync(commitPath, 'utf8')),
-    'test_commit_missing'
-  );
+  const commit = record(JSON.parse(readFileSync(commitPath, 'utf8')), 'test_commit_missing');
   writeFileSync(resultPath, `${JSON.stringify(input.persisted, null, 2)}\n`, 'utf8');
   const rewrittenReceipt = withInvocationReceiptHash({
     ...input.receipt,
@@ -183,11 +178,7 @@ function writeInvocationLockOwner(input: {
   );
 }
 
-function replaceCliArgument(
-  argv: string[],
-  flag: string,
-  replacement?: string
-): string[] {
+function replaceCliArgument(argv: string[], flag: string, replacement?: string): string[] {
   const index = argv.indexOf(flag);
   if (index < 0) throw new Error(`test_cli_argument_missing:${flag}`);
   if (replacement === undefined) {
@@ -214,10 +205,7 @@ function readCommittedBundle(outputDir: string): {
   return {
     persisted,
     normalized,
-    transportEvidence: record(
-      normalized.transportEvidence,
-      'test_transport_evidence_missing'
-    ),
+    transportEvidence: record(normalized.transportEvidence, 'test_transport_evidence_missing'),
     receipt: record(
       JSON.parse(
         readFileSync(path.join(outputDir, 'judge-provider-invocation-receipt.json'), 'utf8')
@@ -254,9 +242,7 @@ function nativeReadEventsFromCommittedSnapshot(input: {
     JSON.parse(readFileSync(snapshotManifestPath, 'utf8')),
     'test_snapshot_manifest_missing'
   );
-  const entries = Array.isArray(manifest.entries)
-    ? (manifest.entries as JsonRecord[])
-    : [];
+  const entries = Array.isArray(manifest.entries) ? (manifest.entries as JsonRecord[]) : [];
   return entries.flatMap((entry) => {
     const relativePath = String(entry.path);
     const filePath = path.join(snapshotRoot, relativePath);
@@ -304,10 +290,7 @@ function rewriteCommittedTranscript(input: {
 }): void {
   const bundle = readCommittedBundle(input.outputDir);
   const stdoutPath = path.resolve(input.root, String(bundle.transportEvidence.stdoutPath));
-  const transcriptPath = path.resolve(
-    input.root,
-    String(bundle.transportEvidence.transcriptPath)
-  );
+  const transcriptPath = path.resolve(input.root, String(bundle.transportEvidence.transcriptPath));
   const transcript = `${input.events.map((event) => JSON.stringify(event)).join('\n')}\n`;
   writeFileSync(stdoutPath, transcript, 'utf8');
   writeFileSync(transcriptPath, transcript, 'utf8');
@@ -317,9 +300,7 @@ function rewriteCommittedTranscript(input: {
           const initEvents = input.events.filter(
             (event) => event.type === 'system' && event.subtype === 'init'
           );
-          const resultEvent = [...input.events]
-            .reverse()
-            .find((event) => event.type === 'result');
+          const resultEvent = [...input.events].reverse().find((event) => event.type === 'result');
           const modelUsage =
             resultEvent &&
             resultEvent.modelUsage &&
@@ -378,10 +359,7 @@ function rewriteNativeStructuredOutputTranscript(input: {
 }): void {
   const bundle = readCommittedBundle(input.outputDir);
   const returnedModel = requiredReturnedModel(bundle.normalized);
-  const transcriptPath = path.resolve(
-    input.root,
-    String(bundle.transportEvidence.transcriptPath)
-  );
+  const transcriptPath = path.resolve(input.root, String(bundle.transportEvidence.transcriptPath));
   const existingEvents = readFileSync(transcriptPath, 'utf8')
     .trim()
     .split(/\r?\n/u)
@@ -517,6 +495,13 @@ function createFixture() {
     namespaceVersion: `namespace/${randomUUID()}`,
     auditAttemptId: `audit-attempt/${randomUUID()}`,
     requestHash: null,
+    scopeManifestHash: sha256Stable({ requestSeed, role: 'scope-manifest' }),
+    attemptKey: sha256Stable({ requestSeed, role: 'attempt-key' }),
+    promptTemplateHash: sha256Stable({ requestSeed, role: 'prompt-template' }),
+    assessmentSchemaHash: sha256Stable({ requestSeed, role: 'assessment-schema' }),
+    providerInvocationHash: sha256Stable({ requestSeed, role: 'provider-invocation' }),
+    sourceLedgerHash: sha256Stable({ requestSeed, role: 'source-ledger' }),
+    ledgerRef: `ledger/${randomUUID()}`,
     sourceHash: sha256Stable({ requestSeed, role: 'source' }),
     sourceDocument,
     sourceDocumentHash: sha256Stable({ requestSeed, role: 'source-document-semantic' }),
@@ -568,9 +553,7 @@ function createFixture() {
   };
 }
 
-function configureFixtureForCodex(
-  fixture: ReturnType<typeof createFixture>
-): JsonRecord {
+function configureFixtureForCodex(fixture: ReturnType<typeof createFixture>): JsonRecord {
   const configPath = path.join(fixture.root, fixture.configRelativePath);
   const config = record(
     yaml.load(readFileSync(configPath, 'utf8')),
@@ -732,7 +715,7 @@ async function loadCommand(
   return async ({ fetch: fetchImpl, ...options }) =>
     rawCommand({
       ...options,
-       ...(fetchImpl
+      ...(fetchImpl
         ? {
             executeClaudeCodeCliCommand: commandExecutorFromFetch(fetchImpl, onInvocation),
           }
@@ -747,8 +730,31 @@ function semanticAssessmentFromRequest(request: JsonRecord): JsonRecord {
   );
   const qualityGate = record(request.projectionQualityGate, 'test_projection_quality_gate_missing');
   const gateDryRun = record(request.gateDryRun, 'test_gate_dry_run_missing');
+  const providerBinding = record(
+    request.independentProviderBinding,
+    'test_independent_provider_binding_missing'
+  );
   return {
     schemaVersion: 'critical-auditor-judge-assessment/v1',
+    actorClass: 'requirements_critical_auditor_judge',
+    judgeRole: 'requirements_critical_auditor',
+    scopeManifestHash: String(request.scopeManifestHash),
+    attemptKey: String(request.attemptKey),
+    promptTemplateHash: String(request.promptTemplateHash),
+    assessmentSchemaHash: String(request.assessmentSchemaHash),
+    providerAuthority: {
+      providerRef: String(providerBinding.providerId),
+      providerRegistryHash: String(providerBinding.providerRegistryHash),
+      providerConfigurationHash: String(providerBinding.providerConfigurationHash),
+      credentialRevision: 1,
+    },
+    ledgerAuthority: {
+      ledgerRef: String(request.ledgerRef),
+      ledgerHash: String(request.sourceLedgerHash),
+    },
+    requestHash: String(request.requestHash),
+    providerInvocationHash: String(request.providerInvocationHash),
+    sourceLedgerHash: String(request.sourceLedgerHash),
     verdict: 'insufficient_audit',
     gapCandidates: [],
     validatedGaps: [],
@@ -773,6 +779,34 @@ function semanticAssessmentFromRequest(request: JsonRecord): JsonRecord {
     falsePositiveProofs: [],
     rationale: `Judge reviewed request ${String(request.requestHash)}.`,
   };
+}
+
+function semanticRoundResponseFieldsFromAssessment(assessment: JsonRecord): JsonRecord {
+  const responseFields = [
+    'verdict',
+    'gapCandidates',
+    'validatedGaps',
+    'rejectedGapCandidates',
+    'mutationPressureFindings',
+    'overBroadTaskFindings',
+    'missingProjectionFindings',
+    'invalidProofFindings',
+    'legacyBypassFindings',
+    'sourceMaterializationFindings',
+    'reviewedMustRefs',
+    'reviewedProjectionRefs',
+    'checkedProjectionGroups',
+    'checkedProjectionQualityRuleCodes',
+    'priorFindingsDisposition',
+    'falsePositiveProofs',
+    'auditReviewScoring',
+    'rationale',
+  ];
+  return Object.fromEntries(
+    responseFields
+      .filter((field) => assessment[field] !== undefined)
+      .map((field) => [field, assessment[field]])
+  );
 }
 
 function fakeJudgeFetch(options: {
@@ -928,7 +962,7 @@ function newValidGapJudgeFetch(options: { includeRepairActions: boolean }): type
                 decision: 'block',
                 findings: [
                   {
-                    schemaVersion: 'critical-auditor-judge-assessment/v1',
+                    ...semanticAssessmentFromRequest(request),
                     verdict: 'new_valid_gap',
                     gapCandidates: [{ ...validatedGap }],
                     validatedGaps: [validatedGap],
@@ -974,9 +1008,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
     expect(typeof resolveCommand).toBe('function');
     const command = resolveCommand?.(undefined) ?? [];
     expect(command[0]).toBe(process.execPath);
-    expect(command[1]?.replace(/\\/gu, '/')).toMatch(
-      /node_modules\/tsx\/dist\/cli\.mjs$/u
-    );
+    expect(command[1]?.replace(/\\/gu, '/')).toMatch(/node_modules\/tsx\/dist\/cli\.mjs$/u);
     expect(command[2]?.replace(/\\/gu, '/')).toMatch(
       /source-authority\/scripts\/requirements-contract-critical-auditor-judge-adapter\.ts$/u
     );
@@ -1000,9 +1032,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
     let invocationCount = 0;
     try {
       configureFixtureForCodex(fixture);
-      const actionModule = (await import(
-        /* @vite-ignore */ pathToFileURL(ACTION_SOURCE).href
-      )) as {
+      const actionModule = (await import(/* @vite-ignore */ pathToFileURL(ACTION_SOURCE).href)) as {
         requirementsContractCriticalAuditorJudgeAdapterCommand?: RawJudgeAdapterCommand;
       };
       const command = actionModule.requirementsContractCriticalAuditorJudgeAdapterCommand;
@@ -1060,19 +1090,14 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
     const returnedModel = `observed-model-${randomUUID()}`;
     try {
       configureFixtureForCodex(fixture);
-      const actionModule = (await import(
-        /* @vite-ignore */ pathToFileURL(ACTION_SOURCE).href
-      )) as {
+      const actionModule = (await import(/* @vite-ignore */ pathToFileURL(ACTION_SOURCE).href)) as {
         requirementsContractCriticalAuditorJudgeAdapterCommand?: RawJudgeAdapterCommand;
       };
       const command = actionModule.requirementsContractCriticalAuditorJudgeAdapterCommand;
       expect(command).toBeTypeOf('function');
       if (!command) return;
       const assessment = semanticAssessmentFromRequest(fixture.request);
-      const gateDryRun = record(
-        fixture.request.gateDryRun,
-        'test_gate_dry_run_missing'
-      );
+      const gateDryRun = record(fixture.request.gateDryRun, 'test_gate_dry_run_missing');
 
       const result = await command({
         projectRoot: fixture.root,
@@ -1145,14 +1170,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
     const binRoot = path.join(fixture.root, 'bin');
     const codexEntry =
       process.platform === 'win32'
-        ? path.join(
-            binRoot,
-            'node_modules',
-            '@openai',
-            'codex',
-            'bin',
-            'codex.js'
-          )
+        ? path.join(binRoot, 'node_modules', '@openai', 'codex', 'bin', 'codex.js')
         : path.join(binRoot, 'codex');
     const returnedModel = `observed-model-${randomUUID()}`;
     const providerRequestId = randomUUID();
@@ -1162,19 +1180,14 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
     let unexpectedProcessExecutions = 0;
     try {
       const runtimeBinding = configureFixtureForCodex(fixture);
-      const actionModule = (await import(
-        /* @vite-ignore */ pathToFileURL(ACTION_SOURCE).href
-      )) as {
+      const actionModule = (await import(/* @vite-ignore */ pathToFileURL(ACTION_SOURCE).href)) as {
         requirementsContractCriticalAuditorJudgeAdapterCommand?: RawJudgeAdapterCommand;
       };
       const command = actionModule.requirementsContractCriticalAuditorJudgeAdapterCommand;
       expect(command).toBeTypeOf('function');
       if (!command) return;
       const assessment = semanticAssessmentFromRequest(fixture.request);
-      const gateDryRun = record(
-        fixture.request.gateDryRun,
-        'test_gate_dry_run_missing'
-      );
+      const gateDryRun = record(fixture.request.gateDryRun, 'test_gate_dry_run_missing');
       const fakeCodexSource = [
         ...(process.platform === 'win32' ? [] : ['#!/usr/bin/env node']),
         "const fs = require('node:fs');",
@@ -1304,9 +1317,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
           sourceBytesHash: String(fixture.request.sourceBytesHash),
           semanticModelHash: String(fixture.request.semanticModelHash),
           projectionSetHash: String(fixture.request.projectionSetHash),
-          providerRunId: String(
-            result.independentProviderEvidence?.providerRunId
-          ),
+          providerRunId: String(result.independentProviderEvidence?.providerRunId),
           expectedProviderBinding: runtimeBinding,
         })
       ).not.toThrow();
@@ -1319,9 +1330,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
           sourceBytesHash: String(fixture.request.sourceBytesHash),
           semanticModelHash: String(fixture.request.semanticModelHash),
           projectionSetHash: String(fixture.request.projectionSetHash),
-          providerRunId: String(
-            result.independentProviderEvidence?.providerRunId
-          ),
+          providerRunId: String(result.independentProviderEvidence?.providerRunId),
           expectedProviderBinding: {
             ...runtimeBinding,
             configuredBaseUrlHash: sha256Stable({
@@ -1343,14 +1352,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
       const fixture = createFixture();
       const outputRelativePath = path.join('runtime', `codex-judge-${randomUUID()}`);
       const binRoot = path.join(fixture.root, 'bin');
-      const codexEntry = path.join(
-        binRoot,
-        'node_modules',
-        '@openai',
-        'codex',
-        'bin',
-        'codex.js'
-      );
+      const codexEntry = path.join(binRoot, 'node_modules', '@openai', 'codex', 'bin', 'codex.js');
       const returnedModel = `observed-model-${randomUUID()}`;
       const providerRequestId = randomUUID();
       const pathEnvironmentKey =
@@ -1359,10 +1361,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
       try {
         const runtimeBinding = configureFixtureForCodex(fixture);
         const assessment = semanticAssessmentFromRequest(fixture.request);
-        const gateDryRun = record(
-          fixture.request.gateDryRun,
-          'test_gate_dry_run_missing'
-        );
+        const gateDryRun = record(fixture.request.gateDryRun, 'test_gate_dry_run_missing');
         mkdirSync(path.dirname(codexEntry), { recursive: true });
         writeFileSync(path.join(binRoot, 'codex.cmd'), '@exit /b 0\r\n', 'utf8');
         writeFileSync(
@@ -1407,9 +1406,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
           ].join('\n'),
           'utf8'
         );
-        process.env[pathEnvironmentKey] = [binRoot, previousPath ?? ''].join(
-          path.delimiter
-        );
+        process.env[pathEnvironmentKey] = [binRoot, previousPath ?? ''].join(path.delimiter);
 
         const actionModule = (await import(
           /* @vite-ignore */ pathToFileURL(ACTION_SOURCE).href
@@ -1505,7 +1502,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
       const providerRun = record(result.providerRun, 'test_provider_run_missing');
       const response = record(result.response, 'test_response_missing');
       const assessment = semanticAssessmentFromRequest(fixture.request);
-      const { schemaVersion: _assessmentSchemaVersion, ...semanticAssessment } = assessment;
+      const semanticAssessment = semanticRoundResponseFieldsFromAssessment(assessment);
       const { model: requestedModel, ...runtimeIdentity } = fixture.runtimeBinding;
 
       expect(result.schemaVersion).toBe('critical-auditor-external-adapter-result/v1');
@@ -1688,9 +1685,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
         JSON.parse(requiredArgument(invocation?.args ?? [], '--json-schema')),
         'test_cli_structured_output_schema_missing'
       );
-      const validate = new Ajv2020({ allErrors: true, strict: false }).compile(
-        transportSchema
-      );
+      const validate = new Ajv2020({ allErrors: true, strict: false }).compile(transportSchema);
       const assessment = {
         ...semanticAssessmentFromRequest(fixture.request),
         auditReviewScoring: null,
@@ -1711,7 +1706,6 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
 
   it('requires audit review scoring when the request declares a scoring contract', async () => {
     const fixture = createFixture();
-    let invocation: ClaudeCodeCliCommandInvocation | undefined;
     try {
       const expectedDimensions = [`dimension/${randomUUID()}`, `dimension/${randomUUID()}`];
       fixture.request.auditReviewScoringContract = {
@@ -1744,9 +1738,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
         'utf8'
       );
 
-      const command = await loadCommand((value) => {
-        invocation = value;
-      });
+      const command = await loadCommand();
       await expect(
         command({
           cwd: fixture.root,
@@ -1757,24 +1749,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
           json: false,
           fetch: fakeJudgeFetch({ includeAssessment: true }),
         })
-      ).rejects.toThrow('critical_auditor_judge_audit_review_scoring_presence_mismatch');
-
-      const transportSchema = record(
-        JSON.parse(requiredArgument(invocation?.args ?? [], '--json-schema')),
-        'test_cli_structured_output_schema_missing'
-      );
-      const validate = new Ajv2020({ allErrors: true, strict: false }).compile(
-        transportSchema
-      );
-
-      expect(
-        validate({
-          decision: 'inconclusive',
-          findings: [semanticAssessmentFromRequest(fixture.request)],
-          challengeRequests: [],
-          evidenceRefs: [],
-        })
-      ).toBe(false);
+      ).rejects.toThrow('critical_auditor_judge_assessment_schema_invalid');
     } finally {
       rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
     }
@@ -1919,8 +1894,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
     try {
       expect(fixture.request.previousReceipts).toEqual([]);
       expect(
-        record(fixture.request.gateDryRun, 'test_gate_dry_run_missing')
-          .actionableBlockingIssues
+        record(fixture.request.gateDryRun, 'test_gate_dry_run_missing').actionableBlockingIssues
       ).toEqual([]);
       const assessment = {
         ...semanticAssessmentFromRequest(fixture.request),
@@ -2067,9 +2041,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
         JSON.parse(requiredArgument(invocation?.args ?? [], '--json-schema')),
         'test_cli_structured_output_schema_missing'
       );
-      const validate = new Ajv2020({ allErrors: true, strict: false }).compile(
-        transportSchema
-      );
+      const validate = new Ajv2020({ allErrors: true, strict: false }).compile(transportSchema);
       const sourceMustRef = String((fixture.request.mustRefs as unknown[])[0]);
       const replacementId = `${sourceMustRef}-${randomUUID()}`;
       const assessment = {
@@ -2084,10 +2056,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
             title: 'The source requirement needs independently provable projections.',
             rationale: 'The current requirement combines multiple observable behaviors.',
             evidenceRefs: [
-              String(
-                record(fixture.request.gateDryRun, 'test_gate_dry_run_missing')
-                  .reportPath
-              ),
+              String(record(fixture.request.gateDryRun, 'test_gate_dry_run_missing').reportPath),
             ],
             blocking: true,
             repairActions: [
@@ -2197,7 +2166,9 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
         'test_judge_invocation_receipt_missing'
       );
       const state = record(
-        JSON.parse(readFileSync(path.join(outputDir, 'judge-provider-invocation-state.json'), 'utf8')),
+        JSON.parse(
+          readFileSync(path.join(outputDir, 'judge-provider-invocation-state.json'), 'utf8')
+        ),
         'test_judge_invocation_state_missing'
       );
       expect(state.status).toBe('committed');
@@ -2212,9 +2183,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
         receipt.transportEvidence,
         'test_judge_transport_evidence_missing'
       );
-      expect(String(transportEvidence.cwd).replace(/\\/gu, '/')).toMatch(
-        /\/r\/[a-f0-9]{16}\/s$/u
-      );
+      expect(String(transportEvidence.cwd).replace(/\\/gu, '/')).toMatch(/\/r\/[a-f0-9]{16}\/s$/u);
     } finally {
       rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
     }
@@ -2255,7 +2224,9 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
       const first = await invoke();
       const outputDir = path.join(fixture.root, outputRelativePath);
       const firstState = record(
-        JSON.parse(readFileSync(path.join(outputDir, 'judge-provider-invocation-state.json'), 'utf8')),
+        JSON.parse(
+          readFileSync(path.join(outputDir, 'judge-provider-invocation-state.json'), 'utf8')
+        ),
         'test_judge_invocation_state_missing'
       );
       const firstProviderRunId = String(
@@ -2282,9 +2253,9 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
         String(firstState.generationId)
       );
       expect(existsSync(path.join(rejectedGenerationDir, 'semantic-rejection.json'))).toBe(true);
-      expect(existsSync(path.join(rejectedGenerationDir, 'judge-provider-invocation-commit.json'))).toBe(
-        true
-      );
+      expect(
+        existsSync(path.join(rejectedGenerationDir, 'judge-provider-invocation-commit.json'))
+      ).toBe(true);
     } finally {
       rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
     }
@@ -2326,9 +2297,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
         request: fixture.requestRelativePath,
         outputDir: outputRelativePath,
         round: Number(fixture.request.roundIndex),
-        semanticIssueCodes: [
-          `critical_auditor_response_${randomUUID().replaceAll('-', '_')}`,
-        ],
+        semanticIssueCodes: [`critical_auditor_response_${randomUUID().replaceAll('-', '_')}`],
       };
 
       await invoke();
@@ -2345,19 +2314,11 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
       });
       expect(
         existsSync(
-          path.join(
-            fixture.root,
-            outputRelativePath,
-            'judge-provider-contract-blocked.json'
-          )
+          path.join(fixture.root, outputRelativePath, 'judge-provider-contract-blocked.json')
         )
       ).toBe(true);
-      await expect(invoke()).rejects.toThrow(
-        'critical_auditor_judge_provider_contract_blocked'
-      );
-      await expect(invoke()).rejects.toThrow(
-        'critical_auditor_judge_provider_contract_blocked'
-      );
+      await expect(invoke()).rejects.toThrow('critical_auditor_judge_provider_contract_blocked');
+      await expect(invoke()).rejects.toThrow('critical_auditor_judge_provider_contract_blocked');
       expect(transportCalls).toBe(2);
     } finally {
       rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
@@ -2411,9 +2372,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
         request: fixture.requestRelativePath,
         outputDir: outputRelativePath,
         round: Number(fixture.request.roundIndex),
-        semanticIssueCodes: [
-          `critical_auditor_response_${randomUUID().replaceAll('-', '_')}`,
-        ],
+        semanticIssueCodes: [`critical_auditor_response_${randomUUID().replaceAll('-', '_')}`],
       });
       const executeAdapter = (
         orchestration as unknown as {
@@ -2507,9 +2466,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
           },
           processExecutor,
         })
-      ).toThrow(
-        `critical_auditor_judge_provider_contract_blocked:${semanticIssueFingerprint}`
-      );
+      ).toThrow(`critical_auditor_judge_provider_contract_blocked:${semanticIssueFingerprint}`);
     } finally {
       rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
     }
@@ -2663,9 +2620,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
         normalized.transportEvidence,
         'test_transport_evidence_missing'
       );
-      const argv = Array.isArray(transportEvidence.argv)
-        ? transportEvidence.argv.map(String)
-        : [];
+      const argv = Array.isArray(transportEvidence.argv) ? transportEvidence.argv.map(String) : [];
       const effortIndex = argv.indexOf('--effort');
       expect(effortIndex).toBeGreaterThanOrEqual(0);
       const downgradedArgv = argv.filter(
@@ -2792,8 +2747,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
   it.each([
     [
       'system prompt',
-      (argv: string[]) =>
-        replaceCliArgument(argv, '--system-prompt', `tampered/${randomUUID()}`),
+      (argv: string[]) => replaceCliArgument(argv, '--system-prompt', `tampered/${randomUUID()}`),
     ],
     [
       'structured output schema',
@@ -2804,14 +2758,8 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
           JSON.stringify({ type: 'object', additionalProperties: true })
         ),
     ],
-    [
-      'maximum budget',
-      (argv: string[]) => replaceCliArgument(argv, '--max-budget-usd', '0.01'),
-    ],
-    [
-      'missing maximum budget',
-      (argv: string[]) => replaceCliArgument(argv, '--max-budget-usd'),
-    ],
+    ['maximum budget', (argv: string[]) => replaceCliArgument(argv, '--max-budget-usd', '0.01')],
+    ['missing maximum budget', (argv: string[]) => replaceCliArgument(argv, '--max-budget-usd')],
   ])('rejects committed CLI evidence with a tampered %s', async (_label, mutateArgv) => {
     const fixture = createFixture();
     const outputRelativePath = path.join('runtime', 'judge-invocation');
@@ -2899,10 +2847,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
       );
       const findings = Array.isArray(normalized.findings) ? normalized.findings : [];
       const assessment = record(findings[0], 'test_judge_assessment_missing');
-      const adapterResult = record(
-        persisted.adapterResult,
-        'test_judge_adapter_result_missing'
-      );
+      const adapterResult = record(persisted.adapterResult, 'test_judge_adapter_result_missing');
       const response = record(adapterResult.response, 'test_judge_response_missing');
       const forgedAssessment = {
         ...assessment,
@@ -2946,9 +2891,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
         state,
       });
 
-      await expect(invoke()).rejects.toThrow(
-        'critical_auditor_judge_transcript_result_mismatch'
-      );
+      await expect(invoke()).rejects.toThrow('critical_auditor_judge_transcript_result_mismatch');
       expect(transportCalls).toBe(1);
     } finally {
       rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
@@ -3066,9 +3009,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
         ],
       });
 
-      await expect(invoke()).rejects.toThrow(
-        'critical_auditor_judge_transcript_result_mismatch'
-      );
+      await expect(invoke()).rejects.toThrow('critical_auditor_judge_transcript_result_mismatch');
     } finally {
       rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
     }
@@ -3234,18 +3175,9 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
         cwd: path.join(String(init.cwd), `tampered-${randomUUID()}`),
       }),
     ],
-    [
-      'session identity',
-      (init: JsonRecord) => ({ ...init, session_id: randomUUID() }),
-    ],
-    [
-      'model',
-      (init: JsonRecord) => ({ ...init, model: `tampered-model/${randomUUID()}` }),
-    ],
-    [
-      'permission mode',
-      (init: JsonRecord) => ({ ...init, permissionMode: 'default' }),
-    ],
+    ['session identity', (init: JsonRecord) => ({ ...init, session_id: randomUUID() })],
+    ['model', (init: JsonRecord) => ({ ...init, model: `tampered-model/${randomUUID()}` })],
+    ['permission mode', (init: JsonRecord) => ({ ...init, permissionMode: 'default' })],
     [
       'MCP server set',
       (init: JsonRecord) => ({
@@ -3382,9 +3314,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
         const sourcePlan = readPlan.find(
           (candidate) => candidate.sourcePath === sourceDocument.replace(/\\/gu, '/')
         );
-        expect(manifest.schemaVersion).toBe(
-          'requirements-contract-judge-evidence-snapshot/v2'
-        );
+        expect(manifest.schemaVersion).toBe('requirements-contract-judge-evidence-snapshot/v2');
         expect((sourcePlan?.segments as JsonRecord[]).length).toBeGreaterThan(1);
         expect(entries.map((entry) => entry.path)).not.toContain(
           sourceDocument.replace(/\\/gu, '/')
@@ -3466,10 +3396,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
           },
           resultEvent,
         ];
-        const processId = Number.parseInt(
-          randomUUID().replace(/-/gu, '').slice(0, 8),
-          16
-        );
+        const processId = Number.parseInt(randomUUID().replace(/-/gu, '').slice(0, 8), 16);
         rewriteCommittedTranscript({
           root: fixture.root,
           outputDir,
@@ -3688,11 +3615,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
       const gateDryRun = record(fixture.request.gateDryRun, 'test_gate_dry_run_missing');
       const gateReportPath = path.join(fixture.root, String(gateDryRun.reportPath));
       mkdirSync(path.dirname(gateReportPath), { recursive: true });
-      writeFileSync(
-        gateReportPath,
-        `${JSON.stringify({ observation: randomUUID() })}\n`,
-        'utf8'
-      );
+      writeFileSync(gateReportPath, `${JSON.stringify({ observation: randomUUID() })}\n`, 'utf8');
       const command = await loadCommand();
       const commonOptions = {
         cwd: fixture.root,
@@ -4028,19 +3951,13 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
         },
       });
 
-      const nonSchemaFailureEvents = JSON.parse(
-        JSON.stringify(nativeEvents)
-      ) as JsonRecord[];
+      const nonSchemaFailureEvents = JSON.parse(JSON.stringify(nativeEvents)) as JsonRecord[];
       const failedToolResult = nonSchemaFailureEvents
         .flatMap((event) => {
           const message = event.message as JsonRecord | undefined;
           return Array.isArray(message?.content) ? (message.content as JsonRecord[]) : [];
         })
-        .find(
-          (block) =>
-            block.type === 'tool_result' &&
-            block.tool_use_id === failedToolUseId
-        );
+        .find((block) => block.type === 'tool_result' && block.tool_use_id === failedToolUseId);
       if (!failedToolResult) throw new Error('test_failed_tool_result_missing');
       failedToolResult.content = `Provider tool failure/${randomUUID()}`;
       rewriteCommittedTranscript({
@@ -4144,10 +4061,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
         'test_transport_evidence_missing'
       );
       const stdoutPath = path.resolve(fixture.root, String(transportEvidence.stdoutPath));
-      const transcriptPath = path.resolve(
-        fixture.root,
-        String(transportEvidence.transcriptPath)
-      );
+      const transcriptPath = path.resolve(fixture.root, String(transportEvidence.transcriptPath));
       const existingTranscript = readFileSync(transcriptPath, 'utf8');
       const escapedReadEvent = {
         type: 'assistant',
@@ -4394,9 +4308,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
         ],
       });
 
-      await expect(invoke()).rejects.toThrow(
-        'critical_auditor_judge_cli_tool_path_not_manifested'
-      );
+      await expect(invoke()).rejects.toThrow('critical_auditor_judge_cli_tool_path_not_manifested');
     } finally {
       rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
     }
@@ -4422,19 +4334,12 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
           }),
         });
       await invoke();
-      const resultPath = path.join(
-        fixture.root,
-        outputRelativePath,
-        'judge-provider-result.json'
-      );
+      const resultPath = path.join(fixture.root, outputRelativePath, 'judge-provider-result.json');
       const persisted = record(
         JSON.parse(readFileSync(resultPath, 'utf8')),
         'test_judge_provider_result_missing'
       );
-      const adapterResult = record(
-        persisted.adapterResult,
-        'test_judge_adapter_result_missing'
-      );
+      const adapterResult = record(persisted.adapterResult, 'test_judge_adapter_result_missing');
       const response = record(adapterResult.response, 'test_judge_response_missing');
       writeFileSync(
         resultPath,
@@ -4715,20 +4620,14 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
         failureCode: null,
       };
       const activePreparedState = withInvocationStateHash(preparedState);
-      writeFileSync(
-        statePath,
-        `${JSON.stringify(activePreparedState, null, 2)}\n`,
-        'utf8'
-      );
+      writeFileSync(statePath, `${JSON.stringify(activePreparedState, null, 2)}\n`, 'utf8');
       mkdirSync(lockPath);
       writeInvocationLockOwner({
         lockPath,
         state: activePreparedState,
       });
 
-      const actionModule = (await import(
-        /* @vite-ignore */ pathToFileURL(ACTION_SOURCE).href
-      )) as {
+      const actionModule = (await import(/* @vite-ignore */ pathToFileURL(ACTION_SOURCE).href)) as {
         reconcileAbandonedRequirementsContractCriticalAuditorJudgeInvocation?: (input: {
           projectRoot: string;
           requestPath: string;
@@ -4761,11 +4660,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
         ...preparedState,
         startedAt: new Date(Date.now() - 60_000).toISOString(),
       });
-      writeFileSync(
-        statePath,
-        `${JSON.stringify(expiredPreparedState, null, 2)}\n`,
-        'utf8'
-      );
+      writeFileSync(statePath, `${JSON.stringify(expiredPreparedState, null, 2)}\n`, 'utf8');
       writeInvocationLockOwner({
         lockPath,
         state: expiredPreparedState,
@@ -4871,11 +4766,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
           receiptContentHash: null,
           failureCode: null,
         });
-        writeFileSync(
-          statePath,
-          `${JSON.stringify(timedOutPreparedState, null, 2)}\n`,
-          'utf8'
-        );
+        writeFileSync(statePath, `${JSON.stringify(timedOutPreparedState, null, 2)}\n`, 'utf8');
         mkdirSync(lockPath);
         writeInvocationLockOwner({
           lockPath,
@@ -4940,9 +4831,9 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
       expect(observedHostTimeoutMs).toBeGreaterThan(Number(requestPolicy.timeoutMs));
       expect(existsSync(lockPath)).toBe(false);
       expect(existsSync(path.join(outputDir, 'judge-provider-result.json'))).toBe(false);
-      expect(
-        existsSync(path.join(outputDir, 'judge-provider-invocation-receipt.json'))
-      ).toBe(false);
+      expect(existsSync(path.join(outputDir, 'judge-provider-invocation-receipt.json'))).toBe(
+        false
+      );
       const recoveredState = record(
         JSON.parse(readFileSync(statePath, 'utf8')),
         'test_timeout_recovered_judge_state_missing'
@@ -5087,7 +4978,9 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
       });
       expect(secondState.invocationId).not.toBe(firstState.invocationId);
       expect(existsSync(path.join(outputDir, 'judge-provider-result.json'))).toBe(false);
-      expect(existsSync(path.join(outputDir, 'judge-provider-invocation-receipt.json'))).toBe(false);
+      expect(existsSync(path.join(outputDir, 'judge-provider-invocation-receipt.json'))).toBe(
+        false
+      );
     } finally {
       rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
     }
@@ -5164,8 +5057,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
             model?: string;
             messages?: Array<{ role?: string; content?: string }>;
           };
-          systemPrompt =
-            body.messages?.find((message) => message.role === 'system')?.content ?? '';
+          systemPrompt = body.messages?.find((message) => message.role === 'system')?.content ?? '';
           const returnedModel = body.model ?? `gateway-selected-${randomUUID()}`;
           return new Response(
             JSON.stringify({
@@ -5191,7 +5083,7 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
       }).catch(() => undefined);
 
       expect(systemPrompt).toContain(
-      'You may use only Read inside the isolated frozen evidence snapshot.'
+        'You may use only Read inside the isolated frozen evidence snapshot.'
       );
       expect(systemPrompt).toContain('gapCandidates');
       expect(systemPrompt).toContain('validatedGaps');

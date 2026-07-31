@@ -97,6 +97,41 @@ describe('requirements contract Judge Audit Unit projector', () => {
     expect(result.blockingReasons).toContain(`duplicate_root:${duplicateRoot}`);
   });
 
+  it('returns every in-scope audit gap in one projection and rejects incomplete evidence', () => {
+    const fixture = judgeAuditUnitProjectionFixture();
+    const missingBindingRoot = JUDGE_AUDIT_FIXTURE_IDS.secondAcceptanceRoot;
+    const incompleteEvidenceRoot = JUDGE_AUDIT_FIXTURE_IDS.associatedNegativeRoot;
+    const missingSemanticRoot = JUDGE_AUDIT_FIXTURE_IDS.standaloneNegativeRoot;
+    const { [missingSemanticRoot]: _omitted, ...remainingNodes } = fixture.semanticModel.nodes;
+    const result = projectRequirementsContractJudgeAuditUnitSet({
+      ...fixture,
+      semanticModel: {
+        ...fixture.semanticModel,
+        nodes: remainingNodes,
+      },
+      compactTraceMatrix: {
+        ...fixture.compactTraceMatrix,
+        acceptanceRootIds: fixture.compactTraceMatrix.acceptanceRootIds.filter(
+          (rootRef) => rootRef !== JUDGE_AUDIT_FIXTURE_IDS.standaloneAcceptanceRoot
+        ),
+      },
+      rootBindings: fixture.rootBindings
+        .filter((binding) => binding.rootRef !== missingBindingRoot)
+        .map((binding) =>
+          binding.rootRef === incompleteEvidenceRoot ? { ...binding, evidenceRefs: [] } : binding
+        ),
+    });
+
+    expect(result.decision).toBe('block');
+    expect(result.blockingReasons).toEqual([
+      `missing_acceptance_root_projection:${JUDGE_AUDIT_FIXTURE_IDS.standaloneAcceptanceRoot}`,
+      `missing_root_binding:${missingBindingRoot}`,
+      `missing_semantic_root:${missingSemanticRoot}`,
+      `root_binding_field_missing:${incompleteEvidenceRoot}:evidenceRefs`,
+    ]);
+    expect(result.coverage.unitEvidenceCompleteness).toBe(0);
+  });
+
   it('keeps source and dist projection behavior identical for the shared fixture', () => {
     const distProjector = require(DIST_PROJECTOR_PATH) as {
       projectRequirementsContractJudgeAuditUnitSet?: typeof projectRequirementsContractJudgeAuditUnitSet;
@@ -239,5 +274,14 @@ describe('requirements contract Judge Audit Unit projector', () => {
     expect(validator({ ...result, decision: 'block' }).issues).toContain(
       'decision_consistency_mismatch'
     );
+    expect(validator({ ...result, authority: 'final_acceptance_judge' } as never).issues).toContain(
+      'authority_mismatch'
+    );
+    expect(
+      validator({
+        ...result,
+        coverage: { ...result.coverage, missingRootBindingCount: 99 },
+      }).issues
+    ).toContain('coverage_mismatch:missingRootBindingCount');
   });
 });

@@ -671,11 +671,13 @@ export function projectRequirementsContractJudgeAuditUnitSet(
     (binding) => [binding.rootRef, binding] as const
   );
   const rootBindingMap = new Map<string, JudgeAuditRootBinding>();
+  let rootBindingEvidenceCompleteness: 0 | 1 = 1;
   for (const [rootRef, binding] of rootBindingEntries) {
     if (rootBindingMap.has(rootRef)) blockingReasons.push(`duplicate_root_binding:${rootRef}`);
     rootBindingMap.set(rootRef, binding);
     if (!rootSet.has(rootRef)) blockingReasons.push(`extra_root:${rootRef}`);
     for (const field of bindingMissingFields(binding)) {
+      rootBindingEvidenceCompleteness = 0;
       blockingReasons.push(`root_binding_field_missing:${rootRef}:${field}`);
     }
     const canonicalRoot = canonicalRootByRef.get(rootRef);
@@ -695,6 +697,7 @@ export function projectRequirementsContractJudgeAuditUnitSet(
     }
   }
   const missingRootBindingRefs = allRootRefs.filter((rootRef) => !rootBindingMap.has(rootRef));
+  if (missingRootBindingRefs.length > 0) rootBindingEvidenceCompleteness = 0;
   for (const rootRef of missingRootBindingRefs) {
     blockingReasons.push(`missing_root_binding:${rootRef}`);
   }
@@ -732,7 +735,7 @@ export function projectRequirementsContractJudgeAuditUnitSet(
     'deterministicReportRefs',
     'proofRefs',
   ] as const;
-  let unitEvidenceCompleteness: 0 | 1 = 1;
+  let unitEvidenceCompleteness: 0 | 1 = rootBindingEvidenceCompleteness;
   const units = [...unitsByKey.values()]
     .map((unit) => {
       const stable = stableUnit(unit);
@@ -862,6 +865,12 @@ export function validateRequirementsContractJudgeAuditUnitSet(
   input: JudgeAuditUnitProjectionResult
 ): JudgeAuditUnitSetValidation {
   const issues: string[] = [];
+  if (input.schemaVersion !== 'requirements-contract-judge-audit-unit-set/v1') {
+    issues.push('schema_version_mismatch');
+  }
+  if (input.authority !== 'none') {
+    issues.push('authority_mismatch');
+  }
   const expectedRootRefs = uniqueSorted([
     ...input.canonicalRootUniverse.requirementRoots
       .filter((root) => root.applicability.decision === 'applicable')
@@ -965,9 +974,96 @@ export function validateRequirementsContractJudgeAuditUnitSet(
     unitCount: input.units.length,
     mustUnitCount: input.units.filter((unit) => unit.unitKind === 'must').length,
     standaloneUnitCount: input.units.filter((unit) => unit.unitKind === 'standalone').length,
+    missingRootCount: expectedRootRefs.filter((rootRef) => !rootToUnitByRef.has(rootRef)).length,
+    extraRootCount: input.rootToUnit.filter((edge) => !expectedRootSet.has(edge.rootRef)).length,
+    orphanRootCount: uniqueSorted(
+      input.units.flatMap((unit) =>
+        unit.rootRefs.filter((rootRef) => !expectedRootSet.has(rootRef))
+      )
+    ).length,
+    duplicateRootCount:
+      duplicateRefs([
+        ...input.canonicalRootUniverse.requirementRoots
+          .filter((root) => root.applicability.decision === 'applicable')
+          .map((root) => root.rootRef),
+        ...input.canonicalRootUniverse.acceptanceRoots
+          .filter((root) => root.applicability.decision === 'applicable')
+          .map((root) => root.rootRef),
+      ]).length + duplicateRefs(input.rootUniverse.acceptanceRootRefs).length,
+    missingRootBindingCount: input.blockingReasons.filter((reason) =>
+      reason.startsWith('missing_root_binding:')
+    ).length,
+    rootPayloadMismatchCount: input.blockingReasons.filter((reason) =>
+      reason.startsWith('root_payload_hash_mismatch:')
+    ).length,
+    semanticRootMismatchCount: input.blockingReasons.filter(
+      (reason) =>
+        reason.startsWith('missing_semantic_root:') ||
+        reason.startsWith('extra_semantic_root:') ||
+        reason.startsWith('root_kind_mismatch:')
+    ).length,
+    acceptanceRootMismatchCount: input.blockingReasons.filter(
+      (reason) =>
+        reason.startsWith('missing_acceptance_root_projection:') ||
+        reason.startsWith('extra_acceptance_root_projection:') ||
+        reason.startsWith('duplicate_acceptance_root_binding:') ||
+        reason.startsWith('missing_acceptance_root_binding:') ||
+        reason.startsWith('extra_acceptance_root_binding:') ||
+        reason.startsWith('acceptance_requirement_ref_unknown:') ||
+        reason.startsWith('acceptance_multiple_units:')
+    ).length,
+    invalidAssociationEdgeCount: input.blockingReasons.filter(
+      (reason) =>
+        reason.startsWith('unregistered_negative_association_edge:') ||
+        reason.startsWith('invalid_negative_association_edge:') ||
+        reason.startsWith('association_edge_hash_mismatch:')
+    ).length,
+    unitEvidenceCompleteness:
+      input.blockingReasons.some(
+        (reason) =>
+          reason.startsWith('missing_root_binding:') ||
+          reason.includes(':sourceSpanRefs') ||
+          reason.includes(':testRefs') ||
+          reason.includes(':fixtureRefs') ||
+          reason.includes(':assertionRefs') ||
+          reason.includes(':changedPathRefs') ||
+          reason.includes(':observedSequenceRefs') ||
+          reason.includes(':deterministicReportRefs') ||
+          reason.includes(':evidenceRefs') ||
+          reason.includes(':proofRefs')
+      ) ||
+      input.units.some((unit) =>
+        requiredUnitEvidenceFields.some((field) => unit[field].length === 0)
+      )
+        ? 0
+        : 1,
+    mustUnitCoverage: input.rootUniverse.requirementRootRefs
+      .filter((rootRef) => input.rootUniverse.requirementRootRefs.includes(rootRef))
+      .every((rootRef) => {
+        const canonicalRoot = input.canonicalRootUniverse.requirementRoots.find(
+          (root) => root.rootRef === rootRef
+        );
+        return (
+          (canonicalRoot?.requirementKind !== 'functional' &&
+            canonicalRoot?.requirementKind !== 'nonfunctional') ||
+          rootToUnitByRef.get(rootRef) === unitId('must', rootRef)
+        );
+      })
+      ? 1
+      : 0,
+    negativeRootCoverage: input.rootUniverse.negativeRootRefs.every((rootRef) =>
+      rootToUnitByRef.has(rootRef)
+    )
+      ? 1
+      : 0,
+    acceptanceRootCoverage: input.rootUniverse.acceptanceRootRefs.every((rootRef) =>
+      rootToUnitByRef.has(rootRef)
+    )
+      ? 1
+      : 0,
   };
   for (const [field, expected] of Object.entries(expectedCoverage)) {
-    if (input.coverage[field as keyof typeof expectedCoverage] !== expected) {
+    if (input.coverage[field as keyof typeof input.coverage] !== expected) {
       issues.push(`coverage_mismatch:${field}`);
     }
   }
