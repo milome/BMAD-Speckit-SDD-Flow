@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "campaignId",
+    "campaignLineageKey",
+    "repairTransactionManifestHash",
+    "headTreeHash",
+    "indexHash",
+    "governedWorkingBytes",
+    "renameRecords",
+    "deletionRecords",
+    "symlinkRecords",
+    "submoduleRecords",
+    "governedByteManifestHash",
+    "userChangePreservationProof",
+    "gitOperationSafety",
+    "decision",
+    "baselineManifestHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-dirty-baseline-manifest/v1" },
+    "campaignId": { "type": "string", "minLength": 1 },
+    "campaignLineageKey": { "$ref": "#/$defs/hash" },
+    "repairTransactionManifestHash": { "$ref": "#/$defs/hash" },
+    "headTreeHash": { "$ref": "#/$defs/hash" },
+    "indexHash": { "$ref": "#/$defs/hash" },
+    "governedWorkingBytes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/dirtyByteRecord" }
+    },
+    "renameRecords": { "type": "array", "items": { "$ref": "#/$defs/renameRecord" } },
+    "deletionRecords": { "type": "array", "items": { "$ref": "#/$defs/deletionRecord" } },
+    "symlinkRecords": { "type": "array", "items": { "$ref": "#/$defs/symlinkRecord" } },
+    "submoduleRecords": { "type": "array", "items": { "$ref": "#/$defs/submoduleRecord" } },
+    "governedByteManifestHash": { "$ref": "#/$defs/hash" },
+    "userChangePreservationProof": {
+      "type": "object",
+      "required": ["untouchedUnrelatedPathHashes", "decision"],
+      "properties": {
+        "untouchedUnrelatedPathHashes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/hash" }
+        },
+        "decision": { "const": "pass" }
+      },
+      "additionalProperties": false
+    },
+    "gitOperationSafety": {
+      "type": "object",
+      "required": ["stage", "commit", "reset", "overwriteUserChanges"],
+      "properties": {
+        "stage": { "const": false },
+        "commit": { "const": false },
+        "reset": { "const": false },
+        "overwriteUserChanges": { "const": false }
+      },
+      "additionalProperties": false
+    },
+    "decision": { "const": "pass" },
+    "baselineManifestHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "path": { "type": "string", "minLength": 1 },
+    "dirtyByteRecord": {
+      "type": "object",
+      "required": ["path", "status", "mode", "workingHash"],
+      "properties": {
+        "path": { "$ref": "#/$defs/path" },
+        "status": {
+          "enum": ["modified", "untracked", "deleted", "renamed", "symlink", "submodule"]
+        },
+        "mode": { "type": "string", "minLength": 1 },
+        "headHash": { "$ref": "#/$defs/hash" },
+        "workingHash": { "$ref": "#/$defs/hash" }
+      },
+      "additionalProperties": false
+    },
+    "renameRecord": {
+      "type": "object",
+      "required": ["fromPath", "toPath", "fromHash", "toHash"],
+      "properties": {
+        "fromPath": { "$ref": "#/$defs/path" },
+        "toPath": { "$ref": "#/$defs/path" },
+        "fromHash": { "$ref": "#/$defs/hash" },
+        "toHash": { "$ref": "#/$defs/hash" }
+      },
+      "additionalProperties": false
+    },
+    "deletionRecord": {
+      "type": "object",
+      "required": ["path", "headHash"],
+      "properties": {
+        "path": { "$ref": "#/$defs/path" },
+        "headHash": { "$ref": "#/$defs/hash" }
+      },
+      "additionalProperties": false
+    },
+    "symlinkRecord": {
+      "type": "object",
+      "required": ["path", "target", "linkHash"],
+      "properties": {
+        "path": { "$ref": "#/$defs/path" },
+        "target": { "$ref": "#/$defs/path" },
+        "linkHash": { "$ref": "#/$defs/hash" }
+      },
+      "additionalProperties": false
+    },
+    "submoduleRecord": {
+      "type": "object",
+      "required": ["path", "commitHash"],
+      "properties": {
+        "path": { "$ref": "#/$defs/path" },
+        "commitHash": { "$ref": "#/$defs/hash" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

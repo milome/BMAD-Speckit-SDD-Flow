@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "campaignId",
+    "campaignLineageKey",
+    "baselineManifestHash",
+    "workspaceRoot",
+    "isolated",
+    "governedByteParity",
+    "userChangePreservationProof",
+    "hostOperationSafety",
+    "decision",
+    "workspaceReceiptHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-remediation-workspace-receipt/v1" },
+    "campaignId": { "type": "string", "minLength": 1 },
+    "campaignLineageKey": { "$ref": "#/$defs/hash" },
+    "baselineManifestHash": { "$ref": "#/$defs/hash" },
+    "workspaceRoot": { "type": "string", "minLength": 1 },
+    "isolated": { "const": true },
+    "governedByteParity": {
+      "type": "object",
+      "required": ["reproducedPathHashes", "decision"],
+      "properties": {
+        "reproducedPathHashes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/hash" }
+        },
+        "decision": { "const": "pass" }
+      },
+      "additionalProperties": false
+    },
+    "userChangePreservationProof": {
+      "type": "object",
+      "required": ["untouchedUnrelatedPathHashes", "decision"],
+      "properties": {
+        "untouchedUnrelatedPathHashes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/hash" }
+        },
+        "decision": { "const": "pass" }
+      },
+      "additionalProperties": false
+    },
+    "hostOperationSafety": {
+      "type": "object",
+      "required": ["staged", "committed", "reset", "overwrittenUserChanges"],
+      "properties": {
+        "staged": { "const": false },
+        "committed": { "const": false },
+        "reset": { "const": false },
+        "overwrittenUserChanges": { "const": false }
+      },
+      "additionalProperties": false
+    },
+    "decision": { "const": "pass" },
+    "workspaceReceiptHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+  },
+  "additionalProperties": false
+}
