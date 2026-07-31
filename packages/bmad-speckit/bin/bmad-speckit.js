@@ -1213,33 +1213,6 @@ program
   );
 
 program
-  .command('requirements-contract-critical-auditor-judge-adapter')
-  .description('Run one Critical Auditor round through the configured independent Judge')
-  .requiredOption('--project-root <path>', 'Project root containing Judge configuration')
-  .requiredOption('--config <path>', 'Public Judge runtime configuration')
-  .requiredOption('--request <path>', 'Critical Auditor round request')
-  .requiredOption('--round <number>', 'Critical Auditor round number')
-  .requiredOption('--output-dir <path>', 'Controlled Judge invocation output directory')
-  .option('--json', 'Print machine-readable JSON')
-  .action((opts) =>
-    runCommandPromise(
-      'requirements-contract-critical-auditor-judge-adapter',
-      loadCommand(
-        '../dist/main-agent/source-authority/scripts/requirements-contract-critical-auditor-judge-adapter.js',
-        'requirementsContractCriticalAuditorJudgeAdapterCommand'
-      )({
-        cwd: opts.projectRoot,
-        projectRoot: opts.projectRoot,
-        config: opts.config,
-        request: opts.request,
-        round: Number(opts.round),
-        outputDir: opts.outputDir,
-        json: Boolean(opts.json),
-      })
-    )
-  );
-
-program
   .command('requirements-contract-gap-closure-readonly-auditor-adapter')
   .description('Run the package-owned readonly independent gap closure auditor adapter')
   .requiredOption('--project-root <path>', 'Project root containing the closure evidence request')

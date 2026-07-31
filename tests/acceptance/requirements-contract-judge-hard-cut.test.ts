@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
 const BIN = path.join(ROOT, 'packages/bmad-speckit/bin/bmad-speckit.js');
+const LEGACY_COMMAND = 'requirements-contract-critical-auditor-judge-adapter';
 const BIN_SOURCE = readFileSync(BIN, 'utf8');
 const SPECKIT_CLI_SOURCE = readFileSync(
   path.join(
@@ -24,6 +25,7 @@ describe('Judge public entry hard cut', () => {
     expect(SPECKIT_CLI_SOURCE).toContain("args[1] !== 'run'");
     expect(BIN_SOURCE).not.toContain('--external-adapter-command');
     expect(BIN_SOURCE).not.toContain('--adapter-command');
+    expect(BIN_SOURCE).not.toContain(LEGACY_COMMAND);
     expect(SPECKIT_CLI_SOURCE).not.toContain('resolveCriticalAuditorExternalAdapterCommand');
   });
 
@@ -35,11 +37,19 @@ describe('Judge public entry hard cut', () => {
     expect(canonical.status).toBe(0);
     expect(canonical.stdout).toContain('judge run');
 
-    const legacyEntry = spawnSync(process.execPath, [BIN, 'judge-adapter', '--help'], {
-      cwd: ROOT,
-      encoding: 'utf8',
-    });
-    expect(legacyEntry.status).not.toBe(0);
+    const legacyEntry = spawnSync(
+      process.execPath,
+      [BIN, LEGACY_COMMAND, '--help'],
+      {
+        cwd: ROOT,
+        encoding: 'utf8',
+      }
+    );
+    expect(legacyEntry.error).toBeUndefined();
+    expect(legacyEntry.signal).toBeNull();
+    expect(legacyEntry.status).toBe(1);
+    expect(legacyEntry.stderr).toContain('unknown command');
+    expect(legacyEntry.stderr).toContain(LEGACY_COMMAND);
 
     const legacyOverride = spawnSync(
       process.execPath,
