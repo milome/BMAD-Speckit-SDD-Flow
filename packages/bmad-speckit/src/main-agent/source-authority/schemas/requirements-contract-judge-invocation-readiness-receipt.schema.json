@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-judge-invocation-readiness-receipt.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "role",
+    "attemptId",
+    "requestHash",
+    "sourceDocumentHash",
+    "semanticModelHash",
+    "projectionSetHash",
+    "scopeHash",
+    "providerRegistryHash",
+    "credentialBindingHash",
+    "promptHash",
+    "schemaHash",
+    "policyHash",
+    "ledgerHash",
+    "auditUnitSetHash",
+    "vetoSetHash",
+    "readinessHash",
+    "providerInvocationCount",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-judge-invocation-readiness-receipt/v1"
+    },
+    "role": {
+      "const": "requirements"
+    },
+    "attemptId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requestHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "sourceDocumentHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "semanticModelHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "projectionSetHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "scopeHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "providerRegistryHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "credentialBindingHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "promptHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "schemaHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "policyHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "ledgerHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "auditUnitSetHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "vetoSetHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "readinessHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "providerInvocationCount": {
+      "const": 0
+    },
+    "decision": {
+      "const": "pass"
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}
