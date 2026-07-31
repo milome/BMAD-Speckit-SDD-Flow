@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "campaignId",
+    "campaignLineageKey",
+    "initialReviewAttemptKey",
+    "remediationLedgerHash",
+    "originSetHash",
+    "repairUnits",
+    "graph",
+    "permutationHashes",
+    "decision",
+    "manifestHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-repair-transaction-manifest/v1" },
+    "campaignId": { "type": "string", "minLength": 1 },
+    "campaignLineageKey": { "$ref": "#/$defs/hash" },
+    "initialReviewAttemptKey": { "$ref": "#/$defs/hash" },
+    "remediationLedgerHash": { "$ref": "#/$defs/hash" },
+    "originSetHash": { "$ref": "#/$defs/hash" },
+    "repairUnits": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/repairUnit" }
+    },
+    "graph": {
+      "type": "object",
+      "required": ["unitIds", "edges", "atomicGroups", "cycleDetected", "decision", "graphHash"],
+      "properties": {
+        "unitIds": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["fromUnitId", "toUnitId"],
+            "properties": {
+              "fromUnitId": { "type": "string", "minLength": 1 },
+              "toUnitId": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          }
+        },
+        "atomicGroups": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["atomicGroupId", "unitIds", "originIds"],
+            "properties": {
+              "atomicGroupId": { "$ref": "#/$defs/hash" },
+              "unitIds": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+              "originIds": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/hash" } }
+            },
+            "additionalProperties": false
+          }
+        },
+        "cycleDetected": { "const": false },
+        "decision": { "const": "pass" },
+        "graphHash": { "$ref": "#/$defs/hash" }
+      },
+      "additionalProperties": false
+    },
+    "permutationHashes": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/hash" }
+    },
+    "decision": { "const": "pass" },
+    "manifestHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "repairUnit": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "unitId",
+        "originIds",
+        "dependencyUnitIds",
+        "conflictUnitIds",
+        "rootCauseRef",
+        "semanticRegionRef",
+        "rollbackBoundaryRef",
+        "postconditionRef",
+        "atomicGroupId",
+        "authorizedPaths",
+        "preconditionHashes",
+        "closurePredicates",
+        "verificationRefs",
+        "modelSuggestionRefs",
+        "selfHash"
+      ],
+      "properties": {
+        "schemaVersion": { "const": "requirements-contract-repair-unit/v1" },
+        "unitId": { "type": "string", "minLength": 1 },
+        "originIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/hash" }
+        },
+        "dependencyUnitIds": { "type": "array", "items": { "type": "string" } },
+        "conflictUnitIds": { "type": "array", "items": { "type": "string" } },
+        "rootCauseRef": { "type": "string", "minLength": 1 },
+        "semanticRegionRef": { "type": "string", "minLength": 1 },
+        "rollbackBoundaryRef": { "type": "string", "minLength": 1 },
+        "postconditionRef": { "type": "string", "minLength": 1 },
+        "atomicGroupId": { "$ref": "#/$defs/hash" },
+        "authorizedPaths": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "preconditionHashes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/hash" }
+        },
+        "closurePredicates": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "verificationRefs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "modelSuggestionRefs": { "type": "array", "items": { "type": "string" } },
+        "selfHash": { "$ref": "#/$defs/hash" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
