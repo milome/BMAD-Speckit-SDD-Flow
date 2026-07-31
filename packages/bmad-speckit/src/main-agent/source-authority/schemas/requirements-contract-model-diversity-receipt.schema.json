@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "campaignId",
+    "campaignLineageKey",
+    "reviewerModel",
+    "finalJudgeModel",
+    "actorPairHash",
+    "initialReviewAttemptKey",
+    "decision",
+    "receiptHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-model-diversity-receipt/v1" },
+    "campaignId": { "type": "string", "minLength": 1 },
+    "campaignLineageKey": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "reviewerModel": { "$ref": "#/$defs/modelIdentity" },
+    "finalJudgeModel": { "$ref": "#/$defs/modelIdentity" },
+    "actorPairHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "initialReviewAttemptKey": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "decision": { "const": "pass" },
+    "receiptHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+  },
+  "$defs": {
+    "modelIdentity": {
+      "type": "object",
+      "required": [
+        "actorClass",
+        "providerRef",
+        "modelRef",
+        "modelFamily",
+        "modelRevisionHash",
+        "invocationMode",
+        "fallbackUsed"
+      ],
+      "properties": {
+        "actorClass": {
+          "enum": ["bounded_code_reviewer", "final_acceptance_judge"]
+        },
+        "providerRef": { "type": "string", "minLength": 1 },
+        "modelRef": { "type": "string", "minLength": 1 },
+        "modelFamily": { "type": "string", "minLength": 1 },
+        "modelRevisionHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "invocationMode": { "const": "native" },
+        "fallbackUsed": { "const": false }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
