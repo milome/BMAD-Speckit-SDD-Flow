@@ -38,13 +38,7 @@
     "credentialConfig": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "source",
-        "path",
-        "schemaVersion",
-        "allowedRoot",
-        "environmentFallbackAllowed"
-      ],
+      "required": ["source", "path", "schemaVersion", "allowedRoot", "environmentFallbackAllowed"],
       "properties": {
         "source": { "const": "config_file" },
         "path": { "type": "string", "minLength": 1 },
@@ -110,11 +104,7 @@
         "authentication": {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "type",
-            "sensitivity",
-            "arbitraryNonEmptyValueAllowed"
-          ],
+          "required": ["type", "sensitivity", "arbitraryNonEmptyValueAllowed"],
           "properties": {
             "type": { "enum": ["bearer", "api_key", "claude_code_session"] },
             "sensitivity": { "enum": ["placeholder", "secret", "host_managed"] },
@@ -148,11 +138,7 @@
         "requestPolicy": {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "timeoutMs",
-            "maximumAttempts",
-            "structuredResponseRequired"
-          ],
+          "required": ["timeoutMs", "maximumAttempts", "structuredResponseRequired"],
           "properties": {
             "timeoutMs": { "type": "integer", "minimum": 1 },
             "maximumAttempts": { "const": 1 },

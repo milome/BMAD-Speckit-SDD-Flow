@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-judge-ledger-entry.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "ledgerEntryId",
+    "ledgerNamespace",
+    "actorClass",
+    "judgeRole",
+    "attemptKeyHash",
+    "sourceAuthorityHash",
+    "observationHash",
+    "dispositionHash",
+    "previousLedgerEntryHash",
+    "ledgerEntryHash",
+    "appendOnly",
+    "decisionFieldOrigin",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-judge-ledger-entry/v1" },
+    "ledgerEntryId": { "type": "string", "minLength": 1 },
+    "ledgerNamespace": { "enum": ["requirements", "final_acceptance"] },
+    "actorClass": {
+      "enum": ["requirements_critical_auditor_judge", "final_acceptance_judge"]
+    },
+    "judgeRole": {
+      "enum": ["requirements_critical_auditor", "final_acceptance_judge"]
+    },
+    "attemptKeyHash": { "$ref": "#/$defs/hash" },
+    "sourceAuthorityHash": { "$ref": "#/$defs/hash" },
+    "observationHash": { "$ref": "#/$defs/hash" },
+    "dispositionHash": { "$ref": "#/$defs/hash" },
+    "previousLedgerEntryHash": {
+      "anyOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }]
+    },
+    "ledgerEntryHash": { "$ref": "#/$defs/hash" },
+    "appendOnly": { "const": true },
+    "decisionFieldOrigin": { "const": "package_calculated" },
+    "decision": { "const": "recorded" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "actorClass": { "const": "requirements_critical_auditor_judge" }
+        }
+      },
+      "then": {
+        "properties": {
+          "judgeRole": { "const": "requirements_critical_auditor" },
+          "ledgerNamespace": { "const": "requirements" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "actorClass": { "const": "final_acceptance_judge" } }
+      },
+      "then": {
+        "properties": {
+          "judgeRole": { "const": "final_acceptance_judge" },
+          "ledgerNamespace": { "const": "final_acceptance" }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

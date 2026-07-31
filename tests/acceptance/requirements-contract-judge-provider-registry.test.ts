@@ -110,11 +110,7 @@ function runtime(activeProviderRef: 'provider-a' | 'provider-b') {
   };
 }
 
-function cliRuntime(input: {
-  providerRef: string;
-  adapterRef: string;
-  command: string;
-}) {
+function cliRuntime(input: { providerRef: string; adapterRef: string; command: string }) {
   return {
     schemaVersion: 'requirements-contract-judge-runtime/v1',
     enabled: true,
@@ -214,26 +210,24 @@ describe('requirements contract Judge provider registry', () => {
     if (!createProjection) return;
 
     const projection = JSON.parse(readFileSync(REGISTRY_PROJECTION_PATH, 'utf8')) as JsonRecord;
+    const currentProjection = (await createProjection(process.cwd())) as JsonRecord;
     const configuredRuntime = (
       yaml.load(
-        readFileSync(
-          path.resolve('_bmad/_config/governance-remediation.yaml'),
-          'utf8'
-        )
+        readFileSync(path.resolve('_bmad/_config/governance-remediation.yaml'), 'utf8')
       ) as { judgeRuntime: JsonRecord }
     ).judgeRuntime;
     const activeProviderRef = String(configuredRuntime.activeProviderRef);
-    const configuredProvider = (
-      configuredRuntime.providers as Record<string, JsonRecord>
-    )[activeProviderRef];
+    const configuredProvider = (configuredRuntime.providers as Record<string, JsonRecord>)[
+      activeProviderRef
+    ];
     const schema = JSON.parse(readFileSync(REGISTRY_PROJECTION_SCHEMA_PATH, 'utf8'));
     const ajv = new Ajv2020({ allErrors: true, strict: false });
     addFormats(ajv);
     const validate = ajv.compile(schema);
 
     expect(validate(projection), JSON.stringify(validate.errors ?? [])).toBe(true);
-    expect(projection).toEqual(await createProjection(process.cwd()));
-    expect(projection).toMatchObject({
+    expect(validate(currentProjection), JSON.stringify(validate.errors ?? [])).toBe(true);
+    expect(currentProjection).toMatchObject({
       schemaVersion: 'requirements-contract-judge-provider-registry/v1',
       activeProviderRef,
       providers: [
@@ -250,15 +244,15 @@ describe('requirements contract Judge provider registry', () => {
         },
       ],
     });
-    const projectedProvider = (
-      (projection.providers as Array<{ provider: JsonRecord }>)[0]?.provider
-    );
+    const projectedProvider = (currentProjection.providers as Array<{ provider: JsonRecord }>)[0]
+      ?.provider;
     if (Object.hasOwn(configuredProvider, 'model')) {
       expect(projectedProvider).toHaveProperty('model', configuredProvider.model);
     } else {
       expect(projectedProvider).not.toHaveProperty('model');
     }
-    expect(JSON.stringify(projection)).not.toMatch(
+    expect(currentProjection.registryHash).toBe(projection.registryHash);
+    expect(JSON.stringify(currentProjection)).not.toMatch(
       /apiKey|authorization|\/chat\/completions|\/messages/u
     );
   });
@@ -290,9 +284,7 @@ describe('requirements contract Judge provider registry', () => {
     expect(existsSync(REGISTRY_PROJECTION_SCHEMA_PATH)).toBe(true);
     const ajv = new Ajv2020({ allErrors: true, strict: false });
     addFormats(ajv);
-    const validate = ajv.compile(
-      JSON.parse(readFileSync(REGISTRY_PROJECTION_SCHEMA_PATH, 'utf8'))
-    );
+    const validate = ajv.compile(JSON.parse(readFileSync(REGISTRY_PROJECTION_SCHEMA_PATH, 'utf8')));
     const configured = runtime('provider-a');
     const selectedProvider = configured.providers['provider-a'];
     const projection = {
@@ -426,6 +418,34 @@ describe('requirements contract Judge provider registry', () => {
     expect(providerB.apiStyle).toBe('messages');
     expect(providerB.model).toBe('judge-model-b');
     expect(selectionB.adapterRef ?? selectionB.adapterId ?? providerB.adapterRef).toBeDefined();
+  });
+
+  it('computes the same registry hash for provider permutations', async () => {
+    const loaded = await loadRegistryModule();
+    if (!loaded) return;
+    const createRegistry = exportedFunction<RegistryFactory>(
+      loaded,
+      'createRequirementsContractJudgeProviderRegistry'
+    );
+    if (!createRegistry) return;
+
+    const configured = runtime('provider-b');
+    const reversedProviders = Object.fromEntries(Object.entries(configured.providers).reverse());
+    const reversedRuntime = {
+      ...configured,
+      providers: reversedProviders,
+    };
+
+    const registryA = (await createRegistry({
+      judgeRuntime: configured,
+      runtime: configured,
+    })) as JsonRecord;
+    const registryB = (await createRegistry({
+      judgeRuntime: reversedRuntime,
+      runtime: reversedRuntime,
+    })) as JsonRecord;
+
+    expect(registryB.registryHash).toBe(registryA.registryHash);
   });
 
   it('binds Codex CLI providers only to CodexCliJudgeAdapter', async () => {

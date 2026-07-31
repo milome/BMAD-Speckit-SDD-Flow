@@ -110,8 +110,7 @@ function adapterFor(
   if (
     provider.apiStyle === 'cli' &&
     (provider.transport === 'claude-code-cli' ||
-      (provider.transport === 'cli' &&
-        provider.adapterRef === 'ClaudeCodeCliJudgeAdapter'))
+      (provider.transport === 'cli' && provider.adapterRef === 'ClaudeCodeCliJudgeAdapter'))
   ) {
     const endpoint = record(provider.endpoint, 'judge_provider_endpoint_invalid');
     if (endpoint.command !== 'claude') {
@@ -156,8 +155,11 @@ export function createRequirementsContractJudgeProviderRegistry(
   if (typeof activeProviderRef !== 'string' || !Object.hasOwn(providers, activeProviderRef)) {
     throw new Error('judge_provider_active_ref_missing');
   }
+  const orderedProviderEntries = Object.entries(providers).sort(([left], [right]) =>
+    left.localeCompare(right, 'en')
+  );
   const bindings = Object.fromEntries(
-    Object.entries(providers).map(([providerRef, value]) => {
+    orderedProviderEntries.map(([providerRef, value]) => {
       const provider = record(value, 'judge_provider_definition_invalid');
       const binding = adapterFor(provider, dependencies);
       return [providerRef, { providerRef, provider, ...binding }];
