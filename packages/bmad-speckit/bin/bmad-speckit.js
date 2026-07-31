@@ -118,6 +118,28 @@ program
   .enablePositionalOptions()
   .description('BMAD-Speckit: init, check, version, upgrade, uninstall, config, feedback');
 
+const judgePublicCommand = program
+  .command('judge')
+  .description('Run the canonical requirements contract Judge command');
+
+judgePublicCommand
+  .command('run')
+  .description('Run the canonical requirements contract Judge invocation')
+  .requiredOption('--project-root <path>', 'Project root containing Judge configuration')
+  .requiredOption('--config <path>', 'Public Judge runtime configuration')
+  .requiredOption('--request <path>', 'Canonical Judge request')
+  .requiredOption('--role <role>', 'Pinned Judge role; must be requirements')
+  .requiredOption('--attempt-id <id>', 'Current Judge attempt identity')
+  .requiredOption('--output-dir <path>', 'Controlled Judge output directory')
+  .option('--json', 'Print machine-readable JSON')
+  .action((_opts, command) =>
+    runRuntimeModule(
+      '../dist/main-agent/source-authority/scripts/speckit-cli.js',
+      'runJudgePublicCommand',
+      forwardedArgsFromCommand(command)
+    )
+  );
+
 program
   .command('init [project-name]')
   .description('Initialize a new bmad-speckit project')
