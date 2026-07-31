@@ -93,8 +93,7 @@ const MAX_STDOUT_BYTES = 32 * 1024 * 1024;
 const MAX_STDERR_BYTES = 4 * 1024 * 1024;
 const MAX_READ_SEGMENT_BYTES = 32 * 1024;
 const WINDOWS_LEGACY_PATH_LIMIT = 260;
-const UUID_V4_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+const UUID_V4_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const ALLOWED_TOOLS = ['Read'] as const;
 const ASSESSMENT_VERDICTS = [
   'no_new_valid_gap',
@@ -144,6 +143,19 @@ function sha256(value: string | Buffer): string {
   return `${HASH_PREFIX}${createHash('sha256').update(value).digest('hex')}`;
 }
 
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value) ?? String(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+  }
+  return `{${Object.keys(value as JsonRecord)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableStringify((value as JsonRecord)[key])}`)
+    .join(',')}}`;
+}
+
 function slash(value: string): string {
   return value.replace(/\\/gu, '/');
 }
@@ -180,6 +192,65 @@ function writeTextAtomic(target: string, content: string): void {
 
 function writeJsonAtomic(target: string, value: unknown): void {
   writeTextAtomic(target, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+function validateInvocationReceipt(receipt: JsonRecord): void {
+  const schemaPath = path.resolve(
+    __dirname,
+    '..',
+    'schemas',
+    'requirements-contract-judge-invocation-receipt.schema.json'
+  );
+  const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8')) as object;
+  const validate = new Ajv2020({ allErrors: true, strict: false }).compile(schema);
+  if (!validate(receipt)) {
+    throw new Error(
+      `claude_code_cli_judge_invocation_receipt_invalid:${JSON.stringify(validate.errors ?? [])}`
+    );
+  }
+  const unsigned = { ...receipt };
+  delete unsigned.receiptHash;
+  if (receipt.receiptHash !== sha256(stableStringify(unsigned))) {
+    throw new Error('claude_code_cli_judge_invocation_receipt_hash_mismatch');
+  }
+}
+
+function writeInvocationReceipt(input: {
+  outputDir: string;
+  startedAt: string;
+  completedAt: string;
+  providerRef: string;
+  transport: string;
+  providerRequestId: string;
+  decision: 'pass' | 'block' | 'inconclusive';
+  normalizedResponseHash: string;
+  transportEvidenceHash: string;
+}): JsonRecord {
+  const payload: JsonRecord = {
+    schemaVersion: 'requirements-contract-judge-invocation-receipt/v1',
+    invocationId: randomUUID(),
+    providerRef: input.providerRef,
+    transport: input.transport,
+    adapterRef: 'ClaudeCodeCliJudgeAdapter',
+    providerRequestId: input.providerRequestId,
+    outcome: 'decided',
+    decision: input.decision,
+    unknownOutcomeReason: null,
+    automaticSemanticRetry: false,
+    maximumAttempts: 1,
+    attemptOrdinal: 1,
+    normalizedResponseHash: input.normalizedResponseHash,
+    transportEvidenceHash: input.transportEvidenceHash,
+    startedAt: input.startedAt,
+    completedAt: input.completedAt,
+  };
+  const receipt = {
+    ...payload,
+    receiptHash: sha256(stableStringify(payload)),
+  };
+  validateInvocationReceipt(receipt);
+  writeJsonAtomic(path.join(input.outputDir, 'judge-invocation-receipt.json'), receipt);
+  return receipt;
 }
 
 function pathLikeKey(key: string): boolean {
@@ -293,10 +364,9 @@ function materializeSnapshotFile(input: {
       path: segmentPath,
       hash: segmentHash,
       bytes: segmentContent.byteLength,
-      roles:
-        !useReadSegments
-          ? sourceRoles
-          : [...new Set([...sourceRoles, 'judgeReadSegment'])].sort(),
+      roles: !useReadSegments
+        ? sourceRoles
+        : [...new Set([...sourceRoles, 'judgeReadSegment'])].sort(),
     });
     segments.push({
       path: segmentPath,
@@ -396,9 +466,7 @@ function materializeEvidenceSnapshot(input: {
   const entries = materializedFiles.flatMap((materialized) => materialized.entries);
   const readPlan = materializedFiles.map((materialized) => materialized.readPlan);
   const sourceRelativePath = slash(path.relative(projectRoot, sourcePath));
-  const sourceReadPlan = readPlan.find(
-    (entry) => entry.sourcePath === sourceRelativePath
-  );
+  const sourceReadPlan = readPlan.find((entry) => entry.sourcePath === sourceRelativePath);
   if (!sourceReadPlan || sourceReadPlan.sourceHash !== sourceBytesHash) {
     throw new Error('claude_code_cli_judge_source_snapshot_binding_mismatch');
   }
@@ -493,14 +561,8 @@ function executionContext(payload: JsonRecord): ExecutionContext {
     'claude_code_cli_judge_execution_context_missing'
   );
   return {
-    projectRoot: requiredText(
-      context.projectRoot,
-      'claude_code_cli_judge_project_root_missing'
-    ),
-    requestPath: requiredText(
-      context.requestPath,
-      'claude_code_cli_judge_request_path_missing'
-    ),
+    projectRoot: requiredText(context.projectRoot, 'claude_code_cli_judge_project_root_missing'),
+    requestPath: requiredText(context.requestPath, 'claude_code_cli_judge_request_path_missing'),
     outputDir: requiredText(context.outputDir, 'claude_code_cli_judge_output_dir_missing'),
   };
 }
@@ -522,16 +584,12 @@ function configuredRequestedModel(provider: JsonRecord): string | null {
 function assertProvider(provider: JsonRecord): void {
   const legacyBinding = provider.transport === 'claude-code-cli';
   const configuredBinding =
-    provider.transport === 'cli' &&
-    provider.adapterRef === 'ClaudeCodeCliJudgeAdapter';
+    provider.transport === 'cli' && provider.adapterRef === 'ClaudeCodeCliJudgeAdapter';
   if ((!legacyBinding && !configuredBinding) || provider.apiStyle !== 'cli') {
     throw new Error('claude_code_cli_judge_provider_binding_invalid');
   }
   const endpoint = record(provider.endpoint, 'claude_code_cli_judge_endpoint_invalid');
-  const command = requiredText(
-    endpoint.command,
-    'claude_code_cli_judge_command_missing'
-  );
+  const command = requiredText(endpoint.command, 'claude_code_cli_judge_command_missing');
   if (
     (legacyBinding && command !== 'claude') ||
     endpoint.resolutionMode !== 'path_search' ||
@@ -578,10 +636,7 @@ function assertProvider(provider: JsonRecord): void {
       throw new Error('claude_code_cli_judge_authentication_invalid');
     }
   }
-  const auditPolicy = record(
-    provider.auditPolicy,
-    'claude_code_cli_judge_audit_policy_invalid'
-  );
+  const auditPolicy = record(provider.auditPolicy, 'claude_code_cli_judge_audit_policy_invalid');
   const allowedTools = Array.isArray(auditPolicy.allowedTools)
     ? auditPolicy.allowedTools.map(String)
     : [];
@@ -601,10 +656,7 @@ function credentialBinding(input: {
   provider: JsonRecord;
   credential: unknown;
 }): CredentialBinding {
-  const endpoint = record(
-    input.provider.endpoint,
-    'claude_code_cli_judge_endpoint_invalid'
-  );
+  const endpoint = record(input.provider.endpoint, 'claude_code_cli_judge_endpoint_invalid');
   const authentication = record(
     input.provider.authentication,
     'claude_code_cli_judge_authentication_invalid'
@@ -630,10 +682,7 @@ function credentialBinding(input: {
       credentialEnvironmentVariable: null,
     };
   }
-  const credential = record(
-    input.credential,
-    'claude_code_cli_judge_credential_required'
-  );
+  const credential = record(input.credential, 'claude_code_cli_judge_credential_required');
   const credentialRevision = Number(credential.credentialRevision);
   if (
     credential.providerRef !== input.providerRef ||
@@ -644,10 +693,7 @@ function credentialBinding(input: {
   ) {
     throw new Error('claude_code_cli_judge_credential_binding_invalid');
   }
-  const baseUrl = requiredText(
-    endpoint.baseUrl,
-    'claude_code_cli_judge_gateway_base_url_missing'
-  );
+  const baseUrl = requiredText(endpoint.baseUrl, 'claude_code_cli_judge_gateway_base_url_missing');
   const secret = readRequirementsContractJudgeCredentialSecret(input.credential);
   const credentialEnvironmentVariable =
     authentication.type === 'bearer' ? 'ANTHROPIC_AUTH_TOKEN' : 'ANTHROPIC_API_KEY';
@@ -710,12 +756,7 @@ export function buildClaudeCodeCliJudgeArgs(input: {
     'claude_code_cli_judge_request_policy_invalid'
   );
   const configuredModel = configuredRequestedModel(input.provider);
-  const args = [
-    '--print',
-    '--effort',
-    'xhigh',
-    '--bare',
-  ];
+  const args = ['--print', '--effort', 'xhigh', '--bare'];
   if (configuredModel !== null) {
     args.push('--model', configuredModel);
   }
@@ -908,9 +949,7 @@ function validatedTranscriptModelBinding(
 } {
   const initModels = events
     .filter((event) => event.type === 'system' && event.subtype === 'init')
-    .map((event) =>
-      requiredText(event.model, 'claude_code_cli_judge_init_model_missing')
-    );
+    .map((event) => requiredText(event.model, 'claude_code_cli_judge_init_model_missing'));
   const assistantModels = events
     .filter((event) => event.type === 'assistant')
     .map((event) =>
@@ -921,10 +960,7 @@ function validatedTranscriptModelBinding(
     );
   const structuredOutputModels = events.flatMap((event) => {
     if (event.type !== 'assistant') return [];
-    const message = record(
-      event.message,
-      'claude_code_cli_judge_assistant_message_invalid'
-    );
+    const message = record(event.message, 'claude_code_cli_judge_assistant_message_invalid');
     const content = Array.isArray(message.content) ? message.content : [];
     const producedStructuredOutput = content.some((entry) => {
       if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return false;
@@ -932,12 +968,7 @@ function validatedTranscriptModelBinding(
       return block.type === 'tool_use' && block.name === 'StructuredOutput';
     });
     return producedStructuredOutput
-      ? [
-          requiredText(
-            message.model,
-            'claude_code_cli_judge_assistant_model_missing'
-          ),
-        ]
+      ? [requiredText(message.model, 'claude_code_cli_judge_assistant_model_missing')]
       : [];
   });
   const uniqueStructuredOutputModels = [...new Set(structuredOutputModels)];
@@ -951,9 +982,7 @@ function validatedTranscriptModelBinding(
   const normalizedUsageModels = rawUsageModels.map((model) => model.trim());
   if (
     normalizedUsageModels.length === 0 ||
-    normalizedUsageModels.some(
-      (model, index) => !model || model !== rawUsageModels[index]
-    ) ||
+    normalizedUsageModels.some((model, index) => !model || model !== rawUsageModels[index]) ||
     new Set(normalizedUsageModels).size !== normalizedUsageModels.length
   ) {
     throw new Error('claude_code_cli_judge_returned_model_mismatch');
@@ -966,8 +995,7 @@ function validatedTranscriptModelBinding(
   const initModel = initModels.length === 1 ? initModels[0] : null;
   if (
     !returnedModel ||
-    (executorKind === 'native_spawn' &&
-      (!initModel || !modelUsageModels.includes(initModel)))
+    (executorKind === 'native_spawn' && (!initModel || !modelUsageModels.includes(initModel)))
   ) {
     throw new Error('claude_code_cli_judge_returned_model_mismatch');
   }
@@ -1030,9 +1058,7 @@ function validateExecutionReceipt(receipt: JsonRecord): void {
   const validate = new Ajv2020({ allErrors: true, strict: false }).compile(schema);
   if (!validate(receipt)) {
     throw new Error(
-      `claude_code_cli_judge_execution_receipt_invalid:${JSON.stringify(
-        validate.errors ?? []
-      )}`
+      `claude_code_cli_judge_execution_receipt_invalid:${JSON.stringify(validate.errors ?? [])}`
     );
   }
 }
@@ -1041,9 +1067,7 @@ export function createClaudeCodeCliJudgeAdapter(
   dependencies: ClaudeCodeCliJudgeAdapterDependencies = {}
 ) {
   const run = dependencies.executeCommand ?? executeCommand;
-  const executorKind = dependencies.executeCommand
-    ? 'injected_test_transport'
-    : 'native_spawn';
+  const executorKind = dependencies.executeCommand ? 'injected_test_transport' : 'native_spawn';
   return {
     judge: async (input: AdapterInput): Promise<JsonRecord> => {
       const provider = record(input.provider, 'claude_code_cli_judge_provider_invalid');
@@ -1072,11 +1096,7 @@ export function createClaudeCodeCliJudgeAdapter(
             );
       const context = executionContext(payload);
       const snapshot = materializeEvidenceSnapshot({ context, request });
-      const prompt = buildClaudeCodeCliJudgePrompt(
-        systemPrompt,
-        request,
-        snapshot.readPlan
-      );
+      const prompt = buildClaudeCodeCliJudgePrompt(systemPrompt, request, snapshot.readPlan);
       const args = buildClaudeCodeCliJudgeArgs({
         provider,
         systemPrompt,
@@ -1090,19 +1110,14 @@ export function createClaudeCodeCliJudgeAdapter(
       if (!Number.isInteger(timeoutMs) || timeoutMs <= 0) {
         throw new Error('claude_code_cli_judge_timeout_invalid');
       }
-      const endpoint = record(
-        provider.endpoint,
-        'claude_code_cli_judge_endpoint_invalid'
-      );
-      const command = requiredText(
-        endpoint.command,
-        'claude_code_cli_judge_command_missing'
-      );
+      const endpoint = record(provider.endpoint, 'claude_code_cli_judge_endpoint_invalid');
+      const command = requiredText(endpoint.command, 'claude_code_cli_judge_command_missing');
       const outputDir = path.resolve(context.outputDir);
       const stdoutPath = path.join(outputDir, 'claude-code-cli-stdout.jsonl');
       const stderrPath = path.join(outputDir, 'claude-code-cli-stderr.log');
       const transcriptPath = path.join(outputDir, 'claude-code-cli-transcript.jsonl');
       const executionSnapshot = materializeExecutionSnapshot(snapshot);
+      const startedAt = new Date().toISOString();
       try {
         const execution = await run({
           command,
@@ -1139,10 +1154,7 @@ export function createClaudeCodeCliJudgeAdapter(
         if (!Array.isArray(permissionDenials) || permissionDenials.length > 0) {
           throw new Error('claude_code_cli_judge_permission_denied');
         }
-        const modelUsage = record(
-          result.modelUsage,
-          'claude_code_cli_judge_model_usage_missing'
-        );
+        const modelUsage = record(result.modelUsage, 'claude_code_cli_judge_model_usage_missing');
         const model = configuredRequestedModel(provider);
         const modelBinding = validatedTranscriptModelBinding(
           transcript.events,
@@ -1150,7 +1162,7 @@ export function createClaudeCodeCliJudgeAdapter(
           executorKind
         );
         const returnedModel = modelBinding.returnedModel;
-        const normalized = structuredDecision(result.structured_output);
+        const normalizedDecision = structuredDecision(result.structured_output);
         const transportEvidence = {
           schemaVersion: 'requirements-contract-cli-judge-execution-receipt/v1',
           adapterRef: 'ClaudeCodeCliJudgeAdapter',
@@ -1163,9 +1175,7 @@ export function createClaudeCodeCliJudgeAdapter(
               : 'injected_test_transport',
           launchCommand: executorKind === 'native_spawn' ? command : null,
           launchCommandHash:
-            executorKind === 'native_spawn'
-              ? sha256(JSON.stringify(command))
-              : null,
+            executorKind === 'native_spawn' ? sha256(JSON.stringify(command)) : null,
           launchArgv: executorKind === 'native_spawn' ? args : null,
           launchEntryPath: null,
           launchEntryHash: null,
@@ -1199,27 +1209,37 @@ export function createClaudeCodeCliJudgeAdapter(
           structuredOutputSchemaHash: sha256(
             JSON.stringify(structuredOutputSchema ?? DEFAULT_STRUCTURED_OUTPUT_SCHEMA)
           ),
-          snapshotManifestPath: slash(
-            path.relative(context.projectRoot, snapshot.manifestPath)
-          ),
+          snapshotManifestPath: slash(path.relative(context.projectRoot, snapshot.manifestPath)),
           snapshotHash: snapshot.snapshotHash,
           sessionId: result.session_id,
           initModel: modelBinding.initModel,
           modelUsageModels: modelBinding.modelUsageModels,
         };
         validateExecutionReceipt(transportEvidence);
-        return {
+        const normalized = {
           schemaVersion: 'requirements-contract-normalized-judge-response/v1',
           providerRef,
           transport: provider.transport,
           configuredModel: model,
           returnedModel,
-          ...normalized,
+          ...normalizedDecision,
           providerRequestId: result.session_id,
           requestHash: sha256(prompt),
           responseHash: sha256(execution.stdout),
           transportEvidence,
         };
+        writeInvocationReceipt({
+          outputDir,
+          startedAt,
+          completedAt: new Date().toISOString(),
+          providerRef,
+          transport: String(provider.transport),
+          providerRequestId: result.session_id,
+          decision: normalizedDecision.decision,
+          normalizedResponseHash: sha256(stableStringify(normalized)),
+          transportEvidenceHash: sha256(stableStringify(transportEvidence)),
+        });
+        return normalized;
       } finally {
         executionSnapshot.dispose();
       }

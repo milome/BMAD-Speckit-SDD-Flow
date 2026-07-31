@@ -1,12 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -30,9 +23,7 @@ type CodexCommandInvocation = {
   outputPath: string;
 };
 type CodexAdapterFactory = (dependencies?: {
-  executeCommand?: (
-    invocation: CodexCommandInvocation
-  ) => Promise<{
+  executeCommand?: (invocation: CodexCommandInvocation) => Promise<{
     exitCode: number;
     stdout: string;
     stderr: string;
@@ -48,6 +39,9 @@ const ADAPTER_PATH = path.resolve(
 );
 const CLI_EXECUTION_RECEIPT_SCHEMA_PATH = path.resolve(
   'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-cli-judge-execution-receipt.schema.json'
+);
+const INVOCATION_RECEIPT_SCHEMA_PATH = path.resolve(
+  'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-invocation-receipt.schema.json'
 );
 const NORMALIZED_RESPONSE_SCHEMA_PATH = path.resolve(
   'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-normalized-judge-response.schema.json'
@@ -254,9 +248,7 @@ describe('Codex CLI Judge adapter', () => {
   it('executes through Codex transport, persists the common receipt, and fails closed without observed model evidence', async () => {
     const loaded = await loadAdapter();
     if (!loaded) return;
-    const createAdapter = loaded.createCodexCliJudgeAdapter as
-      | CodexAdapterFactory
-      | undefined;
+    const createAdapter = loaded.createCodexCliJudgeAdapter as CodexAdapterFactory | undefined;
     expect(createAdapter).toBeTypeOf('function');
     if (!createAdapter) return;
 
@@ -367,22 +359,13 @@ describe('Codex CLI Judge adapter', () => {
     async () => {
       const loaded = await loadAdapter();
       if (!loaded) return;
-      const createAdapter = loaded.createCodexCliJudgeAdapter as
-        | CodexAdapterFactory
-        | undefined;
+      const createAdapter = loaded.createCodexCliJudgeAdapter as CodexAdapterFactory | undefined;
       expect(createAdapter).toBeTypeOf('function');
       if (!createAdapter) return;
 
       const root = createRoot();
       const binRoot = path.join(root, 'bin');
-      const codexEntry = path.join(
-        binRoot,
-        'node_modules',
-        '@openai',
-        'codex',
-        'bin',
-        'codex.js'
-      );
+      const codexEntry = path.join(binRoot, 'node_modules', '@openai', 'codex', 'bin', 'codex.js');
       const outputDir = path.join(root, 'runtime', randomUUID());
       const requestPath = path.join(root, 'requests', `${randomUUID()}.json`);
       const evidencePath = path.join(root, 'evidence', `${randomUUID()}.txt`);
@@ -485,6 +468,30 @@ describe('Codex CLI Judge adapter', () => {
           ...((receipt.argv as unknown[]) ?? []).map(String),
         ]);
         expect(receipt.processId).toEqual(expect.any(Number));
+        const invocationReceipt = JSON.parse(
+          readFileSync(path.join(outputDir, 'judge-invocation-receipt.json'), 'utf8')
+        ) as JsonRecord;
+        const validateInvocationReceipt = new Ajv2020({
+          allErrors: true,
+          strict: false,
+        }).compile(JSON.parse(readFileSync(INVOCATION_RECEIPT_SCHEMA_PATH, 'utf8')));
+        expect(
+          validateInvocationReceipt(invocationReceipt),
+          JSON.stringify(validateInvocationReceipt.errors ?? [])
+        ).toBe(true);
+        expect(invocationReceipt).toMatchObject({
+          schemaVersion: 'requirements-contract-judge-invocation-receipt/v1',
+          providerRef,
+          transport: 'cli',
+          adapterRef: 'CodexCliJudgeAdapter',
+          providerRequestId: result.providerRequestId,
+          outcome: 'decided',
+          decision: 'block',
+          unknownOutcomeReason: null,
+          automaticSemanticRetry: false,
+          maximumAttempts: 1,
+          attemptOrdinal: 1,
+        });
       } finally {
         if (previousPath === undefined) delete process.env[pathEnvironmentKey];
         else process.env[pathEnvironmentKey] = previousPath;

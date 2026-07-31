@@ -1,13 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
@@ -34,6 +27,9 @@ interface CommandResult {
 }
 
 const ROOTS: string[] = [];
+const INVOCATION_RECEIPT_SCHEMA_PATH = path.resolve(
+  'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-invocation-receipt.schema.json'
+);
 
 function createRoot(): string {
   const root = mkdtempSync(path.join(tmpdir(), 'claude-code-cli-judge-'));
@@ -86,9 +82,7 @@ function provider(
   };
 }
 
-function requireCommandInvocation(
-  invocation: CommandInvocation | null
-): CommandInvocation {
+function requireCommandInvocation(invocation: CommandInvocation | null): CommandInvocation {
   if (!invocation) {
     throw new Error('test_command_invocation_missing');
   }
@@ -123,8 +117,7 @@ function boundRequest(root: string, extra: JsonRecord = {}): JsonRecord {
 
 function runNodeChild(invocation: CommandInvocation): Promise<CommandResult> {
   const modelArgIndex = invocation.args.indexOf('--model');
-  const requestedModel =
-    modelArgIndex >= 0 ? invocation.args[modelArgIndex + 1]?.trim() : '';
+  const requestedModel = modelArgIndex >= 0 ? invocation.args[modelArgIndex + 1]?.trim() : '';
   if (!requestedModel) {
     throw new Error('test_requested_model_missing');
   }
@@ -344,9 +337,7 @@ describe('Claude Code CLI Judge adapter', () => {
         '--strict-mcp-config',
       ])
     );
-    expect(capturedInvocation.args.join(' ')).not.toMatch(
-      /\bWrite\b|\bEdit\b|\bBash\b|\bWeb\b/u
-    );
+    expect(capturedInvocation.args.join(' ')).not.toMatch(/\bWrite\b|\bEdit\b|\bBash\b|\bWeb\b/u);
     const readAllowlistMatch =
       /<judge-read-allowlist-json>\r?\n([\s\S]*?)\r?\n<\/judge-read-allowlist-json>/u.exec(
         capturedInvocation.stdin
@@ -411,9 +402,7 @@ describe('Claude Code CLI Judge adapter', () => {
         };
       };
     };
-    expect(
-      structuredOutputSchema.properties?.findings?.items?.properties?.verdict?.enum
-    ).toEqual([
+    expect(structuredOutputSchema.properties?.findings?.items?.properties?.verdict?.enum).toEqual([
       'no_new_valid_gap',
       'no_new_confirmation_blocking_gap',
       'new_valid_gap',
@@ -454,13 +443,32 @@ describe('Claude Code CLI Judge adapter', () => {
         'utf8'
       )
     );
-    const validateReceipt = new Ajv2020({ allErrors: true, strict: false }).compile(
-      receiptSchema
-    );
+    const validateReceipt = new Ajv2020({ allErrors: true, strict: false }).compile(receiptSchema);
+    expect(validateReceipt(evidence), JSON.stringify(validateReceipt.errors, null, 2)).toBe(true);
+    const invocationReceipt = JSON.parse(
+      readFileSync(path.join(outputDir, 'judge-invocation-receipt.json'), 'utf8')
+    ) as JsonRecord;
+    const validateInvocationReceipt = new Ajv2020({
+      allErrors: true,
+      strict: false,
+    }).compile(JSON.parse(readFileSync(INVOCATION_RECEIPT_SCHEMA_PATH, 'utf8')));
     expect(
-      validateReceipt(evidence),
-      JSON.stringify(validateReceipt.errors, null, 2)
+      validateInvocationReceipt(invocationReceipt),
+      JSON.stringify(validateInvocationReceipt.errors ?? [])
     ).toBe(true);
+    expect(invocationReceipt).toMatchObject({
+      schemaVersion: 'requirements-contract-judge-invocation-receipt/v1',
+      providerRef: 'local-sonnet-judge',
+      transport: 'claude-code-cli',
+      adapterRef: 'ClaudeCodeCliJudgeAdapter',
+      providerRequestId: normalized.providerRequestId,
+      outcome: 'decided',
+      decision: 'block',
+      unknownOutcomeReason: null,
+      automaticSemanticRetry: false,
+      maximumAttempts: 1,
+      attemptOrdinal: 1,
+    });
     expect(existsSync(path.join(outputDir, 'claude-code-cli-stdout.jsonl'))).toBe(true);
     expect(existsSync(path.join(outputDir, 'claude-code-cli-stderr.log'))).toBe(true);
     expect(existsSync(path.join(outputDir, 'claude-code-cli-transcript.jsonl'))).toBe(true);
@@ -1061,19 +1069,12 @@ describe('Claude Code CLI Judge adapter', () => {
         's',
       ];
       while (
-        path.join(
-          tmpdir(),
-          'j-XXXXXX',
-          ...priorRoundPathParts,
-          'prior-round-evidence.json'
-        ).length < 280
+        path.join(tmpdir(), 'j-XXXXXX', ...priorRoundPathParts, 'prior-round-evidence.json')
+          .length < 280
       ) {
         priorRoundPathParts.push(randomUUID().replaceAll('-', ''));
       }
-      const priorRoundEvidence = path.join(
-        ...priorRoundPathParts,
-        'prior-round-evidence.json'
-      );
+      const priorRoundEvidence = path.join(...priorRoundPathParts, 'prior-round-evidence.json');
       const priorRoundEvidencePath = path.join(root, priorRoundEvidence);
       mkdirSync(path.dirname(sourcePath), { recursive: true });
       mkdirSync(path.dirname(requestPath), { recursive: true });

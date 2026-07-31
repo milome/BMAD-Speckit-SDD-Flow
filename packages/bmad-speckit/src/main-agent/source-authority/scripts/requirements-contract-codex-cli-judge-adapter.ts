@@ -37,9 +37,7 @@ export interface CodexCliCommandResult {
 }
 
 export interface CodexCliJudgeAdapterDependencies {
-  executeCommand?: (
-    invocation: CodexCliCommandInvocation
-  ) => Promise<CodexCliCommandResult>;
+  executeCommand?: (invocation: CodexCliCommandInvocation) => Promise<CodexCliCommandResult>;
   readCredentialSecret?: (credential: unknown) => string;
 }
 
@@ -74,10 +72,7 @@ interface CredentialBinding {
 interface CodexCliLaunch {
   command: string;
   args: string[];
-  commandResolution: Exclude<
-    CodexCliCommandResolution,
-    'injected_test_transport'
-  >;
+  commandResolution: Exclude<CodexCliCommandResolution, 'injected_test_transport'>;
   launchEntryPath: string | null;
 }
 
@@ -148,6 +143,19 @@ function sha256(value: string | Buffer): string {
   return `${HASH_PREFIX}${createHash('sha256').update(value).digest('hex')}`;
 }
 
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value) ?? String(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+  }
+  return `{${Object.keys(value as JsonRecord)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableStringify((value as JsonRecord)[key])}`)
+    .join(',')}}`;
+}
+
 function slash(value: string): string {
   return value.replace(/\\/gu, '/');
 }
@@ -172,6 +180,67 @@ function writeTextAtomic(target: string, content: string): void {
 
 function writeJsonAtomic(target: string, value: unknown): void {
   writeTextAtomic(target, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+function validateInvocationReceipt(receipt: JsonRecord): void {
+  const schemaPath = path.resolve(
+    __dirname,
+    '..',
+    'schemas',
+    'requirements-contract-judge-invocation-receipt.schema.json'
+  );
+  const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8')) as object;
+  const validate = new Ajv2020({ allErrors: true, strict: false }).compile(schema);
+  if (!validate(receipt)) {
+    throw new Error(
+      `codex_cli_judge_invocation_receipt_invalid:${JSON.stringify(validate.errors ?? [])}`
+    );
+  }
+  const unsigned = { ...receipt };
+  delete unsigned.receiptHash;
+  if (receipt.receiptHash !== sha256(stableStringify(unsigned))) {
+    throw new Error('codex_cli_judge_invocation_receipt_hash_mismatch');
+  }
+}
+
+function writeInvocationReceipt(input: {
+  outputDir: string;
+  startedAt: string;
+  completedAt: string;
+  providerRef: string;
+  transport: string;
+  providerRequestId: string;
+  outcome: 'decided' | 'unknown';
+  decision: 'pass' | 'block' | 'inconclusive';
+  unknownOutcomeReason: string | null;
+  normalizedResponseHash: string;
+  transportEvidenceHash: string;
+}): JsonRecord {
+  const payload: JsonRecord = {
+    schemaVersion: 'requirements-contract-judge-invocation-receipt/v1',
+    invocationId: randomUUID(),
+    providerRef: input.providerRef,
+    transport: input.transport,
+    adapterRef: 'CodexCliJudgeAdapter',
+    providerRequestId: input.providerRequestId,
+    outcome: input.outcome,
+    decision: input.decision,
+    unknownOutcomeReason: input.unknownOutcomeReason,
+    automaticSemanticRetry: false,
+    maximumAttempts: 1,
+    attemptOrdinal: 1,
+    normalizedResponseHash: input.normalizedResponseHash,
+    transportEvidenceHash: input.transportEvidenceHash,
+    startedAt: input.startedAt,
+    completedAt: input.completedAt,
+  };
+  const receipt = {
+    ...payload,
+    receiptHash: sha256(stableStringify(payload)),
+  };
+  validateInvocationReceipt(receipt);
+  writeJsonAtomic(path.join(input.outputDir, 'judge-invocation-receipt.json'), receipt);
+  return receipt;
 }
 
 function inferJsonSchemaType(value: unknown): string | undefined {
@@ -239,10 +308,7 @@ function collectReferencedFiles(
   return files;
 }
 
-function materializeEvidenceSnapshot(input: {
-  context: ExecutionContext;
-  request: JsonRecord;
-}): {
+function materializeEvidenceSnapshot(input: { context: ExecutionContext; request: JsonRecord }): {
   snapshotRoot: string;
   manifestPath: string;
   snapshotHash: string;
@@ -267,33 +333,27 @@ function materializeEvidenceSnapshot(input: {
     throw new Error('codex_cli_judge_snapshot_already_exists');
   }
   fs.mkdirSync(snapshotRoot, { recursive: true });
-  const referencedFiles = collectReferencedFiles(
-    input.request,
-    projectRoot,
-    outputDir
-  );
+  const referencedFiles = collectReferencedFiles(input.request, projectRoot, outputDir);
   referencedFiles.add(requestPath);
-  const entries = [...referencedFiles]
-    .sort()
-    .map((sourcePath) => {
-      if (fs.lstatSync(sourcePath).isSymbolicLink()) {
-        throw new Error('codex_cli_judge_evidence_symlink_forbidden');
-      }
-      const relativePath = slash(path.relative(projectRoot, sourcePath));
-      const targetPath = resolveWithin(
-        snapshotRoot,
-        relativePath,
-        'codex_cli_judge_snapshot_path_escape'
-      );
-      fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-      fs.copyFileSync(sourcePath, targetPath);
-      const content = fs.readFileSync(targetPath);
-      return {
-        path: relativePath,
-        hash: sha256(content),
-        bytes: content.length,
-      };
-    });
+  const entries = [...referencedFiles].sort().map((sourcePath) => {
+    if (fs.lstatSync(sourcePath).isSymbolicLink()) {
+      throw new Error('codex_cli_judge_evidence_symlink_forbidden');
+    }
+    const relativePath = slash(path.relative(projectRoot, sourcePath));
+    const targetPath = resolveWithin(
+      snapshotRoot,
+      relativePath,
+      'codex_cli_judge_snapshot_path_escape'
+    );
+    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+    fs.copyFileSync(sourcePath, targetPath);
+    const content = fs.readFileSync(targetPath);
+    return {
+      path: relativePath,
+      hash: sha256(content),
+      bytes: content.length,
+    };
+  });
   const manifest = {
     schemaVersion: 'requirements-contract-cli-judge-evidence-snapshot/v1',
     entries,
@@ -310,19 +370,10 @@ function materializeEvidenceSnapshot(input: {
 }
 
 function executionContext(payload: JsonRecord): ExecutionContext {
-  const context = record(
-    payload.executionContext,
-    'codex_cli_judge_execution_context_missing'
-  );
+  const context = record(payload.executionContext, 'codex_cli_judge_execution_context_missing');
   return {
-    projectRoot: requiredText(
-      context.projectRoot,
-      'codex_cli_judge_project_root_missing'
-    ),
-    requestPath: requiredText(
-      context.requestPath,
-      'codex_cli_judge_request_path_missing'
-    ),
+    projectRoot: requiredText(context.projectRoot, 'codex_cli_judge_project_root_missing'),
+    requestPath: requiredText(context.requestPath, 'codex_cli_judge_request_path_missing'),
     outputDir: requiredText(context.outputDir, 'codex_cli_judge_output_dir_missing'),
   };
 }
@@ -359,20 +410,14 @@ function assertProvider(provider: JsonRecord): void {
     throw new Error('codex_cli_judge_endpoint_invalid');
   }
   configuredRequestedModel(provider);
-  const baseUrl = requiredText(
-    endpoint.baseUrl,
-    'codex_cli_judge_gateway_base_url_missing'
-  );
+  const baseUrl = requiredText(endpoint.baseUrl, 'codex_cli_judge_gateway_base_url_missing');
   let parsedBaseUrl: URL;
   try {
     parsedBaseUrl = new URL(baseUrl);
   } catch {
     throw new Error('codex_cli_judge_gateway_base_url_invalid');
   }
-  const authentication = record(
-    provider.authentication,
-    'codex_cli_judge_authentication_invalid'
-  );
+  const authentication = record(provider.authentication, 'codex_cli_judge_authentication_invalid');
   if (
     !['http:', 'https:'].includes(parsedBaseUrl.protocol) ||
     endpoint.upstreamVersioning !== 'gateway_managed' ||
@@ -382,10 +427,7 @@ function assertProvider(provider: JsonRecord): void {
   ) {
     throw new Error('codex_cli_judge_authentication_invalid');
   }
-  const auditPolicy = record(
-    provider.auditPolicy,
-    'codex_cli_judge_audit_policy_invalid'
-  );
+  const auditPolicy = record(provider.auditPolicy, 'codex_cli_judge_audit_policy_invalid');
   const allowedTools = Array.isArray(auditPolicy.allowedTools)
     ? auditPolicy.allowedTools.map(String)
     : [];
@@ -416,10 +458,7 @@ function credentialBinding(input: {
     'codex_cli_judge_authentication_invalid'
   );
   const endpoint = record(input.provider.endpoint, 'codex_cli_judge_endpoint_invalid');
-  const credential = record(
-    input.credential,
-    'codex_cli_judge_credential_required'
-  );
+  const credential = record(input.credential, 'codex_cli_judge_credential_required');
   const credentialRevision = Number(credential.credentialRevision);
   if (
     credential.providerRef !== input.providerRef ||
@@ -505,10 +544,7 @@ export function buildCodexCliJudgeArgs(input: CodexCliJudgeArgsInput): string[] 
   );
   const args = ['--ask-for-approval', 'never'];
   if (input.configuredModel !== null) {
-    args.push(
-      '--model',
-      requiredText(input.configuredModel, 'codex_cli_judge_model_missing')
-    );
+    args.push('--model', requiredText(input.configuredModel, 'codex_cli_judge_model_missing'));
   }
   args.push(
     'exec',
@@ -564,9 +600,7 @@ function executableFile(candidate: string): boolean {
   }
 }
 
-function resolveCodexCliLaunch(
-  invocation: CodexCliCommandInvocation
-): CodexCliLaunch {
+function resolveCodexCliLaunch(invocation: CodexCliCommandInvocation): CodexCliLaunch {
   if (invocation.command !== 'codex') {
     throw new Error('codex_cli_judge_command_not_resolvable');
   }
@@ -577,8 +611,7 @@ function resolveCodexCliLaunch(
     const trimmed = entry.trim();
     if (!trimmed) continue;
     const resolvedEntry = path.resolve(trimmed);
-    const identity =
-      process.platform === 'win32' ? resolvedEntry.toLowerCase() : resolvedEntry;
+    const identity = process.platform === 'win32' ? resolvedEntry.toLowerCase() : resolvedEntry;
     if (visited.has(identity)) continue;
     visited.add(identity);
 
@@ -647,9 +680,7 @@ function commandLaunchEvidence(
     };
   }
   if (
-    !['path_search_executable', 'windows_npm_shim'].includes(
-      String(execution.commandResolution)
-    )
+    !['path_search_executable', 'windows_npm_shim'].includes(String(execution.commandResolution))
   ) {
     throw new Error('codex_cli_judge_launch_resolution_missing');
   }
@@ -666,10 +697,7 @@ function commandLaunchEvidence(
   const launchEntryPath =
     commandResolution === 'windows_npm_shim'
       ? path.resolve(
-          requiredText(
-            execution.launchEntryPath,
-            'codex_cli_judge_launch_entry_missing'
-          )
+          requiredText(execution.launchEntryPath, 'codex_cli_judge_launch_entry_missing')
         )
       : null;
   if (
@@ -686,14 +714,11 @@ function commandLaunchEvidence(
     launchCommandHash: sha256(fs.readFileSync(launchCommand)),
     launchArgv: execution.launchArgs.map(String),
     launchEntryPath,
-    launchEntryHash:
-      launchEntryPath === null ? null : sha256(fs.readFileSync(launchEntryPath)),
+    launchEntryHash: launchEntryPath === null ? null : sha256(fs.readFileSync(launchEntryPath)),
   };
 }
 
-function executeCommand(
-  invocation: CodexCliCommandInvocation
-): Promise<CodexCliCommandResult> {
+function executeCommand(invocation: CodexCliCommandInvocation): Promise<CodexCliCommandResult> {
   return new Promise((resolve, reject) => {
     let child: ChildProcessWithoutNullStreams;
     let launch: CodexCliLaunch;
@@ -710,9 +735,7 @@ function executeCommand(
     } catch (error) {
       reject(
         new Error(
-          `codex_cli_judge_spawn_failed:${
-            error instanceof Error ? error.message : String(error)
-          }`
+          `codex_cli_judge_spawn_failed:${error instanceof Error ? error.message : String(error)}`
         )
       );
       return;
@@ -754,11 +777,7 @@ function executeCommand(
       }
     });
     child.once('error', (error: NodeJS.ErrnoException) => {
-      finish(() =>
-        reject(
-          new Error(`codex_cli_judge_spawn_failed:${error.code ?? 'unknown'}`)
-        )
-      );
+      finish(() => reject(new Error(`codex_cli_judge_spawn_failed:${error.code ?? 'unknown'}`)));
     });
     child.once('close', (exitCode) => {
       finish(() => {
@@ -779,9 +798,7 @@ function executeCommand(
       });
     });
     child.stdin.once('error', (error: NodeJS.ErrnoException) => {
-      terminate(
-        new Error(`codex_cli_judge_stdin_stream_failed:${error.code ?? 'unknown'}`)
-      );
+      terminate(new Error(`codex_cli_judge_stdin_stream_failed:${error.code ?? 'unknown'}`));
     });
     child.stdin.end(invocation.stdin);
   });
@@ -811,9 +828,7 @@ function observedModel(events: JsonRecord[]): string | null {
   const models = new Set<string>();
   for (const event of events) {
     if (
-      ['thread.started', 'turn.started', 'turn.completed'].includes(
-        String(event.type)
-      ) &&
+      ['thread.started', 'turn.started', 'turn.completed'].includes(String(event.type)) &&
       typeof event.model === 'string' &&
       event.model.trim()
     ) {
@@ -881,16 +896,12 @@ function validateExecutionReceipt(receipt: JsonRecord): void {
   const validate = new Ajv2020({ allErrors: true, strict: false }).compile(schema);
   if (!validate(receipt)) {
     throw new Error(
-      `codex_cli_judge_execution_receipt_invalid:${JSON.stringify(
-        validate.errors ?? []
-      )}`
+      `codex_cli_judge_execution_receipt_invalid:${JSON.stringify(validate.errors ?? [])}`
     );
   }
 }
 
-export function createCodexCliJudgeAdapter(
-  dependencies: CodexCliJudgeAdapterDependencies = {}
-) {
+export function createCodexCliJudgeAdapter(dependencies: CodexCliJudgeAdapterDependencies = {}) {
   const run = dependencies.executeCommand ?? executeCommand;
   const readCredentialSecret =
     dependencies.readCredentialSecret ?? readRequirementsContractJudgeCredentialSecret;
@@ -901,10 +912,7 @@ export function createCodexCliJudgeAdapter(
     judge: async (input: AdapterInput): Promise<JsonRecord> => {
       const provider = record(input.provider, 'codex_cli_judge_provider_invalid');
       assertProvider(provider);
-      const providerRef = requiredText(
-        input.providerRef,
-        'codex_cli_judge_provider_ref_missing'
-      );
+      const providerRef = requiredText(input.providerRef, 'codex_cli_judge_provider_ref_missing');
       const payload = record(input.payload, 'codex_cli_judge_payload_invalid');
       const systemPrompt = requiredText(
         payload.systemPrompt,
@@ -947,10 +955,7 @@ export function createCodexCliJudgeAdapter(
         configuredModel,
       });
       const endpoint = record(provider.endpoint, 'codex_cli_judge_endpoint_invalid');
-      const command = requiredText(
-        endpoint.command,
-        'codex_cli_judge_command_missing'
-      );
+      const command = requiredText(endpoint.command, 'codex_cli_judge_command_missing');
       const requestPolicy = record(
         provider.requestPolicy,
         'codex_cli_judge_request_policy_invalid'
@@ -959,6 +964,7 @@ export function createCodexCliJudgeAdapter(
       if (!Number.isInteger(timeoutMs) || timeoutMs <= 0) {
         throw new Error('codex_cli_judge_timeout_invalid');
       }
+      const startedAt = new Date().toISOString();
       const prompt = buildCodexCliJudgePrompt({
         systemPrompt,
         request,
@@ -1037,14 +1043,31 @@ export function createCodexCliJudgeAdapter(
         modelUsageModels: [],
       };
       validateExecutionReceipt(receipt);
-      writeJsonAtomic(
-        path.join(outputDir, 'cli-judge-execution-receipt.json'),
-        receipt
-      );
+      writeJsonAtomic(path.join(outputDir, 'cli-judge-execution-receipt.json'), receipt);
+      const completedAt = new Date().toISOString();
+      const transportEvidenceHash = sha256(stableStringify(receipt));
       if (!returnedModel) {
+        writeInvocationReceipt({
+          outputDir,
+          startedAt,
+          completedAt,
+          providerRef,
+          transport: String(provider.transport),
+          providerRequestId: requestId,
+          outcome: 'unknown',
+          decision: 'inconclusive',
+          unknownOutcomeReason: 'codex_cli_judge_model_observation_missing',
+          normalizedResponseHash: sha256(
+            stableStringify({
+              decision: 'inconclusive',
+              reason: 'codex_cli_judge_model_observation_missing',
+            })
+          ),
+          transportEvidenceHash,
+        });
         throw new Error('codex_cli_judge_model_observation_missing');
       }
-      return {
+      const normalized = {
         schemaVersion: 'requirements-contract-normalized-judge-response/v1',
         providerRef,
         transport: provider.transport,
@@ -1056,6 +1079,20 @@ export function createCodexCliJudgeAdapter(
         responseHash: sha256(fs.readFileSync(outputPath)),
         transportEvidence: receipt,
       };
+      writeInvocationReceipt({
+        outputDir,
+        startedAt,
+        completedAt,
+        providerRef,
+        transport: String(provider.transport),
+        providerRequestId: requestId,
+        outcome: 'decided',
+        decision: normalizedDecision.decision,
+        unknownOutcomeReason: null,
+        normalizedResponseHash: sha256(stableStringify(normalized)),
+        transportEvidenceHash,
+      });
+      return normalized;
     },
   } as const;
 }
