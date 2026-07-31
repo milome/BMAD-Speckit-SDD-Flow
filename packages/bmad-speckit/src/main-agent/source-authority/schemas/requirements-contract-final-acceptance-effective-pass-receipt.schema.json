@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-final-acceptance-effective-pass-receipt.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "campaignId",
+    "effectivePass",
+    "authorityStateHash",
+    "ledgerHeadHash",
+    "requiredClosureCount",
+    "observedClosureCount",
+    "kernelOrJudgeSubstitution",
+    "decision",
+    "effectivePassReceiptHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-final-acceptance-effective-pass-receipt/v1"
+    },
+    "campaignId": { "type": "string", "minLength": 1 },
+    "effectivePass": { "const": true },
+    "authorityStateHash": { "$ref": "#/$defs/sha256" },
+    "ledgerHeadHash": { "$ref": "#/$defs/sha256" },
+    "requiredClosureCount": { "type": "integer", "minimum": 1 },
+    "observedClosureCount": { "type": "integer", "minimum": 1 },
+    "kernelOrJudgeSubstitution": { "const": false },
+    "decision": { "const": "pass" },
+    "effectivePassReceiptHash": { "$ref": "#/$defs/sha256" }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

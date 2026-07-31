@@ -464,9 +464,7 @@ function emitAuditReviewGateBundle(
     receiptPath: normalizePathForRecord(bundle.control.commitReceiptPath),
   };
   (deps.writeOutput ?? process.stdout.write.bind(process.stdout))(
-    args.json
-      ? `${JSON.stringify(output, null, 2)}\n`
-      : `audit_review=${bundle.decision}\n`
+    args.json ? `${JSON.stringify(output, null, 2)}\n` : `audit_review=${bundle.decision}\n`
   );
   return bundle.decision === 'pass' ? 0 : 1;
 }
@@ -547,9 +545,7 @@ function validateAuditRepairEvidence(input: {
   const issueCodes: string[] = [];
   const frozenInputs: FrozenAuditRepairInput[] = [];
   const resolvedReceiptPaths = input.repairReceiptPaths.map((item) => path.resolve(item));
-  const resolvedFeedbackPaths = input.repairFeedbackDispatchPaths.map((item) =>
-    path.resolve(item)
-  );
+  const resolvedFeedbackPaths = input.repairFeedbackDispatchPaths.map((item) => path.resolve(item));
   const suppliedReceiptByIdentity = new Map(
     resolvedReceiptPaths.map((item) => [physicalPathIdentity(item), item])
   );
@@ -618,9 +614,7 @@ function validateAuditRepairEvidence(input: {
       priorRepairReceiptRefs: receiptPriorRefs,
     });
     const receiptIssues = [
-      text(receipt.schemaVersion) === 'audit-main-agent-repair-receipt/v1'
-        ? ''
-        : 'schema_invalid',
+      text(receipt.schemaVersion) === 'audit-main-agent-repair-receipt/v1' ? '' : 'schema_invalid',
       snapshot.contentHash === planRef.contentHash ? '' : 'content_hash_mismatch',
       receiptHash === sha256AuditTriadJson(receiptWithoutHash) ? '' : 'self_hash_mismatch',
       text(receipt.recordId) === text(input.plan.recordId) ? '' : 'record_mismatch',
@@ -655,9 +649,7 @@ function validateAuditRepairEvidence(input: {
       text(feedbackRef.contentHash) ? '' : 'feedback_content_hash_missing',
       text(feedbackRef.dispatchHash) ? '' : 'feedback_dispatch_hash_missing',
     ].filter(Boolean);
-    issueCodes.push(
-      ...receiptIssues.map((issue) => `audit_repair_receipt_${index + 1}_${issue}`)
-    );
+    issueCodes.push(...receiptIssues.map((issue) => `audit_repair_receipt_${index + 1}_${issue}`));
     if (receiptIssues.length === 0 && resolvedFeedbackPath) {
       receiptBindings.push({
         path: projectRelativeArtifactPath(projectRoot, expectedPath),
@@ -711,9 +703,7 @@ function validateAuditRepairEvidence(input: {
     const receipt = readJson(receiptPath);
     const feedbackRef = nested(receipt.feedbackDispatchRef);
     const dispatchIssues = [
-      text(dispatch.schemaVersion) === 'audit-repair-feedback-dispatch/v1'
-        ? ''
-        : 'schema_invalid',
+      text(dispatch.schemaVersion) === 'audit-repair-feedback-dispatch/v1' ? '' : 'schema_invalid',
       snapshot.contentHash === expectedRef.contentHash ? '' : 'content_hash_mismatch',
       dispatchHash === expectedRef.dispatchHash ? '' : 'dispatch_hash_ref_mismatch',
       dispatchHash === sha256AuditTriadJson(dispatchWithoutHash) ? '' : 'self_hash_mismatch',
@@ -733,7 +723,10 @@ function validateAuditRepairEvidence(input: {
       text(dispatch.qualityRuleSetHash) === text(receipt.qualityRuleSetHash)
         ? ''
         : 'quality_rule_set_hash_mismatch',
-      sameJson(artifactRefs(dispatch.priorRepairReceiptRefs), artifactRefs(receipt.priorRepairReceiptRefs))
+      sameJson(
+        artifactRefs(dispatch.priorRepairReceiptRefs),
+        artifactRefs(receipt.priorRepairReceiptRefs)
+      )
         ? ''
         : 'prior_receipt_refs_mismatch',
       sameJson(strings(dispatch.validatedGapRefs), strings(receipt.validatedGapRefs))
@@ -801,9 +794,7 @@ function physicalPathIdentity(value: string): string {
   return path.resolve(fs.realpathSync.native(existing), ...missingSegments);
 }
 
-function assertUniqueAuditPaths(
-  entries: Array<{ role: string; path: string }>
-): void {
+function assertUniqueAuditPaths(entries: Array<{ role: string; path: string }>): void {
   const seen = new Map<string, string>();
   for (const entry of entries.filter((item) => text(item.path))) {
     const identity = physicalPathIdentity(entry.path);
@@ -886,11 +877,7 @@ function currentHashes(
   };
 }
 
-function resolveRoundPaths(
-  args: ParsedArgs,
-  recordPath: string,
-  attemptId: string
-): string[] {
+function resolveRoundPaths(args: ParsedArgs, recordPath: string, attemptId: string): string[] {
   return [
     ...(args.round ?? []),
     ...(args.rounds ? [args.rounds] : []),
@@ -898,12 +885,6 @@ function resolveRoundPaths(
       ? [defaultRoundsPath(recordPath, attemptId)]
       : []),
   ].map((item) => path.resolve(item));
-}
-
-function readRounds(paths: string[]): AuditTriadRoundReceipt[] {
-  return paths.flatMap(
-    (item) => readJsonArray(item) as unknown as AuditTriadRoundReceipt[]
-  );
 }
 
 function readRoundsWithFrozenInputs(input: {
@@ -1212,10 +1193,7 @@ function updateRecord(
   };
 }
 
-export function mainAuditReviewGate(
-  argv: string[],
-  deps: MainAuditReviewGateDeps = {}
-): number {
+export function mainAuditReviewGate(argv: string[], deps: MainAuditReviewGateDeps = {}): number {
   const args = parseArgs(argv);
   if (args.help) {
     console.log(
@@ -1228,9 +1206,7 @@ export function mainAuditReviewGate(
   const record = readJson(recordPath);
   const attemptId = resolveAttemptId(args, record);
   const implementationAttemptId =
-    text(record.currentAttemptId) ||
-    text(record.implementationAttemptId) ||
-    text(record.runId);
+    text(record.currentAttemptId) || text(record.implementationAttemptId) || text(record.runId);
   if (!implementationAttemptId) {
     throw new Error('audit_review_implementation_attempt_missing');
   }
@@ -1296,14 +1272,13 @@ export function mainAuditReviewGate(
       path: normalizePathForRecord(planPath),
       contentHash: planHash,
     },
-    frozenInputs: [
-      ...roundInputs.frozenInputs,
-      ...repairEvidenceValidation.frozenInputs,
-    ].map((input) => ({
-      role: input.role,
-      path: normalizePathForRecord(path.resolve(input.path)),
-      contentHash: input.contentHash,
-    })),
+    frozenInputs: [...roundInputs.frozenInputs, ...repairEvidenceValidation.frozenInputs].map(
+      (input) => ({
+        role: input.role,
+        path: normalizePathForRecord(path.resolve(input.path)),
+        contentHash: input.contentHash,
+      })
+    ),
     reportPath: normalizePathForRecord(reportPath),
     runtimeStatusReceiptPath: normalizePathForRecord(runtimeStatusReceiptPath),
     auditEpochId: plan.auditEpochId,
@@ -1363,10 +1338,7 @@ export function mainAuditReviewGate(
           ...baseEvaluation,
           decision: 'blocked' as const,
           blockingReasons: [
-            ...new Set([
-              ...baseEvaluation.blockingReasons,
-              ...repairEvidenceValidation.issueCodes,
-            ]),
+            ...new Set([...baseEvaluation.blockingReasons, ...repairEvidenceValidation.issueCodes]),
           ],
           checks: [
             ...baseEvaluation.checks,
@@ -1586,3 +1558,8 @@ if (require.main === module && isDirectMainAgentAuditReviewGateCli(process.argv[
     process.exitCode = 2;
   }
 }
+
+export {
+  evaluateRequirementsContractFinalAcceptanceEffectivePass as evaluateMainAgentFinalAcceptanceEffectivePass,
+  validateRequirementsContractFinalAcceptanceEffectivePassReceipt as validateMainAgentFinalAcceptanceEffectivePassReceipt,
+} from './requirements-contract-final-acceptance-effective-pass-gate';
