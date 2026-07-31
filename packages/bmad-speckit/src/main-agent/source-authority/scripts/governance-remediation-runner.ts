@@ -1570,3 +1570,329 @@ async function main(): Promise<void> {
 }
 
 void main();
+
+import {
+  createRequirementsContractRemediationJournalEntry,
+  type RequirementsContractRemediationJournalEntry,
+} from './requirements-contract-remediation-journal';
+import { stableHash as p17StableHash } from './requirements-contract-verification-evidence-normalizer';
+
+type RequirementsContractRepairGuardDecision = 'pass' | 'fail';
+
+interface RequirementsContractRepairUnitLike {
+  unitId: string;
+  atomicGroupId: string;
+  authorizedPaths: string[];
+}
+
+interface RequirementsContractRepairExecutionStep {
+  unitId: string;
+  writes: Array<{ path: string; contentHash: string }>;
+  guards: {
+    path: RequirementsContractRepairGuardDecision;
+    parse: RequirementsContractRepairGuardDecision;
+    directTest: RequirementsContractRepairGuardDecision;
+    closurePredicate: RequirementsContractRepairGuardDecision;
+  };
+}
+
+export interface RequirementsContractRepairUnitReceipt {
+  schemaVersion: 'requirements-contract-repair-unit-receipt/v1';
+  unitId: string;
+  atomicGroupId: string;
+  preimageHash: string;
+  appliedWriteHashes: string[];
+  rollbackHash: string;
+  journalHeadHash: string;
+  liveWorktreeMutated: false;
+  decision: 'pass' | 'rollback';
+  receiptHash: string;
+}
+
+export interface RequirementsContractRepairUnitTransactionResult {
+  transactionManifestHash: string;
+  receipts: RequirementsContractRepairUnitReceipt[];
+  journalEntries: RequirementsContractRemediationJournalEntry[];
+  summary: {
+    successfulUnitIds: string[];
+    rolledBackUnitIds: string[];
+    liveWorktreeMutated: false;
+  };
+}
+
+export class RequirementsContractRepairUnitRunnerError extends Error {
+  readonly code: string;
+
+  constructor(code: string) {
+    super(code);
+    this.name = 'RequirementsContractRepairUnitRunnerError';
+    this.code = code;
+  }
+}
+
+function p17Fail(code: string): never {
+  throw new RequirementsContractRepairUnitRunnerError(code);
+}
+
+function p17IsRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function p17Text(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function p17RequireText(record: Record<string, unknown>, key: string, code: string): string {
+  const value = p17Text(record[key]);
+  if (!value) p17Fail(code);
+  return value;
+}
+
+function p17RequireHash(record: Record<string, unknown>, key: string, code: string): string {
+  const value = p17RequireText(record, key, code);
+  if (!/^sha256:[a-f0-9]{64}$/u.test(value)) p17Fail(code);
+  return value;
+}
+
+function p17RepairUnit(value: unknown): RequirementsContractRepairUnitLike {
+  if (!p17IsRecord(value)) p17Fail('remediation_runner_unit_invalid');
+  const authorizedPaths = Array.isArray(value.authorizedPaths)
+    ? value.authorizedPaths
+        .map((item) => p17Text(item))
+        .filter(Boolean)
+        .sort()
+    : [];
+  if (authorizedPaths.length === 0) p17Fail('remediation_runner_unit_invalid');
+  return {
+    unitId: p17RequireText(value, 'unitId', 'remediation_runner_unit_invalid'),
+    atomicGroupId: p17RequireHash(value, 'atomicGroupId', 'remediation_runner_unit_invalid'),
+    authorizedPaths,
+  };
+}
+
+function p17Receipt(input: {
+  unit: RequirementsContractRepairUnitLike;
+  appliedWriteHashes: string[];
+  journalHeadHash: string;
+  decision: 'pass' | 'rollback';
+}): RequirementsContractRepairUnitReceipt {
+  const rollbackHash = p17StableHash({
+    unitId: input.unit.unitId,
+    atomicGroupId: input.unit.atomicGroupId,
+    appliedWriteHashes: input.appliedWriteHashes,
+    decision: input.decision,
+  });
+  const payload = {
+    schemaVersion: 'requirements-contract-repair-unit-receipt/v1' as const,
+    unitId: input.unit.unitId,
+    atomicGroupId: input.unit.atomicGroupId,
+    preimageHash: p17StableHash({
+      unitId: input.unit.unitId,
+      authorizedPaths: input.unit.authorizedPaths,
+    }),
+    appliedWriteHashes: input.appliedWriteHashes,
+    rollbackHash,
+    journalHeadHash: input.journalHeadHash,
+    liveWorktreeMutated: false as const,
+    decision: input.decision,
+  };
+  return { ...payload, receiptHash: p17StableHash(payload) };
+}
+
+function p17AppendJournal(input: {
+  journalEntries: RequirementsContractRemediationJournalEntry[];
+  transactionManifestHash: string;
+  eventType: RequirementsContractRemediationJournalEntry['eventType'];
+  unitId: string;
+  payload: unknown;
+}): RequirementsContractRemediationJournalEntry {
+  const entry = createRequirementsContractRemediationJournalEntry({
+    transactionManifestHash: input.transactionManifestHash,
+    entryOrdinal: input.journalEntries.length,
+    eventType: input.eventType,
+    unitId: input.unitId,
+    previousEntryHash:
+      input.journalEntries.at(-1)?.entryHash ??
+      'sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+    payload: input.payload,
+  });
+  input.journalEntries.push(entry);
+  return entry;
+}
+
+function p17GuardFailed(step: RequirementsContractRepairExecutionStep): boolean {
+  return (
+    step.guards.path !== 'pass' ||
+    step.guards.parse !== 'pass' ||
+    step.guards.directTest !== 'pass' ||
+    step.guards.closurePredicate !== 'pass'
+  );
+}
+
+export function runRequirementsContractRepairUnitTransactions(
+  input: unknown
+): RequirementsContractRepairUnitTransactionResult {
+  if (!p17IsRecord(input)) p17Fail('remediation_runner_input_invalid');
+  const liveWorktreeOperations = Array.isArray(input.liveWorktreeOperations)
+    ? input.liveWorktreeOperations.map((item) => p17Text(item)).filter(Boolean)
+    : [];
+  if (
+    liveWorktreeOperations.some((operation) =>
+      /\bgit\s+(reset|checkout|clean|revert)\b|rm\s+-rf|remove-item\b/iu.test(operation)
+    )
+  ) {
+    p17Fail('remediation_runner_live_worktree_command_forbidden');
+  }
+  if (!p17IsRecord(input.transactionManifest)) {
+    p17Fail('remediation_runner_manifest_invalid');
+  }
+  const transactionManifestHash = p17RequireHash(
+    input.transactionManifest,
+    'manifestHash',
+    'remediation_runner_manifest_invalid'
+  );
+  const units = (
+    Array.isArray(input.transactionManifest.repairUnits)
+      ? input.transactionManifest.repairUnits
+      : []
+  ).map(p17RepairUnit);
+  const unitById = new Map(units.map((unit) => [unit.unitId, unit]));
+  const executionPlan = Array.isArray(input.executionPlan)
+    ? (input.executionPlan as RequirementsContractRepairExecutionStep[])
+    : [];
+  const journalEntries: RequirementsContractRemediationJournalEntry[] = [];
+  const receiptsByUnit = new Map<string, RequirementsContractRepairUnitReceipt>();
+
+  for (const step of executionPlan) {
+    if (!p17IsRecord(step)) p17Fail('remediation_runner_step_invalid');
+    const unitId = p17RequireText(step, 'unitId', 'remediation_runner_unknown_write');
+    const unit = unitById.get(unitId);
+    if (!unit) p17Fail('remediation_runner_unknown_write');
+    for (const write of Array.isArray(step.writes) ? step.writes : []) {
+      if (!p17IsRecord(write)) p17Fail('remediation_runner_write_invalid');
+      const writePath = p17RequireText(write, 'path', 'remediation_runner_write_invalid');
+      if (!unit.authorizedPaths.includes(writePath)) {
+        p17Fail('remediation_runner_unauthorized_path');
+      }
+    }
+    p17AppendJournal({
+      journalEntries,
+      transactionManifestHash,
+      eventType: 'prepare',
+      unitId,
+      payload: { unitId, authorizedPaths: unit.authorizedPaths },
+    });
+    const appliedWriteHashes = (Array.isArray(step.writes) ? step.writes : []).map((write) =>
+      p17StableHash(write)
+    );
+    p17AppendJournal({
+      journalEntries,
+      transactionManifestHash,
+      eventType: 'apply',
+      unitId,
+      payload: { unitId, appliedWriteHashes },
+    });
+    p17AppendJournal({
+      journalEntries,
+      transactionManifestHash,
+      eventType: 'verify',
+      unitId,
+      payload: { unitId, guards: step.guards },
+    });
+
+    if (p17GuardFailed(step)) {
+      const groupUnits = units.filter(
+        (candidate) => candidate.atomicGroupId === unit.atomicGroupId
+      );
+      for (const groupUnit of groupUnits) {
+        p17AppendJournal({
+          journalEntries,
+          transactionManifestHash,
+          eventType: 'rollback',
+          unitId: groupUnit.unitId,
+          payload: { unitId: groupUnit.unitId, atomicGroupId: groupUnit.atomicGroupId },
+        });
+        receiptsByUnit.set(
+          groupUnit.unitId,
+          p17Receipt({
+            unit: groupUnit,
+            appliedWriteHashes:
+              groupUnit.unitId === unitId || receiptsByUnit.has(groupUnit.unitId)
+                ? appliedWriteHashes
+                : [],
+            journalHeadHash: journalEntries.at(-1)?.entryHash ?? '',
+            decision: 'rollback',
+          })
+        );
+      }
+      continue;
+    }
+    p17AppendJournal({
+      journalEntries,
+      transactionManifestHash,
+      eventType: 'seal',
+      unitId,
+      payload: { unitId, decision: 'pass' },
+    });
+    receiptsByUnit.set(
+      unitId,
+      p17Receipt({
+        unit,
+        appliedWriteHashes,
+        journalHeadHash: journalEntries.at(-1)?.entryHash ?? '',
+        decision: 'pass',
+      })
+    );
+  }
+
+  const receipts = executionPlan
+    .map((step) => (p17IsRecord(step) ? p17Text(step.unitId) : ''))
+    .filter(Boolean)
+    .filter((unitId, index, array) => array.indexOf(unitId) === index)
+    .map((unitId) => receiptsByUnit.get(unitId))
+    .filter((receipt): receipt is RequirementsContractRepairUnitReceipt => Boolean(receipt));
+  const successfulUnitIds = receipts
+    .filter((receipt) => receipt.decision === 'pass')
+    .map((receipt) => receipt.unitId)
+    .sort();
+  const rolledBackUnitIds = receipts
+    .filter((receipt) => receipt.decision === 'rollback')
+    .map((receipt) => receipt.unitId)
+    .sort();
+  return {
+    transactionManifestHash,
+    receipts,
+    journalEntries,
+    summary: {
+      successfulUnitIds,
+      rolledBackUnitIds,
+      liveWorktreeMutated: false,
+    },
+  };
+}
+
+export function validateRequirementsContractRepairUnitReceipt(
+  value: unknown,
+  currentAuthority: unknown
+): RequirementsContractRepairUnitReceipt {
+  if (!p17IsRecord(value) || !p17IsRecord(currentAuthority)) {
+    p17Fail('repair_unit_receipt_invalid');
+  }
+  const receipt = value as unknown as RequirementsContractRepairUnitReceipt;
+  const { receiptHash, ...payload } = receipt;
+  if (receiptHash !== p17StableHash(payload)) p17Fail('repair_unit_receipt_hash_mismatch');
+  if (
+    receipt.schemaVersion !== 'requirements-contract-repair-unit-receipt/v1' ||
+    receipt.liveWorktreeMutated !== false ||
+    !['pass', 'rollback'].includes(receipt.decision)
+  ) {
+    p17Fail('repair_unit_receipt_invalid');
+  }
+  if (
+    receipt.unitId !== p17Text(currentAuthority.unitId) ||
+    receipt.receiptHash !== p17Text(currentAuthority.receiptHash)
+  ) {
+    p17Fail('repair_unit_receipt_stale');
+  }
+  return receipt;
+}

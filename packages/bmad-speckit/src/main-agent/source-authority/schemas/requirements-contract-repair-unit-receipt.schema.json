@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "unitId",
+    "atomicGroupId",
+    "preimageHash",
+    "appliedWriteHashes",
+    "rollbackHash",
+    "journalHeadHash",
+    "liveWorktreeMutated",
+    "decision",
+    "receiptHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-repair-unit-receipt/v1" },
+    "unitId": { "type": "string", "minLength": 1 },
+    "atomicGroupId": { "$ref": "#/$defs/hash" },
+    "preimageHash": { "$ref": "#/$defs/hash" },
+    "appliedWriteHashes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/hash" }
+    },
+    "rollbackHash": { "$ref": "#/$defs/hash" },
+    "journalHeadHash": { "$ref": "#/$defs/hash" },
+    "liveWorktreeMutated": { "const": false },
+    "decision": { "enum": ["pass", "rollback"] },
+    "receiptHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+  },
+  "additionalProperties": false
+}
