@@ -1,3 +1,6 @@
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import * as path from 'node:path';
+import yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 import {
   createExecutionPacket,
@@ -10,13 +13,40 @@ import {
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-triad-orchestrator';
 import {
   cleanupRequirementWorkspace,
-  materializeRequirementFixture,
+  materializeRequirementFixture as materializeRequirementFixtureBase,
   writeCompiledImplementPacket,
 } from '../helpers/requirement-fixture-runtime';
 import {
   createFixtureAuditTriadPlan,
   createFixtureAuditTriadRound,
 } from '../helpers/audit-triad-fixture-runtime';
+
+function normalizeFixtureJudgeRuntimePolicy(root: string): void {
+  const configPath = path.join(root, '_bmad', '_config', 'governance-remediation.yaml');
+  const config = yaml.load(readFileSync(configPath, 'utf8')) as Record<string, any>;
+  const judgeRuntime = config.judgeRuntime as Record<string, any>;
+  const activeProviderRef = String(judgeRuntime.activeProviderRef ?? '');
+  const providers = judgeRuntime.providers as Record<string, any>;
+  const provider = providers[activeProviderRef] as Record<string, any>;
+  provider.requestPolicy = provider.requestPolicy ?? judgeRuntime.requestPolicy ?? {
+    timeoutMs: 1_800_000,
+    maximumAttempts: 1,
+    structuredResponseRequired: true,
+    maxBudgetUsd: 5,
+  };
+  delete judgeRuntime.requestPolicy;
+  delete judgeRuntime.requirementsConvergence;
+  mkdirSync(path.dirname(configPath), { recursive: true });
+  writeFileSync(configPath, `${yaml.dump(config, { lineWidth: -1 })}\n`, 'utf8');
+}
+
+function materializeRequirementFixture(
+  input?: Parameters<typeof materializeRequirementFixtureBase>[0]
+): ReturnType<typeof materializeRequirementFixtureBase> {
+  const fixture = materializeRequirementFixtureBase(input);
+  normalizeFixtureJudgeRuntimePolicy(fixture.root);
+  return fixture;
+}
 
 function baseAuditInput(fixture: ReturnType<typeof materializeRequirementFixture>): {
   compiledPromptRef: CompiledPromptRef;

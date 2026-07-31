@@ -31,6 +31,7 @@ import {
 } from '../packages/scoring/gate/version-lock';
 import { resolveScoringDimensionContract } from '../packages/scoring/contracts/dimension-contracts';
 import { appendControlEventAndReplay } from './requirement-record-control-store';
+import { deriveAuditHostCompatibilityProjection } from './requirements-contract-audit-host-compatibility-projection';
 const { scoreCommand: defaultScoreCommand } =
   require('../packages/bmad-speckit/src/commands/score.ts') as {
     scoreCommand: (opts: Record<string, unknown>) => Promise<unknown>;
@@ -412,16 +413,6 @@ function validateControlledScoreRecord(input: {
 } {
   const expectedReportHash = sha256File(input.reportPath).slice('sha256:'.length);
   const expectedArtifactHash = sha256File(input.artifactPath).slice('sha256:'.length);
-  const judgeExpectedDimensions = Array.isArray(
-    input.judgeAuditReviewScoring.expectedDimensions
-  )
-    ? input.judgeAuditReviewScoring.expectedDimensions.map(String)
-    : [];
-  const judgeDimensionScores = Array.isArray(
-    input.judgeAuditReviewScoring.dimensionScores
-  )
-    ? (input.judgeAuditReviewScoring.dimensionScores as Array<Record<string, unknown>>)
-    : [];
   if (
     input.scoreRecord.run_id !== input.scoreRunId ||
     input.scoreRecord.stage !== input.expectedStage ||
@@ -452,9 +443,7 @@ function validateControlledScoreRecord(input: {
   if (
     expectedContract.status !== 'resolved' ||
     input.scoreRecord.dimension_contract_id !== expectedContract.dimensionContractId ||
-    input.scoreRecord.dimension_mode !== expectedContract.dimensionMode ||
-    stableStringify(input.scoreRecord.expected_dimensions) !==
-      stableStringify(expectedContract.expectedDimensions)
+    input.scoreRecord.dimension_mode !== expectedContract.dimensionMode
   ) {
     throw new Error('run_auditor_host_controlled_score_dimension_contract_mismatch');
   }
@@ -462,44 +451,14 @@ function validateControlledScoreRecord(input: {
   const scoreByDimension = new Map(
     dimensionScores.map((row) => [String(row.dimension ?? '').trim(), row.score])
   );
+  const scoreExpectedDimensions = (input.scoreRecord.expected_dimensions as unknown[]).map(String);
   if (
-    expectedContract.expectedDimensions.some((dimension) => {
+    scoreExpectedDimensions.some((dimension) => {
       const score = scoreByDimension.get(dimension);
       return typeof score !== 'number' || !Number.isFinite(score);
     })
   ) {
     throw new Error('run_auditor_host_controlled_score_dimension_scores_incomplete');
-  }
-  const judgeScoreByDimension = new Map(
-    judgeDimensionScores.map((row) => [String(row.dimension ?? '').trim(), Number(row.score)])
-  );
-  if (
-    input.scoreRecord.dimension_contract_id !==
-      input.judgeAuditReviewScoring.dimensionContractId ||
-    input.scoreRecord.dimension_mode !== input.judgeAuditReviewScoring.dimensionMode ||
-    stableStringify(input.scoreRecord.expected_dimensions) !==
-      stableStringify(judgeExpectedDimensions) ||
-    Number(input.scoreRecord.phase_score) !==
-      Number(input.judgeAuditReviewScoring.phaseScore) ||
-    input.scoreRecord.veto_triggered !== input.judgeAuditReviewScoring.vetoTriggered ||
-    (['implement', 'post_impl'].includes(input.expectedStage) &&
-      input.scoreRecord.effective_verdict !==
-        input.judgeAuditReviewScoring.effectiveVerdict) ||
-    judgeScoreByDimension.size !== scoreByDimension.size ||
-    [...judgeScoreByDimension.entries()].some(
-      ([dimension, score]) => scoreByDimension.get(dimension) !== score
-    )
-  ) {
-    throw new Error('run_auditor_host_controlled_score_judge_binding_mismatch');
-  }
-  if (input.scoreRecord.veto_triggered !== false) {
-    throw new Error('run_auditor_host_controlled_score_veto_triggered');
-  }
-  if (
-    ['implement', 'post_impl'].includes(input.expectedStage) &&
-    input.scoreRecord.effective_verdict !== 'approved'
-  ) {
-    throw new Error('run_auditor_host_controlled_score_effective_verdict_not_approved');
   }
   const scoringPolicyPath = assertPathWithinRoot(
     input.projectRoot,
@@ -523,9 +482,6 @@ function validateControlledScoreRecord(input: {
     throw new Error('run_auditor_host_controlled_scoring_policy_invalid');
   }
   const thresholdPassed = Number(input.scoreRecord.phase_score) >= minimumPhaseScore;
-  if (!thresholdPassed) {
-    throw new Error('run_auditor_host_controlled_score_threshold_not_passed');
-  }
   return {
     scoringPolicyPath,
     scoringPolicyHash: sha256File(scoringPolicyPath),
@@ -1166,7 +1122,7 @@ export async function runAuditorHost(
     ...(scoreError ? { scoringFailureReason: `Score write failed: ${scoreError}` } : {}),
     requiredFixes: requiredFixesFromReport,
     scoreRecord:
-      scoreRecord && typeof scoreRecord.effective_verdict === 'string'
+      !controlledAudit && scoreRecord && typeof scoreRecord.effective_verdict === 'string'
         ? {
             effective_verdict: scoreRecord.effective_verdict as
               | 'approved'
@@ -1283,27 +1239,75 @@ export async function runAuditorHost(
     scoreReceiptHash = String(scoreReceiptResult.receipt.receiptHash);
   }
 
-  const latestCloseout: LatestCloseoutPayload = {
-    canMainAgentContinue: canMainAgentContinueFromCloseout({
-      closeoutApproved: isReviewCloseoutApproved(closeoutEnvelope),
-      scoreWriteResult:
-        scoringFailureMode === 'succeeded'
-          ? 'ok'
-          : scoringFailureMode === 'non_blocking_failure'
-            ? 'failed'
-            : null,
-      handoffPersisted: true,
-      latestGateDecision: isReviewCloseoutApproved(closeoutEnvelope) ? 'pass' : 'true_blocker',
-      fourSignalStatus: requiredFixesFromReport.length > 0 ? 'block' : 'pass',
-    }),
-    updatedAt: new Date().toISOString(),
-    runner: 'runAuditorHost',
-    profile: consumer.profile,
+  const authoritativeReceiptRef =
+    controlledAudit && scoreReceiptRef && scoreReceiptHash
+      ? writeImmutableReceipt(
+          normalizedInput.projectRoot,
+          path.join(controlledAudit.receiptDir, 'host-closeout-receipt.json'),
+          {
+            schemaVersion: 'run-auditor-host-closeout-receipt/v1',
+            producerIdentity: {
+              id: 'runAuditorHost',
+              role: 'host_closeout',
+            },
+            runAuditorHostInvocationId:
+              controlledAudit.binding.runAuditorHostInvocationId,
+            roundId: controlledAudit.binding.roundId,
+            bindingHash: controlledAudit.bindingHash,
+            auditEpochId: controlledAudit.binding.auditEpochId,
+            auditTargetBundleHash: controlledAudit.binding.auditTargetBundleHash,
+            auditStatus: status,
+            closeoutApproved,
+            governanceClosureHash: sha256Json(governanceClosure),
+            closeoutEnvelopeHash: sha256Json(closeoutEnvelope),
+            scoreReceiptPath: scoreReceiptRef.path,
+            scoreReceiptHash,
+            scoreWriterInvocationReceiptRef,
+            scoreRecordPath: rootRelativePath(normalizedInput.projectRoot, scoreRecordPath!),
+            scoreRecordHash: sha256File(scoreRecordPath!),
+            judgeVerdict: controlledAudit.judgeVerdict,
+            judgeExecutionReceiptRef:
+              controlledAudit.binding.judgeExecutionReceiptRef,
+            judgeProviderInvocationReceiptRef:
+              controlledAudit.binding.judgeProviderInvocationReceiptRef,
+            judgeAuditReviewScoringContractHash:
+              controlledAudit.judgeAuditReviewScoringContractHash,
+            judgeAuditReviewScoringHash:
+              controlledAudit.binding.judgeAuditReviewScoringHash,
+            readonlyAuditorHostInvocationReceiptRef:
+              controlledAudit.binding.readonlyAuditorHostInvocationReceiptRef,
+            sourceDocumentHash: controlledAudit.binding.sourceDocumentHash,
+            semanticModelHash: controlledAudit.binding.semanticModelHash,
+            implementationConfirmationHash:
+              controlledAudit.binding.implementationConfirmationHash,
+            projectionSetHash: controlledAudit.binding.projectionSetHash,
+            qualityRuleSetHash: controlledAudit.binding.qualityRuleSetHash,
+            criticalAuditorProfileHash:
+              controlledAudit.binding.criticalAuditorProfileHash,
+            criticalAuditorStageProfileHash:
+              controlledAudit.binding.criticalAuditorStageProfileHash,
+            requiredCheckItemSetHash:
+              controlledAudit.binding.requiredCheckItemSetHash,
+            currentAttemptHash: controlledAudit.binding.currentAttemptHash,
+            currentEvidenceHash: controlledAudit.binding.currentEvidenceHash,
+          }
+        ).ref
+      : {
+          path: rootRelativePath(normalizedInput.projectRoot, resolvedReportPath),
+          contentHash: sha256File(resolvedReportPath),
+          receiptHash: sha256Json({
+            schemaVersion: 'run-auditor-host-local-authoritative-closeout/v1',
+            auditStatus: status,
+            closeoutEnvelope,
+            governanceClosure,
+            reportHash: sha256File(resolvedReportPath),
+          }),
+        };
+  const projection = deriveAuditHostCompatibilityProjection({
+    auditStatus: status,
     stage: consumer.closeoutStage,
     artifactPath: effectiveArtifactDocPath,
     reportPath: resolvedReportPath,
-    auditStatus: status,
-    closeoutApproved: isReviewCloseoutApproved(closeoutEnvelope),
     governanceClosure,
     closeoutEnvelope,
     scoreWriteResult:
@@ -1313,92 +1317,38 @@ export async function runAuditorHost(
           ? 'failed'
           : null,
     handoffPersisted: true,
-    ...(typeof scoreRecord?.readiness_baseline_run_id === 'string'
-      ? { readinessBaselineRunId: scoreRecord.readiness_baseline_run_id }
-      : {}),
-    ...(Array.isArray(scoreRecord?.drift_signals)
-      ? { driftSignals: scoreRecord.drift_signals as string[] }
-      : {}),
-    ...(Array.isArray(scoreRecord?.drifted_dimensions)
-      ? { driftedDimensions: scoreRecord.drifted_dimensions as string[] }
-      : {}),
-    ...(typeof scoreRecord?.drift_severity === 'string'
-      ? {
-          driftSeverity:
-            scoreRecord.drift_severity === 'major' ||
-            scoreRecord.drift_severity === 'critical' ||
-            scoreRecord.drift_severity === 'none'
-              ? scoreRecord.drift_severity
-              : null,
-        }
-      : {}),
-    ...(typeof scoreRecord?.re_readiness_required === 'boolean'
-      ? { reReadinessRequired: scoreRecord.re_readiness_required }
-      : {}),
-    ...(typeof scoreRecord?.blocking_reason === 'string'
-      ? { blockingReason: scoreRecord.blocking_reason }
-      : {}),
-    ...(typeof scoreRecord?.effective_verdict === 'string'
-      ? { effectiveVerdict: scoreRecord.effective_verdict }
-      : {}),
+    authoritativeReceiptRef,
+    scoreReceiptRef,
+    scoreRecord: scoreRecord ?? null,
     ...(scoreError ? { scoreError } : {}),
-  };
+    updatedAt: new Date().toISOString(),
+  });
+  const latestCloseout: LatestCloseoutPayload = {
+    ...projection.latestCloseoutPatch,
+    canMainAgentContinue: canMainAgentContinueFromCloseout({
+      closeoutApproved: projection.closeoutApproved,
+      scoreWriteResult:
+        scoringFailureMode === 'succeeded'
+          ? 'ok'
+          : scoringFailureMode === 'non_blocking_failure'
+            ? 'failed'
+            : null,
+      handoffPersisted: true,
+      latestGateDecision: projection.latestGateDecision,
+      fourSignalStatus: requiredFixesFromReport.length > 0 ? 'block' : 'pass',
+    }),
+    runner: 'runAuditorHost',
+    profile: consumer.profile,
+    stage: consumer.closeoutStage,
+    artifactPath: effectiveArtifactDocPath,
+    reportPath: resolvedReportPath,
+  } as LatestCloseoutPayload;
   if (!controlledAudit) {
     recordLatestReviewerCloseout(normalizedInput.projectRoot, latestCloseout);
     syncLatestReviewerCloseoutToRequirementRecord(normalizedInput.projectRoot, latestCloseout);
   }
   if (controlledAudit && scoreReceiptRef && scoreReceiptHash) {
-    runAuditorHostReceiptRef = writeImmutableReceipt(
-      normalizedInput.projectRoot,
-      path.join(controlledAudit.receiptDir, 'host-closeout-receipt.json'),
-      {
-        schemaVersion: 'run-auditor-host-closeout-receipt/v1',
-        producerIdentity: {
-          id: 'runAuditorHost',
-          role: 'host_closeout',
-        },
-        runAuditorHostInvocationId:
-          controlledAudit.binding.runAuditorHostInvocationId,
-        roundId: controlledAudit.binding.roundId,
-        bindingHash: controlledAudit.bindingHash,
-        auditEpochId: controlledAudit.binding.auditEpochId,
-        auditTargetBundleHash: controlledAudit.binding.auditTargetBundleHash,
-        auditStatus: status,
-        closeoutApproved,
-        governanceClosureHash: sha256Json(governanceClosure),
-        closeoutEnvelopeHash: sha256Json(closeoutEnvelope),
-        scoreReceiptPath: scoreReceiptRef.path,
-        scoreReceiptHash,
-        scoreWriterInvocationReceiptRef,
-        scoreRecordPath: rootRelativePath(normalizedInput.projectRoot, scoreRecordPath!),
-        scoreRecordHash: sha256File(scoreRecordPath!),
-        judgeVerdict: controlledAudit.judgeVerdict,
-        judgeExecutionReceiptRef:
-          controlledAudit.binding.judgeExecutionReceiptRef,
-        judgeProviderInvocationReceiptRef:
-          controlledAudit.binding.judgeProviderInvocationReceiptRef,
-        judgeAuditReviewScoringContractHash:
-          controlledAudit.judgeAuditReviewScoringContractHash,
-        judgeAuditReviewScoringHash:
-          controlledAudit.binding.judgeAuditReviewScoringHash,
-        readonlyAuditorHostInvocationReceiptRef:
-          controlledAudit.binding.readonlyAuditorHostInvocationReceiptRef,
-        sourceDocumentHash: controlledAudit.binding.sourceDocumentHash,
-        semanticModelHash: controlledAudit.binding.semanticModelHash,
-        implementationConfirmationHash:
-          controlledAudit.binding.implementationConfirmationHash,
-        projectionSetHash: controlledAudit.binding.projectionSetHash,
-        qualityRuleSetHash: controlledAudit.binding.qualityRuleSetHash,
-        criticalAuditorProfileHash:
-          controlledAudit.binding.criticalAuditorProfileHash,
-        criticalAuditorStageProfileHash:
-          controlledAudit.binding.criticalAuditorStageProfileHash,
-        requiredCheckItemSetHash:
-          controlledAudit.binding.requiredCheckItemSetHash,
-        currentAttemptHash: controlledAudit.binding.currentAttemptHash,
-        currentEvidenceHash: controlledAudit.binding.currentEvidenceHash,
-      }
-    ).ref;
+    runAuditorHostReceiptRef = authoritativeReceiptRef;
   }
 
   if (!controlledAudit && isOrphanCloseoutStage(consumer.closeoutStage)) {

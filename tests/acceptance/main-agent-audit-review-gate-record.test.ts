@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import * as path from 'node:path';
+import yaml from 'js-yaml';
 import { describe, expect, it, vi } from 'vitest';
 import {
   createAuditTriadExecutionPlan,
@@ -25,13 +26,39 @@ import {
 import { resolveSixModelRuntimeDecision } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/six-model-runtime-decision';
 import {
   cleanupRequirementWorkspace,
-  materializeRequirementFixture,
+  materializeRequirementFixture as materializeRequirementFixtureBase,
   writeCompiledImplementPacket,
 } from '../helpers/requirement-fixture-runtime';
 
 function writeJson(filePath: string, value: unknown): void {
   mkdirSync(path.dirname(filePath), { recursive: true });
   writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+function normalizeFixtureJudgeRuntimePolicy(root: string): void {
+  const configPath = path.join(root, '_bmad', '_config', 'governance-remediation.yaml');
+  const config = yaml.load(readFileSync(configPath, 'utf8')) as Record<string, any>;
+  const judgeRuntime = config.judgeRuntime as Record<string, any>;
+  const activeProviderRef = String(judgeRuntime.activeProviderRef ?? '');
+  const providers = judgeRuntime.providers as Record<string, any>;
+  const provider = providers[activeProviderRef] as Record<string, any>;
+  provider.requestPolicy = provider.requestPolicy ?? judgeRuntime.requestPolicy ?? {
+    timeoutMs: 1_800_000,
+    maximumAttempts: 1,
+    structuredResponseRequired: true,
+    maxBudgetUsd: 5,
+  };
+  delete judgeRuntime.requestPolicy;
+  delete judgeRuntime.requirementsConvergence;
+  writeFileSync(configPath, `${yaml.dump(config, { lineWidth: -1 })}\n`, 'utf8');
+}
+
+function materializeRequirementFixture(
+  input?: Parameters<typeof materializeRequirementFixtureBase>[0]
+): ReturnType<typeof materializeRequirementFixtureBase> {
+  const fixture = materializeRequirementFixtureBase(input);
+  normalizeFixtureJudgeRuntimePolicy(fixture.root);
+  return fixture;
 }
 
 function auditPlanSemanticBindings(
@@ -227,6 +254,260 @@ function cleanRound(plan: AuditTriadExecutionPlan, roundId: string): AuditTriadR
   } as AuditTriadRoundReceipt;
 }
 
+function writeAuditTriadReceiptRef(
+  root: string,
+  relativePath: string,
+  payload: Record<string, unknown>
+): { path: string; contentHash: string; receiptHash: string } {
+  const receipt = {
+    ...payload,
+    receiptHash: sha256Json(payload),
+  };
+  const absolutePath = path.resolve(root, relativePath);
+  writeJson(absolutePath, receipt);
+  return {
+    path: relativePath.replace(/\\/gu, '/'),
+    contentHash: sha256Text(readFileSync(absolutePath, 'utf8')),
+    receiptHash: String(receipt.receiptHash),
+  };
+}
+
+function writeSelfHashJson(
+  filePath: string,
+  hashField: string,
+  payload: Record<string, unknown>
+): Record<string, unknown> {
+  const value = {
+    ...payload,
+    [hashField]: sha256Json(payload),
+  };
+  writeJson(filePath, value);
+  return value;
+}
+
+function materializeRoundProducerArtifacts(input: {
+  root: string;
+  plan: AuditTriadExecutionPlan;
+  round: AuditTriadRoundReceipt;
+  roundIndex: number;
+}): AuditTriadRoundReceipt {
+  const roundDir = path.join(
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    input.plan.recordId,
+    'audit-triad',
+    input.plan.attemptId,
+    'rounds',
+    `round-${input.roundIndex}`
+  );
+  const absoluteRoundDir = path.join(input.root, roundDir);
+  const readonlyRequestWithoutHash = {
+    schemaVersion: 'audit-readonly-auditor-request/v1',
+    auditEpochId: input.plan.auditEpochId,
+    auditTargetBundleHash: input.plan.auditTargetBundleHash,
+    roundIndex: input.roundIndex,
+  };
+  const readonlyRequest = {
+    ...readonlyRequestWithoutHash,
+    requestHash: sha256Json(readonlyRequestWithoutHash),
+  };
+  writeJson(path.join(absoluteRoundDir, 'readonly-auditor-request.json'), readonlyRequest);
+  const readonlyResponseWithoutHash = {
+    schemaVersion: 'audit-readonly-auditor-response/v1',
+    auditEpochId: input.plan.auditEpochId,
+    auditTargetBundleHash: input.plan.auditTargetBundleHash,
+    roundIndex: input.roundIndex,
+    requestHash: readonlyRequest.requestHash,
+    producerInvocationId: input.round.readonlyAuditorInvocationId,
+    perspectiveResults: input.round.perspectiveResults,
+    vetoItemResults: input.round.vetoItemResults,
+  };
+  const readonlyResponse = {
+    ...readonlyResponseWithoutHash,
+    responseHash: sha256Json(readonlyResponseWithoutHash),
+  };
+  writeJson(path.join(absoluteRoundDir, 'readonly-auditor-response.json'), readonlyResponse);
+  const judgeRequestWithoutHash = {
+    schemaVersion: 'critical-auditor-round-request/v1',
+    auditEpochId: input.plan.auditEpochId,
+    auditTargetBundleHash: input.plan.auditTargetBundleHash,
+    readonlyAuditorResponseHash: readonlyResponse.responseHash,
+    requestHash: null,
+  };
+  const judgeRequest = {
+    ...judgeRequestWithoutHash,
+    requestHash: sha256Json(judgeRequestWithoutHash),
+  };
+  writeJson(path.join(absoluteRoundDir, 'judge-request.json'), judgeRequest);
+  writeJson(
+    path.join(absoluteRoundDir, 'judge-authoritative-audit-report.md'),
+    { status: 'PASS' }
+  );
+  const reportPath = path.join(absoluteRoundDir, 'judge-authoritative-audit-report.md');
+  const readonlyStdoutPath = path.join(absoluteRoundDir, 'readonly-stdout.log');
+  const readonlyStderrPath = path.join(absoluteRoundDir, 'readonly-stderr.log');
+  const judgeStdoutPath = path.join(absoluteRoundDir, 'judge-stdout.log');
+  const judgeStderrPath = path.join(absoluteRoundDir, 'judge-stderr.log');
+  writeFileSync(readonlyStdoutPath, 'pass\n', 'utf8');
+  writeFileSync(readonlyStderrPath, '', 'utf8');
+  writeFileSync(judgeStdoutPath, 'pass\n', 'utf8');
+  writeFileSync(judgeStderrPath, '', 'utf8');
+  const providerResultPath = path.join(absoluteRoundDir, 'judge-provider-result.json');
+  writeJson(providerResultPath, { schemaVersion: 'critical-auditor-judge-provider-result/v1' });
+  const transportEvidence = {
+    command: 'claude',
+    executorKind: 'native_spawn',
+    exitCode: 0,
+  };
+  const providerRef = writeAuditTriadReceiptRef(input.root, path.join(roundDir, 'judge-provider-invocation-receipt.json'), {
+    schemaVersion: 'critical-auditor-judge-invocation-receipt/v1',
+    requestHash: input.round.criticalAuditorRequestHash,
+    sourceDocumentHash: input.plan.sourceDocumentHash,
+    semanticModelHash: input.plan.semanticModelHash,
+    projectionSetHash: input.plan.projectionSetHash,
+    providerRunId: input.round.independentProviderEvidence?.providerRunId,
+    responseHash: input.round.independentProviderEvidence?.responseHash,
+    resultPath: providerResultPath.replace(/\\/gu, '/'),
+    resultContentHash: sha256Text(readFileSync(providerResultPath, 'utf8')),
+    transportEvidence,
+    transportEvidenceHash: sha256Json(transportEvidence),
+  });
+  writeSelfHashJson(path.join(absoluteRoundDir, 'judge-provider-invocation-state.json'), 'stateHash', {
+    status: 'committed',
+    receiptHash: providerRef.receiptHash,
+    receiptContentHash: providerRef.contentHash,
+    resultContentHash: sha256Text(readFileSync(providerResultPath, 'utf8')),
+  });
+  writeSelfHashJson(path.join(absoluteRoundDir, 'judge-provider-invocation-commit.json'), 'commitHash', {
+    receiptHash: providerRef.receiptHash,
+    receiptContentHash: providerRef.contentHash,
+    stateContentHash: sha256Text(readFileSync(path.join(absoluteRoundDir, 'judge-provider-invocation-state.json'), 'utf8')),
+    resultContentHash: sha256Text(readFileSync(providerResultPath, 'utf8')),
+  });
+  const judgeRef = writeAuditTriadReceiptRef(input.root, path.join(roundDir, 'judge-execution-receipt.json'), {
+    schemaVersion: 'audit-judge-execution-receipt/v1',
+    auditEpochId: input.plan.auditEpochId,
+    auditTargetBundleHash: input.plan.auditTargetBundleHash,
+    roundIndex: input.roundIndex,
+    judgeRequestHash: judgeRequest.requestHash,
+    readonlyAuditorResponseHash: readonlyResponse.responseHash,
+    verdict: input.round.verdict,
+    validatedGapRefs: input.round.validatedGapRefs,
+    independentProviderEvidence: input.round.independentProviderEvidence,
+    providerInvocationReceiptRef: providerRef,
+    sourceDocumentHash: input.plan.sourceDocumentHash,
+    semanticModelHash: input.plan.semanticModelHash,
+    implementationConfirmationHash: input.plan.implementationConfirmationHash,
+    projectionSetHash: input.plan.projectionSetHash,
+    qualityRuleSetHash: input.plan.qualityRuleSetHash,
+    currentAttemptHash: input.plan.currentAttemptHash,
+    currentEvidenceHash: input.plan.currentEvidenceHash,
+  });
+  const hostRef = writeAuditTriadReceiptRef(input.root, path.join(roundDir, 'readonly-host-receipt.json'), {
+    schemaVersion: 'audit-readonly-auditor-host-invocation-receipt/v1',
+    auditEpochId: input.plan.auditEpochId,
+    auditTargetBundleHash: input.plan.auditTargetBundleHash,
+    roundIndex: input.roundIndex,
+    producerInvocationId: input.round.readonlyAuditorInvocationId,
+    responseHash: readonlyResponse.responseHash,
+    responseProduced: true,
+    exitCode: 0,
+    stdoutPath: readonlyStdoutPath.replace(/\\/gu, '/'),
+    stdoutHash: sha256Text(readFileSync(readonlyStdoutPath, 'utf8')),
+    stderrPath: readonlyStderrPath.replace(/\\/gu, '/'),
+    stderrHash: sha256Text(readFileSync(readonlyStderrPath, 'utf8')),
+  });
+  writeSelfHashJson(path.join(absoluteRoundDir, 'readonly-auditor-invocation-state.json'), 'stateHash', {
+    status: 'committed',
+    requestHash: readonlyRequest.requestHash,
+    responseHash: readonlyResponse.responseHash,
+    responseContentHash: sha256Text(readFileSync(path.join(absoluteRoundDir, 'readonly-auditor-response.json'), 'utf8')),
+    hostReceiptReceiptHash: hostRef.receiptHash,
+    hostReceiptContentHash: hostRef.contentHash,
+  });
+  const binding = {
+    roundId: input.round.roundId,
+    runAuditorHostInvocationId: `invocation-${input.roundIndex}`,
+    auditEpochId: input.plan.auditEpochId,
+    auditTargetBundleHash: input.plan.auditTargetBundleHash,
+    sourceDocumentHash: input.plan.sourceDocumentHash,
+    semanticModelHash: input.plan.semanticModelHash,
+    projectionSetHash: input.plan.projectionSetHash,
+    readonlyAuditorRequestHash: readonlyRequest.requestHash,
+    readonlyAuditorResponseHash: readonlyResponse.responseHash,
+    judgeRequestHash: judgeRequest.requestHash,
+    judgeExecutionReceiptRef: judgeRef,
+    judgeProviderInvocationReceiptRef: providerRef,
+    judgeAuthoritativeReportHash: sha256Text(readFileSync(reportPath, 'utf8')),
+  };
+  writeJson(path.join(absoluteRoundDir, 'run-auditor-host-binding.json'), binding);
+  const scoreWriterRef = writeAuditTriadReceiptRef(input.root, path.join(roundDir, 'score-writer-receipt.json'), {
+    schemaVersion: 'run-auditor-host-score-writer-invocation-receipt/v1',
+    roundId: input.round.roundId,
+    producerIdentity: { id: 'package-score-command', role: 'score_writer' },
+    bindingHash: sha256Json(binding),
+    scoreRecordPath: path.join(absoluteRoundDir, 'score-record.json').replace(/\\/gu, '/'),
+    scoreRecordHash: sha256Text('score-record-placeholder'),
+  });
+  const scoreRecordPath = path.join(absoluteRoundDir, 'score-record.json');
+  writeJson(scoreRecordPath, { status: 'approved' });
+  const scoreRecordHash = sha256Text(readFileSync(scoreRecordPath, 'utf8'));
+  const scoreWriterReceiptPath = path.join(input.root, scoreWriterRef.path);
+  const scoreWriter = JSON.parse(readFileSync(scoreWriterReceiptPath, 'utf8'));
+  scoreWriter.scoreRecordHash = scoreRecordHash;
+  delete scoreWriter.receiptHash;
+  scoreWriter.receiptHash = sha256Json(scoreWriter);
+  writeJson(scoreWriterReceiptPath, scoreWriter);
+  const updatedScoreWriterRef = {
+    ...scoreWriterRef,
+    contentHash: sha256Text(readFileSync(scoreWriterReceiptPath, 'utf8')),
+    receiptHash: scoreWriter.receiptHash,
+  };
+  writeSelfHashJson(path.join(absoluteRoundDir, 'score-writer-invocation-state.json'), 'stateHash', {
+    status: 'committed',
+    receiptHash: updatedScoreWriterRef.receiptHash,
+  });
+  const scoreRef = writeAuditTriadReceiptRef(input.root, path.join(roundDir, 'score-receipt.json'), {
+    schemaVersion: 'run-auditor-host-score-receipt/v1',
+    bindingHash: sha256Json(binding),
+    scoreWriterInvocationReceiptRef: updatedScoreWriterRef,
+    scoreRecordHash,
+  });
+  const closeoutRef = writeAuditTriadReceiptRef(input.root, path.join(roundDir, 'host-closeout-receipt.json'), {
+    schemaVersion: 'run-auditor-host-closeout-receipt/v1',
+    bindingHash: sha256Json(binding),
+    scoreReceiptPath: scoreRef.path,
+    scoreReceiptHash: scoreRef.receiptHash,
+    scoreWriterInvocationReceiptRef: updatedScoreWriterRef,
+    auditStatus: 'PASS',
+    closeoutApproved: true,
+  });
+  const materializedRound = {
+    ...input.round,
+    providerInvocationReceiptRef: providerRef,
+    judgeExecutionReceiptRef: judgeRef,
+    readonlyAuditorHostInvocationReceiptRef: hostRef,
+    scoreWriterInvocationReceiptRef: updatedScoreWriterRef,
+    scoreReceiptRefs: [scoreRef.path],
+    runAuditorHostReceiptRefs: [closeoutRef.path],
+    judgeAdapterHostExecution: {
+      adapterKind: 'package_cli_external_adapter',
+      commandHash: sha256Text('claude'),
+      exitCode: 0,
+      stdoutPath: judgeStdoutPath.replace(/\\/gu, '/'),
+      stdoutHash: sha256Text(readFileSync(judgeStdoutPath, 'utf8')),
+      stderrPath: judgeStderrPath.replace(/\\/gu, '/'),
+      stderrHash: sha256Text(readFileSync(judgeStderrPath, 'utf8')),
+    },
+  };
+  const { receiptHash: _oldReceiptHash, ...roundWithoutHash } = materializedRound;
+  return {
+    ...materializedRound,
+    receiptHash: sha256Json(roundWithoutHash),
+  };
+}
+
 function materializePostRepairAuditGateFixture(input: {
   fixture: ReturnType<typeof materializeRequirementFixture>;
   compiled: ReturnType<typeof writeCompiledImplementPacket>;
@@ -385,9 +666,24 @@ function materializePostRepairAuditGateFixture(input: {
   const planPath = writeAuditTriadExecutionPlan(fixture.root, plan);
   const roundsPath = path.join(path.dirname(planPath), 'rounds.json');
   writeJson(roundsPath, [
-    cleanRound(plan, `${auditAttemptId}-round-1`),
-    cleanRound(plan, `${auditAttemptId}-round-2`),
-    cleanRound(plan, `${auditAttemptId}-round-3`),
+    materializeRoundProducerArtifacts({
+      root: fixture.root,
+      plan,
+      round: cleanRound(plan, `${auditAttemptId}-round-1`),
+      roundIndex: 1,
+    }),
+    materializeRoundProducerArtifacts({
+      root: fixture.root,
+      plan,
+      round: cleanRound(plan, `${auditAttemptId}-round-2`),
+      roundIndex: 2,
+    }),
+    materializeRoundProducerArtifacts({
+      root: fixture.root,
+      plan,
+      round: cleanRound(plan, `${auditAttemptId}-round-3`),
+      roundIndex: 3,
+    }),
   ]);
   return {
     plan,
@@ -437,9 +733,24 @@ describe('main agent audit review gate', () => {
         'rounds.json'
       );
       writeJson(roundsPath, [
-        cleanRound(plan, 'r1'),
-        cleanRound(plan, 'r2'),
-        cleanRound(plan, 'r3'),
+        materializeRoundProducerArtifacts({
+          root: fixture.root,
+          plan,
+          round: cleanRound(plan, 'r1'),
+          roundIndex: 1,
+        }),
+        materializeRoundProducerArtifacts({
+          root: fixture.root,
+          plan,
+          round: cleanRound(plan, 'r2'),
+          roundIndex: 2,
+        }),
+        materializeRoundProducerArtifacts({
+          root: fixture.root,
+          plan,
+          round: cleanRound(plan, 'r3'),
+          roundIndex: 3,
+        }),
       ]);
 
       const code = mainAuditReviewGate([
@@ -495,25 +806,29 @@ describe('main agent audit review gate', () => {
       expect(runtimeReceipt).toMatchObject({
         modelId: 'audit_review',
         implementationAttemptId: fixture.runId,
-        stageInputs: [
-          {
+        stageInputs: expect.arrayContaining([
+          expect.objectContaining({
             role: 'audit_triad_execution_plan',
             path: planPath.replace(/\\/gu, '/'),
             hash: sha256Text(readFileSync(planPath, 'utf8')),
-          },
-          {
+          }),
+          expect.objectContaining({
             role: 'audit_triad_round_1',
             path: roundsPath.replace(/\\/gu, '/'),
             hash: sha256Text(readFileSync(roundsPath, 'utf8')),
-          },
-        ],
-        deterministicGateOutputs: [
-          {
+          }),
+          expect.objectContaining({
+            role: 'audit_triad_run_auditor_host_receipt',
+            hash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+          }),
+        ]),
+        deterministicGateOutputs: expect.arrayContaining([
+          expect.objectContaining({
             role: 'audit_review_report',
             path: reportPath.replace(/\\/gu, '/'),
             hash: sha256Text(readFileSync(reportPath, 'utf8')),
-          },
-        ],
+          }),
+        ]),
       });
       expect(record.artifactIndex).toEqual(
         expect.arrayContaining([
@@ -828,9 +1143,24 @@ describe('main agent audit review gate', () => {
         'rounds.json'
       );
       writeJson(roundsPath, [
-        cleanRound(plan, 'r1'),
-        cleanRound(plan, 'r2'),
-        cleanRound(plan, 'r3'),
+        materializeRoundProducerArtifacts({
+          root: fixture.root,
+          plan,
+          round: cleanRound(plan, 'r1'),
+          roundIndex: 1,
+        }),
+        materializeRoundProducerArtifacts({
+          root: fixture.root,
+          plan,
+          round: cleanRound(plan, 'r2'),
+          roundIndex: 2,
+        }),
+        materializeRoundProducerArtifacts({
+          root: fixture.root,
+          plan,
+          round: cleanRound(plan, 'r3'),
+          roundIndex: 3,
+        }),
       ]);
       const recordBefore = readFileSync(fixture.recordPath, 'utf8');
       const planBefore = readFileSync(planPath, 'utf8');
