@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-judge-false-positive-ledger-entry.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "ledgerEntryId",
+    "ledgerNamespace",
+    "actorClass",
+    "judgeRole",
+    "attemptKeyHash",
+    "scopeManifestHash",
+    "findingId",
+    "origin",
+    "observationHash",
+    "disposition",
+    "dispositionHash",
+    "previousLedgerEntryHash",
+    "authorityBindingHash",
+    "appendOnly",
+    "perGapModelInvocationCount",
+    "readonlyAuditorInvocationCount",
+    "decisionFieldOrigin",
+    "decision",
+    "ledgerEntryHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-judge-false-positive-ledger-entry/v1"
+    },
+    "ledgerEntryId": { "type": "string", "minLength": 1 },
+    "ledgerNamespace": { "const": "requirements" },
+    "actorClass": { "const": "requirements_critical_auditor_judge" },
+    "judgeRole": { "const": "requirements_critical_auditor" },
+    "attemptKeyHash": { "$ref": "#/$defs/hash" },
+    "scopeManifestHash": { "$ref": "#/$defs/hash" },
+    "findingId": { "type": "string", "minLength": 1 },
+    "origin": { "$ref": "#/$defs/origin" },
+    "observationHash": { "$ref": "#/$defs/hash" },
+    "disposition": { "$ref": "#/$defs/falsePositiveDisposition" },
+    "dispositionHash": { "$ref": "#/$defs/hash" },
+    "previousLedgerEntryHash": {
+      "anyOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }]
+    },
+    "authorityBindingHash": { "$ref": "#/$defs/hash" },
+    "appendOnly": { "const": true },
+    "perGapModelInvocationCount": { "const": 0 },
+    "readonlyAuditorInvocationCount": { "const": 0 },
+    "decisionFieldOrigin": { "const": "package_calculated" },
+    "decision": { "const": "recorded" },
+    "ledgerEntryHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "origin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gapId",
+        "auditUnitRef",
+        "requirementRef",
+        "sourceRef",
+        "sourceHash",
+        "evidenceRef"
+      ],
+      "properties": {
+        "gapId": { "type": "string", "minLength": 1 },
+        "auditUnitRef": { "type": "string", "minLength": 1 },
+        "requirementRef": { "type": "string", "minLength": 1 },
+        "sourceRef": { "type": "string", "minLength": 1 },
+        "sourceHash": { "$ref": "#/$defs/hash" },
+        "evidenceRef": { "type": "string", "minLength": 1 }
+      }
+    },
+    "falsePositiveDisposition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["disposition", "dispositionReasonHash", "sourceAuthorityHash", "evidenceHash"],
+      "properties": {
+        "disposition": { "const": "accepted_false_positive" },
+        "dispositionReasonHash": { "$ref": "#/$defs/hash" },
+        "sourceAuthorityHash": { "$ref": "#/$defs/hash" },
+        "evidenceHash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}
