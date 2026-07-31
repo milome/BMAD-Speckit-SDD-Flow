@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "campaignId",
+    "campaignLineageKey",
+    "initialReviewAttemptKey",
+    "blindReviewAggregateHash",
+    "originCount",
+    "completeOriginSetHash",
+    "permutationHashes",
+    "mergedFindings",
+    "originPreservationMatrix",
+    "decision",
+    "ledgerHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-campaign-remediation-ledger/v1"
+    },
+    "campaignId": { "type": "string", "minLength": 1 },
+    "campaignLineageKey": { "$ref": "#/$defs/hash" },
+    "initialReviewAttemptKey": { "$ref": "#/$defs/hash" },
+    "blindReviewAggregateHash": { "$ref": "#/$defs/hash" },
+    "originCount": { "type": "integer", "minimum": 1 },
+    "completeOriginSetHash": { "$ref": "#/$defs/hash" },
+    "permutationHashes": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/hash" }
+    },
+    "mergedFindings": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/mergedFinding" }
+    },
+    "originPreservationMatrix": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/preservationRow" }
+    },
+    "decision": { "const": "pass" },
+    "ledgerHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "actorClass": {
+      "enum": ["bounded_code_reviewer", "final_acceptance_judge"]
+    },
+    "origin": {
+      "type": "object",
+      "required": ["originId", "actorClass", "sourceLedgerHash", "sourceLineageHash", "findingId"],
+      "properties": {
+        "originId": { "$ref": "#/$defs/hash" },
+        "actorClass": { "$ref": "#/$defs/actorClass" },
+        "sourceLedgerHash": { "$ref": "#/$defs/hash" },
+        "sourceLineageHash": { "$ref": "#/$defs/hash" },
+        "findingId": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "mergedFinding": {
+      "type": "object",
+      "required": ["mergedFindingId", "canonicalObservationHash", "origins"],
+      "properties": {
+        "mergedFindingId": { "$ref": "#/$defs/hash" },
+        "canonicalObservationHash": { "$ref": "#/$defs/hash" },
+        "origins": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/origin" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "preservationRow": {
+      "type": "object",
+      "required": [
+        "originId",
+        "actorClass",
+        "sourceLedgerHash",
+        "sourceLineageHash",
+        "findingId",
+        "mergedFindingId",
+        "disposition",
+        "dispositionRef"
+      ],
+      "properties": {
+        "originId": { "$ref": "#/$defs/hash" },
+        "actorClass": { "$ref": "#/$defs/actorClass" },
+        "sourceLedgerHash": { "$ref": "#/$defs/hash" },
+        "sourceLineageHash": { "$ref": "#/$defs/hash" },
+        "findingId": { "type": "string", "minLength": 1 },
+        "mergedFindingId": { "$ref": "#/$defs/hash" },
+        "disposition": {
+          "enum": ["accepted", "rejected", "remediated", "not_applicable", "deferred_open_issue"]
+        },
+        "dispositionRef": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

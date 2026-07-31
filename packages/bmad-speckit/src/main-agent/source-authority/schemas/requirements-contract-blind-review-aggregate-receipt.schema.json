@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "campaignId",
+    "campaignLineageKey",
+    "scopeManifestHash",
+    "portfolioHash",
+    "modelDiversityReceiptHash",
+    "initialReviewAttemptKey",
+    "actorReceipts",
+    "blindnessProof",
+    "invocationCountReceipt",
+    "sourceLedgerHashes",
+    "decision",
+    "aggregateHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-blind-review-aggregate-receipt/v1"
+    },
+    "campaignId": { "type": "string", "minLength": 1 },
+    "campaignLineageKey": { "$ref": "#/$defs/hash" },
+    "scopeManifestHash": { "$ref": "#/$defs/hash" },
+    "portfolioHash": { "$ref": "#/$defs/hash" },
+    "modelDiversityReceiptHash": { "$ref": "#/$defs/hash" },
+    "initialReviewAttemptKey": { "$ref": "#/$defs/hash" },
+    "actorReceipts": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "$ref": "#/$defs/actorReceipt" }
+    },
+    "blindnessProof": {
+      "type": "object",
+      "required": [
+        "identicalBlindInputHash",
+        "frozenScopeBytesHash",
+        "frozenEvidenceHash",
+        "governedPathSetHash",
+        "preparedIntentHashes",
+        "peerLeakageDetected"
+      ],
+      "properties": {
+        "identicalBlindInputHash": { "$ref": "#/$defs/hash" },
+        "frozenScopeBytesHash": { "$ref": "#/$defs/hash" },
+        "frozenEvidenceHash": { "$ref": "#/$defs/hash" },
+        "governedPathSetHash": { "$ref": "#/$defs/hash" },
+        "preparedIntentHashes": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": { "$ref": "#/$defs/hash" }
+        },
+        "peerLeakageDetected": { "const": false }
+      },
+      "additionalProperties": false
+    },
+    "invocationCountReceipt": {
+      "type": "object",
+      "required": ["reviewerCalls", "finalJudgeCalls", "semanticInvocationCount"],
+      "properties": {
+        "reviewerCalls": { "const": 1 },
+        "finalJudgeCalls": { "const": 1 },
+        "semanticInvocationCount": { "const": 2 }
+      },
+      "additionalProperties": false
+    },
+    "sourceLedgerHashes": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/hash" }
+    },
+    "decision": { "const": "pass" },
+    "aggregateHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "actorClass": {
+      "enum": ["bounded_code_reviewer", "final_acceptance_judge"]
+    },
+    "actorReceipt": {
+      "type": "object",
+      "required": [
+        "actorClass",
+        "dispatchGroupId",
+        "invocationMode",
+        "startedAfterBothIntentsPrepared",
+        "modelRef",
+        "modelRevisionHash",
+        "blindInputHash",
+        "invocationIntentHash",
+        "sourceLedgerHash",
+        "terminalOutcome",
+        "findingIds",
+        "actorReceiptHash"
+      ],
+      "properties": {
+        "actorClass": { "$ref": "#/$defs/actorClass" },
+        "dispatchGroupId": { "type": "string", "minLength": 1 },
+        "invocationMode": { "const": "native" },
+        "startedAfterBothIntentsPrepared": { "const": true },
+        "modelRef": { "type": "string", "minLength": 1 },
+        "modelRevisionHash": { "$ref": "#/$defs/hash" },
+        "blindInputHash": { "$ref": "#/$defs/hash" },
+        "invocationIntentHash": { "$ref": "#/$defs/hash" },
+        "sourceLedgerHash": { "$ref": "#/$defs/hash" },
+        "terminalOutcome": { "enum": ["clean", "findings", "blocked"] },
+        "findingIds": { "type": "array", "items": { "type": "string" } },
+        "actorReceiptHash": { "$ref": "#/$defs/hash" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
