@@ -61,7 +61,10 @@ const ACTION_SOURCE = path.resolve(
   process.cwd(),
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-critical-auditor-judge-adapter.ts'
 );
-const PACKAGE_CLI_SOURCE = path.resolve(process.cwd(), 'packages/bmad-speckit/bin/bmad-speckit.js');
+const ACTION_DIST = path.resolve(
+  process.cwd(),
+  'packages/bmad-speckit/dist/main-agent/source-authority/scripts/requirements-contract-critical-auditor-judge-adapter.js'
+);
 const JUDGE_INVOCATION_SOURCE = path.resolve(
   process.cwd(),
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-invocation.ts'
@@ -1012,12 +1015,14 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
     expect(command[2]?.replace(/\\/gu, '/')).toMatch(
       /source-authority\/scripts\/requirements-contract-critical-auditor-judge-adapter\.ts$/u
     );
-    const packageCliSource = readFileSync(PACKAGE_CLI_SOURCE, 'utf8');
-    expect(packageCliSource).toContain(
-      ".command('requirements-contract-critical-auditor-judge-adapter')"
+    expect(existsSync(ACTION_SOURCE)).toBe(true);
+    expect(readFileSync(ACTION_SOURCE, 'utf8')).toContain(
+      'export async function requirementsContractCriticalAuditorJudgeAdapterCommand'
     );
-    expect(packageCliSource).toContain(".requiredOption('--output-dir <path>'");
-    expect(packageCliSource).toContain('outputDir: opts.outputDir');
+    expect(existsSync(ACTION_DIST)).toBe(true);
+    expect(readFileSync(ACTION_DIST, 'utf8')).toContain(
+      'exports.requirementsContractCriticalAuditorJudgeAdapterCommand'
+    );
   });
 
   it('does not expose fetch as a Judge result injection surface', () => {
