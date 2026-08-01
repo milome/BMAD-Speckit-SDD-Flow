@@ -12,7 +12,10 @@ type ReleaseGateReport = {
   blocking_reasons?: string[];
   completion_intent?: {
     token: string;
+    runId?: string;
     storyKey: string;
+    evidenceBundleId?: string;
+    attemptId?: string;
     contractHash: string;
     gateReportHash: string;
     singleUse: boolean;
@@ -187,13 +190,18 @@ function writeAudit(
     storyKey: input.storyKey,
     evidenceBundleId: input.evidenceBundleId ?? report.evidence_provenance?.evidenceBundleId,
     gateReportHash: report.completion_intent?.gateReportHash ?? releaseGateReportHash(report),
+    completionToken: report.completion_intent?.token,
+    attemptId: report.completion_intent?.attemptId,
+    expiresAt: report.completion_intent?.expiresAt,
     prefix: 'sprint-status-update',
   });
   fs.writeFileSync(
     auditPath,
     `${JSON.stringify(
       {
+        runId: evidence_provenance.runId,
         storyKey: input.storyKey,
+        evidenceBundleId: evidence_provenance.evidenceBundleId,
         status: input.status,
         authorized: true,
         evidence_provenance,
@@ -204,6 +212,7 @@ function writeAudit(
         fromStatus: fromStatus ?? 'missing',
         toStatus: input.status,
         token: input.token,
+        attemptId: report.completion_intent?.attemptId ?? null,
         singleUse: true,
         expiresAt: report.completion_intent?.expiresAt ?? null,
         updatedAt: new Date().toISOString(),

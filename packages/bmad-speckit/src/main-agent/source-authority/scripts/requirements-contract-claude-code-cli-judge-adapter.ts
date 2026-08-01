@@ -1187,7 +1187,7 @@ export function createClaudeCodeCliJudgeAdapter(
             Number(execution.processId) > 0
               ? execution.processId
               : null,
-          providerRequestId: result.session_id,
+          providerRequestId: String(result.session_id),
           requestedModel: model,
           observedModel: returnedModel,
           modelObservationSource: 'cli_event',
@@ -1223,7 +1223,7 @@ export function createClaudeCodeCliJudgeAdapter(
           configuredModel: model,
           returnedModel,
           ...normalizedDecision,
-          providerRequestId: result.session_id,
+          providerRequestId: String(result.session_id),
           requestHash: sha256(prompt),
           responseHash: sha256(execution.stdout),
           transportEvidence,
@@ -1234,7 +1234,7 @@ export function createClaudeCodeCliJudgeAdapter(
           completedAt: new Date().toISOString(),
           providerRef,
           transport: String(provider.transport),
-          providerRequestId: result.session_id,
+          providerRequestId: String(result.session_id),
           decision: normalizedDecision.decision,
           normalizedResponseHash: sha256(stableStringify(normalized)),
           transportEvidenceHash: sha256(stableStringify(transportEvidence)),

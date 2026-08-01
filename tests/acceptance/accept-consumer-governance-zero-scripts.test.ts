@@ -106,6 +106,16 @@ describe('consumer governance zero-scripts install', () => {
       expect(existsSync(join(consumer, '.claude', 'hooks', 'runtime-policy-inject.cjs'))).toBe(
         true
       );
+      expect(
+        existsSync(
+          join(
+            consumer,
+            '.claude',
+            'schemas',
+            'requirements-contract-runtime-status-decision-receipt.schema.json'
+          )
+        )
+      ).toBe(true);
       expect(existsSync(join(consumer, '.claude', 'hooks', 'write-runtime-context.cjs'))).toBe(
         true
       );
@@ -186,7 +196,14 @@ describe('consumer governance zero-scripts install', () => {
         }
       );
 
-      expect(inject.status).toBe(0);
+      expect(
+        inject.status,
+        [
+          `runtime-policy-inject status=${inject.status}`,
+          `stdout=${inject.stdout || '<empty>'}`,
+          `stderr=${inject.stderr || '<empty>'}`,
+        ].join('\n')
+      ).toBe(0);
       const injectOut = JSON.parse(inject.stdout || '{}') as {
         continue?: boolean;
         stopReason?: string;

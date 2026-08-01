@@ -209,8 +209,8 @@ export function compileRequirementsAuditAggregate(input: unknown): RequirementsA
 
   const payload = {
     schemaVersion: 'requirements-contract-requirements-audit-aggregate/v1' as const,
-    actorClass: REQUIREMENTS_ACTOR,
-    judgeRole: REQUIREMENTS_ROLE,
+    actorClass: REQUIREMENTS_ACTOR as typeof REQUIREMENTS_ACTOR,
+    judgeRole: REQUIREMENTS_ROLE as typeof REQUIREMENTS_ROLE,
     requestHash,
     attemptKeyHash,
     scopeManifestHash,
@@ -232,9 +232,10 @@ export function compileRequirementsAuditAggregate(input: unknown): RequirementsA
     passedVetoRefs,
     issueCodes: [...new Set(issues)].sort((left, right) => left.localeCompare(right)),
   };
-  return {
+  const aggregate: RequirementsAuditAggregate = {
     ...payload,
     aggregateHash: sha256Stable(payload),
     decision: payload.issueCodes.length === 0 ? 'pass' : 'block',
   };
+  return aggregate;
 }

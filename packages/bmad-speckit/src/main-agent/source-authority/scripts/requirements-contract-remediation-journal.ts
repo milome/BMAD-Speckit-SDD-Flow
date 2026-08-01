@@ -6,6 +6,8 @@ import {
   text,
 } from './requirements-contract-verification-evidence-normalizer';
 
+type JsonRecord = Record<string, unknown>;
+
 export type RequirementsContractRemediationJournalEventType =
   | 'prepare'
   | 'apply'
@@ -69,9 +71,12 @@ export function validateRequirementsContractRemediationJournalEntry(
   currentAuthority: unknown
 ): RequirementsContractRemediationJournalEntry {
   if (!isRecord(value) || !isRecord(currentAuthority)) fail('remediation_journal_entry_invalid');
+  const entryRecord = value as JsonRecord;
   const entry = value as unknown as RequirementsContractRemediationJournalEntry;
   const { entryHash, ...payload } = entry;
-  if (entryHash !== stableHash(payload)) fail('remediation_journal_entry_hash_mismatch');
+  if (entryHash !== stableHash(payload as JsonRecord)) {
+    fail('remediation_journal_entry_hash_mismatch');
+  }
   if (
     entry.schemaVersion !== 'requirements-contract-remediation-journal-entry/v1' ||
     entry.decision !== 'pass' ||
@@ -92,6 +97,6 @@ export function validateRequirementsContractRemediationJournalEntry(
   ) {
     fail('remediation_journal_entry_stale');
   }
-  requireText(entry, 'unitId', 'remediation_journal_entry_invalid');
+  requireText(entryRecord, 'unitId', 'remediation_journal_entry_invalid');
   return entry;
 }

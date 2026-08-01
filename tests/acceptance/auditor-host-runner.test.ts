@@ -68,7 +68,7 @@ function writeReceipt(root: string, relativePath: string, payload: Record<string
   return receiptRef(root, filePath);
 }
 
-function materializeControlledAuditBinding(root: string, reportPath: string, artifactPath: string) {
+function materializeControlledAuditBinding(root: string, reportPath: string, _artifactPath: string) {
   const roundId = 'round-1';
   const auditEpochId = sha256Text(`${root}:audit-epoch`);
   const auditTargetBundleHash = sha256Text(`${root}:audit-target`);

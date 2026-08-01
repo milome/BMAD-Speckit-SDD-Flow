@@ -44,6 +44,8 @@ function delegateMetadataRequestToMainCli(argv) {
 delegateMetadataRequestToMainCli(args);
 
 const ROOT_PACKAGE_JSON = require(path.join(PKG_ROOT, 'package.json'));
+const RUNTIME_STATUS_DECISION_RECEIPT_SCHEMA_FILE =
+  'requirements-contract-runtime-status-decision-receipt.schema.json';
 const { syncSpecifyMirror } = require(path.join(
   PKG_ROOT,
   '_bmad',
@@ -77,6 +79,63 @@ let requestedAgentTarget =
 
 if (!requestedAgentTarget) {
   requestedAgentTarget = 'cursor';
+}
+
+function resolveRuntimeStatusDecisionReceiptSchema(pkgRoot) {
+  const candidates = [
+    path.join(
+      pkgRoot,
+      'node_modules',
+      'bmad-speckit',
+      'dist',
+      'main-agent',
+      'source-authority',
+      'schemas',
+      RUNTIME_STATUS_DECISION_RECEIPT_SCHEMA_FILE
+    ),
+    path.join(
+      pkgRoot,
+      'node_modules',
+      'bmad-speckit',
+      'src',
+      'main-agent',
+      'source-authority',
+      'schemas',
+      RUNTIME_STATUS_DECISION_RECEIPT_SCHEMA_FILE
+    ),
+    path.join(
+      pkgRoot,
+      'packages',
+      'bmad-speckit',
+      'dist',
+      'main-agent',
+      'source-authority',
+      'schemas',
+      RUNTIME_STATUS_DECISION_RECEIPT_SCHEMA_FILE
+    ),
+    path.join(
+      pkgRoot,
+      'packages',
+      'bmad-speckit',
+      'src',
+      'main-agent',
+      'source-authority',
+      'schemas',
+      RUNTIME_STATUS_DECISION_RECEIPT_SCHEMA_FILE
+    ),
+  ];
+  return candidates.find((candidate) => fs.existsSync(candidate)) || null;
+}
+
+function copyRuntimeStatusDecisionReceiptSchemaToHookPeer(schemaSrc, hookDir) {
+  if (!schemaSrc || !fs.existsSync(schemaSrc)) return false;
+  const schemaDest = path.join(
+    path.dirname(hookDir),
+    'schemas',
+    RUNTIME_STATUS_DECISION_RECEIPT_SCHEMA_FILE
+  );
+  copyFileWithRetry(schemaSrc, schemaDest);
+  return true;
 }
 /**
  * Deploy .specify/ runtime directory from _bmad/speckit/ source.
@@ -1007,6 +1066,7 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
     );
   }
   const wrcSrc = path.join(path.dirname(emitSrc), '..', 'write-runtime-context.cjs');
+  const runtimeStatusSchemaSrc = resolveRuntimeStatusDecisionReceiptSchema(pkgRoot);
   const hookDirs = [
     path.join(targetDir, '.cursor', 'hooks'),
     path.join(targetDir, '.claude', 'hooks'),
@@ -1027,6 +1087,11 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
     if (fs.existsSync(wrcSrc)) {
       copyFileWithRetry(wrcSrc, path.join(d, 'write-runtime-context.cjs'));
     }
+    if (!copyRuntimeStatusDecisionReceiptSchemaToHookPeer(runtimeStatusSchemaSrc, d)) {
+      console.warn(
+        `runtime status decision receipt schema not found; emit-runtime-policy.cjs may fail in ${path.relative(targetDir, d)}.`
+      );
+    }
     deployed += 1;
   }
   if (deployed === 0) {
@@ -1036,7 +1101,7 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
     return;
   }
   console.log(
-    'Deployed emit-runtime-policy.cjs, resolve-for-session.cjs, render-audit-block.cjs (+ write-runtime-context.cjs) under .cursor/hooks and/or .claude/hooks; removed legacy worker/dispatch/launcher hook-local bundles from the accepted install surface (no project-root scripts/).'
+    'Deployed emit-runtime-policy.cjs, resolve-for-session.cjs, render-audit-block.cjs (+ write-runtime-context.cjs and runtime status schema) under .cursor/hooks and/or .claude/hooks; removed legacy worker/dispatch/launcher hook-local bundles from the accepted install surface (no project-root scripts/).'
   );
 }
 

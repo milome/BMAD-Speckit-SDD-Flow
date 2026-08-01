@@ -33,7 +33,10 @@ interface ReleaseGateReport {
   mode?: 'package_runtime_module';
   completion_intent?: {
     token: string;
+    runId: string;
     storyKey: string;
+    evidenceBundleId: string;
+    attemptId: string;
     contractHash: string;
     gateReportHash: string;
     singleUse: true;
@@ -50,6 +53,7 @@ interface ReleaseGateCliOptions {
   requirementSetId?: string;
   runId?: string;
   evidenceBundleId?: string;
+  attemptId?: string;
   singleSourceCommand?: string;
   rerunGateCommand?: string;
   storyKey?: string;
@@ -62,6 +66,9 @@ interface EvidenceProvenance {
   evidenceBundleId: string;
   contractHash?: string;
   gateReportHash?: string;
+  completionToken?: string;
+  attemptId?: string;
+  expiresAt?: string;
 }
 
 interface ExecutionAuditLedgerItem {
@@ -179,6 +186,33 @@ function sha256File(filePath: string): string {
 
 function readJson<T>(filePath: string): T {
   return JSON.parse(fs.readFileSync(filePath, 'utf8')) as T;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function mergeProvenance(value: unknown, binding: EvidenceProvenance): EvidenceProvenance {
+  return {
+    ...(isRecord(value) ? value : {}),
+    ...binding,
+  };
+}
+
+function stampDeliveryBinding(filePath: string, binding: EvidenceProvenance): void {
+  if (!fs.existsSync(filePath)) return;
+  const value = readJson<unknown>(filePath);
+  if (!isRecord(value)) {
+    throw new Error(`delivery artifact is not an object: ${filePath}`);
+  }
+  value.evidence_provenance = mergeProvenance(value.evidence_provenance, binding);
+  if (isRecord(value.prTopology)) {
+    value.prTopology.evidence_provenance = mergeProvenance(
+      value.prTopology.evidence_provenance,
+      binding
+    );
+  }
+  fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 }
 
 function writePackageRuntimeQualityGateReport(input: {
@@ -325,7 +359,10 @@ function appendScriptProvenanceArgs(
 }
 
 function commandSupportsScriptProvenance(command: string): boolean {
-  return /main-agent-(host-matrix|dual-host)-pr-orchestrator\.(ts|js)\b/u.test(command);
+  return (
+    /main-agent-(host-matrix|dual-host)-pr-orchestrator\.(ts|js)\b/u.test(command) ||
+    /\b(host-matrix|dual-host)-pr-orchestrator\b/u.test(command)
+  );
 }
 
 function resolveOptionalPath(root: string, raw: string | undefined): string | null {
@@ -670,8 +707,10 @@ export function mainReleaseGate(argv: string[]): number {
       '_config',
       'orchestration-governance.contract.yaml'
     );
+    const contractHash = sha256File(contractPath);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
     const token = `${'release-gate:pass'}:${storyKey}:${Date.now()}:${crypto.randomBytes(8).toString('hex')}`;
+    const attemptId = normalizeText(args.attemptId) || `${expectedProvenance.runId}:release-gate`;
     const gateReportHash = sha256(
       JSON.stringify({
         generatedAt: report.generatedAt,
@@ -679,18 +718,29 @@ export function mainReleaseGate(argv: string[]): number {
         blocking_reasons: report.blocking_reasons,
       })
     );
+    const deliveryBinding: EvidenceProvenance = {
+      ...expectedProvenance,
+      contractHash,
+      gateReportHash,
+      completionToken: token,
+      attemptId,
+      expiresAt,
+    };
     report.completion_intent = {
       token,
+      runId: deliveryBinding.runId,
       storyKey,
-      contractHash: sha256File(contractPath),
+      evidenceBundleId: deliveryBinding.evidenceBundleId,
+      attemptId,
+      contractHash,
       gateReportHash,
       singleUse: true,
       expiresAt,
     };
-    report.evidence_provenance = {
-      ...report.evidence_provenance,
-      gateReportHash,
-    };
+    report.evidence_provenance = deliveryBinding;
+    for (const artifactPath of [hostMatrixPath, prTopologyPath, qualityGatePath]) {
+      stampDeliveryBinding(artifactPath, deliveryBinding);
+    }
   }
   const reportPath = writeReport(report);
   if (blockingReasons.length === 0 && args.skipSprintStatusUpdate !== 'true') {

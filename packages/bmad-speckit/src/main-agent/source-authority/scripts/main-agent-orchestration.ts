@@ -5936,6 +5936,7 @@ export function executeCriticalAuditorJudgeAdapter(input: {
   expected: CriticalAuditorIndependentProviderExpectation;
   processExecutor?: typeof spawnSync;
 }): CriticalAuditorRoundResult {
+  throw new Error('main_agent_judge_legacy_direct_adapter_forbidden');
   const [command, ...baseArgs] = resolveCriticalAuditorExternalAdapterCommand(undefined);
   const credentialMetadata = resolveRequirementsContractJudgeCredentialMetadata({
     cwd: input.projectRoot,
@@ -6053,11 +6054,10 @@ export function executeCriticalAuditorJudgeAdapter(input: {
           committed,
         }),
       };
-    } catch (error) {
-      if (
-        !(error instanceof Error) ||
-        error.message !== 'critical_auditor_judge_invocation_state_not_committed'
-      ) {
+    } catch (error: unknown) {
+      const failure = error as { message?: unknown };
+      const message = typeof failure.message === 'string' ? failure.message : '';
+      if (message !== 'critical_auditor_judge_invocation_state_not_committed') {
         throw error;
       }
     }
@@ -6097,7 +6097,9 @@ export function executeCriticalAuditorJudgeAdapter(input: {
         failureCode: 'critical_auditor_judge_host_timeout',
       });
     }
-    throw new Error(`critical_auditor_external_adapter_failed:${execution.error.message}`);
+    throw new Error(
+      `critical_auditor_external_adapter_failed:${execution.error?.message ?? 'unknown'}`
+    );
   }
   if (exitCode !== 0) {
     const providerContractBlocked = /(?:^|\r?\n)(critical_auditor_judge_provider_contract_blocked:sha256:[a-f0-9]{64})(?:\r?\n|$)/u.exec(
@@ -40294,6 +40296,40 @@ export interface MainAgentJudgeReviewCampaignBridgeInput {
   directAdapterDispatch?: unknown;
 }
 
+export type MainAgentCanonicalJudgeRunRole =
+  | 'requirements_critical_auditor'
+  | 'final_acceptance_judge';
+
+export interface MainAgentCanonicalJudgeRunDispatchInput {
+  projectRoot: string;
+  config: string;
+  request: string;
+  role: MainAgentCanonicalJudgeRunRole;
+  attemptId: string;
+  outputDir: string;
+  controlledDispatchRef: unknown;
+  callerVerdict?: unknown;
+  callerFindings?: unknown;
+  callerScope?: unknown;
+  callerEffectivePass?: unknown;
+  callerCloseoutAuthority?: unknown;
+  directAdapterDispatch?: unknown;
+}
+
+export interface MainAgentCanonicalJudgeRunDispatch {
+  schemaVersion: 'main-agent-canonical-judge-run-dispatch/v1';
+  command: 'bmad-speckit judge run';
+  argv: string[];
+  role: MainAgentCanonicalJudgeRunRole;
+  attemptId: string;
+  controlledDispatchHash: string;
+  roleInference: false;
+  directAdapterDispatch: false;
+  callerAuthorityInjection: false;
+  dispatchHash: string;
+  decision: 'pass';
+}
+
 export interface MainAgentJudgeReviewCampaignBridge {
   schemaVersion: 'main-agent-judge-review-campaign-bridge/v1';
   roleInput: 'requirements_judge';
@@ -40309,6 +40345,80 @@ export interface MainAgentJudgeReviewCampaignBridge {
   callerAuthorityInjection: false;
   bridgeHash: string;
   decision: 'pass';
+}
+
+function rejectMainAgentJudgeAuthorityInjection(input: {
+  callerVerdict?: unknown;
+  callerFindings?: unknown;
+  callerScope?: unknown;
+  callerEffectivePass?: unknown;
+  callerCloseoutAuthority?: unknown;
+  directAdapterDispatch?: unknown;
+}): void {
+  for (const key of [
+    'callerVerdict',
+    'callerFindings',
+    'callerScope',
+    'callerEffectivePass',
+    'callerCloseoutAuthority',
+  ] as const) {
+    if (input[key] !== undefined) {
+      throw new Error('main_agent_judge_bridge_caller_authority_injection');
+    }
+  }
+  if (input.directAdapterDispatch === true) {
+    throw new Error('main_agent_judge_bridge_direct_adapter_forbidden');
+  }
+}
+
+export function buildMainAgentCanonicalJudgeRunDispatch(
+  input: MainAgentCanonicalJudgeRunDispatchInput
+): MainAgentCanonicalJudgeRunDispatch {
+  rejectMainAgentJudgeAuthorityInjection(input);
+  if (
+    input.role !== 'requirements_critical_auditor' &&
+    input.role !== 'final_acceptance_judge'
+  ) {
+    throw new Error('main_agent_judge_run_role_explicit_required');
+  }
+  const controlledDispatch = recordObject(input.controlledDispatchRef);
+  if (!normalizeText(controlledDispatch.packetId) || !normalizeText(controlledDispatch.packetKind)) {
+    throw new Error('main_agent_judge_bridge_controlled_dispatch_invalid');
+  }
+  const argv = [
+    'judge',
+    'run',
+    '--project-root',
+    input.projectRoot,
+    '--config',
+    input.config,
+    '--request',
+    input.request,
+    '--role',
+    input.role,
+    '--attempt-id',
+    input.attemptId,
+    '--output-dir',
+    input.outputDir,
+    '--json',
+  ];
+  const controlledDispatchHash = sha256Json({
+    packetId: normalizeText(controlledDispatch.packetId),
+    packetKind: normalizeText(controlledDispatch.packetKind),
+    route: controlledDispatch.route ?? null,
+  });
+  const payload = {
+    schemaVersion: 'main-agent-canonical-judge-run-dispatch/v1' as const,
+    command: 'bmad-speckit judge run' as const,
+    argv,
+    role: input.role,
+    attemptId: input.attemptId,
+    controlledDispatchHash,
+    roleInference: false as const,
+    directAdapterDispatch: false as const,
+    callerAuthorityInjection: false as const,
+  };
+  return { ...payload, dispatchHash: sha256Json(payload), decision: 'pass' as const };
 }
 
 function rejectMainAgentJudgeBridgeAuthorityInjection(

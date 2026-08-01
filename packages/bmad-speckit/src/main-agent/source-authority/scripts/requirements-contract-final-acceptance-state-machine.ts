@@ -38,7 +38,7 @@ export function reduceRequirementsContractFinalAcceptanceState(
   if (!isRecord(input)) fail('final_acceptance_state_input_invalid');
   if (input.replayedAttempt === true) fail('final_acceptance_state_replay');
   if (input.partialAuthority === true) fail('final_acceptance_state_partial');
-  const mode = input.mode === 'remediated' ? 'remediated' : 'clean';
+  const mode: 'clean' | 'remediated' = input.mode === 'remediated' ? 'remediated' : 'clean';
   const requiredClosureCount =
     typeof input.requiredClosureCount === 'number' ? input.requiredClosureCount : 0;
   const observedClosureCount =

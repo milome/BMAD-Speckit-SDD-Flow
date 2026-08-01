@@ -1,5 +1,14 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import Ajv2020 from 'ajv/dist/2020.js';
+import type {
+  ClaudeCodeCliCommandInvocation,
+  ClaudeCodeCliCommandResult,
+} from './requirements-contract-claude-code-cli-judge-adapter';
+import type {
+  CodexCliCommandInvocation,
+  CodexCliCommandResult,
+} from './requirements-contract-codex-cli-judge-adapter';
 import {
   prepareRequirementsContractJudgeInvocation,
   type RequirementsContractJudgeJsonRecord,
@@ -10,6 +19,7 @@ import {
   type RequirementsContractJudgeRole,
 } from './requirements-contract-judge-role';
 import { canonicalJson, sha256, writeGovernedJson } from './requirements-contract-governed-write';
+import { sha256Stable } from './requirements-contract-semantic-resolver';
 
 type JsonRecord = Record<string, unknown>;
 type JudgeDecision = 'pass' | 'block' | 'inconclusive';
@@ -22,18 +32,34 @@ export interface RequirementsContractJudgeRunCommandOptions {
   attemptId: string;
   outputDir: string;
   json?: boolean;
-  invokeJudge?: (input: {
-    providerRef: string;
-    provider: JsonRecord;
-    payload: {
-      systemPrompt: string;
-      request: JsonRecord;
-      executionContext?: JsonRecord;
-      structuredOutputSchema?: JsonRecord;
-    };
-  }) => Promise<JsonRecord>;
+  executeClaudeCodeCliCommand?: (
+    invocation: ClaudeCodeCliCommandInvocation
+  ) => Promise<ClaudeCodeCliCommandResult>;
+  executeCodexCliCommand?: (
+    invocation: CodexCliCommandInvocation
+  ) => Promise<CodexCliCommandResult>;
 }
 
+const PUBLIC_ARG_KEYS = new Set([
+  'project-root',
+  'config',
+  'request',
+  'role',
+  'attempt-id',
+  'output-dir',
+  'json',
+]);
+const OPTION_KEYS = new Set([
+  'projectRoot',
+  'config',
+  'request',
+  'role',
+  'attemptId',
+  'outputDir',
+  'json',
+  'executeClaudeCodeCliCommand',
+  'executeCodexCliCommand',
+]);
 const AUTHORITY_OVERRIDE_KEYS = [
   'provider',
   'providerRef',
@@ -73,6 +99,14 @@ function judgeRole(value: unknown, missingCode: string): RequirementsContractJud
 }
 
 function rejectObjectOverrides(input: JsonRecord): void {
+  for (const key of Object.keys(input)) {
+    if (!OPTION_KEYS.has(key)) {
+      if (AUTHORITY_OVERRIDE_KEYS.includes(key as (typeof AUTHORITY_OVERRIDE_KEYS)[number])) {
+        throw new Error(`requirements_contract_judge_command_authority_override:${key}`);
+      }
+      throw new Error(`requirements_contract_judge_command_arg_forbidden:${key}`);
+    }
+  }
   for (const key of AUTHORITY_OVERRIDE_KEYS) {
     if (Object.hasOwn(input, key) && input[key] !== undefined) {
       throw new Error(`requirements_contract_judge_command_authority_override:${key}`);
@@ -89,8 +123,70 @@ function resolveWithin(root: string, value: string): string {
   return resolved;
 }
 
+function assertRealPathWithin(root: string, targetPath: string, code: string): void {
+  const rootReal = fs.realpathSync.native(root);
+  const targetReal = fs.realpathSync.native(targetPath);
+  const relative = path.relative(rootReal, targetReal);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    throw new Error(code);
+  }
+}
+
+function assertWritablePathRealParentWithin(root: string, targetPath: string, code: string): void {
+  let cursor = path.resolve(targetPath);
+  while (!fs.existsSync(cursor)) {
+    const next = path.dirname(cursor);
+    if (next === cursor) throw new Error(code);
+    cursor = next;
+  }
+  assertRealPathWithin(root, cursor, code);
+}
+
 function readJson(filePath: string): JsonRecord {
   return JSON.parse(fs.readFileSync(filePath, 'utf8')) as JsonRecord;
+}
+
+let cachedAttemptKeyValidator: ReturnType<Ajv2020['compile']> | null = null;
+
+function attemptKeyValidator() {
+  if (cachedAttemptKeyValidator) return cachedAttemptKeyValidator;
+  const schemaPath = path.resolve(
+    __dirname,
+    '..',
+    'schemas',
+    'requirements-contract-judge-attempt-key.schema.json'
+  );
+  cachedAttemptKeyValidator = new Ajv2020({ allErrors: true, strict: false }).compile(
+    JSON.parse(fs.readFileSync(schemaPath, 'utf8')) as object
+  );
+  return cachedAttemptKeyValidator;
+}
+
+function validateAttemptKey(value: unknown): JsonRecord {
+  const attemptKey = record(value, 'requirements_contract_judge_command_attempt_key_missing');
+  const validate = attemptKeyValidator();
+  if (!validate(attemptKey)) {
+    throw new Error(
+      `requirements_contract_judge_command_attempt_key_schema_invalid:${JSON.stringify(
+        validate.errors ?? []
+      )}`
+    );
+  }
+  return attemptKey;
+}
+
+function requestAuthorityEnvelope(requestEnvelope: JsonRecord): JsonRecord {
+  const { readinessReceipt: _readinessReceipt, requestHash: _requestHash, ...authority } =
+    requestEnvelope;
+  return authority;
+}
+
+function requireEqual(
+  actual: unknown,
+  expected: unknown,
+  code: string
+): void {
+  if (actual !== expected) throw new Error(code);
 }
 
 function processExitCode(decision: JudgeDecision): number {
@@ -131,6 +227,9 @@ export function parseRequirementsContractJudgeRunArgv(
     if (AUTHORITY_OVERRIDE_KEYS.includes(key as (typeof AUTHORITY_OVERRIDE_KEYS)[number])) {
       throw new Error(`requirements_contract_judge_command_authority_override:${key}`);
     }
+    if (!PUBLIC_ARG_KEYS.has(key)) {
+      throw new Error(`requirements_contract_judge_command_arg_forbidden:${key}`);
+    }
     const value = argv[index + 1];
     if (!value || value.startsWith('--')) {
       throw new Error(`requirements_contract_judge_command_arg_missing:${key}`);
@@ -157,7 +256,17 @@ export async function requirementsContractJudgeRunCommand(
 ) {
   rejectObjectOverrides(options as unknown as JsonRecord);
   const root = path.resolve(options.projectRoot);
+  if (!fs.existsSync(root) || !fs.statSync(root).isDirectory()) {
+    throw new Error('requirements_contract_judge_command_project_root_missing');
+  }
+  assertRealPathWithin(root, root, 'requirements_contract_judge_command_project_root_escape');
   const requestPath = resolveWithin(root, options.request);
+  assertRealPathWithin(root, requestPath, 'requirements_contract_judge_command_request_path_escape');
+  assertWritablePathRealParentWithin(
+    root,
+    path.resolve(root, options.outputDir, 'judge-run-result.json'),
+    'requirements_contract_judge_command_output_path_escape'
+  );
   const requestEnvelope = readJson(requestPath);
   const requestRole = judgeRole(
     requestEnvelope.role,
@@ -170,37 +279,106 @@ export async function requirementsContractJudgeRunCommand(
   if (requestRole !== expectedRole) {
     throw new Error('requirements_contract_judge_command_role_pin_mismatch');
   }
-  const attemptKey = record(
-    requestEnvelope.attemptKey,
-    'requirements_contract_judge_command_attempt_key_missing'
+  const attemptKey = validateAttemptKey(requestEnvelope.attemptKey);
+  const readinessReceipt = record(
+    requestEnvelope.readinessReceipt,
+    'requirements_contract_judge_command_readiness_missing'
   );
-  if (attemptKey.attemptId !== options.attemptId || attemptKey.role !== requestRole) {
+  if (attemptKey.attemptId !== options.attemptId || attemptKey.judgeRole !== requestRole) {
     throw new Error('requirements_contract_judge_command_attempt_key_mismatch');
   }
+  requireEqual(
+    requestEnvelope.sourceAuthorityHash,
+    attemptKey.sourceAuthorityHash,
+    'requirements_contract_judge_command_source_authority_mismatch'
+  );
+  requireEqual(
+    requestEnvelope.sourceDocumentHash,
+    readinessReceipt.sourceDocumentHash,
+    'requirements_contract_judge_command_source_document_mismatch'
+  );
+  requireEqual(
+    requestEnvelope.semanticModelHash,
+    readinessReceipt.semanticModelHash,
+    'requirements_contract_judge_command_semantic_model_mismatch'
+  );
+  requireEqual(
+    requestEnvelope.projectionSetHash,
+    readinessReceipt.projectionSetHash,
+    'requirements_contract_judge_command_projection_set_mismatch'
+  );
+  requireEqual(
+    requestEnvelope.scopeManifestHash,
+    attemptKey.scopeManifestHash,
+    'requirements_contract_judge_command_scope_mismatch'
+  );
+  requireEqual(
+    requestEnvelope.scopeManifestHash,
+    readinessReceipt.scopeHash,
+    'requirements_contract_judge_command_scope_mismatch'
+  );
+  const systemPrompt = text(
+    requestEnvelope.systemPrompt,
+    'requirements_contract_judge_command_system_prompt_missing'
+  );
+  requireEqual(
+    sha256(systemPrompt),
+    attemptKey.promptTemplateHash,
+    'requirements_contract_judge_command_prompt_hash_mismatch'
+  );
+  const structuredOutputSchema = requestEnvelope.structuredOutputSchema
+    ? record(
+        requestEnvelope.structuredOutputSchema,
+        'requirements_contract_judge_command_schema_invalid'
+      )
+    : null;
+  if (structuredOutputSchema) {
+    requireEqual(
+      sha256(canonicalJson(structuredOutputSchema)),
+      attemptKey.assessmentSchemaHash,
+      'requirements_contract_judge_command_schema_hash_mismatch'
+    );
+  }
   assertRequirementsContractJudgeInvocationReadiness({
-    readinessReceipt: record(
-      requestEnvelope.readinessReceipt,
-      'requirements_contract_judge_command_readiness_missing'
-    ),
+    readinessReceipt,
     scope: {
-      requestHash: attemptKey.requestHash,
-      sourceDocumentHash: attemptKey.sourceDocumentHash,
-      semanticModelHash: attemptKey.semanticModelHash,
-      projectionSetHash: attemptKey.projectionSetHash,
-      scopeHash: requestEnvelope.scopeHash ?? requestEnvelope.readinessReceipt?.scopeHash,
+      requestHash: requestEnvelope.requestHash,
+      sourceDocumentHash: requestEnvelope.sourceDocumentHash,
+      semanticModelHash: requestEnvelope.semanticModelHash,
+      projectionSetHash: requestEnvelope.projectionSetHash,
+      scopeHash: requestEnvelope.scopeManifestHash ?? requestEnvelope.scopeHash,
     },
     providerInvocationCount: 0,
   });
   const prepared = await prepareRequirementsContractJudgeInvocation({
     projectRoot: root,
     config: options.config,
+    executeClaudeCodeCliCommand: options.executeClaudeCodeCliCommand,
+    executeCodexCliCommand: options.executeCodexCliCommand,
   });
   const provider = prepared.provider as JsonRecord;
+  requireEqual(
+    attemptKey.providerRegistryHash,
+    prepared.providerRegistryHash,
+    'requirements_contract_judge_command_provider_registry_hash_mismatch'
+  );
+  requireEqual(
+    readinessReceipt.providerRegistryHash,
+    prepared.providerRegistryHash,
+    'requirements_contract_judge_command_provider_registry_hash_mismatch'
+  );
+  requireEqual(
+    attemptKey.providerConfigurationHash,
+    sha256Stable(provider),
+    'requirements_contract_judge_command_provider_configuration_hash_mismatch'
+  );
+  requireEqual(
+    requestEnvelope.requestHash,
+    sha256(canonicalJson(requestAuthorityEnvelope(requestEnvelope))),
+    'requirements_contract_judge_command_request_hash_mismatch'
+  );
   const payload = {
-    systemPrompt: text(
-      requestEnvelope.systemPrompt,
-      'requirements_contract_judge_command_system_prompt_missing'
-    ),
+    systemPrompt,
     request: requestEnvelope,
     executionContext: {
       projectRoot: root,
@@ -210,22 +388,13 @@ export async function requirementsContractJudgeRunCommand(
       role: requestRole,
       attemptId: options.attemptId,
     },
-    ...(requestEnvelope.structuredOutputSchema
+    ...(structuredOutputSchema
       ? {
-          structuredOutputSchema: record(
-            requestEnvelope.structuredOutputSchema,
-            'requirements_contract_judge_command_schema_invalid'
-          ),
+          structuredOutputSchema,
         }
       : {}),
   };
-  const response = options.invokeJudge
-    ? await options.invokeJudge({
-        providerRef: prepared.providerRef,
-        provider,
-        payload,
-      })
-    : ((await prepared.invoke(payload)) as RequirementsContractJudgeJsonRecord);
+  const response = (await prepared.invoke(payload)) as RequirementsContractJudgeJsonRecord;
   const decision = normalizedDecision(response);
   const exitCode = processExitCode(decision);
   const result = {
@@ -239,7 +408,7 @@ export async function requirementsContractJudgeRunCommand(
     providerRegistryHash: prepared.providerRegistryHash,
     credentialProviderRef: prepared.credentialProviderRef,
     credentialRevision: prepared.credentialRevision,
-    requestHash: sha256(canonicalJson(payload.request)),
+    requestHash: requestEnvelope.requestHash,
     responseHash: sha256(canonicalJson(response)),
     jsonDecision: decision,
     processExitCode: exitCode,

@@ -15,6 +15,9 @@ const {
   normalizePlatformSkillFrontmatterFile,
 } = require('./platform-skill-frontmatter');
 
+const RUNTIME_STATUS_DECISION_RECEIPT_SCHEMA_FILE =
+  'requirements-contract-runtime-status-decision-receipt.schema.json';
+
 /**
  * Recursively copy directory contents to dest.
  * @param {string} src - Source directory.
@@ -72,6 +75,53 @@ function normalizeClaudeHookCommandRefs(settings) {
     }
   }
   return normalized;
+}
+
+function findPackageRoot() {
+  let current = __dirname;
+  while (current && path.dirname(current) !== current) {
+    if (fs.existsSync(path.join(current, 'package.json'))) {
+      return current;
+    }
+    current = path.dirname(current);
+  }
+  return path.resolve(__dirname, '..');
+}
+
+function resolveRuntimeStatusDecisionReceiptSchema() {
+  const packageRoot = findPackageRoot();
+  const candidates = [
+    path.join(
+      packageRoot,
+      'dist',
+      'main-agent',
+      'source-authority',
+      'schemas',
+      RUNTIME_STATUS_DECISION_RECEIPT_SCHEMA_FILE
+    ),
+    path.join(
+      packageRoot,
+      'src',
+      'main-agent',
+      'source-authority',
+      'schemas',
+      RUNTIME_STATUS_DECISION_RECEIPT_SCHEMA_FILE
+    ),
+  ];
+  return candidates.find((candidate) => fs.existsSync(candidate)) || null;
+}
+
+function copyRuntimeStatusDecisionReceiptSchemaToHookPeer(hookDir) {
+  const schemaSrc = resolveRuntimeStatusDecisionReceiptSchema();
+  if (!schemaSrc) return false;
+  const schemaDest = path.join(
+    path.dirname(hookDir),
+    'schemas',
+    RUNTIME_STATUS_DECISION_RECEIPT_SCHEMA_FILE
+  );
+  fs.mkdirSync(path.dirname(schemaDest), { recursive: true });
+  fs.copyFileSync(schemaSrc, schemaDest);
+  return true;
 }
 
 function generateCodexReadme() {
@@ -419,6 +469,7 @@ function deployCursorRuntimePolicyHooks(projectRoot, bmadRoot) {
   if (fs.existsSync(sharedDir)) {
     copyDirRecursive(sharedDir, destDir);
   }
+  copyRuntimeStatusDecisionReceiptSchemaToHookPeer(destDir);
 
   const names = [
     'emit-runtime-policy-cli.cjs',
@@ -454,6 +505,7 @@ function deployClaudeRuntimePolicyHooks(projectRoot, bmadRoot) {
   if (fs.existsSync(sharedDir)) {
     copyDirRecursive(sharedDir, destDir);
   }
+  copyRuntimeStatusDecisionReceiptSchemaToHookPeer(destDir);
 
   const names = [
     'emit-runtime-policy-cli.cjs',

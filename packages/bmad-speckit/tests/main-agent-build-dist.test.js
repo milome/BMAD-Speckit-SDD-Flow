@@ -285,12 +285,18 @@ function collectTrackedPackageSourceFiles() {
 
 function registeredRuntimeActionIds() {
   const cliSource = fs.readFileSync(CLI_PATH, 'utf8');
-  return [
+  const directActionIds = [
     ...cliSource.matchAll(/\.command\('(?<actionId>requirements-contract-[a-z0-9-]+)'\)/gu),
   ]
     .map((match) => match.groups?.actionId ?? '')
-    .filter(Boolean)
-    .sort();
+    .filter(Boolean);
+  if (
+    /(?:const\s+)?judgePublicCommand\s*=\s*program\s*\.command\('judge'\)/u.test(cliSource) &&
+    /judgePublicCommand\s*\.command\('run'\)/u.test(cliSource)
+  ) {
+    directActionIds.push('requirements-contract-judge-run');
+  }
+  return directActionIds.sort();
 }
 
 function collectSourceAuthorityGeneratedJavaScriptTwins() {

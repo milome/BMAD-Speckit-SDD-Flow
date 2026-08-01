@@ -15,6 +15,11 @@ const {
   closeGoalCampaign,
 } = require(modulePath('./campaign-closure'));
 const {
+  commitGoalCampaignRepairAuthority,
+  compileGoalCampaignRepairAuthority,
+  verifyGoalCampaignRepairAuthority,
+} = require(modulePath('./campaign-repair-authority'));
+const {
   compileCanonicalIntent,
 } = require(modulePath('./canonical-intent-compiler'));
 const {
@@ -57,6 +62,7 @@ const {
 const KERNEL_SCHEMA_NAMES = Object.freeze([
   'goal-contract-campaign-activation-receipt.schema.json',
   'goal-contract-campaign-closure-receipt.schema.json',
+  'goal-contract-campaign-repair-authority-receipt.schema.json',
   'goal-contract-canonical-intent-bundle.schema.json',
   'goal-contract-canonical-source-snapshot.schema.json',
   'goal-contract-compilation-receipt.schema.json',
@@ -79,6 +85,11 @@ const RECEIPT_SCHEMAS = Object.freeze({
   },
   'goal-contract-campaign-closure-receipt/v1': {
     schemaName: 'goal-contract-campaign-closure-receipt.schema.json',
+    hashField: 'receiptHash',
+  },
+  'goal-contract-campaign-repair-authority-receipt/v1': {
+    schemaName:
+      'goal-contract-campaign-repair-authority-receipt.schema.json',
     hashField: 'receiptHash',
   },
   'goal-contract-subcontract-closure-receipt/v1': {
@@ -369,9 +380,11 @@ module.exports = {
   activateGoalCampaignFromSuccessorAuthority,
   closeGoalCampaign,
   closeSubcontract,
+  commitGoalCampaignRepairAuthority,
   compileCanonicalIntent,
   compileCompositeSourceAuthorityBundle,
   compileExecutionBundle,
+  compileGoalCampaignRepairAuthority,
   compileGoalContract,
   compileIntentAuthorityEnvelope,
   compilePartitions,
@@ -382,5 +395,6 @@ module.exports = {
   issueSubcontractExecutionLease,
   projectExecutionArtifacts,
   resolveSpecSpan,
+  verifyGoalCampaignRepairAuthority,
   verifyControlPlaneReceipt,
 };

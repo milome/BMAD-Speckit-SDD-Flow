@@ -893,7 +893,7 @@ function unwrapArtifact(value: any): any {
   );
 }
 
-function expectArtifactContract(file: string, recordId: string): void {
+function _expectArtifactContract(file: string, recordId: string): void {
   const artifact = unwrapArtifact(readJson(file));
   expect(artifact.schemaVersion, `${file} schemaVersion`).toBeTruthy();
   expect(artifact.recordId, `${file} recordId`).toBe(recordId);

@@ -22,6 +22,8 @@ import {
   markMainAgentPacketDispatched,
   resolveMainAgentOrchestrationSurface,
   writeMainAgentRunLoopTaskReport,
+  buildMainAgentCanonicalJudgeRunDispatch,
+  executeCriticalAuditorJudgeAdapter,
   resolveMainAgentJudgeReviewCampaignBridge,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import { runUnifiedIngressAsync } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-unified-ingress';
@@ -633,6 +635,100 @@ function writeConfirmedReadinessRecord(root: string): string {
 }
 
 describe('main-agent orchestration consumer', () => {
+  it('dispatches both Judge roles through the canonical judge run command', () => {
+    const requestPath = 'requests/judge-request.json';
+    const outputDir = 'out/judge-run';
+    const attempts = [
+      {
+        role: 'requirements_critical_auditor' as const,
+        attemptId: 'requirements-attempt-001',
+      },
+      {
+        role: 'final_acceptance_judge' as const,
+        attemptId: 'final-attempt-001',
+      },
+    ];
+
+    const dispatches = attempts.map((attempt) =>
+      buildMainAgentCanonicalJudgeRunDispatch({
+        projectRoot: 'repo',
+        config: '_bmad/_config/governance-remediation.yaml',
+        request: requestPath,
+        role: attempt.role,
+        attemptId: attempt.attemptId,
+        outputDir,
+        controlledDispatchRef: {
+          packetId: `packet-${attempt.role}`,
+          packetKind: 'execution',
+        },
+      })
+    );
+
+    expect(dispatches.map((dispatch) => dispatch.role)).toEqual([
+      'requirements_critical_auditor',
+      'final_acceptance_judge',
+    ]);
+    for (const dispatch of dispatches) {
+      expect(dispatch).toMatchObject({
+        schemaVersion: 'main-agent-canonical-judge-run-dispatch/v1',
+        command: 'bmad-speckit judge run',
+        roleInference: false,
+        directAdapterDispatch: false,
+        callerAuthorityInjection: false,
+        decision: 'pass',
+      });
+      expect(dispatch.argv).toEqual([
+        'judge',
+        'run',
+        '--project-root',
+        'repo',
+        '--config',
+        '_bmad/_config/governance-remediation.yaml',
+        '--request',
+        requestPath,
+        '--role',
+        dispatch.role,
+        '--attempt-id',
+        dispatch.attemptId,
+        '--output-dir',
+        outputDir,
+        '--json',
+      ]);
+    }
+  });
+
+  it('fails closed instead of dispatching the legacy Critical Auditor adapter helper', () => {
+    expect(() =>
+      executeCriticalAuditorJudgeAdapter({
+        projectRoot: 'repo',
+        requestPath: 'requests/judge-request.json',
+        outputDir: 'out/judge-provider-invocation',
+        roundIndex: 1,
+        expected: {
+          providerId: 'provider-1',
+          model: 'model-1',
+          transport: 'cli',
+          adapterRef: 'CodexCliJudgeAdapter',
+          apiStyle: 'cli',
+          configuredBaseUrlHash: 'sha256:0000000000000000000000000000000000000000000000000000000000000000',
+          independenceClass: 'different_provider_different_model',
+          providerRegistryHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+          providerConfigurationHash:
+            'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+          transactionId: 'transaction-1',
+          auditAttemptId: 'attempt-1',
+          requestHash: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+          sourceDocumentHash:
+            'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+          semanticModelHash:
+            'sha256:5555555555555555555555555555555555555555555555555555555555555555',
+          projectionSetHash:
+            'sha256:6666666666666666666666666666666666666666666666666666666666666666',
+        },
+      })
+    ).toThrow('main_agent_judge_legacy_direct_adapter_forbidden');
+  });
+
   it('bridges typed J03 and J05 Judge outputs without caller authority injection', () => {
     const hash = (label: string) => sha256Text(label);
     const requirementsAuthority = {

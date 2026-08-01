@@ -80,7 +80,7 @@ const CONTRACT_ACTION_IDS = [
   'requirements-contract-command-execution-producer',
   'requirements-contract-clean-materialization',
   'requirements-contract-judge-credentials-init',
-  'requirements-contract-critical-auditor-judge-adapter',
+  'requirements-contract-judge-run',
   'requirements-contract-gap-closure-readonly-auditor-adapter',
   'requirements-contract-eval',
   'requirements-contract-candidate-package',
@@ -133,10 +133,16 @@ function expectRepositoryFileRef(ref: FileRef): void {
 
 function registeredRuntimeActionIds(): string[] {
   const cliSource = readFileSync(CLI_PATH, 'utf8');
-  return [...cliSource.matchAll(/\.command\('(?<actionId>requirements-contract-[a-z0-9-]+)'\)/gu)]
+  const directActionIds = [...cliSource.matchAll(/\.command\('(?<actionId>requirements-contract-[a-z0-9-]+)'\)/gu)]
     .map((match) => match.groups?.actionId ?? '')
-    .filter(Boolean)
-    .sort();
+    .filter(Boolean);
+  if (
+    /(?:const\s+)?judgePublicCommand\s*=\s*program\s*\.command\('judge'\)/u.test(cliSource) &&
+    /judgePublicCommand\s*\.command\('run'\)/u.test(cliSource)
+  ) {
+    directActionIds.push('requirements-contract-judge-run');
+  }
+  return directActionIds.sort();
 }
 
 describe('requirements contract package runtime action binding', () => {
@@ -267,14 +273,18 @@ describe('requirements contract package runtime action binding', () => {
     const reverseAudit = manifest.actions.find(
       (action) => action.actionId === 'requirements-contract-reverse-audit'
     );
-    const criticalAuditorJudge = manifest.actions.find(
-      (action) =>
-        action.actionId === 'requirements-contract-critical-auditor-judge-adapter'
+    const judgeRun = manifest.actions.find(
+      (action) => action.actionId === 'requirements-contract-judge-run'
     );
     expect(stageAudit).toBeDefined();
     expect(reverseAudit).toBeDefined();
-    expect(criticalAuditorJudge).toBeDefined();
-    if (!stageAudit || !reverseAudit || !criticalAuditorJudge) return;
+    expect(judgeRun).toBeDefined();
+    expect(
+      manifest.actions.find(
+        (action) => action.actionId === 'requirements-contract-critical-auditor-judge-adapter'
+      )
+    ).toBeUndefined();
+    if (!stageAudit || !reverseAudit || !judgeRun) return;
 
     const stageOutputPaths = stageAudit.outputSchemaRefs.map((ref) => ref.path);
     expect(stageOutputPaths).toContain(
@@ -294,11 +304,27 @@ describe('requirements contract package runtime action binding', () => {
     expect(reverseAudit.outputSchemaRefs.map((ref) => ref.path)).toContain(
       'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-normalized-judge-response.schema.json'
     );
-    expect(criticalAuditorJudge.outputSchemaRefs.map((ref) => ref.path)).toContain(
+    expect(judgeRun.sourceHandlerRef.path).toBe(
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-command.ts'
+    );
+    expect(judgeRun.semanticGate.sourceSymbol).toBe('requirementsContractJudgeRunCommand');
+    expect(judgeRun.inputSchemaRefs.map((ref) => ref.path)).toEqual(
+      expect.arrayContaining([
+        'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-critical-auditor-judge-request.schema.json',
+        'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-final-acceptance-judge-request.schema.json',
+        'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-attempt-key.schema.json',
+        'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-invocation-readiness-receipt.schema.json',
+      ])
+    );
+    expect(judgeRun.outputSchemaRefs.map((ref) => ref.path)).toContain(
       'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-cli-judge-execution-receipt.schema.json'
     );
-    expect(criticalAuditorJudge.runtimeRefs).toEqual(
+    expect(judgeRun.outputSchemaRefs.map((ref) => ref.path)).toContain(
+      'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-invocation-receipt.schema.json'
+    );
+    expect(judgeRun.runtimeRefs).toEqual(
       expect.arrayContaining([
+        expect.objectContaining({ role: 'legacy-critical-auditor-judge-adapter' }),
         expect.objectContaining({ role: 'claude-code-cli-judge-adapter' }),
         expect.objectContaining({ role: 'codex-cli-judge-adapter' }),
       ])

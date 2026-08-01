@@ -25,9 +25,52 @@
     "decision",
     "receiptHash"
   ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "const": "goal-contract-subcontract-execution-lease/v2"
+          }
+        },
+        "required": ["schemaVersion"]
+      },
+      "then": {
+        "required": [
+          "baseAttemptId",
+          "repairAttemptId",
+          "repairAuthorityReceiptHash",
+          "predecessorClosureBindings"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "const": "goal-contract-subcontract-execution-lease/v1"
+          }
+        },
+        "required": ["schemaVersion"]
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            { "required": ["baseAttemptId"] },
+            { "required": ["repairAttemptId"] },
+            { "required": ["repairAuthorityReceiptHash"] },
+            { "required": ["predecessorClosureBindings"] }
+          ]
+        }
+      }
+    }
+  ],
   "properties": {
     "schemaVersion": {
-      "const": "goal-contract-subcontract-execution-lease/v1"
+      "enum": [
+        "goal-contract-subcontract-execution-lease/v1",
+        "goal-contract-subcontract-execution-lease/v2"
+      ]
     },
     "campaignId": {
       "type": "string",
@@ -36,6 +79,9 @@
     "campaignActivationHash": { "$ref": "#/$defs/hash" },
     "activationReceiptHash": { "$ref": "#/$defs/hash" },
     "attemptId": { "type": "string", "minLength": 1 },
+    "baseAttemptId": { "type": "string", "minLength": 1 },
+    "repairAttemptId": { "type": "string", "minLength": 1 },
+    "repairAuthorityReceiptHash": { "$ref": "#/$defs/hash" },
     "partitionId": { "$ref": "#/$defs/partitionId" },
     "partitionManifestHash": { "$ref": "#/$defs/hash" },
     "partitionSetHash": { "$ref": "#/$defs/hash" },
@@ -48,6 +94,26 @@
       "enum": ["governed_files", "integration_only"]
     },
     "predecessorClosureReceiptHashes": { "$ref": "#/$defs/hashes" },
+    "predecessorClosureBindings": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "partitionId",
+          "origin",
+          "closureReceiptHash"
+        ],
+        "properties": {
+          "partitionId": { "$ref": "#/$defs/partitionId" },
+          "origin": {
+            "enum": ["preserved_base", "repaired"]
+          },
+          "closureReceiptHash": { "$ref": "#/$defs/hash" }
+        }
+      }
+    },
     "leaseOrdinal": { "type": "integer", "minimum": 1 },
     "authorizationCount": { "const": 1 },
     "modelInvocationCount": { "const": 0 },

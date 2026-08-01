@@ -4,7 +4,7 @@
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-consumer-registry.ts",
     "hash": "sha256:1e465738a39afe6ce9ff0a3a99adadd2efcb1770b799c17bbd9e31ed2686109f"
   },
-  "registryHash": "sha256:bd87e45c830e7f4a89578851576230f3acd7f6413000207168e69622e43ca747",
+  "registryHash": "sha256:8d9f799ccfa249f3fb44eb718796af60c2e8f22f0f41404833a5ad5aedff031a",
   "validationModes": [
     "draft",
     "confirmation-ready",
@@ -63,7 +63,7 @@
     {
       "consumerId": "direct-main-session-requirement-authoring",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
-      "pathHash": "sha256:99c5db314dc23eda01c4da65b7a589f218efa2787525519024628f7d5e65d9f7",
+      "pathHash": "sha256:ac69c64decabed92eec08558153fc20ee020d6b5503670c33a726518bae0ed5b",
       "inputRole": "authoring_request",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -887,7 +887,7 @@
     {
       "consumerId": "judge-provider-registry",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-provider-registry.ts",
-      "pathHash": "sha256:eb40bf0d8e855b0c00356012aad9245cd6c978d59133babf49771f40f4f197f7",
+      "pathHash": "sha256:b88588bb76cb03559b1be77d7bc6788a61dce6331917686da5308ecad89193d6",
       "inputRole": "validated_judge_runtime",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -919,7 +919,7 @@
     {
       "consumerId": "openai-compatible-judge-adapter",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-openai-compatible-judge-adapter.ts",
-      "pathHash": "sha256:f0e8ad988412972ec84db29558f5258dd356a54b42283c47ea42939adcc5573f",
+      "pathHash": "sha256:62d2311caa60dfd12ac410dc3e736a2aeffab6398b275242efcce5c430412e44",
       "inputRole": "judge_provider_request",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -951,7 +951,7 @@
     {
       "consumerId": "anthropic-compatible-judge-adapter",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-anthropic-compatible-judge-adapter.ts",
-      "pathHash": "sha256:fbb245240b389b979288a4bc25c23b62ab411c52975d5e36000ee9e2795eb834",
+      "pathHash": "sha256:c015872f2a19f3d3fe7ead8c2434008956aabac1954a171014e22a16d3fdbc44",
       "inputRole": "judge_provider_request",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -983,7 +983,7 @@
     {
       "consumerId": "claude-code-cli-judge-adapter",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-claude-code-cli-judge-adapter.ts",
-      "pathHash": "sha256:f9a4598e8234e7652f76a456c496393b33f66170c4d6868d65a9e0c423b7f893",
+      "pathHash": "sha256:199e980f5d89bae069f90b4cdc3adb2a4c143dff0791221995c8d522500cdc2b",
       "inputRole": "frozen_local_judge_evidence_snapshot",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -1015,7 +1015,7 @@
     {
       "consumerId": "codex-cli-judge-adapter",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-codex-cli-judge-adapter.ts",
-      "pathHash": "sha256:902664c2c563d28cb1741123e27628d2520dbb935ebade3304886b79bfe9e1bf",
+      "pathHash": "sha256:2b7933acbe860d8cefea085d5720040cf83f66eb5c69fbd263b3f317bfbfc7ec",
       "inputRole": "frozen_local_judge_evidence_snapshot",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",

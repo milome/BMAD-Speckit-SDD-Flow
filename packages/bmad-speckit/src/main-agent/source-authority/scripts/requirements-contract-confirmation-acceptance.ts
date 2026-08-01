@@ -618,6 +618,9 @@ export function runRequirementsContractConfirmationAcceptance(
       contentHash: frozenIrContentHash,
     },
   };
+  if (!('ref' in effectivePass)) {
+    throw new Error(effectivePass.error ?? 'requirements_effective_pass_receipt_missing');
+  }
   const requirementsEffectivePassReceiptRef = effectivePass.ref;
   const confirmationAuthorityTupleInput: JsonObject = {
     schemaVersion: 'requirements-confirmation-authority-tuple-input/v1',

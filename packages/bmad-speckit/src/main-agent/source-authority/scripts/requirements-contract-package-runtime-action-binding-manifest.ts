@@ -43,7 +43,7 @@ const FROZEN_ACTION_IDS = [
   'requirements-contract-command-execution-producer',
   'requirements-contract-clean-materialization',
   'requirements-contract-judge-credentials-init',
-  'requirements-contract-critical-auditor-judge-adapter',
+  'requirements-contract-judge-run',
   'requirements-contract-gap-closure-readonly-auditor-adapter',
   'requirements-contract-eval',
   'requirements-contract-candidate-package',
@@ -61,7 +61,7 @@ const FROZEN_ACTION_IDS = [
   'requirements-contract-consumer-cli-capability-observe',
 ].sort();
 const ACTION_UNIVERSE_HASH =
-  'sha256:8029ca35c702adb6e0d63a194dd1d0829e981afca3340c6f87db8031d852b7e7';
+  'sha256:54316a5458e7f1afd1ef94c3725a067960c82ab38b8eab44d1074b816f028bdf';
 
 const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
   {
@@ -247,25 +247,35 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
     behaviorTests: ['tests/acceptance/requirements-contract-evidence-verify-command.test.ts'],
   },
   {
-    actionId: 'requirements-contract-critical-auditor-judge-adapter',
-    sourcePath: `${SCRIPT_ROOT}/requirements-contract-critical-auditor-judge-adapter.ts`,
-    distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-critical-auditor-judge-adapter.js`,
-    gateSymbol: 'requirementsContractCriticalAuditorJudgeAdapterCommand',
+    actionId: 'requirements-contract-judge-run',
+    sourcePath: `${SCRIPT_ROOT}/requirements-contract-judge-command.ts`,
+    distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-judge-command.js`,
+    gateSymbol: 'requirementsContractJudgeRunCommand',
     inputSchemas: [
-      `${SCHEMA_ROOT}/requirements-contract-critical-auditor-judge-adapter-input.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-critical-auditor-judge-request.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-final-acceptance-judge-request.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-judge-attempt-key.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-judge-invocation-readiness-receipt.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-judge-runtime.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-judge-credentials.schema.json`,
     ],
     outputSchemas: [
       `${SCHEMA_ROOT}/requirements-contract-normalized-judge-response.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-cli-judge-execution-receipt.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-judge-invocation-receipt.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-critical-auditor-judge-assessment.schema.json`,
-      `${SCHEMA_ROOT}/requirements-contract-critical-auditor-external-adapter-result.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-final-acceptance-judge-assessment.schema.json`,
     ],
     behaviorTests: [
-      'tests/acceptance/requirements-contract-critical-auditor-judge-adapter.test.ts',
+      'tests/acceptance/requirements-contract-judge-command.test.ts',
     ],
     runtimeRefs: [
+      {
+        role: 'legacy-critical-auditor-judge-adapter',
+        repositoryPath: `${DIST_SCRIPT_ROOT}/requirements-contract-critical-auditor-judge-adapter.js`,
+        packagePath:
+          'dist/main-agent/source-authority/scripts/requirements-contract-critical-auditor-judge-adapter.js',
+      },
       {
         role: 'judge-credential-resolver',
         repositoryPath: `${DIST_SCRIPT_ROOT}/requirements-contract-judge-credential-resolver.js`,
@@ -613,10 +623,16 @@ function repositoryFileRef(root: string, relativePath: string): FileRef {
 function registeredActionIds(root: string): string[] {
   const cliPath = path.join(root, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
   const cliSource = fs.readFileSync(cliPath, 'utf8');
-  return [...cliSource.matchAll(/\.command\('(?<actionId>requirements-contract-[a-z0-9-]+)'\)/gu)]
+  const directActionIds = [...cliSource.matchAll(/\.command\('(?<actionId>requirements-contract-[a-z0-9-]+)'\)/gu)]
     .map((match) => match.groups?.actionId ?? '')
-    .filter(Boolean)
-    .sort();
+    .filter(Boolean);
+  if (
+    /(?:const\s+)?judgePublicCommand\s*=\s*program\s*\.command\('judge'\)/u.test(cliSource) &&
+    /judgePublicCommand\s*\.command\('run'\)/u.test(cliSource)
+  ) {
+    directActionIds.push('requirements-contract-judge-run');
+  }
+  return [...new Set(directActionIds)].sort();
 }
 
 export function buildPackageRuntimeActionBindingManifest(root: string): JsonRecord {

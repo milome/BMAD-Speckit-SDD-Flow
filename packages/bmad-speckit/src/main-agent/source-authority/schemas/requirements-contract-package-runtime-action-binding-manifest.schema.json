@@ -17,7 +17,7 @@
       "const": "requirements-contract-package-runtime-action-binding-manifest/v2"
     },
     "actionUniverseHash": {
-      "const": "sha256:8029ca35c702adb6e0d63a194dd1d0829e981afca3340c6f87db8031d852b7e7"
+      "const": "sha256:54316a5458e7f1afd1ef94c3725a067960c82ab38b8eab44d1074b816f028bdf"
     },
     "actions": {
       "type": "array",
@@ -53,10 +53,10 @@
               "requirements-contract-eval",
               "requirements-contract-evidence-verify",
               "requirements-contract-finalization-safe-write",
-              "requirements-contract-critical-auditor-judge-adapter",
               "requirements-contract-gap-closure-readonly-auditor-adapter",
               "requirements-contract-judge-credentials-init",
               "requirements-contract-judge-provider-smoke",
+              "requirements-contract-judge-run",
               "requirements-contract-production-activate",
               "requirements-contract-production-bypass-evidence-materialize",
               "requirements-contract-production-bypass-verify",

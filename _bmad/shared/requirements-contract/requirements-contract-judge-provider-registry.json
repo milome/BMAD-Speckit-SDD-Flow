@@ -2,7 +2,7 @@
   "schemaVersion": "requirements-contract-judge-provider-registry/v1",
   "owner": {
     "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-provider-registry.ts",
-    "hash": "sha256:eb40bf0d8e855b0c00356012aad9245cd6c978d59133babf49771f40f4f197f7"
+    "hash": "sha256:b88588bb76cb03559b1be77d7bc6788a61dce6331917686da5308ecad89193d6"
   },
   "sourceConfig": {
     "path": "_bmad/_config/governance-remediation.yaml",
