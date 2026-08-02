@@ -9,29 +9,21 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- CommonJS script for prepublish */
 const fs = require('node:fs');
 const path = require('node:path');
+const { validatePackageDescriptor } = require('../tools/ci/prepare-package-artifact.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
-const RELEASE_GATE_RUNTIME = path.join(
-  ROOT,
-  'packages',
-  'bmad-speckit',
-  'dist',
-  'utils',
-  'goal-contract',
-  'release-gate.js'
-);
-if (!fs.existsSync(RELEASE_GATE_RUNTIME)) {
-  throw new Error(
-    `Missing built goal-contract release gate runtime: ${RELEASE_GATE_RUNTIME}. Run npm run build:main-agent-dist before prepublish.`
-  );
-}
-const { checkGoalContractReleaseGate } = require(RELEASE_GATE_RUNTIME);
 const SPECKIT_DIR = path.join(ROOT, 'packages', 'bmad-speckit');
 const SPECKIT_BMAD_MIRROR = path.join(SPECKIT_DIR, '_bmad');
 const SPECKIT_SCOPED_NODE_MODULES = path.join(SPECKIT_DIR, 'node_modules', '@bmad-speckit');
 const PACK_SESSION_FILE = path.join(SPECKIT_DIR, 'node_modules', '.pack-session-count.json');
 const PACK_SESSION_LOCK_DIR = path.join(SPECKIT_DIR, 'node_modules', '.pack-session.lock');
 const SILENT = process.env.BMAD_PREPUBLISH_SILENT === '1';
+const verifyDescriptorIndex = process.argv.indexOf('--verify-descriptor');
+const VERIFY_DESCRIPTOR_PATH =
+  verifyDescriptorIndex >= 0 ? process.argv[verifyDescriptorIndex + 1] : null;
+if (verifyDescriptorIndex >= 0 && !VERIFY_DESCRIPTOR_PATH) {
+  throw new Error('CANONICAL_PACKAGE_DESCRIPTOR_PATH_REQUIRED');
+}
 const PACK_SESSION_LOCK_TIMEOUT_MS = Number.parseInt(
   process.env.BMAD_PACK_SESSION_LOCK_TIMEOUT_MS || '180000',
   10
@@ -87,7 +79,12 @@ const BUNDLED = [
       const resolveForSession = path.join(dir, 'dist', 'resolve-for-session.cjs');
       const renderAuditBlock = path.join(dir, 'dist', 'render-audit-block.cjs');
       const runAuditorHost = path.join(dir, 'dist', 'run-auditor-host.cjs');
-      return fs.existsSync(emitRuntimePolicy) && fs.existsSync(resolveForSession) && fs.existsSync(renderAuditBlock) && fs.existsSync(runAuditorHost);
+      return (
+        fs.existsSync(emitRuntimePolicy) &&
+        fs.existsSync(resolveForSession) &&
+        fs.existsSync(renderAuditBlock) &&
+        fs.existsSync(runAuditorHost)
+      );
     },
   },
 ];
@@ -236,9 +233,10 @@ function removeDeadOwnerLock(lockDir) {
 function acquirePersistentPackSessionLock(lockDir) {
   fs.mkdirSync(path.dirname(lockDir), { recursive: true });
   const startedAt = Date.now();
-  const timeoutMs = Number.isFinite(PACK_SESSION_LOCK_TIMEOUT_MS) && PACK_SESSION_LOCK_TIMEOUT_MS > 0
-    ? PACK_SESSION_LOCK_TIMEOUT_MS
-    : 180000;
+  const timeoutMs =
+    Number.isFinite(PACK_SESSION_LOCK_TIMEOUT_MS) && PACK_SESSION_LOCK_TIMEOUT_MS > 0
+      ? PACK_SESSION_LOCK_TIMEOUT_MS
+      : 180000;
   const owner = {
     pid: process.pid,
     acquiredAt: new Date().toISOString(),
@@ -247,7 +245,11 @@ function acquirePersistentPackSessionLock(lockDir) {
   while (Date.now() - startedAt < timeoutMs) {
     try {
       fs.mkdirSync(lockDir);
-      fs.writeFileSync(path.join(lockDir, 'owner.json'), JSON.stringify(owner, null, 2) + '\n', 'utf8');
+      fs.writeFileSync(
+        path.join(lockDir, 'owner.json'),
+        JSON.stringify(owner, null, 2) + '\n',
+        'utf8'
+      );
       return;
     } catch (error) {
       if (error.code !== 'EEXIST') {
@@ -279,7 +281,11 @@ function acquirePrepublishSyncLock(lockDir) {
   for (let attempt = 0; attempt < 120; attempt += 1) {
     try {
       fs.mkdirSync(lockDir, { recursive: false });
-      fs.writeFileSync(path.join(lockDir, 'owner.json'), JSON.stringify(payload, null, 2) + '\n', 'utf8');
+      fs.writeFileSync(
+        path.join(lockDir, 'owner.json'),
+        JSON.stringify(payload, null, 2) + '\n',
+        'utf8'
+      );
       return;
     } catch (error) {
       if (error.code !== 'EEXIST') {
@@ -332,9 +338,9 @@ function atomicSwap(staging, target) {
   }
 
   // 原子性切换（带 Windows EPERM 重试）
-  renameWithRetry(target, oldTarget);     // 旧目录 -> .old
-  renameWithRetry(staging, target);       // staging -> 目标
-  rmWithRetry(oldTarget);                 // 删除旧目录
+  renameWithRetry(target, oldTarget); // 旧目录 -> .old
+  renameWithRetry(staging, target); // staging -> 目标
+  rmWithRetry(oldTarget); // 删除旧目录
 }
 
 /**
@@ -418,7 +424,12 @@ function syncWorkspacePackageToBundled(relDir, scopedId) {
     const value = String(entry);
     if (value.includes('*')) {
       const matcher = new RegExp(
-        '^' + value.split('*').map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$'
+        '^' +
+          value
+            .split('*')
+            .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+            .join('.*') +
+          '$'
       );
       for (const name of fs.readdirSync(pkgDir)) {
         if (!matcher.test(name)) continue;
@@ -451,101 +462,138 @@ function syncWorkspacePackageToBundled(relDir, scopedId) {
 
 const PREPUBLISH_SYNC_LOCK_DIR = path.join(SPECKIT_DIR, 'node_modules', '.prepublish-sync.lock');
 
-const holdPackSessionLock = process.env.BMAD_PACK_SESSION === '1';
-acquirePersistentPackSessionLock(PACK_SESSION_LOCK_DIR);
-acquirePrepublishSyncLock(PREPUBLISH_SYNC_LOCK_DIR);
-try {
-  if (holdPackSessionLock) {
-    writePackSessionCount(readPackSessionCount() + 1);
+if (VERIFY_DESCRIPTOR_PATH) {
+  const descriptorPath = path.resolve(ROOT, VERIFY_DESCRIPTOR_PATH);
+  const relative = path.relative(ROOT, descriptorPath);
+  if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    throw new Error('CANONICAL_PACKAGE_DESCRIPTOR_PATH_INVALID');
   }
-  for (const b of BUNDLED) {
-    info(`同步 ${b.id} → bmad-speckit/node_modules ...`);
-    syncWorkspacePackageToBundled(b.relDir, b.id);
+  const descriptor = JSON.parse(fs.readFileSync(descriptorPath, 'utf8'));
+  validatePackageDescriptor({
+    repoRoot: ROOT,
+    descriptor,
+    descriptorPath,
+    expectedCommitSha: process.env.CI_COMMIT_SHA || descriptor.commitSha,
+  });
+  info(`已验证 canonical package descriptor: ${relative.replace(/\\/g, '/')}`);
+} else {
+  const releaseGateRuntime = path.join(
+    ROOT,
+    'packages',
+    'bmad-speckit',
+    'dist',
+    'utils',
+    'goal-contract',
+    'release-gate.js'
+  );
+  if (!fs.existsSync(releaseGateRuntime)) {
+    throw new Error(
+      `Missing built goal-contract release gate runtime: ${releaseGateRuntime}. Run npm run build:main-agent-dist before prepublish.`
+    );
   }
-  info('同步 workspace scoped packages → packages/bmad-speckit/node_modules/@bmad-speckit ...');
-  syncBundledWorkspaceScopes();
-  info('同步 _bmad → packages/bmad-speckit/_bmad ...');
-  syncBmadMirror();
-  info('同步完成。\n');
+  const { checkGoalContractReleaseGate } = require(releaseGateRuntime);
+  const holdPackSessionLock = process.env.BMAD_PACK_SESSION === '1';
+  acquirePersistentPackSessionLock(PACK_SESSION_LOCK_DIR);
+  acquirePrepublishSyncLock(PREPUBLISH_SYNC_LOCK_DIR);
+  try {
+    if (holdPackSessionLock) {
+      writePackSessionCount(readPackSessionCount() + 1);
+    }
+    for (const b of BUNDLED) {
+      info(`同步 ${b.id} → bmad-speckit/node_modules ...`);
+      syncWorkspacePackageToBundled(b.relDir, b.id);
+    }
+    info('同步 workspace scoped packages → packages/bmad-speckit/node_modules/@bmad-speckit ...');
+    syncBundledWorkspaceScopes();
+    info('同步 _bmad → packages/bmad-speckit/_bmad ...');
+    syncBmadMirror();
+    info('同步完成。\n');
 
-  const checks = [];
+    const checks = [];
 
-  for (const b of BUNDLED) {
-    const pkgDir = path.join(ROOT, b.relDir);
-    checks.push({
-      label: `${b.relDir}/ 产物就绪`,
-      test: () => b.distCheck(pkgDir),
-    });
-    if (b.extraCheck) {
+    for (const b of BUNDLED) {
+      const pkgDir = path.join(ROOT, b.relDir);
       checks.push({
-        label: `${b.relDir} extra`,
-        test: () => b.extraCheck(pkgDir),
+        label: `${b.relDir}/ 产物就绪`,
+        test: () => b.distCheck(pkgDir),
+      });
+      if (b.extraCheck) {
+        checks.push({
+          label: `${b.relDir} extra`,
+          test: () => b.extraCheck(pkgDir),
+        });
+      }
+      const parts = b.id.split('/');
+      const dest = path.join(SPECKIT_DIR, 'node_modules', ...parts);
+      checks.push({
+        label: `packages/bmad-speckit/node_modules/${b.id} 存在`,
+        test: () => fs.existsSync(dest),
       });
     }
-    const parts = b.id.split('/');
-    const dest = path.join(SPECKIT_DIR, 'node_modules', ...parts);
+
     checks.push({
-      label: `packages/bmad-speckit/node_modules/${b.id} 存在`,
-      test: () => fs.existsSync(dest),
+      label: 'packages/bmad-speckit/_bmad 存在',
+      test: () =>
+        fs.existsSync(SPECKIT_BMAD_MIRROR) &&
+        fs.statSync(SPECKIT_BMAD_MIRROR).isDirectory() &&
+        fs.readdirSync(SPECKIT_BMAD_MIRROR).length > 0,
     });
-  }
 
-  checks.push({
-    label: 'packages/bmad-speckit/_bmad 存在',
-    test: () => fs.existsSync(SPECKIT_BMAD_MIRROR) && fs.statSync(SPECKIT_BMAD_MIRROR).isDirectory() && fs.readdirSync(SPECKIT_BMAD_MIRROR).length > 0,
-  });
+    checks.push({
+      label: 'packages/bmad-speckit/_bmad 含 hooks/*.cjs',
+      test: () => {
+        const hookRoots = [
+          path.join(SPECKIT_BMAD_MIRROR, 'runtime', 'hooks'),
+          path.join(SPECKIT_BMAD_MIRROR, 'cursor', 'hooks'),
+          path.join(SPECKIT_BMAD_MIRROR, 'claude', 'hooks'),
+        ];
+        return hookRoots.every(
+          (dir) => fs.existsSync(dir) && fs.readdirSync(dir).some((name) => name.endsWith('.cjs'))
+        );
+      },
+    });
 
-  checks.push({
-    label: 'packages/bmad-speckit/_bmad 含 hooks/*.cjs',
-    test: () => {
-      const hookRoots = [
-        path.join(SPECKIT_BMAD_MIRROR, 'runtime', 'hooks'),
-        path.join(SPECKIT_BMAD_MIRROR, 'cursor', 'hooks'),
-        path.join(SPECKIT_BMAD_MIRROR, 'claude', 'hooks'),
-      ];
-      return hookRoots.every((dir) => fs.existsSync(dir) && fs.readdirSync(dir).some((name) => name.endsWith('.cjs')));
-    },
-  });
+    checks.push({
+      label:
+        'tracked goal-contract release-gate fixture includes current coverageReceiptPath and unmappedSourceObligations proof',
+      test: () => {
+        const fixtureRoot = path.join(ROOT, 'tests', 'fixtures', 'goal-contract-release-gate');
+        const source = path.join(fixtureRoot, 'source-plan.md');
+        const goal = path.join(fixtureRoot, 'goal-contract.md');
+        const coverage = path.join(fixtureRoot, 'coverage.json');
+        const generation = path.join(fixtureRoot, 'generation.json');
+        const result = checkGoalContractReleaseGate({ source, goal, coverage, generation });
+        return result.ok;
+      },
+    });
 
-  checks.push({
-    label: 'tracked goal-contract release-gate fixture includes current coverageReceiptPath and unmappedSourceObligations proof',
-    test: () => {
-      const fixtureRoot = path.join(ROOT, 'tests', 'fixtures', 'goal-contract-release-gate');
-      const source = path.join(fixtureRoot, 'source-plan.md');
-      const goal = path.join(fixtureRoot, 'goal-contract.md');
-      const coverage = path.join(fixtureRoot, 'coverage.json');
-      const generation = path.join(fixtureRoot, 'generation.json');
-      const result = checkGoalContractReleaseGate({ source, goal, coverage, generation });
-      return result.ok;
-    },
-  });
+    checks.push({
+      label: 'packages/bmad-speckit/package.json 包含 bundleDependencies（三项 @bmad-speckit/*）',
+      test: () => {
+        const pkg = JSON.parse(fs.readFileSync(path.join(SPECKIT_DIR, 'package.json'), 'utf8'));
+        const bd = pkg.bundleDependencies || pkg.bundledDependencies;
+        if (!Array.isArray(bd)) return false;
+        return BUNDLED.every((b) => bd.includes(b.id));
+      },
+    });
 
-  checks.push({
-    label: 'packages/bmad-speckit/package.json 包含 bundleDependencies（三项 @bmad-speckit/*）',
-    test: () => {
-      const pkg = JSON.parse(fs.readFileSync(path.join(SPECKIT_DIR, 'package.json'), 'utf8'));
-      const bd = pkg.bundleDependencies || pkg.bundledDependencies;
-      if (!Array.isArray(bd)) return false;
-      return BUNDLED.every((b) => bd.includes(b.id));
-    },
-  });
+    let allPassed = true;
+    for (const { label, test } of checks) {
+      const ok = test();
+      info(ok ? `  ✓ ${label}` : `  ✗ ${label}`);
+      if (!ok) allPassed = false;
+    }
 
-  let allPassed = true;
-  for (const { label, test } of checks) {
-    const ok = test();
-    info(ok ? `  ✓ ${label}` : `  ✗ ${label}`);
-    if (!ok) allPassed = false;
-  }
+    if (!allPassed) {
+      console.error('\n发布前检查未通过，请修复上述问题后重试。');
+      process.exit(1);
+    }
 
-  if (!allPassed) {
-    console.error('\n发布前检查未通过，请修复上述问题后重试。');
-    process.exit(1);
-  }
-
-  info('\n发布前检查全部通过 ✓');
-} finally {
-  releasePrepublishSyncLock(PREPUBLISH_SYNC_LOCK_DIR);
-  if (!holdPackSessionLock) {
-    rmWithRetry(PACK_SESSION_LOCK_DIR);
+    info('\n发布前检查全部通过 ✓');
+  } finally {
+    releasePrepublishSyncLock(PREPUBLISH_SYNC_LOCK_DIR);
+    if (!holdPackSessionLock) {
+      rmWithRetry(PACK_SESSION_LOCK_DIR);
+    }
   }
 }

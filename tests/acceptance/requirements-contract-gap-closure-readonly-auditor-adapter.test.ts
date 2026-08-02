@@ -1,24 +1,12 @@
-import {
-  chmodSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import * as crypto from 'node:crypto';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import {
-  requirementsContractGapClosureReadonlyAuditorAdapterCommand,
-} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-gap-closure-readonly-auditor-adapter';
+import { requirementsContractGapClosureReadonlyAuditorAdapterCommand } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-gap-closure-readonly-auditor-adapter';
 
-const PACKAGE_CLI = path.resolve(
-  __dirname,
-  '../../packages/bmad-speckit/bin/bmad-speckit.js'
-);
+const PACKAGE_CLI = path.resolve(__dirname, '../../packages/bmad-speckit/bin/bmad-speckit.js');
 
 function sha256(value: string | Buffer): string {
   return `sha256:${crypto.createHash('sha256').update(value).digest('hex')}`;
@@ -110,6 +98,8 @@ describe('requirements-contract gap closure readonly auditor adapter', () => {
         producerReceiptHashes: [hash],
         distHash: hash,
         packageHash: hash,
+        cleanMaterializationReceiptPath: path.join(root, 'clean-materialization-receipt.json'),
+        cleanMaterializationReceiptHash: hash,
         auditorAdapterPath: path.join(root, 'adapter.js'),
         auditorAdapterHash: hash,
         actionBindingManifestPath: path.join(root, 'action-binding.json'),

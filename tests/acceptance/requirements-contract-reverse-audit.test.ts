@@ -1,13 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -35,8 +28,14 @@ describe('requirements contract reverse audit', () => {
 
     for (const source of [reverseAuditSource, criticalAuditorSource]) {
       expect(source).toContain('prepareRequirementsContractJudgeInvocation');
-      expect(source).not.toContain('resolveRequirementsContractJudgeCredential');
-      expect(source).not.toContain('resolveRequirementsContractJudgeProvider');
+      expect(source).not.toMatch(
+        /import\s*\{[^}]*\bresolveRequirementsContractJudgeCredential\b[^}]*\}\s*from/u
+      );
+      expect(source).not.toMatch(/\bresolveRequirementsContractJudgeCredential\s*\(/u);
+      expect(source).not.toMatch(
+        /import\s*\{[^}]*\bresolveRequirementsContractJudgeProvider\b[^}]*\}\s*from/u
+      );
+      expect(source).not.toMatch(/\bresolveRequirementsContractJudgeProvider\s*\(/u);
       expect(source).not.toContain('adapter.judge');
       expect(source).not.toMatch(/\bfetch\s*\(/u);
       expect(source).not.toContain("new URL('/chat/completions'");
@@ -44,7 +43,6 @@ describe('requirements contract reverse audit', () => {
       expect(source).not.toMatch(/credentials\?*\.credentials/u);
     }
     expect(existsSync(SHARED_JUDGE_INVOCATION_SOURCE)).toBe(true);
-    if (!existsSync(SHARED_JUDGE_INVOCATION_SOURCE)) return;
     const sharedSource = readFileSync(SHARED_JUDGE_INVOCATION_SOURCE, 'utf8');
     expect(sharedSource).toContain('resolveRequirementsContractJudgeCredential');
     expect(sharedSource).toContain('resolveRequirementsContractJudgeProvider');

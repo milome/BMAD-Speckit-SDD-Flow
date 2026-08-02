@@ -23,6 +23,11 @@ const { reduceAudit } = require('../../tools/test-portfolio-audit/audit.cjs');
 const temporaryRoots: string[] = [];
 const cliPath = join(process.cwd(), 'tools', 'test-portfolio-audit', 'run.cjs');
 const routeFixture = join(process.cwd(), 'tests', 'fixtures', 'test-portfolio-audit', 'routes');
+// Produced by 30f95de8 against the LF-normalized standalone route fixture.
+const BASE_ROUTE_AUDIT_SHA256 =
+  'sha256:57c46ab3dee916ae738f22b743ed683f19044631a3c99ee3a3a69980f1acb0d0';
+const BASE_ROUTE_SUMMARY_SHA256 =
+  'sha256:73be9a1fe870b7b70cf7fd0055a6a339c9789f263b3ee2576da6dcf303d2d62a';
 
 it('selects only root and declared workspace packages as critical authority packages', () => {
   expect(
@@ -47,6 +52,28 @@ function createTemporaryRoot(prefix = 'test-portfolio-audit-'): string {
   const root = mkdtempSync(join(tmpdir(), prefix));
   temporaryRoots.push(root);
   return root;
+}
+
+function createBaseVectorRouteFixture(): string {
+  const fixture = join(createTemporaryRoot('test-portfolio-audit-base-vector-'), 'routes');
+  const copyNormalizedTree = (source: string, target: string) => {
+    mkdirSync(target, { recursive: true });
+    for (const entry of readdirSync(source, { withFileTypes: true })) {
+      const sourcePath = join(source, entry.name);
+      const targetPath = join(target, entry.name);
+      if (entry.isDirectory()) {
+        copyNormalizedTree(sourcePath, targetPath);
+      } else {
+        writeFileSync(
+          targetPath,
+          readFileSync(sourcePath, 'utf8').replace(/\r\n?/gu, '\n'),
+          'utf8'
+        );
+      }
+    }
+  };
+  copyNormalizedTree(routeFixture, fixture);
+  return fixture;
 }
 
 function runCli(args: string[]) {
@@ -356,6 +383,28 @@ describe('test portfolio audit CLI orchestration', () => {
     expect(receipt.staticAnalysisDurationMs).toBeGreaterThanOrEqual(0);
     expect(receipt.probeDurationMs).toBeGreaterThanOrEqual(0);
     expect(receipt.totalDurationMs).toBeGreaterThanOrEqual(0);
+  }, 30_000);
+
+  it('matches the frozen Base route fixture audit and summary bytes', () => {
+    const outputDir = createTemporaryRoot('test-portfolio-audit-base-vector-output-');
+    const repoRoot = createBaseVectorRouteFixture();
+    const result = runCli([
+      '--repo-root',
+      repoRoot,
+      '--output-dir',
+      outputDir,
+      '--probe-limit',
+      '0',
+      '--json',
+    ]);
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(sha256Bytes(readFileSync(join(outputDir, 'test-portfolio-audit.json')))).toBe(
+      BASE_ROUTE_AUDIT_SHA256
+    );
+    expect(sha256Bytes(readFileSync(join(outputDir, 'test-portfolio-summary.md')))).toBe(
+      BASE_ROUTE_SUMMARY_SHA256
+    );
   }, 30_000);
 
   it('maps an incomplete artifact to exit two with visible discovery issues', () => {

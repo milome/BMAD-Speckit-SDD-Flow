@@ -997,40 +997,52 @@ describe('runtime-policy-inject (dual host entry)', () => {
   });
 
   it('does not fall back to root .bmad/runtime-context.json when no explicit context file is provided', () => {
-    const emit = path.join(
-      repoRoot,
-      'packages',
-      'bmad-speckit',
-      'src',
-      'main-agent',
-      'source-authority',
-      'scripts',
-      'emit-runtime-policy.ts'
-    );
-    const r = spawnSync(
-      process.execPath,
-      [
-        path.join(repoRoot, 'node_modules', 'ts-node', 'dist', 'bin.js'),
-        '--project',
-        path.join(repoRoot, 'tsconfig.node.json'),
-        '--transpile-only',
-        emit,
-        '--cwd',
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'runtime-policy-no-active-'));
+    try {
+      fs.mkdirSync(path.join(tempRoot, '.bmad'), { recursive: true });
+      fs.writeFileSync(
+        path.join(tempRoot, '.bmad', 'runtime-context.json'),
+        JSON.stringify({ flow: 'story', stage: 'implement', triggerStage: 'legacy-root-state' }),
+        'utf8'
+      );
+      const emit = path.join(
         repoRoot,
-      ],
-      {
-        cwd: repoRoot,
-        encoding: 'utf8',
-        env: { ...process.env },
-      }
-    );
+        'packages',
+        'bmad-speckit',
+        'src',
+        'main-agent',
+        'source-authority',
+        'scripts',
+        'emit-runtime-policy.ts'
+      );
+      const r = spawnSync(
+        process.execPath,
+        [
+          path.join(repoRoot, 'node_modules', 'ts-node', 'dist', 'bin.js'),
+          '--project',
+          path.join(repoRoot, 'tsconfig.node.json'),
+          '--transpile-only',
+          emit,
+          '--cwd',
+          tempRoot,
+        ],
+        {
+          cwd: tempRoot,
+          encoding: 'utf8',
+          env: { ...process.env },
+        }
+      );
 
-    const stderr = r.stderr ?? '';
-    expect(stderr).not.toContain('.bmad/runtime-context.json');
-    if (r.status !== 0) {
-      expect(stderr).toMatch(/emit-runtime-policy:/);
-    } else {
-      expect((r.stdout ?? '').trim()).toContain('"triggerStage"');
+      expectSpawnStatus(r, 0, 'emit-runtime-policy no-active requirement');
+      expect((r.stderr ?? '').trim()).toBe('');
+      const policy = JSON.parse(r.stdout || '{}') as Record<string, unknown>;
+      expect(policy).toMatchObject({
+        status: 'no_active_requirement',
+        decision: 'contract_authoring_required',
+      });
+      expect(policy).not.toHaveProperty('triggerStage');
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
     }
   });
 });

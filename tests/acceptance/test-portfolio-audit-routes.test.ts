@@ -13,7 +13,7 @@ const {
 
 const FIXTURE = join(process.cwd(), 'tests/fixtures/test-portfolio-audit/routes');
 const KNOWN_WRAPPER_SHA256 =
-  'sha256:606dc9aced298e824225322eecca34f0e1054126cfcd46e7925a471397b635e8';
+  'sha256:2b7569597161915c94f45fe4811ae6f6385df4c6f84faad5f83b1f86c0812447';
 
 type Issue = {
   code: string;
@@ -390,6 +390,31 @@ describe('test portfolio execution routes', () => {
       evidenceRef: 'source:.github/workflows/dynamic.yml#jobs.missing-test.steps[0].run',
     });
     expectSorted(configured.map((row: { testPath: string }) => row.testPath));
+  });
+
+  it('accepts only the governed manifest matrix and keeps its lane commands non-enumerating', () => {
+    const graph = buildExecutionRouteGraph({
+      repoRoot: FIXTURE,
+      inventory: [
+        { testPath: 'tests/shared.test.ts', runnerId: 'root-vitest' },
+        { testPath: 'tests/platform.test.ts', runnerId: 'root-vitest' },
+      ],
+    });
+
+    expect(graph.issues).not.toContainEqual(
+      expect.objectContaining({
+        code: 'WORKFLOW_MATRIX_DYNAMIC',
+        sourceRef: expect.stringContaining('governed.yml'),
+      })
+    );
+    expect(
+      graph.invocations.filter(
+        (invocation: Invocation) => invocation.workflowPath === '.github/workflows/governed.yml'
+      )
+    ).toEqual([]);
+    expect(
+      graph.routes.filter((route: Route) => route.workflowPath === '.github/workflows/governed.yml')
+    ).toEqual([]);
   });
 
   it('sorts routes, invocations, issues, and configured refs deterministically', () => {

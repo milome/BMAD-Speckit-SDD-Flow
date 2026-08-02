@@ -3,62 +3,37 @@ name: Publish npm
 on:
   workflow_dispatch:
     inputs:
+      qualifying_run_id:
+        description: Successful governed PR CI run ID
+        required: true
+        type: string
+      commit_sha:
+        description: Exact qualifying commit SHA
+        required: true
+        type: string
       npm_tag:
         description: npm dist-tag
         required: true
         default: latest
         type: string
       dry_run:
-        description: Use npm publish --dry-run instead of a real publish
+        description: Validate without publishing
         required: true
         default: true
         type: boolean
 
+permissions:
+  actions: read
+  contents: write
+  id-token: write
+
 jobs:
   publish:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    env:
-      NPM_REGISTRY: https://registry.npmjs.org
-      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          registry-url: https://registry.npmjs.org
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Verify npm auth on npmjs.org
-        run: npm whoami --registry="$NPM_REGISTRY"
-
-      - name: Pack root publish artifact
-        run: |
-          mkdir -p .artifacts/npm
-          npm pack --json > .artifacts/npm/publish-pack.json
-          TGZ_NAME=$(node -e "const fs=require('fs');const pack=JSON.parse(fs.readFileSync('.artifacts/npm/publish-pack.json','utf8'));process.stdout.write(pack[0].filename)")
-          mv "$TGZ_NAME" ".artifacts/npm/$TGZ_NAME"
-
-      - name: Upload root publish artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: npm-publish-root-${{ github.run_id }}
-          path: .artifacts/npm/
-
-      - name: Publish root package to npmjs.org
-        env:
-          DRY_RUN: ${{ inputs.dry_run }}
-          NPM_TAG: ${{ inputs.npm_tag }}
-        run: |
-          if [ "$DRY_RUN" = "true" ]; then
-            npm publish --dry-run --tag "$NPM_TAG" --registry="$NPM_REGISTRY"
-          else
-            npm publish --tag "$NPM_TAG" --registry="$NPM_REGISTRY"
-          fi
+    uses: ./.github/workflows/release.yml
+    with:
+      qualifying_run_id: ${{ inputs.qualifying_run_id }}
+      commit_sha: ${{ inputs.commit_sha }}
+      npm_tag: ${{ inputs.npm_tag }}
+      dry_run: ${{ inputs.dry_run }}
+    secrets:
+      npm_token: ${{ secrets.NPM_TOKEN }}

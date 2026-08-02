@@ -1,0 +1,296 @@
+{
+  "schemaVersion": "test-portfolio-audit-facts/v1",
+  "repository": {
+    "commit": "fixture-commit",
+    "dirty": false
+  },
+  "inventory": {
+    "tests": [
+      {
+        "identityKey": "vitest#tests/core/state-machine.test.ts",
+        "runnerId": "vitest",
+        "testPath": "tests/core/state-machine.test.ts",
+        "executableIdentity": "vitest::tests/core/state-machine.test.ts",
+        "evidenceRefs": ["source:tests/core/state-machine.test.ts"]
+      },
+      {
+        "identityKey": "vitest#tests/feature/new-behavior.test.ts",
+        "runnerId": "vitest",
+        "testPath": "tests/feature/new-behavior.test.ts",
+        "executableIdentity": "vitest::tests/feature/new-behavior.test.ts",
+        "evidenceRefs": ["source:tests/feature/new-behavior.test.ts"]
+      },
+      {
+        "identityKey": "vitest#tests/on-demand/platform.test.ts",
+        "runnerId": "vitest",
+        "testPath": "tests/on-demand/platform.test.ts",
+        "executableIdentity": "vitest::tests/on-demand/platform.test.ts",
+        "evidenceRefs": ["source:tests/on-demand/platform.test.ts"]
+      },
+      {
+        "identityKey": "vitest#tests/redundant/duplicate.test.ts",
+        "runnerId": "vitest",
+        "testPath": "tests/redundant/duplicate.test.ts",
+        "executableIdentity": "vitest::tests/redundant/duplicate.test.ts",
+        "evidenceRefs": ["source:tests/redundant/duplicate.test.ts"]
+      }
+    ]
+  },
+  "discovery": {
+    "complete": true,
+    "runnerResolved": [
+      "tests/core/state-machine.test.ts",
+      "tests/feature/new-behavior.test.ts",
+      "tests/on-demand/platform.test.ts",
+      "tests/redundant/duplicate.test.ts"
+    ],
+    "candidates": [
+      "tests/core/state-machine.test.ts",
+      "tests/feature/new-behavior.test.ts",
+      "tests/on-demand/platform.test.ts",
+      "tests/redundant/duplicate.test.ts"
+    ],
+    "runnerResolvedCount": 4,
+    "candidateCount": 4,
+    "unexplainedRunnerOnlyCount": 0,
+    "unexplainedCandidateOnlyCount": 0,
+    "unexplainedRunnerOnly": [],
+    "unexplainedCandidateOnly": []
+  },
+  "analyzerResults": [
+    {
+      "analyzerId": "criticality",
+      "dimension": "criticality",
+      "status": "complete",
+      "findings": [
+        {
+          "identityKey": "vitest#tests/core/state-machine.test.ts",
+          "value": "critical",
+          "confidence": "high",
+          "bindings": [
+            {
+              "kind": "main_agent_core",
+              "selectionRef": "script:test:core-state-machine",
+              "evidenceRef": "source:package.json#testPortfolioAudit.criticalBindings[0]"
+            },
+            {
+              "kind": "security_encoding_persistence",
+              "evidenceRef": "source:tests/core/state-machine.test.ts#security-boundary"
+            }
+          ],
+          "evidenceRefs": [
+            "source:package.json#testPortfolioAudit.criticalBindings[0]",
+            "source:tests/core/state-machine.test.ts#security-boundary"
+          ],
+          "issueCodes": [],
+          "releaseGateMembership": "none"
+        },
+        {
+          "identityKey": "vitest#tests/feature/new-behavior.test.ts",
+          "value": "standard",
+          "confidence": "medium",
+          "bindings": [],
+          "evidenceRefs": [],
+          "issueCodes": [],
+          "releaseGateMembership": "none"
+        },
+        {
+          "identityKey": "vitest#tests/on-demand/platform.test.ts",
+          "value": "standard",
+          "confidence": "medium",
+          "bindings": [],
+          "evidenceRefs": ["workflow:.github/workflows/release.yml#platform"],
+          "issueCodes": [],
+          "releaseGateMembership": "explicit"
+        },
+        {
+          "identityKey": "vitest#tests/redundant/duplicate.test.ts",
+          "value": "standard",
+          "confidence": "medium",
+          "bindings": [],
+          "evidenceRefs": [],
+          "issueCodes": [],
+          "releaseGateMembership": "none"
+        }
+      ],
+      "issues": []
+    },
+    {
+      "analyzerId": "duplicate-execution",
+      "dimension": "executionMultiplicity",
+      "status": "complete",
+      "findings": [
+        {
+          "identityKey": "vitest#tests/core/state-machine.test.ts",
+          "value": "single",
+          "confidence": "high",
+          "evidenceRefs": [],
+          "issueCodes": []
+        },
+        {
+          "identityKey": "vitest#tests/feature/new-behavior.test.ts",
+          "value": "single",
+          "confidence": "high",
+          "evidenceRefs": [],
+          "issueCodes": []
+        },
+        {
+          "identityKey": "vitest#tests/on-demand/platform.test.ts",
+          "value": "single",
+          "confidence": "high",
+          "evidenceRefs": [],
+          "issueCodes": []
+        },
+        {
+          "identityKey": "vitest#tests/redundant/duplicate.test.ts",
+          "value": "duplicate",
+          "confidence": "high",
+          "evidenceRefs": ["workflow:.github/workflows/ci.yml#duplicate-route"],
+          "issueCodes": ["DUPLICATE_EFFECTIVE_EXECUTION"],
+          "approved": true
+        }
+      ],
+      "issues": []
+    },
+    {
+      "analyzerId": "target-validity",
+      "dimension": "targetValidity",
+      "status": "complete",
+      "findings": [
+        {
+          "identityKey": "vitest#tests/core/state-machine.test.ts",
+          "targetRef": "src/state-machine.ts",
+          "value": "active",
+          "confidence": "high",
+          "evidenceRefs": ["source:src/state-machine.ts"],
+          "issueCodes": []
+        },
+        {
+          "identityKey": "vitest#tests/feature/new-behavior.test.ts",
+          "targetRef": "src/new-behavior.ts",
+          "value": "active",
+          "confidence": "high",
+          "evidenceRefs": ["source:src/new-behavior.ts"],
+          "issueCodes": []
+        },
+        {
+          "identityKey": "vitest#tests/on-demand/platform.test.ts",
+          "targetRef": "src/platform.ts",
+          "value": "active",
+          "confidence": "high",
+          "evidenceRefs": ["source:src/platform.ts"],
+          "issueCodes": []
+        },
+        {
+          "identityKey": "vitest#tests/redundant/duplicate.test.ts",
+          "targetRef": "src/duplicate.ts",
+          "value": "active",
+          "confidence": "high",
+          "evidenceRefs": ["source:src/duplicate.ts"],
+          "issueCodes": []
+        }
+      ],
+      "issues": []
+    },
+    {
+      "analyzerId": "oracle-effectiveness",
+      "dimension": "oracleEffectiveness",
+      "status": "complete",
+      "findings": [
+        {
+          "identityKey": "vitest#tests/core/state-machine.test.ts",
+          "value": "effective",
+          "confidence": "high",
+          "evidenceRefs": ["source:tests/core/state-machine.test.ts#behavioral"],
+          "issueCodes": []
+        },
+        {
+          "identityKey": "vitest#tests/feature/new-behavior.test.ts",
+          "value": "effective",
+          "confidence": "high",
+          "evidenceRefs": ["source:tests/feature/new-behavior.test.ts#behavioral"],
+          "issueCodes": []
+        },
+        {
+          "identityKey": "vitest#tests/on-demand/platform.test.ts",
+          "value": "effective",
+          "confidence": "high",
+          "evidenceRefs": ["source:tests/on-demand/platform.test.ts#behavioral"],
+          "issueCodes": []
+        },
+        {
+          "identityKey": "vitest#tests/redundant/duplicate.test.ts",
+          "value": "effective",
+          "confidence": "high",
+          "evidenceRefs": ["source:tests/redundant/duplicate.test.ts#behavioral"],
+          "issueCodes": []
+        }
+      ],
+      "issues": []
+    },
+    {
+      "analyzerId": "parallel-safety",
+      "dimension": "parallelSafety",
+      "status": "complete",
+      "findings": [
+        {
+          "identityKey": "vitest#tests/core/state-machine.test.ts",
+          "value": "safe_candidate",
+          "confidence": "medium",
+          "evidenceRefs": [],
+          "issueCodes": []
+        },
+        {
+          "identityKey": "vitest#tests/feature/new-behavior.test.ts",
+          "value": "safe_candidate",
+          "confidence": "medium",
+          "evidenceRefs": [],
+          "issueCodes": []
+        },
+        {
+          "identityKey": "vitest#tests/on-demand/platform.test.ts",
+          "value": "safe_candidate",
+          "confidence": "medium",
+          "evidenceRefs": [],
+          "issueCodes": []
+        },
+        {
+          "identityKey": "vitest#tests/redundant/duplicate.test.ts",
+          "value": "safe_candidate",
+          "confidence": "medium",
+          "evidenceRefs": [],
+          "issueCodes": []
+        }
+      ],
+      "issues": []
+    }
+  ],
+  "timings": {
+    "vitest#tests/core/state-machine.test.ts": 850,
+    "vitest#tests/feature/new-behavior.test.ts": 420,
+    "vitest#tests/on-demand/platform.test.ts": 1250,
+    "vitest#tests/redundant/duplicate.test.ts": 300
+  },
+  "invalidCatalogs": {
+    "CATALOG_RUNNER_ONLY": {
+      "gates": {
+        "unexplainedRunnerOnlyCount": 1
+      }
+    },
+    "CATALOG_CANDIDATE_ONLY": {
+      "gates": {
+        "unexplainedCandidateOnlyCount": 1
+      }
+    },
+    "CATALOG_IDENTITY_DUPLICATE": {
+      "gates": {
+        "catalogIdentityDuplicateCount": 1
+      }
+    },
+    "CATALOG_TEST_UNCLASSIFIED": {
+      "gates": {
+        "unclassifiedTestCount": 1
+      }
+    }
+  }
+}

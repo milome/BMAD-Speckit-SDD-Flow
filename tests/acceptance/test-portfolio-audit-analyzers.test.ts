@@ -903,6 +903,24 @@ describe('oracle effectiveness analyzer', () => {
     expect(finding.claimedRoles).not.toContain('process_e2e');
   });
 
+  it('recognizes node:assert CLI source contracts as independent oracle evidence', async () => {
+    const oracle = loadOracleEffectiveness();
+    const testPath = 'packages/bmad-speckit/tests/main-agent-dist-no-root-ts-dispatch.test.js';
+    const finding = await oracle.analyzeTestFile({
+      repoRoot: process.cwd(),
+      testPath,
+    });
+
+    expect(finding).toMatchObject({
+      value: 'effective',
+      confidence: 'high',
+      issueCodes: [],
+    });
+    expect(finding.evidenceRefs).toEqual(
+      expect.arrayContaining([expect.stringMatching(`source:${testPath}#assertion:line:`)])
+    );
+  });
+
   it.each([
     ['negative-fixture.test.ts', 'behavioral'],
     ['process-boundary.test.ts', 'process_boundary'],
@@ -1051,6 +1069,7 @@ describe('parallel safety analyzer', () => {
     ['env-unrestored.test.ts', 'PARALLEL_PROCESS_ENV_MUTATION'],
     ['fixed-port.test.ts', 'PARALLEL_FIXED_PORT'],
     ['root-pack.test.ts', 'PARALLEL_ROOT_BUILD_OR_PACK'],
+    ['root-build-script.test.ts', 'PARALLEL_ROOT_BUILD_OR_PACK'],
   ])('marks %s unsafe with exact issue code', async (testPath, issueCode) => {
     const parallelSafety = loadParallelSafety();
     const result = await parallelSafety.analyzeTestFile({

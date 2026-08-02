@@ -14,8 +14,6 @@ const {
 const { compareTestIdentity } = require('../../tools/test-portfolio-audit/canonical.cjs');
 
 const FIXTURE = join(process.cwd(), 'tests/fixtures/test-portfolio-audit/discovery');
-const NODE_RUNNER_SHA256 =
-  'sha256:1f0dd783c499343b7aef327b5c91d616f4e5e5e04b746bd8ea616a6493c113ea';
 const temporaryRoots: string[] = [];
 
 function createTemporaryRoot(prefix: string): string {
@@ -176,32 +174,79 @@ describe('test portfolio discovery', () => {
     ]);
   });
 
-  it('binds the package Node adapter to the current runner source hash', () => {
+  it('binds the package Node adapter to its declared discovery contract', () => {
     const result = discoverNodeTests({ repoRoot: process.cwd() });
 
     expect(result.status).toBe('complete');
-    expect(result.runnerId).toBe('bmad-speckit-node-test');
-    expect(result.runnerSourceSha256).toBe(NODE_RUNNER_SHA256);
+    expect(result.runnerId).toBe('package-node-test');
     expect(result.tests.length).toBeGreaterThan(0);
     expect(result.tests).toEqual([...result.tests].sort(compareTestIdentity));
     expect(result.issues).toEqual([]);
   });
 
-  it('rejects a drifted Node runner convention', () => {
+  it('rejects a missing Node runner discovery contract', () => {
     const root = createTemporaryRoot('test-portfolio-node-drift-');
     writeFixtureFile(
       root,
       'packages/bmad-speckit/scripts/run-node-tests.cjs',
-      "require('node:test');\n"
+      'module.exports = {};\n'
     );
     writeFixtureFile(root, 'packages/bmad-speckit/tests/example.test.js');
 
     expect(discoverNodeTests({ repoRoot: root })).toMatchObject({
-      runnerId: 'bmad-speckit-node-test',
+      runnerId: 'package-node-test',
       status: 'unsupported',
       tests: [],
       issues: [{ code: 'NODE_RUNNER_CONVENTION_DRIFT' }],
     });
+  });
+
+  it('rejects a Node runner whose exported contract version changes after loading', () => {
+    const root = createTemporaryRoot('test-portfolio-node-version-drift-');
+    const scriptPath = writeFixtureFile(
+      root,
+      'packages/bmad-speckit/scripts/run-node-tests.cjs',
+      "module.exports.DISCOVERY_CONTRACT_VERSION = 'node-runner-discovery/v1';\n"
+    );
+    writeFixtureFile(root, 'packages/bmad-speckit/tests/example.test.js');
+
+    expect(discoverNodeTests({ repoRoot: root }).status).toBe('complete');
+    writeFileSync(
+      scriptPath,
+      "module.exports.DISCOVERY_CONTRACT_VERSION = 'node-runner-discovery/v2';\n",
+      'utf8'
+    );
+
+    expect(discoverNodeTests({ repoRoot: root })).toMatchObject({
+      runnerId: 'package-node-test',
+      status: 'unsupported',
+      tests: [],
+      issues: [{ code: 'NODE_RUNNER_CONVENTION_DRIFT' }],
+    });
+  });
+
+  it.each([
+    ['absent', false],
+    ['present', true],
+  ])('restores an adapter module cache entry that was %s before discovery', (_state, present) => {
+    const root = createTemporaryRoot('test-portfolio-node-cache-');
+    const scriptPath = writeFixtureFile(
+      root,
+      'packages/bmad-speckit/scripts/run-node-tests.cjs',
+      "module.exports.DISCOVERY_CONTRACT_VERSION = 'node-runner-discovery/v1';\n"
+    );
+    writeFixtureFile(root, 'packages/bmad-speckit/tests/example.test.js');
+    const resolvedScript = require.resolve(scriptPath);
+    delete require.cache[resolvedScript];
+    if (present) require(resolvedScript);
+    const originalCacheEntry = require.cache[resolvedScript];
+
+    try {
+      expect(discoverNodeTests({ repoRoot: root }).status).toBe('complete');
+      expect(require.cache[resolvedScript]).toBe(originalCacheEntry);
+    } finally {
+      delete require.cache[resolvedScript];
+    }
   });
 
   it('keeps both unexplained directions visible before configured refs are supplied', () => {

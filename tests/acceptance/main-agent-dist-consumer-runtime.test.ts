@@ -13,6 +13,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
+import { resolveCanonicalPackageTarball } from '../helpers/canonical-package-artifact';
 
 const REPO_ROOT = join(import.meta.dirname, '..', '..');
 const CONSUMER_RUNTIME_DIR = join(REPO_ROOT, '.tmp', 'main-agent-consumer-runtime');
@@ -88,31 +89,27 @@ function expectSuccess(result: ProcessResult): ProcessResult {
 type FreshPackage = {
   path: string;
   hash: string;
-  packDir: string;
 };
-
-function packFreshPackage(cwd: string, prefix: string): FreshPackage {
-  const packDir = mkdtempSync(join(tmpdir(), `${prefix}-`));
-  const result = runProcess(npmCmd, ['pack', '--pack-destination', packDir], cwd);
-  expectSuccess(result);
-  const tarballs = readdirSync(packDir).filter((name) => name.endsWith('.tgz'));
-  expect(tarballs).toHaveLength(1);
-  const packagePath = join(packDir, tarballs[0]);
-  return {
-    path: packagePath,
-    hash: sha256File(packagePath),
-    packDir,
-  };
-}
 
 function prepareRootPackageTarball(): FreshPackage {
   mkdirSync(CONSUMER_RUNTIME_DIR, { recursive: true });
-  expectSuccess(runProcess(npmCmd, ['run', 'build:main-agent-dist', '--prefix', 'packages/bmad-speckit'], REPO_ROOT));
-  return packFreshPackage(REPO_ROOT, 'main-agent-root-package');
+  const packagePath = resolveCanonicalPackageTarball(REPO_ROOT);
+  return {
+    path: packagePath,
+    hash: sha256File(packagePath),
+  };
 }
 
-function prepareDirectPackageTarball(): FreshPackage {
-  return packFreshPackage(join(REPO_ROOT, 'packages', 'bmad-speckit'), 'main-agent-direct-package');
+function extractBundledDirectPackage(rootTarball: string): {
+  extractedRoot: string;
+  packagePath: string;
+} {
+  const extractedRoot = mkdtempSync(join(tmpdir(), 'main-agent-bundled-package-'));
+  expectSuccess(runProcess('tar', ['-xf', rootTarball, '-C', extractedRoot], REPO_ROOT));
+  const packagePath = join(extractedRoot, 'package', 'node_modules', 'bmad-speckit');
+  expect(existsSync(join(packagePath, 'package.json'))).toBe(true);
+  expect(existsSync(join(packagePath, 'dist', 'main-agent', 'index.js'))).toBe(true);
+  return { extractedRoot, packagePath };
 }
 
 function writeConsumerPackageJson(target: string, name: string): void {
@@ -128,7 +125,10 @@ function resolveInstalledPackageRuntime(target: string): string {
     join(target, 'node_modules', 'bmad-speckit-sdd-flow', 'node_modules', 'bmad-speckit'),
     join(target, 'node_modules', 'bmad-speckit'),
   ];
-  return candidates.find((candidate) => existsSync(join(candidate, 'dist', 'main-agent', 'index.js'))) ?? 'unresolved';
+  return (
+    candidates.find((candidate) => existsSync(join(candidate, 'dist', 'main-agent', 'index.js'))) ??
+    'unresolved'
+  );
 }
 
 function resolveNpxPackageRuntime(): string {
@@ -170,11 +170,11 @@ function ensureRuntimeProbe(target: string): { probePath: string; logPath: strin
       "const fs = require('node:fs');",
       "const childProcess = require('node:child_process');",
       "const Module = require('node:module');",
-      "const logPath = process.env.BMAD_RUNTIME_PROBE_LOG;",
-      "const ROOT_SCRIPT_RE = /(^|[\\\\/])scripts[\\\\/]main-agent-orchestration\\.ts\\b/i;",
-      "const TSX_RE = /(^|[\\\\/])tsx(?:\\.cmd)?$|\\btsx\\b/i;",
-      "const TS_NODE_RE = /(^|[\\\\/])ts-node(?:\\.cmd)?$|\\bts-node\\b/i;",
-      "const COMPILED_FALLBACK_RE = /compiled[\\\\/]main-agent-orchestration\\.cjs/i;",
+      'const logPath = process.env.BMAD_RUNTIME_PROBE_LOG;',
+      'const ROOT_SCRIPT_RE = /(^|[\\\\/])scripts[\\\\/]main-agent-orchestration\\.ts\\b/i;',
+      'const TSX_RE = /(^|[\\\\/])tsx(?:\\.cmd)?$|\\btsx\\b/i;',
+      'const TS_NODE_RE = /(^|[\\\\/])ts-node(?:\\.cmd)?$|\\bts-node\\b/i;',
+      'const COMPILED_FALLBACK_RE = /compiled[\\\\/]main-agent-orchestration\\.cjs/i;',
       'function stringify(value) {',
       '  try { return JSON.stringify(value); } catch { return String(value); }',
       '}',
@@ -339,18 +339,41 @@ function runObservedMainAgentInspect(
   expect(slash(parsed.cwd)).toBe(slash(target));
   expect(typeof parsed.exitCode).toBe('number');
   expect(Array.isArray(parsed.errors)).toBe(true);
-  expect(flags.usedRootScript, `${result.command} executed packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts`).toBe(false);
+  expect(
+    flags.usedRootScript,
+    `${result.command} executed packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts`
+  ).toBe(false);
   expect(flags.usedTsx, `${result.command} executed tsx`).toBe(false);
   expect(flags.usedTsNode, `${result.command} executed ts-node`).toBe(false);
   expect(flags.usedCompiledFallback, `${result.command} entered compiled fallback`).toBe(false);
   expect(resolvedPackagePath).not.toBe('unresolved');
   if (existsSync(resolvedPackagePath) && statSync(resolvedPackagePath).isDirectory()) {
-    expect(existsSync(join(resolvedPackagePath, '_bmad', 'shared', 'requirements-contract'))).toBe(true);
+    expect(existsSync(join(resolvedPackagePath, '_bmad', 'shared', 'requirements-contract'))).toBe(
+      true
+    );
     expect(
-      existsSync(join(resolvedPackagePath, 'dist', 'main-agent', 'source-authority', 'schemas', 'requirements-contract-implementation-confirmation.schema.json'))
+      existsSync(
+        join(
+          resolvedPackagePath,
+          'dist',
+          'main-agent',
+          'source-authority',
+          'schemas',
+          'requirements-contract-implementation-confirmation.schema.json'
+        )
+      )
     ).toBe(true);
     expect(
-      existsSync(join(resolvedPackagePath, 'dist', 'main-agent', 'source-authority', 'templates', 'requirements-contract-source-prd-template.md'))
+      existsSync(
+        join(
+          resolvedPackagePath,
+          'dist',
+          'main-agent',
+          'source-authority',
+          'templates',
+          'requirements-contract-source-prd-template.md'
+        )
+      )
     ).toBe(true);
     expect(existsSync(join(resolvedPackagePath, 'dist', '_bmad'))).toBe(false);
     expect(
@@ -363,7 +386,7 @@ function runObservedMainAgentInspect(
 }
 
 describe('main-agent consumer dist runtime', () => {
-  it('runs root tarball, npx, no-save, direct package tarball, and file: without TypeScript dispatch', () => {
+  it('runs the canonical root tarball and its bundled direct package without TypeScript dispatch', () => {
     rmSync(INSTALL_EVIDENCE_DIR, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
     const rootPackage = prepareRootPackageTarball();
     const rootTarball = rootPackage.path;
@@ -426,38 +449,36 @@ describe('main-agent consumer dist runtime', () => {
       rmSync(tgzConsumer, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
     }
 
-    const directPackage = prepareDirectPackageTarball();
-    const directConsumer = mkdtempSync(join(tmpdir(), 'main-agent-direct-tgz-'));
+    const bundledDirect = extractBundledDirectPackage(rootTarball);
     try {
-      writeConsumerPackageJson(directConsumer, 'main-agent-direct-tgz');
-      const directSpec = slash(directPackage.path);
-      expectSuccess(runProcess(npmCmd, ['install', '--no-save', directPackage.path], directConsumer));
-      const packagePath = resolveInstalledPackageRuntime(directConsumer);
-      expect(packagePath).not.toBe('unresolved');
+      const bundledRoot = join(bundledDirect.extractedRoot, 'package');
       runObservedMainAgentInspect(
-        'direct-package-tgz',
+        'bundled-direct-package',
         'main-agent-inspect',
-        npxCmd,
-        ['--no-install', 'bmad-speckit', 'main-agent', 'inspect', '--json'],
-        directConsumer,
-        directSpec,
-        packagePath,
-        directPackage
+        process.execPath,
+        [
+          join(bundledDirect.packagePath, 'bin', 'bmad-speckit.js'),
+          'main-agent',
+          'inspect',
+          '--json',
+        ],
+        bundledRoot,
+        `bundled:${packageSpec}`,
+        bundledDirect.packagePath,
+        rootPackage
       );
     } finally {
-      rmSync(directConsumer, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+      rmSync(bundledDirect.extractedRoot, {
+        recursive: true,
+        force: true,
+        maxRetries: 5,
+        retryDelay: 200,
+      });
     }
 
     const fileConsumer = mkdtempSync(join(tmpdir(), 'main-agent-file-package-'));
     try {
       writeConsumerPackageJson(fileConsumer, 'main-agent-file-package');
-      expectSuccess(
-        runProcess(
-          npmCmd,
-          ['run', 'build:main-agent-dist'],
-          join(REPO_ROOT, 'packages', 'bmad-speckit')
-        )
-      );
       const fileSpec = `file:${slash(join(REPO_ROOT, 'packages', 'bmad-speckit'))}`;
       expectSuccess(runProcess(npmCmd, ['install', '--no-save', fileSpec], fileConsumer));
       const packagePath = resolveInstalledPackageRuntime(fileConsumer);
@@ -470,12 +491,10 @@ describe('main-agent consumer dist runtime', () => {
         fileConsumer,
         fileSpec,
         packagePath,
-        directPackage
+        rootPackage
       );
     } finally {
       rmSync(fileConsumer, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
     }
-    rmSync(rootPackage.packDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
-    rmSync(directPackage.packDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
   }, 900_000);
 });

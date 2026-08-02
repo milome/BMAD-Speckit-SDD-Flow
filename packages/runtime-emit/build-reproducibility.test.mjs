@@ -1,15 +1,15 @@
-/* eslint-disable @typescript-eslint/no-require-imports -- node:test validates the CommonJS build entry */
-const assert = require('node:assert');
-const { execFileSync } = require('node:child_process');
-const fs = require('node:fs');
-const path = require('node:path');
-const { test } = require('node:test');
+import assert from 'node:assert';
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { it } from 'vitest';
 
-const PACKAGE_ROOT = __dirname;
+const PACKAGE_ROOT = path.dirname(fileURLToPath(import.meta.url));
 const BUILD_SCRIPT = path.join(PACKAGE_ROOT, 'build.js');
 const BUILD_MANIFEST = path.join(PACKAGE_ROOT, 'dist', 'build-manifest.json');
 
-test('runtime emit build manifest is byte-reproducible for unchanged source', () => {
+it('runtime emit build manifest is byte-reproducible for unchanged source', () => {
   execFileSync(process.execPath, [BUILD_SCRIPT], {
     cwd: PACKAGE_ROOT,
     encoding: 'utf8',

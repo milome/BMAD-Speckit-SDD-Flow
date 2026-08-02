@@ -1,16 +1,10 @@
 import { execSync, spawnSync } from 'node:child_process';
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readdirSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { listUnexpectedLegacyConsumerHookFiles } from '../../packages/bmad-speckit/dist/services/install-surface-manifest.js';
+import { resolveCanonicalPackageTarball } from '../helpers/canonical-package-artifact';
 import {
   buildPassImplementationEntryGate,
   buildSixModelResultsForImplementationReady,
@@ -50,13 +44,7 @@ function removeDirWithRetry(target: string, attempts = 15, intervalMs = 300): vo
 
 describe('consumer governance zero-scripts install', () => {
   it('keeps consumer root free of governance scripts and runs governance via hook-local entries', () => {
-    const packDir = mkdtempSync(join(tmpdir(), 'gov-zero-scripts-root-pack-'));
-    run(`npm pack --pack-destination "${packDir.replace(/\\/g, '/')}"`, PKG_ROOT);
-    const tgzName = readdirSync(packDir).find(
-      (f) => f.startsWith('bmad-speckit-sdd-flow-') && f.endsWith('.tgz')
-    );
-    expect(tgzName).toBeTruthy();
-
+    const tgzPath = resolveCanonicalPackageTarball(PKG_ROOT);
     const consumer = mkdtempSync(join(tmpdir(), 'gov-zero-scripts-consumer-'));
     try {
       writeFileSync(
@@ -65,7 +53,7 @@ describe('consumer governance zero-scripts install', () => {
         'utf8'
       );
 
-      run(`npm install "${join(packDir, tgzName!).replace(/\\/g, '/')}"`, consumer);
+      run(`npm install "${tgzPath.replace(/\\/g, '/')}"`, consumer);
       run('npm install js-yaml', consumer);
       run('npx bmad-speckit-init --agent cursor', consumer);
 
@@ -242,7 +230,6 @@ describe('consumer governance zero-scripts install', () => {
       ).toBe(false);
     } finally {
       removeDirWithRetry(consumer);
-      removeDirWithRetry(packDir);
     }
   }, 300_000);
 });

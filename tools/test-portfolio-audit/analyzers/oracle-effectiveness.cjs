@@ -17,6 +17,7 @@ const PROCESS_CALLS = new Set([
   'spawnSync',
 ]);
 const SOURCE_READ_CALLS = new Set(['readFile', 'readFileSync']);
+const NODE_ASSERT_MODULES = new Set(['node:assert', 'node:assert/strict']);
 
 function compareText(left, right) {
   return String(left).localeCompare(String(right), 'en');
@@ -168,7 +169,56 @@ function expressionProvenance(expression, sourceFile, variables, seen = new Set(
   return `expression:${expressionText(expression, sourceFile)}`;
 }
 
-function matcherCall(node) {
+function requiredModuleName(expression) {
+  if (
+    !ts.isCallExpression(expression) ||
+    !ts.isIdentifier(expression.expression) ||
+    expression.expression.text !== 'require' ||
+    expression.arguments.length !== 1 ||
+    !ts.isStringLiteralLike(expression.arguments[0])
+  ) {
+    return undefined;
+  }
+  return expression.arguments[0].text;
+}
+
+function collectNodeAssertBindings(sourceFile) {
+  const bindings = new Set();
+  function visit(node) {
+    if (ts.isImportDeclaration(node) && ts.isStringLiteralLike(node.moduleSpecifier)) {
+      if (NODE_ASSERT_MODULES.has(node.moduleSpecifier.text)) {
+        const clause = node.importClause;
+        if (clause?.name) bindings.add(clause.name.text);
+        if (clause?.namedBindings && ts.isNamespaceImport(clause.namedBindings)) {
+          bindings.add(clause.namedBindings.name.text);
+        }
+        if (clause?.namedBindings && ts.isNamedImports(clause.namedBindings)) {
+          for (const element of clause.namedBindings.elements) {
+            if ((element.propertyName || element.name).text === 'strict') {
+              bindings.add(element.name.text);
+            }
+          }
+        }
+      }
+    }
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.initializer &&
+      (NODE_ASSERT_MODULES.has(requiredModuleName(node.initializer)) ||
+        (ts.isPropertyAccessExpression(node.initializer) &&
+          node.initializer.name.text === 'strict' &&
+          NODE_ASSERT_MODULES.has(requiredModuleName(node.initializer.expression))))
+    ) {
+      bindings.add(node.name.text);
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(sourceFile);
+  return bindings;
+}
+
+function matcherCall(node, nodeAssertBindings) {
   if (!ts.isCallExpression(node)) return undefined;
   const matcherNames = [];
   let expression = node.expression;
@@ -177,19 +227,32 @@ function matcherCall(node) {
     expression = expression.expression;
   }
   if (
-    !ts.isCallExpression(expression) ||
-    !ts.isIdentifier(expression.expression) ||
-    expression.expression.text !== 'expect' ||
-    expression.arguments.length === 0
+    ts.isCallExpression(expression) &&
+    ts.isIdentifier(expression.expression) &&
+    expression.expression.text === 'expect' &&
+    expression.arguments.length > 0
   ) {
-    return undefined;
+    return {
+      node,
+      actual: expression.arguments[0],
+      expected: node.arguments[0],
+      matcherNames,
+    };
   }
-  return {
-    node,
-    actual: expression.arguments[0],
-    expected: node.arguments[0],
-    matcherNames,
-  };
+  if (
+    ts.isPropertyAccessExpression(node.expression) &&
+    ts.isIdentifier(node.expression.expression) &&
+    nodeAssertBindings.has(node.expression.expression.text) &&
+    node.arguments.length > 0
+  ) {
+    return {
+      node,
+      actual: node.arguments[0],
+      expected: node.arguments[1],
+      matcherNames: [node.expression.name.text],
+    };
+  }
+  return undefined;
 }
 
 function containsBareReturn(statement) {
@@ -248,6 +311,7 @@ function collectClaims(testTitles, declaredRoles = []) {
 
 function collectOracleFacts(sourceFile, testPath, declaredRoles) {
   const variables = collectVariables(sourceFile);
+  const nodeAssertBindings = collectNodeAssertBindings(sourceFile);
   const sourceVariables = new Set();
   const processVariables = new Set();
   const assertions = [];
@@ -272,7 +336,7 @@ function collectOracleFacts(sourceFile, testPath, declaredRoles) {
       }
     }
 
-    const assertion = matcherCall(node);
+    const assertion = matcherCall(node, nodeAssertBindings);
     if (assertion) {
       assertions.push(assertion);
       refs.push(lineRef(sourceFile, testPath, node, 'assertion'));
@@ -328,7 +392,7 @@ function collectOracleFacts(sourceFile, testPath, declaredRoles) {
       processAssertion &&
       expressionUsesProperty(assertion.actual, new Set(['output', 'state', 'stderr', 'stdout']));
     const negativeAssertion =
-      assertion.matcherNames.includes('not') ||
+      assertion.matcherNames.some((name) => /^(?:doesNot|not)/u.test(name)) ||
       /toThrow|toReject|rejects|toBeRejected/iu.test(assertion.matcherNames.join('.'));
 
     if (sourceAssertion) sourceAssertionCount += 1;

@@ -85,6 +85,61 @@ function writeRecord(root: string): string {
 }
 
 describe('implementation readiness gate activation metadata', () => {
+  it('treats architecture confirmation as not applicable when the record explicitly opts out', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'readiness-gate-unit-'));
+    try {
+      const recordPath = writeRecord(root);
+      const input = JSON.parse(readFileSync(recordPath, 'utf8'));
+      input.architectureConfirmationRequired = false;
+      delete input.architectureConfirmationState;
+      delete input.architectureConfirmationStateChecks;
+      writeFileSync(recordPath, `${JSON.stringify(input, null, 2)}\n`, 'utf8');
+
+      const code = mainImplementationReadinessGate([
+        '--requirement-record',
+        recordPath,
+        '--evaluated-at',
+        '2026-05-20T00:00:00.000Z',
+        '--evaluated-by',
+        'unit-test',
+        '--json',
+      ]);
+
+      expect(code).toBe(1);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      const latestGate = record.gateChecks.at(-1);
+      expect(latestGate.checks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'architecture-confirmation-required',
+            passed: true,
+            required: false,
+          }),
+          expect.objectContaining({
+            id: 'architecture-confirmation-current',
+            passed: true,
+          }),
+          expect.objectContaining({
+            id: 'architecture-confirmation-recipe-current',
+            passed: true,
+          }),
+          expect.objectContaining({
+            id: 'architecture-confirmation-state-current',
+            passed: true,
+          }),
+        ])
+      );
+      expect(latestGate.blockingReasons).not.toEqual(
+        expect.arrayContaining([
+          'architecture_confirmation_not_active',
+          'architecture_confirmation_resolved_recipe_hash_not_current',
+        ])
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('blocks record-only readiness and does not activate baseline without mandatory stage audit and AI-TDD gate proof', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'readiness-gate-unit-'));
     try {

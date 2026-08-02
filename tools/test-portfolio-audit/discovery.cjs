@@ -4,12 +4,7 @@ const os = require('node:os');
 const path = require('node:path');
 const ts = require('typescript');
 
-const {
-  compareTestIdentity,
-  normalizeRepoPath,
-  sha256Bytes,
-  stableUnique,
-} = require('./canonical.cjs');
+const { compareTestIdentity, normalizeRepoPath, stableUnique } = require('./canonical.cjs');
 
 const SKIPPED_DIRECTORIES = new Set([
   '.artifacts',
@@ -21,11 +16,11 @@ const SKIPPED_DIRECTORIES = new Set([
 ]);
 
 const NODE_RUNNER_ADAPTER = Object.freeze({
-  runnerId: 'bmad-speckit-node-test',
+  runnerId: 'package-node-test',
   scriptPath: 'packages/bmad-speckit/scripts/run-node-tests.cjs',
   testsRoot: 'packages/bmad-speckit/tests',
   suffix: '.test.js',
-  sourceSha256: 'sha256:1f0dd783c499343b7aef327b5c91d616f4e5e5e04b746bd8ea616a6493c113ea',
+  contractVersion: 'node-runner-discovery/v1',
 });
 
 function walkFiles(root) {
@@ -261,11 +256,27 @@ function discoverVitestTests({
 
 function discoverNodeTests({ repoRoot }) {
   const script = path.resolve(repoRoot, NODE_RUNNER_ADAPTER.scriptPath);
-  const actualHash = fs.existsSync(script) ? sha256Bytes(fs.readFileSync(script)) : null;
-  if (actualHash !== NODE_RUNNER_ADAPTER.sourceSha256) {
+  let contractVersion;
+  let resolvedScript;
+  let originalCacheEntry;
+  let hadOriginalCacheEntry = false;
+  try {
+    resolvedScript = require.resolve(script);
+    hadOriginalCacheEntry = Object.prototype.hasOwnProperty.call(require.cache, resolvedScript);
+    originalCacheEntry = require.cache[resolvedScript];
+    delete require.cache[resolvedScript];
+    contractVersion = require(resolvedScript).DISCOVERY_CONTRACT_VERSION;
+  } catch {
+    contractVersion = null;
+  } finally {
+    if (resolvedScript) {
+      if (hadOriginalCacheEntry) require.cache[resolvedScript] = originalCacheEntry;
+      else delete require.cache[resolvedScript];
+    }
+  }
+  if (contractVersion !== NODE_RUNNER_ADAPTER.contractVersion) {
     return {
       runnerId: NODE_RUNNER_ADAPTER.runnerId,
-      runnerSourceSha256: actualHash,
       status: 'unsupported',
       tests: [],
       issues: [{ code: 'NODE_RUNNER_CONVENTION_DRIFT' }],
@@ -281,7 +292,6 @@ function discoverNodeTests({ repoRoot }) {
     .sort(compareTestIdentity);
   return {
     runnerId: NODE_RUNNER_ADAPTER.runnerId,
-    runnerSourceSha256: actualHash,
     status: 'complete',
     tests,
     issues: [],

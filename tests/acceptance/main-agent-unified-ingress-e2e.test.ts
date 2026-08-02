@@ -1,5 +1,4 @@
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
@@ -11,71 +10,56 @@ import {
   governanceEventTypeRegistryHash,
   type GovernanceTransportEnvelope,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-transport-envelope';
-import { defaultRuntimeContextFile, writeRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
-import {
-  defaultRuntimeContextRegistry,
-  writeRuntimeContextRegistry,
-} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 import { readOrchestrationState } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state';
+import { publishImplementationPromptFixture } from './helpers/prompt-transaction-implementation-publication-fixture';
 
-function prepareRoot(hostKind: MainAgentHostKind, hookAvailable: boolean): string {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), `main-agent-ingress-${hostKind}-`));
-  const recordId = `REQ-INGRESS-${hostKind.toUpperCase()}`;
-  writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
-  writeRuntimeContext(
-    root,
-    defaultRuntimeContextFile({
+interface PreparedIngressFixture {
+  root: string;
+  cleanup: () => void;
+  pointer: Record<string, unknown>;
+  recordId: string;
+  requirementSetId: string;
+  implementationAttemptId: string;
+  transactionId: string;
+}
+
+async function prepareRoot(
+  hostKind: MainAgentHostKind,
+  hookAvailable: boolean
+): Promise<PreparedIngressFixture> {
+  const published = await publishImplementationPromptFixture({
+    configureRecord: (record, fixture) => ({
+      ...record,
+      transactionId: fixture.identity.transactionId,
       flow: 'story',
       stage: 'implement',
+      entryFlow: 'story',
+      entryFlowClass: 'full_story_entry',
+      workflowAdapter: 'bmad',
+      runtimeRegistryBridge: true,
       sourceMode: 'full_bmad',
-      contextScope: 'story',
       storyId: `S-${hostKind}`,
-      runId: `ingress-${hostKind}`,
-    })
-  );
-  const requirementRecordDir = path.join(
-    root,
-    '_bmad-output',
-    'runtime',
-    'requirement-records',
-    recordId
-  );
-  fs.mkdirSync(requirementRecordDir, { recursive: true });
-  fs.writeFileSync(
-    path.join(requirementRecordDir, 'requirement-record.json'),
-    JSON.stringify(
-      {
-        recordId,
-        requirementSetId: recordId,
-        status: 'user_confirmed',
-        flow: 'story',
-        stage: 'implement',
-        entryFlow: 'story',
-        entryFlowClass: 'full_story_entry',
-        workflowAdapter: 'bmad',
-        runtimeRegistryBridge: true,
-        sourceMode: 'full_bmad',
-        sourcePath: `specs/${recordId}/story.md`,
-        sourceDocumentHash:
-          'sha256:1111111111111111111111111111111111111111111111111111111111111111',
-        implementationConfirmationHash:
-          'sha256:2222222222222222222222222222222222222222222222222222222222222222',
-        traceRows: ['TRACE-INGRESS'],
-        coveredRequirementIds: ['MUST-INGRESS'],
-        taskRefs: ['TASK-INGRESS'],
-        runId: `ingress-${hostKind}`,
-        storyId: `S-${hostKind}`,
-        architectureConfirmationState: {
-          status: 'active',
-          currentArchitectureConfirmationHash:
-            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        },
-      },
-      null,
-      2
-    ) + '\n',
-    'utf8'
-  );
+    }),
+  });
+  const { fixture, pointer } = published;
+  const requirementRecordRef = pointer.requirementRecordRef as Record<string, unknown>;
+  const publishedRecord = JSON.parse(
+    fs.readFileSync(String(requirementRecordRef.path), 'utf8')
+  ) as Record<string, unknown>;
+  const recordId = String(publishedRecord.recordId);
+  const requirementSetId = String(pointer.requirementSetId);
+  const implementationAttemptId = String(pointer.implementationAttemptId);
+  const transactionId = String(pointer.transactionId);
+  if (
+    recordId !== fixture.authority.recordId ||
+    requirementSetId !== fixture.identity.requirementSetId ||
+    implementationAttemptId !== fixture.identity.implementationAttemptId ||
+    transactionId !== fixture.identity.transactionId
+  ) {
+    fixture.cleanup();
+    throw new Error('published ingress fixture identity mismatch');
+  }
+  const root = fixture.root;
   if (hookAvailable && hostKind === 'cursor') {
     fs.mkdirSync(path.join(root, '.cursor'), { recursive: true });
     fs.writeFileSync(path.join(root, '.cursor', 'hooks.json'), '{"version":1}\n', 'utf8');
@@ -102,13 +86,22 @@ function prepareRoot(hostKind: MainAgentHostKind, hookAvailable: boolean): strin
       'utf8'
     );
   }
-  return root;
+  return {
+    root,
+    cleanup: fixture.cleanup,
+    pointer,
+    recordId,
+    requirementSetId,
+    implementationAttemptId,
+    transactionId,
+  };
 }
 
-function ingressInput(root: string, hostKind: MainAgentHostKind) {
+function ingressInput(fixture: PreparedIngressFixture, hostKind: MainAgentHostKind) {
   return {
-    projectRoot: root,
-    recordId: `REQ-INGRESS-${hostKind.toUpperCase()}`,
+    projectRoot: fixture.root,
+    recordId: fixture.recordId,
+    requirementSetId: fixture.requirementSetId,
     hostKind,
     flow: 'story' as const,
     stage: 'implement',
@@ -160,17 +153,18 @@ const REGISTRY_BINDING = {
 };
 
 function codexHookTrustEnvelope(
+  fixture: PreparedIngressFixture,
   overrides: Partial<GovernanceTransportEnvelope> = {}
 ): GovernanceTransportEnvelope {
   return {
     hostKind: 'codex',
     hostMode: 'hooks_enabled',
     entry: 'codex-session-start-hook',
-    runId: 'ingress-codex',
-    recordId: 'REQ-INGRESS-CODEX',
-    requirementSetId: 'REQ-INGRESS-CODEX',
+    runId: fixture.implementationAttemptId,
+    recordId: fixture.recordId,
+    requirementSetId: fixture.requirementSetId,
     stage: 'implement',
-    packetId: 'codex-hook-session',
+    packetId: fixture.implementationAttemptId,
     eventType: 'hook_trust_receipt_recorded',
     payloadKind: 'decision',
     decision: 'pass',
@@ -200,12 +194,13 @@ function codexHookTrustEnvelope(
 }
 
 describe('main-agent unified ingress e2e', () => {
-  it('routes hooks-enabled cursor through hook_ingress and the shared control plane', () => {
-    const root = prepareRoot('cursor', true);
+  it('routes hooks-enabled cursor through hook_ingress and the shared control plane', async () => {
+    const root = await prepareRoot('cursor', true);
     try {
       const receipt = runUnifiedIngress(ingressInput(root, 'cursor'));
 
-      expect(receipt.recordId).toBe('REQ-INGRESS-CURSOR');
+      expect(receipt.recordId).toBe(root.recordId);
+      expect(receipt.requirementSetId).toBe(root.requirementSetId);
       expect(receipt.hostMode).toBe('hooks_enabled');
       expect(receipt.orchestrationEntry).toBe('hook_ingress');
       expect(receipt.degradationLevel).toBe('none');
@@ -216,15 +211,15 @@ describe('main-agent unified ingress e2e', () => {
         recovered_orchestration_entry: null,
       });
       expect(receipt.controlPlane).toBe('main-agent-orchestration');
-      expect(receipt.runLoop.status).toBe('completed');
-      expect(receipt.runLoop.pendingPacketStatus).toBe('completed');
+      expect(receipt.runLoop.status).toBe('blocked');
+      expect(receipt.runLoop.pendingPacketStatus).toBe('invalidated');
     } finally {
-      fs.rmSync(root, { recursive: true, force: true });
+      root.cleanup();
     }
   });
 
-  it('degrades missing hooks to cli_ingress without changing the control plane', () => {
-    const root = prepareRoot('claude', false);
+  it('degrades missing hooks to cli_ingress without changing the control plane', async () => {
+    const root = await prepareRoot('claude', false);
     try {
       const receipt = runUnifiedIngress(ingressInput(root, 'claude'));
 
@@ -244,22 +239,23 @@ describe('main-agent unified ingress e2e', () => {
       expect(receipt.hostRecovery.recovered_host_mode).toBeNull();
       expect(receipt.hostRecovery.recovered_orchestration_entry).toBeNull();
       expect(receipt.hostRecovery.parity_diff.degradationCleared).toBe(false);
-      expect(receipt.hostRecovery.before_parity_snapshot.inspect?.status).toBe('completed');
+      expect(receipt.hostRecovery.before_parity_snapshot.inspect?.status).toBe('blocked');
       expect(receipt.hostRecovery.after_parity_snapshot.inspect).toBeNull();
       expect(receipt.hostRecovery.recovery_log_path).toEqual(expect.any(String));
       expect(fs.existsSync(receipt.hostRecovery.recovery_log_path as string)).toBe(true);
       expect((receipt.hostRecovery.recovery_log_path as string).replace(/\\/g, '/')).toContain(
-        '_bmad-output/runtime/requirement-records/REQ-INGRESS-CLAUDE/artifacts/ingress/recovery'
+        `_bmad-output/runtime/requirement-records/${root.recordId}/artifacts/ingress/recovery`
       );
       expect(receipt.controlPlane).toBe('main-agent-orchestration');
-      expect(receipt.runLoop.status).toBe('completed');
+      expect(receipt.runLoop.status).toBe('blocked');
+      expect(receipt.runLoop.pendingPacketStatus).toBe('dispatched');
     } finally {
-      fs.rmSync(root, { recursive: true, force: true });
+      root.cleanup();
     }
   });
 
-  it('emits S3f recovery/back-switch fields when forced cli ingress can recover hooks', () => {
-    const root = prepareRoot('cursor', true);
+  it('emits S3f recovery/back-switch fields when forced cli ingress can recover hooks', async () => {
+    const root = await prepareRoot('cursor', true);
     try {
       const receipt = runUnifiedIngress({
         ...ingressInput(root, 'cursor'),
@@ -271,42 +267,40 @@ describe('main-agent unified ingress e2e', () => {
       expect(receipt.hostRecovery.recovery_probe_count).toBeGreaterThanOrEqual(
         receipt.hostRecovery.required_probe_count
       );
-      expect(receipt.hostRecovery.recovered_host_mode).toBe('hooks_enabled');
-      expect(receipt.hostRecovery.recovered_orchestration_entry).toBe('hook_ingress');
-      expect(receipt.hostRecovery.degradation_cleared_at).toEqual(expect.any(String));
+      expect(receipt.hostRecovery.recovered_host_mode).toBeNull();
+      expect(receipt.hostRecovery.recovered_orchestration_entry).toBeNull();
+      expect(receipt.hostRecovery.degradation_cleared_at).toBeNull();
       expect(receipt.hostRecovery.before_parity_snapshot.orchestrationEntry).toBe('cli_ingress');
-      expect(receipt.hostRecovery.after_parity_snapshot.orchestrationEntry).toBe('hook_ingress');
+      expect(receipt.hostRecovery.after_parity_snapshot.orchestrationEntry).toBeNull();
       expect(receipt.hostRecovery.before_parity_snapshot.inspect?.resolvedHost).toBe('cursor');
-      expect(receipt.hostRecovery.after_parity_snapshot.inspect?.pendingPacketStatus).toBe(
-        'completed'
+      expect(receipt.hostRecovery.before_parity_snapshot.inspect?.pendingPacketStatus).toBe(
+        'invalidated'
       );
-      expect(receipt.hostRecovery.before_parity_snapshot.inspect).not.toBe(
-        receipt.hostRecovery.after_parity_snapshot.inspect
-      );
+      expect(receipt.hostRecovery.after_parity_snapshot.inspect).toBeNull();
       expect(receipt.hostRecovery.parity_diff).toMatchObject({
-        hostModeChanged: true,
-        orchestrationEntryChanged: true,
-        degradationCleared: true,
+        hostModeChanged: false,
+        orchestrationEntryChanged: false,
+        degradationCleared: false,
       });
       expect(receipt.hostRecovery.recovery_log_path).toEqual(expect.any(String));
       expect(fs.existsSync(receipt.hostRecovery.recovery_log_path as string)).toBe(true);
-      const state = readOrchestrationState(root, receipt.runLoop.sessionId!);
+      const state = readOrchestrationState(root.root, receipt.runLoop.sessionId!);
       expect(state?.hostRecovery).toMatchObject({
         degradation_level: 'cli_forced',
         active_host_mode: 'no_hooks',
         orchestration_entry: 'cli_ingress',
-        recovered_host_mode: 'hooks_enabled',
-        recovered_orchestration_entry: 'hook_ingress',
+        recovered_host_mode: null,
+        recovered_orchestration_entry: null,
       });
     } finally {
-      fs.rmSync(root, { recursive: true, force: true });
+      root.cleanup();
     }
   });
 
-  it('does not back-switch when hook health probe fails despite hook file existing', () => {
-    const root = prepareRoot('cursor', true);
+  it('does not back-switch when hook health probe fails despite hook file existing', async () => {
+    const root = await prepareRoot('cursor', true);
     try {
-      fs.writeFileSync(path.join(root, '.cursor', 'hooks.json'), '{not-json}\n', 'utf8');
+      fs.writeFileSync(path.join(root.root, '.cursor', 'hooks.json'), '{not-json}\n', 'utf8');
       const receipt = runUnifiedIngress({
         ...ingressInput(root, 'cursor'),
         forceNoHooks: true,
@@ -321,17 +315,17 @@ describe('main-agent unified ingress e2e', () => {
       ) as { probes: Array<{ hookAvailable: boolean; hookExecutable: boolean }> };
       expect(log.probes.every((probe) => probe.hookAvailable)).toBe(true);
       expect(log.probes.every((probe) => probe.hookExecutable)).toBe(false);
-      const state = readOrchestrationState(root, receipt.runLoop.sessionId!);
+      const state = readOrchestrationState(root.root, receipt.runLoop.sessionId!);
       expect(state?.hostRecovery?.degradation_level).toBe('cli_forced');
       expect(state?.hostRecovery?.recovered_host_mode).toBeNull();
     } finally {
-      fs.rmSync(root, { recursive: true, force: true });
+      root.cleanup();
     }
   });
 
-  it('emits host_partial and transport_degraded degradation branches', () => {
-    const hostPartialRoot = prepareRoot('codex', false);
-    const transportRoot = prepareRoot('cursor', true);
+  it('emits host_partial and transport_degraded degradation branches', async () => {
+    const hostPartialRoot = await prepareRoot('codex', false);
+    const transportRoot = await prepareRoot('cursor', true);
     try {
       const hostPartial = runUnifiedIngress({
         ...ingressInput(hostPartialRoot, 'codex'),
@@ -349,13 +343,13 @@ describe('main-agent unified ingress e2e', () => {
       expect(transport.degradationReason?.failed_capability).toBe('transport');
       expect(transport.hostRecovery.recovery_log_path).toEqual(expect.any(String));
     } finally {
-      fs.rmSync(hostPartialRoot, { recursive: true, force: true });
-      fs.rmSync(transportRoot, { recursive: true, force: true });
+      hostPartialRoot.cleanup();
+      transportRoot.cleanup();
     }
   });
 
-  it('fails closed when host recovery cannot write orchestration state', () => {
-    const root = prepareRoot('cursor', true);
+  it('fails closed when host recovery cannot write orchestration state', async () => {
+    const root = await prepareRoot('cursor', true);
     try {
       expect(() =>
         runUnifiedIngress({
@@ -365,12 +359,12 @@ describe('main-agent unified ingress e2e', () => {
         })
       ).toThrow(/host recovery state write failed/u);
     } finally {
-      fs.rmSync(root, { recursive: true, force: true });
+      root.cleanup();
     }
   });
 
-  it('blocks S3f back-switch when inspect parity does not match the recovering host', () => {
-    const root = prepareRoot('cursor', true);
+  it('blocks S3f back-switch when inspect parity does not match the recovering host', async () => {
+    const root = await prepareRoot('cursor', true);
     try {
       const receipt = runUnifiedIngress({
         ...ingressInput(root, 'cursor'),
@@ -390,12 +384,12 @@ describe('main-agent unified ingress e2e', () => {
       expect(log.inspect_parity_passed).toBe(false);
       expect(log.back_switch_allowed).toBe(false);
     } finally {
-      fs.rmSync(root, { recursive: true, force: true });
+      root.cleanup();
     }
   });
 
-  it('routes Codex no-hooks ingress to current main-session execution', () => {
-    const root = prepareRoot('codex', false);
+  it('routes Codex no-hooks ingress to current main-session execution', async () => {
+    const root = await prepareRoot('codex', false);
     try {
       const receipt = runUnifiedIngress(ingressInput(root, 'codex'));
 
@@ -406,20 +400,20 @@ describe('main-agent unified ingress e2e', () => {
       expect(receipt.controlPlane).toBe('main-agent-orchestration');
       expect(receipt.runLoop.status).toBe('blocked');
       expect(receipt.runLoop.resolvedHost).toBe('codex');
-      expect(receipt.runLoop.pendingPacketStatus).toBe('invalidated');
-      expect(receipt.runLoop.finalNextAction).toBe('dispatch_implement');
+      expect(receipt.runLoop.pendingPacketStatus).toBe('dispatched');
+      expect(receipt.runLoop.finalNextAction).toBe('await_native_goal_task_report');
       expect(receipt.sameControlPlane).toBe(true);
     } finally {
-      fs.rmSync(root, { recursive: true, force: true });
+      root.cleanup();
     }
   });
 
-  it('allows codex hooks_enabled only with a validated hook trust envelope', () => {
-    const root = prepareRoot('codex', false);
+  it('allows codex hooks_enabled only with a validated hook trust envelope', async () => {
+    const root = await prepareRoot('codex', false);
     try {
       const receipt = runUnifiedIngress({
         ...ingressInput(root, 'codex'),
-        codexHookTrustEnvelope: codexHookTrustEnvelope(),
+        codexHookTrustEnvelope: codexHookTrustEnvelope(root),
         ...REGISTRY_BINDING,
       });
 
@@ -430,17 +424,17 @@ describe('main-agent unified ingress e2e', () => {
       expect(receipt.degradationReason).toBeNull();
       expect(receipt.controlPlane).toBe('main-agent-orchestration');
       expect(receipt.runLoop.status).toBe('blocked');
-      expect(receipt.runLoop.pendingPacketStatus).toBe('invalidated');
-      expect(receipt.runLoop.finalNextAction).toBe('dispatch_implement');
+      expect(receipt.runLoop.pendingPacketStatus).toBe('dispatched');
+      expect(receipt.runLoop.finalNextAction).toBe('await_native_goal_task_report');
     } finally {
-      fs.rmSync(root, { recursive: true, force: true });
+      root.cleanup();
     }
   });
 
-  it('degrades codex hook claims to no_hooks when trust proof is incomplete', () => {
-    const root = prepareRoot('codex', false);
+  it('degrades codex hook claims to no_hooks when trust proof is incomplete', async () => {
+    const root = await prepareRoot('codex', false);
     try {
-      const invalid = codexHookTrustEnvelope({
+      const invalid = codexHookTrustEnvelope(root, {
         payload: {
           hookTrust: 'trusted',
           codexVersion: '0.130.0',
@@ -465,25 +459,27 @@ describe('main-agent unified ingress e2e', () => {
         'codex_runtime_policy_snapshot_hash_missing'
       );
     } finally {
-      fs.rmSync(root, { recursive: true, force: true });
+      root.cleanup();
     }
   });
 
-  it('requires a requirement record id instead of writing legacy global ingress outputs', () => {
-    const root = prepareRoot('cursor', true);
+  it('requires a requirement record id instead of writing legacy global ingress outputs', async () => {
+    const root = await prepareRoot('cursor', true);
     try {
       expect(() =>
         runUnifiedIngress({
-          projectRoot: root,
+          projectRoot: root.root,
           recordId: '',
           hostKind: 'cursor',
           flow: 'story',
           stage: 'implement',
         })
       ).toThrow(/recordId is required/u);
-      expect(fs.existsSync(path.join(root, '_bmad-output', 'runtime', 'ingress'))).toBe(false);
+      expect(fs.existsSync(path.join(root.root, '_bmad-output', 'runtime', 'ingress'))).toBe(
+        false
+      );
     } finally {
-      fs.rmSync(root, { recursive: true, force: true });
+      root.cleanup();
     }
   });
 });

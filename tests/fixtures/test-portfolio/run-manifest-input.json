@@ -1,0 +1,179 @@
+{
+  "repository": {
+    "commitSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "dirty": false
+  },
+  "catalogHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "packageDescriptorHash": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+  "tarballSha256": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+  "selectionHash": "sha256:696bc09661d4656774d6f283a7126aea3aecbe4757235cd19e7186f8974108e4",
+  "timingSummary": {
+    "schemaVersion": "ci-test-timing-summary/v1",
+    "commitShas": ["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],
+    "runs": [
+      {
+        "commitSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "events": [
+          {
+            "identityKey": "vitest::tests/core-a.test.ts",
+            "testPath": "tests/core-a.test.ts",
+            "runnerId": "vitest",
+            "durationMs": 1000,
+            "outcome": "passed",
+            "eventId": "sha256:1e11cc5f627d37924fd23a13f7dc7ce0473ec4987c9564b0a9d006ef2be0aa40"
+          },
+          {
+            "identityKey": "vitest::tests/core-b.test.ts",
+            "testPath": "tests/core-b.test.ts",
+            "runnerId": "vitest",
+            "durationMs": 1000,
+            "outcome": "passed",
+            "eventId": "sha256:b781153693cd005878d125099f02c82d33dee36525675fc688eae514ffb6750c"
+          },
+          {
+            "identityKey": "vitest::tests/feature.test.ts",
+            "testPath": "tests/feature.test.ts",
+            "runnerId": "vitest",
+            "durationMs": 1000,
+            "outcome": "passed",
+            "eventId": "sha256:15aa99ad691e397d8c0f5a73aec1c36a30d5522693540f61544bd44379f7b3b6"
+          }
+        ]
+      }
+    ],
+    "timings": {
+      "vitest::tests/core-a.test.ts": {
+        "sampleCount": 1,
+        "medianMs": 1000,
+        "maxMs": 1000,
+        "conservativeMs": 1000
+      },
+      "vitest::tests/core-b.test.ts": {
+        "sampleCount": 1,
+        "medianMs": 1000,
+        "maxMs": 1000,
+        "conservativeMs": 1000
+      },
+      "vitest::tests/feature.test.ts": {
+        "sampleCount": 1,
+        "medianMs": 1000,
+        "maxMs": 1000,
+        "conservativeMs": 1000
+      }
+    },
+    "timingSnapshotHash": "sha256:0cf483ec5fb54e1eccd24893a6262046c47bfd75e323cc16c597ecfac4cc758b"
+  },
+  "policy": {
+    "timing": {
+      "unknownDurationMs": 60000,
+      "maxShardDurationMs": 60000,
+      "maxShardsPerLane": 4
+    }
+  },
+  "policyHash": "sha256:92a8154fdcd6be600a688153f34a99770d36314498d7a40f475ba2b07d0d6ede",
+  "shardPlan": {
+    "schemaVersion": "ci-shard-plan/v1",
+    "profile": "pr-fast",
+    "selection": {
+      "schemaVersion": "test-selection/v1",
+      "selectionStatus": "ready",
+      "blockingGapCount": 0,
+      "uncoveredObligationIds": [],
+      "requestedProfile": "pr-fast",
+      "profile": "pr-fast",
+      "expansionLevel": "trace_capability",
+      "escalationReasonCodes": [],
+      "selected": [
+        {
+          "identityKey": "vitest::tests/core-a.test.ts",
+          "runnerId": "vitest",
+          "testPath": "tests/core-a.test.ts",
+          "lane": "core",
+          "reasonCodes": ["CORE_PERMANENT"],
+          "coveredObligationIds": []
+        },
+        {
+          "identityKey": "vitest::tests/core-b.test.ts",
+          "runnerId": "vitest",
+          "testPath": "tests/core-b.test.ts",
+          "lane": "core",
+          "reasonCodes": ["CORE_PERMANENT"],
+          "coveredObligationIds": []
+        },
+        {
+          "identityKey": "vitest::tests/feature.test.ts",
+          "runnerId": "vitest",
+          "testPath": "tests/feature.test.ts",
+          "lane": "feature",
+          "reasonCodes": ["CHANGED_TEST"],
+          "coveredObligationIds": []
+        }
+      ],
+      "gates": {
+        "selectionOmissionCount": 0,
+        "selectionDuplicateCount": 0,
+        "unresolvedImpactBindingCount": 0
+      }
+    },
+    "selectionHash": "sha256:696bc09661d4656774d6f283a7126aea3aecbe4757235cd19e7186f8974108e4",
+    "timingBinding": {
+      "expectedCommitSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "expectedEnvironmentClass": "windows-x64-node22",
+      "status": "stale",
+      "observedCommitSha": null,
+      "observedEnvironmentClass": null,
+      "observedAt": null,
+      "provenance": null,
+      "artifactHashes": [],
+      "freshTimingCount": 0,
+      "staleTimingCount": 3,
+      "fallbackTimingCount": 3,
+      "fallbackIdentityKeys": [
+        "vitest::tests/core-a.test.ts",
+        "vitest::tests/core-b.test.ts",
+        "vitest::tests/feature.test.ts"
+      ],
+      "fallbackReasonCodes": ["TIMING_PROVENANCE_MISSING"]
+    },
+    "timingSnapshotHash": "sha256:0cf483ec5fb54e1eccd24893a6262046c47bfd75e323cc16c597ecfac4cc758b",
+    "timingPolicy": {
+      "unknownDurationMs": 60000,
+      "maxShardDurationMs": 60000,
+      "maxShardsPerLane": 4,
+      "prP95Minutes": 1
+    },
+    "weights": {
+      "vitest::tests/core-a.test.ts": 60000,
+      "vitest::tests/core-b.test.ts": 60000,
+      "vitest::tests/feature.test.ts": 60000
+    },
+    "shards": [
+      {
+        "lane": "core",
+        "shardId": "core-01",
+        "estimatedDurationMs": 60000,
+        "identityKeys": ["vitest::tests/core-a.test.ts"]
+      },
+      {
+        "lane": "core",
+        "shardId": "core-02",
+        "estimatedDurationMs": 60000,
+        "identityKeys": ["vitest::tests/core-b.test.ts"]
+      },
+      {
+        "lane": "feature",
+        "shardId": "feature-01",
+        "estimatedDurationMs": 60000,
+        "identityKeys": ["vitest::tests/feature.test.ts"]
+      }
+    ],
+    "gates": {
+      "shardCoverageMismatchCount": 0,
+      "shardDuplicateIdentityCount": 0,
+      "maxShardDurationExceededCount": 0,
+      "prWallClockBudgetExceededCount": 0,
+      "staleTimingUsedWithoutFallbackCount": 0
+    },
+    "shardPlanHash": "sha256:3608460f3c195b93b56aff0efa04aeb0f5584fdf1bfacf251b2766486042f675"
+  }
+}

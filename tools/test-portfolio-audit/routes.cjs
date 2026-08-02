@@ -6,7 +6,7 @@ const { normalizeRepoPath, sha256Bytes } = require('./canonical.cjs');
 
 const KNOWN_WRAPPER = Object.freeze({
   path: 'tools/run-root-tests.cjs',
-  sourceSha256: 'sha256:606dc9aced298e824225322eecca34f0e1054126cfcd46e7925a471397b635e8',
+  sourceSha256: 'sha256:2b7569597161915c94f45fe4811ae6f6385df4c6f84faad5f83b1f86c0812447',
   delegatedScripts: ['test:governance-fixtures', 'test:vitest:default', 'test:bmad-speckit'],
 });
 
@@ -418,8 +418,52 @@ function isDynamicScalar(value) {
   return typeof value === 'string' && /\$\{\{|\$\(|`/u.test(value);
 }
 
-function cartesianMatrix(matrix) {
+function governedMatrixContract(workflow, jobId, job, matrix) {
+  if (jobId !== 'execute-shard' || matrix !== '${{ fromJSON(needs.classify.outputs.matrix) }}') {
+    return false;
+  }
+  const classify = workflow.jobs?.classify;
+  const evidenceJoin = workflow.jobs?.['evidence-join'];
+  const classifySteps = Array.isArray(classify?.steps) ? classify.steps : [];
+  const manifestStep = classifySteps.find((step) => step?.id === 'manifest');
+  const executeSteps = Array.isArray(job?.steps) ? job.steps : [];
+  const shardStep = executeSteps.find((step) => typeof step?.run === 'string');
+  const joinSteps = Array.isArray(evidenceJoin?.steps) ? evidenceJoin.steps : [];
+  const joinStep = joinSteps.find((step) => typeof step?.run === 'string');
+  const executeNeeds = Array.isArray(job.needs) ? job.needs : [job.needs];
+  const joinNeeds = Array.isArray(evidenceJoin?.needs) ? evidenceJoin.needs : [evidenceJoin?.needs];
+  return (
+    classify?.outputs?.matrix === '${{ steps.manifest.outputs.matrix }}' &&
+    typeof manifestStep?.run === 'string' &&
+    /\bnpm\s+run\s+ci:manifest\b/u.test(manifestStep.run) &&
+    executeNeeds.length === 1 &&
+    executeNeeds[0] === 'classify' &&
+    typeof shardStep?.run === 'string' &&
+    /\bnpm\s+run\s+ci:run-shard\b/u.test(shardStep.run) &&
+    /\$\{\{\s*matrix\.lane\s*\}\}/u.test(shardStep.run) &&
+    /\$\{\{\s*matrix\.shardId\s*\}\}/u.test(shardStep.run) &&
+    !/\$\{\{\s*matrix\.(?!lane\b|shardId\b)[A-Za-z0-9_-]+\s*\}\}/u.test(shardStep.run) &&
+    evidenceJoin?.if === 'always()' &&
+    joinNeeds.length === 1 &&
+    joinNeeds[0] === 'execute-shard' &&
+    typeof joinStep?.run === 'string' &&
+    /\bnpm\s+run\s+ci:join\b/u.test(joinStep.run)
+  );
+}
+
+function isGovernedControlJob(workflow, jobId) {
+  const execute = workflow.jobs?.['execute-shard'];
+  return (
+    ['classify', 'execute-shard', 'evidence-join', 'ci-result'].includes(jobId) &&
+    governedMatrixContract(workflow, 'execute-shard', execute, execute?.strategy?.matrix)
+  );
+}
+
+function cartesianMatrix(matrix, { workflow, jobId, job } = {}) {
   if (matrix === undefined) return { combinations: [{}], matrix: false, issue: null };
+  if (governedMatrixContract(workflow, jobId, job, matrix)) {
+    return { combinations: [{}], matrix: true, issue: null, governed: true };
+  }
   if (!matrix || typeof matrix !== 'object' || Array.isArray(matrix)) {
     return { combinations: [], matrix: true, issue: 'WORKFLOW_MATRIX_DYNAMIC' };
   }
@@ -562,12 +606,14 @@ function buildExecutionRouteGraph({ repoRoot, inventory }) {
     for (const jobId of Object.keys(jobs).sort(compareText)) {
       const job = jobs[jobId];
       if (!job || typeof job !== 'object') continue;
-      const matrix = cartesianMatrix(job.strategy?.matrix);
+      const matrix = cartesianMatrix(job.strategy?.matrix, { workflow, jobId, job });
       const jobSourceRef = `source:${workflowPath}#jobs.${jobId}`;
       if (matrix.issue) {
         issues.push(workflowIssue(matrix.issue, `${jobSourceRef}.strategy.matrix`));
         continue;
       }
+
+      if (isGovernedControlJob(workflow, jobId)) continue;
 
       const steps = Array.isArray(job.steps) ? job.steps : [];
       for (const combination of matrix.combinations) {

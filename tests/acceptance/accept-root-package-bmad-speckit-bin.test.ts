@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
+import { resolveCanonicalPackageTarball } from '../helpers/canonical-package-artifact';
 
 const PKG_ROOT = join(import.meta.dirname, '..', '..');
 const NPM_CACHE_DIR = mkdtempSync(join(tmpdir(), 'accept-root-bin-npm-cache-'));
@@ -25,7 +26,7 @@ function run(cmd: string, cwd: string): string {
 }
 
 describe('root package bmad-speckit bin', () => {
-  it('file-installing bmad-speckit-sdd-flow exposes a working npx bmad-speckit entry', () => {
+  it('installing the canonical root package exposes a working npx bmad-speckit entry', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-root-bin-'));
     try {
       writeFileSync(
@@ -34,7 +35,8 @@ describe('root package bmad-speckit bin', () => {
         'utf8'
       );
 
-      run(`npm install --save-dev "file:${PKG_ROOT.replace(/\\/g, '/')}"`, target);
+      const tgz = resolveCanonicalPackageTarball(PKG_ROOT);
+      run(`npm install --save-dev "${tgz.replace(/\\/g, '/')}"`, target);
 
       const binCmd = join(target, 'node_modules', '.bin', 'bmad-speckit.cmd');
       expect(existsSync(binCmd)).toBe(true);
@@ -50,11 +52,9 @@ describe('root package bmad-speckit bin', () => {
   }, 120_000);
 
   it('tarball-installing bmad-speckit-sdd-flow on a clean consumer also exposes npx bmad-speckit', () => {
-    const packDir = mkdtempSync(join(tmpdir(), 'accept-root-bin-pack-'));
     const target = mkdtempSync(join(tmpdir(), 'accept-root-bin-tgz-'));
     try {
-      run(`npm pack --json --pack-destination "${packDir.replace(/\\/g, '/')}"`, PKG_ROOT);
-      const tgz = join(packDir, `bmad-speckit-sdd-flow-${ROOT_PACKAGE_VERSION}.tgz`);
+      const tgz = resolveCanonicalPackageTarball(PKG_ROOT);
       expect(existsSync(tgz)).toBe(true);
 
       writeFileSync(
@@ -78,16 +78,13 @@ describe('root package bmad-speckit bin', () => {
       expect(metadata.problems ?? []).toEqual([]);
     } finally {
       rmSync(target, { recursive: true, force: true });
-      rmSync(packDir, { recursive: true, force: true });
     }
   }, 240_000);
 
   it('npx --package root tgz can deploy install surface without mutating package.json or package-lock.json', () => {
-    const packDir = mkdtempSync(join(tmpdir(), 'accept-root-npx-pack-'));
     const target = mkdtempSync(join(tmpdir(), 'accept-root-npx-tgz-'));
     try {
-      run(`npm pack --json --pack-destination "${packDir.replace(/\\/g, '/')}"`, PKG_ROOT);
-      const tgz = join(packDir, `bmad-speckit-sdd-flow-${ROOT_PACKAGE_VERSION}.tgz`);
+      const tgz = resolveCanonicalPackageTarball(PKG_ROOT);
       expect(existsSync(tgz)).toBe(true);
 
       const packageJsonPath = join(target, 'package.json');
@@ -121,7 +118,6 @@ describe('root package bmad-speckit bin', () => {
       expect(existsSync(join(target, 'node_modules', 'bmad-speckit-sdd-flow'))).toBe(false);
     } finally {
       rmSync(target, { recursive: true, force: true });
-      rmSync(packDir, { recursive: true, force: true });
     }
   }, 240_000);
 
@@ -144,14 +140,8 @@ describe('root package bmad-speckit bin', () => {
       writeFileSync(packageLockPath, packageLock, 'utf8');
 
       const initEntry = join(PKG_ROOT, 'scripts', 'init-to-root.js').replace(/\\/g, '/');
-      const help = run(
-        `"${process.execPath}" "${initEntry}" --help`,
-        target
-      );
-      const version = run(
-        `"${process.execPath}" "${initEntry}" --version`,
-        target
-      );
+      const help = run(`"${process.execPath}" "${initEntry}" --help`, target);
+      const version = run(`"${process.execPath}" "${initEntry}" --version`, target);
 
       expect(help).toContain('Initialize a new bmad-speckit project');
       expect(help).toContain('--ai <name>');
@@ -167,11 +157,9 @@ describe('root package bmad-speckit bin', () => {
   }, 60_000);
 
   it('npx --package root tgz exposes ralph subcommands without requiring source-repo ts-node paths', () => {
-    const packDir = mkdtempSync(join(tmpdir(), 'accept-root-ralph-pack-'));
     const target = mkdtempSync(join(tmpdir(), 'accept-root-ralph-tgz-'));
     try {
-      run(`npm pack --json --pack-destination "${packDir.replace(/\\/g, '/')}"`, PKG_ROOT);
-      const tgz = join(packDir, `bmad-speckit-sdd-flow-${ROOT_PACKAGE_VERSION}.tgz`);
+      const tgz = resolveCanonicalPackageTarball(PKG_ROOT);
       expect(existsSync(tgz)).toBe(true);
 
       writeFileSync(
@@ -197,7 +185,6 @@ describe('root package bmad-speckit bin', () => {
       expect(existsSync(join(target, 'progress.tasks.txt'))).toBe(true);
     } finally {
       rmSync(target, { recursive: true, force: true });
-      rmSync(packDir, { recursive: true, force: true });
     }
   }, 240_000);
 

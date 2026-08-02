@@ -319,13 +319,39 @@ function isMkdtempPrefix(node) {
   );
 }
 
-function commandText(call, sourceFile) {
-  return call.arguments.map((argument) => expressionText(argument, sourceFile)).join(' ');
+function collectCommandHints(sourceFile) {
+  const hints = new Map();
+  walk(sourceFile, (node) => {
+    if (!ts.isVariableDeclaration(node) || !ts.isIdentifier(node.name) || !node.initializer) {
+      return;
+    }
+    const literals = [];
+    walk(node.initializer, (candidate) => {
+      if (ts.isStringLiteralLike(candidate)) literals.push(candidate.text);
+    });
+    if (literals.length > 0) hints.set(node.name.text, stableUnique(literals).join(' '));
+  });
+  return hints;
+}
+
+function commandText(call, sourceFile, commandHints) {
+  const parts = call.arguments.map((argument) => expressionText(argument, sourceFile));
+  for (const argument of call.arguments) {
+    walk(argument, (node) => {
+      if (ts.isIdentifier(node) && commandHints.has(node.text)) {
+        parts.push(commandHints.get(node.text));
+      }
+    });
+  }
+  return parts.join(' ');
 }
 
 function isRootBuildPackInstall(command) {
-  return /\b(?:npm|pnpm|yarn|bun)\b[\s\S]*\b(?:build|pack|install|ci|prepare|prepublish)\b/iu.test(
-    command
+  return (
+    /\b(?:npm|pnpm|yarn|bun)\b[\s\S]*\b(?:build|pack|install|ci|prepare|prepublish)\b/iu.test(
+      command
+    ) ||
+    /\b(?:build|pack|install|prepare|prepublish)[a-z0-9._-]*\.(?:cjs|mjs|js|ts)\b/iu.test(command)
   );
 }
 
@@ -351,6 +377,7 @@ function hasFixedPort(call) {
 function collectIsolationFacts(sourceFile, testPath) {
   const facts = createFacts();
   const safeEnvPositions = collectProvenEnvRestorePositions(sourceFile);
+  const commandHints = collectCommandHints(sourceFile);
 
   walk(sourceFile, (node) => {
     const assignment = assignmentParts(node);
@@ -380,7 +407,7 @@ function collectIsolationFacts(sourceFile, testPath) {
       addFact(facts, 'fixedPorts', lineRef(sourceFile, testPath, node, 'fixed-port'));
     }
     if (PROCESS_CALLS.has(name)) {
-      const command = commandText(node, sourceFile);
+      const command = commandText(node, sourceFile, commandHints);
       if (isRootBuildPackInstall(command)) {
         addFact(
           facts,

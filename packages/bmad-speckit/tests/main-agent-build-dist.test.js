@@ -11,11 +11,7 @@ const REPO_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
 let packageTestSession;
 
 function acquirePackageTestSessionLock(packageRoot) {
-  const lockDir = path.join(
-    packageRoot,
-    'node_modules',
-    '.package-test-session.lock'
-  );
+  const lockDir = path.join(packageRoot, 'node_modules', '.package-test-session.lock');
   fs.mkdirSync(path.dirname(lockDir), { recursive: true });
   const startedAt = Date.now();
   while (Date.now() - startedAt < 900_000) {
@@ -28,10 +24,7 @@ function acquirePackageTestSessionLock(packageRoot) {
       };
     } catch (error) {
       if (error.code !== 'EEXIST') throw error;
-      if (
-        fs.existsSync(lockDir) &&
-        Date.now() - fs.statSync(lockDir).mtimeMs > 7_200_000
-      ) {
+      if (fs.existsSync(lockDir) && Date.now() - fs.statSync(lockDir).mtimeMs > 7_200_000) {
         fs.rmSync(lockDir, { recursive: true, force: true });
         continue;
       }
@@ -378,7 +371,11 @@ describe('main-agent dist build', () => {
     assert.ok(pkg.files.includes('dist/'));
     assert.ok(pkg.files.includes('_bmad/'));
     assert.ok(pkg.files.includes('node_modules/@bmad-speckit/'));
-    assert.equal(pkg.files.includes('src/'), false, 'npm package must not publish source snapshots');
+    assert.equal(
+      pkg.files.includes('src/'),
+      false,
+      'npm package must not publish source snapshots'
+    );
     assert.equal(pkg.files.includes('tests/'), false, 'npm package must not publish package tests');
     assert.equal(
       pkg.files.includes('test-nonempty/'),
@@ -390,10 +387,10 @@ describe('main-agent dist build', () => {
   it('builds main-agent dist before release CI-equivalent tests', () => {
     const workflow = fs.readFileSync(RELEASE_WORKFLOW, 'utf8');
     const buildIndex = workflow.indexOf('npm run build:main-agent-dist');
-    const testIndex = workflow.indexOf('npm run test:ci');
+    const testIndex = workflow.indexOf('npm run ci:release-full');
 
     assert.notEqual(buildIndex, -1, 'release workflow must build main-agent dist');
-    assert.notEqual(testIndex, -1, 'release workflow must run CI-equivalent tests');
+    assert.notEqual(testIndex, -1, 'release workflow must run governed release-full tests');
     assert.ok(
       buildIndex < testIndex,
       'release workflow must build main-agent dist before tests invoke package CLI'
@@ -496,9 +493,7 @@ describe('main-agent dist build', () => {
       );
     }
     const actionBindingManifest = JSON.parse(actionBindingManifestBytes.toString('utf8'));
-    const manifestActionIds = actionBindingManifest.actions
-      .map((action) => action.actionId)
-      .sort();
+    const manifestActionIds = actionBindingManifest.actions.map((action) => action.actionId).sort();
     assert.deepEqual(
       manifestActionIds,
       registeredRuntimeActionIds(),
@@ -553,10 +548,7 @@ describe('main-agent dist build', () => {
       );
     }
     const projectionRegistry = JSON.parse(
-      fs.readFileSync(
-        path.join(REPO_ROOT, '_bmad', PROJECTION_REGISTRY_RELATIVE_PATH),
-        'utf8'
-      )
+      fs.readFileSync(path.join(REPO_ROOT, '_bmad', PROJECTION_REGISTRY_RELATIVE_PATH), 'utf8')
     );
     const artifactRoleProjection = projectionRegistry.projections.find(
       (projection) => projection.projectionId === 'artifact_role_registry'
@@ -579,18 +571,22 @@ describe('main-agent dist build', () => {
     assert.equal(fs.existsSync(RUNTIME_BUILD_AUTHORITY_RECEIPT), true);
     const runtimeManifest = JSON.parse(fs.readFileSync(RUNTIME_ASSET_MANIFEST, 'utf8'));
     assert.equal(runtimeManifest.schemaVersion, 'bmad-speckit-main-agent-runtime-assets/v2');
-    assert.equal(runtimeManifest.hashDomainRegistry.schemaVersion, 'requirements-contract-hash-domains/v2');
+    assert.equal(
+      runtimeManifest.hashDomainRegistry.schemaVersion,
+      'requirements-contract-hash-domains/v2'
+    );
     for (const entry of runtimeManifest.entries) {
       assert.match(entry.sourceBytesHash, /^sha256:[a-f0-9]{64}$/u);
       if (entry.materialization !== 'build_metadata') {
         assert.match(entry.targetBytesHash, /^sha256:[a-f0-9]{64}$/u);
       }
     }
-    const buildAuthority = JSON.parse(
-      fs.readFileSync(RUNTIME_BUILD_AUTHORITY_RECEIPT, 'utf8')
-    );
+    const buildAuthority = JSON.parse(fs.readFileSync(RUNTIME_BUILD_AUTHORITY_RECEIPT, 'utf8'));
     assert.equal(buildAuthority.schemaVersion, 'bmad-speckit-runtime-build-authority/v1');
-    assert.equal(buildAuthority.hashDomainRegistry.schemaVersion, 'requirements-contract-hash-domains/v2');
+    assert.equal(
+      buildAuthority.hashDomainRegistry.schemaVersion,
+      'requirements-contract-hash-domains/v2'
+    );
     for (const field of [
       'sourceInputManifestHash',
       'buildScriptHash',
@@ -603,15 +599,9 @@ describe('main-agent dist build', () => {
       assert.match(buildAuthority[field], /^sha256:[a-f0-9]{64}$/u, `${field} is required`);
     }
     assert.equal(buildAuthority.decision, 'pass');
-    for (const packageId of JSON.parse(fs.readFileSync(PACKAGE_JSON, 'utf8'))
-      .bundleDependencies) {
+    for (const packageId of JSON.parse(fs.readFileSync(PACKAGE_JSON, 'utf8')).bundleDependencies) {
       const packageName = packageId.slice('@bmad-speckit/'.length);
-      const bundledRoot = path.join(
-        PACKAGE_ROOT,
-        'node_modules',
-        '@bmad-speckit',
-        packageName
-      );
+      const bundledRoot = path.join(PACKAGE_ROOT, 'node_modules', '@bmad-speckit', packageName);
       assert.equal(
         fs.existsSync(path.join(bundledRoot, 'package.json')),
         true,
@@ -939,10 +929,7 @@ describe('main-agent dist build', () => {
 
   it('fails closed when the repository _bmad source set cannot be enumerated', () => {
     const buildSource = fs.readFileSync(BUILD_SCRIPT, 'utf8');
-    assert.match(
-      buildSource,
-      /repository _bmad source enumeration failed/u
-    );
+    assert.match(buildSource, /repository _bmad source enumeration failed/u);
     assert.doesNotMatch(
       buildSource,
       /sourceFiles === null[\s\S]*?fs\.cpSync\(repoBmadRoot,\s*packageBmadRoot/u
@@ -966,25 +953,11 @@ describe('main-agent dist build', () => {
 
   it('publishes Sequence mode runtime without legacy prose matching', () => {
     const requiredRuntimePaths = [
-      path.join(
-        PACKAGE_DIST_ROOT,
-        'utils',
-        'goal-contract',
-        'sequence-mode.js'
-      ),
-      path.join(
-        PACKAGE_DIST_ROOT,
-        'utils',
-        'goal-contract',
-        'sequence-applicability-adapter.js'
-      ),
+      path.join(PACKAGE_DIST_ROOT, 'utils', 'goal-contract', 'sequence-mode.js'),
+      path.join(PACKAGE_DIST_ROOT, 'utils', 'goal-contract', 'sequence-applicability-adapter.js'),
     ];
     for (const runtimePath of requiredRuntimePaths) {
-      assert.equal(
-        fs.existsSync(runtimePath),
-        true,
-        `missing Sequence runtime: ${runtimePath}`
-      );
+      assert.equal(fs.existsSync(runtimePath), true, `missing Sequence runtime: ${runtimePath}`);
     }
 
     const compiledCommand = fs.readFileSync(
@@ -1002,9 +975,7 @@ describe('main-agent dist build', () => {
           text.includes('sequence applicability is unresolved.')
         );
       })
-      .map((filePath) =>
-        path.relative(PACKAGE_DIST_ROOT, filePath).replace(/\\/g, '/')
-      );
+      .map((filePath) => path.relative(PACKAGE_DIST_ROOT, filePath).replace(/\\/g, '/'));
     assert.deepEqual(legacyMatcherOffenders, []);
   });
 
@@ -1015,13 +986,8 @@ describe('main-agent dist build', () => {
       stdio: 'pipe',
     });
 
-    const buildAuthority = JSON.parse(
-      fs.readFileSync(RUNTIME_BUILD_AUTHORITY_RECEIPT, 'utf8')
-    );
-    assert.equal(
-      buildAuthority.packageAssetCount,
-      buildAuthority.packageAssetEntries.length
-    );
+    const buildAuthority = JSON.parse(fs.readFileSync(RUNTIME_BUILD_AUTHORITY_RECEIPT, 'utf8'));
+    assert.equal(buildAuthority.packageAssetCount, buildAuthority.packageAssetEntries.length);
     assert.deepEqual(
       buildAuthority.packageAssetEntries.map((entry) => entry.target),
       [...buildAuthority.packageAssetEntries]
@@ -1091,19 +1057,11 @@ describe('main-agent dist build', () => {
       stdio: 'pipe',
     });
     const compiled = fs.readFileSync(
-      path.join(
-        PACKAGE_DIST_ROOT,
-        'utils',
-        'goal-contract',
-        'execution-projection.js'
-      ),
+      path.join(PACKAGE_DIST_ROOT, 'utils', 'goal-contract', 'execution-projection.js'),
       'utf8'
     );
 
-    assert.match(
-      compiled,
-      /path\.resolve\(__dirname,\s*'\.\.',\s*'\.\.',\s*'\.\.'\)/u
-    );
+    assert.match(compiled, /path\.resolve\(__dirname,\s*'\.\.',\s*'\.\.',\s*'\.\.'\)/u);
     assert.doesNotMatch(
       compiled,
       /path\.resolve\(__dirname,\s*'\.\.',\s*'\.\.',\s*'\.\.',\s*'\.\.',\s*'\.\.'\)/u
@@ -1129,11 +1087,9 @@ describe('main-agent dist build', () => {
         'scripts',
         'src',
       ]) {
-        fs.cpSync(
-          path.join(PACKAGE_ROOT, relativePath),
-          path.join(cloneRoot, relativePath),
-          { recursive: true }
-        );
+        fs.cpSync(path.join(PACKAGE_ROOT, relativePath), path.join(cloneRoot, relativePath), {
+          recursive: true,
+        });
       }
       fs.copyFileSync(
         path.join(REPO_ROOT, 'package-lock.json'),
@@ -1151,12 +1107,7 @@ describe('main-agent dist build', () => {
       );
       const receipt = JSON.parse(
         fs.readFileSync(
-          path.join(
-            cloneRoot,
-            'dist',
-            'main-agent',
-            'runtime-build-authority-receipt.json'
-          ),
+          path.join(cloneRoot, 'dist', 'main-agent', 'runtime-build-authority-receipt.json'),
           'utf8'
         )
       );
@@ -1216,10 +1167,7 @@ describe('main-agent dist build', () => {
       stdio: 'pipe',
     });
 
-    assert.equal(
-      fs.existsSync(path.join(DIST_ROOT, 'source-authority', '_bmad-output')),
-      false
-    );
+    assert.equal(fs.existsSync(path.join(DIST_ROOT, 'source-authority', '_bmad-output')), false);
   });
 
   it('builds package _bmad mirror before source-authority import rewriting', () => {
@@ -1251,13 +1199,8 @@ describe('main-agent dist build', () => {
       'bmads-auto',
       `.package-runtime-owner-ignore-${process.pid}.sentinel`
     );
-    const repositoryRelativePath = path
-      .relative(REPO_ROOT, ignoredSourcePath)
-      .replace(/\\/gu, '/');
-    const packageRelativePath = path.relative(
-      path.join(REPO_ROOT, '_bmad'),
-      ignoredSourcePath
-    );
+    const repositoryRelativePath = path.relative(REPO_ROOT, ignoredSourcePath).replace(/\\/gu, '/');
+    const packageRelativePath = path.relative(path.join(REPO_ROOT, '_bmad'), ignoredSourcePath);
     fs.mkdirSync(path.dirname(ignoredSourcePath), { recursive: true });
     fs.writeFileSync(ignoredSourcePath, 'ignored package runtime sentinel\n', 'utf8');
     try {
@@ -1284,18 +1227,17 @@ describe('main-agent dist build', () => {
       cwd: REPO_ROOT,
       encoding: 'utf8',
     });
-    const bundledRuntimeRoot = path.join(
-      PACKAGE_ROOT,
-      'node_modules',
-      '@bmad-speckit'
-    );
+    const bundledRuntimeRoot = path.join(PACKAGE_ROOT, 'node_modules', '@bmad-speckit');
     const testOnlyPaths = collectFiles(bundledRuntimeRoot)
       .map((filePath) => path.relative(bundledRuntimeRoot, filePath).replace(/\\/g, '/'))
       .filter((filePath) =>
-        filePath.split('/').some((segment) =>
-          ['__tests__', 'tests', 'test-nonempty'].includes(segment) ||
-          segment.startsWith('__fixtures')
-        )
+        filePath
+          .split('/')
+          .some(
+            (segment) =>
+              ['__tests__', 'tests', 'test-nonempty'].includes(segment) ||
+              segment.startsWith('__fixtures')
+          )
       );
 
     assert.deepEqual(testOnlyPaths, []);
