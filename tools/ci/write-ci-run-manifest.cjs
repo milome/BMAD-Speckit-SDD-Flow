@@ -431,7 +431,7 @@ function appendGitHubOutputs(manifest, manifestPath) {
   fs.appendFileSync(
     outputPath,
     [
-      `matrix=${JSON.stringify(manifest.matrix)}`,
+      `matrix=${JSON.stringify({ include: manifest.matrix })}`,
       `manifest_path=${manifestPath.replace(/\\/g, '/')}`,
       `plan_hash=${manifest.planHash}`,
       '',
