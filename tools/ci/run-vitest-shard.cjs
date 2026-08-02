@@ -631,7 +631,7 @@ function main(args = process.argv.slice(2)) {
     filePath: manifestPath,
   }).artifact;
   let environment = {};
-  if (options.lane === 'consumer_install') {
+  if (options.descriptor) {
     const descriptorPath = path.resolve(options.descriptor);
     const descriptor = readCanonicalArtifact({
       repoRoot,

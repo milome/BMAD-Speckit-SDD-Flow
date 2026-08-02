@@ -8,6 +8,8 @@ const {
 } = require('./tests/contract-command-selector-preflight.cjs');
 
 const isGovernedShard = process.env.CI_GOVERNED_SHARD === '1';
+const hasGovernedCanonicalPackage =
+  isGovernedShard && Boolean(process.env.BMAD_SPECKIT_TARBALL);
 delete process.env.CI_GOVERNED_SHARD;
 
 if (!isGovernedShard) {
@@ -31,7 +33,8 @@ const consumerInstallFinalTests = [
 ];
 const explicitlyRequested = (file: string) =>
   explicitArgs.has(file) || [...explicitArgs].some((arg) => arg.endsWith(`/${file}`));
-const requiresCanonicalPackage = consumerInstallFinalTests.some(explicitlyRequested);
+const requiresCanonicalPackage =
+  hasGovernedCanonicalPackage || consumerInstallFinalTests.some(explicitlyRequested);
 
 /** Exclude bmad-speckit tests (use node:test); they run via test:bmad-speckit, invoked after vitest in npm test */
 export default defineConfig({
@@ -59,7 +62,9 @@ export default defineConfig({
       'tests/acceptance/main-agent-long-run-soak-wall-clock.test.ts',
       // Consumer install/package final-state tests stay out of default discovery,
       // but exact file commands must still be runnable for contract evidence.
-      ...consumerInstallFinalTests.filter((file) => !explicitlyRequested(file)),
+      ...(isGovernedShard
+        ? []
+        : consumerInstallFinalTests.filter((file) => !explicitlyRequested(file))),
     ],
     /** Reduce flaky timeout failures for integration tests (parse-and-write, dashboard-epic-aggregate, hash) */
     testTimeout: 20000,
