@@ -443,9 +443,22 @@ describe('main-agent release gate contract', () => {
       expect(run.exitCode).toBe(0);
       const report = JSON.parse(fs.readFileSync(reportPath, 'utf8')) as {
         checks: Array<{ id: string; passed: boolean }>;
+        evidence_provenance: {
+          runId: string;
+          storyKey: string;
+          evidenceBundleId: string;
+          contractHash: string;
+          gateReportHash?: string;
+          completionToken?: string;
+          attemptId?: string;
+          expiresAt?: string;
+        };
         completion_intent?: {
           token: string;
+          runId: string;
           storyKey: string;
+          evidenceBundleId: string;
+          attemptId: string;
           contractHash: string;
           gateReportHash: string;
           singleUse: boolean;
@@ -460,17 +473,26 @@ describe('main-agent release gate contract', () => {
         'sprint-status-update-audit.json'
       );
       const sprintAudit = JSON.parse(fs.readFileSync(sprintAuditPath, 'utf8')) as {
+        runId: string;
         storyKey: string;
+        evidenceBundleId: string;
         status: string;
         authorized: boolean;
         evidence_provenance: {
           runId: string;
           storyKey: string;
           evidenceBundleId: string;
+          contractHash?: string;
+          gateReportHash?: string;
+          completionToken?: string;
+          attemptId?: string;
+          expiresAt?: string;
         };
         gateReportHash: string;
         contractHash: string;
         token: string;
+        attemptId: string;
+        expiresAt: string;
         singleUse: boolean;
       };
       expect(report.checks.find((item) => item.id === 'execution-audit-ledger')?.passed).toBe(true);
@@ -486,18 +508,42 @@ describe('main-agent release gate contract', () => {
           )
           .digest('hex')
       );
-      expect(sprintAudit).toMatchObject({
+      expect(report.completion_intent).toMatchObject({
+        runId: 'run-pass',
         storyKey: 'S-release',
+        evidenceBundleId: 'bundle-pass',
+        contractHash: report.evidence_provenance.contractHash,
+        gateReportHash: report.evidence_provenance.gateReportHash,
+      });
+      expect(report.evidence_provenance).toMatchObject({
+        runId: 'run-pass',
+        storyKey: 'S-release',
+        evidenceBundleId: 'bundle-pass',
+        completionToken: report.completion_intent?.token,
+        attemptId: report.completion_intent?.attemptId,
+        expiresAt: report.completion_intent?.expiresAt,
+      });
+      expect(sprintAudit).toMatchObject({
+        runId: 'run-pass',
+        storyKey: 'S-release',
+        evidenceBundleId: 'bundle-pass',
         status: 'done',
         authorized: true,
         gateReportHash: report.completion_intent?.gateReportHash,
         contractHash: report.completion_intent?.contractHash,
         token: report.completion_intent?.token,
+        attemptId: report.completion_intent?.attemptId,
+        expiresAt: report.completion_intent?.expiresAt,
         singleUse: true,
         evidence_provenance: {
           runId: 'run-pass',
           storyKey: 'S-release',
           evidenceBundleId: 'bundle-pass',
+          contractHash: report.completion_intent?.contractHash,
+          gateReportHash: report.completion_intent?.gateReportHash,
+          completionToken: report.completion_intent?.token,
+          attemptId: report.completion_intent?.attemptId,
+          expiresAt: report.completion_intent?.expiresAt,
         },
       });
     } finally {
@@ -645,6 +691,98 @@ describe('main-agent release gate contract', () => {
         false
       );
       expect(report.blocking_reasons.join('\n')).toContain('provenance mismatch');
+    } finally {
+      fs.rmSync(reportDir, { recursive: true, force: true });
+    }
+  });
+
+  it('appends same-run provenance to package CLI host-matrix commands', () => {
+    const reportDir = fs.mkdtempSync(path.join(os.tmpdir(), 'release-gate-cli-provenance-'));
+    try {
+      const reportPath = path.join(reportDir, 'report.json');
+      const hostMatrixPath = path.join(reportDir, 'host-matrix.json');
+      const prTopologyPath = path.join(reportDir, 'pr-topology.json');
+      const e2eScript = path.join(reportDir, 'write-host-matrix.cjs');
+      fs.writeFileSync(
+        e2eScript,
+        [
+          "const fs = require('node:fs');",
+          "const args = process.argv.slice(2);",
+          "const get = (name) => args[args.indexOf(name) + 1];",
+          "const provenance = {",
+          "  runId: get('--runId'),",
+          "  storyKey: get('--storyKey'),",
+          "  evidenceBundleId: get('--evidenceBundleId'),",
+          "  gateReportHash: 'host-matrix-artifact-hash',",
+          "};",
+          'const hostMatrix = {',
+          "  journeyMode: 'real',",
+          '  journeyE2EPassed: true,',
+          '  hostsPassed: { claude: true, codex: true },',
+          "  hostMatrix: { matrixType: 'main_agent_multi_host_matrix', requiredHosts: ['cursor', 'claude', 'codex'], hostsPassed: { cursor: true, claude: true, codex: true }, allRequiredHostsPassed: true, legacyDualHostPassed: true },",
+          '  githubPrApi: { attempted: false, passed: true, prUrl: null, steps: [] },',
+          '  evidence_provenance: provenance,',
+          '};',
+          'const prTopology = {',
+          '  version: 1,',
+          "  batch_id: 'release-gate-cli-provenance',",
+          "  required_nodes: [{ node_id: 'node-1', target_pr: 'PR-1', depends_on: [], state: 'merged' }],",
+          '  all_affected_stories_passed: true,',
+          '  evidence_provenance: provenance,',
+          '};',
+          `fs.writeFileSync(${JSON.stringify(hostMatrixPath)}, JSON.stringify(hostMatrix), 'utf8');`,
+          `fs.writeFileSync(${JSON.stringify(prTopologyPath)}, JSON.stringify(prTopology), 'utf8');`,
+          'process.exit(0);',
+        ].join('\n') + '\n',
+        'utf8'
+      );
+      const evidence = writeReleaseGateEvidence(reportDir, {
+        runId: 'run-pass',
+        storyKey: 'S-release',
+        evidenceBundleId: 'bundle-pass',
+      });
+      const ledgerPath = writePassingLedger(reportDir);
+      const packageCliLikeCommand = `${process.execPath} ${JSON.stringify(e2eScript)} main-agent host-matrix-pr-orchestrator`;
+
+      const run = runReleaseGate(
+        {
+          MAIN_AGENT_RELEASE_GATE_E2E_COMMAND: packageCliLikeCommand,
+          MAIN_AGENT_RELEASE_GATE_REPORT_PATH: reportPath,
+          MAIN_AGENT_RELEASE_GATE_SKIP_QUALITY_PRODUCER: 'true',
+        },
+        true,
+        [
+          '--hostMatrixPath',
+          hostMatrixPath,
+          '--prTopologyPath',
+          prTopologyPath,
+          '--qualityGatePath',
+          evidence.qualityGatePath,
+          '--singleSourceCommand',
+          `${process.execPath} -e "process.exit(0)"`,
+          '--rerunGateCommand',
+          `${process.execPath} -e "process.exit(0)"`,
+          ...sameRunArgs(),
+          '--ledgerPath',
+          ledgerPath,
+          '--skipSprintStatusUpdate',
+          'true',
+        ]
+      );
+
+      expect(run.exitCode).toBe(0);
+      const hostMatrix = JSON.parse(fs.readFileSync(hostMatrixPath, 'utf8')) as {
+        evidence_provenance?: {
+          runId?: string;
+          storyKey?: string;
+          evidenceBundleId?: string;
+        };
+      };
+      expect(hostMatrix.evidence_provenance).toMatchObject({
+        runId: 'run-pass',
+        storyKey: 'S-release',
+        evidenceBundleId: 'bundle-pass',
+      });
     } finally {
       fs.rmSync(reportDir, { recursive: true, force: true });
     }

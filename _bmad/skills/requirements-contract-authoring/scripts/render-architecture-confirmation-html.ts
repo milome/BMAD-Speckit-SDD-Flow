@@ -78,6 +78,10 @@ function text(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function hasCjk(value) {
+  return /[\u3400-\u9fff]/u.test(text(value));
+}
+
 function object(value) {
   return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 }
@@ -185,13 +189,15 @@ function renderValue(value) {
   return escapeHtml(value ?? '');
 }
 
-function renderObjectTable(rows, preferredFields) {
+function renderObjectTable(rows, preferredFields, fieldLabels = {}) {
   const objects = array(rows).filter((row) => row && typeof row === 'object' && !Array.isArray(row));
   if (objects.length === 0) return '<p class="empty">源工件未提供该视图数据。</p>';
   const fieldSet = new Set(preferredFields);
   for (const row of objects) Object.keys(row).forEach((key) => fieldSet.add(key));
   const fields = Array.from(fieldSet).filter((field) => objects.some((row) => row[field] !== undefined));
-  const head = fields.map((field) => `<th>${escapeHtml(field)}</th>`).join('');
+  const head = fields
+    .map((field) => `<th>${escapeHtml(fieldLabels[field] || field)}</th>`)
+    .join('');
   const body = objects
     .map((row) => {
       const cells = fields
@@ -235,6 +241,15 @@ function getUiText(language) {
     navMetadata: '工件元数据',
     draftTitleSuffix: '架构确认草案',
     projectionNote: '该页面是 requirement-scoped 架构确认 JSON 的用户可读投影。它不写入 architectureConfirmations[]，确认后必须通过 controlled ingest 写入。',
+    confirmabilityLabels: {
+      confirmable: '可确认',
+      blocked: '已阻断',
+    },
+    statusLabels: {
+      draft: '草案',
+      active: '已生效',
+    },
+    none: '无',
     confirmationScope: '确认范围',
     currentDecision: '当前结论',
     currentDecisionText: (count) => `命中 ${count} 个完整架构触发项；必须先确认架构再进入实施准备。`,
@@ -243,7 +258,7 @@ function getUiText(language) {
     blockers: '阻断项',
     fingerprint: '确认指纹',
     architectureDelta: '本次架构确认重点',
-    architectureDeltaLead: '本区先展示本次确认真正需要 review 的架构影响、有效范围和 stale 输入；完整 targetPaths 与触发矩阵保留在下方作为明细。',
+    architectureDeltaLead: '本区优先展示本次确认需要审阅的架构影响、有效范围和过期输入；完整目标路径与触发矩阵保留在下方作为明细。',
     targetPaths: '目标路径',
     consumerTriggered: '消费项目触发项',
     governanceTriggered: '治理系统触发项',
@@ -253,7 +268,7 @@ function getUiText(language) {
     focusRows: '重点影响行',
     targetPathSamples: '有效路径样例',
     businessArchitectureDiagrams: '业务架构图谱',
-    businessArchitectureDiagramsLead: '本区聚焦消费项目业务行为、用户界面、设置状态和验收路径；缺少任一必需业务视图都不能进入实施准备。',
+    businessArchitectureDiagramsLead: '本区聚焦消费项目业务行为、运行时交互、数据状态和验收路径；缺少任一必需业务视图都不能进入实施准备。',
     governanceArchitectureDiagrams: '治理架构图谱',
     governanceArchitectureDiagramsLead: '本区保留确认、ingest、record 和 hash recipe 的治理架构视图，用于审阅流程控制边界。',
     diagramEvidenceRefs: '证据',
@@ -264,7 +279,7 @@ function getUiText(language) {
     expandDiagrams: '展开全部',
     singleDiagram: '单图模式',
     mermaidRuntimeMissing: 'Mermaid runtime 不可用；保留源码但不能渲染为图。',
-    mermaidRuntimeEmbedded: 'Mermaid runtime embedded',
+    mermaidRuntimeEmbedded: 'Mermaid 运行时已内嵌',
     businessMermaidVisual: '业务 Mermaid 图',
     governanceMermaidVisual: '治理 Mermaid 图',
     fallbackDiagram: '紧凑 fallback 图',
@@ -289,7 +304,28 @@ function getUiText(language) {
     riskAndRollback: '风险与回滚',
     missingRisk: '源工件未提供 riskStatement。',
     missingRollback: '源工件未提供 rollbackPlan。',
-    evidence: 'Evidence',
+    evidence: '证据',
+    riskLabel: '风险',
+    rollbackLabel: '回滚',
+    staleInputsLabel: '过期输入',
+    missingDiagram: (type) => `缺少 ${type} 图`,
+    moreEdges: (count) => `另有 ${count} 条关系`,
+    sourceLabels: {
+      consumerImpactScan: '消费项目影响扫描',
+      governanceImpactScan: '治理系统影响扫描',
+      fullArchitectureTriggerMatrix: '完整架构触发矩阵',
+    },
+    fieldLabels: {
+      source: '来源',
+      category: '类别',
+      status: '状态',
+      summary: '摘要',
+      description: '说明',
+      requiredDecision: '待确认决策',
+      trigger: '触发项',
+      decision: '判定',
+      reason: '原因',
+    },
     confirmationPhrase: '确认口令',
     copyPhrase: '复制确认口令',
     copyMissing: '未找到确认口令。',
@@ -313,6 +349,15 @@ function getUiText(language) {
     navMetadata: 'Artifact Metadata',
     draftTitleSuffix: 'Architecture Confirmation Draft',
     projectionNote: 'This page is a user-readable projection of the requirement-scoped architecture confirmation JSON. It does not write architectureConfirmations[]; after user confirmation, controlled ingest must record it.',
+    confirmabilityLabels: {
+      confirmable: 'confirmable',
+      blocked: 'blocked',
+    },
+    statusLabels: {
+      draft: 'draft',
+      active: 'active',
+    },
+    none: 'none',
     confirmationScope: 'Confirmation Scope',
     currentDecision: 'Current Decision',
     currentDecisionText: (count) => `${count} full-architecture trigger item(s) matched; architecture must be confirmed before implementation readiness.`,
@@ -368,6 +413,27 @@ function getUiText(language) {
     missingRisk: 'The source artifact did not provide riskStatement.',
     missingRollback: 'The source artifact did not provide rollbackPlan.',
     evidence: 'Evidence',
+    riskLabel: 'Risk',
+    rollbackLabel: 'Rollback',
+    staleInputsLabel: 'Stale Inputs',
+    missingDiagram: (type) => `missing ${type}`,
+    moreEdges: (count) => `+${count} more edges`,
+    sourceLabels: {
+      consumerImpactScan: 'Consumer Impact Scan',
+      governanceImpactScan: 'Governance Impact Scan',
+      fullArchitectureTriggerMatrix: 'Full Architecture Trigger Matrix',
+    },
+    fieldLabels: {
+      source: 'Source',
+      category: 'Category',
+      status: 'Status',
+      summary: 'Summary',
+      description: 'Description',
+      requiredDecision: 'Required Decision',
+      trigger: 'Trigger',
+      decision: 'Decision',
+      reason: 'Reason',
+    },
     confirmationPhrase: 'Confirmation Phrase',
     copyPhrase: 'Copy Confirmation Phrase',
     copyMissing: 'Confirmation phrase not found.',
@@ -415,26 +481,57 @@ function firstText(...values) {
   return '';
 }
 
-function summarizeScanRows(rows) {
+function localizedText(row, field, language) {
+  if (language === 'zh-CN') return text(row?.[`${field}Zh`]);
+  if (language === 'bilingual') {
+    const zh = text(row?.[`${field}Zh`]);
+    const en = text(row?.[field]);
+    return zh && en ? `${zh} / ${en}` : zh || en;
+  }
+  return text(row?.[field]);
+}
+
+function isTriggeredRow(row) {
+  const value = firstText(row?.status, row?.decision).toLowerCase();
+  return value.includes('triggered') && !value.includes('not_triggered');
+}
+
+function projectRows(rows, fields, language) {
+  return array(rows).map((value) => {
+    const row = object(value);
+    return Object.fromEntries(fields.map((field) => [field, localizedText(row, field, language)]));
+  });
+}
+
+function summarizeScanRows(rows, language) {
   const normalized = array(rows).map((row) => object(row));
   return {
     total: normalized.length,
-    triggered: normalized.filter((row) => firstText(row.status, row.decision).includes('triggered') && !firstText(row.status, row.decision).includes('not_triggered')).length,
+    triggered: normalized.filter((row) => isTriggeredRow(row)).length,
     reviewRows: normalized
       .filter((row) => firstText(row.status, row.decision).includes('triggered') || firstText(row.requiredDecision))
       .map((row) => ({
-        category: firstText(row.category, row.trigger, row.name),
-        status: firstText(row.status, row.decision),
-        summary: firstText(row.summary, row.reason, row.description, row.requiredDecision),
+        category:
+          localizedText(row, 'category', language) ||
+          localizedText(row, 'trigger', language) ||
+          localizedText(row, 'name', language),
+        status:
+          localizedText(row, 'status', language) ||
+          localizedText(row, 'decision', language),
+        summary:
+          localizedText(row, 'summary', language) ||
+          localizedText(row, 'reason', language) ||
+          localizedText(row, 'description', language) ||
+          localizedText(row, 'requiredDecision', language),
       })),
   };
 }
 
-function buildArchitectureDelta(confirmation, validation) {
+function buildArchitectureDelta(confirmation, validation, language = 'en-US') {
   const targetPaths = array(confirmation.targetPaths).map((item) => text(item)).filter(Boolean);
-  const consumer = summarizeScanRows(confirmation.consumerImpactScan);
-  const governance = summarizeScanRows(confirmation.governanceImpactScan);
-  const triggers = summarizeScanRows(confirmation.fullArchitectureTriggerMatrix);
+  const consumer = summarizeScanRows(confirmation.consumerImpactScan, language);
+  const governance = summarizeScanRows(confirmation.governanceImpactScan, language);
+  const triggers = summarizeScanRows(confirmation.fullArchitectureTriggerMatrix, language);
   const staleInputs = object(confirmation.staleInputs);
   const staleInputRows = Object.entries(staleInputs)
     .filter(([, value]) => text(value))
@@ -467,7 +564,7 @@ function buildArchitectureDelta(confirmation, validation) {
 
 function renderArchitectureDelta(delta, ui) {
   const focusRows = delta.reviewFocus.slice(0, 24).map((row) => [
-    row.source,
+    ui.sourceLabels[row.source] || row.source,
     row.category,
     row.status,
     row.summary,
@@ -487,21 +584,26 @@ function renderArchitectureDelta(delta, ui) {
       <div class="review-flow">
         <section class="review-step">
           <h3>${escapeHtml(ui.focusRows)}</h3>
-          ${focusRows.length ? renderObjectTable(focusRows.map(([source, category, status, summary]) => ({ source, category, status, summary })), ['source', 'category', 'status', 'summary']) : `<p class="empty">${escapeHtml(ui.noTriggeredRows)}</p>`}
+          ${focusRows.length ? renderObjectTable(focusRows.map(([source, category, status, summary]) => ({ source, category, status, summary })), ['source', 'category', 'status', 'summary'], ui.fieldLabels) : `<p class="empty">${escapeHtml(ui.noTriggeredRows)}</p>`}
         </section>
         <section class="review-step">
           <h3>${escapeHtml(ui.targetPathSamples)}</h3>
           <div class="pill-list">${renderList(delta.sampleTargetPaths)}</div>
         </section>
         <section class="review-step">
-          <h3>Stale Inputs</h3>
+          <h3>${escapeHtml(ui.staleInputsLabel)}</h3>
           ${staleRows.length ? renderObjectTable(staleRows.map(([field, value]) => ({ field, value })), ['field', 'value']) : `<p class="empty">${escapeHtml(ui.noStaleInputs)}</p>`}
         </section>
       </div>
     </section>`;
 }
 
-function normalizeArchitectureDiagrams(confirmation, fieldName = 'architectureDiagrams', fallbackFieldName = '') {
+function normalizeArchitectureDiagrams(
+  confirmation,
+  fieldName = 'architectureDiagrams',
+  fallbackFieldName = '',
+  language = 'en-US'
+) {
   const byType = new Map();
   const hasPrimaryField = Object.prototype.hasOwnProperty.call(confirmation, fieldName);
   const primaryRows = array(confirmation[fieldName]);
@@ -516,9 +618,9 @@ function normalizeArchitectureDiagrams(confirmation, fieldName = 'architectureDi
       ? {
           id: text(row.id) || `ARCH-VIEW-${type.toUpperCase().replace(/[^A-Z0-9]+/gu, '-')}`,
           type,
-          title: text(row.title),
-          description: text(row.description),
-          mermaid: text(row.mermaid),
+          title: localizedText(row, 'title', language),
+          description: localizedText(row, 'description', language),
+          mermaid: localizedText(row, 'mermaid', language),
           evidenceRefs: array(row.evidenceRefs).map(text).filter(Boolean),
           targetPathRefs: array(row.targetPathRefs).map(text).filter(Boolean),
           triggerRefs: array(row.triggerRefs).map(text).filter(Boolean),
@@ -574,7 +676,7 @@ function simplifyMermaidLine(line) {
     .trim();
 }
 
-function renderCompactMermaidFallback(diagram, mermaid) {
+function renderCompactMermaidFallback(diagram, mermaid, ui) {
   const items = String(mermaid ?? '')
     .split(/\r?\n/u)
     .map((line) => ({
@@ -598,12 +700,12 @@ function renderCompactMermaidFallback(diagram, mermaid) {
     )
     .join('')}${
     hiddenCount > 0
-      ? `<div class="flow-step-card muted-card"><strong>+${hiddenCount} more edges</strong></div>`
+      ? `<div class="flow-step-card muted-card"><strong>${escapeHtml(ui.moreEdges(hiddenCount))}</strong></div>`
       : ''
   }</div>`;
 }
 
-function renderMermaidNativeBlock(diagram, mermaid) {
+function renderMermaidNativeBlock(diagram, mermaid, ui) {
   const diagramHash = sha256Text(mermaid);
   const diagramKind = inferMermaidDiagramKind(mermaid);
   return `<pre class="mermaid-source-native" data-mermaid-source data-mermaid-normalized="false">${escapeHtml(mermaid)}</pre>
@@ -613,7 +715,8 @@ function renderMermaidNativeBlock(diagram, mermaid) {
     <p class="mermaid-runtime-error blocked" data-mermaid-error hidden></p>
     <details class="fallback-diagram"><summary>${escapeHtml(diagram.fallbackLabel)}</summary>${renderCompactMermaidFallback(
       diagram,
-      mermaid
+      mermaid,
+      ui
     )}</details>
     <details><summary>${escapeHtml(diagram.sourceLabel)}</summary><pre>${escapeHtml(mermaid)}</pre><code>${escapeHtml(diagramHash)}</code></details>`;
 }
@@ -645,14 +748,15 @@ function renderArchitectureDiagrams({ sectionId, title, lead, diagrams, ui, merm
         ${description ? `<p class="muted">${escapeHtml(description)}</p>` : ''}
         ${
           missing
-            ? `<p class="empty">${escapeHtml(`missing ${diagram.type}`)}</p>`
+            ? `<p class="empty">${escapeHtml(ui.missingDiagram(diagram.type))}</p>`
             : `<div class="diagram-rendered" tabindex="0"><h4>${escapeHtml(visualLabel)}</h4>${renderMermaidNativeBlock(
                 {
                   id: diagram.id,
                   fallbackLabel: ui.fallbackDiagram,
                   sourceLabel: ui.mermaidSource,
                 },
-                mermaid
+                mermaid,
+                ui
               )}</div>`
         }
         <div class="diagram-refs">
@@ -709,7 +813,18 @@ function confirmPhrase(confirmation, artifactHash) {
   );
 }
 
-function validate(confirmation, recipe) {
+function validateZhProjectionRows(blockingIssues, rows, label, fields) {
+  array(rows).forEach((value, index) => {
+    const row = object(value);
+    for (const field of fields) {
+      if (!hasCjk(row[`${field}Zh`])) {
+        blockingIssues.push(`missing_zh_projection_${label}_${index}_${field}Zh`);
+      }
+    }
+  });
+}
+
+function validate(confirmation, recipe, language = 'en-US') {
   const blockingIssues = [];
   const warnings = [];
   const required = [
@@ -758,6 +873,53 @@ function validate(confirmation, recipe) {
       blockingIssues.push(`missing_governanceArchitectureDiagram_${type}`);
     }
   }
+  if (language === 'zh-CN' || language === 'bilingual') {
+    for (const field of ['decisionZh', 'outcomeZh', 'riskStatementZh', 'rollbackPlanZh']) {
+      if (!hasCjk(confirmation[field])) blockingIssues.push(`missing_zh_projection_${field}`);
+    }
+    validateZhProjectionRows(
+      blockingIssues,
+      confirmation.consumerImpactScan,
+      'consumerImpactScan',
+      ['category', 'status', 'summary', 'description', 'requiredDecision']
+    );
+    validateZhProjectionRows(
+      blockingIssues,
+      confirmation.governanceImpactScan,
+      'governanceImpactScan',
+      ['category', 'status', 'summary', 'description', 'requiredDecision']
+    );
+    validateZhProjectionRows(
+      blockingIssues,
+      confirmation.fullArchitectureTriggerMatrix,
+      'fullArchitectureTriggerMatrix',
+      ['trigger', 'decision', 'reason', 'requiredDecision']
+    );
+    const localizedBusinessDiagrams = normalizeArchitectureDiagrams(
+      confirmation,
+      'businessArchitectureDiagrams',
+      'architectureDiagrams',
+      language
+    );
+    const localizedGovernanceDiagrams = normalizeArchitectureDiagrams(
+      confirmation,
+      'governanceArchitectureDiagrams',
+      'architectureDiagrams',
+      language
+    );
+    for (const [label, diagrams] of [
+      ['businessArchitectureDiagrams', localizedBusinessDiagrams],
+      ['governanceArchitectureDiagrams', localizedGovernanceDiagrams],
+    ]) {
+      diagrams.forEach((diagram, index) => {
+        for (const field of ['title', 'description', 'mermaid']) {
+          if (!hasCjk(diagram[field])) {
+            blockingIssues.push(`missing_zh_projection_${label}_${index}_${field}Zh`);
+          }
+        }
+      });
+    }
+  }
   const declaredHash = text(confirmation.architectureConfirmationArtifactHash || confirmation.artifactHash);
   const computedHash = architectureHashFor(confirmation, recipe);
   if (!declaredHash) blockingIssues.push('missing_architectureConfirmationArtifactHash');
@@ -775,10 +937,37 @@ function renderHtml(input) {
   const artifactHash = input.validation.declaredHash || input.validation.computedHash;
   const phrase = confirmPhrase(c, artifactHash);
   const confirmability = input.validation.blockingIssues.length ? 'blocked' : 'confirmable';
-  const triggerCount = array(c.fullArchitectureTriggerMatrix).filter((row) => text(row.decision || row.status).includes('triggered')).length;
-  const architectureDelta = buildArchitectureDelta(c, input.validation);
-  const businessArchitectureDiagrams = normalizeArchitectureDiagrams(c, 'businessArchitectureDiagrams', 'architectureDiagrams');
-  const governanceArchitectureDiagrams = normalizeArchitectureDiagrams(c, 'governanceArchitectureDiagrams', 'architectureDiagrams');
+  const triggerCount = array(c.fullArchitectureTriggerMatrix).filter((row) =>
+    isTriggeredRow(object(row))
+  ).length;
+  const architectureDelta = buildArchitectureDelta(c, input.validation, input.language);
+  const businessArchitectureDiagrams = normalizeArchitectureDiagrams(
+    c,
+    'businessArchitectureDiagrams',
+    'architectureDiagrams',
+    input.language
+  );
+  const governanceArchitectureDiagrams = normalizeArchitectureDiagrams(
+    c,
+    'governanceArchitectureDiagrams',
+    'architectureDiagrams',
+    input.language
+  );
+  const consumerImpactRows = projectRows(
+    c.consumerImpactScan,
+    ['category', 'status', 'summary', 'description', 'requiredDecision'],
+    input.language
+  );
+  const governanceImpactRows = projectRows(
+    c.governanceImpactScan,
+    ['category', 'status', 'summary', 'description', 'requiredDecision'],
+    input.language
+  );
+  const triggerRows = projectRows(
+    c.fullArchitectureTriggerMatrix,
+    ['trigger', 'decision', 'reason', 'requiredDecision'],
+    input.language
+  );
   return `<!doctype html>
 <html lang="${escapeHtml(input.language)}">
 <head>
@@ -805,15 +994,15 @@ function renderHtml(input) {
   </nav>
   <div>
     <section id="summary" class="hero">
-      <span class="chip ${confirmability === 'confirmable' ? 'good' : 'bad'}">${escapeHtml(confirmability)}</span><span class="chip warn">${escapeHtml(c.status || 'draft')}</span><span class="chip">${escapeHtml(c.recordId)}</span>
+      <span class="chip ${confirmability === 'confirmable' ? 'good' : 'bad'}">${escapeHtml(ui.confirmabilityLabels[confirmability] || confirmability)}</span><span class="chip warn">${escapeHtml(ui.statusLabels[c.status] || c.status || ui.statusLabels.draft)}</span><span class="chip">${escapeHtml(c.recordId)}</span>
       <h1>${escapeHtml(c.recordId)} ${escapeHtml(ui.draftTitleSuffix)}</h1>
       <p class="muted">${escapeHtml(ui.projectionNote)}</p>
       <div class="two-col">
         <div>
-          <p><strong>${escapeHtml(ui.confirmationScope)}：</strong>${escapeHtml(c.decision || c.outcome || 'architecture confirmation')}</p>
+          <p><strong>${escapeHtml(ui.confirmationScope)}：</strong>${escapeHtml(localizedText(c, 'decision', input.language) || localizedText(c, 'outcome', input.language) || 'architecture confirmation')}</p>
           <p><strong>${escapeHtml(ui.currentDecision)}：</strong>${escapeHtml(ui.currentDecisionText(triggerCount))}</p>
           <p><strong>${escapeHtml(ui.userNextStep)}：</strong>${escapeHtml(ui.userNextStepText)}</p>
-          <p><strong>${escapeHtml(ui.blockers)}：</strong>${escapeHtml(input.validation.blockingIssues.join(', ') || 'none')}</p>
+          <p><strong>${escapeHtml(ui.blockers)}：</strong>${escapeHtml(input.validation.blockingIssues.join(', ') || ui.none)}</p>
         </div>
         <div>
           <p class="muted">${escapeHtml(ui.fingerprint)}</p>
@@ -844,14 +1033,14 @@ function renderHtml(input) {
     <section id="impact" class="card">
       <h2>${escapeHtml(ui.navImpact)}</h2>
       <div class="review-flow">
-        <section class="review-step"><h3>${escapeHtml(ui.consumerImpactScan)}</h3>${renderObjectTable(c.consumerImpactScan, ['category', 'status', 'summary', 'description', 'requiredDecision'])}</section>
-        <section class="review-step"><h3>${escapeHtml(ui.governanceImpactScan)}</h3>${renderObjectTable(c.governanceImpactScan, ['category', 'status', 'summary', 'description', 'requiredDecision'])}</section>
+        <section class="review-step"><h3>${escapeHtml(ui.consumerImpactScan)}</h3>${renderObjectTable(consumerImpactRows, ['category', 'status', 'summary', 'description', 'requiredDecision'], ui.fieldLabels)}</section>
+        <section class="review-step"><h3>${escapeHtml(ui.governanceImpactScan)}</h3>${renderObjectTable(governanceImpactRows, ['category', 'status', 'summary', 'description', 'requiredDecision'], ui.fieldLabels)}</section>
       </div>
     </section>
-    <section id="triggers" class="card"><h2>${escapeHtml(ui.fullTriggerMatrix)}</h2>${renderObjectTable(c.fullArchitectureTriggerMatrix, ['trigger', 'decision', 'reason', 'requiredDecision'])}</section>
+    <section id="triggers" class="card"><h2>${escapeHtml(ui.fullTriggerMatrix)}</h2>${renderObjectTable(triggerRows, ['trigger', 'decision', 'reason', 'requiredDecision'], ui.fieldLabels)}</section>
     <section id="paths" class="card"><h2>${escapeHtml(ui.targetPaths)}</h2><p class="muted">${escapeHtml(ui.targetPathsCount(array(c.targetPaths).length))}</p>${renderPathTable(c.targetPaths)}</section>
     <section id="hash" class="card"><h2>${escapeHtml(ui.hashRecipeAndStaleInputs)}</h2><div class="review-flow"><section class="review-step"><h3>${escapeHtml(ui.recipe)}</h3>${renderObjectTable([c.architectureConfirmationHashRecipe || {}], ['schemaVersion', 'recipeVersion', 'configPath', 'resolvedRecipeHash'])}</section><section class="review-step"><h3>Stale Inputs</h3>${renderObjectTable([c.staleInputs || {}], ['sourceDocumentHash', 'implementationConfirmationHash', 'targetPathsHash', 'consumerImpactScanHash', 'governanceImpactScanHash', 'resolvedRecipeHash'])}</section></div></section>
-    <section id="risk" class="card"><h2>${escapeHtml(ui.riskAndRollback)}</h2><p><strong>Risk:</strong> ${escapeHtml(c.riskStatement || ui.missingRisk)}</p><p><strong>Rollback:</strong> ${escapeHtml(c.rollbackPlan || ui.missingRollback)}</p><p><strong>${escapeHtml(ui.evidence)}:</strong></p><div class="pill-list">${renderList(c.evidenceRefs)}</div></section>
+    <section id="risk" class="card"><h2>${escapeHtml(ui.riskAndRollback)}</h2><p><strong>${escapeHtml(ui.riskLabel)}:</strong> ${escapeHtml(localizedText(c, 'riskStatement', input.language) || ui.missingRisk)}</p><p><strong>${escapeHtml(ui.rollbackLabel)}:</strong> ${escapeHtml(localizedText(c, 'rollbackPlan', input.language) || ui.missingRollback)}</p><p><strong>${escapeHtml(ui.evidence)}:</strong></p><div class="pill-list">${renderList(c.evidenceRefs)}</div></section>
     <section id="phrase" class="card"><div class="section-title"><h2>${escapeHtml(ui.confirmationPhrase)}</h2><button class="copy-button" type="button" data-copy-target="architecture-confirmation-phrase">${escapeHtml(ui.copyPhrase)}</button></div><pre id="architecture-confirmation-phrase" class="phrase">${escapeHtml(phrase)}</pre><p class="copy-status" data-copy-status aria-live="polite"></p></section>
     <section id="metadata" class="card"><h2>${escapeHtml(ui.metadata)}</h2>${renderObjectTable([{ jsonPath: input.architecturePath, htmlPath: input.outPath, runId: c.runId, artifactHash, computedArtifactHash: input.validation.computedHash }], ['jsonPath', 'htmlPath', 'runId', 'artifactHash', 'computedArtifactHash'])}</section>
   </div>
@@ -1074,17 +1263,19 @@ function main(argv) {
   const reportPath = path.resolve(args.renderReport || deriveSibling(outPath, '.render-report.json'));
   const confirmation = readJson(architecturePath);
   const recipe = resolveRecipe(args.recipe);
-  const validation = validate(confirmation, recipe);
-  const architectureDelta = buildArchitectureDelta(confirmation, validation);
+  const validation = validate(confirmation, recipe, args.language);
+  const architectureDelta = buildArchitectureDelta(confirmation, validation, args.language);
   const businessArchitectureDiagrams = normalizeArchitectureDiagrams(
     confirmation,
     'businessArchitectureDiagrams',
-    'architectureDiagrams'
+    'architectureDiagrams',
+    args.language
   );
   const governanceArchitectureDiagrams = normalizeArchitectureDiagrams(
     confirmation,
     'governanceArchitectureDiagrams',
-    'architectureDiagrams'
+    'architectureDiagrams',
+    args.language
   );
   const mermaidRuntime = readMermaidRuntimeScript();
   const html = renderHtml({

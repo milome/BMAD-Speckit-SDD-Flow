@@ -7,9 +7,19 @@ import {
 } from './architecture-confirmation-hash-recipe';
 import {
   appendControlEventAndReplay,
+  canonicalizeRequirementRecord,
+  sha256Json,
   type ControlCommitResult,
 } from './requirement-record-control-store';
+import {
+  createRuntimeStatusProjectionUpdate,
+  runtimeStatusProjectionArtifactWrites,
+  runtimeStatusProjectionRecordPatch,
+  type RequirementsContractSixModelId,
+} from './requirements-contract-runtime-status-decision-receipt';
 import { hasOpenReconfirmationRequest } from './reconfirmation-runtime';
+import { validateSourcePrdLintTransitionFromFiles } from './requirements-contract-validation-facade';
+import { resolveVerifiedSixModelStatus } from './verified-six-model-status-facade';
 
 type JsonObject = Record<string, unknown>;
 
@@ -176,11 +186,6 @@ function refPath(value: unknown): string | null {
   return null;
 }
 
-function appendJsonl(file: string, value: JsonObject): void {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.appendFileSync(file, `${JSON.stringify(value)}\n`, 'utf8');
-}
-
 function object(value: unknown): JsonObject {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonObject) : {};
 }
@@ -203,6 +208,18 @@ function hasSixModelRuntime(record: JsonObject): boolean {
     typeof record.currentMentalModel === 'string' &&
     object(record.sixModelResults).requirement_confirmation !== undefined
   );
+}
+
+function verifiedModelStatus(
+  record: JsonObject,
+  modelId: RequirementsContractSixModelId
+) {
+  return resolveVerifiedSixModelStatus({
+    record,
+    modelId,
+    currentImplementationAttemptId:
+      text(record.currentAttemptId) || text(record.implementationAttemptId) || text(record.runId),
+  });
 }
 
 function sameArchitectureConfirmationAlreadyRecorded(
@@ -314,9 +331,11 @@ function appendMentalModelTransition(input: {
       if (hasPendingBlockerIntake(record)) {
         throw new Error('mental_model_transition_blocked_by_pending_blocker_intake');
       }
-      const results = object(record.sixModelResults);
-      const currentResult = object(results[String(payload.fromModel)]);
-      if (text(currentResult.status) !== 'pass') {
+      const currentStatus = verifiedModelStatus(
+        record,
+        String(payload.fromModel) as RequirementsContractSixModelId
+      );
+      if (currentStatus.effectiveStatus !== 'pass') {
         throw new Error('mental_model_transition_requires_current_model_pass');
       }
       return {
@@ -341,8 +360,9 @@ function appendArchitectureConfirmationResult(input: {
   const current = readJson(input.recordPath);
   if (!hasSixModelRuntime(current)) return null;
   const existingResult = object(object(current.sixModelResults).architecture_confirmation);
+  const existingStatus = verifiedModelStatus(current, 'architecture_confirmation');
   if (
-    text(existingResult.status) === 'pass' &&
+    existingStatus.effectiveStatus === 'pass' &&
     text(object(existingResult.currentHashes).architectureConfirmationArtifactHash) ===
       text(input.event.architectureConfirmationArtifactHash)
   ) {
@@ -354,26 +374,58 @@ function appendArchitectureConfirmationResult(input: {
     input.recordedAt,
     input.recordedBy
   );
+  const attemptId = text(current.currentAttemptId) || text(current.runId);
+  const architecturePath = text(input.event.architectureConfirmationPath);
+  const architectureHash = text(input.event.architectureConfirmationArtifactHash);
+  const runtimeStatus = createRuntimeStatusProjectionUpdate({
+    recordId: text(current.recordId),
+    requirementSetId: text(current.requirementSetId) || text(current.recordId),
+    modelId: 'architecture_confirmation',
+    implementationAttemptId: attemptId,
+    sourceDocumentHash: text(current.sourceDocumentHash),
+    implementationConfirmationHash: text(current.implementationConfirmationHash),
+    semanticModelHash: text(current.semanticModelHash),
+    stageInputs: [
+      {
+        role: 'requirement_source',
+        path: text(current.sourcePath),
+        hash: text(current.sourceDocumentHash),
+      },
+    ],
+    deterministicGateOutputs: [
+      {
+        role: 'architecture_confirmation',
+        path: architecturePath,
+        hash: architectureHash,
+      },
+    ],
+    blockerRefs: [],
+    evidenceRefs: [architecturePath, text(input.event.renderReportPath)].filter(Boolean),
+    authorityClass: 'deterministic_gate',
+    decision: 'pass',
+    effectiveStatus: 'pass',
+    createdAt: input.recordedAt,
+    receiptPath: `runtime/status-decisions/${attemptId}/architecture_confirmation.json`,
+    projection: result,
+  });
   return appendControlEventAndReplay({
     recordPath: input.recordPath,
     writerId: 'architecture-confirmation-ingest',
     eventType: 'six_model_results_recorded',
     recordedAt: input.recordedAt,
+    expectedBeforeRecordHash: sha256Json(canonicalizeRequirementRecord(current)),
     payload: {
       eventType: 'six_model_results_recorded',
-      ...result,
+      ...runtimeStatus.projection,
     },
+    artifactWrites: runtimeStatusProjectionArtifactWrites(runtimeStatus),
     reduce: (record) => ({
       ...record,
-      sixModelResults: {
-        ...object(record.sixModelResults),
-        architecture_confirmation: modelResultForArchitectureConfirmation(
-          record,
-          input.event,
-          input.recordedAt,
-          input.recordedBy
-        ),
-      },
+      ...runtimeStatusProjectionRecordPatch({
+        record,
+        modelId: 'architecture_confirmation',
+        update: runtimeStatus,
+      }),
       lastEventType: 'six_model_results_recorded',
       updatedAt: input.recordedAt,
     }),
@@ -740,6 +792,15 @@ export function mainIngestArchitectureConfirmation(argv: string[]): number {
   const confirmation = readJson(architecturePath);
   const report = readRenderEvidence(reportPath);
   const record = readJson(recordPath);
+  const sourcePrdLintTransition = validateSourcePrdLintTransitionFromFiles({
+    transition: 'architecture-confirmation',
+    requirementRecordPath: recordPath,
+    currentSourcePath: text(report.sourcePath),
+  });
+  if (sourcePrdLintTransition.decision === 'block') {
+    console.error(JSON.stringify({ ok: false, sourcePrdLintTransition }, null, 2));
+    return 3;
+  }
   const confirmedAt = args.confirmedAt ?? new Date().toISOString();
   const confirmationText = confirmationTextFromArgs(args);
   const { event, mismatches } = validate({
@@ -764,6 +825,18 @@ export function mainIngestArchitectureConfirmation(argv: string[]): number {
   const baseDir = path.dirname(recordPath);
   const currentRecord = readJson(recordPath);
   const alreadyRecorded = sameArchitectureConfirmationAlreadyRecorded(currentRecord, event);
+  const artifactIndex = path.resolve(
+    args.artifactIndex ?? path.join(baseDir, 'artifact-index.jsonl')
+  );
+  const architectureArtifactIndexEntry = {
+    artifactType: 'architecture_confirmation',
+    sourceOfTruthRole: 'evidence',
+    recordId: event.recordId,
+    requirementSetId: event.requirementSetId,
+    path: normalizePathForRecord(architecturePath),
+    eventType: 'architecture_confirmation_recorded',
+    contentHash: event.architectureConfirmationArtifactHash,
+  };
   const commit = alreadyRecorded
     ? null
     : appendControlEventAndReplay({
@@ -776,6 +849,12 @@ export function mainIngestArchitectureConfirmation(argv: string[]): number {
           architecturePath: normalizePathForRecord(architecturePath),
           renderReportPath: normalizePathForRecord(reportPath),
         },
+        artifactIndexUpdates: [
+          {
+            path: artifactIndex,
+            entries: [architectureArtifactIndexEntry],
+          },
+        ],
         reduce: (currentRecord) =>
           updateRecord(currentRecord, event, confirmedAt, args.confirmedBy!),
       });
@@ -785,20 +864,6 @@ export function mainIngestArchitectureConfirmation(argv: string[]): number {
     recordedAt: confirmedAt,
     recordedBy: args.confirmedBy!,
   });
-  const artifactIndex = path.resolve(
-    args.artifactIndex ?? path.join(baseDir, 'artifact-index.jsonl')
-  );
-  if (!alreadyRecorded) {
-    appendJsonl(artifactIndex, {
-      artifactType: 'architecture_confirmation',
-      sourceOfTruthRole: 'evidence',
-      recordId: event.recordId,
-      requirementSetId: event.requirementSetId,
-      path: normalizePathForRecord(architecturePath),
-      eventType: 'architecture_confirmation_recorded',
-      contentHash: event.architectureConfirmationArtifactHash,
-    });
-  }
   const primaryCommit = commit ?? progressionCommits.at(-1);
 
   const result = {

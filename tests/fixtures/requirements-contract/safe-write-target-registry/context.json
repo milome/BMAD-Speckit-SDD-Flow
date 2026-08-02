@@ -1,0 +1,19 @@
+{
+  "requirementSetId": "SAFE-WRITE-FIXTURE-REQUIREMENT",
+  "implementationAttemptId": "SAFE-WRITE-FIXTURE-IMPLEMENTATION",
+  "bundleRevision": "SAFE-WRITE-FIXTURE-BUNDLE",
+  "activationAttemptId": "SAFE-WRITE-FIXTURE-ACTIVATION",
+  "sourcePrdPath": "tests/fixtures/requirements-contract/safe-write-target-registry/source-prd.md",
+  "consumerRegistryPath": "tests/fixtures/requirements-contract/safe-write-target-registry/consumer-registry.json",
+  "evidenceRoot": "tests/fixtures/requirements-contract/safe-write-target-registry/evidence",
+  "goalExecutionApplicable": true,
+  "activationOutcome": "success",
+  "classification": {
+    "excludedControlRelativePaths": [
+      "recovery-finalization-transactions/FIXTURE-TX/FIXTURE-IMP/FIXTURE-RUN/intent.json",
+      "recovery-finalization-attempts/FIXTURE-TX/FIXTURE-IMP/FIXTURE-RUN/FIXTURE-CMD/failure-archive.json",
+      "implementation-evidence.json"
+    ],
+    "unregisteredRelativePath": "not-registered.json"
+  }
+}

@@ -90,7 +90,6 @@ const ALLOWED_EXECUTOR_KINDS = new Set([
   'cursor_mcp_task',
   'cursor_task',
   'claude_agent_tool',
-  'codex_worker_adapter',
   'codex_spawn_agent',
   'generic_prompt_packet',
   'auditor_host',
@@ -549,16 +548,16 @@ export function buildSubagentEvidenceEnvelopeFromTaskReport(input: {
   workspaceRef: JsonObject;
   commandRuns: JsonObject[];
   artifactRefs: JsonObject[];
+  executionVerified: boolean;
   hookReceipts?: JsonObject[];
   transportRefs?: JsonObject[];
   failureRecords?: JsonObject[];
 }): JsonObject {
-  const status =
-    input.taskReport.status === 'done'
-      ? 'accepted'
-      : input.taskReport.status === 'partial'
-        ? 'partial'
-        : 'blocked';
+  const status = input.executionVerified
+    ? 'accepted'
+    : input.taskReport.status === 'partial'
+      ? 'partial'
+      : 'blocked';
   return {
     envelopeVersion: ENVELOPE_VERSION,
     recordId: input.recordId,

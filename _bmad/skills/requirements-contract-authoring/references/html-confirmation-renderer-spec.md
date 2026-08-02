@@ -1,5 +1,15 @@
 # HTML Confirmation Renderer Spec
 
+```text
+assetKind: reference
+authority: none
+```
+
+This document is non-authoritative renderer documentation. It must not be parsed
+as the Implementation Confirmation machine schema or used to invent missing
+requirement semantics. The machine boundary is
+`requirements-contract-implementation-confirmation-codec.ts`.
+
 Use this reference when implementing or invoking `<skill-dir>/scripts/render-requirements-confirmation-html.ts`.
 
 The renderer is a generic read-only confirmation view generator. It reads an implementation source document and its inline `implementationConfirmation`; it renders HTML plus machine-readable summaries. It must not create, infer, rewrite, merge, shrink, confirm, or mutate requirements.
@@ -13,7 +23,7 @@ The confirmation page belongs to the contract confirmability audit layer only. I
 Post-confirmation control writes are handled by the high-level confirmation ingest action, not by the renderer:
 
 ```bash
-bmad-speckit confirm-scope \
+npm exec --prefix "<project_root>" -- bmad-speckit confirm-scope \
   --source <source-document.md> \
   --render-report _bmad-output/runtime/requirement-records/<recordId>/confirmation/confirmation-render-report.json \
   --confirmation-text "<exact confirmation text from chat>" \
@@ -21,7 +31,7 @@ bmad-speckit confirm-scope \
   --json
 ```
 
-After exact chat confirmation, agents must run this entry immediately. It calls the high-level orchestration action, which calls the skill-local controlled ingest wrapper, writes `confirmation_recorded` to `requirement-record.json`, and blocks readiness or prompt generation if the controlled record is missing or stale. `bmad-speckit main-agent:confirm-scope` remains a compatibility alias, but the stable user-facing entry is `bmad-speckit confirm-scope`.
+After exact chat confirmation, agents must run this entry immediately with `<project_root>` resolved from `_bmad-output/config/bmad-speckit-install-manifest.json`. It calls the high-level orchestration action, which calls the skill-local controlled ingest wrapper, writes `confirmation_recorded` to `requirement-record.json`, and blocks readiness or prompt generation if the controlled record is missing or stale. `bmad-speckit main-agent:confirm-scope` remains a compatibility alias, but the stable user-facing entry is `npm exec --prefix "<project_root>" -- bmad-speckit confirm-scope`.
 
 Architecture confirmation has a skill-local prepare entry that is the normal user-facing workflow:
 

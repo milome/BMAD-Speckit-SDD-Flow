@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-real-consumer-pre-confirmation-snapshot/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "phase",
+    "transactionId",
+    "implementationAttemptId",
+    "phaseAuditAttemptId",
+    "candidatePackageReceipt",
+    "stageObservations",
+    "distBuildHash",
+    "packedRuntimeHash",
+    "packedRuntimeFileCount",
+    "installedRuntimeHash",
+    "installedRuntimeFileCount",
+    "preConfirmationEvidenceSetHash",
+    "preConfirmationStageSnapshotHash",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-real-consumer-pre-confirmation-snapshot/v1"
+    },
+    "phase": { "enum": ["pre-candidate", "final"] },
+    "transactionId": { "type": "string", "minLength": 1 },
+    "implementationAttemptId": { "type": "string", "minLength": 1 },
+    "phaseAuditAttemptId": { "type": "string", "minLength": 1 },
+    "candidatePackageReceipt": { "$ref": "#/$defs/ref" },
+    "stageObservations": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10
+    },
+    "distBuildHash": { "$ref": "#/$defs/hash" },
+    "packedRuntimeHash": { "$ref": "#/$defs/hash" },
+    "packedRuntimeFileCount": { "type": "integer", "minimum": 1 },
+    "installedRuntimeHash": { "$ref": "#/$defs/hash" },
+    "installedRuntimeFileCount": { "type": "integer", "minimum": 1 },
+    "preConfirmationEvidenceSetHash": { "$ref": "#/$defs/hash" },
+    "preConfirmationStageSnapshotHash": { "$ref": "#/$defs/hash" },
+    "decision": { "const": "PASS" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

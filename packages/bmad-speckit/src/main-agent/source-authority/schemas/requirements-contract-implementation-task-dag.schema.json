@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-implementation-task-dag.schema.json",
+  "title": "Requirements Contract Implementation Task DAG",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "sequenceContractHash",
+    "tasks",
+    "cycleCount",
+    "unresolvedDependencyCount",
+    "decision",
+    "taskDagHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-implementation-task-dag/v1"
+    },
+    "sequenceContractHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "taskId",
+          "scenarioRef",
+          "stepRef",
+          "objective",
+          "dependencies",
+          "targetRef",
+          "symbolRef",
+          "requirementRefs",
+          "authorizedBehavior",
+          "forbiddenBehaviors",
+          "redRef",
+          "evidenceRefs"
+        ],
+        "properties": {
+          "taskId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scenarioRef": {
+            "type": "string",
+            "pattern": "^SCN-[A-Z0-9]+(?:-[A-Z0-9]+)*-[0-9]{3}$"
+          },
+          "stepRef": {
+            "type": "string",
+            "pattern": "^MSG-[0-9]{3}$"
+          },
+          "objective": {
+            "type": "string",
+            "minLength": 1
+          },
+          "dependencies": {
+            "$ref": "#/$defs/stringArray"
+          },
+          "targetRef": {
+            "type": "string",
+            "minLength": 1
+          },
+          "symbolRef": {
+            "type": "string",
+            "minLength": 1
+          },
+          "requirementRefs": {
+            "$ref": "#/$defs/nonEmptyStringArray"
+          },
+          "authorizedBehavior": {
+            "type": "string",
+            "minLength": 1
+          },
+          "forbiddenBehaviors": {
+            "$ref": "#/$defs/nonEmptyStringArray"
+          },
+          "redRef": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidenceRefs": {
+            "$ref": "#/$defs/nonEmptyStringArray"
+          }
+        }
+      }
+    },
+    "cycleCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "unresolvedDependencyCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "decision": {
+      "enum": ["pass", "block"]
+    },
+    "taskDagHash": {
+      "$ref": "#/$defs/sha256"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "stringArray": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "nonEmptyStringArray": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  }
+}

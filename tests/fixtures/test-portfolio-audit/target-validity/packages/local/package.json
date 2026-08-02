@@ -1,0 +1,11 @@
+{
+  "name": "target-validity-local-fixture",
+  "type": "module",
+  "bin": {
+    "target-validity-cli": "src/local-cli.mjs"
+  },
+  "scripts": {
+    "build": "node build.js",
+    "build:helper": "node helper-build.js"
+  }
+}

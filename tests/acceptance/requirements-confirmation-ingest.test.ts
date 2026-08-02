@@ -39,6 +39,13 @@ const REQ_TRACE_PROMPT = path.join(
   'scripts',
   'generate_prompt.py'
 );
+const GOAL_CONTRACT_PROFILE = path.join(
+  ROOT,
+  '_bmad',
+  'shared',
+  'goal-contract',
+  'goal-contract-profile.json'
+);
 const requireForRenderer = createRequire(import.meta.url);
 const {
   extractImplementationConfirmation,
@@ -405,7 +412,7 @@ implementationConfirmation:
   controlledIngestWriterRegistry:
     - writerId: requirements-confirmation-ingest
       scriptPath: "_bmad/skills/requirements-contract-authoring/scripts/ingest-confirmation-event.js"
-      scriptContentHash: "sha256:fixture-confirmation-ingest"
+      scriptContentHash: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
       ownerModel: requirements_contract
       allowedWriteApis: ["appendControlEvent", "atomicWriteRequirementRecord", "appendArtifactIndex"]
       allowedPaths:
@@ -419,8 +426,8 @@ implementationConfirmation:
       receiptPath: "_bmad-output/runtime/requirement-records/<requirement-set-id>/receipts/requirements-confirmation-ingest/<receipt-id>.json"
       beforeAfterHashRequired: true
       canModifyWriterRegistry: false
-      registryHash: "sha256:fixture-writer-registry"
-      architectureConfirmationHash: "sha256:fixture-architecture"
+      registryHash: "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      architectureConfirmationHash: "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
   functionalResumeFailureCaseRegistry:
     status: frozen_in_P0
     p0ExecutableSubsetRequired: true
@@ -493,6 +500,22 @@ function runPython(script: string, args: string[]) {
 
 function fixedHash(char: string): string {
   return `sha256:${char.repeat(64)}`;
+}
+
+function directReqTraceEntry(): string {
+  const profile = JSON.parse(fs.readFileSync(GOAL_CONTRACT_PROFILE, 'utf8')) as {
+    entryProfiles?: Record<string, Record<string, unknown>>;
+  };
+  const matches = Object.entries(profile.entryProfiles ?? {}).filter(
+    ([, entry]) =>
+      entry.compilerRoute === 'shared_requirement_trace_compiler' &&
+      entry.dualViewPolicy === 'forbidden' &&
+      entry.sourceAuthority === 'confirmed_implementation_confirmation_and_requirement_record'
+  );
+  if (matches.length !== 1) {
+    throw new Error(`direct_req_trace_entry_resolution_failed:${matches.length}`);
+  }
+  return matches[0][0];
 }
 
 function writeValidDrilldownGateReport(source: string): string {
@@ -612,6 +635,86 @@ function writeCloseoutRenderReport(input: {
 }
 
 describe('controlled confirmation ingest', () => {
+  it('ingests implementationConfirmation blocks larger than the V8 argument limit', () => {
+    const source = writeSource();
+    const sourceText = fs.readFileSync(source, 'utf8');
+    const firstViewMarker = '\n```mermaid';
+    const firstViewIndex = sourceText.indexOf(firstViewMarker);
+    expect(firstViewIndex).toBeGreaterThan(0);
+    const largePadding = Array.from(
+      { length: 130_000 },
+      (_, index) => `    - "padding-${index}"`
+    ).join('\n');
+    fs.writeFileSync(
+      source,
+      `${sourceText.slice(0, firstViewIndex)}
+  largeSourcePadding:
+${largePadding}${sourceText.slice(firstViewIndex)}`,
+      'utf8'
+    );
+
+    const currentSourceText = fs.readFileSync(source, 'utf8');
+    const extracted = extractImplementationConfirmation(currentSourceText);
+    const sourceDocumentHash = sourceDocumentHashFor(
+      currentSourceText,
+      extracted.blockText,
+      extracted.confirmation
+    );
+    const implementationConfirmationHash = implementationConfirmationHashFor(
+      extracted.confirmation
+    );
+    const confirmationPageHash = fixedHash('f');
+    const reportPath = path.join(tempDir, 'confirmation-render-report.json');
+    const report = {
+      confirmability: 'confirmable',
+      recordId: 'REQ-CONFIRM-INGEST',
+      requirementSetId: 'REQSET-CONFIRM-INGEST',
+      sourceDocumentHash,
+      implementationConfirmationHash,
+      confirmationPageHash,
+      artifactRef: { path: path.join(tempDir, 'confirmation.html') },
+      confirmInstruction: [
+        '确认以上范围进入下一阶段',
+        `sourceDocumentHash=${sourceDocumentHash}`,
+        `implementationConfirmationHash=${implementationConfirmationHash}`,
+        `confirmationPageHash=${confirmationPageHash}`,
+      ].join('\n'),
+    };
+    fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    const confirmationTextFile = path.join(tempDir, 'confirmation.txt');
+    fs.writeFileSync(confirmationTextFile, report.confirmInstruction, 'utf8');
+    const recordPath = path.join(tempDir, 'requirement-record.json');
+
+    const result = runNode(INGEST, [
+      '--source',
+      source,
+      '--render-report',
+      reportPath,
+      '--confirmation-text-file',
+      confirmationTextFile,
+      '--confirmed-by',
+      'test-user',
+      '--record-id',
+      report.recordId,
+      '--requirement-set-id',
+      report.requirementSetId,
+      '--requirement-record',
+      recordPath,
+      '--event-log',
+      path.join(tempDir, 'events.jsonl'),
+      '--artifact-index',
+      path.join(tempDir, 'artifact-index.jsonl'),
+      '--confirmed-at',
+      '2026-07-11T12:00:00.000Z',
+      '--json',
+    ]);
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    const updated = extractImplementationConfirmation(fs.readFileSync(source, 'utf8'));
+    expect(updated.confirmation.status).toBe('user_confirmed');
+    expect(updated.confirmation.largeSourcePadding).toHaveLength(130_000);
+  });
+
   it('uses the high-level orchestration entry to create requirement-record without manual ingest assembly', () => {
     const source = writeSource();
     const { reportPath, report } = render(source);
@@ -639,7 +742,9 @@ describe('controlled confirmation ingest', () => {
     const output = JSON.parse(result.stdout);
     expect(output.action).toBe('confirm-scope');
     expect(output.ok).toBe(true);
-    expect(output.delegatedEntry).toContain('confirm-requirements-scope.js');
+    expect(output.delegatedEntry).toContain(
+      'requirements-contract-confirmation-acceptance.js'
+    );
     const record = JSON.parse(
       fs.readFileSync(
         path.join(
@@ -664,6 +769,26 @@ describe('controlled confirmation ingest', () => {
     expect(record.controlStore.eventLogPath).toMatch(
       /REQ-CONFIRM-INGEST\/events\/control-events\.jsonl$/u
     );
+    expect(record.controlledIngestWriterRegistryRequired).toBe(true);
+    expect(record.controlledIngestWriterRegistry).toEqual([
+      {
+        writerId: 'requirements-confirmation-ingest',
+        eventTypes: ['confirmation_recorded', 'artifact_index_recorded'],
+        writerHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+      },
+    ]);
+    expect(record.controlledIngestWriterRegistryHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
+    const controlEventPath = path.join(
+      tempDir,
+      '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/events/control-events.jsonl'
+    );
+    const controlEvent = JSON.parse(fs.readFileSync(controlEventPath, 'utf8').trim());
+    expect(controlEvent).toMatchObject({
+      eventType: 'confirmation_recorded',
+      writerId: 'requirements-confirmation-ingest',
+      writerRegistryHash: record.controlledIngestWriterRegistryHash,
+      writerHash: record.controlledIngestWriterRegistry[0].writerHash,
+    });
   });
 
   it('uses the highest-level package confirm-scope entry without requiring the main-agent alias', () => {
@@ -823,7 +948,13 @@ describe('controlled confirmation ingest', () => {
 
   it('blocks req-trace prompt before ingest and allows it after controlled confirmation ingest with control store authority', () => {
     const source = writeSource();
-    const blockedPrompt = runPython(REQ_TRACE_PROMPT, ['--source-document', source]);
+    const entry = directReqTraceEntry();
+    const blockedPrompt = runPython(REQ_TRACE_PROMPT, [
+      '--entry',
+      entry,
+      '--source-document',
+      source,
+    ]);
     expect(blockedPrompt.status).toBe(3);
     expect(blockedPrompt.stdout).toContain('BLOCK: EXECUTION_READY_AUTHORITY_MISSING');
     expect(blockedPrompt.stdout).toContain('execution_ready_authority_missing');
@@ -856,6 +987,8 @@ describe('controlled confirmation ingest', () => {
     expect(ingest.status).toBe(0);
 
     const allowedPrompt = runPython(REQ_TRACE_PROMPT, [
+      '--entry',
+      entry,
       '--source-document',
       source,
       '--requirement-record',

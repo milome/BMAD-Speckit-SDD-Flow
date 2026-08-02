@@ -2,7 +2,7 @@
 ---
 name: bmad-standalone-tasks-doc-review
 description: |
-  Strict audit for TASKS / TASKS-like documents (TASKS_*.md, tasks-E*.md): Critical Auditor >70%, 3-round no-gap convergence, and the audit subagent must edit the audited document when gaps are found. Use when: (1) The user requests an audit of a TASKS document with strict convergence, (2) “Run an audit subtask on {doc path}” or “TASKS document audit”, (3) Pre-implementation document quality gate. Supports code-reviewer (Codex worker dispatch) or Codex worker adapter general-purpose fallback. Follows audit-document-iteration-rules.
+  Strict audit for TASKS / TASKS-like documents (TASKS_*.md, tasks-E*.md): Critical Auditor >70%, 3-round no-gap convergence, and the audit subagent must edit the audited document when gaps are found. Use when: (1) The user requests an audit of a TASKS document with strict convergence, (2) “Run an audit subtask on {doc path}” or “TASKS document audit”, (3) Pre-implementation document quality gate. Supports code-reviewer (Codex worker dispatch) or current Codex main session general-purpose fallback. Follows audit-document-iteration-rules.
 ---
 
 # BMAD standalone tasks document audit
@@ -43,14 +43,14 @@ Hard prohibitions:
 | Critical Auditor | Must participate; speaking share **>70%** |
 | Convergence | **Three consecutive rounds with no new gap** (on the audited document) |
 | When a gap is found | **The audit subagent must edit the audited document in the same round**; suggestions-only is forbidden |
-| Subagent type | Prefer code-reviewer; if unavailable use `Codex worker adapter` + `subagent_type: general-purpose` |
+| Subagent type | Prefer code-reviewer; if unavailable use `current Codex main session` + `subagent_type: general-purpose` |
 
 ## Workflow
 
 1. **Resolve document path**: From user input, get `{document-path}` (e.g. `_bmad-output/implementation-artifacts/_orphan/TASKS_xxx.md`).
 2. **Determine requirements baseline**: If the TASKS doc header has a `reference` (or equivalent) field pointing to a baseline document, read that document as the baseline; otherwise the TASKS doc is self-contained (then `{baseline-path}` is the audited doc path).
 3. **Launch audit**: Copy the full prompt from [references/audit-prompt-tasks-doc.md](references/audit-prompt-tasks-doc.md), replace `{document-path}`, `{baseline-path}`, `{project-root}`, `{report-path}`, `{round}`; the **report save** section must say that **every round’s report (pass or fail) is saved to `{report-path}`**, consistent with step 7 (if the template says “only when audit passes”, override it).
-4. **Subagent choice**: Prefer Codex worker dispatch → code-reviewer; if code-reviewer is unavailable (no Task, failure, timeout), use `Codex worker adapter` + `subagent_type: general-purpose`.
+4. **Subagent choice**: Prefer Codex worker dispatch → code-reviewer; if code-reviewer is unavailable (no Task, failure, timeout), use `current Codex main session` + `subagent_type: general-purpose`.
 5. **Convergence check**: After each report, if the verdict is pass and the Critical Auditor states “no new gap this round” → `consecutive_pass_count + 1`; otherwise reset to 0. **Pass** means the conclusion contains “完全覆盖、验证通过” or “通过”; Critical Auditor section contains “本轮无新 gap”, “无新 gap”, or “无 gap”.
 6. **Iterate**: Until 3 no-gap rounds, launch the next audit on the updated document. **No infinite loops**: when `consecutive_pass_count >= 3`, **stop immediately**; **max 10 rounds**, then force-stop with “max rounds reached—manual review required”.
 7. **Persist reports**: Every round’s report (pass or fail) must be saved to `_bmad-output/implementation-artifacts/_orphan/AUDIT_TASKS_{slug}_§4_round{N}.md`; the main Agent must state this in the subagent prompt. **Note**: saving reports is the subagent’s job; the main Agent **only** checks convergence—do not re-launch audits just to “save reports”.

@@ -385,11 +385,30 @@ const CONFIRMATION_BOOKKEEPING_FIELDS = new Set([
   'confirmationRender',
 ]);
 
+const PROJECTION_HASH_BOOKKEEPING_FIELDS = new Set([
+  'derivedFromPacketHash',
+  'projectionStatus',
+]);
+
+function stripProjectionHashBookkeeping(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripProjectionHashBookkeeping(item));
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key]) => !PROJECTION_HASH_BOOKKEEPING_FIELDS.has(key))
+      .map(([key, child]) => [key, stripProjectionHashBookkeeping(child)])
+  );
+}
+
 function semanticConfirmationForHash(confirmation) {
   const semantic = {};
   for (const [key, value] of Object.entries(confirmation ?? {})) {
     if (!CONFIRMATION_BOOKKEEPING_FIELDS.has(key)) {
-      semantic[key] = value;
+      semantic[key] = stripProjectionHashBookkeeping(value);
     }
   }
   if (
@@ -493,6 +512,20 @@ function extractPathRefs(value) {
   return [...refs];
 }
 
+function isNonProductTargetModification(row) {
+  const classifications = [row?.coverageRole, row?.changeType]
+    .map((value) =>
+      String(value ?? '')
+        .trim()
+        .toLowerCase()
+        .replace(/-/gu, '_')
+    )
+    .filter(Boolean);
+  return classifications.some((value) =>
+    ['validation_only', 'generated_output', 'runtime_output'].includes(value)
+  );
+}
+
 function hasOwn(value, key) {
   return Object.prototype.hasOwnProperty.call(value ?? {}, key);
 }
@@ -574,22 +607,46 @@ function defaultRequirementRecordPath(recordId) {
   return path.resolve('_bmad-output', 'runtime', 'requirement-records', recordId, 'requirement-record.json');
 }
 
+const REQUIREMENT_RECORD_SNAPSHOT_IDENTITY_FIELDS = [
+  'recordId',
+  'requirementSetId',
+  'sourceDocumentHash',
+  'implementationConfirmationHash',
+  'semanticModelHash',
+  'projectionSetHash',
+];
+
+function assertRequirementRecordSnapshotIdentity(authorityRecord, snapshotRecord) {
+  for (const field of REQUIREMENT_RECORD_SNAPSHOT_IDENTITY_FIELDS) {
+    const authorityValue = String(authorityRecord?.[field] ?? '').trim();
+    const snapshotValue = String(snapshotRecord?.[field] ?? '').trim();
+    if (authorityValue !== snapshotValue) {
+      throw new Error(`requirement_record_snapshot_identity_mismatch:${field}`);
+    }
+  }
+}
+
 function readRequirementRecord(args, recordId) {
-  const requestedPath = args.requirementRecord
+  const authorityPath = args.requirementRecord
     ? path.resolve(args.requirementRecord)
     : defaultRequirementRecordPath(recordId);
+  const snapshotPath = args.requirementRecordSnapshot
+    ? path.resolve(args.requirementRecordSnapshot)
+    : authorityPath;
   if (!recordId || recordId === 'unrecorded') {
     return {
-      path: requestedPath,
+      path: authorityPath,
+      snapshotPath,
       found: false,
       record: null,
       loadError: null,
       source: args.requirementRecord ? 'explicit' : 'default',
     };
   }
-  if (!fs.existsSync(requestedPath)) {
+  if (!fs.existsSync(snapshotPath)) {
     return {
-      path: requestedPath,
+      path: authorityPath,
+      snapshotPath,
       found: false,
       record: null,
       loadError: null,
@@ -597,16 +654,29 @@ function readRequirementRecord(args, recordId) {
     };
   }
   try {
+    const record = readDataFile(snapshotPath);
+    if (args.requirementRecordSnapshot) {
+      const authorityRecord = readDataFile(authorityPath);
+      assertRequirementRecordSnapshotIdentity(authorityRecord, record);
+    }
     return {
-      path: requestedPath,
+      path: authorityPath,
+      snapshotPath,
       found: true,
-      record: readDataFile(requestedPath),
+      record,
       loadError: null,
       source: args.requirementRecord ? 'explicit' : 'default',
     };
   } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.startsWith('requirement_record_snapshot_identity_mismatch:')
+    ) {
+      throw error;
+    }
     return {
-      path: requestedPath,
+      path: authorityPath,
+      snapshotPath,
       found: false,
       record: null,
       loadError: error instanceof Error ? error.message : String(error),
@@ -951,7 +1021,11 @@ function normalizeGovernanceEventTypeRegistry(confirmation) {
   const schemaIssues = [];
   const eventTypes = new Map();
   const rows = asArray(confirmation?.governanceEventTypeRegistry);
-  const policy = normalizeGovernanceEventTypeRegistryPolicy(confirmation, schemaIssues);
+  const governanceEventsApply = applicabilityDomainApplies(confirmation, 'governanceEvents');
+  const policy =
+    governanceEventsApply || rows.length > 0
+      ? normalizeGovernanceEventTypeRegistryPolicy(confirmation, schemaIssues)
+      : null;
   rows.forEach((row, index) => {
     const eventType = String(row?.eventType ?? '').trim();
     if (!eventType) {
@@ -2256,7 +2330,10 @@ function buildAiTddContractManifestCoverage(input) {
 
   const commandTargetRows = asArray(confirmation.requiredCommands).map((row) => {
     const id = row.id || row.commandId;
-    const files = extractPathRefs(String(row.command ?? ''));
+    const files = unique([
+      ...extractPathRefs(String(row.command ?? '')),
+      ...stringList(row.targetFiles).map((file) => normalizePathForReport(file)),
+    ]);
     const linkedTraceRows = asArray(traceRows).filter((trace) => commandRefsForTrace(trace).includes(id));
     const traceRefs = unique([...refsForRow(row, ['traceRows', 'traceRefs']), ...linkedTraceRows.map((trace) => trace.id)]);
     const evidenceRefs = unique([
@@ -2309,13 +2386,15 @@ function buildAiTddContractManifestCoverage(input) {
         evidenceRefs: refsForRow(row, ['evidenceRefs', 'linkedEvidenceIds']),
         sourceSection: 'artifactAutomationPlan',
       })),
-    ...asArray(targetModificationPaths).map((row) => ({
-      id: row.id,
-      pathOrField: row.path,
-      traceRefs: stringList(row.traceRefs),
-      evidenceRefs: stringList(row.evidenceRefs),
-      sourceSection: 'targetModificationPaths',
-    })),
+    ...asArray(targetModificationPaths)
+      .filter((row) => !isNonProductTargetModification(row))
+      .map((row) => ({
+        id: row.id,
+        pathOrField: row.path,
+        traceRefs: stringList(row.traceRefs),
+        evidenceRefs: stringList(row.evidenceRefs),
+        sourceSection: 'targetModificationPaths',
+      })),
   ].filter((row) => row.id || row.pathOrField).map((row) => {
     const missing = [
       ...(row.pathOrField ? [] : ['canonical_surface_path_or_field_missing']),
@@ -3612,7 +3691,20 @@ function buildCoverage(input) {
       if (!file) continue;
       const absolute = path.isAbsolute(file) ? file : path.resolve(process.cwd(), file);
       if (!fs.existsSync(absolute)) {
-        blockingIssues.push(blocking('acceptance_test_file_missing', `${rowId} references missing file ${file}`, [rowId, file]));
+        const issue = warning(
+          'acceptance_test_file_missing',
+          `${rowId} references missing file ${file}`,
+          [rowId, file]
+        );
+        if (
+          String(row.expectedPreImplementationState ?? '')
+            .trim()
+            .toLowerCase() === 'expected_red'
+        ) {
+          warnings.push(issue);
+        } else {
+          blockingIssues.push(blocking(issue.code, issue.message, issue.refs));
+        }
       }
     }
     validateRefs(row.covers, new Set([...idSet.must, ...idSet.notDone]), 'acceptance_unknown_requirement_ref', rowId);
@@ -8764,6 +8856,7 @@ if (require.main === module) {
 module.exports = {
   main,
   parseArgs,
+  readRequirementRecord,
   extractImplementationConfirmation,
   extractMermaidBlocks,
   buildCoverage,

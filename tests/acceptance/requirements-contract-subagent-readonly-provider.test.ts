@@ -4,6 +4,7 @@ import {
   buildValidResponseFromRequest,
   createTempRoot,
   expectSourceHashUnchanged,
+  installJudgeRuntimeConfig,
   issueCodes,
   readJson,
   removeTempRoot,
@@ -15,6 +16,7 @@ import {
 } from './helpers/requirements-contract-authoring-fixture';
 
 function prepareSubagentResponse(root: string, recordId: string) {
+  installJudgeRuntimeConfig(root);
   const source = writeConsumerRequirement(root);
   const beforeHash = sha256File(source);
   runAuthoring(root, source, recordId, {
@@ -89,8 +91,9 @@ describe('requirements contract readonly subagent providers', () => {
           maxCriticalAuditorRounds: 1,
         });
         const receiptPath = roundArtifact(root, recordId, 'receipt', 1);
-        const receipt = readJson<{ criticalAuditorReceipt: Record<string, unknown> }>(receiptPath)
-          .criticalAuditorReceipt;
+        const receipt = readJson<{ criticalAuditorReceipt: Record<string, unknown> }>(
+          receiptPath
+        ).criticalAuditorReceipt;
 
         expect(issueCodes(result)).toContain('critical_auditor_no_new_gap_convergence_not_reached');
         expect(existsSync(receiptPath)).toBe(true);

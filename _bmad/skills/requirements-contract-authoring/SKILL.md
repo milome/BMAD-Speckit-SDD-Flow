@@ -188,7 +188,7 @@ node <skill-dir>/scripts/prepare-current-source-promotion.js \
   --json
 ```
 
-For a main-session Critical Auditor no-new-gap response, use the skill-local response writer. Do not create `write-critical-auditor-no-new-gap-response.cjs` or similar helpers inside `_bmad-output/.../authoring`. The writer consumes a current round request, fails closed when the gate dry-run has actionable blockers or reconciliation issues, writes only `critical-auditor-round-response-<n>.json`, and never writes receipt files.
+Do not use a deterministic script as Critical Auditor no-new-gap authority. The skill-local `write-critical-auditor-no-new-gap-response.js` path is retained only as a fail-closed compatibility probe: it consumes the current request and returns `critical_auditor_independent_provider_evidence_required`. It never writes receipt files or response files. Obtain the response from an independently bound provider/model identity and ingest it through the controlled authoring flow. Do not create executable helpers inside `_bmad-output/.../authoring`.
 
 ```bash
 node <skill-dir>/scripts/write-critical-auditor-no-new-gap-response.js \
@@ -614,7 +614,7 @@ The Artifact and Automation Plan View must make planned outputs visible before i
 
 When planned work touches runtime governance, hooks, no-hook execution, recovery, bmad-help routing, dashboard, scoring, or SFT, the artifact plan must also show:
 
-- `bmad-speckit main-agent resolve-active-requirement` or the equivalent skill/project resolver as the startup locator.
+- `npm exec --prefix "<project_root>" -- bmad-speckit main-agent resolve-active-requirement` or the equivalent skill/project resolver as the startup locator, where `<project_root>` is read from `_bmad-output/config/bmad-speckit-install-manifest.json`.
 - `_bmad-output/runtime/requirement-records/index.json` as locator projection only.
 - `_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json` as the reloaded control record.
 - `_bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/runtime-policy-snapshot.json`.
@@ -779,6 +779,10 @@ Rules:
 - Do not treat the user's normal conversation language as an implicit language selection.
 - Preserve the selected language for this source document's confirmation flow.
 - If the implementation source document is later changed semantically and confirmation must be regenerated, reuse the previously selected language unless the user asks to change it.
+- For `zh-CN` or `bilingual`, every renderer-checked Chinese projection must be a semantically equivalent translation authored by the main-session authoring agent. A fixed Chinese prefix wrapped around the source text is not a translation.
+- If genuine Chinese projections are missing, fail closed before Critical Auditor execution, hashing, source promotion, or rendering. Do not fall back to English and do not synthesize CJK marker text.
+- `author-confirmation-ready-source` may return `localization_translation_required` and write `authoring/localization-request.json`. The authoring agent must translate every request entry, preserve its `sourceTextHash`, attest semantic equivalence, and write a `requirements-contract-localization-response/v1` response.
+- Resume the same transaction with `--localization-response <response.json>`. A stale, partial, non-CJK, source-identical, or synthetic-wrapper response must remain blocked.
 
 ### 6. Render The HTML Confirmation Page
 
@@ -805,6 +809,24 @@ Required outputs:
 - `confirmation.html`
 - `confirmation-summary.json`
 - `confirmation-render-report.json`
+
+When HTML rendering runs after `authoring-repair`, transaction recovery, or another
+post-promotion repair path, the main agent must register the current render through the
+controlled orchestration action before presenting the page:
+
+```bash
+main-agent-orchestration --action register-pre-confirmation-render \
+  --source <source-document.md> \
+  --render-report _bmad-output/runtime/requirement-records/<recordId>/confirmation/confirmation-render-report.json \
+  --requirement-record _bmad-output/runtime/requirement-records/<recordId>/requirement-record.json \
+  --record-id <recordId> \
+  --requirement-set-id <requirementSetId>
+```
+
+This action validates current semantic hashes, confirmability, pre-render drilldown evidence,
+and the HTML file hash before updating the draft RequirementRecord. It must not record user
+confirmation, append `confirmation_recorded`, or advance beyond `requirement_confirmation`.
+Never repair this mismatch by directly editing `requirement-record.json`.
 
 The renderer must follow [html-confirmation-renderer-spec.md](references/html-confirmation-renderer-spec.md). It is a read-only renderer and must not modify the source document, set `status: user_confirmed`, write gate decisions, or create control events.
 
@@ -834,6 +856,7 @@ node <skill-dir>/scripts/prepare-architecture-confirmation-page.ts \
   --consumer-impact-scan <json-array-or-file> \
   --governance-impact-scan <json-array-or-file> \
   --full-architecture-trigger-matrix <json-array-or-file> \
+  --localization <authoring-agent-zh-CN-localization.json> \
   --out _bmad-output/runtime/requirement-records/<recordId>/architecture/architecture-confirmation-<runId>.html \
   --language zh-CN \
   --json
@@ -845,6 +868,15 @@ The prepare entry is part of this skill. It must automatically:
 - generate requirement-scoped `architecture-confirmation-<runId>.json`,
 - render the user-facing architecture confirmation HTML,
 - write a prepare report with the internal step results and the user-facing confirmation instruction.
+
+For `zh-CN` or `bilingual`, the main-session authoring agent must create the localization
+bundle before prepare. The bundle must contain semantic Chinese projections for every
+consumer impact row, governance impact row, trigger row, risk statement, rollback plan,
+and every required business/governance diagram title, description, and Mermaid label.
+The producer persists these projections as `*Zh` fields. The renderer only selects the
+requested projection and must fail closed when any required Chinese projection is
+missing or non-CJK; it must not translate business content, synthesize fixed prefixes,
+or fall back to English.
 
 The user-facing next step is only to open the architecture confirmation HTML and confirm the hashes in chat. Do not expose stale check or JSON producer commands as manual user steps.
 
@@ -864,7 +896,7 @@ The architecture renderer is a read-only projection over `architecture-confirmat
 
 The page must show the requirement-scoped decision, consumer impact scan, governance impact scan, full architecture trigger matrix, target paths, hash recipe, stale input hashes, risk statement, rollback plan, evidence refs, exact confirmation phrase, and artifact metadata.
 
-If the prepare entry, producer, or architecture renderer reports missing core fields, hash mismatch, recipe mismatch, missing impact scans, missing trigger matrix, or missing target paths, stop before Implementation Readiness. Do not use an older architecture HTML projection or a manually assembled fallback page.
+If the prepare entry, producer, or architecture renderer reports missing core fields, hash mismatch, recipe mismatch, missing impact scans, missing trigger matrix, missing target paths, or missing localization projections, stop before Implementation Readiness. Do not use an older architecture HTML projection or a manually assembled fallback page.
 
 ### 7. Confirm In Chat With Hashes
 
@@ -888,16 +920,18 @@ Rules:
 
 ### 7a. Run Controlled Confirmation Ingest
 
-The normal post-confirmation entry is the highest-level `bmad-speckit` CLI command:
+The normal post-confirmation entry is the highest-level `bmad-speckit` CLI command, executed through project-local npm prefix resolution:
 
 ```bash
-bmad-speckit confirm-scope \
+npm exec --prefix "<project_root>" -- bmad-speckit confirm-scope \
   --source <source-document.md> \
   --render-report _bmad-output/runtime/requirement-records/<recordId>/confirmation/confirmation-render-report.json \
   --confirmation-text "<exact confirmation text from chat>" \
   --confirmed-by <user-or-agent-label> \
   --json
 ```
+
+Resolve `<project_root>` from `_bmad-output/config/bmad-speckit-install-manifest.json`. Do not run bare `bmad-speckit confirm-scope` from outside the consumer project tree.
 
 This entry must dispatch through the installed package runtime, equivalent to `bmad-speckit main-agent confirm-scope`, which then calls the skill-local `confirm-requirements-scope.js`, which in turn calls `ingest-confirmation-event.js`, updates the source bookkeeping, writes the requirement-scoped `requirement-record.json`, appends the confirmation event log and artifact index, and returns the generated paths. `bmad-speckit main-agent:confirm-scope` remains a compatibility alias, but agents should not need to remember the lower-level wrapper during normal confirmation or orchestration. Consumer-facing instructions must not route through root TypeScript orchestration scripts. `render-requirements-confirmation-html.ts` remains read-only and must not absorb this responsibility.
 

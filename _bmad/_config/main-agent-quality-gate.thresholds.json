@@ -7,7 +7,6 @@
   "requiredKeyPaths": [
     "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
     "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-unified-ingress.ts",
-    "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-codex-worker-adapter.ts",
     "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-release-gate.ts",
     "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-truth-gate.ts",
     "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts",
@@ -30,13 +29,10 @@
     "tests/acceptance/main-agent-host-matrix-pr-orchestration.test.ts",
     "tests/acceptance/main-agent-run-loop-e2e.test.ts",
     "tests/acceptance/main-agent-codex-agent-parity.test.ts",
-    "tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts",
     "tests/acceptance/main-agent-unified-ingress-e2e.test.ts"
   ],
   "requiredCodexProofPaths": [
     "tests/acceptance/main-agent-codex-agent-parity.test.ts",
-    "tests/acceptance/main-agent-codex-worker-adapter-e2e.test.ts",
-    "tests/acceptance/main-agent-codex-consumer-five-layer-e2e.test.ts",
     "tests/acceptance/reviewer-codex-noop-guard.test.ts",
     "tests/acceptance/reviewer-rollout-rollback-proof.test.ts"
   ],

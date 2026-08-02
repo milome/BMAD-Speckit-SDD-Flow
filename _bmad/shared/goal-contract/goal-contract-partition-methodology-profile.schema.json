@@ -1,0 +1,88 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "profileId",
+    "profileVersion",
+    "canonicalizationVersion",
+    "rules",
+    "exclusions",
+    "provenance"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "partition-methodology-profile/v1" },
+    "profileId": { "type": "string", "minLength": 1 },
+    "profileVersion": { "type": "string", "minLength": 1 },
+    "canonicalizationVersion": {
+      "const": "stable-json/path-sorted-rules/v1"
+    },
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ruleId",
+          "classification",
+          "normativeRule",
+          "deterministicChecks"
+        ],
+        "properties": {
+          "ruleId": { "type": "string", "pattern": "^PM-[0-9]{3}$" },
+          "classification": {
+            "enum": ["adopted", "adapted", "project-extension"]
+          },
+          "normativeRule": { "type": "string", "minLength": 1 },
+          "deterministicChecks": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "exclusions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "methodologySourceBundleHash",
+        "assets"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "partition-methodology-upstream-provenance/v1"
+        },
+        "methodologySourceBundleHash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "assets": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "sha256"],
+            "properties": {
+              "path": { "type": "string", "minLength": 1 },
+              "sha256": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

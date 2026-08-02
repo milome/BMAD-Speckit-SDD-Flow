@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-candidate-package-input.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "packageRoot",
+    "packageManifest",
+    "distRoot",
+    "phase",
+    "phaseAuditAttemptId",
+    "tarball",
+    "receipt"
+  ],
+  "properties": {
+    "cwd": { "type": "string", "minLength": 1 },
+    "packageRoot": { "type": "string", "minLength": 1 },
+    "packageManifest": { "type": "string", "minLength": 1 },
+    "distRoot": { "type": "string", "minLength": 1 },
+    "phase": { "enum": ["architecture", "pre-candidate", "final"] },
+    "phaseAuditAttemptId": { "type": "string", "minLength": 1 },
+    "tarball": { "type": "string", "minLength": 1 },
+    "receipt": { "type": "string", "minLength": 1 },
+    "json": { "type": "boolean" }
+  }
+}

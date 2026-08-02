@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-real-consumer-journey-command-receipt/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "commandId",
+    "phase",
+    "transactionId",
+    "implementationAttemptId",
+    "phaseAuditAttemptId",
+    "candidatePackageReceipt",
+    "journeyEvidence",
+    "preConfirmationSnapshot",
+    "confirmationReceipt",
+    "boundaryObserverReceipt",
+    "installArgv",
+    "installExitCode",
+    "passAuthority",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-real-consumer-journey-command-receipt/v1"
+    },
+    "commandId": { "const": "CMD-35" },
+    "phase": { "enum": ["pre-candidate", "final"] },
+    "transactionId": { "type": "string", "minLength": 1 },
+    "implementationAttemptId": { "type": "string", "minLength": 1 },
+    "phaseAuditAttemptId": { "type": "string", "minLength": 1 },
+    "candidatePackageReceipt": { "$ref": "#/$defs/ref" },
+    "journeyEvidence": { "$ref": "#/$defs/ref" },
+    "preConfirmationSnapshot": { "$ref": "#/$defs/ref" },
+    "confirmationReceipt": { "$ref": "#/$defs/ref" },
+    "boundaryObserverReceipt": { "$ref": "#/$defs/ref" },
+    "installArgv": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "installExitCode": { "const": 0 },
+    "passAuthority": { "const": false },
+    "decision": { "const": "pass" }
+  },
+  "$defs": {
+    "ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+      }
+    }
+  }
+}

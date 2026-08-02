@@ -1,0 +1,10 @@
+name: target-validity
+
+on:
+  pull_request:
+
+jobs:
+  fixture:
+    runs-on: ubuntu-latest
+    steps:
+      - run: node src/workflow-entry.ts

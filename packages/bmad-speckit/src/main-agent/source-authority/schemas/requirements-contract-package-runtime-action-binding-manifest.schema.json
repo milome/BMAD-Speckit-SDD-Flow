@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-package-runtime-action-binding-manifest.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "actionUniverseHash",
+    "actions",
+    "packageRuntimeRoutingOnlyActionCount",
+    "installedPackageActionBehaviorMismatchCount",
+    "packageActionSemanticBindingCoverage",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-package-runtime-action-binding-manifest/v2"
+    },
+    "actionUniverseHash": {
+      "const": "sha256:54316a5458e7f1afd1ef94c3725a067960c82ab38b8eab44d1074b816f028bdf"
+    },
+    "actions": {
+      "type": "array",
+      "minItems": 25,
+      "maxItems": 25,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "actionId",
+          "sourceHandlerRef",
+          "distHandlerRef",
+          "semanticGate",
+          "inputSchemaRefs",
+          "outputSchemaRefs",
+          "behaviorTestRefs",
+          "packageDistRef",
+          "installedSurfaceRefs",
+          "runtimeRefs",
+          "routingOnly"
+        ],
+        "properties": {
+          "actionId": {
+            "enum": [
+              "requirements-contract-bundle-publish",
+              "requirements-contract-candidate-package",
+              "requirements-contract-changed-path-manifest",
+              "requirements-contract-clean-materialization",
+              "requirements-contract-command-execution-producer",
+              "requirements-contract-consumer-cli-capability-observe",
+              "requirements-contract-detached-test-rerun",
+              "requirements-contract-eval",
+              "requirements-contract-evidence-verify",
+              "requirements-contract-finalization-safe-write",
+              "requirements-contract-gap-closure-readonly-auditor-adapter",
+              "requirements-contract-judge-credentials-init",
+              "requirements-contract-judge-provider-smoke",
+              "requirements-contract-judge-run",
+              "requirements-contract-production-activate",
+              "requirements-contract-production-bypass-evidence-materialize",
+              "requirements-contract-production-bypass-verify",
+              "requirements-contract-prompt-transaction-publish",
+              "requirements-contract-real-consumer-journey",
+              "requirements-contract-recovery-bootstrap",
+              "requirements-contract-recovery-finalize",
+              "requirements-contract-reverse-audit",
+              "requirements-contract-six-model-projection-parity-verify",
+              "requirements-contract-stage-five-star-audit",
+              "requirements-contract-terminal-command-supervisor"
+            ]
+          },
+          "capabilityActionId": {
+            "type": "string",
+            "pattern": "^requirements-contract-[a-z0-9-]+$"
+          },
+          "sourceHandlerRef": { "$ref": "#/$defs/fileRef" },
+          "distHandlerRef": { "$ref": "#/$defs/fileRef" },
+          "semanticGate": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["gateId", "sourceSymbol", "distSymbol"],
+            "properties": {
+              "gateId": { "type": "string", "minLength": 1 },
+              "sourceSymbol": { "type": "string", "minLength": 1 },
+              "distSymbol": { "type": "string", "minLength": 1 }
+            }
+          },
+          "inputSchemaRefs": { "$ref": "#/$defs/nonEmptyFileRefs" },
+          "outputSchemaRefs": { "$ref": "#/$defs/nonEmptyFileRefs" },
+          "behaviorTestRefs": { "$ref": "#/$defs/nonEmptyFileRefs" },
+          "packageDistRef": { "$ref": "#/$defs/fileRef" },
+          "installedSurfaceRefs": { "$ref": "#/$defs/nonEmptyFileRefs" },
+          "runtimeRefs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["role", "packagePath", "hash"],
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]*$"
+                },
+                "packagePath": { "type": "string", "minLength": 1 },
+                "hash": { "$ref": "#/$defs/hash" }
+              }
+            }
+          },
+          "routingOnly": { "const": false }
+        }
+      }
+    },
+    "packageRuntimeRoutingOnlyActionCount": { "const": 0 },
+    "installedPackageActionBehaviorMismatchCount": { "const": 0 },
+    "packageActionSemanticBindingCoverage": { "const": 1 },
+    "decision": { "const": "pass" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "fileRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "nonEmptyFileRefs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/fileRef" }
+    }
+  }
+}

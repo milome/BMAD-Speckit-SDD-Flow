@@ -19,6 +19,10 @@ function runCli(args, options = {}) {
   });
 }
 
+function standaloneGenerateArgs(args) {
+  return ['generate', '--entry', 'standalone_goal_contract', ...args];
+}
+
 function writePlan(root, lines) {
   const sourcePath = path.join(root, 'source-plan.md');
   fs.writeFileSync(sourcePath, `${lines.join('\n')}\n`, 'utf8');
@@ -40,15 +44,15 @@ describe('goal-contract implementation proof audit', () => {
       '',
       '- Optional internal refactor may update `packages/bmad-speckit/src/utils/goal-contract/slot-data-builder.ts`.',
     ]);
-    const out = path.join(root, 'goal.md');
+    const out = path.join(root, 'goal-execution-plan.md');
 
-    const result = runCli(['generate', '--source', source, '--out', out, '--json']);
+    const result = runCli(standaloneGenerateArgs(['--source', source, '--out', out, '--json']));
     const payload = generationPayload(result);
 
     assert.notEqual(result.status, 0);
     assert.equal(payload.ok, false);
-    assert.equal(payload.failureClass, 'non_deterministic_source_obligation');
-    assert.match(payload.sourceId, /^SRC\d{3}$/u);
+    assert.equal(payload.failureClass, 'source_obligation_classification_ambiguous');
+    assert.match(payload.sourceId, /^SRC-[A-F0-9]{12}$/u);
     assert.equal(payload.matchedPhrase.toLowerCase(), 'optional');
     assert.ok(Number.isInteger(payload.lineStart));
     assert.ok(Number.isInteger(payload.lineEnd));
@@ -65,15 +69,15 @@ describe('goal-contract implementation proof audit', () => {
       '',
       '- The allowed seam can update `packages/bmad-speckit/src/utils/goal-contract/slot-data-builder.ts`.',
     ]);
-    const out = path.join(root, 'goal.md');
+    const out = path.join(root, 'goal-execution-plan.md');
 
-    const result = runCli(['generate', '--source', source, '--out', out, '--json']);
+    const result = runCli(standaloneGenerateArgs(['--source', source, '--out', out, '--json']));
     const payload = generationPayload(result);
 
     assert.notEqual(result.status, 0);
     assert.equal(payload.ok, false);
-    assert.equal(payload.failureClass, 'non_deterministic_source_obligation');
-    assert.match(payload.sourceId, /^SRC\d{3}$/u);
+    assert.equal(payload.failureClass, 'source_obligation_classification_ambiguous');
+    assert.match(payload.sourceId, /^SRC-[A-F0-9]{12}$/u);
     assert.equal(payload.matchedPhrase.toLowerCase(), 'allowed');
     assert.match(payload.sourceExcerpt, /allowed seam/u);
   });
@@ -104,9 +108,9 @@ describe('goal-contract implementation proof audit', () => {
       'node --test packages/bmad-speckit/tests/goal-contract-implementation-proof.test.js',
       '```',
     ]);
-    const out = path.join(root, 'goal.md');
+    const out = path.join(root, 'goal-execution-plan.md');
 
-    const result = runCli(['generate', '--source', source, '--out', out, '--json']);
+    const result = runCli(standaloneGenerateArgs(['--source', source, '--out', out, '--json']));
     const payload = generationPayload(result);
 
     assert.equal(result.status, 0, result.stderr || result.stdout);
@@ -133,9 +137,9 @@ describe('goal-contract implementation proof audit', () => {
       'node --test packages/bmad-speckit/tests/goal-contract-implementation-proof.test.js',
       '```',
     ]);
-    const out = path.join(root, 'goal.md');
+    const out = path.join(root, 'goal-execution-plan.md');
 
-    const result = runCli(['generate', '--source', source, '--out', out, '--json']);
+    const result = runCli(standaloneGenerateArgs(['--source', source, '--out', out, '--json']));
     const payload = generationPayload(result);
 
     assert.equal(result.status, 0, result.stderr || result.stdout);
@@ -164,21 +168,29 @@ describe('goal-contract implementation proof audit', () => {
       'node --test packages/bmad-speckit/tests/goal-contract-implementation-proof.test.js',
       '```',
     ]);
-    const out = path.join(root, 'goal.md');
+    const out = path.join(root, 'goal-execution-plan.md');
 
-    const result = runCli(['generate', '--source', source, '--out', out, '--json']);
+    const result = runCli(standaloneGenerateArgs(['--source', source, '--out', out, '--json']));
     const payload = generationPayload(result);
 
     assert.equal(result.status, 0, result.stderr || result.stdout);
     assert.equal(payload.ok, true);
     assert.equal(payload.implementationProofAudit.decision, 'pass');
-    assert.equal(payload.implementationProofAudit.coverageOnlyCommandAllowedForCodeObligations, false);
+    assert.equal(
+      payload.implementationProofAudit.coverageOnlyCommandAllowedForCodeObligations,
+      false
+    );
 
     const generation = JSON.parse(fs.readFileSync(payload.generationReceiptPath, 'utf8'));
     const goalText = fs.readFileSync(out, 'utf8');
 
     assert.equal(generation.implementationProofAudit.decision, 'pass');
     assert.doesNotMatch(goalText, /rg -n -F 'SRC\d{3}'.*coverage\.json/u);
-    assert.match(goalText, /node --test packages\/bmad-speckit\/tests\/goal-contract-implementation-proof\.test\.js/u);
+    assert.match(
+      goalText,
+      /node --test packages\/bmad-speckit\/tests\/goal-contract-implementation-proof\.test\.js/u
+    );
+    assert.doesNotMatch(goalText, /\bObserved(?: Evidence)?:\s*PASS\b/u);
+    assert.equal(generation.evidenceTerminalState ?? null, null);
   });
 });

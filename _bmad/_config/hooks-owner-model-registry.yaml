@@ -675,31 +675,6 @@ no_hook_equivalents:
     completionAuthority: evidence_only
     writesRequirementEvidence: true
     parityGroup: session_start_context
-  - equivalentId: codex_no_hooks_worker
-    host: codex
-    ownerModel: execution_closure
-    trigger: codex_worker_dispatch
-    paths:
-      - packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-codex-worker-adapter.ts
-      - _bmad/codex/agents/codex-no-hooks-worker.toml
-    inputArtifacts:
-      - governance_packet
-      - ResolvedRuntimeContext
-    outputArtifacts:
-      - _bmad-output/runtime/requirement-records/<requirement-set-id>/prompts/worker-io/<packet-id>.stdin.prompt.txt
-      - _bmad-output/runtime/requirement-records/<requirement-set-id>/executions/worker-logs/<packet-id>.stdout.log
-      - _bmad-output/runtime/requirement-records/<requirement-set-id>/executions/worker-logs/<packet-id>.stderr.log
-      - task_report
-    replacesHooks:
-      - claude_post_tool_use
-      - cursor_post_tool_use
-      - shared_post_tool_use_core
-    recordEventTypes:
-      - task_report_ingested
-      - execution_iteration_recorded
-    completionAuthority: evidence_only
-    writesRequirementEvidence: true
-    parityGroup: tool_trace_capture
   - equivalentId: codex_no_hooks_result_ingest
     host: codex
     ownerModel: audit_review

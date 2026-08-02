@@ -54,10 +54,103 @@ function stableStringify(value) {
     .join(',')}}`;
 }
 
+function projectControlledIngestWriterRegistry(
+  confirmation,
+  sourceDocumentHash,
+  implementationConfirmationHash
+) {
+  const sourceRows = Array.isArray(confirmation?.controlledIngestWriterRegistry)
+    ? confirmation.controlledIngestWriterRegistry
+    : [];
+  if (sourceRows.length === 0) {
+    throw new Error('controlled_ingest_writer_registry_missing');
+  }
+  const writers = sourceRows.map((row, index) => {
+    const writerId = String(row?.writerId ?? '').trim();
+    const eventTypes = Array.isArray(row?.allowedEventTypes)
+      ? row.allowedEventTypes.map((value) => String(value ?? '').trim()).filter(Boolean)
+      : [];
+    if (!writerId || eventTypes.length === 0) {
+      throw new Error(`controlled_ingest_writer_registry_row_invalid:${index}`);
+    }
+    return {
+      writerId,
+      eventTypes,
+      writerHash: sha256(
+        stableStringify({
+          writerId,
+          scriptPath: String(row?.scriptPath ?? '').trim(),
+          scriptContentHash: String(row?.scriptContentHash ?? '').trim(),
+          ownerModel: String(row?.ownerModel ?? '').trim(),
+          allowedWriteApis: row?.allowedWriteApis ?? [],
+          allowedPaths: row?.allowedPaths ?? [],
+          allowedEventTypes: eventTypes,
+          payloadContractRefs: row?.payloadContractRefs ?? [],
+          writesControlFields: row?.writesControlFields ?? [],
+          receiptPath: String(row?.receiptPath ?? '').trim(),
+          beforeAfterHashRequired: row?.beforeAfterHashRequired === true,
+          canModifyWriterRegistry: row?.canModifyWriterRegistry === true,
+          registryHash: String(row?.registryHash ?? '').trim(),
+          architectureConfirmationHash: String(row?.architectureConfirmationHash ?? '').trim(),
+        })
+      ),
+    };
+  });
+  const writerIds = writers.map((writer) => writer.writerId);
+  if (new Set(writerIds).size !== writerIds.length) {
+    throw new Error('controlled_ingest_writer_registry_duplicate_writer');
+  }
+  const confirmationWriter = writers.find(
+    (writer) => writer.writerId === 'requirements-confirmation-ingest'
+  );
+  if (!confirmationWriter) {
+    throw new Error('controlled_ingest_writer_not_authorized:requirements-confirmation-ingest');
+  }
+  if (!confirmationWriter.eventTypes.includes('confirmation_recorded')) {
+    throw new Error(
+      'controlled_ingest_writer_event_not_authorized:requirements-confirmation-ingest:confirmation_recorded'
+    );
+  }
+  return {
+    controlledIngestWriterRegistryRequired: true,
+    controlledIngestWriterRegistry: writers,
+    controlledIngestWriterRegistryHash: sha256(
+      JSON.stringify({
+        schemaVersion: 'controlled-ingest-writer-registry/v1',
+        sourceDocumentHash,
+        implementationConfirmationHash,
+        writers,
+      })
+    ),
+    confirmationWriter,
+  };
+}
+
+const PROJECTION_HASH_BOOKKEEPING_FIELDS = new Set([
+  'derivedFromPacketHash',
+  'projectionStatus',
+]);
+
+function stripProjectionHashBookkeeping(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripProjectionHashBookkeeping(item));
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key]) => !PROJECTION_HASH_BOOKKEEPING_FIELDS.has(key))
+      .map(([key, child]) => [key, stripProjectionHashBookkeeping(child)])
+  );
+}
+
 function semanticConfirmationForHash(confirmation) {
   const semantic = {};
   for (const [key, value] of Object.entries(confirmation ?? {})) {
-    if (!BOOKKEEPING_FIELDS.has(key)) semantic[key] = value;
+    if (!BOOKKEEPING_FIELDS.has(key)) {
+      semantic[key] = stripProjectionHashBookkeeping(value);
+    }
   }
   normalizePreConfirmationDrilldownForHash(semantic);
   return semantic;
@@ -298,6 +391,13 @@ function confirmationTextFromArgs(args) {
   return String(args.confirmationText ?? '');
 }
 
+function replaceImplementationConfirmationBlock(extracted, replacementLines) {
+  return extracted.lines
+    .slice(0, extracted.start)
+    .concat(replacementLines, extracted.lines.slice(extracted.end))
+    .join('\n');
+}
+
 function updateSourceDocument(sourceText, extracted, update) {
   const confirmationPhrase =
     typeof update.confirmInstruction === 'string' && update.confirmInstruction.trim()
@@ -329,9 +429,7 @@ function updateSourceDocument(sourceText, extracted, update) {
   for (let i = 0; i < trailingBlankLines; i += 1) {
     replacementLines.push('');
   }
-  const lines = [...extracted.lines];
-  lines.splice(extracted.start, extracted.end - extracted.start, ...replacementLines);
-  return lines.join('\n');
+  return replaceImplementationConfirmationBlock(extracted, replacementLines);
 }
 
 function updateSourceBookkeeping(sourceText, extracted, update) {
@@ -362,9 +460,7 @@ function updateSourceBookkeeping(sourceText, extracted, update) {
   for (let i = 0; i < trailingBlankLines; i += 1) {
     replacementLines.push('');
   }
-  const lines = [...extracted.lines];
-  lines.splice(extracted.start, extracted.end - extracted.start, ...replacementLines);
-  return lines.join('\n');
+  return replaceImplementationConfirmationBlock(extracted, replacementLines);
 }
 
 function controlEventLogPathForRecord(recordPath) {
@@ -375,7 +471,7 @@ function controlEventIdFor(event) {
   return `${event.eventType}:${event.confirmedAt ?? event.observedAt ?? new Date().toISOString()}:${event.recordId}`;
 }
 
-function buildControlEvent(existingRecord, event) {
+function buildControlEvent(existingRecord, event, writerAuthorization = null) {
   const eventId = controlEventIdFor(event);
   const previousEventHash =
     existingRecord?.controlStore && typeof existingRecord.controlStore === 'object'
@@ -386,11 +482,17 @@ function buildControlEvent(existingRecord, event) {
     eventType: event.eventType,
     recordId: event.recordId,
     requirementSetId: event.requirementSetId,
-    writerId: 'ingest-confirmation-event.js',
+    writerId: writerAuthorization?.writerId ?? 'ingest-confirmation-event.js',
     recordedAt: event.confirmedAt ?? event.observedAt ?? new Date().toISOString(),
     previousEventHash,
     payloadSchemaVersion: `${event.eventType}/v1`,
     payloadHash: sha256(JSON.stringify(event)),
+    ...(writerAuthorization
+      ? {
+          writerRegistryHash: writerAuthorization.writerRegistryHash,
+          writerHash: writerAuthorization.writerHash,
+        }
+      : {}),
     payload: event,
   };
   return {
@@ -429,7 +531,7 @@ function buildRequirementRecord(existing, event, projectionEvent = null, options
       updatedAt: projectionEvent?.observedAt ?? record.updatedAt,
     };
   }
-  const controlEvent = buildControlEvent(record, event);
+  const controlEvent = buildControlEvent(record, event, options.writerAuthorization);
   return {
     ...record,
     recordId: record.recordId ?? event.recordId,
@@ -444,6 +546,7 @@ function buildRequirementRecord(existing, event, projectionEvent = null, options
     traceStatusPolicy: event.traceStatusPolicy,
     sourceDocumentHash: event.sourceDocumentHash,
     implementationConfirmationHash: event.implementationConfirmationHash,
+    ...(options.writerRegistrySnapshot ?? {}),
     confirmationPageHash: event.confirmationPageHash,
     latestConfirmationProjectionHash: projectionEvent?.newProjectionHash ?? event.confirmationPageHash,
     confirmationHistory,
@@ -1109,6 +1212,15 @@ function main(argv) {
     globalContractTraceabilityPolicy: buildGlobalContractTraceabilityPolicy(extracted.confirmation),
     traceStatusPolicy: buildTraceStatusPolicy(),
   };
+  const writerRegistrySnapshot = projectControlledIngestWriterRegistry(
+    extracted.confirmation,
+    sourceDocumentHash,
+    implementationConfirmationHash
+  );
+  const writerAuthorization = {
+    ...writerRegistrySnapshot.confirmationWriter,
+    writerRegistryHash: writerRegistrySnapshot.controlledIngestWriterRegistryHash,
+  };
   const requestId = args.requestId ?? provided.requestId ?? report.requestId ?? report.reconfirmationRequest?.requestId ?? null;
   if (requestId) event.requestId = requestId;
   const projectionEvent = projectionHashChanged
@@ -1180,7 +1292,18 @@ function main(argv) {
     existingRecord,
     isProjectionOnlyRefresh ? null : event,
     projectionEvent,
-    { recordPath }
+    {
+      recordPath,
+      writerAuthorization,
+      writerRegistrySnapshot: {
+        controlledIngestWriterRegistryRequired:
+          writerRegistrySnapshot.controlledIngestWriterRegistryRequired,
+        controlledIngestWriterRegistry:
+          writerRegistrySnapshot.controlledIngestWriterRegistry,
+        controlledIngestWriterRegistryHash:
+          writerRegistrySnapshot.controlledIngestWriterRegistryHash,
+      },
+    }
   );
   const nextRecord =
     !isProjectionOnlyRefresh && requestId
@@ -1200,7 +1323,10 @@ function main(argv) {
   if (projectionEvent) appendJsonl(eventLogPath, projectionEvent);
   const controlEventLogPath = controlEventLogPathForRecord(recordPath);
   if (!isProjectionOnlyRefresh) {
-    appendJsonl(controlEventLogPath, buildControlEvent(existingRecord, event));
+    appendJsonl(
+      controlEventLogPath,
+      buildControlEvent(existingRecord, event, writerAuthorization)
+    );
   }
   if (projectionEvent) {
     appendJsonl(controlEventLogPath, buildControlEvent(nextRecord, projectionEvent));

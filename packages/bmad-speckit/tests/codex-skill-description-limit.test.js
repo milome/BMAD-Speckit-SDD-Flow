@@ -9,6 +9,28 @@ const ROOT = path.resolve(__dirname, '..', '..', '..');
 const INIT_TO_ROOT = path.join(ROOT, 'scripts', 'init-to-root.js');
 const MAX_CODEX_DESCRIPTION_LENGTH = 1024;
 const REQUIRED_DESCRIPTION_FRAGMENTS = {
+  'bmad-help': [
+    'upstream BMAD workflow',
+    'catalog',
+    'Do not use for generic next-step',
+    'active RequirementRecord',
+  ],
+  'bmad-speckit': [
+    'natural-language',
+    'next-step',
+    'active RequirementRecord',
+    '下一步',
+    '继续',
+    '现在该做什么',
+  ],
+  bmads: [
+    'natural-language',
+    'next-step',
+    'active RequirementRecord',
+    '下一步',
+    '继续',
+    '现在该做什么',
+  ],
   'bmad-story-assistant': [
     'Epic/Story',
     'Create Story',

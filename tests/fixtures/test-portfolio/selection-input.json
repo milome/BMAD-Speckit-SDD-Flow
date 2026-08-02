@@ -1,0 +1,144 @@
+{
+  "catalog": {
+    "schemaVersion": "test-catalog/v1",
+    "tests": [
+      {
+        "identityKey": "vitest::tests/core.test.ts",
+        "runnerId": "vitest",
+        "testPath": "tests/core.test.ts",
+        "lifecycleState": "retained_on_demand",
+        "capabilityRefs": ["six-model-state-machine"],
+        "traceRefs": [],
+        "featureRefs": [],
+        "packageId": "root",
+        "releaseGateMembership": "none"
+      },
+      {
+        "identityKey": "vitest::tests/exact.test.ts",
+        "runnerId": "vitest",
+        "testPath": "tests/exact.test.ts",
+        "lifecycleState": "feature_working_set",
+        "capabilityRefs": ["capability:selector"],
+        "traceRefs": ["trace:selector"],
+        "featureRefs": ["feature:portfolio"],
+        "packageId": "root",
+        "releaseGateMembership": "none"
+      },
+      {
+        "identityKey": "vitest::tests/feature.test.ts",
+        "runnerId": "vitest",
+        "testPath": "tests/feature.test.ts",
+        "lifecycleState": "retained_on_demand",
+        "capabilityRefs": [],
+        "traceRefs": [],
+        "featureRefs": ["feature:portfolio"],
+        "packageId": "root",
+        "releaseGateMembership": "none"
+      },
+      {
+        "identityKey": "node::packages/p/tests/package.test.js",
+        "runnerId": "node",
+        "testPath": "packages/p/tests/package.test.js",
+        "lifecycleState": "retained_on_demand",
+        "capabilityRefs": [],
+        "traceRefs": [],
+        "featureRefs": [],
+        "packageId": "@bmad-speckit/p",
+        "releaseGateMembership": "none"
+      },
+      {
+        "identityKey": "vitest::tests/release.test.ts",
+        "runnerId": "vitest",
+        "testPath": "tests/release.test.ts",
+        "lifecycleState": "retained_on_demand",
+        "capabilityRefs": [
+          "consumer-install-boundary",
+          "consumer-runtime-boundary",
+          "governance-proof-round-1",
+          "governance-proof-round-2",
+          "runtime-policy-security-boundary",
+          "sprint-status-write-security-boundary"
+        ],
+        "traceRefs": [],
+        "featureRefs": [],
+        "packageId": "root",
+        "releaseGateMembership": "release",
+        "classifications": {
+          "criticalBindings": [
+            {
+              "kind": "package_install",
+              "evidenceRef": "source:package.json#testPortfolioAudit.criticalBindings[0]"
+            },
+            {
+              "kind": "cli_bin",
+              "evidenceRef": "source:package.json#testPortfolioAudit.criticalBindings[0]"
+            },
+            {
+              "kind": "consumer_compatibility",
+              "evidenceRef": "source:package.json#testPortfolioAudit.criticalBindings[0]"
+            },
+            {
+              "kind": "packaged_runtime",
+              "evidenceRef": "source:package.json#testPortfolioAudit.criticalBindings[1]"
+            },
+            {
+              "kind": "security_encoding_persistence",
+              "evidenceRef": "source:package.json#testPortfolioAudit.criticalBindings[3]"
+            },
+            {
+              "kind": "protected_acceptance_or_proof",
+              "evidenceRef": "source:package.json#testPortfolioAudit.criticalBindings[5]"
+            }
+          ]
+        }
+      },
+      {
+        "identityKey": "vitest::tests/delete.test.ts",
+        "runnerId": "vitest",
+        "testPath": "tests/delete.test.ts",
+        "lifecycleState": "deletion_candidate",
+        "capabilityRefs": [],
+        "traceRefs": [],
+        "featureRefs": [],
+        "packageId": "root",
+        "releaseGateMembership": "none"
+      }
+    ]
+  },
+  "policy": {
+    "profiles": [
+      "pr-fast",
+      "pr-full",
+      "nightly-deep",
+      "release-verify",
+      "nightly-full",
+      "release-full"
+    ],
+    "selection": {
+      "expansionOrder": ["trace_capability", "feature", "package"],
+      "highDiffusionPathRules": [
+        "packages/bmad-speckit/src/main-agent/**",
+        "packages/bmad-speckit/src/utils/main-agent/**"
+      ],
+      "releaseSurfacePathRules": ["package.json", "scripts/prepublish-check.js"],
+      "productSurvivalCapabilityRefs": ["six-model-state-machine"],
+      "releaseCapabilityRefs": [
+        "consumer-install-boundary",
+        "consumer-runtime-boundary",
+        "six-model-state-machine",
+        "runtime-policy-security-boundary",
+        "sprint-status-write-security-boundary",
+        "governance-proof-round-1",
+        "governance-proof-round-2"
+      ],
+      "releaseRequiredBindingKinds": [
+        "package_install",
+        "cli_bin",
+        "consumer_compatibility",
+        "packaged_runtime",
+        "security_encoding_persistence",
+        "protected_acceptance_or_proof"
+      ]
+    }
+  }
+}

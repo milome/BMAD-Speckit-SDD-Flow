@@ -69,7 +69,7 @@ Suggested paths: if tied to a Story, use `_bmad-output/implementation-artifacts/
 ### Phase 2: Audit subtask (required)
 
 1. **Trigger**: After phase one converges and the final plan + task document exists, the main Agent **must** start an audit subtask.
-2. **Sub-agent**: Prefer **code-reviewer** (Codex worker dispatch); else `Codex worker adapter` with `subagent_type: general-purpose`.
+2. **Sub-agent**: Prefer **code-reviewer** (Codex worker dispatch); else `current Codex main session` with `subagent_type: general-purpose`.
 3. **Basis**: Use the full prompt template in [references/audit-prompt-rca-tasks.md](references/audit-prompt-rca-tasks.md) (audit-prompts §4 spirit + TASKS-style doc); or the project’s `.codex/skills/speckit-workflow/references/audit-prompts.md` §4 adaptation.
 4. **Audit rules**:
    - **Critical Auditor must appear**, **>70%** share;

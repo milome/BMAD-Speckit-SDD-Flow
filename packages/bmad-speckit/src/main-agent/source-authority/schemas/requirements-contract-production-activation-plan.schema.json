@@ -1,0 +1,218 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-production-activation-plan.schema.json",
+  "title": "Requirements Contract Production Activation Plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "requirementRecord",
+    "requirementSetId",
+    "implementationAttemptId",
+    "activationAttemptId",
+    "activationReceiptId",
+    "idGenerationScheme",
+    "registry",
+    "plannedSnapshotPath",
+    "nestedCommands",
+    "cliIdentityHash",
+    "schemaIdentityHash",
+    "expectedPromotionReceiptPath",
+    "createdAt"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-production-activation-plan/v1"
+    },
+    "requirementRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^_bmad-output/runtime/requirement-records/[^/]+/requirement-record\\.json$"
+        },
+        "hash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "requirementSetId": {
+      "$ref": "#/$defs/stableId"
+    },
+    "implementationAttemptId": {
+      "type": "string",
+      "pattern": "^IMPL-ATTEMPT-[A-Z0-9][A-Z0-9._-]*$"
+    },
+    "activationAttemptId": {
+      "$ref": "#/$defs/activationAttemptId"
+    },
+    "activationReceiptId": {
+      "$ref": "#/$defs/activationReceiptId"
+    },
+    "idGenerationScheme": {
+      "const": "uuidv7"
+    },
+    "registry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "preimageHash", "targetArtifact12Hash"],
+      "properties": {
+        "path": {
+          "const": "_bmad/shared/requirements-contract/requirements-contract-consumer-registry.json"
+        },
+        "preimageHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "targetArtifact12Hash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "plannedSnapshotPath": {
+      "type": "string",
+      "pattern": "^_bmad-output/runtime/requirement-records/[^/]+/activation/IMPL-ATTEMPT-[^/]+/ACT-ATTEMPT-[^/]+/candidate-snapshot/$"
+    },
+    "nestedCommands": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/cmd09"
+        },
+        {
+          "$ref": "#/$defs/cmd11"
+        },
+        {
+          "$ref": "#/$defs/cmd13"
+        },
+        {
+          "$ref": "#/$defs/cmd18"
+        }
+      ],
+      "items": false
+    },
+    "cliIdentityHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "schemaIdentityHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "expectedPromotionReceiptPath": {
+      "type": "string",
+      "pattern": "^docs/plans/evidence/loop-engineering-remediation/normalized-contract-activation-plan-write-receipts/ACT-ATTEMPT-[^/]+\\.receipt\\.json$"
+    },
+    "createdAt": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{3})?Z$"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "uuidv7": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "activationAttemptId": {
+      "type": "string",
+      "pattern": "^ACT-ATTEMPT-[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "activationReceiptId": {
+      "type": "string",
+      "pattern": "^ACT-RECEIPT-[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commandId", "argvHash", "fixtureOnly"],
+      "properties": {
+        "commandId": {
+          "enum": ["CMD-09", "CMD-11", "CMD-13", "CMD-18"]
+        },
+        "argvHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "fixtureOnly": {
+          "type": "boolean"
+        }
+      }
+    },
+    "cmd09": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/command"
+        },
+        {
+          "properties": {
+            "commandId": {
+              "const": "CMD-09"
+            },
+            "fixtureOnly": {
+              "const": false
+            }
+          }
+        }
+      ]
+    },
+    "cmd11": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/command"
+        },
+        {
+          "properties": {
+            "commandId": {
+              "const": "CMD-11"
+            },
+            "fixtureOnly": {
+              "const": false
+            }
+          }
+        }
+      ]
+    },
+    "cmd13": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/command"
+        },
+        {
+          "properties": {
+            "commandId": {
+              "const": "CMD-13"
+            },
+            "fixtureOnly": {
+              "const": false
+            }
+          }
+        }
+      ]
+    },
+    "cmd18": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/command"
+        },
+        {
+          "properties": {
+            "commandId": {
+              "const": "CMD-18"
+            },
+            "fixtureOnly": {
+              "const": true
+            }
+          }
+        }
+      ]
+    }
+  }
+}

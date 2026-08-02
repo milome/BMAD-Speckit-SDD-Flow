@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-critical-auditor-judge-adapter-input.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["projectRoot", "config", "request", "round", "json"],
+  "properties": {
+    "projectRoot": { "type": "string", "minLength": 1 },
+    "config": { "type": "string", "minLength": 1 },
+    "request": { "type": "string", "minLength": 1 },
+    "round": { "type": "integer", "minimum": 1 },
+    "json": { "type": "boolean" }
+  }
+}

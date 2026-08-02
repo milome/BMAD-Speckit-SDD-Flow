@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-diagram-applicability.schema.json",
+  "title": "Requirements Contract Diagram Applicability",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "projectProfileHash", "decisions"],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-diagram-applicability/v1"
+    },
+    "projectProfileHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "decisions": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["view", "applicability", "reasonCode", "proofRefs"],
+        "properties": {
+          "view": {
+            "enum": [
+              "primary_business_sequence",
+              "failure_compensation_sequence",
+              "state_lifecycle",
+              "deployment_delta",
+              "data_security_flow",
+              "scope_boundary",
+              "governance_flow"
+            ]
+          },
+          "applicability": {
+            "enum": ["required", "not_applicable", "unresolved", "forbidden"]
+          },
+          "reasonCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "proofRefs": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          }
+        }
+      }
+    }
+  }
+}

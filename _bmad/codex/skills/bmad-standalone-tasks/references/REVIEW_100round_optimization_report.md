@@ -1,7 +1,7 @@
 # bmad-standalone-tasks 技能 100 轮深度分析评审报告
 
-**被审技能**：`bmad-standalone-tasks`（SKILL.md + references/prompt-templates.md）  
-**评审视角**：产品经理、架构师、批判审计员、开发代表  
+**被审技能**：`bmad-standalone-tasks`（SKILL.md + references/prompt-templates.md）
+**评审视角**：产品经理、架构师、批判审计员、开发代表
 **产出**：优化建议清单、可替换 SKILL 片段、prompt-templates 增补
 
 ---
@@ -20,9 +20,9 @@
 | O8 | 批判审计员 | 禁止主 Agent 改生产的表述缺少路径与工具列举，主 Agent 可能误用 write/search_replace | 在「Main Agent prohibitions」中列举：禁止对以下路径执行 `search_replace`、`write`、`edit`：`vnpy/`、`*datafeed*`、`*/engine.py`、以及 TASKS/BUGFIX 文档中列为实现目标的任何路径；允许：同目录下 `prd.{stem}.json`、`progress.{stem}.txt` 的创建/更新可由子代理完成，主 Agent 仅允许编辑说明性文件（如 README、本 SKILL、artifact 目录下 .md） | SKILL.md § Step 3 与 § Hard constraints 第 1 条 |
 | O9 | 可执行性 | 占位符 {DOC_PATH}、{任务清单} 的填写责任与数据来源未在 SKILL 中集中说明 | 在 SKILL.md 中增加「占位符说明」：{DOC_PATH} 由主 Agent 在解析用户输入后填写，为 TASKS/BUGFIX 文档的绝对路径或相对项目根的路径；{任务清单} 由主 Agent 从文档中提取未完成项后填写，格式示例：§7 T7a-1～T7a-9、§3 第 2～5 条 | SKILL.md Step 1 下方「DOC_PATH」段扩展为「占位符说明」小节 |
 | O10 | 可执行性 | 实施分多批（如先 T7a 再 T7b）时，resume 如何传递「当前做到哪一批」未说明 | 约定：resume 时主 Agent 在 prompt 中显式传入「上一批已完成范围」与「本批待执行范围」，例如：「上一批已完成：§7 T7a-1～T7a-9；本批请从 T7b-1 开始执行至 T7b-10」。并建议在 references 中增加「Resume 专用 prompt」模板 | prompt-templates.md 新增「Resume 实施子任务」模板；SKILL.md Main Agent responsibilities 中「resume」一句扩展 |
-| O11 | 边界与错误 | 文档路径不存在、子 agent 返回错误或超时时无处理约定 | 补充：若文档路径不存在，主 Agent 应向用户报错并列出已解析出的路径，不发起实施子任务；若子 agent 返回错误或超时，主 Agent 可发起一次 resume（若存在 agent ID），否则重新发起新的 Codex worker adapter 并注明「上次未完成，请从 progress 文件或下列断点继续」；不替代子 agent 直接改代码 | SKILL.md 末尾新增「错误与边界处理」小节 |
+| O11 | 边界与错误 | 文档路径不存在、子 agent 返回错误或超时时无处理约定 | 补充：若文档路径不存在，主 Agent 应向用户报错并列出已解析出的路径，不发起实施子任务；若子 agent 返回错误或超时，主 Agent 可发起一次 resume（若存在 agent ID），否则重新发起新的 current Codex main session 并注明「上次未完成，请从 progress 文件或下列断点继续」；不替代子 agent 直接改代码 | SKILL.md 末尾新增「错误与边界处理」小节 |
 | O12 | 边界与错误 | 主 Agent 是否允许编辑 progress/prd 文件未明确 | 明确：主 Agent **禁止**直接编辑 prd.*.json 与 progress.*.txt（这些由子代理按 ralph-method 维护）；主 Agent 仅允许编辑说明性/文档类 artifact（如 README、技能自身、审计结论记录 .md） | SKILL.md § Step 3 与 § Hard constraints |
-| O13 | 架构/实施 | Codex worker adapter 若不支持 subagent_type=code-reviewer，当前 Step 2 会失败 | 增加调用策略：优先使用 Codex worker dispatch 调度 code-reviewer（若存在 .codex/agents/code-reviewer.md 或 .codex/agents/code-reviewer.md）；若通过 Codex worker adapter 调用且环境不支持 code-reviewer，则使用 subagent_type=general-purpose 并将完整审计 prompt（含 §5 与批判审计员、3 轮无 gap 要求）传入，并在报告中注明「未使用 code-reviewer 子类型，使用 general-purpose + 审计 prompt」 | SKILL.md Step 2 整段；prompt-templates.md 审计模板说明 |
+| O13 | 架构/实施 | current Codex main session 若不支持 subagent_type=code-reviewer，当前 Step 2 会失败 | 增加调用策略：优先使用 Codex worker dispatch 调度 code-reviewer（若存在 .codex/agents/code-reviewer.md 或 .codex/agents/code-reviewer.md）；若通过 current Codex main session 调用且环境不支持 code-reviewer，则使用 subagent_type=general-purpose 并将完整审计 prompt（含 §5 与批判审计员、3 轮无 gap 要求）传入，并在报告中注明「未使用 code-reviewer 子类型，使用 general-purpose + 审计 prompt」 | SKILL.md Step 2 整段；prompt-templates.md 审计模板说明 |
 
 ---
 
@@ -49,13 +49,13 @@
 
 ### 2.2 替换「Step 2」审计调用策略（建议 O13）
 
-**位置**：`## Step 2: Audit sub-task (after implementation)` 下，`**Tool**: Codex worker adapter` 至 `**Requirements**:` 之间。
+**位置**：`## Step 2: Audit sub-task (after implementation)` 下，`**Tool**: current Codex main session` 至 `**Requirements**:` 之间。
 
 **替换为**：
 
 ```markdown
-**Tool**: 优先 Codex worker dispatch 调度 code-reviewer；若不可用则 `Codex worker adapter`。  
-**subagent_type**（仅 Codex worker adapter 时）：若环境支持 `code-reviewer` 则使用；否则使用 `general-purpose` 并传入完整审计 prompt（含 §5、批判审计员占比 >50%、3 轮无 gap），在审计报告开头注明「未使用 code-reviewer 子类型，使用 general-purpose + 审计 prompt」。
+**Tool**: 优先 Codex worker dispatch 调度 code-reviewer；若不可用则 `current Codex main session`。
+**subagent_type**（仅 current Codex main session 时）：若环境支持 `code-reviewer` 则使用；否则使用 `general-purpose` 并传入完整审计 prompt（含 §5、批判审计员占比 >50%、3 轮无 gap），在审计报告开头注明「未使用 code-reviewer 子类型，使用 general-purpose + 审计 prompt」。
 
 **Requirements**:
 ```
@@ -70,7 +70,7 @@
 ## Step 3: Main Agent prohibitions (reminder)
 
 - **禁止** 对以下路径或目标执行 `search_replace`、`write`、`edit`：`vnpy/`、`*datafeed*`、`*/engine.py`、以及 TASKS/BUGFIX 文档中列为实现目标的任何路径；禁止直接编辑 `prd.{stem}.json` 与 `progress.{stem}.txt`（由子代理按 ralph-method 维护）。
-- **禁止** 用主 Agent 直接实现任务以替代 subagent；若 subagent 返回不完整，只能通过 **Codex worker adapter resume** 或再次发起新的 Codex worker adapter 继续，不得自行改代码。
+- **禁止** 用主 Agent 直接实现任务以替代 subagent；若 subagent 返回不完整，只能通过 **current Codex main session resume** 或再次发起新的 current Codex main session 继续，不得自行改代码。
 - **允许** 主 Agent 仅编辑说明性/文档类文件（如 README、本 SKILL.md、artifact 目录下 .md），以配合审计结论或记录进度。
 ```
 
@@ -98,7 +98,7 @@
 ## 错误与边界处理
 
 - **文档路径不存在**：主 Agent 解析用户输入得到路径后，若该路径不存在，应向用户报错并列出已解析路径，不发起实施子任务。
-- **子 agent 错误或超时**：若有返回的 agent ID，主 Agent 可发起一次 **resume**；否则重新发起新的 Codex worker adapter，并在 prompt 中注明「上次未完成，请从同目录 progress 文件或下列断点继续」，不替代子 agent 直接改生产代码。
+- **子 agent 错误或超时**：若有返回的 agent ID，主 Agent 可发起一次 **resume**；否则重新发起新的 current Codex main session，并在 prompt 中注明「上次未完成，请从同目录 progress 文件或下列断点继续」，不替代子 agent 直接改生产代码。
 - **主 Agent 禁止编辑**：prd.*.json、progress.*.txt 仅由子代理维护；主 Agent 不得为「补写 progress」等理由直接编辑上述文件。
 ```
 
@@ -142,7 +142,7 @@
 
 ## Resume 实施子任务（general-purpose）
 
-当 Step 1 子任务未在一次调用内完成时，主 Agent 使用 **Codex worker adapter resume** 或重新发起 Codex worker adapter 时，可传入以下模板（填写断点与本批范围）。
+当 Step 1 子任务未在一次调用内完成时，主 Agent 使用 **current Codex main session resume** 或重新发起 current Codex main session 时，可传入以下模板（填写断点与本批范围）。
 
 ```
 你正在**接续**执行 TASKS/BUGFIX 文档的未完成任务。请先读取同目录下的 progress 文件确认已完成范围，再从本批起点开始执行。

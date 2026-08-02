@@ -428,6 +428,74 @@ D      □     [━━●━━━━━━━]                    5%    默认
 - 恢复默认可回到 `5m/1H/4H` 显示、`15m/30m/45m/D` 隐藏。
 - 小屏幕下设置入口和关键按钮可用。
 
+## Negative Requirements And Not Done Conditions
+
+| ID | Not-done condition | Negative assertion | Blocks completion when | Failure refs | Evidence refs |
+| --- | --- | --- | --- | --- | --- |
+| NEG-001 | 设置失败后出现部分更新、丢失最近一次有效配置或错误显示保存成功，均不能算完成。 | 任何校验、预览、重置、批量、取消、保存或布局失败都必须保持最近一次有效状态，禁止部分写入和成功假象。 | 失败后显示状态、透明度、摘要或持久化结果不一致，或者界面错误显示成功。 | FAIL-001 FAIL-002 FAIL-003 | ACC-010 CMD-010 |
+
+## Failure Matrix
+
+| ID | Failure condition | Required system behavior | Negative requirement refs | Evidence | Requirement refs |
+| --- | --- | --- | --- | --- | --- |
+| FAIL-001 | 多周期显示配置缺失、格式无效或无法加载。 | 保留最近一次有效配置和主图摘要，显示可恢复的配置错误，不得应用部分配置。 | NEG-001 | ACC-001 ACC-003 ACC-004 ACC-005 ACC-006 ACC-007 ACC-008 ACC-010 E2E-001 | MUST-FR-001 MUST-FR-003 MUST-FR-004 MUST-FR-005 MUST-FR-006 MUST-FR-007 MUST-FR-008 |
+| FAIL-002 | 设置入口、状态摘要或关键操作在小屏幕下不可见、不可达或产生横向溢出。 | 保持图表可读，提供可访问的设置入口和关键操作，并阻止破坏布局的视图状态成为当前状态。 | NEG-001 | ACC-001 ACC-002 ACC-009 ACC-010 E2E-001 | MUST-FR-001 MUST-FR-002 MUST-FR-009 |
+| FAIL-003 | 预览、恢复默认、批量操作、取消或保存过程中发生校验、刷新或持久化失败。 | 原子回滚到操作前有效状态，保持各周期显示和透明度一致，并向用户显示可恢复错误。 | NEG-001 | ACC-003 ACC-004 ACC-005 ACC-006 ACC-007 ACC-008 ACC-010 E2E-001 | MUST-FR-003 MUST-FR-004 MUST-FR-005 MUST-FR-006 MUST-FR-007 MUST-FR-008 |
+
+## Acceptance Evidence
+
+| ID | Evidence target | Covers | Required evidence | Oracle | Assertion source | Responsibility mapping |
+| --- | --- | --- | --- | --- | --- | --- |
+| ACC-001 | 主图启用周期摘要 | MUST-FR-001 | pytest tests/test_multi_timeframe_settings.py | 摘要准确展示当前启用周期，无启用周期时显示等价空状态。 | CMD-001 TRACE-001 | PATH-001 owns remediation. |
+| ACC-002 | 多周期设置入口 | MUST-FR-002 | pytest tests/test_multi_timeframe_settings.py | 多周期模式入口可见可用，单周期模式入口隐藏或禁用。 | CMD-002 TRACE-002 | PATH-002 owns remediation. |
+| ACC-003 | 周期显示开关 | MUST-FR-003 | pytest tests/test_multi_timeframe_settings.py | 每个叠加周期可独立显示或隐藏，隐藏不删除数据或触发下载。 | CMD-003 TRACE-003 | PATH-001 owns remediation. |
+| ACC-004 | 周期透明度设置 | MUST-FR-004 | pytest tests/test_multi_timeframe_settings.py | 每个周期透明度可独立调整并实时预览，不触发聚合或下载。 | CMD-004 TRACE-004 | PATH-002 owns remediation. |
+| ACC-005 | 隐藏周期透明度保留 | MUST-FR-005 | pytest tests/test_multi_timeframe_settings.py | 周期隐藏后再次显示时恢复隐藏前透明度。 | CMD-005 TRACE-005 | PATH-001 owns remediation. |
+| ACC-006 | 单周期默认重置 | MUST-FR-006 | pytest tests/test_multi_timeframe_settings.py | 单行默认操作只重置目标周期，其他周期状态保持不变。 | CMD-006 TRACE-006 | PATH-002 owns remediation. |
+| ACC-007 | 批量操作 | MUST-FR-007 | pytest tests/test_multi_timeframe_settings.py | 核心周期、全部显示、全部隐藏和恢复默认按定义原子应用。 | CMD-007 TRACE-007 | PATH-002 owns remediation. |
+| ACC-008 | 取消恢复 | MUST-FR-008 | pytest tests/test_multi_timeframe_settings.py | 取消后恢复打开面板前状态，确定后仅保留已确认修改。 | CMD-008 TRACE-008 | PATH-002 owns remediation. |
+| ACC-009 | 小屏自适应 | MUST-FR-009 | pytest tests/test_multi_timeframe_settings.py | 1366x768 下无横向溢出，设置区可滚动且关键按钮固定可见。 | CMD-009 TRACE-009 | PATH-003 owns remediation. |
+| ACC-010 | 失败原子回滚 | NEG-001 | pytest tests/test_multi_timeframe_settings.py | 任一设置或布局失败均保持最近一次有效状态，不部分写入且不显示成功假象。 | CMD-010 TRACE-010 | PATH-001 PATH-002 PATH-003 own rollback. |
+
+## Test And Verification Paths
+
+| ID | Type | Covers | Command or evidence path | Completion rule | Per-MUST oracle | Assertion source | Responsibility mapping | Target files |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| CMD-001 | delivery-evidence | MUST-FR-001 | pytest tests/test_multi_timeframe_settings.py | Exit code 0. | 摘要准确展示启用周期和空状态。 | ACC-001 E2E-001 TRACE-001 | PATH-001 owns remediation. | tests/test_multi_timeframe_settings.py vnpy/chart/multi_timeframe_widget.py |
+| CMD-002 | delivery-evidence | MUST-FR-002 | pytest tests/test_multi_timeframe_settings.py | Exit code 0. | 设置入口仅在正确模式下可用。 | ACC-002 E2E-001 TRACE-002 | PATH-002 owns remediation. | tests/test_multi_timeframe_settings.py vnpy/chart/multi_timeframe_settings_dialog.py |
+| CMD-003 | delivery-evidence | MUST-FR-003 | pytest tests/test_multi_timeframe_settings.py | Exit code 0. | 周期显示开关独立生效且不删除数据。 | ACC-003 E2E-001 TRACE-003 | PATH-001 owns remediation. | tests/test_multi_timeframe_settings.py vnpy/chart/multi_timeframe_widget.py |
+| CMD-004 | delivery-evidence | MUST-FR-004 | pytest tests/test_multi_timeframe_settings.py | Exit code 0. | 周期透明度独立调整并实时预览。 | ACC-004 E2E-001 TRACE-004 | PATH-002 owns remediation. | tests/test_multi_timeframe_settings.py vnpy/chart/multi_timeframe_settings_dialog.py |
+| CMD-005 | delivery-evidence | MUST-FR-005 | pytest tests/test_multi_timeframe_settings.py | Exit code 0. | 隐藏后再次显示恢复原透明度。 | ACC-005 E2E-001 TRACE-005 | PATH-001 owns remediation. | tests/test_multi_timeframe_settings.py vnpy/chart/multi_timeframe_widget.py |
+| CMD-006 | delivery-evidence | MUST-FR-006 | pytest tests/test_multi_timeframe_settings.py | Exit code 0. | 单周期重置不影响其他周期。 | ACC-006 E2E-001 TRACE-006 | PATH-002 owns remediation. | tests/test_multi_timeframe_settings.py vnpy/chart/multi_timeframe_settings_dialog.py |
+| CMD-007 | delivery-evidence | MUST-FR-007 | pytest tests/test_multi_timeframe_settings.py | Exit code 0. | 四种批量操作按定义原子应用。 | ACC-007 E2E-001 TRACE-007 | PATH-002 owns remediation. | tests/test_multi_timeframe_settings.py vnpy/chart/multi_timeframe_settings_dialog.py |
+| CMD-008 | delivery-evidence | MUST-FR-008 | pytest tests/test_multi_timeframe_settings.py | Exit code 0. | 取消回滚，确定保留已确认修改。 | ACC-008 E2E-001 TRACE-008 | PATH-002 owns remediation. | tests/test_multi_timeframe_settings.py vnpy/chart/multi_timeframe_settings_dialog.py |
+| CMD-009 | delivery-evidence | MUST-FR-009 | pytest tests/test_multi_timeframe_settings.py | Exit code 0. | 小屏无横向溢出且关键操作可达。 | ACC-009 E2E-001 TRACE-009 | PATH-003 owns remediation. | tests/test_multi_timeframe_settings.py vnpy/trader/ui/widget.py |
+| CMD-010 | delivery-evidence | NEG-001 | pytest tests/test_multi_timeframe_settings.py | Exit code 0. | 任一失败均原子回滚且不产生成功假象。 | ACC-010 E2E-001 TRACE-010 | PATH-001 PATH-002 PATH-003 own rollback. | tests/test_multi_timeframe_settings.py vnpy/chart/multi_timeframe_widget.py vnpy/chart/multi_timeframe_settings_dialog.py vnpy/trader/ui/widget.py |
+| E2E-001 | e2e | MUST-FR-001 MUST-FR-002 MUST-FR-003 MUST-FR-004 MUST-FR-005 MUST-FR-006 MUST-FR-007 MUST-FR-008 MUST-FR-009 NEG-001 | pytest tests/test_multi_timeframe_settings.py | Exit code 0. | 用户可在桌面和小屏完成查看、配置、预览、取消、保存和恢复默认闭环；失败时原子回滚。 | ACC-001 ACC-002 ACC-003 ACC-004 ACC-005 ACC-006 ACC-007 ACC-008 ACC-009 ACC-010 CMD-001 CMD-002 CMD-003 CMD-004 CMD-005 CMD-006 CMD-007 CMD-008 CMD-009 CMD-010 TRACE-001 TRACE-002 TRACE-003 TRACE-004 TRACE-005 TRACE-006 TRACE-007 TRACE-008 TRACE-009 TRACE-010 | PATH-001 PATH-002 PATH-003 own remediation. | tests/test_multi_timeframe_settings.py vnpy/chart/multi_timeframe_widget.py vnpy/chart/multi_timeframe_settings_dialog.py vnpy/trader/ui/widget.py |
+
+## Trace Matrix Source
+
+| ID | Covers | Evidence refs | Acceptance refs | Contract validation command refs | Delivery evidence command refs | View refs | Artifact refs | Boundary refs | Per-MUST oracle | Per-MUST closure assertion | Responsibility mapping |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| TRACE-001 | MUST-FR-001 | ACC-001 | ACC-001 E2E-001 | CMD-001 | CMD-001 | none | PATH-001 | none | 摘要准确展示启用周期和空状态。 | MUST-FR-001 closes through ACC-001 and TRACE-001. | PATH-001 owns remediation. |
+| TRACE-002 | MUST-FR-002 | ACC-002 | ACC-002 E2E-001 | CMD-002 | CMD-002 | none | PATH-002 | none | 设置入口仅在正确模式下可用。 | MUST-FR-002 closes through ACC-002 and TRACE-002. | PATH-002 owns remediation. |
+| TRACE-003 | MUST-FR-003 | ACC-003 | ACC-003 E2E-001 | CMD-003 | CMD-003 | none | PATH-001 | none | 周期显示开关独立生效且不删除数据。 | MUST-FR-003 closes through ACC-003 and TRACE-003. | PATH-001 owns remediation. |
+| TRACE-004 | MUST-FR-004 | ACC-004 | ACC-004 E2E-001 | CMD-004 | CMD-004 | none | PATH-002 | none | 周期透明度独立调整并实时预览。 | MUST-FR-004 closes through ACC-004 and TRACE-004. | PATH-002 owns remediation. |
+| TRACE-005 | MUST-FR-005 | ACC-005 | ACC-005 E2E-001 | CMD-005 | CMD-005 | none | PATH-001 | none | 隐藏后再次显示恢复原透明度。 | MUST-FR-005 closes through ACC-005 and TRACE-005. | PATH-001 owns remediation. |
+| TRACE-006 | MUST-FR-006 | ACC-006 | ACC-006 E2E-001 | CMD-006 | CMD-006 | none | PATH-002 | none | 单周期重置不影响其他周期。 | MUST-FR-006 closes through ACC-006 and TRACE-006. | PATH-002 owns remediation. |
+| TRACE-007 | MUST-FR-007 | ACC-007 | ACC-007 E2E-001 | CMD-007 | CMD-007 | none | PATH-002 | none | 四种批量操作按定义原子应用。 | MUST-FR-007 closes through ACC-007 and TRACE-007. | PATH-002 owns remediation. |
+| TRACE-008 | MUST-FR-008 | ACC-008 | ACC-008 E2E-001 | CMD-008 | CMD-008 | none | PATH-002 | none | 取消回滚，确定保留已确认修改。 | MUST-FR-008 closes through ACC-008 and TRACE-008. | PATH-002 owns remediation. |
+| TRACE-009 | MUST-FR-009 | ACC-009 | ACC-009 E2E-001 | CMD-009 | CMD-009 | none | PATH-003 | none | 小屏无横向溢出且关键操作可达。 | MUST-FR-009 closes through ACC-009 and TRACE-009. | PATH-003 owns remediation. |
+| TRACE-010 | NEG-001 | ACC-010 | ACC-010 E2E-001 | CMD-010 | CMD-010 | none | PATH-001 PATH-002 PATH-003 | none | 任一设置或布局失败均保持最近一次有效状态，不部分写入且不显示成功假象。 | NEG-001 closes through ACC-010 and TRACE-010. | PATH-001 PATH-002 PATH-003 own rollback. |
+
+## Implementation Path Map
+
+| ID | Repository path | Ownership | Required change | Requirement refs | Per-MUST oracle | Assertion source | Responsibility mapping |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| PATH-001 | `vnpy/chart/multi_timeframe_widget.py` | Chart widget owner | 渲染启用周期摘要、显示开关和透明度状态，并保留隐藏周期透明度。 | MUST-FR-001 MUST-FR-003 MUST-FR-005 NEG-001 | ACC-001 ACC-003 ACC-005 ACC-010 pass independently. | ACC-001 ACC-003 ACC-005 ACC-010 CMD-001 CMD-003 CMD-005 CMD-010 TRACE-001 TRACE-003 TRACE-005 TRACE-010 | Chart widget owner owns implementation and rollback. |
+| PATH-002 | `vnpy/chart/multi_timeframe_settings_dialog.py` | Settings dialog owner | 提供设置入口、透明度编辑、单周期重置、批量操作和取消恢复。 | MUST-FR-002 MUST-FR-004 MUST-FR-006 MUST-FR-007 MUST-FR-008 NEG-001 | ACC-002 ACC-004 ACC-006 ACC-007 ACC-008 ACC-010 pass independently. | ACC-002 ACC-004 ACC-006 ACC-007 ACC-008 ACC-010 CMD-002 CMD-004 CMD-006 CMD-007 CMD-008 CMD-010 TRACE-002 TRACE-004 TRACE-006 TRACE-007 TRACE-008 TRACE-010 | Settings dialog owner owns implementation and rollback. |
+| PATH-003 | `vnpy/trader/ui/widget.py` | UI integration owner | 保持小屏布局可用、设置区域可滚动且关键按钮固定可见。 | MUST-FR-009 NEG-001 | ACC-009 and ACC-010 pass at 1366x768. | ACC-009 ACC-010 CMD-009 CMD-010 TRACE-009 TRACE-010 | UI integration owner owns implementation and rollback. |
+
 ## 15. 风险与约束
 
 ### 15.1 回归风险

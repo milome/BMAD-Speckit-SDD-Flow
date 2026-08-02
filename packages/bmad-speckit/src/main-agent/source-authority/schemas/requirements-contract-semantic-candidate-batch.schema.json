@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-semantic-candidate-batch.schema.json",
+  "title": "Requirements Contract Semantic Candidate Batch",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "requirementSetId",
+    "discoverySessionId",
+    "discoverySessionHash",
+    "producedByConsumerId",
+    "candidates",
+    "candidateBatchHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-semantic-candidate-batch/v1"
+    },
+    "requirementSetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "discoverySessionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "discoverySessionHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "producedByConsumerId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "candidates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "candidateId",
+          "candidateKind",
+          "statement",
+          "statementHash",
+          "authorityClass",
+          "resolutionStatus",
+          "sourceBindings"
+        ],
+        "properties": {
+          "candidateId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "candidateKind": {
+            "enum": [
+              "requirement",
+              "negative_requirement",
+              "boundary",
+              "ambiguity",
+              "conflict",
+              "counterexample",
+              "option",
+              "oracle",
+              "question"
+            ]
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "statementHash": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "authorityClass": {
+            "const": "model_hypothesis"
+          },
+          "resolutionStatus": {
+            "const": "unresolved"
+          },
+          "sourceBindings": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "excerptId",
+                "turnId",
+                "messageId",
+                "startUtf8Byte",
+                "endUtf8ByteExclusive",
+                "excerptHash"
+              ],
+              "properties": {
+                "excerptId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "turnId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "messageId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "startUtf8Byte": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "endUtf8ByteExclusive": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "excerptHash": {
+                  "type": "string",
+                  "pattern": "^sha256:[a-f0-9]{64}$"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "candidateBatchHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

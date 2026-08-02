@@ -32,6 +32,10 @@
     "./speckit-implement": {
       "require": "./dist/speckit-implement.js",
       "types": "./dist/speckit-implement.d.ts"
+    },
+    "./*": {
+      "require": "./dist/*.js",
+      "types": "./dist/*.d.ts"
     }
   },
   "scripts": {

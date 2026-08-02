@@ -3,6 +3,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { mainRunRequiredCommandsFromAiTddManifest } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest';
+import { createRecordedConfirmationHistory } from './helpers/requirement-record-confirmation-fixture';
 
 const dynamicRunnerPath = 'packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts';
 const legacyRunnerPath = 'scripts/run-confirmed-final-required-commands.js';
@@ -93,7 +94,13 @@ function fixture(
 ) {
   const testFile = path.join(root, 'tests', 'acceptance', 'fixture.test.ts');
   writeText(testFile, 'import { it } from "vitest"; it("runner fixture", () => {});\n');
-  const targetPath = 'packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts';
+  const targetPath = 'src/runner-target.ts';
+  const absoluteTargetPath = path.join(root, targetPath);
+  writeText(absoluteTargetPath, 'export const runnerTarget = true;\n');
+  writeJson(path.join(root, 'package-lock.json'), {
+    lockfileVersion: 3,
+    packages: {},
+  });
   const targetRows =
     mode === 'missing-target-modification-paths'
       ? []
@@ -191,7 +198,7 @@ function fixture(
       '  artifactAutomationPlan:',
       '    - id: CANONICAL-001',
       '      artifactType: report',
-      '      path: packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts',
+      `      path: ${targetPath}`,
       '      producer: runner-fixture',
       '      sourceOfTruthRole: evidence',
       '      traceRows: [TRACE-001]',
@@ -215,12 +222,12 @@ function fixture(
       '        currentState: missing',
       '        targetState: runner',
       '    artifactPaths:',
-      '      - path: packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts',
+      `      - path: ${targetPath}`,
       '        traceRows: [TRACE-001]',
       '        evidenceRefs: [EVD-001]',
       '    canonicalArtifacts:',
       '      - id: CANONICAL-001',
-      '        targetPathOrField: packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts',
+      `        targetPathOrField: ${targetPath}`,
       '        traceRows: [TRACE-001]',
       '        evidenceRefs: [EVD-001]',
       '    existingArtifacts:',
@@ -238,15 +245,36 @@ function fixture(
       '',
     ].join('\n')
   );
-  const recordPath = path.join(root, 'requirement-record.json');
+  const recordPath = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    'REQ-RUNNER',
+    'requirement-record.json'
+  );
   writeJson(recordPath, {
     recordId: 'REQ-RUNNER',
     requirementSetId: 'REQ-RUNNER',
     status: 'user_confirmed',
+    transactionId: 'TX-REQ-RUNNER',
+    currentAttemptId: 'IMP-REQ-RUNNER',
+    semanticModelHash:
+      'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+    packetHash:
+      'sha256:4444444444444444444444444444444444444444444444444444444444444444',
     sourcePath,
     sourceDocumentHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
     implementationConfirmationHash:
       'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+    confirmationHistory: createRecordedConfirmationHistory({
+      recordId: 'REQ-RUNNER',
+      sourcePath,
+      sourceDocumentHash:
+        'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+      implementationConfirmationHash:
+        'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+    }),
     closeout: { currentAttemptId: 'attempt-runner' },
     aiTddContractGate: { required: true },
     deliveryEvidence: { requiredCommands: [] },
@@ -255,7 +283,7 @@ function fixture(
     executionIterations: [],
     artifactIndex: [],
   });
-  return { sourcePath, recordPath };
+  return { sourcePath, recordPath, targetPath: absoluteTargetPath };
 }
 
 describe('manifest driven required command runner contract', () => {
@@ -341,7 +369,7 @@ describe('manifest driven required command runner contract', () => {
   it('indexes target snapshots and normalized runtime reports through controlled ingest', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'manifest-runner-artifact-index-'));
     try {
-      const { sourcePath, recordPath } = fixture(root, 'valid');
+      const { sourcePath, recordPath, targetPath } = fixture(root, 'valid');
       const commandFile = path.join(root, 'runner-artifact-command.js');
       writeText(commandFile, 'console.log("runner artifact index fixture");\n');
       const source = readText(sourcePath).replace(
@@ -366,10 +394,31 @@ describe('manifest driven required command runner contract', () => {
         '--json',
       ]);
       expect([0, 1]).toContain(code);
+      if (code === 1) {
+        const failedPacket = JSON.parse(
+          readFileSync(path.join(evidenceDir, 'implementation-evidence-packet.failed.json'), 'utf8')
+        );
+        expect(failedPacket.blockingReasons).not.toEqual(
+          expect.arrayContaining(['implementation_evidence_ingest_failed:3'])
+        );
+        expect(failedPacket.blockingReasons).not.toEqual(
+          expect.arrayContaining([
+            'target_artifact_evidence_snapshot_path_mismatch',
+            'target_artifact_evidence_snapshot_transaction_id_mismatch',
+            'target_artifact_evidence_snapshot_packet_hash_mismatch',
+          ])
+        );
+      }
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record).toMatchObject({
+        transactionId: 'TX-REQ-RUNNER',
+        packetHash:
+          'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+      });
       const artifactPaths = record.artifactIndex.map((artifact: Record<string, unknown>) =>
         String(artifact.path)
       );
+      const normalizedTargetPath = targetPath.replace(/\\/gu, '/');
       expect(artifactPaths).toEqual(
         expect.arrayContaining([
           path.join(evidenceDir, 'ai-tdd-pre-run-report.json').replace(/\\/gu, '/'),
@@ -378,13 +427,54 @@ describe('manifest driven required command runner contract', () => {
           path.join(evidenceDir, 'dynamic-runner-test-report.json').replace(/\\/gu, '/'),
           path.join(evidenceDir, 'legacy-guard-test-report.json').replace(/\\/gu, '/'),
           path.join(evidenceDir, 'final-closeout-runner-test-report.json').replace(/\\/gu, '/'),
-          path
-            .resolve('packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts')
-            .replace(/\\/gu, '/'),
+          normalizedTargetPath,
         ])
       );
+      const targetControl = record.artifactIndex.find(
+        (artifact: Record<string, unknown>) => artifact.path === normalizedTargetPath
+      );
+      expect(targetControl).toMatchObject({
+        artifactType: 'target_file_control',
+        sourceOfTruthRole: 'projection',
+      });
+      const targetEvidenceSnapshot = record.artifactIndex.find(
+        (artifact: Record<string, unknown>) =>
+          artifact.artifactType === 'target_file_readback_snapshot'
+      );
+      expect(targetEvidenceSnapshot).toMatchObject({
+        sourceOfTruthRole: 'evidence',
+        contentHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+      });
+      const targetEvidenceSnapshotPath = String(targetEvidenceSnapshot.path);
+      const targetSnapshot = JSON.parse(readFileSync(targetEvidenceSnapshotPath, 'utf8'));
+      expect(targetSnapshot).toMatchObject({
+        schemaVersion: 'requirements-contract-target-file-evidence-snapshot/v1',
+        targetArtifactId: 'CANONICAL-001',
+        targetPath: normalizedTargetPath,
+        targetHash: targetControl.contentHash,
+        requirementSetId: 'REQ-RUNNER',
+        transactionId: 'TX-REQ-RUNNER',
+        implementationAttemptId: 'IMP-REQ-RUNNER',
+        closeoutAttemptId: 'attempt-runner',
+        semanticModelHash:
+          'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+        packetHash:
+          'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+      });
+      expect(existsSync(`${targetEvidenceSnapshotPath}.schema.json`)).toBe(true);
+      expect(existsSync(`${targetEvidenceSnapshotPath}.readback-receipt.json`)).toBe(true);
       const packet = JSON.parse(
         readFileSync(path.join(evidenceDir, 'implementation-evidence-packet.json'), 'utf8')
+      );
+      expect(packet.artifactRefs).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            artifactType: 'target_file_readback_snapshot',
+            path: targetEvidenceSnapshotPath,
+            schemaPath: `${targetEvidenceSnapshotPath}.schema.json`,
+            readbackReceiptPath: `${targetEvidenceSnapshotPath}.readback-receipt.json`,
+          }),
+        ])
       );
       expect(packet.artifactRefs).not.toEqual(
         expect.arrayContaining([

@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "masterSourceHash",
+    "sourceSnapshotHash",
+    "methodologyProfileHash",
+    "executionProjectionHash",
+    "partitionPolicyHash",
+    "partitionManifestHash",
+    "partitionSetHash",
+    "partitionId",
+    "partitionRole",
+    "selectionSetHash",
+    "selectedPrimarySourceObligationIds",
+    "selectedPrimaryTraceSliceIds",
+    "selectedPrimaryAtomicTaskIds",
+    "selectedAcceptanceIds",
+    "selectedCommandIds",
+    "selectedEvidenceContractIds",
+    "inheritedConstraintIds",
+    "excludedSourceObligationIds",
+    "excludedTraceSliceIds",
+    "excludedAtomicTaskIds",
+    "excludedAcceptanceIds",
+    "excludedCommandIds",
+    "excludedEvidenceContractIds",
+    "dependencyPartitionIds",
+    "decision",
+    "blockingReasons"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-partition-selection-receipt/v1"
+    },
+    "masterSourceHash": { "$ref": "#/$defs/hash" },
+    "sourceSnapshotHash": { "$ref": "#/$defs/hash" },
+    "methodologyProfileHash": { "$ref": "#/$defs/hash" },
+    "executionProjectionHash": { "$ref": "#/$defs/hash" },
+    "partitionPolicyHash": { "$ref": "#/$defs/hash" },
+    "partitionManifestHash": { "$ref": "#/$defs/hash" },
+    "partitionSetHash": { "$ref": "#/$defs/hash" },
+    "partitionId": { "$ref": "#/$defs/partitionId" },
+    "partitionRole": {
+      "enum": [
+        "implementation",
+        "authority_transition",
+        "integration",
+        "distribution",
+        "final_integration"
+      ]
+    },
+    "selectionSetHash": { "$ref": "#/$defs/hash" },
+    "selectedPrimarySourceObligationIds": { "$ref": "#/$defs/ids" },
+    "selectedPrimaryTraceSliceIds": { "$ref": "#/$defs/ids" },
+    "selectedPrimaryAtomicTaskIds": { "$ref": "#/$defs/ids" },
+    "selectedAcceptanceIds": { "$ref": "#/$defs/ids" },
+    "selectedCommandIds": { "$ref": "#/$defs/ids" },
+    "selectedEvidenceContractIds": { "$ref": "#/$defs/ids" },
+    "inheritedConstraintIds": { "$ref": "#/$defs/ids" },
+    "excludedSourceObligationIds": { "$ref": "#/$defs/ids" },
+    "excludedTraceSliceIds": { "$ref": "#/$defs/ids" },
+    "excludedAtomicTaskIds": { "$ref": "#/$defs/ids" },
+    "excludedAcceptanceIds": { "$ref": "#/$defs/ids" },
+    "excludedCommandIds": { "$ref": "#/$defs/ids" },
+    "excludedEvidenceContractIds": { "$ref": "#/$defs/ids" },
+    "dependencyPartitionIds": { "$ref": "#/$defs/partitionIds" },
+    "decision": { "enum": ["pass", "blocked"] },
+    "blockingReasons": { "$ref": "#/$defs/ids" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "decision": { "const": "pass" } } },
+      "then": { "properties": { "blockingReasons": { "maxItems": 0 } } }
+    },
+    {
+      "if": { "properties": { "decision": { "const": "blocked" } } },
+      "then": { "properties": { "blockingReasons": { "minItems": 1 } } }
+    }
+  ],
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "partitionId": {
+      "type": "string",
+      "pattern": "^partition-[0-9a-f]{64}$"
+    },
+    "partitionIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/partitionId" }
+    },
+    "ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

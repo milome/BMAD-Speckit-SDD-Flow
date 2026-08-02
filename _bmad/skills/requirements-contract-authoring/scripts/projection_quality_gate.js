@@ -171,6 +171,17 @@ function isGenericProjectionText(text) {
   );
 }
 
+function stripExactRequirementPayloads(text, mustRefs, mustTextById) {
+  let projectionText = text;
+  for (const mustRef of mustRefs) {
+    const payload = mustTextById.get(mustRef);
+    if (payload) {
+      projectionText = projectionText.split(payload).join(' ');
+    }
+  }
+  return projectionText;
+}
+
 function collectProjectionQualityIssues(confirmation, options = {}) {
   const prefix = options.codePrefix ?? '';
   const makeIssue =
@@ -186,6 +197,9 @@ function collectProjectionQualityIssues(confirmation, options = {}) {
   const issues = [];
   const mustIds = idsFor(confirmation.must).filter((id) => id.startsWith('MUST-'));
   if (mustIds.length <= 1) return issues;
+  const mustTextById = new Map(
+    asArray(confirmation.must).map((row) => [rowId(row), String(row?.text ?? '').trim()])
+  );
 
   const traceMustMap = buildTraceMustMap(confirmation);
   const acceptanceRows = [
@@ -308,13 +322,21 @@ function collectProjectionQualityIssues(confirmation, options = {}) {
     const rows = currentTargetRows(confirmation);
     const productSpecificBusinessRefs = new Set();
     for (const row of rows) {
-      const text = collectText(row);
-      if (isGenericProjectionText(text)) continue;
       const rowMustRefs = new Set([
         ...mustRefsForCoverageRow(row, traceMustMap),
         ...perMustDetailRefsFor(row, businessMust),
       ]);
-      if (rowMustRefs.size === businessMust.length && !hasPerMustDetailForAll(row, businessMust)) {
+      const projectionControlText = stripExactRequirementPayloads(
+        collectText(row),
+        rowMustRefs,
+        mustTextById
+      );
+      if (isGenericProjectionText(projectionControlText)) continue;
+      if (
+        businessMust.length > 1 &&
+        rowMustRefs.size === businessMust.length &&
+        !hasPerMustDetailForAll(row, businessMust)
+      ) {
         continue;
       }
       for (const ref of rowMustRefs) {

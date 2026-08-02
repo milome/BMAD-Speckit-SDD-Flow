@@ -48,6 +48,24 @@ function writeSessionRequirements(root: string): string {
       '| --- | --- | --- | --- |',
       '| FR-001 | The authoring flow must produce a staging draft from a session requirement before materializing source. | Session entry must stay staging-first. | ACC-001 |',
       '',
+      '## Negative Requirements And Not Done Conditions',
+      '',
+      '| ID | Not-done condition | Negative assertion | Blocks completion when | Failure refs | Evidence refs |',
+      '| --- | --- | --- | --- | --- | --- |',
+      '| NEG-001 | Skipping the staging draft is not allowed. | Source materialization must not run before staging. | The target source is created before the staging draft. | FAIL-001 | ACC-001 |',
+      '',
+      '## Failure Matrix',
+      '',
+      '| ID | Failure condition | Required system behavior | Negative requirement refs | Evidence | Requirement refs |',
+      '| --- | --- | --- | --- | --- | --- |',
+      '| FAIL-001 | Staging draft generation fails. | Keep the target source absent and report the blocking failure. | NEG-001 | ACC-001 | MUST-FR-001 |',
+      '',
+      '## Out Of Scope',
+      '',
+      '| ID | Forbidden scope | Boundary assertion | Evidence |',
+      '| --- | --- | --- | --- |',
+      '| OUT-001 | Replacing cp-01 or cp-02 decomposition authority. | Existing checkpoint decomposition ownership remains unchanged. | ACC-001 |',
+      '',
     ].join('\n'),
     'utf8'
   );
@@ -56,7 +74,7 @@ function writeSessionRequirements(root: string): string {
 
 function cleanCriticalAuditorRound(input: any) {
   return {
-    verdict: 'no_new_gap',
+    verdict: 'no_new_valid_gap',
     transactionId: input.transactionId,
     namespaceVersion: input.namespaceVersion,
     requestHash: input.requestHash,
@@ -114,7 +132,16 @@ describe('source PRD authoring entry-source lint gate', () => {
       });
 
       const dir = authoringDir(root, recordId);
-      const report = readJson(path.join(dir, 'source-prd-instance-lint-report.json'));
+      const reportPath = path.join(dir, 'source-prd-instance-lint-report.json');
+      expect(
+        existsSync(reportPath),
+        JSON.stringify({
+          substate: result.substate,
+          blockingStage: result.blockingStage,
+          blockingIssues: result.blockingIssues,
+        })
+      ).toBe(true);
+      const report = readJson(reportPath);
       const transaction = readJson(path.join(dir, 'authoring-transaction.json'));
 
       expect(result.entrySource).toBe(entrySource);
@@ -122,7 +149,7 @@ describe('source PRD authoring entry-source lint gate', () => {
         `_bmad-output/runtime/requirement-records/${recordId}/authoring/source-prd-instance-lint-report.json`
       );
       expect(report).toMatchObject({
-        stage: 'pre_staging_source',
+        stage: 'post_staging_draft',
         entrySource,
         ok: true,
         status: 'source_prd_draft_ready',
@@ -153,13 +180,28 @@ describe('source PRD authoring entry-source lint gate', () => {
         entrySource: 'session_requirements',
         recordId,
         requirementSetId: `${recordId}-SET`,
+        sessionId: 'session-source-prd-lint',
+        sessionTurnId: 'turn-source-prd-lint',
+        sessionMessageId: 'message-source-prd-lint',
+        sessionActorIdentityClass: 'requesting_user',
+        sessionBranch: 'test-source-prd-lint',
+        sessionCapturedAt: '2026-07-14T00:00:00.000Z',
         targetPath: 'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts',
         requiredCommand: 'npx vitest run tests/acceptance/source-prd-authoring-entry-source-lint.test.ts',
         criticalAuditorRound: cleanCriticalAuditorRound,
       });
 
       const dir = authoringDir(root, recordId);
-      const report = readJson(path.join(dir, 'source-prd-instance-lint-report.json'));
+      const reportPath = path.join(dir, 'source-prd-instance-lint-report.json');
+      expect(
+        existsSync(reportPath),
+        JSON.stringify({
+          substate: result.substate,
+          blockingStage: result.blockingStage,
+          blockingIssues: result.blockingIssues,
+        })
+      ).toBe(true);
+      const report = readJson(reportPath);
       const transaction = readJson(path.join(dir, 'authoring-transaction.json'));
 
       expect(result.entrySource).toBe('session_requirements');
@@ -177,9 +219,46 @@ describe('source PRD authoring entry-source lint gate', () => {
         status: 'source_prd_draft_blocked',
         sourcePrdDraftReady: false,
       });
-      expect(transaction.nextRequiredAction).not.toBe('source_prd_draft_ready');
-      expect(existsSync(path.join(dir, 'draft-source-preview.md'))).toBe(true);
+      expect(transaction.nextRequiredAction).toBe(
+        'continue_staging_repair_without_ready_claim'
+      );
+      const previewPath = path.join(dir, 'draft-source-preview.md');
+      expect(existsSync(previewPath)).toBe(true);
+      const previewText = readFileSync(previewPath, 'utf8');
+      expect(previewText).toBe(readFileSync(intake, 'utf8'));
+      expect(previewText).not.toContain('implementationConfirmation:');
       expect(existsSync(target)).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('does not treat an existing source as session intake from an explicit entry-source claim', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'source-prd-entry-existing-source-'));
+    try {
+      const source = writeSessionRequirements(root);
+      const recordId = 'REQ-SOURCE-PRD-EXISTING-SOURCE';
+
+      const result = runMainAgentPreConfirmationDrilldown(root, {
+        source,
+        entrySource: 'session_requirements',
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        sessionId: 'session-existing-source',
+        sessionTurnId: 'turn-existing-source',
+        sessionMessageId: 'message-existing-source',
+        sessionActorIdentityClass: 'requesting_user',
+        sessionBranch: 'test-existing-source',
+        sessionCapturedAt: '2026-07-17T00:00:00.000Z',
+        targetPath: 'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts',
+        requiredCommand: 'npx vitest run tests/acceptance/source-prd-authoring-entry-source-lint.test.ts',
+        criticalAuditorRound: cleanCriticalAuditorRound,
+      });
+
+      const dir = authoringDir(root, recordId);
+      expect(result.entrySource).toBeUndefined();
+      expect(existsSync(path.join(dir, 'source-prd-instance-lint-report.json'))).toBe(false);
+      expect(existsSync(path.join(dir, 'intake-receipt.json'))).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

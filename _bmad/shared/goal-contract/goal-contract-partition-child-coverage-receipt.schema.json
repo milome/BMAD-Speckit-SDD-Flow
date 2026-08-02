@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "partitionId",
+    "partitionManifestHash",
+    "selectionReceiptHash",
+    "globalCoverageReceiptHash",
+    "selectedPrimaryObligationIds",
+    "inheritedConstraintIds",
+    "excludedObligationIds",
+    "unmappedSelectedObligations",
+    "orphanGeneratedTaskIds",
+    "orphanGeneratedAcceptanceIds",
+    "decision",
+    "blockingReasons"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-partition-child-coverage-receipt/v1"
+    },
+    "partitionId": {
+      "type": "string",
+      "pattern": "^partition-[0-9a-f]{64}$"
+    },
+    "partitionManifestHash": { "$ref": "#/$defs/hash" },
+    "selectionReceiptHash": { "$ref": "#/$defs/hash" },
+    "globalCoverageReceiptHash": { "$ref": "#/$defs/hash" },
+    "selectedPrimaryObligationIds": { "$ref": "#/$defs/ids" },
+    "inheritedConstraintIds": { "$ref": "#/$defs/ids" },
+    "excludedObligationIds": { "$ref": "#/$defs/ids" },
+    "unmappedSelectedObligations": { "$ref": "#/$defs/ids" },
+    "orphanGeneratedTaskIds": { "$ref": "#/$defs/ids" },
+    "orphanGeneratedAcceptanceIds": { "$ref": "#/$defs/ids" },
+    "decision": { "enum": ["pass", "blocked"] },
+    "blockingReasons": { "$ref": "#/$defs/ids" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "decision": { "const": "pass" } } },
+      "then": { "properties": { "blockingReasons": { "maxItems": 0 } } }
+    },
+    {
+      "if": { "properties": { "decision": { "const": "blocked" } } },
+      "then": { "properties": { "blockingReasons": { "minItems": 1 } } }
+    }
+  ],
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

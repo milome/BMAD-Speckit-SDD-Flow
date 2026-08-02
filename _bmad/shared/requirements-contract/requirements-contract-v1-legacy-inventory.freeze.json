@@ -1,0 +1,10 @@
+{
+  "inventoryHash": "sha256:70f7ac7beb1ca5a052156c04b1c9bea058a0036ca0a6bcb2cae2c6aa5c89e46d",
+  "inventorySchemaHash": "sha256:9aec7a3c316a7a8f26319a25c273fe9d9b75edbbc929b047153bf564ea97402b",
+  "writerHash": "sha256:a8961b07388a1161ffd283c9a04c177bdd41080f08b1e5809cbed87b561756b2",
+  "cutoverId": "V2-CUTOVER-019F4C5A-BD07-7170-A123-FD9E9B556BB3",
+  "predecessorHash": "sha256:bb0a9c02f46f17fe5be66c476131cb2fb82001af80702161b616e549f63cdaef",
+  "g00BaselineHash": "sha256:0cf615aa5673d9dc1fd91f5920662bdb521b47c7d87383f239a2ccb2f8e7d0c2",
+  "rowCount": 0,
+  "freezeTransactionId": "TX-019f4c5a-bd07-7170-a123-fd9e9b556bb3"
+}

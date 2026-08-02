@@ -1,0 +1,337 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-bundle-publication-receipt.schema.json",
+  "title": "Requirements Contract Bundle Publication Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "commandId",
+    "exactArgv",
+    "argvHash",
+    "requirementSetId",
+    "baseRevision",
+    "expectedCommittedRecordRevision",
+    "observedCommittedRecordRevision",
+    "bundleRevision",
+    "atomicCommitId",
+    "controlEventId",
+    "manifest",
+    "members",
+    "staging",
+    "compareAndSwap",
+    "result"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-bundle-publication-receipt/v1"
+    },
+    "commandId": {
+      "const": "CMD-26"
+    },
+    "exactArgv": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "argvHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "requirementSetId": {
+      "$ref": "#/$defs/stableId"
+    },
+    "baseRevision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "expectedCommittedRecordRevision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "observedCommittedRecordRevision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "bundleRevision": {
+      "type": "string",
+      "pattern": "^BUNDLE-REV-[A-Z0-9][A-Z0-9._-]*$"
+    },
+    "atomicCommitId": {
+      "type": "string",
+      "pattern": "^ATOMIC-COMMIT-[A-Z0-9][A-Z0-9._-]*$"
+    },
+    "controlEventId": {
+      "type": "string",
+      "pattern": "^CONTROL-EVENT-[A-Z0-9][A-Z0-9._-]*$"
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash", "canonicalByteDomain"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^_bmad-output/runtime/requirement-records/[^/]+/authoring/revisions/[^/]+/bundle-manifest\\.json$"
+        },
+        "hash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "canonicalByteDomain": {
+          "const": "requirements-contract-runtime-bundle-manifest/v1"
+        }
+      }
+    },
+    "members": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "items": {
+        "$ref": "#/$defs/member"
+      },
+      "uniqueItems": true,
+      "allOf": [
+        {
+          "$ref": "#/$defs/containsSemanticIr"
+        },
+        {
+          "$ref": "#/$defs/containsTraceGraph"
+        },
+        {
+          "$ref": "#/$defs/containsTargetBindings"
+        },
+        {
+          "$ref": "#/$defs/containsTaskGraph"
+        },
+        {
+          "$ref": "#/$defs/containsRedContracts"
+        },
+        {
+          "$ref": "#/$defs/containsOracleRegistry"
+        },
+        {
+          "$ref": "#/$defs/containsAcceptanceContracts"
+        },
+        {
+          "$ref": "#/$defs/containsEvidenceRequirements"
+        },
+        {
+          "$ref": "#/$defs/containsBusinessBehaviorDelta"
+        },
+        {
+          "$ref": "#/$defs/containsImplementationImpactMap"
+        }
+      ]
+    },
+    "staging": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "allElevenFilesReadBack",
+        "sameVolumeRenameDecision",
+        "orphanCleanupDecision"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^_bmad-output/runtime/requirement-records/[^/]+/authoring/\\.staging/ATOMIC-COMMIT-[^/]+$"
+        },
+        "allElevenFilesReadBack": {
+          "const": true
+        },
+        "sameVolumeRenameDecision": {
+          "const": "pass"
+        },
+        "orphanCleanupDecision": {
+          "const": "pass"
+        }
+      }
+    },
+    "compareAndSwap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baseRevisionMatched",
+        "activeBundleRevisionMatched",
+        "eventAppended",
+        "activeBundleRevision",
+        "decision"
+      ],
+      "properties": {
+        "baseRevisionMatched": {
+          "const": true
+        },
+        "activeBundleRevisionMatched": {
+          "const": true
+        },
+        "eventAppended": {
+          "const": true
+        },
+        "activeBundleRevision": {
+          "type": "string",
+          "pattern": "^BUNDLE-REV-[A-Z0-9][A-Z0-9._-]*$"
+        },
+        "decision": {
+          "const": "pass"
+        }
+      }
+    },
+    "result": {
+      "const": "pass"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "member": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash", "safeWriteReceiptRef", "readbackHash"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^_bmad-output/runtime/requirement-records/[^/]+/authoring/revisions/[^/]+/[^/]+\\.json$"
+        },
+        "hash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "safeWriteReceiptRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "readbackHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "containsSemanticIr": {
+      "contains": {
+        "properties": {
+          "path": {
+            "pattern": "/semantic-ir\\.json$"
+          }
+        },
+        "required": ["path"]
+      },
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsTraceGraph": {
+      "contains": {
+        "properties": {
+          "path": {
+            "pattern": "/trace-graph\\.json$"
+          }
+        },
+        "required": ["path"]
+      },
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsTargetBindings": {
+      "contains": {
+        "properties": {
+          "path": {
+            "pattern": "/target-bindings\\.json$"
+          }
+        },
+        "required": ["path"]
+      },
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsTaskGraph": {
+      "contains": {
+        "properties": {
+          "path": {
+            "pattern": "/task-graph\\.json$"
+          }
+        },
+        "required": ["path"]
+      },
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsRedContracts": {
+      "contains": {
+        "properties": {
+          "path": {
+            "pattern": "/red-contracts\\.json$"
+          }
+        },
+        "required": ["path"]
+      },
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsOracleRegistry": {
+      "contains": {
+        "properties": {
+          "path": {
+            "pattern": "/oracle-registry\\.json$"
+          }
+        },
+        "required": ["path"]
+      },
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsAcceptanceContracts": {
+      "contains": {
+        "properties": {
+          "path": {
+            "pattern": "/acceptance-contracts\\.json$"
+          }
+        },
+        "required": ["path"]
+      },
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsEvidenceRequirements": {
+      "contains": {
+        "properties": {
+          "path": {
+            "pattern": "/evidence-requirements\\.json$"
+          }
+        },
+        "required": ["path"]
+      },
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsBusinessBehaviorDelta": {
+      "contains": {
+        "properties": {
+          "path": {
+            "pattern": "/business-behavior-delta\\.json$"
+          }
+        },
+        "required": ["path"]
+      },
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsImplementationImpactMap": {
+      "contains": {
+        "properties": {
+          "path": {
+            "pattern": "/implementation-impact-map\\.json$"
+          }
+        },
+        "required": ["path"]
+      },
+      "minContains": 1,
+      "maxContains": 1
+    }
+  }
+}

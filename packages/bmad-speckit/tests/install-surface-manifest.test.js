@@ -1,3 +1,5 @@
+require('./register-ts-source.cjs');
+
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
@@ -14,6 +16,7 @@ const {
   readInstallManifest,
 } = require('../src/services/install-surface-manifest');
 const ROOT_PACKAGE_VERSION = require('../../../package.json').version;
+const PACKAGE_ROOT = path.resolve(__dirname, '..');
 
 function writeJson(filePath, payload) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -27,6 +30,23 @@ function writeSkill(root, relativeRoot, name) {
 }
 
 describe('install-surface-manifest helper', () => {
+  it('includes Sequence mode runtime in the published package surface', () => {
+    const packageJson = JSON.parse(
+      fs.readFileSync(path.join(PACKAGE_ROOT, 'package.json'), 'utf8')
+    );
+    assert.ok(packageJson.files.includes('dist/'));
+    for (const relativePath of [
+      'dist/utils/goal-contract/sequence-mode.js',
+      'dist/utils/goal-contract/sequence-applicability-adapter.js',
+    ]) {
+      assert.equal(
+        fs.existsSync(path.join(PACKAGE_ROOT, relativePath)),
+        true,
+        `published Sequence runtime is missing: ${relativePath}`
+      );
+    }
+  });
+
   it('normalizes agent aliases to canonical runtime ids', () => {
     assert.deepStrictEqual(normalizeAgentList('cursor-agent,claude'), ['cursor', 'claude-code']);
   });

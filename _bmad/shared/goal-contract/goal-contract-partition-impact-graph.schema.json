@@ -1,0 +1,388 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "enumerationMode",
+    "repositoryTreeHash",
+    "repositoryFactsHash",
+    "partitionImpactPolicyHash",
+    "analyzerIdentityHash",
+    "sourceSnapshotHash",
+    "sourceObligationGraphHash",
+    "executionProjectionHash",
+    "partitionPlanBasisHash",
+    "artifactNodes",
+    "commandNodes",
+    "partitionNodes",
+    "relationEdges",
+    "unsupportedRelationRecords",
+    "graphStatistics",
+    "impactGraphHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-partition-impact-graph/v1"
+    },
+    "enumerationMode": {
+      "enum": [
+        "git_index_worktree",
+        "bounded_filesystem",
+        "package_repository_facts"
+      ]
+    },
+    "repositoryTreeHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "repositoryFactsHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "partitionImpactPolicyHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "analyzerIdentityHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "sourceSnapshotHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "sourceObligationGraphHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "executionProjectionHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "partitionPlanBasisHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "artifactNodes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/artifact"
+      }
+    },
+    "commandNodes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/command"
+      }
+    },
+    "partitionNodes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/partition"
+      }
+    },
+    "relationEdges": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/edge"
+      }
+    },
+    "unsupportedRelationRecords": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/unsupported"
+      }
+    },
+    "graphStatistics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "visitedDirectoryCount",
+        "candidateFileCount",
+        "analyzedFileCount",
+        "aggregateBytes",
+        "artifactNodeCount",
+        "commandNodeCount",
+        "partitionNodeCount",
+        "relationEdgeCount",
+        "unsupportedRelationCount"
+      ],
+      "properties": {
+        "visitedDirectoryCount": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "candidateFileCount": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "analyzedFileCount": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "aggregateBytes": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "artifactNodeCount": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "commandNodeCount": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "partitionNodeCount": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "relationEdgeCount": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "unsupportedRelationCount": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        }
+      }
+    },
+    "impactGraphHash": {
+      "$ref": "#/$defs/hash"
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "nonnegativeInteger": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "strings": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifactId",
+        "path",
+        "artifactKind",
+        "existenceState",
+        "fileHash",
+        "plannedOperation",
+        "mutable",
+        "ownerPartitionId",
+        "provenanceRefs"
+      ],
+      "properties": {
+        "artifactId": {
+          "type": "string",
+          "pattern": "^artifact-[0-9a-f]{64}$"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "artifactKind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "existenceState": {
+          "enum": [
+            "planned",
+            "present"
+          ]
+        },
+        "fileHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "plannedOperation": {
+          "enum": [
+            "create",
+            "modify",
+            "none"
+          ]
+        },
+        "mutable": {
+          "type": "boolean"
+        },
+        "ownerPartitionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "provenanceRefs": {
+          "$ref": "#/$defs/strings"
+        }
+      }
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commandId",
+        "commandKind",
+        "commandOwnerPartitionId",
+        "commandTextHash",
+        "workingDirectory",
+        "shell",
+        "runtime",
+        "executableArtifactId",
+        "testArtifactIds",
+        "targetArtifactIds",
+        "scriptExpansionChain",
+        "sourceBindingHash"
+      ],
+      "properties": {
+        "commandId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commandKind": {
+          "enum": [
+            "direct",
+            "impacted",
+            "integration",
+            "regression"
+          ]
+        },
+        "commandOwnerPartitionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commandTextHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "workingDirectory": {
+          "type": "string"
+        },
+        "shell": {
+          "type": "string"
+        },
+        "runtime": {
+          "type": "string"
+        },
+        "executableArtifactId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "testArtifactIds": {
+          "$ref": "#/$defs/strings"
+        },
+        "targetArtifactIds": {
+          "$ref": "#/$defs/strings"
+        },
+        "scriptExpansionChain": {
+          "$ref": "#/$defs/strings"
+        },
+        "sourceBindingHash": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "partition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "partitionId",
+        "topologicalIndex",
+        "dependencyPartitionIds",
+        "ownedArtifactIds",
+        "commandIds"
+      ],
+      "properties": {
+        "partitionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "topologicalIndex": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "dependencyPartitionIds": {
+          "$ref": "#/$defs/strings"
+        },
+        "ownedArtifactIds": {
+          "$ref": "#/$defs/strings"
+        },
+        "commandIds": {
+          "$ref": "#/$defs/strings"
+        }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "edgeId",
+        "relationKind",
+        "fromNodeId",
+        "toNodeId",
+        "evidencePath",
+        "lineStart",
+        "lineEnd",
+        "evidenceHash",
+        "provenanceKind"
+      ],
+      "properties": {
+        "edgeId": {
+          "type": "string",
+          "pattern": "^relation-[0-9a-f]{64}$"
+        },
+        "relationKind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fromNodeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "toNodeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidencePath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lineStart": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "lineEnd": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "evidenceHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "provenanceKind": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "unsupported": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourcePath",
+        "line",
+        "relationClass",
+        "expressionHash",
+        "requiredRemediation"
+      ],
+      "properties": {
+        "sourcePath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "relationClass": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expressionHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "requiredRemediation": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

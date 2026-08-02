@@ -1,0 +1,8 @@
+{
+  "name": "test-portfolio-route-wrapper-drift-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "delegate": "node tools/run-root-tests.cjs"
+  }
+}

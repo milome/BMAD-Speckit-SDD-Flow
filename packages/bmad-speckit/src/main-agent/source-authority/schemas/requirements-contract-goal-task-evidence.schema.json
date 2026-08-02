@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-goal-task-evidence.schema.json",
+  "title": "Requirements Contract Goal Task Evidence",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schemaVersion", "finalizationDeclarationHash", "decision"],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-goal-task-evidence/v1"
+    },
+    "finalizationDeclarationHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "decision": { "const": "PASS" }
+  }
+}

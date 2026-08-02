@@ -6,6 +6,10 @@ const os = require('node:os');
 const path = require('node:path');
 const { buildBmadHelpOutput, renderBmadHelp } = require('../dist/runtime/bmad-help-renderer');
 const { buildBmadsOutput } = require('../dist/runtime/bmads-renderer');
+const {
+  sha256,
+  withVerifiedModelStatus,
+} = require('./helpers/runtime-status-fixture.cjs');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
 const PACKAGE_CLI = path.join(PROJECT_ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
@@ -32,24 +36,24 @@ function makeRoot() {
   const recordsRoot = path.join(root, '_bmad-output', 'runtime', 'requirement-records');
   const recordDir = path.join(recordsRoot, 'REQ-BMAD-HELP-CROSS');
   fs.mkdirSync(recordDir, { recursive: true });
+  const requirementRecord = withVerifiedModelStatus(
+    {
+      recordId: 'REQ-BMAD-HELP-CROSS',
+      title: 'BMAD help cross entry',
+      currentMentalModel: 'implementation_readiness',
+      sourceDocumentHash: sha256('bmad-help-source'),
+      implementationConfirmationHash: sha256('bmad-help-confirmation'),
+      privateDiagnosticBlob: RAW_RECORD_SENTINEL,
+      updatedAt: '2026-06-01T00:00:00.000Z',
+    },
+    {
+      modelId: 'implementation_readiness',
+      authorityClass: 'deterministic_gate',
+    }
+  );
   fs.writeFileSync(
     path.join(recordDir, 'requirement-record.json'),
-    `${JSON.stringify(
-      {
-        recordId: 'REQ-BMAD-HELP-CROSS',
-        title: 'BMAD help cross entry',
-        currentMentalModel: 'implementation_readiness',
-        sourceDocumentHash: 'sha256:source',
-        implementationConfirmationHash: 'sha256:confirmation',
-        privateDiagnosticBlob: RAW_RECORD_SENTINEL,
-        sixModelResults: {
-          implementation_readiness: { status: 'pass' },
-        },
-        updatedAt: '2026-06-01T00:00:00.000Z',
-      },
-      null,
-      2
-    )}\n`,
+    `${JSON.stringify(requirementRecord, null, 2)}\n`,
     'utf8'
   );
   fs.writeFileSync(

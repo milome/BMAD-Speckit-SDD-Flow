@@ -1,0 +1,850 @@
+{
+  "schemaVersion": "test-portfolio-policy/v1",
+  "budgets": {
+    "executableTestCount": 1200,
+    "corePermanentCount": 120,
+    "prP95Minutes": 10
+  },
+  "profiles": [
+    "pr-fast",
+    "pr-full",
+    "nightly-deep",
+    "release-verify",
+    "nightly-full",
+    "release-full"
+  ],
+  "semanticObligations": [
+    {
+      "model": "requirement_confirmation",
+      "applicability": "applicable",
+      "minimumEvidenceKind": "indirect",
+      "requiredBehaviors": [
+        "state_entry",
+        "applicability_or_not_applicable",
+        "successful_promotion",
+        "fail_closed",
+        "invalidation",
+        "reconfirmation",
+        "evidence_binding",
+        "authority_rejection",
+        "stale_evidence_rejection"
+      ]
+    },
+    {
+      "model": "architecture_confirmation",
+      "applicability": "applicable",
+      "minimumEvidenceKind": "indirect",
+      "requiredBehaviors": [
+        "state_entry",
+        "applicability_or_not_applicable",
+        "successful_promotion",
+        "fail_closed",
+        "invalidation",
+        "reconfirmation",
+        "evidence_binding",
+        "authority_rejection",
+        "stale_evidence_rejection"
+      ]
+    },
+    {
+      "model": "implementation_readiness",
+      "applicability": "applicable",
+      "minimumEvidenceKind": "indirect",
+      "requiredBehaviors": [
+        "state_entry",
+        "applicability_or_not_applicable",
+        "successful_promotion",
+        "fail_closed",
+        "invalidation",
+        "reconfirmation",
+        "evidence_binding",
+        "authority_rejection",
+        "stale_evidence_rejection"
+      ]
+    },
+    {
+      "model": "execution_closure",
+      "applicability": "applicable",
+      "minimumEvidenceKind": "indirect",
+      "requiredBehaviors": [
+        "state_entry",
+        "applicability_or_not_applicable",
+        "successful_promotion",
+        "fail_closed",
+        "invalidation",
+        "reconfirmation",
+        "evidence_binding",
+        "authority_rejection",
+        "stale_evidence_rejection"
+      ]
+    },
+    {
+      "model": "audit_review",
+      "applicability": "applicable",
+      "minimumEvidenceKind": "indirect",
+      "requiredBehaviors": [
+        "state_entry",
+        "applicability_or_not_applicable",
+        "successful_promotion",
+        "fail_closed",
+        "invalidation",
+        "reconfirmation",
+        "evidence_binding",
+        "authority_rejection",
+        "stale_evidence_rejection",
+        "reverse_audit_execution",
+        "judge_continuation"
+      ]
+    },
+    {
+      "model": "delivery_confirmation",
+      "applicability": "applicable",
+      "minimumEvidenceKind": "indirect",
+      "requiredBehaviors": [
+        "state_entry",
+        "applicability_or_not_applicable",
+        "successful_promotion",
+        "fail_closed",
+        "invalidation",
+        "reconfirmation",
+        "evidence_binding",
+        "authority_rejection",
+        "stale_evidence_rejection",
+        "record_closed_final_transition"
+      ]
+    }
+  ],
+  "semanticJourneys": [
+    {
+      "journeyId": "six-model-complete-record-closed",
+      "model": "six_model_e2e",
+      "transition": "ingress_to_record_closed",
+      "applicability": "applicable",
+      "minimumEvidenceKind": "indirect",
+      "anyOfEvidenceRefs": ["trace:six-model/full-e2e/record-closed"],
+      "affectedTargetRefs": ["capability:six-model-state-machine", "transition:record-closed"],
+      "remediationOwner": "dev"
+    }
+  ],
+  "semanticEvidenceBindings": [
+    {
+      "runnerId": "root-vitest",
+      "testPath": "tests/acceptance/requirements-contract-confirmation-acceptance.test.ts",
+      "bindings": [
+        {
+          "evidenceRef": "trace:six-model/requirement-confirmation/state-entry",
+          "evidenceKind": "direct"
+        },
+        {
+          "evidenceRef": "trace:six-model/requirement-confirmation/successful-promotion",
+          "evidenceKind": "direct"
+        },
+        {
+          "evidenceRef": "trace:six-model/requirement-confirmation/fail-closed",
+          "evidenceKind": "direct"
+        },
+        {
+          "evidenceRef": "trace:six-model/requirement-confirmation/evidence-binding",
+          "evidenceKind": "direct"
+        },
+        {
+          "evidenceRef": "trace:six-model/requirement-confirmation/authority-rejection",
+          "evidenceKind": "direct"
+        }
+      ]
+    },
+    {
+      "runnerId": "root-vitest",
+      "testPath": "tests/acceptance/confirmation-drift-classifier.test.ts",
+      "bindings": [
+        {
+          "evidenceRef": "trace:six-model/requirement-confirmation/invalidation",
+          "evidenceKind": "indirect"
+        },
+        {
+          "evidenceRef": "trace:six-model/requirement-confirmation/reconfirmation",
+          "evidenceKind": "indirect"
+        },
+        {
+          "evidenceRef": "trace:six-model/requirement-confirmation/stale-evidence-rejection",
+          "evidenceKind": "indirect"
+        }
+      ]
+    },
+    {
+      "runnerId": "root-vitest",
+      "testPath": "tests/acceptance/requirements-contract-stage-five-star-audit-architecture-wave-gate.test.ts",
+      "bindings": [
+        {
+          "evidenceRef": "trace:six-model/architecture-confirmation/successful-promotion",
+          "evidenceKind": "indirect"
+        },
+        {
+          "evidenceRef": "trace:six-model/architecture-confirmation/fail-closed",
+          "evidenceKind": "direct"
+        },
+        {
+          "evidenceRef": "trace:six-model/architecture-confirmation/evidence-binding",
+          "evidenceKind": "indirect"
+        },
+        {
+          "evidenceRef": "trace:six-model/architecture-confirmation/authority-rejection",
+          "evidenceKind": "direct"
+        },
+        {
+          "evidenceRef": "trace:six-model/architecture-confirmation/invalidation",
+          "evidenceKind": "indirect"
+        }
+      ]
+    },
+    {
+      "runnerId": "root-vitest",
+      "testPath": "tests/acceptance/readiness-drift-closeout-proof.test.ts",
+      "bindings": [
+        {
+          "evidenceRef": "trace:six-model/implementation-readiness/invalidation",
+          "evidenceKind": "indirect"
+        },
+        {
+          "evidenceRef": "trace:six-model/implementation-readiness/reconfirmation",
+          "evidenceKind": "indirect"
+        },
+        {
+          "evidenceRef": "trace:six-model/implementation-readiness/stale-evidence-rejection",
+          "evidenceKind": "direct"
+        },
+        {
+          "evidenceRef": "trace:six-model/execution-closure/invalidation",
+          "evidenceKind": "indirect"
+        }
+      ]
+    },
+    {
+      "runnerId": "root-vitest",
+      "testPath": "tests/acceptance/strict-closeout-proof-gate.test.ts",
+      "bindings": [
+        {
+          "evidenceRef": "trace:six-model/execution-closure/applicability-or-not-applicable",
+          "evidenceKind": "direct"
+        },
+        {
+          "evidenceRef": "trace:six-model/execution-closure/successful-promotion",
+          "evidenceKind": "indirect"
+        },
+        {
+          "evidenceRef": "trace:six-model/execution-closure/fail-closed",
+          "evidenceKind": "direct"
+        }
+      ]
+    },
+    {
+      "runnerId": "root-vitest",
+      "testPath": "tests/acceptance/audit-triad-closed-loop-e2e.test.ts",
+      "bindings": [
+        {
+          "evidenceRef": "trace:six-model/audit-review/successful-promotion",
+          "evidenceKind": "direct"
+        },
+        {
+          "evidenceRef": "trace:six-model/audit-review/evidence-binding",
+          "evidenceKind": "direct"
+        }
+      ]
+    },
+    {
+      "runnerId": "root-vitest",
+      "testPath": "tests/acceptance/requirements-contract-reverse-audit.test.ts",
+      "bindings": [
+        {
+          "evidenceRef": "trace:six-model/audit-review/reverse-audit-execution",
+          "evidenceKind": "direct"
+        },
+        {
+          "evidenceRef": "trace:six-model/audit-review/judge-continuation",
+          "evidenceKind": "direct"
+        }
+      ]
+    },
+    {
+      "runnerId": "root-vitest",
+      "testPath": "tests/acceptance/critical-auditor-receipt-binding.test.ts",
+      "bindings": [
+        {
+          "evidenceRef": "trace:six-model/audit-review/fail-closed",
+          "evidenceKind": "direct"
+        }
+      ]
+    },
+    {
+      "runnerId": "root-vitest",
+      "testPath": "tests/acceptance/main-agent-audit-judge-request-authority-binding.test.ts",
+      "bindings": [
+        {
+          "evidenceRef": "trace:six-model/audit-review/invalidation",
+          "evidenceKind": "indirect"
+        },
+        {
+          "evidenceRef": "trace:six-model/audit-review/authority-rejection",
+          "evidenceKind": "direct"
+        },
+        {
+          "evidenceRef": "trace:six-model/audit-review/stale-evidence-rejection",
+          "evidenceKind": "direct"
+        }
+      ]
+    },
+    {
+      "runnerId": "root-vitest",
+      "testPath": "tests/acceptance/main-agent-delivery-truth-gate.test.ts",
+      "bindings": [
+        {
+          "evidenceRef": "trace:six-model/delivery-confirmation/successful-promotion",
+          "evidenceKind": "direct",
+          "oracleAuthority": {
+            "independence": "independent",
+            "evidenceRefs": [
+              "source:tests/acceptance/main-agent-delivery-truth-gate.test.ts#assertion:line:140",
+              "source:tests/acceptance/main-agent-delivery-truth-gate.test.ts#assertion:line:141",
+              "source:tests/acceptance/main-agent-delivery-truth-gate.test.ts#assertion:line:142"
+            ]
+          }
+        },
+        {
+          "evidenceRef": "trace:six-model/delivery-confirmation/stale-evidence-rejection",
+          "evidenceKind": "indirect",
+          "oracleAuthority": {
+            "independence": "independent",
+            "evidenceRefs": [
+              "source:tests/acceptance/main-agent-delivery-truth-gate.test.ts#assertion:line:219"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "runnerId": "root-vitest",
+      "testPath": "tests/acceptance/ai-tdd-contract-gate.test.ts",
+      "bindings": [
+        {
+          "evidenceRef": "trace:six-model/execution-closure/stale-evidence-rejection",
+          "evidenceKind": "indirect",
+          "oracleAuthority": {
+            "independence": "independent",
+            "evidenceRefs": [
+              "source:tests/acceptance/ai-tdd-contract-gate.test.ts#assertion:line:2261"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "runnerId": "root-vitest",
+      "testPath": "tests/acceptance/main-agent-closeout-source-authority.test.ts",
+      "bindings": [
+        {
+          "evidenceRef": "trace:six-model/delivery-confirmation/evidence-binding",
+          "evidenceKind": "indirect"
+        },
+        {
+          "evidenceRef": "trace:six-model/delivery-confirmation/authority-rejection",
+          "evidenceKind": "direct"
+        }
+      ]
+    },
+    {
+      "runnerId": "root-vitest",
+      "testPath": "tests/acceptance/main-agent-post-close-defect-intake.test.ts",
+      "bindings": [
+        {
+          "evidenceRef": "trace:six-model/delivery-confirmation/invalidation",
+          "evidenceKind": "indirect"
+        }
+      ]
+    },
+    {
+      "runnerId": "root-vitest",
+      "testPath": "tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts",
+      "bindings": [
+        {
+          "evidenceRef": "trace:six-model/architecture-confirmation/state-entry",
+          "evidenceKind": "indirect",
+          "oracleAuthority": {
+            "independence": "independent",
+            "evidenceRefs": [
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:391"
+            ]
+          }
+        },
+        {
+          "evidenceRef": "trace:six-model/architecture-confirmation/reconfirmation",
+          "evidenceKind": "indirect",
+          "oracleAuthority": {
+            "independence": "independent",
+            "evidenceRefs": [
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:419",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:428"
+            ]
+          }
+        },
+        {
+          "evidenceRef": "trace:six-model/architecture-confirmation/stale-evidence-rejection",
+          "evidenceKind": "direct",
+          "oracleAuthority": {
+            "independence": "independent",
+            "evidenceRefs": [
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:463",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:464",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:467",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:471"
+            ]
+          }
+        },
+        {
+          "evidenceRef": "trace:six-model/requirement-confirmation/applicability-or-not-applicable",
+          "evidenceKind": "indirect",
+          "oracleAuthority": {
+            "independence": "independent",
+            "evidenceRefs": [
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:516",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:518",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:519"
+            ]
+          }
+        },
+        {
+          "evidenceRef": "trace:six-model/implementation-readiness/applicability-or-not-applicable",
+          "evidenceKind": "indirect",
+          "oracleAuthority": {
+            "independence": "independent",
+            "evidenceRefs": [
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:516",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:518",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:519"
+            ]
+          }
+        },
+        {
+          "evidenceRef": "trace:six-model/audit-review/applicability-or-not-applicable",
+          "evidenceKind": "indirect",
+          "oracleAuthority": {
+            "independence": "independent",
+            "evidenceRefs": [
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:516",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:518",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:519"
+            ]
+          }
+        },
+        {
+          "evidenceRef": "trace:six-model/delivery-confirmation/applicability-or-not-applicable",
+          "evidenceKind": "indirect",
+          "oracleAuthority": {
+            "independence": "independent",
+            "evidenceRefs": [
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:516",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:518",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:519"
+            ]
+          }
+        },
+        {
+          "evidenceRef": "trace:six-model/execution-closure/reconfirmation",
+          "evidenceKind": "indirect",
+          "oracleAuthority": {
+            "independence": "independent",
+            "evidenceRefs": [
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:540",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:543"
+            ]
+          }
+        },
+        {
+          "evidenceRef": "trace:six-model/audit-review/reconfirmation",
+          "evidenceKind": "indirect",
+          "oracleAuthority": {
+            "independence": "independent",
+            "evidenceRefs": [
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:564",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:567"
+            ]
+          }
+        },
+        {
+          "evidenceRef": "trace:six-model/delivery-confirmation/reconfirmation",
+          "evidenceKind": "indirect",
+          "oracleAuthority": {
+            "independence": "independent",
+            "evidenceRefs": [
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:588",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:591"
+            ]
+          }
+        },
+        {
+          "evidenceRef": "trace:six-model/delivery-confirmation/record-closed-final-transition",
+          "evidenceKind": "direct",
+          "oracleAuthority": {
+            "independence": "independent",
+            "evidenceRefs": [
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:611",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:617",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:619"
+            ]
+          }
+        },
+        {
+          "evidenceRef": "trace:six-model/audit-review/state-entry",
+          "evidenceKind": "indirect",
+          "oracleAuthority": {
+            "independence": "independent",
+            "evidenceRefs": [
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:698"
+            ]
+          }
+        },
+        {
+          "evidenceRef": "trace:six-model/delivery-confirmation/fail-closed",
+          "evidenceKind": "indirect",
+          "oracleAuthority": {
+            "independence": "independent",
+            "evidenceRefs": [
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:588",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:591"
+            ]
+          }
+        },
+        {
+          "evidenceRef": "trace:six-model/delivery-confirmation/state-entry",
+          "evidenceKind": "indirect",
+          "oracleAuthority": {
+            "independence": "independent",
+            "evidenceRefs": [
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:698"
+            ]
+          }
+        },
+        {
+          "evidenceRef": "trace:six-model/execution-closure/authority-rejection",
+          "evidenceKind": "indirect",
+          "oracleAuthority": {
+            "independence": "independent",
+            "evidenceRefs": [
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:367",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:372"
+            ]
+          }
+        },
+        {
+          "evidenceRef": "trace:six-model/execution-closure/state-entry",
+          "evidenceKind": "indirect",
+          "oracleAuthority": {
+            "independence": "independent",
+            "evidenceRefs": [
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:698"
+            ]
+          }
+        },
+        {
+          "evidenceRef": "trace:six-model/implementation-readiness/authority-rejection",
+          "evidenceKind": "indirect",
+          "oracleAuthority": {
+            "independence": "independent",
+            "evidenceRefs": [
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:367",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:372"
+            ]
+          }
+        },
+        {
+          "evidenceRef": "trace:six-model/implementation-readiness/state-entry",
+          "evidenceKind": "indirect",
+          "oracleAuthority": {
+            "independence": "independent",
+            "evidenceRefs": [
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:698"
+            ]
+          }
+        },
+        {
+          "evidenceRef": "trace:six-model/implementation-readiness/successful-promotion",
+          "evidenceKind": "indirect",
+          "oracleAuthority": {
+            "independence": "independent",
+            "evidenceRefs": [
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:698"
+            ]
+          }
+        },
+        {
+          "evidenceRef": "trace:six-model/full-e2e/record-closed",
+          "evidenceKind": "indirect",
+          "oracleAuthority": {
+            "independence": "independent",
+            "evidenceRefs": [
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:650",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:698",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:705",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:713"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "runnerId": "root-vitest",
+      "testPath": "tests/acceptance/requirements-contract-six-model-receipt-projection-transaction.test.ts",
+      "bindings": [
+        {
+          "evidenceRef": "trace:six-model/implementation-readiness/evidence-binding",
+          "evidenceKind": "direct"
+        },
+        {
+          "evidenceRef": "trace:six-model/execution-closure/evidence-binding",
+          "evidenceKind": "direct"
+        }
+      ]
+    },
+    {
+      "runnerId": "root-vitest",
+      "testPath": "tests/unit/main-agent-implementation-readiness-gate.test.ts",
+      "bindings": [
+        {
+          "evidenceRef": "trace:six-model/architecture-confirmation/applicability-or-not-applicable",
+          "evidenceKind": "indirect"
+        },
+        {
+          "evidenceRef": "trace:six-model/implementation-readiness/fail-closed",
+          "evidenceKind": "direct"
+        }
+      ]
+    }
+  ],
+  "protectedCapabilities": [
+    {
+      "capabilityId": "consumer-install-boundary",
+      "selectionRefs": ["script:test:consumer-install-final"],
+      "survivalEvidenceRefs": ["target:scripts/init-to-root.js"],
+      "requiredBehaviors": {}
+    },
+    {
+      "capabilityId": "consumer-runtime-boundary",
+      "selectionRefs": ["script:test:consumer-runtime-final"],
+      "survivalEvidenceRefs": [
+        "target:packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-real-consumer-journey.ts"
+      ],
+      "requiredBehaviors": {}
+    },
+    {
+      "capabilityId": "six-model-state-machine",
+      "selectionRefs": ["script:test:ci:codex"],
+      "survivalEvidenceRefs": [
+        "target:packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state.ts"
+      ],
+      "semanticEvidenceNamespace": "trace:six-model",
+      "requiredBehaviors": {}
+    },
+    {
+      "capabilityId": "runtime-policy-security-boundary",
+      "selectionRefs": ["script:test:runtime-policy-inject"],
+      "survivalEvidenceRefs": [
+        "target:packages/bmad-speckit/src/main-agent/source-authority/scripts/stable-runtime-policy-json.ts"
+      ],
+      "requiredBehaviors": {}
+    },
+    {
+      "capabilityId": "sprint-status-write-security-boundary",
+      "selectionRefs": ["script:test:main-agent-sprint-status-write-gate"],
+      "survivalEvidenceRefs": [
+        "target:packages/bmad-speckit/src/main-agent/source-authority/scripts/sprint-status-authorized-update.ts"
+      ],
+      "requiredBehaviors": {}
+    },
+    {
+      "capabilityId": "governance-proof-round-1",
+      "selectionRefs": ["script:test:governance-audit:round1"],
+      "survivalEvidenceRefs": [
+        "target:packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts"
+      ],
+      "requiredBehaviors": {}
+    },
+    {
+      "capabilityId": "governance-proof-round-2",
+      "selectionRefs": ["script:test:governance-audit:round2"],
+      "survivalEvidenceRefs": [
+        "target:packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-artifact.ts"
+      ],
+      "requiredBehaviors": {}
+    },
+    {
+      "capabilityId": "requirement-record-authority",
+      "selectionRefs": ["script:core:requirement-record-authority"],
+      "bindTestsBySurvivalEvidence": true,
+      "survivalEvidenceRefs": [
+        "target:packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-control-store.ts"
+      ],
+      "requiredBehaviors": {}
+    },
+    {
+      "capabilityId": "judge-audit-reverse-audit-continuation",
+      "selectionRefs": ["script:core:judge-audit-reverse-audit-continuation"],
+      "bindTestsBySurvivalEvidence": true,
+      "survivalEvidenceRefs": [
+        "target:packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-triad-orchestrator.ts"
+      ],
+      "requiredBehaviors": {}
+    },
+    {
+      "capabilityId": "cli-startup-boundary",
+      "selectionRefs": ["script:core:cli-startup-boundary"],
+      "bindTestsBySurvivalEvidence": true,
+      "survivalEvidenceRefs": ["target:scripts/bmad-speckit-cli.js"],
+      "requiredBehaviors": {}
+    },
+    {
+      "capabilityId": "canonical-package-runtime-boundary",
+      "selectionRefs": ["script:core:canonical-package-runtime-boundary"],
+      "bindTestsBySurvivalEvidence": true,
+      "survivalEvidenceRefs": [
+        "target:packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-package-runtime-index.ts"
+      ],
+      "requiredBehaviors": {}
+    },
+    {
+      "capabilityId": "persistence-boundary",
+      "selectionRefs": ["script:core:persistence-boundary"],
+      "bindTestsBySurvivalEvidence": true,
+      "survivalEvidenceRefs": [
+        "target:packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-execution-store.ts"
+      ],
+      "requiredBehaviors": {}
+    },
+    {
+      "capabilityId": "encoding-boundary",
+      "selectionRefs": ["script:core:encoding-boundary"],
+      "bindTestsBySurvivalEvidence": true,
+      "survivalEvidenceRefs": [
+        "target:packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-intake-receipt.ts"
+      ],
+      "requiredBehaviors": {}
+    }
+  ],
+  "classification": {
+    "directoryRules": [
+      {
+        "ruleId": "root-tests",
+        "pattern": "tests/**",
+        "state": "retained_on_demand"
+      },
+      {
+        "ruleId": "package-node-tests",
+        "pattern": "packages/bmad-speckit/tests/**",
+        "state": "retained_on_demand"
+      },
+      {
+        "ruleId": "package-source-tests",
+        "pattern": "packages/bmad-speckit/src/**",
+        "state": "retained_on_demand"
+      },
+      {
+        "ruleId": "scoring-package-tests",
+        "pattern": "packages/scoring/**",
+        "state": "retained_on_demand"
+      },
+      {
+        "ruleId": "runtime-emit-package-tests",
+        "pattern": "packages/runtime-emit/**",
+        "state": "retained_on_demand"
+      }
+    ],
+    "exceptions": [
+      {
+        "testPath": "tests/ralph-method/schema.test.ts",
+        "packageId": "@bmad-speckit/ralph-method"
+      },
+      {
+        "testPath": "tests/ralph-method/verify-ralph-compliance.test.ts",
+        "packageId": "@bmad-speckit/ralph-method"
+      },
+      {
+        "testPath": "tests/ralph-method/verify-tdd-trace.test.ts",
+        "packageId": "@bmad-speckit/ralph-method"
+      },
+      {
+        "testPath": "tests/ralph-method/write-tracking-files.test.ts",
+        "packageId": "@bmad-speckit/ralph-method"
+      }
+    ]
+  },
+  "selection": {
+    "expansionOrder": ["trace_capability", "feature", "package"],
+    "highDiffusionPathRules": [
+      "packages/bmad-speckit/src/main-agent/**",
+      "packages/bmad-speckit/src/utils/main-agent/**",
+      "packages/runtime-context/**",
+      "_bmad/**",
+      "repo-governance/ci/**",
+      "scripts/**",
+      ".eslintrc.cjs"
+    ],
+    "releaseSurfacePathRules": [
+      ".github/workflows/publish-npm.yml",
+      ".github/workflows/release.yml",
+      "package.json",
+      "packages/bmad-speckit/package.json",
+      "scripts/prepublish-check.js"
+    ],
+    "productSurvivalCapabilityRefs": [
+      "consumer-install-boundary",
+      "consumer-runtime-boundary",
+      "runtime-policy-security-boundary",
+      "six-model-state-machine",
+      "sprint-status-write-security-boundary"
+    ],
+    "releaseCapabilityRefs": [
+      "consumer-install-boundary",
+      "consumer-runtime-boundary",
+      "six-model-state-machine",
+      "runtime-policy-security-boundary",
+      "sprint-status-write-security-boundary",
+      "governance-proof-round-1",
+      "governance-proof-round-2",
+      "requirement-record-authority",
+      "judge-audit-reverse-audit-continuation",
+      "cli-startup-boundary",
+      "canonical-package-runtime-boundary",
+      "persistence-boundary",
+      "encoding-boundary"
+    ],
+    "releaseRequiredBindingKinds": [
+      "package_install",
+      "cli_bin",
+      "consumer_compatibility",
+      "packaged_runtime",
+      "security_encoding_persistence",
+      "protected_acceptance_or_proof"
+    ]
+  },
+  "timing": {
+    "unknownDurationMs": 60000,
+    "maxShardDurationMs": 480000,
+    "maxShardsPerLane": 64
+  },
+  "deletion": {
+    "optimizationUseForbidden": true,
+    "requiredReviewMode": "manual_exception",
+    "minimumApprovals": 2,
+    "maxBatchSize": 10,
+    "deterministicReasonCodes": [
+      "EXACT_DUPLICATE",
+      "TARGET_REMOVED",
+      "SELF_PROVING_ORACLE",
+      "REPLACED_BY_CONTRACT_TEST"
+    ],
+    "localReview": {
+      "maxCandidates": 10,
+      "maxCalls": 1,
+      "retries": 0,
+      "timeoutMs": 120000
+    }
+  }
+}

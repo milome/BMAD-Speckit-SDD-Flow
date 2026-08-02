@@ -102,8 +102,10 @@ describe('main-agent delivery evidence run', () => {
             'main-agent',
             'source-authority',
             'scripts',
-            'main-agent-delivery-evidence-run.ts'
+          'main-agent-delivery-evidence-run.ts'
           ),
+          '--provider',
+          'mock',
           '--skipSprintAudit',
         ],
         { cwd: root, encoding: 'utf8' }

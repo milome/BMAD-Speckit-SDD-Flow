@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "masterSourcePath",
+    "masterSourceHash",
+    "sourceSnapshotHash",
+    "methodologyProfileHash",
+    "methodologyProfileArtifactHash",
+    "executionProjectionHash",
+    "taskDagHash",
+    "partitionPolicyHash",
+    "partitionPolicyArtifactHash",
+    "partitionManifestPath",
+    "partitionManifestHash",
+    "partitionAnalysisReceiptHash",
+    "partitionSetHash",
+    "partitionId",
+    "partitionRole",
+    "selectionReceiptPath",
+    "selectionReceiptHash",
+    "selectionSetHash",
+    "globalCoverageReceiptPath",
+    "globalCoverageReceiptHash",
+    "goalContractPath",
+    "goalContractHash",
+    "coverageReceiptPath",
+    "coverageReceiptHash",
+    "selectedAtomicTaskCount",
+    "inheritedConstraintCount",
+    "rendererAudit",
+    "deterministicPreflight",
+    "commandPortabilityAudit",
+    "writeReceipt",
+    "decision",
+    "blockingReasons"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-partition-child-generation-receipt/v1"
+    },
+    "masterSourcePath": { "$ref": "#/$defs/path" },
+    "masterSourceHash": { "$ref": "#/$defs/hash" },
+    "sourceSnapshotHash": { "$ref": "#/$defs/hash" },
+    "methodologyProfileHash": { "$ref": "#/$defs/hash" },
+    "methodologyProfileArtifactHash": { "$ref": "#/$defs/hash" },
+    "executionProjectionHash": { "$ref": "#/$defs/hash" },
+    "taskDagHash": { "$ref": "#/$defs/hash" },
+    "sequenceMode": {
+      "enum": ["auto", "required", "disabled"]
+    },
+    "sequenceApplicability": {
+      "enum": ["required", "not_applicable_with_proof", "unresolved"]
+    },
+    "sequenceCoverage": {
+      "enum": ["complete", "not_applicable", "excluded", "unresolved"]
+    },
+    "sequenceClosureStatus": {
+      "enum": [
+        "compiled",
+        "not_required",
+        "not_requested",
+        "unavailable",
+        "unresolved"
+      ]
+    },
+    "childContractAuthority": {
+      "enum": ["full", "core_only"]
+    },
+    "partitionPolicyHash": { "$ref": "#/$defs/hash" },
+    "partitionPolicyArtifactHash": { "$ref": "#/$defs/hash" },
+    "partitionManifestPath": { "$ref": "#/$defs/path" },
+    "partitionManifestHash": { "$ref": "#/$defs/hash" },
+    "partitionAnalysisReceiptHash": { "$ref": "#/$defs/hash" },
+    "partitionImpactGraphHash": { "$ref": "#/$defs/hash" },
+    "partitionClosureFeasibilityHash": { "$ref": "#/$defs/hash" },
+    "driftHash": { "$ref": "#/$defs/hash" },
+    "partitionSetHash": { "$ref": "#/$defs/hash" },
+    "partitionId": { "$ref": "#/$defs/partitionId" },
+    "partitionRole": { "type": "string", "minLength": 1 },
+    "selectionReceiptPath": { "$ref": "#/$defs/path" },
+    "selectionReceiptHash": { "$ref": "#/$defs/hash" },
+    "selectionSetHash": { "$ref": "#/$defs/hash" },
+    "globalCoverageReceiptPath": { "$ref": "#/$defs/path" },
+    "globalCoverageReceiptHash": { "$ref": "#/$defs/hash" },
+    "goalContractPath": { "$ref": "#/$defs/path" },
+    "goalContractHash": { "$ref": "#/$defs/hash" },
+    "coverageReceiptPath": { "$ref": "#/$defs/path" },
+    "coverageReceiptHash": { "$ref": "#/$defs/hash" },
+    "selectedAtomicTaskCount": { "type": "integer", "minimum": 1 },
+    "inheritedConstraintCount": { "type": "integer", "minimum": 0 },
+    "rendererAudit": { "type": "object" },
+    "deterministicPreflight": { "type": "object" },
+    "commandPortabilityAudit": { "type": "object" },
+    "writeReceipt": { "type": "object" },
+    "decision": { "enum": ["pass", "blocked"] },
+    "blockingReasons": { "$ref": "#/$defs/ids" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "decision": { "const": "pass" } } },
+      "then": { "properties": { "blockingReasons": { "maxItems": 0 } } }
+    },
+    {
+      "if": { "properties": { "decision": { "const": "blocked" } } },
+      "then": { "properties": { "blockingReasons": { "minItems": 1 } } }
+    }
+  ],
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "partitionId": {
+      "type": "string",
+      "pattern": "^partition-[0-9a-f]{64}$"
+    },
+    "path": { "type": "string", "minLength": 1 },
+    "ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

@@ -1,36 +1,20 @@
-import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  buildNativeGoalImportReturnMetadata,
+  ensureMainAgentDispatchPacket,
   runMainAgentAutomaticLoop,
-  type NativeGoalSpawnSyncFn,
+  type NativeGoalControlledExecutor,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import {
-  cleanupRequirementWorkspace,
-  materializeRequirementFixture,
-  writeCompiledImplementPacket,
-} from '../helpers/requirement-fixture-runtime';
-
-function sha256File(filePath: string): string {
-  return `sha256:${createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')}`;
-}
+  executeRequiredCommandsForPublishedFixture,
+  publishImplementationPromptFixture,
+} from './helpers/prompt-transaction-implementation-publication-fixture';
 
 function writeJson(filePath: string, value: unknown): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
-}
-
-function taskReportPath(root: string, sessionId: string, packetId: string): string {
-  return path.join(
-    root,
-    '_bmad-output',
-    'runtime',
-    'governance',
-    'task-reports',
-    sessionId,
-    `${packetId}.json`
-  );
 }
 
 function receiptPath(root: string, recordId: string, attemptId: string): string {
@@ -58,123 +42,98 @@ function orchestrationStatePath(fixture: {
   );
 }
 
-function addGoalCommandText(input: {
-  packetPath: string;
-  auditReceiptPath: string;
-  goalExecutionPath: string;
-  modelPacketPath: string;
-  packetId: string;
-}): string {
-  const commandText = `/goal Execute ${input.packetId} by following ${input.goalExecutionPath}; use ${input.modelPacketPath} as authority; stop only on final pass or reconfirm_required.`;
-  writeJson(input.auditReceiptPath, {
-    decision: 'pass',
-    goalCommand: {
-      mode: 'native_goal_document_ref',
-      commandText,
-      chars: Array.from(commandText).length,
-      documentPath: input.goalExecutionPath,
-      documentHash: sha256File(input.goalExecutionPath),
-      nativeGoalCommandUsed: true,
-    },
-    continuationDirective: {
-      directive: commandText,
-      nativeGoalCommandUsed: true,
-    },
-  });
-  const packet = JSON.parse(fs.readFileSync(input.packetPath, 'utf8'));
-  packet.compiledPromptRef.auditReceiptHash = sha256File(input.auditReceiptPath);
-  packet.compiledPromptRef.goalExecutionHash = sha256File(input.goalExecutionPath);
-  writeJson(input.packetPath, packet);
-  return commandText;
-}
-
 describe('main-agent run-loop native goal invocation routing', () => {
   it.each([
     { host: 'codex' as const },
     { host: 'claude' as const },
-  ])('prepares $host native goal packet for main-session execution without host subprocess', ({ host }) => {
-    const packetId = `implement-native-${host}`;
-    const fixture = materializeRequirementFixture({
-      orchestrationNextAction: 'dispatch_implement',
-      pendingPacket: { packetId, packetKind: 'execution', status: 'ready_for_main_agent' },
-    });
+  ])('persists $host awaiting_task_report without a synthetic TaskReport', async ({ host }) => {
+    const { fixture, goalCommandText } = await publishImplementationPromptFixture();
     try {
-      const compiled = writeCompiledImplementPacket({
-        root: fixture.root,
-        fixture,
-        packetId,
-      });
-      const commandText = addGoalCommandText({
-        packetPath: compiled.packetPath,
-        auditReceiptPath: compiled.compiledPromptRef.auditReceiptPath,
-        goalExecutionPath: compiled.compiledPromptRef.goalExecutionPath!,
-        modelPacketPath: compiled.compiledPromptRef.modelPacketPath,
-        packetId,
-      });
-      const requestedTaskReportPath = taskReportPath(
-        fixture.root,
-        fixture.requirementSetId,
-        packetId
-      );
-      const spawnSyncFn: NativeGoalSpawnSyncFn = () => {
-        throw new Error('run-loop must not spawn a host CLI for native /goal');
-      };
-
+      const taskReportBefore = fs.existsSync(fixture.options.taskReportPath)
+        ? fs.readFileSync(fixture.options.taskReportPath)
+        : null;
       const result = runMainAgentAutomaticLoop({
         projectRoot: fixture.root,
-        recordId: fixture.recordId,
-        requirementSetId: fixture.requirementSetId,
-        runId: fixture.runId,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
         flow: 'standalone_tasks',
         stage: 'implement',
         host,
-        nativeGoalSpawnSyncFn: spawnSyncFn,
       });
 
       expect(result.status).toBe('blocked');
-      expect(result.taskReport?.status).toBe('blocked');
-      expect(result.taskReport?.validationsRun).toContain('main-session-native-goal-preparation');
-      expect(result.taskReport?.driftFlags).toContain('main-session-native-goal-required');
+      expect(result.taskReport).toBeNull();
       expect(result.steps.some((step) => step.step === 'native-goal-invocation')).toBe(true);
-      expect(result.steps.some((step) => step.step === 'codex-worker-adapter')).toBe(false);
+      const packetId = result.dispatchInstruction!.packetId;
+      const taskReportAfter = fs.existsSync(fixture.options.taskReportPath)
+        ? fs.readFileSync(fixture.options.taskReportPath)
+        : null;
+      expect(taskReportAfter).toEqual(taskReportBefore);
       const receipt = JSON.parse(
-        fs.readFileSync(receiptPath(fixture.root, fixture.recordId, packetId), 'utf8')
+        fs.readFileSync(receiptPath(fixture.root, fixture.authority.recordId, packetId), 'utf8')
       );
       expect(receipt.invokedCommandKind).toBe('main_session_native_goal_required');
       expect(receipt.executionSurface).toBe('main_session_native_goal_required');
-      expect(receipt.args).toEqual([commandText]);
+      expect(receipt.args).toEqual([goalCommandText]);
       expect(receipt.nativeGoalCommandPrepared).toBe(true);
       expect(receipt.nativeGoalCommandUsed).toBe(false);
       expect(receipt.packetId).toBe(packetId);
-      expect(receipt.taskReportPath).toBe(requestedTaskReportPath);
+      expect(receipt.taskReportPath).toBe(fixture.options.taskReportPath);
+      const record = JSON.parse(fs.readFileSync(fixture.paths.recordPath, 'utf8'));
+      expect(record.nativeGoalHandoff).toMatchObject({
+        packetId,
+        invoked: true,
+        imported: false,
+        importStatus: 'awaiting_task_report',
+        returnCommand: 'bmad-speckit',
+        returnArgv: [
+          'main-agent-orchestration',
+          '--action',
+          'import-native-goal-task-report',
+          '--taskReportPath',
+          fixture.options.taskReportPath,
+        ],
+      });
+      expect(record.lastEventType).toBe('native_goal_handoff_recorded');
+      expect(result.finalSurface.orchestrationState?.pendingPacket?.status).toBe('dispatched');
+      expect(result.finalSurface.orchestrationState?.lastTaskReport ?? null).toBeNull();
+      expect(result.finalSurface.orchestrationState?.gatesLoop?.noProgressCount ?? 0).toBe(0);
     } finally {
-      cleanupRequirementWorkspace(fixture.root);
+      fixture.cleanup();
     }
   });
 
-  it('infers Codex CLI host from process env even when state and config still say cursor', () => {
-    const packetId = 'implement-native-codex-env';
+  it('infers Codex CLI host from process env even when state and config still say cursor', async () => {
     const previousEnv = {
       CODEX_THREAD_ID: process.env.CODEX_THREAD_ID,
       CODEX_MANAGED_BY_NPM: process.env.CODEX_MANAGED_BY_NPM,
       CODEX_MANAGED_PACKAGE_ROOT: process.env.CODEX_MANAGED_PACKAGE_ROOT,
     };
-    process.env.CODEX_THREAD_ID = 'codex-thread-fixture';
-    process.env.CODEX_MANAGED_BY_NPM = 'true';
-    process.env.CODEX_MANAGED_PACKAGE_ROOT = 'D:\\Dev\\BMAD-Speckit-SDD-Flow';
-
-    const fixture = materializeRequirementFixture({
-      orchestrationNextAction: 'dispatch_implement',
-      pendingPacket: { packetId, packetKind: 'execution', status: 'ready_for_main_agent' },
-    });
+    const { fixture, goalCommandText } = await publishImplementationPromptFixture();
     try {
+      process.env.CODEX_THREAD_ID = fixture.identity.transactionId;
+      process.env.CODEX_MANAGED_BY_NPM = 'true';
+      process.env.CODEX_MANAGED_PACKAGE_ROOT = fixture.paths.installedPackageRoot;
       fs.mkdirSync(path.join(fixture.root, '_bmad', '_config'), { recursive: true });
       fs.writeFileSync(
         path.join(fixture.root, '_bmad', '_config', 'governance-remediation.yaml'),
         ['version: 1', 'primaryHost: cursor', 'authoritativeHost: cursor'].join('\n'),
         'utf8'
       );
-      const statePath = orchestrationStatePath(fixture);
+      ensureMainAgentDispatchPacket({
+        projectRoot: fixture.root,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        host: 'cursor',
+      });
+      const statePath = orchestrationStatePath({
+        recordPath: fixture.paths.recordPath,
+        requirementSetId: fixture.identity.requirementSetId,
+      });
       const state = JSON.parse(fs.readFileSync(statePath, 'utf8'));
       state.host = 'cursor';
       state.hostRecovery = {
@@ -185,41 +144,30 @@ describe('main-agent run-loop native goal invocation routing', () => {
       };
       writeJson(statePath, state);
 
-      const compiled = writeCompiledImplementPacket({
-        root: fixture.root,
-        fixture,
-        packetId,
-      });
-      const commandText = addGoalCommandText({
-        packetPath: compiled.packetPath,
-        auditReceiptPath: compiled.compiledPromptRef.auditReceiptPath,
-        goalExecutionPath: compiled.compiledPromptRef.goalExecutionPath!,
-        modelPacketPath: compiled.compiledPromptRef.modelPacketPath,
-        packetId,
-      });
-      const spawnSyncFn: NativeGoalSpawnSyncFn = () => {
-        throw new Error('run-loop must not spawn a host CLI for native /goal');
-      };
-
       const result = runMainAgentAutomaticLoop({
         projectRoot: fixture.root,
-        recordId: fixture.recordId,
-        requirementSetId: fixture.requirementSetId,
-        runId: fixture.runId,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
         flow: 'standalone_tasks',
         stage: 'implement',
-        nativeGoalSpawnSyncFn: spawnSyncFn,
       });
 
       expect(result.dispatchInstruction?.host).toBe('codex');
       expect(result.steps.some((step) => step.step === 'native-goal-invocation')).toBe(true);
+      const packetId = result.dispatchInstruction!.packetId;
       const receipt = JSON.parse(
-        fs.readFileSync(receiptPath(fixture.root, fixture.recordId, packetId), 'utf8')
+        fs.readFileSync(receiptPath(fixture.root, fixture.authority.recordId, packetId), 'utf8')
       );
       expect(receipt.invokedCommandKind).toBe('main_session_native_goal_required');
-      expect(receipt.args).toEqual([commandText]);
+      expect(receipt.args).toEqual([goalCommandText]);
+      const record = JSON.parse(fs.readFileSync(fixture.paths.recordPath, 'utf8'));
+      expect(record.nativeGoalHandoff).toMatchObject({
+        dispatchHost: 'codex',
+        importStatus: 'awaiting_task_report',
+      });
     } finally {
-      cleanupRequirementWorkspace(fixture.root);
+      fixture.cleanup();
       for (const [key, value] of Object.entries(previousEnv)) {
         if (value === undefined) {
           delete process.env[key];
@@ -228,5 +176,154 @@ describe('main-agent run-loop native goal invocation routing', () => {
         }
       }
     }
+  });
+
+  it.each([
+    { host: 'codex' as const, canonicalHost: 'codex' },
+    { host: 'claude' as const, canonicalHost: 'claude-code-cli' },
+  ])('ingests a real TaskReport produced by the $host controlled executor', async ({
+    host,
+    canonicalHost,
+  }) => {
+    const { fixture, pointer, goalCommandText } = await publishImplementationPromptFixture();
+    try {
+      const executor: NativeGoalControlledExecutor = (request) => {
+        expect(request).toMatchObject({
+          host: canonicalHost,
+          commandText: goalCommandText,
+          taskReportPath: fixture.options.taskReportPath,
+        });
+        executeRequiredCommandsForPublishedFixture({
+          fixture,
+          pointer,
+        });
+        writeJson(request.taskReportPath, {
+          packetId: request.packetId,
+          status: 'done',
+          filesChanged: [],
+          validationsRun: ['main-agent-controlled-native-goal'],
+          evidence: ['controlled executor TaskReport'],
+          downstreamContext: ['continue to execution closure'],
+        });
+        return {
+          exitCode: 0,
+          stdout: 'native goal completed',
+          stderr: '',
+        };
+      };
+
+      const result = runMainAgentAutomaticLoop({
+        projectRoot: fixture.root,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        host,
+        nativeGoalExecutor: executor,
+      });
+
+      expect(result.steps.filter((step) => step.status === 'fail')).toEqual([]);
+      expect(result.status).toBe('completed');
+      const packetId = result.dispatchInstruction!.packetId;
+      expect(result.taskReport).toMatchObject({
+        packetId,
+        status: 'done',
+      });
+      const receipt = JSON.parse(
+        fs.readFileSync(
+          receiptPath(
+            fixture.root,
+            fixture.authority.recordId,
+            packetId
+          ),
+          'utf8'
+        )
+      );
+      expect(receipt).toMatchObject({
+        executionSurface: 'host_native_goal',
+        invokedCommandKind: 'host_native_goal',
+        nativeGoalCommandPrepared: true,
+        nativeGoalCommandUsed: true,
+        exitCode: 0,
+        taskReportPath: fixture.options.taskReportPath,
+      });
+      expect(receipt.taskReportHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
+      expect(receipt.transactionManifestHash).toBe(
+        (pointer.transactionManifestRef as Record<string, unknown>).hash
+      );
+      const record = JSON.parse(fs.readFileSync(fixture.paths.recordPath, 'utf8'));
+      expect(record.nativeGoalHandoff).toMatchObject({
+        invoked: true,
+        imported: true,
+        importStatus: 'task_report_done',
+      });
+      expect(record.executionIterations).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            executionIterationId: packetId,
+            status: 'done',
+          }),
+        ])
+      );
+      const modelPacket = JSON.parse(
+        fs.readFileSync(
+          String((pointer.modelPacketRef as Record<string, unknown>).path),
+          'utf8'
+        )
+      ) as Record<string, unknown>;
+      const requiredCommand = (modelPacket.requiredCommands as Array<Record<string, unknown>>)[0];
+      const executionIteration = (
+        record.executionIterations as Array<Record<string, unknown>>
+      ).find((iteration) => iteration.executionIterationId === packetId);
+      expect(executionIteration?.commandRunRefs).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            commandId: requiredCommand.id,
+            runId: expect.stringMatching(/^RUN-[A-Za-z0-9._-]+$/u),
+            exitCode: 0,
+            executorIdentity: expect.objectContaining({
+              class: 'goal_controlled_executor',
+            }),
+            transactionId: fixture.identity.transactionId,
+            implementationAttemptId: fixture.identity.implementationAttemptId,
+          }),
+        ])
+      );
+      expect(executionIteration?.evidenceArtifactRefs).toEqual(
+        expect.arrayContaining(
+          [
+            'native_goal_task_report',
+            'native_goal_invocation_receipt',
+            'prompt_transaction_manifest',
+            'current_dispatch_pointer',
+            'command_execution_receipt',
+          ].map((artifactType) => expect.objectContaining({ artifactType }))
+        )
+      );
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('builds argv-safe TaskReport import metadata for paths with spaces and shell metacharacters', () => {
+    const taskReportPath = path.join(
+      'D:\\consumer workspace',
+      '_bmad-output',
+      'runtime',
+      'task reports',
+      'native goal & proof.json'
+    );
+
+    expect(buildNativeGoalImportReturnMetadata(taskReportPath)).toEqual({
+      returnCommand: 'bmad-speckit',
+      returnArgv: [
+        'main-agent-orchestration',
+        '--action',
+        'import-native-goal-task-report',
+        '--taskReportPath',
+        taskReportPath,
+      ],
+    });
   });
 });

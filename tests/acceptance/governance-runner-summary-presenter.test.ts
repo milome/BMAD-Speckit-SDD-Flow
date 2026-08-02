@@ -200,10 +200,10 @@ describe('governance runner summary presenter', () => {
               codex: {
                 carrierSourcePath: '_bmad/codex/agents/code-reviewer.toml',
                 runtimeTargetPath: '.codex/agents/code-reviewer.toml',
-                preferredRoute: { tool: 'codex', subtypeOrExecutor: 'worker:audit' },
+                preferredRoute: { tool: 'codex', subtypeOrExecutor: 'main-session:audit' },
                 fallbackRoute: { tool: 'codex', subtypeOrExecutor: 'general-purpose' },
                 fallbackReason:
-                  'Use the Codex no-hooks worker adapter fallback only when the dedicated code-reviewer carrier is unavailable, while preserving the shared reviewer contract and runAuditorHost closeout.',
+                  'The current Codex main session executes the audit packet through the dedicated code-reviewer carrier and preserves the shared reviewer contract and runAuditorHost closeout.',
               },
             },
             activeAuditConsumer: {

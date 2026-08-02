@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-consumer-project-profile.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "consumerId",
+    "projectName",
+    "executionHost",
+    "hostRegistryEntryId",
+    "capabilityProbeArgv",
+    "capabilityProbeArtifactRef",
+    "packageRuntimeActionBindingManifestRef"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-consumer-project-profile/v1"
+    },
+    "consumerId": { "$ref": "#/$defs/id" },
+    "projectName": { "$ref": "#/$defs/id" },
+    "executionHost": {
+      "enum": ["codex", "claude-code", "cursor-ide", "cursor-cli", "generic"]
+    },
+    "hostRegistryEntryId": { "$ref": "#/$defs/id" },
+    "capabilityProbeArgv": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "capabilityProbeArtifactRef": { "$ref": "#/$defs/fileRef" },
+    "packageRuntimeActionBindingManifestRef": { "$ref": "#/$defs/fileRef" }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "fileRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

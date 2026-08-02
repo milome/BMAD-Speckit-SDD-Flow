@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-v1-legacy-inventory.schema.json",
+  "title": "Requirements Contract V1 Legacy Inventory",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "cutoverId",
+    "cutoverPredecessorArtifact12Hash",
+    "g00BaselineHash",
+    "frozen",
+    "rows"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-v1-legacy-inventory/v1"
+    },
+    "cutoverId": {
+      "$ref": "#/$defs/cutoverId"
+    },
+    "cutoverPredecessorArtifact12Hash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "g00BaselineHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "frozen": {
+      "const": true
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/inventoryRow"
+      },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "cutoverId": {
+      "type": "string",
+      "pattern": "^V2-CUTOVER-[A-Z0-9][A-Z0-9._-]*$"
+    },
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:)(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\]+$"
+    },
+    "baselineInventoryProof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        "hash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "inventoryRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourcePath",
+        "sourceHash",
+        "v1ParserFormatProofHash",
+        "requirementSetId",
+        "cutoverId",
+        "cutoverPredecessorArtifact12Hash",
+        "baselineInventoryProof",
+        "legacyReadEligibility"
+      ],
+      "properties": {
+        "sourcePath": {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        "sourceHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "v1ParserFormatProofHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "requirementSetId": {
+          "$ref": "#/$defs/stableId"
+        },
+        "cutoverId": {
+          "$ref": "#/$defs/cutoverId"
+        },
+        "cutoverPredecessorArtifact12Hash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "baselineInventoryProof": {
+          "$ref": "#/$defs/baselineInventoryProof"
+        },
+        "legacyReadEligibility": {
+          "const": "eligible"
+        }
+      }
+    },
+    "freezeReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "inventoryHash",
+        "inventorySchemaHash",
+        "writerHash",
+        "cutoverId",
+        "predecessorHash",
+        "g00BaselineHash",
+        "rowCount",
+        "freezeTransactionId"
+      ],
+      "properties": {
+        "inventoryHash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "inventorySchemaHash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "writerHash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "cutoverId": {
+          "type": "string",
+          "pattern": "^V2-CUTOVER-[A-Z0-9][A-Z0-9._-]*$"
+        },
+        "predecessorHash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "g00BaselineHash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "rowCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "freezeTransactionId": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

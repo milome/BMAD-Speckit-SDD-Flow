@@ -14,6 +14,8 @@ describe('bmad-help entry surface contract', () => {
     const coreWorkflow = readRepoFile('_bmad/core/skills/bmad-help/workflow.md');
     const skillCard = readRepoFile('_bmad/skills/bmad-help/SKILL.md');
     const coreSkillCard = readRepoFile('_bmad/core/skills/bmad-help/SKILL.md');
+    const bmadsSkillCard = readRepoFile('_bmad/skills/bmads/SKILL.md');
+    const bmadSpeckitSkillCard = readRepoFile('_bmad/skills/bmad-speckit/SKILL.md');
     const coreTask = readRepoFile('_bmad/core/tasks/help.md');
     const command = readRepoFile('_bmad/commands/bmad-help.md');
     const catalog = readRepoFile('_bmad/_config/bmad-help.csv');
@@ -40,6 +42,19 @@ describe('bmad-help entry surface contract', () => {
       expect(doc).toContain('contextMaturity');
       expect(doc).toContain('implementationReadinessStatus');
       expect(doc).toContain('complexity');
+      expect(doc).toContain('Do not use for generic next-step');
+      expect(doc).toContain('active RequirementRecord');
+      expect(doc).toContain('upstream BMAD workflow');
+      expect(doc).not.toContain('recommend the next workflow or agent');
+    }
+
+    for (const doc of [bmadsSkillCard, bmadSpeckitSkillCard]) {
+      expect(doc).toContain('natural-language');
+      expect(doc).toContain('active RequirementRecord');
+      expect(doc).toContain('下一步');
+      expect(doc).toContain('继续');
+      expect(doc).toContain('现在该做什么');
+      expect(doc).toContain('bmad-help');
     }
 
     expect(moduleHelp).toContain('contextMaturity');

@@ -1,0 +1,267 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-judge-audit-unit-projection-input.schema.json",
+  "title": "Requirements Contract Judge Audit Unit Projection Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "requirementSetId",
+    "sourceAuthorityHash",
+    "semanticModelHash",
+    "canonicalTraceGraphHash",
+    "canonicalRootUniverse",
+    "semanticModel",
+    "compactTraceMatrix",
+    "rootBindings"
+  ],
+  "properties": {
+    "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },
+    "sourceAuthorityHash": { "$ref": "#/$defs/hash" },
+    "semanticModelHash": { "$ref": "#/$defs/hash" },
+    "canonicalTraceGraphHash": { "$ref": "#/$defs/hash" },
+    "canonicalRootUniverse": { "$ref": "#/$defs/canonicalRootUniverse" },
+    "semanticModel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["semanticBodies", "nodes", "edges"],
+      "properties": {
+        "semanticBodies": {
+          "type": "object",
+          "additionalProperties": { "type": "object" }
+        },
+        "nodes": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/semanticNode" }
+        },
+        "edges": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/semanticEdge" }
+        }
+      }
+    },
+    "compactTraceMatrix": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["acceptanceRootIds", "acceptanceRootBindings", "atomicRows"],
+      "properties": {
+        "acceptanceRootIds": { "$ref": "#/$defs/refArray" },
+        "acceptanceRootBindings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/acceptanceRootBinding" }
+        },
+        "atomicRows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/atomicRow" }
+        }
+      }
+    },
+    "rootBindings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/rootBinding" }
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "refArray": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/nonEmptyString" },
+      "uniqueItems": true
+    },
+    "canonicalRootUniverse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "semanticConservationManifestHash",
+        "acceptanceRootProofManifestHash",
+        "requirementRoots",
+        "acceptanceRoots"
+      ],
+      "properties": {
+        "semanticConservationManifestHash": { "$ref": "#/$defs/hash" },
+        "acceptanceRootProofManifestHash": { "$ref": "#/$defs/hash" },
+        "requirementRoots": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/canonicalRequirementRoot" },
+          "uniqueItems": true
+        },
+        "acceptanceRoots": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/canonicalAcceptanceRoot" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "canonicalRequirementRoot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rootRef",
+        "requirementKind",
+        "payloadHash",
+        "sourceSpanRefs",
+        "applicability",
+        "authorityProofRefs"
+      ],
+      "properties": {
+        "rootRef": { "$ref": "#/$defs/nonEmptyString" },
+        "requirementKind": {
+          "enum": ["functional", "nonfunctional", "negative"]
+        },
+        "payloadHash": { "$ref": "#/$defs/hash" },
+        "sourceSpanRefs": { "$ref": "#/$defs/refArray" },
+        "applicability": { "$ref": "#/$defs/applicability" },
+        "authorityProofRefs": { "$ref": "#/$defs/refArray" }
+      }
+    },
+    "canonicalAcceptanceRoot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rootRef",
+        "payloadHash",
+        "sourceSpanRefs",
+        "requirementRefs",
+        "applicability",
+        "authorityProofRefs"
+      ],
+      "properties": {
+        "rootRef": { "$ref": "#/$defs/nonEmptyString" },
+        "payloadHash": { "$ref": "#/$defs/hash" },
+        "sourceSpanRefs": { "$ref": "#/$defs/refArray" },
+        "requirementRefs": { "$ref": "#/$defs/refArray" },
+        "applicability": { "$ref": "#/$defs/applicability" },
+        "authorityProofRefs": { "$ref": "#/$defs/refArray" }
+      }
+    },
+    "applicability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision", "reasonCode", "proofRefs"],
+      "properties": {
+        "decision": {
+          "enum": ["applicable", "not_applicable", "unresolved", "invalid"]
+        },
+        "reasonCode": { "$ref": "#/$defs/nonEmptyString" },
+        "proofRefs": { "$ref": "#/$defs/refArray" }
+      }
+    },
+    "semanticNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodeType", "bodySchemaVersion", "bodyHash", "applicability", "proofBindings"],
+      "properties": {
+        "nodeType": { "$ref": "#/$defs/nonEmptyString" },
+        "bodySchemaVersion": { "$ref": "#/$defs/nonEmptyString" },
+        "bodyHash": { "$ref": "#/$defs/hash" },
+        "applicability": { "$ref": "#/$defs/applicability" },
+        "proofBindings": { "$ref": "#/$defs/refArray" }
+      }
+    },
+    "semanticEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "edgeType",
+        "fromRef",
+        "fromHash",
+        "toRef",
+        "toHash",
+        "applicability",
+        "proofBindings",
+        "edgeHash"
+      ],
+      "properties": {
+        "edgeType": { "$ref": "#/$defs/nonEmptyString" },
+        "fromRef": { "$ref": "#/$defs/nonEmptyString" },
+        "fromHash": { "$ref": "#/$defs/hash" },
+        "toRef": { "$ref": "#/$defs/nonEmptyString" },
+        "toHash": { "$ref": "#/$defs/hash" },
+        "applicability": { "$ref": "#/$defs/applicability" },
+        "proofBindings": { "$ref": "#/$defs/refArray" },
+        "edgeHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "acceptanceRootBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["acceptanceRootRef", "decision", "traceRefs", "proofRefs"],
+      "properties": {
+        "acceptanceRootRef": { "$ref": "#/$defs/nonEmptyString" },
+        "decision": { "const": "trace_bound" },
+        "traceRefs": { "$ref": "#/$defs/refArray" },
+        "proofRefs": { "$ref": "#/$defs/refArray" }
+      }
+    },
+    "dimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "refs", "proofRefs"],
+      "properties": {
+        "state": { "const": "bound" },
+        "refs": { "$ref": "#/$defs/refArray" },
+        "proofRefs": { "$ref": "#/$defs/refArray" }
+      }
+    },
+    "dimensions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "target": { "$ref": "#/$defs/dimension" },
+        "sequenceStep": { "$ref": "#/$defs/dimension" },
+        "red": { "$ref": "#/$defs/dimension" },
+        "oracle": { "$ref": "#/$defs/dimension" },
+        "command": { "$ref": "#/$defs/dimension" },
+        "evidenceRequirement": { "$ref": "#/$defs/dimension" }
+      }
+    },
+    "atomicRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["traceId", "requirementRef", "proofRefs", "dimensions"],
+      "properties": {
+        "traceId": { "$ref": "#/$defs/nonEmptyString" },
+        "requirementRef": { "$ref": "#/$defs/nonEmptyString" },
+        "proofRefs": { "$ref": "#/$defs/refArray" },
+        "dimensions": { "$ref": "#/$defs/dimensions" }
+      }
+    },
+    "rootBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rootRef",
+        "sourceSpanRefs",
+        "testRefs",
+        "fixtureRefs",
+        "assertionRefs",
+        "changedPathRefs",
+        "observedSequenceRefs",
+        "deterministicReportRefs",
+        "evidenceRefs",
+        "proofRefs"
+      ],
+      "properties": {
+        "rootRef": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceSpanRefs": { "$ref": "#/$defs/refArray" },
+        "testRefs": { "$ref": "#/$defs/refArray" },
+        "fixtureRefs": { "$ref": "#/$defs/refArray" },
+        "assertionRefs": { "$ref": "#/$defs/refArray" },
+        "changedPathRefs": { "$ref": "#/$defs/refArray" },
+        "observedSequenceRefs": { "$ref": "#/$defs/refArray" },
+        "deterministicReportRefs": { "$ref": "#/$defs/refArray" },
+        "evidenceRefs": { "$ref": "#/$defs/refArray" },
+        "proofRefs": { "$ref": "#/$defs/refArray" }
+      }
+    }
+  }
+}

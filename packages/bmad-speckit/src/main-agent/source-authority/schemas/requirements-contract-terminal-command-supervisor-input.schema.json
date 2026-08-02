@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-terminal-command-supervisor-input.schema.json",
+  "title": "Requirements Contract Terminal Command Supervisor Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "bundle",
+    "safeWriteManifestReceipt",
+    "evd15Receipt",
+    "artifact01Receipt",
+    "receipt",
+    "firstCommand",
+    "secondCommand"
+  ],
+  "properties": {
+    "cwd": { "type": "string", "minLength": 1 },
+    "contract": { "type": "string", "minLength": 1 },
+    "bundle": {
+      "const": "docs/plans/evidence/loop-engineering-remediation/implementation-evidence.json"
+    },
+    "safeWriteManifestReceipt": {
+      "const": "docs/plans/evidence/loop-engineering-remediation/finalization-receipts/safe-write-receipt-manifest.receipt.json"
+    },
+    "evd15Receipt": {
+      "const": "docs/plans/evidence/loop-engineering-remediation/finalization-receipts/G15-final-gates.receipt.json"
+    },
+    "artifact01Receipt": {
+      "const": "docs/plans/evidence/loop-engineering-remediation/finalization-receipts/implementation-evidence.receipt.json"
+    },
+    "receipt": {
+      "const": "docs/plans/evidence/loop-engineering-remediation/terminal-command-receipt.json"
+    },
+    "firstCommand": { "const": "CMD-24" },
+    "secondCommand": { "const": "CMD-25" },
+    "json": { "type": "boolean" }
+  }
+}

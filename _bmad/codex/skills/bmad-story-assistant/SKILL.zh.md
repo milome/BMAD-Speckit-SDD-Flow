@@ -3,7 +3,7 @@ name: bmad-story-assistant
 description: |
   BMAD Story 助手：按 Epic/Story 编号执行完整的 Create Story → 审计 → Dev Story → 实施后审计 工作流。
   阶段零：在新项目/worktree 自动检测并补丁 party-mode 展示名优化（若 _bmad 存在且未优化）。
-  使用 subagent 执行任务；审计步骤优先通过 Codex worker dispatch 调度 code-reviewer（.codex/agents/ 或 .codex/agents/），失败则回退 Codex worker adapter general-purpose。
+  使用 subagent 执行任务；审计步骤优先通过 Codex worker dispatch 调度 code-reviewer（.codex/agents/ 或 .codex/agents/），失败则回退 current Codex main session general-purpose。
   遵循 ralph-method、TDD 红绿灯、speckit-workflow 约束。主 Agent 禁止直接修改生产代码。
   **禁止因 Epic/Story 已存在即跳过 party-mode**：仅当用户明确说「已通过 party-mode 且审计通过」时方可跳过 Create Story；否则必须执行 Create Story。主 Agent 在进入 Codex party-mode 前必须先展示 `20 / 50 / 100` 强度选项、等待用户选择、完成发起前自检，并由宿主在 `SubagentStart` 注入 `Party Mode Session Bootstrap (JSON)`；涉及方案选择或设计决策时进入 party-mode 至少 100 轮。
   适用场景：用户提供 Epic 编号与 Story 编号（如 4、1 表示 Story 4.1），需生成 Story 文档、通过审计、执行 Dev Story 并完成实施后审计。全程中文。
@@ -94,8 +94,8 @@ Layer 5: 收尾层 (批量Push + PR自动生成 + 强制人工审核 + 发布)
 
 ## 强制约束
 
-- **主 Agent 禁止直接生成 Story 文档**：阶段一 Create Story 产出的 Story 文档必须由 Codex worker adapter 子代理产出；主 Agent 不得以「已有需求文档」「Epic 已明确」等为由跳过子代理并自行撰写 Story 文档。
-- **主 Agent 禁止直接修改生产代码**：实施必须通过 Codex worker adapter 子代理执行。
+- **主 Agent 禁止直接生成 Story 文档**：阶段一 Create Story 产出的 Story 文档必须由 current Codex main session 子代理产出；主 Agent 不得以「已有需求文档」「Epic 已明确」等为由跳过子代理并自行撰写 Story 文档。
+- **主 Agent 禁止直接修改生产代码**：实施必须通过 current Codex main session 子代理执行。
 - **禁止因 Epic/Story 已存在即跳过 party-mode**：仅当用户**明确**说明「Story 已通过 party-mode 且审计通过，跳过 Create Story」或符合例外场景时，方可跳过阶段一、二；否则，即使 Epic/Story 文档已存在（可能由简单 bmad 命令生成、未经 party-mode 深入讨论），**必须**执行 Create Story。凡涉及代码实现的 Story，**必须**进入 party-mode 至少 100 轮辩论（例外场景见阶段一 §1.0）。
 
 ---
@@ -195,7 +195,7 @@ Story 完整标识为 `{epic_num}-{story_num}`，例如 Epic 4、Story 4.1 → `
 用户说：「帮我创建 Story 3.2 并做审计。」
 
 主 Agent 执行：
-1. Codex worker adapter 发起 Create Story（epic_num=3, story_num=2）
+1. current Codex main session 发起 Create Story（epic_num=3, story_num=2）
 2. 产出 `3-2-<title>.md` 后发起审计子任务
 3. 若未通过则修改文档并再次审计，直至通过
 
@@ -486,7 +486,7 @@ Architecture Party-Mode角色（GAP-020 修复：与 Plan Party-Mode 差异说�
 
 ### 主Agent发起子任务前自检清单
 
-在发起任何子任务（Codex worker adapter或Codex worker dispatch）前，必须完成以下检查：
+在发起任何子任务（current Codex main session或Codex worker dispatch）前，必须完成以下检查：
 
 **sprint-status 检查**（阶段一 Create Story 发起前必须执行，TASKS_sprint-planning-gate T4）：
 - [ ] 当用户通过 epic_num/story_num 或从 sprint-status 解析指定 Story 时，主 Agent 须在发起 Create Story 子任务**之前**检查 sprint-status 是否存在。
@@ -586,7 +586,7 @@ Architecture Party-Mode角色（GAP-020 修复：与 Plan Party-Mode 差异说�
 4. **若 sprint-status 存在**：可附带「sprint-status 已确认」标志于子任务 prompt，简化子任务逻辑。
 5. **豁免**：若用户明确「已通过 party-mode 且审计通过，跳过 Create Story」并仅请求 Dev Story，可按现有逻辑执行（Dev Story 由 dev-story 流程内部门控）。
 
-通过 **Codex worker adapter** 调用 subagent，执行 `/bmad-bmm-create-story` 等价工作流，生成 Epic `{epic_num}`、Story `{epic_num}-{story_num}` 文档。主 Agent 须将模板 **STORY-A1-CREATE**（阶段一 Create Story prompt）整段复制并替换占位符。
+通过 **current Codex main session** 调用 subagent，执行 `/bmad-bmm-create-story` 等价工作流，生成 Epic `{epic_num}`、Story `{epic_num}-{story_num}` 文档。主 Agent 须将模板 **STORY-A1-CREATE**（阶段一 Create Story prompt）整段复制并替换占位符。
 
 **跳过判断**：仅当用户**明确**说出「已通过 party-mode 且审计通过」「跳过 Create Story」时，主 Agent 方可跳过阶段一、二。若用户仅提供 Epic/Story 编号或说「Story 已存在」而未明确上述表述，**必须**执行 Create Story（含 party-mode 100 轮，若有方案选择或设计决策）。
 
@@ -595,7 +595,7 @@ Architecture Party-Mode角色（GAP-020 修复：与 Plan Party-Mode 差异说�
 **模板 ID**：STORY-A1-CREATE。**模板边界**：自代码块内首行至「…全程必须使用中文。」止。
 
 ```yaml
-tool: Codex worker adapter
+tool: current Codex main session
 subagent_type: general-purpose
 description: "Create Story {epic_num}-{story_num} via BMAD create-story workflow"
 prompt: |
@@ -659,11 +659,11 @@ Story 文档生成后，**必须**发起审计子任务，使用 audit-prompts.m
 
 ### 2.1 审计子代理优先顺序
 
-**说明**：`Codex worker adapter` 的 `subagent_type` 目前仅支持 `general-purpose`、`explore`、`shell`，**不支持** `code-reviewer`。
+**说明**：`current Codex main session` 的 `subagent_type` 目前仅支持 `general-purpose`、`explore`、`shell`，**不支持** `code-reviewer`。
 
-**优先**：若项目存在 `.codex/agents/code-reviewer.md` 或 `.codex/agents/code-reviewer.md`，Codex 会从中发现 code-reviewer。优先通过 **Codex worker dispatch 工具**（或等效机制）调度 code-reviewer 执行审计，并传入本阶段适用的审计提示词（见下文）。**不得**在审计步骤中强制「必须用 Codex worker adapter」。
+**优先**：若项目存在 `.codex/agents/code-reviewer.md` 或 `.codex/agents/code-reviewer.md`，Codex 会从中发现 code-reviewer。优先通过 **Codex worker dispatch 工具**（或等效机制）调度 code-reviewer 执行审计，并传入本阶段适用的审计提示词（见下文）。**不得**在审计步骤中强制「必须用 current Codex main session」。
 
-**回退**：若 code-reviewer 不可用（无 agents 文件、Task 无法调度等），则回退到 `Codex worker adapter` + `subagent_type: general-purpose`，并传入本阶段适用的审计提示词，保证审计标准一致。
+**回退**：若 code-reviewer 不可用（无 agents 文件、Task 无法调度等），则回退到 `current Codex main session` + `subagent_type: general-purpose`，并传入本阶段适用的审计提示词，保证审计标准一致。
 
 **提示词**：**必须**使用本 skill 内阶段二 Story 审计完整 prompt 模板（ID STORY-A2-AUDIT）整段复制到审计子任务 prompt 中，**不得**使用其他通用审计提示词。
 
@@ -673,8 +673,8 @@ Story 文档生成后，**必须**发起审计子任务，使用 audit-prompts.m
 
 ```yaml
 # 优先：Codex worker dispatch 调度 code-reviewer（若 .codex/agents/ 或 .codex/agents/ 存在）
-# 回退：Codex worker adapter（因 Codex worker adapter 不支持 code-reviewer，回退时使用 general-purpose）
-tool: Codex worker adapter
+# 回退：current Codex main session（因 current Codex main session 不支持 code-reviewer，回退时使用 general-purpose）
+tool: current Codex main session
 subagent_type: general-purpose
 description: "Audit Story {epic_num}-{story_num} document"
 prompt: |
@@ -693,7 +693,7 @@ prompt: |
   3. 多方案场景是否已通过辩论达成共识并选定最优方案。
   4. 是否有技术债或占位性表述。
   5. **推迟闭环**：若 Story 含「由 Story X.Y 负责」，须验证 `_bmad-output/implementation-artifacts/epic-{X}-*/story-{Y}-*/` 下 Story 文档存在且 scope/验收标准含该任务的具体描述；否则判不通过。「由 X.Y 负责」的表述须含被推迟任务的**具体描述**，便于 grep 验证。修改建议（三选一）：① 若 X.Y 不存在：创建 Story X.Y，scope 含 [任务具体描述]；② 若 X.Y 存在但 scope 不含：更新 Story X.Y，将 [任务具体描述] 加入 scope；③ 若不应推迟：删除「由 X.Y 负责」，改为本 Story 实现。
-  
+
   验证方式：阅读 Story 文档；若含「由 Story X.Y 负责」，读取 `{project-root}/_bmad-output/implementation-artifacts/epic-{X}-*/story-{Y}-*/` 下 Story 文档，检查 scope/验收标准是否含该任务；grep 被推迟任务的关键词。
 
   报告结尾必须按以下格式输出：结论：通过/未通过。必达子项：① 覆盖需求与 Epic；② 明确无禁止词；③ 多方案已共识；④ 无技术债/占位表述；⑤ 推迟闭环（若有「由 X.Y 负责」则 X.Y 存在且 scope 含该任务）；⑥ 本报告结论格式符合本段要求。若任一项不满足则结论为未通过，并列出不满足项及每条对应的修改建议。
@@ -940,9 +940,9 @@ elif story_count >= 3:
 
 **主 Agent 必须执行的步骤**：1 推导 epic_slug（从 `_bmad-output/planning-artifacts/epics.md` 中 `### Epic N：Title` 的 Title 转 kebab-case，或从 `_bmad-output/implementation-artifacts/epic-{N}-*/` 已有目录名解析）→ 2 准备 prompt（将模板 STORY-A3-DEV 整段复制并替换占位符 epic_num、story_num、epic_slug、slug、project-root）→ 3 执行发起前自检清单 → 4 输出自检结果 → 5 发起子任务。**禁止**：不得在未完成步骤 3、4 的情况下执行步骤 5；不得省略 epic_slug 占位符，否则子代理会创建无 slug 的 specs/epic-N/ 路径。
 
-- **仅负责**：发起 Codex worker adapter、传入 BUGFIX/TASKS 文档路径、收集 subagent 输出。
+- **仅负责**：发起 current Codex main session、传入 BUGFIX/TASKS 文档路径、收集 subagent 输出。
 - **禁止**：主 Agent 直接对生产代码执行 `search_replace` 或 `write`。
-- **必须**：通过 Codex worker adapter 将实施任务委托给 subagent。
+- **必须**：通过 current Codex main session 将实施任务委托给 subagent。
 
 #### 3.2.1 阶段判断与禁止重复 Dev Story（防止反复执行阶段三）
 
@@ -957,10 +957,10 @@ elif story_count >= 3:
 
 ### 3.3 发起实施子任务（STORY-A3-DEV 模板）
 
-主 Agent 须将以下模板整段复制并替换占位符后传入 Codex worker adapter：
+主 Agent 须将以下模板整段复制并替换占位符后传入 current Codex main session：
 
 ```yaml
-tool: Codex worker adapter
+tool: current Codex main session
 subagent_type: general-purpose
 description: "Dev Story {epic_num}-{story_num} implementation"
 prompt: |
@@ -1120,7 +1120,7 @@ cleanup 命令（按平台择一执行）：
 
 **审计方式**：
 - 优先：Codex worker dispatch调度code-reviewer
-- 回退：Codex worker adapter general-purpose + audit-prompts.md §5内容
+- 回退：current Codex main session general-purpose + audit-prompts.md §5内容
 
 ### 审计结论处理
 
@@ -1531,7 +1531,7 @@ post-audit 前还必须追加以下检查：
 
 ### 4.1 审计子代理与提示词
 
-与阶段二相同：**优先** Codex worker dispatch 调度 code-reviewer；**回退** Codex worker adapter general-purpose。主 Agent 须将 **STORY-A4-POSTAUDIT** 完整 prompt 模板整段复制并替换占位符后传入。**传入审计子任务的 prompt 必须包含【§5 可解析块要求（implement 专用）】**（见上节综合审计），并附 audit-prompts §5.1 或 audit-prompts-code.md 可解析块示例（功能性、代码质量、测试覆盖、安全性）。**【审计通过后必做】**：当结论为「完全覆盖、验证通过」时，你（审计子代理）**在返回主 Agent 前必须**返回 `projectRoot`、`reportPath`、`artifactDocPath=<story 文档路径>`、`stage=implement`，交由 invoking host/runner 统一调用 `runAuditorHost`；报告路径为 `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_Story_{epic}-{story}_stage4.md`；若 host/runner 执行失败，在结论中注明 resultCode；**禁止**在未完成上述 host 收口前返回通过结论。详细模板见本 skill 历史版本或 speckit-workflow references。
+与阶段二相同：**优先** Codex worker dispatch 调度 code-reviewer；**回退** current Codex main session general-purpose。主 Agent 须将 **STORY-A4-POSTAUDIT** 完整 prompt 模板整段复制并替换占位符后传入。**传入审计子任务的 prompt 必须包含【§5 可解析块要求（implement 专用）】**（见上节综合审计），并附 audit-prompts §5.1 或 audit-prompts-code.md 可解析块示例（功能性、代码质量、测试覆盖、安全性）。**【审计通过后必做】**：当结论为「完全覆盖、验证通过」时，你（审计子代理）**在返回主 Agent 前必须**返回 `projectRoot`、`reportPath`、`artifactDocPath=<story 文档路径>`、`stage=implement`，交由 invoking host/runner 统一调用 `runAuditorHost`；报告路径为 `_bmad-output/implementation-artifacts/epic-{epic}-*/story-{story}-*/AUDIT_Story_{epic}-{story}_stage4.md`；若 host/runner 执行失败，在结论中注明 resultCode；**禁止**在未完成上述 host 收口前返回通过结论。详细模板见本 skill 历史版本或 speckit-workflow references。
 
 若审计结论为**未通过**，**必须**按审计报告修改后**再次发起**，直至「完全覆盖、验证通过」。
 
@@ -1543,7 +1543,7 @@ post-audit 前还必须追加以下检查：
 
 ```yaml
 # 回退方案示例
-tool: Codex worker adapter
+tool: current Codex main session
 subagent_type: general-purpose
 description: "Audit bmad-story-assistant skill"
 prompt: |
@@ -1552,10 +1552,10 @@ prompt: |
   审计内容：
   1. 是否完整覆盖用户要求的 Create Story、审计、Dev Story、实施后审计、Skill 自审计 全流程。
   2. Epic/Story 编号作为输入的说明是否清晰，占位符 {epic_num}、{story_num}、{project-root} 是否一致。
-  3. 引用的命令、技能是否准确：/bmad-bmm-create-story、/bmad-bmm-dev-story、Codex worker adapter、ralph-method、speckit-workflow、audit-prompts.md §5。
-  4. 主 Agent 禁止直接修改生产代码、必须通过 Codex worker adapter 委托等约束是否明确。
+  3. 引用的命令、技能是否准确：/bmad-bmm-create-story、/bmad-bmm-dev-story、current Codex main session、ralph-method、speckit-workflow、audit-prompts.md §5。
+  4. 主 Agent 禁止直接修改生产代码、必须通过 current Codex main session 委托等约束是否明确。
   5. 中文表述是否清晰无歧义。
-  6. 审计步骤是否明确：Codex worker adapter 不支持 code-reviewer；优先 Codex worker dispatch 调度 code-reviewer、失败则回退 Codex worker adapter general-purpose；是否避免强制「必须用 Codex worker adapter」；阶段二使用 Story 专用提示词、阶段四使用完整 audit-prompts §5。
+  6. 审计步骤是否明确：current Codex main session 不支持 code-reviewer；优先 Codex worker dispatch 调度 code-reviewer、失败则回退 current Codex main session general-purpose；是否避免强制「必须用 current Codex main session」；阶段二使用 Story 专用提示词、阶段四使用完整 audit-prompts §5。
   7. **推迟闭环**：禁止词表是否含「先实现、后续扩展、或后续扩展」；是否含「Story 范围表述示例」；阶段二审计是否含「由 Story X.Y 负责」的验证项；审计未通过时主 Agent 是否须先执行「创建/更新 Story X.Y」再再次审计；Create Story 是否含正面指引（功能不在本 Story 但属 Epic 时须写明归属）。
 
   报告结尾必须明确给出结论：是否「完全覆盖、验证通过」；若未通过，请列出未通过项及修改建议。
@@ -1567,7 +1567,7 @@ prompt: |
 
 ## BMAD Agent 展示名与命令对照
 
-在 Codex worker adapter 子任务调用、Party Mode 多轮对话、工作流指引等场景中，应使用以下**展示名**指代各 Agent，以保持上下文一致性与用户体验。
+在 current Codex main session 子任务调用、Party Mode 多轮对话、工作流指引等场景中，应使用以下**展示名**指代各 Agent，以保持上下文一致性与用户体验。
 
 | Agent 展示名 | 命令名 | 模块 |
 |--------------|--------|------|
@@ -1594,7 +1594,7 @@ prompt: |
 | 批判性审计员 | （仅 party-mode 内使用，无独立命令） | core |
 
 **使用说明**：
-- **Codex worker adapter 子任务上下文**：在 prompt 中引用 BMAD 工作流或推荐下一步时，使用展示名（如「可交由 Winston 架构师 做架构检查」）。
+- **current Codex main session 子任务上下文**：在 prompt 中引用 BMAD 工作流或推荐下一步时，使用展示名（如「可交由 Winston 架构师 做架构检查」）。
 - **Party Mode 多轮对话**：Facilitator 介绍与发言时，必须使用展示名标注角色（如「🏗️ **Winston 架构师**：…」「💻 **Amelia 开发**：…」），与 `_bmad/_config/agent-manifest.csv` 的 `displayName` 及上表保持一致。
 
 ---
@@ -1690,7 +1690,7 @@ prompt: |
 
 4. **审计约束**
    - 优先使用Codex worker dispatch调度code-reviewer
-   - code-reviewer不可用时使用Codex worker adapter回退
+   - code-reviewer不可用时使用current Codex main session回退
    - 所有审计必须达到A/B级才能继续
 
 5. **Worktree约束**

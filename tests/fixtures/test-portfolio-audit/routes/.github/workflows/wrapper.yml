@@ -1,0 +1,15 @@
+name: Wrapper execution routes
+
+on:
+  pull_request:
+
+jobs:
+  delegated:
+    runs-on: ubuntu-latest
+    steps:
+      - run: npm run delegate
+
+  delegated-and-direct:
+    runs-on: ubuntu-latest
+    steps:
+      - run: npm run delegate && npm run explicit

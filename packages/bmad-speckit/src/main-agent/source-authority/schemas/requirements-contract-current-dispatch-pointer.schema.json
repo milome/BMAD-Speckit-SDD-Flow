@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-current-dispatch-pointer.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "producer",
+    "action",
+    "contractHash",
+    "transactionId",
+    "requirementSetId",
+    "implementationAttemptId",
+    "attemptSequence",
+    "packetId",
+    "dispatchInputSetHash",
+    "requirementRecordRef",
+    "attemptContextRef",
+    "sourceRef",
+    "sourceDocumentHash",
+    "sourceAmendmentHashes",
+    "semanticModelHash",
+    "stageRegistryRef",
+    "installedStageRegistryRef",
+    "architectureAuthorityDecision",
+    "confirmationReceiptRefs",
+    "implementationReadinessReceiptRef",
+    "confirmationPageRefs",
+    "consumerRef",
+    "universeHashes",
+    "packageRuntimeActionBindingManifestRef",
+    "transactionManifestRef",
+    "modelPacketRef",
+    "auditReceiptRef",
+    "humanPromptRef",
+    "goalExecutionRef",
+    "capabilityObservationRef",
+    "activationState",
+    "decision",
+    "selectionMetrics",
+    "supersededPointerRef",
+    "createdAt"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-current-dispatch-pointer/v1" },
+    "producer": { "const": "requirements-contract-current-dispatch-pointer" },
+    "action": { "const": "requirements-contract-prompt-transaction-publish" },
+    "contractHash": { "$ref": "#/$defs/hash" },
+    "transactionId": { "$ref": "#/$defs/id" },
+    "requirementSetId": { "$ref": "#/$defs/id" },
+    "implementationAttemptId": { "$ref": "#/$defs/id" },
+    "attemptSequence": { "type": "integer", "minimum": 1 },
+    "packetId": { "$ref": "#/$defs/id" },
+    "dispatchInputSetHash": { "$ref": "#/$defs/hash" },
+    "requirementRecordRef": { "$ref": "#/$defs/fileRef" },
+    "attemptContextRef": { "$ref": "#/$defs/fileRef" },
+    "sourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sourceDocumentHash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sourceDocumentHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "sourceDocumentHash": { "$ref": "#/$defs/hash" },
+    "sourceAmendmentHashes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/hash" }
+    },
+    "semanticModelHash": { "$ref": "#/$defs/hash" },
+    "stageRegistryRef": { "$ref": "#/$defs/fileRef" },
+    "installedStageRegistryRef": { "$ref": "#/$defs/fileRef" },
+    "architectureAuthorityDecision": {
+      "enum": ["pass", "architecture_not_required"]
+    },
+    "confirmationReceiptRefs": { "$ref": "#/$defs/confirmationRefs" },
+    "implementationReadinessReceiptRef": { "$ref": "#/$defs/fileRef" },
+    "confirmationPageRefs": { "$ref": "#/$defs/confirmationPageRefs" },
+    "consumerRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["consumerId", "root", "marker", "profile"],
+      "properties": {
+        "consumerId": { "$ref": "#/$defs/id" },
+        "root": { "type": "string", "minLength": 1 },
+        "marker": { "$ref": "#/$defs/fileRef" },
+        "profile": { "$ref": "#/$defs/fileRef" }
+      }
+    },
+    "universeHashes": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "$ref": "#/$defs/hash" }
+    },
+    "packageRuntimeActionBindingManifestRef": { "$ref": "#/$defs/fileRef" },
+    "transactionManifestRef": { "$ref": "#/$defs/readbackRef" },
+    "modelPacketRef": { "$ref": "#/$defs/readbackRef" },
+    "auditReceiptRef": { "$ref": "#/$defs/readbackRef" },
+    "humanPromptRef": { "$ref": "#/$defs/readbackRef" },
+    "goalExecutionRef": {
+      "oneOf": [{ "$ref": "#/$defs/readbackRef" }, { "type": "null" }]
+    },
+    "capabilityObservationRef": { "$ref": "#/$defs/readbackRef" },
+    "activationState": { "const": "active" },
+    "decision": { "const": "PASS" },
+    "selectionMetrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "directoryScanCount",
+        "newestFileSelectionCount",
+        "historicalFallbackCount",
+        "missingBindingCount",
+        "replayRejectedCount",
+        "casMismatchCount",
+        "currentDispatchPointerCoverage"
+      ],
+      "properties": {
+        "directoryScanCount": { "const": 0 },
+        "newestFileSelectionCount": { "const": 0 },
+        "historicalFallbackCount": { "const": 0 },
+        "missingBindingCount": { "const": 0 },
+        "replayRejectedCount": { "const": 0 },
+        "casMismatchCount": { "const": 0 },
+        "currentDispatchPointerCoverage": { "const": 1 }
+      }
+    },
+    "supersededPointerRef": {
+      "oneOf": [{ "$ref": "#/$defs/fileRef" }, { "type": "null" }]
+    },
+    "createdAt": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$" },
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "fileRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "confirmationRefs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requirements", "architecture"],
+      "properties": {
+        "requirements": { "$ref": "#/$defs/fileRef" },
+        "architecture": { "$ref": "#/$defs/fileRef" }
+      }
+    },
+    "confirmationPageRefs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requirements", "architecture"],
+      "properties": {
+        "requirements": { "$ref": "#/$defs/fileRef" },
+        "architecture": {
+          "oneOf": [
+            { "$ref": "#/$defs/fileRef" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "readbackRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash", "readbackHash", "readbackVerified"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" },
+        "readbackHash": { "$ref": "#/$defs/hash" },
+        "readbackVerified": { "const": true }
+      }
+    }
+  }
+}

@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-file-intake-receipt.schema.json",
+  "title": "Requirements Contract File Intake Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "requirementSetId",
+    "entrySource",
+    "requestedArtifactRole",
+    "sourcePath",
+    "sourceContentHash",
+    "sourceByteLength",
+    "excerpts",
+    "capturedAt",
+    "receiptHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-file-intake-receipt/v1"
+    },
+    "requirementSetId": {
+      "$ref": "#/$defs/nonEmptyString"
+    },
+    "entrySource": {
+      "enum": ["bmad_prd", "source_prd_draft"]
+    },
+    "requestedArtifactRole": {
+      "enum": ["product_prd", "requirement_source_prd"]
+    },
+    "sourcePath": {
+      "$ref": "#/$defs/nonEmptyString"
+    },
+    "sourceContentHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "sourceByteLength": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "excerpts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/excerpt"
+      }
+    },
+    "capturedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "receiptHash": {
+      "$ref": "#/$defs/sha256"
+    }
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "excerpt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "order",
+        "excerptId",
+        "actorIdentityClass",
+        "content",
+        "contentHash",
+        "boundary"
+      ],
+      "properties": {
+        "order": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "excerptId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "actorIdentityClass": {
+          "const": "source_document"
+        },
+        "content": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "contentHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "boundary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "sourcePath",
+            "startUtf8Byte",
+            "endUtf8ByteExclusive",
+            "startLine",
+            "endLine"
+          ],
+          "properties": {
+            "kind": {
+              "const": "file"
+            },
+            "sourcePath": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "startUtf8Byte": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "endUtf8ByteExclusive": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "startLine": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "endLine": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    }
+  }
+}

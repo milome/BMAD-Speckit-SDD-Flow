@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "goal-contract-partition-policy/v1",
+  "policyId": "goal-contract-partition-default",
+  "policyVersion": "1.1.0",
+  "limits": {
+    "targetClosureMinutesPerPartition": {
+      "min": 120,
+      "max": 180
+    },
+    "maxClosureMinutesPerPartition": 240,
+    "maxPrimaryWriteScopeOwnersPerPartition": 8,
+    "maxCrossPartitionDependencies": 32,
+    "maxCandidateFrontiers": 256,
+    "maxSearchStates": 4096
+  },
+  "weights": {
+    "dependencyCut": 120,
+    "sharedFileChurn": 180,
+    "auditOverhead": 100,
+    "closureFragmentation": 160,
+    "effortImbalance": 40,
+    "sourceBoundaryViolation": 60,
+    "finalIntegration": 100,
+    "semanticCohesionBenefit": 80,
+    "evidenceLocalityBenefit": 80
+  },
+  "semanticDerivationAllowance": true,
+  "canonicalizationVersion": "goal-contract-partition-policy-canonical/v1"
+}

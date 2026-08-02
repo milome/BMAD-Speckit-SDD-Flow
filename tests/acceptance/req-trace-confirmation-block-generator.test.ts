@@ -5,6 +5,9 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import yaml from 'js-yaml';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { requiredCommandExecutionDescriptorsFromModelPacket } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-command-execution-receipt';
+import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
+import { expandSixModelAuthority } from '../helpers/requirement-fixture-runtime';
 
 const ROOT = process.cwd();
 const SCRIPT = path.join(
@@ -79,12 +82,33 @@ function normalizePathForAssert(value: string): string {
   return value.replace(/\\/gu, '/');
 }
 
+const PROJECTION_HASH_BOOKKEEPING_FIELDS = new Set([
+  'derivedFromPacketHash',
+  'projectionStatus',
+]);
+
+function stripProjectionHashBookkeeping(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripProjectionHashBookkeeping(item));
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => !PROJECTION_HASH_BOOKKEEPING_FIELDS.has(key))
+      .map(([key, child]) => [key, stripProjectionHashBookkeeping(child)])
+  );
+}
+
 function semanticConfirmationForHash(
   confirmation: Record<string, unknown>
 ): Record<string, unknown> {
   const semantic: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(confirmation)) {
-    if (!BOOKKEEPING_FIELDS.has(key)) semantic[key] = value;
+    if (!BOOKKEEPING_FIELDS.has(key)) {
+      semantic[key] = stripProjectionHashBookkeeping(value);
+    }
   }
   normalizePreConfirmationDrilldownForHash(semantic);
   return semantic;
@@ -95,7 +119,11 @@ function normalizePreConfirmationDrilldownForHash(semantic: Record<string, unkno
   if (!value || typeof value !== 'object' || Array.isArray(value)) return;
   const drilldown = { ...(value as Record<string, unknown>) };
   const semanticKernelRef = drilldown.semanticKernelRef;
-  if (semanticKernelRef && typeof semanticKernelRef === 'object' && !Array.isArray(semanticKernelRef)) {
+  if (
+    semanticKernelRef &&
+    typeof semanticKernelRef === 'object' &&
+    !Array.isArray(semanticKernelRef)
+  ) {
     const next = { ...(semanticKernelRef as Record<string, unknown>) };
     delete next.hash;
     drilldown.semanticKernelRef = next;
@@ -157,14 +185,39 @@ function currentHashes(sourcePath: string): {
   };
 }
 
+function legacyProjectionInclusiveHashes(sourcePath: string): {
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+} {
+  const sourceText = fs.readFileSync(sourcePath, 'utf8');
+  const { blockText, confirmation } = extractConfirmation(sourceText);
+  const semantic: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(confirmation)) {
+    if (!BOOKKEEPING_FIELDS.has(key)) {
+      semantic[key] = value;
+    }
+  }
+  normalizePreConfirmationDrilldownForHash(semantic);
+  const normalizedBlock = `implementationConfirmation:${stableStringify(semantic)}`;
+  return {
+    sourceDocumentHash: sha256(sourceText.replace(blockText, normalizedBlock)),
+    implementationConfirmationHash: sha256(stableStringify(semantic)),
+  };
+}
+
 function writeRequirementRecord(
   sourcePath: string,
   overrides: Partial<{
     sourceDocumentHash: string;
     implementationConfirmationHash: string;
+    requirementSetId: string;
+    currentAttemptId: string;
+    semanticModelHash: string;
     architectureConfirmationState: Record<string, unknown>;
     architectureConfirmations: Array<Record<string, unknown>>;
     sixModelResults: Record<string, unknown>;
+    runtimeStatusDecisionReceipts: Array<Record<string, unknown>>;
+    artifactIndex: Array<Record<string, unknown>>;
     currentMentalModel: string;
     currentStage: string;
     stage: string;
@@ -214,12 +267,77 @@ function writeRequirementRecord(
   return recordPath;
 }
 
+function writeGovernedCriticalAuditorReceipts(
+  sourcePath: string,
+  overrides: Partial<{
+    missingRounds: number[];
+    recordIdByRound: Record<number, string>;
+    sourceDocumentHashByRound: Record<number, string>;
+    implementationConfirmationHashByRound: Record<number, string>;
+    validatedGapsByRound: Record<number, Array<Record<string, unknown>>>;
+    verdictByRound: Record<number, string>;
+  }> = {}
+): void {
+  const hashes = currentHashes(sourcePath);
+  const authoringDir = path.join(tempDir, 'authoring');
+  fs.mkdirSync(authoringDir, { recursive: true });
+  for (const roundIndex of [1, 2, 3]) {
+    if (overrides.missingRounds?.includes(roundIndex)) continue;
+    const receipt = {
+      schemaVersion: 'critical-auditor-receipt/v1',
+      recordId: overrides.recordIdByRound?.[roundIndex] ?? 'REQ-TRACE-001',
+      roundIndex,
+      sourceDocumentHash:
+        overrides.sourceDocumentHashByRound?.[roundIndex] ?? hashes.sourceDocumentHash,
+      implementationConfirmationHash:
+        overrides.implementationConfirmationHashByRound?.[roundIndex] ??
+        hashes.implementationConfirmationHash,
+      validatedGaps: overrides.validatedGapsByRound?.[roundIndex] ?? [],
+      convergenceDecision: {
+        verdict: overrides.verdictByRound?.[roundIndex] ?? 'no_new_valid_gap',
+        resetsConvergenceCounter: false,
+      },
+      receiptHash: `sha256:${String(roundIndex).repeat(64)}`,
+    };
+    fs.writeFileSync(
+      path.join(authoringDir, `critical-auditor-receipt-round-${roundIndex}.json`),
+      `${JSON.stringify({ criticalAuditorReceipt: receipt }, null, 2)}\n`,
+      'utf8'
+    );
+  }
+}
+
 function architectureConfirmationRecordOverrides(sourcePath: string): Record<string, unknown> {
   const hashes = currentHashes(sourcePath);
-  const architectureHash = 'sha256:4444444444444444444444444444444444444444444444444444444444444444';
+  const architectureHash =
+    'sha256:4444444444444444444444444444444444444444444444444444444444444444';
   const resolvedRecipeHash =
-    'sha256:5555555555555555555555555555555555555555555555555555555555555555';
+    resolveArchitectureConfirmationHashRecipe().resolvedRecipeHash;
+  const implementationAttemptId = `IMPL-${hashes.sourceDocumentHash.slice(-12).toUpperCase()}`;
+  const semanticModelHash = sha256(
+    stableStringify({
+      sourceDocumentHash: hashes.sourceDocumentHash,
+      implementationConfirmationHash: hashes.implementationConfirmationHash,
+    })
+  );
+  const sixModelAuthority = expandSixModelAuthority({
+    rawResults: {
+      architecture_confirmation: {
+        status: 'pass',
+        blockingReasons: [],
+      },
+    },
+    recordId: 'REQ-TRACE-001',
+    requirementSetId: 'REQ-TRACE-001',
+    implementationAttemptId,
+    sourceDocumentHash: hashes.sourceDocumentHash,
+    implementationConfirmationHash: hashes.implementationConfirmationHash,
+    semanticModelHash,
+  });
   return {
+    requirementSetId: 'REQ-TRACE-001',
+    currentAttemptId: implementationAttemptId,
+    semanticModelHash,
     architectureConfirmationState: {
       status: 'active',
       currentArchitectureConfirmationRunId: 'arch-run-001',
@@ -254,21 +372,9 @@ function architectureConfirmationRecordOverrides(sourcePath: string): Record<str
         confirmedBy: 'test-user',
       },
     ],
-    sixModelResults: {
-      architecture_confirmation: {
-        payloadKind: 'model_result',
-        model: 'architecture_confirmation',
-        status: 'pass',
-        sourceDocumentHash: hashes.sourceDocumentHash,
-        implementationConfirmationHash: hashes.implementationConfirmationHash,
-        currentHashes: {
-          sourceDocumentHash: hashes.sourceDocumentHash,
-          implementationConfirmationHash: hashes.implementationConfirmationHash,
-          architectureConfirmationArtifactHash: architectureHash,
-          resolvedRecipeHash,
-        },
-      },
-    },
+    sixModelResults: sixModelAuthority.sixModelResults,
+    runtimeStatusDecisionReceipts: sixModelAuthority.runtimeStatusDecisionReceipts,
+    artifactIndex: sixModelAuthority.artifactIndex,
     currentMentalModel: 'implementation_readiness',
     currentStage: 'implementation_readiness',
     stage: 'implementation_readiness',
@@ -280,7 +386,10 @@ function run(
   options: { env?: NodeJS.ProcessEnv } = {}
 ): { stdout: string; status: number } {
   try {
-    const stdout = execFileSync('python', [SCRIPT, ...args], {
+    const entryArgs = args.includes('--entry')
+      ? []
+      : ['--entry', 'req_trace_direct'];
+    const stdout = execFileSync('python', [SCRIPT, ...entryArgs, ...args], {
       cwd: ROOT,
       encoding: 'utf8',
       env: options.env,
@@ -294,7 +403,10 @@ function run(
 
 function runNodePrompt(args: string[]): { stdout: string; status: number } {
   try {
-    const stdout = execFileSync(process.execPath, [NODE_SCRIPT, ...args], {
+    const entryArgs = args.includes('--entry')
+      ? []
+      : ['--entry', 'req_trace_direct'];
+    const stdout = execFileSync(process.execPath, [NODE_SCRIPT, ...entryArgs, ...args], {
       cwd: ROOT,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -705,10 +817,98 @@ describe('req trace generator confirmation block gate', () => {
     );
   });
 
+  it('disables automatic commits by default in the generated human prompt', () => {
+    const source = writeSource(validCompilerSource());
+    const record = writeRequirementRecord(source);
+    const promptOnlyResult = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+    ]);
+
+    expect(promptOnlyResult.status, promptOnlyResult.stdout).toBe(0);
+    expect(promptOnlyResult.stdout).toContain(
+      '不要自动提交；只有用户明确要求提交时才提交，并且禁止 push。'
+    );
+    expect(promptOnlyResult.stdout).not.toContain('改为 PASS 后立即本地提交一次');
+
+    for (const profile of ['full', 'compact']) {
+      const outDir = path.join(tempDir, `default-no-auto-commit-${profile}`);
+      const result = runNodePrompt([
+        '--source-document',
+        source,
+        '--requirement-record',
+        record,
+        '--out-dir',
+        outDir,
+        '--human-prompt-profile',
+        profile,
+        '--json',
+      ]);
+
+      expect(result.status, result.stdout).toBe(0);
+      const prompt = fs.readFileSync(path.join(outDir, 'human_prompt.txt'), 'utf8');
+      expect(prompt).toContain('不要自动提交；只有用户明确要求提交时才提交，并且禁止 push。');
+      expect(prompt).not.toContain('改为 PASS 后立即本地提交一次');
+    }
+  });
+
+  it('enables a local commit only with the explicit auto-commit flag', () => {
+    const source = writeSource(validCompilerSource());
+    const record = writeRequirementRecord(source);
+    const promptOnlyResult = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--auto-commit',
+    ]);
+
+    expect(promptOnlyResult.status, promptOnlyResult.stdout).toBe(0);
+    expect(promptOnlyResult.stdout).toContain('改为 PASS 后立即本地提交一次');
+    expect(promptOnlyResult.stdout).not.toContain(
+      '不要自动提交；只有用户明确要求提交时才提交，并且禁止 push。'
+    );
+
+    for (const profile of ['full', 'compact']) {
+      const outDir = path.join(tempDir, `explicit-auto-commit-${profile}`);
+      const result = runNodePrompt([
+        '--source-document',
+        source,
+        '--requirement-record',
+        record,
+        '--out-dir',
+        outDir,
+        '--human-prompt-profile',
+        profile,
+        '--auto-commit',
+        '--json',
+      ]);
+
+      expect(result.status, result.stdout).toBe(0);
+      const prompt = fs.readFileSync(path.join(outDir, 'human_prompt.txt'), 'utf8');
+      expect(prompt).toContain('改为 PASS 后立即本地提交一次');
+      expect(prompt).not.toContain(
+        '不要自动提交；只有用户明确要求提交时才提交，并且禁止 push。'
+      );
+    }
+  });
+
   it('compiles synchronized model packet, human prompt, and audit receipt artifacts', () => {
     const source = writeSource(validCompilerSource());
     const record = writeRequirementRecord(source);
     const outDir = path.join(tempDir, 'trace-execution');
+    const commandReceiptRoot = path.join(tempDir, 'command-receipts', 'IMP-TRACE-001');
+    const controlledExecutionContext = {
+      requirementSetId: 'REQ-TRACE-001',
+      transactionId: 'TX-TRACE-001',
+      implementationAttemptId: 'IMP-TRACE-001',
+      architectureAuditAttemptId: 'AUDIT-ARCH-TRACE-001',
+      activePhaseAuditAttemptId: 'AUDIT-ARCH-TRACE-001',
+      contractHash: `sha256:${'a'.repeat(64)}`,
+      inputSnapshotHash: `sha256:${'b'.repeat(64)}`,
+    };
     const result = runNodePrompt([
       '--source-document',
       source,
@@ -718,6 +918,24 @@ describe('req trace generator confirmation block gate', () => {
       outDir,
       '--execution-host',
       'codex',
+      '--requirement-set-id',
+      controlledExecutionContext.requirementSetId,
+      '--transaction-id',
+      controlledExecutionContext.transactionId,
+      '--implementation-attempt-id',
+      controlledExecutionContext.implementationAttemptId,
+      '--architecture-audit-attempt-id',
+      controlledExecutionContext.architectureAuditAttemptId,
+      '--active-phase-audit-attempt-id',
+      controlledExecutionContext.activePhaseAuditAttemptId,
+      '--contract-hash',
+      controlledExecutionContext.contractHash,
+      '--input-snapshot-hash',
+      controlledExecutionContext.inputSnapshotHash,
+      '--command-cwd',
+      ROOT,
+      '--command-receipt-root',
+      commandReceiptRoot,
       '--json',
     ]);
 
@@ -732,6 +950,34 @@ describe('req trace generator confirmation block gate', () => {
     const packet = readJson<Record<string, any>>(path.join(outDir, 'model_packet.json'));
     const prompt = fs.readFileSync(path.join(outDir, 'human_prompt.txt'), 'utf8');
     const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(requiredCommandExecutionDescriptorsFromModelPacket(packet)).toEqual({
+      issueCodes: [],
+      descriptors: [
+        {
+          id: 'CMD-TEST-001',
+          command:
+            'npx vitest run tests/acceptance/req-trace-confirmation-block-generator.test.ts',
+          normalizedCommand:
+            'npx vitest run tests/acceptance/req-trace-confirmation-block-generator.test.ts',
+          argv: [
+            'npx',
+            'vitest',
+            'run',
+            'tests/acceptance/req-trace-confirmation-block-generator.test.ts',
+          ],
+          cwd: normalizePathForAssert(ROOT),
+          receiptPath: normalizePathForAssert(
+            path.join(commandReceiptRoot, 'CMD-TEST-001.json')
+          ),
+          requirementRefs: ['MUST-001'],
+          acceptanceRefs: ['ACC-001', 'E2E-001'],
+          traceRefs: ['TRACE-001'],
+        },
+      ],
+    });
+    expect(packet.controlledExecutionContext).toEqual(controlledExecutionContext);
+    expect(packet.executionHandoff.requiredValidationCommandRefs).toEqual(['CMD-TEST-001']);
+    expect(packet.executionHandoff).not.toHaveProperty('requiredValidationCommands');
 
     expect(packet.artifactRole).toBe('execution_authority');
     expect(packet.sourceDocumentHash).toBe(currentHashes(source).sourceDocumentHash);
@@ -832,6 +1078,29 @@ describe('req trace generator confirmation block gate', () => {
       aiTddManifestComplete: true,
       atomicTaskLineageComplete: true,
     });
+  });
+
+  it('blocks a partial controlled command execution context', () => {
+    const source = writeSource(validCompilerSource());
+    const record = writeRequirementRecord(source);
+    const outDir = path.join(tempDir, 'trace-execution-partial-context');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--execution-host',
+      'codex',
+      '--requirement-set-id',
+      'REQ-TRACE-001',
+      '--json',
+    ]);
+
+    expect(result.status).toBe(3);
+    expect(result.stdout).toContain('BLOCK: CONTROLLED_EXECUTION_CONTEXT_INCOMPLETE');
+    expect(fs.existsSync(path.join(outDir, 'model_packet.json'))).toBe(false);
   });
 
   it('blocks execution packet generation when architecture confirmation is required but not recorded', () => {
@@ -1026,6 +1295,47 @@ describe('req trace generator confirmation block gate', () => {
     });
   });
 
+  it('accepts a legacy command id list covered by the canonical command target collection', () => {
+    const source = writeSource(
+      validCompilerSource().replace(
+        `    commandTargets:
+      commandRefs: ["CMD-TEST-001"]
+      atomicTaskCommandBindings:
+        TASK-001: ["CMD-TEST-001"]
+    traceClosureAssertions:`,
+        `    commandTargets: ["CMD-TEST-001"]
+    commandTargetCollection:
+      requiredCommandRefs: ["CMD-TEST-001"]
+      targetModificationPathRefs: ["TARGET-MOD-001"]
+    traceClosureAssertions:`
+      )
+    );
+    const record = writeRequirementRecord(source);
+    const outDir = path.join(tempDir, 'compatible-command-target-aliases-trace-execution');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--json',
+    ]);
+
+    expect(result.status, result.stdout).toBe(0);
+    const packet = readJson<Record<string, any>>(path.join(outDir, 'model_packet.json'));
+    const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(packet.contractExecutionManifest.commandTargetCollection).toMatchObject({
+      requiredCommandRefs: ['CMD-TEST-001'],
+      targetModificationPathRefs: ['TARGET-MOD-001'],
+    });
+    expect(packet.contractExecutionManifest).not.toHaveProperty('commandTargets');
+    expect(receipt.contractExecutionManifest.aliasAudit).toMatchObject({
+      aliasesUsed: expect.arrayContaining(['commandTargets', 'commandTargetCollection']),
+      blockingReasons: [],
+    });
+  });
+
   it('uses /goal for Codex only when explicitly available and allowed', () => {
     const source = writeSource(validCompilerSource());
     const record = writeRequirementRecord(source);
@@ -1066,7 +1376,9 @@ describe('req trace generator confirmation block gate', () => {
     expect(goalDocument).toContain('AI-TDD protocol:');
     expect(goalDocument).toContain('- Packet ID: implement-confirmation-codex');
     expect(goalDocument).toContain(`- TaskReport path: ${normalizePathForAssert(taskReportPath)}`);
-    expect(goalDocument).toContain('TaskReport schema: { packetId, status, filesChanged, validationsRun, evidence, downstreamContext, driftFlags? }');
+    expect(goalDocument).toContain(
+      'TaskReport schema: { packetId, status, filesChanged, validationsRun, evidence, downstreamContext, driftFlags? }'
+    );
     expect(goalDocument).toContain('Allowed write scope:');
     expect(goalDocument).toContain('Required validation commands:');
     expect(goalDocument).toContain('Completion evidence fields:');
@@ -1300,6 +1612,192 @@ describe('req trace generator confirmation block gate', () => {
     expect(receipt.decision).toBe('pass');
     const packet = readJson<Record<string, any>>(path.join(outDir, 'model_packet.json'));
     expect(packet.preConfirmationDrilldown.criticalAuditor.consecutiveNoNewGapRounds).toBe(3);
+  });
+
+  it('does not require implementation trace bindings for validation-only target rows', () => {
+    const source = writeSource(
+      validCompilerSource().replace(
+        / {2}requiredCommands:\n/u,
+        `    - id: TARGET-MOD-VALIDATION-ONLY
+      path: tests/acceptance/req-trace-confirmation-block-generator.test.ts
+      changeType: validation_only
+      coverageRole: validation_only
+      intent: "Validate the compiler without becoming an implementation target."
+  requiredCommands:
+`
+      )
+    );
+    const record = writeRequirementRecord(source);
+    const outDir = path.join(tempDir, 'validation-only-target-trace-execution');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--json',
+    ]);
+
+    expect(result.status, result.stdout).toBe(0);
+    const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(receipt.decision).toBe('pass');
+    expect(receipt.blockingReasons).not.toEqual(
+      expect.arrayContaining([
+        'TARGET_MODIFICATION_TRACE_BINDING_REQUIRED:TARGET-MOD-VALIDATION-ONLY',
+        'TARGET_MODIFICATION_EVIDENCE_BINDING_REQUIRED:TARGET-MOD-VALIDATION-ONLY',
+      ])
+    );
+    const packet = readJson<Record<string, any>>(path.join(outDir, 'model_packet.json'));
+    expect(packet.executionHandoff.allowedWriteScope).not.toContain(
+      'tests/acceptance/req-trace-confirmation-block-generator.test.ts'
+    );
+  });
+
+  it('still requires implementation trace bindings for ordinary target rows', () => {
+    const source = writeSource(
+      validCompilerSource().replace(
+        '      traceRows: ["TRACE-001"]\n      evidenceRefs: ["EVD-001"]\n  requiredCommands:',
+        '  requiredCommands:'
+      )
+    );
+    const record = writeRequirementRecord(source);
+    const outDir = path.join(tempDir, 'unbound-implementation-target-trace-execution');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--json',
+    ]);
+
+    expect(result.status).toBe(3);
+    const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(receipt.blockingReasons).toEqual(
+      expect.arrayContaining([
+        'TARGET_MODIFICATION_TRACE_BINDING_REQUIRED:TARGET-MOD-001',
+        'TARGET_MODIFICATION_EVIDENCE_BINDING_REQUIRED:TARGET-MOD-001',
+      ])
+    );
+  });
+
+  it('accepts three current governed receipts when source auditor bookkeeping is stale', () => {
+    const source = writeSource(
+      validCompilerSource().replace(
+        / {2}preConfirmationDrilldown:[\s\S]*? {2}must:\n/u,
+        `  preConfirmationDrilldown:
+    semanticKernelRef: authoring/semantic-kernel.json
+    mustDecompositionPacketRef: authoring/must_decomposition_packet.json
+    reconciliationReportRef: authoring/must_packet_source_reconciliation_report.json
+    preRenderGateReportRef: authoring/pre-render-must-decomposition-gate-report.json
+    criticalAuditor:
+      minimumRounds: 3
+      consecutiveNoNewGapRounds: 0
+      latestReceiptHash: null
+      convergenceVerdict: audit_not_run
+  must:
+`
+      )
+    );
+    const record = writeRequirementRecord(source);
+    writeGovernedCriticalAuditorReceipts(source);
+    const outDir = path.join(tempDir, 'governed-auditor-receipts-trace-execution');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--json',
+    ]);
+
+    expect(result.status, result.stdout).toBe(0);
+    const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(receipt.decision).toBe('pass');
+    const packet = readJson<Record<string, any>>(path.join(outDir, 'model_packet.json'));
+    expect(packet.preConfirmationDrilldown.criticalAuditorReceipts).toHaveLength(3);
+    expect(
+      packet.preConfirmationDrilldown.criticalAuditorReceipts.every(
+        (item: Record<string, unknown>) => item.exists === true
+      )
+    ).toBe(true);
+  });
+
+  it.each([
+    {
+      name: 'wrong record id',
+      overrides: { recordIdByRound: { 2: 'REQ-OTHER' } },
+    },
+    {
+      name: 'stale source hash',
+      overrides: {
+        sourceDocumentHashByRound: {
+          2: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        },
+      },
+    },
+    {
+      name: 'stale confirmation hash',
+      overrides: {
+        implementationConfirmationHashByRound: {
+          2: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        },
+      },
+    },
+    {
+      name: 'missing round',
+      overrides: { missingRounds: [2] },
+    },
+    {
+      name: 'validated gap',
+      overrides: {
+        validatedGapsByRound: {
+          2: [{ id: 'GAP-001', status: 'resolved' }],
+        },
+      },
+    },
+    {
+      name: 'non-converged verdict',
+      overrides: { verdictByRound: { 2: 'new_valid_gap' } },
+    },
+  ])('blocks governed auditor receipts with $name', ({ overrides }) => {
+    const source = writeSource(
+      validCompilerSource().replace(
+        / {2}preConfirmationDrilldown:[\s\S]*? {2}must:\n/u,
+        `  preConfirmationDrilldown:
+    semanticKernelRef: authoring/semantic-kernel.json
+    mustDecompositionPacketRef: authoring/must_decomposition_packet.json
+    reconciliationReportRef: authoring/must_packet_source_reconciliation_report.json
+    preRenderGateReportRef: authoring/pre-render-must-decomposition-gate-report.json
+    criticalAuditor:
+      minimumRounds: 3
+      consecutiveNoNewGapRounds: 0
+      latestReceiptHash: null
+      convergenceVerdict: audit_not_run
+  must:
+`
+      )
+    );
+    const record = writeRequirementRecord(source);
+    writeGovernedCriticalAuditorReceipts(source, overrides);
+    const outDir = path.join(tempDir, 'invalid-governed-auditor-receipts-trace-execution');
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--json',
+    ]);
+
+    expect(result.status).toBe(3);
+    const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(receipt.blockingReasons).toContain('CRITICAL_AUDITOR_THREE_ROUNDS_REQUIRED');
+    expect(fs.existsSync(path.join(outDir, 'model_packet.json'))).toBe(false);
   });
 
   it('ignores pre-confirmation drilldown bookkeeping when validating confirmation record hashes', () => {
@@ -1642,6 +2140,86 @@ describe('req trace generator confirmation block gate', () => {
     expect(result.status).toBe(3);
     expect(result.stdout).toContain('BLOCK: CONFIRMATION_RECORD_HASH_MISMATCH');
     expect(result.stdout).toContain('sourceDocumentHash');
+  });
+
+  it('compiles from an existing confirmation that used the projection-inclusive hash recipe', () => {
+    const source = writeSource(
+      validCompilerSource().replace(
+        '      derivedFromProjectionRef: "must_decomposition_packet:atomicImplementationTaskList[TASK-001]"',
+        `      derivedFromProjectionRef: "must_decomposition_packet:atomicImplementationTaskList[TASK-001]"
+      derivedFromPacketHash: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      projectionStatus: synchronized`
+      )
+    );
+    const legacyHashes = legacyProjectionInclusiveHashes(source);
+    const canonicalHashes = currentHashes(source);
+    expect(legacyHashes).not.toEqual(canonicalHashes);
+    const record = writeRequirementRecord(source, legacyHashes);
+    const outDir = path.join(tempDir, 'legacy-hash-trace-execution');
+
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      outDir,
+      '--execution-host',
+      'codex',
+      '--json',
+    ]);
+
+    expect(result.status, result.stdout).toBe(0);
+    const packet = readJson<Record<string, any>>(path.join(outDir, 'model_packet.json'));
+    const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
+    expect(packet.sourceDocumentHash).toBe(legacyHashes.sourceDocumentHash);
+    expect(packet.implementationConfirmationHash).toBe(
+      legacyHashes.implementationConfirmationHash
+    );
+    expect(receipt.confirmationHashAuthority).toMatchObject({
+      recipe: 'legacy_projection_bookkeeping_inclusive/v1',
+      compatibilityDecision: 'accepted_existing_confirmation',
+      canonicalSourceDocumentHash: canonicalHashes.sourceDocumentHash,
+      canonicalImplementationConfirmationHash: canonicalHashes.implementationConfirmationHash,
+    });
+  });
+
+  it('still blocks semantic drift from a projection-inclusive legacy confirmation', () => {
+    const source = writeSource(
+      validCompilerSource().replace(
+        '      derivedFromProjectionRef: "must_decomposition_packet:atomicImplementationTaskList[TASK-001]"',
+        `      derivedFromProjectionRef: "must_decomposition_packet:atomicImplementationTaskList[TASK-001]"
+      derivedFromPacketHash: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      projectionStatus: synchronized`
+      )
+    );
+    const legacyHashes = legacyProjectionInclusiveHashes(source);
+    const record = writeRequirementRecord(source, legacyHashes);
+    fs.writeFileSync(
+      source,
+      fs
+        .readFileSync(source, 'utf8')
+        .replace(
+          'Compile synchronized execution artifacts.',
+          'Compile semantically changed execution artifacts.'
+        ),
+      'utf8'
+    );
+
+    const result = runNodePrompt([
+      '--source-document',
+      source,
+      '--requirement-record',
+      record,
+      '--out-dir',
+      path.join(tempDir, 'legacy-hash-semantic-drift'),
+      '--execution-host',
+      'codex',
+      '--json',
+    ]);
+
+    expect(result.status).toBe(3);
+    expect(result.stdout).toContain('CONFIRMATION_RECORD_HASH_MISMATCH');
   });
 
   it('blocks draft confirmation blocks', () => {

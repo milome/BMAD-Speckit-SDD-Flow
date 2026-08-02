@@ -30,6 +30,54 @@ execution:
   projections:
     emitNonAuthoritativePackets: true
     archivePath: _bmad-output/runtime/governance/archive
+judgeRuntime:
+  schemaVersion: requirements-contract-judge-runtime/v1
+  enabled: true
+  activeProviderRef: local-sonnet-judge
+  selectionPolicy:
+    mode: contract_locked
+    runtimeFallbackAllowed: false
+    runtimeAutoDiscoveryAllowed: false
+    environmentOverrideAllowed: false
+    cliTransportAllowed: true
+    selectionReceiptRequired: true
+  credentialConfig:
+    source: config_file
+    path: _bmad-output/config/private/judge-provider.credentials.yaml
+    schemaVersion: requirements-contract-judge-credentials/v1
+    allowedRoot: _bmad-output/config/private
+    environmentFallbackAllowed: false
+  providers:
+    local-sonnet-judge:
+      enabled: true
+      transport: cli
+      adapterRef: ClaudeCodeCliJudgeAdapter
+      apiStyle: cli
+      credentialRef: local-sonnet-judge
+      endpoint:
+        command: claude
+        baseUrl: http://localhost:3010
+        resolutionMode: path_search
+        routingOwnership: transport_adapter
+        upstreamVersioning: gateway_managed
+        explicitOperationPath: null
+      authentication:
+        type: bearer
+        sensitivity: secret
+        arbitraryNonEmptyValueAllowed: false
+      auditPolicy:
+        independenceClass: different_provider_different_model
+        blindReview: true
+        allowPassAuthority: false
+        toolsAllowed: true
+        allowedTools:
+          - Read
+        implementationWritesAllowed: false
+      requestPolicy:
+        timeoutMs: 1800000
+        maximumAttempts: 1
+        structuredResponseRequired: true
+        maxBudgetUsd: 5
 provider:
   mode: openai-compatible
   id: openai-governance

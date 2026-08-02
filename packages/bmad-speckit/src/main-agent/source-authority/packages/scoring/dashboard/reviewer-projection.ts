@@ -272,10 +272,10 @@ const HOSTS: Record<ReviewerHostId, ReviewerHostRouteSummary> = {
   codex: {
     carrierSourcePath: '_bmad/codex/agents/code-reviewer.toml',
     runtimeTargetPath: '.codex/agents/code-reviewer.toml',
-    preferredRoute: { tool: 'codex', subtypeOrExecutor: 'worker:audit' },
-    fallbackRoute: { tool: 'codex', subtypeOrExecutor: 'worker:audit' },
+    preferredRoute: { tool: 'codex', subtypeOrExecutor: 'main-session:audit' },
+    fallbackRoute: { tool: 'codex', subtypeOrExecutor: 'main-session:audit' },
     fallbackReason:
-      'Codex uses the no-hooks worker adapter for audit packets; flat or no-op reviewer fallback is disabled.',
+      'The current Codex main session executes audit packets through the dedicated reviewer carrier; worker and no-op fallbacks are disabled.',
   },
 };
 

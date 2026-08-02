@@ -330,6 +330,165 @@ describe('requirement-record.schema.json', () => {
     expect(validate(record), JSON.stringify(validate.errors, null, 2)).toBe(true);
   });
 
+  it('binds the goal-contract authority writer and reduced authority payload', () => {
+    const validate = loadValidator();
+    const record = validRecord() as ReturnType<typeof validRecord> & {
+      controlledIngestWriterRegistryRequired?: boolean;
+      controlledIngestWriterRegistry?: Array<Record<string, unknown>>;
+      controlledIngestWriterRegistryHash?: string;
+      nativeGoalHandoff?: Record<string, unknown>;
+    };
+    const hash =
+      'sha256:7777777777777777777777777777777777777777777777777777777777777777';
+    record.controlledIngestWriterRegistryRequired = true;
+    record.controlledIngestWriterRegistry = [
+      {
+        writerId: 'goal-contract-authority-supersession',
+        eventTypes: ['goal_contract_partition_authority_superseded'],
+        writerHash: hash,
+        scriptPath:
+          'packages/bmad-speckit/src/utils/goal-contract/control-plane/authority-supersession.ts',
+        scriptContentHash: hash,
+        ownerModel: 'implementation_readiness',
+        allowedWriteApis: ['appendControlEventAndReplay'],
+        allowedPaths: [
+          '_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json',
+          '_bmad-output/runtime/requirement-records/<requirement-set-id>/events/control-events.jsonl',
+          '_bmad-output/runtime/requirement-records/<requirement-set-id>/events/receipts/<event-id>.json',
+          '_bmad-output/runtime/requirement-records/<requirement-set-id>/goal-contract/partition-runs/<partition-run-id>',
+          '_bmad-output/runtime/requirement-records/<requirement-set-id>/goal-contract/active-partition-run.json',
+          '_bmad-output/runtime/requirement-records/<requirement-set-id>/goal-contract/pointer-projection-blocked.json',
+        ],
+        payloadContractRefs: [
+          'goal-contract-partition-authority-supersession/v1',
+        ],
+        writesControlFields: [
+          'nativeGoalHandoff.goalContractPartitionAuthority',
+        ],
+        receiptPath:
+          '_bmad-output/runtime/requirement-records/<requirement-set-id>/events/receipts/<event-id>.json',
+        beforeAfterHashRequired: true,
+        canModifyWriterRegistry: false,
+        registryHash: hash,
+        architectureConfirmationHash:
+          record.architectureConfirmationState
+            .currentArchitectureConfirmationHash,
+      },
+    ];
+    record.controlledIngestWriterRegistryHash = hash;
+    record.nativeGoalHandoff = {
+      masterImplementationPlanHash: hash,
+      goalContractPartitionAuthority: {
+        schemaVersion:
+          'goal-contract-partition-authority-supersession/v1',
+        requirementSetId: record.requirementSetId,
+        sourceHash: hash,
+        partitionRunId: `partition-run-${'8'.repeat(64)}`,
+        authorityRoot:
+          '_bmad-output/runtime/requirement-records/REQ-SCHEMA-001/goal-contract',
+        partitionPlanHash: hash,
+        partitionManifestHash: hash,
+        partitionManifestDocumentHash: hash,
+        partitionSetHash: hash,
+        eventChainProjection: hash,
+      },
+    };
+
+    expect(validate(record), JSON.stringify(validate.errors, null, 2)).toBe(
+      true
+    );
+    delete record.controlledIngestWriterRegistry[0].allowedPaths;
+    expect(validate(record)).toBe(false);
+    record.controlledIngestWriterRegistry[0].allowedPaths = [];
+    (
+      record.nativeGoalHandoff.goalContractPartitionAuthority as Record<
+        string,
+        unknown
+      >
+    ).partitionRunId = 'partition-run-invalid';
+    expect(validate(record)).toBe(false);
+  });
+
+  it('accepts receipt-backed six-model runtime status authority', () => {
+    const validate = loadValidator();
+    const record = validRecord() as ReturnType<typeof validRecord> & Record<string, unknown>;
+    const semanticModelHash =
+      'sha256:5555555555555555555555555555555555555555555555555555555555555555';
+    const receiptHash =
+      'sha256:6666666666666666666666666666666666666666666666666666666666666666';
+    const receiptPath = 'runtime/status-decisions/attempt-001/requirement_confirmation.json';
+    record.semanticModelHash = semanticModelHash;
+    record.currentAttemptId = 'attempt-001';
+    record.runtimeStatusDecisionReceipts = [
+      {
+        path: receiptPath,
+        receipt: {
+          schemaVersion: 'requirements-contract-runtime-status-decision-receipt/v1',
+          recordId: record.recordId,
+          requirementSetId: record.requirementSetId,
+          modelId: 'requirement_confirmation',
+          implementationAttemptId: 'attempt-001',
+          sourceDocumentHash: record.sourceDocumentHash,
+          implementationConfirmationHash: record.implementationConfirmationHash,
+          semanticModelHash,
+          stageInputs: [
+            {
+              role: 'requirement_confirmation',
+              path: 'runtime/stage-inputs/requirement_confirmation.json',
+              hash: semanticModelHash,
+            },
+          ],
+          deterministicGateOutputs: [
+            {
+              role: 'requirement_confirmation_decision',
+              path: 'runtime/gate-outputs/requirement_confirmation.json',
+              hash: semanticModelHash,
+            },
+          ],
+          blockerRefs: [],
+          evidenceRefs: ['runtime/gate-outputs/requirement_confirmation.json'],
+          authorityClass: 'controlled_confirmation',
+          decision: 'pass',
+          effectiveStatus: 'pass',
+          createdAt: '2026-05-19T00:00:00.000Z',
+          receiptHash,
+        },
+      },
+    ];
+    record.sixModelResults = {
+      requirement_confirmation: {
+        payloadKind: 'model_result',
+        model: 'requirement_confirmation',
+        recordId: record.recordId,
+        requirementSetId: record.requirementSetId,
+        sourceDocumentHash: record.sourceDocumentHash,
+        implementationConfirmationHash: record.implementationConfirmationHash,
+        semanticModelHash,
+        currentAttemptId: 'attempt-001',
+        decisionReceiptRef: receiptPath,
+        decisionReceiptHash: receiptHash,
+        status: 'pass',
+        resultRecordedAt: '2026-05-19T00:00:00.000Z',
+        resultRecordedBy: 'controlled-confirmation',
+        blockingReasons: [],
+        sourceRefs: [{ sourceType: 'confirmation_history', id: 'confirmation_recorded' }],
+        currentHashes: {
+          sourceDocumentHash: record.sourceDocumentHash,
+          implementationConfirmationHash: record.implementationConfirmationHash,
+          semanticModelHash,
+        },
+      },
+    };
+
+    expect(validate(record), JSON.stringify(validate.errors, null, 2)).toBe(true);
+    (
+      record.sixModelResults as {
+        requirement_confirmation: { decisionReceiptHash: string };
+      }
+    ).requirement_confirmation.decisionReceiptHash = 'not-a-sha256';
+    expect(validate(record)).toBe(false);
+  });
+
   it('accepts all declared runtime reconfirmation request status values', () => {
     const validate = loadValidator();
     for (const status of [
@@ -472,6 +631,9 @@ describe('requirement-record.schema.json', () => {
         ],
         commandBindings: [{ id: 'CMD-001', traceRows: ['TRACE-001'], evidenceRefs: ['EVD-001'] }],
         artifactBindings: [{ id: 'ART-001', traceRows: ['TRACE-001'], evidenceRefs: ['EVD-001'] }],
+        targetPathBindings: [
+          { id: 'TARGET-MOD-001', traceRefs: ['TRACE-001'], evidenceRefs: ['EVD-001'] },
+        ],
         derivedFromRequirementRefs: ['MUST-001', 'NEG-001'],
         derivedFromTraceRefs: ['TRACE-001'],
         derivedFromEvidenceRefs: ['EVD-001'],

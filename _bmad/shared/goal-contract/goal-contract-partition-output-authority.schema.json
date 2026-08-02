@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "goal-contract-partition-output-authority.schema.json",
+  "title": "Goal Contract Partition Output Authority",
+  "oneOf": [
+    { "$ref": "#/$defs/standaloneAuthority" },
+    { "$ref": "#/$defs/requirementRecordProjection" }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "normalizedPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    },
+    "relativeArtifactPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?![A-Za-z]:/)(?!.*(?:^|/)\\.\\.(?:/|$))(?:children|receipts)/.+$"
+    },
+    "artifactHash": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "$ref": "#/$defs/relativeArtifactPath" },
+        "hash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "standaloneAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "authorityMode",
+        "sourceHash",
+        "generationKey",
+        "generationRoot",
+        "partitionPlanPath",
+        "partitionPlanHash",
+        "partitionManifestPath",
+        "partitionManifestHash",
+        "partitionManifestDocumentHash",
+        "childContractHashes",
+        "requiredReceiptHashes"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "goal-contract-partition-active-generation/v1"
+        },
+        "authorityMode": { "const": "standalone_bootstrap" },
+        "sourceHash": { "$ref": "#/$defs/sha256" },
+        "generationKey": { "$ref": "#/$defs/sha256" },
+        "generationRoot": { "$ref": "#/$defs/normalizedPath" },
+        "partitionPlanPath": { "$ref": "#/$defs/normalizedPath" },
+        "partitionPlanHash": { "$ref": "#/$defs/sha256" },
+        "partitionManifestPath": { "$ref": "#/$defs/normalizedPath" },
+        "partitionManifestHash": { "$ref": "#/$defs/sha256" },
+        "partitionManifestDocumentHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "childContractHashes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/artifactHash" }
+        },
+        "requiredReceiptHashes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/artifactHash" }
+        }
+      }
+    },
+    "requirementRecordProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "authorityMode",
+        "requirementSetId",
+        "sourceHash",
+        "partitionRunId",
+        "authorityRoot",
+        "recordPath",
+        "recordHash",
+        "recordRevision",
+        "eventChainHead",
+        "eventId",
+        "eventChainProjection",
+        "partitionPlanHash",
+        "partitionManifestHash",
+        "partitionManifestDocumentHash",
+        "partitionSetHash",
+        "pointerProjectionHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "goal-contract-partition-active-requirement-record-run/v1"
+        },
+        "authorityMode": { "const": "requirement_record" },
+        "requirementSetId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "sourceHash": { "$ref": "#/$defs/sha256" },
+        "partitionRunId": {
+          "type": "string",
+          "pattern": "^partition-run-[0-9a-f]{64}$"
+        },
+        "authorityRoot": { "$ref": "#/$defs/normalizedPath" },
+        "recordPath": { "$ref": "#/$defs/normalizedPath" },
+        "recordHash": { "$ref": "#/$defs/sha256" },
+        "recordRevision": { "type": "integer", "minimum": 0 },
+        "eventChainHead": { "$ref": "#/$defs/sha256" },
+        "eventId": { "$ref": "#/$defs/nonEmptyString" },
+        "eventChainProjection": { "$ref": "#/$defs/sha256" },
+        "partitionPlanHash": { "$ref": "#/$defs/sha256" },
+        "partitionManifestHash": { "$ref": "#/$defs/sha256" },
+        "partitionManifestDocumentHash": { "$ref": "#/$defs/sha256" },
+        "partitionSetHash": { "$ref": "#/$defs/sha256" },
+        "pointerProjectionHash": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  }
+}

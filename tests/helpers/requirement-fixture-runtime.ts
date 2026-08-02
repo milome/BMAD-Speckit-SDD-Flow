@@ -13,11 +13,13 @@ import {
   createDefaultOrchestrationState,
   writeOrchestrationStateAtPath,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state';
+import { createRuntimeStatusDecisionReceipt } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-runtime-status-decision-receipt';
 import { defaultRuntimeContextFile, writeRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
+import { writePassingSourcePrdLintReport } from './source-prd-lint-fixture';
 
 export const SIX_MODEL_HARDENING_FIXTURE_ID =
   'REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING';
@@ -28,6 +30,7 @@ export interface MaterializedRequirementFixture {
   fixtureId: string;
   sourcePath: string;
   sourceDocumentHash: string;
+  semanticModelHash: string;
   implementationConfirmationHash: string;
   recordPath: string;
   recordId: string;
@@ -85,6 +88,7 @@ function copyProjectConfigForRuntime(root: string): void {
   for (const relativePath of [
     path.join('_bmad', '_config', 'audit-item-mapping.yaml'),
     path.join('_bmad', '_config', 'code-reviewer-config.yaml'),
+    path.join('_bmad', '_config', 'governance-remediation.yaml'),
   ]) {
     const source = path.join(repoRoot(), relativePath);
     const target = path.join(root, relativePath);
@@ -152,13 +156,51 @@ function objectRecord(value: unknown): Record<string, unknown> {
     : {};
 }
 
-function expandSixModelResults(input: {
+function sourceRequiredCommandsForFixtureRoot(root: string): Record<string, unknown>[] {
+  const index = readJson(
+    path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json')
+  );
+  const active = objectRecord(index.active);
+  const requirementSetId = String(active.requirementSetId ?? '').trim();
+  if (!requirementSetId) return [];
+  const record = readJson(
+    path.join(
+      root,
+      '_bmad-output',
+      'runtime',
+      'requirement-records',
+      requirementSetId,
+      'requirement-record.json'
+    )
+  );
+  const sourcePath = String(record.sourcePath ?? '').trim();
+  if (!sourcePath || !fs.existsSync(sourcePath)) return [];
+  const sourceText = fs.readFileSync(sourcePath, 'utf8');
+  for (const match of sourceText.matchAll(/```ya?ml\s*\n(?<body>[\s\S]*?)```/gu)) {
+    const parsed = objectRecord(yaml.load(match.groups?.body ?? ''));
+    const confirmation = objectRecord(parsed.implementationConfirmation ?? parsed);
+    if (Array.isArray(confirmation.requiredCommands)) {
+      return confirmation.requiredCommands.map(objectRecord).filter(
+        (command) => Object.keys(command).length > 0
+      );
+    }
+  }
+  return [];
+}
+
+export function expandSixModelAuthority(input: {
   rawResults?: Record<string, unknown>;
   recordId: string;
   requirementSetId: string;
+  implementationAttemptId: string;
   sourceDocumentHash: string;
   implementationConfirmationHash: string;
-}): Record<string, unknown> {
+  semanticModelHash: string;
+}): {
+  sixModelResults: Record<string, unknown>;
+  runtimeStatusDecisionReceipts: Array<{ path: string; receipt: unknown }>;
+  artifactIndex: Array<Record<string, unknown>>;
+} {
   const models = input.rawResults ?? {
     requirement_confirmation: { status: 'pass' },
     architecture_confirmation: { status: 'pass' },
@@ -168,9 +210,105 @@ function expandSixModelResults(input: {
     sourceDocumentHash: input.sourceDocumentHash,
     implementationConfirmationHash: input.implementationConfirmationHash,
   };
-  return Object.fromEntries(
+  const receiptRefs: Array<{ path: string; receipt: unknown }> = [];
+  const artifactIndex: Array<Record<string, unknown>> = [];
+  const sixModelResults = Object.fromEntries(
     Object.entries(models).map(([model, raw]) => {
       const value = objectRecord(raw);
+      const status = typeof value.status === 'string' ? value.status : 'pass';
+      const effectiveStatus =
+        status === 'pass'
+          ? 'pass'
+          : status === 'stale'
+            ? 'stale'
+            : status === 'awaiting_user_acceptance'
+              ? 'awaiting_user_acceptance'
+              : 'blocked';
+      const receiptPath = `runtime/status-decisions/${model}.json`;
+      const receipt = createRuntimeStatusDecisionReceipt({
+        recordId: input.recordId,
+        requirementSetId: input.requirementSetId,
+        modelId: model as never,
+        implementationAttemptId: input.implementationAttemptId,
+        sourceDocumentHash: input.sourceDocumentHash,
+        implementationConfirmationHash: input.implementationConfirmationHash,
+        semanticModelHash: input.semanticModelHash,
+        stageInputs: [
+          {
+            role: model,
+            path: `runtime/stage-inputs/${model}.json`,
+            hash: input.semanticModelHash,
+          },
+        ],
+        deterministicGateOutputs: [
+          {
+            role: `${model}_decision`,
+            path: `runtime/gate-outputs/${model}.json`,
+            hash: input.semanticModelHash,
+          },
+        ],
+        blockerRefs:
+          effectiveStatus === 'blocked'
+            ? Array.isArray(value.blockingReasons)
+              ? value.blockingReasons.map(String)
+              : [`${model}_blocked`]
+            : [],
+        evidenceRefs: [`runtime/gate-outputs/${model}.json`],
+        authorityClass:
+          model === 'requirement_confirmation'
+            ? 'controlled_confirmation'
+            : model === 'delivery_confirmation'
+              ? 'controlled_closeout'
+              : 'deterministic_gate',
+        decision:
+          effectiveStatus === 'pass' || effectiveStatus === 'awaiting_user_acceptance'
+            ? 'pass'
+            : effectiveStatus === 'stale'
+              ? 'stale'
+              : 'block',
+        effectiveStatus,
+        createdAt:
+          typeof value.resultRecordedAt === 'string'
+            ? value.resultRecordedAt
+            : '2026-05-30T00:00:00.000Z',
+      });
+      receiptRefs.push({ path: receiptPath, receipt });
+      artifactIndex.push(
+        {
+          eventType: 'artifact_indexed',
+          artifactType: 'runtime_status_decision_receipt',
+          sourceOfTruthRole: 'control',
+          recordId: input.recordId,
+          requirementSetId: input.requirementSetId,
+          path: receiptPath,
+          contentHash: receipt.receiptHash,
+          producer: 'tests/helpers/requirement-fixture-runtime',
+          purpose: `Fixture runtime-status authority for ${model}.`,
+          relatedRequirementIds: [input.recordId],
+          status: 'active',
+          inputVersion: 'requirements-contract-runtime-status-decision-receipt/v1',
+          outputVersion: 'requirements-contract-runtime-status-decision-receipt/v1',
+          traceRows: [],
+          evidenceRefs: [],
+        },
+        ...[...receipt.stageInputs, ...receipt.deterministicGateOutputs].map((binding) => ({
+          eventType: 'artifact_indexed',
+          artifactType: 'runtime_status_bound_evidence',
+          sourceOfTruthRole: 'evidence',
+          recordId: input.recordId,
+          requirementSetId: input.requirementSetId,
+          path: binding.path,
+          contentHash: binding.hash,
+          producer: 'tests/helpers/requirement-fixture-runtime',
+          purpose: `Fixture runtime-status binding for ${binding.role}.`,
+          relatedRequirementIds: [input.recordId],
+          status: 'active',
+          inputVersion: 'fixture/v1',
+          outputVersion: 'fixture/v1',
+          traceRows: [],
+          evidenceRefs: [],
+        }))
+      );
       return [
         model,
         {
@@ -181,7 +319,11 @@ function expandSixModelResults(input: {
           requirementSetId: input.requirementSetId,
           sourceDocumentHash: input.sourceDocumentHash,
           implementationConfirmationHash: input.implementationConfirmationHash,
-          status: typeof value.status === 'string' ? value.status : 'pass',
+          semanticModelHash: input.semanticModelHash,
+          currentAttemptId: input.implementationAttemptId,
+          decisionReceiptRef: receiptPath,
+          decisionReceiptHash: receipt.receiptHash,
+          status: effectiveStatus,
           resultRecordedAt:
             typeof value.resultRecordedAt === 'string'
               ? value.resultRecordedAt
@@ -198,6 +340,11 @@ function expandSixModelResults(input: {
       ];
     })
   );
+  return {
+    sixModelResults,
+    runtimeStatusDecisionReceipts: receiptRefs,
+    artifactIndex,
+  };
 }
 
 export function createTempRequirementWorkspace(prefix = 'requirement-fixture-'): string {
@@ -259,6 +406,24 @@ export function materializeRequirementFixture(
     ],
   };
   const implementationConfirmationHash = sha256Text(stableStringify(semanticConfirmation));
+  const authorityAttemptId = input.pendingPacket?.packetId ?? runId;
+  const semanticModelHash = sha256Text(
+    stableStringify({
+      recordId,
+      requirementSetId,
+      sourceDocumentHash,
+      implementationConfirmationHash,
+    })
+  );
+  const sixModelAuthority = expandSixModelAuthority({
+    rawResults: input.sixModelResults,
+    recordId,
+    requirementSetId,
+    implementationAttemptId: authorityAttemptId,
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    semanticModelHash,
+  });
   const recordRoot = path.join(
     root,
     '_bmad-output',
@@ -285,6 +450,7 @@ export function materializeRequirementFixture(
     requirementSetId,
     sourceDocumentHash,
     implementationConfirmationHash,
+    semanticModelHash,
   });
   fs.mkdirSync(path.dirname(htmlPath), { recursive: true });
   fs.writeFileSync(
@@ -311,6 +477,7 @@ export function materializeRequirementFixture(
     recordId,
     requirementSetId,
     runId,
+    currentAttemptId: authorityAttemptId,
     status: 'user_confirmed',
     flow: manifest.flow,
     stage: manifest.stage,
@@ -320,15 +487,12 @@ export function materializeRequirementFixture(
     artifactPath: sourcePath,
     sourceDocumentHash,
     implementationConfirmationHash,
+    semanticModelHash,
     confirmationPageHash,
     currentMentalModel: input.currentMentalModel ?? 'implementation_readiness',
-    sixModelResults: expandSixModelResults({
-      rawResults: input.sixModelResults,
-      recordId,
-      requirementSetId,
-      sourceDocumentHash,
-      implementationConfirmationHash,
-    }),
+    sixModelResults: sixModelAuthority.sixModelResults,
+    runtimeStatusDecisionReceipts: sixModelAuthority.runtimeStatusDecisionReceipts,
+    artifactIndex: sixModelAuthority.artifactIndex,
     confirmationHistory: [
       {
         eventType: 'confirmation_recorded',
@@ -368,6 +532,10 @@ export function materializeRequirementFixture(
     },
   };
   writeJson(recordPath, record);
+  writePassingSourcePrdLintReport({
+    requirementRecordPath: recordPath,
+    sourcePath,
+  });
   writeJson(path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json'), {
     version: 1,
     active: { recordId, requirementSetId, runId },
@@ -431,6 +599,7 @@ export function materializeRequirementFixture(
     fixtureId,
     sourcePath,
     sourceDocumentHash,
+    semanticModelHash,
     implementationConfirmationHash,
     recordPath,
     recordId,
@@ -528,6 +697,7 @@ export function writeFakeReqTraceSkill(
   input: { goalCommandMode?: 'native_goal_document_ref' | 'fallback_prompt_contract' } = {}
 ): string {
   const goalCommandMode = input.goalCommandMode ?? 'native_goal_document_ref';
+  const sourceRequiredCommands = sourceRequiredCommandsForFixtureRoot(root);
   const skillDir = path.join(root, '_bmad', 'skills', 'req-trace-matrix-prompt-generator');
   const scriptPath = path.join(skillDir, 'scripts', 'generate_prompt.js');
   fs.mkdirSync(path.dirname(scriptPath), { recursive: true });
@@ -552,7 +722,7 @@ export function writeFakeReqTraceSkill(
       "const projectRoot = recordPath.split(`${path.sep}_bmad-output${path.sep}`)[0] || process.cwd();",
       "const sessionId = record.requirementSetId || record.recordId || 'fixture';",
       "const taskReportPath = taskReportPathArg || path.join(projectRoot, '_bmad-output', 'runtime', 'governance', 'task-reports', sessionId, `${packetId}.json`);",
-      "const modelPacket = { schemaVersion: 'model-packet-fixture/v1', artifactRole: 'execution_authority', packetId, taskReportPath, sourceDocumentHash: record.sourceDocumentHash, implementationConfirmationHash: record.implementationConfirmationHash, executionDisciplineProfile: profile, traceOrder: ['TRACE-010','TRACE-011','TRACE-012','TRACE-013','TRACE-014','TRACE-015','TRACE-016'] };",
+      `const modelPacket = { schemaVersion: 'model-packet-fixture/v1', artifactRole: 'execution_authority', packetId, taskReportPath, sourceDocumentHash: record.sourceDocumentHash, implementationConfirmationHash: record.implementationConfirmationHash, executionDisciplineProfile: profile, requiredCommands: ${JSON.stringify(sourceRequiredCommands)}, traceOrder: ['TRACE-010','TRACE-011','TRACE-012','TRACE-013','TRACE-014','TRACE-015','TRACE-016'] };`,
       "const modelPath = path.join(outDir, 'model_packet.json');",
       "const humanPath = path.join(outDir, 'human_prompt.txt');",
       "const goalPath = path.join(outDir, 'goal_execution.md');",

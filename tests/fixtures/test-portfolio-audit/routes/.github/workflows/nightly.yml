@@ -1,0 +1,21 @@
+name: Nightly tests
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+
+jobs:
+  nightly:
+    runs-on: macos-latest
+    steps:
+      - run: npm run broad
+
+  platform:
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - run: npx vitest run tests/platform.test.ts

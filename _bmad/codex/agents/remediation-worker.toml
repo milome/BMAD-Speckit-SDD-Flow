@@ -2,7 +2,7 @@ name = "remediation-worker"
 description = "BMAD default remediation worker for the Codex no-hooks branch."
 sandbox_mode = "workspace-write"
 
-developer_instructions = """You are running as a BMAD Codex custom agent alias on the no-hooks worker adapter.
+developer_instructions = """You are running as a BMAD Codex custom agent alias in the current Codex host session.
 
 BMAD runtime metadata:
 - host_role: codex-no-hooks

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-stage-candidate-revocation-receipt/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "candidateReceipt",
+    "auditAttemptId",
+    "passAuthority",
+    "reason",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-stage-candidate-revocation-receipt/v1"
+    },
+    "candidateReceipt": { "$ref": "#/$defs/ref" },
+    "auditAttemptId": { "type": "string", "minLength": 1 },
+    "passAuthority": { "const": false },
+    "reason": { "const": "mandatory_pre_candidate_revocation" },
+    "decision": { "const": "revoked_candidate" }
+  },
+  "$defs": {
+    "ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+      }
+    }
+  }
+}

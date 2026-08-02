@@ -17,6 +17,11 @@ import {
   type JsonObject,
 } from './target-artifact-realization-gate';
 import { evaluateStrictCloseoutProof } from './strict-closeout-proof-gate';
+import {
+  readRequirementsContractForRequirementRecord,
+  type RequirementsContractLogicalReadInput,
+  type RequirementsContractReadResult,
+} from './requirements-contract-read-facade';
 
 const cjsRequire = createRequire(__filename);
 
@@ -46,6 +51,7 @@ function loadContractExecutionManifestBuilder(): {
     confirmation: JsonObject;
     manifest: JsonObject;
     record?: JsonObject;
+    sourceFormatVersion?: 'v1' | 'v2';
     sourcePath?: string;
     recordPath?: string;
     attemptId?: string;
@@ -140,6 +146,11 @@ interface RedProofRow {
   proofSource: string;
 }
 
+interface RedProofExecutionResult {
+  state: MatrixState;
+  failureClass: string;
+}
+
 const AI_TDD_COMMAND_IDS = new Set([
   'CMD-AI-TDD-CONTRACT-GATE',
   'CMD-AI-TDD-CONTRACT-CLOSEOUT-GATE',
@@ -156,6 +167,24 @@ const INVALID_RED_FAILURE_CLASSES = new Set([
   'environment_error',
   'unbound_oracle',
 ]);
+
+export function readAiTddContract(
+  input: Omit<RequirementsContractLogicalReadInput, 'consumerId'> & { traceId?: string }
+): RequirementsContractReadResult {
+  return readRequirementsContractForRequirementRecord({
+    ...input,
+    consumerId: 'ai-tdd-contract-gate',
+    mode: input.mode,
+    requiredProjectionRoles: [
+      'target_bindings',
+      'task_graph',
+      'red_contracts',
+      'oracle_registry',
+      'acceptance_manifest',
+      'evidence_requirements',
+    ],
+  });
+}
 
 function parseArgs(argv: string[]): ParsedArgs {
   const out: ParsedArgs = {};
@@ -199,12 +228,109 @@ function nested(value: unknown): JsonObject {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonObject) : {};
 }
 
+function isActiveV2RequirementRecord(record: JsonObject): boolean {
+  return (
+    text(record.schemaVersion) === 'requirement-record/v1' &&
+    Boolean(text(record.requirementSetId)) &&
+    Boolean(text(record.activeBundleRevision)) &&
+    /^sha256:[a-f0-9]{64}$/u.test(text(record.semanticModelHash)) &&
+    /^sha256:[a-f0-9]{64}$/u.test(text(record.traceGraphHash))
+  );
+}
+
+function canonicalAiTddSource(input: {
+  sourcePath: string;
+  record: JsonObject;
+  read: RequirementsContractReadResult;
+}): { sourcePath: string; confirmation: JsonObject } {
+  const semantic = nested(input.read.logicalModel);
+  const trace = nested(input.read.traceGraph);
+  const target = nested(input.read.projections.target_bindings);
+  const tasks = nested(input.read.projections.task_graph);
+  const red = nested(input.read.projections.red_contracts);
+  const acceptance = nested(input.read.projections.acceptance_manifest);
+  const evidence = nested(input.read.projections.evidence_requirements);
+  return {
+    sourcePath: input.sourcePath,
+    confirmation: {
+      ...semantic,
+      status: text(input.record.status) || 'user_confirmed',
+      sourceDocumentHash: text(input.record.sourceDocumentHash),
+      implementationConfirmationHash: text(input.record.implementationConfirmationHash),
+      requirements: objects(semantic.requirements),
+      traceRows: objects(trace.traceRows),
+      requiredCommands: objects(acceptance.requiredCommands ?? tasks.requiredCommands),
+      acceptance: objects(acceptance.acceptance),
+      acceptanceTests: objects(acceptance.acceptanceTests),
+      e2eSuites: objects(acceptance.e2eSuites),
+      evidence: objects(evidence.evidence ?? evidence.rows),
+      negativeControls: objects(red.negativeControls),
+      targetModificationPaths: objects(target.targetModificationPaths),
+      artifactAutomationPlan: objects(target.artifactAutomationPlan),
+    },
+  };
+}
+
+function blockedAiTddReadReport(input: {
+  sourcePath: string;
+  recordPath: string;
+  mode: AiTddMode;
+  attemptId: string;
+  evaluatedAt: string;
+  evaluatedBy: string;
+  read: RequirementsContractReadResult;
+}): JsonObject {
+  const blockingReasons = [
+    'requirements_contract_read_facade_blocked',
+    ...input.read.issues.map((issue) => `${issue.code}:${issue.message}`),
+  ];
+  return {
+    reportType: 'ai_tdd_contract_gate_report',
+    generatedAt: input.evaluatedAt,
+    generatedBy: input.evaluatedBy,
+    mode: input.mode,
+    sourcePath: normalizePath(input.sourcePath),
+    recordPath: normalizePath(path.resolve(input.recordPath)),
+    currentAttemptId: input.attemptId,
+    decision: 'blocked',
+    blockingReasons,
+    contractExecutionManifest: {},
+    redGreenMatrix: [],
+    missingTestPlan: { decision: 'blocked' },
+    acceptanceE2eTestPlan: { decision: 'blocked', tests: [], e2eSuites: [] },
+    contractCompletenessReport: { ready: false, blockingReasons },
+    targetArtifactPlan: { decision: 'blocked' },
+    negativeControlPlan: { decision: 'blocked' },
+    preImplementationReadinessReport: { ready: false, blockingReasons },
+    closeoutReadinessReport: { ready: false, blockingReasons },
+    subReports: [],
+    mutationPolicy: {
+      writesPass: false,
+      closesTrace: false,
+      writesRecordClosed: false,
+      modifiesSourceTraceRows: false,
+    },
+  };
+}
+
 function unique(values: string[]): string[] {
   return [...new Set(values.filter(Boolean))];
 }
 
 function normalizePath(value: string): string {
   return value.replace(/\\/gu, '/');
+}
+
+function isTestFileRef(value: string): boolean {
+  const normalized = normalizePath(value).toLowerCase();
+  const fileName = path.posix.basename(normalized);
+  if (!/\.(?:py|tsx?|jsx?|mjs|cjs|java|kt|go|rs|cs|rb|php|feature)$/u.test(fileName)) {
+    return false;
+  }
+  return (
+    /(?:^|\/)(?:tests?|__tests__)(?:\/|$)/u.test(normalized) ||
+    /(?:^|[._-])(?:test|spec)(?:[._-]|$)/u.test(fileName)
+  );
 }
 
 function readJson(file: string): JsonObject {
@@ -237,8 +363,14 @@ function commandFileRefs(row: JsonObject): string[] {
     text(row.testPath),
     ...strings(row.files),
     ...strings(row.testFiles),
-    ...strings(row.targetFiles),
+    ...strings(row.targetFiles).filter(isTestFileRef),
   ])
+    .filter(Boolean)
+    .map(normalizePath);
+}
+
+function commandTargetFileRefs(row: JsonObject): string[] {
+  return unique([...commandFileRefs(row), ...strings(row.targetFiles)])
     .filter(Boolean)
     .map(normalizePath);
 }
@@ -318,6 +450,7 @@ function findProjectRoot(start: string): string {
     if (parent === current) return path.resolve(start);
     current = parent;
   }
+  return path.resolve(start);
 }
 
 function withActiveSourceRoot<T>(sourcePath: string, fn: () => T): T {
@@ -339,10 +472,7 @@ function extractCommandFileRefs(command: string): string[] {
   const tokens = normalized.match(/"[^"]+"|'[^']+'|\S+/gu) ?? [];
   for (const token of tokens) {
     const ref = token.replace(/^['"]|['"]$/gu, '');
-    if (
-      /(?:^|[\\/])[^\\/]+\.(?:tsx|ts|jsx|json|mjs|cjs|js|ya?ml|md)$/iu.test(ref) &&
-      (/[\\/]/u.test(ref) || /\.(?:test|spec)\./iu.test(ref))
-    ) {
+    if (/(?:^|[\\/])[^\\/]+\.(?:py|tsx|ts|jsx|json|mjs|cjs|js|ya?ml|md)$/iu.test(ref)) {
       refs.add(ref);
     }
   }
@@ -539,9 +669,7 @@ function derivedAcceptanceRows(confirmation: JsonObject): AcceptanceRow[] {
   const traceByCommand = traceCommandIndex(confirmation);
   return objects(confirmation.requiredCommands).flatMap((command, index) => {
     const id = commandId(command);
-    const files = commandFileRefs(command).filter((file) =>
-      /\.(?:test|spec)\.(?:ts|tsx|js|jsx|mjs|cjs)$/iu.test(file)
-    );
+    const files = commandFileRefs(command).filter(isTestFileRef);
     if (files.length === 0) return [];
     const linkedTraces = traceByCommand.get(id) ?? [];
     const covers = unique([
@@ -656,6 +784,8 @@ function targetModificationPaths(confirmation: JsonObject): JsonObject[] {
     ...objects(confirmation.targetModificationPaths).map((row, index) => ({
       id: text(row.id) || `TARGET-MOD-${index + 1}`,
       path: text(row.path) || text(row.targetPath) || text(row.targetPathOrField),
+      changeType: text(row.changeType),
+      coverageRole: text(row.coverageRole),
       traceRefs: idRefs(row, ['traceRows', 'traceRefs']),
       evidenceRefs: idRefs(row, ['evidenceRefs']),
       artifactRefs: idRefs(row, ['artifactRefs']),
@@ -974,7 +1104,7 @@ function commandTargetCollection(confirmation: JsonObject): JsonObject {
       const id = commandId(row);
       const traceRefs = idRefs(row, ['traceRows', 'traceRefs']);
       const evidenceRefs = idRefs(row, ['evidenceRefs', 'linkedEvidenceIds']);
-      const files = commandFileRefs(row);
+      const files = commandTargetFileRefs(row);
       const linkedTraceRows = traceRows.filter((trace) => commandRefs(trace).includes(id));
       const collectedTraceRefs = unique([
         ...traceRefs,
@@ -1448,6 +1578,15 @@ function applyReadinessAutoRemediationOverlay(
         return mergeUniqueRefs(out, 'evidenceRefs', strings(patch.evidenceRefs));
       }
     ),
+    targetModificationPaths: applyOverlayRows(
+      objects(confirmation.targetModificationPaths),
+      objects(overlay.targetPathBindings),
+      (row, patch) => {
+        let out = mergeUniqueRefs(row, 'traceRows', strings(patch.traceRefs));
+        out = mergeUniqueRefs(out, 'traceRefs', strings(patch.traceRefs));
+        return mergeUniqueRefs(out, 'evidenceRefs', strings(patch.evidenceRefs));
+      }
+    ),
     artifactAutomationPlan: applyOverlayRows(
       objects(confirmation.artifactAutomationPlan),
       objects(overlay.artifactBindings),
@@ -1467,6 +1606,7 @@ function buildManifest(input: {
   recordPath: string;
   attemptId: string;
 }): JsonObject {
+  const activeV2 = isActiveV2RequirementRecord(input.record);
   const confirmation = applyReadinessAutoRemediationOverlay(input.confirmation, input.record);
   const acceptance = acceptanceRows(confirmation);
   const redProofs = redProofRows({ confirmation: input.confirmation, record: input.record });
@@ -1475,7 +1615,7 @@ function buildManifest(input: {
   const errorCoverage = errorCaseCoverage(confirmation, acceptance);
   const commandTargets = commandTargetCollection(confirmation);
   const traceClosures = traceClosureAssertions(confirmation);
-  const currentTargetMapManifest = currentTargetMapSection(confirmation);
+  const currentTargetMapManifest = activeV2 ? null : currentTargetMapSection(confirmation);
   const canonicalSurfaces = canonicalSurfaceReconciliation(
     confirmation,
     targetArtifacts as unknown as JsonObject[]
@@ -1499,6 +1639,26 @@ function buildManifest(input: {
     traceRows: objects(confirmation.traceRows),
     evidenceRows: objects(confirmation.evidence),
   });
+  const closeoutGateSections = [
+    commandTargets,
+    traceClosures,
+    ...(currentTargetMapManifest ? [currentTargetMapManifest] : []),
+    targetModificationCoverage,
+    canonicalSurfaces,
+    legacyControls,
+    closeoutProofPlan,
+    evidenceTrust,
+  ];
+  const requiredManifestSections = [
+    'commandTargetCollection',
+    'traceClosureAssertions',
+    ...(currentTargetMapManifest ? ['currentTargetMap'] : []),
+    'targetModificationPathCoverage',
+    'canonicalSurfaceReconciliation',
+    'legacyDenial',
+    'closeoutProof',
+    'evidenceTrustStates',
+  ];
   const rawManifest = {
     sourcePath: normalizePath(path.resolve(input.sourcePath)),
     recordPath: normalizePath(path.resolve(input.recordPath)),
@@ -1521,7 +1681,7 @@ function buildManifest(input: {
       commandRefs: commandRefs(row),
       artifactRefs: strings(row.artifactRefs),
       canonicalSurfaceRefs: strings(row.canonicalSurfaceRefs),
-      currentTargetMapRefs: strings(row.currentTargetMapRefs),
+      ...(activeV2 ? {} : { currentTargetMapRefs: strings(row.currentTargetMapRefs) }),
       targetModificationPaths: strings(row.targetModificationPaths),
       acceptanceRefs: strings(row.acceptanceRefs),
       status: text(row.status),
@@ -1545,35 +1705,17 @@ function buildManifest(input: {
     errorCaseCoverage: errorCoverage,
     commandTargetCollection: commandTargets,
     traceClosureAssertions: traceClosures,
-    currentTargetMap: currentTargetMapManifest,
+    ...(currentTargetMapManifest ? { currentTargetMap: currentTargetMapManifest } : {}),
     targetModificationPathCoverage: targetModificationCoverage,
     canonicalSurfaceReconciliation: canonicalSurfaces,
     legacyDenial: legacyControls,
     closeoutProof: closeoutProofPlan,
     evidenceTrustStates: evidenceTrust,
     closeoutGates: {
-      decision: [
-        commandTargets,
-        traceClosures,
-        currentTargetMapManifest,
-        targetModificationCoverage,
-        canonicalSurfaces,
-        legacyControls,
-        closeoutProofPlan,
-        evidenceTrust,
-      ].every((section) => section.ready === true)
+      decision: closeoutGateSections.every((section) => section.ready === true)
         ? 'pass'
         : 'blocked',
-      requiredManifestSections: [
-        'commandTargetCollection',
-        'traceClosureAssertions',
-        'currentTargetMap',
-        'targetModificationPathCoverage',
-        'canonicalSurfaceReconciliation',
-        'legacyDenial',
-        'closeoutProof',
-        'evidenceTrustStates',
-      ],
+      requiredManifestSections,
     },
   };
   const { buildDerivedContractExecutionManifest } = loadContractExecutionManifestBuilder();
@@ -1581,6 +1723,7 @@ function buildManifest(input: {
     confirmation,
     manifest: rawManifest,
     record: input.record,
+    sourceFormatVersion: activeV2 ? 'v2' : 'v1',
     sourcePath: normalizePath(path.resolve(input.sourcePath)),
     recordPath: normalizePath(path.resolve(input.recordPath)),
     attemptId: input.attemptId,
@@ -1666,7 +1809,9 @@ function contractCompletenessReport(manifest: JsonObject): JsonObject {
   const manifestSections = [
     ['commandTargetCollection', nested(manifest.commandTargetCollection)],
     ['traceClosureAssertions', nested(manifest.traceClosureAssertions)],
-    ['currentTargetMap', nested(manifest.currentTargetMap)],
+    ...(Object.prototype.hasOwnProperty.call(manifest, 'currentTargetMap')
+      ? ([['currentTargetMap', nested(manifest.currentTargetMap)]] as const)
+      : []),
     ['targetModificationPathCoverage', nested(manifest.targetModificationPathCoverage)],
     ['canonicalSurfaceReconciliation', nested(manifest.canonicalSurfaceReconciliation)],
     ['legacyDenial', nested(manifest.legacyDenial)],
@@ -1983,10 +2128,6 @@ function acceptanceFromManifest(manifest: JsonObject): AcceptanceRow[] {
   ];
 }
 
-function commandById(manifest: JsonObject): Map<string, JsonObject> {
-  return new Map(objects(manifest.requiredCommands).map((row) => [text(row.id), row]));
-}
-
 function preProofFor(row: AcceptanceRow, manifest: JsonObject): RedProofRow | undefined {
   return (objects(manifest.preImplementationRedProofs) as unknown as RedProofRow[]).find(
     (proof) => proof.acceptanceId === row.id || row.commandRefs.includes(proof.commandId)
@@ -1999,40 +2140,71 @@ function invalidRedOutput(output: string): boolean {
   );
 }
 
+function redProofCommandFor(row: AcceptanceRow, manifest: JsonObject): JsonObject | undefined {
+  const commands = objects(manifest.requiredCommands);
+  const commandsById = new Map(commands.map((command) => [commandId(command), command]));
+  const directCommands = row.commandRefs
+    .map((ref) => commandsById.get(ref))
+    .filter((command): command is JsonObject => Boolean(command));
+  const testFiles = row.files.filter(isTestFileRef).map(normalizePath);
+  const coversTestFiles = (command: JsonObject): boolean => {
+    const commandFiles = new Set(commandFileRefs(command).filter(isTestFileRef).map(normalizePath));
+    return testFiles.length > 0 && testFiles.every((file) => commandFiles.has(file));
+  };
+  const directTestCommand = directCommands.find(coversTestFiles);
+  if (directTestCommand) return directTestCommand;
+
+  const coveringCommandsByText = new Map<string, JsonObject>();
+  for (const command of commands.filter(coversTestFiles)) {
+    const commandText = text(command.command);
+    if (commandText && !coveringCommandsByText.has(commandText)) {
+      coveringCommandsByText.set(commandText, command);
+    }
+  }
+  if (coveringCommandsByText.size === 1) {
+    return [...coveringCommandsByText.values()][0];
+  }
+  return directCommands[0];
+}
+
 function executePreImplementationRedProof(
   row: AcceptanceRow,
   manifest: JsonObject,
-  timeoutMs: number
+  timeoutMs: number,
+  executionCache?: Map<string, RedProofExecutionResult>
 ): RedProofRow | undefined {
-  const commands = commandById(manifest);
-  const command = row.commandRefs.map((ref) => commands.get(ref)).find(Boolean);
+  const command = redProofCommandFor(row, manifest);
   const commandText = text(command?.command);
   if (!commandText) return undefined;
-  const result = spawnSync(commandText, {
-    cwd: process.cwd(),
-    shell: true,
-    encoding: 'utf8',
-    timeout: timeoutMs,
-    windowsHide: true,
-  });
-  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
   const commandIdValue = text(command?.id) || row.commandRefs[0] || '';
-  if (result.error || result.status === null || invalidRedOutput(output)) {
-    return {
-      acceptanceId: row.id,
-      commandId: commandIdValue,
-      state: 'invalid_red',
-      oracle: row.oracle,
-      failureClass: result.error ? 'runner_crash' : 'environment_error',
-      proofSource: 'execute_red_proof',
-    };
+  let execution = executionCache?.get(commandText);
+  if (!execution) {
+    const result = spawnSync(commandText, {
+      cwd: process.cwd(),
+      shell: true,
+      encoding: 'utf8',
+      timeout: timeoutMs,
+      windowsHide: true,
+    });
+    const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
+    execution =
+      result.error || result.status === null || invalidRedOutput(output)
+        ? {
+            state: 'invalid_red',
+            failureClass: result.error ? 'runner_crash' : 'environment_error',
+          }
+        : {
+            state: result.status === 0 ? 'unexpected_green' : 'expected_red',
+            failureClass: result.status === 0 ? 'unexpected_pass' : 'oracle_failure',
+          };
+    executionCache?.set(commandText, execution);
   }
   return {
     acceptanceId: row.id,
     commandId: commandIdValue,
-    state: result.status === 0 ? 'unexpected_green' : 'expected_red',
+    state: execution.state,
     oracle: row.oracle,
-    failureClass: result.status === 0 ? 'unexpected_pass' : 'oracle_failure',
+    failureClass: execution.failureClass,
     proofSource: 'execute_red_proof',
   };
 }
@@ -2040,19 +2212,34 @@ function executePreImplementationRedProof(
 function preImplementationState(
   row: AcceptanceRow,
   manifest: JsonObject,
-  options: { executeRedProof?: boolean; redProofCommandTimeoutMs?: number } = {}
+  options: {
+    executeRedProof?: boolean;
+    redProofCommandTimeoutMs?: number;
+    redProofExecutionCache?: Map<string, RedProofExecutionResult>;
+  } = {}
 ): MatrixRow {
+  const expectedPreImplementationState = row.expectedPreImplementationState ?? 'expected_red';
   const missingFiles = row.files.filter((file) => !fileExists(file));
+  const missingTestPlan =
+    expectedPreImplementationState === 'expected_red' && row.files.length === 0;
   const controlledProof =
-    preProofFor(row, manifest) ??
-    (options.executeRedProof
-      ? executePreImplementationRedProof(row, manifest, options.redProofCommandTimeoutMs ?? 120000)
-      : undefined);
+    missingTestPlan || missingFiles.length > 0
+      ? undefined
+      : (preProofFor(row, manifest) ??
+        (options.executeRedProof
+          ? executePreImplementationRedProof(
+              row,
+              manifest,
+              options.redProofCommandTimeoutMs ?? 120000,
+              options.redProofExecutionCache
+            )
+          : undefined));
   const proofState =
     controlledProof?.failureClass && INVALID_RED_FAILURE_CLASSES.has(controlledProof.failureClass)
       ? 'invalid_red'
       : controlledProof?.state;
-  const state = missingFiles.length > 0 ? 'missing_test' : (proofState ?? 'missing_plan');
+  const state =
+    missingTestPlan || missingFiles.length > 0 ? 'missing_test' : (proofState ?? 'missing_plan');
   const reasons =
     state === 'expected_red'
       ? controlledProof && !controlledProof.oracle
@@ -2068,10 +2255,10 @@ function preImplementationState(
   return matrixRow({
     id: row.id,
     category: row.id.startsWith('E2E-') || row.kind === 'e2e' ? 'E2E' : 'ACC',
-    expectedPreImplementationState: row.expectedPreImplementationState ?? 'expected_red',
+    expectedPreImplementationState,
     currentState: state,
     oracle: controlledProof?.oracle || row.oracle,
-    commandRefs: row.commandRefs,
+    commandRefs: controlledProof?.commandId ? [controlledProof.commandId] : row.commandRefs,
     refs: [
       ...row.covers,
       ...row.traceRefs,
@@ -2123,6 +2310,7 @@ function modeMatrix(input: {
   const preOptions = {
     executeRedProof: input.executeRedProof,
     redProofCommandTimeoutMs: input.redProofCommandTimeoutMs,
+    redProofExecutionCache: new Map<string, RedProofExecutionResult>(),
   };
   const acceptanceRows =
     input.mode === 'pre-implementation'
@@ -2669,7 +2857,38 @@ export function evaluateAiTddContractGate(input: {
     const evaluatedAt = input.evaluatedAt ?? new Date().toISOString();
     const evaluatedBy = input.evaluatedBy ?? 'agent';
     const attemptId = currentAttempt(input.record, input.attemptId);
-    const source = readImplementationConfirmation(input.sourcePath);
+    const semanticRead = isActiveV2RequirementRecord(input.record)
+      ? readAiTddContract({
+          projectRoot: activeProjectRoot,
+          mode:
+            input.mode === 'closeout'
+              ? 'closeout'
+              : input.mode === 'pre-implementation'
+                ? 'draft'
+                : 'execution',
+          requirementSetId: text(input.record.requirementSetId),
+          expectedSemanticModelHash: text(input.record.semanticModelHash),
+          expectedTraceGraphHash: text(input.record.traceGraphHash),
+        })
+      : null;
+    if (semanticRead && !semanticRead.ok) {
+      return blockedAiTddReadReport({
+        sourcePath: input.sourcePath,
+        recordPath: input.recordPath,
+        mode: input.mode,
+        attemptId,
+        evaluatedAt,
+        evaluatedBy,
+        read: semanticRead,
+      });
+    }
+    const source = semanticRead
+      ? canonicalAiTddSource({
+          sourcePath: input.sourcePath,
+          record: input.record,
+          read: semanticRead,
+        })
+      : readImplementationConfirmation(input.sourcePath);
     const manifest = buildManifest({
       sourcePath: source.sourcePath,
       confirmation: source.confirmation,

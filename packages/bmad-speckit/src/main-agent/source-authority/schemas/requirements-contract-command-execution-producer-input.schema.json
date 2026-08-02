@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-command-execution-producer-input.schema.json",
+  "title": "Requirements Contract Command Execution Producer Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "commandRunId",
+    "commandId",
+    "argv",
+    "cwd",
+    "stdoutPath",
+    "stderrPath",
+    "receiptPath",
+    "requirementSetId",
+    "requirementRefs",
+    "transactionId",
+    "implementationAttemptId",
+    "architectureAuditAttemptId",
+    "activePhaseAuditAttemptId",
+    "contractHash",
+    "inputSnapshotHash",
+    "acceptanceRefs",
+    "traceRefs"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-command-execution-producer-input/v1"
+    },
+    "commandRunId": {
+      "type": "string",
+      "pattern": "^RUN-[A-Za-z0-9._-]+$"
+    },
+    "commandId": {
+      "type": "string",
+      "pattern": "^CMD-[A-Za-z0-9._-]+$"
+    },
+    "argv": {
+      "$ref": "#/$defs/argv"
+    },
+    "cwd": {
+      "type": "string",
+      "minLength": 1
+    },
+    "stdoutPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "stderrPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "receiptPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requirementSetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requirementRefs": {
+      "$ref": "#/$defs/nonEmptyStrings"
+    },
+    "transactionId": {
+      "type": "string",
+      "pattern": "^TX-[A-Za-z0-9._-]+$"
+    },
+    "implementationAttemptId": {
+      "type": "string",
+      "pattern": "^IMPL-ATTEMPT-[A-Z0-9][A-Z0-9._-]*$"
+    },
+    "architectureAuditAttemptId": {
+      "type": "string",
+      "pattern": "^AUDIT-[A-Za-z0-9._-]+$"
+    },
+    "activePhaseAuditAttemptId": {
+      "type": "string",
+      "pattern": "^AUDIT-[A-Za-z0-9._-]+$"
+    },
+    "contractHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "inputSnapshotHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "acceptanceRefs": {
+      "$ref": "#/$defs/nonEmptyStrings"
+    },
+    "traceRefs": {
+      "$ref": "#/$defs/nonEmptyStrings"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "argv": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "nonEmptyStrings": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

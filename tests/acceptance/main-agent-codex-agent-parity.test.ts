@@ -59,7 +59,6 @@ describe('Codex agent parity with Claude branch', () => {
       'remediation-worker.toml',
       'document-worker.toml',
       'general-purpose.toml',
-      'codex-no-hooks-worker.toml',
       'release-quality-proof-worker.toml',
     ]) {
       expect(codexAgents.has(alias)).toBe(true);

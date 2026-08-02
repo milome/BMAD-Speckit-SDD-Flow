@@ -5,6 +5,7 @@ import {
   buildValidResponseFromRequest,
   cleanCriticalAuditorRound,
   createTempRoot,
+  installJudgeRuntimeConfig,
   issueCodes,
   readJson,
   removeTempRoot,
@@ -20,6 +21,7 @@ describe('requirements contract ID namespace synchronization', () => {
   it('binds request, packet, response, and receipt refs to one namespace version', () => {
     const root = createTempRoot('requirements-contract-namespace-sync-');
     try {
+      installJudgeRuntimeConfig(root);
       const source = writeConsumerRequirement(root);
 
       runAuthoring(root, source, 'REQ-NAMESPACE-SYNC', {
@@ -53,6 +55,7 @@ describe('requirements contract ID namespace synchronization', () => {
   it('archives stale namespace artifacts and restarts at round one when response namespace drifts', () => {
     const root = createTempRoot('requirements-contract-namespace-stale-');
     try {
+      installJudgeRuntimeConfig(root);
       const recordId = 'REQ-NAMESPACE-STALE';
       const source = writeConsumerRequirement(root);
       runAuthoring(root, source, recordId, {

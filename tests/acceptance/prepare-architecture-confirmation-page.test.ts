@@ -3,6 +3,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { createRecordedConfirmationHistory } from './helpers/requirement-record-confirmation-fixture';
 
 const ROOT = process.cwd();
 const PREPARE = path.join(
@@ -119,11 +120,26 @@ function writeConfirmedFixture() {
     record,
     `${JSON.stringify(
       {
+        schemaVersion: 'requirement-record/v1',
         recordId: 'REQ-PREPARE',
         requirementSetId: 'REQ-PREPARE',
         status: 'user_confirmed',
+        sourcePath: source,
         sourceDocumentHash: report.sourceDocumentHash,
         implementationConfirmationHash: report.implementationConfirmationHash,
+        confirmationPageHash: report.confirmationPageHash,
+        latestConfirmationProjectionHash: report.confirmationPageHash,
+        confirmationHistory: createRecordedConfirmationHistory({
+          recordId: 'REQ-PREPARE',
+          sourcePath: source,
+          sourceDocumentHash: report.sourceDocumentHash,
+          implementationConfirmationHash: report.implementationConfirmationHash,
+          confirmationPageHash: report.confirmationPageHash,
+          confirmedAt: '2026-05-20T00:00:00.000Z',
+          confirmedBy: 'tester',
+          renderReportPath: path.join(tempDir, 'confirmation-render-report.json'),
+          htmlPath: htmlOut,
+        }),
         architectureConfirmationState: {
           status: 'active',
           currentArchitectureConfirmationRunId: 'old-arch',
@@ -166,6 +182,88 @@ const governanceImpactScan = JSON.stringify([
 const triggerMatrix = JSON.stringify([
   { trigger: 'shared_schema_or_contract_changed', decision: 'triggered', reason: 'fixture' },
 ]);
+const requiredArchitectureDiagramTypes = [
+  'system_architecture',
+  'deployment',
+  'class',
+  'swimlane',
+  'state_machine',
+  'sequence',
+  'activity',
+];
+
+function writeZhLocalizationBundle(): string {
+  const file = path.join(tempDir, 'architecture-localization.zh-CN.json');
+  const mermaidFor = (type: string, scope: 'business' | 'governance') => {
+    const noun = scope === 'business' ? '业务' : '治理';
+    if (type === 'class') return `classDiagram\n  class Component\n  %% ${noun}组件`;
+    if (type === 'state_machine') {
+      return `stateDiagram-v2\n  state "${noun}输入" as Input\n  Input --> Output: ${noun}输出`;
+    }
+    if (type === 'sequence') {
+      return `sequenceDiagram\n  participant A as ${noun}输入\n  participant B as ${noun}输出\n  A->>B: 提交`;
+    }
+    return `flowchart LR\n  输入["${noun}输入"] --> 输出["${noun}输出"]`;
+  };
+  const diagramProjection = (scope: 'business' | 'governance') =>
+    requiredArchitectureDiagramTypes.map((type) => ({
+      id:
+        scope === 'business'
+          ? `BUS-ARCH-VIEW-${type === 'system_architecture' ? 'SYSTEM' : type.replace('state_machine', 'STATE').toUpperCase()}`
+          : `ARCH-VIEW-${type === 'system_architecture' ? 'SYSTEM' : type.replace('state_machine', 'STATE').toUpperCase()}`,
+      title: `${scope === 'business' ? '业务' : '治理'}${type}架构图`,
+      description: '由 authoring agent 提供的架构中文说明。',
+      mermaid: mermaidFor(type, scope),
+    }));
+  fs.writeFileSync(
+    file,
+    `${JSON.stringify(
+      {
+        language: 'zh-CN',
+        projectionSource: 'authoring_agent',
+        decision: '完整架构待确认',
+        outcome: '确认后进入实施准备',
+        riskStatement: '错误的架构边界可能导致共享契约冲突。',
+        rollbackPlan: '拒绝确认并重新生成需求范围内的架构工件。',
+        consumerImpactScan: [
+          {
+            sourceCategory: 'data_model',
+            category: '数据模型',
+            status: '已触发',
+            summary: '数据模型变更需要架构确认。',
+            description: '共享数据契约将受到影响。',
+            requiredDecision: '确认数据模型所有权和兼容边界。',
+          },
+        ],
+        governanceImpactScan: [
+          {
+            sourceCategory: 'orchestration_hook_gate_ingest_rerun_closeout',
+            category: '编排、门禁与受控写入',
+            status: '已触发',
+            summary: '实施准备门禁和受控写入路径受到影响。',
+            description: '架构确认必须保持需求范围和 hash 绑定。',
+            requiredDecision: '确认治理推进仍由受控事件驱动。',
+          },
+        ],
+        fullArchitectureTriggerMatrix: [
+          {
+            sourceTrigger: 'shared_schema_or_contract_changed',
+            trigger: '共享模式或契约发生变更',
+            decision: '已触发',
+            reason: '需求记录模式受到影响。',
+            requiredDecision: '确认共享契约的兼容和回滚边界。',
+          },
+        ],
+        businessArchitectureDiagrams: diagramProjection('business'),
+        governanceArchitectureDiagrams: diagramProjection('governance'),
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
+  return file;
+}
 
 describe('prepare-architecture-confirmation-page', () => {
   it('resolves nested packaged bmad-speckit dist scripts from npm tarball installs', () => {
@@ -201,6 +299,7 @@ describe('prepare-architecture-confirmation-page', () => {
       tempDir,
       '_bmad-output/runtime/requirement-records/REQ-PREPARE/architecture/architecture-confirmation-run-001.html'
     );
+    const localization = writeZhLocalizationBundle();
     const result = runNode(PREPARE, [
       '--source',
       fixture.source,
@@ -216,6 +315,8 @@ describe('prepare-architecture-confirmation-page', () => {
       governanceImpactScan,
       '--full-architecture-trigger-matrix',
       triggerMatrix,
+      '--localization',
+      localization,
       '--out',
       out,
       '--json',
@@ -241,6 +342,9 @@ describe('prepare-architecture-confirmation-page', () => {
       eventType: 'architecture_confirmation_state_checked',
     });
     expect(['pass', 'fail', 'blocked']).toContain(output.internalSteps[0].decision);
+    expect(output.internalSteps[0].receiptPath).toMatch(
+      /events\/receipts\/architecture_confirmation_state_checked_.*\.json$/u
+    );
     const prepareReport = JSON.parse(fs.readFileSync(output.prepareReportPath, 'utf8'));
     expect(prepareReport.userFacingNextStep).toBe(
       'open_architecture_confirmation_html_and_confirm_hashes'
@@ -248,12 +352,60 @@ describe('prepare-architecture-confirmation-page', () => {
     expect(prepareReport.internalSteps[0].label).toBe('architecture_confirmation_state_checked');
 
     const record = JSON.parse(fs.readFileSync(fixture.record, 'utf8'));
-    expect(record.architectureConfirmationStateChecks ?? []).toHaveLength(0);
+    expect(record.architectureConfirmationStateChecks).toHaveLength(1);
+    expect(record.architectureConfirmationStateChecks[0]).toMatchObject({
+      eventType: 'architecture_confirmation_state_checked',
+      decision: output.internalSteps[0].decision,
+    });
+    expect(['pass', 'fail', 'blocked']).toContain(
+      record.architectureConfirmationStateChecks[0].decision
+    );
+    expect(record.controlStore.lastEventId).toContain('architecture_confirmation_state_checked');
     expect(record.architectureConfirmations ?? []).toHaveLength(0);
+  });
+
+  it('canonicalizes legacy runtime refs and architecture state before persisting the state check', () => {
+    const fixture = writeConfirmedFixture();
+    const localization = writeZhLocalizationBundle();
+    const runtimePolicySnapshot = path.join(tempDir, 'runtime-policy-snapshot.json');
+    fs.writeFileSync(runtimePolicySnapshot, '{"schemaVersion":"runtime-policy-snapshot/v1"}\n', 'utf8');
+    const legacyRecord = JSON.parse(fs.readFileSync(fixture.record, 'utf8'));
+    legacyRecord.runtimePolicySnapshotRef = { path: runtimePolicySnapshot };
+    legacyRecord.architectureConfirmationState.reasonCode = 'legacy_missing_reason';
+    fs.writeFileSync(fixture.record, `${JSON.stringify(legacyRecord, null, 2)}\n`, 'utf8');
+
+    const result = runNode(PREPARE, [
+      '--source',
+      fixture.source,
+      '--requirement-record',
+      fixture.record,
+      '--run-id',
+      'run-legacy-record',
+      '--target-paths',
+      targetPaths,
+      '--consumer-impact-scan',
+      consumerImpactScan,
+      '--governance-impact-scan',
+      governanceImpactScan,
+      '--full-architecture-trigger-matrix',
+      triggerMatrix,
+      '--localization',
+      localization,
+      '--out',
+      path.join(tempDir, 'architecture-confirmation-legacy.html'),
+      '--json',
+    ]);
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    const record = JSON.parse(fs.readFileSync(fixture.record, 'utf8'));
+    expect(record.runtimePolicySnapshotRef.contentHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
+    expect(record.architectureConfirmationState).not.toHaveProperty('reasonCode');
+    expect(record.architectureConfirmationStateChecks).toHaveLength(1);
   });
 
   it('fails closed instead of rendering when required architecture inputs are missing', () => {
     const fixture = writeConfirmedFixture();
+    const localization = writeZhLocalizationBundle();
     const out = path.join(tempDir, 'architecture-confirmation.html');
     const result = runNode(PREPARE, [
       '--source',
@@ -270,6 +422,8 @@ describe('prepare-architecture-confirmation-page', () => {
       governanceImpactScan,
       '--full-architecture-trigger-matrix',
       triggerMatrix,
+      '--localization',
+      localization,
       '--out',
       out,
       '--json',

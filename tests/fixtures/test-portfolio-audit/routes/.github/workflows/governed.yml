@@ -1,0 +1,28 @@
+name: Governed dynamic matrix
+
+on:
+  pull_request:
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.manifest.outputs.matrix }}
+    steps:
+      - id: manifest
+        run: npm run ci:manifest
+
+  execute-shard:
+    needs: classify
+    strategy:
+      matrix: ${{ fromJSON(needs.classify.outputs.matrix) }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: npm run ci:run-shard -- --lane ${{ matrix.lane }} --shard-id ${{ matrix.shardId }}
+
+  evidence-join:
+    if: always()
+    needs: execute-shard
+    runs-on: ubuntu-latest
+    steps:
+      - run: npm run ci:join

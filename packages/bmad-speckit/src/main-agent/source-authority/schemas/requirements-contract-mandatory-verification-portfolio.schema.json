@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "campaignId",
+    "scopeManifestHash",
+    "campaignLineageKey",
+    "requiredSections",
+    "evidenceRefs",
+    "commandRefs",
+    "taskReportProvenanceRefs",
+    "deliverySurfaceRefs",
+    "policyRefs",
+    "priorFindingRefs",
+    "portfolioHash",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-mandatory-verification-portfolio/v1" },
+    "campaignId": { "type": "string", "minLength": 1 },
+    "scopeManifestHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "campaignLineageKey": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "requiredSections": { "type": "array", "minItems": 9, "items": { "type": "string" } },
+    "evidenceRefs": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "commandRefs": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "taskReportProvenanceRefs": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "deliverySurfaceRefs": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "policyRefs": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "priorFindingRefs": { "type": "array", "items": { "type": "string" } },
+    "portfolioHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "decision": { "const": "pass" }
+  },
+  "additionalProperties": false
+}

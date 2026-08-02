@@ -101,6 +101,7 @@ module.exports = {
     'packages/runtime-emit/build.js',
     'packages/runtime-emit/write-runtime-context.js',
     'packages/scoring/dashboard/ui/app.js',
+    'tests/fixtures/test-portfolio-audit/',
     '*.config.ts',
   ],
 };

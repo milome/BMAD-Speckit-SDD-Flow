@@ -1,0 +1,235 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-g09-prompt-transaction-evidence.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "evidenceId",
+    "producer",
+    "action",
+    "decision",
+    "contractHash",
+    "transactionId",
+    "requirementSetId",
+    "implementationAttemptId",
+    "dispatchInputSetHash",
+    "modelPacketPath",
+    "modelPacketHash",
+    "transactionManifestPath",
+    "generationReceiptPath",
+    "generationReceiptHash",
+    "humanPromptPath",
+    "humanPromptHash",
+    "goalExecutionApplicability",
+    "goalExecutionPath",
+    "goalExecutionHash",
+    "productionArgv",
+    "productionArgvHash",
+    "resolvedGeneratorPath",
+    "resolvedGeneratorHash",
+    "resolvedRunnerPath",
+    "resolvedRunnerHash",
+    "outputSetExpected",
+    "outputSetObserved",
+    "promptTransactionOutputSetMismatchCount",
+    "promptTransactionArgvMismatchCount",
+    "promptTransactionReverseHashEdgeCount",
+    "modelPacketProjectionDriftCount",
+    "modelPacketAuthorityClaimCount",
+    "modelPacketTaskParityCount",
+    "modelPacketAcceptanceParityCount",
+    "modelPacketSourceObligationParityCount",
+    "modelPacketCommandParityCount",
+    "modelPacketStopConditionParityCount",
+    "modelPacketAmendmentParityCount",
+    "promptTransactionLockPath",
+    "promptTransactionLockViolationCount",
+    "promptTransactionStaleLockRecoveryCases",
+    "promptTransactionStaleLockRecoveryMismatchCount",
+    "promptTransactionQuarantineRoot",
+    "promptTransactionQuarantineCases",
+    "promptTransactionOrphanTransientCount",
+    "promptTransactionTransientActiveReadCount",
+    "transactionManifestHash",
+    "sourceHashBinding",
+    "sourceAmendmentHashBindings",
+    "atomicPromotionCases",
+    "blockedReplayCases",
+    "concurrencyCases",
+    "autoCommitDefault",
+    "commandRunRef",
+    "transactionManifestRef",
+    "currentDispatchPointerRef",
+    "capabilityObservationRef",
+    "safeWriteReceiptRefs",
+    "outputReadbacks",
+    "createdAt"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-g09-prompt-transaction-evidence/v1" },
+    "evidenceId": { "const": "EVD-09" },
+    "producer": { "const": "requirements-contract-prompt-transaction-publisher" },
+    "action": { "const": "requirements-contract-prompt-transaction-publish" },
+    "decision": { "const": "PASS" },
+    "contractHash": { "$ref": "#/$defs/hash" },
+    "transactionId": { "$ref": "#/$defs/id" },
+    "requirementSetId": { "$ref": "#/$defs/id" },
+    "implementationAttemptId": { "$ref": "#/$defs/id" },
+    "dispatchInputSetHash": { "$ref": "#/$defs/hash" },
+    "modelPacketPath": { "$ref": "#/$defs/path" },
+    "modelPacketHash": { "$ref": "#/$defs/hash" },
+    "transactionManifestPath": { "$ref": "#/$defs/path" },
+    "generationReceiptPath": { "$ref": "#/$defs/path" },
+    "generationReceiptHash": { "$ref": "#/$defs/hash" },
+    "humanPromptPath": { "$ref": "#/$defs/path" },
+    "humanPromptHash": { "$ref": "#/$defs/hash" },
+    "goalExecutionApplicability": { "enum": ["required", "not_applicable"] },
+    "goalExecutionPath": {
+      "oneOf": [{ "$ref": "#/$defs/path" }, { "type": "null" }]
+    },
+    "goalExecutionHash": {
+      "oneOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }]
+    },
+    "productionArgv": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "productionArgvHash": { "$ref": "#/$defs/hash" },
+    "resolvedGeneratorPath": { "$ref": "#/$defs/path" },
+    "resolvedGeneratorHash": { "$ref": "#/$defs/hash" },
+    "resolvedRunnerPath": { "$ref": "#/$defs/path" },
+    "resolvedRunnerHash": { "$ref": "#/$defs/hash" },
+    "outputSetExpected": { "$ref": "#/$defs/outputSet" },
+    "outputSetObserved": { "$ref": "#/$defs/outputSet" },
+    "promptTransactionOutputSetMismatchCount": { "const": 0 },
+    "promptTransactionArgvMismatchCount": { "const": 0 },
+    "promptTransactionReverseHashEdgeCount": { "const": 0 },
+    "modelPacketProjectionDriftCount": { "const": 0 },
+    "modelPacketAuthorityClaimCount": { "const": 0 },
+    "modelPacketTaskParityCount": { "const": 0 },
+    "modelPacketAcceptanceParityCount": { "const": 0 },
+    "modelPacketSourceObligationParityCount": { "const": 0 },
+    "modelPacketCommandParityCount": { "const": 0 },
+    "modelPacketStopConditionParityCount": { "const": 0 },
+    "modelPacketAmendmentParityCount": { "const": 0 },
+    "promptTransactionLockPath": { "$ref": "#/$defs/path" },
+    "promptTransactionLockViolationCount": { "const": 0 },
+    "promptTransactionStaleLockRecoveryCases": { "$ref": "#/$defs/cases" },
+    "promptTransactionStaleLockRecoveryMismatchCount": { "const": 0 },
+    "promptTransactionQuarantineRoot": { "$ref": "#/$defs/path" },
+    "promptTransactionQuarantineCases": { "$ref": "#/$defs/cases" },
+    "promptTransactionOrphanTransientCount": { "const": 0 },
+    "promptTransactionTransientActiveReadCount": { "const": 0 },
+    "transactionManifestHash": { "$ref": "#/$defs/hash" },
+    "sourceHashBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sourceDocumentHash", "requirementRecordRef"],
+      "properties": {
+        "path": { "$ref": "#/$defs/path" },
+        "sourceDocumentHash": { "$ref": "#/$defs/hash" },
+        "requirementRecordRef": { "$ref": "#/$defs/fileRef" }
+      }
+    },
+    "sourceAmendmentHashBindings": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/hash" }
+    },
+    "atomicPromotionCases": { "$ref": "#/$defs/cases" },
+    "blockedReplayCases": { "$ref": "#/$defs/cases" },
+    "concurrencyCases": { "$ref": "#/$defs/cases" },
+    "autoCommitDefault": { "const": false },
+    "commandRunRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash", "hashApplicability"],
+      "properties": {
+        "path": { "type": "null" },
+        "hash": { "type": "null" },
+        "hashApplicability": { "const": "downstream_external" }
+      }
+    },
+    "transactionManifestRef": { "$ref": "#/$defs/readbackRef" },
+    "currentDispatchPointerRef": { "$ref": "#/$defs/readbackRef" },
+    "capabilityObservationRef": { "$ref": "#/$defs/readbackRef" },
+    "safeWriteReceiptRefs": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/readbackRef" }
+    },
+    "outputReadbacks": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 5,
+      "items": { "$ref": "#/$defs/readbackRef" }
+    },
+    "createdAt": { "type": "string", "format": "date-time" }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "goalExecutionApplicability": { "const": "required" },
+        "goalExecutionPath": { "$ref": "#/$defs/path" },
+        "goalExecutionHash": { "$ref": "#/$defs/hash" },
+        "outputSetExpected": { "const": ["model_packet.json", "transaction-manifest.json", "audit_receipt.json", "human_prompt.txt", "goal_execution.md"] },
+        "outputSetObserved": { "const": ["model_packet.json", "transaction-manifest.json", "audit_receipt.json", "human_prompt.txt", "goal_execution.md"] }
+      }
+    },
+    {
+      "properties": {
+        "goalExecutionApplicability": { "const": "not_applicable" },
+        "goalExecutionPath": { "type": "null" },
+        "goalExecutionHash": { "type": "null" },
+        "outputSetExpected": { "const": ["model_packet.json", "transaction-manifest.json", "audit_receipt.json", "human_prompt.txt"] },
+        "outputSetObserved": { "const": ["model_packet.json", "transaction-manifest.json", "audit_receipt.json", "human_prompt.txt"] }
+      }
+    }
+  ],
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$" },
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "path": { "type": "string", "minLength": 1 },
+    "cases": { "type": "array", "items": { "type": "object" } },
+    "outputSet": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "model_packet.json",
+          "transaction-manifest.json",
+          "audit_receipt.json",
+          "human_prompt.txt",
+          "goal_execution.md"
+        ]
+      }
+    },
+    "fileRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "$ref": "#/$defs/path" },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "readbackRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash", "readbackHash", "readbackVerified"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" },
+        "readbackHash": { "$ref": "#/$defs/hash" },
+        "readbackVerified": { "const": true }
+      }
+    }
+  }
+}

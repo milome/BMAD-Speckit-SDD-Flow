@@ -1,0 +1,8 @@
+{
+  "name": "test-portfolio-route-package-node-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/package.test.js"
+  }
+}

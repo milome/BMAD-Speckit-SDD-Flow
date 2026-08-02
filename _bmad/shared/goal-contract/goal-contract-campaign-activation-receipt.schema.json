@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "campaignId",
+    "campaignActivationHash",
+    "attemptId",
+    "sourceCompositionPolicyHash",
+    "orderedSourceSnapshotSetHash",
+    "sourceAuthorityBundleHash",
+    "authorityAttestationHash",
+    "goalContractHash",
+    "partitionPlanHash",
+    "partitionManifestHash",
+    "partitionSetHash",
+    "partitionPolicyHash",
+    "compilerIdentityHash",
+    "subordinateCoverageReceiptHashes",
+    "childReleaseReceiptHashes",
+    "executionAuthorization",
+    "executionAuthorizationHash",
+    "authorizationCount",
+    "modelInvocationCount",
+    "activatedAt",
+    "decision",
+    "receiptHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-campaign-activation-receipt/v1"
+    },
+    "campaignId": {
+      "type": "string",
+      "pattern": "^goal-campaign-[0-9a-f]{64}$"
+    },
+    "campaignActivationHash": { "$ref": "#/$defs/hash" },
+    "attemptId": { "$ref": "#/$defs/nonEmpty" },
+    "sourceCompositionPolicyHash": { "$ref": "#/$defs/hash" },
+    "orderedSourceSnapshotSetHash": { "$ref": "#/$defs/hash" },
+    "sourceAuthorityBundleHash": { "$ref": "#/$defs/hash" },
+    "authorityAttestationHash": { "$ref": "#/$defs/hash" },
+    "goalContractHash": { "$ref": "#/$defs/hash" },
+    "partitionPlanHash": { "$ref": "#/$defs/hash" },
+    "partitionManifestHash": { "$ref": "#/$defs/hash" },
+    "graphHash": { "$ref": "#/$defs/hash" },
+    "feasibilityHash": { "$ref": "#/$defs/hash" },
+    "driftHash": { "$ref": "#/$defs/hash" },
+    "partitionSetHash": { "$ref": "#/$defs/hash" },
+    "partitionPolicyHash": { "$ref": "#/$defs/hash" },
+    "compilerIdentityHash": { "$ref": "#/$defs/hash" },
+    "subordinateCoverageReceiptHashes": { "$ref": "#/$defs/hashes" },
+    "childReleaseReceiptHashes": { "$ref": "#/$defs/hashes" },
+    "executionAuthorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authorizerIdentity",
+        "authorizationKind",
+        "authorizedSourceCompositionPolicyHash",
+        "authorizedGoalContractHash",
+        "authorizedPartitionManifestHash",
+        "authorizedPartitionSetHash",
+        "authorizationSourceHash",
+        "authorizationStatementHash"
+      ],
+      "properties": {
+        "authorizerIdentity": { "$ref": "#/$defs/nonEmpty" },
+        "authorizationKind": {
+          "enum": ["user_explicit", "main_agent_controlled_dispatch"]
+        },
+        "authorizedSourceCompositionPolicyHash": { "$ref": "#/$defs/hash" },
+        "authorizedGoalContractHash": { "$ref": "#/$defs/hash" },
+        "authorizedPartitionManifestHash": { "$ref": "#/$defs/hash" },
+        "authorizedPartitionSetHash": { "$ref": "#/$defs/hash" },
+        "authorizationSourceHash": { "$ref": "#/$defs/hash" },
+        "authorizationStatementHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "executionAuthorizationHash": { "$ref": "#/$defs/hash" },
+    "authorizationCount": { "const": 1 },
+    "modelInvocationCount": { "const": 0 },
+    "activatedAt": { "$ref": "#/$defs/timestamp" },
+    "decision": { "const": "pass" },
+    "receiptHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "hashes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/hash" }
+    },
+    "nonEmpty": {
+      "type": "string",
+      "minLength": 1
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{3})?Z$"
+    }
+  }
+}

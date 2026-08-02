@@ -11,8 +11,7 @@ const { auditorSpecAction } = require('./actions/auditor-spec');
 const { bmadRuntimeWorkerAction } = require('./actions/bmad-runtime-worker');
 const { bmadArtifactHardcutAction } = require('./actions/bmad-artifact-hardcut');
 const { chaosScenariosAction } = require('./actions/chaos-scenarios');
-const { codexWorkerAdapterAction } = require('./actions/codex-worker-adapter');
-const { compiledPromptRunnerAction } = require('./actions/compiled-prompt-runner');
+const { promptTransactionPublishAction } = require('./actions/prompt-transaction-publish');
 const {
   confirmScopeAction,
   confirmScopeMissingReason,
@@ -35,6 +34,7 @@ const { e2eHostMatrixJourneyRunnerAction } = require('./actions/e2e-host-matrix-
 const { finalCloseoutEvidenceRunnerAction } = require('./actions/final-closeout-evidence-runner');
 const { functionalResumeCheckAction } = require('./actions/functional-resume-check');
 const { governedDataProductsAction } = require('./actions/governed-data-products');
+const { gapClosureEvidenceAction } = require('./actions/gap-closure-evidence');
 const { governancePacketDispatchWorkerAction } = require('./actions/governance-packet-dispatch-worker');
 const { hostMatrixPrOrchestratorAction } = require('./actions/host-matrix-pr-orchestrator');
 const { implementationReadinessGateAction } = require('./actions/implementation-readiness-gate');
@@ -60,6 +60,9 @@ const { releaseGateAction } = require('./actions/release-gate');
 const { requirementRecordControlStoreAction } = require('./actions/requirement-record-control-store');
 const { requirementRecordLiveSchemaGateAction } = require('./actions/requirement-record-live-schema-gate');
 const { requirementRecordSchemaEvolutionAction } = require('./actions/requirement-record-schema-evolution');
+const {
+  requirementsContractSourceIntakeAction,
+} = require('./actions/requirements-contract-source-intake');
 const { resolveActiveRequirementAction } = require('./actions/resolve-active-requirement');
 const {
   runRequiredCommandsFromAiTddManifestAction,
@@ -94,6 +97,7 @@ const PACKAGE_RUNTIME_READY_ACTIONS = {
   'entryflow-traceability-check': entryflowTraceabilityCheckAction,
   'execution-closure-gate': executionClosureGateAction,
   'functional-resume-check': functionalResumeCheckAction,
+  'gap-closure-evidence': gapClosureEvidenceAction,
   'governed-data-products': governedDataProductsAction,
   'production-loop-ready-check': productionLoopReadyCheckAction,
   'runtime-policy-snapshot-check': runtimePolicySnapshotCheckAction,
@@ -109,6 +113,7 @@ const PACKAGE_RUNTIME_READY_ACTIONS = {
   'requirement-record-control-store': requirementRecordControlStoreAction,
   'requirement-record-live-schema-gate': requirementRecordLiveSchemaGateAction,
   'requirement-record-schema-evolution': requirementRecordSchemaEvolutionAction,
+  'requirements-contract-source-intake': requirementsContractSourceIntakeAction,
   'resolve-active-requirement': resolveActiveRequirementAction,
   'run-required-commands-from-ai-tdd-manifest': runRequiredCommandsFromAiTddManifestAction,
   'runtime-scoring-data-path': runtimeScoringDataPathAction,
@@ -196,8 +201,7 @@ const SUPPORTED_ACTIONS = new Set([
   'release-gate',
   'quality-gate',
   'delivery-truth-gate',
-  'codex-worker-adapter',
-  'compiled-prompt-runner',
+  'requirements-contract-prompt-transaction-publish',
   'implementation-readiness-gate',
   'unified-ingress',
   'delivery-closeout-gate',
@@ -228,6 +232,8 @@ const ORCHESTRATION_ACTIONS = new Set([
   'confirmation-drift-route',
   'repair-confirmation-bookkeeping',
   'confirmation-bookkeeping-repair',
+  'register-pre-confirmation-render',
+  'register_pre_confirmation_render',
   'pre-confirmation-drilldown',
   'pre_confirmation_drilldown',
   'author-confirmation-ready-source',
@@ -317,6 +323,21 @@ function emitResponse(context, response) {
   if (context.json) writeJson(response);
   else writeHuman(context, response);
   return response.exitCode;
+}
+
+function emitPackageActionResponse(context, data, defaultStatus = 'package_runtime_ready') {
+  const exitCode =
+    typeof data?.exitCode === 'number' ? data.exitCode : data?.ok === false ? 1 : 0;
+  return emitResponse(
+    context,
+    envelope(
+      context,
+      data?.status || defaultStatus,
+      exitCode,
+      data,
+      Array.isArray(data?.errors) ? data.errors : []
+    )
+  );
 }
 
 function emitLegacyResult(result) {
@@ -438,15 +459,38 @@ async function runMainAgentRuntime(context) {
     const reason = confirmScopeMissingReason(context.args);
     if (reason) return emitResponse(context, missingRuntimeState(context, reason));
     if (context.legacyOrchestration) return emitLegacyResult(legacyConfirmScopeAction(context));
-    const runtime = requireRuntimeState(context);
-    if (!runtime.ok) return emitResponse(context, runtime.response);
-    return emitResponse(context, envelope(context, 'ok', 0, confirmScopeAction(context, runtime.state)));
+    const result = confirmScopeAction(
+      context,
+      hasRuntimeState(context.cwd) ? inspectRuntimeState(context.cwd) : null
+    );
+    const exitCode = result.exitCode ?? (result.ok === false ? 1 : 0);
+    return emitResponse(
+      context,
+      envelope(
+        context,
+        result.ok === false ? 'confirmation_blocked' : 'ok',
+        exitCode,
+        result,
+        result.ok === false
+          ? [
+              {
+                code: result.mismatches?.[0] || 'confirmation_blocked',
+                message: result.error || result.mismatches?.join(', ') || 'confirmation blocked',
+              },
+            ]
+          : []
+      )
+    );
   }
 
   if (context.action === 'dispatch-plan') {
     const runtime = requireRuntimeState(context);
     if (!runtime.ok) return emitResponse(context, runtime.response);
-    return emitResponse(context, envelope(context, 'ok', 0, dispatchPlanAction(context, runtime.state)));
+    return emitPackageActionResponse(
+      context,
+      dispatchPlanAction(context, runtime.state),
+      'dispatch_blocked'
+    );
   }
 
   if (context.action === 'run-loop') {
@@ -465,24 +509,19 @@ async function runMainAgentRuntime(context) {
     return emitLegacyAction(context, deliveryTruthGateAction);
   }
 
-  if (context.action === 'codex-worker-adapter') {
-    return emitResponse(
+  if (context.action === 'requirements-contract-prompt-transaction-publish') {
+    return emitPackageActionResponse(
       context,
-      envelope(context, 'package_runtime_ready', 0, codexWorkerAdapterAction(context))
-    );
-  }
-
-  if (context.action === 'compiled-prompt-runner') {
-    return emitResponse(
-      context,
-      envelope(context, 'package_runtime_ready', 0, compiledPromptRunnerAction(context))
+      await promptTransactionPublishAction(context),
+      'prompt_transaction_publication_blocked'
     );
   }
 
   if (context.action === 'implementation-readiness-gate') {
-    return emitResponse(
+    return emitPackageActionResponse(
       context,
-      envelope(context, 'package_runtime_ready', 0, implementationReadinessGateAction(context))
+      implementationReadinessGateAction(context),
+      'implementation_readiness_blocked'
     );
   }
 

@@ -1,0 +1,146 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "requirements-contract-six-model-projection-parity-publication-receipt.schema.json",
+  "title": "Requirements Contract Six-Model Projection Parity Publication Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "producer",
+    "action",
+    "writer",
+    "contractHash",
+    "requirementSetId",
+    "implementationAttemptId",
+    "targetPath",
+    "targetHash",
+    "readbackHash",
+    "readbackVerified",
+    "safeWriteReceiptRef",
+    "reportSchema",
+    "targetExistedBefore",
+    "previousHash",
+    "explicitUtf8",
+    "atomicWrite",
+    "createdAt"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-six-model-projection-parity-publication-receipt/v1"
+    },
+    "producer": {
+      "const": "requirements-contract-six-model-projection-parity-verifier"
+    },
+    "action": {
+      "const": "requirements-contract-six-model-projection-parity-verify"
+    },
+    "writer": {
+      "const": "large-document-writer-safe-write/v1"
+    },
+    "contractHash": {
+      "$ref": "#/definitions/hash"
+    },
+    "requirementSetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "implementationAttemptId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "targetPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "targetHash": {
+      "$ref": "#/definitions/hash"
+    },
+    "readbackHash": {
+      "$ref": "#/definitions/hash"
+    },
+    "readbackVerified": {
+      "const": true
+    },
+    "safeWriteReceiptRef": {
+      "$ref": "#/definitions/fileRef"
+    },
+    "reportSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "schemaVersion",
+        "hash",
+        "readbackHash",
+        "readbackVerified"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schemaVersion": {
+          "const": "requirements-contract-six-model-projection-parity-report/v1"
+        },
+        "hash": {
+          "$ref": "#/definitions/hash"
+        },
+        "readbackHash": {
+          "$ref": "#/definitions/hash"
+        },
+        "readbackVerified": {
+          "const": true
+        }
+      }
+    },
+    "targetExistedBefore": {
+      "type": "boolean"
+    },
+    "previousHash": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/hash"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "explicitUtf8": {
+      "const": true
+    },
+    "atomicWrite": {
+      "const": true
+    },
+    "createdAt": {
+      "type": "string",
+      "minLength": 20
+    }
+  },
+  "definitions": {
+    "fileRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash", "readbackHash", "readbackVerified"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hash": {
+          "$ref": "#/definitions/hash"
+        },
+        "readbackHash": {
+          "$ref": "#/definitions/hash"
+        },
+        "readbackVerified": {
+          "const": true
+        }
+      }
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

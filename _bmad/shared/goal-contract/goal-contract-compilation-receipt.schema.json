@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "goal-contract-compilation-receipt/v1",
+  "title": "Goal Contract Compilation Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "goalContractSemanticHash",
+    "goalContractHash",
+    "goalContractDocumentHash",
+    "sourceCompositionPolicyHash",
+    "orderedSourceSnapshotSetHash",
+    "sourceAuthorityBundleHash",
+    "canonicalIntentSemanticHash",
+    "canonicalIntentBundleHash",
+    "authorityAttestationHash",
+    "subordinateCoverageReceiptHashes",
+    "compilePolicyHash",
+    "compilerIdentityHash",
+    "profileBytesHash",
+    "templateBytesHash",
+    "runtimeRecordId",
+    "compiledAt",
+    "receiptHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-compilation-receipt/v1"
+    },
+    "goalContractSemanticHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "goalContractHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "goalContractDocumentHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "sourceCompositionPolicyHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "orderedSourceSnapshotSetHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "sourceAuthorityBundleHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "canonicalIntentSemanticHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "canonicalIntentBundleHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "authorityAttestationHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "subordinateCoverageReceiptHashes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/hash"
+      },
+      "uniqueItems": true
+    },
+    "compilePolicyHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "compilerIdentityHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "profileBytesHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "templateBytesHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "runtimeRecordId": {
+      "type": "string",
+      "pattern": "^GOAL-CONTRACT-[0-9a-f]{64}$"
+    },
+    "compiledAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "receiptHash": {
+      "$ref": "#/$defs/hash"
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    }
+  }
+}

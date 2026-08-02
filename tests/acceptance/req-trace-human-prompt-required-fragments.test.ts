@@ -14,6 +14,14 @@ const SCRIPT = path.join(
   'scripts',
   'generate_prompt.js'
 );
+const CANONICAL_PROFILE = path.join(
+  ROOT,
+  '_bmad',
+  'shared',
+  'goal-contract',
+  'goal-contract-profile.json'
+);
+const DIRECT_ENTRY_ARGS = ['--entry', 'req_trace_direct'] as const;
 let tempDir: string;
 let fixture: ReturnType<typeof materializeAiTddManifestCloseoutRunnerFixture>;
 
@@ -35,6 +43,7 @@ describe('req trace human prompt required fragment audit', () => {
       process.execPath,
       [
         SCRIPT,
+        ...DIRECT_ENTRY_ARGS,
         '--source-document',
         fixture.sourcePath,
         '--requirement-record',
@@ -139,6 +148,9 @@ describe('req trace human prompt required fragment audit', () => {
         process.execPath,
         [
           patchedScript,
+          ...DIRECT_ENTRY_ARGS,
+          '--goal-contract-profile',
+          CANONICAL_PROFILE,
           '--source-document',
           fixture.sourcePath,
           '--requirement-record',

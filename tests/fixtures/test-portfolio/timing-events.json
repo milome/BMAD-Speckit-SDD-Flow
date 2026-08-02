@@ -1,0 +1,36 @@
+{
+  "commitSha": "cccccccccccccccccccccccccccccccccccccccc",
+  "previousRuns": [
+    {
+      "commitSha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "events": [
+        {
+          "eventId": "sha256:f38e061690661ac4155d48021482d4c9fa5e323a0f8e8ec207873b1b9914f026",
+          "identityKey": "vitest::tests/a.test.ts",
+          "testPath": "tests/a.test.ts",
+          "runnerId": "vitest",
+          "durationMs": 1200,
+          "outcome": "passed"
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "eventId": "sha256:48957f5e5a9a476f91702f5a60fa3cac24d377356cd14b2efa0a58a01803c3a3",
+      "identityKey": "vitest::tests/a.test.ts",
+      "testPath": "tests/a.test.ts",
+      "runnerId": "vitest",
+      "durationMs": 1800,
+      "outcome": "passed"
+    },
+    {
+      "eventId": "sha256:69bac6ccb75adde3c75101d324f12c3ae6a19b5c38a8c75083ca2eb4219406dd",
+      "identityKey": "vitest::tests/b.test.ts",
+      "testPath": "tests/b.test.ts",
+      "runnerId": "vitest",
+      "durationMs": 7000,
+      "outcome": "failed"
+    }
+  ]
+}

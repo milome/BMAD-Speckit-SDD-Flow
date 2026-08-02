@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-diagram-set.schema.json",
+  "title": "Requirements Contract Diagram Set",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "diagramSetId",
+    "rootDiagramRef",
+    "diagrams",
+    "transitionEdges",
+    "expandedMessageRefs",
+    "blockingChildRefs",
+    "sequenceContractHash",
+    "projectionHashes"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-diagram-set/v1"
+    },
+    "diagramSetId": {
+      "type": "string",
+      "pattern": "^DSET-[A-Z0-9]+(?:-[A-Z0-9]+)*-[0-9]{3}$"
+    },
+    "rootDiagramRef": {
+      "type": "string",
+      "pattern": "^DGM-[A-Z0-9]+(?:-[A-Z0-9]+)*-[0-9]{3}$"
+    },
+    "diagrams": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "diagramRef",
+          "role",
+          "scenarioRef",
+          "messageRefs",
+          "blockingChildRefs",
+          "projectionHash"
+        ],
+        "properties": {
+          "diagramRef": {
+            "type": "string",
+            "pattern": "^DGM-[A-Z0-9]+(?:-[A-Z0-9]+)*-[0-9]{3}$"
+          },
+          "role": {
+            "enum": [
+              "scenario_overview",
+              "primary_happy_path",
+              "capability_drilldown",
+              "failure_compensation",
+              "lifecycle",
+              "deployment_delta",
+              "data_security"
+            ]
+          },
+          "scenarioRef": {
+            "type": "string",
+            "pattern": "^SCN-[A-Z0-9]+(?:-[A-Z0-9]+)*-[0-9]{3}$"
+          },
+          "messageRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^SCN-[A-Z0-9]+(?:-[A-Z0-9]+)*-[0-9]{3}#MSG-[0-9]{3}$"
+            },
+            "uniqueItems": true
+          },
+          "blockingChildRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^DGM-[A-Z0-9]+(?:-[A-Z0-9]+)*-[0-9]{3}$"
+            },
+            "uniqueItems": true
+          },
+          "projectionHash": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "transitionEdges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["messageRef", "expandsTo"],
+        "properties": {
+          "messageRef": {
+            "type": "string",
+            "pattern": "^SCN-[A-Z0-9]+(?:-[A-Z0-9]+)*-[0-9]{3}#MSG-[0-9]{3}$"
+          },
+          "expandsTo": {
+            "type": "string",
+            "pattern": "^DGM-[A-Z0-9]+(?:-[A-Z0-9]+)*-[0-9]{3}$"
+          }
+        }
+      }
+    },
+    "expandedMessageRefs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^SCN-[A-Z0-9]+(?:-[A-Z0-9]+)*-[0-9]{3}#MSG-[0-9]{3}$"
+      },
+      "uniqueItems": true
+    },
+    "blockingChildRefs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^DGM-[A-Z0-9]+(?:-[A-Z0-9]+)*-[0-9]{3}$"
+      },
+      "uniqueItems": true
+    },
+    "sequenceContractHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "projectionHashes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^sha256:[a-f0-9]{64}$"
+      },
+      "uniqueItems": true
+    }
+  }
+}

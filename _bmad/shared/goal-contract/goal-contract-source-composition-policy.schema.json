@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "goal-contract-source-composition-policy/v1",
+  "title": "Goal Contract Source Composition Policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "mode",
+    "policyAuthorityBinding",
+    "requiredSubordinateBindings",
+    "conflictPolicy",
+    "sourceCompositionPolicyHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-source-composition-policy/v1"
+    },
+    "mode": {
+      "enum": [
+        "single_source",
+        "composite_required"
+      ]
+    },
+    "policyAuthorityBinding": {
+      "$ref": "#/$defs/policyAuthorityBinding"
+    },
+    "requiredSubordinateBindings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/subordinateBinding"
+      }
+    },
+    "conflictPolicy": {
+      "const": "fail_closed"
+    },
+    "sourceCompositionPolicyHash": {
+      "$ref": "#/$defs/hash"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "composite_required"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "requiredSubordinateBindings": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "single_source"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "requiredSubordinateBindings": {
+            "maxItems": 0
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "stringArray": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "subordinateBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "namespace",
+        "sourceArtifactId",
+        "parentTaskRefs",
+        "requiredRequirementIds",
+        "requiredTaskIds"
+      ],
+      "properties": {
+        "role": {
+          "const": "subordinate_component_specification"
+        },
+        "namespace": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceArtifactId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parentTaskRefs": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "requiredRequirementIds": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "requiredTaskIds": {
+          "$ref": "#/$defs/stringArray"
+        }
+      }
+    },
+    "policyAuthorityBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authorityKind",
+        "authoritySourceId",
+        "declaredMode",
+        "declaredRequiredBindingsHash",
+        "authorityEvidenceHash"
+      ],
+      "properties": {
+        "authorityKind": {
+          "enum": [
+            "deterministic_source_authority_adapter",
+            "imported_approved_contract"
+          ]
+        },
+        "authoritySourceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "declaredMode": {
+          "enum": [
+            "single_source",
+            "composite_required"
+          ]
+        },
+        "declaredRequiredBindingsHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "authorityEvidenceHash": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    }
+  }
+}

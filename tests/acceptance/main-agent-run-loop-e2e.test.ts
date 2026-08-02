@@ -1,8 +1,10 @@
 import { execFileSync, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  buildMainAgentDispatchInstruction,
   importNativeGoalTaskReport,
   resolveMainAgentOrchestrationSurface,
   runMainAgentAutomaticLoop,
@@ -11,6 +13,7 @@ import {
 import { createDefaultOrchestrationState, writeOrchestrationStateAtPath } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state';
 import { defaultRuntimeContextFile, writeRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 import {
+  AI_TDD_MANIFEST_CLOSEOUT_RUNNER_FIXTURE_ID,
   cleanupRequirementWorkspace,
   materializeRequirementFixture,
   writeCompiledImplementPacket,
@@ -18,6 +21,20 @@ import {
 } from '../helpers/requirement-fixture-runtime';
 
 type RequirementFixture = ReturnType<typeof materializeRequirementFixture>;
+
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value) ?? 'null';
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
+  const record = value as Record<string, unknown>;
+  return `{${Object.keys(record)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`)
+    .join(',')}}`;
+}
+
+function sha256Stable(value: unknown): string {
+  return `sha256:${createHash('sha256').update(stableStringify(value), 'utf8').digest('hex')}`;
+}
 
 function materializeRunLoopFixture(
   input: Parameters<typeof materializeRequirementFixture>[0] = {}
@@ -136,12 +153,45 @@ function writeNativeGoalTaskReport(root: string, sessionId: string, packetId: st
 
 function prepareNativeGoalImportFixture(
   fixture: RequirementFixture,
-  input: { packetId?: string; sourceHash?: string } = {}
+  input: { packetId?: string; sourceHash?: string; omitReceipt?: boolean } = {}
 ) {
   const packetId = input.packetId ?? 'implement-native-goal-current';
   const compiled = writeCompiledImplementPacket({ root: fixture.root, fixture, packetId });
   const modelPacket = JSON.parse(fs.readFileSync(compiled.compiledPromptRef.modelPacketPath, 'utf8'));
-  modelPacket.requiredCommands = [{ id: 'CMD-NATIVE-GOAL', command: 'npm test -- --native-goal' }];
+  const receiptPath = path.join(
+    fixture.root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    fixture.requirementSetId,
+    'command-receipts',
+    packetId,
+    'CMD-NATIVE-GOAL.json'
+  );
+  const commandText = 'npm test -- --native-goal';
+  const commandArgv = ['npm', 'test', '--', '--native-goal'];
+  const controlledExecutionContext = {
+    requirementSetId: fixture.requirementSetId,
+    transactionId: 'TX-native-goal-import',
+    implementationAttemptId: 'IMP-native-goal-import',
+    architectureAuditAttemptId: 'AUDIT-native-goal-import',
+    activePhaseAuditAttemptId: 'AUDIT-native-goal-import',
+    contractHash: `sha256:${'a'.repeat(64)}`,
+    inputSnapshotHash: `sha256:${'b'.repeat(64)}`,
+  };
+  modelPacket.controlledExecutionContext = controlledExecutionContext;
+  modelPacket.requiredCommands = [
+    {
+      id: 'CMD-NATIVE-GOAL',
+      command: commandText,
+      argv: commandArgv,
+      cwd: fixture.root,
+      receiptPath,
+      requirementRefs: [fixture.recordId],
+      acceptanceRefs: ['AC-NATIVE-GOAL'],
+      traceRefs: ['TR-NATIVE-GOAL'],
+    },
+  ];
   fs.writeFileSync(
     compiled.compiledPromptRef.modelPacketPath,
     `${JSON.stringify(modelPacket, null, 2)}\n`,
@@ -157,8 +207,68 @@ function prepareNativeGoalImportFixture(
     `${packetId}.json`
   );
   compiled.packet.compiledPromptRef.sourceDocumentHash = input.sourceHash ?? fixture.sourceDocumentHash;
-  compiled.packet.compiledPromptRef.modelPacketHash = `sha256:test-${packetId}`;
+  compiled.packet.compiledPromptRef.modelPacketHash = `sha256:${createHash('sha256')
+    .update(fs.readFileSync(compiled.compiledPromptRef.modelPacketPath))
+    .digest('hex')}`;
   fs.writeFileSync(compiled.packetPath, `${JSON.stringify(compiled.packet, null, 2)}\n`, 'utf8');
+  if (!input.omitReceipt) {
+    const stdoutPath = `${receiptPath}.stdout.log`;
+    const stderrPath = `${receiptPath}.stderr.log`;
+    fs.mkdirSync(path.dirname(receiptPath), { recursive: true });
+    fs.writeFileSync(stdoutPath, 'native goal command output\n', 'utf8');
+    fs.writeFileSync(stderrPath, '', 'utf8');
+    const payload = {
+      schemaVersion: 'requirements-contract-command-execution-receipt/v1' as const,
+      commandRunId: `RUN-${packetId}`,
+      commandId: 'CMD-NATIVE-GOAL',
+      command: commandText,
+      normalizedCommand: commandText,
+      argv: commandArgv,
+      argvHash: sha256Stable(commandArgv),
+      cwd: fixture.root,
+      executorIdentity: {
+        class: 'controlled_detached_executor' as const,
+        id: 'main-agent-run-loop-e2e',
+      },
+      hostIdentity: {
+        platform: process.platform,
+        architecture: process.arch,
+        nodeVersion: process.version,
+      },
+      requirementSetId: fixture.requirementSetId,
+      requirementRefs: [fixture.recordId],
+      ...controlledExecutionContext,
+      startedAt: '2026-07-16T00:00:00.000Z',
+      endedAt: '2026-07-16T00:00:01.000Z',
+      exitCode: 0,
+      signal: null,
+      stdoutPath,
+      stdoutHash: `sha256:${createHash('sha256')
+        .update(fs.readFileSync(stdoutPath))
+        .digest('hex')}`,
+      stderrPath,
+      stderrHash: `sha256:${createHash('sha256')
+        .update(fs.readFileSync(stderrPath))
+        .digest('hex')}`,
+      acceptanceRefs: ['AC-NATIVE-GOAL'],
+      traceRefs: ['TR-NATIVE-GOAL'],
+      publication: {
+        writer: 'controlled-detached-executor',
+        targetPath: receiptPath,
+        publishedAt: '2026-07-16T00:00:01.100Z',
+        readbackAt: '2026-07-16T00:00:01.200Z',
+        explicitUtf8: true as const,
+        createOnly: true as const,
+        readbackVerified: true as const,
+      },
+      decision: 'pass' as const,
+    };
+    fs.writeFileSync(
+      receiptPath,
+      `${JSON.stringify({ ...payload, receiptHash: sha256Stable(payload) }, null, 2)}\n`,
+      'utf8'
+    );
+  }
   const state = createDefaultOrchestrationState({
     sessionId: fixture.requirementSetId,
     host: 'codex',
@@ -223,6 +333,28 @@ function writeImportTaskReport(
 }
 
 describe('main-agent automatic run-loop', () => {
+  it('keeps controlled dispatch-plan at dispatch_implement until native goal is actually invoked', () => {
+    const fixture = materializeRunLoopFixture();
+    try {
+      const instruction = buildMainAgentDispatchInstruction({
+        ...runLoopArgs(fixture),
+        host: 'codex',
+        hydratePacket: true,
+      });
+      const record = JSON.parse(fs.readFileSync(fixture.recordPath, 'utf8'));
+      const surface = resolveMainAgentOrchestrationSurface({
+        ...runLoopArgs(fixture),
+      });
+
+      expect(instruction?.nextAction).toBe('dispatch_implement');
+      expect(record.nativeGoalHandoff).toBeUndefined();
+      expect(surface.mainAgentNextAction).toBe('dispatch_implement');
+      expect(surface.mainAgentStageSummary?.nextAction).toBe('dispatch_implement');
+    } finally {
+      cleanupRequirementWorkspace(fixture.root);
+    }
+  });
+
   it('executes inspect dispatch claim dispatch report complete and final inspect from one call', () => {
     const fixture = materializeRunLoopFixture();
     const root = fixture.root;
@@ -243,6 +375,7 @@ describe('main-agent automatic run-loop', () => {
         'claim',
         'long-run-policy.attach',
         'dispatch',
+        'command-receipt.validate',
         'task-report.ingest',
         'inspect.final',
       ]);
@@ -338,7 +471,7 @@ describe('main-agent automatic run-loop', () => {
     }
   });
 
-  it('uses the Codex worker adapter by default for codex host run-loop instead of synthetic TaskReport', () => {
+  it('requires current main-session execution and invalidates the pending Codex packet', () => {
     const fixture = materializeRunLoopFixture();
     const root = fixture.root;
     try {
@@ -351,13 +484,20 @@ describe('main-agent automatic run-loop', () => {
       });
 
       expect(result.status).toBe('blocked');
-      expect(result.steps.some((step) => step.step === 'codex-worker-adapter')).toBe(true);
-      expect(result.taskReport?.validationsRun).toContain('codex-worker-adapter-smoke');
+      expect(result.steps).toContainEqual(
+        expect.objectContaining({
+          step: 'main-session-execution-handoff',
+          status: 'fail',
+        })
+      );
+      expect(result.taskReport?.validationsRun).toContain(
+        'main-session-execution-preparation'
+      );
       expect(result.taskReport?.validationsRun).not.toContain('main-agent:run-loop-task-report');
-      expect(result.taskReport?.driftFlags).toContain('codex-smoke-non-delivery-evidence');
+      expect(result.taskReport?.driftFlags).toContain('main-session-execution-required');
       expect(result.dispatchInstruction?.host).toBe('codex');
       expect(result.finalSurface.pendingPacketStatus).toBe('invalidated');
-      expect(result.finalSurface.mainAgentNextAction).toBe('dispatch_implement');
+      expect(result.finalSurface.mainAgentNextAction).not.toBe('dispatch_review');
     } finally {
       cleanupRequirementWorkspace(root);
     }
@@ -413,7 +553,7 @@ describe('main-agent automatic run-loop', () => {
     }
   });
 
-  it('prepares Codex native goal for main-session execution without running a worker subprocess', () => {
+  it('prepares Codex native goal for current main-session execution', () => {
     const fixture = materializeRunLoopFixture();
     const root = fixture.root;
     try {
@@ -431,11 +571,9 @@ describe('main-agent automatic run-loop', () => {
       expect(result.steps.find((step) => step.step === 'native-goal-invocation')?.summary).toContain(
         'command=main-session-native-goal'
       );
-      expect(result.steps.some((step) => step.step === 'codex-worker-adapter')).toBe(false);
       expect(result.taskReport?.status).toBe('blocked');
       expect(result.taskReport?.validationsRun).toContain('main-session-native-goal-preparation');
       expect(result.taskReport?.driftFlags).toContain('main-session-native-goal-required');
-      expect(result.taskReport?.validationsRun).not.toContain('codex-worker-adapter-smoke');
       expect(result.taskReport?.validationsRun).not.toContain('main-agent:run-loop-task-report');
       expect(result.finalSurface.pendingPacketStatus).toBe('invalidated');
       expect(result.finalSurface.mainAgentNextAction).toBe('dispatch_implement');
@@ -683,7 +821,7 @@ describe('main-agent automatic run-loop', () => {
     }
   });
 
-  it('imports a valid native goal TaskReport through controlled ingest evidence', () => {
+  it('imports a valid native goal TaskReport as an untrusted execution claim', () => {
     const fixture = materializeRunLoopFixture({
       currentMentalModel: 'execution_closure',
       sixModelResults: {
@@ -698,6 +836,28 @@ describe('main-agent automatic run-loop', () => {
       const compiled = prepareNativeGoalImportFixture(fixture);
       const taskReportPath = compiled.packet.compiledPromptRef.taskReportPath!;
       writeImportTaskReport(taskReportPath, compiled.packet.packetId);
+      const beforeImport = JSON.parse(fs.readFileSync(fixture.recordPath, 'utf8'));
+      const artifactIndexBeforeImport = (beforeImport.artifactIndex ?? []).map(
+        ({
+          artifactType,
+          sourceOfTruthRole,
+          recordId,
+          requirementSetId,
+          path: artifactPath,
+          contentHash,
+          producer,
+          status,
+        }: Record<string, unknown>) => ({
+          artifactType,
+          sourceOfTruthRole,
+          recordId,
+          requirementSetId,
+          path: artifactPath,
+          contentHash,
+          producer,
+          status,
+        })
+      );
 
       const imported = importNativeGoalTaskReport({
         projectRoot: root,
@@ -727,32 +887,38 @@ describe('main-agent automatic run-loop', () => {
             eventType: 'execution_iteration_recorded',
             executionIterationId: compiled.packet.packetId,
             sourceDocumentHash: fixture.sourceDocumentHash,
+            authorityClass: 'untrusted_claim',
+            commandSuccessEligible: false,
+            requirementClosureEligible: false,
+            evidenceAcceptanceEligible: false,
           }),
         ])
       );
-      expect(record.requirementClosures).toEqual([
-        expect.objectContaining({
-          eventType: 'requirement_closure_recorded',
-          requirementId: fixture.recordId,
-          status: 'pass',
-        }),
-      ]);
-      expect(record.artifactIndex).toHaveLength(1);
-      expect(record.artifactIndex[0]).toMatchObject({
-        artifactType: 'native_goal_task_report',
-      });
-      expect(path.normalize(record.artifactIndex[0].path)).toBe(path.normalize(taskReportPath));
-      expect(record.deliveryEvidence.requiredCommands).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            commandId: 'CMD-NATIVE-GOAL',
-            closeoutAttemptId: compiled.packet.packetId,
-            artifactRefs: expect.arrayContaining([
-              expect.objectContaining({ artifactType: 'native_goal_task_report' }),
-            ]),
-          }),
-        ])
-      );
+      expect(record.requirementClosures ?? []).toEqual([]);
+      expect(
+        (record.artifactIndex ?? []).map(
+          ({
+            artifactType,
+            sourceOfTruthRole,
+            recordId,
+            requirementSetId,
+            path: artifactPath,
+            contentHash,
+            producer,
+            status,
+          }: Record<string, unknown>) => ({
+            artifactType,
+            sourceOfTruthRole,
+            recordId,
+            requirementSetId,
+            path: artifactPath,
+            contentHash,
+            producer,
+            status,
+          })
+        )
+      ).toEqual(artifactIndexBeforeImport);
+      expect(record.deliveryEvidence ?? null).toBeNull();
     } finally {
       cleanupRequirementWorkspace(root);
     }
@@ -776,6 +942,7 @@ describe('main-agent automatic run-loop', () => {
         schemaVersion: 'native-goal-handoff/v1',
         packetId: compiled.packet.packetId,
         taskReportPath: compiled.packet.compiledPromptRef.taskReportPath,
+        invoked: true,
         imported: false,
       };
       fs.writeFileSync(fixture.recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
@@ -835,7 +1002,8 @@ describe('main-agent automatic run-loop', () => {
         name: 'command',
         configure: (_fixture, reportPath, packetId) =>
           writeImportTaskReport(reportPath, packetId, { validationsRun: ['npm test'] }),
-        expected: 'required_command_coverage_missing',
+        expected: 'required_command_receipt_missing:CMD-NATIVE-GOAL',
+        omitReceipt: true,
       },
       {
         name: 'evidence',
@@ -854,6 +1022,7 @@ describe('main-agent automatic run-loop', () => {
             testCase.name === 'source-hash'
               ? 'sha256:0000000000000000000000000000000000000000000000000000000000000000'
               : undefined,
+          omitReceipt: testCase.omitReceipt,
         });
         const taskReportPath = compiled.packet.compiledPromptRef.taskReportPath!;
         testCase.configure(fixture, taskReportPath, compiled.packet.packetId);
@@ -910,8 +1079,10 @@ describe('main-agent automatic run-loop', () => {
     }
   });
 
-  it('CLI --taskReportPath ingests an existing report without overwriting it', () => {
-    const fixture = materializeRunLoopFixture();
+  it('CLI --taskReportPath cannot bypass command Receipt validation', () => {
+    const fixture = materializeRunLoopFixture({
+      fixtureId: AI_TDD_MANIFEST_CLOSEOUT_RUNNER_FIXTURE_ID,
+    });
     const root = fixture.root;
     const previousAllow = process.env.MAIN_AGENT_ALLOW_EXTERNAL_TASK_REPORT;
     try {
@@ -967,19 +1138,28 @@ describe('main-agent automatic run-loop', () => {
         ]),
         { cwd: process.cwd(), encoding: 'utf8' }
       );
-      expect(resultProcess.status).toBe(0);
+      expect(resultProcess.status).toBe(1);
       const result = parsePackageOrLegacyJson<{
         status: string;
-        taskReport: { validationsRun: string[]; evidence: string[] };
+        taskReport: {
+          status: string;
+          validationsRun: string[];
+          evidence: string[];
+          driftFlags?: string[];
+        };
       }>(resultProcess.stdout);
       const after = JSON.parse(fs.readFileSync(reportPath, 'utf8')) as {
         validationsRun: string[];
         evidence: string[];
       };
 
-      expect(result.status).toBe('completed');
+      expect(result.status).toBe('blocked');
+      expect(result.taskReport.status).toBe('blocked');
+      expect(result.taskReport.driftFlags).toContain(
+        'required-command-receipt-validation-failed'
+      );
       expect(result.taskReport.validationsRun).toEqual(['external-real-validation']);
-      expect(result.taskReport.evidence).toEqual(['external-real-evidence']);
+      expect(result.taskReport.evidence).toContain('external-real-evidence');
       expect(after.validationsRun).toEqual(['external-real-validation']);
       expect(after.evidence).toEqual(['external-real-evidence']);
     } finally {

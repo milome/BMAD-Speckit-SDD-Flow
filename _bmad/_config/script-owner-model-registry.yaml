@@ -152,38 +152,6 @@ scripts:
     writesRuntimeState: false
     writesRequirementEvidence: true
     hookParityRequired: false
-  - scriptId: main_agent_codex_worker_adapter
-    path: packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-codex-worker-adapter.ts
-    sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-codex-worker-adapter.ts"
-    sourcePathKind: source_repo_provenance
-    consumerInvocationKind: package_cli
-    consumerInvocation: "npx --no-install bmad-speckit main-agent codex-worker-adapter --json"
-    consumerRootPathRequired: false
-    packageRuntimeCommand: "npx --no-install bmad-speckit main-agent codex-worker-adapter --json"
-    installedHelperPath: null
-    consumerRuntimeAvailability: available_after_local_package_install
-    directNodeTsInvocationSupported: false
-    consumerEvidenceCommand: "npx --no-install bmad-speckit main-agent codex-worker-adapter --json"
-    ownerModel: execution_closure
-    secondaryModels: []
-    stage: worker_execution
-    producer: codex_worker_adapter
-    inputArtifacts:
-      - _bmad-output/runtime/requirement-records/<requirement-set-id>/prompts/prompt-packets/<packet-id>.md
-      - ResolvedRuntimeContext
-      - _bmad-output/runtime/requirement-records/<requirement-set-id>/recovery/runtime-policy-snapshot.json
-    outputArtifacts:
-      - _bmad-output/runtime/requirement-records/<requirement-set-id>/prompts/worker-io/<packet-id>.stdin.prompt.txt
-      - _bmad-output/runtime/requirement-records/<requirement-set-id>/executions/worker-logs/<packet-id>.stdout.log
-      - _bmad-output/runtime/requirement-records/<requirement-set-id>/executions/worker-logs/<packet-id>.stderr.log
-      - task_report
-    recordEventTypes:
-      - task_report_ingested
-      - execution_iteration_recorded
-    completionAuthority: evidence_only
-    writesRuntimeState: false
-    writesRequirementEvidence: true
-    hookParityRequired: true
   - scriptId: runtime_governance
     path: packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance.ts
     sourceRepoPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-governance.ts"

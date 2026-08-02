@@ -1,0 +1,475 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-prompt-transaction-manifest.schema.json",
+  "title": "Requirements Contract Prompt Transaction Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "transactionId",
+    "requirementSetId",
+    "implementationAttemptId",
+    "attemptSequence",
+    "sourceHash",
+    "sourceAmendmentHashes",
+    "semanticModelHash",
+    "contractHash",
+    "requirementRecordRef",
+    "attemptContextRef",
+    "sourceRef",
+    "stageRegistryRef",
+    "installedStageRegistryRef",
+    "architectureAuthorityDecision",
+    "confirmationReceiptRefs",
+    "implementationReadinessReceiptRef",
+    "confirmationPageRefs",
+    "consumerRef",
+    "universeHashes",
+    "createdAt",
+    "transactionStatus",
+    "hostDirective",
+    "executionDisposition",
+    "outputs"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-prompt-transaction-manifest/v1"
+    },
+    "transactionId": {
+      "type": "string",
+      "pattern": "^TX-[A-Z0-9][A-Z0-9._-]*$"
+    },
+    "requirementSetId": {
+      "$ref": "#/$defs/stableId"
+    },
+    "implementationAttemptId": {
+      "type": "string",
+      "pattern": "^IMPL-ATTEMPT-[A-Z0-9][A-Z0-9._-]*$"
+    },
+    "attemptSequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "sourceHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "sourceAmendmentHashes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/sha256"
+      },
+      "uniqueItems": true
+    },
+    "semanticModelHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "contractHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "dispatchInputSetHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "requirementRecordRef": {
+      "$ref": "#/$defs/fileRef"
+    },
+    "attemptContextRef": {
+      "$ref": "#/$defs/fileRef"
+    },
+    "sourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sourceDocumentHash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sourceDocumentHash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "stageRegistryRef": {
+      "$ref": "#/$defs/fileRef"
+    },
+    "installedStageRegistryRef": {
+      "$ref": "#/$defs/fileRef"
+    },
+    "architectureAuthorityDecision": {
+      "enum": ["pass", "architecture_not_required"]
+    },
+    "confirmationReceiptRefs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requirements", "architecture"],
+      "properties": {
+        "requirements": {
+          "$ref": "#/$defs/fileRef"
+        },
+        "architecture": {
+          "$ref": "#/$defs/fileRef"
+        }
+      }
+    },
+    "implementationReadinessReceiptRef": {
+      "$ref": "#/$defs/fileRef"
+    },
+    "confirmationPageRefs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requirements", "architecture"],
+      "properties": {
+        "requirements": { "$ref": "#/$defs/fileRef" },
+        "architecture": {
+          "oneOf": [
+            { "$ref": "#/$defs/fileRef" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "consumerRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["consumerId", "root", "marker", "profile", "actionBindingManifest"],
+      "properties": {
+        "consumerId": {
+          "$ref": "#/$defs/stableId"
+        },
+        "root": {
+          "type": "string",
+          "minLength": 1
+        },
+        "marker": {
+          "$ref": "#/$defs/fileRef"
+        },
+        "profile": {
+          "$ref": "#/$defs/fileRef"
+        },
+        "actionBindingManifest": {
+          "$ref": "#/$defs/fileRef"
+        }
+      }
+    },
+    "universeHashes": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/$defs/sha256"
+      }
+    },
+    "capabilityObservationRef": {
+      "$ref": "#/$defs/readbackRef"
+    },
+    "generatorRef": {
+      "$ref": "#/$defs/fileRef"
+    },
+    "runnerRef": {
+      "$ref": "#/$defs/fileRef"
+    },
+    "executionReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exitCode",
+        "stdoutHash",
+        "stderrHash",
+        "startedAt",
+        "completedAt"
+      ],
+      "properties": {
+        "exitCode": { "const": 0 },
+        "stdoutHash": { "$ref": "#/$defs/sha256" },
+        "stderrHash": { "$ref": "#/$defs/sha256" },
+        "startedAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{3})?Z$"
+        },
+        "completedAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{3})?Z$"
+        }
+      }
+    },
+    "productionArgv": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "productionArgvHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "createdAt": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{3})?Z$"
+    },
+    "transactionStatus": {
+      "enum": ["pass", "blocked"]
+    },
+    "hostDirective": {
+      "enum": ["native_goal_document_ref", "direct_prompt", "unresolved"]
+    },
+    "executionDisposition": {
+      "enum": ["executable", "non_executable"]
+    },
+    "outputs": {
+      "type": "object"
+    },
+    "blockingReasons": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "failedPhase": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "dispatchInputSetHash",
+        "capabilityObservationRef",
+        "generatorRef",
+        "runnerRef",
+        "executionReceipt",
+        "productionArgv",
+        "productionArgvHash"
+      ],
+      "properties": {
+        "transactionStatus": {
+          "const": "pass"
+        },
+        "hostDirective": {
+          "const": "native_goal_document_ref"
+        },
+        "executionDisposition": {
+          "const": "executable"
+        },
+        "outputs": {
+          "$ref": "#/$defs/nativeGoalOutputs"
+        }
+      }
+    },
+    {
+      "required": [
+        "dispatchInputSetHash",
+        "capabilityObservationRef",
+        "generatorRef",
+        "runnerRef",
+        "executionReceipt",
+        "productionArgv",
+        "productionArgvHash"
+      ],
+      "properties": {
+        "transactionStatus": {
+          "const": "pass"
+        },
+        "hostDirective": {
+          "const": "direct_prompt"
+        },
+        "executionDisposition": {
+          "const": "executable"
+        },
+        "outputs": {
+          "$ref": "#/$defs/directPromptOutputs"
+        }
+      }
+    },
+    {
+      "required": ["blockingReasons", "failedPhase"],
+      "not": {
+        "anyOf": [
+          { "required": ["dispatchInputSetHash"] },
+          { "required": ["capabilityObservationRef"] },
+          { "required": ["generatorRef"] },
+          { "required": ["runnerRef"] },
+          { "required": ["executionReceipt"] },
+          { "required": ["productionArgv"] },
+          { "required": ["productionArgvHash"] }
+        ]
+      },
+      "properties": {
+        "transactionStatus": {
+          "const": "blocked"
+        },
+        "executionDisposition": {
+          "const": "non_executable"
+        },
+        "hostDirective": {
+          "const": "unresolved"
+        },
+        "outputs": {
+          "$ref": "#/$defs/blockedOutputs"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "stableId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "fileRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "readbackRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash", "readbackHash", "readbackVerified"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "readbackHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "readbackVerified": {
+          "const": true
+        }
+      }
+    },
+    "modelPacket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "/model_packet\\.json$"
+        },
+        "hash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "humanPrompt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "/human_prompt\\.txt$"
+        },
+        "hash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "goalExecution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "/goal_execution\\.md$"
+        },
+        "hash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "auditReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hashApplicability"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "/audit_receipt\\.json$"
+        },
+        "hashApplicability": {
+          "const": "downstream_external"
+        }
+      }
+    },
+    "transactionManifestPath": {
+      "type": "string",
+      "pattern": "/transaction-manifest\\.json$"
+    },
+    "nativeGoalOutputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "modelPacket",
+        "transactionManifestPath",
+        "auditReceipt",
+        "humanPrompt",
+        "goalExecution"
+      ],
+      "properties": {
+        "modelPacket": {
+          "$ref": "#/$defs/modelPacket"
+        },
+        "transactionManifestPath": {
+          "$ref": "#/$defs/transactionManifestPath"
+        },
+        "auditReceipt": {
+          "$ref": "#/$defs/auditReceipt"
+        },
+        "humanPrompt": {
+          "$ref": "#/$defs/humanPrompt"
+        },
+        "goalExecution": {
+          "$ref": "#/$defs/goalExecution"
+        }
+      }
+    },
+    "directPromptOutputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["modelPacket", "transactionManifestPath", "auditReceipt", "humanPrompt"],
+      "properties": {
+        "modelPacket": {
+          "$ref": "#/$defs/modelPacket"
+        },
+        "transactionManifestPath": {
+          "$ref": "#/$defs/transactionManifestPath"
+        },
+        "auditReceipt": {
+          "$ref": "#/$defs/auditReceipt"
+        },
+        "humanPrompt": {
+          "$ref": "#/$defs/humanPrompt"
+        }
+      }
+    },
+    "blockedOutputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["transactionManifestPath", "auditReceipt"],
+      "properties": {
+        "transactionManifestPath": {
+          "$ref": "#/$defs/transactionManifestPath"
+        },
+        "auditReceipt": {
+          "$ref": "#/$defs/auditReceipt"
+        }
+      }
+    }
+  }
+}

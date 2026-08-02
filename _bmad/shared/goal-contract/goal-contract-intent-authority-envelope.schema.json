@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "goal-contract-intent-authority-envelope/v1",
+  "title": "Goal Contract Intent Authority Envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "subject",
+    "authorityBasis",
+    "authorityAttestationHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-intent-authority-envelope/v1"
+    },
+    "subject": {
+      "$ref": "#/$defs/subject"
+    },
+    "authorityBasis": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/directSourceDeclaration"
+        },
+        {
+          "$ref": "#/$defs/implementationConfirmation"
+        },
+        {
+          "$ref": "#/$defs/importedApprovedContract"
+        }
+      ]
+    },
+    "authorityAttestationHash": {
+      "$ref": "#/$defs/hash"
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceSnapshotHash",
+        "canonicalIntentSemanticHash",
+        "specSpanRegistryHash",
+        "sourceCompositionPolicyHash",
+        "orderedSourceSnapshotSetHash",
+        "sourceAuthorityBundleHash"
+      ],
+      "properties": {
+        "sourceSnapshotHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "canonicalIntentSemanticHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "specSpanRegistryHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "sourceCompositionPolicyHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "orderedSourceSnapshotSetHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "sourceAuthorityBundleHash": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "directSourceDeclaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "sourceDeclarationHash",
+        "declaringUserAuthorityIdentity",
+        "entryScenario"
+      ],
+      "properties": {
+        "kind": {
+          "const": "direct_source_declaration"
+        },
+        "sourceDeclarationHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "declaringUserAuthorityIdentity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "entryScenario": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "implementationConfirmation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "requirementRecordId",
+        "confirmationHash",
+        "confirmationSchemaVersion",
+        "confirmedAuthorityIdentity"
+      ],
+      "properties": {
+        "kind": {
+          "const": "implementation_confirmation"
+        },
+        "requirementRecordId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "confirmationHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "confirmationSchemaVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "confirmedAuthorityIdentity": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "importedApprovedContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "importedContractHash",
+        "approvalReceiptHash",
+        "approvalAuthorityIdentity"
+      ],
+      "properties": {
+        "kind": {
+          "const": "imported_approved_contract"
+        },
+        "importedContractHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "approvalReceiptHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "approvalAuthorityIdentity": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

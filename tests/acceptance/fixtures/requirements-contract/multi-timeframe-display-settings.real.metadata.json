@@ -18,9 +18,9 @@
   },
   "sanitizedFixture": {
     "path": "tests/acceptance/fixtures/requirements-contract/multi-timeframe-display-settings.real.md",
-    "bytes": 15159,
-    "lines": 473,
-    "sha256": "7048ec2278b299185328588f2db882b2acc3e19f40afb98fb177f96cddac657e"
+    "bytes": 27762,
+    "lines": 541,
+    "sha256": "4e71bf5f1766f81bbd6f11b5052d3ae7f3c8ced7059606a23480998a579acc06"
   },
   "sanitization": {
     "removedBlock": "implementationConfirmation",
@@ -29,23 +29,8 @@
     "reason": "Remove generated contract materialization from a failed authoring path while preserving business requirement prose for regression coverage."
   },
   "requiredBusinessAnchors": {
-    "frIds": [
-      "FR-1",
-      "FR-2",
-      "FR-3",
-      "FR-4",
-      "FR-5",
-      "FR-6",
-      "FR-7",
-      "FR-8",
-      "FR-9"
-    ],
-    "hiddenByDefaultPeriods": [
-      "15m",
-      "30m",
-      "45m",
-      "D"
-    ],
+    "frIds": ["FR-1", "FR-2", "FR-3", "FR-4", "FR-5", "FR-6", "FR-7", "FR-8", "FR-9"],
+    "hiddenByDefaultPeriods": ["15m", "30m", "45m", "D"],
     "outOfScopeTimeline": "1m",
     "targetPaths": [
       "vnpy/chart/multi_timeframe_widget.py",

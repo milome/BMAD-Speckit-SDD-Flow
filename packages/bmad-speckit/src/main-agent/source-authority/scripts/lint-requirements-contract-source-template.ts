@@ -1,7 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {
+  REQUIREMENTS_CONTRACT_SOURCE_PRD_SCHEMA_SURFACE_PATHS,
   REQUIREMENTS_CONTRACT_SOURCE_PRD_RULES,
+  REQUIREMENTS_CONTRACT_SOURCE_PRD_TEMPLATE_SURFACE_PATHS,
   type RequirementsContractSourcePrdRules,
 } from '../rules/requirements-contract-source-prd-rules';
 
@@ -34,15 +36,35 @@ interface LintResult {
 
 const SCRIPT_DIR = __dirname;
 const SOURCE_AUTHORITY_ROOT = path.resolve(SCRIPT_DIR, '..');
-const DEFAULT_TEMPLATE = path.join(
-  SOURCE_AUTHORITY_ROOT,
-  'templates',
-  'requirements-contract-source-prd-template.md'
+
+function resolveDeclaredSurface(
+  runtimePath: string,
+  declaredSurfacePaths: readonly string[]
+): string {
+  const candidates = [
+    runtimePath,
+    ...declaredSurfacePaths.map((surfacePath) =>
+      path.resolve(process.cwd(), surfacePath)
+    ),
+  ];
+  return candidates.find((candidate) => fs.existsSync(candidate)) ?? candidates[0];
+}
+
+const DEFAULT_TEMPLATE = resolveDeclaredSurface(
+  path.join(
+    SOURCE_AUTHORITY_ROOT,
+    'templates',
+    'requirements-contract-source-prd-template.md'
+  ),
+  REQUIREMENTS_CONTRACT_SOURCE_PRD_TEMPLATE_SURFACE_PATHS
 );
-const DEFAULT_SCHEMA = path.join(
-  SOURCE_AUTHORITY_ROOT,
-  'templates',
-  'requirements-contract-source-prd-template.schema.json'
+const DEFAULT_SCHEMA = resolveDeclaredSurface(
+  path.join(
+    SOURCE_AUTHORITY_ROOT,
+    'templates',
+    'requirements-contract-source-prd-template.schema.json'
+  ),
+  REQUIREMENTS_CONTRACT_SOURCE_PRD_SCHEMA_SURFACE_PATHS
 );
 
 function isDirectSourceTemplateLintCli(entry: string | undefined): boolean {

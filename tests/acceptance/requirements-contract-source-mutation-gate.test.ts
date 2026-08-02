@@ -1,8 +1,10 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   artifacts,
   cleanCriticalAuditorRound,
+  createMinimalConsumerRequirementDescriptor,
+  createSourceAuthorityProjectionDescriptor,
   createTempRoot,
   expectSourceHashUnchanged,
   issueCodes,
@@ -10,58 +12,60 @@ import {
   readJson,
   removeTempRoot,
   runAuthoring,
+  runAuthoringWithTestLocalization,
   sha256File,
-  writeConsumerRequirement,
-  writeText,
+  writeMinimalConsumerRequirement,
+  writeSourceAuthorityProjection,
 } from './helpers/requirements-contract-authoring-fixture';
 
-function largeCheckpointRequirement(root: string): string {
-  const rows = Array.from({ length: 80 }, (_unused, index) => {
-    const n = String(index + 1).padStart(2, '0');
-    return `- 默认显示场景 ${n} 必须保持主图摘要和设置面板同步。`;
-  });
-  return writeText(
-    root,
-    'docs/requirements/checkpoint-required.md',
-    [
-      '# Multi Timeframe Checkpoint Required',
-      '',
-      '目标文件：`vnpy/chart/multi_timeframe_widget.py`',
-      '',
-      '## 验收标准',
-      '',
-      ...rows,
-      '',
-      'pytest tests/test_multi_timeframe_settings.py 必须覆盖设置持久化。',
-      '',
-    ].join('\n')
-  );
+interface DraftConfirmationArtifact {
+  implementationConfirmation: {
+    preConfirmationDrilldown: {
+      criticalAuditor: {
+        consecutiveNoNewGapRounds: number;
+        convergenceVerdict: string;
+      };
+    };
+  };
 }
 
 describe('requirements contract source mutation gate', () => {
   it('writes only diagnostic artifacts and leaves source unchanged when Critical Auditor provider is missing', () => {
     const root = createTempRoot('requirements-contract-missing-auditor-');
     try {
-      const source = writeConsumerRequirement(root);
-      const beforeHash = sha256File(source);
+      const descriptor = createMinimalConsumerRequirementDescriptor(
+        'source-mutation-missing-auditor'
+      );
+      const materialized = writeMinimalConsumerRequirement(
+        root,
+        'docs/requirements/missing-auditor.md',
+        descriptor
+      );
+      const beforeHash = sha256File(materialized.sourcePath);
 
-      const result = runAuthoring(root, source, 'REQ-MISSING-AUDITOR', {
-        targetPath: 'vnpy/chart/multi_timeframe_widget.py',
-        requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
-      });
+      const result = runAuthoring(
+        root,
+        materialized.sourcePath,
+        'REQ-MISSING-AUDITOR',
+        materialized.authoringOptions
+      );
       const paths = artifacts(root, 'REQ-MISSING-AUDITOR', 'REQ-MISSING-AUDITOR-SET');
       const decision = readJson(paths.sourceMutationDecision);
-      const draft = readJson(paths.draftImplementationConfirmation).implementationConfirmation;
+      const draft = readJson<DraftConfirmationArtifact>(
+        paths.draftImplementationConfirmation
+      ).implementationConfirmation;
 
       expect(issueCodes(result)).toContain('critical_auditor_provider_mode_required');
       expect(decision.finalDecision).toBe('block_source_materialization');
       expect(decision.auditEvidenceDecision).toBe('block');
       expect(decision.sourceMutationPerformed).toBe(false);
       expect(draft.preConfirmationDrilldown.criticalAuditor.consecutiveNoNewGapRounds).toBe(0);
-      expect(draft.preConfirmationDrilldown.criticalAuditor.convergenceVerdict).toBe('audit_not_run');
+      expect(draft.preConfirmationDrilldown.criticalAuditor.convergenceVerdict).toBe(
+        'audit_not_run'
+      );
       expect(JSON.stringify(draft)).not.toContain('bounded_no_new_gap');
       expect(existsSync(paths.receipt1)).toBe(false);
-      expectSourceHashUnchanged(source, beforeHash);
+      expectSourceHashUnchanged(materialized.sourcePath, beforeHash);
     } finally {
       removeTempRoot(root);
     }
@@ -70,12 +74,17 @@ describe('requirements contract source mutation gate', () => {
   it('automatically persists checkpoint evidence before guarded source promotion', () => {
     const root = createTempRoot('requirements-contract-checkpoint-mutation-');
     try {
-      const source = largeCheckpointRequirement(root);
-      const beforeHash = sha256File(source);
+      const descriptor = createSourceAuthorityProjectionDescriptor(
+        'source-mutation-checkpoint-required',
+        { negativeCount: 50, sourcePath: 'docs/requirements/checkpoint-required.md' }
+      );
+      const materialized = writeSourceAuthorityProjection(root, descriptor);
+      const { confirmationLanguage: omittedLanguage, ...authoringOptions } =
+        materialized.authoringOptions;
+      const beforeHash = sha256File(materialized.sourcePath);
 
-      const result = runAuthoring(root, source, 'REQ-CHECKPOINT-MUTATION', {
-        targetPath: 'vnpy/chart/multi_timeframe_widget.py',
-        requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
+      const result = runAuthoring(root, materialized.sourcePath, 'REQ-CHECKPOINT-MUTATION', {
+        ...authoringOptions,
         criticalAuditorRound: cleanCriticalAuditorRound,
       });
       const paths = artifacts(root, 'REQ-CHECKPOINT-MUTATION', 'REQ-CHECKPOINT-MUTATION-SET');
@@ -84,6 +93,7 @@ describe('requirements contract source mutation gate', () => {
       const checkpointEvidence = readJson(paths.checkpointPersistenceEvidence);
       const promotionReceipt = readJson(paths.promotionReceipt);
 
+      expect(omittedLanguage).toBe(descriptor.language);
       expect(issueCodes(result)).toContain('language_required_before_render');
       expect(issueCodes(result)).not.toContain('checkpoint_required_before_source_materialization');
       expect(route.decision).toBe('single_pass_final_allowed');
@@ -97,7 +107,7 @@ describe('requirements contract source mutation gate', () => {
         safePromotionAsDraft: true,
       });
       expect(existsSync(paths.sourceMaterializationReceipt)).toBe(false);
-      expect(sha256File(source)).not.toBe(beforeHash);
+      expect(sha256File(materialized.sourcePath)).not.toBe(beforeHash);
     } finally {
       removeTempRoot(root);
     }
@@ -108,65 +118,97 @@ describe('requirements contract source mutation gate', () => {
       {
         name: 'coverage-gap',
         recordId: 'REQ-MUTATION-COVERAGE',
-        source: (root: string) =>
-          writeText(
+        setup: (root: string) => {
+          const descriptor = createMinimalConsumerRequirementDescriptor(
+            'source-mutation-coverage-gap'
+          );
+          const materialized = writeMinimalConsumerRequirement(
             root,
             'docs/requirements/coverage-gap.md',
+            descriptor
+          );
+          writeFileSync(
+            materialized.sourcePath,
             [
-              '# Product UX Requirement',
+              readFileSync(materialized.sourcePath, 'utf8').trimEnd(),
               '',
-              '目标文件：`vnpy/chart/multi_timeframe_widget.py`',
+              '## Unmapped Requirement',
               '',
-              '## 验收标准',
+              '| Scenario | Decision | Behavior |',
+              '| --- | --- | --- |',
+              '| Additional behavior | TBD | ? |',
               '',
-              '| 场景 | 行为 |',
-              '|---|---|',
-              '| 默认显示 | TBD |',
-              '',
-            ].join('\n')
-          ),
-        options: {
-          targetPath: 'vnpy/chart/multi_timeframe_widget.py',
-          requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
+            ].join('\n'),
+            'utf8'
+          );
+          return {
+            source: materialized.sourcePath,
+            options: materialized.authoringOptions,
+          };
         },
         expectedIssue: 'source_requirement_coverage_gap',
       },
       {
         name: 'missing-target',
         recordId: 'REQ-MUTATION-TARGET',
-        source: (root: string) =>
-          writeText(
+        setup: (root: string) => {
+          const descriptor = createMinimalConsumerRequirementDescriptor(
+            'source-mutation-missing-target'
+          );
+          descriptor.target.path = 'target-authority-not-declared';
+          const materialized = writeMinimalConsumerRequirement(
             root,
             'docs/requirements/missing-target.md',
-            '# Consumer UX\n\n## 验收标准\n\n主图摘要必须展示所有启用周期。\n'
-          ),
-        options: { requiredCommand: 'pytest tests/test_multi_timeframe_settings.py' },
+            descriptor
+          );
+          const { targetPath: omittedTargetPath, ...options } = materialized.authoringOptions;
+          expect(omittedTargetPath).toBe(descriptor.target.path);
+          return { source: materialized.sourcePath, options };
+        },
         expectedIssue: 'target_authority_missing',
       },
       {
         name: 'missing-validation',
         recordId: 'REQ-MUTATION-VALIDATION',
-        source: (root: string) =>
-          writeText(
+        setup: (root: string) => {
+          const descriptor = createMinimalConsumerRequirementDescriptor(
+            'source-mutation-missing-validation'
+          );
+          descriptor.verification.requiredCommand = 'validation-authority-not-declared';
+          const materialized = writeMinimalConsumerRequirement(
             root,
             'docs/requirements/missing-validation.md',
-            '# Consumer UX\n\n目标文件：`vnpy/chart/multi_timeframe_widget.py`\n\n## 验收标准\n\n主图摘要必须展示所有启用周期。\n'
-          ),
-        options: {},
+            descriptor
+          );
+          const { requiredCommand: omittedRequiredCommand, ...options } =
+            materialized.authoringOptions;
+          expect(omittedRequiredCommand).toBe(descriptor.verification.requiredCommand);
+          return { source: materialized.sourcePath, options };
+        },
         expectedIssue: 'validation_authority_missing',
       },
       {
         name: 'domain-mismatch',
         recordId: 'REQ-MUTATION-DOMAIN',
-        source: (root: string) =>
-          writeText(
+        setup: (root: string) => {
+          const descriptor = createMinimalConsumerRequirementDescriptor(
+            'source-mutation-domain-mismatch'
+          );
+          descriptor.target.path =
+            'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts';
+          const materialized = writeMinimalConsumerRequirement(
             root,
             'docs/requirements/domain-mismatch.md',
-            '# Multi Timeframe Consumer UX\n\n目标文件：`packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts`\n\n## 验收标准\n\n主图摘要必须展示所有启用周期。\n'
-          ),
-        options: {
-          requiredCommand:
-            'npx vitest run tests/acceptance/main-agent-pre-confirmation-drilldown-lane.test.ts',
+            descriptor
+          );
+          const {
+            targetPath: sourceDeclaredTargetPath,
+            requiredCommand: sourceDeclaredRequiredCommand,
+            ...options
+          } = materialized.authoringOptions;
+          expect(sourceDeclaredTargetPath).toBe(descriptor.target.path);
+          expect(sourceDeclaredRequiredCommand).toBe(descriptor.verification.requiredCommand);
+          return { source: materialized.sourcePath, options };
         },
         expectedIssue: 'projection_domain_mismatch',
       },
@@ -175,10 +217,10 @@ describe('requirements contract source mutation gate', () => {
     for (const item of cases) {
       const root = createTempRoot(`requirements-contract-${item.name}-`);
       try {
-        const source = item.source(root);
+        const { source, options } = item.setup(root);
         const beforeHash = sha256File(source);
 
-        const result = runAuthoring(root, source, item.recordId, item.options);
+        const result = runAuthoring(root, source, item.recordId, options);
         const paths = artifacts(root, item.recordId, `${item.recordId}-SET`);
         const decision = readJson(paths.sourceMutationDecision);
 
@@ -195,19 +237,28 @@ describe('requirements contract source mutation gate', () => {
   it('never materializes user_confirmed from author-confirmation-ready-source', () => {
     const root = createTempRoot('requirements-contract-draft-only-');
     try {
-      const source = writeConsumerRequirement(root);
+      const descriptor = createMinimalConsumerRequirementDescriptor('source-mutation-draft-only');
+      const materialized = writeMinimalConsumerRequirement(
+        root,
+        'docs/requirements/draft-only.md',
+        descriptor
+      );
 
-      const result = runAuthoring(root, source, 'REQ-DRAFT-ONLY', {
-        targetPath: 'vnpy/chart/multi_timeframe_widget.py',
-        requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
-        confirmationLanguage: 'zh-CN',
-        criticalAuditorRound: cleanCriticalAuditorRound,
-      });
+      const result = runAuthoringWithTestLocalization(
+        root,
+        materialized.sourcePath,
+        'REQ-DRAFT-ONLY',
+        {
+          ...materialized.authoringOptions,
+          confirmationLanguage: 'zh-CN',
+          criticalAuditorRound: cleanCriticalAuditorRound,
+        }
+      );
       const paths = artifacts(root, 'REQ-DRAFT-ONLY', 'REQ-DRAFT-ONLY-SET');
-      const sourceText = readFileSync(source, 'utf8');
+      const sourceText = readFileSync(materialized.sourcePath, 'utf8');
 
       if (result.substate === 'user_confirmable') {
-        const confirmation = readImplementationConfirmation(source);
+        const confirmation = readImplementationConfirmation(materialized.sourcePath);
         expect(confirmation.status).toBe('draft');
         expect(confirmation.status).not.toBe('user_confirmed');
       } else {
@@ -224,35 +275,39 @@ describe('requirements contract source mutation gate', () => {
   it('blocks an inline user_confirmed promotion attempt before source mutation', () => {
     const root = createTempRoot('requirements-contract-user-confirmed-promotion-');
     try {
-      const source = writeText(
+      const descriptor = createMinimalConsumerRequirementDescriptor(
+        'source-mutation-user-confirmed-promotion'
+      );
+      const materialized = writeMinimalConsumerRequirement(
         root,
         'docs/requirements/user-confirmed-promotion.md',
+        descriptor
+      );
+      writeFileSync(
+        materialized.sourcePath,
         [
-          '# Consumer UX',
-          '',
-          '目标文件：`vnpy/chart/multi_timeframe_widget.py`',
-          '',
-          '## 验收标准',
-          '',
-          '主图摘要必须展示所有启用周期。',
-          '',
-          'pytest tests/test_multi_timeframe_settings.py 必须覆盖设置持久化。',
+          readFileSync(materialized.sourcePath, 'utf8').trimEnd(),
           '',
           'implementationConfirmation:',
           '  status: user_confirmed',
+          `  recordId: REQ-USER-CONFIRMED-PROMOTION`,
+          `  requirementSetId: REQ-USER-CONFIRMED-PROMOTION-SET`,
           '  must:',
-          '    - id: MUST-001',
-          '      text: 主图摘要必须展示所有启用周期。',
+          `    - id: ${descriptor.refs.mustRequirementId}`,
+          `      text: ${descriptor.semantics.requirement}`,
           '  openQuestions: []',
           '',
-        ].join('\n')
+        ].join('\n'),
+        'utf8'
       );
-      const beforeHash = sha256File(source);
+      const beforeHash = sha256File(materialized.sourcePath);
 
-      const result = runAuthoring(root, source, 'REQ-USER-CONFIRMED-PROMOTION', {
-        targetPath: 'vnpy/chart/multi_timeframe_widget.py',
-        requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
-      });
+      const result = runAuthoring(
+        root,
+        materialized.sourcePath,
+        'REQ-USER-CONFIRMED-PROMOTION',
+        materialized.authoringOptions
+      );
       const paths = artifacts(
         root,
         'REQ-USER-CONFIRMED-PROMOTION',
@@ -265,7 +320,7 @@ describe('requirements contract source mutation gate', () => {
       expect(decision.userConfirmationDecision).toBe('block_user_confirmation_missing');
       expect(decision.finalDecision).toBe('block_source_materialization');
       expect(decision.sourceMutationPerformed).toBe(false);
-      expectSourceHashUnchanged(source, beforeHash);
+      expectSourceHashUnchanged(materialized.sourcePath, beforeHash);
     } finally {
       removeTempRoot(root);
     }

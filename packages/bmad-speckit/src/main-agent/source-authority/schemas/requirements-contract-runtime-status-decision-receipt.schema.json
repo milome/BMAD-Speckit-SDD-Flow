@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-runtime-status-decision-receipt.schema.json",
+  "title": "Requirements Contract Runtime Status Decision Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "recordId",
+    "requirementSetId",
+    "modelId",
+    "implementationAttemptId",
+    "sourceDocumentHash",
+    "implementationConfirmationHash",
+    "semanticModelHash",
+    "stageInputs",
+    "deterministicGateOutputs",
+    "blockerRefs",
+    "evidenceRefs",
+    "authorityClass",
+    "decision",
+    "effectiveStatus",
+    "createdAt",
+    "receiptHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-runtime-status-decision-receipt/v1"
+    },
+    "recordId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requirementSetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "modelId": {
+      "enum": [
+        "requirement_confirmation",
+        "architecture_confirmation",
+        "implementation_readiness",
+        "execution_closure",
+        "audit_review",
+        "delivery_confirmation"
+      ]
+    },
+    "implementationAttemptId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceDocumentHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "implementationConfirmationHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "semanticModelHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "stageInputs": {
+      "$ref": "#/$defs/bindings"
+    },
+    "deterministicGateOutputs": {
+      "$ref": "#/$defs/bindings"
+    },
+    "blockerRefs": {
+      "$ref": "#/$defs/strings"
+    },
+    "evidenceRefs": {
+      "$ref": "#/$defs/strings"
+    },
+    "authorityClass": {
+      "enum": [
+        "controlled_confirmation",
+        "deterministic_gate",
+        "controlled_closeout"
+      ]
+    },
+    "decision": {
+      "enum": ["pass", "block", "stale"]
+    },
+    "effectiveStatus": {
+      "enum": [
+        "pass",
+        "blocked",
+        "stale",
+        "not_established",
+        "awaiting_user_acceptance"
+      ]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "receiptHash": {
+      "$ref": "#/$defs/sha256"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "strings": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "bindings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "path", "hash"],
+        "properties": {
+          "role": {
+            "type": "string",
+            "minLength": 1
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "hash": {
+            "$ref": "#/$defs/sha256"
+          }
+        }
+      }
+    }
+  }
+}

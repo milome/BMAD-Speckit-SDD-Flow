@@ -1,0 +1,221 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "goal-contract-authority-supersession-receipt/v1",
+  "title": "Goal Contract Authority Supersession Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "attemptId",
+    "attemptKey",
+    "supersessionMode",
+    "activationMode",
+    "sourceCoverageAuthority",
+    "supersededDisposition",
+    "supersededAuthority",
+    "successorAuthority",
+    "compilerIdentityHash",
+    "partitionPolicyHash",
+    "sourceIdentity",
+    "equivalenceHash",
+    "partitionMappingHash",
+    "checkpointMappingHash",
+    "stagedPayloadHash",
+    "promotionMode",
+    "decision",
+    "receiptHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-authority-supersession-receipt/v1"
+    },
+    "attemptId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "attemptKey": {
+      "$ref": "#/$defs/hash"
+    },
+    "supersessionMode": {
+      "enum": ["strict_equivalence", "source_grounded_hard_cut"]
+    },
+    "activationMode": {
+      "const": "successor_only"
+    },
+    "sourceCoverageAuthority": {
+      "enum": ["superseded_equivalence", "canonical_parent_source"]
+    },
+    "supersededDisposition": {
+      "const": "superseded_non_executable"
+    },
+    "supersededAuthority": {
+      "$ref": "#/$defs/supersededAuthority"
+    },
+    "successorAuthority": {
+      "$ref": "#/$defs/successorAuthority"
+    },
+    "compilerIdentityHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "partitionPolicyHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "sourceIdentity": {
+      "$ref": "#/$defs/sourceIdentity"
+    },
+    "equivalenceHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "sourceGroundedCoverageHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "partitionMappingHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "checkpointMappingHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "stagedPayloadHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "promotionMode": {
+      "const": "atomic_directory_rename"
+    },
+    "decision": {
+      "const": "pass"
+    },
+    "receiptHash": {
+      "$ref": "#/$defs/hash"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "supersessionMode": {
+            "const": "source_grounded_hard_cut"
+          }
+        }
+      },
+      "then": {
+        "required": ["sourceGroundedCoverageHash"],
+        "properties": {
+          "sourceCoverageAuthority": {
+            "const": "canonical_parent_source"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "sourceCoverageAuthority": {
+            "const": "superseded_equivalence"
+          }
+        },
+        "not": {
+          "required": ["sourceGroundedCoverageHash"]
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "hashArray": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/hash"
+      },
+      "uniqueItems": true
+    },
+    "supersededAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "parentPlanHash",
+        "partitionManifestHash",
+        "partitionSetHash",
+        "childrenSummaryHash"
+      ],
+      "properties": {
+        "parentPlanHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "partitionManifestHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "partitionSetHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "childrenSummaryHash": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "successorAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "partitionPlanHash",
+        "partitionManifestHash",
+        "partitionManifestDocumentHash",
+        "partitionSetHash",
+        "orderedChildContractHashes",
+        "sourceCompositionPolicyHash",
+        "sourceAuthorityBundleHash",
+        "specSpanRegistryHash"
+      ],
+      "properties": {
+        "partitionPlanHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "partitionManifestHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "partitionManifestDocumentHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "partitionSetHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "orderedChildContractHashes": {
+          "$ref": "#/$defs/hashArray"
+        },
+        "sourceCompositionPolicyHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "sourceAuthorityBundleHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "specSpanRegistryHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "releaseContextHash": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "sourceIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourcePath",
+        "sourceHash",
+        "sourceSnapshotHash"
+      ],
+      "properties": {
+        "sourcePath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "sourceSnapshotHash": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    }
+  }
+}

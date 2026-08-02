@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-architecture-applicability-receipt.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "decision",
+    "transactionId",
+    "requirementSetId",
+    "implementationAttemptId",
+    "requirementSnapshotHash",
+    "sourceDocumentHash",
+    "implementationConfirmationHash",
+    "semanticModelHash",
+    "policyVersion",
+    "policyHash",
+    "targetPathsHash",
+    "deploymentImpactHash",
+    "consumerImpactHash",
+    "governanceImpactHash",
+    "reasonCode",
+    "decidedBy",
+    "decidedAt",
+    "invalidationInputs"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-architecture-applicability-receipt/v1"
+    },
+    "decision": { "const": "architecture_not_required" },
+    "transactionId": { "$ref": "#/$defs/id" },
+    "requirementSetId": { "$ref": "#/$defs/id" },
+    "implementationAttemptId": { "$ref": "#/$defs/id" },
+    "requirementSnapshotHash": { "$ref": "#/$defs/hash" },
+    "sourceDocumentHash": { "$ref": "#/$defs/hash" },
+    "implementationConfirmationHash": { "$ref": "#/$defs/hash" },
+    "semanticModelHash": { "$ref": "#/$defs/hash" },
+    "policyVersion": { "type": "string", "minLength": 1 },
+    "policyHash": { "$ref": "#/$defs/hash" },
+    "targetPathsHash": { "$ref": "#/$defs/hash" },
+    "deploymentImpactHash": { "$ref": "#/$defs/hash" },
+    "consumerImpactHash": { "$ref": "#/$defs/hash" },
+    "governanceImpactHash": { "$ref": "#/$defs/hash" },
+    "reasonCode": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{2,127}$"
+    },
+    "decidedBy": { "type": "string", "minLength": 1 },
+    "decidedAt": { "type": "string", "format": "date-time" },
+    "invalidationInputs": {
+      "type": "array",
+      "minItems": 7,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "sourceDocumentHash",
+          "implementationConfirmationHash",
+          "semanticModelHash",
+          "targetPathsHash",
+          "deploymentImpactHash",
+          "consumerImpactHash",
+          "governanceImpactHash"
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

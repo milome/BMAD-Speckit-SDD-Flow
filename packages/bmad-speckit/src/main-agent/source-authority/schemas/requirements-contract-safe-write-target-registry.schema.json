@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-safe-write-target-registry/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "owner", "registryHash", "targetSetSchemaVersion", "targetOrdering", "fixedTargetDescriptors", "parameterizedFamilies", "applicabilityRules", "excludedControlEvidenceFamilies", "authority"],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-safe-write-target-registry/v1"
+    },
+    "owner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "registryHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "targetSetSchemaVersion": {
+      "const": "requirements-contract-safe-write-target-set/v1"
+    },
+    "targetOrdering": {
+      "const": "normalized_path_lexicographic"
+    },
+    "fixedTargetDescriptors": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["targetId", "resolution", "contextKey"],
+            "properties": {
+              "targetId": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              "resolution": {
+                "const": "context_path"
+              },
+              "contextKey": {
+                "const": "consumerRegistryPath"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["targetId", "resolution", "relativePath"],
+            "properties": {
+              "targetId": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              "resolution": {
+                "const": "evidence_relative"
+              },
+              "relativePath": {
+                "type": "string",
+                "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "parameterizedFamilies": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["source_prd", "trace_execution", "bundle_revision", "activation_plan", "activation_plan_write_receipt", "activation_outcome_receipt", "judge_attempt_receipts"]
+      }
+    },
+    "applicabilityRules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["goalExecution", "activationOutcome", "judgeAttemptReceipts"],
+      "properties": {
+        "goalExecution": { "const": "goal_execution_applicable" },
+        "activationOutcome": { "const": "success_or_blocked_exclusive" },
+        "judgeAttemptReceipts": { "const": "transaction_and_audit_attempt_required" }
+      }
+    },
+    "excludedControlEvidenceFamilies": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["finalization_bundle_and_terminal_inputs", "finalization_block_receipts", "finalization_failure_archives", "recovery_finalization_transactions", "recovery_finalization_attempts", "terminal_supervisor_receipts"]
+      }
+    },
+    "authority": {
+      "const": "none"
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

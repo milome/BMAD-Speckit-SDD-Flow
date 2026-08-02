@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.dev/schemas/requirements-contract-production-bypass-closure-report.schema.json",
+  "title": "Requirements Contract Production Bypass Closure Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "producer",
+    "action",
+    "corpusRef",
+    "evidenceRefs",
+    "checkpointReceiptWithoutSemanticValidatorCount",
+    "blockedCheckpointMarkedCompletedCount",
+    "sourcePrdLintBypassProgressionCount",
+    "explicitSixModelStatusPassAuthorityCount",
+    "architectureHashOnlyPassCount",
+    "taskReportCommandSuccessSynthesisCount",
+    "taskReportRequirementClosureCount",
+    "commandIdSubstringCoverageCount",
+    "missingArtifactAcceptedCount",
+    "artifactCurrentAttemptMismatchCount",
+    "historicalPacketSelectionCount",
+    "packetWithoutTransactionBindingCount",
+    "packageRuntimeRoutingOnlyActionCount",
+    "installedPackageActionBehaviorMismatchCount",
+    "syntheticCriticalAuditorNoGapCount",
+    "criticalAuditorProviderIdentityMismatchCount",
+    "currentAttemptClosureWithoutIndependentOracleCount",
+    "checkpointSemanticValidatorCoverage",
+    "commandReceiptCoverage",
+    "artifactReadbackCoverage",
+    "currentDispatchPointerCoverage",
+    "packageActionSemanticBindingCoverage",
+    "criticalAuditorProjectionCoverage",
+    "independentOracleClosureCount",
+    "productionBypassClosureIssueCount",
+    "issues",
+    "correctnessDecision",
+    "efficiencyMetricsApplicable"
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "readbackRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourcePath",
+        "resolvedPath",
+        "status",
+        "hash",
+        "readbackHash",
+        "readbackVerified",
+        "decision"
+      ],
+      "properties": {
+        "sourcePath": { "type": "string", "minLength": 1 },
+        "resolvedPath": { "type": "string", "minLength": 1 },
+        "status": {
+          "enum": ["accepted", "missing", "invalid"]
+        },
+        "hash": {
+          "anyOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }]
+        },
+        "readbackHash": {
+          "anyOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }]
+        },
+        "readbackVerified": { "type": "boolean" },
+        "decision": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "issue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "sourcePath": { "type": "string", "minLength": 1 },
+        "metric": { "type": "string", "minLength": 1 },
+        "expected": { "type": "number" },
+        "actual": {
+          "type": ["number", "string", "boolean", "null"]
+        }
+      }
+    }
+  },
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-production-bypass-closure-report/v1"
+    },
+    "producer": {
+      "const": "requirements-contract-production-bypass-verifier"
+    },
+    "action": {
+      "const": "requirements-contract-production-bypass-verify"
+    },
+    "corpusRef": {
+      "$ref": "#/$defs/readbackRef"
+    },
+    "evidenceRefs": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "items": {
+        "$ref": "#/$defs/readbackRef"
+      }
+    },
+    "checkpointReceiptWithoutSemanticValidatorCount": { "type": "number" },
+    "blockedCheckpointMarkedCompletedCount": { "type": "number" },
+    "sourcePrdLintBypassProgressionCount": { "type": "number" },
+    "explicitSixModelStatusPassAuthorityCount": { "type": "number" },
+    "architectureHashOnlyPassCount": { "type": "number" },
+    "taskReportCommandSuccessSynthesisCount": { "type": "number" },
+    "taskReportRequirementClosureCount": { "type": "number" },
+    "commandIdSubstringCoverageCount": { "type": "number" },
+    "missingArtifactAcceptedCount": { "type": "number" },
+    "artifactCurrentAttemptMismatchCount": { "type": "number" },
+    "historicalPacketSelectionCount": { "type": "number" },
+    "packetWithoutTransactionBindingCount": { "type": "number" },
+    "packageRuntimeRoutingOnlyActionCount": { "type": "number" },
+    "installedPackageActionBehaviorMismatchCount": { "type": "number" },
+    "syntheticCriticalAuditorNoGapCount": { "type": "number" },
+    "criticalAuditorProviderIdentityMismatchCount": { "type": "number" },
+    "currentAttemptClosureWithoutIndependentOracleCount": { "type": "number" },
+    "checkpointSemanticValidatorCoverage": { "type": "number" },
+    "commandReceiptCoverage": { "type": "number" },
+    "artifactReadbackCoverage": { "type": "number" },
+    "currentDispatchPointerCoverage": { "type": "number" },
+    "packageActionSemanticBindingCoverage": { "type": "number" },
+    "criticalAuditorProjectionCoverage": { "type": "number" },
+    "independentOracleClosureCount": {
+      "type": "number",
+      "minimum": 0
+    },
+    "productionBypassClosureIssueCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/issue"
+      }
+    },
+    "correctnessDecision": {
+      "enum": ["PASS", "BLOCK"]
+    },
+    "efficiencyMetricsApplicable": {
+      "type": "boolean"
+    }
+  }
+}

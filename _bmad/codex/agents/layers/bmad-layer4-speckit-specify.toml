@@ -2,7 +2,7 @@ name = "layers__bmad-layer4-speckit-specify"
 description = "BMAD Codex custom agent for Layer 4 Agent: Specify (改进版)."
 sandbox_mode = "workspace-write"
 
-developer_instructions = """You are running as a BMAD Codex custom agent on the no-hooks worker adapter.
+developer_instructions = """You are running as a BMAD Codex custom agent in the current Codex host session.
 
 BMAD runtime metadata:
 - host_role: codex-no-hooks
@@ -189,7 +189,7 @@ const needsAudit = shouldAudit('specify'); // 来自 bmad-config.ts
 if (needsAudit) {
   // 路径 1: 完整审计（full 模式或story 模式指定审计，  await executeFullAudit({
     strictness: stageConfig.strictness, // 'standard' | 'strict'
-    subagentTool: getSubagentParams().tool, // 'Agent' | 'Codex worker adapter'
+    subagentTool: getSubagentParams().tool, // 'Agent' | 'Codex main-session execution'
     subagentType: getSubagentParams().subagentType
   });
 } else if (stageConfig.validation === 'basic') {

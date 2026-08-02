@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-terminal-closeout-packet/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "contract",
+    "completionEvidence",
+    "terminalCommandReceipt",
+    "identity",
+    "authority",
+    "evidenceBundleId",
+    "coverage",
+    "criticalMetrics",
+    "lifecycleDecisions",
+    "phaseHistory",
+    "evidenceIndex",
+    "artifactIndex",
+    "finalization",
+    "commands",
+    "residualRisks",
+    "upstreamEvidenceHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-terminal-closeout-packet/v1" },
+    "contract": { "$ref": "#/$defs/ref" },
+    "completionEvidence": { "$ref": "#/$defs/ref" },
+    "terminalCommandReceipt": { "$ref": "#/$defs/ref" },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "transactionId",
+        "implementationAttemptId",
+        "auditAttemptId",
+        "architectureAuditAttemptId",
+        "preCandidateAuditAttemptId",
+        "finalAuditAttemptId"
+      ],
+      "properties": {
+        "transactionId": { "type": "string", "minLength": 1 },
+        "implementationAttemptId": { "type": "string", "minLength": 1 },
+        "auditAttemptId": { "type": "string", "minLength": 1 },
+        "architectureAuditAttemptId": { "type": "string", "minLength": 1 },
+        "preCandidateAuditAttemptId": { "type": "string", "minLength": 1 },
+        "finalAuditAttemptId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractHash",
+        "sourcePlanHash",
+        "sourceAmendmentHashes",
+        "aggregateAmendmentHash",
+        "semanticModelHash",
+        "sequenceContractHash",
+        "closureReportHash"
+      ],
+      "properties": {
+        "contractHash": { "$ref": "#/$defs/hash" },
+        "sourcePlanHash": { "$ref": "#/$defs/hash" },
+        "sourceAmendmentHashes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/hash" }
+        },
+        "aggregateAmendmentHash": { "$ref": "#/$defs/hash" },
+        "semanticModelHash": { "$ref": "#/$defs/hash" },
+        "sequenceContractHash": { "$ref": "#/$defs/hash" },
+        "closureReportHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "evidenceBundleId": { "type": "string", "minLength": 1 },
+    "coverage": { "type": "object" },
+    "criticalMetrics": { "type": "object" },
+    "lifecycleDecisions": { "type": "object" },
+    "phaseHistory": { "type": "array" },
+    "evidenceIndex": { "type": "array", "minItems": 1 },
+    "artifactIndex": { "type": "array", "minItems": 1 },
+    "finalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "terminalFinalizationTargetSetDeclarationHash",
+        "terminalFinalizationTargetSetClosureHash",
+        "targets"
+      ],
+      "properties": {
+        "terminalFinalizationTargetSetDeclarationHash": { "$ref": "#/$defs/hash" },
+        "terminalFinalizationTargetSetClosureHash": { "$ref": "#/$defs/hash" },
+        "targets": { "type": "array", "minItems": 3, "maxItems": 3 }
+      }
+    },
+    "commands": { "type": "array", "minItems": 2, "maxItems": 2 },
+    "residualRisks": { "type": "array" },
+    "upstreamEvidenceHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

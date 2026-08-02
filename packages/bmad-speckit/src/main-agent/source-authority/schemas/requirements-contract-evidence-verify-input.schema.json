@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-evidence-verify-input.schema.json",
+  "title": "Requirements Contract Evidence Verify Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["bundle"],
+  "properties": {
+    "cwd": { "type": "string", "minLength": 1 },
+    "bundle": { "$ref": "#/$defs/repositoryPath" },
+    "commandId": { "const": "CMD-24" },
+    "json": { "type": "boolean" }
+  },
+  "$defs": {
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:[\\\\/])(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    }
+  }
+}

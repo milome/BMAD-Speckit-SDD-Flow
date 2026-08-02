@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-evidence-verification-receipt.schema.json",
+  "title": "Requirements Contract Evidence Verification Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "commandId",
+    "exactArgv",
+    "argvHash",
+    "bundle",
+    "transactionId",
+    "implementationAttemptId",
+    "auditAttemptIds",
+    "verifiedArtifactCount",
+    "verifiedEvidenceCount",
+    "coveredStoryCount",
+    "coveredAcceptanceCount",
+    "coveredTraceCount",
+    "coveredCommandCount",
+    "criticalMetricCount",
+    "externalBindingCount",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-evidence-verification-receipt/v1"
+    },
+    "commandId": { "const": "CMD-24" },
+    "exactArgv": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "argvHash": { "$ref": "#/$defs/sha256" },
+    "bundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "transactionId": { "type": "string", "minLength": 1 },
+    "implementationAttemptId": { "type": "string", "minLength": 1 },
+    "auditAttemptIds": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "verifiedArtifactCount": { "type": "integer", "minimum": 1 },
+    "verifiedEvidenceCount": { "type": "integer", "minimum": 1 },
+    "coveredStoryCount": { "type": "integer", "minimum": 1 },
+    "coveredAcceptanceCount": { "type": "integer", "minimum": 1 },
+    "coveredTraceCount": { "type": "integer", "minimum": 1 },
+    "coveredCommandCount": { "type": "integer", "minimum": 1 },
+    "criticalMetricCount": { "type": "integer", "minimum": 1 },
+    "externalBindingCount": { "type": "integer", "minimum": 0 },
+    "decision": { "const": "pass" }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

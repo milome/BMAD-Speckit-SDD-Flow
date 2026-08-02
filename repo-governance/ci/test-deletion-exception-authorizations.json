@@ -1,0 +1,5 @@
+{
+  "schemaVersion": "test-deletion-authorizations/v1",
+  "registryMode": "manual_exception",
+  "authorizations": []
+}

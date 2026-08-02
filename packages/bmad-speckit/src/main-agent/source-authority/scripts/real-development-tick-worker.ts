@@ -108,7 +108,7 @@ function createPacket(projectRoot, sessionDir, tick) {
     flow: 'story',
     phase: 'implement',
     taskType: tick === 1 ? 'implement' : 'remediate',
-    role: 'codex-no-hooks-worker',
+    role: 'main-session-implementation',
     inputArtifacts: [
       'docs/plans/PRD_backtest_independent_process.md',
       path.join(sessionDir, 'task-plan.md'),
@@ -123,11 +123,11 @@ function createPacket(projectRoot, sessionDir, tick) {
     ],
     expectedDelta: tickObjective(tick),
     successCriteria: [
-      'BMAD main-agent codex worker adapter reads this dispatch packet and invokes Codex.',
-      'Worker writes a TaskReport at the requested taskReportPath.',
+      'The current main session reads and executes this dispatch packet.',
+      'The current main session writes a TaskReport at the requested taskReportPath.',
       'TaskReport is ingested by BMAD main-agent run-loop using --taskReportPath.',
       'Targeted consumer-project tests are run and logged.',
-      'Each tick records before/after diff hash, patch, adapter report, run-loop ingest, and tests in ticks.jsonl.',
+      'Each tick records before/after diff hash, patch, main-session handoff, run-loop ingest, and tests in ticks.jsonl.',
     ],
     stopConditions: [
       'Do not edit outside allowedWriteScope.',
@@ -171,15 +171,14 @@ function finalTaskReport(input) {
         })()
       : null;
   const testPassed = input.testExitCode === 0;
-  const adapterPassed = input.adapterExitCode === 0 && existing?.status === 'done';
   const filesChanged = Array.from(
     new Set([...(Array.isArray(existing?.filesChanged) ? existing.filesChanged : []), ...input.filesChanged])
   );
   const existingEvidence = Array.isArray(existing?.evidence) ? existing.evidence : [];
   const evidence = Array.from(
     new Set([
-      ...existingEvidence.filter((item) => item !== 'codex did not produce task report'),
-      input.adapterReportPath,
+      ...existingEvidence,
+      input.mainSessionHandoffPath,
       input.testLogPath,
       input.afterDiffPath,
     ])
@@ -187,17 +186,13 @@ function finalTaskReport(input) {
   const validationsRun = Array.from(
     new Set([
       ...(Array.isArray(existing?.validationsRun) ? existing.validationsRun : []),
-      'codex-worker-adapter',
+      'main-session-execution',
       'pytest:targeted-backtester-subprocess',
       'bmad-real-development-tick-finalize',
     ])
   );
   const status =
-    testPassed && (input.patchChanged || input.hasPriorCompletedTick)
-      ? 'done'
-      : adapterPassed
-        ? 'done'
-        : 'blocked';
+    testPassed && (input.patchChanged || input.hasPriorCompletedTick) ? 'done' : 'blocked';
   return {
     packetId: input.packet.packetId,
     status,
@@ -208,7 +203,6 @@ function finalTaskReport(input) {
         ? evidence
         : [
             ...evidence,
-            `adapterExitCode=${input.adapterExitCode}`,
             `testExitCode=${input.testExitCode}`,
           ],
     downstreamContext: [
@@ -217,7 +211,7 @@ function finalTaskReport(input) {
         ? input.patchChanged
           ? 'Real development tick produced patch and targeted tests passed; ready for main-agent ingest/final inspect.'
           : 'Real review/gate tick reran targeted tests after prior completed patch; no additional code change was required.'
-        : 'Next tick must fix adapter/test failures and rerun gates.',
+        : 'Next tick must fix main-session execution or test failures and rerun gates.',
     ],
   };
 }
@@ -284,17 +278,6 @@ function writeTickOrchestrationState(projectRoot, packet, packetPath) {
   return statePath;
 }
 
-function tsNodeArgs(scriptPath, extraArgs) {
-  return [
-    path.join(BMAD_ROOT, 'node_modules', 'ts-node', 'dist', 'bin.js'),
-    '--project',
-    path.join(BMAD_ROOT, 'tsconfig.node.json'),
-    '--transpile-only',
-    scriptPath,
-    ...extraArgs,
-  ];
-}
-
 function main() {
   const projectRoot = process.cwd();
   const sessionDir = process.env.BMAD_REAL_DEV_SESSION_DIR;
@@ -318,54 +301,21 @@ function main() {
   const { packet, packetPath } = createPacket(projectRoot, sessionDir, tick);
   const orchestrationStatePath = writeTickOrchestrationState(projectRoot, packet, packetPath);
   const taskReportPath = path.join(tickDir, 'task-report.json');
-  const adapterReportPath = path.join(tickDir, 'codex-worker-adapter-report.json');
+  const mainSessionHandoffPath = path.join(tickDir, 'main-session-execution-handoff.json');
   const runLoopIngestPath = path.join(tickDir, 'main-agent-run-loop-ingest.json');
-  const tickTimeoutMs = Number(process.env.BMAD_REAL_DEV_TICK_TIMEOUT_MS ?? '0');
-  const adapterTimeoutMs =
-    tickTimeoutMs > 15_000 ? Math.max(5_000, tickTimeoutMs - 15_000) : 120_000;
+  writeJson(mainSessionHandoffPath, {
+    schemaVersion: 'main-session-execution-handoff/v1',
+    packetId: packet.packetId,
+    packetPath,
+    executionSurface: 'current_main_session',
+    decision: 'blocked_pending_main_session',
+  });
   appendTickEvent(sessionDir, tickDir, {
-    event: 'adapter_started',
+    event: 'main_session_execution_handoff_prepared',
     packetPath,
     orchestrationStatePath,
     taskReportPath,
-    adapterReportPath,
-    timeoutMs: adapterTimeoutMs,
-  });
-
-  const adapter = run(
-    process.execPath,
-    tsNodeArgs(path.join(BMAD_ROOT, 'scripts', 'main-agent-codex-worker-adapter.ts'), [
-      '--cwd',
-      projectRoot,
-      '--packetPath',
-      packetPath,
-      '--taskReportPath',
-      taskReportPath,
-      '--reportPath',
-      adapterReportPath,
-      '--timeoutMs',
-      String(adapterTimeoutMs),
-    ]),
-    {
-      cwd: BMAD_ROOT,
-      timeoutMs: adapterTimeoutMs + 5_000,
-      env: {
-        ...process.env,
-        BMAD_FRAMEWORK_ROOT: BMAD_ROOT,
-        BMAD_REAL_DEV_SESSION_DIR: sessionDir,
-        BMAD_REAL_DEV_TICK: String(tick),
-        BMAD_REAL_DEV_TICK_DIR: tickDir,
-      },
-    }
-  );
-  writeText(path.join(tickDir, 'adapter-stdout.log'), adapter.stdout);
-  writeText(path.join(tickDir, 'adapter-stderr.log'), adapter.stderr);
-  appendTickEvent(sessionDir, tickDir, {
-    event: 'adapter_finished',
-    exitCode: adapter.exitCode,
-    signal: adapter.signal,
-    stdoutPath: path.join(tickDir, 'adapter-stdout.log'),
-    stderrPath: path.join(tickDir, 'adapter-stderr.log'),
+    mainSessionHandoffPath,
   });
 
   appendTickEvent(sessionDir, tickDir, { event: 'targeted_tests_started' });
@@ -395,8 +345,7 @@ function main() {
   const finalizedTaskReport = finalTaskReport({
     packet,
     taskReportPath,
-    adapterExitCode: adapter.exitCode,
-    adapterReportPath,
+    mainSessionHandoffPath,
     testExitCode: test.exitCode,
     testLogPath: path.join(tickDir, 'test-targeted.log'),
     afterDiffPath,
@@ -452,7 +401,7 @@ function main() {
     tick,
     startedAt,
     endedAt: new Date().toISOString(),
-    action: 'bmad-main-agent-codex-worker-adapter-dispatch-ingest-gate-tick',
+    action: 'bmad-main-agent-main-session-dispatch-ingest-gate-tick',
     bmadFrameworkRoot: BMAD_ROOT,
     consumerProjectRoot: projectRoot,
     packetId: packet.packetId,
@@ -461,12 +410,9 @@ function main() {
     beforeDiffHash: beforeHash,
     afterDiffHash: afterHash,
     patchChanged: beforeHash !== afterHash,
-    adapter: {
-      command: adapter.command,
-      exitCode: adapter.exitCode,
-      stdoutPath: path.join(tickDir, 'adapter-stdout.log'),
-      stderrPath: path.join(tickDir, 'adapter-stderr.log'),
-      reportPath: adapterReportPath,
+    mainSessionExecution: {
+      executionSurface: 'current_main_session',
+      handoffPath: mainSessionHandoffPath,
     },
     runLoopIngest: {
       command: runLoop.command,
@@ -496,7 +442,7 @@ function main() {
     rerunFixes:
       finalizedTaskReport.status === 'done' && runLoop.exitCode === 0 && test.exitCode === 0
         ? []
-        : ['Next tick must inspect adapter/run-loop/test logs and close failures via BMAD orchestrated rerun.'],
+        : ['Next tick must inspect main-session handoff, run-loop, and test logs before rerun.'],
   };
 
   appendJsonl(path.join(sessionDir, 'ticks.jsonl'), tickRecord);

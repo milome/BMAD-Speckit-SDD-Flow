@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-final-acceptance-judge-assessment.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "actorClass",
+    "judgeRole",
+    "scopeManifestHash",
+    "attemptKey",
+    "promptTemplateHash",
+    "assessmentSchemaHash",
+    "providerAuthority",
+    "ledgerAuthority",
+    "requestHash",
+    "providerInvocationHash",
+    "sourceLedgerHash",
+    "verdict",
+    "findings",
+    "coverage",
+    "evidenceRefs",
+    "rationale"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-final-acceptance-judge-assessment/v1"
+    },
+    "actorClass": { "const": "final_acceptance_judge" },
+    "judgeRole": { "const": "final_acceptance_judge" },
+    "scopeManifestHash": { "$ref": "#/$defs/hash" },
+    "attemptKey": { "$ref": "#/$defs/hash" },
+    "promptTemplateHash": { "$ref": "#/$defs/hash" },
+    "assessmentSchemaHash": { "$ref": "#/$defs/hash" },
+    "providerAuthority": { "$ref": "#/$defs/providerAuthority" },
+    "ledgerAuthority": { "$ref": "#/$defs/ledgerAuthority" },
+    "requestHash": { "$ref": "#/$defs/hash" },
+    "providerInvocationHash": { "$ref": "#/$defs/hash" },
+    "sourceLedgerHash": { "$ref": "#/$defs/hash" },
+    "verdict": {
+      "enum": ["coverage_satisfied", "findings_present", "insufficient_evidence", "blocked"]
+    },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
+    },
+    "coverage": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/coverage" }
+    },
+    "evidenceRefs": { "$ref": "#/$defs/stringSet" },
+    "rationale": { "type": "string", "minLength": 1 }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "stringSet": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "providerAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "providerRef",
+        "providerRegistryHash",
+        "providerConfigurationHash",
+        "credentialRevision"
+      ],
+      "properties": {
+        "providerRef": { "type": "string", "minLength": 1 },
+        "providerRegistryHash": { "$ref": "#/$defs/hash" },
+        "providerConfigurationHash": { "$ref": "#/$defs/hash" },
+        "credentialRevision": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "ledgerAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ledgerRef", "ledgerHash"],
+      "properties": {
+        "ledgerRef": { "type": "string", "minLength": 1 },
+        "ledgerHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["findingId", "severity", "claim", "evidenceRefs"],
+      "properties": {
+        "findingId": { "type": "string", "minLength": 1 },
+        "severity": { "enum": ["critical", "high", "medium", "low"] },
+        "claim": { "type": "string", "minLength": 1 },
+        "evidenceRefs": { "$ref": "#/$defs/stringSet" }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["coverageUnit", "status", "evidenceRefs"],
+      "properties": {
+        "coverageUnit": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["covered", "uncovered", "inconclusive"] },
+        "evidenceRefs": { "$ref": "#/$defs/stringSet" }
+      }
+    }
+  }
+}

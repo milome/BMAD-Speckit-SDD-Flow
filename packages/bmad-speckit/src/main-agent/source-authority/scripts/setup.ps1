@@ -59,6 +59,7 @@ $OPTIONAL_SKILLS = @(
     'git-push-monitor',
     'bmad-eval-analytics',
     'requirements-contract-authoring',
+    'requirements-contract-grill',
     'req-trace-matrix-prompt-generator'
 )
 $V6_CORE_SKILLS = @(

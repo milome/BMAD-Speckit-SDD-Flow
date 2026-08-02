@@ -1,3 +1,4 @@
+import { createHash, randomUUID } from 'node:crypto';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -9,6 +10,160 @@ import {
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
 import { runAuditorHost } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/run-auditor-host';
 import { defaultRuntimeContextFile, writeRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
+import { deriveAuditHostCompatibilityProjection } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-audit-host-compatibility-projection';
+import { resolveScoringDimensionContract } from '../../packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/contracts/dimension-contracts';
+import { parseDimensionScores } from '../../packages/bmad-speckit/src/main-agent/source-authority/packages/scoring/parsers';
+
+function sha256Text(value: string): string {
+  return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
+}
+
+function sha256Json(value: unknown): string {
+  return sha256Text(stableStringify(value));
+}
+
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+  return `{${Object.keys(value as Record<string, unknown>)
+    .sort()
+    .map(
+      (key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`
+    )
+    .join(',')}}`;
+}
+
+function writeJson(filePath: string, value: unknown): void {
+  mkdirSync(path.dirname(filePath), { recursive: true });
+  writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+function materializeScoringPolicy(root: string): void {
+  const source = path.join(process.cwd(), '_bmad', '_config', 'scoring-policy.contract.yaml');
+  const target = path.join(root, '_bmad', '_config', 'scoring-policy.contract.yaml');
+  mkdirSync(path.dirname(target), { recursive: true });
+  writeFileSync(target, readFileSync(source, 'utf8'), 'utf8');
+}
+
+function receiptRef(root: string, filePath: string): {
+  path: string;
+  contentHash: string;
+  receiptHash: string;
+} {
+  const receipt = JSON.parse(readFileSync(filePath, 'utf8'));
+  return {
+    path: path.relative(root, filePath).replace(/\\/gu, '/'),
+    contentHash: sha256Text(readFileSync(filePath, 'utf8')),
+    receiptHash: String(receipt.receiptHash),
+  };
+}
+
+function writeReceipt(root: string, relativePath: string, payload: Record<string, unknown>) {
+  const receipt = {
+    ...payload,
+    receiptHash: sha256Json(payload),
+  };
+  const filePath = path.join(root, relativePath);
+  writeJson(filePath, receipt);
+  return receiptRef(root, filePath);
+}
+
+function materializeControlledAuditBinding(root: string, reportPath: string, _artifactPath: string) {
+  const roundId = 'round-1';
+  const auditEpochId = sha256Text(`${root}:audit-epoch`);
+  const auditTargetBundleHash = sha256Text(`${root}:audit-target`);
+  const readonlyAuditorRequestHash = sha256Text(`${root}:readonly-request`);
+  const readonlyAuditorResponseHash = sha256Text(`${root}:readonly-response`);
+  const judgeRequestHash = sha256Text(`${root}:judge-request`);
+  const sourceDocumentHash = sha256Text(`${root}:source`);
+  const semanticModelHash = sha256Text(`${root}:semantic`);
+  const implementationConfirmationHash = sha256Text(`${root}:implementation`);
+  const projectionSetHash = sha256Text(`${root}:projection`);
+  const qualityRuleSetHash = sha256Text(`${root}:quality`);
+  const currentAttemptHash = sha256Text(`${root}:attempt`);
+  const currentEvidenceHash = sha256Text(`${root}:evidence`);
+  const contract = resolveScoringDimensionContract({ stage: 'implement' });
+  if (contract.status !== 'resolved') throw new Error('fixture dimension contract unresolved');
+  const reportText = readFileSync(reportPath, 'utf8');
+  const parsedDimensionScores = parseDimensionScores(reportText, 'code');
+  const dimensionScores = parsedDimensionScores.map(({ dimension, score }) => ({
+    dimension,
+    score,
+    maxScore: 100,
+  }));
+  const judgeAuditReviewScoring = {
+    dimensionContractId: contract.dimensionContractId,
+    dimensionMode: contract.dimensionMode,
+    expectedDimensions: parsedDimensionScores.map(({ dimension }) => dimension),
+    dimensionScores,
+    phaseScore: 83.5,
+    minimumPhaseScore: 90,
+    thresholdPassed: false,
+    vetoTriggered: false,
+    effectiveVerdict: 'blocked',
+  };
+  const receiptDir = path.join(
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    'controlled-audit',
+    'round-1'
+  );
+  const readonlyAuditorHostInvocationReceiptRef = writeReceipt(root, path.join(receiptDir, 'readonly-host.json'), {
+    schemaVersion: 'audit-readonly-auditor-host-invocation-receipt/v1',
+    auditEpochId,
+    auditTargetBundleHash,
+    roundIndex: 1,
+    requestHash: readonlyAuditorRequestHash,
+    responseHash: readonlyAuditorResponseHash,
+    responseProduced: true,
+    exitCode: 0,
+  });
+  const judgeProviderInvocationReceiptRef = writeReceipt(root, path.join(receiptDir, 'judge-provider.json'), {
+    schemaVersion: 'critical-auditor-judge-invocation-receipt/v1',
+    requestHash: judgeRequestHash,
+    sourceDocumentHash,
+    semanticModelHash,
+    projectionSetHash,
+  });
+  const judgeExecutionReceiptRef = writeReceipt(root, path.join(receiptDir, 'judge-execution.json'), {
+    schemaVersion: 'audit-judge-execution-receipt/v1',
+    auditEpochId,
+    auditTargetBundleHash,
+    roundIndex: 1,
+    judgeRequestHash,
+    readonlyAuditorResponseHash,
+    verdict: 'no_new_valid_gap',
+    auditReviewScoring: judgeAuditReviewScoring,
+    auditReviewScoringContractHash: sha256Text('audit-review-scoring-contract'),
+    providerInvocationReceiptRef: judgeProviderInvocationReceiptRef,
+  });
+  return {
+    roundId,
+    runAuditorHostInvocationId: randomUUID(),
+    auditEpochId,
+    auditTargetBundleHash,
+    sourceDocumentHash,
+    semanticModelHash,
+    implementationConfirmationHash,
+    projectionSetHash,
+    qualityRuleSetHash,
+    criticalAuditorProfileHash: sha256Text(`${root}:profile`),
+    criticalAuditorStageProfileHash: sha256Text(`${root}:stage-profile`),
+    requiredCheckItemSetHash: sha256Text(`${root}:checks`),
+    currentAttemptHash,
+    currentEvidenceHash,
+    readonlyAuditorRequestHash,
+    readonlyAuditorResponseHash,
+    readonlyAuditorHostInvocationReceiptRef,
+    judgeRequestHash,
+    judgeExecutionReceiptRef,
+    judgeProviderInvocationReceiptRef,
+    judgeAuthoritativeReportHash: sha256Text(readFileSync(reportPath, 'utf8')),
+    judgeAuditReviewScoringContractHash: sha256Text('audit-review-scoring-contract'),
+    judgeAuditReviewScoringHash: sha256Json(judgeAuditReviewScoring),
+  };
+}
 
 describe('auditor host runner', () => {
   it.each([
@@ -630,5 +785,164 @@ describe('auditor host runner', () => {
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
+  });
+
+  it('materializes score and host-closeout receipts from the real score writer for a controlled audit round', async () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'auditor-host-controlled-round-'));
+    const originalScoringDataPath = process.env.SCORING_DATA_PATH;
+    try {
+      writeRuntimeContextRegistry(root, defaultRuntimeContextRegistry(root));
+      materializeScoringPolicy(root);
+      const artifactDocPath = path.join(root, 'artifacts', 'implementation.md');
+      const reportPath = path.join(root, 'audit', 'AUDIT_current_attempt.md');
+      mkdirSync(path.dirname(artifactDocPath), { recursive: true });
+      mkdirSync(path.dirname(reportPath), { recursive: true });
+      writeFileSync(artifactDocPath, '# Production implementation\n', 'utf8');
+      const scoringBody = readFileSync(
+        path.join(
+          process.cwd(),
+          'packages',
+          'scoring',
+          'parsers',
+          '__tests__',
+          'fixtures',
+          'sample-implement-report-with-four-dimensions.md'
+        ),
+        'utf8'
+      );
+      writeFileSync(
+        reportPath,
+        [
+          'status: PASS',
+          `reportPath: ${reportPath.replace(/\\/g, '/')}`,
+          'iteration_count: 0',
+          'required_fixes_count: 0',
+          'score_trigger_present: true',
+          `artifactDocPath: ${artifactDocPath.replace(/\\/g, '/')}`,
+          'converged: true',
+          '',
+          scoringBody,
+        ].join('\n'),
+        'utf8'
+      );
+      process.env.SCORING_DATA_PATH = path.join(root, '_bmad-output', 'scoring');
+      const controlledAuditBinding = materializeControlledAuditBinding(
+        root,
+        reportPath,
+        artifactDocPath
+      );
+
+      const result = await runAuditorHost({
+        projectRoot: root,
+        reportPath,
+        stage: 'implement',
+        artifactPath: artifactDocPath,
+        controlledAuditBinding,
+      });
+
+      expect(result.scoreReceiptRef).toMatchObject({
+        path: expect.any(String),
+        contentHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+        receiptHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+      });
+      expect(result.runAuditorHostReceiptRef).toMatchObject({
+        path: expect.any(String),
+        contentHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+        receiptHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+      });
+
+      const scoreReceiptPath = path.resolve(root, result.scoreReceiptRef!.path);
+      const hostReceiptPath = path.resolve(root, result.runAuditorHostReceiptRef!.path);
+      const scoreReceipt = JSON.parse(readFileSync(scoreReceiptPath, 'utf8'));
+      const hostReceipt = JSON.parse(readFileSync(hostReceiptPath, 'utf8'));
+      const scoreRecordPath = path.resolve(root, scoreReceipt.scoreRecordPath);
+      const scoreRecord = JSON.parse(readFileSync(scoreRecordPath, 'utf8'));
+
+      expect(scoreReceipt).toMatchObject({
+        schemaVersion: 'run-auditor-host-score-receipt/v1',
+        producerIdentity: { id: 'runAuditorHost', role: 'score_materializer' },
+        roundId: controlledAuditBinding.roundId,
+        auditReportHash: sha256Text(readFileSync(reportPath, 'utf8')),
+        sourceDocumentHash: controlledAuditBinding.sourceDocumentHash,
+        semanticModelHash: controlledAuditBinding.semanticModelHash,
+        projectionSetHash: controlledAuditBinding.projectionSetHash,
+        currentAttemptHash: controlledAuditBinding.currentAttemptHash,
+        currentEvidenceHash: controlledAuditBinding.currentEvidenceHash,
+      });
+      expect(scoreRecord).toMatchObject({
+        run_id: scoreReceipt.scoreRunId,
+        scenario: 'real_dev',
+        stage: 'implement',
+      });
+      expect(hostReceipt).toMatchObject({
+        schemaVersion: 'run-auditor-host-closeout-receipt/v1',
+        producerIdentity: { id: 'runAuditorHost', role: 'host_closeout' },
+        roundId: controlledAuditBinding.roundId,
+        scoreReceiptHash: scoreReceipt.receiptHash,
+        closeoutApproved: true,
+        sourceDocumentHash: controlledAuditBinding.sourceDocumentHash,
+        semanticModelHash: controlledAuditBinding.semanticModelHash,
+        projectionSetHash: controlledAuditBinding.projectionSetHash,
+        currentAttemptHash: controlledAuditBinding.currentAttemptHash,
+        currentEvidenceHash: controlledAuditBinding.currentEvidenceHash,
+      });
+      expect(result.closeoutEnvelope).toMatchObject({
+        resultCode: 'approved',
+        rerunDecision: 'none',
+        packetExecutionClosureStatus: 'gate_passed',
+      });
+    } finally {
+      if (originalScoringDataPath === undefined) {
+        delete process.env.SCORING_DATA_PATH;
+      } else {
+        process.env.SCORING_DATA_PATH = originalScoringDataPath;
+      }
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects score-only or compatibility-boolean audit host projections without an authoritative receipt', () => {
+    const authoritativeReceiptRef = {
+      path: 'runtime/host-closeout-receipt.json',
+      contentHash: `sha256:${'1'.repeat(64)}`,
+      receiptHash: `sha256:${'2'.repeat(64)}`,
+    };
+    const input = {
+      auditStatus: 'PASS' as const,
+      stage: 'implement',
+      artifactPath: 'implementation.md',
+      reportPath: 'AUDIT.md',
+      governanceClosure: { contractVersion: 'review_governance_closure_v1' },
+      closeoutEnvelope: { resultCode: 'approved' },
+      scoreWriteResult: 'ok' as const,
+      handoffPersisted: true,
+      updatedAt: '2026-07-30T00:00:00.000Z',
+    };
+
+    expect(() =>
+      deriveAuditHostCompatibilityProjection({
+        ...input,
+        scoreReceiptRef: authoritativeReceiptRef,
+      })
+    ).toThrow(/authoritative_receipt_ref_missing/u);
+    expect(() =>
+      deriveAuditHostCompatibilityProjection({
+        ...input,
+        authoritativeReceiptRef,
+        compatibilityCloseoutApproved: true,
+      })
+    ).toThrow(/compatibility_boolean_forbidden/u);
+    expect(
+      deriveAuditHostCompatibilityProjection({
+        ...input,
+        authoritativeReceiptRef,
+      })
+    ).toMatchObject({
+      closeoutApproved: true,
+      projectionDerivationReceipt: {
+        authorityMode: 'authoritative_receipt',
+        authoritativeReceiptRef,
+      },
+    });
   });
 });

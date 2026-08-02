@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "requirements-contract-consumer-registry/v2",
+  "owner": {
+    "path": "src/registry-owner.ts",
+    "hash": "sha256:fixture"
+  },
+  "consumers": [
+    {
+      "consumerId": "fixture-consumer",
+      "path": "src/registry-active.ts",
+      "pathHash": "sha256:fixture"
+    }
+  ],
+  "discovery": {
+    "declaredPaths": [
+      "src/registry-active.ts"
+    ],
+    "discoveredPaths": [
+      "src/registry-active.ts"
+    ]
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-semantic-mutation-report.schema.json",
+  "title": "Requirements Contract Semantic Mutation Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "qualificationHash",
+    "mutations",
+    "requiredMutationCount",
+    "killedMutationCount",
+    "survivingMandatoryMutationIds",
+    "decision",
+    "reportHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-semantic-mutation-report/v1" },
+    "qualificationHash": { "$ref": "#/$defs/sha256" },
+    "mutations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/mutation" }
+    },
+    "requiredMutationCount": { "type": "integer", "minimum": 0 },
+    "killedMutationCount": { "type": "integer", "minimum": 0 },
+    "survivingMandatoryMutationIds": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/nonEmptyString" },
+      "uniqueItems": true
+    },
+    "decision": { "enum": ["pass", "block"] },
+    "reportHash": { "$ref": "#/$defs/sha256" }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mutation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mutationId", "mutationType", "mandatory", "killed"],
+      "properties": {
+        "mutationId": { "$ref": "#/$defs/nonEmptyString" },
+        "mutationType": { "$ref": "#/$defs/nonEmptyString" },
+        "mandatory": { "type": "boolean" },
+        "killed": { "type": "boolean" }
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 ---
 name: goal-execution-contract-generator
-description: Generate strict frozen /goal execution contract documents from conversation requirements or existing requirement documents using the shared goal-contract template projection. Use when the user asks for a /goal-ready execution contract, strict goal plan, autonomous implementation contract, or docs/plans goal execution document; includes docs-review dependency adaptation, auto-install when missing, and audit/fix iteration until 3 consecutive no-gap rounds.
+description: Generate strict frozen /goal execution contract documents from conversation requirements or existing requirement documents using the shared goal-contract template projection. Use when the user asks for a /goal-ready execution contract, strict goal plan, autonomous implementation contract, or docs/plans goal execution document.
 ---
 
 # Goal Execution Contract Generator
@@ -16,7 +16,12 @@ Create a frozen `/goal` execution contract. This skill only generates and audits
    - Default: `docs/plans/YYYY-MM-DD-<slug>-goal-execution-plan.md`.
    - Use the user-provided path if present.
 3. For source-plan goal contracts, use the first-class package CLI:
-   - Run `bmad-speckit goal-contract generate --source <path> --out <path> --json`.
+   - Run `bmad-speckit goal-contract generate --entry standalone_goal_contract --source <path> --out <path> --json`.
+   - Build one immutable `SourceSnapshot` from the exact Source Plan bytes or LF-normalized ordered conversation segments.
+   - Invoke `StandaloneViewProvider.deriveImplementationView` with only that snapshot, repository facts, and the implementation role contract.
+   - Invoke `StandaloneViewProvider.deriveAcceptanceEvidenceView` separately with the same snapshot and the acceptance/evidence role contract.
+   - Require distinct provider session identities, reject cross-view inputs or shared responses, and record both input/output hashes.
+   - Do not persist either transient view as an authority file.
    - Treat `coverageReceiptPath`, `generationReceiptPath`, `sourcePlanHash`, `goalContractHash`, `sourceObligationCount`, and `unmappedSourceObligations: 0` from the JSON output as required generation evidence.
    - Require the coverage receipt before public release use.
    - The installed consumer invocation must work for Codex, Claude Code, and Cursor without host-specific lock-in and without consumer root `scripts/`.
@@ -26,18 +31,18 @@ Create a frozen `/goal` execution contract. This skill only generates and audits
    - Resolve `references/goal-execution-contract-template.md` and `references/goal-contract-profile.json` relative to this skill directory.
    - If the template is missing, stop with `goal_contract_template_missing`.
    - If the profile is missing, continue only for manual contract authoring, and report `goal_contract_profile_missing` as a packaging defect.
-5. Run docs-review dependency adaptation before writing the contract:
-   - Run `node <skill-dir>/scripts/check-docs-review-dependency.js --auto-install`, replacing `<skill-dir>` with this skill's installed directory.
-   - If it reports `available` or `installed`, continue.
-   - If it reports `blocked`, stop with `docs_review_dependency_blocked` and include the reported reason.
+5. Run docs-review dependency adaptation only for a non-standalone compatibility workflow that explicitly retains docs-review:
+   - Standalone Goal-contract generation MUST NOT install, invoke, or wait for docs-review.
+   - For a retained non-standalone workflow, run `node <skill-dir>/scripts/check-docs-review-dependency.js --auto-install`, replacing `<skill-dir>` with this skill's installed directory.
+   - If that retained workflow reports `blocked`, stop it with `docs_review_dependency_blocked` and include the reported reason.
 6. Generate the contract from the template only when the package CLI is not applicable.
-7. Run the contract completeness gate.
-8. Run docs-review audit/fix rounds.
+7. Run the contract completeness gate and command portability gate.
+8. Delegate semantic review convergence to `multi-view-doc-review-loop`.
 9. Run encoding integrity gate after all text edits.
 
 ## Contract Generation Rules
 
-- `bmad-speckit goal-contract generate --source <path> --out <path> --json` is the required success path for source-plan contracts.
+- `bmad-speckit goal-contract generate --entry standalone_goal_contract --source <path> --out <path> --json` is the required success path for source-plan contracts.
 - `.tmp/*.cjs generation scripts are failure evidence only`; they are not a success path and must not be cited as successful generation proof.
 - `large-document-writer is transport only`; it must not own source-plan obligation extraction, task generation, acceptance generation, command generation, or source coverage semantics.
 - Coverage receipt is source coverage evidence only; it is not implementation evidence.
@@ -189,28 +194,44 @@ Also verify:
 - Every `MUST`, `MUST NOT`, `NOT DONE`, `EVD`, `ARTIFACT`, `PATH`, `TRACE MATRIX`, and `COMMAND` row has deterministic owner, path or target, proof command or artifact, and pass/block condition.
 - Every unavailable or out-of-scope item is expressed as either `blocked_until_<specific_condition>` or a deterministic `NOT DONE` row.
 
-If any check fails, fix the contract before starting docs-review rounds.
+If any check fails, fix the contract before delegating review convergence.
 
-## Docs-Review Audit Loop
+## Command Portability Gate
 
-Use the installed `docs-review` skill in local review mode. If the current host cannot invoke `$docs-review` directly after auto-install, read the returned `SKILL.md` path from the dependency script and apply its local review workflow manually.
+Run command portability checks before freezing the first semantic-review hash and after every command-text repair.
 
-Loop rules:
+- On Windows, run `node <skill-dir>/scripts/check-contract-command-portability.js --target <path> --shell pwsh --json`.
+- Treat any non-zero result as a generation blocker. Fix every reported occurrence in one batch before semantic review or promotion.
+- Reject unquoted Git extended revision expressions such as `git rev-parse HEAD^{tree}` in PowerShell contracts. Require `git rev-parse "HEAD^{tree}"` or an equivalent quoted revision argument.
+- Smoke-test read-only commands in their declared shell when repository state permits. Do not execute mutating, destructive, credentialed, release, commit, push, or deployment commands during contract generation.
+- Record the target hash and portability receipt with the deterministic completeness evidence so a later docs-review cannot discover the same command defect after semantic convergence.
 
-1. Run docs-review against the generated contract.
-2. If docs-review reports issues, fix them immediately.
-3. After any fix, reset the consecutive no-gap counter to `0`.
-4. If docs-review reports no issues, increment the consecutive no-gap counter.
-5. Stop only after `3` consecutive no-gap rounds.
+## Review Convergence Delegation
 
-Treat any style, clarity, structure, command-order, or readability issue as a gap. Do not waive docs-review findings unless the finding conflicts with frozen `/goal` contract semantics; if there is a conflict, keep the contract semantics and document the waived docs-review issue in the final response.
+`multi-view-doc-review-loop` is the only owner of audit convergence. This generator MUST NOT run an independent audit/fix loop or maintain a no-gap counter.
+
+Handoff rules:
+
+1. Complete generation, source coverage, the deterministic completeness gate, and the command portability gate.
+2. Hand the generated target path, source hash, and current target hash to `multi-view-doc-review-loop`.
+3. Let that skill own audit epochs, target freezing, batch fixes, selective revalidation, timeout takeover, and completion receipts.
+4. For `standalone_goal_contract`, treat the latest-hash three-perspective PASS as the terminal model-audit result and do not run a separate final docs-review.
+5. Preserve any existing final docs-review only for unrelated non-standalone documentation workflows; if it changes governed semantics, return that target to its convergence controller.
+
+Treat standalone style, clarity, structure, command-order, or readability defects as deterministic or three-perspective audit findings. Do not create a second audit loop for them.
 
 ## Required Commands
 
-Use PowerShell 7 on Windows:
+For retained non-standalone docs-review workflows only, use PowerShell 7 on Windows:
 
 ```powershell
 pwsh.exe -NoLogo -NoProfile -Command "& { node <skill-dir>/scripts/check-docs-review-dependency.js --auto-install }"
+```
+
+Run the command portability gate before semantic review and after command-text changes:
+
+```powershell
+pwsh.exe -NoLogo -NoProfile -Command "& { node <skill-dir>/scripts/check-contract-command-portability.js --target <path> --shell pwsh --json }"
 ```
 
 Run the project encoding gate before and after Markdown/skill edits when available:
@@ -225,8 +246,10 @@ Report:
 
 - Generated contract path.
 - Source path or conversation-derived source summary.
-- docs-review dependency status.
-- docs-review rounds and whether 3 consecutive no-gap rounds were achieved.
+- Standalone docs-review status `not_required`, or the retained non-standalone dependency status.
+- Command portability gate result.
+- Audit epoch count, reviewed target hash, required perspective receipts, and selective carry-forward decisions.
+- Standalone latest-hash three-perspective result, or the retained non-standalone final docs-review result.
 - Encoding gate result.
 - Any residual risks or blocked conditions.
 

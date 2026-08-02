@@ -37,6 +37,11 @@ import {
   verifySpeckitImplementRalphTracking,
 } from './ralph-method/speckit-implement';
 import type { RalphTddPhase } from './ralph-method/types';
+import {
+  parseRequirementsContractJudgeRunArgv,
+  requirementsContractJudgeRunCommand,
+  type RequirementsContractJudgeRunCommandOptions,
+} from './requirements-contract-judge-command';
 
 function buildCrossPlatformCommand(command: string): string {
   if (process.platform !== 'win32') {
@@ -297,6 +302,102 @@ function getRequiredStringOption(options: CliOptions, key: string): string {
   return value;
 }
 
+type JudgePublicResult = Record<string, unknown>;
+
+const LEGACY_JUDGE_PUBLIC_FLAGS = new Set([
+  '--external-adapter-command',
+  '--adapter-command',
+  '--external-argv',
+  '--executable',
+  '--command',
+]);
+
+export interface JudgePublicCommandDependencies {
+  runCommand?: typeof requirementsContractJudgeRunCommand;
+  writeStdout?: (value: string) => void;
+  writeStderr?: (value: string) => void;
+}
+
+export function enforceJudgeProcessStatusParity(
+  input: JudgePublicResult
+): JudgePublicResult {
+  const decision = String(input.decision ?? input.jsonDecision ?? 'error');
+  const ok = decision === 'pass' && input.ok === true;
+  const expectedProcessExitCode = ok ? 0 : 1;
+  const reportedProcessExitCode = Number(input.processExitCode);
+  const processStatusParity =
+    Number.isInteger(reportedProcessExitCode) &&
+    reportedProcessExitCode === expectedProcessExitCode &&
+    input.processStatusParity !== false;
+  const result: JudgePublicResult = {
+    ...input,
+    decision,
+    ok,
+    processExitCode: expectedProcessExitCode,
+    processStatusParity,
+  };
+  if (!processStatusParity) {
+    result.issueCode = 'release_process_status_mismatch';
+    result.reportedProcessExitCode = input.processExitCode;
+    result.processExitCode = 1;
+  }
+  return result;
+}
+
+function publicJudgeError(error: unknown): JudgePublicResult {
+  const issueCode =
+    error instanceof Error ? error.message : String(error);
+  return enforceJudgeProcessStatusParity({
+    schemaVersion: 'requirements-contract-judge-public-result/v1',
+    command: 'bmad-speckit judge run',
+    decision: 'error',
+    ok: false,
+    processExitCode: 1,
+    processStatusParity: true,
+    issueCode,
+  });
+}
+
+export async function runJudgePublicCommand(
+  argv: string[] = process.argv.slice(2),
+  deps: JudgePublicCommandDependencies = {}
+): Promise<number> {
+  const writeStdout =
+    deps.writeStdout ?? ((value: string) => process.stdout.write(value));
+  const writeStderr =
+    deps.writeStderr ?? ((value: string) => process.stderr.write(value));
+  const jsonRequested = argv.includes('--json');
+
+  try {
+    const legacyFlag = argv.find((arg) => LEGACY_JUDGE_PUBLIC_FLAGS.has(arg));
+    if (legacyFlag) {
+      throw new Error(
+        `requirements_contract_judge_public_legacy_override_rejected:${legacyFlag}`
+      );
+    }
+    const options = parseRequirementsContractJudgeRunArgv(argv);
+    const runCommand = deps.runCommand ?? requirementsContractJudgeRunCommand;
+    const commandResult = await runCommand({
+      ...options,
+      json: false,
+    } as RequirementsContractJudgeRunCommandOptions);
+    const result = enforceJudgeProcessStatusParity({
+      ...(commandResult as JudgePublicResult),
+      ok: (commandResult as JudgePublicResult).decision === 'pass',
+    });
+    if (jsonRequested) writeStdout(`${JSON.stringify(result)}\n`);
+    return Number(result.processExitCode);
+  } catch (error) {
+    const result = publicJudgeError(error);
+    if (jsonRequested) {
+      writeStdout(`${JSON.stringify(result)}\n`);
+    } else {
+      writeStderr(`${String(result.issueCode)}\n`);
+    }
+    return 1;
+  }
+}
+
 export function recordImplementRalphTddPhase(
   options: CliOptions,
   deps: { projectRoot?: string } = {}
@@ -539,6 +640,16 @@ async function main(): Promise<void> {
   if (args[0] === '--version' || args[0] === 'version') {
     console.log(`Speckit CLI v${VERSION}`);
     process.exit(0);
+  }
+
+  if (args[0] === 'judge') {
+    if (args[1] !== 'run') {
+      console.error('Error: only the canonical command `judge run` is supported');
+      process.exitCode = 1;
+      return;
+    }
+    process.exitCode = await runJudgePublicCommand(args.slice(2));
+    return;
   }
 
   const { command, options } = parseArgs(args);

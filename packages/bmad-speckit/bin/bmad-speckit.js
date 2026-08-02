@@ -21,6 +21,16 @@ function loadCommand(modulePath, exportName) {
   return require(modulePath)[exportName];
 }
 
+function loadRecoveryCommand(exportName) {
+  return require('../dist/main-agent/source-authority/scripts/requirements-contract-recovery-bootstrap.js')[
+    exportName
+  ];
+}
+
+function collectRepeatedOption(value, previous) {
+  return [...previous, value];
+}
+
 function runRuntimeModule(modulePath, exportName, args) {
   Promise.resolve(require(modulePath)[exportName](args))
     .then((exitCode) => {
@@ -88,7 +98,10 @@ function registerWave312PublicCommand(commandName, exportName, description) {
     .action((opts, command) =>
       runCommandPromise(
         commandName,
-        loadCommand(`../dist/commands/${commandName}`, exportName)(opts, forwardedArgsFromCommand(command))
+        loadCommand(`../dist/commands/${commandName}`, exportName)(
+          opts,
+          forwardedArgsFromCommand(command)
+        )
       )
     );
 }
@@ -105,12 +118,37 @@ program
   .enablePositionalOptions()
   .description('BMAD-Speckit: init, check, version, upgrade, uninstall, config, feedback');
 
+const judgePublicCommand = program
+  .command('judge')
+  .description('Run the canonical requirements contract Judge command');
+
+judgePublicCommand
+  .command('run')
+  .description('Run the canonical requirements contract Judge invocation')
+  .requiredOption('--project-root <path>', 'Project root containing Judge configuration')
+  .requiredOption('--config <path>', 'Public Judge runtime configuration')
+  .requiredOption('--request <path>', 'Canonical Judge request')
+  .requiredOption('--role <role>', 'Pinned Judge role; must be requirements')
+  .requiredOption('--attempt-id <id>', 'Current Judge attempt identity')
+  .requiredOption('--output-dir <path>', 'Controlled Judge output directory')
+  .option('--json', 'Print machine-readable JSON')
+  .action((_opts, command) =>
+    runRuntimeModule(
+      '../dist/main-agent/source-authority/scripts/speckit-cli.js',
+      'runJudgePublicCommand',
+      forwardedArgsFromCommand(command)
+    )
+  );
+
 program
   .command('init [project-name]')
   .description('Initialize a new bmad-speckit project')
   .option('--here', 'Use current directory')
   .option('--ai <name>', 'AI selection, comma-separated for multi (e.g. cursor-agent,claude)')
-  .option('--ai-commands-dir <path>', 'Commands directory for generic AI (required when --ai generic)')
+  .option(
+    '--ai-commands-dir <path>',
+    'Commands directory for generic AI (required when --ai generic)'
+  )
   .option('-y, --yes', 'Skip all prompts, use defaults')
   .option('--template <tag|url>', 'Template version (latest, v1.0.0) or tarball URL')
   .option('--network-timeout <ms>', 'Network timeout in ms (overrides env and config)')
@@ -121,7 +159,10 @@ program
   .option('--bmad-path <path>', 'Shared _bmad path (worktree mode, no copy)')
   .option('--ai-skills', 'Publish AI skills to project-local skill directories (default)')
   .option('--no-ai-skills', 'Skip publishing AI skills')
-  .option('--allow-global-skill-writes', 'Allow explicit user-global skill writes for registries that declare skillScope=user-global')
+  .option(
+    '--allow-global-skill-writes',
+    'Allow explicit user-global skill writes for registries that declare skillScope=user-global'
+  )
   .option('--debug', 'Enable debug output')
   .option('--github-token <token>', 'GitHub API token')
   .option('--skip-tls', 'Skip SSL/TLS verification (not recommended)')
@@ -135,7 +176,10 @@ program
   .option('--json', 'Output as JSON')
   .option('--ignore-agent-tools', 'Skip AI tool (detectCommand) detection')
   .action((opts) =>
-    loadCommand('../dist/commands/check', 'checkCommand')({
+    loadCommand(
+      '../dist/commands/check',
+      'checkCommand'
+    )({
       cwd: process.cwd(),
       listAi: opts.listAi,
       json: opts.json,
@@ -148,7 +192,10 @@ program
   .description('Show CLI version, template version, Node version')
   .option('--json', 'Output as JSON')
   .action((opts) =>
-    loadCommand('../dist/commands/version', 'versionCommand')({
+    loadCommand(
+      '../dist/commands/version',
+      'versionCommand'
+    )({
       cwd: process.cwd(),
       json: opts.json,
     })
@@ -172,11 +219,17 @@ program
   .command('uninstall')
   .description('Safely uninstall managed bmad-speckit install surface from current project')
   .option('--target <path>', 'Project root to uninstall from', '.')
-  .option('--agent <ids>', 'Optional agent filter (cursor|claude-code|codex|cursor,claude-code,codex)')
+  .option(
+    '--agent <ids>',
+    'Optional agent filter (cursor|claude-code|codex|cursor,claude-code,codex)'
+  )
   .option('--remove-global-skills', 'Also remove managed global skill directories')
   .option('--dry-run', 'Preview uninstall actions without changing files')
   .action((opts) =>
-    loadCommand('../dist/commands/uninstall', 'uninstallCommand')({
+    loadCommand(
+      '../dist/commands/uninstall',
+      'uninstallCommand'
+    )({
       target: opts.target,
       agent: opts.agent,
       removeGlobalSkills: opts.removeGlobalSkills,
@@ -186,12 +239,18 @@ program
 
 program
   .command('add-agent <ai>')
-  .description('Add AI agent infrastructure to an initialized project (e.g. bmad-speckit add-agent claude)')
-  .action((ai) => loadCommand('../dist/commands/add-agent', 'addAgentCommand')(ai, { cwd: process.cwd() }));
+  .description(
+    'Add AI agent infrastructure to an initialized project (e.g. bmad-speckit add-agent claude)'
+  )
+  .action((ai) =>
+    loadCommand('../dist/commands/add-agent', 'addAgentCommand')(ai, { cwd: process.cwd() })
+  );
 
 program
   .command('large-doc')
-  .description('Create, validate, safely promote, and clean up large generated document draft sessions')
+  .description(
+    'Create, validate, safely promote, and clean up large generated document draft sessions'
+  )
   .option('--json', 'Print machine-readable JSON')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
@@ -268,9 +327,7 @@ ralphCmd
   .option('--storySlug <slug>', 'Story slug')
   .action((opts) => loadCommand('../dist/commands/ralph', 'ralphVerifyCommand')(opts));
 
-const configCmd = program
-  .command('config')
-  .description('Get/set/list bmad-speckit config');
+const configCmd = program.command('config').description('Get/set/list bmad-speckit config');
 
 configCmd
   .command('get <key>')
@@ -334,7 +391,10 @@ program
   .option('--agent <agent>', 'Agent type (cursor|claude-code|codex)')
   .option('--source <source>', 'Source type (cursor_command|claude_agent|claude_hook)')
   .action((opts) => {
-    loadCommand('../dist/commands/score', 'scoreCommand')(opts).catch((err) => {
+    loadCommand(
+      '../dist/commands/score',
+      'scoreCommand'
+    )(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -360,9 +420,10 @@ program
   .option('--dataPath <path>', 'Scoring data directory for --run-id compatibility')
   .allowUnknownOption(false)
   .action((opts) => {
-    loadCommand('../dist/commands/eval-question-generate', 'evalQuestionGenerateCli')(opts).then(
-      (exitCode) => process.exit(exitCode)
-    );
+    loadCommand(
+      '../dist/commands/eval-question-generate',
+      'evalQuestionGenerateCli'
+    )(opts).then((exitCode) => process.exit(exitCode));
   });
 
 program
@@ -376,7 +437,10 @@ program
   .option('--scenario <scenario>', 'Scenario filter (real_dev|eval_question|all)', 'real_dev')
   .option('--dataPath <path>', 'Scoring data directory')
   .action((opts) => {
-    loadCommand('../dist/commands/coach', 'coachCommand')(opts).catch((err) => {
+    loadCommand(
+      '../dist/commands/coach',
+      'coachCommand'
+    )(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -409,7 +473,9 @@ program
 
 program
   .command('sft-extract')
-  .description('Extract SFT training dataset from scoring data (legacy JSONL or canonical bundle compatibility mode)')
+  .description(
+    'Extract SFT training dataset from scoring data (legacy JSONL or canonical bundle compatibility mode)'
+  )
   .option('--min-score <n>', 'Minimum score for inclusion (default: 90, minimum: 90)')
   .option(
     '--target <target>',
@@ -417,13 +483,19 @@ program
     'legacy_instruction_io'
   )
   .option('--output <path>', 'Output file path')
-  .option('--bundle-dir <path>', 'Bundle output directory when --target is not legacy_instruction_io')
+  .option(
+    '--bundle-dir <path>',
+    'Bundle output directory when --target is not legacy_instruction_io'
+  )
   .option('--dataPath <path>', 'Scoring data directory')
   .option('--split-seed <n>', 'Deterministic split seed for canonical exporters')
   .option('--max-tokens <n>', 'Maximum token estimate allowed for canonical exporters')
   .option('--drop-no-code-pair', 'Reject samples without code pair in canonical exporters')
   .action((opts) => {
-    loadCommand('../dist/commands/sft-extract', 'sftExtractCommand')(opts).catch((err) => {
+    loadCommand(
+      '../dist/commands/sft-extract',
+      'sftExtractCommand'
+    )(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -444,7 +516,10 @@ program
   .option('--max-tokens <n>', 'Maximum token estimate allowed')
   .option('--drop-no-code-pair', 'Reject samples without code pair')
   .action((opts) => {
-    loadCommand('../dist/commands/sft-preview', 'sftPreviewCommand')(opts).catch((err) => {
+    loadCommand(
+      '../dist/commands/sft-preview',
+      'sftPreviewCommand'
+    )(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -465,7 +540,10 @@ program
   .option('--max-tokens <n>', 'Maximum token estimate allowed')
   .option('--drop-no-code-pair', 'Reject samples without code pair')
   .action((opts) => {
-    loadCommand('../dist/commands/sft-validate', 'sftValidateCommand')(opts).catch((err) => {
+    loadCommand(
+      '../dist/commands/sft-validate',
+      'sftValidateCommand'
+    )(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -486,7 +564,10 @@ program
   .option('--max-tokens <n>', 'Maximum token estimate allowed')
   .option('--drop-no-code-pair', 'Reject samples without code pair')
   .action((opts) => {
-    loadCommand('../dist/commands/sft-bundle', 'sftBundleCommand')(opts).catch((err) => {
+    loadCommand(
+      '../dist/commands/sft-bundle',
+      'sftBundleCommand'
+    )(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -509,7 +590,10 @@ program
   .option('--persist', 'After sprint-status write: refresh registry using last-*-run.json')
   .action((opts) => {
     try {
-      loadCommand('../dist/commands/ensure-run-runtime-context', 'ensureRunRuntimeContextCommand')(opts);
+      loadCommand(
+        '../dist/commands/ensure-run-runtime-context',
+        'ensureRunRuntimeContextCommand'
+      )(opts);
     } catch (err) {
       console.error(err);
       process.exit(1);
@@ -559,7 +643,10 @@ program
   .option('--dashboard-port <n>', 'Port to auto-start the dashboard on')
   .option('--host <host>', 'Dashboard host when auto-starting', '127.0.0.1')
   .action((opts) => {
-    loadCommand('../dist/commands/runtime-mcp', 'runtimeMcpCommand')(opts).catch((err) => {
+    loadCommand(
+      '../dist/commands/runtime-mcp',
+      'runtimeMcpCommand'
+    )(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -572,7 +659,10 @@ program
   .option('--timeoutMs <ms>', 'Request timeout in ms')
   .option('--prompt <text>', 'Custom smoke prompt')
   .action((opts) => {
-    loadCommand('../dist/commands/provider-smoke', 'providerSmokeCommand')(opts).catch((err) => {
+    loadCommand(
+      '../dist/commands/provider-smoke',
+      'providerSmokeCommand'
+    )(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -586,7 +676,10 @@ program
   .option('--host <host>', 'Host to bind', '127.0.0.1')
   .option('--open', 'Open the dashboard in the default browser')
   .action((opts) => {
-    loadCommand('../dist/commands/dashboard-start', 'dashboardStartCommand')(opts).catch((err) => {
+    loadCommand(
+      '../dist/commands/dashboard-start',
+      'dashboardStartCommand'
+    )(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -620,7 +713,10 @@ program
   .option('--host <host>', 'Host to bind', '127.0.0.1')
   .option('--open', 'Start a stable background server and open the dashboard in the browser')
   .action((opts) => {
-    loadCommand('../dist/commands/dashboard-live', 'dashboardLiveCommand')(opts).catch((err) => {
+    loadCommand(
+      '../dist/commands/dashboard-live',
+      'dashboardLiveCommand'
+    )(opts).catch((err) => {
       console.error(err);
       process.exit(1);
     });
@@ -702,16 +798,17 @@ program
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, _command) =>
-    runRuntimeModule(
-      '../dist/main-agent/index.js',
-      'mainAgentRuntimeCommand',
-      ['--legacy-orchestration', ...rawArgsAfterCommandName('main-agent-orchestration')]
-    )
+    runRuntimeModule('../dist/main-agent/index.js', 'mainAgentRuntimeCommand', [
+      '--legacy-orchestration',
+      ...rawArgsAfterCommandName('main-agent-orchestration'),
+    ])
   );
 
 program
   .command('confirm-scope')
-  .description('Confirm requirement scope through controlled ingest after exact chat hash confirmation')
+  .description(
+    'Confirm requirement scope through controlled ingest after exact chat hash confirmation'
+  )
   .option('--json', 'Print machine-readable JSON')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
@@ -834,25 +931,781 @@ registerWave312PublicCommand(
   'architectureDriftCheckCommand',
   'Run the package architecture drift check surface'
 );
-registerWave312PublicCommand('coach-diagnose', 'coachDiagnoseCommand', 'Run the package coach diagnosis surface');
+registerWave312PublicCommand(
+  'coach-diagnose',
+  'coachDiagnoseCommand',
+  'Run the package coach diagnosis surface'
+);
 registerWave312PublicCommand(
   'emit-runtime-policy',
   'emitRuntimePolicyCommand',
   'Emit the package runtime policy surface'
 );
-registerWave312PublicCommand('init-to-root', 'initToRootCommand', 'Run the package init-to-root surface');
+registerWave312PublicCommand(
+  'init-to-root',
+  'initToRootCommand',
+  'Run the package init-to-root surface'
+);
 registerWave312PublicCommand(
   'live-smoke-speckit-workflow',
   'liveSmokeSpeckitWorkflowCommand',
   'Run the package live smoke workflow surface'
 );
 registerWave312PublicCommand('setup', 'setupCommand', 'Run the package setup surface');
-registerWave312PublicCommand('speckit-cli', 'speckitCliCommand', 'Run the package Speckit CLI surface');
+registerWave312PublicCommand(
+  'speckit-cli',
+  'speckitCliCommand',
+  'Run the package Speckit CLI surface'
+);
 registerWave312PublicCommand(
   'validate-single-source-whitelist',
   'validateSingleSourceWhitelistCommand',
   'Run the package single-source whitelist validation surface'
 );
+
+program
+  .command('requirements-contract-six-model-projection-parity-verify')
+  .description('Verify six-model projection parity across package installation surfaces')
+  .requiredOption('--evidence-root <path>', 'Directory containing parity observations')
+  .requiredOption('--out <path>', 'Parity report output path')
+  .option('--json', 'Print machine-readable JSON summary')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-six-model-projection-parity-verify',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-six-model-projection-parity-verifier.js',
+        'requirementsContractSixModelProjectionParityVerifyCommand'
+      )({
+        evidenceRoot: opts.evidenceRoot,
+        out: opts.out,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-consumer-cli-capability-observe')
+  .description('Observe the installed Consumer CLI host capability')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-consumer-cli-capability-observe',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-consumer-cli-capability.js',
+        'requirementsContractConsumerCliCapabilityObserveCommand'
+      )({
+        cwd: process.cwd(),
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-prompt-transaction-publish')
+  .description('Publish the current governed prompt transaction and dispatch pointer')
+  .requiredOption('--requirement-record <path>', 'Current Requirement Record')
+  .requiredOption('--out-dir <path>', 'Current implementation-attempt output directory')
+  .requiredOption('--prompt-language <language>', 'Prompt language')
+  .requiredOption('--human-prompt-profile <profile>', 'Human prompt profile')
+  .requiredOption('--packet-id <id>', 'Current implementation-attempt packet id')
+  .requiredOption('--task-report-path <path>', 'Current TaskReport path')
+  .requiredOption('--attempt-context <path>', 'Current pre-edit attempt context receipt')
+  .requiredOption('--stage-registry <path>', 'Canonical Stage Registry owner')
+  .requiredOption(
+    '--requirements-confirmation-receipt <path>',
+    'Current requirements confirmation receipt'
+  )
+  .requiredOption(
+    '--architecture-confirmation-receipt <path>',
+    'Current architecture confirmation receipt'
+  )
+  .requiredOption('--consumer-root <path>', 'Authorized Consumer project root')
+  .requiredOption('--current-dispatch-pointer <path>', 'Current dispatch pointer target')
+  .requiredOption('--evidence-out <path>', 'EVD-09 target')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-prompt-transaction-publish',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher.js',
+        'requirementsContractPromptTransactionPublishCommand'
+      )({
+        cwd: process.cwd(),
+        requirementRecord: opts.requirementRecord,
+        outDir: opts.outDir,
+        promptLanguage: opts.promptLanguage,
+        humanPromptProfile: opts.humanPromptProfile,
+        packetId: opts.packetId,
+        taskReportPath: opts.taskReportPath,
+        attemptContext: opts.attemptContext,
+        stageRegistry: opts.stageRegistry,
+        requirementsConfirmationReceipt: opts.requirementsConfirmationReceipt,
+        architectureConfirmationReceipt: opts.architectureConfirmationReceipt,
+        consumerRoot: opts.consumerRoot,
+        currentDispatchPointer: opts.currentDispatchPointer,
+        evidenceOut: opts.evidenceOut,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-production-bypass-evidence-materialize')
+  .description('Materialize current production bypass evidence aggregates')
+  .requiredOption('--requirement-record <path>', 'Current Requirement Record')
+  .requiredOption('--transaction-id <id>', 'Current transaction id')
+  .requiredOption('--implementation-attempt-id <id>', 'Current implementation attempt id')
+  .requiredOption('--attempt-context <path>', 'Current attempt context receipt')
+  .requiredOption('--pointer-receipt <path>', 'Current dispatch pointer receipt')
+  .requiredOption('--implementation-evidence <path>', 'Current implementation evidence index')
+  .requiredOption('--evidence-root <path>', 'Target directory for verifier evidence')
+  .requiredOption('--contract-hash <hash>', 'Current frozen contract hash')
+  .requiredOption('--source-hash <hash>', 'Current source document hash')
+  .requiredOption('--semantic-model-hash <hash>', 'Current semantic model hash')
+  .option('--json', 'Print machine-readable JSON summary')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-production-bypass-evidence-materialize',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-production-bypass-evidence-materializer.js',
+        'requirementsContractProductionBypassEvidenceMaterializeCommand'
+      )({
+        requirementRecordPath: opts.requirementRecord,
+        transactionId: opts.transactionId,
+        implementationAttemptId: opts.implementationAttemptId,
+        attemptContextPath: opts.attemptContext,
+        pointerReceiptPath: opts.pointerReceipt,
+        implementationEvidencePath: opts.implementationEvidence,
+        evidenceRoot: opts.evidenceRoot,
+        contractHash: opts.contractHash,
+        sourceHash: opts.sourceHash,
+        semanticModelHash: opts.semanticModelHash,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-production-bypass-verify')
+  .description('Verify production bypass closure from current authoritative evidence')
+  .requiredOption('--evidence-root <path>', 'Directory containing current closure evidence')
+  .option('--json', 'Print machine-readable JSON summary')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-production-bypass-verify',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-production-bypass-verifier.js',
+        'requirementsContractProductionBypassVerifyCommand'
+      )({
+        cwd: process.cwd(),
+        evidenceRoot: opts.evidenceRoot,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-changed-path-manifest')
+  .description('Capture the authorized candidate snapshot and changed-path manifest')
+  .requiredOption('--contract <path>', 'Frozen goal execution contract')
+  .requiredOption('--baseline <path>', 'Frozen G00 baseline fixture')
+  .requiredOption('--snapshot-before-write <boolean>', 'Require capture before CMD-21 output write')
+  .requiredOption('--out <path>', 'Changed-path manifest output')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-changed-path-manifest',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-changed-path-manifest.js',
+        'requirementsContractChangedPathManifestCommand'
+      )({
+        cwd: process.cwd(),
+        contract: opts.contract,
+        baseline: opts.baseline,
+        snapshotBeforeWrite: opts.snapshotBeforeWrite === 'true',
+        out: opts.out,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-detached-test-rerun')
+  .description('Materialize the frozen candidate and rerun the declared command range')
+  .requiredOption('--contract <path>', 'Frozen goal execution contract')
+  .requiredOption('--changed-path-manifest <path>', 'Current changed-path manifest')
+  .requiredOption('--baseline <path>', 'Frozen G00 baseline fixture')
+  .requiredOption('--command-range <range>', 'Inclusive command range such as CMD-02:CMD-20')
+  .requiredOption('--workspace-mode <mode>', 'Must be isolated-snapshot')
+  .requiredOption('--artifact-root <path>', 'Detached audit artifact root')
+  .requiredOption('--out <path>', 'Detached rerun report output')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-detached-test-rerun',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-detached-test-runner.js',
+        'requirementsContractDetachedTestRerunCommand'
+      )({
+        cwd: process.cwd(),
+        contract: opts.contract,
+        changedPathManifest: opts.changedPathManifest,
+        baseline: opts.baseline,
+        commandRange: opts.commandRange,
+        workspaceMode: opts.workspaceMode,
+        artifactRoot: opts.artifactRoot,
+        out: opts.out,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-eval')
+  .description('Evaluate requirements-contract correctness against the frozen labeled corpus')
+  .requiredOption('--corpus <path>', 'Versioned evaluation corpus')
+  .requiredOption('--out <path>', 'Evaluation report output')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-eval',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-evaluation.js',
+        'requirementsContractEvalCommand'
+      )({
+        cwd: process.cwd(),
+        corpus: opts.corpus,
+        out: opts.out,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-candidate-package')
+  .description('Pack the sole bmad-speckit package owner with immutable provenance')
+  .requiredOption('--package-root <path>', 'Sole package owner root')
+  .requiredOption('--package-manifest <path>', 'Package manifest')
+  .requiredOption('--dist-root <path>', 'Generated package dist root')
+  .requiredOption('--phase <phase>', 'architecture, pre-candidate, or final')
+  .requiredOption('--phase-audit-attempt-id <id>', 'Current phase audit attempt identity')
+  .requiredOption('--tarball <path>', 'Canonical phase tarball output')
+  .requiredOption('--receipt <path>', 'Candidate-package receipt output')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-candidate-package',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-candidate-package.js',
+        'requirementsContractCandidatePackageCommand'
+      )({
+        cwd: process.cwd(),
+        packageRoot: opts.packageRoot,
+        packageManifest: opts.packageManifest,
+        distRoot: opts.distRoot,
+        phase: opts.phase,
+        phaseAuditAttemptId: opts.phaseAuditAttemptId,
+        tarball: opts.tarball,
+        receipt: opts.receipt,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-gap-closure-readonly-auditor-adapter')
+  .description('Run the package-owned readonly independent gap closure auditor adapter')
+  .requiredOption('--project-root <path>', 'Project root containing the closure evidence request')
+  .requiredOption('--request <path>', 'Gap closure independent audit request')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-gap-closure-readonly-auditor-adapter',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-gap-closure-readonly-auditor-adapter.js',
+        'requirementsContractGapClosureReadonlyAuditorAdapterCommand'
+      )({
+        cwd: opts.projectRoot,
+        projectRoot: opts.projectRoot,
+        request: opts.request,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-judge-credentials-init')
+  .description('Initialize the configured placeholder Judge credential')
+  .requiredOption('--config <path>', 'Public Judge runtime configuration')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-judge-credentials-init',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-judge-credential-initializer.js',
+        'requirementsContractJudgeCredentialsInitCommand'
+      )({
+        cwd: process.cwd(),
+        config: opts.config,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-judge-provider-smoke')
+  .description('Probe the configured Judge Provider and publish phase receipts')
+  .requiredOption('--config <path>', 'Public Judge runtime configuration')
+  .requiredOption('--phase <phase>', 'pre-candidate or final')
+  .requiredOption('--phase-root <path>', 'Current immutable phase root')
+  .requiredOption('--phase-audit-attempt-id <id>', 'Current phase audit attempt identity')
+  .requiredOption('--audit-context <path>', 'Current phase audit context')
+  .requiredOption('--capability-receipt <path>', 'Capability receipt output')
+  .requiredOption('--selection-receipt <path>', 'Selection receipt output')
+  .requiredOption('--security-parity <path>', 'Security parity output')
+  .requiredOption('--projection-mode <mode>', 'Must be final-only')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-judge-provider-smoke',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-judge-provider-smoke.js',
+        'requirementsContractJudgeProviderSmokeCommand'
+      )({
+        cwd: process.cwd(),
+        config: opts.config,
+        phase: opts.phase,
+        phaseRoot: opts.phaseRoot,
+        phaseAuditAttemptId: opts.phaseAuditAttemptId,
+        auditContext: opts.auditContext,
+        capabilityReceipt: opts.capabilityReceipt,
+        selectionReceipt: opts.selectionReceipt,
+        securityParity: opts.securityParity,
+        projectionMode: opts.projectionMode,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-reverse-audit')
+  .description('Run the fixed two-round blind Judge reverse audit')
+  .requiredOption('--contract <path>', 'Frozen goal execution contract')
+  .requiredOption('--judge-config <path>', 'Public Judge runtime configuration')
+  .requiredOption('--phase <phase>', 'pre-candidate or final')
+  .requiredOption('--phase-root <path>', 'Current immutable phase root')
+  .requiredOption('--phase-audit-attempt-id <id>', 'Current phase audit attempt identity')
+  .requiredOption('--audit-context <path>', 'Current phase audit context')
+  .requiredOption('--capability-receipt <path>', 'Current Capability receipt')
+  .requiredOption('--selection-receipt <path>', 'Current Selection receipt')
+  .requiredOption('--out-test-source-audit <path>', 'Final test-source audit output')
+  .requiredOption('--out-challenge-tests <path>', 'Challenge-test receipt output')
+  .requiredOption('--out-initial-judge <path>', 'Initial blind Judge output')
+  .requiredOption('--out-final-judge <path>', 'Final blind Judge output')
+  .requiredOption('--projection-mode <mode>', 'Must be final-only')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-reverse-audit',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-reverse-audit.js',
+        'requirementsContractReverseAuditCommand'
+      )({
+        cwd: process.cwd(),
+        contract: opts.contract,
+        judgeConfig: opts.judgeConfig,
+        phase: opts.phase,
+        phaseRoot: opts.phaseRoot,
+        phaseAuditAttemptId: opts.phaseAuditAttemptId,
+        auditContext: opts.auditContext,
+        capabilityReceipt: opts.capabilityReceipt,
+        selectionReceipt: opts.selectionReceipt,
+        outTestSourceAudit: opts.outTestSourceAudit,
+        outChallengeTests: opts.outChallengeTests,
+        outInitialJudge: opts.outInitialJudge,
+        outFinalJudge: opts.outFinalJudge,
+        projectionMode: opts.projectionMode,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-bundle-publish')
+  .description('Publish one immutable Canonical Requirement Record Bundle revision')
+  .requiredOption('--requirement-record <path>', 'Current Requirement Record')
+  .requiredOption('--source-document <path>', 'Resolved Source PRD')
+  .requiredOption('--receipt <path>', 'Bundle publication receipt output')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-bundle-publish',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-bundle-publish.js',
+        'requirementsContractBundlePublishCommand'
+      )({
+        cwd: process.cwd(),
+        requirementRecord: opts.requirementRecord,
+        sourceDocument: opts.sourceDocument,
+        receipt: opts.receipt,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-evidence-verify')
+  .description('Verify the complete frozen completion-evidence universe')
+  .requiredOption('--bundle <path>', 'Final implementation evidence bundle')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-evidence-verify',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-evidence-verify.js',
+        'requirementsContractEvidenceVerifyCommand'
+      )({
+        cwd: process.cwd(),
+        bundle: opts.bundle,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-finalization-safe-write')
+  .description('Promote one fixed finalization role through the governed safe writer')
+  .requiredOption('--requirement-record <path>', 'Current Requirement Record')
+  .requiredOption('--implementation-attempt-id <id>', 'Unique active implementation attempt')
+  .requiredOption('--draft <path>', 'Canonical role draft')
+  .requiredOption('--target <path>', 'Fixed successful target')
+  .requiredOption('--receipt <path>', 'Fixed successful promotion receipt')
+  .requiredOption('--blocked-receipt-root <path>', 'Fixed blocked receipt root')
+  .requiredOption('--artifact-role <role>', 'Finalization artifact role')
+  .requiredOption('--validation-profile <profile>', 'Allowlisted validation profile')
+  .requiredOption('--min-bytes <count>', 'Required minimum byte count')
+  .requiredOption('--finalization-declaration-hash <hash>', 'Frozen finalization declaration hash')
+  .requiredOption('--expected-predecessor-receipt <path>', 'Expected predecessor PASS receipt')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-finalization-safe-write',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-finalization-safe-writer.js',
+        'requirementsContractFinalizationSafeWriteCommand'
+      )({
+        cwd: process.cwd(),
+        requirementRecord: opts.requirementRecord,
+        implementationAttemptId: opts.implementationAttemptId,
+        draft: opts.draft,
+        target: opts.target,
+        receipt: opts.receipt,
+        blockedReceiptRoot: opts.blockedReceiptRoot,
+        artifactRole: opts.artifactRole,
+        validationProfile: opts.validationProfile,
+        minBytes: Number(opts.minBytes),
+        finalizationDeclarationHash: opts.finalizationDeclarationHash,
+        expectedPredecessorReceipt: opts.expectedPredecessorReceipt,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-terminal-command-supervisor')
+  .description('Run the frozen terminal command pair against the finalized evidence set')
+  .requiredOption('--contract <path>', 'Frozen goal execution contract')
+  .requiredOption('--bundle <path>', 'Frozen implementation evidence bundle')
+  .requiredOption(
+    '--safe-write-manifest-receipt <path>',
+    'AMEND-05 safe-write manifest PASS receipt'
+  )
+  .requiredOption('--evd15-receipt <path>', 'EVD-15 PASS receipt')
+  .requiredOption('--artifact01-receipt <path>', 'ARTIFACT-01 PASS receipt')
+  .requiredOption('--receipt <path>', 'External terminal command receipt')
+  .requiredOption('--first-command <id>', 'Must be CMD-24')
+  .requiredOption('--second-command <id>', 'Must be CMD-25')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-terminal-command-supervisor',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-terminal-command-supervisor.js',
+        'requirementsContractTerminalCommandSupervisorCommand'
+      )({
+        cwd: process.cwd(),
+        contract: opts.contract,
+        bundle: opts.bundle,
+        safeWriteManifestReceipt: opts.safeWriteManifestReceipt,
+        evd15Receipt: opts.evd15Receipt,
+        artifact01Receipt: opts.artifact01Receipt,
+        receipt: opts.receipt,
+        firstCommand: opts.firstCommand,
+        secondCommand: opts.secondCommand,
+        json: Boolean(opts.json),
+      }).then((receipt) => (receipt.result === 'PASS' ? 0 : 1))
+    )
+  );
+
+program
+  .command('requirements-contract-command-execution-producer')
+  .description('Execute argv through the controlled producer and publish a bound receipt')
+  .requiredOption('--project-root <path>', 'Project root containing the execution request')
+  .requiredOption('--request <path>', 'Command execution producer request')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-command-execution-producer',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-command-execution-receipt.js',
+        'requirementsContractCommandExecutionProducerCommand'
+      )({
+        cwd: opts.projectRoot,
+        projectRoot: opts.projectRoot,
+        request: opts.request,
+        json: Boolean(opts.json),
+      }).then((receipt) => (receipt.decision === 'pass' ? 0 : 1))
+    )
+  );
+
+program
+  .command('requirements-contract-clean-materialization')
+  .description('Rebuild current source from a fresh root and publish parity evidence')
+  .requiredOption('--project-root <path>', 'Source project root to materialize')
+  .requiredOption('--request <path>', 'Clean materialization request')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-clean-materialization',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-clean-materialization.js',
+        'requirementsContractCleanMaterializationCommand'
+      )({
+        cwd: opts.projectRoot,
+        projectRoot: opts.projectRoot,
+        request: opts.request,
+        json: Boolean(opts.json),
+      }).then((receipt) => (receipt.decision === 'pass' ? 0 : 1))
+    )
+  );
+
+program
+  .command('requirements-contract-stage-five-star-audit')
+  .description('Audit all eleven production stages against current phase evidence')
+  .requiredOption('--contract <path>', 'Frozen goal execution contract')
+  .requiredOption('--recovery <path>', 'Current recovery lineage receipt')
+  .requiredOption('--consumer-root <path>', 'Authorized Consumer project root')
+  .requiredOption('--phase <phase>', 'architecture, pre-candidate, or final')
+  .requiredOption('--phase-root <path>', 'Current phase evidence root')
+  .requiredOption('--phase-audit-attempt-id <id>', 'Current phase audit attempt')
+  .requiredOption('--audit-context <path>', 'Current phase audit context')
+  .requiredOption('--matrix <path>', 'Stage five-star matrix output')
+  .requiredOption('--gap-ledger <path>', 'Predicate Gap ledger output')
+  .requiredOption('--final-gate <path>', 'Anti-fabrication final gate output')
+  .requiredOption('--candidate-receipt <path>', 'Pre-candidate receipt output')
+  .requiredOption(
+    '--candidate-revocation-receipt <path>',
+    'Mandatory pre-candidate revocation output'
+  )
+  .requiredOption('--downstream-invalidation-set <path>', 'Revocation invalidation output')
+  .requiredOption('--projection-mode <mode>', 'Must be final-only')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-stage-five-star-audit',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-stage-five-star-auditor.js',
+        'requirementsContractStageFiveStarAuditCommand'
+      )({
+        cwd: process.cwd(),
+        contract: opts.contract,
+        recovery: opts.recovery,
+        consumerRoot: opts.consumerRoot,
+        phase: opts.phase,
+        phaseRoot: opts.phaseRoot,
+        phaseAuditAttemptId: opts.phaseAuditAttemptId,
+        auditContext: opts.auditContext,
+        matrix: opts.matrix,
+        gapLedger: opts.gapLedger,
+        finalGate: opts.finalGate,
+        candidateReceipt: opts.candidateReceipt,
+        candidateRevocationReceipt: opts.candidateRevocationReceipt,
+        downstreamInvalidationSet: opts.downstreamInvalidationSet,
+        projectionMode: opts.projectionMode,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-real-consumer-journey')
+  .description('Run the fixed real Consumer journey from an attempt-scoped candidate package')
+  .requiredOption('--contract <path>', 'Frozen goal execution contract')
+  .requiredOption('--consumer-root <path>', 'Fixed authorized Consumer project root')
+  .requiredOption('--restore-clean-baseline', 'Restore the authorized clean Consumer baseline')
+  .requiredOption('--phase <phase>', 'pre-candidate or final')
+  .requiredOption('--phase-root <path>', 'Current immutable phase evidence root')
+  .requiredOption('--phase-audit-attempt-id <id>', 'Current phase audit attempt')
+  .requiredOption('--package-root <path>', 'Package source root')
+  .requiredOption('--package-manifest <path>', 'Package source manifest')
+  .requiredOption('--dist-root <path>', 'Built package dist root')
+  .requiredOption('--candidate-tarball <path>', 'Attempt-scoped candidate tarball output')
+  .requiredOption(
+    '--candidate-package-receipt <path>',
+    'Attempt-scoped candidate package receipt output'
+  )
+  .requiredOption('--journey-evidence <path>', 'Real Consumer journey evidence output')
+  .requiredOption(
+    '--pre-confirmation-snapshot <path>',
+    'Immutable pre-confirmation evidence snapshot output'
+  )
+  .requiredOption('--confirmation-receipt <path>', 'Final delivery confirmation receipt output')
+  .requiredOption('--run-all-stages', 'Run STAGE-01 through STAGE-11')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-real-consumer-journey',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-real-consumer-journey.js',
+        'requirementsContractRealConsumerJourneyCommand'
+      )({
+        cwd: process.cwd(),
+        contract: opts.contract,
+        consumerRoot: opts.consumerRoot,
+        restoreCleanBaseline: Boolean(opts.restoreCleanBaseline),
+        phase: opts.phase,
+        phaseRoot: opts.phaseRoot,
+        phaseAuditAttemptId: opts.phaseAuditAttemptId,
+        packageRoot: opts.packageRoot,
+        packageManifest: opts.packageManifest,
+        distRoot: opts.distRoot,
+        candidateTarball: opts.candidateTarball,
+        candidatePackageReceipt: opts.candidatePackageReceipt,
+        journeyEvidence: opts.journeyEvidence,
+        preConfirmationSnapshot: opts.preConfirmationSnapshot,
+        confirmationReceipt: opts.confirmationReceipt,
+        runAllStages: Boolean(opts.runAllStages),
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-production-activate')
+  .description('Plan, test, and atomically activate the production consumer registry')
+  .requiredOption('--requirement-record <path>', 'Current Requirement Record')
+  .requiredOption('--registry <path>', 'Exact production consumer registry')
+  .requiredOption('--activation-plan-dir <path>', 'Immutable activation plan directory')
+  .requiredOption(
+    '--activation-plan-write-receipt-dir <path>',
+    'Activation plan promotion receipt directory'
+  )
+  .requiredOption('--success-receipt <path>', 'Unique successful activation receipt')
+  .requiredOption('--blocked-attempt-dir <path>', 'Attempt-specific blocked receipt directory')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-production-activate',
+      loadCommand(
+        '../dist/main-agent/source-authority/scripts/requirements-contract-production-activate.js',
+        'requirementsContractProductionActivateCommand'
+      )({
+        cwd: process.cwd(),
+        requirementRecord: opts.requirementRecord,
+        registry: opts.registry,
+        activationPlanDir: opts.activationPlanDir,
+        activationPlanWriteReceiptDir: opts.activationPlanWriteReceiptDir,
+        successReceipt: opts.successReceipt,
+        blockedAttemptDir: opts.blockedAttemptDir,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-recovery-bootstrap')
+  .description('Bootstrap current recovery lineage and Consumer identity')
+  .requiredOption('--contract <path>', 'Frozen goal execution contract')
+  .requiredOption('--authority <path>', 'Primary recovery authority')
+  .requiredOption('--architecture-authority <path>', 'Architecture-wave recovery authority')
+  .requiredOption('--attempt-context <path>', 'Current pre-edit attempt context receipt')
+  .requiredOption('--qualified-red-receipt <path>', 'Current detached Qualified RED receipt')
+  .requiredOption('--consumer-root <path>', 'Authorized Consumer project root')
+  .option('--create-if-absent', 'Create the authorized Consumer when absent')
+  .requiredOption('--initial-publication-receipt <path>', 'Provisional publication receipt output')
+  .requiredOption('--out <path>', 'Recovery lineage receipt output')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-recovery-bootstrap',
+      loadRecoveryCommand('requirementsContractRecoveryBootstrapCommand')({
+        cwd: process.cwd(),
+        contract: opts.contract,
+        authority: opts.authority,
+        architectureAuthority: opts.architectureAuthority,
+        attemptContext: opts.attemptContext,
+        qualifiedRedReceipt: opts.qualifiedRedReceipt,
+        consumerRoot: opts.consumerRoot,
+        createIfAbsent: Boolean(opts.createIfAbsent),
+        initialPublicationReceipt: opts.initialPublicationReceipt,
+        out: opts.out,
+        json: Boolean(opts.json),
+      })
+    )
+  );
+
+program
+  .command('requirements-contract-recovery-finalize')
+  .description('Finalize current recovery lineage through the governed recovery transaction')
+  .requiredOption('--contract <path>', 'Frozen goal execution contract')
+  .requiredOption('--authority <path>', 'Primary recovery authority')
+  .requiredOption('--architecture-authority <path>', 'Architecture-wave recovery authority')
+  .requiredOption('--attempt-context <path>', 'Current pre-edit attempt context receipt')
+  .requiredOption('--recovery <path>', 'Attempt-scoped provisional recovery lineage receipt')
+  .requiredOption('--initial-publication-receipt <path>', 'Provisional publication receipt')
+  .requiredOption('--target <path>', 'Canonical recovery lineage target')
+  .requiredOption('--expected-target-preimage-hash <sha256>', 'Frozen target preimage hash')
+  .requiredOption('--qualified-red-receipt <path>', 'Current detached Qualified RED receipt')
+  .requiredOption(
+    '--command-receipt <path>',
+    'Current controlled command receipt; repeat for each required role',
+    collectRepeatedOption,
+    []
+  )
+  .requiredOption('--expected-provisional-hash <sha256>', 'Published provisional receipt hash')
+  .requiredOption('--command-run-id <id>', 'Current controlled finalization command run identity')
+  .requiredOption('--invocation-sequence <number>', 'Current finalization invocation sequence')
+  .requiredOption('--finalization-run-id <id>', 'Stable logical finalization run identity')
+  .requiredOption('--transaction-root <path>', 'Canonical recovery transaction root')
+  .requiredOption('--failure-root <path>', 'Canonical recovery failure archive root')
+  .requiredOption('--finalization-receipt <path>', 'Canonical recovery finalization receipt target')
+  .option('--json', 'Print machine-readable JSON')
+  .action((opts) =>
+    runCommandPromise(
+      'requirements-contract-recovery-finalize',
+      loadRecoveryCommand('requirementsContractRecoveryFinalizeCommand')({
+        cwd: process.cwd(),
+        contract: opts.contract,
+        authority: opts.authority,
+        architectureAuthority: opts.architectureAuthority,
+        attemptContext: opts.attemptContext,
+        recovery: opts.recovery,
+        initialPublicationReceipt: opts.initialPublicationReceipt,
+        target: opts.target,
+        expectedTargetPreimageHash: opts.expectedTargetPreimageHash,
+        qualifiedRedReceipt: opts.qualifiedRedReceipt,
+        commandReceipts: opts.commandReceipt,
+        expectedProvisionalHash: opts.expectedProvisionalHash,
+        commandRunId: opts.commandRunId,
+        invocationSequence: Number(opts.invocationSequence),
+        finalizationRunId: opts.finalizationRunId,
+        transactionRoot: opts.transactionRoot,
+        failureRoot: opts.failureRoot,
+        finalizationReceipt: opts.finalizationReceipt,
+        json: Boolean(opts.json),
+      })
+    )
+  );
 
 program
   .command('eval-questions')
@@ -861,7 +1714,11 @@ program
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .action((_options, command) =>
-    emitDeprecatedAlias('eval-questions', 'source-repository evaluation workflow', forwardedArgsFromCommand(command))
+    emitDeprecatedAlias(
+      'eval-questions',
+      'source-repository evaluation workflow',
+      forwardedArgsFromCommand(command)
+    )
   );
 
 program
@@ -880,4 +1737,17 @@ program
     )
   );
 
-program.parse();
+const requestedTopLevelAction = process.argv[2];
+const unknownTopLevelHelp =
+  requestedTopLevelAction &&
+  !requestedTopLevelAction.startsWith('-') &&
+  requestedTopLevelAction !== 'help' &&
+  process.argv.slice(3).includes('--help') &&
+  !program.commands.some((command) => command.name() === requestedTopLevelAction);
+
+if (unknownTopLevelHelp) {
+  process.stderr.write(`error: unknown command '${requestedTopLevelAction}'\n`);
+  process.exitCode = 1;
+} else {
+  program.parse();
+}

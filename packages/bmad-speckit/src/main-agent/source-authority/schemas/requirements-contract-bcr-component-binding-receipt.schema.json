@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-bcr-component-binding-receipt.schema.json",
+  "title": "Requirements Contract BCR Component Binding Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "namespace",
+    "sourceRole",
+    "sourceArtifactId",
+    "parentTaskRefs",
+    "requiredRequirementIds",
+    "requiredTaskIds",
+    "subordinateSourceHash",
+    "specSpanRegistryHash",
+    "sourceObligationGraphHash",
+    "namespaceOwnershipHash",
+    "parentProjectionPolicyHash",
+    "sourceCompositionPolicyHash",
+    "bindingHash",
+    "decision",
+    "receiptHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-bcr-component-binding-receipt/v1"
+    },
+    "namespace": { "const": "BCR" },
+    "sourceRole": { "const": "subordinate_component_specification" },
+    "sourceArtifactId": { "$ref": "#/$defs/text" },
+    "parentTaskRefs": { "$ref": "#/$defs/stringSet" },
+    "requiredRequirementIds": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "uniqueItems": true,
+      "items": { "pattern": "^BCR-C[0-9]{2}$" }
+    },
+    "requiredTaskIds": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": { "pattern": "^BCR-T[0-9]{2}$" }
+    },
+    "subordinateSourceHash": { "$ref": "#/$defs/hash" },
+    "specSpanRegistryHash": { "$ref": "#/$defs/hash" },
+    "sourceObligationGraphHash": { "$ref": "#/$defs/hash" },
+    "namespaceOwnershipHash": { "$ref": "#/$defs/hash" },
+    "parentProjectionPolicyHash": { "$ref": "#/$defs/hash" },
+    "sourceCompositionPolicyHash": { "$ref": "#/$defs/hash" },
+    "bindingHash": { "$ref": "#/$defs/hash" },
+    "decision": { "const": "pass" },
+    "receiptHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "text": { "type": "string", "minLength": 1 },
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "stringSet": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/text" }
+    }
+  }
+}

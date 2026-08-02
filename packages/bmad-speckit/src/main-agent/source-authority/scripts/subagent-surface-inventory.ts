@@ -54,7 +54,6 @@ interface InventoryRow {
 const TARGET_PATHS = [
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts',
-  'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-codex-worker-adapter.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-dispatch-worker.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-host-dispatch-adapter.ts',
@@ -63,7 +62,6 @@ const TARGET_PATHS = [
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/reviewer-registry.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/facilitator-registry.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/bmad-runtime-worker.ts',
-  'scripts/real-development-tick-worker.js',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-host-matrix-pr-orchestrator.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-dual-host-pr-orchestrator.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/e2e-host-matrix-journey-runner.ts',
@@ -117,7 +115,6 @@ const MATCH_PATTERNS = [
   'mcp_task',
   'Agent tool',
   'Task tool',
-  'Codex worker adapter',
   'runAuditorHost',
   'SubagentStart',
   'SubagentStop',
@@ -126,7 +123,6 @@ const MATCH_PATTERNS = [
   'subprocess',
   'parallel processing',
   'delegated execution',
-  'worker adapter',
   'external host dispatch',
 ];
 
@@ -413,7 +409,6 @@ function findMatches(filePath: string, content: string): Array<{ pattern: string
 }
 
 function canonicalPatternForPath(filePath: string, pattern: string): string {
-  if (filePath.includes('main-agent-codex-worker-adapter.ts')) return 'Codex worker adapter';
   if (filePath.includes('run-auditor-host.ts')) return 'runAuditorHost';
   if (filePath.includes('parallel')) return 'parallel processing';
   if (filePath.includes('governance-host-dispatch-adapter.ts')) return 'external host dispatch';
@@ -498,7 +493,7 @@ function surfaceKindForPath(filePath: string, matchPattern: string): string {
   if (normalized.includes('worktree') || matchPattern.includes('parallel'))
     return 'worktree_and_parallel_execution_surfaces';
   if (normalized.includes('governance') || normalized.includes('host'))
-    return 'host_worker_adapters';
+    return 'host_dispatch_surfaces';
   return 'code_dispatch_scripts';
 }
 

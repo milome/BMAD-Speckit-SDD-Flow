@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "requirements-confirmation-ingest-scale/v1",
+  "minUtf8Bytes": 8388608,
+  "totalLines": 126730,
+  "sourceSpan": {
+    "startLine": 1173,
+    "endLine": 126730
+  },
+  "replacementRange": {
+    "startLine": 1173,
+    "endLine": 126172
+  },
+  "replacementLineCount": 125000,
+  "tailLineCount": 558,
+  "payloadFormula": "    - \"scale-replacement-{six-digit index}-{48 lowercase x characters}\"",
+  "replacementContentBytes": 10249999,
+  "replacementContentSha256": "sha256:0a1d5d48bf57f19f1f904e67de53f170331deb5320d0f43c0e254c4fb514fbb0"
+}

@@ -155,7 +155,6 @@ async function main() {
     console.log('runtime-emit: wrote', path.relative(repoRoot, outfile));
   }
   const manifest = {
-    generatedAt: new Date().toISOString(),
     files: bundles.map((bundle) => path.basename(bundle.outfile)).sort((a, b) => a.localeCompare(b)),
   };
   fs.writeFileSync(path.join(outDir, 'build-manifest.json'), JSON.stringify(manifest, null, 2) + '\n', 'utf8');

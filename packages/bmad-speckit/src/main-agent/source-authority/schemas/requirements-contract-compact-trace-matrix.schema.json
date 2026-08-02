@@ -1,0 +1,534 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-compact-trace-matrix.schema.json",
+  "title": "Requirements Contract Compact Trace Matrix",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "activationState",
+    "requirementSetId",
+    "sourceAuthorityHash",
+    "semanticModelHash",
+    "canonicalTraceGraphHash",
+    "blockingEdgeUniverseHash",
+    "edgeTypeRegistryHash",
+    "authority",
+    "bundleBinding",
+    "acceptanceManifestBinding",
+    "acceptanceRootProofManifestBinding",
+    "acceptanceRootIds",
+    "acceptanceRootCount",
+    "acceptanceRootSetHash",
+    "acceptanceRootBindings",
+    "atomicRows",
+    "fullPathRows",
+    "projectionHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-compact-trace-matrix/v1"
+    },
+    "activationState": {
+      "const": "inactive_schema_boundary"
+    },
+    "requirementSetId": {
+      "$ref": "#/$defs/stableId"
+    },
+    "sourceAuthorityHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "semanticModelHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "canonicalTraceGraphHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "blockingEdgeUniverseHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "edgeTypeRegistryHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "authority": {
+      "const": "none"
+    },
+    "bundleBinding": {
+      "$ref": "#/$defs/bundleBinding"
+    },
+    "acceptanceManifestBinding": {
+      "$ref": "#/$defs/acceptanceManifestBinding"
+    },
+    "acceptanceRootProofManifestBinding": {
+      "$ref": "#/$defs/acceptanceRootProofManifestBinding"
+    },
+    "acceptanceRootIds": {
+      "$ref": "#/$defs/referenceArray"
+    },
+    "acceptanceRootCount": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "acceptanceRootSetHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "acceptanceRootBindings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/acceptanceRootBinding"
+      },
+      "uniqueItems": true
+    },
+    "atomicRows": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/atomicRow"
+      },
+      "uniqueItems": true
+    },
+    "fullPathRows": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/fullPathRow"
+      },
+      "uniqueItems": true
+    },
+    "projectionHash": {
+      "$ref": "#/$defs/sha256"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "referenceId": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$"
+    },
+    "referenceArray": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/referenceId"
+      },
+      "uniqueItems": true
+    },
+    "reasonCode": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "artifactBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+        },
+        "hash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "bundleBinding": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/artifactBinding"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^_bmad-output/runtime/requirement-records/[^/]+/authoring/revisions/[^/]+/bundle-manifest\\.json$"
+            }
+          }
+        }
+      ]
+    },
+    "acceptanceManifestBinding": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/artifactBinding"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^_bmad-output/runtime/requirement-records/[^/]+/authoring/revisions/[^/]+/acceptance-contracts\\.json$"
+            }
+          }
+        }
+      ]
+    },
+    "acceptanceRootProofManifestBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "schemaVersion",
+        "hash",
+        "parserHash",
+        "sourceAuthorityHash",
+        "decisionReceiptSetHash"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "(?:^|/)acceptance-root-proof-manifest\\.json$"
+        },
+        "schemaVersion": {
+          "const": "requirements-contract-acceptance-root-proof-manifest/v1"
+        },
+        "hash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "parserHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "sourceAuthorityHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "decisionReceiptSetHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "applicability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision", "reasonCode", "proofRefs"],
+      "properties": {
+        "decision": {
+          "enum": ["applicable", "not_applicable", "unresolved", "invalid"]
+        },
+        "reasonCode": {
+          "$ref": "#/$defs/reasonCode"
+        },
+        "proofRefs": {
+          "$ref": "#/$defs/referenceArray"
+        }
+      }
+    },
+    "typedReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "hash"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/referenceId"
+        },
+        "type": {
+          "enum": [
+            "requirement",
+            "scenario",
+            "sequence_step",
+            "branch",
+            "target",
+            "task",
+            "red",
+            "oracle",
+            "command",
+            "acceptance",
+            "evidence_requirement",
+            "proof"
+          ]
+        },
+        "hash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "boundDimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "refs", "proofRefs"],
+      "properties": {
+        "state": {
+          "const": "bound"
+        },
+        "refs": {
+          "$ref": "#/$defs/referenceArray"
+        },
+        "proofRefs": {
+          "$ref": "#/$defs/referenceArray"
+        }
+      }
+    },
+    "notApplicableDimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "reasonCode", "proofRefs"],
+      "properties": {
+        "state": {
+          "const": "not_applicable"
+        },
+        "reasonCode": {
+          "$ref": "#/$defs/reasonCode"
+        },
+        "proofRefs": {
+          "$ref": "#/$defs/referenceArray"
+        }
+      }
+    },
+    "dimension": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/boundDimension"
+        },
+        {
+          "$ref": "#/$defs/notApplicableDimension"
+        }
+      ]
+    },
+    "dimensions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario",
+        "sequenceStep",
+        "branch",
+        "target",
+        "task",
+        "red",
+        "oracle",
+        "command",
+        "acceptance",
+        "evidenceRequirement"
+      ],
+      "properties": {
+        "scenario": {
+          "$ref": "#/$defs/dimension"
+        },
+        "sequenceStep": {
+          "$ref": "#/$defs/dimension"
+        },
+        "branch": {
+          "$ref": "#/$defs/dimension"
+        },
+        "target": {
+          "$ref": "#/$defs/dimension"
+        },
+        "task": {
+          "$ref": "#/$defs/dimension"
+        },
+        "red": {
+          "$ref": "#/$defs/dimension"
+        },
+        "oracle": {
+          "$ref": "#/$defs/dimension"
+        },
+        "command": {
+          "$ref": "#/$defs/dimension"
+        },
+        "acceptance": {
+          "$ref": "#/$defs/dimension"
+        },
+        "evidenceRequirement": {
+          "$ref": "#/$defs/dimension"
+        }
+      }
+    },
+    "joinedPath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "criticalPathRefs", "proofRefs"],
+      "properties": {
+        "state": {
+          "const": "joined"
+        },
+        "criticalPathRefs": {
+          "$ref": "#/$defs/referenceArray"
+        },
+        "proofRefs": {
+          "$ref": "#/$defs/referenceArray"
+        }
+      }
+    },
+    "notApplicablePath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "reasonCode", "proofRefs"],
+      "properties": {
+        "state": {
+          "const": "not_applicable"
+        },
+        "reasonCode": {
+          "$ref": "#/$defs/reasonCode"
+        },
+        "proofRefs": {
+          "$ref": "#/$defs/referenceArray"
+        }
+      }
+    },
+    "pathJoin": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/joinedPath"
+        },
+        {
+          "$ref": "#/$defs/notApplicablePath"
+        }
+      ]
+    },
+    "traceBoundAcceptanceRoot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["acceptanceRootRef", "decision", "traceRefs", "proofRefs"],
+      "properties": {
+        "acceptanceRootRef": {
+          "$ref": "#/$defs/referenceId"
+        },
+        "decision": {
+          "const": "trace_bound"
+        },
+        "traceRefs": {
+          "$ref": "#/$defs/referenceArray"
+        },
+        "proofRefs": {
+          "$ref": "#/$defs/referenceArray"
+        }
+      }
+    },
+    "notApplicableAcceptanceRoot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["acceptanceRootRef", "decision", "reasonCode", "proofRefs"],
+      "properties": {
+        "acceptanceRootRef": {
+          "$ref": "#/$defs/referenceId"
+        },
+        "decision": {
+          "const": "not_applicable"
+        },
+        "reasonCode": {
+          "$ref": "#/$defs/reasonCode"
+        },
+        "proofRefs": {
+          "$ref": "#/$defs/referenceArray"
+        }
+      }
+    },
+    "acceptanceRootBinding": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/traceBoundAcceptanceRoot"
+        },
+        {
+          "$ref": "#/$defs/notApplicableAcceptanceRoot"
+        }
+      ]
+    },
+    "atomicRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "traceId",
+        "edgeId",
+        "edgeType",
+        "requirementRef",
+        "fromRef",
+        "toRef",
+        "applicability",
+        "proofRefs",
+        "dimensions",
+        "pathJoin",
+        "bundleBinding",
+        "acceptanceManifestBinding",
+        "acceptanceRootProofManifestBinding",
+        "rowHash"
+      ],
+      "properties": {
+        "traceId": {
+          "$ref": "#/$defs/referenceId"
+        },
+        "edgeId": {
+          "$ref": "#/$defs/referenceId"
+        },
+        "edgeType": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "requirementRef": {
+          "$ref": "#/$defs/referenceId"
+        },
+        "fromRef": {
+          "$ref": "#/$defs/typedReference"
+        },
+        "toRef": {
+          "$ref": "#/$defs/typedReference"
+        },
+        "applicability": {
+          "$ref": "#/$defs/applicability"
+        },
+        "proofRefs": {
+          "$ref": "#/$defs/referenceArray"
+        },
+        "dimensions": {
+          "$ref": "#/$defs/dimensions"
+        },
+        "pathJoin": {
+          "$ref": "#/$defs/pathJoin"
+        },
+        "bundleBinding": {
+          "$ref": "#/$defs/bundleBinding"
+        },
+        "acceptanceManifestBinding": {
+          "$ref": "#/$defs/acceptanceManifestBinding"
+        },
+        "acceptanceRootProofManifestBinding": {
+          "$ref": "#/$defs/acceptanceRootProofManifestBinding"
+        },
+        "rowHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "fullPathRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pathTraceId",
+        "criticalPathRef",
+        "sequenceContractHash",
+        "orderedAtomicTraceIds",
+        "orderedEdgeIds",
+        "proofRefs",
+        "pathHash"
+      ],
+      "properties": {
+        "pathTraceId": {
+          "$ref": "#/$defs/referenceId"
+        },
+        "criticalPathRef": {
+          "$ref": "#/$defs/referenceId"
+        },
+        "sequenceContractHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "orderedAtomicTraceIds": {
+          "$ref": "#/$defs/referenceArray"
+        },
+        "orderedEdgeIds": {
+          "$ref": "#/$defs/referenceArray"
+        },
+        "proofRefs": {
+          "$ref": "#/$defs/referenceArray"
+        },
+        "pathHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    }
+  }
+}

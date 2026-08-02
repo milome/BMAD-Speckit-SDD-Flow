@@ -1,0 +1,41 @@
+{
+  "featureRef": "feature:test-selection",
+  "policy": {
+    "budgets": {
+      "corePermanentCount": 120
+    },
+    "protectedCapabilities": [
+      {
+        "capabilityId": "six-model-state-machine",
+        "selectionRefs": ["script:test:ci:codex"]
+      }
+    ],
+    "selection": {
+      "productSurvivalCapabilityRefs": ["six-model-state-machine"]
+    },
+    "classification": {
+      "directoryRules": [
+        {
+          "ruleId": "root-tests",
+          "pattern": "tests/**",
+          "state": "retained_on_demand"
+        }
+      ],
+      "exceptions": []
+    }
+  },
+  "tests": [
+    {
+      "identityKey": "vitest::tests/state-machine.test.ts",
+      "runnerId": "vitest",
+      "testPath": "tests/state-machine.test.ts",
+      "lifecycleState": "feature_working_set",
+      "capabilityRefs": [],
+      "failureModeRefs": ["negative:invalid-transition"],
+      "featureRefs": ["feature:test-selection"],
+      "classifications": {
+        "oracleEffectiveness": "effective"
+      }
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "projectName": "bmad-speckit-consumer-evidence-closure",
+  "markerSchemaVersion": "bmad-speckit-consumer-project/v1",
+  "bootstrapId": "G00-AMEND09-BASELINE",
+  "gitUserName": "BMAD Speckit Evidence Closure",
+  "gitUserEmail": "evidence-closure@bmad-speckit.local",
+  "commitTimestamp": "2026-07-13T00:00:00Z",
+  "commitSubject": "chore: initialize evidence closure consumer",
+  "markerHash": "sha256:e10966e1d55970cb1fa64486f83756b5f22e9555389f331f6bbae88f12d65a65",
+  "packageHash": "sha256:482b60f9025570aa325eb984872002dd8c3e6e191a7bb56ce2a16e44fa1e560c",
+  "baselineCommit": "bc6df322fb3dc0ba5e8a8aebe3e3dffbf0d70bd2",
+  "baselineTree": "a028f146d6781ebc3a6fff4ef0951c29d2515e55",
+  "branch": "main",
+  "remotes": [],
+  "authorTimestamp": "2026-07-13T00:00:00Z",
+  "committerTimestamp": "2026-07-13T00:00:00Z",
+  "trackedFiles": [
+    {
+      "mode": "100644",
+      "blob": "30c40f12b99e3649d73e5c3169aa2e2d3ed00059",
+      "path": "bmad-speckit-consumer-project.json"
+    },
+    {
+      "mode": "100644",
+      "blob": "11dee9f2bfc07c686c63696c46b3fd358ebce372",
+      "path": "package.json"
+    }
+  ],
+  "trackedFileIndexCanonicalization": "mode + SP + gitBlob + SP + path, rows in git index order, LF separators, no trailing LF",
+  "baselineFileIndexHash": "sha256:a6a5fb710209736f471527ef8c10bd6698d2c18f99c0b7ccaf608719d32f85e5"
+}

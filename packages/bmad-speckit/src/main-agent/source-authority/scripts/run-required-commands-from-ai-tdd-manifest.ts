@@ -6,6 +6,7 @@ import * as path from 'node:path';
 import { evaluateAiTddContractGate } from './ai-tdd-contract-gate';
 import { mainIngestImplementationEvidence } from './ingest-implementation-evidence';
 import { readImplementationConfirmation } from './target-artifact-realization-gate';
+import { resolveVerifiedSixModelStatus } from './verified-six-model-status-facade';
 
 type JsonObject = Record<string, unknown>;
 type Decision = 'pass' | 'blocked';
@@ -30,6 +31,22 @@ function isDirectRunRequiredCommandsFromAiTddManifestCli(entry: string | undefin
 interface CommandRun {
   commandId: string;
   command: string;
+  normalizedCommand: string;
+  cwd: string;
+  executorIdentity: {
+    class: 'controlled_detached_executor';
+    id: string;
+  };
+  runtimeVersions: Record<string, string>;
+  dependencyLockHashes: JsonObject[];
+  environment: Record<string, string>;
+  environmentFingerprint: string;
+  environmentCompatibilityDecision: 'pass';
+  transactionId: string;
+  implementationAttemptId: string;
+  sourceDocumentHash: string;
+  semanticModelHash: string;
+  packetHash: string;
   runId: string;
   closeoutAttemptId: string;
   startedAt: string;
@@ -39,10 +56,26 @@ interface CommandRun {
   stderrPath: string;
   outputPath: string;
   outputHash: string;
+  coveredRequirementIds: string[];
   artifactRefs: JsonObject[];
   deliveryEvidenceRequired?: boolean;
   commandExecutionMode?: string;
   rawExitCode?: number | null;
+}
+
+interface ExecutionAuthorityBinding {
+  projectRoot: string;
+  recordId: string;
+  requirementSetId: string;
+  transactionId: string;
+  implementationAttemptId: string;
+  sourceDocumentHash: string;
+  semanticModelHash: string;
+  packetHash: string;
+  runtimeVersions: Record<string, string>;
+  dependencyLockHashes: JsonObject[];
+  environment: Record<string, string>;
+  environmentFingerprint: string;
 }
 
 const REQUIRED_PRE_RUN_SECTIONS = [
@@ -134,6 +167,82 @@ function stableStringify(value: unknown): string {
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([key, item]) => `${JSON.stringify(key)}:${stableStringify(item)}`)
     .join(',')}}`;
+}
+
+function projectRootForRecordPath(recordPath: string): string {
+  const resolved = path.resolve(recordPath);
+  const marker = `${path.sep}_bmad-output${path.sep}`;
+  const markerIndex = resolved.lastIndexOf(marker);
+  return markerIndex > 0 ? resolved.slice(0, markerIndex) : process.cwd();
+}
+
+function dependencyLockHashes(projectRoot: string): JsonObject[] {
+  return ['package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', 'bun.lock', 'bun.lockb']
+    .map((relativePath) => ({
+      relativePath,
+      absolutePath: path.join(projectRoot, relativePath),
+    }))
+    .filter(({ absolutePath }) => fs.existsSync(absolutePath) && fs.statSync(absolutePath).isFile())
+    .map(({ relativePath, absolutePath }) => ({
+      path: normalizePath(relativePath),
+      hash: sha256File(absolutePath),
+    }));
+}
+
+function currentImplementationAttemptId(record: JsonObject): string {
+  return (
+    text(record.currentAttemptId) ||
+    text(record.implementationAttemptId) ||
+    text(nested(record.closeout).currentAttemptId)
+  );
+}
+
+function executionAuthorityBinding(record: JsonObject, recordPath: string): ExecutionAuthorityBinding {
+  const projectRoot = projectRootForRecordPath(recordPath);
+  const runtimeVersions = {
+    node: process.version,
+    v8: process.versions.v8,
+  };
+  const environment = {
+    platform: process.platform,
+    architecture: process.arch,
+    cwd: normalizePath(projectRoot),
+  };
+  const locks = dependencyLockHashes(projectRoot);
+  return {
+    projectRoot,
+    recordId: text(record.recordId),
+    requirementSetId: text(record.requirementSetId) || text(record.recordId),
+    transactionId: text(record.transactionId),
+    implementationAttemptId: currentImplementationAttemptId(record),
+    sourceDocumentHash: text(record.sourceDocumentHash),
+    semanticModelHash: text(record.semanticModelHash),
+    packetHash: text(record.packetHash),
+    runtimeVersions,
+    dependencyLockHashes: locks,
+    environment,
+    environmentFingerprint: sha256Bytes(
+      stableStringify({
+        runtimeVersions,
+        environment,
+        dependencyLockHashes: locks,
+      })
+    ),
+  };
+}
+
+function requirementIdsForTraceRefs(manifest: JsonObject, traceRefs: string[]): string[] {
+  const traceRefSet = new Set(traceRefs);
+  const fromTrace = objects(manifest.traceRows)
+    .filter((row) => traceRefSet.has(text(row.id)))
+    .flatMap((row) => strings(row.covers));
+  if (fromTrace.length > 0) return unique(fromTrace);
+  const requirements = nested(manifest.requirements);
+  return unique(
+    ['must', 'notDone', 'mustNot']
+      .flatMap((section) => objects(requirements[section]))
+      .map((row) => text(row.id))
+  );
 }
 
 function sha256Directory(directory: string): string {
@@ -345,6 +454,90 @@ function artifactRefForFile(input: {
   };
 }
 
+function bindEvidenceArtifactReadback(
+  artifact: JsonObject,
+  binding: ExecutionAuthorityBinding
+): void {
+  if (text(artifact.sourceOfTruthRole) !== 'evidence') return;
+  const artifactPath = text(artifact.path);
+  const absoluteArtifactPath = path.isAbsolute(artifactPath)
+    ? path.resolve(artifactPath)
+    : path.resolve(binding.projectRoot, artifactPath);
+  const relative = path.relative(binding.projectRoot, absoluteArtifactPath);
+  if (
+    !artifactPath ||
+    relative === '..' ||
+    relative.startsWith(`..${path.sep}`) ||
+    !fs.existsSync(absoluteArtifactPath) ||
+    !fs.statSync(absoluteArtifactPath).isFile()
+  ) {
+    return;
+  }
+  try {
+    const parsed = JSON.parse(fs.readFileSync(absoluteArtifactPath, 'utf8')) as unknown;
+    if (!parsed || typeof parsed !== 'object') return;
+  } catch {
+    return;
+  }
+  const schemaPath = `${absoluteArtifactPath}.schema.json`;
+  const readbackReceiptPath = `${absoluteArtifactPath}.readback-receipt.json`;
+  writeJson(schemaPath, {
+    $schema: 'https://json-schema.org/draft/2020-12/schema',
+    type: 'object',
+  });
+  const artifactHash = sha256File(absoluteArtifactPath);
+  const requirementRefs = unique(strings(artifact.relatedRequirementIds));
+  const publishedAt = new Date().toISOString();
+  const receiptPayload = {
+    schemaVersion: 'requirements-contract-evidence-artifact-readback-receipt/v1',
+    artifactId: path.basename(absoluteArtifactPath),
+    artifactType: text(artifact.artifactType),
+    artifactPath: normalizePath(absoluteArtifactPath),
+    artifactHash,
+    artifactSchemaPath: normalizePath(schemaPath),
+    artifactSchemaHash: sha256File(schemaPath),
+    producerIdentity: {
+      class: 'controlled_artifact_producer',
+      id: text(artifact.producer),
+    },
+    requirementSetId: binding.requirementSetId,
+    requirementRefs,
+    transactionId: binding.transactionId,
+    implementationAttemptId: binding.implementationAttemptId,
+    publishedAt,
+    readbackAt: publishedAt,
+    publication: {
+      targetPath: normalizePath(absoluteArtifactPath),
+      publishedHash: artifactHash,
+      readbackHash: artifactHash,
+      readbackVerified: true,
+    },
+    decision: 'pass',
+  };
+  writeJson(readbackReceiptPath, {
+    ...receiptPayload,
+    receiptHash: sha256Bytes(stableStringify(receiptPayload)),
+  });
+  artifact.path = normalizePath(absoluteArtifactPath);
+  artifact.hash = artifactHash;
+  artifact.contentHash = artifactHash;
+  artifact.schemaPath = normalizePath(schemaPath);
+  artifact.readbackReceiptPath = normalizePath(readbackReceiptPath);
+}
+
+function bindEvidenceArtifactReadbacks(
+  artifacts: JsonObject[],
+  binding: ExecutionAuthorityBinding
+): void {
+  const seen = new Set<string>();
+  for (const artifact of artifacts) {
+    const key = `${text(artifact.sourceOfTruthRole)}:${normalizePath(text(artifact.path))}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    bindEvidenceArtifactReadback(artifact, binding);
+  }
+}
+
 function normalizeArtifactRole(value: string): string {
   const role = text(value);
   if (role) return role === 'post_closeout_review_projection' ? 'projection' : role;
@@ -358,11 +551,22 @@ function filePathPrefix(value: string): string {
 }
 
 function latestAuditAttemptId(record: JsonObject): string {
-  const auditResult = nested(nested(record.sixModelResults).audit_review);
-  const fromResult = objects(auditResult.sourceRefs)
-    .map((ref) => text(ref.id))
-    .find((id) => /^audit-/u.test(id));
-  if (fromResult) return fromResult;
+  const currentAttemptId =
+    text(record.currentAttemptId) ||
+    text(record.implementationAttemptId) ||
+    text(record.runId) ||
+    text(nested(record.closeout).currentAttemptId);
+  const auditStatus = resolveVerifiedSixModelStatus({
+    record,
+    modelId: 'audit_review',
+    currentImplementationAttemptId: currentAttemptId,
+  });
+  if (
+    auditStatus.projectionIntegrity === 'valid' &&
+    /^audit-/u.test(auditStatus.currentAttemptId)
+  ) {
+    return auditStatus.currentAttemptId;
+  }
   const fromIterations = objects(record.executionIterations)
     .map((iteration) => text(iteration.closeoutAttemptId) || text(iteration.executionIterationId))
     .filter((id) => /^audit-/u.test(id));
@@ -409,13 +613,14 @@ function recordFieldValue(record: JsonObject, pathOrField: string): unknown {
 function targetConcretePath(
   target: JsonObject,
   record: JsonObject,
-  closeoutAttemptId: string
+  closeoutAttemptId: string,
+  projectRoot: string
 ): string {
   const targetPath = filePathPrefix(text(target.pathOrField));
   if (!targetPath || /\s/u.test(targetPath)) return '';
   const replaced = replaceKnownTargetPlaceholders(targetPath, record, closeoutAttemptId);
   if (replaced.includes('<')) return '';
-  return path.isAbsolute(replaced) ? replaced : path.resolve(replaced);
+  return path.isAbsolute(replaced) ? replaced : path.resolve(projectRoot, replaced);
 }
 
 function writeSemanticCoverageClosureReport(input: {
@@ -483,6 +688,7 @@ function writeRuntimeModeSelection(input: {
   record: JsonObject;
   closeoutAttemptId: string;
   evidenceDir: string;
+  projectRoot: string;
 }): void {
   const goalExecutionPath = path.join(input.evidenceDir, 'goal_execution.md');
   const modelPacketPath = path.join(input.evidenceDir, 'model_packet.json');
@@ -533,11 +739,17 @@ function materializeTargetArtifacts(input: {
   record: JsonObject;
   closeoutAttemptId: string;
   evidenceDir: string;
+  projectRoot: string;
 }): void {
   for (const target of objects(input.manifest.targetArtifacts)) {
     const pathOrField = normalizePath(text(target.pathOrField));
     if (!pathOrField) continue;
-    const concretePath = targetConcretePath(target, input.record, input.closeoutAttemptId);
+    const concretePath = targetConcretePath(
+      target,
+      input.record,
+      input.closeoutAttemptId,
+      input.projectRoot
+    );
     if (!concretePath) continue;
     if (pathOrField.endsWith('/semantic-coverage/must_atom_coverage_closure_report.json')) {
       writeSemanticCoverageClosureReport({
@@ -552,6 +764,7 @@ function materializeTargetArtifacts(input: {
         record: input.record,
         closeoutAttemptId: input.closeoutAttemptId,
         evidenceDir: input.evidenceDir,
+        projectRoot: input.projectRoot,
       });
     } else if (
       pathOrField.endsWith('/audit-scoring-convergence-receipt.json') &&
@@ -562,10 +775,63 @@ function materializeTargetArtifacts(input: {
   }
 }
 
+function isJsonObjectFile(filePath: string): boolean {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8')) as unknown;
+    return Boolean(parsed) && typeof parsed === 'object' && !Array.isArray(parsed);
+  } catch {
+    return false;
+  }
+}
+
+function writeTargetFileEvidenceSnapshot(input: {
+  target: JsonObject;
+  absoluteTargetPath: string;
+  closeoutAttemptId: string;
+  evidenceDir: string;
+  binding: ExecutionAuthorityBinding;
+}): string {
+  const targetArtifactId = text(input.target.id) || path.basename(input.absoluteTargetPath);
+  const safeArtifactId = targetArtifactId.replace(/[^A-Za-z0-9_.-]/gu, '_');
+  const pathDiscriminator = sha256Bytes(normalizePath(input.absoluteTargetPath)).slice(7, 23);
+  const snapshotPath = path.join(
+    input.evidenceDir,
+    'target-artifact-snapshots',
+    `${safeArtifactId}-${pathDiscriminator}.json`
+  );
+  writeJson(snapshotPath, {
+    schemaVersion: 'requirements-contract-target-file-evidence-snapshot/v1',
+    targetArtifactId,
+    targetPath: normalizePath(input.absoluteTargetPath),
+    targetHash: sha256File(input.absoluteTargetPath),
+    targetSizeBytes: fs.statSync(input.absoluteTargetPath).size,
+    targetSourceOfTruthRole: normalizeArtifactRole(
+      text(input.target.expectedSourceOfTruthRole)
+    ),
+    producer:
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts',
+    requirementSetId: input.binding.requirementSetId,
+    transactionId: input.binding.transactionId,
+    implementationAttemptId: input.binding.implementationAttemptId,
+    closeoutAttemptId: input.closeoutAttemptId,
+    sourceDocumentHash: input.binding.sourceDocumentHash,
+    semanticModelHash: input.binding.semanticModelHash,
+    packetHash: input.binding.packetHash,
+    traceRows: strings(input.target.traceRefs),
+    evidenceRefs: strings(input.target.evidenceRefs),
+    capturedAt: new Date().toISOString(),
+    decision: 'pass',
+  });
+  return snapshotPath;
+}
+
 function targetArtifactRefs(
   manifest: JsonObject,
   closeoutAttemptId: string,
-  record: JsonObject
+  record: JsonObject,
+  projectRoot: string,
+  evidenceDir: string,
+  binding: ExecutionAuthorityBinding
 ): JsonObject[] {
   return objects(manifest.targetArtifacts).flatMap((target) => {
     const pathOrField = text(target.pathOrField);
@@ -594,22 +860,48 @@ function targetArtifactRefs(
     if (!targetPath || /\s/u.test(targetPath)) return [];
     const replaced = replaceKnownTargetPlaceholders(targetPath, record, closeoutAttemptId);
     if (replaced.includes('<')) return [];
-    const absolute = path.isAbsolute(replaced) ? replaced : path.resolve(replaced);
+    const absolute = path.isAbsolute(replaced) ? replaced : path.resolve(projectRoot, replaced);
     if (!fs.existsSync(absolute)) return [];
+    const aliases = [text(target.id), targetPath, replaced, ...strings(target.aliases)].filter(
+      Boolean
+    );
+    const targetRef = artifactRefForFile({
+      artifactType: text(target.expectedSourceOfTruthRole) || 'target_file_snapshot',
+      filePath: absolute,
+      producer:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts',
+      purpose: `current-attempt target artifact snapshot for ${text(target.id) || targetPath}`,
+      traceRows: strings(target.traceRefs),
+      evidenceRefs: strings(target.evidenceRefs),
+      closeoutAttemptId,
+      sourceOfTruthRole: expectedRole,
+      aliases,
+    });
+    if (expectedRole !== 'evidence' || isJsonObjectFile(absolute)) {
+      return [targetRef];
+    }
+    targetRef.artifactType = 'target_file_control';
+    targetRef.sourceOfTruthRole = 'projection';
+    const snapshotPath = writeTargetFileEvidenceSnapshot({
+      target,
+      absoluteTargetPath: absolute,
+      closeoutAttemptId,
+      evidenceDir,
+      binding,
+    });
     return [
+      targetRef,
       artifactRefForFile({
-        artifactType: text(target.expectedSourceOfTruthRole) || 'target_file_snapshot',
-        filePath: absolute,
+        artifactType: 'target_file_readback_snapshot',
+        filePath: snapshotPath,
         producer:
           'packages/bmad-speckit/src/main-agent/source-authority/scripts/run-required-commands-from-ai-tdd-manifest.ts',
-        purpose: `current-attempt target artifact snapshot for ${text(target.id) || targetPath}`,
+        purpose: `readback-verified target artifact evidence for ${text(target.id) || targetPath}`,
         traceRows: strings(target.traceRefs),
         evidenceRefs: strings(target.evidenceRefs),
         closeoutAttemptId,
         sourceOfTruthRole: expectedRole,
-        aliases: [text(target.id), targetPath, replaced, ...strings(target.aliases)].filter(
-          Boolean
-        ),
+        aliases,
       }),
     ];
   });
@@ -703,13 +995,15 @@ function runCommand(input: {
   runId: string;
   closeoutAttemptId: string;
   evidenceDir: string;
+  binding: ExecutionAuthorityBinding;
+  coveredRequirementIds: string[];
 }): CommandRun {
   const commandIdValue = commandId(input.command);
   const commandText = text(input.command.command);
   const startedAt = new Date().toISOString();
   const spawn = commandSpawnOptions(commandText);
   const result = spawnSync(spawn.command, spawn.args, {
-    cwd: process.cwd(),
+    cwd: input.binding.projectRoot,
     shell: spawn.shell,
     encoding: 'utf8',
     windowsHide: true,
@@ -729,10 +1023,25 @@ function runCommand(input: {
   fs.mkdirSync(commandDir, { recursive: true });
   const stdoutPath = path.join(commandDir, `${safeId}.stdout.txt`);
   const stderrPath = path.join(commandDir, `${safeId}.stderr.txt`);
-  const outputPath = path.join(commandDir, `${safeId}.combined.txt`);
+  const outputPath = path.join(commandDir, `${safeId}.combined.json`);
   fs.writeFileSync(stdoutPath, stdout, 'utf8');
   fs.writeFileSync(stderrPath, stderr, 'utf8');
-  fs.writeFileSync(outputPath, `${stdout}\n${stderr}`, 'utf8');
+  writeJson(outputPath, {
+    schemaVersion: 'required-command-output/v1',
+    commandId: commandIdValue,
+    command: commandText,
+    normalizedCommand: commandText.trim().replace(/\s+/gu, ' '),
+    cwd: normalizePath(input.binding.projectRoot),
+    startedAt,
+    completedAt,
+    rawExitCode: result.status,
+    exitCode: normalizedResult.exitCode,
+    commandExecutionMode: mode,
+    stdoutPath: normalizePath(stdoutPath),
+    stdoutHash: sha256File(stdoutPath),
+    stderrPath: normalizePath(stderrPath),
+    stderrHash: sha256File(stderrPath),
+  });
   const artifactRefs = normalizedResult.passed
     ? [
         artifactRefForOutput({
@@ -747,6 +1056,22 @@ function runCommand(input: {
   return {
     commandId: commandIdValue,
     command: commandText,
+    normalizedCommand: commandText.trim().replace(/\s+/gu, ' '),
+    cwd: normalizePath(input.binding.projectRoot),
+    executorIdentity: {
+      class: 'controlled_detached_executor',
+      id: 'requirements-contract-ai-tdd-manifest-runner/v1',
+    },
+    runtimeVersions: input.binding.runtimeVersions,
+    dependencyLockHashes: input.binding.dependencyLockHashes,
+    environment: input.binding.environment,
+    environmentFingerprint: input.binding.environmentFingerprint,
+    environmentCompatibilityDecision: 'pass',
+    transactionId: input.binding.transactionId,
+    implementationAttemptId: input.binding.implementationAttemptId,
+    sourceDocumentHash: input.binding.sourceDocumentHash,
+    semanticModelHash: input.binding.semanticModelHash,
+    packetHash: input.binding.packetHash,
     runId: input.runId,
     closeoutAttemptId: input.closeoutAttemptId,
     startedAt,
@@ -756,6 +1081,7 @@ function runCommand(input: {
     stderrPath: normalizePath(stderrPath),
     outputPath: normalizePath(outputPath),
     outputHash: sha256File(outputPath),
+    coveredRequirementIds: input.coveredRequirementIds,
     artifactRefs,
     commandExecutionMode: mode,
     rawExitCode: result.status,
@@ -771,6 +1097,8 @@ function syntheticCommandRun(input: {
   traceRefs: string[];
   evidenceRefs: string[];
   output: JsonObject;
+  binding: ExecutionAuthorityBinding;
+  coveredRequirementIds: string[];
 }): CommandRun {
   const startedAt = new Date().toISOString();
   const safeId = input.commandId.replace(/[^A-Za-z0-9_.-]/gu, '_');
@@ -778,7 +1106,7 @@ function syntheticCommandRun(input: {
   fs.mkdirSync(commandDir, { recursive: true });
   const stdoutPath = path.join(commandDir, `${safeId}.stdout.txt`);
   const stderrPath = path.join(commandDir, `${safeId}.stderr.txt`);
-  const outputPath = path.join(commandDir, `${safeId}.combined.txt`);
+  const outputPath = path.join(commandDir, `${safeId}.combined.json`);
   const stdout = `${JSON.stringify(input.output, null, 2)}\n`;
   fs.writeFileSync(stdoutPath, stdout, 'utf8');
   fs.writeFileSync(stderrPath, '', 'utf8');
@@ -787,6 +1115,22 @@ function syntheticCommandRun(input: {
   return {
     commandId: input.commandId,
     command: input.command,
+    normalizedCommand: input.command.trim().replace(/\s+/gu, ' '),
+    cwd: normalizePath(input.binding.projectRoot),
+    executorIdentity: {
+      class: 'controlled_detached_executor',
+      id: 'requirements-contract-ai-tdd-manifest-runner/v1',
+    },
+    runtimeVersions: input.binding.runtimeVersions,
+    dependencyLockHashes: input.binding.dependencyLockHashes,
+    environment: input.binding.environment,
+    environmentFingerprint: input.binding.environmentFingerprint,
+    environmentCompatibilityDecision: 'pass',
+    transactionId: input.binding.transactionId,
+    implementationAttemptId: input.binding.implementationAttemptId,
+    sourceDocumentHash: input.binding.sourceDocumentHash,
+    semanticModelHash: input.binding.semanticModelHash,
+    packetHash: input.binding.packetHash,
     runId: input.runId,
     closeoutAttemptId: input.closeoutAttemptId,
     startedAt,
@@ -796,6 +1140,7 @@ function syntheticCommandRun(input: {
     stderrPath: normalizePath(stderrPath),
     outputPath: normalizePath(outputPath),
     outputHash: sha256File(outputPath),
+    coveredRequirementIds: input.coveredRequirementIds,
     artifactRefs: [
       artifactRefForOutput({
         commandId: input.commandId,
@@ -844,6 +1189,7 @@ function buildFailureCaseCoverage(input: {
   runId: string;
   closeoutAttemptId: string;
   evidenceDir: string;
+  binding: ExecutionAuthorityBinding;
 }): { commandRun?: CommandRun; artifactRefs: JsonObject[] } {
   let confirmation: JsonObject;
   try {
@@ -877,6 +1223,12 @@ function buildFailureCaseCoverage(input: {
       traceRefs: refs.traceRefs,
       evidenceRefs: refs.evidenceRefs,
     },
+    binding: input.binding,
+    coveredRequirementIds: unique(
+      ['must', 'notDone', 'mustNot']
+        .flatMap((section) => objects(confirmation[section]))
+        .map((row) => text(row.id))
+    ),
   });
   const coverageCommandRef = {
     commandId: coverageCommandRun.commandId,
@@ -1025,6 +1377,10 @@ function buildImplementationEvidencePacket(input: {
     eventType: 'execution_iteration_recorded',
     recordId: text(input.record.recordId),
     requirementSetId: text(input.record.requirementSetId) || text(input.record.recordId),
+    transactionId: text(input.record.transactionId),
+    implementationAttemptId: currentImplementationAttemptId(input.record),
+    semanticModelHash: text(input.record.semanticModelHash),
+    packetHash: text(input.record.packetHash),
     executionIterationId: `${input.runId}:${input.closeoutAttemptId}`,
     runId: input.runId,
     closeoutAttemptId: input.closeoutAttemptId,
@@ -1176,6 +1532,7 @@ export function mainRunRequiredCommandsFromAiTddManifest(argv: string[]): number
   fs.mkdirSync(evidenceDir, { recursive: true });
 
   const record = readJson(recordPath);
+  const authorityBinding = executionAuthorityBinding(record, recordPath);
   const preRunReport = evaluateAiTddContractGate({
     sourcePath,
     record,
@@ -1210,6 +1567,8 @@ export function mainRunRequiredCommandsFromAiTddManifest(argv: string[]): number
       runId: args.runId,
       closeoutAttemptId: args.attemptId,
       evidenceDir,
+      binding: authorityBinding,
+      coveredRequirementIds: requirementIdsForTraceRefs(manifest, strings(command.traceRefs)),
     });
     commandRuns.push(run);
     if (run.exitCode !== 0) {
@@ -1244,13 +1603,9 @@ export function mainRunRequiredCommandsFromAiTddManifest(argv: string[]): number
     runId: args.runId,
     closeoutAttemptId: args.attemptId,
     evidenceDir,
+    binding: authorityBinding,
   });
   if (failureCaseCoverage.commandRun) commandRuns.push(failureCaseCoverage.commandRun);
-  writeJson(commandEvidenceBundlePath, {
-    runId: args.runId,
-    closeoutAttemptId: args.attemptId,
-    commandRuns,
-  });
   const refs = manifestRefs(manifest);
   const normalizedCommandReports = commandReportRefs({
     commandRuns,
@@ -1262,9 +1617,32 @@ export function mainRunRequiredCommandsFromAiTddManifest(argv: string[]): number
     record,
     closeoutAttemptId: args.attemptId,
     evidenceDir,
+    projectRoot: authorityBinding.projectRoot,
+  });
+  const targetArtifacts = targetArtifactRefs(
+    manifest,
+    args.attemptId,
+    record,
+    authorityBinding.projectRoot,
+    evidenceDir,
+    authorityBinding
+  );
+  bindEvidenceArtifactReadbacks(
+    [
+      ...commandRuns.flatMap((run) => run.artifactRefs),
+      ...targetArtifacts,
+      ...normalizedCommandReports,
+      ...failureCaseCoverage.artifactRefs,
+    ],
+    authorityBinding
+  );
+  writeJson(commandEvidenceBundlePath, {
+    runId: args.runId,
+    closeoutAttemptId: args.attemptId,
+    commandRuns,
   });
   const preIngestArtifacts = [
-    ...targetArtifactRefs(manifest, args.attemptId, record),
+    ...targetArtifacts,
     ...normalizedCommandReports,
     ...failureCaseCoverage.artifactRefs,
     artifactRefForFile({
@@ -1288,6 +1666,7 @@ export function mainRunRequiredCommandsFromAiTddManifest(argv: string[]): number
       closeoutAttemptId: args.attemptId,
     }),
   ];
+  bindEvidenceArtifactReadbacks(preIngestArtifacts, authorityBinding);
   const packet = buildImplementationEvidencePacket({
     record,
     sourcePath,

@@ -1,0 +1,341 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-terminal-command-receipt.schema.json",
+  "title": "Requirements Contract Terminal Command Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "contractHash",
+    "frozenEvidenceBundleHash",
+    "terminalFinalizationTargetSetDeclarationHash",
+    "terminalFinalizationTargetSetClosureHash",
+    "finalizationTargets",
+    "commands",
+    "orderedExecutionDecision",
+    "result"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-terminal-command-receipt/v1"
+    },
+    "contractHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "frozenEvidenceBundleHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "terminalFinalizationTargetSetDeclarationHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "terminalFinalizationTargetSetClosureHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "finalizationTargets": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "prefixItems": [
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/finalizationTarget"
+            },
+            {
+              "properties": {
+                "order": {
+                  "const": 1
+                },
+                "artifactRole": {
+                  "const": "SAFE-WRITE-RECEIPT-MANIFEST"
+                },
+                "targetPath": {
+                  "const": "docs/plans/evidence/loop-engineering-remediation/safe-write-receipt-manifest.json"
+                },
+                "receiptPath": {
+                  "const": "docs/plans/evidence/loop-engineering-remediation/finalization-receipts/safe-write-receipt-manifest.receipt.json"
+                },
+                "predecessorRole": {
+                  "const": "not_applicable"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/finalizationTarget"
+            },
+            {
+              "properties": {
+                "order": {
+                  "const": 2
+                },
+                "artifactRole": {
+                  "const": "EVD-15"
+                },
+                "targetPath": {
+                  "const": "docs/plans/evidence/loop-engineering-remediation/G15-final-gates.json"
+                },
+                "receiptPath": {
+                  "const": "docs/plans/evidence/loop-engineering-remediation/finalization-receipts/G15-final-gates.receipt.json"
+                },
+                "predecessorRole": {
+                  "const": "SAFE-WRITE-RECEIPT-MANIFEST"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/finalizationTarget"
+            },
+            {
+              "properties": {
+                "order": {
+                  "const": 3
+                },
+                "artifactRole": {
+                  "const": "ARTIFACT-01"
+                },
+                "targetPath": {
+                  "const": "docs/plans/evidence/loop-engineering-remediation/implementation-evidence.json"
+                },
+                "receiptPath": {
+                  "const": "docs/plans/evidence/loop-engineering-remediation/finalization-receipts/implementation-evidence.receipt.json"
+                },
+                "predecessorRole": {
+                  "const": "EVD-15"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "items": false
+    },
+    "commands": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "prefixItems": [
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/commandRun"
+            },
+            {
+              "properties": {
+                "commandId": {
+                  "const": "CMD-24"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/commandRun"
+            },
+            {
+              "properties": {
+                "commandId": {
+                  "const": "CMD-25"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "items": false
+    },
+    "orderedExecutionDecision": {
+      "enum": ["pass", "block"]
+    },
+    "result": {
+      "enum": ["PASS", "BLOCK"]
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "orderedExecutionDecision": {
+          "const": "pass"
+        },
+        "result": {
+          "const": "PASS"
+        },
+        "commands": {
+          "prefixItems": [
+            {
+              "properties": {
+                "exitCode": {
+                  "const": 0
+                }
+              }
+            },
+            {
+              "properties": {
+                "exitCode": {
+                  "const": 0
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "orderedExecutionDecision": {
+          "const": "block"
+        },
+        "result": {
+          "const": "BLOCK"
+        },
+        "commands": {
+          "contains": {
+            "required": ["exitCode"],
+            "properties": {
+              "exitCode": {
+                "not": {
+                  "const": 0
+                }
+              }
+            }
+          },
+          "minContains": 1
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "finalizationTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "order",
+        "artifactRole",
+        "targetPath",
+        "receiptPath",
+        "targetSchemaVersion",
+        "minimumBytes",
+        "predecessorRole",
+        "targetHash",
+        "promotionReceiptHash",
+        "promotionHash",
+        "readbackHash"
+      ],
+      "properties": {
+        "order": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3
+        },
+        "artifactRole": {
+          "enum": ["SAFE-WRITE-RECEIPT-MANIFEST", "EVD-15", "ARTIFACT-01"]
+        },
+        "targetPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "receiptPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "targetSchemaVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "minimumBytes": {
+          "const": 2
+        },
+        "predecessorRole": {
+          "enum": ["not_applicable", "SAFE-WRITE-RECEIPT-MANIFEST", "EVD-15"]
+        },
+        "targetHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "promotionReceiptHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "promotionHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "readbackHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "commandRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commandId",
+        "exactArgv",
+        "argvHash",
+        "cwd",
+        "executorIdentity",
+        "hostIdentity",
+        "startedAt",
+        "endedAt",
+        "exitCode",
+        "stdoutHash",
+        "stderrHash"
+      ],
+      "properties": {
+        "commandId": {
+          "enum": ["CMD-24", "CMD-25"]
+        },
+        "exactArgv": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "argvHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "cwd": {
+          "type": "string",
+          "minLength": 1
+        },
+        "executorIdentity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hostIdentity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "startedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "endedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "exitCode": {
+          "type": "integer"
+        },
+        "stdoutHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "stderrHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    }
+  }
+}

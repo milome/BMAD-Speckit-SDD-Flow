@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-confirmed-authority-projection.schema.json",
+  "title": "Requirements Contract Confirmed Authority Projection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "requirementRecordId",
+    "sourceSnapshotHash",
+    "implementationConfirmationSemanticHash",
+    "controlledConfirmationEventHash",
+    "confirmedAuthorityIdentity",
+    "RequirementsEffectivePassReceiptRef",
+    "writerId",
+    "controlReceiptHash",
+    "authorityTupleHash",
+    "projectionHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-confirmed-authority-projection/v1"
+    },
+    "requirementRecordId": { "$ref": "#/$defs/nonEmpty" },
+    "sourceSnapshotHash": { "$ref": "#/$defs/hash" },
+    "implementationConfirmationSemanticHash": { "$ref": "#/$defs/hash" },
+    "controlledConfirmationEventHash": { "$ref": "#/$defs/hash" },
+    "confirmedAuthorityIdentity": { "$ref": "#/$defs/confirmedAuthorityIdentity" },
+    "RequirementsEffectivePassReceiptRef": { "$ref": "#/$defs/effectivePassReceiptRef" },
+    "writerId": { "const": "requirements-confirmation-ingest" },
+    "controlReceiptHash": { "$ref": "#/$defs/hash" },
+    "authorityTupleHash": { "$ref": "#/$defs/hash" },
+    "projectionHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "nonEmpty": { "type": "string", "minLength": 1 },
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "confirmedAuthorityIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "semanticHash", "contentHash"],
+      "properties": {
+        "path": { "$ref": "#/$defs/nonEmpty" },
+        "semanticHash": { "$ref": "#/$defs/hash" },
+        "contentHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "effectivePassReceiptRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "schemaVersion", "receiptHash", "actorClass", "judgeRole", "decision"],
+      "properties": {
+        "path": { "$ref": "#/$defs/nonEmpty" },
+        "schemaVersion": { "const": "requirements-effective-pass-receipt/v1" },
+        "receiptHash": { "$ref": "#/$defs/hash" },
+        "actorClass": { "const": "requirements_critical_auditor_judge" },
+        "judgeRole": { "const": "requirements_critical_auditor" },
+        "decision": { "const": "pass" }
+      }
+    }
+  }
+}

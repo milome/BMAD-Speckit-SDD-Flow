@@ -4,6 +4,7 @@
 import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { expandSixModelAuthority } from './requirement-fixture-runtime';
 
 const REPO_ROOT = process.cwd();
 
@@ -370,6 +371,31 @@ export function writeMinimalRequirementRecordContext(
         sourcePathValue,
       })
     : null;
+  const sourceDocumentHash =
+    confirmedSource?.sourceDocumentHash ??
+    'sha256:1111111111111111111111111111111111111111111111111111111111111111';
+  const implementationConfirmationHash =
+    confirmedSource?.implementationConfirmationHash ??
+    'sha256:2222222222222222222222222222222222222222222222222222222222222222';
+  const semanticModelHash = sha256Text(
+    stableStringify({
+      recordId,
+      requirementSetId,
+      sourceDocumentHash,
+      implementationConfirmationHash,
+    })
+  );
+  const sixModelAuthority = opts.sixModelResults
+    ? expandSixModelAuthority({
+        rawResults: opts.sixModelResults,
+        recordId,
+        requirementSetId,
+        implementationAttemptId: identitySegment,
+        sourceDocumentHash,
+        implementationConfirmationHash,
+        semanticModelHash,
+      })
+    : null;
 
   const record = {
     recordId,
@@ -403,18 +429,22 @@ export function writeMinimalRequirementRecordContext(
     artifactRoot: opts.artifactRoot,
     artifactPath: opts.artifactPath ?? opts.artifactRoot,
     sourcePath: sourcePathValue,
-    sourceDocumentHash:
-      confirmedSource?.sourceDocumentHash ??
-      'sha256:1111111111111111111111111111111111111111111111111111111111111111',
-    implementationConfirmationHash:
-      confirmedSource?.implementationConfirmationHash ??
-      'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    semanticModelHash,
+    currentAttemptId: identitySegment,
     confirmationPageHash:
       confirmedSource?.confirmationPageHash ??
       'sha256:3333333333333333333333333333333333333333333333333333333333333333',
     ...(confirmedSource ? { confirmationHistory: confirmedSource.confirmationHistory } : {}),
     ...(opts.currentMentalModel ? { currentMentalModel: opts.currentMentalModel } : {}),
-    ...(opts.sixModelResults ? { sixModelResults: opts.sixModelResults } : {}),
+    ...(sixModelAuthority
+      ? {
+          sixModelResults: sixModelAuthority.sixModelResults,
+          runtimeStatusDecisionReceipts: sixModelAuthority.runtimeStatusDecisionReceipts,
+          artifactIndex: sixModelAuthority.artifactIndex,
+        }
+      : {}),
     implementationEntryGate: opts.implementationEntryGate ?? {
       gateName: 'implementation-readiness',
       requestedFlow: flow === 'bugfix' || flow === 'standalone_tasks' ? flow : 'story',

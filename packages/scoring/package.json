@@ -76,6 +76,10 @@
     "./scores/format-table": {
       "require": "./dist/scores/format-table.js",
       "types": "./dist/scores/format-table.d.ts"
+    },
+    "./*": {
+      "require": "./dist/*.js",
+      "types": "./dist/*.d.ts"
     }
   },
   "scripts": {
@@ -87,11 +91,14 @@
     "dist/",
     "rules/",
     "schema/",
-    "eval-questions/",
+    "eval-questions/EVAL_AGENT_BMAD_FLOW_IMPROVEMENT.md",
+    "eval-questions/MANIFEST_SCHEMA.md",
+    "eval-questions/README.md",
+    "eval-questions/v1/",
+    "eval-questions/v2/",
     "runtime/schema/",
     "analytics/schema/",
-    "dashboard/ui/",
-    "data/__fixtures-*"
+    "dashboard/ui/"
   ],
   "dependencies": {
     "ajv": "^8.18.0",

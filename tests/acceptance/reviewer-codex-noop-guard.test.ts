@@ -17,7 +17,7 @@ describe('reviewer codex parity guard', () => {
     expect(Object.keys(explainability.hosts)).toStrictEqual(['cursor', 'claude', 'codex']);
     expect(explainability.hosts.codex.preferredRoute).toStrictEqual({
       tool: 'codex',
-      subtypeOrExecutor: 'worker:audit',
+      subtypeOrExecutor: 'main-session:audit',
     });
     expect(projection.compatibilityGuards.codexNoopRequired).toBe(false);
     expect(explainability.compatibilityGuards.codexBehaviorChangeAllowed).toBe(true);

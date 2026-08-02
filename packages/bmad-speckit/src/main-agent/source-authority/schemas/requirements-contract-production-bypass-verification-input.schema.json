@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.dev/schemas/requirements-contract-production-bypass-verification-input.schema.json",
+  "title": "Requirements Contract Production Bypass Verification Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["cwd", "evidenceRoot"],
+  "properties": {
+    "cwd": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidenceRoot": {
+      "type": "string",
+      "minLength": 1
+    },
+    "corpusPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "json": {
+      "type": "boolean"
+    }
+  }
+}

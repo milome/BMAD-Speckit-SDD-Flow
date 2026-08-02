@@ -4,7 +4,7 @@ name: bmad-standalone-tasks
 description: |
   Execute unfinished tasks from a user-provided TASKS/BUGFIX document via subagents only.
   Use when the user asks to implement unfinished items from a named TASKS or BUGFIX markdown file.
-  Enforces Codex worker adapter for implementation, ralph-method (prd + progress, TDD), speckit-workflow (no pseudo-implementation, run acceptance commands),
+  Enforces current Codex main session for implementation, ralph-method (prd + progress, TDD), speckit-workflow (no pseudo-implementation, run acceptance commands),
   and code-reviewer-style audit with Critical Auditor >50% and three consecutive no-gap rounds.
   The main Agent must NOT edit production code.
 ---
@@ -51,35 +51,35 @@ Before starting the implementation subtask, the main Agent must parse the docume
 
 ## Hard constraints (non-negotiable)
 
-1. **Implementation only via subagent**  
-   All production and test code changes must be done through **Codex worker adapter** (subagent). The main Agent **must not** use `search_replace` or `write` on production code.
+1. **Implementation only via subagent**
+   All production and test code changes must be done through **current Codex main session** (subagent). The main Agent **must not** use `search_replace` or `write` on production code.
 
-2. **ralph-method**  
-   - Create and maintain **prd** and **progress** beside the reference document (`prd.{stem}.json`, `progress.{stem}.txt` for e.g. `BUGFIX_foo.md`).  
-   - After **each** completed US: update prd (`passes=true`), append progress (timestamped story log).  
+2. **ralph-method**
+   - Create and maintain **prd** and **progress** beside the reference document (`prd.{stem}.json`, `progress.{stem}.txt` for e.g. `BUGFIX_foo.md`).
+   - After **each** completed US: update prd (`passes=true`), append progress (timestamped story log).
    - Execute US in order.
 
-3. **TDD red–green–refactor**  
+3. **TDD red–green–refactor**
    Per US: tests first (red) → implement until green → refactor. Do not mark done without passing tests.
 
-4. **speckit-workflow**  
+4. **speckit-workflow**
    No placeholders or pseudo-implementation; run acceptance commands from the document; stay faithful to the BUGFIX/TASKS document.
 
-5. **Forbidden**  
-   - Do not add defer-to-later phrasing in task descriptions (Chinese TASKS docs often ban deferred-to-next-iteration wording; follow the document).  
+5. **Forbidden**
+   - Do not add defer-to-later phrasing in task descriptions (Chinese TASKS docs often ban deferred-to-next-iteration wording; follow the document).
    - Do not mark a task complete if the behavior is not actually invoked or verified.
 
 ## Main Agent responsibilities
 
-- **Do**: Resolve document path, read task list, **launch Codex worker adapter** (implementation and audit), pass full context, **collect and summarize** subagent output.  
-- **Do**: If subagent returns incomplete, launch a **resume** Codex worker adapter with the same agent ID; do **not** replace the subagent by editing code yourself.  
+- **Do**: Resolve document path, read task list, **launch current Codex main session** (implementation and audit), pass full context, **collect and summarize** subagent output.
+- **Do**: If subagent returns incomplete, launch a **resume** current Codex main session with the same agent ID; do **not** replace the subagent by editing code yourself.
 - **Do not**: Edit production or test code (including any path listed in the TASKS/BUGFIX document as an implementation target).
 
 ---
 
 ## Step 1: Implementation sub-task
 
-**Tool**: `Codex worker adapter`  
+**Tool**: `current Codex main session`
 **subagent_type**: `general-purpose`
 
 **Prompt template** (fill placeholders; pass full TASKS path and constraints):
@@ -111,18 +111,18 @@ Before starting the implementation subtask, the main Agent must parse the docume
 - **DOC_PATH**: absolute path or repo-relative path (main Agent resolves; absolute recommended).
 - **TASK_LIST**: unfinished items from the document (e.g. §7 ranges). For resume, use `references/prompt-templates.md` “Resume implementation subtask” with “already completed” and “this batch”.
 
-Main Agent only: invoke Codex worker adapter with this prompt, then collect and summarize (and resume if needed).
+Main Agent only: invoke current Codex main session with this prompt, then collect and summarize (and resume if needed).
 
 ---
 
 ## Step 2: Audit sub-task (after implementation)
 
-**Tool**: **Prefer** Codex worker dispatch with **code-reviewer** if `.codex/agents/code-reviewer.md` or `.codex/agents/code-reviewer.md` exists. **If only Codex worker adapter** is available and it has no `code-reviewer` subtype, use `general-purpose` with the full audit prompt below (§5, Critical Auditor >50%, three no-gap rounds) and state at the top of the report that code-reviewer subtype was not used.
+**Tool**: **Prefer** Codex worker dispatch with **code-reviewer** if `.codex/agents/code-reviewer.md` or `.codex/agents/code-reviewer.md` exists. **If only current Codex main session** is available and it has no `code-reviewer` subtype, use `general-purpose` with the full audit prompt below (§5, Critical Auditor >50%, three no-gap rounds) and state at the top of the report that code-reviewer subtype was not used.
 
 **Requirements**:
 
-- Use **audit-prompts.md §5** (implementation-stage audit): verify each item; no placeholders; actionable; use the pass phrasing required by the template (often Chinese literals in this repo—category α).  
-- **Critical Auditor must appear**, speaking share **>70%**; adversarial check for omissions, line drift, acceptance consistency, false positives/negatives.  
+- Use **audit-prompts.md §5** (implementation-stage audit): verify each item; no placeholders; actionable; use the pass phrasing required by the template (often Chinese literals in this repo—category α).
+- **Critical Auditor must appear**, speaking share **>70%**; adversarial check for omissions, line drift, acceptance consistency, false positives/negatives.
 - **Convergence**: one **round** = one full audit subtask; **three consecutive no-gap rounds** = three passes in a row with the template’s required pass wording and Critical Auditor stating no new gap in the required language; any fail or gap resets the count.
 
 **Prompt template**:
@@ -153,7 +153,7 @@ Main Agent only: invoke Codex worker adapter with this prompt, then collect and 
 - 若未通过：注明「本轮存在 gap，不计数」，修复后再次发起本审计，直至连续 3 轮无 gap 收敛。
 ```
 
-Main Agent: run this Codex worker adapter after Step 1 (and any resume). You may print “round N passed, continuing…” between rounds. If the audit verdict is fail, launch implementation (or resume) so the subagent fixes code/prd/progress; the main Agent may edit docs-only files, not `prd.*`, `progress.*`, or production code. Repeat audit until three consecutive no-gap rounds.
+Main Agent: run this current Codex main session after Step 1 (and any resume). You may print “round N passed, continuing…” between rounds. If the audit verdict is fail, launch implementation (or resume) so the subagent fixes code/prd/progress; the main Agent may edit docs-only files, not `prd.*`, `progress.*`, or production code. Repeat audit until three consecutive no-gap rounds.
 
 **不中断执行 contract**: The implementation subagent must start from the first remaining item in the current batch and continuously complete all remaining scoped US/tasks. It must not pause at single-item completion, mid-batch milestones, or “wait for approval first” checkpoints. Control may return to the main Agent only when: ① all work in the current scope is finished and the flow can enter post-audit / closeout; ② a real blocker requires reroute / remediation; ③ an explicit audit boundary or resume checkpoint defined by this skill has been reached. 换言之，子代理必须连续完成当前作用域内的全部剩余 US/任务。
 
@@ -161,29 +161,29 @@ Main Agent: run this Codex worker adapter after Step 1 (and any resume). You may
 
 ## Step 3: Main Agent prohibitions (reminder)
 
-- **Do not** use `search_replace`, `write`, or `edit` on production code (including paths listed as implementation targets). **Do not** edit `prd.{stem}.json` or `progress.{stem}.txt` (subagent maintains them).  
-- **Do not** substitute your own implementation for the subagent; use **Codex worker adapter resume** or a new task with explicit “already completed” / “this batch” in the prompt.  
+- **Do not** use `search_replace`, `write`, or `edit` on production code (including paths listed as implementation targets). **Do not** edit `prd.{stem}.json` or `progress.{stem}.txt` (subagent maintains them).
+- **Do not** substitute your own implementation for the subagent; use **current Codex main session resume** or a new task with explicit “already completed” / “this batch” in the prompt.
 - **May** edit explanatory/docs-only files (README, this skill, artifact `.md`) for audit notes or progress narration.
 
 ---
 
 ## Integration with ralph-method / speckit-workflow
 
-- **Standalone**: this skill uses the current TASKS/BUGFIX doc as the only task source; no prior speckit `tasks.md` required. US/prd come from the document. If ralph-method elsewhere requires alignment with `tasks.md`, **this skill wins** for standalone runs. Subagents may build prd/progress without plan/GAPS/tasks.md prerequisites from the ralph-method skill.  
-- **Flat task lists**: map to US-001, US-002, … (or doc ids), valid prd schema, consistent progress ids.  
+- **Standalone**: this skill uses the current TASKS/BUGFIX doc as the only task source; no prior speckit `tasks.md` required. US/prd come from the document. If ralph-method elsewhere requires alignment with `tasks.md`, **this skill wins** for standalone runs. Subagents may build prd/progress without plan/GAPS/tasks.md prerequisites from the ralph-method skill.
+- **Flat task lists**: map to US-001, US-002, … (or doc ids), valid prd schema, consistent progress ids.
 - **Skill loading**: the Step 1 preamble already requires loading ralph-method and speckit-workflow first.
 
 ## References
 
-- **ralph-method**: Create/maintain prd + progress; naming/schema in ralph-method skill.  
-- **speckit-workflow**: TDD, 15 rules, acceptance commands, architecture fidelity; audits should use code-review where applicable.  
-- **audit-prompts §5**: implementation-stage audit; the six built-in items here map to §5. Cross-check `_bmad/references/audit-prompts.md` §5 if present. Critical Auditor, three no-gap rounds.  
-- **audit-post-impl-rules**: aligned with speckit-workflow and bmad-story-assistant; Step 2 matches (three no-gap rounds, Critical Auditor >50%). Path: `.codex/skills/speckit-workflow/references/audit-post-impl-rules.md`.  
-- **audit-document-iteration-rules**: for TASKS/BUGFIX **document** audit (not post-implementation), follow `.codex/skills/speckit-workflow/references/audit-document-iteration-rules.md` (audit subagent edits the doc). **Step 2 is post-implementation (code)**—implementation subagent fixes code.  
+- **ralph-method**: Create/maintain prd + progress; naming/schema in ralph-method skill.
+- **speckit-workflow**: TDD, 15 rules, acceptance commands, architecture fidelity; audits should use code-review where applicable.
+- **audit-prompts §5**: implementation-stage audit; the six built-in items here map to §5. Cross-check `_bmad/references/audit-prompts.md` §5 if present. Critical Auditor, three no-gap rounds.
+- **audit-post-impl-rules**: aligned with speckit-workflow and bmad-story-assistant; Step 2 matches (three no-gap rounds, Critical Auditor >50%). Path: `.codex/skills/speckit-workflow/references/audit-post-impl-rules.md`.
+- **audit-document-iteration-rules**: for TASKS/BUGFIX **document** audit (not post-implementation), follow `.codex/skills/speckit-workflow/references/audit-document-iteration-rules.md` (audit subagent edits the doc). **Step 2 is post-implementation (code)**—implementation subagent fixes code.
 - **Prompt templates**: `references/prompt-templates.md`.
 
 ## Errors and edge cases
 
-- **Missing path**: if resolved `DOC_PATH` does not exist, report error with path; do not start implementation subtask.  
-- **Subagent error / timeout**: **resume** once if agent id exists; else new Codex worker adapter with “continue from progress or checkpoint”; do not edit production code as substitute.  
+- **Missing path**: if resolved `DOC_PATH` does not exist, report error with path; do not start implementation subtask.
+- **Subagent error / timeout**: **resume** once if agent id exists; else new current Codex main session with “continue from progress or checkpoint”; do not edit production code as substitute.
 - **Main Agent must not** edit `prd.*.json` or `progress.*.txt` to “patch progress”—only the subagent.

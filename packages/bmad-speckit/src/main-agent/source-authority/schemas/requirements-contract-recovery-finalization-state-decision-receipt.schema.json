@@ -1,0 +1,205 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-recovery-finalization-state-decision-receipt.schema.json",
+  "title": "Requirements Contract Recovery Finalization State Decision Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "transactionId",
+    "implementationAttemptId",
+    "architectureAuditAttemptId",
+    "contractHash",
+    "finalizationRunId",
+    "commandRunId",
+    "invocationSequence",
+    "invocationIntent",
+    "observedState",
+    "observedPathInventory",
+    "priorUnmatchedInvocationIntents",
+    "selectedTransition",
+    "rejectionReason",
+    "createdAt",
+    "readbackVerified"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-recovery-finalization-state-decision-receipt/v1"
+    },
+    "transactionId": {
+      "type": "string",
+      "pattern": "^TX-[A-Za-z0-9._-]+$"
+    },
+    "implementationAttemptId": {
+      "type": "string",
+      "pattern": "^IMP-[A-Za-z0-9._-]+$"
+    },
+    "architectureAuditAttemptId": {
+      "type": "string",
+      "pattern": "^AUDIT-[A-Za-z0-9._-]+$"
+    },
+    "contractHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "finalizationRunId": {
+      "type": "string",
+      "pattern": "^FINALIZE-[A-Za-z0-9._-]+$"
+    },
+    "commandRunId": {
+      "type": "string",
+      "pattern": "^RUN-[A-Za-z0-9._-]+$"
+    },
+    "invocationSequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "invocationIntent": {
+      "$ref": "#/$defs/pathHash"
+    },
+    "observedState": {
+      "enum": [
+        "fresh",
+        "intent_recorded",
+        "fresh_decided",
+        "backup_only",
+        "backup_and_staged",
+        "prepared",
+        "promoted_unrecorded",
+        "target_promoted",
+        "committed",
+        "corrupt"
+      ]
+    },
+    "observedPathInventory": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "path", "exists"],
+        "properties": {
+          "role": {
+            "type": "string",
+            "minLength": 1
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "exists": {
+            "type": "boolean"
+          },
+          "pathType": {
+            "enum": ["file", "directory"]
+          },
+          "hash": {
+            "$ref": "#/$defs/sha256"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "exists": {
+                  "const": true
+                }
+              },
+              "required": ["exists"]
+            },
+            "then": {
+              "required": ["pathType", "hash"]
+            },
+            "else": {
+              "allOf": [
+                {
+                  "not": {
+                    "required": ["pathType"]
+                  }
+                },
+                {
+                  "not": {
+                    "required": ["hash"]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "priorUnmatchedInvocationIntents": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/pathHash"
+      }
+    },
+    "selectedTransition": {
+      "enum": [
+        "complete_remaining_prefix",
+        "resume_staged_write",
+        "resume_prepare_receipt",
+        "resume_target_promotion",
+        "resume_target_promoted_receipt",
+        "resume_commit_receipt",
+        "observe_committed",
+        "block"
+      ]
+    },
+    "rejectionReason": {
+      "enum": [null, "non_crash_reachable_transaction_state"]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "readbackVerified": {
+      "const": true
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "selectedTransition": {
+            "const": "block"
+          }
+        },
+        "required": ["selectedTransition"]
+      },
+      "then": {
+        "properties": {
+          "rejectionReason": {
+            "const": "non_crash_reachable_transaction_state"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "rejectionReason": {
+            "const": null
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "pathHash": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    }
+  }
+}

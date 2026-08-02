@@ -2,6 +2,7 @@ import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as yaml from 'js-yaml';
+import { resolvePackageOwnedBmadPath } from '../../runtime/package-bmad-root';
 
 export type JsonObject = Record<string, unknown>;
 
@@ -21,6 +22,10 @@ export interface ResolvedArchitectureConfirmationHashRecipe {
 const EXPECTED_SCHEMA_VERSION = 'architecture-confirmation-hash-recipe.contract/v1';
 const EXPECTED_RECIPE_VERSION = 'architecture-confirmation-hash/v1';
 const DEFAULT_CONFIG_PATH = '_bmad/_config/architecture-confirmation-hash-recipe.contract.yaml';
+const DEFAULT_PACKAGE_CONFIG_SEGMENTS = [
+  '_config',
+  'architecture-confirmation-hash-recipe.contract.yaml',
+];
 
 function text(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -59,11 +64,13 @@ export function normalizeArchitecturePath(value: string, repoRoot = process.cwd(
 }
 
 export function resolveArchitectureConfirmationHashRecipe(
-  configPath = DEFAULT_CONFIG_PATH
+  configPath?: string
 ): ResolvedArchitectureConfirmationHashRecipe {
-  const absoluteConfigPath = path.resolve(configPath);
+  const absoluteConfigPath = configPath
+    ? path.resolve(configPath)
+    : resolvePackageOwnedBmadPath(...DEFAULT_PACKAGE_CONFIG_SEGMENTS);
   if (!fs.existsSync(absoluteConfigPath)) {
-    throw new Error(`ArchitectureConfirmationHashRecipe missing: ${configPath}`);
+    throw new Error(`ArchitectureConfirmationHashRecipe missing: ${absoluteConfigPath}`);
   }
   const parsed = yaml.load(fs.readFileSync(absoluteConfigPath, 'utf8')) as unknown;
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
@@ -95,7 +102,7 @@ export function resolveArchitectureConfirmationHashRecipe(
   const resolvedWithoutHash = {
     schemaVersion,
     recipeVersion,
-    configPath: normalizeArchitecturePath(absoluteConfigPath),
+    configPath: configPath ? normalizeArchitecturePath(absoluteConfigPath) : DEFAULT_CONFIG_PATH,
     canonicalization: object(config.canonicalization),
     pathNormalization: object(config.pathNormalization),
     fixedCategoryOrder: object(config.fixedCategoryOrder),

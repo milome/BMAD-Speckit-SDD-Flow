@@ -10,6 +10,8 @@ import {
   appendControlEventAndReplay,
   eventLogPathForRecord,
 } from './requirement-record-control-store';
+import { validateEvidenceArtifactReadbackReceipts } from './requirements-contract-evidence-artifact-readback';
+import { sha256Stable } from './requirements-contract-semantic-resolver';
 
 type JsonObject = Record<string, unknown>;
 
@@ -64,6 +66,7 @@ const LEGACY_WRITE_PATH_PREFIXES = [
   '_bmad-output/runtime/context/',
   '_bmad-output/runtime/governance/',
 ];
+const SHA256 = /^sha256:[a-f0-9]{64}$/u;
 const RERUN_AUTHORITY_SOURCE_TYPES = new Set([
   'gate_check',
   'contract_check',
@@ -126,8 +129,18 @@ function arrayOfStrings(value: unknown): string[] {
   return Array.isArray(value) ? value.map(text).filter(Boolean) : [];
 }
 
+function objectValue(value: unknown): JsonObject {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as JsonObject)
+    : {};
+}
+
 function normalizePathForRecord(value: string): string {
   return value.replace(/\\/gu, '/');
+}
+
+function normalizeCommandText(value: unknown): string {
+  return text(value).replace(/\s+/gu, ' ');
 }
 
 function normalizeSourceOfTruthRole(value: unknown): string {
@@ -186,11 +199,6 @@ function sha256ExistingPath(absolutePath: string): string {
   return sha256File(absolutePath);
 }
 
-function appendJsonl(file: string, value: JsonObject): void {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.appendFileSync(file, `${JSON.stringify(value)}\n`, 'utf8');
-}
-
 function containsForbiddenField(value: unknown, field: string): boolean {
   if (!value || typeof value !== 'object') return false;
   if (Array.isArray(value)) return value.some((item) => containsForbiddenField(item, field));
@@ -236,27 +244,7 @@ function normalizeContractChecks(packet: JsonObject): JsonObject[] {
 }
 
 function closureInputs(packet: JsonObject): JsonObject[] {
-  const explicitClosures = arrayOfObjects(packet.requirementClosures);
-  if (text(packet.status) !== 'done') return explicitClosures;
-
-  const explicitRequirementIds = new Set(
-    explicitClosures.map((closure) => text(closure.requirementId)).filter(Boolean)
-  );
-  const traceClosures = arrayOfStrings(packet.traceRows)
-    .filter((traceRow) => !explicitRequirementIds.has(traceRow))
-    .map((traceRow) => ({
-      requirementId: traceRow,
-      status: 'pass',
-      closureSource: 'execution_trace_row_done',
-    }));
-  const evidenceClosures = arrayOfStrings(packet.evidenceRefs)
-    .filter((evidenceRef) => !explicitRequirementIds.has(evidenceRef))
-    .map((evidenceRef) => ({
-      requirementId: evidenceRef,
-      status: 'pass',
-      closureSource: 'execution_evidence_ref_done',
-    }));
-  return [...explicitClosures, ...traceClosures, ...evidenceClosures];
+  return arrayOfObjects(packet.requirementClosures);
 }
 
 function requireHashMatch(packet: JsonObject, record: JsonObject): string[] {
@@ -304,27 +292,263 @@ function sourceRefs(packet: JsonObject): JsonObject[] {
   return refs.filter((ref) => text(ref.id));
 }
 
-function validateCommands(packet: JsonObject): string[] {
+function currentImplementationAttemptId(record: JsonObject): string {
+  return (
+    text(record.currentAttemptId) ||
+    text(record.implementationAttemptId) ||
+    text(objectValue(record.closeout).currentAttemptId)
+  );
+}
+
+function pathInsideRoot(projectRoot: string, candidatePath: string): string | undefined {
+  const absolute = path.isAbsolute(candidatePath)
+    ? path.resolve(candidatePath)
+    : path.resolve(projectRoot, candidatePath);
+  const relative = path.relative(path.resolve(projectRoot), absolute);
+  return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..')
+    ? absolute
+    : undefined;
+}
+
+function validateCommands(packet: JsonObject, record: JsonObject, projectRoot: string): string[] {
   const mismatches: string[] = [];
   const runId = text(packet.runId);
   const closeoutAttemptId = text(packet.closeoutAttemptId);
+  const transactionId = text(packet.transactionId);
+  const implementationAttemptId = text(packet.implementationAttemptId);
+  const sourceDocumentHash = text(packet.sourceDocumentHash);
+  const semanticModelHash = text(packet.semanticModelHash);
+  const packetHash = text(packet.packetHash);
+  const recordTransactionId = text(record.transactionId);
+  const recordAttemptId = currentImplementationAttemptId(record);
+  const recordSemanticModelHash = text(record.semanticModelHash);
+  const recordPacketHash = text(record.packetHash);
   const commandRuns = arrayOfObjects(packet.commandRuns);
+  const requiredCommands = arrayOfObjects(objectValue(packet.deliveryEvidence).requiredCommands);
   if (!runId) mismatches.push('run_id_missing');
+  if (!transactionId) mismatches.push('transaction_id_missing');
+  if (!implementationAttemptId) mismatches.push('implementation_attempt_id_missing');
+  if (!recordTransactionId) mismatches.push('record_transaction_id_missing');
+  else if (transactionId !== recordTransactionId) mismatches.push('transaction_id_mismatch');
+  if (!recordAttemptId) mismatches.push('record_implementation_attempt_id_missing');
+  else if (implementationAttemptId !== recordAttemptId) {
+    mismatches.push('implementation_attempt_id_mismatch');
+  }
+  if (!SHA256.test(sourceDocumentHash)) mismatches.push('source_document_hash_missing');
+  if (!SHA256.test(semanticModelHash)) mismatches.push('semantic_model_hash_missing');
+  else if (semanticModelHash !== recordSemanticModelHash) mismatches.push('semantic_model_hash_mismatch');
+  if (!SHA256.test(packetHash)) mismatches.push('packet_hash_missing');
+  else if (packetHash !== recordPacketHash) mismatches.push('packet_hash_mismatch');
   if (commandRuns.length === 0) mismatches.push('command_runs_missing');
   for (const run of commandRuns) {
-    if (!text(run.commandId)) mismatches.push('command_id_missing');
-    if (!text(run.command)) mismatches.push('command_missing');
+    const commandId = text(run.commandId);
+    const command = text(run.command);
+    const normalizedCommand = normalizeCommandText(run.normalizedCommand);
+    const executorIdentity = objectValue(run.executorIdentity);
+    const runtimeVersions = objectValue(run.runtimeVersions);
+    const dependencyLockHashes = arrayOfObjects(run.dependencyLockHashes);
+    const coveredRequirementIds = arrayOfStrings(run.coveredRequirementIds);
+    const outputPath = text(run.outputPath);
+    const outputHash = text(run.outputHash);
+    if (!commandId) mismatches.push('command_id_missing');
+    if (!command) mismatches.push('command_missing');
+    if (!normalizedCommand) mismatches.push(`command_normalized_text_missing:${commandId}`);
+    else if (normalizedCommand !== normalizeCommandText(command)) {
+      mismatches.push(`command_normalized_text_mismatch:${commandId}`);
+    }
+    const declaration = requiredCommands.find(
+      (requiredCommand) => text(requiredCommand.commandId) === commandId
+    );
+    const deliveryEvidenceRequired = run.deliveryEvidenceRequired !== false;
+    if (deliveryEvidenceRequired && !declaration) {
+      mismatches.push(`command_declaration_missing:${commandId}`);
+    } else if (
+      deliveryEvidenceRequired &&
+      normalizeCommandText(declaration?.command) !== normalizeCommandText(command)
+    ) {
+      mismatches.push(`command_declared_text_mismatch:${commandId}`);
+    } else if (!deliveryEvidenceRequired && declaration) {
+      mismatches.push(`non_delivery_command_declared_as_required:${commandId}`);
+    }
+    if (!text(run.cwd)) mismatches.push(`command_cwd_missing:${commandId}`);
+    if (!text(executorIdentity.class) || !text(executorIdentity.id)) {
+      mismatches.push(`command_executor_identity_missing:${commandId}`);
+    }
+    if (
+      Object.keys(runtimeVersions).length === 0 ||
+      Object.values(runtimeVersions).some((value) => !text(value))
+    ) {
+      mismatches.push(`command_runtime_versions_missing:${commandId}`);
+    }
+    if (dependencyLockHashes.length === 0) {
+      mismatches.push(`command_dependency_lock_hashes_missing:${commandId}`);
+    }
+    for (const lock of dependencyLockHashes) {
+      const lockPath = text(lock.path);
+      const lockHash = text(lock.hash);
+      const absoluteLockPath = lockPath ? pathInsideRoot(projectRoot, lockPath) : undefined;
+      if (!lockPath || !SHA256.test(lockHash)) {
+        mismatches.push(`command_dependency_lock_hash_invalid:${commandId}`);
+      } else if (!absoluteLockPath || !fs.existsSync(absoluteLockPath)) {
+        mismatches.push(`command_dependency_lock_missing:${commandId}:${lockPath}`);
+      } else if (sha256ExistingPath(absoluteLockPath) !== lockHash) {
+        mismatches.push(`command_dependency_lock_hash_mismatch:${commandId}:${lockPath}`);
+      }
+    }
+    if (!SHA256.test(text(run.environmentFingerprint))) {
+      mismatches.push(`command_environment_fingerprint_missing:${commandId}`);
+    }
+    if (text(run.environmentCompatibilityDecision) !== 'pass') {
+      mismatches.push(`command_environment_compatibility_not_pass:${commandId}`);
+    }
     if (typeof run.exitCode !== 'number') mismatches.push('command_exit_code_missing');
+    else if (run.exitCode !== 0) mismatches.push(`command_exit_code_nonzero:${commandId}`);
     if (!text(run.startedAt) || !text(run.completedAt)) mismatches.push('command_time_missing');
     if (text(run.runId) !== runId) mismatches.push('command_run_id_mismatch');
     if (closeoutAttemptId && text(run.closeoutAttemptId) !== closeoutAttemptId) {
       mismatches.push('command_closeout_attempt_id_mismatch');
     }
+    for (const [field, expected, actual] of [
+      ['transaction_id', transactionId, text(run.transactionId)],
+      ['implementation_attempt_id', implementationAttemptId, text(run.implementationAttemptId)],
+      ['source_document_hash', sourceDocumentHash, text(run.sourceDocumentHash)],
+      ['semantic_model_hash', semanticModelHash, text(run.semanticModelHash)],
+      ['packet_hash', packetHash, text(run.packetHash)],
+    ]) {
+      if (!actual) mismatches.push(`command_${field}_missing:${commandId}`);
+      else if (actual !== expected) mismatches.push(`command_${field}_mismatch:${commandId}`);
+    }
+    if (!outputPath) mismatches.push(`command_output_path_missing:${commandId}`);
+    if (!SHA256.test(outputHash)) mismatches.push(`command_output_hash_missing:${commandId}`);
+    if (outputPath && SHA256.test(outputHash)) {
+      const absoluteOutputPath = pathInsideRoot(projectRoot, outputPath);
+      if (!absoluteOutputPath || !fs.existsSync(absoluteOutputPath)) {
+        mismatches.push(`command_output_missing:${commandId}`);
+      } else if (sha256ExistingPath(absoluteOutputPath) !== outputHash) {
+        mismatches.push(`command_output_hash_mismatch:${commandId}`);
+      }
+    }
+    if (coveredRequirementIds.length === 0) {
+      mismatches.push(`command_covered_requirement_ids_missing:${commandId}`);
+    }
   }
   return mismatches;
 }
 
-function validateArtifacts(packet: JsonObject): string[] {
+function validateRequirementClosures(packet: JsonObject, record: JsonObject): string[] {
+  const mismatches: string[] = [];
+  const closures = closureInputs(packet);
+  const passClosures = closures.filter((closure) => text(closure.status) === 'pass');
+  if (passClosures.length === 0) return mismatches;
+
+  const graph = objectValue(packet.normalizedTraceGraph);
+  const graphNodes = objectValue(graph.nodes);
+  const graphEdges = Object.values(objectValue(graph.edges)).map(objectValue);
+  const graphHash = text(graph.graphHash);
+  const { graphHash: _graphHash, ...graphPreimage } = graph;
+  if (text(graph.schemaVersion) !== 'requirements-contract-normalized-trace-graph/v1') {
+    mismatches.push('closure_trace_graph_schema_invalid');
+  }
+  if (!SHA256.test(graphHash) || graphHash !== sha256Stable(graphPreimage)) {
+    mismatches.push('closure_trace_graph_hash_mismatch');
+  }
+  if (text(graph.requirementSetId) !== text(packet.requirementSetId)) {
+    mismatches.push('closure_trace_graph_requirement_set_mismatch');
+  }
+  if (text(graph.sourceAuthorityHash) !== text(packet.sourceDocumentHash)) {
+    mismatches.push('closure_trace_graph_source_hash_mismatch');
+  }
+  if (text(graph.semanticModelHash) !== text(packet.semanticModelHash)) {
+    mismatches.push('closure_trace_graph_semantic_model_hash_mismatch');
+  }
+
+  const oracleResults = arrayOfObjects(packet.independentOracleResults);
+  const commandRuns = arrayOfObjects(packet.commandRuns);
+  const packetEvidenceRefs = new Set(arrayOfStrings(packet.evidenceRefs));
+  const recordAttemptId = currentImplementationAttemptId(record);
+  for (const closure of passClosures) {
+    const requirementId = text(closure.requirementId);
+    const results = oracleResults.filter(
+      (result) => text(result.requirementId) === requirementId
+    );
+    if (results.length !== 1) {
+      mismatches.push(
+        results.length === 0
+          ? `closure_independent_oracle_missing:${requirementId}`
+          : `closure_independent_oracle_ambiguous:${requirementId}`
+      );
+      continue;
+    }
+    const result = results[0];
+    const oracleId = text(result.oracleId);
+    const requirementNode = objectValue(graphNodes[requirementId]);
+    const oracleNode = objectValue(graphNodes[oracleId]);
+    const verifiedByEdge = graphEdges.find(
+      (edge) =>
+        text(edge.edgeType) === 'verified_by' &&
+        text(edge.fromRef) === requirementId &&
+        text(edge.toRef) === oracleId &&
+        text(edge.applicability) === 'applicable'
+    );
+    if (text(requirementNode.nodeType) !== 'requirement') {
+      mismatches.push(`closure_requirement_graph_node_missing:${requirementId}`);
+    }
+    if (text(oracleNode.nodeType) !== 'oracle') {
+      mismatches.push(`closure_oracle_graph_node_missing:${requirementId}:${oracleId}`);
+    }
+    if (!verifiedByEdge) {
+      mismatches.push(`closure_verified_by_edge_missing:${requirementId}:${oracleId}`);
+    }
+    if (text(result.decision) !== 'pass') {
+      mismatches.push(`closure_oracle_decision_not_pass:${requirementId}`);
+    }
+    for (const [field, expected, actual] of [
+      ['transaction_id', text(packet.transactionId), text(result.transactionId)],
+      [
+        'implementation_attempt_id',
+        text(packet.implementationAttemptId),
+        text(result.implementationAttemptId),
+      ],
+      ['source_document_hash', text(packet.sourceDocumentHash), text(result.sourceDocumentHash)],
+      ['semantic_model_hash', text(packet.semanticModelHash), text(result.semanticModelHash)],
+      ['packet_hash', text(packet.packetHash), text(result.packetHash)],
+      ['graph_hash', graphHash, text(result.graphHash)],
+    ]) {
+      if (!actual || actual !== expected) {
+        mismatches.push(`closure_oracle_${field}_mismatch:${requirementId}`);
+      }
+    }
+    if (text(result.implementationAttemptId) !== recordAttemptId) {
+      mismatches.push(`closure_oracle_not_current_attempt:${requirementId}`);
+    }
+    if (!text(result.observedAt)) {
+      mismatches.push(`closure_oracle_observed_at_missing:${requirementId}`);
+    }
+    const evidenceRefs = arrayOfStrings(result.evidenceRefs);
+    if (
+      evidenceRefs.length === 0 ||
+      evidenceRefs.some((evidenceRef) => !packetEvidenceRefs.has(evidenceRef))
+    ) {
+      mismatches.push(`closure_oracle_evidence_refs_invalid:${requirementId}`);
+    }
+    const commandId = text(result.commandId);
+    const commandRun = commandRuns.find((run) => text(run.commandId) === commandId);
+    if (
+      !commandRun ||
+      !arrayOfStrings(commandRun.coveredRequirementIds).includes(requirementId) ||
+      text(commandRun.outputHash) !== text(result.outputHash)
+    ) {
+      mismatches.push(`closure_oracle_command_binding_invalid:${requirementId}`);
+    }
+  }
+  return mismatches;
+}
+
+function validateArtifacts(
+  packet: JsonObject,
+  record: JsonObject,
+  projectRoot: string
+): string[] {
   const mismatches: string[] = [];
   const validateArtifact = (artifact: JsonObject, prefix: string, passGradeOnly: boolean): void => {
     const artifactPath = text(artifact.path);
@@ -371,6 +595,25 @@ function validateArtifacts(packet: JsonObject): string[] {
       validateArtifact(artifact, 'required_command', true);
     }
   }
+  const artifacts = [
+    ...arrayOfObjects(packet.artifactRefs),
+    ...arrayOfObjects(packet.extensionRefs),
+    ...arrayOfObjects(delta?.negativeAssertionArtifactRefs),
+    ...arrayOfObjects(deliveryEvidence?.requiredCommands).flatMap((command) =>
+      arrayOfObjects(command.artifactRefs)
+    ),
+  ];
+  const readbackValidation = validateEvidenceArtifactReadbackReceipts({
+    projectRoot,
+    artifacts,
+    context: {
+      requirementSetId:
+        text(packet.requirementSetId) || text(record.requirementSetId),
+      transactionId: text(packet.transactionId),
+      implementationAttemptId: text(packet.implementationAttemptId),
+    },
+  });
+  mismatches.push(...readbackValidation.issueCodes);
   return mismatches;
 }
 
@@ -724,12 +967,16 @@ function validateRerunLoops(packet: JsonObject): string[] {
   return mismatches;
 }
 
-function validateSubagentEvidenceEnvelopePacket(packet: JsonObject, record: JsonObject): string[] {
+function validateSubagentEvidenceEnvelopePacket(
+  packet: JsonObject,
+  record: JsonObject,
+  projectRoot: string
+): string[] {
   const envelope = packet.subagentEvidenceEnvelope;
   if (envelope === undefined || envelope === null) return [];
   const validation = validateSubagentEvidenceEnvelope(envelope, {
     record,
-    projectRoot: process.cwd(),
+    projectRoot,
     indexedArtifactRefs: [
       ...arrayOfObjects(packet.artifactRefs),
       ...arrayOfObjects(packet.extensionRefs),
@@ -739,7 +986,11 @@ function validateSubagentEvidenceEnvelopePacket(packet: JsonObject, record: Json
   return validation.ok ? [] : validation.mismatches;
 }
 
-function validatePacket(packet: JsonObject, record: JsonObject): string[] {
+function validatePacket(
+  packet: JsonObject,
+  record: JsonObject,
+  projectRoot: string
+): string[] {
   const entryFlowState =
     packet.entryFlowState &&
     typeof packet.entryFlowState === 'object' &&
@@ -760,8 +1011,9 @@ function validatePacket(packet: JsonObject, record: JsonObject): string[] {
       : (record.traceStatusPolicy as JsonObject | undefined);
   const mismatches = [
     ...requireHashMatch(packet, record),
-    ...validateCommands(packet),
-    ...validateArtifacts(packet),
+    ...validateCommands(packet, record, projectRoot),
+    ...validateRequirementClosures(packet, record),
+    ...validateArtifacts(packet, record, projectRoot),
     ...validateImplementationDelta(packet),
     ...validateEntryFlowState(packet),
     ...validateGlobalContractTraceabilityPolicy(effectiveTraceabilityPolicy, 'effective'),
@@ -771,7 +1023,7 @@ function validatePacket(packet: JsonObject, record: JsonObject): string[] {
     ...validateFailureRecords(packet),
     ...validateRcaRecords(packet),
     ...validateRerunLoops(packet),
-    ...validateSubagentEvidenceEnvelopePacket(packet, record),
+    ...validateSubagentEvidenceEnvelopePacket(packet, record, projectRoot),
   ];
   const packetWithoutLegacyGateResults = {
     ...packet,
@@ -813,16 +1065,38 @@ function validatePacket(packet: JsonObject, record: JsonObject): string[] {
   return [...new Set(mismatches)];
 }
 
+function projectRootForRecordPath(recordPath: string): string {
+  const resolved = path.resolve(recordPath);
+  const marker = `${path.sep}_bmad-output${path.sep}`;
+  const markerIndex = resolved.lastIndexOf(marker);
+  return markerIndex > 0 ? resolved.slice(0, markerIndex) : process.cwd();
+}
+
 function commandRunRefs(packet: JsonObject): JsonObject[] {
   return arrayOfObjects(packet.commandRuns).map((run) => ({
+    ...run,
     commandId: text(run.commandId),
     command: text(run.command),
+    normalizedCommand: normalizeCommandText(run.normalizedCommand),
+    cwd: text(run.cwd),
+    executorIdentity: objectValue(run.executorIdentity),
+    runtimeVersions: objectValue(run.runtimeVersions),
+    dependencyLockHashes: arrayOfObjects(run.dependencyLockHashes),
+    environmentFingerprint: text(run.environmentFingerprint),
+    environmentCompatibilityDecision: text(run.environmentCompatibilityDecision),
+    transactionId: text(run.transactionId),
+    implementationAttemptId: text(run.implementationAttemptId),
+    sourceDocumentHash: text(run.sourceDocumentHash),
+    semanticModelHash: text(run.semanticModelHash),
+    packetHash: text(run.packetHash),
     runId: text(run.runId),
     closeoutAttemptId: text(run.closeoutAttemptId),
     exitCode: run.exitCode,
     startedAt: text(run.startedAt),
     completedAt: text(run.completedAt),
-    outputSummary: text(run.outputSummary),
+    outputPath: normalizePathForRecord(text(run.outputPath)),
+    outputHash: text(run.outputHash),
+    coveredRequirementIds: arrayOfStrings(run.coveredRequirementIds),
   }));
 }
 
@@ -1025,20 +1299,34 @@ function updateRecord(
         recordedBy,
       }
     : undefined;
-  const closureEvents = closureInputs(packet).map((closure) => ({
-    eventType: 'requirement_closure_recorded',
-    recordId,
-    requirementSetId,
-    requirementId: text(closure.requirementId),
-    status: text(closure.status),
-    traceRows: arrayOfStrings(packet.traceRows),
-    evidenceRefs: arrayOfStrings(packet.evidenceRefs),
-    commandRunRefs: commandRefs,
-    evidenceArtifactRefs: artifactRefs,
-    sourceRefs: refs,
-    recordedAt,
-    recordedBy,
-  }));
+  const oracleResults = arrayOfObjects(packet.independentOracleResults);
+  const closureEvents = closureInputs(packet).map((closure) => {
+    const requirementId = text(closure.requirementId);
+    const oracleResult = oracleResults.find(
+      (result) => text(result.requirementId) === requirementId
+    );
+    return {
+      eventType: 'requirement_closure_recorded',
+      recordId,
+      requirementSetId,
+      requirementId,
+      status: text(closure.status),
+      ...(oracleResult
+        ? {
+            oracleId: text(oracleResult.oracleId),
+            oracleResultHash: sha256Stable(oracleResult),
+            oracleObservedAt: text(oracleResult.observedAt),
+          }
+        : {}),
+      traceRows: arrayOfStrings(packet.traceRows),
+      evidenceRefs: arrayOfStrings(packet.evidenceRefs),
+      commandRunRefs: commandRefs,
+      evidenceArtifactRefs: artifactRefs,
+      sourceRefs: refs,
+      recordedAt,
+      recordedBy,
+    };
+  });
   const gateEvents = normalizeGateChecks(packet).map((gate) => ({
     eventType: 'gate_check_recorded',
     recordId,
@@ -1221,7 +1509,11 @@ export function mainIngestImplementationEvidence(argv: string[]): number {
   const recordPath = path.resolve(args.requirementRecord!);
   const packet = readJson(evidencePath);
   const record = readJson(recordPath);
-  const mismatches = validatePacket(packet, record);
+  const mismatches = validatePacket(
+    packet,
+    record,
+    projectRootForRecordPath(recordPath)
+  );
   if (mismatches.length > 0) {
     console.error(JSON.stringify({ ok: false, mismatches }, null, 2));
     return 3;
@@ -1242,6 +1534,14 @@ export function mainIngestImplementationEvidence(argv: string[]): number {
     text(packet.recordId) || text(record.recordId),
     text(packet.requirementSetId) || text(record.requirementSetId)
   );
+  const artifactIndexEntries = [
+    packetArtifact,
+    ...artifactEvents(
+      packet,
+      text(packet.recordId) || text(record.recordId),
+      text(packet.requirementSetId) || text(record.requirementSetId)
+    ),
+  ];
   const commit = appendControlEventAndReplay({
     recordPath,
     writerId: 'implementation-evidence-ingest',
@@ -1254,6 +1554,16 @@ export function mainIngestImplementationEvidence(argv: string[]): number {
       recordedBy,
       evidencePath: normalizePathForRecord(evidencePath),
     },
+    artifactIndexUpdates: [
+      {
+        path: artifactIndex,
+        entries: artifactIndexEntries,
+      },
+      {
+        path: globalArtifactIndex,
+        entries: artifactIndexEntries,
+      },
+    ],
     reduce: (currentRecord) =>
       updateRecord(
         currentRecord,
@@ -1263,17 +1573,6 @@ export function mainIngestImplementationEvidence(argv: string[]): number {
         normalizePathForRecord(evidencePath)
       ),
   });
-  for (const artifact of [
-    packetArtifact,
-    ...artifactEvents(
-      packet,
-      text(packet.recordId) || text(record.recordId),
-      text(packet.requirementSetId) || text(record.requirementSetId)
-    ),
-  ]) {
-    appendJsonl(artifactIndex, artifact);
-    appendJsonl(globalArtifactIndex, artifact);
-  }
   const result = {
     ok: true,
     requirementRecordPath: normalizePathForRecord(recordPath),

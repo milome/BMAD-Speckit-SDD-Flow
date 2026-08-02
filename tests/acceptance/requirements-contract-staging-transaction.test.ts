@@ -4,8 +4,10 @@ import { describe, expect, it } from 'vitest';
 import {
   artifacts,
   cleanCriticalAuditorRound,
+  createMinimalConsumerRequirementDescriptor,
   createTempRoot,
   expectSourceHashUnchanged,
+  installJudgeRuntimeConfig,
   issueCodes,
   readImplementationConfirmation,
   readJson,
@@ -15,6 +17,7 @@ import {
   sha256File,
   sourcePromotionDecisionPath,
   stagingTransactionDir,
+  writeTestLocalizationResponse,
   writeConsumerRequirement,
   writeMinimalConsumerRequirement,
 } from './helpers/requirements-contract-authoring-fixture';
@@ -44,9 +47,12 @@ describe('requirements contract staging transaction', () => {
       expect(decision.finalDecision).toBe('block_source_promotion');
       expect(decision.sourceMutationPerformed).toBe(false);
       expectSourceHashUnchanged(source, beforeHash);
-      expect(existsSync(artifacts(root, 'REQ-STAGING-MISSING', 'REQ-STAGING-MISSING-SET').sourceMaterializationReceipt)).toBe(
-        false
-      );
+      expect(
+        existsSync(
+          artifacts(root, 'REQ-STAGING-MISSING', 'REQ-STAGING-MISSING-SET')
+            .sourceMaterializationReceipt
+        )
+      ).toBe(false);
     } finally {
       removeTempRoot(root);
     }
@@ -66,11 +72,48 @@ describe('requirements contract staging transaction', () => {
       expect(issueCodes(initial)).toContain('critical_auditor_provider_mode_required');
       expect(initialDraft).toContain('confirmationLanguage: not_selected');
       const initialImplementationConfirmationHash = initial.implementationConfirmationHash;
+      const staleReceipt = JSON.stringify(
+        {
+          schemaVersion: 'critical-auditor-receipt/v1',
+          roundIndex: 1,
+          inputHash: 'sha256:stale',
+          sourceDocumentHash: 'sha256:stale',
+          implementationConfirmationHash: 'sha256:stale',
+          contentHash: 'sha256:stale',
+          gateDryRunHash: 'sha256:stale',
+        },
+        null,
+        2
+      );
+      writeFileSync(
+        path.join(stagingDir, 'critical-auditor-receipt-round-1.json'),
+        staleReceipt,
+        'utf8'
+      );
+      writeFileSync(
+        path.join(
+          artifacts(root, 'REQ-STAGING-REFRESH', 'REQ-STAGING-REFRESH-SET').authoring,
+          'critical-auditor-receipt-round-1.json'
+        ),
+        staleReceipt,
+        'utf8'
+      );
 
+      const localizationBlocked = runAuthoring(root, source, 'REQ-STAGING-REFRESH', {
+        targetPath: 'vnpy/chart/multi_timeframe_widget.py',
+        requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
+        confirmationLanguage: 'zh-CN',
+      });
+      expect(localizationBlocked.substate).toBe('localization_translation_required');
       const refreshed = runAuthoring(root, source, 'REQ-STAGING-REFRESH', {
         targetPath: 'vnpy/chart/multi_timeframe_widget.py',
         requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
         confirmationLanguage: 'zh-CN',
+        localizationResponseFile: writeTestLocalizationResponse(
+          root,
+          'REQ-STAGING-REFRESH',
+          'staging-refresh-localization-response.test.json'
+        ),
       });
       const refreshedDraft = readFileSync(path.join(stagingDir, 'draft-source.md'), 'utf8');
       const refreshedRequest = readJson<Record<string, unknown>>(
@@ -84,7 +127,9 @@ describe('requirements contract staging transaction', () => {
       );
 
       expect(issueCodes(refreshed)).toContain('critical_auditor_provider_mode_required');
-      expect(refreshed.implementationConfirmationHash).not.toBe(initialImplementationConfirmationHash);
+      expect(refreshed.implementationConfirmationHash).not.toBe(
+        initialImplementationConfirmationHash
+      );
       expect(refreshedDraft).toContain('confirmationLanguage: zh-CN');
       expect(refreshedDraft).not.toContain('confirmationLanguage: not_selected');
       expect(refreshedKernel.semanticKernel?.implementationConfirmationHash).toBe(
@@ -96,6 +141,14 @@ describe('requirements contract staging transaction', () => {
       expect(refreshedRequest.implementationConfirmationHash).toBe(
         refreshed.implementationConfirmationHash
       );
+      expect(
+        ((refreshedRequest.gateDryRun as any)?.actionableBlockingIssues ?? []).map(
+          (issue: any) => issue.code
+        )
+      ).not.toContain('critical_auditor_receipt_input_hash_stale');
+      expect(existsSync(path.join(stagingDir, 'critical-auditor-receipt-round-1.json'))).toBe(
+        false
+      );
     } finally {
       removeTempRoot(root);
     }
@@ -104,11 +157,17 @@ describe('requirements contract staging transaction', () => {
   it('promotes source and writes promotion receipt only after three validated no-gap rounds', () => {
     const root = createTempRoot('requirements-contract-staging-promote-');
     try {
-      const source = writeMinimalConsumerRequirement(root);
+      installJudgeRuntimeConfig(root);
+      const { sourcePath: source, authoringOptions } = writeMinimalConsumerRequirement(
+        root,
+        'docs/requirements/minimal-consumer.md',
+        createMinimalConsumerRequirementDescriptor('REQ-STAGING-PROMOTE')
+      );
+      const { confirmationLanguage: _confirmationLanguage, ...promotionAuthoringOptions } =
+        authoringOptions;
 
       const result = runAuthoring(root, source, 'REQ-STAGING-PROMOTE', {
-        targetPath: 'vnpy/chart/multi_timeframe_widget.py',
-        requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
+        ...promotionAuthoringOptions,
         criticalAuditorRound: cleanCriticalAuditorRound,
       });
       const paths = artifacts(root, 'REQ-STAGING-PROMOTE', 'REQ-STAGING-PROMOTE-SET');
@@ -125,7 +184,9 @@ describe('requirements contract staging transaction', () => {
         throw new Error(JSON.stringify(promotionState, null, 2));
       }
       const route = readJson<Record<string, unknown>>(paths.scaleRoutingDecision);
-      const checkpointEvidence = readJson<Record<string, unknown>>(paths.checkpointPersistenceEvidence);
+      const checkpointEvidence = readJson<Record<string, unknown>>(
+        paths.checkpointPersistenceEvidence
+      );
       const promotionReceipt = readJson<Record<string, unknown>>(paths.promotionReceipt);
       const confirmation = readImplementationConfirmation(source);
 
@@ -166,6 +227,7 @@ describe('requirements contract staging transaction', () => {
   it('stops promotion without overwrite when source hash changes after transaction start', () => {
     const root = createTempRoot('requirements-contract-staging-source-race-');
     try {
+      installJudgeRuntimeConfig(root);
       const source = writeConsumerRequirement(root);
       const beforeHash = sha256File(source);
       let changed = false;
@@ -175,7 +237,11 @@ describe('requirements contract staging transaction', () => {
         requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
         criticalAuditorRound: (input) => {
           if (!changed) {
-            writeFileSync(source, `${readFileSync(source, 'utf8')}\n<!-- concurrent user edit -->\n`, 'utf8');
+            writeFileSync(
+              source,
+              `${readFileSync(source, 'utf8')}\n<!-- concurrent user edit -->\n`,
+              'utf8'
+            );
             changed = true;
           }
           return cleanCriticalAuditorRound(input);
@@ -192,9 +258,12 @@ describe('requirements contract staging transaction', () => {
       expect(decision.sourceMutationPerformed).toBe(false);
       expect(afterHash).not.toBe(beforeHash);
       expect(readFileSync(source, 'utf8')).toContain('concurrent user edit');
-      expect(existsSync(artifacts(root, 'REQ-STAGING-SOURCE-RACE', 'REQ-STAGING-SOURCE-RACE-SET').sourceMaterializationReceipt)).toBe(
-        false
-      );
+      expect(
+        existsSync(
+          artifacts(root, 'REQ-STAGING-SOURCE-RACE', 'REQ-STAGING-SOURCE-RACE-SET')
+            .sourceMaterializationReceipt
+        )
+      ).toBe(false);
     } finally {
       removeTempRoot(root);
     }

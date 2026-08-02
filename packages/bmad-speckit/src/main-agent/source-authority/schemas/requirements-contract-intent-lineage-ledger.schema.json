@@ -1,0 +1,263 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-intent-lineage-ledger.schema.json",
+  "title": "Requirements Contract Intent Lineage Ledger",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "requirementSetId",
+    "intakeReceiptPath",
+    "intakeReceiptHash",
+    "materialSpanIds",
+    "classifications",
+    "classificationSetHash",
+    "ledgerHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-intent-lineage-ledger/v1"
+    },
+    "requirementSetId": {
+      "$ref": "#/$defs/nonEmptyString"
+    },
+    "intakeReceiptPath": {
+      "$ref": "#/$defs/nonEmptyString"
+    },
+    "intakeReceiptHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "materialSpanIds": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/nonEmptyString"
+      }
+    },
+    "classifications": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/sourceRootClassification"
+          },
+          {
+            "$ref": "#/$defs/duplicateClassification"
+          },
+          {
+            "$ref": "#/$defs/supersededClassification"
+          },
+          {
+            "$ref": "#/$defs/rejectedClassification"
+          },
+          {
+            "$ref": "#/$defs/excludedClassification"
+          }
+        ]
+      }
+    },
+    "classificationSetHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "ledgerHash": {
+      "$ref": "#/$defs/sha256"
+    }
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "sourceRootClassification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "spanId",
+        "sourceHash",
+        "disposition",
+        "classificationRule",
+        "classificationHash",
+        "sourceRootRefs"
+      ],
+      "properties": {
+        "spanId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "sourceHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "disposition": {
+          "const": "source_root"
+        },
+        "classificationRule": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "classificationHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "sourceRootRefs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        }
+      }
+    },
+    "duplicateClassification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "spanId",
+        "sourceHash",
+        "disposition",
+        "classificationRule",
+        "classificationHash",
+        "duplicateOfSourceRootRef",
+        "decisionHash"
+      ],
+      "properties": {
+        "spanId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "sourceHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "disposition": {
+          "const": "duplicate"
+        },
+        "classificationRule": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "classificationHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "duplicateOfSourceRootRef": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "decisionHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "supersededClassification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "spanId",
+        "sourceHash",
+        "disposition",
+        "classificationRule",
+        "classificationHash",
+        "supersededBySpanId",
+        "decisionHash"
+      ],
+      "properties": {
+        "spanId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "sourceHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "disposition": {
+          "const": "superseded"
+        },
+        "classificationRule": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "classificationHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "supersededBySpanId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "decisionHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "rejectedClassification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "spanId",
+        "sourceHash",
+        "disposition",
+        "classificationRule",
+        "classificationHash",
+        "decisionReceiptRef",
+        "decisionHash"
+      ],
+      "properties": {
+        "spanId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "sourceHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "disposition": {
+          "const": "rejected"
+        },
+        "classificationRule": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "classificationHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "decisionReceiptRef": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "decisionHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "excludedClassification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "spanId",
+        "sourceHash",
+        "disposition",
+        "classificationRule",
+        "classificationHash",
+        "exclusionRuleRef",
+        "exclusionReason",
+        "decisionHash"
+      ],
+      "properties": {
+        "spanId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "sourceHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "disposition": {
+          "const": "excluded"
+        },
+        "classificationRule": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "classificationHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "exclusionRuleRef": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "exclusionReason": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "decisionHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    }
+  }
+}

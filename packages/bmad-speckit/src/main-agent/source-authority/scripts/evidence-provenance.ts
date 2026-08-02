@@ -8,6 +8,9 @@ export interface EvidenceProvenance {
   evidenceBundleId: string;
   contractHash?: string;
   gateReportHash?: string;
+  completionToken?: string;
+  attemptId?: string;
+  expiresAt?: string;
 }
 
 export function normalizeEvidenceText(value: string | null | undefined): string {
@@ -37,6 +40,9 @@ export function buildEvidenceProvenance(input: {
   storyKey?: string | null;
   evidenceBundleId?: string | null;
   gateReportHash?: string | null;
+  completionToken?: string | null;
+  attemptId?: string | null;
+  expiresAt?: string | null;
   prefix?: string;
 }): EvidenceProvenance {
   const root = path.resolve(input.root ?? process.cwd());
@@ -54,6 +60,15 @@ export function buildEvidenceProvenance(input: {
     ...(contractHash ? { contractHash } : {}),
     ...(normalizeEvidenceText(input.gateReportHash)
       ? { gateReportHash: normalizeEvidenceText(input.gateReportHash) }
+      : {}),
+    ...(normalizeEvidenceText(input.completionToken)
+      ? { completionToken: normalizeEvidenceText(input.completionToken) }
+      : {}),
+    ...(normalizeEvidenceText(input.attemptId)
+      ? { attemptId: normalizeEvidenceText(input.attemptId) }
+      : {}),
+    ...(normalizeEvidenceText(input.expiresAt)
+      ? { expiresAt: normalizeEvidenceText(input.expiresAt) }
       : {}),
   };
 }

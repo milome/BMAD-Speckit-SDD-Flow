@@ -1,0 +1,1003 @@
+{
+  "schemaVersion": "normalized-contract-scale-corpus/v1",
+  "seed": "0x5EEDC0DE",
+  "nodeSizes": [1024, 2048, 4096, 8192, 16384],
+  "nodeIdFormat": "NODE-{six-digit index}",
+  "edgeProfiles": {
+    "sparse": {
+      "formula": "2n-2",
+      "members": ["path", "parent"]
+    },
+    "boundedDense": {
+      "formula": "8n",
+      "offsets": [1, 2, 3, 4, 5, 6, 7, 8],
+      "wrap": true
+    }
+  },
+  "operationSet": [
+    "complete_manifest_serialization",
+    "parse_and_index",
+    "node_lookup",
+    "outgoing_edge_lookup",
+    "complete_edge_compact_trace_projection",
+    "sparse_critical_path",
+    "bounded_dense_one_edge_critical_paths"
+  ],
+  "cases": [
+    {
+      "nodeCount": 1024,
+      "profiles": {
+        "sparse": {
+          "profile": "sparse",
+          "nodeCount": 1024,
+          "edgeCount": 2046,
+          "inputVectorHash": "sha256:9b9b56d9bac368e6e347fc081e101179806f759b5523f4ecaa70e4144835101d",
+          "packageHash": "sha256:fe8a91bfdd0530fa63c2a70952470f865b514f773596dd90bcfbaa6d156cf8f0",
+          "canonicalBytes": 1470460,
+          "lookupIndices": [0, 511, 1023],
+          "expectedLookup": [
+            {
+              "index": 0,
+              "nodeId": "NODE-000000",
+              "bodyHash": "sha256:9adf338f6d8acc54f9120825f3c52404ed96dad34e7c5067b09b91f9f2161b59"
+            },
+            {
+              "index": 511,
+              "nodeId": "NODE-000511",
+              "bodyHash": "sha256:c1e6af54d06a2250b80b0dd1dec94d1f2efa56a30ef823db4aebb7eb3893b8fe"
+            },
+            {
+              "index": 1023,
+              "nodeId": "NODE-001023",
+              "bodyHash": "sha256:6aae67ff48e709b1b84722ddc362851cf92b224c34d59d8670327d98cf49078c"
+            }
+          ],
+          "outgoingIndices": [0, 341, 682, 1023],
+          "expectedOutgoingEdgeIds": {
+            "0": [
+              "EDGE-SPARSE-PARENT-000001",
+              "EDGE-SPARSE-PARENT-000002",
+              "EDGE-SPARSE-PATH-000000"
+            ],
+            "341": [
+              "EDGE-SPARSE-PARENT-000683",
+              "EDGE-SPARSE-PARENT-000684",
+              "EDGE-SPARSE-PATH-000341"
+            ],
+            "682": ["EDGE-SPARSE-PATH-000682"],
+            "1023": []
+          },
+          "expectedBoundedDenseCriticalPaths": {
+            "prefix": "EDGE-DENSE-",
+            "startIndex": 1,
+            "count": 0,
+            "padWidth": 2,
+            "suffix": "-000000",
+            "expectedHash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "firstEdgeId": null,
+            "lastEdgeId": null
+          },
+          "operationOutputHashes": {
+            "complete_manifest_serialization": "sha256:0405576dda0bf1978aaf6856e15710e6318c943536739b7ea6a8ea5a827b932e",
+            "parse_and_index": "sha256:bbb0ad4b9955d015a75b8d34a7c0476dd07e837b22bd581b9fbab235a29cab04",
+            "node_lookup": "sha256:08eff6b27bbdb0f74a7466442325d2fdf4ce104d9980848c67877602893cd481",
+            "outgoing_edge_lookup": "sha256:6c797e11a21feca6700fd40ddc78c50c411c668c6836474c272911381e4837db",
+            "complete_edge_compact_trace_projection": "sha256:d75b5700906b87e62da82102e28f5b3293a70e231241724be25ae24b559ec658",
+            "sparse_critical_path": "sha256:1bfc4957677af77a84bd0e4b99543db715458e4c66cfb91e800d5e66244e6647",
+            "bounded_dense_one_edge_critical_paths": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "expectedOutputSetHash": "sha256:8e2e2b0acdf24900b2618416d4da4b8f13d8c0a75d2d7cb06a2188513b494a79",
+          "workUnits": {
+            "complete_manifest_serialization": 4094,
+            "parse_and_index": 3070,
+            "node_lookup": 3,
+            "outgoing_edge_lookup": 2053,
+            "complete_edge_compact_trace_projection": 4092,
+            "sparse_critical_path": 3070,
+            "bounded_dense_one_edge_critical_paths": 0
+          },
+          "workUnitLimit": 24688,
+          "expectedCriticalPath": {
+            "prefix": "EDGE-SPARSE-PATH-",
+            "startIndex": 0,
+            "count": 1023,
+            "padWidth": 6,
+            "suffix": "",
+            "expectedHash": "sha256:1bfc4957677af77a84bd0e4b99543db715458e4c66cfb91e800d5e66244e6647",
+            "firstEdgeId": "EDGE-SPARSE-PATH-000000",
+            "lastEdgeId": "EDGE-SPARSE-PATH-001022"
+          }
+        },
+        "boundedDense": {
+          "profile": "boundedDense",
+          "nodeCount": 1024,
+          "edgeCount": 8192,
+          "inputVectorHash": "sha256:4b2bf7063f75a226981b48627bd0da3fc0e616118506dc4bb7f223671f5b1ae4",
+          "packageHash": "sha256:f2c516101093ae378dcebc3644f175bf33a7325cd0e4c82459f205800954e27a",
+          "canonicalBytes": 4455378,
+          "lookupIndices": [0, 511, 1023],
+          "expectedLookup": [
+            {
+              "index": 0,
+              "nodeId": "NODE-000000",
+              "bodyHash": "sha256:9adf338f6d8acc54f9120825f3c52404ed96dad34e7c5067b09b91f9f2161b59"
+            },
+            {
+              "index": 511,
+              "nodeId": "NODE-000511",
+              "bodyHash": "sha256:c1e6af54d06a2250b80b0dd1dec94d1f2efa56a30ef823db4aebb7eb3893b8fe"
+            },
+            {
+              "index": 1023,
+              "nodeId": "NODE-001023",
+              "bodyHash": "sha256:6aae67ff48e709b1b84722ddc362851cf92b224c34d59d8670327d98cf49078c"
+            }
+          ],
+          "outgoingIndices": [0, 341, 682, 1023],
+          "expectedOutgoingEdgeIds": {
+            "0": [
+              "EDGE-DENSE-01-000000",
+              "EDGE-DENSE-02-000000",
+              "EDGE-DENSE-03-000000",
+              "EDGE-DENSE-04-000000",
+              "EDGE-DENSE-05-000000",
+              "EDGE-DENSE-06-000000",
+              "EDGE-DENSE-07-000000",
+              "EDGE-DENSE-08-000000"
+            ],
+            "341": [
+              "EDGE-DENSE-01-000341",
+              "EDGE-DENSE-02-000341",
+              "EDGE-DENSE-03-000341",
+              "EDGE-DENSE-04-000341",
+              "EDGE-DENSE-05-000341",
+              "EDGE-DENSE-06-000341",
+              "EDGE-DENSE-07-000341",
+              "EDGE-DENSE-08-000341"
+            ],
+            "682": [
+              "EDGE-DENSE-01-000682",
+              "EDGE-DENSE-02-000682",
+              "EDGE-DENSE-03-000682",
+              "EDGE-DENSE-04-000682",
+              "EDGE-DENSE-05-000682",
+              "EDGE-DENSE-06-000682",
+              "EDGE-DENSE-07-000682",
+              "EDGE-DENSE-08-000682"
+            ],
+            "1023": [
+              "EDGE-DENSE-01-001023",
+              "EDGE-DENSE-02-001023",
+              "EDGE-DENSE-03-001023",
+              "EDGE-DENSE-04-001023",
+              "EDGE-DENSE-05-001023",
+              "EDGE-DENSE-06-001023",
+              "EDGE-DENSE-07-001023",
+              "EDGE-DENSE-08-001023"
+            ]
+          },
+          "expectedBoundedDenseCriticalPaths": {
+            "prefix": "EDGE-DENSE-",
+            "startIndex": 1,
+            "count": 8,
+            "padWidth": 2,
+            "suffix": "-000000",
+            "expectedHash": "sha256:a3f603f03a9cb02590466cc04f7b7fdecedc1b151a4d7f98bdb30337ba28bf78",
+            "firstEdgeId": "EDGE-DENSE-01-000000",
+            "lastEdgeId": "EDGE-DENSE-08-000000"
+          },
+          "operationOutputHashes": {
+            "complete_manifest_serialization": "sha256:61456df5056e4dc433e41b76b18be7cd1d58250c33fcccc6ccddc938c786a527",
+            "parse_and_index": "sha256:468f9548aa1589845439f3d9208da49a02493f28aeb49c4639668cc9cf28c241",
+            "node_lookup": "sha256:08eff6b27bbdb0f74a7466442325d2fdf4ce104d9980848c67877602893cd481",
+            "outgoing_edge_lookup": "sha256:193a0dd2445e71baf61bef3e5e95791b0376c4d6747674c67070090da94fb53f",
+            "complete_edge_compact_trace_projection": "sha256:91d68d01e08b874872b3714fcc4c667616fba85697cd7dec2de4bd67b3a81e93",
+            "sparse_critical_path": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "bounded_dense_one_edge_critical_paths": "sha256:a3f603f03a9cb02590466cc04f7b7fdecedc1b151a4d7f98bdb30337ba28bf78"
+          },
+          "expectedOutputSetHash": "sha256:1a61298adb6ffa17c0148c19dfe0d66f07c3d33b803e1bbc5ca5bd7422ace814",
+          "workUnits": {
+            "complete_manifest_serialization": 10240,
+            "parse_and_index": 9216,
+            "node_lookup": 3,
+            "outgoing_edge_lookup": 8224,
+            "complete_edge_compact_trace_projection": 16384,
+            "sparse_critical_path": 0,
+            "bounded_dense_one_edge_critical_paths": 9216
+          },
+          "workUnitLimit": 73856,
+          "expectedCriticalPath": {
+            "prefix": "EDGE-SPARSE-PATH-",
+            "startIndex": 0,
+            "count": 0,
+            "padWidth": 6,
+            "suffix": "",
+            "expectedHash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "firstEdgeId": null,
+            "lastEdgeId": null
+          }
+        }
+      }
+    },
+    {
+      "nodeCount": 2048,
+      "profiles": {
+        "sparse": {
+          "profile": "sparse",
+          "nodeCount": 2048,
+          "edgeCount": 4094,
+          "inputVectorHash": "sha256:4c0e5fa1554e525d618bc77aa12d2075bc5fa14b2168d2621493e1ba889258a1",
+          "packageHash": "sha256:b2f39253dfe6ec22910048607e312016ad74b366f0aea7f7d05de8a528a5b724",
+          "canonicalBytes": 2942972,
+          "lookupIndices": [0, 1023, 2047],
+          "expectedLookup": [
+            {
+              "index": 0,
+              "nodeId": "NODE-000000",
+              "bodyHash": "sha256:9adf338f6d8acc54f9120825f3c52404ed96dad34e7c5067b09b91f9f2161b59"
+            },
+            {
+              "index": 1023,
+              "nodeId": "NODE-001023",
+              "bodyHash": "sha256:6aae67ff48e709b1b84722ddc362851cf92b224c34d59d8670327d98cf49078c"
+            },
+            {
+              "index": 2047,
+              "nodeId": "NODE-002047",
+              "bodyHash": "sha256:0a39780b1786ec0685e017948a6fa980b5f7c2f487cbe19c409a62ba7201f7a2"
+            }
+          ],
+          "outgoingIndices": [0, 682, 1365, 2047],
+          "expectedOutgoingEdgeIds": {
+            "0": [
+              "EDGE-SPARSE-PARENT-000001",
+              "EDGE-SPARSE-PARENT-000002",
+              "EDGE-SPARSE-PATH-000000"
+            ],
+            "682": [
+              "EDGE-SPARSE-PARENT-001365",
+              "EDGE-SPARSE-PARENT-001366",
+              "EDGE-SPARSE-PATH-000682"
+            ],
+            "1365": ["EDGE-SPARSE-PATH-001365"],
+            "2047": []
+          },
+          "expectedBoundedDenseCriticalPaths": {
+            "prefix": "EDGE-DENSE-",
+            "startIndex": 1,
+            "count": 0,
+            "padWidth": 2,
+            "suffix": "-000000",
+            "expectedHash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "firstEdgeId": null,
+            "lastEdgeId": null
+          },
+          "operationOutputHashes": {
+            "complete_manifest_serialization": "sha256:ad8826e18b4f1a1d7ce155709692f6695c079f5921e7d408e13855f25bf031e0",
+            "parse_and_index": "sha256:c1f494d5380e9b89e36eebddbca6dc29b93e81d9cc9dac6ae52ee6d345f37f63",
+            "node_lookup": "sha256:214892b4601a7508281eeb5e4710e1c8ac02d9c0c64d5f2b43307bae3c322964",
+            "outgoing_edge_lookup": "sha256:42f4eff7876d5d46543e739d2fa432649eb6de6c8a05a8bc4ca18b5107a0300f",
+            "complete_edge_compact_trace_projection": "sha256:6599c61523f00d6bdfff54f50c6aed0c4901d807ca000a07fb060af72715d347",
+            "sparse_critical_path": "sha256:25cfc77350e5484c9678b6bd222a705c020ed37d394dee7d560795af2a7fa4f2",
+            "bounded_dense_one_edge_critical_paths": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "expectedOutputSetHash": "sha256:3159e7033d56e0a56c5cd3b1566ec9e547d5da1065af984a7bbc3c3cc5360a2c",
+          "workUnits": {
+            "complete_manifest_serialization": 8190,
+            "parse_and_index": 6142,
+            "node_lookup": 3,
+            "outgoing_edge_lookup": 4101,
+            "complete_edge_compact_trace_projection": 8188,
+            "sparse_critical_path": 6142,
+            "bounded_dense_one_edge_critical_paths": 0
+          },
+          "workUnitLimit": 49264,
+          "expectedCriticalPath": {
+            "prefix": "EDGE-SPARSE-PATH-",
+            "startIndex": 0,
+            "count": 2047,
+            "padWidth": 6,
+            "suffix": "",
+            "expectedHash": "sha256:25cfc77350e5484c9678b6bd222a705c020ed37d394dee7d560795af2a7fa4f2",
+            "firstEdgeId": "EDGE-SPARSE-PATH-000000",
+            "lastEdgeId": "EDGE-SPARSE-PATH-002046"
+          }
+        },
+        "boundedDense": {
+          "profile": "boundedDense",
+          "nodeCount": 2048,
+          "edgeCount": 16384,
+          "inputVectorHash": "sha256:b898eca93ccba17c70771ca88152bb27d98cdb35c95f775f032c76b76615de31",
+          "packageHash": "sha256:2cd613c55cff95173fdf09e7329f64a5afef14fe36059395ee0164fb2031cc41",
+          "canonicalBytes": 8911826,
+          "lookupIndices": [0, 1023, 2047],
+          "expectedLookup": [
+            {
+              "index": 0,
+              "nodeId": "NODE-000000",
+              "bodyHash": "sha256:9adf338f6d8acc54f9120825f3c52404ed96dad34e7c5067b09b91f9f2161b59"
+            },
+            {
+              "index": 1023,
+              "nodeId": "NODE-001023",
+              "bodyHash": "sha256:6aae67ff48e709b1b84722ddc362851cf92b224c34d59d8670327d98cf49078c"
+            },
+            {
+              "index": 2047,
+              "nodeId": "NODE-002047",
+              "bodyHash": "sha256:0a39780b1786ec0685e017948a6fa980b5f7c2f487cbe19c409a62ba7201f7a2"
+            }
+          ],
+          "outgoingIndices": [0, 682, 1365, 2047],
+          "expectedOutgoingEdgeIds": {
+            "0": [
+              "EDGE-DENSE-01-000000",
+              "EDGE-DENSE-02-000000",
+              "EDGE-DENSE-03-000000",
+              "EDGE-DENSE-04-000000",
+              "EDGE-DENSE-05-000000",
+              "EDGE-DENSE-06-000000",
+              "EDGE-DENSE-07-000000",
+              "EDGE-DENSE-08-000000"
+            ],
+            "682": [
+              "EDGE-DENSE-01-000682",
+              "EDGE-DENSE-02-000682",
+              "EDGE-DENSE-03-000682",
+              "EDGE-DENSE-04-000682",
+              "EDGE-DENSE-05-000682",
+              "EDGE-DENSE-06-000682",
+              "EDGE-DENSE-07-000682",
+              "EDGE-DENSE-08-000682"
+            ],
+            "1365": [
+              "EDGE-DENSE-01-001365",
+              "EDGE-DENSE-02-001365",
+              "EDGE-DENSE-03-001365",
+              "EDGE-DENSE-04-001365",
+              "EDGE-DENSE-05-001365",
+              "EDGE-DENSE-06-001365",
+              "EDGE-DENSE-07-001365",
+              "EDGE-DENSE-08-001365"
+            ],
+            "2047": [
+              "EDGE-DENSE-01-002047",
+              "EDGE-DENSE-02-002047",
+              "EDGE-DENSE-03-002047",
+              "EDGE-DENSE-04-002047",
+              "EDGE-DENSE-05-002047",
+              "EDGE-DENSE-06-002047",
+              "EDGE-DENSE-07-002047",
+              "EDGE-DENSE-08-002047"
+            ]
+          },
+          "expectedBoundedDenseCriticalPaths": {
+            "prefix": "EDGE-DENSE-",
+            "startIndex": 1,
+            "count": 8,
+            "padWidth": 2,
+            "suffix": "-000000",
+            "expectedHash": "sha256:a3f603f03a9cb02590466cc04f7b7fdecedc1b151a4d7f98bdb30337ba28bf78",
+            "firstEdgeId": "EDGE-DENSE-01-000000",
+            "lastEdgeId": "EDGE-DENSE-08-000000"
+          },
+          "operationOutputHashes": {
+            "complete_manifest_serialization": "sha256:51812807a49da2801477154dfe6378c457f0994b40c153c5f5862c5a233d9ce6",
+            "parse_and_index": "sha256:667afadda0f5a5742e41f65fb5e130da24fea20f293d14e02a2540a40dd280a2",
+            "node_lookup": "sha256:214892b4601a7508281eeb5e4710e1c8ac02d9c0c64d5f2b43307bae3c322964",
+            "outgoing_edge_lookup": "sha256:4e80cc49f0fd71dcfdfbbc89eba51223ee498c1e82257310b01ab43ac1232dbb",
+            "complete_edge_compact_trace_projection": "sha256:8b5700477a6f737033971c08486bf4d8c067aa41ec41fabf7408953b87205f61",
+            "sparse_critical_path": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "bounded_dense_one_edge_critical_paths": "sha256:a3f603f03a9cb02590466cc04f7b7fdecedc1b151a4d7f98bdb30337ba28bf78"
+          },
+          "expectedOutputSetHash": "sha256:e27c8cb31b56e057c6dc6076068b9fe7698507daebf70c91379d3e74e46df3ee",
+          "workUnits": {
+            "complete_manifest_serialization": 20480,
+            "parse_and_index": 18432,
+            "node_lookup": 3,
+            "outgoing_edge_lookup": 16416,
+            "complete_edge_compact_trace_projection": 32768,
+            "sparse_critical_path": 0,
+            "bounded_dense_one_edge_critical_paths": 18432
+          },
+          "workUnitLimit": 147584,
+          "expectedCriticalPath": {
+            "prefix": "EDGE-SPARSE-PATH-",
+            "startIndex": 0,
+            "count": 0,
+            "padWidth": 6,
+            "suffix": "",
+            "expectedHash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "firstEdgeId": null,
+            "lastEdgeId": null
+          }
+        }
+      }
+    },
+    {
+      "nodeCount": 4096,
+      "profiles": {
+        "sparse": {
+          "profile": "sparse",
+          "nodeCount": 4096,
+          "edgeCount": 8190,
+          "inputVectorHash": "sha256:249e879fa27a90767cf658c680fa4f2d6bc3be082dcd1ac7a86b3e00143adcc7",
+          "packageHash": "sha256:d64e2116b2156f102251772d7d5b843e0aff1045da9c4b6c3e2063260e6ac3cd",
+          "canonicalBytes": 5887996,
+          "lookupIndices": [0, 2047, 4095],
+          "expectedLookup": [
+            {
+              "index": 0,
+              "nodeId": "NODE-000000",
+              "bodyHash": "sha256:9adf338f6d8acc54f9120825f3c52404ed96dad34e7c5067b09b91f9f2161b59"
+            },
+            {
+              "index": 2047,
+              "nodeId": "NODE-002047",
+              "bodyHash": "sha256:0a39780b1786ec0685e017948a6fa980b5f7c2f487cbe19c409a62ba7201f7a2"
+            },
+            {
+              "index": 4095,
+              "nodeId": "NODE-004095",
+              "bodyHash": "sha256:e09ad84dd868969a918358de74c450c15d3d6d9303bd65ffa263879f7709ebe2"
+            }
+          ],
+          "outgoingIndices": [0, 1365, 2730, 4095],
+          "expectedOutgoingEdgeIds": {
+            "0": [
+              "EDGE-SPARSE-PARENT-000001",
+              "EDGE-SPARSE-PARENT-000002",
+              "EDGE-SPARSE-PATH-000000"
+            ],
+            "1365": [
+              "EDGE-SPARSE-PARENT-002731",
+              "EDGE-SPARSE-PARENT-002732",
+              "EDGE-SPARSE-PATH-001365"
+            ],
+            "2730": ["EDGE-SPARSE-PATH-002730"],
+            "4095": []
+          },
+          "expectedBoundedDenseCriticalPaths": {
+            "prefix": "EDGE-DENSE-",
+            "startIndex": 1,
+            "count": 0,
+            "padWidth": 2,
+            "suffix": "-000000",
+            "expectedHash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "firstEdgeId": null,
+            "lastEdgeId": null
+          },
+          "operationOutputHashes": {
+            "complete_manifest_serialization": "sha256:40170522f99a38d4156cfecfbb0ef2a57bc01b4f231e0b1feaba8998dde29d01",
+            "parse_and_index": "sha256:aee190a7e6df728421683a16671162c0b54cb2ff21057b0630b6c4d65f2dfb84",
+            "node_lookup": "sha256:4d2bc7b05c840f4d1475e76bcfe4c8f3b8fcf3f2eb00c6b42677f026de7a8ba7",
+            "outgoing_edge_lookup": "sha256:7a13ae558afecdfd706c64dba41c63f9221012910f9959b641fbefe63fcc26a4",
+            "complete_edge_compact_trace_projection": "sha256:c25bfcbdc830ef0f1d389b3c3060da69ddeebc8e7fbb2d7be428c19a54efe9bc",
+            "sparse_critical_path": "sha256:deb7d616a2f1b5b90eddd08fd84040b8e0ac8b8397c4a193d440bde9a070d4fe",
+            "bounded_dense_one_edge_critical_paths": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "expectedOutputSetHash": "sha256:dcc72d2738bcfe908f818c8c783ec46a7ce21eea5696958bf74d88dc89135195",
+          "workUnits": {
+            "complete_manifest_serialization": 16382,
+            "parse_and_index": 12286,
+            "node_lookup": 3,
+            "outgoing_edge_lookup": 8197,
+            "complete_edge_compact_trace_projection": 16380,
+            "sparse_critical_path": 12286,
+            "bounded_dense_one_edge_critical_paths": 0
+          },
+          "workUnitLimit": 98416,
+          "expectedCriticalPath": {
+            "prefix": "EDGE-SPARSE-PATH-",
+            "startIndex": 0,
+            "count": 4095,
+            "padWidth": 6,
+            "suffix": "",
+            "expectedHash": "sha256:deb7d616a2f1b5b90eddd08fd84040b8e0ac8b8397c4a193d440bde9a070d4fe",
+            "firstEdgeId": "EDGE-SPARSE-PATH-000000",
+            "lastEdgeId": "EDGE-SPARSE-PATH-004094"
+          }
+        },
+        "boundedDense": {
+          "profile": "boundedDense",
+          "nodeCount": 4096,
+          "edgeCount": 32768,
+          "inputVectorHash": "sha256:4b57d4ecfbce4ef7128412760d859ccd26e59fd171af0195da62c8ca64f7f665",
+          "packageHash": "sha256:769bce2766726eeae96e4c1b37b3ae22000a57c9b0d7489123a70c29affcf75d",
+          "canonicalBytes": 17824722,
+          "lookupIndices": [0, 2047, 4095],
+          "expectedLookup": [
+            {
+              "index": 0,
+              "nodeId": "NODE-000000",
+              "bodyHash": "sha256:9adf338f6d8acc54f9120825f3c52404ed96dad34e7c5067b09b91f9f2161b59"
+            },
+            {
+              "index": 2047,
+              "nodeId": "NODE-002047",
+              "bodyHash": "sha256:0a39780b1786ec0685e017948a6fa980b5f7c2f487cbe19c409a62ba7201f7a2"
+            },
+            {
+              "index": 4095,
+              "nodeId": "NODE-004095",
+              "bodyHash": "sha256:e09ad84dd868969a918358de74c450c15d3d6d9303bd65ffa263879f7709ebe2"
+            }
+          ],
+          "outgoingIndices": [0, 1365, 2730, 4095],
+          "expectedOutgoingEdgeIds": {
+            "0": [
+              "EDGE-DENSE-01-000000",
+              "EDGE-DENSE-02-000000",
+              "EDGE-DENSE-03-000000",
+              "EDGE-DENSE-04-000000",
+              "EDGE-DENSE-05-000000",
+              "EDGE-DENSE-06-000000",
+              "EDGE-DENSE-07-000000",
+              "EDGE-DENSE-08-000000"
+            ],
+            "1365": [
+              "EDGE-DENSE-01-001365",
+              "EDGE-DENSE-02-001365",
+              "EDGE-DENSE-03-001365",
+              "EDGE-DENSE-04-001365",
+              "EDGE-DENSE-05-001365",
+              "EDGE-DENSE-06-001365",
+              "EDGE-DENSE-07-001365",
+              "EDGE-DENSE-08-001365"
+            ],
+            "2730": [
+              "EDGE-DENSE-01-002730",
+              "EDGE-DENSE-02-002730",
+              "EDGE-DENSE-03-002730",
+              "EDGE-DENSE-04-002730",
+              "EDGE-DENSE-05-002730",
+              "EDGE-DENSE-06-002730",
+              "EDGE-DENSE-07-002730",
+              "EDGE-DENSE-08-002730"
+            ],
+            "4095": [
+              "EDGE-DENSE-01-004095",
+              "EDGE-DENSE-02-004095",
+              "EDGE-DENSE-03-004095",
+              "EDGE-DENSE-04-004095",
+              "EDGE-DENSE-05-004095",
+              "EDGE-DENSE-06-004095",
+              "EDGE-DENSE-07-004095",
+              "EDGE-DENSE-08-004095"
+            ]
+          },
+          "expectedBoundedDenseCriticalPaths": {
+            "prefix": "EDGE-DENSE-",
+            "startIndex": 1,
+            "count": 8,
+            "padWidth": 2,
+            "suffix": "-000000",
+            "expectedHash": "sha256:a3f603f03a9cb02590466cc04f7b7fdecedc1b151a4d7f98bdb30337ba28bf78",
+            "firstEdgeId": "EDGE-DENSE-01-000000",
+            "lastEdgeId": "EDGE-DENSE-08-000000"
+          },
+          "operationOutputHashes": {
+            "complete_manifest_serialization": "sha256:e527707847b7a71c9881809bd71045003ad4b6496e123fed249372688644f0de",
+            "parse_and_index": "sha256:bb8ce84972ff5e7f9e3b61d99dcd96a0e7b84a1beca043291aeecfb70bd47362",
+            "node_lookup": "sha256:4d2bc7b05c840f4d1475e76bcfe4c8f3b8fcf3f2eb00c6b42677f026de7a8ba7",
+            "outgoing_edge_lookup": "sha256:64a3d4fc5f5fb88676725f201b9d403b0bb6ac4106e95023998ac7f8da3e77c1",
+            "complete_edge_compact_trace_projection": "sha256:b0fb7dd26a33d772f3ce052e67ab7eb3ccc17bca122e82bcbceedb8fcddd3958",
+            "sparse_critical_path": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "bounded_dense_one_edge_critical_paths": "sha256:a3f603f03a9cb02590466cc04f7b7fdecedc1b151a4d7f98bdb30337ba28bf78"
+          },
+          "expectedOutputSetHash": "sha256:53ecd632edd0747971157d4c4f9d1521b1cd3fe00bcc0bc119c27cc862b17728",
+          "workUnits": {
+            "complete_manifest_serialization": 40960,
+            "parse_and_index": 36864,
+            "node_lookup": 3,
+            "outgoing_edge_lookup": 32800,
+            "complete_edge_compact_trace_projection": 65536,
+            "sparse_critical_path": 0,
+            "bounded_dense_one_edge_critical_paths": 36864
+          },
+          "workUnitLimit": 295040,
+          "expectedCriticalPath": {
+            "prefix": "EDGE-SPARSE-PATH-",
+            "startIndex": 0,
+            "count": 0,
+            "padWidth": 6,
+            "suffix": "",
+            "expectedHash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "firstEdgeId": null,
+            "lastEdgeId": null
+          }
+        }
+      }
+    },
+    {
+      "nodeCount": 8192,
+      "profiles": {
+        "sparse": {
+          "profile": "sparse",
+          "nodeCount": 8192,
+          "edgeCount": 16382,
+          "inputVectorHash": "sha256:bcf9f51aab34d19d2ff98a189dec1353bcbb7ba69bad720065ca4f6db173c603",
+          "packageHash": "sha256:3e8c5fb92a7be2728ab01412e7683bfe1f7ad23dfed95401dada5772398618ab",
+          "canonicalBytes": 11778044,
+          "lookupIndices": [0, 4095, 8191],
+          "expectedLookup": [
+            {
+              "index": 0,
+              "nodeId": "NODE-000000",
+              "bodyHash": "sha256:9adf338f6d8acc54f9120825f3c52404ed96dad34e7c5067b09b91f9f2161b59"
+            },
+            {
+              "index": 4095,
+              "nodeId": "NODE-004095",
+              "bodyHash": "sha256:e09ad84dd868969a918358de74c450c15d3d6d9303bd65ffa263879f7709ebe2"
+            },
+            {
+              "index": 8191,
+              "nodeId": "NODE-008191",
+              "bodyHash": "sha256:b6941cf56d448387ff2525f44acdc15fe6c9e60796d7cb1e1c3996e86cc1938a"
+            }
+          ],
+          "outgoingIndices": [0, 2730, 5461, 8191],
+          "expectedOutgoingEdgeIds": {
+            "0": [
+              "EDGE-SPARSE-PARENT-000001",
+              "EDGE-SPARSE-PARENT-000002",
+              "EDGE-SPARSE-PATH-000000"
+            ],
+            "2730": [
+              "EDGE-SPARSE-PARENT-005461",
+              "EDGE-SPARSE-PARENT-005462",
+              "EDGE-SPARSE-PATH-002730"
+            ],
+            "5461": ["EDGE-SPARSE-PATH-005461"],
+            "8191": []
+          },
+          "expectedBoundedDenseCriticalPaths": {
+            "prefix": "EDGE-DENSE-",
+            "startIndex": 1,
+            "count": 0,
+            "padWidth": 2,
+            "suffix": "-000000",
+            "expectedHash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "firstEdgeId": null,
+            "lastEdgeId": null
+          },
+          "operationOutputHashes": {
+            "complete_manifest_serialization": "sha256:9f5daf78c437d84f89a487dee8245b8f7b613c06030c505c3d27c817dd73878a",
+            "parse_and_index": "sha256:1d33829643852bfe39fffdcbbcc5ef231b003d88018f3a1f5b9adb0b571e3b35",
+            "node_lookup": "sha256:deb27a636c944fbbc7b537ba8b00e827196c629a572ec25176b6821f0a83ab60",
+            "outgoing_edge_lookup": "sha256:394a5194b4d63f500719a89f4688400c92d48bedf0a199e6d7d6c8f033308c94",
+            "complete_edge_compact_trace_projection": "sha256:b1a648dfabf370403197a5c4b35472ae308dd4d075fcfa9891a3e6120d3b08f5",
+            "sparse_critical_path": "sha256:931ede83003ca82ec7631473ea130737caf597d9b1f8620cfc2429f746b84b95",
+            "bounded_dense_one_edge_critical_paths": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "expectedOutputSetHash": "sha256:c88b3b69670e349a239fb573e73e71c90de8bc4714ad68417a0ff186b2754790",
+          "workUnits": {
+            "complete_manifest_serialization": 32766,
+            "parse_and_index": 24574,
+            "node_lookup": 3,
+            "outgoing_edge_lookup": 16389,
+            "complete_edge_compact_trace_projection": 32764,
+            "sparse_critical_path": 24574,
+            "bounded_dense_one_edge_critical_paths": 0
+          },
+          "workUnitLimit": 196720,
+          "expectedCriticalPath": {
+            "prefix": "EDGE-SPARSE-PATH-",
+            "startIndex": 0,
+            "count": 8191,
+            "padWidth": 6,
+            "suffix": "",
+            "expectedHash": "sha256:931ede83003ca82ec7631473ea130737caf597d9b1f8620cfc2429f746b84b95",
+            "firstEdgeId": "EDGE-SPARSE-PATH-000000",
+            "lastEdgeId": "EDGE-SPARSE-PATH-008190"
+          }
+        },
+        "boundedDense": {
+          "profile": "boundedDense",
+          "nodeCount": 8192,
+          "edgeCount": 65536,
+          "inputVectorHash": "sha256:9ec5ee53a292ffa5f63099bf84c474a3049fba18ea3e3119f2a2cbf508d2eab1",
+          "packageHash": "sha256:78abbabaadccf0c200557f0e63d6c1068492818514feb2f5e9c50211924f12ff",
+          "canonicalBytes": 35650514,
+          "lookupIndices": [0, 4095, 8191],
+          "expectedLookup": [
+            {
+              "index": 0,
+              "nodeId": "NODE-000000",
+              "bodyHash": "sha256:9adf338f6d8acc54f9120825f3c52404ed96dad34e7c5067b09b91f9f2161b59"
+            },
+            {
+              "index": 4095,
+              "nodeId": "NODE-004095",
+              "bodyHash": "sha256:e09ad84dd868969a918358de74c450c15d3d6d9303bd65ffa263879f7709ebe2"
+            },
+            {
+              "index": 8191,
+              "nodeId": "NODE-008191",
+              "bodyHash": "sha256:b6941cf56d448387ff2525f44acdc15fe6c9e60796d7cb1e1c3996e86cc1938a"
+            }
+          ],
+          "outgoingIndices": [0, 2730, 5461, 8191],
+          "expectedOutgoingEdgeIds": {
+            "0": [
+              "EDGE-DENSE-01-000000",
+              "EDGE-DENSE-02-000000",
+              "EDGE-DENSE-03-000000",
+              "EDGE-DENSE-04-000000",
+              "EDGE-DENSE-05-000000",
+              "EDGE-DENSE-06-000000",
+              "EDGE-DENSE-07-000000",
+              "EDGE-DENSE-08-000000"
+            ],
+            "2730": [
+              "EDGE-DENSE-01-002730",
+              "EDGE-DENSE-02-002730",
+              "EDGE-DENSE-03-002730",
+              "EDGE-DENSE-04-002730",
+              "EDGE-DENSE-05-002730",
+              "EDGE-DENSE-06-002730",
+              "EDGE-DENSE-07-002730",
+              "EDGE-DENSE-08-002730"
+            ],
+            "5461": [
+              "EDGE-DENSE-01-005461",
+              "EDGE-DENSE-02-005461",
+              "EDGE-DENSE-03-005461",
+              "EDGE-DENSE-04-005461",
+              "EDGE-DENSE-05-005461",
+              "EDGE-DENSE-06-005461",
+              "EDGE-DENSE-07-005461",
+              "EDGE-DENSE-08-005461"
+            ],
+            "8191": [
+              "EDGE-DENSE-01-008191",
+              "EDGE-DENSE-02-008191",
+              "EDGE-DENSE-03-008191",
+              "EDGE-DENSE-04-008191",
+              "EDGE-DENSE-05-008191",
+              "EDGE-DENSE-06-008191",
+              "EDGE-DENSE-07-008191",
+              "EDGE-DENSE-08-008191"
+            ]
+          },
+          "expectedBoundedDenseCriticalPaths": {
+            "prefix": "EDGE-DENSE-",
+            "startIndex": 1,
+            "count": 8,
+            "padWidth": 2,
+            "suffix": "-000000",
+            "expectedHash": "sha256:a3f603f03a9cb02590466cc04f7b7fdecedc1b151a4d7f98bdb30337ba28bf78",
+            "firstEdgeId": "EDGE-DENSE-01-000000",
+            "lastEdgeId": "EDGE-DENSE-08-000000"
+          },
+          "operationOutputHashes": {
+            "complete_manifest_serialization": "sha256:77f8ccfa98ac2baab82b8094c82c9f986f4e1042dd28aa39603585d974ca5835",
+            "parse_and_index": "sha256:b72e0411855ecf911b7a4e45a79ded373e0dc083a71ae5cb6aab907455b5154d",
+            "node_lookup": "sha256:deb27a636c944fbbc7b537ba8b00e827196c629a572ec25176b6821f0a83ab60",
+            "outgoing_edge_lookup": "sha256:dbfcfaa770ba025d301b9974b82f731f640270bf666f494e225dfc2c064fe6b5",
+            "complete_edge_compact_trace_projection": "sha256:7519cefc2557184cbbae2b38b2336a16430c99fa0e2a928ab124a23116254e08",
+            "sparse_critical_path": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "bounded_dense_one_edge_critical_paths": "sha256:a3f603f03a9cb02590466cc04f7b7fdecedc1b151a4d7f98bdb30337ba28bf78"
+          },
+          "expectedOutputSetHash": "sha256:48db8bbce6e6811d54cd435131dc9f482eb139dd5a5f37f66113e2b025073f31",
+          "workUnits": {
+            "complete_manifest_serialization": 81920,
+            "parse_and_index": 73728,
+            "node_lookup": 3,
+            "outgoing_edge_lookup": 65568,
+            "complete_edge_compact_trace_projection": 131072,
+            "sparse_critical_path": 0,
+            "bounded_dense_one_edge_critical_paths": 73728
+          },
+          "workUnitLimit": 589952,
+          "expectedCriticalPath": {
+            "prefix": "EDGE-SPARSE-PATH-",
+            "startIndex": 0,
+            "count": 0,
+            "padWidth": 6,
+            "suffix": "",
+            "expectedHash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "firstEdgeId": null,
+            "lastEdgeId": null
+          }
+        }
+      }
+    },
+    {
+      "nodeCount": 16384,
+      "profiles": {
+        "sparse": {
+          "profile": "sparse",
+          "nodeCount": 16384,
+          "edgeCount": 32766,
+          "inputVectorHash": "sha256:107281a564682c07d099591fbaac2e17d51f0e838a8b043e961d6d96b52e9629",
+          "packageHash": "sha256:11434b2bf994e7c61f3f83e40d9c999e0142f46571c4360939938bdaa5bc1d2d",
+          "canonicalBytes": 23564524,
+          "lookupIndices": [0, 8191, 16383],
+          "expectedLookup": [
+            {
+              "index": 0,
+              "nodeId": "NODE-000000",
+              "bodyHash": "sha256:9adf338f6d8acc54f9120825f3c52404ed96dad34e7c5067b09b91f9f2161b59"
+            },
+            {
+              "index": 8191,
+              "nodeId": "NODE-008191",
+              "bodyHash": "sha256:b6941cf56d448387ff2525f44acdc15fe6c9e60796d7cb1e1c3996e86cc1938a"
+            },
+            {
+              "index": 16383,
+              "nodeId": "NODE-016383",
+              "bodyHash": "sha256:1201bf349474730b359c4c8b92773a0d14892b44d2527e8d023972d41a9363fd"
+            }
+          ],
+          "outgoingIndices": [0, 5461, 10922, 16383],
+          "expectedOutgoingEdgeIds": {
+            "0": [
+              "EDGE-SPARSE-PARENT-000001",
+              "EDGE-SPARSE-PARENT-000002",
+              "EDGE-SPARSE-PATH-000000"
+            ],
+            "5461": [
+              "EDGE-SPARSE-PARENT-010923",
+              "EDGE-SPARSE-PARENT-010924",
+              "EDGE-SPARSE-PATH-005461"
+            ],
+            "10922": ["EDGE-SPARSE-PATH-010922"],
+            "16383": []
+          },
+          "expectedBoundedDenseCriticalPaths": {
+            "prefix": "EDGE-DENSE-",
+            "startIndex": 1,
+            "count": 0,
+            "padWidth": 2,
+            "suffix": "-000000",
+            "expectedHash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "firstEdgeId": null,
+            "lastEdgeId": null
+          },
+          "operationOutputHashes": {
+            "complete_manifest_serialization": "sha256:c81e1fe80d6b6b42ee644525da0583849196d236d53afcd564b05eb4eb7138d1",
+            "parse_and_index": "sha256:836ff98536e03c523ba223a9defe2aafd483d2710584d426a0000efab4b5956b",
+            "node_lookup": "sha256:1f045052790093829288f49282b506b09eec606876beaa20e9846015a5cc62ad",
+            "outgoing_edge_lookup": "sha256:cb406762ec6f3e2da5e7ea2e630250c7d0c3558a3c6af3717911c76e0f1ca4f1",
+            "complete_edge_compact_trace_projection": "sha256:9ae57065e312d262b99a77397ff74e3cfca199492c37ff288747d6af608162aa",
+            "sparse_critical_path": "sha256:3b0fffc6a7adcbfce09d55f63e2991eddd303627c869eda0685aae9aec77570b",
+            "bounded_dense_one_edge_critical_paths": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "expectedOutputSetHash": "sha256:1cfb4cc0637efba3550f370b3b111481269e08c1510639ba47f3f3dd730aaf6d",
+          "workUnits": {
+            "complete_manifest_serialization": 65534,
+            "parse_and_index": 49150,
+            "node_lookup": 3,
+            "outgoing_edge_lookup": 32773,
+            "complete_edge_compact_trace_projection": 65532,
+            "sparse_critical_path": 49150,
+            "bounded_dense_one_edge_critical_paths": 0
+          },
+          "workUnitLimit": 393328,
+          "expectedCriticalPath": {
+            "prefix": "EDGE-SPARSE-PATH-",
+            "startIndex": 0,
+            "count": 16383,
+            "padWidth": 6,
+            "suffix": "",
+            "expectedHash": "sha256:3b0fffc6a7adcbfce09d55f63e2991eddd303627c869eda0685aae9aec77570b",
+            "firstEdgeId": "EDGE-SPARSE-PATH-000000",
+            "lastEdgeId": "EDGE-SPARSE-PATH-016382"
+          }
+        },
+        "boundedDense": {
+          "profile": "boundedDense",
+          "nodeCount": 16384,
+          "edgeCount": 131072,
+          "inputVectorHash": "sha256:58f49bacc8ea994a490ede317cb3779213c590bca8e9bb830d5cd3ea9f1d06e5",
+          "packageHash": "sha256:2916c653fe7da184fc5dde26ff427ddd5d7e97611ccc51fc52993c15e100add2",
+          "canonicalBytes": 71308482,
+          "lookupIndices": [0, 8191, 16383],
+          "expectedLookup": [
+            {
+              "index": 0,
+              "nodeId": "NODE-000000",
+              "bodyHash": "sha256:9adf338f6d8acc54f9120825f3c52404ed96dad34e7c5067b09b91f9f2161b59"
+            },
+            {
+              "index": 8191,
+              "nodeId": "NODE-008191",
+              "bodyHash": "sha256:b6941cf56d448387ff2525f44acdc15fe6c9e60796d7cb1e1c3996e86cc1938a"
+            },
+            {
+              "index": 16383,
+              "nodeId": "NODE-016383",
+              "bodyHash": "sha256:1201bf349474730b359c4c8b92773a0d14892b44d2527e8d023972d41a9363fd"
+            }
+          ],
+          "outgoingIndices": [0, 5461, 10922, 16383],
+          "expectedOutgoingEdgeIds": {
+            "0": [
+              "EDGE-DENSE-01-000000",
+              "EDGE-DENSE-02-000000",
+              "EDGE-DENSE-03-000000",
+              "EDGE-DENSE-04-000000",
+              "EDGE-DENSE-05-000000",
+              "EDGE-DENSE-06-000000",
+              "EDGE-DENSE-07-000000",
+              "EDGE-DENSE-08-000000"
+            ],
+            "5461": [
+              "EDGE-DENSE-01-005461",
+              "EDGE-DENSE-02-005461",
+              "EDGE-DENSE-03-005461",
+              "EDGE-DENSE-04-005461",
+              "EDGE-DENSE-05-005461",
+              "EDGE-DENSE-06-005461",
+              "EDGE-DENSE-07-005461",
+              "EDGE-DENSE-08-005461"
+            ],
+            "10922": [
+              "EDGE-DENSE-01-010922",
+              "EDGE-DENSE-02-010922",
+              "EDGE-DENSE-03-010922",
+              "EDGE-DENSE-04-010922",
+              "EDGE-DENSE-05-010922",
+              "EDGE-DENSE-06-010922",
+              "EDGE-DENSE-07-010922",
+              "EDGE-DENSE-08-010922"
+            ],
+            "16383": [
+              "EDGE-DENSE-01-016383",
+              "EDGE-DENSE-02-016383",
+              "EDGE-DENSE-03-016383",
+              "EDGE-DENSE-04-016383",
+              "EDGE-DENSE-05-016383",
+              "EDGE-DENSE-06-016383",
+              "EDGE-DENSE-07-016383",
+              "EDGE-DENSE-08-016383"
+            ]
+          },
+          "expectedBoundedDenseCriticalPaths": {
+            "prefix": "EDGE-DENSE-",
+            "startIndex": 1,
+            "count": 8,
+            "padWidth": 2,
+            "suffix": "-000000",
+            "expectedHash": "sha256:a3f603f03a9cb02590466cc04f7b7fdecedc1b151a4d7f98bdb30337ba28bf78",
+            "firstEdgeId": "EDGE-DENSE-01-000000",
+            "lastEdgeId": "EDGE-DENSE-08-000000"
+          },
+          "operationOutputHashes": {
+            "complete_manifest_serialization": "sha256:ea1e38384cca086e5910d845e8e6171e7cf3709f532ecee3ed7d9176d46a4f54",
+            "parse_and_index": "sha256:3c605cc7d934e1c5729660eded70200ec0fbcea12a3ea681cd0bc0e1bcc01790",
+            "node_lookup": "sha256:1f045052790093829288f49282b506b09eec606876beaa20e9846015a5cc62ad",
+            "outgoing_edge_lookup": "sha256:9c5722eebda6501c6b0099cc56d79e0c9ed072c12f5a13efabebff130a8cb519",
+            "complete_edge_compact_trace_projection": "sha256:ec118529a1293688cd903e0c3bdf2175d7d1562e3423373c74293e99d38dd5c6",
+            "sparse_critical_path": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "bounded_dense_one_edge_critical_paths": "sha256:a3f603f03a9cb02590466cc04f7b7fdecedc1b151a4d7f98bdb30337ba28bf78"
+          },
+          "expectedOutputSetHash": "sha256:b37cba73beb7860382524f54a58a5d863783cad9b34ae8fc5652ffa50164fa73",
+          "workUnits": {
+            "complete_manifest_serialization": 163840,
+            "parse_and_index": 147456,
+            "node_lookup": 3,
+            "outgoing_edge_lookup": 131104,
+            "complete_edge_compact_trace_projection": 262144,
+            "sparse_critical_path": 0,
+            "bounded_dense_one_edge_critical_paths": 147456
+          },
+          "workUnitLimit": 1179776,
+          "expectedCriticalPath": {
+            "prefix": "EDGE-SPARSE-PATH-",
+            "startIndex": 0,
+            "count": 0,
+            "padWidth": 6,
+            "suffix": "",
+            "expectedHash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "firstEdgeId": null,
+            "lastEdgeId": null
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-gap-closure-independent-audit-result.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "requestHash",
+    "gapId",
+    "candidateHash",
+    "auditorRole",
+    "auditorRunId",
+    "decision",
+    "findings",
+    "verifiedConditions",
+    "verificationRuns",
+    "rationale",
+    "providerInvocation"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "gap-closure-independent-audit-result/v1" },
+    "requestHash": { "$ref": "#/$defs/hash" },
+    "gapId": { "type": "string", "minLength": 1 },
+    "candidateHash": { "$ref": "#/$defs/hash" },
+    "auditorRole": { "const": "readonly_independent_auditor" },
+    "auditorRunId": { "type": "string", "minLength": 1 },
+    "decision": { "enum": ["PASS", "FAIL"] },
+    "findings": { "type": "array", "items": { "type": "object" } },
+    "verifiedConditions": { "type": "object" },
+    "verificationRuns": { "type": "array", "minItems": 1, "items": { "type": "object" } },
+    "rationale": { "type": "string", "minLength": 1 },
+    "providerInvocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "transport",
+        "sandboxMode",
+        "ephemeral",
+        "implementationPath",
+        "implementationHash",
+        "startedAt",
+        "completedAt",
+        "exitCode",
+        "stdoutPath",
+        "stdoutHash",
+        "eventLogPath",
+        "eventLogHash",
+        "eventCount",
+        "stderrPath",
+        "stderrHash",
+        "rawResponsePath",
+        "rawResponseHash"
+      ],
+      "properties": {
+        "transport": { "const": "codex_cli" },
+        "sandboxMode": { "const": "read-only" },
+        "ephemeral": { "const": true },
+        "implementationPath": { "type": "string", "minLength": 1 },
+        "implementationHash": { "$ref": "#/$defs/hash" },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "completedAt": { "type": "string", "format": "date-time" },
+        "exitCode": { "const": 0 },
+        "stdoutPath": { "type": "string", "minLength": 1 },
+        "stdoutHash": { "$ref": "#/$defs/hash" },
+        "eventLogPath": { "type": "string", "minLength": 1 },
+        "eventLogHash": { "$ref": "#/$defs/hash" },
+        "eventCount": { "type": "integer", "minimum": 1 },
+        "stderrPath": { "type": "string", "minLength": 1 },
+        "stderrHash": { "$ref": "#/$defs/hash" },
+        "rawResponsePath": { "type": "string", "minLength": 1 },
+        "rawResponseHash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+  }
+}

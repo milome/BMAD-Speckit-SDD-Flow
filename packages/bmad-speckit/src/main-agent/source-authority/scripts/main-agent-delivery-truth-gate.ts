@@ -11,7 +11,10 @@ interface ReleaseGateEvidence {
   evidence_provenance?: EvidenceProvenance;
   completion_intent?: {
     token: string;
+    runId: string;
     storyKey: string;
+    evidenceBundleId: string;
+    attemptId: string;
     contractHash: string;
     gateReportHash: string;
     singleUse: boolean;
@@ -39,7 +42,10 @@ interface HostMatrixEvidence {
 }
 
 interface SprintStatusAuditEvidence {
+  runId?: string;
   storyKey: string;
+  evidenceBundleId?: string;
+  attemptId?: string;
   status: string;
   authorized: boolean;
   releaseGateReportPath?: string;
@@ -62,9 +68,14 @@ interface EvidenceProvenance {
   runId: string;
   storyKey: string;
   evidenceBundleId: string;
-  contractHash?: string;
-  gateReportHash?: string;
+  contractHash: string;
+  gateReportHash: string;
+  completionToken: string;
+  attemptId: string;
+  expiresAt: string;
 }
+
+export type DeliveryArtifactBinding = EvidenceProvenance;
 
 export interface DeliveryTruthGateReport {
   reportType: 'main_agent_delivery_truth_gate';
@@ -75,6 +86,7 @@ export interface DeliveryTruthGateReport {
   missingEvidence: string[];
   failedEvidence: string[];
   evidencePaths: Record<string, string | null>;
+  evidenceBinding: DeliveryArtifactBinding | null;
   checks: Array<{ id: string; passed: boolean; summary: string }>;
 }
 
@@ -87,6 +99,10 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
     }
   }
   return out;
+}
+
+function nonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.trim() !== '';
 }
 
 function readJson<T>(filePath: string | undefined): {
@@ -152,10 +168,13 @@ function checkReleaseGate(evidence: ReleaseGateEvidence | null): {
       evidence.critical_failures === 0 &&
       evidence.blocked_sprint_status_update === false &&
       evidence.completion_intent != null &&
-      evidence.completion_intent.token !== '' &&
-      evidence.completion_intent.storyKey !== '' &&
-      evidence.completion_intent.contractHash !== '' &&
-      evidence.completion_intent.gateReportHash !== '' &&
+      nonEmptyString(evidence.completion_intent.token) &&
+      nonEmptyString(evidence.completion_intent.runId) &&
+      nonEmptyString(evidence.completion_intent.storyKey) &&
+      nonEmptyString(evidence.completion_intent.evidenceBundleId) &&
+      nonEmptyString(evidence.completion_intent.attemptId) &&
+      nonEmptyString(evidence.completion_intent.contractHash) &&
+      nonEmptyString(evidence.completion_intent.gateReportHash) &&
       evidence.completion_intent.singleUse === true &&
       Date.parse(evidence.completion_intent.expiresAt) > Date.now(),
     summary: evidence
@@ -226,17 +245,16 @@ function checkSprintAudit(evidence: SprintStatusAuditEvidence | null): {
     passed:
       evidence != null &&
       evidence.authorized === true &&
-      evidence.storyKey !== '' &&
-      evidence.releaseGateReportPath != null &&
-      evidence.gateReportHash != null &&
-      evidence.gateReportHash !== '' &&
-      evidence.contractHash != null &&
-      evidence.contractHash !== '' &&
-      evidence.fromStatus != null &&
-      evidence.fromStatus !== '' &&
+      nonEmptyString(evidence.runId) &&
+      nonEmptyString(evidence.storyKey) &&
+      nonEmptyString(evidence.evidenceBundleId) &&
+      nonEmptyString(evidence.attemptId) &&
+      nonEmptyString(evidence.releaseGateReportPath) &&
+      nonEmptyString(evidence.gateReportHash) &&
+      nonEmptyString(evidence.contractHash) &&
+      nonEmptyString(evidence.fromStatus) &&
       evidence.toStatus === evidence.status &&
-      evidence.token != null &&
-      evidence.token !== '' &&
+      nonEmptyString(evidence.token) &&
       evidence.singleUse === true &&
       evidence.expiresAt != null &&
       Date.parse(evidence.expiresAt) > Date.now(),
@@ -262,7 +280,7 @@ function checkEvidenceProvenance(input: {
   prTopology: PrTopology | null;
   sprintAudit: SprintStatusAuditEvidence | null;
   qualityGate?: QualityGateEvidence | null;
-}): { passed: boolean; summary: string } {
+}): { passed: boolean; summary: string; binding: DeliveryArtifactBinding | null } {
   const entries: Array<[string, EvidenceProvenance | undefined]> = [
     ['releaseGate', input.releaseGate?.evidence_provenance],
     ['hostMatrix', input.hostMatrix?.evidence_provenance],
@@ -270,40 +288,85 @@ function checkEvidenceProvenance(input: {
     ['qualityGate', input.qualityGate?.evidence_provenance],
   ];
   if (input.prTopology) {
-    entries.push(['prTopology', input.prTopology.evidence_provenance]);
+    entries.push([
+      'prTopology',
+      input.prTopology.evidence_provenance as EvidenceProvenance | undefined,
+    ]);
   }
   const present = entries.filter(([, value]) => value != null);
   if (present.length === 0) {
-    return { passed: false, summary: 'missing evidence_provenance on all delivery artifacts' };
+    return {
+      passed: false,
+      summary: 'missing evidence_provenance on all delivery artifacts',
+      binding: null,
+    };
   }
   if (present.length !== entries.length) {
     return {
       passed: false,
       summary: `partial evidence_provenance: ${present.map(([id]) => id).join(',')}`,
+      binding: null,
     };
   }
   const first = present[0][1]!;
+  const bindingKeys = [
+    'runId',
+    'storyKey',
+    'evidenceBundleId',
+    'contractHash',
+    'gateReportHash',
+    'completionToken',
+    'attemptId',
+    'expiresAt',
+  ] as const satisfies readonly (keyof DeliveryArtifactBinding)[];
+  const missingBindings = bindingKeys.filter((key) => !nonEmptyString(first[key]));
   const mismatches = present.filter(
     ([, value]) =>
       value == null ||
-      value.runId !== first.runId ||
-      value.storyKey !== first.storyKey ||
-      value.evidenceBundleId !== first.evidenceBundleId ||
-      value.gateReportHash == null ||
-      value.gateReportHash === ''
+      bindingKeys.some((key) => value[key] !== first[key])
   );
+  const releaseIntent = input.releaseGate?.completion_intent;
+  const releaseIntentMismatch =
+    releaseIntent == null ||
+    releaseIntent.runId !== first.runId ||
+    releaseIntent.storyKey !== first.storyKey ||
+    releaseIntent.evidenceBundleId !== first.evidenceBundleId ||
+    releaseIntent.contractHash !== first.contractHash ||
+    releaseIntent.gateReportHash !== first.gateReportHash ||
+    releaseIntent.token !== first.completionToken ||
+    releaseIntent.attemptId !== first.attemptId ||
+    releaseIntent.expiresAt !== first.expiresAt;
+  const sprintAudit = input.sprintAudit;
+  const sprintAuditMismatch =
+    sprintAudit == null ||
+    sprintAudit.runId !== first.runId ||
+    sprintAudit.storyKey !== first.storyKey ||
+    sprintAudit.evidenceBundleId !== first.evidenceBundleId ||
+    sprintAudit.contractHash !== first.contractHash ||
+    sprintAudit.gateReportHash !== first.gateReportHash ||
+    sprintAudit.token !== first.completionToken ||
+    sprintAudit.attemptId !== first.attemptId ||
+    sprintAudit.expiresAt !== first.expiresAt;
+  const expiryValid = Number.isFinite(Date.parse(first.expiresAt)) &&
+    Date.parse(first.expiresAt) > Date.now();
+  const mismatchLabels = [
+    ...mismatches.map(([id]) => id),
+    ...(releaseIntentMismatch ? ['releaseGate.completion_intent'] : []),
+    ...(sprintAuditMismatch ? ['sprintAudit.binding'] : []),
+    ...(!expiryValid ? ['expiry'] : []),
+  ];
+  const passed =
+    missingBindings.length === 0 &&
+    mismatchLabels.length === 0;
   return {
-    passed:
-      mismatches.length === 0 &&
-      first.runId !== '' &&
-      first.storyKey !== '' &&
-      first.evidenceBundleId !== '' &&
-      first.gateReportHash != null &&
-      first.gateReportHash !== '',
-    summary:
-      mismatches.length === 0
-        ? `runId=${first.runId}, storyKey=${first.storyKey}, evidenceBundleId=${first.evidenceBundleId}, gateReportHash=present`
-        : `provenance mismatch: ${mismatches.map(([id]) => id).join(',')}`,
+    passed,
+    summary: passed
+      ? `runId=${first.runId}, storyKey=${first.storyKey}, evidenceBundleId=${first.evidenceBundleId}, attemptId=${first.attemptId}, contractHash=present, gateReportHash=present, completionToken=present, expiry=current`
+      : `provenance mismatch: ${[
+          ...missingBindings.map((key) => `missing:${key}`),
+          ...mismatchLabels,
+        ].join(',')}`,
+    binding: passed ? { ...first } : null,
   };
 }
 
@@ -319,6 +382,10 @@ export function evaluateDeliveryTruthGate(input: {
   env?: NodeJS.ProcessEnv;
 }): DeliveryTruthGateReport {
   const env = input.env ?? process.env;
+  const provenanceCheck = checkEvidenceProvenance({
+    ...input,
+    hostMatrix: input.hostMatrix ?? null,
+  });
   const checks = [
     { id: 'release-gate', ...checkReleaseGate(input.releaseGate) },
     { id: 'multi-host-host-matrix', ...checkHostMatrix(input.hostMatrix ?? null) },
@@ -327,7 +394,8 @@ export function evaluateDeliveryTruthGate(input: {
     { id: 'quality-gate', ...checkQualityGate(input.qualityGate ?? null) },
     {
       id: 'same-run-evidence-provenance',
-      ...checkEvidenceProvenance({ ...input, hostMatrix: input.hostMatrix ?? null }),
+      passed: provenanceCheck.passed,
+      summary: provenanceCheck.summary,
     },
     {
       id: 'test-dev-seams-disabled',
@@ -364,6 +432,7 @@ export function evaluateDeliveryTruthGate(input: {
     missingEvidence,
     failedEvidence,
     evidencePaths: input.evidencePaths ?? {},
+    evidenceBinding: provenanceCheck.binding,
     checks,
   };
 }

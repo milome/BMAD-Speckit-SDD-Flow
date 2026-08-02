@@ -1,6 +1,6 @@
 ---
 name: bmad-speckit
-description: Root governed runtime entry for BMAD-Speckit-SDD-Flow. Use $bmad-speckit, /bmad-speckit, or bmad-speckit to let this framework take project governance control.
+description: 'Root governed runtime entry for BMAD-Speckit-SDD-Flow. Use for explicit aliases and natural-language next-step, continue, status, or what-now questions when an active RequirementRecord may exist, including 下一步, 继续, and 现在该做什么. This route has priority over bmad-help for governed runtime navigation.'
 ---
 
 # BMAD-Speckit Governed Runtime Entry
@@ -9,15 +9,24 @@ description: Root governed runtime entry for BMAD-Speckit-SDD-Flow. Use $bmad-sp
 
 Short aliases `$bmads`, `/bmads`, and `bmads` load this same entry.
 
+## Natural-Language Routing Priority
+
+Treat generic requests such as `下一步？`, `继续`, `现在该做什么？`, `what next?`,
+`continue`, and runtime status questions as this governed runtime entry whenever an active
+RequirementRecord may exist. This priority applies before `bmad-help`; use `bmad-help`
+only for explicit upstream BMAD workflow, method, agent, or catalog guidance.
+
 ## Required Response Behavior
 
 This is an execution entry, not an explanation page. When the user invokes `$bmad-speckit`, `/bmad-speckit`, `bmad-speckit`, `$bmads`, `/bmads`, or `bmads`, do not stop after showing this skill file or summarizing the runtime contract.
 
 Required steps:
 
-1. Render the BMADS runtime console through the installed package runtime.
-2. Return the renderer stdout to the user as the final answer, line-for-line.
-3. Use the default budget unless the user explicitly requests `--budget full`, debug output, or another budget.
+1. Inspect the BMADS runtime state through the installed package runtime.
+2. If the primary record is at `implementation_readiness=pass` and its compiled packet is missing or unusable, automatically execute the controlled `dispatch-plan` for that exact record.
+3. Re-inspect state and re-render the BMADS runtime console after the controlled action finishes.
+4. Return the final renderer stdout to the user as the final answer, line-for-line.
+5. Use the default budget unless the user explicitly requests `--budget full`, debug output, or another budget.
 
 Default runtime command in consumer projects:
 
@@ -50,11 +59,44 @@ If the renderer output is too long, do not summarize it yourself. Ask the user t
 
 The fixed execution template is:
 
-1. Commentary: state that the runtime renderer will be executed.
-2. Tool: run the package CLI renderer.
-3. Final: paste the renderer stdout exactly.
+1. Commentary: state that governed runtime inspection and any safe automatic transition will be executed.
+2. Tool: run `bmads --json` or the equivalent internal inspect surface.
+3. Tool: when and only when the automatic dispatch-plan conditions below pass, run the exact requirement-scoped controlled action.
+4. Tool: re-render the BMADS runtime console.
+5. Final: paste the renderer stdout exactly. This means the final renderer pass after any safe automatic transition.
 
 Never replace the full `Six Mental Model Panorama` with a sentence such as "current position is 2/6". Never shorten `Current Actionable Requirement Records` to record IDs only.
+
+## Automatic Dispatch-Plan Transition
+
+When the inspected primary record has all of the following properties:
+
+- `currentMentalModel=implementation_readiness`
+- `implementation_readiness=pass`
+- `nextSafeAction=dispatch-plan`
+- the compiled packet is missing or unusable
+- no safety blocker, stale confirmation, hash mismatch, reconfirmation, or blocking business decision is present
+
+the Agent must automatically execute the controlled `dispatch-plan`. Do not ask the user to copy a suggested prompt or manually run the command.
+
+Bind the action to the exact identities returned by the same inspect result:
+
+```text
+main-agent-orchestration --action dispatch-plan --host <active-host> --record-id <primary.recordId> --requirement-set-id <primary.requirementSetId>
+```
+
+Use the installed local runtime controller when available. The `npx --no-install bmad-speckit` prefix is allowed only as the package-local fallback.
+
+After the action returns:
+
+1. Re-inspect the same RequirementRecord.
+2. Require all four synchronized artifacts to be usable: `model_packet.json`, `human_prompt.txt`, `audit_receipt.json`, and `goal_execution.md`.
+3. Require current hashes, packet authority, `ContractExecutionManifest`, and audit receipt validation to pass.
+4. Re-render the BMADS runtime console so the user sees the resulting `execution_closure` / `dispatch_implement` position.
+
+This automatic transition compiles execution input only. It must not execute `dispatch_implement`, must not start the implementation run loop, must not invoke `/goal`, and must not write execution closure PASS.
+
+If controlled dispatch-plan fails, fail closed. Preserve its bounded blocker evidence, re-render the unchanged safe route, and do not substitute a manually invented packet.
 
 ## User Activation
 
@@ -108,8 +150,8 @@ Do not route through `bmads-auto`. `bmads-auto` is quarantined as a deprecated i
 Required internal Main Agent path:
 
 1. Inspect the current control surface.
-2. If the current control record allows dispatch and no usable packet exists, materialize a bounded dispatch plan with `main-agent-orchestration --action dispatch-plan`.
-3. Continue through the main-agent run loop for the active requirement with `main-agent-orchestration --action run-loop`.
+2. If the current control record is at passing implementation readiness and no usable packet exists, automatically materialize the bounded dispatch plan with the exact requirement-scoped `main-agent-orchestration --action dispatch-plan`.
+3. Stop after packet compilation and re-inspection. Do not start `main-agent-orchestration --action run-loop` in the same implementation-readiness transition.
 4. Re-read inspect after every child result, host closeout, rerun, or blocking event before deciding the next global branch.
 5. Treat `mainAgentNextAction`, `mainAgentReady`, and old handoff summaries as compatibility hints only.
 6. Require controlled ingest for TaskReport, execution evidence, audit evidence, gate checks, requirement closures, and closeout attempts.

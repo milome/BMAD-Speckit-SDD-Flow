@@ -1,0 +1,874 @@
+{
+  "schemaVersion": "requirements-contract-canonical-assets-manifest/v2",
+  "owner": {
+    "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-canonical-assets-manifest.ts",
+    "hash": "sha256:4e6d0843fdee9cfc47e7322e8c9e91bdcc696198ad02d2bf1f16652c9096dd8d"
+  },
+  "manifestHash": "sha256:1e0be8d4a8cfaf40fca8d41a410d81f9105027dbceaecccc54c981c3a0f6effd",
+  "assets": [
+    {
+      "assetId": "semantic_ir_schema",
+      "version": "requirement-contract-model/v2",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirement-contract-model-v2.schema.json",
+      "role": "typed_semantic_ir_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:a8b2bcdb3dc2f683ed3cbd121c79123087b2534060c2e77ff153edacab4dfb24"
+    },
+    {
+      "assetId": "canonical_markdown_parser",
+      "version": "requirements-contract-markdown-source-parser/v1",
+      "path": "_bmad/shared/requirements-contract/markdown-source-parser.js",
+      "role": "canonical_parser",
+      "assetKind": "parser",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:d7f831b82338289a7a0108e6e97990e37f082d1158148cfd45a9c828b07dda03"
+    },
+    {
+      "assetId": "validation_rule_registry",
+      "version": "requirements-contract-source-prd-rules/v2",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-source-prd-rules.ts",
+      "role": "validation_rule_registry",
+      "assetKind": "registry",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:fa68aa9811b8f07b49be3ec627a0854dae5c6a567c95b81908b9898e92f70ef7"
+    },
+    {
+      "assetId": "validation_facade",
+      "version": "requirements-contract-validation-facade/v2",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-validation-facade.ts",
+      "role": "validation_facade",
+      "assetKind": "facade",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:2b2fb2f513afa97bb7a459ff5890725382fc4edaa26d41bb3176b8b7039656a1"
+    },
+    {
+      "assetId": "projection_registry",
+      "version": "requirements-contract-projection-registry/v1",
+      "path": "_bmad/shared/requirements-contract/requirements-contract-projection-registry.json",
+      "role": "projection_registry",
+      "assetKind": "registry",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:329d1d6f50c09342780d16b0fc65c9f2c9753b85ea324fcaef10f70e24450df0"
+    },
+    {
+      "assetId": "consumer_registry",
+      "version": "requirements-contract-consumer-registry/v2",
+      "path": "_bmad/shared/requirements-contract/requirements-contract-consumer-registry.json",
+      "role": "consumer_registry",
+      "assetKind": "registry",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:aacee27ac0d5f73c561d9582f6585efdd4854007e66fee37b67997e77f1aac6b"
+    },
+    {
+      "assetId": "discovery_envelope_template",
+      "version": "requirements-contract-discovery-prd-envelope-template/v1",
+      "path": "_bmad/shared/requirements-contract/templates/discovery-prd-envelope-template.md",
+      "role": "discovery_envelope_template",
+      "assetKind": "template",
+      "authorityClass": "none",
+      "sha256": "sha256:ff3e1581b3382498a170cde3394978bdea3e5ea1831177c5ee76b38bbbe9e1af"
+    },
+    {
+      "assetId": "product_prd_template",
+      "version": "requirements-contract-product-prd-template/v1",
+      "path": "_bmad/shared/requirements-contract/templates/product-prd-template.md",
+      "role": "product_prd_template",
+      "assetKind": "template",
+      "authorityClass": "product_background",
+      "sha256": "sha256:59a9b492d6fc545f1ff5a659c164dafabaeb21c42451fdc794a537207c39a2c8"
+    },
+    {
+      "assetId": "product_prd_renderer",
+      "version": "registered-product-prd-renderer/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prd-render-write-seam.ts",
+      "role": "product_prd_renderer",
+      "assetKind": "renderer",
+      "authorityClass": "product_background",
+      "symbolRef": "renderProductPrd",
+      "sha256": "sha256:c83a05d467c4b7b3d0c891b64c521dff7d88af8b0a926d38f25a111827ff8a43"
+    },
+    {
+      "assetId": "source_prd_template",
+      "version": "requirements-contract-source-prd-template/v2",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/templates/requirements-contract-source-prd-template.md",
+      "role": "source_prd_template",
+      "assetKind": "template",
+      "authorityClass": "implementation_semantic_authority",
+      "sha256": "sha256:94d4fab10bed569b98bdc91e3827b611c17dee507d81194d3652be40c797bea8"
+    },
+    {
+      "assetId": "source_prd_renderer",
+      "version": "registered-source-prd-renderer/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prd-render-write-seam.ts",
+      "role": "source_prd_renderer",
+      "assetKind": "renderer",
+      "authorityClass": "none",
+      "symbolRef": "renderCanonicalRequirementSourcePrd",
+      "sha256": "sha256:c83a05d467c4b7b3d0c891b64c521dff7d88af8b0a926d38f25a111827ff8a43"
+    },
+    {
+      "assetId": "implementation_confirmation_schema",
+      "version": "requirements-contract-implementation-confirmation/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-implementation-confirmation.schema.json",
+      "role": "implementation_confirmation_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:9bdc348f5dbdcc78e931822dc8da899405ce87d28e2f166dbc52d230ac6278c2"
+    },
+    {
+      "assetId": "implementation_confirmation_projector",
+      "version": "requirements-contract-implementation-confirmation-projector/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-implementation-confirmation-projector.ts",
+      "role": "implementation_confirmation_projector",
+      "assetKind": "projector",
+      "authorityClass": "none",
+      "symbolRef": "projectRequirementsContractImplementationConfirmation",
+      "sha256": "sha256:d913d3e55fd60caa368776bb2c7cd7429f4ae975fbd383ece6f124d0cd43fe4c"
+    },
+    {
+      "assetId": "implementation_confirmation_validator",
+      "version": "requirements-contract-implementation-confirmation-validator/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-implementation-confirmation-validator.ts",
+      "role": "implementation_confirmation_validator",
+      "assetKind": "validator",
+      "authorityClass": "deterministic_contract",
+      "symbolRef": "validateRequirementsContractImplementationConfirmation",
+      "sha256": "sha256:a0931a140624bd0c2eb91140a16f3f4a3e5a6e73128502fb8ce2ad12dede5265"
+    },
+    {
+      "assetId": "implementation_confirmation_codec",
+      "version": "requirements-contract-implementation-confirmation-codec/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-implementation-confirmation-codec.ts",
+      "role": "implementation_confirmation_codec",
+      "assetKind": "codec",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:361775390951178b2fb39e1328e24309c4d10875fe40e30f1c2af8855a44a309"
+    },
+    {
+      "assetId": "implementation_confirmation_reference",
+      "version": "requirements-contract-implementation-confirmation-reference/v1",
+      "path": "_bmad/skills/requirements-contract-authoring/references/implementation-confirmation-reference.md",
+      "role": "implementation_confirmation_reference",
+      "assetKind": "reference",
+      "authorityClass": "none",
+      "sha256": "sha256:6f58e1892afc8be829084bc39666c8604d179a4d4014ca8bf45edc882a2cd48f"
+    },
+    {
+      "assetId": "confirmation_render_input_schema",
+      "version": "requirements-confirmation-render-input/v2",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-confirmation-render-input-v2.schema.json",
+      "role": "confirmation_render_input_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:c52aa03f920fea0f0394ab11cb46b9994375f30ce4b25195351a195b3412989e"
+    },
+    {
+      "assetId": "confirmation_render_input_projector",
+      "version": "requirements-confirmation-render-input/v2",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-confirmation-render-input.ts",
+      "role": "confirmation_render_input_projector",
+      "assetKind": "projector",
+      "authorityClass": "none",
+      "symbolRef": "createRequirementsConfirmationRenderInput",
+      "sha256": "sha256:b5bb188b810f2d6ab05b19db5325b0a5e563d43959b11e5001bb1631536bae94"
+    },
+    {
+      "assetId": "confirmation_renderer",
+      "version": "requirements-contract-confirmation-html-renderer/v1",
+      "path": "_bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts",
+      "role": "confirmation_renderer",
+      "assetKind": "renderer",
+      "authorityClass": "none",
+      "sha256": "sha256:5a468a5130e9f9b4b347521f6a3ab632d98f4e787f66cb6c883b3d2d08f64faf"
+    },
+    {
+      "assetId": "confirmation_renderer_specification",
+      "version": "requirements-contract-confirmation-renderer-specification/v1",
+      "path": "_bmad/skills/requirements-contract-authoring/references/html-confirmation-renderer-spec.md",
+      "role": "confirmation_renderer_specification",
+      "assetKind": "reference",
+      "authorityClass": "none",
+      "sha256": "sha256:995c56a7bd08686e3375cc47abb12f8f9c0d162b836ae169df5c358fb58a6d1f"
+    },
+    {
+      "assetId": "goal_contract_template",
+      "version": "goal-execution-contract-template/v1",
+      "path": "_bmad/shared/goal-contract/goal-execution-contract-template.md",
+      "role": "goal_contract_template",
+      "assetKind": "template",
+      "authorityClass": "none",
+      "sha256": "sha256:431361c99ebb9e213c439b83a48d809c3bde5e7824705051cd57ca37cd773885"
+    },
+    {
+      "assetId": "goal_contract_profile",
+      "version": "goal-contract-profile/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-profile.json",
+      "role": "goal_contract_profile",
+      "assetKind": "profile",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:6c7ff29e6c1c52a4a943705e3579cf7aeb51bc437da77fe3bf13022e5ee63407"
+    },
+    {
+      "assetId": "goal_contract_renderer",
+      "version": "req-trace-goal-contract-renderer/v1",
+      "path": "_bmad/shared/goal-contract/scripts/render-goal-contract.js",
+      "role": "goal_contract_renderer",
+      "assetKind": "renderer",
+      "authorityClass": "none",
+      "sha256": "sha256:09ec9e365b1f81fcb8fba7367b09bcfb84071b10ea71c114dd67ff091d785eb8"
+    },
+    {
+      "assetId": "goal_contract_partition_methodology_profile",
+      "version": "partition-methodology-profile/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-partition-methodology-profile.json",
+      "role": "goal_contract_partition_methodology_profile",
+      "assetKind": "profile",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:e6f9eec8447ae6fb8c094b03a9379dde4f1d090eb1210754f99e13159aee1233"
+    },
+    {
+      "assetId": "goal_contract_partition_methodology_profile_schema",
+      "version": "partition-methodology-profile/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-partition-methodology-profile.schema.json",
+      "role": "goal_contract_partition_methodology_profile_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:a5ee1d188e66ddd48d072e3aac544ace4780c65455169a933d80ff48ad476aae"
+    },
+    {
+      "assetId": "goal_contract_sequence_applicability_receipt_schema",
+      "version": "goal-contract-sequence-applicability-receipt/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-sequence-applicability-receipt.schema.json",
+      "role": "goal_contract_sequence_applicability_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:5bae87a620c07f0f3b1ef4d2cb5b92fe792cc3bae7932a399c82deac2301a5fd"
+    },
+    {
+      "assetId": "goal_contract_semantic_provider_registry",
+      "version": "goal-contract-semantic-provider-registry/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-semantic-provider-registry.json",
+      "role": "goal_contract_semantic_provider_registry",
+      "assetKind": "registry",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:127a78464955c603f9ae79dc5bf4ad1c71506d6ab6ae3f426481b966fada3c3c"
+    },
+    {
+      "assetId": "goal_contract_semantic_provider_registry_schema",
+      "version": "goal-contract-semantic-provider-registry/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-semantic-provider-registry.schema.json",
+      "role": "goal_contract_semantic_provider_registry_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:661b43863178fc4931a5180dc9f3d4b2e2e14132432a52029d9f61a5723bf061"
+    },
+    {
+      "assetId": "goal_contract_execution_projection_schema",
+      "version": "goal-contract-execution-projection/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-execution-projection.schema.json",
+      "role": "goal_contract_execution_projection_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:670a4c671ac0f7aff3122ee76dcf15d5a3ab5d8b7576304be347f7ba09888749"
+    },
+    {
+      "assetId": "goal_contract_partition_policy",
+      "version": "goal-contract-partition-policy/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-partition-policy.json",
+      "role": "goal_contract_partition_policy",
+      "assetKind": "profile",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:6285b799c127a4baa9bf0a93143c4f5213b23eb757c476a835de13aa250e6a79"
+    },
+    {
+      "assetId": "goal_contract_partition_policy_schema",
+      "version": "goal-contract-partition-policy/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-partition-policy.schema.json",
+      "role": "goal_contract_partition_policy_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:0e344e728103082cc9680571db6fe8dee3f3add6d386927792b6fd7d079faa15"
+    },
+    {
+      "assetId": "goal_contract_partition_impact_policy",
+      "version": "goal-contract-partition-impact-policy/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-partition-impact-policy.json",
+      "role": "goal_contract_partition_impact_policy",
+      "assetKind": "profile",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:58d70416ddb32f948d7a86df82421017e915a2b6a88eff4b816eaa57dc2035a8"
+    },
+    {
+      "assetId": "goal_contract_partition_impact_policy_schema",
+      "version": "goal-contract-partition-impact-policy/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-partition-impact-policy.schema.json",
+      "role": "goal_contract_partition_impact_policy_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:fc3db344251c0dc65d9c14dde46f2a184c88b507f2eb667bdd4ac8444e01d719"
+    },
+    {
+      "assetId": "goal_contract_partition_impact_graph_schema",
+      "version": "goal-contract-partition-impact-graph/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-partition-impact-graph.schema.json",
+      "role": "goal_contract_partition_impact_graph_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:8f15901e26363c4d4cb850715ecf247dab91242d7ea2758e5186b25cd91ae7c1"
+    },
+    {
+      "assetId": "goal_contract_partition_closure_feasibility_receipt_schema",
+      "version": "goal-contract-partition-closure-feasibility-receipt/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-partition-closure-feasibility-receipt.schema.json",
+      "role": "goal_contract_partition_closure_feasibility_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:4a69c23ca0815d7032be7df2782af35345d9d2ab61e90a7dc2dd60b394f606a5"
+    },
+    {
+      "assetId": "goal_contract_partition_impact_drift_receipt_schema",
+      "version": "goal-contract-partition-impact-drift-receipt/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-partition-impact-drift-receipt.schema.json",
+      "role": "goal_contract_partition_impact_drift_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:fc8bca421cae1268f64bc47431d7b72f26cb9bc7128c905fa899d8015b02093d"
+    },
+    {
+      "assetId": "goal_contract_partition_manifest_schema",
+      "version": "goal-contract-partition-manifest/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-partition-manifest.schema.json",
+      "role": "goal_contract_partition_manifest_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:e477962fb36f88905e942fe7ca89489d30860baed78d66e18312aaaef92995b1"
+    },
+    {
+      "assetId": "goal_contract_partition_output_authority_schema",
+      "version": "goal-contract-partition-output-authority/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-partition-output-authority.schema.json",
+      "role": "goal_contract_partition_output_authority_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:bfe8690ca0594153592d8c8577baf2d22633315c6aeca30f3b95295120d0a23c"
+    },
+    {
+      "assetId": "goal_contract_lifecycle_authority_binding_schema",
+      "version": "goal-contract-lifecycle-authority-binding/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-lifecycle-authority-binding.schema.json",
+      "role": "goal_contract_lifecycle_authority_binding_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:778000396ccbfc335a23c2c784f04d2177f53183358c281f4703a67e7719cc5b"
+    },
+    {
+      "assetId": "goal_contract_partition_analysis_receipt_schema",
+      "version": "goal-contract-partition-analysis-receipt/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-partition-analysis-receipt.schema.json",
+      "role": "goal_contract_partition_analysis_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:462c94873cfb9b71520c86ababe97cb22603d4d0190efbb6fb4e07a82d71b67a"
+    },
+    {
+      "assetId": "goal_contract_partition_global_coverage_receipt_schema",
+      "version": "goal-contract-partition-global-coverage-receipt/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-partition-global-coverage-receipt.schema.json",
+      "role": "goal_contract_partition_global_coverage_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:acbcc299d79a6aea09a355c0f9634bd8e8af37af46238afe2e0f45d7125f5a94"
+    },
+    {
+      "assetId": "goal_contract_partition_selection_receipt_schema",
+      "version": "goal-contract-partition-selection-receipt/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-partition-selection-receipt.schema.json",
+      "role": "goal_contract_partition_selection_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:6e5c77383215f4e13dcc834db0781aca937fddee710c8606830467313ea1e6d7"
+    },
+    {
+      "assetId": "goal_contract_dependency_compatibility_receipt_schema",
+      "version": "goal-contract-dependency-compatibility-receipt/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-dependency-compatibility-receipt.schema.json",
+      "role": "goal_contract_dependency_compatibility_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:696674d3a7ed5a2edeb0c32604bb092bfdd0e07883c3bedf8f6d133a6be3af53"
+    },
+    {
+      "assetId": "goal_contract_partition_child_coverage_receipt_schema",
+      "version": "goal-contract-partition-child-coverage-receipt/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-partition-child-coverage-receipt.schema.json",
+      "role": "goal_contract_partition_child_coverage_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:c54283e1977123cbd7ec68ea0bcd0ac57474a6a71a607bc5e8088c1c4b34005c"
+    },
+    {
+      "assetId": "goal_contract_partition_child_generation_receipt_schema",
+      "version": "goal-contract-partition-child-generation-receipt/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-partition-child-generation-receipt.schema.json",
+      "role": "goal_contract_partition_child_generation_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:d82f5a29afca00537d4bc11105afefc5ad816c6cb874fa6d4e29b884e51b73ba"
+    },
+    {
+      "assetId": "goal_contract_partition_plan_schema",
+      "version": "goal-contract-partition-plan/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-partition-plan.schema.json",
+      "role": "goal_contract_partition_plan_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:b9d980595f35dc4b95dfad2a29bdeaecc6615ade0a0a32946298fca1e0225907"
+    },
+    {
+      "assetId": "goal_contract_authority_supersession_receipt_schema",
+      "version": "goal-contract-authority-supersession-receipt/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-authority-supersession-receipt.schema.json",
+      "role": "goal_contract_authority_supersession_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:f11d7e31a57f6801763e71750a198c375f063242e611a746ed67be58a3160ce3"
+    },
+    {
+      "assetId": "goal_contract_source_grounded_coverage_receipt_schema",
+      "version": "goal-contract-source-grounded-coverage-receipt/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-source-grounded-coverage-receipt.schema.json",
+      "role": "goal_contract_source_grounded_coverage_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:f0a8ff040455e0d69fa74013e5d467ac46b5a774941e7a473a6595bf93291b25"
+    },
+    {
+      "assetId": "goal_contract_partition_release_gate_receipt_schema",
+      "version": "goal-contract-partition-release-gate-receipt/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-partition-release-gate-receipt.schema.json",
+      "role": "goal_contract_partition_release_gate_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:5bb0381addc100ae8052910a642c227cd7e315c2dfb9a71d617e7f864d2c524b"
+    },
+    {
+      "assetId": "goal_contract_campaign_activation_receipt_schema",
+      "version": "goal-contract-campaign-activation-receipt/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-campaign-activation-receipt.schema.json",
+      "role": "goal_contract_campaign_activation_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:80b36d977c79bdb47d69d4d8b0ceb0ff612ca489c8656c0641dd592e0460b84d"
+    },
+    {
+      "assetId": "goal_contract_subcontract_execution_lease_schema",
+      "version": "goal-contract-subcontract-execution-lease/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-subcontract-execution-lease.schema.json",
+      "role": "goal_contract_subcontract_execution_lease_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:0c54808ab9358ffc80fcaed98e261763ff92f093ec9d7baad4d2200a2f58e534"
+    },
+    {
+      "assetId": "goal_contract_subcontract_evidence_schema",
+      "version": "goal-contract-subcontract-evidence/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-subcontract-evidence.schema.json",
+      "role": "goal_contract_subcontract_evidence_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:bbb1b61599ac96cc5adc49bea2ddb10b2db0b6f4c44897e7b4478e2ca0c35180"
+    },
+    {
+      "assetId": "goal_contract_subcontract_closure_receipt_schema",
+      "version": "goal-contract-subcontract-closure-receipt/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-subcontract-closure-receipt.schema.json",
+      "role": "goal_contract_subcontract_closure_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:abadc4155374b87d757b5e4736de70297a4e09c7478f7570b88f89af412368c6"
+    },
+    {
+      "assetId": "goal_contract_campaign_closure_receipt_schema",
+      "version": "goal-contract-campaign-closure-receipt/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-campaign-closure-receipt.schema.json",
+      "role": "goal_contract_campaign_closure_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:73fd202c13f2f3083e8b7cb43aceea82b7f711cd553d5f38483de09204695d2f"
+    },
+    {
+      "assetId": "closeout_packet_schema",
+      "version": "requirements-contract-terminal-closeout-packet/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-terminal-closeout-packet.schema.json",
+      "role": "closeout_packet_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:b286ab6f8fc6f44bd4379d0733a6a320a82c37744a597a0cf9b91e4937d93af0"
+    },
+    {
+      "assetId": "closeout_renderer",
+      "version": "requirements-contract-terminal-closeout/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-terminal-closeout.ts",
+      "role": "closeout_renderer",
+      "assetKind": "renderer",
+      "authorityClass": "none",
+      "symbolRef": "renderRequirementsContractTerminalCloseout",
+      "sha256": "sha256:9ab6edf2a68649a3fb97626f70446ff50476d8a1a060644e5afbe74d9f7c4e6b"
+    },
+    {
+      "assetId": "closeout_readback_receipt_schema",
+      "version": "requirements-contract-artifact-readback-receipt/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-artifact-readback-receipt.schema.json",
+      "role": "closeout_readback_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:fc56a455e7a8123c74cc4ca1808376b681faa3af20628fe2ee007ffd207d122e"
+    },
+    {
+      "assetId": "closeout_final_response_projector",
+      "version": "requirements-contract-terminal-closeout-projector/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-terminal-closeout.ts",
+      "role": "closeout_final_response_projector",
+      "assetKind": "projector",
+      "authorityClass": "none",
+      "symbolRef": "projectRequirementsContractTerminalCloseout",
+      "sha256": "sha256:9ab6edf2a68649a3fb97626f70446ff50476d8a1a060644e5afbe74d9f7c4e6b"
+    },
+    {
+      "assetId": "judge_runtime_schema",
+      "version": "requirements-contract-judge-runtime/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-runtime.schema.json",
+      "role": "judge_runtime_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:0910872ad7d8f2bacb524982893c957ea1cd1675e3b9a2e70ad13a24fa048839"
+    },
+    {
+      "assetId": "judge_credentials_schema",
+      "version": "requirements-contract-judge-credentials/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-credentials.schema.json",
+      "role": "judge_credentials_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:c5c1aa6244c864aac710a2473e2d56b40adf9474e09ac73782053ca6c2c5457a"
+    },
+    {
+      "assetId": "normalized_judge_response_schema",
+      "version": "requirements-contract-normalized-judge-response/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-normalized-judge-response.schema.json",
+      "role": "normalized_judge_response_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:862326cd023496be63059f537cc3c48b5e2235956b63efa9fb91b1cdb19bc941"
+    },
+    {
+      "assetId": "cli_judge_execution_receipt_schema",
+      "version": "requirements-contract-cli-judge-execution-receipt/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-cli-judge-execution-receipt.schema.json",
+      "role": "cli_judge_execution_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:c8f79649d84a1dcc529efb6d42ba784cc4633a73e4902a16c9b0c5429f02c5da"
+    },
+    {
+      "assetId": "judge_capability_receipt_schema",
+      "version": "requirements-contract-judge-capability-receipt/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-capability-receipt.schema.json",
+      "role": "judge_capability_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:09825d92ebe9703d536c32fcc43ef3a57f06cc5c18574d1c904de80ba6f7ce4b"
+    },
+    {
+      "assetId": "judge_selection_receipt_schema",
+      "version": "requirements-contract-judge-selection-receipt/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-selection-receipt.schema.json",
+      "role": "judge_selection_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:802942299d9f29e03b17908bf51dd6b5c5b48bd6a845680674ff414cb0f7d466"
+    },
+    {
+      "assetId": "judge_provider_registry_schema",
+      "version": "requirements-contract-judge-provider-registry/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-provider-registry.schema.json",
+      "role": "judge_provider_registry_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:d754c15d73200c528c7349ca30247aa1012a83e01dcdf1e171284969f8723c38"
+    },
+    {
+      "assetId": "judge_challenge_tests_schema",
+      "version": "requirements-contract-judge-challenge-tests/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-challenge-tests.schema.json",
+      "role": "judge_challenge_tests_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:2dea861c9b804f076420275b78c79377d82e2023ec62fdd17808f3adc44f09a3"
+    },
+    {
+      "assetId": "judge_response_schema",
+      "version": "requirements-contract-judge-response/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-response.schema.json",
+      "role": "judge_response_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:bd5fcfae53b518f7737aa9afdd12aaeeb00a3714b9b0abf400d6d52390b01857"
+    },
+    {
+      "assetId": "judge_runtime_security_parity_schema",
+      "version": "requirements-contract-judge-runtime-security-parity/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-runtime-security-parity.schema.json",
+      "role": "judge_runtime_security_parity_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:27045c41321f9c4e98911b5e37c29d2cf20c9a69a8451002f5d8bbfeafd6062c"
+    },
+    {
+      "assetId": "judge_provider_smoke_input_schema",
+      "version": "requirements-contract-judge-provider-smoke-input/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-provider-smoke-input.schema.json",
+      "role": "judge_provider_smoke_input_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:30a631f21e2e359ccb9189dc573feeb2aa2ae1267f70c1a6d61ef07eb975f41a"
+    },
+    {
+      "assetId": "judge_credential_initialization_input_schema",
+      "version": "requirements-contract-judge-credential-initialization-input/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-credential-initialization-input.schema.json",
+      "role": "judge_credential_initialization_input_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:f41d165ef0f299ed35a46c379fb384d5e5f0fd6c7ccd781a06032b0b239f4fff"
+    },
+    {
+      "assetId": "judge_credential_initialization_receipt_schema",
+      "version": "requirements-contract-judge-credential-initialization-receipt/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-credential-initialization-receipt.schema.json",
+      "role": "judge_credential_initialization_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:7ec9175c715e8a328bcc3e54e0c2f0d4bd5569c909b02e8337a5fc56c54e56fd"
+    },
+    {
+      "assetId": "judge_audit_unit_projection_input_schema",
+      "version": "requirements-contract-judge-audit-unit-projection-input/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-audit-unit-projection-input.schema.json",
+      "role": "judge_audit_unit_projection_input_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:ab8b9b5ba9456e01f5e2c61dd9ec1544587955e327107da08f5881ddb77d3c56"
+    },
+    {
+      "assetId": "judge_audit_unit_set_schema",
+      "version": "requirements-contract-judge-audit-unit-set/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-audit-unit-set.schema.json",
+      "role": "judge_audit_unit_set_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:55ad4b393a0b9cafb13f26fbcc62fed492dc7ba7db037ce2f05636407b960328"
+    },
+    {
+      "assetId": "critical_auditor_judge_adapter_input_schema",
+      "version": "requirements-contract-critical-auditor-judge-adapter-input/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-critical-auditor-judge-adapter-input.schema.json",
+      "role": "critical_auditor_judge_adapter_input_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:9f3fd00ed558cf69c6a76ac968309aba8e394a3ea9aef4ad2184a5c5d32224e0"
+    },
+    {
+      "assetId": "critical_auditor_judge_assessment_schema",
+      "version": "requirements-contract-critical-auditor-judge-assessment/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-critical-auditor-judge-assessment.schema.json",
+      "role": "critical_auditor_judge_assessment_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:e835f1d3cfac36affefd08c8fc4473da4d7327372488392c3d235c3e6755057e"
+    },
+    {
+      "assetId": "critical_auditor_external_adapter_result_schema",
+      "version": "requirements-contract-critical-auditor-external-adapter-result/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-critical-auditor-external-adapter-result.schema.json",
+      "role": "critical_auditor_external_adapter_result_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:c6f7a9383db43f9130dd753993623791f500f3d8f0bc61474264865fc02e14ff"
+    },
+    {
+      "assetId": "gap_closure_readonly_auditor_adapter_input_schema",
+      "version": "requirements-contract-gap-closure-readonly-auditor-adapter-input/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-gap-closure-readonly-auditor-adapter-input.schema.json",
+      "role": "gap_closure_readonly_auditor_adapter_input_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:f68ba0e0912694cbbb5b474aa986f2555cd6db5f8379e9d329d75f0e4ffee05b"
+    },
+    {
+      "assetId": "gap_closure_independent_audit_request_schema",
+      "version": "requirements-contract-gap-closure-independent-audit-request/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-gap-closure-independent-audit-request.schema.json",
+      "role": "gap_closure_independent_audit_request_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:3474f935a99e88dbf6a045ec42c3a9651430ae933d5168747c39f986301e16a7"
+    },
+    {
+      "assetId": "gap_closure_independent_audit_assessment_schema",
+      "version": "requirements-contract-gap-closure-independent-audit-assessment/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-gap-closure-independent-audit-assessment.schema.json",
+      "role": "gap_closure_independent_audit_assessment_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:d54ff1bd15993986cc992793c80b90a8acf194c03b06c53f69c0493f75002563"
+    },
+    {
+      "assetId": "gap_closure_independent_audit_result_schema",
+      "version": "requirements-contract-gap-closure-independent-audit-result/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-gap-closure-independent-audit-result.schema.json",
+      "role": "gap_closure_independent_audit_result_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:629fae79f9798fb5a2876005f2f1eff39fba707d4e5df04dfaf6a814cf6fb44f"
+    },
+    {
+      "assetId": "gap_closure_readonly_auditor_adapter",
+      "version": "requirements-contract-gap-closure-readonly-auditor-adapter/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-gap-closure-readonly-auditor-adapter.ts",
+      "role": "gap_closure_readonly_auditor_adapter",
+      "assetKind": "adapter",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:67c698b5e2c78c2a349c4e5e629b64ad3b6d9e30273beb263160b41ee2091974"
+    },
+    {
+      "assetId": "critical_auditor_profile",
+      "version": "critical-auditor-profile/v1",
+      "path": "_bmad/shared/critical-auditor-profile/critical-auditor-profile.json",
+      "role": "critical_auditor_profile",
+      "assetKind": "profile",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:010bc67d6904d17baab1a9e3d42793d22a5cc6f9241629e692031ff98c4305f3"
+    },
+    {
+      "assetId": "judge_provider_registry_projection",
+      "version": "requirements-contract-judge-provider-registry/v1",
+      "path": "_bmad/shared/requirements-contract/requirements-contract-judge-provider-registry.json",
+      "role": "judge_provider_registry_projection",
+      "assetKind": "registry",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:843d6e504727541a66f450867ebe00260da4c1c1ddf71af8e6a9a330a98e6658"
+    },
+    {
+      "assetId": "judge_credential_resolver",
+      "version": "requirements-contract-judge-credential-resolver/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-credential-resolver.ts",
+      "role": "judge_credential_resolver",
+      "assetKind": "resolver",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:184e343f7ba2547cc5ddf84c5437fb6744686bda301cd99066bc980e8bd4b4aa"
+    },
+    {
+      "assetId": "judge_provider_registry",
+      "version": "requirements-contract-judge-provider-registry-runtime/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-provider-registry.ts",
+      "role": "judge_provider_registry",
+      "assetKind": "registry",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:b88588bb76cb03559b1be77d7bc6788a61dce6331917686da5308ecad89193d6"
+    },
+    {
+      "assetId": "openai_compatible_judge_adapter",
+      "version": "requirements-contract-openai-compatible-judge-adapter/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-openai-compatible-judge-adapter.ts",
+      "role": "openai_compatible_judge_adapter",
+      "assetKind": "adapter",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:62d2311caa60dfd12ac410dc3e736a2aeffab6398b275242efcce5c430412e44"
+    },
+    {
+      "assetId": "anthropic_compatible_judge_adapter",
+      "version": "requirements-contract-anthropic-compatible-judge-adapter/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-anthropic-compatible-judge-adapter.ts",
+      "role": "anthropic_compatible_judge_adapter",
+      "assetKind": "adapter",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:c015872f2a19f3d3fe7ead8c2434008956aabac1954a171014e22a16d3fdbc44"
+    },
+    {
+      "assetId": "claude_code_cli_judge_adapter",
+      "version": "requirements-contract-claude-code-cli-judge-adapter/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-claude-code-cli-judge-adapter.ts",
+      "role": "claude_code_cli_judge_adapter",
+      "assetKind": "adapter",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:199e980f5d89bae069f90b4cdc3adb2a4c143dff0791221995c8d522500cdc2b"
+    },
+    {
+      "assetId": "codex_cli_judge_adapter",
+      "version": "requirements-contract-codex-cli-judge-adapter/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-codex-cli-judge-adapter.ts",
+      "role": "codex_cli_judge_adapter",
+      "assetKind": "adapter",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:2b7933acbe860d8cefea085d5720040cf83f66eb5c69fbd263b3f317bfbfc7ec"
+    },
+    {
+      "assetId": "judge_provider_smoke",
+      "version": "requirements-contract-judge-provider-smoke/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-provider-smoke.ts",
+      "role": "judge_provider_smoke",
+      "assetKind": "producer",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:0e6ad4171129a9318d09f10bbe5d900fa2a352cc123c15c0f75b531f67167e72"
+    },
+    {
+      "assetId": "judge_credential_initializer",
+      "version": "requirements-contract-judge-credential-initializer/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-credential-initializer.ts",
+      "role": "judge_credential_initializer",
+      "assetKind": "producer",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:a337e45285dd49f2ca1858383c277fc59080e9fa15483316ca2f0c50b7e2f6be"
+    },
+    {
+      "assetId": "judge_audit_unit_projector",
+      "version": "requirements-contract-judge-audit-unit-projector/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-audit-unit-projector.ts",
+      "role": "judge_audit_unit_projector",
+      "assetKind": "producer",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:0e4b49e8b7bdc99aefe7c38b2c8c41287542015f721b20b5e3807b6ffe7811dd"
+    },
+    {
+      "assetId": "judge_runtime_bindings_resolver",
+      "version": "requirements-contract-judge-runtime-bindings/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-runtime-bindings.ts",
+      "role": "judge_runtime_bindings_resolver",
+      "assetKind": "resolver",
+      "authorityClass": "deterministic_contract",
+      "symbolRef": "resolveRequirementsContractJudgeRuntimeBindings",
+      "sha256": "sha256:fafdf20ac173102cf16f3b068baa20fce477c25fc5f963b651599cbf2632abb2"
+    },
+    {
+      "assetId": "critical_auditor_judge_adapter",
+      "version": "requirements-contract-critical-auditor-judge-adapter/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-critical-auditor-judge-adapter.ts",
+      "role": "critical_auditor_judge_adapter",
+      "assetKind": "adapter",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:090f6087d368b886cd1294af98355ffd4d5b8a6379e5e2a49807d6cefae051db"
+    },
+    {
+      "assetId": "reverse_audit_validator",
+      "version": "requirements-contract-reverse-audit/v1",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-reverse-audit.ts",
+      "role": "reverse_audit_validator",
+      "assetKind": "validator",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:6029981ca90b08263434eeea1b05a87b2bc7f75cc366a9dcee35644c4e776f5c"
+    }
+  ],
+  "authority": "none"
+}

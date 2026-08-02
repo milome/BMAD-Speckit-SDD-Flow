@@ -3,6 +3,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
+import { resolvePackageOwnedBmadPath } from '../../runtime/package-bmad-root';
 
 export type JsonObject = Record<string, unknown>;
 
@@ -12,6 +13,13 @@ export interface RequirementRecordSchemaValidationResult {
   errors: JsonObject[];
 }
 
+export const REQUIREMENT_RECORD_SCHEMA_OWNER_PATH =
+  '_bmad/_schemas/requirement-record.schema.json';
+export const REQUIREMENT_RECORD_SCHEMA_SURFACE_PATHS = [
+  REQUIREMENT_RECORD_SCHEMA_OWNER_PATH,
+  'packages/bmad-speckit/_bmad/_schemas/requirement-record.schema.json',
+] as const;
+
 function readJson(file: string): JsonObject {
   const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as unknown;
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
@@ -20,31 +28,11 @@ function readJson(file: string): JsonObject {
   return parsed as JsonObject;
 }
 
-function schemaPath(): string {
+export function resolveRequirementRecordSchemaPath(): string {
   const candidates = [
-    path.resolve(__dirname, '..', '_bmad', '_schemas', 'requirement-record.schema.json'),
-    path.resolve(
-      __dirname,
-      '..',
-      '..',
-      '..',
-      '..',
-      '_bmad',
-      '_schemas',
-      'requirement-record.schema.json'
-    ),
-    path.resolve(process.cwd(), '_bmad', '_schemas', 'requirement-record.schema.json'),
-    path.resolve(
-      __dirname,
-      '..',
-      '..',
-      '..',
-      '..',
-      '..',
-      '..',
-      '_bmad',
-      '_schemas',
-      'requirement-record.schema.json'
+    resolvePackageOwnedBmadPath('_schemas', 'requirement-record.schema.json'),
+    ...REQUIREMENT_RECORD_SCHEMA_SURFACE_PATHS.map((surfacePath) =>
+      path.resolve(process.cwd(), surfacePath)
     ),
   ];
   const resolved = candidates.find((candidate) => fs.existsSync(candidate));
@@ -53,7 +41,7 @@ function schemaPath(): string {
 }
 
 function compileValidator() {
-  const schema = readJson(schemaPath());
+  const schema = readJson(resolveRequirementRecordSchemaPath());
   const ajv = new Ajv2020({ allErrors: true, strict: false });
   addFormats(ajv);
   return ajv.compile(schema);

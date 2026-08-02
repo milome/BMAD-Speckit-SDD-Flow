@@ -1,0 +1,259 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-judge-provider-registry.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "owner",
+    "sourceConfig",
+    "activeProviderRef",
+    "providers",
+    "registryHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-judge-provider-registry/v1"
+    },
+    "owner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": {
+          "const": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-provider-registry.ts"
+        },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "sourceConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": {
+          "const": "_bmad/_config/governance-remediation.yaml"
+        },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "activeProviderRef": {
+      "type": "string",
+      "minLength": 1
+    },
+    "providers": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/providerBinding" }
+    },
+    "registryHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "providerBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["providerRef", "provider", "adapterRef"],
+      "properties": {
+        "providerRef": { "type": "string", "minLength": 1 },
+        "adapterRef": {
+          "enum": [
+            "OpenAICompatibleJudgeAdapter",
+            "AnthropicCompatibleJudgeAdapter",
+            "ClaudeCodeCliJudgeAdapter",
+            "CodexCliJudgeAdapter"
+          ]
+        },
+        "provider": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "transport",
+            "apiStyle",
+            "credentialRef",
+            "endpoint",
+            "authentication",
+            "auditPolicy",
+            "requestPolicy"
+          ],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "adapterRef": { "type": "string", "minLength": 1 },
+            "transport": {
+              "enum": ["openai-compatible", "anthropic-compatible", "claude-code-cli", "cli"]
+            },
+            "apiStyle": {
+              "enum": ["chat_completions", "messages", "cli"]
+            },
+            "model": { "type": ["string", "null"], "minLength": 1 },
+            "credentialRef": { "type": "string", "minLength": 1 },
+            "endpoint": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "resolutionMode",
+                "routingOwnership",
+                "upstreamVersioning",
+                "explicitOperationPath"
+              ],
+              "properties": {
+                "baseUrl": { "type": "string", "format": "uri" },
+                "command": { "type": "string", "minLength": 1 },
+                "resolutionMode": {
+                  "enum": ["transport_managed", "path_search"]
+                },
+                "routingOwnership": { "const": "transport_adapter" },
+                "upstreamVersioning": {
+                  "enum": ["gateway_managed", "cli_managed"]
+                },
+                "explicitOperationPath": { "type": "null" }
+              }
+            },
+            "authentication": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "sensitivity", "arbitraryNonEmptyValueAllowed"],
+              "properties": {
+                "type": { "enum": ["bearer", "api_key", "claude_code_session"] },
+                "sensitivity": { "enum": ["placeholder", "secret", "host_managed"] },
+                "arbitraryNonEmptyValueAllowed": { "type": "boolean" },
+                "sessionRevision": { "type": "integer", "minimum": 1 }
+              }
+            },
+            "auditPolicy": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "independenceClass",
+                "blindReview",
+                "allowPassAuthority",
+                "toolsAllowed",
+                "implementationWritesAllowed"
+              ],
+              "properties": {
+                "independenceClass": { "type": "string", "minLength": 1 },
+                "blindReview": { "const": true },
+                "allowPassAuthority": { "const": false },
+                "toolsAllowed": { "type": "boolean" },
+                "allowedTools": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": { "type": "string", "minLength": 1 }
+                },
+                "implementationWritesAllowed": { "const": false }
+              }
+            },
+            "requestPolicy": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["timeoutMs", "maximumAttempts", "structuredResponseRequired"],
+              "properties": {
+                "timeoutMs": { "type": "integer", "minimum": 1 },
+                "maximumAttempts": { "const": 1 },
+                "structuredResponseRequired": { "const": true },
+                "maxBudgetUsd": { "type": "number", "exclusiveMinimum": 0 }
+              }
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": { "transport": { "const": "claude-code-cli" } }
+              },
+              "then": {
+                "properties": {
+                  "apiStyle": { "const": "cli" },
+                  "endpoint": {
+                    "required": ["command"],
+                    "properties": {
+                      "command": { "const": "claude" },
+                      "resolutionMode": { "const": "path_search" }
+                    }
+                  },
+                  "auditPolicy": {
+                    "required": ["allowedTools"],
+                    "properties": {
+                      "toolsAllowed": { "const": true },
+                      "allowedTools": { "const": ["Read"] }
+                    }
+                  }
+                },
+                "oneOf": [
+                  {
+                    "required": ["model"],
+                    "properties": {
+                      "model": { "type": "string", "minLength": 1 },
+                      "endpoint": {
+                        "not": { "required": ["baseUrl"] },
+                        "properties": {
+                          "upstreamVersioning": { "const": "cli_managed" }
+                        }
+                      },
+                      "authentication": {
+                        "required": ["sessionRevision"],
+                        "properties": {
+                          "type": { "const": "claude_code_session" },
+                          "sensitivity": { "const": "host_managed" },
+                          "arbitraryNonEmptyValueAllowed": { "const": false }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "model": { "type": "null" },
+                      "endpoint": {
+                        "required": ["baseUrl"],
+                        "properties": {
+                          "upstreamVersioning": { "const": "gateway_managed" }
+                        }
+                      },
+                      "authentication": {
+                        "not": { "required": ["sessionRevision"] },
+                        "properties": {
+                          "type": { "enum": ["bearer", "api_key"] },
+                          "sensitivity": { "const": "secret" },
+                          "arbitraryNonEmptyValueAllowed": { "const": false }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "transport": {
+                    "enum": ["openai-compatible", "anthropic-compatible"]
+                  }
+                }
+              },
+              "then": {
+                "required": ["model"],
+                "properties": {
+                  "model": { "type": "string", "minLength": 1 },
+                  "endpoint": {
+                    "required": ["baseUrl"],
+                    "not": { "required": ["command"] },
+                    "properties": {
+                      "resolutionMode": { "const": "transport_managed" },
+                      "upstreamVersioning": { "const": "gateway_managed" }
+                    }
+                  },
+                  "authentication": {
+                    "not": { "required": ["sessionRevision"] }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

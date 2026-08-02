@@ -49,6 +49,7 @@ Options:
   --record-id <id>            Discover report under _bmad-output runtime records.
   --mode <implementation|readiness>
                               In readiness mode, deliveryReadiness.ready=false fails.
+  --audit-stage <stage>       Internal stage binding used by stage-specific wrappers.
   --definition-only           Run only deterministic pre-render definition drilldown.
   --grill-report <path>       Merge a prior grill/definition audit JSON report.
   --json                      Emit JSON output.
@@ -67,6 +68,7 @@ function parseArgs(argv) {
     confirmationDir: '',
     recordId: '',
     mode: 'implementation',
+    auditStage: 'generic',
     grillReport: '',
     drilldownGateReport: '',
     requirementRecord: '',
@@ -149,6 +151,26 @@ function parseArgs(argv) {
         return { error: '--mode must be implementation or readiness' };
       }
       args.mode = next;
+      i += 1;
+      continue;
+    }
+    if (arg === '--audit-stage') {
+      const next = argv[i + 1];
+      if (!next || next.startsWith('--')) {
+        return { error: 'missing value for --audit-stage' };
+      }
+      if (
+        ![
+          'generic',
+          'contract_confirmability',
+          'implementation_readiness',
+          'delivery_verification',
+          'closeout_integrity',
+        ].includes(next)
+      ) {
+        return { error: 'unsupported --audit-stage value' };
+      }
+      args.auditStage = next;
       i += 1;
       continue;
     }
@@ -407,9 +429,10 @@ function collectReportIntegrityIssues({ sourcePath, sourceText, blockText, confi
   };
 }
 
-function collectConfirmationStateIssues(confirmation, currentHashes) {
+function collectConfirmationStateIssues(confirmation, currentHashes, auditStage) {
   const findings = [];
-  if (confirmation.status !== 'user_confirmed') {
+  const contractConfirmability = auditStage === 'contract_confirmability';
+  if (!contractConfirmability && confirmation.status !== 'user_confirmed') {
     findings.push(
       issue(
         'confirmation_not_user_confirmed',
@@ -462,6 +485,7 @@ function collectConfirmationStateIssues(confirmation, currentHashes) {
     findings.push(issue('missing_confirmation_render', 'implementationConfirmation.confirmationRender is required'));
     return findings;
   }
+  if (contractConfirmability) return findings;
   for (const [field, code] of [
     ['htmlPath', 'missing_confirmation_html_path'],
     ['summaryPath', 'missing_confirmation_summary_path'],
@@ -740,7 +764,7 @@ function collectReportShapeIssues(text, renderReport) {
   return findings;
 }
 
-function collectTraceabilityIssues(text, confirmation) {
+function collectTraceabilityIssues(text, confirmation, mode) {
   const findings = [];
   const mermaidBlocks = [...text.matchAll(/```mermaid\r?\n([\s\S]*?)```/g)].map((match) => match[1]);
   const nonDiagramText = text.replace(/```mermaid\r?\n[\s\S]*?```/g, '\n');
@@ -841,7 +865,16 @@ function collectTraceabilityIssues(text, confirmation) {
     for (const file of row.files) {
       const absolute = path.isAbsolute(file) ? file : path.resolve(process.cwd(), file);
       if (!fs.existsSync(absolute)) {
-        findings.push(issue('acceptance_test_file_missing', `${row.id} references missing file ${file}`, [row.id, file]));
+        const expectedRedBeforeImplementation =
+          mode !== 'readiness' && row.expectedPreImplementationState === 'expected_red';
+        findings.push(
+          issue(
+            'acceptance_test_file_missing',
+            `${row.id} references missing file ${file}`,
+            [row.id, file],
+            expectedRedBeforeImplementation ? 'warning' : 'blocker'
+          )
+        );
       }
     }
     for (const cover of row.covers) {
@@ -904,6 +937,9 @@ function normalizeAcceptanceSuites(confirmation) {
           ...stringList(item?.requiredCommandRefs),
           ...stringList(item?.requiredCommandIds),
         ]),
+        expectedPreImplementationState: String(item?.expectedPreImplementationState ?? '')
+          .trim()
+          .toLowerCase(),
         oracle: String(item?.oracle ?? item?.expectedBehavior ?? item?.assertion ?? '').trim(),
         mockOnly: item?.mockOnly === true,
       });
@@ -1333,6 +1369,7 @@ function buildReport({
   target,
   renderReportPath,
   mode,
+  auditStage,
   runtimeDeliveryReadiness,
   grillReportSummary,
   text,
@@ -1351,6 +1388,7 @@ function buildReport({
     target: normalizePathForReport(target),
     renderReportPath: renderReportPath ? normalizePathForReport(renderReportPath) : null,
     mode,
+    auditStage,
     rendererAuthority: {
       confirmability: renderReport?.confirmability ?? null,
       blockingIssueCount: asArray(renderReport?.blockingIssues).length,
@@ -1501,10 +1539,14 @@ function main(argv) {
     },
   });
   findings.push(
-    ...collectConfirmationStateIssues(confirmation, {
-      sourceDocumentHash: integrity.currentSourceHash,
-      implementationConfirmationHash: integrity.currentImplementationHash,
-    })
+    ...collectConfirmationStateIssues(
+      confirmation,
+      {
+        sourceDocumentHash: integrity.currentSourceHash,
+        implementationConfirmationHash: integrity.currentImplementationHash,
+      },
+      args.auditStage
+    )
   );
   findings.push(
     ...collectReconfirmationRequestIssues(text, confirmation, {
@@ -1514,7 +1556,7 @@ function main(argv) {
   );
   findings.push(...collectConfirmationRenderBookkeepingIssues(confirmation, renderReportPath, renderReport, driftClassification));
   findings.push(...collectReportShapeIssues(text, renderReport));
-  const traceability = collectTraceabilityIssues(text, confirmation);
+  const traceability = collectTraceabilityIssues(text, confirmation, args.mode);
   findings.push(...traceability.findings);
   findings.push(
     ...collectProjectionQualityIssues(confirmation, {
@@ -1545,6 +1587,7 @@ function main(argv) {
     target,
     renderReportPath,
     mode: args.mode,
+    auditStage: args.auditStage,
     runtimeDeliveryReadiness,
     grillReportSummary: grillReport.summary,
     text,

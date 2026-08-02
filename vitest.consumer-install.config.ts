@@ -1,15 +1,3 @@
-import { configDefaults, defineConfig } from 'vitest/config';
+import repoMutating from './vitest.repo-mutating.config';
 
-export default defineConfig({
-  test: {
-    setupFiles: ['tests/register-package-ts-source.cjs'],
-    exclude: [
-      ...configDefaults.exclude,
-      'packages/bmad-speckit/tests/**/*',
-      'packages/bmad-speckit/dist/**/*',
-      '.worktrees/**/*',
-    ],
-    fileParallelism: false,
-    testTimeout: 900_000,
-  },
-});
+export default repoMutating;

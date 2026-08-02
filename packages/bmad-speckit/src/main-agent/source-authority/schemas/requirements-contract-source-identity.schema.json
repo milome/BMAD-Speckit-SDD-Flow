@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-source-identity.schema.json",
+  "title": "Requirements Contract Source Identity",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "recordId",
+    "requirementSetId",
+    "branch",
+    "entrySource",
+    "sourceKind",
+    "sourcePath",
+    "sourceHash",
+    "identityAuthority"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-source-identity/v1"
+    },
+    "recordId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requirementSetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "branch": {
+      "type": "string",
+      "minLength": 1
+    },
+    "entrySource": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceKind": {
+      "enum": ["product_prd", "requirement_source_prd", "discovery_envelope"]
+    },
+    "sourcePath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "identityAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "ref", "hash"],
+      "properties": {
+        "kind": {
+          "enum": [
+            "registered_requirement_record",
+            "source_prd_identity_block",
+            "discovery_session_receipt",
+            "legacy_migration_receipt"
+          ]
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    }
+  }
+}

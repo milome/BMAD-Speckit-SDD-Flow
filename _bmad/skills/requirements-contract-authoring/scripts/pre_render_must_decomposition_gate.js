@@ -13,10 +13,12 @@ const {
   unique,
 } = require('./pre_render_definition_drilldown_lib');
 const { collectProjectionQualityIssues } = require('./projection_quality_gate');
+const {
+  buildDerivedContractExecutionManifest,
+} = require('../../../shared/contract-execution-manifest/build-contract-execution-manifest');
 
 const SOURCE_ROW_GROUPS = [
-  { sourceKey: 'atomicImplementationTaskList', projectionKey: 'mustAtomicTasks' },
-  { sourceKey: 'mustExecutionDecompositionMatrix', projectionKey: 'mustExecutionDecompositionMatrix' },
+  { sourceKey: 'implementationTasks', projectionKey: 'mustAtomicTasks' },
   { sourceKey: 'evidence', projectionKey: 'mustEvidenceProjection' },
   { sourceKey: 'traceRows', projectionKey: 'mustTraceProjection' },
   { sourceKey: 'acceptanceTests', projectionKey: 'mustAcceptanceProjection' },
@@ -162,6 +164,10 @@ function rowId(row, fallback = '') {
 }
 
 function sourceRowsForKey(confirmation, key) {
+  if (key === 'implementationTasks' || key === 'atomicImplementationTaskList') {
+    const canonicalTasks = asArray(confirmation.implementationTasks);
+    return canonicalTasks.length ? canonicalTasks : asArray(confirmation.atomicImplementationTaskList);
+  }
   if (key === 'currentTargetMap') {
     const map = confirmation.currentTargetMap ?? {};
     return [
@@ -207,9 +213,31 @@ function hasSourceRow(confirmation, target) {
 function isProjectionBacked(row, packetHash) {
   if (!row || typeof row !== 'object') return false;
   if (row.derivedFromPacketHash === packetHash) return true;
-  if (row.projectionStatus === 'synchronized' && row.derivedFromMustRef) return true;
+  if (
+    row.projectionStatus === 'synchronized' &&
+    (row.derivedFromMustRef || row.derivedFromRequirementRef)
+  ) {
+    return true;
+  }
   if (row.derivedFromProjectionRef || row.derivedFromProjectionId) return true;
   return false;
+}
+
+function packetProjectionBacksSourceRow(projections, sourceKey, row, index) {
+  const rowIdentifier = rowId(row, String(index));
+  const sourceKeys =
+    sourceKey === 'implementationTasks'
+      ? ['implementationTasks', 'atomicImplementationTaskList']
+      : [sourceKey];
+  return sourceKeys.some((key) =>
+    projections.some((projection) =>
+      projectionMaterializedTargets(projection).some((target) => {
+        const parsed = parseMaterializedTarget(target);
+        if (!parsed || parsed.sourceKey !== key) return false;
+        return !parsed.id || parsed.id === rowIdentifier || String(row?.path ?? '') === parsed.id;
+      })
+    )
+  );
 }
 
 function allPacketProjectionRows(packet) {
@@ -339,9 +367,49 @@ function collectPacketIssues({ packet, packetPath, kernel, sourceDocumentHash, c
   return issues;
 }
 
+function collectContractExecutionManifestIssues(confirmation) {
+  try {
+    const manifest = buildDerivedContractExecutionManifest({ confirmation });
+    const hasAcceptanceSurface = [
+      'acceptanceTests',
+      'acceptanceCriteria',
+      'e2eSuites',
+      'e2eScenarios',
+    ].some((field) => asArray(confirmation[field]).length > 0);
+    return asArray(manifest?.errorCaseCoverage?.missing)
+      .filter(
+        (finding) =>
+          hasAcceptanceSurface ||
+          !['failure_path_acceptance_coverage_missing', 'edge_case_acceptance_coverage_missing'].includes(
+            finding.code
+          )
+      )
+      .map((finding) =>
+        issue(
+          `ai_tdd_manifest_${finding.code}`,
+          `errorCaseCoverage missing ${finding.id}: ${finding.code}`,
+          ['errorCaseCoverage', finding.id],
+          'blocker',
+          'contract_execution_manifest'
+        )
+      );
+  } catch (error) {
+    return [
+      issue(
+        'ai_tdd_manifest_derivation_failed',
+        error instanceof Error ? error.message : String(error),
+        ['aiTddContractExecutionManifestProjection'],
+        'blocker',
+        'contract_execution_manifest'
+      ),
+    ];
+  }
+}
+
 function buildAuditInputHash({ sourceDocumentHash, implementationConfirmationHash, kernel, packet }) {
   return hashObject({
     sourceDocumentHash,
+    semanticModelHash: packet?.semanticModelHash ?? kernel?.semanticModelHash ?? null,
     implementationConfirmationHash,
     semanticKernelHash: kernel?.kernelHash ?? null,
     packetHash: packet?.packetHash ?? null,
@@ -425,8 +493,11 @@ function buildReconciliationReport({
   }
 
   for (const group of SOURCE_ROW_GROUPS) {
-    for (const row of sourceRowsForKey(confirmation, group.sourceKey)) {
-      if (!isProjectionBacked(row, packetHash)) {
+    for (const [index, row] of sourceRowsForKey(confirmation, group.sourceKey).entries()) {
+      if (
+        !isProjectionBacked(row, packetHash) &&
+        !packetProjectionBacksSourceRow(projections, group.sourceKey, row, index)
+      ) {
         issues.push(
           issue(
             'source_row_independently_invented',
@@ -513,6 +584,7 @@ function runGate(args) {
       source: 'must_decomposition_gate',
       makeIssue: issue,
     }),
+    ...collectContractExecutionManifestIssues(confirmation),
   ];
 
   const auditor = collectCriticalAuditorIssues({ receiptReads, auditInputHash });

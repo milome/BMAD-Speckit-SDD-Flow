@@ -4,8 +4,24 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { resolveArchitectureConfirmationHashRecipe } from './architecture-confirmation-hash-recipe';
 import { evaluateAiTddContractGate } from './ai-tdd-contract-gate';
-import { appendControlEventAndReplay, sha256Text } from './requirement-record-control-store';
+import {
+  appendControlEventAndReplay,
+  canonicalizeRequirementRecord,
+  sha256Json,
+  sha256Text,
+} from './requirement-record-control-store';
 import { openReconfirmationRequests } from './reconfirmation-runtime';
+import {
+  createRuntimeStatusProjectionUpdate,
+  runtimeStatusProjectionArtifactWrites,
+  runtimeStatusProjectionRecordPatch,
+  type RuntimeStatusProjectionUpdate,
+} from './requirements-contract-runtime-status-decision-receipt';
+import { validateSourcePrdLintTransitionFromFiles } from './requirements-contract-validation-facade';
+import {
+  resolvePackageBmadRoot,
+  resolvePackageOwnedBmadPath,
+} from '../../runtime/package-bmad-root';
 
 type JsonObject = Record<string, unknown>;
 type ReadinessDecision = 'pass' | 'blocked';
@@ -246,34 +262,13 @@ function resolveRenderReportPath(record: JsonObject): string {
   return '';
 }
 
-function resolveRequirementsContractAuthoringScript(cwd: string, relativeScript: string): string {
-  const home = process.env.USERPROFILE || process.env.HOME || '';
-  const packageRoot = path.resolve(__dirname, '..');
-  const candidates = [
-    path.join(cwd, '.codex', 'skills', 'requirements-contract-authoring'),
-    path.join(cwd, '.cursor', 'skills', 'requirements-contract-authoring'),
-    path.join(cwd, '.claude', 'skills', 'requirements-contract-authoring'),
-    path.join(cwd, '_bmad', 'skills', 'requirements-contract-authoring'),
-    path.join(cwd, '.agents', 'skills', 'requirements-contract-authoring'),
-    path.join(packageRoot, '.codex', 'skills', 'requirements-contract-authoring'),
-    path.join(packageRoot, '.cursor', 'skills', 'requirements-contract-authoring'),
-    path.join(packageRoot, '.claude', 'skills', 'requirements-contract-authoring'),
-    path.join(packageRoot, '_bmad', 'skills', 'requirements-contract-authoring'),
-    ...(home
-      ? [
-          path.join(home, '.codex', 'skills', 'requirements-contract-authoring'),
-          path.join(home, '.cursor', 'skills', 'requirements-contract-authoring'),
-          path.join(home, '.claude', 'skills', 'requirements-contract-authoring'),
-          path.join(home, '.agents', 'skills', 'requirements-contract-authoring'),
-        ]
-      : []),
-  ];
-  for (const skillDir of candidates) {
-    if (!fs.existsSync(path.join(skillDir, 'SKILL.md'))) continue;
-    const scriptPath = path.join(skillDir, 'scripts', relativeScript);
-    if (fs.existsSync(scriptPath)) return scriptPath;
-  }
-  return path.join(candidates[0], 'scripts', relativeScript);
+function resolveRequirementsContractAuthoringScript(relativeScript: string): string {
+  return resolvePackageOwnedBmadPath(
+    'skills',
+    'requirements-contract-authoring',
+    'scripts',
+    relativeScript
+  );
 }
 
 function runImplementationReadinessStageAudit(
@@ -282,7 +277,6 @@ function runImplementationReadinessStageAudit(
 ): { check: JsonObject; blockingReasons: string[] } {
   const cwd = input.cwd ? path.resolve(input.cwd) : process.cwd();
   const scriptPath = resolveRequirementsContractAuthoringScript(
-    cwd,
     'audit_implementation_readiness.js'
   );
   const sourcePath = resolveSourcePath(record, input.sourcePath);
@@ -314,8 +308,11 @@ function runImplementationReadinessStageAudit(
       encoding: 'utf8',
       env: {
         ...process.env,
-        BMAD_SPECKIT_PACKAGE_ROOT: path.resolve(__dirname, '..'),
-        NODE_PATH: [path.join(path.resolve(__dirname, '..'), 'node_modules'), process.env.NODE_PATH]
+        BMAD_SPECKIT_PACKAGE_ROOT: path.dirname(resolvePackageBmadRoot()),
+        NODE_PATH: [
+          path.join(path.dirname(resolvePackageBmadRoot()), 'node_modules'),
+          process.env.NODE_PATH,
+        ]
           .filter(Boolean)
           .join(path.delimiter),
       },
@@ -613,6 +610,51 @@ function evaluate(
   };
 }
 
+function createReadinessRuntimeStatus(
+  record: JsonObject,
+  input: {
+    decision: ReadinessDecision;
+    blockingReasons: string[];
+    reportPath: string;
+    reportHash: string;
+    evaluatedAt: string;
+    resultPayload: JsonObject;
+  }
+): RuntimeStatusProjectionUpdate {
+  const attemptId = text(record.currentAttemptId) || text(record.runId);
+  return createRuntimeStatusProjectionUpdate({
+    recordId: text(record.recordId),
+    requirementSetId: text(record.requirementSetId) || text(record.recordId),
+    modelId: 'implementation_readiness',
+    implementationAttemptId: attemptId,
+    sourceDocumentHash: text(record.sourceDocumentHash),
+    implementationConfirmationHash: text(record.implementationConfirmationHash),
+    semanticModelHash: text(record.semanticModelHash),
+    stageInputs: [
+      {
+        role: 'requirement_source',
+        path: text(record.sourcePath),
+        hash: text(record.sourceDocumentHash),
+      },
+    ],
+    deterministicGateOutputs: [
+      {
+        role: 'implementation_readiness_report',
+        path: normalizePathForRecord(input.reportPath),
+        hash: input.reportHash,
+      },
+    ],
+    blockerRefs: input.blockingReasons,
+    evidenceRefs: [normalizePathForRecord(input.reportPath)],
+    authorityClass: 'deterministic_gate',
+    decision: input.decision === 'pass' ? 'pass' : 'block',
+    effectiveStatus: input.decision === 'pass' ? 'pass' : 'blocked',
+    createdAt: input.evaluatedAt,
+    receiptPath: `runtime/status-decisions/${attemptId}/implementation_readiness.json`,
+    projection: input.resultPayload,
+  });
+}
+
 function updateRecord(
   record: JsonObject,
   input: {
@@ -624,6 +666,7 @@ function updateRecord(
     evaluatedAt: string;
     evaluatedBy: string;
     resultPayload: JsonObject;
+    runtimeStatus: RuntimeStatusProjectionUpdate;
   }
 ): JsonObject {
   const checkId = `implementation-readiness:${input.evaluatedAt}`;
@@ -642,15 +685,15 @@ function updateRecord(
     recordedAt: input.evaluatedAt,
     recordedBy: input.evaluatedBy,
   };
-  const previousSixModelResults = nested(record.sixModelResults);
   return {
     ...record,
     gateChecks: [...objects(record.gateChecks), gateCheck],
-    sixModelResults: {
-      ...previousSixModelResults,
-      implementation_readiness: input.resultPayload,
-    },
-    readinessBaselineMetadata: nested(input.resultPayload.readinessBaselineMetadata),
+    ...runtimeStatusProjectionRecordPatch({
+      record,
+      modelId: 'implementation_readiness',
+      update: input.runtimeStatus,
+    }),
+    readinessBaselineMetadata: nested(input.runtimeStatus.projection.readinessBaselineMetadata),
     currentMentalModel: text(record.currentMentalModel) || 'implementation_readiness',
     lastEventType: 'implementation_readiness_result_recorded',
     updatedAt: input.evaluatedAt,
@@ -682,13 +725,29 @@ export function mainImplementationReadinessGate(argv: string[]): number {
   const reportPath = path.resolve(
     args.reportPath ?? path.join(path.dirname(recordPath), 'implementation-readiness-report.json')
   );
-  const evaluation = evaluate(record, {
+  const sourcePrdLintTransition = validateSourcePrdLintTransitionFromFiles({
+    transition: 'implementation-readiness',
+    requirementRecordPath: recordPath,
+    currentSourcePath: resolveSourcePath(record, args.source),
+  });
+  const baseEvaluation = evaluate(record, {
     recordPath,
     sourcePath: args.source,
     implementationRunKind: args.implementationRunKind,
     evaluatedAt,
     evaluatedBy,
   });
+  const evaluation =
+    sourcePrdLintTransition.decision === 'pass'
+      ? baseEvaluation
+      : {
+          ...baseEvaluation,
+          decision: 'blocked' as const,
+          blockingReasons: unique([
+            ...baseEvaluation.blockingReasons,
+            ...sourcePrdLintTransition.issueCodes,
+          ]),
+        };
   const report = {
     reportType: 'implementation_readiness_report',
     generatedAt: evaluatedAt,
@@ -758,13 +817,20 @@ export function mainImplementationReadinessGate(argv: string[]): number {
     evaluatedBy,
     resultPayload,
   };
+  const runtimeStatus = createReadinessRuntimeStatus(record, readinessPayload);
   const commit = appendControlEventAndReplay({
     recordPath,
     writerId: 'implementation-readiness-gate-writer',
     eventType: 'implementation_readiness_result_recorded',
     recordedAt: evaluatedAt,
+    expectedBeforeRecordHash: sha256Json(canonicalizeRequirementRecord(record)),
     payload: resultPayload,
-    reduce: (currentRecord) => updateRecord(currentRecord, readinessPayload),
+    artifactWrites: runtimeStatusProjectionArtifactWrites(runtimeStatus),
+    reduce: (currentRecord) =>
+      updateRecord(currentRecord, {
+        ...readinessPayload,
+        runtimeStatus,
+      }),
   });
   const output = {
     ok: true,
@@ -775,6 +841,10 @@ export function mainImplementationReadinessGate(argv: string[]): number {
     controlEventHash: commit.event.eventHash,
     eventLogPath: normalizePathForRecord(commit.eventLogPath),
     receiptPath: normalizePathForRecord(commit.receiptPath),
+    decisionReceiptRef: runtimeStatus.receiptRef
+      ? normalizePathForRecord(runtimeStatus.receiptRef.path)
+      : null,
+    decisionReceiptHash: runtimeStatus.receiptRef?.receipt.receiptHash ?? null,
     readinessBaselineMetadata,
   };
   process.stdout.write(

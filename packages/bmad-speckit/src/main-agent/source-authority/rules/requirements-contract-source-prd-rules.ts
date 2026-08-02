@@ -19,8 +19,30 @@ export interface RequirementsContractSourcePrdRules {
   stableIdPrefixes: string[];
 }
 
+const REQUIREMENTS_CONTRACT_SOURCE_AUTHORITY_ROOT =
+  'packages/bmad-speckit/src/main-agent/source-authority';
+const REQUIREMENTS_CONTRACT_SOURCE_PRD_TEMPLATE_RELATIVE_PATH =
+  'templates/requirements-contract-source-prd-template.md';
+const REQUIREMENTS_CONTRACT_SOURCE_PRD_SCHEMA_RELATIVE_PATH =
+  'templates/requirements-contract-source-prd-template.schema.json';
+
+export const REQUIREMENTS_CONTRACT_SOURCE_PRD_ARTIFACT_ROLE =
+  'requirement_source_prd';
+export const REQUIREMENTS_CONTRACT_SOURCE_PRD_TEMPLATE_OWNER_PATH =
+  `${REQUIREMENTS_CONTRACT_SOURCE_AUTHORITY_ROOT}/${REQUIREMENTS_CONTRACT_SOURCE_PRD_TEMPLATE_RELATIVE_PATH}`;
+export const REQUIREMENTS_CONTRACT_SOURCE_PRD_SCHEMA_OWNER_PATH =
+  `${REQUIREMENTS_CONTRACT_SOURCE_AUTHORITY_ROOT}/${REQUIREMENTS_CONTRACT_SOURCE_PRD_SCHEMA_RELATIVE_PATH}`;
+export const REQUIREMENTS_CONTRACT_SOURCE_PRD_TEMPLATE_SURFACE_PATHS = [
+  REQUIREMENTS_CONTRACT_SOURCE_PRD_TEMPLATE_OWNER_PATH,
+  'packages/bmad-speckit/dist/main-agent/source-authority/templates/requirements-contract-source-prd-template.md',
+] as const;
+export const REQUIREMENTS_CONTRACT_SOURCE_PRD_SCHEMA_SURFACE_PATHS = [
+  REQUIREMENTS_CONTRACT_SOURCE_PRD_SCHEMA_OWNER_PATH,
+  'packages/bmad-speckit/dist/main-agent/source-authority/templates/requirements-contract-source-prd-template.schema.json',
+] as const;
+
 export const REQUIREMENTS_CONTRACT_SOURCE_PRD_RULES: RequirementsContractSourcePrdRules = {
-  templatePath: 'templates/requirements-contract-source-prd-template.md',
+  templatePath: REQUIREMENTS_CONTRACT_SOURCE_PRD_TEMPLATE_RELATIVE_PATH,
   requiredHeadings: [
     '# Requirements Contract Source PRD Template',
     '## Template Authority',

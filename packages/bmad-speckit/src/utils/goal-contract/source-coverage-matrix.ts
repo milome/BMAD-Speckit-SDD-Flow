@@ -6,7 +6,70 @@ function list(value) {
   return Array.isArray(value) ? value : [];
 }
 
-function validateSourceCoverage({ sourceObligations, registries }) {
+function validateGraphSourceCoverage(graph) {
+  const sourceIds = graph.nodes
+    .filter((node) => node.nodeType === 'source')
+    .map((node) => node.id);
+  const targetTypes = new Map([
+    ['source_to_goal', 'goal'],
+    ['source_to_trace', 'trace'],
+    ['source_to_acceptance', 'acceptance'],
+    ['source_to_command', 'command'],
+    ['source_to_evidence', 'evidence'],
+  ]);
+  const validTargets = new Map(
+    [...new Set(targetTypes.values())].map((nodeType) => [
+      nodeType,
+      new Set(
+        graph.nodes
+          .filter((node) => node.nodeType === nodeType)
+          .map((node) => node.id)
+      ),
+    ])
+  );
+  const unmappedSourceObligations = [];
+  const orphanGeneratedRefs = [];
+  const blockingReasons = [];
+
+  for (const sourceId of sourceIds) {
+    for (const [edgeType, targetType] of targetTypes) {
+      const bindings = graph.edges.filter(
+        (edge) => edge.edgeType === edgeType && edge.from === sourceId
+      );
+      if (bindings.length === 0) {
+        if (!unmappedSourceObligations.includes(sourceId)) {
+          unmappedSourceObligations.push(sourceId);
+        }
+        blockingReasons.push(`${sourceId} missing ${edgeType}`);
+      }
+      for (const edge of bindings) {
+        if (!validTargets.get(targetType).has(edge.to)) {
+          orphanGeneratedRefs.push(`${edgeType}:${sourceId}:${edge.to}`);
+        }
+      }
+    }
+  }
+
+  return {
+    decision:
+      sourceIds.length > 0 &&
+      unmappedSourceObligations.length === 0 &&
+      orphanGeneratedRefs.length === 0
+        ? 'pass'
+        : 'blocked',
+    evidenceClassification: 'coverage_only',
+    runtimeEvidenceAuthority: false,
+    unmappedSourceObligations,
+    orphanGeneratedRefs,
+    blockingReasons:
+      sourceIds.length === 0
+        ? ['source nodes are empty']
+        : blockingReasons,
+  };
+}
+
+function validateSourceCoverage({ sourceObligations, registries, graph }) {
+  if (graph) return validateGraphSourceCoverage(graph);
   const obligations = list(sourceObligations);
   const taskIds = toSet(registries?.tasks);
   const acceptanceIds = toSet(registries?.acceptance);
@@ -84,5 +147,6 @@ function buildSourceCoverageMatrix({ sourceObligations }) {
 
 module.exports = {
   buildSourceCoverageMatrix,
+  validateGraphSourceCoverage,
   validateSourceCoverage,
 };

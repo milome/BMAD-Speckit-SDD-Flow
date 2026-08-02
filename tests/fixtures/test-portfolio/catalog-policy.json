@@ -1,0 +1,238 @@
+{
+  "schemaVersion": "test-portfolio-policy/v1",
+  "budgets": {
+    "executableTestCount": 1200,
+    "corePermanentCount": 120,
+    "prP95Minutes": 10
+  },
+  "profiles": [
+    "pr-fast",
+    "pr-full",
+    "nightly-deep",
+    "release-verify",
+    "nightly-full",
+    "release-full"
+  ],
+  "semanticObligations": [
+    {
+      "model": "requirement_confirmation",
+      "applicability": "applicable",
+      "minimumEvidenceKind": "direct",
+      "requiredBehaviors": [
+        "state_entry",
+        "applicability_or_not_applicable",
+        "successful_promotion",
+        "fail_closed",
+        "invalidation",
+        "reconfirmation",
+        "evidence_binding",
+        "authority_rejection",
+        "stale_evidence_rejection"
+      ]
+    },
+    {
+      "model": "architecture_confirmation",
+      "applicability": "not_applicable",
+      "minimumEvidenceKind": "direct",
+      "requiredBehaviors": [
+        "state_entry",
+        "applicability_or_not_applicable",
+        "successful_promotion",
+        "fail_closed",
+        "invalidation",
+        "reconfirmation",
+        "evidence_binding",
+        "authority_rejection",
+        "stale_evidence_rejection"
+      ]
+    },
+    {
+      "model": "implementation_readiness",
+      "applicability": "not_applicable",
+      "minimumEvidenceKind": "direct",
+      "requiredBehaviors": [
+        "state_entry",
+        "applicability_or_not_applicable",
+        "successful_promotion",
+        "fail_closed",
+        "invalidation",
+        "reconfirmation",
+        "evidence_binding",
+        "authority_rejection",
+        "stale_evidence_rejection"
+      ]
+    },
+    {
+      "model": "execution_closure",
+      "applicability": "not_applicable",
+      "minimumEvidenceKind": "direct",
+      "requiredBehaviors": [
+        "state_entry",
+        "applicability_or_not_applicable",
+        "successful_promotion",
+        "fail_closed",
+        "invalidation",
+        "reconfirmation",
+        "evidence_binding",
+        "authority_rejection",
+        "stale_evidence_rejection"
+      ]
+    },
+    {
+      "model": "audit_review",
+      "applicability": "not_applicable",
+      "minimumEvidenceKind": "direct",
+      "requiredBehaviors": [
+        "state_entry",
+        "applicability_or_not_applicable",
+        "successful_promotion",
+        "fail_closed",
+        "invalidation",
+        "reconfirmation",
+        "evidence_binding",
+        "authority_rejection",
+        "stale_evidence_rejection",
+        "reverse_audit_execution",
+        "judge_continuation"
+      ]
+    },
+    {
+      "model": "delivery_confirmation",
+      "applicability": "not_applicable",
+      "minimumEvidenceKind": "direct",
+      "requiredBehaviors": [
+        "state_entry",
+        "applicability_or_not_applicable",
+        "successful_promotion",
+        "fail_closed",
+        "invalidation",
+        "reconfirmation",
+        "evidence_binding",
+        "authority_rejection",
+        "stale_evidence_rejection",
+        "record_closed_final_transition"
+      ]
+    }
+  ],
+  "semanticJourneys": [
+    {
+      "journeyId": "six-model-complete-record-closed",
+      "model": "six_model_e2e",
+      "transition": "ingress_to_record_closed",
+      "applicability": "applicable",
+      "minimumEvidenceKind": "direct",
+      "anyOfEvidenceRefs": [
+        "trace:six-model/full-e2e/record-closed"
+      ],
+      "affectedTargetRefs": [
+        "capability:six-model-state-machine",
+        "transition:record-closed"
+      ],
+      "remediationOwner": "dev"
+    }
+  ],
+  "semanticEvidenceBindings": [],
+  "protectedCapabilities": [
+    {
+      "capabilityId": "state-machine",
+      "selectionRefs": ["script:test:core-state-machine"],
+      "survivalEvidenceRefs": ["target:src/state-machine.ts"],
+      "requiredBehaviors": {
+        "requirement_confirmation/*": {
+          "anyOfEvidenceRefs": ["target:src/state-machine.ts"],
+          "evidenceKind": "direct"
+        }
+      }
+    }
+  ],
+  "classification": {
+    "directoryRules": [
+      {
+        "ruleId": "core-tests",
+        "pattern": "tests/core/**",
+        "state": "retained_on_demand",
+        "packageId": "root",
+        "traceRefs": ["trace:state-machine"],
+        "fixtureRefs": ["fixture:state-machine"]
+      },
+      {
+        "ruleId": "feature-tests",
+        "pattern": "tests/feature/**",
+        "state": "retained_on_demand",
+        "packageId": "root",
+        "featureRefs": ["feature:catalog-generation"]
+      },
+      {
+        "ruleId": "on-demand-tests",
+        "pattern": "tests/on-demand/**",
+        "state": "retained_on_demand",
+        "packageId": "root"
+      },
+      {
+        "ruleId": "redundant-tests",
+        "pattern": "tests/redundant/**",
+        "state": "retained_on_demand",
+        "packageId": "root"
+      }
+    ],
+    "exceptions": []
+  },
+  "selection": {
+    "expansionOrder": ["trace_capability", "feature", "package"],
+    "highDiffusionPathRules": [],
+    "releaseSurfacePathRules": [
+      ".github/workflows/publish-npm.yml",
+      ".github/workflows/release.yml",
+      "package.json",
+      "packages/bmad-speckit/package.json",
+      "scripts/prepublish-check.js"
+    ],
+    "productSurvivalCapabilityRefs": [
+      "consumer-install-boundary",
+      "consumer-runtime-boundary",
+      "runtime-policy-security-boundary",
+      "six-model-state-machine",
+      "sprint-status-write-security-boundary"
+    ],
+    "releaseCapabilityRefs": [
+      "consumer-install-boundary",
+      "consumer-runtime-boundary",
+      "six-model-state-machine",
+      "runtime-policy-security-boundary",
+      "sprint-status-write-security-boundary",
+      "governance-proof-round-1",
+      "governance-proof-round-2"
+    ],
+    "releaseRequiredBindingKinds": [
+      "package_install",
+      "cli_bin",
+      "consumer_compatibility",
+      "packaged_runtime",
+      "security_encoding_persistence",
+      "protected_acceptance_or_proof"
+    ]
+  },
+  "timing": {
+    "unknownDurationMs": 60000,
+    "maxShardDurationMs": 480000,
+    "maxShardsPerLane": 8
+  },
+  "deletion": {
+    "optimizationUseForbidden": true,
+    "requiredReviewMode": "manual_exception",
+    "minimumApprovals": 2,
+    "maxBatchSize": 10,
+    "deterministicReasonCodes": [
+      "EXACT_DUPLICATE",
+      "TARGET_REMOVED",
+      "SELF_PROVING_ORACLE",
+      "REPLACED_BY_CONTRACT_TEST"
+    ],
+    "localReview": {
+      "maxCandidates": 10,
+      "maxCalls": 1,
+      "retries": 0,
+      "timeoutMs": 120000
+    }
+  }
+}

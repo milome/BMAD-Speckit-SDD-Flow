@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "goal-contract-source-grounded-coverage-receipt/v1",
+  "title": "Goal Contract Source-Grounded Coverage Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "decision",
+    "sourceCoverageAuthority",
+    "partitionPlanHash",
+    "partitionSetHash",
+    "sourceAuthorityBundleHash",
+    "specSpanRegistryHash",
+    "specSpanRefCount",
+    "specSpanRefSetHash",
+    "partitionCount",
+    "topologicalOrderHash",
+    "dependencyEdgeSetHash",
+    "dimensions",
+    "receiptHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-source-grounded-coverage-receipt/v1"
+    },
+    "decision": { "const": "pass" },
+    "sourceCoverageAuthority": {
+      "const": "canonical_parent_source"
+    },
+    "partitionPlanHash": { "$ref": "#/$defs/hash" },
+    "partitionSetHash": { "$ref": "#/$defs/hash" },
+    "sourceAuthorityBundleHash": { "$ref": "#/$defs/hash" },
+    "specSpanRegistryHash": { "$ref": "#/$defs/hash" },
+    "specSpanRefCount": { "type": "integer", "minimum": 0 },
+    "specSpanRefSetHash": { "$ref": "#/$defs/hash" },
+    "partitionCount": { "type": "integer", "minimum": 1 },
+    "topologicalOrderHash": { "$ref": "#/$defs/hash" },
+    "dependencyEdgeSetHash": { "$ref": "#/$defs/hash" },
+    "dimensions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceObligations",
+        "traceSlices",
+        "tasks",
+        "acceptance",
+        "commands",
+        "evidence",
+        "subordinateDeclaredSources"
+      ],
+      "properties": {
+        "sourceObligations": { "$ref": "#/$defs/dimension" },
+        "traceSlices": { "$ref": "#/$defs/dimension" },
+        "tasks": { "$ref": "#/$defs/dimension" },
+        "acceptance": { "$ref": "#/$defs/dimension" },
+        "commands": { "$ref": "#/$defs/dimension" },
+        "evidence": { "$ref": "#/$defs/dimension" },
+        "subordinateDeclaredSources": {
+          "$ref": "#/$defs/dimension"
+        }
+      }
+    },
+    "receiptHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "dimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requiredCount",
+        "coveredCount",
+        "requiredSetHash",
+        "coveredSetHash"
+      ],
+      "properties": {
+        "requiredCount": { "type": "integer", "minimum": 0 },
+        "coveredCount": { "type": "integer", "minimum": 0 },
+        "requiredSetHash": { "$ref": "#/$defs/hash" },
+        "coveredSetHash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

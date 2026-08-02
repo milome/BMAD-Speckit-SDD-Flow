@@ -1,6 +1,6 @@
 ---
 name: multi-view-doc-review-loop
-description: Run a closed-loop multi-agent audit for goal execution contracts, requirements contracts, implementation plans, and handoff documents. Use three parallel perspectives to check goal semantics, execution determinism, acceptance completeness, modification paths, and project best-practice compliance, then centralize fixes and re-review until no material issues remain.
+description: Use when an execution-critical contract, implementation plan, requirements document, or handoff needs multi-perspective audit and reliable convergence.
 ---
 
 # Multi-View Doc Review Loop
@@ -11,7 +11,12 @@ This is an orchestration skill. Do not duplicate the full rules from `grill-with
 
 ## Core Rule
 
-Run three independent review perspectives, make all edits in the main session, then send the updated diff back for re-review. Repeat until every perspective returns `No material issues found` or the loop reaches the iteration limit.
+Use one hash-bound convergence controller. Run the required independent perspectives once against a frozen target, batch fix accepted findings, and selectively revalidate only perspectives invalidated by the change. Do not stack an independent docs-review loop on top.
+
+Audit-profile rule:
+
+- `standalone_goal_contract`: the latest-hash three-perspective PASS is terminal; `finalDocsReviewRequired: false`.
+- Other document workflows: preserve their existing single final docs-review behavior unless their own governing contract says otherwise.
 
 ## Main Agent Orchestration Control
 
@@ -20,10 +25,35 @@ The Main Agent owns the full control loop. Subagents provide read-only findings 
 - Main Agent dispatches each review round, names the three perspectives, and records the target file set, diff, or PR under review.
 - Main Agent requires every subagent to return findings to the main Agent; subagents must not patch files, stage files, commit files, run final verification, or declare completion.
 - Main Agent merges findings, deduplicates overlaps, decides whether each issue is accepted, rejected, or blocked by a user decision, and updates the disposition table.
-- Main Agent applies all allowed fixes in the main session after merging findings.
-- Main Agent resumes the loop after fixes by sending the updated diff and disposition table back to all three perspectives.
-- Main Agent halts the loop when a required user decision is unresolved, repository evidence contradicts the requested contract, three full review rounds have completed with remaining material issues, or every perspective returns `No material issues found`.
+- Main Agent MUST NOT edit the target while an audit epoch is frozen or reviewing.
+- Main Agent applies one batch fix in the main session only after the active epoch closes.
+- Main Agent computes the changed semantic slices and revalidates only perspectives selected by the Selective Revalidation Matrix.
+- Main Agent allows at most two audit epochs in one convergence cycle: one initial epoch and one repair epoch.
+- Main Agent uses one wait deadline of `180000` milliseconds. If a required reviewer misses the deadline, the Main Agent performs that perspective locally against the same target hash instead of waiting again.
+- After any required reviewer times out once, keep that perspective local for the remainder of the convergence run; do not redispatch it in later epochs or internal cycles.
+- Existing user authorization remains valid across internal convergence cycles until convergence succeeds or a real user decision, destructive approval, missing capability, credential requirement, or directly conflicting user change blocks progress.
+- A two-epoch cycle boundary is internal bookkeeping, not a user-facing stop condition. If deterministic repairs remain after epoch 2, close the cycle and immediately start the next internal cycle under the existing authorization.
+- Main Agent halts only when a required user decision is unresolved, repository evidence contradicts the requested contract, an external capability is unavailable, a directly conflicting user change appears, or all required latest-hash receipts pass.
 - Main Agent performs the final verification commands, checks encoding integrity when text files changed, and writes the final response with round count, fixed issues, unresolved risks, and evidence.
+
+## Audit Snapshot Barrier
+
+Before dispatch, create an audit binding containing:
+
+```yaml
+auditEpochId: unique_epoch_id
+targetPath: repository_relative_path
+targetHash: lowercase_sha256_of_exact_target_bytes
+sourceHash: source_hash_or_none
+repositoryIdentity: current_repository_identity
+state: frozen
+```
+
+- Every reviewer request and receipt MUST carry `auditEpochId` and `targetHash`.
+- Reviewers verify the target hash before reading and before returning a verdict.
+- A hash mismatch sets the epoch to `superseded`; cancel or ignore outstanding work and do not wait for its verdict.
+- Receipts from different epochs or target hashes MUST NOT be combined.
+- Non-mutating checks may run in parallel. Any target edit requires closing or superseding the epoch first.
 
 ## Scope
 
@@ -88,20 +118,36 @@ Check:
 
 Primary question: does the contract point to the right files and enforce the right engineering constraints?
 
-## Loop Workflow
+## Convergence Workflow
 
 1. Identify the review target: files, diff, pasted content, or PR.
 2. Determine whether the user asked for `review only` or `review and fix`.
 3. If key context is missing and cannot be found by scanning the repository, ask one focused question before starting.
-4. Dispatch three subagents in parallel, one per perspective.
-5. Require subagents to read only and produce issues; they must not edit files.
-6. Merge findings in the main session.
-7. Deduplicate overlapping issues and preserve the strongest evidence.
-8. Mark issues that require user decisions.
-9. If a user decision is required, ask one question at a time, following `grill-with-docs`.
-10. Apply fixes only from the main session when fixing is allowed.
-11. Send the updated diff and disposition table back to all three perspectives.
-12. Continue until all perspectives return `No material issues found` or three full review rounds have completed.
+4. Run deterministic structure, placeholder, identifier, reference, hash, and applicable command-portability checks before model review.
+5. Freeze epoch 1 and dispatch the required perspectives in parallel against one `targetHash`.
+6. Wait once for at most `180000` milliseconds; perform any timed-out required perspective locally against the frozen target.
+7. Merge and deduplicate findings, then close epoch 1.
+8. Mark findings as accepted, rejected with evidence, or blocked by a user decision.
+9. Apply one batch fix in the main session when fixing is allowed.
+10. Compute changed semantic slices and select invalidated perspectives with the Selective Revalidation Matrix.
+11. If no perspective is invalidated, rerun deterministic checks and apply the active audit-profile completion rule.
+12. Otherwise freeze epoch 2 and run only invalidated perspectives against the new hash.
+13. If epoch 2 still has a deterministically repairable Blocker or Major issue, close the current internal cycle, batch all known occurrences into one repair, and start the next internal cycle without asking the user to continue.
+14. For `standalone_goal_contract`, finish after latest-hash perspective closure and deterministic checks; do not run final docs-review.
+15. For other document workflows, retain one final docs-review as a leaf check. If it changes governed semantics, start the next internal convergence cycle; otherwise rerun deterministic checks and finish.
+
+## Selective Revalidation Matrix
+
+| Changed slice | Required revalidation |
+|---|---|
+| Formatting, spelling, heading, table layout | Deterministic checks; retained final docs-review only when the active non-standalone profile requires it |
+| File paths, commands, tests, execution order | Execution Determinism; Change Path |
+| Acceptance, evidence, traceability | Goal Semantics; Execution Determinism |
+| Goal, scope, non-goal, authority | All three perspectives |
+| Schema, release, installation, security boundary | Execution Determinism; Change Path; Goal Semantics when behavior or authority changes |
+| Unknown or unprovable impact | All three perspectives |
+
+An unaffected perspective may carry forward only when the receipt records the previous hash, current hash, changed slices, governed slices, and a deterministic preservation reason.
 
 ## Subagent Output Format
 
@@ -110,6 +156,10 @@ Require every subagent to use this format:
 ```markdown
 ## Perspective
 Goal Semantics and Boundaries | Execution Determinism and Acceptance | Change Path and Project Practice
+
+## Audit Binding
+auditEpochId: ...
+targetHash: ...
 
 ## Issues
 **Issue 1: [Brief title]**
@@ -163,13 +213,14 @@ Use stable IDs:
 
 ## Stop Conditions
 
-Stop successfully when all three perspectives return `No material issues found`.
+Stop successfully when deterministic checks pass, every required perspective has a PASS receipt for the latest hash or a valid selective carry-forward receipt, no Blocker or Major remains, the active audit-profile completion rule is satisfied, and encoding verification passes.
 
 Stop with residual risks when:
 
-- Three full review rounds have completed and material issues remain.
 - A required user decision is still unresolved.
 - Repository evidence contradicts the requested contract and cannot be reconciled safely.
 - The target document is missing required context and the context cannot be inferred.
+- An audit target changes while frozen and the replacement hash cannot be established.
+- The same material blocker persists across three internal cycles without a deterministic repair and cannot progress without user input or an external-state change.
 
-In the final response, report the number of review rounds, the issues fixed, unresolved risks, and verification evidence.
+In the final response, report epoch IDs, latest target hash, required and carried-forward perspectives, timeout takeovers, issues fixed, the audit-profile completion result, unresolved risks, and verification evidence.

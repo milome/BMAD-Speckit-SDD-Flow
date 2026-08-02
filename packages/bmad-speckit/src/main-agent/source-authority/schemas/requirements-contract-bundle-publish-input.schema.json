@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-bundle-publish-input.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["requirementRecord", "sourceDocument", "receipt"],
+  "properties": {
+    "cwd": { "type": "string", "minLength": 1 },
+    "requirementRecord": { "type": "string", "minLength": 1 },
+    "sourceDocument": { "type": "string", "minLength": 1 },
+    "receipt": { "type": "string", "minLength": 1 },
+    "json": { "type": "boolean" }
+  }
+}

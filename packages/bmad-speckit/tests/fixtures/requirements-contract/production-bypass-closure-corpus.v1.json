@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "requirements-contract-production-bypass-closure-corpus/v1",
+  "cases": [
+    { "caseId": "checkpoint-validator-missing", "metric": "checkpointReceiptWithoutSemanticValidatorCount", "kind": "zero_count", "injectedValue": 1 },
+    { "caseId": "blocked-checkpoint-completed", "metric": "blockedCheckpointMarkedCompletedCount", "kind": "zero_count", "injectedValue": 1 },
+    { "caseId": "source-prd-lint-bypass", "metric": "sourcePrdLintBypassProgressionCount", "kind": "zero_count", "injectedValue": 1 },
+    { "caseId": "explicit-six-model-pass", "metric": "explicitSixModelStatusPassAuthorityCount", "kind": "zero_count", "injectedValue": 1 },
+    { "caseId": "architecture-hash-only-pass", "metric": "architectureHashOnlyPassCount", "kind": "zero_count", "injectedValue": 1 },
+    { "caseId": "task-report-command-pass", "metric": "taskReportCommandSuccessSynthesisCount", "kind": "zero_count", "injectedValue": 1 },
+    { "caseId": "task-report-closure", "metric": "taskReportRequirementClosureCount", "kind": "zero_count", "injectedValue": 1 },
+    { "caseId": "command-id-substring", "metric": "commandIdSubstringCoverageCount", "kind": "zero_count", "injectedValue": 1 },
+    { "caseId": "missing-artifact-accepted", "metric": "missingArtifactAcceptedCount", "kind": "zero_count", "injectedValue": 1 },
+    { "caseId": "artifact-attempt-mismatch", "metric": "artifactCurrentAttemptMismatchCount", "kind": "zero_count", "injectedValue": 1 },
+    { "caseId": "historical-packet-selected", "metric": "historicalPacketSelectionCount", "kind": "zero_count", "injectedValue": 1 },
+    { "caseId": "packet-transaction-unbound", "metric": "packetWithoutTransactionBindingCount", "kind": "zero_count", "injectedValue": 1 },
+    { "caseId": "routing-only-package-action", "metric": "packageRuntimeRoutingOnlyActionCount", "kind": "zero_count", "injectedValue": 1 },
+    { "caseId": "installed-package-mismatch", "metric": "installedPackageActionBehaviorMismatchCount", "kind": "zero_count", "injectedValue": 1 },
+    { "caseId": "synthetic-auditor-no-gap", "metric": "syntheticCriticalAuditorNoGapCount", "kind": "zero_count", "injectedValue": 1 },
+    { "caseId": "auditor-provider-mismatch", "metric": "criticalAuditorProviderIdentityMismatchCount", "kind": "zero_count", "injectedValue": 1 },
+    { "caseId": "oracle-closure-missing", "metric": "currentAttemptClosureWithoutIndependentOracleCount", "kind": "zero_count", "injectedValue": 1 },
+    { "caseId": "checkpoint-validator-coverage-gap", "metric": "checkpointSemanticValidatorCoverage", "kind": "coverage", "injectedValue": 0.5 },
+    { "caseId": "command-receipt-coverage-gap", "metric": "commandReceiptCoverage", "kind": "coverage", "injectedValue": 0.5 },
+    { "caseId": "artifact-readback-coverage-gap", "metric": "artifactReadbackCoverage", "kind": "coverage", "injectedValue": 0.5 },
+    { "caseId": "dispatch-pointer-coverage-gap", "metric": "currentDispatchPointerCoverage", "kind": "coverage", "injectedValue": 0.5 },
+    { "caseId": "package-action-coverage-gap", "metric": "packageActionSemanticBindingCoverage", "kind": "coverage", "injectedValue": 0.5 },
+    { "caseId": "auditor-projection-coverage-gap", "metric": "criticalAuditorProjectionCoverage", "kind": "coverage", "injectedValue": 0.5 }
+  ]
+}

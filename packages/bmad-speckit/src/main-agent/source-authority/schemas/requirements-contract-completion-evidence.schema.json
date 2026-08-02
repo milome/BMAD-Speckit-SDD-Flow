@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-completion-evidence.schema.json",
+  "title": "Requirements Contract Completion Evidence",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "transactionId",
+    "implementationAttemptId",
+    "auditAttemptId",
+    "architectureAuditAttemptId",
+    "preCandidateAuditAttemptId",
+    "finalAuditAttemptId",
+    "evidenceBundleId",
+    "contractHash",
+    "sourcePlanHash",
+    "sourceAmendmentHashes",
+    "aggregateAmendmentHash",
+    "semanticModelHash",
+    "sequenceContractHash",
+    "closureReportHash",
+    "commandRunsHash", "acceptanceTraceMatrixHash", "sourceCoverageHash", "evaluationReportHash",
+    "intakeReceiptPath", "intakeReceiptHash", "intentLineageLedgerPath", "intentLineageLedgerHash",
+    "semanticConservationManifestPath", "semanticConservationManifestHash", "sourceRootInventoryHash",
+    "changedPathManifestHash", "detachedTestRerunHash", "testSourceAuditHash", "judgeChallengeTestsHash",
+    "canonicalAssetsManifestHash", "consumerRegistryHash", "semanticResolutionReceiptsHash", "grillSessionHash",
+    "decisionReceiptsHash", "renderFieldCoverageHash", "redQualificationHash", "semanticMutationReportHash",
+    "planningArtifactResolverManifestHash", "requirementSourceRegistryHash", "legacyPrdMigrationReceiptHash",
+    "projectProfileManifestHash", "sequenceStepTraceMatrixHash", "implementationTaskDagHash", "deploymentDeltaHash",
+    "sequenceProjectionReportHash", "observedSequenceReceiptHash", "modelPacketPath", "modelPacketHash",
+    "transactionManifestPath", "transactionManifestHash", "generationReceiptPath", "generationReceiptHash",
+    "humanPromptPath", "humanPromptHash", "goalExecutionApplicability", "goalExecutionPath", "goalExecutionHash",
+    "productionArgvHash", "normalizedContractPackageManifestHash", "compactTraceMatrixParityHash",
+    "businessBehaviorDeltaHash", "implementationImpactMapHash", "readFacadeParityHash",
+    "normalizedContractScaleReportHash", "normalizedContractActivationReceiptHash",
+    "safeWriteTargetRegistryHash", "receiptCompleteExactTargetSetHash",
+    "safeWriteReceiptManifestHash", "terminalFinalizationTargetSetDeclarationHash",
+    "amend06Authority", "amend06SourceHash", "amend06SourceBytes", "amend06SourceLines",
+    "amend06PreviousAggregateSourceAmendmentHash", "amend07Authority", "amend07SourceHash",
+    "amend07SourceBytes", "amend07SourceLines", "amend07PreviousAggregateSourceAmendmentHash",
+    "checkpointSemanticValidationReceiptsHash", "checkpointProgressConsistencyHash",
+    "sourcePrdLintStateTransitionHash", "runtimeStatusAuthorityHash", "commandExecutionReceiptBundleHash",
+    "evidenceArtifactReadbackHash", "currentDispatchPointerReceiptHash",
+    "packageRuntimeActionBindingManifestHash", "criticalAuditorIndependenceReportHash",
+    "productionBypassClosureReportHash", "sixModelStatusProjectionParityHash",
+    "amend08Authority", "amend08SourceHash", "amend08SourceBytes", "amend08SourceLines",
+    "amend08PreviousAggregateSourceAmendmentHash", "amend09AuthorityPath", "amend09AuthorityHash",
+    "amend09SourceHash", "amend09SourceBytes", "amend09SourceLines", "amend09PreviousContractHash",
+    "amend09PreviousAggregateSourceAmendmentHash", "amend10AuthorityPath", "amend10AuthorityHash",
+    "amend10ArchitectureWaveAuthorityPath", "amend10ArchitectureWaveAuthorityHash", "amend10SourceHash",
+    "amend10SourceBytes", "amend10SourceLines", "amend10PreviousContractHash",
+    "amend10PreviousAggregateSourceAmendmentHash", "contractPromotionReceiptPath",
+    "contractPromotionReceiptHash", "contractPromotionReadbackReceiptPath",
+    "contractPromotionReadbackReceiptHash", "architecturePhaseRootHash", "preCandidatePhaseRootHash",
+    "finalPhaseRootHash", "candidateRevocationReceiptPath", "candidateRevocationReceiptHash",
+    "candidateDownstreamInvalidationSetPath", "candidateDownstreamInvalidationSetHash",
+    "finalPhaseSourceReceiptSetHash", "recoveryLineageReceiptHash", "recoveryLineageFinalizationReceiptHash",
+    "stageFiveStarAuditMatrixHash", "stageGapLedgerHash", "realConsumerJourneyEvidenceHash",
+    "confirmationReceiptBundleHash", "stageFinalGateReportHash", "judgeCredentialInitializationReceiptHash",
+    "judgeProviderCapabilitySelectionHash", "judgeProviderSecurityParityHash", "judgeCapabilityReceiptHash",
+    "judgeSelectionReceiptHash", "baseJudgeInputBundleHash", "finalJudgeInputBundleHash",
+    "judgeAuditUniverseHash", "judgeAuditUnitSetHash", "EVD-16Hash", "finalSummaryHash",
+    "coverage",
+    "criticalMetrics",
+    "evidenceIndex",
+    "artifactIndex"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-completion-evidence/v1" },
+    "transactionId": { "type": "string", "minLength": 1 },
+    "implementationAttemptId": { "type": "string", "minLength": 1 },
+    "auditAttemptId": { "type": "string", "minLength": 1 },
+    "architectureAuditAttemptId": { "type": "string", "minLength": 1 },
+    "preCandidateAuditAttemptId": { "type": "string", "minLength": 1 },
+    "finalAuditAttemptId": { "type": "string", "minLength": 1 },
+    "evidenceBundleId": { "type": "string", "minLength": 1 },
+    "contractHash": { "$ref": "#/$defs/sha256" },
+    "sourcePlanHash": { "$ref": "#/$defs/sha256" },
+    "sourceAmendmentHashes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/sha256" }
+    },
+    "aggregateAmendmentHash": { "$ref": "#/$defs/sha256" },
+    "semanticModelHash": { "$ref": "#/$defs/sha256" },
+    "sequenceContractHash": { "$ref": "#/$defs/sha256" },
+    "closureReportHash": { "$ref": "#/$defs/sha256" },
+    "goalExecutionApplicability": {
+      "enum": ["required", "not_applicable"]
+    },
+    "goalExecutionPath": {
+      "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }]
+    },
+    "goalExecutionHash": {
+      "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }]
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["storyIds", "acceptanceIds", "traceIds", "commandIds"],
+      "properties": {
+        "storyIds": { "$ref": "#/$defs/idList" },
+        "acceptanceIds": { "$ref": "#/$defs/idList" },
+        "traceIds": { "$ref": "#/$defs/idList" },
+        "commandIds": { "$ref": "#/$defs/idList" }
+      }
+    },
+    "criticalMetrics": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "type": "number" }
+    },
+    "evidenceIndex": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/evidenceRef" }
+    },
+    "artifactIndex": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/artifactRef" }
+    }
+  },
+  "patternProperties": {
+    "^(?!goalExecutionHash$)[A-Za-z0-9-]+Hash$": { "$ref": "#/$defs/sha256" },
+    "^(?!goalExecutionPath$)[A-Za-z0-9]+Path$": { "type": "string", "minLength": 1 },
+    "^amend(06|07|08|09|10)Source(Bytes|Lines)$": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "^amend(06|07|08)Authority$": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": true,
+  "oneOf": [
+    {
+      "properties": {
+        "goalExecutionApplicability": { "const": "required" },
+        "goalExecutionPath": { "type": "string", "minLength": 1 },
+        "goalExecutionHash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    {
+      "properties": {
+        "goalExecutionApplicability": { "const": "not_applicable" },
+        "goalExecutionPath": { "type": "null" },
+        "goalExecutionHash": { "type": "null" }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "idList": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "evidenceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidenceId", "path", "hash", "decision"],
+      "properties": {
+        "evidenceId": { "type": "string", "pattern": "^EVD-[0-9]{2}$" },
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/sha256" },
+        "decision": { "const": "PASS" }
+      }
+    },
+    "artifactRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifactId", "path", "hash", "decision"],
+      "properties": {
+        "artifactId": { "type": "string", "pattern": "^ARTIFACT-[0-9]{2}$" },
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/sha256" },
+        "decision": { "const": "PASS" }
+      }
+    }
+  }
+}

@@ -1,57 +1,78 @@
 ---
+templateSchemaVersion: requirements-contract-discovery-envelope/v1
+artifactRole: discovery_envelope
+authority: none
+workflowType: prd
 stepsCompleted: []
 inputDocuments: []
-workflowType: 'prd'
+discoveryState: in_progress
+transcriptRefs: []
+candidateRefs: []
+openDecisionRefs: []
 ---
 
-# Product Requirements Document - {{project_name}}
+# Product Discovery Envelope - {{project_name}}
 
 **Author:** {{user_name}}
 **Date:** {{date}}
 
-## P0 Journey Inventory
+This envelope preserves non-authoritative discovery state. It cannot declare final
+requirements, trace closure, implementation readiness, or delivery completion.
 
-_List the minimum user journeys that must be runnable for this product to be considered real._
+## Workflow Progress
 
-| Journey ID | Actor | Trigger | Business Completion State | Current Workaround | Priority |
-|------------|-------|---------|---------------------------|--------------------|----------|
-| J01 | [actor] | [trigger] | [observable business done] | [manual workaround / none] | P0 |
+Record workflow progress without treating a completed step as semantic authority.
 
-## Journey Evidence Contract
+| Step | State | Updated by | Evidence ref |
+|---|---|---|---|
+| discovery | not_started | none | none |
 
-_Define how each P0 journey will be proven, not just described._
+## Input References
 
-| Journey ID | Given | When | Then | Success Evidence | Smoke Path | Full E2E / Deferred Reason |
-|------------|-------|------|------|------------------|------------|----------------------------|
-| J01 | [starting state] | [action] | [expected outcome] | [metric / artifact / visible result] | [yes/no + path] | [test id / reason] |
+Bind source documents and external inputs by stable reference. Do not copy them into
+final requirement structures inside this envelope.
 
-## Actor-Permission-State Matrix
+| Input ref | Type | Path or URI ref | Hash | Classification |
+|---|---|---|---|---|
+| INPUT-001 | user_input | pending | pending | unclassified |
 
-_Capture actor, permission, and state transitions that affect journey execution._
+## Discovery Transcript References
 
-| Actor | Permission Boundary | Start State | End State | Notes |
-|------|----------------------|-------------|-----------|-------|
-| [actor] | [rbac / capability] | [state] | [state] | [notes] |
+Preserve immutable session, turn, excerpt, and span references for later Intake
+Receipt construction.
 
-## Failure Matrix
+| Transcript ref | Session ref | Turn ref | Excerpt or span ref | Hash |
+|---|---|---|---|---|
+| TRANSCRIPT-001 | pending | pending | pending | pending |
 
-_Document the failure triggers that would break the core journeys and what the user sees next._
+## Semantic Candidate References
 
-| Journey ID | Failure Trigger | User-Visible Impact | Recovery Path | Owner |
-|------------|-----------------|---------------------|---------------|-------|
-| J01 | [trigger] | [impact] | [retry / fallback / support path] | [owner] |
+Candidates are hypotheses only. Resolver and Grill decisions are required before any
+candidate can become an authorized semantic node.
 
-## Core Business Invariants
+| Candidate ref | Candidate type | Source refs | State | Decision receipt ref |
+|---|---|---|---|---|
+| CANDIDATE-001 | model_hypothesis | pending | unresolved | none |
 
-_List the business truths that must hold across all implementations and future planning._
+## Open Decisions
 
-- INV-01: [business invariant]
-- INV-02: [business invariant]
+Keep unresolved business decisions explicit and dependency ordered.
 
-## Deferred Ambiguities
+| Decision ref | Question | Blocking dependency | Owner | State |
+|---|---|---|---|---|
+| DECISION-001 | pending | none | user | unresolved |
 
-_Any unresolved ambiguity must be explicit and owned. Silence is not allowed._
+## Discovery Notes
 
-| Ambiguity ID | Question | Why It Matters | Owner | Resolution Gate |
-|--------------|----------|----------------|-------|-----------------|
-| DA-01 | [open question] | [impact] | [owner] | [prd / architecture / readiness] |
+Capture product context, users, journeys, constraints, alternatives, and rejected
+options as discovery evidence. These notes remain non-authoritative until promoted
+through Intake, lineage, Resolver, Grill, validation, and registered rendering.
+
+## Materialization Handoff
+
+When discovery is complete, route this envelope through the registered artifact-role
+classifier. Product documents use the Product PRD Renderer. Requirement source
+documents require a stable requirement identity, Intake Receipt, Intent Lineage
+Ledger, Semantic Conservation Manifest, Validation Facade, Canonical Renderer, Safe
+Writer, readback, and registration. No template step or local edit may bypass that
+chain.

@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-discovery-session.schema.json",
+  "title": "Requirements Contract Discovery Session",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "sessionId",
+    "workflowId",
+    "authorityClass",
+    "startedAt",
+    "turns",
+    "excerpts",
+    "sessionHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-discovery-session/v1"
+    },
+    "sessionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "workflowId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "authorityClass": {
+      "const": "none"
+    },
+    "startedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "turns": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "turnId",
+          "messageId",
+          "actorIdentityClass",
+          "capturedAt",
+          "content",
+          "contentHash"
+        ],
+        "properties": {
+          "turnId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "messageId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actorIdentityClass": {
+            "type": "string",
+            "minLength": 1
+          },
+          "capturedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contentHash": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "excerpts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "excerptId",
+          "turnId",
+          "messageId",
+          "startUtf8Byte",
+          "endUtf8ByteExclusive",
+          "content",
+          "contentHash"
+        ],
+        "properties": {
+          "excerptId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "turnId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "messageId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "startUtf8Byte": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "endUtf8ByteExclusive": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contentHash": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "sessionHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

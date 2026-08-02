@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-clean-materialization-receipt.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "materializationRunId",
+    "sourceSnapshotPaths",
+    "sourceSnapshotHash",
+    "sourceManifestPath",
+    "sourceManifestHash",
+    "sourceFileCount",
+    "materializationRoot",
+    "sourceWasCleanOfBuildOutputs",
+    "installReceiptPath",
+    "installReceiptHash",
+    "buildReceiptPath",
+    "buildReceiptHash",
+    "runtimeBuildAuthorityReceiptPath",
+    "runtimeBuildAuthorityReceiptHash",
+    "currentDistHash",
+    "freshDistHash",
+    "currentPackageHash",
+    "freshPackageHash",
+    "distParity",
+    "packageParity",
+    "startedAt",
+    "completedAt",
+    "decision",
+    "receiptHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-clean-materialization-receipt/v1"
+    },
+    "materializationRunId": {
+      "type": "string",
+      "pattern": "^RUN-[A-Za-z0-9._-]+$"
+    },
+    "sourceSnapshotPaths": { "$ref": "#/$defs/nonEmptyStrings" },
+    "sourceSnapshotHash": { "$ref": "#/$defs/sha256" },
+    "sourceManifestPath": { "type": "string", "minLength": 1 },
+    "sourceManifestHash": { "$ref": "#/$defs/sha256" },
+    "sourceFileCount": { "type": "integer", "minimum": 1 },
+    "materializationRoot": { "type": "string", "minLength": 1 },
+    "sourceWasCleanOfBuildOutputs": { "const": true },
+    "installReceiptPath": { "type": "string", "minLength": 1 },
+    "installReceiptHash": { "$ref": "#/$defs/sha256" },
+    "buildReceiptPath": {
+      "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }]
+    },
+    "buildReceiptHash": {
+      "anyOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }]
+    },
+    "runtimeBuildAuthorityReceiptPath": {
+      "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }]
+    },
+    "runtimeBuildAuthorityReceiptHash": {
+      "anyOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }]
+    },
+    "currentDistHash": { "$ref": "#/$defs/sha256" },
+    "freshDistHash": {
+      "anyOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }]
+    },
+    "currentPackageHash": { "$ref": "#/$defs/sha256" },
+    "freshPackageHash": {
+      "anyOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }]
+    },
+    "distParity": { "type": "boolean" },
+    "packageParity": { "type": "boolean" },
+    "startedAt": { "type": "string", "format": "date-time" },
+    "completedAt": { "type": "string", "format": "date-time" },
+    "decision": { "enum": ["pass", "block"] },
+    "receiptHash": { "$ref": "#/$defs/sha256" }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "nonEmptyStrings": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

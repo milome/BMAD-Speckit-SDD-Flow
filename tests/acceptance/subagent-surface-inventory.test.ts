@@ -60,21 +60,12 @@ function registryRows(options: { unsafeEnvelope?: boolean; omitBmm?: boolean } =
         - canAffectControlFlow true but requiredEnvelope false
         - renderer or tests hardcode partial surface list as authority
   subagentExecutionSurfaceRegistry:
-    - surfaceId: main_agent_codex_worker_adapter
-      path: packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-codex-worker-adapter.ts
-      surfaceType: no_hook_worker_adapter
-      classification: control_worker
-      canAffectControlFlow: true
-      requiredEnvelope: ${options.unsafeEnvelope ? 'false' : 'true'}
-      currentAttemptRevalidationRequired: true
-      linkedRequirements:
-        - MUST-045
     - surfaceId: standalone_task_skills
       path: _bmad/codex/skills/bmad-standalone-tasks/**
       surfaceType: skill_dispatch
       classification: control_worker
       canAffectControlFlow: true
-      requiredEnvelope: true
+      requiredEnvelope: ${options.unsafeEnvelope ? 'false' : 'true'}
       currentAttemptRevalidationRequired: true
       linkedRequirements:
         - MUST-045
@@ -129,19 +120,6 @@ ${registryRows(options)}
       currentArchitectureConfirmationHash: ARCHITECTURE_HASH,
     },
   });
-  writeText(
-    path.join(
-      root,
-      'packages',
-      'bmad-speckit',
-      'src',
-      'main-agent',
-      'source-authority',
-      'scripts',
-      'main-agent-codex-worker-adapter.ts'
-    ),
-    'export const prompt = "Codex worker adapter requires subagent envelope";\n'
-  );
   writeText(
     path.join(root, '_bmad', 'codex', 'skills', 'bmad-standalone-tasks', 'SKILL.md'),
     'Use Agent tool subagent for delegated execution.\n'
@@ -226,7 +204,7 @@ describe('subagent surface inventory', () => {
       expect(report.blockingIssues as string[]).toEqual([]);
       expect(
         (report.rows as Array<Record<string, unknown>>).some(
-          (row) => row.registrySurfaceId === 'main_agent_codex_worker_adapter'
+          (row) => row.registrySurfaceId === 'standalone_task_skills'
         )
       ).toBe(true);
       expect(
@@ -269,7 +247,7 @@ describe('subagent surface inventory', () => {
       expect(code).toBe(1);
       expect(report.decision).toBe('blocked');
       expect(report.blockingIssues as string[]).toContain(
-        'registry_control_flow_without_envelope:main_agent_codex_worker_adapter'
+        'registry_control_flow_without_envelope:standalone_task_skills'
       );
     } finally {
       rmSync(root, { recursive: true, force: true });

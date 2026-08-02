@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-reverse-audit-input.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "judgeConfig",
+    "phase",
+    "phaseRoot",
+    "phaseAuditAttemptId",
+    "auditContext",
+    "capabilityReceipt",
+    "selectionReceipt",
+    "outTestSourceAudit",
+    "outChallengeTests",
+    "outInitialJudge",
+    "outFinalJudge",
+    "projectionMode"
+  ],
+  "properties": {
+    "cwd": { "type": "string", "minLength": 1 },
+    "contract": { "type": "string", "minLength": 1 },
+    "judgeConfig": { "type": "string", "minLength": 1 },
+    "phase": { "enum": ["pre-candidate", "final"] },
+    "phaseRoot": { "type": "string", "minLength": 1 },
+    "phaseAuditAttemptId": { "type": "string", "minLength": 1 },
+    "auditContext": { "type": "string", "minLength": 1 },
+    "capabilityReceipt": { "type": "string", "minLength": 1 },
+    "selectionReceipt": { "type": "string", "minLength": 1 },
+    "outTestSourceAudit": { "type": "string", "minLength": 1 },
+    "outChallengeTests": { "type": "string", "minLength": 1 },
+    "outInitialJudge": { "type": "string", "minLength": 1 },
+    "outFinalJudge": { "type": "string", "minLength": 1 },
+    "projectionMode": { "const": "final-only" },
+    "json": { "type": "boolean" }
+  }
+}

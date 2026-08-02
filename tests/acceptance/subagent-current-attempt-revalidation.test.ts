@@ -118,7 +118,7 @@ function envelope(root: string, artifactRefs: Record<string, unknown>[]) {
     subtaskId: 'subtask-current-attempt',
     packetId: 'packet-current-attempt',
     packetKind: 'execution',
-    executorKind: 'codex_worker_adapter',
+    executorKind: 'codex_spawn_agent',
     executorRole: 'implementation-worker',
     decisionAuthority: 'none',
     sourceDocumentHash: SOURCE_HASH,

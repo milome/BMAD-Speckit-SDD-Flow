@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-critical-auditor-external-adapter-result.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "providerRun", "response"],
+  "properties": {
+    "schemaVersion": { "const": "critical-auditor-external-adapter-result/v1" },
+    "providerRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "providerId",
+        "requestedModel",
+        "model",
+        "transport",
+        "adapterRef",
+        "apiStyle",
+        "configuredBaseUrlHash",
+        "credentialRevision",
+        "independenceClass",
+        "providerRegistryHash",
+        "providerConfigurationHash",
+        "providerRunId"
+      ],
+      "properties": {
+        "providerId": { "type": "string", "minLength": 1 },
+        "requestedModel": { "type": ["string", "null"], "minLength": 1 },
+        "model": { "type": "string", "minLength": 1 },
+        "transport": { "type": "string", "minLength": 1 },
+        "adapterRef": { "type": "string", "minLength": 1 },
+        "apiStyle": { "type": "string", "minLength": 1 },
+        "configuredBaseUrlHash": { "$ref": "#/$defs/hash" },
+        "credentialRevision": { "type": "integer", "minimum": 1 },
+        "independenceClass": { "type": "string", "minLength": 1 },
+        "providerRegistryHash": { "$ref": "#/$defs/hash" },
+        "providerConfigurationHash": { "$ref": "#/$defs/hash" },
+        "providerRunId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "response": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "verdict",
+        "roundIndex",
+        "transactionId",
+        "namespaceVersion",
+        "requestHash",
+        "sourceHash",
+        "sourceDocumentHash",
+        "sourceBytesHash",
+        "semanticModelHash",
+        "implementationConfirmationHash",
+        "packetHash",
+        "projectionSetHash",
+        "gateDryRunHash",
+        "reconciliationIssueCount",
+        "gapCandidates",
+        "validatedGaps",
+        "rejectedGapCandidates",
+        "mutationPressureFindings",
+        "overBroadTaskFindings",
+        "missingProjectionFindings",
+        "invalidProofFindings",
+        "legacyBypassFindings",
+        "sourceMaterializationFindings",
+        "reviewedMustRefs",
+        "reviewedProjectionRefs",
+        "checkedProjectionGroups",
+        "checkedProjectionQualityRuleCodes",
+        "priorFindingsDisposition",
+        "falsePositiveProofs",
+        "rationale"
+      ],
+      "properties": {
+        "schemaVersion": { "const": "critical-auditor-round-response/v1" },
+        "verdict": {
+          "enum": [
+            "no_new_valid_gap",
+            "no_new_confirmation_blocking_gap",
+            "new_valid_gap",
+            "insufficient_audit",
+            "blocked"
+          ]
+        },
+        "roundIndex": { "type": "integer", "minimum": 1 },
+        "transactionId": { "type": "string", "minLength": 1 },
+        "namespaceVersion": { "type": "string", "minLength": 1 },
+        "requestHash": { "$ref": "#/$defs/hash" },
+        "sourceHash": { "$ref": "#/$defs/hash" },
+        "sourceDocumentHash": { "$ref": "#/$defs/hash" },
+        "sourceBytesHash": { "$ref": "#/$defs/hash" },
+        "semanticModelHash": { "$ref": "#/$defs/hash" },
+        "implementationConfirmationHash": { "$ref": "#/$defs/hash" },
+        "packetHash": { "$ref": "#/$defs/hash" },
+        "projectionSetHash": { "$ref": "#/$defs/hash" },
+        "gateDryRunHash": { "$ref": "#/$defs/hash" },
+        "reconciliationIssueCount": { "type": "integer", "minimum": 0 },
+        "gapCandidates": { "$ref": "#/$defs/objectArray" },
+        "validatedGaps": { "$ref": "#/$defs/objectArray" },
+        "rejectedGapCandidates": { "$ref": "#/$defs/objectArray" },
+        "mutationPressureFindings": { "$ref": "#/$defs/objectArray" },
+        "overBroadTaskFindings": { "$ref": "#/$defs/objectArray" },
+        "missingProjectionFindings": { "$ref": "#/$defs/objectArray" },
+        "invalidProofFindings": { "$ref": "#/$defs/objectArray" },
+        "legacyBypassFindings": { "$ref": "#/$defs/objectArray" },
+        "sourceMaterializationFindings": { "$ref": "#/$defs/objectArray" },
+        "reviewedMustRefs": { "$ref": "#/$defs/nonEmptyStringArray" },
+        "reviewedProjectionRefs": { "$ref": "#/$defs/nonEmptyStringArray" },
+        "checkedProjectionGroups": { "$ref": "#/$defs/nonEmptyStringArray" },
+        "checkedProjectionQualityRuleCodes": { "$ref": "#/$defs/nonEmptyStringArray" },
+        "priorFindingsDisposition": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["findingRef", "disposition", "evidenceRefs"],
+            "properties": {
+              "findingRef": { "type": "string", "minLength": 1 },
+              "disposition": { "enum": ["new", "resolved", "unchanged", "rejected"] },
+              "evidenceRefs": { "$ref": "#/$defs/nonEmptyStringArray" }
+            }
+          }
+        },
+        "falsePositiveProofs": { "$ref": "#/$defs/objectArray" },
+        "auditReviewScoring": { "type": "object" },
+        "rationale": { "type": "string", "minLength": 1 }
+      }
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "objectArray": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "nonEmptyStringArray": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

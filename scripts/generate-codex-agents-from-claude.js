@@ -94,8 +94,8 @@ function codexizeMarkdown(markdown, relativePath = '') {
     .replace(/Cursor Canonical Base/giu, 'Codex Canonical Base')
     .replace(/Cursor Command/giu, 'Codex command')
     .replace(/Cursor/gu, 'Codex')
-    .replace(/mcp_task/giu, 'Codex worker adapter')
-    .replace(/mcp-task/giu, 'Codex worker adapter')
+    .replace(/mcp_task/giu, 'Codex main-session execution')
+    .replace(/mcp-task/giu, 'Codex main-session execution')
     .replace(/generalPurpose/gu, 'general-purpose')
     .replace(/claude carrier adapter/giu, 'codex carrier adapter')
     .replace(/Claude Code CLI/gu, 'Codex CLI')
@@ -113,8 +113,8 @@ function codexizeMarkdown(markdown, relativePath = '') {
     .replace(/`scripts\/parse-bmad-audit-result\.ts`/gu, '`npx --no-install bmad-speckit run-auditor-host`')
     .replace(/scripts\/parse-bmad-audit-result\.ts/gu, 'npx --no-install bmad-speckit run-auditor-host')
     .replace(/host_role\s*=\s*"?claude-[^"\n]*"?/giu, 'host_role = "codex-no-hooks"')
-    .replace(/閫氳繃 Agent 宸ュ叿璋冪敤/gu, '閫氳繃 Codex worker adapter 璋冪敤')
-    .replace(/閫氳繃 Agent 宸ュ叿鍚姩/gu, '閫氳繃 Codex worker adapter 鍚姩')
+    .replace(/閫氳繃 Agent 宸ュ叿璋冪敤/gu, '通过 Codex 主会话调用')
+    .replace(/閫氳繃 Agent 宸ュ叿鍚姩/gu, '通过 Codex 主会话启动')
     .replace(/@"party-mode-facilitator \(agent\)"/gu, 'party-mode-facilitator');
   if (toPortable(relativePath).startsWith('layers/')) {
     output = modernizeLayerRuntimeControl(output);
@@ -197,7 +197,7 @@ function renderToml(relativePath, markdown) {
   const sourcePath = toPortable(path.join('_bmad', 'claude', 'agents', relativePath));
   const codexMarkdown = codexizeMarkdown(markdown, relativePath);
   const body = [
-    'You are running as a BMAD Codex custom agent on the no-hooks worker adapter.',
+    'You are running as a BMAD Codex custom agent in the current Codex host session.',
     '',
     'BMAD runtime metadata:',
     '- host_role: codex-no-hooks',
@@ -271,11 +271,6 @@ function roleAliases() {
       source: 'bmad-master.md',
       description: 'BMAD general-purpose Codex agent.',
     },
-    {
-      name: 'codex-no-hooks-worker',
-      source: 'speckit-implement.md',
-      description: 'BMAD Codex no-hooks worker.',
-    },
   ];
 }
 
@@ -308,7 +303,7 @@ function renderAliasToml(name, relativePath, markdown, description) {
   const sourcePath = toPortable(path.join('_bmad', 'claude', 'agents', relativePath));
   const codexMarkdown = codexizeMarkdown(markdown, relativePath);
   const body = [
-    'You are running as a BMAD Codex custom agent alias on the no-hooks worker adapter.',
+    'You are running as a BMAD Codex custom agent alias in the current Codex host session.',
     '',
     'BMAD runtime metadata:',
     '- host_role: codex-no-hooks',

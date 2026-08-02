@@ -328,6 +328,82 @@ const requiredArchitectureDiagramTypes = [
   'activity',
 ];
 
+function writeZhLocalizationBundle(): string {
+  const file = path.join(tempDir, 'architecture-localization.zh-CN.json');
+  const mermaidFor = (type: string, scope: 'business' | 'governance') => {
+    const noun = scope === 'business' ? '业务' : '治理';
+    if (type === 'class') return `classDiagram\n  class Component\n  %% ${noun}组件`;
+    if (type === 'state_machine') {
+      return `stateDiagram-v2\n  state "${noun}输入" as Input\n  Input --> Output: ${noun}输出`;
+    }
+    if (type === 'sequence') {
+      return `sequenceDiagram\n  participant A as ${noun}输入\n  participant B as ${noun}输出\n  A->>B: 提交`;
+    }
+    return `flowchart LR\n  输入["${noun}输入"] --> 输出["${noun}输出"]`;
+  };
+  const diagramProjection = (scope: 'business' | 'governance') =>
+    requiredArchitectureDiagramTypes.map((type) => ({
+      id:
+        scope === 'business'
+          ? `BUS-ARCH-VIEW-${type === 'system_architecture' ? 'SYSTEM' : type.replace('state_machine', 'STATE').toUpperCase()}`
+          : `ARCH-VIEW-${type === 'system_architecture' ? 'SYSTEM' : type.replace('state_machine', 'STATE').toUpperCase()}`,
+      title: `${scope === 'business' ? '业务' : '治理'}${type}架构图`,
+      description:
+        scope === 'business'
+          ? '由 authoring agent 提供的消费项目业务架构中文说明。'
+          : '由 authoring agent 提供的需求治理架构中文说明。',
+      mermaid: mermaidFor(type, scope),
+    }));
+  fs.writeFileSync(
+    file,
+    `${JSON.stringify(
+      {
+        language: 'zh-CN',
+        projectionSource: 'authoring_agent',
+        decision: '完整架构待确认',
+        outcome: '确认后进入实施准备',
+        riskStatement: '错误的架构边界可能导致共享契约冲突和不安全的状态推进。',
+        rollbackPlan: '拒绝本次架构确认并基于已确认需求重新生成架构工件。',
+        consumerImpactScan: [
+          {
+            sourceCategory: 'data_model',
+            category: '数据模型',
+            status: '已触发',
+            summary: '数据模型变更需要架构确认。',
+            description: '共享数据契约将受到影响。',
+            requiredDecision: '确认数据模型所有权和兼容边界。',
+          },
+        ],
+        governanceImpactScan: [
+          {
+            sourceCategory: 'orchestration_hook_gate_ingest_rerun_closeout',
+            category: '编排、门禁与受控写入',
+            status: '已触发',
+            summary: '实施准备门禁和受控写入路径受到影响。',
+            description: '架构确认必须保持需求范围和 hash 绑定。',
+            requiredDecision: '确认治理推进仍由受控事件驱动。',
+          },
+        ],
+        fullArchitectureTriggerMatrix: [
+          {
+            sourceTrigger: 'shared_schema_or_contract_changed',
+            trigger: '共享模式或契约发生变更',
+            decision: '已触发',
+            reason: '需求记录模式受到影响。',
+            requiredDecision: '确认共享契约的兼容和回滚边界。',
+          },
+        ],
+        businessArchitectureDiagrams: diagramProjection('business'),
+        governanceArchitectureDiagrams: diagramProjection('governance'),
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
+  return file;
+}
+
 describe('generate-architecture-confirmation-artifact', () => {
   it('generates a requirement-scoped architecture confirmation JSON without mutating the requirement record', () => {
     const fixture = writeFixture();
@@ -343,6 +419,7 @@ describe('generate-architecture-confirmation-artifact', () => {
     ];
     const beforeRecord = fs.readFileSync(fixture.record, 'utf8');
     const out = path.join(tempDir, 'architecture-confirmation.json');
+    const localization = writeZhLocalizationBundle();
     const result = runNode(SCRIPT, [
       '--source',
       fixture.source,
@@ -366,6 +443,8 @@ describe('generate-architecture-confirmation-artifact', () => {
       governanceImpactScan,
       '--full-architecture-trigger-matrix',
       triggerMatrix,
+      '--localization',
+      localization,
       '--json',
     ]);
 
@@ -378,6 +457,8 @@ describe('generate-architecture-confirmation-artifact', () => {
       architectureConfirmationHashFor(artifact, recipe)
     );
     expect(artifact.confirmationPhrase).toContain('确认架构确认进入实施准备');
+    expect(artifact.riskStatementZh).toContain('错误的架构边界');
+    expect(artifact.consumerImpactScan[0].summaryZh).toBe('数据模型变更需要架构确认。');
     expect(artifact.businessArchitectureDiagrams?.map((view: Record<string, unknown>) => view.type)).toEqual(
       requiredArchitectureDiagramTypes
     );
@@ -450,6 +531,9 @@ describe('generate-architecture-confirmation-artifact', () => {
         false
       );
       expect(view.scope).toBe('business_architecture');
+      expect(view.titleZh).toContain('业务');
+      expect(view.descriptionZh).toContain('authoring agent');
+      expect(view.mermaidZh).toMatch(/[\u3400-\u9fff]/u);
     }
     for (const view of artifact.governanceArchitectureDiagrams as Array<Record<string, unknown>>) {
       expect(view.scope).toBe('governance_architecture');
@@ -471,6 +555,7 @@ describe('generate-architecture-confirmation-artifact', () => {
   it('uses confirmation hash normalization for preConfirmationDrilldown volatile fields', () => {
     const fixture = writeFixture({ includePreConfirmationDrilldown: true });
     const out = path.join(tempDir, 'architecture-confirmation-drilldown.json');
+    const localization = writeZhLocalizationBundle();
     const result = runNode(SCRIPT, [
       '--source',
       fixture.source,
@@ -488,6 +573,8 @@ describe('generate-architecture-confirmation-artifact', () => {
       governanceImpactScan,
       '--full-architecture-trigger-matrix',
       triggerMatrix,
+      '--localization',
+      localization,
       '--json',
     ]);
 
@@ -496,6 +583,34 @@ describe('generate-architecture-confirmation-artifact', () => {
     const record = JSON.parse(fs.readFileSync(fixture.record, 'utf8'));
     expect(artifact.sourceDocumentHash).toBe(record.sourceDocumentHash);
     expect(artifact.implementationConfirmationHash).toBe(record.implementationConfirmationHash);
+  });
+
+  it('fails closed when zh-CN authoring localization is missing', () => {
+    const fixture = writeFixture();
+    const out = path.join(tempDir, 'architecture-confirmation-missing-localization.json');
+    const result = runNode(SCRIPT, [
+      '--source',
+      fixture.source,
+      '--requirement-record',
+      fixture.record,
+      '--out',
+      out,
+      '--run-id',
+      'arch-fixture-missing-localization',
+      '--target-paths',
+      targetPaths,
+      '--consumer-impact-scan',
+      consumerImpactScan,
+      '--governance-impact-scan',
+      governanceImpactScan,
+      '--full-architecture-trigger-matrix',
+      triggerMatrix,
+      '--json',
+    ]);
+
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain('missing zh-CN authoring localization bundle');
+    expect(fs.existsSync(out)).toBe(false);
   });
 
   it('fails closed when impact scans or target paths are missing', () => {

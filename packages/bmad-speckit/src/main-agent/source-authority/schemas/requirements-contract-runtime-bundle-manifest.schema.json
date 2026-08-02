@@ -1,0 +1,377 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-runtime-bundle-manifest.schema.json",
+  "title": "Requirements Contract Runtime Bundle Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "canonicalByteDomain",
+    "requirementSetId",
+    "sourceAuthorityHash",
+    "semanticModelHash",
+    "traceGraphHash",
+    "baseRevision",
+    "bundleRevision",
+    "expectedCommittedRecordRevision",
+    "atomicCommitId",
+    "controlEventId",
+    "authority",
+    "sourcePrdBackReferences",
+    "upstreamProofs",
+    "members"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-runtime-bundle-manifest/v1"
+    },
+    "canonicalByteDomain": {
+      "const": "requirements-contract-runtime-bundle-manifest/v1"
+    },
+    "requirementSetId": {
+      "$ref": "#/$defs/stableId"
+    },
+    "sourceAuthorityHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "semanticModelHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "traceGraphHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "baseRevision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "bundleRevision": {
+      "type": "string",
+      "pattern": "^BUNDLE-REV-[A-Z0-9][A-Z0-9._-]*$"
+    },
+    "expectedCommittedRecordRevision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "atomicCommitId": {
+      "type": "string",
+      "pattern": "^ATOMIC-COMMIT-[A-Z0-9][A-Z0-9._-]*$"
+    },
+    "controlEventId": {
+      "type": "string",
+      "pattern": "^CONTROL-EVENT-[A-Z0-9][A-Z0-9._-]*$"
+    },
+    "authority": {
+      "const": "none"
+    },
+    "sourcePrdBackReferences": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceDocumentPath",
+        "implementationConfirmationBundleManifestPath",
+        "acceptanceContractsPath"
+      ],
+      "properties": {
+        "sourceDocumentPath": {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        "implementationConfirmationBundleManifestPath": {
+          "type": "string",
+          "pattern": "^_bmad-output/runtime/requirement-records/[^/]+/authoring/revisions/[^/]+/bundle-manifest\\.json$"
+        },
+        "acceptanceContractsPath": {
+          "type": "string",
+          "pattern": "^_bmad-output/runtime/requirement-records/[^/]+/authoring/revisions/[^/]+/acceptance-contracts\\.json$"
+        }
+      }
+    },
+    "upstreamProofs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["intakeReceipt", "intentLineageLedger", "semanticConservationManifest"],
+      "properties": {
+        "intakeReceipt": {
+          "$ref": "#/$defs/upstreamProof"
+        },
+        "intentLineageLedger": {
+          "$ref": "#/$defs/upstreamProof"
+        },
+        "semanticConservationManifest": {
+          "$ref": "#/$defs/upstreamProof"
+        }
+      }
+    },
+    "members": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "prefixItems": [
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/member"
+            },
+            {
+              "properties": {
+                "path": {
+                  "pattern": "/semantic-ir\\.json$"
+                },
+                "schemaVersion": {
+                  "const": "requirement-contract-model/v2"
+                },
+                "role": {
+                  "const": "semantic_ir"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/member"
+            },
+            {
+              "properties": {
+                "path": {
+                  "pattern": "/trace-graph\\.json$"
+                },
+                "schemaVersion": {
+                  "const": "requirements-contract-trace-graph/v1"
+                },
+                "role": {
+                  "const": "trace_graph"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/member"
+            },
+            {
+              "properties": {
+                "path": {
+                  "pattern": "/target-bindings\\.json$"
+                },
+                "schemaVersion": {
+                  "const": "requirements-contract-target-bindings/v1"
+                },
+                "role": {
+                  "const": "target_bindings"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/member"
+            },
+            {
+              "properties": {
+                "path": {
+                  "pattern": "/task-graph\\.json$"
+                },
+                "schemaVersion": {
+                  "const": "requirements-contract-task-graph/v1"
+                },
+                "role": {
+                  "const": "task_graph"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/member"
+            },
+            {
+              "properties": {
+                "path": {
+                  "pattern": "/red-contracts\\.json$"
+                },
+                "schemaVersion": {
+                  "const": "requirements-contract-red-contracts/v1"
+                },
+                "role": {
+                  "const": "red_contracts"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/member"
+            },
+            {
+              "properties": {
+                "path": {
+                  "pattern": "/oracle-registry\\.json$"
+                },
+                "schemaVersion": {
+                  "const": "requirements-contract-oracle-registry/v1"
+                },
+                "role": {
+                  "const": "oracle_registry"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/member"
+            },
+            {
+              "properties": {
+                "path": {
+                  "pattern": "/acceptance-contracts\\.json$"
+                },
+                "schemaVersion": {
+                  "const": "requirements-contract-acceptance-manifest/v1"
+                },
+                "role": {
+                  "const": "acceptance_manifest"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/member"
+            },
+            {
+              "properties": {
+                "path": {
+                  "pattern": "/evidence-requirements\\.json$"
+                },
+                "schemaVersion": {
+                  "const": "requirements-contract-evidence-requirements/v1"
+                },
+                "role": {
+                  "const": "evidence_requirements"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/member"
+            },
+            {
+              "properties": {
+                "path": {
+                  "pattern": "/business-behavior-delta\\.json$"
+                },
+                "schemaVersion": {
+                  "const": "requirements-contract-business-behavior-delta/v1"
+                },
+                "role": {
+                  "const": "business_behavior_delta"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/member"
+            },
+            {
+              "properties": {
+                "path": {
+                  "pattern": "/implementation-impact-map\\.json$"
+                },
+                "schemaVersion": {
+                  "const": "requirements-contract-implementation-impact-map/v1"
+                },
+                "role": {
+                  "const": "implementation_impact_map"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "items": false
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:[\\\\/])(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    },
+    "upstreamProof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        "hash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "member": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "schemaVersion", "role", "hash", "safeWriteReceiptRef"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^_bmad-output/runtime/requirement-records/[^/]+/authoring/revisions/[^/]+/[^/]+\\.json$"
+        },
+        "schemaVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "enum": [
+            "semantic_ir",
+            "trace_graph",
+            "target_bindings",
+            "task_graph",
+            "red_contracts",
+            "oracle_registry",
+            "acceptance_manifest",
+            "evidence_requirements",
+            "business_behavior_delta",
+            "implementation_impact_map"
+          ]
+        },
+        "hash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "safeWriteReceiptRef": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

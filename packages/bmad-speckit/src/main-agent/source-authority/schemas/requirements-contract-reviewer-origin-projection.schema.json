@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-reviewer-origin-projection.schema.json",
+  "title": "Requirements Contract Reviewer Origin Projection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "actorClass",
+    "reviewerIdentity",
+    "campaignId",
+    "campaignLineageKey",
+    "scopeSnapshotHash",
+    "reviewerAttemptKey",
+    "sourceLedgerHash",
+    "requestHash",
+    "responseHash",
+    "identityReceiptHash",
+    "coverageReceiptHash",
+    "origins",
+    "originSetHash",
+    "projectionHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-reviewer-origin-projection/v1"
+    },
+    "actorClass": { "const": "bounded_code_reviewer" },
+    "reviewerIdentity": { "const": "bmad_code_reviewer" },
+    "campaignId": { "$ref": "#/$defs/text" },
+    "campaignLineageKey": { "$ref": "#/$defs/hash" },
+    "scopeSnapshotHash": { "$ref": "#/$defs/hash" },
+    "reviewerAttemptKey": { "$ref": "#/$defs/hash" },
+    "sourceLedgerHash": { "$ref": "#/$defs/hash" },
+    "requestHash": { "$ref": "#/$defs/hash" },
+    "responseHash": { "$ref": "#/$defs/hash" },
+    "identityReceiptHash": { "$ref": "#/$defs/hash" },
+    "coverageReceiptHash": { "$ref": "#/$defs/hash" },
+    "origins": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/origin" }
+    },
+    "originSetHash": { "$ref": "#/$defs/hash" },
+    "projectionHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "text": { "type": "string", "minLength": 1 },
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "location": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "line"],
+      "properties": {
+        "path": { "$ref": "#/$defs/text" },
+        "line": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "origin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actorClass",
+        "reviewerIdentity",
+        "campaignId",
+        "campaignLineageKey",
+        "scopeSnapshotHash",
+        "reviewerAttemptKey",
+        "findingId",
+        "findingFingerprint",
+        "canonicalRule",
+        "canonicalLocation",
+        "originId",
+        "sourceLedgerHash",
+        "requestHash",
+        "responseHash",
+        "identityReceiptHash",
+        "coverageReceiptHash",
+        "originHash"
+      ],
+      "properties": {
+        "actorClass": { "const": "bounded_code_reviewer" },
+        "reviewerIdentity": { "const": "bmad_code_reviewer" },
+        "campaignId": { "$ref": "#/$defs/text" },
+        "campaignLineageKey": { "$ref": "#/$defs/hash" },
+        "scopeSnapshotHash": { "$ref": "#/$defs/hash" },
+        "reviewerAttemptKey": { "$ref": "#/$defs/hash" },
+        "findingId": { "$ref": "#/$defs/text" },
+        "findingFingerprint": { "$ref": "#/$defs/hash" },
+        "canonicalRule": { "$ref": "#/$defs/text" },
+        "canonicalLocation": { "$ref": "#/$defs/location" },
+        "originId": { "$ref": "#/$defs/hash" },
+        "sourceLedgerHash": { "$ref": "#/$defs/hash" },
+        "requestHash": { "$ref": "#/$defs/hash" },
+        "responseHash": { "$ref": "#/$defs/hash" },
+        "identityReceiptHash": { "$ref": "#/$defs/hash" },
+        "coverageReceiptHash": { "$ref": "#/$defs/hash" },
+        "originHash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "enabled",
+    "activeProviderRef",
+    "providers",
+    "roleContracts"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-semantic-provider-registry/v1"
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "activeProviderRef": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "providers": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/processProvider"
+          },
+          {
+            "$ref": "#/$defs/httpProvider"
+          }
+        ]
+      }
+    },
+    "roleContracts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "implementation_view",
+        "acceptance_evidence_view"
+      ],
+      "properties": {
+        "implementation_view": {
+          "const": "goal_contract_implementation_view/v1"
+        },
+        "acceptance_evidence_view": {
+          "const": "goal_contract_acceptance_evidence_view/v1"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "credentialEnvRefs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Z][A-Z0-9_]*$"
+      }
+    },
+    "processProvider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "providerType",
+        "command",
+        "args",
+        "credentialEnvRefs"
+      ],
+      "properties": {
+        "providerType": {
+          "const": "process"
+        },
+        "command": {
+          "type": "string",
+          "minLength": 1
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "credentialEnvRefs": {
+          "$ref": "#/$defs/credentialEnvRefs"
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 600000
+        }
+      }
+    },
+    "httpProvider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "providerType",
+        "urlEnvRef",
+        "credentialEnvRefs",
+        "timeoutMs"
+      ],
+      "properties": {
+        "providerType": {
+          "const": "http"
+        },
+        "urlEnvRef": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "credentialEnvRefs": {
+          "$ref": "#/$defs/credentialEnvRefs"
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 600000
+        }
+      }
+    }
+  }
+}

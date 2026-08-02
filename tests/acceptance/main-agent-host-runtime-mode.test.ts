@@ -84,7 +84,10 @@ describe('Main Agent host runtime mode contract', () => {
         compiledPromptRef: promptOnly,
       });
       expect(blocker?.reasonCode).toBe('native_goal_readiness_invalid');
-      expect(blocker?.reasonDetails.invalidFields).toEqual(
+      expect(
+        (blocker?.reasonDetails as { invalidFields?: string[] } | undefined)
+          ?.invalidFields
+      ).toEqual(
         expect.arrayContaining(['goalExecutionPath', 'goalExecutionHash'])
       );
 

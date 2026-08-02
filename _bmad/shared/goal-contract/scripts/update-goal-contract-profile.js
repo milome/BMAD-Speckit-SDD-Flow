@@ -14,6 +14,10 @@ const SHARED_DIR = path.join(ROOT, '_bmad', 'shared', 'goal-contract');
 const TEMPLATE_PATH = path.join(SHARED_DIR, 'goal-execution-contract-template.md');
 const PROFILE_PATH = path.join(SHARED_DIR, 'goal-contract-profile.json');
 const LOCK_PATH = path.join(SHARED_DIR, 'goal-contract-profile.lock.json');
+const REFERENCE_DIRS = [
+  path.join(ROOT, '_bmad', 'skills', 'goal-execution-contract-generator', 'references'),
+  path.join(ROOT, '.codex', 'skills', 'goal-execution-contract-generator', 'references'),
+];
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -21,6 +25,14 @@ function readJson(file) {
 
 function writeJson(file, value) {
   fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+function syncSkillReferences() {
+  for (const referenceDir of REFERENCE_DIRS) {
+    fs.mkdirSync(referenceDir, { recursive: true });
+    fs.copyFileSync(TEMPLATE_PATH, path.join(referenceDir, 'goal-execution-contract-template.md'));
+    fs.copyFileSync(PROFILE_PATH, path.join(referenceDir, 'goal-contract-profile.json'));
+  }
 }
 
 function majorVersion(version) {
@@ -61,6 +73,7 @@ function updateGoalContractProfile({ now = new Date().toISOString() } = {}) {
   lock.minimumRendererVersion = profile.compatibility?.minimumRendererVersion ?? lock.minimumRendererVersion ?? '1.0.0';
   lock.updatedAt = now;
   writeJson(LOCK_PATH, lock);
+  syncSkillReferences();
 
   return {
     profileVersion: profile.profileVersion,
@@ -69,6 +82,9 @@ function updateGoalContractProfile({ now = new Date().toISOString() } = {}) {
     profileHash: profile.profileHash,
     requiredSections: extracted.sections,
     requiredSlots: extracted.slots.filter((slot) => slot.required).map((slot) => slot.name),
+    synchronizedReferenceDirectories: REFERENCE_DIRS.map((referenceDir) =>
+      normalizeRepoPath(referenceDir)
+    ),
   };
 }
 

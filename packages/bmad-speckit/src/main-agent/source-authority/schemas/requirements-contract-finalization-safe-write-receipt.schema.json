@@ -1,0 +1,218 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-finalization-safe-write-receipt.schema.json",
+  "title": "Requirements Contract Finalization Safe Write Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "commandId",
+    "finalizationRunId",
+    "requirementRecord",
+    "implementationAttemptId",
+    "exactArgv",
+    "argvHash",
+    "artifactRole",
+    "validationProfile",
+    "finalizationDeclarationHash",
+    "predecessor",
+    "target",
+    "draft",
+    "writerIdentity",
+    "result",
+    "selectedReceiptPath"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-finalization-safe-write-receipt/v1"
+    },
+    "commandId": { "const": "requirements-contract-finalization-safe-write" },
+    "finalizationRunId": {
+      "type": "string",
+      "pattern": "^FINALIZATION-RUN-[A-Z0-9-]+$"
+    },
+    "requirementRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "implementationAttemptId": { "type": "string", "minLength": 1 },
+    "exactArgv": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "argvHash": { "$ref": "#/$defs/sha256" },
+    "artifactRole": {
+      "enum": ["SAFE-WRITE-RECEIPT-MANIFEST", "EVD-15", "ARTIFACT-01"]
+    },
+    "validationProfile": {
+      "enum": [
+        "safe-write-receipt-manifest",
+        "goal-task-evidence",
+        "implementation-evidence-bundle"
+      ]
+    },
+    "finalizationDeclarationHash": { "$ref": "#/$defs/sha256" },
+    "predecessor": {
+      "type": "object",
+      "required": ["applicable", "expectedReceiptPath"],
+      "properties": {
+        "applicable": { "type": "boolean" },
+        "expectedReceiptPath": { "type": "string", "minLength": 1 },
+        "receipt": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "hash", "artifactRole"],
+          "properties": {
+            "path": { "type": "string", "minLength": 1 },
+            "hash": { "$ref": "#/$defs/sha256" },
+            "artifactRole": {
+              "enum": ["SAFE-WRITE-RECEIPT-MANIFEST", "EVD-15"]
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "target": {
+      "type": "object",
+      "required": ["path", "requiredSchemaVersion", "requiredSchemaHash", "minBytes"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "requiredSchemaVersion": { "type": "string", "minLength": 1 },
+        "requiredSchemaHash": { "$ref": "#/$defs/sha256" },
+        "minBytes": { "const": 2 },
+        "targetExistedBefore": { "type": "boolean" },
+        "previousHash": {
+          "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }]
+        },
+        "backupApplicability": {
+          "enum": ["required", "not_applicable"]
+        },
+        "backupPath": {
+          "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }]
+        },
+        "backupHash": {
+          "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }]
+        },
+        "nonexistenceProofHash": {
+          "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }]
+        },
+        "promotedHash": { "$ref": "#/$defs/sha256" },
+        "readbackHash": { "$ref": "#/$defs/sha256" }
+      },
+      "additionalProperties": false
+    },
+    "draft": {
+      "type": "object",
+      "required": ["path"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/sha256" },
+        "bytes": { "type": "integer", "minimum": 2 },
+        "archivedPath": { "type": "string", "minLength": 1 },
+        "archivedHash": { "$ref": "#/$defs/sha256" }
+      },
+      "additionalProperties": false
+    },
+    "writerIdentity": {
+      "const": "requirements-contract-finalization-safe-writer/v1"
+    },
+    "result": { "enum": ["PASS", "BLOCK"] },
+    "selectedReceiptPath": { "type": "string", "minLength": 1 },
+    "failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
+      }
+    },
+    "retryRole": {
+      "enum": ["SAFE-WRITE-RECEIPT-MANIFEST", "EVD-15", "ARTIFACT-01"]
+    }
+  },
+  "oneOf": [
+    {
+      "properties": { "result": { "const": "PASS" } },
+      "allOf": [
+        {
+          "properties": {
+            "target": {
+              "required": [
+                "targetExistedBefore",
+                "previousHash",
+                "backupApplicability",
+                "backupPath",
+                "backupHash",
+                "nonexistenceProofHash",
+                "promotedHash",
+                "readbackHash"
+              ],
+              "oneOf": [
+                {
+                  "properties": {
+                    "targetExistedBefore": { "const": true },
+                    "previousHash": { "$ref": "#/$defs/sha256" },
+                    "backupApplicability": { "const": "required" },
+                    "backupPath": { "type": "string", "minLength": 1 },
+                    "backupHash": { "$ref": "#/$defs/sha256" },
+                    "nonexistenceProofHash": { "type": "null" }
+                  }
+                },
+                {
+                  "properties": {
+                    "targetExistedBefore": { "const": false },
+                    "previousHash": { "type": "null" },
+                    "backupApplicability": { "const": "not_applicable" },
+                    "backupPath": { "type": "null" },
+                    "backupHash": { "type": "null" },
+                    "nonexistenceProofHash": { "$ref": "#/$defs/sha256" }
+                  }
+                }
+              ]
+            },
+            "draft": {
+              "required": ["hash", "bytes"],
+              "not": {
+                "anyOf": [{ "required": ["archivedPath"] }, { "required": ["archivedHash"] }]
+              }
+            }
+          }
+        }
+      ],
+      "not": {
+        "anyOf": [{ "required": ["failure"] }, { "required": ["retryRole"] }]
+      }
+    },
+    {
+      "properties": { "result": { "const": "BLOCK" } },
+      "required": ["failure", "retryRole"],
+      "allOf": [
+        {
+          "properties": {
+            "target": {
+              "not": {
+                "anyOf": [{ "required": ["promotedHash"] }, { "required": ["readbackHash"] }]
+              }
+            },
+            "draft": {
+              "required": ["archivedPath", "archivedHash"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

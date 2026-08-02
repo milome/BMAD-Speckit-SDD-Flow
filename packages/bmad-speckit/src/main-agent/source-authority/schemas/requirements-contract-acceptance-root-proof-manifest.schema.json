@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-acceptance-root-proof-manifest.schema.json",
+  "title": "Requirements Contract Acceptance Root Proof Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "canonicalFileName",
+    "requirementSetId",
+    "canonicalParserHash",
+    "sourceAuthorityHash",
+    "decisionReceiptSetHash",
+    "rootCount",
+    "orderedRootIds",
+    "rootSetHash",
+    "roots"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-acceptance-root-proof-manifest/v1"
+    },
+    "canonicalFileName": {
+      "const": "acceptance-root-proof-manifest.json"
+    },
+    "requirementSetId": {
+      "$ref": "#/$defs/stableId"
+    },
+    "canonicalParserHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "sourceAuthorityHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "decisionReceiptSetHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "rootCount": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "orderedRootIds": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/referenceId"
+      },
+      "uniqueItems": true
+    },
+    "rootSetHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "roots": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/root"
+      },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "referenceId": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$"
+    },
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:[\\\\/])(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    },
+    "referenceArray": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/referenceId"
+      },
+      "uniqueItems": true
+    },
+    "sourceSpan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["startLine", "endLine"],
+      "properties": {
+        "startLine": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "applicability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision", "reasonCode", "proofRefs"],
+      "properties": {
+        "decision": {
+          "enum": ["applicable", "not_applicable", "unresolved", "invalid"]
+        },
+        "reasonCode": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "proofRefs": {
+          "$ref": "#/$defs/referenceArray"
+        }
+      }
+    },
+    "root": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "acceptanceRootId",
+        "sourcePath",
+        "sourceSpan",
+        "sourceHash",
+        "authorityClass",
+        "authorityProofRefs",
+        "applicability",
+        "requirementRefs",
+        "rootPayloadHash"
+      ],
+      "properties": {
+        "acceptanceRootId": {
+          "$ref": "#/$defs/referenceId"
+        },
+        "sourcePath": {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        "sourceSpan": {
+          "$ref": "#/$defs/sourceSpan"
+        },
+        "sourceHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "authorityClass": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "authorityProofRefs": {
+          "$ref": "#/$defs/referenceArray"
+        },
+        "applicability": {
+          "$ref": "#/$defs/applicability"
+        },
+        "requirementRefs": {
+          "$ref": "#/$defs/referenceArray"
+        },
+        "rootPayloadHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    }
+  }
+}

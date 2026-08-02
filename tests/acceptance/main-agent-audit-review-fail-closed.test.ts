@@ -1,3 +1,6 @@
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import * as path from 'node:path';
+import yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 import {
   createExecutionPacket,
@@ -6,15 +9,44 @@ import {
   type CompiledPromptRef,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract';
 import {
-  createAuditTriadExecutionPlan,
   evaluateAuditTriadConvergence,
-  type AuditTriadRoundReceipt,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-triad-orchestrator';
 import {
   cleanupRequirementWorkspace,
-  materializeRequirementFixture,
+  materializeRequirementFixture as materializeRequirementFixtureBase,
   writeCompiledImplementPacket,
 } from '../helpers/requirement-fixture-runtime';
+import {
+  createFixtureAuditTriadPlan,
+  createFixtureAuditTriadRound,
+} from '../helpers/audit-triad-fixture-runtime';
+
+function normalizeFixtureJudgeRuntimePolicy(root: string): void {
+  const configPath = path.join(root, '_bmad', '_config', 'governance-remediation.yaml');
+  const config = yaml.load(readFileSync(configPath, 'utf8')) as Record<string, any>;
+  const judgeRuntime = config.judgeRuntime as Record<string, any>;
+  const activeProviderRef = String(judgeRuntime.activeProviderRef ?? '');
+  const providers = judgeRuntime.providers as Record<string, any>;
+  const provider = providers[activeProviderRef] as Record<string, any>;
+  provider.requestPolicy = provider.requestPolicy ?? judgeRuntime.requestPolicy ?? {
+    timeoutMs: 1_800_000,
+    maximumAttempts: 1,
+    structuredResponseRequired: true,
+    maxBudgetUsd: 5,
+  };
+  delete judgeRuntime.requestPolicy;
+  delete judgeRuntime.requirementsConvergence;
+  mkdirSync(path.dirname(configPath), { recursive: true });
+  writeFileSync(configPath, `${yaml.dump(config, { lineWidth: -1 })}\n`, 'utf8');
+}
+
+function materializeRequirementFixture(
+  input?: Parameters<typeof materializeRequirementFixtureBase>[0]
+): ReturnType<typeof materializeRequirementFixtureBase> {
+  const fixture = materializeRequirementFixtureBase(input);
+  normalizeFixtureJudgeRuntimePolicy(fixture.root);
+  return fixture;
+}
 
 function baseAuditInput(fixture: ReturnType<typeof materializeRequirementFixture>): {
   compiledPromptRef: CompiledPromptRef;
@@ -22,17 +54,10 @@ function baseAuditInput(fixture: ReturnType<typeof materializeRequirementFixture
   auditTriadExecutionPlanRef: AuditTriadExecutionPlanRef;
 } {
   const compiled = writeCompiledImplementPacket({ root: fixture.root, fixture });
-  const plan = createAuditTriadExecutionPlan({
-    projectRoot: fixture.root,
-    recordId: fixture.recordId,
-    stage: 'implement',
-    callPoint: 'audit_review',
+  const plan = createFixtureAuditTriadPlan({
+    fixture,
+    compiled,
     attemptId: 'audit-current',
-    sourceDocumentHash: fixture.sourceDocumentHash,
-    implementationConfirmationHash: fixture.implementationConfirmationHash,
-    modelPacketHash: compiled.compiledPromptRef.modelPacketHash,
-    auditReceiptHash: compiled.compiledPromptRef.auditReceiptHash,
-    goalExecutionHash: compiled.compiledPromptRef.goalExecutionHash,
   });
   const auditExecutionProfile: AuditExecutionProfile = {
     schemaVersion: 'audit-execution-profile/v1',
@@ -41,6 +66,13 @@ function baseAuditInput(fixture: ReturnType<typeof materializeRequirementFixture
     stageProfileId: plan.stageProfileId,
     stageProfileHash: plan.criticalAuditorStageProfileHash,
     requiredCheckItemSetHash: plan.requiredCheckItemSetHash,
+    auditEpochId: plan.auditEpochId,
+    auditTargetBundleHash: plan.auditTargetBundleHash,
+    semanticModelHash: plan.semanticModelHash,
+    projectionSetHash: plan.projectionSetHash,
+    checkedProjectionQualityRuleCodes: plan.checkedProjectionQualityRuleCodes,
+    qualityRuleSetHash: plan.qualityRuleSetHash,
+    independentProviderBinding: plan.independentProviderBinding,
     perspectives: ['product_intent', 'model_projection', 'main_agent_execution'],
     auditScoringConvergencePolicy: {
       auditPassRequired: true,
@@ -63,7 +95,12 @@ function baseAuditInput(fixture: ReturnType<typeof materializeRequirementFixture
       requirementSetId: fixture.requirementSetId,
       attemptId: 'audit-current',
       sourceDocumentHash: fixture.sourceDocumentHash,
+      semanticModelHash: plan.semanticModelHash,
       implementationConfirmationHash: fixture.implementationConfirmationHash,
+      projectionSetHash: plan.projectionSetHash,
+      qualityRuleSetHash: plan.qualityRuleSetHash,
+      auditEpochId: plan.auditEpochId,
+      auditTargetBundleHash: plan.auditTargetBundleHash,
       modelPacketHash: compiled.compiledPromptRef.modelPacketHash,
       currentAttemptHash: plan.currentAttemptHash,
       currentEvidenceHash: plan.currentEvidenceHash,
@@ -78,6 +115,11 @@ function baseAuditInput(fixture: ReturnType<typeof materializeRequirementFixture
       contentHash: 'sha256:plan',
       attemptId: 'audit-current',
       stageProfileId: plan.stageProfileId,
+      auditEpochId: plan.auditEpochId,
+      auditTargetBundleHash: plan.auditTargetBundleHash,
+      semanticModelHash: plan.semanticModelHash,
+      projectionSetHash: plan.projectionSetHash,
+      qualityRuleSetHash: plan.qualityRuleSetHash,
       criticalAuditorProfileHash: plan.criticalAuditorProfileHash,
       criticalAuditorStageProfileHash: plan.criticalAuditorStageProfileHash,
       requiredCheckItemSetHash: plan.requiredCheckItemSetHash,
@@ -159,48 +201,20 @@ describe('Main Agent audit review fail-closed contract', () => {
     }
   });
 
-  it('blocks audit convergence without three current no-gap rounds, score receipts, and runAuditorHost receipts', () => {
+  it('blocks audit convergence without three current no-gap rounds or bound execution receipts', () => {
     const fixture = materializeRequirementFixture();
     try {
       const compiled = writeCompiledImplementPacket({ root: fixture.root, fixture });
-      const plan = createAuditTriadExecutionPlan({
-        projectRoot: fixture.root,
-        recordId: fixture.recordId,
-        stage: 'implement',
-        callPoint: 'audit_review',
+      const plan = createFixtureAuditTriadPlan({
+        fixture,
+        compiled,
         attemptId: 'audit-current',
-        sourceDocumentHash: fixture.sourceDocumentHash,
-        implementationConfirmationHash: fixture.implementationConfirmationHash,
-        modelPacketHash: compiled.compiledPromptRef.modelPacketHash,
-        auditReceiptHash: compiled.compiledPromptRef.auditReceiptHash,
-        goalExecutionHash: compiled.compiledPromptRef.goalExecutionHash,
       });
-      const cleanRound = (roundId: string): AuditTriadRoundReceipt => ({
-        schemaVersion: 'audit-triad-round-receipt/v1',
-        roundId,
-        stageProfileId: plan.stageProfileId,
-        perspectiveResults: {
-          product_intent: { agentId: `product-${roundId}`, validGaps: [] },
-          model_projection: { agentId: `model-${roundId}`, validGaps: [] },
-          main_agent_execution: { agentId: `main-${roundId}`, validGaps: [] },
-        },
-        coveredCheckItemIds: plan.subagents[0].requiredCheckItemIds,
-        vetoItemResults: plan.subagents[0].requiredCheckItemIds
-          .filter((id) => id.startsWith('veto_'))
-          .map((itemId) => ({ itemId, passed: true })),
-        validatedGapRefs: [],
-        invalidGapRefs: [],
-        sourceDocumentHash: plan.sourceDocumentHash,
-        implementationConfirmationHash: plan.implementationConfirmationHash,
-        modelPacketHash: plan.modelPacketHash,
-        auditReceiptHash: plan.auditReceiptHash,
-        goalExecutionHash: plan.goalExecutionHash,
-        criticalAuditorProfileHash: plan.criticalAuditorProfileHash,
-        criticalAuditorStageProfileHash: plan.criticalAuditorStageProfileHash,
-        requiredCheckItemSetHash: plan.requiredCheckItemSetHash,
-        currentAttemptHash: plan.currentAttemptHash,
-        currentEvidenceHash: plan.currentEvidenceHash,
-      });
+      const cleanRound = (roundId: string) =>
+        createFixtureAuditTriadRound(plan, roundId, {
+          judgeExecutionReceiptRef: undefined,
+          readonlyAuditorHostInvocationReceiptRef: undefined,
+        });
 
       expect(
         evaluateAuditTriadConvergence({
@@ -220,8 +234,8 @@ describe('Main Agent audit review fail-closed contract', () => {
       expect(withoutReceipts.ok).toBe(false);
       expect(withoutReceipts.blockingReasons).toEqual(
         expect.arrayContaining([
-          'round_1_score_receipt_missing',
-          'round_1_run_auditor_host_receipt_missing',
+          'round_1_judge_execution_receipt_ref_missing',
+          'round_1_readonly_host_invocation_receipt_ref_missing',
         ])
       );
     } finally {

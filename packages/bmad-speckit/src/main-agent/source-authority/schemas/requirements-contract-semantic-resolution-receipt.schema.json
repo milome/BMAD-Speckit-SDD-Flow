@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-semantic-resolution-receipt.schema.json",
+  "title": "Requirements Contract Semantic Resolution Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "resolutionId", "fieldRef", "valueHash", "resolutionAuthorityClass", "premises", "derivationRule", "authorityProof", "applicabilityProof", "conflictingCandidates", "sourceModelHashBefore", "sourceModelHashAfter", "resolverId", "resolutionRunId", "receiptHash"],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-semantic-resolution-receipt/v1" },
+    "resolutionId": { "$ref": "#/$defs/nonEmpty" },
+    "fieldRef": { "$ref": "#/$defs/nonEmpty" },
+    "valueHash": { "$ref": "#/$defs/sha256" },
+    "resolutionAuthorityClass": { "enum": ["source_extracted", "rule_derived", "repository_derived", "policy_inherited"] },
+    "premises": { "type": "array", "minItems": 1, "items": { "oneOf": [{ "$ref": "#/$defs/sourcePremise" }, { "$ref": "#/$defs/repositoryPremise" }, { "$ref": "#/$defs/policyPremise" }] } },
+    "derivationRule": { "type": ["string", "null"], "minLength": 1 },
+    "authorityProof": { "$ref": "#/$defs/authorityProof" },
+    "applicabilityProof": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/applicabilityProof" }] },
+    "conflictingCandidates": { "type": "array", "maxItems": 0 },
+    "sourceModelHashBefore": { "$ref": "#/$defs/sha256" },
+    "sourceModelHashAfter": { "$ref": "#/$defs/sha256" },
+    "resolverId": { "$ref": "#/$defs/nonEmpty" },
+    "resolutionRunId": { "$ref": "#/$defs/nonEmpty" },
+    "receiptHash": { "$ref": "#/$defs/sha256" }
+  },
+  "$defs": {
+    "nonEmpty": { "type": "string", "minLength": 1 },
+    "sha256": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "span": { "type": "object", "additionalProperties": false, "required": ["startLine", "endLine"], "properties": { "startLine": { "type": "integer", "minimum": 1 }, "endLine": { "type": "integer", "minimum": 1 } } },
+    "sourcePremise": { "type": "object", "additionalProperties": false, "required": ["kind", "sourcePath", "sourceSpan", "excerpt", "hash"], "properties": { "kind": { "const": "source" }, "sourcePath": { "$ref": "#/$defs/nonEmpty" }, "sourceSpan": { "$ref": "#/$defs/span" }, "excerpt": { "$ref": "#/$defs/nonEmpty" }, "hash": { "$ref": "#/$defs/sha256" } } },
+    "repositoryPremise": { "type": "object", "additionalProperties": false, "required": ["kind", "artifactPath", "hash", "candidateRef", "candidateValueHash"], "properties": { "kind": { "const": "repository" }, "artifactPath": { "$ref": "#/$defs/nonEmpty" }, "hash": { "$ref": "#/$defs/sha256" }, "candidateRef": { "$ref": "#/$defs/nonEmpty" }, "candidateValueHash": { "$ref": "#/$defs/sha256" } } },
+    "policyPremise": { "type": "object", "additionalProperties": false, "required": ["kind", "catalogId", "catalogVersion", "catalogHash", "policyId", "policyVersion", "policyValueHash"], "properties": { "kind": { "const": "policy" }, "catalogId": { "$ref": "#/$defs/nonEmpty" }, "catalogVersion": { "$ref": "#/$defs/nonEmpty" }, "catalogHash": { "$ref": "#/$defs/sha256" }, "policyId": { "$ref": "#/$defs/nonEmpty" }, "policyVersion": { "$ref": "#/$defs/nonEmpty" }, "policyValueHash": { "$ref": "#/$defs/sha256" } } },
+    "applicabilityProof": { "type": "object", "additionalProperties": false, "required": ["basis", "result", "policyId", "catalogHash", "factsHash"], "properties": { "basis": { "const": "deterministic_policy_predicate" }, "result": { "const": true }, "policyId": { "$ref": "#/$defs/nonEmpty" }, "catalogHash": { "$ref": "#/$defs/sha256" }, "factsHash": { "$ref": "#/$defs/sha256" } } },
+    "authorityProof": {
+      "oneOf": [
+        { "$ref": "#/$defs/sourceExtractionProof" },
+        { "$ref": "#/$defs/ruleEvaluationProof" },
+        { "$ref": "#/$defs/repositoryObservationProof" },
+        { "$ref": "#/$defs/policyEvaluationProof" }
+      ]
+    },
+    "sourceExtractionProof": { "type": "object", "additionalProperties": false, "required": ["kind", "parserId", "parserHash", "observationHash"], "properties": { "kind": { "const": "source_extraction" }, "parserId": { "$ref": "#/$defs/nonEmpty" }, "parserHash": { "$ref": "#/$defs/sha256" }, "observationHash": { "$ref": "#/$defs/sha256" } } },
+    "ruleEvaluationProof": { "type": "object", "additionalProperties": false, "required": ["kind", "ruleId", "ruleVersion", "ruleHash", "premiseSetHash", "outputValueHash", "evaluationReceiptHash"], "properties": { "kind": { "const": "rule_evaluation" }, "ruleId": { "$ref": "#/$defs/nonEmpty" }, "ruleVersion": { "$ref": "#/$defs/nonEmpty" }, "ruleHash": { "$ref": "#/$defs/sha256" }, "premiseSetHash": { "$ref": "#/$defs/sha256" }, "outputValueHash": { "$ref": "#/$defs/sha256" }, "evaluationReceiptHash": { "$ref": "#/$defs/sha256" } } },
+    "repositoryObservationProof": { "type": "object", "additionalProperties": false, "required": ["kind", "canonicalPath", "producerId", "producerHash", "observationId", "candidateUniverseHash", "observationReceiptHash"], "properties": { "kind": { "const": "repository_observation" }, "canonicalPath": { "$ref": "#/$defs/nonEmpty" }, "producerId": { "$ref": "#/$defs/nonEmpty" }, "producerHash": { "$ref": "#/$defs/sha256" }, "observationId": { "$ref": "#/$defs/nonEmpty" }, "candidateUniverseHash": { "$ref": "#/$defs/sha256" }, "observationReceiptHash": { "$ref": "#/$defs/sha256" } } },
+    "policyEvaluationProof": { "type": "object", "additionalProperties": false, "required": ["kind", "authorityId", "approvalReceiptHash", "factObservationReceiptHash"], "properties": { "kind": { "const": "policy_evaluation" }, "authorityId": { "$ref": "#/$defs/nonEmpty" }, "approvalReceiptHash": { "$ref": "#/$defs/sha256" }, "factObservationReceiptHash": { "$ref": "#/$defs/sha256" } } }
+  }
+}

@@ -1,231 +1,296 @@
 name: CI
 
 on:
-  push:
-    branches: [main, master]
   pull_request:
-    branches: [main, master]
+    branches: [dev, main, master]
+  merge_group:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      requested_profile:
+        description: Governed CI profile
+        required: false
+        default: nightly-full
+        type: choice
+        options:
+          - pr-fast
+          - pr-full
+          - nightly-deep
+          - nightly-full
+          - release-verify
+          - release-full
+      base_sha:
+        description: Required base commit for impact-sensitive profiles
+        required: false
+        type: string
+  workflow_call:
+    inputs:
+      requested_profile:
+        required: false
+        default: pr-fast
+        type: string
+      base_sha:
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  test:
+  classify:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.manifest.outputs.matrix }}
+      execution_allowed: ${{ steps.selection-gate.outputs.execution_allowed }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: '22.22.1'
+          cache: npm
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+      - run: npm install --global npm@10.9.4
 
-      - name: Install ripgrep
-        run: sudo apt-get update && sudo apt-get install -y ripgrep
+      - run: git config core.filemode false
 
-      - name: Install dependencies
-        run: npm ci
+      # classify must preserve a pristine checkout for catalog provenance.
+      - run: npm ci --ignore-scripts
 
-      - name: Build scoring package
-        run: npm run build:scoring
-
-      - name: Build runtime-emit package from package runtime policy source
-        run: npm run build:runtime-emit
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Generate governance mapping fixture
-        run: npm run test:governance-fixtures
-
-      - name: Validate Speckit contract schemas
+      - name: Resolve governed profile and changed paths
+        id: profile
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_PROFILE: ${{ inputs.requested_profile }}
+          INPUT_BASE_SHA: ${{ inputs.base_sha }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}
         run: |
-          python -m json.tool docs/reference/speckit-journey-ledger.schema.json > /dev/null
-          python -m json.tool docs/reference/speckit-trace-map.schema.json > /dev/null
-          python -m json.tool docs/reference/speckit-closure-note.schema.json > /dev/null
+          mkdir -p .artifacts/test-portfolio
+          case "$EVENT_NAME" in
+            schedule)
+              profile=nightly-full
+              ;;
+            pull_request)
+              profile=pr-fast
+              ;;
+            merge_group)
+              profile=pr-fast
+              ;;
+            *)
+              profile="${INPUT_PROFILE:-pr-fast}"
+              ;;
+          esac
+          case "$profile" in
+            pr-fast|pr-full|nightly-deep|nightly-full|release-verify|release-full) ;;
+            *) echo "::error::PROFILE_UNKNOWN:$profile"; exit 1 ;;
+          esac
+          base="${INPUT_BASE_SHA:-${PR_BASE_SHA:-${MERGE_GROUP_BASE_SHA:-}}}"
+          case "$profile" in
+            pr-fast|pr-full|nightly-deep|release-verify)
+              if [ -z "$base" ]; then
+                echo "::error::CI_BASE_SHA_REQUIRED:$profile"
+                exit 1
+              fi
+              ;;
+          esac
+          if [ -n "$base" ]; then
+            git diff --name-only "$base" "$GITHUB_SHA" |
+              node -e "const fs=require('fs');const rows=fs.readFileSync(0,'utf8').split(/\r?\n/u).filter(Boolean).sort();fs.writeFileSync('.artifacts/test-portfolio/changed-paths.json',JSON.stringify(rows));"
+          else
+            node -e "require('fs').writeFileSync('.artifacts/test-portfolio/changed-paths.json','[]');"
+          fi
+          echo "base_sha=$base" >> "$GITHUB_OUTPUT"
+          echo "profile=$profile" >> "$GITHUB_OUTPUT"
 
-      - name: Validate Speckit readiness tooling
+      - name: Prepare the canonical package once
+        run: npm run ci:prepare-package -- --commit-sha "$GITHUB_SHA"
+
+      - name: Generate the governed test plan within budget
+        id: planning
+        shell: bash
+        env:
+          BASE_SHA: ${{ steps.profile.outputs.base_sha }}
+          PROFILE: ${{ steps.profile.outputs.profile }}
+          PR_FAST_PLANNING_BUDGET_SECONDS: '90'
         run: |
-          python _bmad/speckit/scripts/python/readiness_gate.py --help
-          python _bmad/speckit/scripts/python/generate_smoke_skeleton.py --help
-          python _bmad/speckit/scripts/python/ambiguity_linter.py --help
+          set -euo pipefail
 
-      - name: Speckit readiness gate self-check
-        run: |
-          tmpdir="$(mktemp -d)"
-          cp _bmad/speckit/scripts/templates/journey-ledger.template.json "$tmpdir/journey-ledger.json"
-          cp _bmad/speckit/scripts/templates/trace-map.template.json "$tmpdir/trace-map.json"
-          mkdir -p "$tmpdir/closure-notes"
-          cp _bmad/speckit/scripts/templates/closure-note.template.md "$tmpdir/closure-notes/J01.md"
-          python _bmad/speckit/scripts/python/readiness_gate.py \
-            --journey-ledger "$tmpdir/journey-ledger.json" \
-            --trace-map "$tmpdir/trace-map.json" \
-            --artifact-root "$tmpdir"
-
-      - name: Speckit ambiguity linter self-check
-        run: |
-          python _bmad/speckit/scripts/python/ambiguity_linter.py \
-            docs/reference/speckit-journey-ledger.schema.json \
-            docs/reference/speckit-trace-map.schema.json
-
-      - name: Speckit smoke skeleton generation validation
-        run: |
-          tmpdir="$(mktemp -d)"
-          python _bmad/speckit/scripts/python/generate_smoke_skeleton.py \
-            --journey-ledger _bmad/speckit/scripts/templates/journey-ledger.template.json \
-            --output-root "$tmpdir/smoke"
-          find "$tmpdir/smoke" -name '*.smoke.spec.ts' -print -quit | grep -q .
-
-      - name: Init Claude surface
-        run: npm run init:claude
-
-      - name: Init Codex surface
-        run: npm run init:codex
-
-      - name: SpeCKit mirror sync test
-        run: npm run test:speckit-mirror-sync
-
-      - name: Build Main Agent dist runtime
-        run: npm run build:main-agent-dist
-
-      - name: Validate no root TypeScript scripts
-        run: npm run validate:no-root-scripts-ts
-
-      - name: Verify requirements contract source writes
-        run: npm run verify:requirements-contract-source-writes
-
-      - name: Vitest suite
-        id: vitest
-        continue-on-error: true
-        run: npm run test:vitest:default
-
-      - name: Consumer install final-state tests
-        id: consumer_install
-        continue-on-error: true
-        timeout-minutes: 20
-        run: npm run test:consumer-install-final
-
-      - name: Consumer runtime final-state replay
-        id: consumer_runtime
-        continue-on-error: true
-        timeout-minutes: 15
-        run: npm run test:consumer-runtime-final
-
-      - name: BMAD SpecKit tests
-        id: bmad_speckit
-        continue-on-error: true
-        run: npm run test:bmad-speckit
-
-      - name: Main Agent release gate
-        id: release_gate
-        continue-on-error: true
-        run: npm run main-agent:release-gate:ci
-
-      - name: Main Agent quality gate
-        id: quality_gate
-        continue-on-error: true
-        run: npm run main-agent:quality-gate
-
-      - name: Main Agent chaos tests
-        id: chaos
-        continue-on-error: true
-        run: npm run test:main-agent-chaos
-
-      - name: Fail if any test segment failed
-        if: always()
-        run: |
-          failed=0
-
-          check_step() {
-            name="$1"
-            outcome="$2"
-
-            if [ "$outcome" = "failure" ]; then
-              echo "::error::$name failed"
-              failed=1
-            else
-              echo "$name: $outcome"
-            fi
+          run_stage() {
+            local stage="$1"
+            shift
+            local started_at_ms
+            local ended_at_ms
+            started_at_ms="$(date +%s%3N)"
+            "$@"
+            ended_at_ms="$(date +%s%3N)"
+            echo "::notice title=CI planning stage::${stage}=$((ended_at_ms - started_at_ms))ms"
           }
 
-          check_step "Vitest suite" "${{ steps.vitest.outcome }}"
-          check_step "Consumer install final-state tests" "${{ steps.consumer_install.outcome }}"
-          check_step "Consumer runtime final-state replay" "${{ steps.consumer_runtime.outcome }}"
-          check_step "BMAD SpecKit tests" "${{ steps.bmad_speckit.outcome }}"
-          check_step "Main Agent release gate" "${{ steps.release_gate.outcome }}"
-          check_step "Main Agent quality gate" "${{ steps.quality_gate.outcome }}"
-          check_step "Main Agent chaos tests" "${{ steps.chaos.outcome }}"
+          run_planning() {
+            run_stage ci:catalog npm run ci:catalog -- --changed-paths .artifacts/test-portfolio/changed-paths.json
+            run_stage ci:profile-policy npm run ci:profile-policy -- --catalog .artifacts/test-portfolio/test-catalog.json --output .artifacts/test-portfolio/test-profile-policy.json
+            run_stage ci:timing-bootstrap npm run ci:timing-bootstrap
+            run_stage ci:freeze-core npm run ci:freeze-core -- --catalog .artifacts/test-portfolio/test-catalog.json --facts .artifacts/test-portfolio/test-catalog-facts.json --timing-summary .artifacts/test-portfolio/ci-test-timing-summary.json --commit-sha "$GITHUB_SHA" --environment-class linux-x64-node22 --output .artifacts/test-portfolio/core-freeze.json
+            run_stage ci:coverage-gap npm run ci:coverage-gap -- --catalog .artifacts/test-portfolio/test-catalog.json --core-freeze .artifacts/test-portfolio/core-freeze.json
+            local -a selection_args=(
+              --catalog .artifacts/test-portfolio/test-catalog.json
+              --core-freeze .artifacts/test-portfolio/core-freeze.json
+              --coverage-report .artifacts/test-portfolio/six-model-coverage-gap-report.json
+              --profile-policy .artifacts/test-portfolio/test-profile-policy.json
+              --requested-profile "$PROFILE"
+            )
+            if [ -n "$BASE_SHA" ]; then
+              selection_args+=(
+                --facts .artifacts/test-portfolio/test-catalog-facts.json
+                --base-sha "$BASE_SHA"
+                --commit-sha "$GITHUB_SHA"
+              )
+            else
+              selection_args+=(
+                --changed-paths .artifacts/test-portfolio/changed-paths.json
+              )
+            fi
+            run_stage ci:select npm run ci:select -- "${selection_args[@]}"
+            run_stage ci:shard-plan npm run ci:shard-plan -- --selection .artifacts/test-portfolio/test-selection.json --commit-sha "$GITHUB_SHA" --environment-class linux-x64-node22
+          }
 
-          exit "$failed"
+          export -f run_stage run_planning
+          if [ "$PROFILE" = "pr-fast" ]; then
+            timeout --foreground --signal=TERM --kill-after=10s \
+              "${PR_FAST_PLANNING_BUDGET_SECONDS}s" bash -c 'set -euo pipefail; run_planning'
+          else
+            run_planning
+          fi
 
-  package:
+      - name: Freeze the planned Run Manifest
+        id: manifest
+        run: npm run ci:manifest -- --catalog .artifacts/test-portfolio/test-catalog.json --selection .artifacts/test-portfolio/test-selection.json --shard-plan .artifacts/test-portfolio/ci-shard-plan.json --timing-summary .artifacts/test-portfolio/ci-test-timing-summary.json --package-descriptor .artifacts/test-portfolio/package/canonical-package.json --commit-sha "$GITHUB_SHA"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ci-plan-${{ github.sha }}
+          path: .artifacts/test-portfolio/
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Gate shard execution on selection readiness
+        id: selection-gate
+        shell: bash
+        run: |
+          node -e "const fs=require('fs');const selection=JSON.parse(fs.readFileSync('.artifacts/test-portfolio/test-selection.json','utf8'));if(!['ready','blocked'].includes(selection.selectionStatus))throw new Error('CI_SELECTION_STATUS_INVALID');fs.appendFileSync(process.env.GITHUB_OUTPUT,'execution_allowed='+(selection.selectionStatus === 'ready')+'\n');"
+
+  execute-shard:
+    needs: classify
+    if: needs.classify.outputs.execution_allowed == 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.classify.outputs.matrix) }}
     runs-on: ubuntu-latest
-    needs: test
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
         with:
-          fetch-depth: 0
+          node-version: '22.22.1'
+          cache: npm
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - run: npm install --global npm@10.9.4
+
+      - run: git config core.filemode false
+
+      - run: npm ci
+
+      - uses: actions/download-artifact@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
+          name: ci-plan-${{ github.sha }}
+          path: .artifacts/test-portfolio
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Prepare generated shard runtime
+        run: npm run ci:prepare-shard-runtime
 
-      - name: Verify root publish chain on npmjs.org
-        run: npm publish --dry-run --registry=https://registry.npmjs.org
+      - name: Execute exact governed shard
+        run: npm run ci:run-shard -- --manifest .artifacts/test-portfolio/ci-run-manifest.json --lane "${{ matrix.lane }}" --shard-id "${{ matrix.shardId }}" --descriptor .artifacts/test-portfolio/package/canonical-package.json
 
-      - name: Pack root tgz
-        run: |
-          mkdir -p .artifacts/npm
-          npm pack --json > .artifacts/npm/root-pack.raw
-          node scripts/extract-npm-pack-json.js .artifacts/npm/root-pack.raw .artifacts/npm/root-pack.json
-          ROOT_TGZ=$(node -e "const fs=require('fs');const pack=JSON.parse(fs.readFileSync('.artifacts/npm/root-pack.json','utf8'));process.stdout.write(pack[0].filename)")
-          mv "$ROOT_TGZ" ".artifacts/npm/$ROOT_TGZ"
-
-      - name: Write npm package artifact manifest
-        run: |
-          node - <<'NODE'
-          const fs = require('fs');
-          const path = '.artifacts/npm';
-          const summarize = (filename) => {
-            const pack = JSON.parse(fs.readFileSync(filename, 'utf8'))[0];
-            return {
-              name: pack.name,
-              version: pack.version,
-              filename: pack.filename,
-              size: pack.size,
-              unpackedSize: pack.unpackedSize,
-              shasum: pack.shasum,
-            };
-          };
-
-          const manifest = {
-            generatedAt: new Date().toISOString(),
-            packages: {
-              root: summarize(`${path}/root-pack.json`),
-            },
-          };
-
-          fs.writeFileSync(`${path}/manifest.json`, JSON.stringify(manifest, null, 2));
-          NODE
-
-      - name: Upload npm tarball artifacts
+      - name: Upload shard evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: npm-packages-${{ github.sha }}
-          path: .artifacts/npm/
+          name: ci-lane-${{ matrix.lane }}-${{ matrix.shardId }}
+          path: .artifacts/test-portfolio/lane-results/
+          if-no-files-found: error
+          retention-days: 7
+
+  evidence-join:
+    if: always() && needs.classify.outputs.execution_allowed == 'true'
+    needs: [classify, execute-shard]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.1'
+
+      - run: npm install --global npm@10.9.4
+
+      - run: npm ci --ignore-scripts
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ci-plan-${{ github.sha }}
+          path: .artifacts/test-portfolio
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ci-lane-*
+          path: .artifacts/test-portfolio/lane-results
+          merge-multiple: true
+
+      - name: Join all required evidence
+        run: npm run ci:join -- --manifest .artifacts/test-portfolio/ci-run-manifest.json --lane-results-dir .artifacts/test-portfolio/lane-results
+
+      - name: Upload final Run Manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-final-${{ github.sha }}
+          path: .artifacts/test-portfolio/final/ci-run-manifest.json
+          if-no-files-found: error
+          retention-days: 30
+
+  ci-result:
+    name: CI required
+    if: always()
+    needs: [classify, evidence-join]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Expose the only required CI result
+        shell: bash
+        env:
+          CLASSIFY_RESULT: ${{ needs.classify.result }}
+          EXECUTION_ALLOWED: ${{ needs.classify.outputs.execution_allowed }}
+          EVIDENCE_JOIN_RESULT: ${{ needs.evidence-join.result }}
+        run: |
+          if [ "$CLASSIFY_RESULT" != "success" ]; then
+            echo "::error::CI_CLASSIFY_FAILED:$CLASSIFY_RESULT"
+            exit 1
+          fi
+          if [ "$EXECUTION_ALLOWED" != "true" ]; then
+            echo "::error::CI_SELECTION_BLOCKED"
+            exit 1
+          fi
+          if [ "$EVIDENCE_JOIN_RESULT" != "success" ]; then
+            echo "::error::CI_EVIDENCE_JOIN_FAILED:$EVIDENCE_JOIN_RESULT"
+            exit 1
+          fi

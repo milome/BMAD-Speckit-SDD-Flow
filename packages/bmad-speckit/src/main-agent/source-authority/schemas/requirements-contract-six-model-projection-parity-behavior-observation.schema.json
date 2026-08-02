@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "requirements-contract-six-model-projection-parity-behavior-observation.schema.json",
+  "title": "Requirements Contract Six-Model Projection Parity Behavior Observation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "producer",
+    "action",
+    "surface",
+    "caseId",
+    "contractHash",
+    "requirementSetId",
+    "implementationAttemptId",
+    "observedAt",
+    "outcome"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-six-model-projection-parity-behavior-observation/v1"
+    },
+    "producer": {
+      "const": "requirements-contract-six-model-projection-parity-case-runner"
+    },
+    "action": {
+      "type": "string",
+      "pattern": "^run:(valid_receipt|missing_receipt|missing_projection|projection_mismatch|stale_attempt|blocked_receipt|synthetic_bridge|complete_panorama)$"
+    },
+    "surface": {
+      "$ref": "requirements-contract-six-model-projection-parity-observation.schema.json#/definitions/surface"
+    },
+    "caseId": {
+      "$ref": "requirements-contract-six-model-projection-parity-observation.schema.json#/definitions/caseId"
+    },
+    "contractHash": {
+      "$ref": "requirements-contract-six-model-projection-parity-observation.schema.json#/definitions/hash"
+    },
+    "requirementSetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "implementationAttemptId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observedAt": {
+      "type": "string",
+      "minLength": 20
+    },
+    "outcome": {
+      "$ref": "requirements-contract-six-model-projection-parity-report.schema.json#/definitions/outcome"
+    }
+  }
+}

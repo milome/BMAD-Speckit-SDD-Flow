@@ -20,16 +20,25 @@ const PROMOTION_STAGE_POLICIES = {
     allowedStatuses: new Set(["user_confirmed"]),
     confirmationReadyOnSuccess: true,
     safePromotionAsDraft: false,
+    allowDeferredCriticalAuditorCheckpoints: false,
   },
   "authoring-draft": {
     allowedStatuses: new Set(["draft", "draft_updated_not_confirmation_ready", "reconfirm_required"]),
     confirmationReadyOnSuccess: false,
     safePromotionAsDraft: true,
+    allowDeferredCriticalAuditorCheckpoints: true,
   },
   "current-source-receipt-refresh": {
     allowedStatuses: new Set(["draft", "draft_updated_not_confirmation_ready", "reconfirm_required", "user_confirmed"]),
     confirmationReadyOnSuccess: false,
     safePromotionAsDraft: false,
+    allowDeferredCriticalAuditorCheckpoints: true,
+  },
+  "projection-metadata-resync": {
+    allowedStatuses: new Set(["draft", "draft_updated_not_confirmation_ready", "reconfirm_required", "user_confirmed"]),
+    confirmationReadyOnSuccess: false,
+    safePromotionAsDraft: false,
+    allowDeferredCriticalAuditorCheckpoints: true,
   },
 };
 
@@ -48,7 +57,7 @@ function usage() {
     "  --require <text>        Required literal text. May be repeated.",
     "  --min-bytes <n>         Minimum UTF-8 byte count.",
     "  --retry-receipt <path>  Retry receipt JSON path.",
-    "  --promotion-stage <stage> Promotion stage: confirmation-ready (default), authoring-draft, or current-source-receipt-refresh.",
+    "  --promotion-stage <stage> Promotion stage: confirmation-ready (default), authoring-draft, current-source-receipt-refresh, or projection-metadata-resync.",
     "  --scale-assessment <path> Required authoring scale assessment JSON for guarded source writes.",
     "  --scale-routing-decision <path> Required scale routing decision JSON for guarded source writes.",
     "  --source-mutation-decision <path> Required source mutation decision JSON for guarded source writes.",
@@ -401,6 +410,7 @@ function guardedPromotionRequired(args, targetPath) {
   return (
     args.promotionStage === "authoring-draft" ||
     args.promotionStage === "current-source-receipt-refresh" ||
+    args.promotionStage === "projection-metadata-resync" ||
     isDocsPlansTarget(targetPath)
   );
 }
@@ -525,7 +535,7 @@ function autoRepairDeterministicGateArtifacts(args, manifest, targetPath) {
       status: "manual_or_orchestrator_semantic_step_required",
       path: normalizePathForReport(defaults.sourceMutationDecision),
       command:
-        "bmad-speckit main-agent-orchestration --action author-confirmation-ready-source --source <intake-source.md> --json",
+        "npm exec --prefix <project_root> -- bmad-speckit main-agent-orchestration --action author-confirmation-ready-source --source <intake-source.md> --json",
     });
   }
 
@@ -560,6 +570,18 @@ const REQUIRED_CHECKPOINT_IDS = [
   "cp-07-human-readable-views",
   "cp-08-pre-render-global-reconciliation",
 ];
+const PRE_AUDITOR_CHECKPOINT_IDS = REQUIRED_CHECKPOINT_IDS.slice(0, 2);
+const CRITICAL_AUDITOR_DEFERRED_CHECKPOINT_ID =
+  REQUIRED_CHECKPOINT_IDS[PRE_AUDITOR_CHECKPOINT_IDS.length];
+const CRITICAL_AUDITOR_DEFERRED_CHECKPOINT_BLOCKER_CODES = new Set([
+  "critical_auditor_receipt_missing",
+  "critical_auditor_receipt_input_hash_stale",
+  "critical_auditor_less_than_three_no_new_gap_rounds",
+  "critical_auditor_validated_gap_unresolved",
+  "critical_auditor_receipts_required_before_checkpoint",
+  "critical_auditor_checkpoint_outcome_required",
+  "author_claim_lacks_critic_disposition",
+]);
 
 function validateScaleAssessment(assessment) {
   const issues = [];
@@ -622,18 +644,29 @@ function validateCheckpointPersistenceEvidence(evidence, context = {}) {
     typeof policy === "object" &&
     !Array.isArray(policy) &&
     policy.mode === "source_gap_fix_materialization" &&
-    policy.auditorConvergenceDeferredToNextRound === true;
+    policy.auditorConvergenceDeferredToNextRound === true &&
+    Array.isArray(policy.deferredCriticalAuditorBlockers) &&
+    policy.deferredCriticalAuditorBlockers.length > 0 &&
+    policy.deferredCriticalAuditorBlockers.every((blocker) =>
+      CRITICAL_AUDITOR_DEFERRED_CHECKPOINT_BLOCKER_CODES.has(String(blocker?.code ?? ""))
+    );
   if (evidence.checkpointPersistenceSatisfiedCandidate !== true && !deferredCriticalAuditorOnly) {
     issues.push("checkpoint_persistence_satisfied_candidate_required");
   }
   if (Array.isArray(evidence.completedCheckpointIds)) {
     issues.push("checkpoint_persistence_top_level_completed_ids_forbidden");
   }
-  for (const checkpointId of REQUIRED_CHECKPOINT_IDS) {
-    const completed = Array.isArray(evidence.checkpointPersistenceRef?.completedCheckpointIds)
-      ? evidence.checkpointPersistenceRef.completedCheckpointIds
-      : [];
-    if (!completed.includes(checkpointId)) issues.push(`checkpoint_missing:${checkpointId}`);
+  const completed = Array.isArray(evidence.checkpointPersistenceRef?.completedCheckpointIds)
+    ? evidence.checkpointPersistenceRef.completedCheckpointIds
+    : [];
+  const expectedCompleted = deferredCriticalAuditorOnly
+    ? PRE_AUDITOR_CHECKPOINT_IDS
+    : REQUIRED_CHECKPOINT_IDS;
+  if (
+    completed.length !== expectedCompleted.length ||
+    expectedCompleted.some((checkpointId, index) => completed[index] !== checkpointId)
+  ) {
+    issues.push(`checkpoint_completed_set_invalid:${expectedCompleted.join(",")}`);
   }
   const ref = evidence.checkpointPersistenceRef;
   if (!ref || typeof ref !== "object") issues.push("checkpoint_persistence_ref_missing");
@@ -648,8 +681,27 @@ function validateCheckpointPersistenceEvidence(evidence, context = {}) {
       continue;
     }
     if (!receiptRef.path) issues.push(`checkpoint_receipt_ref_path_missing:${checkpointId}`);
+    const checkpointIndex = REQUIRED_CHECKPOINT_IDS.indexOf(checkpointId);
+    if (
+      deferredCriticalAuditorOnly &&
+      checkpointIndex > REQUIRED_CHECKPOINT_IDS.indexOf(CRITICAL_AUDITOR_DEFERRED_CHECKPOINT_ID)
+    ) {
+      if (receiptRef.hash) issues.push(`checkpoint_receipt_ref_hash_forbidden:${checkpointId}`);
+      if (receiptRef.status !== "pending") {
+        issues.push(`checkpoint_receipt_ref_not_pending:${checkpointId}`);
+      }
+      if (receiptRef.persistenceStatus !== "pending") {
+        issues.push(`checkpoint_receipt_ref_persistence_not_pending:${checkpointId}`);
+      }
+      if (receiptRef.semanticValidationStatus !== "pending") {
+        issues.push(`checkpoint_receipt_ref_semantic_not_pending:${checkpointId}`);
+      }
+      if (receiptRef.path && fs.existsSync(path.resolve(receiptRef.path))) {
+        issues.push(`checkpoint_receipt_file_forbidden:${checkpointId}`);
+      }
+      continue;
+    }
     if (!receiptRef.hash) issues.push(`checkpoint_receipt_ref_hash_missing:${checkpointId}`);
-    if (receiptRef.status !== "passed") issues.push(`checkpoint_receipt_ref_not_passed:${checkpointId}`);
     if (receiptRef.path) {
       const receiptPath = path.resolve(receiptRef.path);
       if (!fs.existsSync(receiptPath)) {
@@ -658,14 +710,14 @@ function validateCheckpointPersistenceEvidence(evidence, context = {}) {
         issues.push(`checkpoint_receipt_file_hash_mismatch:${checkpointId}`);
       } else {
         const receipt = readJsonFile(receiptPath);
-        if (receipt?.schemaVersion !== "requirements-contract-checkpoint-receipt/v1") {
+        if (
+          receipt?.schemaVersion !==
+          "requirements-contract-checkpoint-semantic-validation-receipt/v1"
+        ) {
           issues.push(`checkpoint_receipt_schema_invalid:${checkpointId}`);
         }
         if (receipt?.checkpointId !== checkpointId) {
           issues.push(`checkpoint_receipt_checkpoint_id_mismatch:${checkpointId}`);
-        }
-        if (receipt?.status !== "passed") {
-          issues.push(`checkpoint_receipt_status_not_passed:${checkpointId}`);
         }
         if (context.sourceDocumentHash) {
           if (!receipt?.sourceDocumentHash) {
@@ -679,6 +731,70 @@ function validateCheckpointPersistenceEvidence(evidence, context = {}) {
             issues.push(`checkpoint_receipt_implementation_hash_missing:${checkpointId}`);
           } else if (receipt.implementationConfirmationHash !== context.implementationConfirmationHash) {
             issues.push(`checkpoint_receipt_implementation_hash_mismatch:${checkpointId}`);
+          }
+        }
+        for (const [field, expectedValue] of [
+          ["recordId", evidence.recordId],
+          ["requirementSetId", evidence.requirementSetId],
+          ["implementationAttemptId", evidence.implementationAttemptId],
+          ["semanticModelHash", evidence.semanticModelHash],
+          ["semanticConservationManifestHash", evidence.semanticConservationManifestHash],
+        ]) {
+          if (!expectedValue || receipt?.[field] !== expectedValue) {
+            issues.push(`checkpoint_receipt_${field}_mismatch:${checkpointId}`);
+          }
+        }
+        for (const field of ["validatorIdentity", "validatorVersion", "validatorHash"]) {
+          if (!receipt?.[field]) issues.push(`checkpoint_receipt_${field}_missing:${checkpointId}`);
+        }
+        if (!Array.isArray(receipt?.validatedInputs) || receipt.validatedInputs.length === 0) {
+          issues.push(`checkpoint_receipt_validated_inputs_missing:${checkpointId}`);
+        }
+        const deferredCheckpoint =
+          deferredCriticalAuditorOnly &&
+          checkpointId === CRITICAL_AUDITOR_DEFERRED_CHECKPOINT_ID;
+        if (deferredCheckpoint) {
+          if (
+            receiptRef.status !== "blocked" ||
+            receiptRef.persistenceStatus !== "committed" ||
+            receiptRef.semanticValidationStatus !== "block"
+          ) {
+            issues.push(`checkpoint_receipt_ref_not_deferred_block:${checkpointId}`);
+          }
+          if (
+            receipt?.persistenceStatus !== "committed" ||
+            receipt?.semanticValidationStatus !== "block" ||
+            receipt?.decision !== "block"
+          ) {
+            issues.push(`checkpoint_receipt_status_not_deferred_block:${checkpointId}`);
+          }
+          if (
+            !Array.isArray(receipt?.blockers) ||
+            receipt.blockers.length === 0 ||
+            !receipt.blockers.every((blocker) =>
+              CRITICAL_AUDITOR_DEFERRED_CHECKPOINT_BLOCKER_CODES.has(
+                String(blocker?.code ?? "")
+              )
+            )
+          ) {
+            issues.push(`checkpoint_receipt_deferred_blockers_invalid:${checkpointId}`);
+          }
+        } else {
+          if (
+            receiptRef.status !== "passed" ||
+            receiptRef.persistenceStatus !== "committed" ||
+            receiptRef.semanticValidationStatus !== "pass"
+          ) {
+            issues.push(`checkpoint_receipt_ref_not_passed:${checkpointId}`);
+          }
+          if (
+            receipt?.persistenceStatus !== "committed" ||
+            receipt?.semanticValidationStatus !== "pass" ||
+            receipt?.decision !== "pass" ||
+            !Array.isArray(receipt?.blockers) ||
+            receipt.blockers.length !== 0
+          ) {
+            issues.push(`checkpoint_receipt_status_not_passed:${checkpointId}`);
           }
         }
         const { receiptHash, ...receiptPayload } = receipt || {};
@@ -792,7 +908,7 @@ function addNextRequiredActionsForErrors(result) {
     result.nextRequiredActions.push({
       action: "rerun_authoring_orchestrator_for_current_hashes",
       command:
-        "bmad-speckit main-agent-orchestration --action author-confirmation-ready-source --source <intake-source.md> --json",
+        "npm exec --prefix <project_root> -- bmad-speckit main-agent-orchestration --action author-confirmation-ready-source --source <intake-source.md> --json",
       reason:
         "source-mutation-decision.json is stale or not bound to the current target hash and draft manifest hash.",
     });
@@ -887,7 +1003,7 @@ function validateAuthoringPromotionGate(args, targetPath, manifest) {
         result.nextRequiredActions.push({
           action: "run_authoring_orchestrator_until_source_mutation_decision",
           command:
-            "bmad-speckit main-agent-orchestration --action author-confirmation-ready-source --source <intake-source.md> --json",
+            "npm exec --prefix <project_root> -- bmad-speckit main-agent-orchestration --action author-confirmation-ready-source --source <intake-source.md> --json",
         });
       }
       if (error === "encodingReport_required") {
@@ -997,6 +1113,8 @@ function validateAuthoringPromotionGate(args, targetPath, manifest) {
             sourceDocumentHash: semanticBinding.sourceDocumentHash,
             implementationConfirmationHash: semanticBinding.implementationConfirmationHash,
             allowDeferredCriticalAuditorBlockers:
+              promotionPolicyFor(args.promotionStage)
+                ?.allowDeferredCriticalAuditorCheckpoints === true &&
               checkpointEvidence.checkpointPersistenceRef?.preRenderGatePolicy?.mode ===
                 "source_gap_fix_materialization" &&
               checkpointEvidence.checkpointPersistenceRef?.preRenderGatePolicy
@@ -1152,6 +1270,68 @@ function main() {
         return failed.exitCode;
       }
     }
+    if (args.promotionStage === "projection-metadata-resync") {
+      const targetState = currentTargetState(targetPath);
+      if (!targetState.exists) {
+        const failed = fail(
+          receipt,
+          "semantic_decision_required:projection_metadata_target_missing",
+          {
+            promotionStage: args.promotionStage,
+            requiredCondition: "target must exist for metadata-only resynchronization",
+          },
+          { ...args, draft: draftPath, target: targetPath },
+          manifest
+        );
+        writeReceipt(failed.receipt, args.json);
+        return failed.exitCode;
+      }
+      const draftText = fs.readFileSync(draftPath, "utf8");
+      const targetText = fs.readFileSync(targetPath, "utf8");
+      const draftConfirmation = extractImplementationConfirmation(draftText);
+      const targetConfirmation = extractImplementationConfirmation(targetText);
+      const draftSemanticHashes = {
+        sourceDocumentHash: sourceDocumentHashFor(
+          draftText,
+          draftConfirmation.blockText,
+          draftConfirmation.confirmation
+        ),
+        implementationConfirmationHash: implementationConfirmationHashFor(
+          draftConfirmation.confirmation
+        ),
+      };
+      const targetSemanticHashes = {
+        sourceDocumentHash: sourceDocumentHashFor(
+          targetText,
+          targetConfirmation.blockText,
+          targetConfirmation.confirmation
+        ),
+        implementationConfirmationHash: implementationConfirmationHashFor(
+          targetConfirmation.confirmation
+        ),
+      };
+      if (
+        draftSemanticHashes.sourceDocumentHash !== targetSemanticHashes.sourceDocumentHash ||
+        draftSemanticHashes.implementationConfirmationHash !==
+          targetSemanticHashes.implementationConfirmationHash
+      ) {
+        const failed = fail(
+          receipt,
+          "semantic_decision_required:projection_metadata_semantic_hash_mismatch",
+          {
+            promotionStage: args.promotionStage,
+            requiredCondition:
+              "sourceDocumentHash and implementationConfirmationHash must remain unchanged",
+            targetSemanticHashes,
+            draftSemanticHashes,
+          },
+          { ...args, draft: draftPath, target: targetPath },
+          manifest
+        );
+        writeReceipt(failed.receipt, args.json);
+        return failed.exitCode;
+      }
+    }
 
     let effectiveArgs = args;
     if (args.autoRepair && guardedPromotionRequired(args, targetPath)) {
@@ -1205,7 +1385,11 @@ function main() {
       return failed.exitCode;
     }
 
-    if (args.promotionStage === "authoring-draft" || args.promotionStage === "current-source-receipt-refresh") {
+    if (
+      args.promotionStage === "authoring-draft" ||
+      args.promotionStage === "current-source-receipt-refresh" ||
+      args.promotionStage === "projection-metadata-resync"
+    ) {
       receipt.audit = {
         status: null,
         ok: true,
@@ -1213,12 +1397,16 @@ function main() {
         reason:
           args.promotionStage === "current-source-receipt-refresh"
             ? "current_source_receipt_refresh_is_not_confirmation_ready"
-            : "authoring_draft_is_not_confirmation_ready",
+            : args.promotionStage === "projection-metadata-resync"
+              ? "projection_metadata_resync_is_semantic_hash_neutral"
+              : "authoring_draft_is_not_confirmation_ready",
       };
       receipt.residualRisks.push(
         args.promotionStage === "current-source-receipt-refresh"
           ? "reverse_audit_not_run_current_source_receipt_refresh"
-          : "reverse_audit_not_run_authoring_draft"
+          : args.promotionStage === "projection-metadata-resync"
+            ? "reverse_audit_not_run_projection_metadata_resync"
+            : "reverse_audit_not_run_authoring_draft"
       );
     } else {
       const audit = runReverseAudit(draftPath);

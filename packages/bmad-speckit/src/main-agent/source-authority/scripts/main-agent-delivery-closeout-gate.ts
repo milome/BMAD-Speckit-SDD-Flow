@@ -2,14 +2,31 @@
 import { spawnSync } from 'node:child_process';
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { resolveArchitectureConfirmationHashRecipe } from './architecture-confirmation-hash-recipe';
 import { aiTddContractGateRequired, evaluateAiTddContractGate } from './ai-tdd-contract-gate';
-import { appendControlEventAndReplay } from './requirement-record-control-store';
+import {
+  appendControlEventAndReplay,
+  canonicalizeRequirementRecord,
+  sha256Json,
+} from './requirement-record-control-store';
 import { evaluateStrictCloseoutProof } from './strict-closeout-proof-gate';
-import { readImplementationConfirmation } from './target-artifact-realization-gate';
+import {
+  implementationConfirmationHash,
+  readImplementationConfirmation,
+  sourceDocumentHashForImplementationConfirmation,
+} from './target-artifact-realization-gate';
 import { buildPerMustClosureEvidenceIndex } from './per-must-closure-evidence-index';
 import { openReconfirmationRequests } from './reconfirmation-runtime';
+import {
+  createRuntimeStatusProjectionUpdate,
+  runtimeStatusProjectionArtifactWrites,
+  runtimeStatusProjectionRecordPatch,
+  type RuntimeStatusProjectionUpdate,
+} from './requirements-contract-runtime-status-decision-receipt';
+import { resolveVerifiedSixModelStatus } from './verified-six-model-status-facade';
+import { validateSourcePrdLintTransitionFromFiles } from './requirements-contract-validation-facade';
 import {
   runtimeModeDir,
   type NativeGoalInvocationReceipt,
@@ -200,14 +217,22 @@ function projectRootForRecordPath(recordPath: string): string {
   return path.resolve(path.dirname(recordPath), '..', '..', '..', '..');
 }
 
-function resolveRecordRelativePath(recordPath: string, candidate: string): string {
-  return path.isAbsolute(candidate) ? candidate : path.resolve(path.dirname(recordPath), candidate);
-}
-
 function isSyntheticCloseoutSource(sourcePath: string): boolean {
   return normalizePathForRecord(sourcePath).endsWith(
     '/confirmation/closeout-confirmation-source.md'
   );
+}
+
+function resolveExistingSourcePath(recordPath: string, candidate: string): string | null {
+  const normalized = text(candidate);
+  if (!normalized) return null;
+  const candidates = path.isAbsolute(normalized)
+    ? [path.resolve(normalized)]
+    : [
+        path.resolve(projectRootForRecordPath(recordPath), normalized),
+        path.resolve(path.dirname(recordPath), normalized),
+      ];
+  return candidates.find((resolved) => fs.existsSync(resolved)) ?? null;
 }
 
 function resolveSourcePathForCloseout(
@@ -215,95 +240,174 @@ function resolveSourcePathForCloseout(
   recordPath: string,
   explicit?: string
 ): string | null {
-  const candidates = [
-    {
-      path: explicit,
-      syntheticFallback: text(explicit) ? isSyntheticCloseoutSource(text(explicit)) : false,
-    },
-    { path: text(record.sourcePath), syntheticFallback: false },
-    { path: text(record.artifactPath), syntheticFallback: false },
-  ];
-  const fallbackCandidates: string[] = [];
-  for (const candidate of candidates) {
-    const candidatePath = text(candidate.path);
+  for (const candidatePath of [text(explicit), text(record.sourcePath), text(record.artifactPath)]) {
     if (!candidatePath) continue;
-    const resolved = resolveRecordRelativePath(recordPath, candidatePath);
-    if (!fs.existsSync(resolved)) continue;
-    if (candidate.syntheticFallback) {
-      fallbackCandidates.push(resolved);
-      continue;
-    }
+    const resolved = resolveExistingSourcePath(recordPath, candidatePath);
+    if (!resolved || isSyntheticCloseoutSource(resolved)) continue;
     return resolved;
   }
-  return fallbackCandidates[0] ?? null;
+  return null;
 }
 
-function writeSyntheticCloseoutSource(input: {
+export interface CloseoutSourceAuthority {
+  passed: boolean;
+  sourcePath: string | null;
+  sourceDocumentHash: string | null;
+  sourceAmendmentHashes: string[];
+  semanticModelHash: string | null;
+  implementationConfirmationHash: string | null;
+  blockingReasons: string[];
+}
+
+function latestConfirmedSource(record: JsonObject): JsonObject | null {
+  const history = objects(record.confirmationHistory);
+  for (let index = history.length - 1; index >= 0; index -= 1) {
+    const entry = history[index];
+    if (
+      text(entry.eventType) === 'confirmation_recorded' ||
+      (text(entry.sourcePath) &&
+        text(entry.sourceDocumentHash) &&
+        text(entry.implementationConfirmationHash))
+    ) {
+      return entry;
+    }
+  }
+  return null;
+}
+
+function samePath(left: string, right: string): boolean {
+  try {
+    return fs.realpathSync(left) === fs.realpathSync(right);
+  } catch {
+    return path.resolve(left) === path.resolve(right);
+  }
+}
+
+export function resolveCloseoutSourceAuthority(input: {
   record: JsonObject;
   recordPath: string;
-  closeoutAttemptId: string;
-}): string {
-  const sourcePath = path.join(
-    path.dirname(input.recordPath),
-    'confirmation',
-    'closeout-confirmation-source.md'
+  sourcePath?: string;
+}): CloseoutSourceAuthority {
+  const blockingReasons: string[] = [];
+  const confirmedSource = latestConfirmedSource(input.record);
+  const sourcePath = resolveSourcePathForCloseout(
+    input.record,
+    input.recordPath,
+    input.sourcePath
   );
-  const sourceDocumentHash =
-    text(input.record.sourceDocumentHash) || sha256Text('missing-source-document');
-  const implementationConfirmationHash =
-    text(input.record.implementationConfirmationHash) ||
-    sha256Text('missing-implementation-confirmation');
-  const commandIds = objects(deliveryEvidence(input.record).requiredCommands)
-    .map((command) => text(command.commandId))
-    .filter(Boolean);
-  const commandRefs = commandIds.length ? commandIds : ['CMD-CLOSEOUT'];
-  const content = [
-    'implementationConfirmation:',
-    '  status: user_confirmed',
-    `  sourceDocumentHash: ${sourceDocumentHash}`,
-    `  implementationConfirmationHash: ${implementationConfirmationHash}`,
-    '  must:',
-    '    - id: MUST-CLOSEOUT',
-    '      text: Synthetic closeout confirmation source for user acceptance projection.',
-    '  notDone:',
-    '    - id: NEG-CLOSEOUT',
-    '      text: Do not close without explicit user acceptance.',
-    '  mustNot:',
-    '    - id: OUT-CLOSEOUT',
-    '      text: Do not write record_closed before confirm-closeout-acceptance.',
-    '  evidence:',
-    '    - id: EVD-CLOSEOUT',
-    '      text: Delivery closeout gate passed and awaits user acceptance.',
-    `      requiredCommandRefs: [${commandRefs.join(', ')}]`,
-    '  traceRows: []',
-    '  requiredCommands:',
-    ...commandRefs.map(
-      (commandId) => `    - id: ${commandId}\n      command: closeout evidence command`
-    ),
-    '  artifactAutomationPlan: []',
-    '  targetModificationPaths: []',
-    '  applicability:',
-    '    governanceEvents: { applies: false, reasonCode: not_applicable }',
-    '    runtimeRecovery: { applies: false, reasonCode: not_applicable }',
-    '    scoringDashboardSft: { applies: false, reasonCode: not_applicable }',
-    '    currentTargetMap: { applies: false, reasonCode: not_applicable }',
-    '    scriptsAndHooks: { applies: false, reasonCode: not_applicable }',
-    '    aiTddContractGate: { applies: false, reasonCode: not_applicable }',
-    '  currentTargetMap:',
-    '    canonicalArtifacts: []',
-    '    pathRegistry: []',
-    '    existingArtifacts: []',
-    '',
-  ].join('\n');
-  fs.mkdirSync(path.dirname(sourcePath), { recursive: true });
-  fs.writeFileSync(sourcePath, content, 'utf8');
-  return sourcePath;
+  const confirmedSourcePath = confirmedSource
+    ? resolveExistingSourcePath(input.recordPath, text(confirmedSource.sourcePath))
+    : null;
+  if (!confirmedSource) blockingReasons.push('confirmed_source_receipt_missing');
+  if (!sourcePath) blockingReasons.push('confirmed_source_path_missing');
+  if (!confirmedSourcePath) blockingReasons.push('confirmed_source_receipt_path_missing');
+  if (sourcePath && confirmedSourcePath && !samePath(sourcePath, confirmedSourcePath)) {
+    blockingReasons.push('confirmed_source_path_mismatch');
+  }
+
+  const sourceDocumentHash = text(input.record.sourceDocumentHash);
+  const confirmedSourceDocumentHash = text(confirmedSource?.sourceDocumentHash);
+  if (!isSha256(sourceDocumentHash)) blockingReasons.push('source_document_hash_missing_or_invalid');
+  if (!isSha256(confirmedSourceDocumentHash)) {
+    blockingReasons.push('confirmed_source_document_hash_missing_or_invalid');
+  } else if (sourceDocumentHash !== confirmedSourceDocumentHash) {
+    blockingReasons.push('source_document_hash_confirmation_mismatch');
+  }
+
+  const implementationHash = text(input.record.implementationConfirmationHash);
+  const confirmedImplementationHash = text(confirmedSource?.implementationConfirmationHash);
+  if (!isSha256(implementationHash)) {
+    blockingReasons.push('implementation_confirmation_hash_missing_or_invalid');
+  }
+  if (!isSha256(confirmedImplementationHash)) {
+    blockingReasons.push('confirmed_implementation_confirmation_hash_missing_or_invalid');
+  } else if (implementationHash !== confirmedImplementationHash) {
+    blockingReasons.push('implementation_confirmation_hash_confirmation_mismatch');
+  }
+
+  const semanticModelHash = text(input.record.semanticModelHash);
+  if (!isSha256(semanticModelHash)) blockingReasons.push('semantic_model_hash_missing_or_invalid');
+
+  const sourceAmendmentHashes = strings(input.record.sourceAmendmentHashes);
+  if (
+    sourceAmendmentHashes.length === 0 ||
+    sourceAmendmentHashes.some((hash) => !isSha256(hash))
+  ) {
+    blockingReasons.push('source_amendment_hashes_missing_or_invalid');
+  }
+
+  if (sourcePath) {
+    try {
+      const source = readImplementationConfirmation(sourcePath);
+      const actualSourceDocumentHash =
+        sourceDocumentHashForImplementationConfirmation(source);
+      const actualImplementationHash = implementationConfirmationHash(source.confirmation);
+      if (sourceDocumentHash !== actualSourceDocumentHash) {
+        blockingReasons.push('source_document_hash_content_mismatch');
+      }
+      if (implementationHash !== actualImplementationHash) {
+        blockingReasons.push('implementation_confirmation_hash_content_mismatch');
+      }
+    } catch {
+      blockingReasons.push('confirmed_source_confirmation_unreadable');
+    }
+  }
+
+  const sourceAuthorityIssues = uniqueStrings(blockingReasons);
+  return {
+    passed: sourceAuthorityIssues.length === 0,
+    sourcePath,
+    sourceDocumentHash: sourceDocumentHash || null,
+    sourceAmendmentHashes,
+    semanticModelHash: semanticModelHash || null,
+    implementationConfirmationHash: implementationHash || null,
+    blockingReasons:
+      sourceAuthorityIssues.length === 0
+        ? []
+        : ['closeout_source_unresolved', ...sourceAuthorityIssues],
+  };
+}
+
+function resolveRequirementsContractAuthoringScript(
+  recordPath: string,
+  relativeScript: string
+): string {
+  const projectRoot = projectRootForRecordPath(recordPath);
+  const configuredPackageRoot = text(process.env.BMAD_SPECKIT_PACKAGE_ROOT);
+  const packageRoot = configuredPackageRoot
+    ? path.resolve(configuredPackageRoot)
+    : path.resolve(__dirname, '..', '..', '..', '..');
+  const repositoryRoot = path.resolve(packageRoot, '..', '..');
+  const sourceAuthorityRoot = path.resolve(__dirname, '..');
+  const home = process.env.USERPROFILE || process.env.HOME || '';
+  const roots = uniqueStrings([
+    projectRoot,
+    packageRoot,
+    repositoryRoot,
+    sourceAuthorityRoot,
+    home,
+  ]);
+  const surfaceRoots = ['_bmad', '.codex', '.cursor', '.claude', '.agents'];
+  for (const root of roots) {
+    for (const surface of surfaceRoots) {
+      const scriptPath = path.join(
+        root,
+        surface,
+        'skills',
+        'requirements-contract-authoring',
+        'scripts',
+        relativeScript
+      );
+      if (fs.existsSync(scriptPath)) return scriptPath;
+    }
+  }
+  throw new Error(`closeout confirmation renderer missing: ${relativeScript}`);
 }
 
 function renderCloseoutConfirmation(input: {
   record: JsonObject;
   recordPath: string;
-  sourcePath?: string;
+  sourcePath: string;
   closeoutReportPath: string;
   htmlPath: string;
   renderReportPath: string;
@@ -317,24 +421,14 @@ function renderCloseoutConfirmation(input: {
   userPrompt: string;
   ingestCommand: string;
 } {
-  const sourcePath =
-    resolveSourcePathForCloseout(input.record, input.recordPath, input.sourcePath) ??
-    writeSyntheticCloseoutSource({
-      record: input.record,
-      recordPath: input.recordPath,
-      closeoutAttemptId: text(nested(input.record.closeout).currentAttemptId),
-    });
-  const rendererPath = path.resolve(
-    process.cwd(),
-    '_bmad',
-    'skills',
-    'requirements-contract-authoring',
-    'scripts',
+  const sourcePath = input.sourcePath;
+  const rendererPath = resolveRequirementsContractAuthoringScript(
+    input.recordPath,
     'render-requirements-confirmation-html.ts'
   );
-  if (!fs.existsSync(rendererPath)) {
-    throw new Error(`closeout confirmation renderer missing: ${rendererPath}`);
-  }
+  const projectRoot = projectRootForRecordPath(input.recordPath);
+  const snapshotRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-closeout-render-'));
+  const snapshotPath = path.join(snapshotRoot, 'requirement-record.json');
   const renderArgs = [
     rendererPath,
     '--source',
@@ -351,6 +445,8 @@ function renderCloseoutConfirmation(input: {
     text(input.record.entryFlow) || text(input.record.flow) || 'standalone_tasks',
     '--requirement-record',
     input.recordPath,
+    '--requirement-record-snapshot',
+    snapshotPath,
     '--closeout-report',
     input.closeoutReportPath,
     '--mode',
@@ -359,7 +455,14 @@ function renderCloseoutConfirmation(input: {
     'false',
     '--json',
   ];
-  const step = spawnSync(process.execPath, renderArgs, { cwd: process.cwd(), encoding: 'utf8' });
+  const step = (() => {
+    try {
+      fs.writeFileSync(snapshotPath, `${JSON.stringify(input.record, null, 2)}\n`, 'utf8');
+      return spawnSync(process.execPath, renderArgs, { cwd: projectRoot, encoding: 'utf8' });
+    } finally {
+      fs.rmSync(snapshotRoot, { recursive: true, force: true });
+    }
+  })();
   if (step.status !== 0) {
     throw new Error(
       `closeout confirmation HTML render failed (${step.status ?? 'unknown'}): ${
@@ -1810,24 +1913,22 @@ function hasImplementationReadinessPass(record: JsonObject): boolean {
   );
 }
 
-function sixModelResult(record: JsonObject, model: string): JsonObject {
-  const results = nested(record.sixModelResults);
-  return nested(results[model]);
-}
-
-function currentSixModelPassIssues(record: JsonObject, model: string): string[] {
-  const result = sixModelResult(record, model);
-  const status = text(result.status);
-  const issues: string[] = [];
-  if (!status) issues.push(`${model}_result_missing`);
-  else if (status !== 'pass') issues.push(`${model}_not_passed:${status}`);
-  if (text(result.sourceDocumentHash) !== text(record.sourceDocumentHash)) {
-    issues.push(`${model}_source_hash_mismatch`);
-  }
-  if (text(result.implementationConfirmationHash) !== text(record.implementationConfirmationHash)) {
-    issues.push(`${model}_confirmation_hash_mismatch`);
-  }
-  return issues;
+function currentSixModelPassIssues(
+  record: JsonObject,
+  model: 'execution_closure' | 'audit_review'
+): string[] {
+  const verified = resolveVerifiedSixModelStatus({
+    record,
+    modelId: model,
+    currentImplementationAttemptId:
+      text(record.currentAttemptId) ||
+      text(record.implementationAttemptId) ||
+      text(record.runId) ||
+      text(nested(record.closeout).currentAttemptId),
+  });
+  return verified.effectiveStatus === 'pass'
+    ? []
+    : [`${model}_not_passed:${verified.effectiveStatus}`, ...verified.blockerRefs];
 }
 
 function closeoutPrerequisiteIssues(record: JsonObject): string[] {
@@ -2047,10 +2148,31 @@ function evaluate(
   attemptId: string,
   sourcePath?: string,
   modelPacketPath?: string,
-  reportPath?: string
+  reportPath?: string,
+  resolvedSourceAuthority?: CloseoutSourceAuthority
 ): { decision: CloseoutDecision; blockingReasons: string[]; checks: JsonObject[] } {
   const checks: JsonObject[] = [];
   const blockingReasons: string[] = [];
+  const sourceAuthority =
+    resolvedSourceAuthority ??
+    resolveCloseoutSourceAuthority({
+      record,
+      recordPath,
+      sourcePath,
+    });
+  checks.push({
+    id: 'closeout-source-authority',
+    passed: sourceAuthority.passed,
+    sourcePath: sourceAuthority.sourcePath
+      ? normalizePathForRecord(sourceAuthority.sourcePath)
+      : null,
+    sourceDocumentHash: sourceAuthority.sourceDocumentHash,
+    sourceAmendmentHashes: sourceAuthority.sourceAmendmentHashes,
+    semanticModelHash: sourceAuthority.semanticModelHash,
+    implementationConfirmationHash: sourceAuthority.implementationConfirmationHash,
+    blockingReasons: sourceAuthority.blockingReasons,
+  });
+  if (!sourceAuthority.passed) blockingReasons.push('closeout_source_unresolved');
   const openReconfirmations = openReconfirmationRequests(record);
   checks.push({
     id: 'no-open-reconfirmation-request',
@@ -2060,11 +2182,7 @@ function evaluate(
   if (openReconfirmations.length > 0) {
     blockingReasons.push('open_reconfirmation_request_exists');
   }
-  const resolvedSourcePath = sourcePath
-    ? path.resolve(sourcePath)
-    : text(record.sourcePath) && fs.existsSync(text(record.sourcePath))
-      ? path.resolve(text(record.sourcePath))
-      : undefined;
+  const resolvedSourcePath = sourceAuthority.sourcePath ?? undefined;
   const applicability = contractApplicability(resolvedSourcePath);
   const closeoutPrerequisites = closeoutPrerequisiteIssues(record);
   checks.push({
@@ -2177,11 +2295,7 @@ function evaluate(
       attemptId,
       evaluatedAt: new Date().toISOString(),
       evaluatedBy: 'main-agent-delivery-closeout-gate',
-      sourcePath: sourcePath
-        ? path.resolve(sourcePath)
-        : text(record.sourcePath) && fs.existsSync(text(record.sourcePath))
-          ? path.resolve(text(record.sourcePath))
-          : undefined,
+      sourcePath: resolvedSourcePath,
     });
     checks.push({
       id: 'strict-closeout-proof-gate-current-attempt',
@@ -2205,18 +2319,9 @@ function evaluate(
     }
   }
 
-  const resolvedAiTddSourcePath = sourcePath
-    ? path.resolve(sourcePath)
-    : text(record.sourcePath) && fs.existsSync(text(record.sourcePath))
-      ? path.resolve(text(record.sourcePath))
-      : '';
+  const resolvedAiTddSourcePath = resolvedSourcePath ?? '';
   if (aiTddContractGateRequired(record, resolvedAiTddSourcePath)) {
-    const resolvedSourcePath = sourcePath
-      ? path.resolve(sourcePath)
-      : text(record.sourcePath) && fs.existsSync(text(record.sourcePath))
-        ? path.resolve(text(record.sourcePath))
-        : '';
-    if (!resolvedSourcePath) {
+    if (!resolvedAiTddSourcePath) {
       checks.push({
         id: 'ai-tdd-contract-gate-closeout',
         passed: false,
@@ -2226,7 +2331,7 @@ function evaluate(
     } else {
       try {
         const aiTddGate = evaluateAiTddContractGate({
-          sourcePath: resolvedSourcePath,
+          sourcePath: resolvedAiTddSourcePath,
           record,
           recordPath,
           mode: 'closeout',
@@ -2388,8 +2493,9 @@ function evaluate(
   });
   if (openRcaRecords.length > 0) blockingReasons.push('open_rca_action_exists');
 
-  const decision: CloseoutDecision = blockingReasons.length === 0 ? 'pass' : 'blocked';
-  return { decision, blockingReasons, checks };
+  const canonicalBlockingReasons = uniqueStrings(blockingReasons);
+  const decision: CloseoutDecision = canonicalBlockingReasons.length === 0 ? 'pass' : 'blocked';
+  return { decision, blockingReasons: canonicalBlockingReasons, checks };
 }
 
 function closeoutFailureSourceRefs(
@@ -2480,6 +2586,106 @@ function rcaRecordsForCloseout(
   ];
 }
 
+function createDeliveryRuntimeStatus(
+  record: JsonObject,
+  input: {
+    attemptId: string;
+    decision: CloseoutDecision;
+    blockingReasons: string[];
+    reportPath: string;
+    recordPath: string;
+    closeoutAcceptanceRequest?: {
+      htmlPath: string;
+      renderReportPath: string;
+      summaryPath: string;
+      closeoutConfirmInstruction: string;
+      closeoutConfirmationPageHash: string;
+      deliveryCloseoutReportHash: string;
+      userPrompt: string;
+      ingestCommand: string;
+    };
+    evaluatedAt: string;
+    evaluatedBy: string;
+  }
+): RuntimeStatusProjectionUpdate {
+  const gateCheckId = `delivery-closeout:${input.attemptId}`;
+  const deliveryConfirmationStatus =
+    input.decision === 'pass' ? 'awaiting_user_acceptance' : input.decision;
+  const deliveryConfirmationResult = {
+    payloadKind: 'model_result',
+    model: 'delivery_confirmation',
+    recordId: text(record.recordId),
+    requirementSetId: text(record.requirementSetId) || text(record.recordId),
+    sourceDocumentHash: text(record.sourceDocumentHash),
+    implementationConfirmationHash: text(record.implementationConfirmationHash),
+    status: deliveryConfirmationStatus,
+    resultRecordedAt: input.evaluatedAt,
+    resultRecordedBy: input.evaluatedBy,
+    blockingReasons: input.blockingReasons,
+    sourceRefs: [
+      { sourceType: 'closeout_attempt', id: input.attemptId },
+      { sourceType: 'gate_check', id: gateCheckId },
+    ],
+    currentHashes: {
+      sourceDocumentHash: text(record.sourceDocumentHash),
+      implementationConfirmationHash: text(record.implementationConfirmationHash),
+      architectureConfirmationHash: text(
+        nested(record.architectureConfirmationState).currentArchitectureConfirmationHash
+      ),
+    },
+    deliveryCloseoutReportRef: {
+      path: normalizePathForRecord(input.reportPath),
+    },
+    closeoutAcceptanceRequestRef: input.closeoutAcceptanceRequest
+      ? {
+          htmlPath: input.closeoutAcceptanceRequest.htmlPath,
+          renderReportPath: input.closeoutAcceptanceRequest.renderReportPath,
+          closeoutConfirmationPageHash:
+            input.closeoutAcceptanceRequest.closeoutConfirmationPageHash,
+          deliveryCloseoutReportHash: input.closeoutAcceptanceRequest.deliveryCloseoutReportHash,
+        }
+      : null,
+  };
+  return createRuntimeStatusProjectionUpdate({
+    recordId: text(record.recordId),
+    requirementSetId: text(record.requirementSetId) || text(record.recordId),
+    modelId: 'delivery_confirmation',
+    implementationAttemptId: input.attemptId,
+    sourceDocumentHash: text(record.sourceDocumentHash),
+    implementationConfirmationHash: text(record.implementationConfirmationHash),
+    semanticModelHash: text(record.semanticModelHash),
+    stageInputs: [
+      {
+        role: 'requirement_record',
+        path: normalizePathForRecord(input.recordPath),
+        hash: `sha256:${crypto
+          .createHash('sha256')
+          .update(JSON.stringify(record), 'utf8')
+          .digest('hex')}`,
+      },
+    ],
+    deterministicGateOutputs: [
+      {
+        role: 'delivery_closeout_report',
+        path: normalizePathForRecord(input.reportPath),
+        hash: sha256File(input.reportPath),
+      },
+    ],
+    blockerRefs: input.blockingReasons,
+    evidenceRefs: [
+      normalizePathForRecord(input.reportPath),
+      ...(input.closeoutAcceptanceRequest ? [input.closeoutAcceptanceRequest.htmlPath] : []),
+    ],
+    authorityClass: 'controlled_closeout',
+    decision: input.decision === 'pass' ? 'pass' : 'block',
+    effectiveStatus:
+      input.decision === 'pass' ? 'awaiting_user_acceptance' : 'blocked',
+    createdAt: input.evaluatedAt,
+    receiptPath: `runtime/status-decisions/${input.attemptId}/delivery_confirmation.json`,
+    projection: deliveryConfirmationResult,
+  });
+}
+
 function updateRecord(
   record: JsonObject,
   input: {
@@ -2488,6 +2694,7 @@ function updateRecord(
     blockingReasons: string[];
     checks: JsonObject[];
     reportPath: string;
+    recordPath: string;
     closeoutAcceptanceRequest?: {
       htmlPath: string;
       renderReportPath: string;
@@ -2501,6 +2708,7 @@ function updateRecord(
     evaluatedAt: string;
     evaluatedBy: string;
     allowExistingAttempt?: boolean;
+    runtimeStatus?: RuntimeStatusProjectionUpdate;
   }
 ): JsonObject {
   const closeout =
@@ -2543,44 +2751,7 @@ function updateRecord(
     input.decision === 'pass'
       ? 'delivery_confirmation_user_acceptance_requested'
       : 'delivery_confirmation_result_recorded';
-  const deliveryConfirmationStatus =
-    input.decision === 'pass' ? 'awaiting_user_acceptance' : input.decision;
-  const previousSixModelResults = nested(record.sixModelResults);
-  const deliveryConfirmationResult = {
-    payloadKind: 'model_result',
-    model: 'delivery_confirmation',
-    recordId: text(record.recordId),
-    requirementSetId: text(record.requirementSetId) || text(record.recordId),
-    sourceDocumentHash: text(record.sourceDocumentHash),
-    implementationConfirmationHash: text(record.implementationConfirmationHash),
-    status: deliveryConfirmationStatus,
-    resultRecordedAt: input.evaluatedAt,
-    resultRecordedBy: input.evaluatedBy,
-    blockingReasons: input.blockingReasons,
-    sourceRefs: [
-      { sourceType: 'closeout_attempt', id: input.attemptId },
-      { sourceType: 'gate_check', id: gateCheckId },
-    ],
-    currentHashes: {
-      sourceDocumentHash: text(record.sourceDocumentHash),
-      implementationConfirmationHash: text(record.implementationConfirmationHash),
-      architectureConfirmationHash: text(
-        nested(record.architectureConfirmationState).currentArchitectureConfirmationHash
-      ),
-    },
-    deliveryCloseoutReportRef: {
-      path: normalizePathForRecord(input.reportPath),
-    },
-    closeoutAcceptanceRequestRef: input.closeoutAcceptanceRequest
-      ? {
-          htmlPath: input.closeoutAcceptanceRequest.htmlPath,
-          renderReportPath: input.closeoutAcceptanceRequest.renderReportPath,
-          closeoutConfirmationPageHash:
-            input.closeoutAcceptanceRequest.closeoutConfirmationPageHash,
-          deliveryCloseoutReportHash: input.closeoutAcceptanceRequest.deliveryCloseoutReportHash,
-        }
-      : null,
-  };
+  const runtimeStatus = input.runtimeStatus ?? createDeliveryRuntimeStatus(record, input);
   const closeoutAcceptanceRequest = input.closeoutAcceptanceRequest
     ? {
         status: 'awaiting_user_acceptance',
@@ -2618,10 +2789,11 @@ function updateRecord(
     gateChecks: [...objects(record.gateChecks), gateCheck],
     failureRecords,
     rcaRecords,
-    sixModelResults: {
-      ...previousSixModelResults,
-      delivery_confirmation: deliveryConfirmationResult,
-    },
+    ...runtimeStatusProjectionRecordPatch({
+      record,
+      modelId: 'delivery_confirmation',
+      update: runtimeStatus,
+    }),
     status:
       input.decision === 'pass'
         ? 'awaiting_user_acceptance'
@@ -2671,16 +2843,39 @@ export function mainDeliveryCloseoutGate(argv: string[]): number {
   const reportPath = path.resolve(
     args.reportPath ?? path.join(path.dirname(recordPath), 'delivery-closeout-report.json')
   );
-  const sourcePathForCloseout =
-    resolveSourcePathForCloseout(record, recordPath, args.source) ?? args.source;
-  const evaluation = evaluate(
+  const sourceAuthority = resolveCloseoutSourceAuthority({
+    record,
+    recordPath,
+    sourcePath: args.source,
+  });
+  const sourcePathForCloseout = sourceAuthority.sourcePath ?? args.source;
+  const sourcePrdLintTransition = validateSourcePrdLintTransitionFromFiles({
+    transition: 'closeout',
+    requirementRecordPath: recordPath,
+    currentSourcePath: sourcePathForCloseout ?? '',
+  });
+  const baseEvaluation = evaluate(
     record,
     recordPath,
     attemptId,
     sourcePathForCloseout,
     args.modelPacket,
-    reportPath
+    reportPath,
+    sourceAuthority
   );
+  const evaluation =
+    sourcePrdLintTransition.decision === 'pass'
+      ? baseEvaluation
+      : {
+          ...baseEvaluation,
+          decision: 'blocked' as const,
+          blockingReasons: [
+            ...new Set([
+              ...baseEvaluation.blockingReasons,
+              ...sourcePrdLintTransition.issueCodes,
+            ]),
+          ],
+        };
   const report = {
     reportType: 'delivery_closeout_report',
     generatedAt: evaluatedAt,
@@ -2714,34 +2909,30 @@ export function mainDeliveryCloseoutGate(argv: string[]): number {
       blockingReasons: evaluation.blockingReasons,
       checks: evaluation.checks,
       reportPath,
+      recordPath,
       evaluatedAt,
       evaluatedBy,
       allowExistingAttempt:
         attemptExists && (!explicitAttemptId || args.allowExistingAttempt === true),
     });
-    writeJsonAtomic(recordPath, projectedRecord);
-    try {
-      const rendered = renderCloseoutConfirmation({
-        record: projectedRecord,
-        recordPath,
-        sourcePath: sourcePathForCloseout,
-        closeoutReportPath: reportPath,
-        htmlPath,
-        renderReportPath,
-      });
-      closeoutAcceptanceRequest = {
-        htmlPath: relativePathForRecord(recordPath, rendered.htmlPath),
-        renderReportPath: relativePathForRecord(recordPath, rendered.renderReportPath),
-        summaryPath: relativePathForRecord(recordPath, rendered.summaryPath),
-        closeoutConfirmInstruction: rendered.closeoutConfirmInstruction,
-        closeoutConfirmationPageHash: rendered.closeoutConfirmationPageHash,
-        deliveryCloseoutReportHash: rendered.deliveryCloseoutReportHash,
-        userPrompt: rendered.userPrompt,
-        ingestCommand: rendered.ingestCommand,
-      };
-    } finally {
-      writeJsonAtomic(recordPath, record);
-    }
+    const rendered = renderCloseoutConfirmation({
+      record: projectedRecord,
+      recordPath,
+      sourcePath: sourceAuthority.sourcePath!,
+      closeoutReportPath: reportPath,
+      htmlPath,
+      renderReportPath,
+    });
+    closeoutAcceptanceRequest = {
+      htmlPath: relativePathForRecord(recordPath, rendered.htmlPath),
+      renderReportPath: relativePathForRecord(recordPath, rendered.renderReportPath),
+      summaryPath: relativePathForRecord(recordPath, rendered.summaryPath),
+      closeoutConfirmInstruction: rendered.closeoutConfirmInstruction,
+      closeoutConfirmationPageHash: rendered.closeoutConfirmationPageHash,
+      deliveryCloseoutReportHash: rendered.deliveryCloseoutReportHash,
+      userPrompt: rendered.userPrompt,
+      ingestCommand: rendered.ingestCommand,
+    };
   }
   const closeoutPayload = {
     attemptId,
@@ -2749,10 +2940,12 @@ export function mainDeliveryCloseoutGate(argv: string[]): number {
     blockingReasons: evaluation.blockingReasons,
     checks: evaluation.checks,
     reportPath,
+    recordPath,
     closeoutAcceptanceRequest,
     evaluatedAt,
     evaluatedBy,
   };
+  const runtimeStatus = createDeliveryRuntimeStatus(record, closeoutPayload);
   const commit = appendControlEventAndReplay({
     recordPath,
     writerId: 'delivery-closeout-gate-writer',
@@ -2761,12 +2954,15 @@ export function mainDeliveryCloseoutGate(argv: string[]): number {
         ? 'delivery_confirmation_user_acceptance_requested'
         : 'delivery_confirmation_result_recorded',
     recordedAt: evaluatedAt,
+    expectedBeforeRecordHash: sha256Json(canonicalizeRequirementRecord(record)),
     payload: closeoutPayload,
+    artifactWrites: runtimeStatusProjectionArtifactWrites(runtimeStatus),
     reduce: (currentRecord) =>
       updateRecord(currentRecord, {
         ...closeoutPayload,
         allowExistingAttempt:
           attemptExists && (!explicitAttemptId || args.allowExistingAttempt === true),
+        runtimeStatus,
       }),
   });
   const output = {

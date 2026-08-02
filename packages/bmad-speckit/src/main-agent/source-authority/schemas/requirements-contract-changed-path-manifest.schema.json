@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-changed-path-manifest.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "transactionId",
+    "implementationAttemptId",
+    "baselineSnapshotHash",
+    "candidateSnapshotHash",
+    "candidateSnapshotCapturedBefore",
+    "candidateFileIndex",
+    "candidateFileIndexHash",
+    "gitDiffHash",
+    "changedPaths",
+    "untrackedPaths",
+    "deletedPaths",
+    "unauthorizedPathCount",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-changed-path-manifest/v1"
+    },
+    "transactionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "implementationAttemptId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "baselineSnapshotHash": {
+      "type": "string",
+      "minLength": 1
+    },
+    "candidateSnapshotHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "candidateSnapshotCapturedBefore": {
+      "const": "CMD-21"
+    },
+    "candidateFileIndex": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/fileIndexEntry"
+      }
+    },
+    "candidateFileIndexHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "gitDiffHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "changedPaths": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/change"
+      }
+    },
+    "untrackedPaths": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "deletedPaths": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "unauthorizedPathCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "decision": {
+      "enum": ["pass", "block"]
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "fileIndexEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "pathRole", "tracked", "bytes", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "pathRole": {
+          "enum": ["implementation", "test", "documentation"]
+        },
+        "tracked": { "type": "boolean" },
+        "bytes": { "type": "integer", "minimum": 0 },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "change": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "changeType",
+        "pathRole",
+        "beforeHash",
+        "afterHash",
+        "authorityRefs",
+        "authorizationDecision",
+        "authorizationReasonRefs"
+      ],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "changeType": { "enum": ["added", "modified", "deleted"] },
+        "pathRole": {
+          "enum": ["implementation", "test", "documentation"]
+        },
+        "beforeHash": {
+          "oneOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }]
+        },
+        "afterHash": {
+          "oneOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }]
+        },
+        "authorityRefs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "requirementRefs",
+            "acceptanceRefs",
+            "traceRefs",
+            "targetRefs"
+          ],
+          "properties": {
+            "requirementRefs": {
+              "type": "array",
+              "items": { "type": "string" },
+              "uniqueItems": true
+            },
+            "acceptanceRefs": {
+              "type": "array",
+              "items": { "type": "string" },
+              "uniqueItems": true
+            },
+            "traceRefs": {
+              "type": "array",
+              "items": { "type": "string" },
+              "uniqueItems": true
+            },
+            "targetRefs": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          }
+        },
+        "authorizationDecision": {
+          "enum": ["pass", "block"]
+        },
+        "authorizationReasonRefs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}

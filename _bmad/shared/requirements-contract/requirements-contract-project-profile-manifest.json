@@ -1,0 +1,103 @@
+{
+  "schemaVersion": "requirements-contract-project-profile-manifest/v1",
+  "owner": {
+    "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-project-profile.ts",
+    "hash": "sha256:5fda5d3d64ad5d044c43d1f32699284920add498331a8dad6e381b998a4c11e4"
+  },
+  "projectKinds": [
+    "consumer_product",
+    "governance_framework",
+    "hybrid"
+  ],
+  "classificationAuthorityKinds": [
+    "install_manifest",
+    "registered_architecture_record",
+    "decision_receipt"
+  ],
+  "diagramPolicyRegistry": {
+    "path": "_bmad/shared/requirements-contract/requirements-contract-diagram-policy-registry.json",
+    "hash": "sha256:36f1948c95aca6c1d445742da7ab395ac566eb5038e597f68e16368f2f2e92eb"
+  },
+  "components": [
+    {
+      "role": "project_profile_schema",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-project-profile.schema.json",
+      "hash": "sha256:c90dda18cbf1523022630402aa21fdf6ec5481b8914afc73ffbbe891f9a20d79"
+    },
+    {
+      "role": "project_profile_resolver",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-project-profile-resolver.ts",
+      "hash": "sha256:0d6522576459d61a651010022934661622da5cbf7371fe92ea400621ad2439a2"
+    },
+    {
+      "role": "diagram_applicability_schema",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-diagram-applicability.schema.json",
+      "hash": "sha256:f3869aaac1f11f1fc4f11a9a7433be567989bb02a2eb1fe2f375fdcf267f03cc"
+    },
+    {
+      "role": "diagram_applicability_planner",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-diagram-applicability-planner.ts",
+      "hash": "sha256:0ee5c408d60e5c7a63ab6cd119edcacbf2d6a5515d2ebc1a90a7794d08f19a6a"
+    },
+    {
+      "role": "sequence_contract_schema",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-sequence-contract.schema.json",
+      "hash": "sha256:66a681bce7ac751ede60cf414873002757c3c3fd8296a19944217ca1cd021381"
+    },
+    {
+      "role": "sequence_compiler",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-sequence-compiler.ts",
+      "hash": "sha256:050531f7d2cde045bbdcf749c8262a76ffdae901e748ddac0e235de53dc334b7"
+    },
+    {
+      "role": "diagram_set_schema",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-diagram-set.schema.json",
+      "hash": "sha256:d01dc7544c0ce9795048daac6a41949f72689b12e4c33f79a40d22c99b264f1e"
+    },
+    {
+      "role": "diagram_set_planner",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-diagram-set-planner.ts",
+      "hash": "sha256:28b5729c7012ae10c146a88246681a06f0198609267d399e1905c7a173e27269"
+    },
+    {
+      "role": "mermaid_projection",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-sequence-mermaid-projection.ts",
+      "hash": "sha256:34da0bbe2af46243947188018b8d350d890074ddf18307a05aab8167392d1834"
+    },
+    {
+      "role": "sequence_trace_compiler",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-sequence-trace-matrix.ts",
+      "hash": "sha256:ac5d2eaef88d3072faa3460e360278f1a762b0b6eca64addf05f789f349a5d04"
+    },
+    {
+      "role": "deployment_model_schema",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-deployment-model.schema.json",
+      "hash": "sha256:279b754146ac98b0c0245048b25e6fe9e81727cd71748a08c7b925e921d89d38"
+    },
+    {
+      "role": "deployment_delta_schema",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-deployment-delta.schema.json",
+      "hash": "sha256:752c36a07d3bd3b5a023ec75a224e36a1f2359eca16c74b60a64a6ee4c59ba85"
+    },
+    {
+      "role": "deployment_model",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-deployment-model.ts",
+      "hash": "sha256:3b9bc445edc7e29f131798c3faaffd5d75edb4791baa84f6bf51147e66001155"
+    },
+    {
+      "role": "deployment_delta",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-deployment-delta.ts",
+      "hash": "sha256:f604c10e20d51dcbfc1e0b976481046e9f0e5b6c0977ae90bdc3d3a2d31b54df"
+    },
+    {
+      "role": "observed_sequence_producer",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-observed-sequence-evidence.ts",
+      "hash": "sha256:ec62460387ecb9ecd4f36b57e9eded6f8f49fbfe975b7b055235dc870bcd0345"
+    },
+    {
+      "role": "validation_facade",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-validation-facade.ts",
+      "hash": "sha256:2b2fb2f513afa97bb7a459ff5890725382fc4edaa26d41bb3176b8b7039656a1"
+    }
+  ]
+}

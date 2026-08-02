@@ -38,6 +38,10 @@
       "items": { "$ref": "#/$defs/mentalModelTransition" }
     },
     "sixModelResults": { "$ref": "#/$defs/sixModelResults" },
+    "runtimeStatusDecisionReceipts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/runtimeStatusDecisionReceiptRef" }
+    },
     "pendingBlockerIntake": {
       "type": "array",
       "items": { "$ref": "#/$defs/pendingBlockerIntake" }
@@ -85,6 +89,16 @@
     "runtimePolicySnapshotRef": { "$ref": "#/$defs/artifactRef" },
     "sourceDocumentHash": { "$ref": "#/$defs/sha256" },
     "implementationConfirmationHash": { "$ref": "#/$defs/sha256" },
+    "semanticModelHash": { "$ref": "#/$defs/sha256" },
+    "sourceAmendmentHashes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/sha256" }
+    },
+    "transactionId": { "$ref": "#/$defs/nonEmptyString" },
+    "packetHash": { "$ref": "#/$defs/sha256" },
+    "currentAttemptId": { "$ref": "#/$defs/nonEmptyString" },
     "confirmationPageHash": { "$ref": "#/$defs/sha256" },
     "latestConfirmationProjectionHash": { "$ref": "#/$defs/sha256" },
     "confirmationProjectionHistory": {
@@ -99,6 +113,13 @@
       "minItems": 1,
       "items": { "$ref": "#/$defs/confirmationEvent" }
     },
+    "controlledIngestWriterRegistryRequired": { "const": true },
+    "controlledIngestWriterRegistry": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/controlledIngestWriter" }
+    },
+    "controlledIngestWriterRegistryHash": { "$ref": "#/$defs/sha256" },
     "architectureConfirmationState": { "$ref": "#/$defs/architectureConfirmationState" },
     "architectureConfirmations": {
       "type": "array",
@@ -234,10 +255,7 @@
       "items": { "$ref": "#/$defs/artifactRef" }
     },
     "deliveryEvidence": { "$ref": "#/$defs/deliveryEvidence" },
-    "nativeGoalHandoff": {
-      "type": "object",
-      "additionalProperties": true
-    },
+    "nativeGoalHandoff": { "$ref": "#/$defs/nativeGoalHandoff" },
     "closeout": { "$ref": "#/$defs/closeout" },
     "closeoutAcceptance": {
       "type": "object",
@@ -276,6 +294,16 @@
     "lastAppliedEventHash": { "$ref": "#/$defs/sha256" },
     "eventChainHead": { "$ref": "#/$defs/sha256" },
     "eventCount": { "type": "integer", "minimum": 0 },
+    "recordRevision": { "type": "integer", "minimum": 0 },
+    "activeBundleRevision": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^BUNDLE-REV-[A-Z0-9][A-Z0-9._-]*$"
+        },
+        { "type": "null" }
+      ]
+    },
     "controlStore": { "$ref": "#/$defs/controlStore" },
     "updatedAt": { "type": "string", "format": "date-time" }
   },
@@ -317,6 +345,180 @@
         "lastEventHash": { "$ref": "#/$defs/sha256" },
         "reducer": { "const": "canonical-requirement-record-reducer/v1" },
         "atomicCommitter": { "const": "requirement-record-control-store/v1" }
+      }
+    },
+    "controlledIngestWriter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["writerId", "eventTypes", "writerHash"],
+      "properties": {
+        "writerId": { "$ref": "#/$defs/nonEmptyString" },
+        "eventTypes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "writerHash": { "$ref": "#/$defs/sha256" },
+        "scriptPath": { "$ref": "#/$defs/nonEmptyString" },
+        "scriptContentHash": { "$ref": "#/$defs/sha256" },
+        "ownerModel": { "$ref": "#/$defs/nonEmptyString" },
+        "allowedWriteApis": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "allowedPaths": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "payloadContractRefs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "writesControlFields": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "receiptPath": { "$ref": "#/$defs/nonEmptyString" },
+        "beforeAfterHashRequired": { "type": "boolean" },
+        "canModifyWriterRegistry": { "type": "boolean" },
+        "registryHash": { "$ref": "#/$defs/sha256" },
+        "architectureConfirmationHash": { "$ref": "#/$defs/sha256" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "writerId": {
+                "const": "goal-contract-authority-supersession"
+              }
+            },
+            "required": ["writerId"]
+          },
+          "then": {
+            "required": [
+              "scriptPath",
+              "scriptContentHash",
+              "ownerModel",
+              "allowedWriteApis",
+              "allowedPaths",
+              "payloadContractRefs",
+              "writesControlFields",
+              "receiptPath",
+              "beforeAfterHashRequired",
+              "canModifyWriterRegistry",
+              "registryHash",
+              "architectureConfirmationHash"
+            ],
+            "properties": {
+              "eventTypes": {
+                "const": [
+                  "goal_contract_partition_authority_superseded"
+                ]
+              },
+              "scriptPath": {
+                "pattern": "^(?:packages/bmad-speckit/src|dist)/utils/goal-contract/control-plane/authority-supersession\\.(?:ts|js)$"
+              },
+              "ownerModel": { "const": "implementation_readiness" },
+              "allowedWriteApis": {
+                "const": ["appendControlEventAndReplay"]
+              },
+              "allowedPaths": {
+                "const": [
+                  "_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json",
+                  "_bmad-output/runtime/requirement-records/<requirement-set-id>/events/control-events.jsonl",
+                  "_bmad-output/runtime/requirement-records/<requirement-set-id>/events/receipts/<event-id>.json",
+                  "_bmad-output/runtime/requirement-records/<requirement-set-id>/goal-contract/partition-runs/<partition-run-id>",
+                  "_bmad-output/runtime/requirement-records/<requirement-set-id>/goal-contract/active-partition-run.json",
+                  "_bmad-output/runtime/requirement-records/<requirement-set-id>/goal-contract/pointer-projection-blocked.json"
+                ]
+              },
+              "payloadContractRefs": {
+                "const": [
+                  "goal-contract-partition-authority-supersession/v1"
+                ]
+              },
+              "writesControlFields": {
+                "const": [
+                  "nativeGoalHandoff.goalContractPartitionAuthority"
+                ]
+              },
+              "receiptPath": {
+                "const": "_bmad-output/runtime/requirement-records/<requirement-set-id>/events/receipts/<event-id>.json"
+              },
+              "beforeAfterHashRequired": { "const": true },
+              "canModifyWriterRegistry": { "const": false }
+            }
+          }
+        }
+      ]
+    },
+    "nativeGoalHandoff": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "masterImplementationPlanHash": { "$ref": "#/$defs/sha256" },
+        "goalContractSourceIdentity": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "masterImplementationPlanHash": {
+              "$ref": "#/$defs/sha256"
+            }
+          }
+        },
+        "goalContractPartitionAuthority": {
+          "$ref": "#/$defs/goalContractPartitionAuthority"
+        }
+      }
+    },
+    "goalContractPartitionAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "requirementSetId",
+        "sourceHash",
+        "partitionRunId",
+        "authorityRoot",
+        "partitionPlanHash",
+        "partitionManifestHash",
+        "partitionManifestDocumentHash",
+        "partitionSetHash",
+        "eventChainProjection"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "goal-contract-partition-authority-supersession/v1"
+        },
+        "requirementSetId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "sourceHash": { "$ref": "#/$defs/sha256" },
+        "partitionRunId": {
+          "type": "string",
+          "pattern": "^partition-run-[0-9a-f]{64}$"
+        },
+        "authorityRoot": {
+          "type": "string",
+          "pattern": "(?:^|/)_bmad-output/runtime/requirement-records/[A-Za-z0-9][A-Za-z0-9._-]{0,127}/goal-contract$"
+        },
+        "partitionPlanHash": { "$ref": "#/$defs/sha256" },
+        "partitionManifestHash": { "$ref": "#/$defs/sha256" },
+        "partitionManifestDocumentHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "partitionSetHash": { "$ref": "#/$defs/sha256" },
+        "eventChainProjection": { "$ref": "#/$defs/sha256" }
       }
     },
     "globalContractTraceabilityPolicy": {
@@ -447,6 +649,91 @@
         "id": { "$ref": "#/$defs/nonEmptyString" }
       }
     },
+    "runtimeStatusDecisionReceiptRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "receipt"],
+      "properties": {
+        "path": { "$ref": "#/$defs/nonEmptyString" },
+        "receipt": { "$ref": "#/$defs/runtimeStatusDecisionReceipt" }
+      }
+    },
+    "runtimeStatusDecisionReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "recordId",
+        "requirementSetId",
+        "modelId",
+        "implementationAttemptId",
+        "sourceDocumentHash",
+        "implementationConfirmationHash",
+        "semanticModelHash",
+        "stageInputs",
+        "deterministicGateOutputs",
+        "blockerRefs",
+        "evidenceRefs",
+        "authorityClass",
+        "decision",
+        "effectiveStatus",
+        "createdAt",
+        "receiptHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "requirements-contract-runtime-status-decision-receipt/v1"
+        },
+        "recordId": { "$ref": "#/$defs/nonEmptyString" },
+        "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },
+        "modelId": {
+          "enum": [
+            "requirement_confirmation",
+            "architecture_confirmation",
+            "implementation_readiness",
+            "execution_closure",
+            "audit_review",
+            "delivery_confirmation"
+          ]
+        },
+        "implementationAttemptId": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceDocumentHash": { "$ref": "#/$defs/sha256" },
+        "implementationConfirmationHash": { "$ref": "#/$defs/sha256" },
+        "semanticModelHash": { "$ref": "#/$defs/sha256" },
+        "stageInputs": { "$ref": "#/$defs/runtimeStatusBindings" },
+        "deterministicGateOutputs": { "$ref": "#/$defs/runtimeStatusBindings" },
+        "blockerRefs": { "$ref": "#/$defs/uniqueStrings" },
+        "evidenceRefs": { "$ref": "#/$defs/uniqueStrings" },
+        "authorityClass": {
+          "enum": ["controlled_confirmation", "deterministic_gate", "controlled_closeout"]
+        },
+        "decision": { "enum": ["pass", "block", "stale"] },
+        "effectiveStatus": {
+          "enum": ["pass", "blocked", "stale", "not_established", "awaiting_user_acceptance"]
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "receiptHash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "runtimeStatusBindings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "path", "hash"],
+        "properties": {
+          "role": { "$ref": "#/$defs/nonEmptyString" },
+          "path": { "$ref": "#/$defs/nonEmptyString" },
+          "hash": { "$ref": "#/$defs/sha256" }
+        }
+      }
+    },
+    "uniqueStrings": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/nonEmptyString" }
+    },
     "modelResult": {
       "type": "object",
       "additionalProperties": true,
@@ -480,6 +767,10 @@
         "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },
         "sourceDocumentHash": { "$ref": "#/$defs/sha256" },
         "implementationConfirmationHash": { "$ref": "#/$defs/sha256" },
+        "semanticModelHash": { "$ref": "#/$defs/sha256" },
+        "currentAttemptId": { "$ref": "#/$defs/nonEmptyString" },
+        "decisionReceiptRef": { "$ref": "#/$defs/nonEmptyString" },
+        "decisionReceiptHash": { "$ref": "#/$defs/sha256" },
         "status": { "enum": ["pass", "awaiting_user_acceptance", "blocked", "fail", "stale", "not_established"] },
         "resultRecordedAt": { "type": "string", "format": "date-time" },
         "resultRecordedBy": { "$ref": "#/$defs/nonEmptyString" },
@@ -677,11 +968,59 @@
       "properties": {
         "commandId": { "$ref": "#/$defs/nonEmptyString" },
         "command": { "$ref": "#/$defs/nonEmptyString" },
+        "normalizedCommand": { "$ref": "#/$defs/nonEmptyString" },
+        "cwd": { "$ref": "#/$defs/nonEmptyString" },
+        "executorIdentity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["class", "id"],
+          "properties": {
+            "class": { "$ref": "#/$defs/nonEmptyString" },
+            "id": { "$ref": "#/$defs/nonEmptyString" }
+          }
+        },
+        "runtimeVersions": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "dependencyLockHashes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "hash"],
+            "properties": {
+              "path": { "$ref": "#/$defs/nonEmptyString" },
+              "hash": { "$ref": "#/$defs/sha256" }
+            }
+          }
+        },
+        "environment": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": true
+        },
+        "environmentFingerprint": { "$ref": "#/$defs/sha256" },
+        "environmentCompatibilityDecision": { "const": "pass" },
+        "transactionId": { "$ref": "#/$defs/nonEmptyString" },
+        "implementationAttemptId": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceDocumentHash": { "$ref": "#/$defs/sha256" },
+        "semanticModelHash": { "$ref": "#/$defs/sha256" },
+        "packetHash": { "$ref": "#/$defs/sha256" },
         "runId": { "$ref": "#/$defs/nonEmptyString" },
         "closeoutAttemptId": { "$ref": "#/$defs/nonEmptyString" },
         "exitCode": { "type": "integer" },
         "startedAt": { "type": "string", "format": "date-time" },
         "completedAt": { "type": "string", "format": "date-time" },
+        "outputPath": { "$ref": "#/$defs/nonEmptyString" },
+        "outputHash": { "$ref": "#/$defs/sha256" },
+        "coveredRequirementIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
         "outputSummary": { "type": "string" }
       }
     },
@@ -967,7 +1306,14 @@
         "implementationConfirmationHash": { "$ref": "#/$defs/sha256" },
         "architectureConfirmationHash": { "$ref": "#/$defs/sha256" },
         "recordedAt": { "type": "string", "format": "date-time" },
-        "recordedBy": { "$ref": "#/$defs/nonEmptyString" }
+        "recordedBy": { "$ref": "#/$defs/nonEmptyString" },
+        "authorityClass": { "const": "untrusted_claim" },
+        "commandSuccessEligible": { "const": false },
+        "requirementClosureEligible": { "const": false },
+        "evidenceAcceptanceEligible": { "const": false },
+        "gatePassEligible": { "const": false },
+        "sixModelAdvancementEligible": { "const": false },
+        "completionEligible": { "const": false }
       }
     },
     "subagentEvidenceEnvelopeEvent": {
@@ -1154,6 +1500,9 @@
         "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },
         "requirementId": { "$ref": "#/$defs/nonEmptyString" },
         "status": { "enum": ["open", "pass", "fail", "blocked"] },
+        "oracleId": { "$ref": "#/$defs/nonEmptyString" },
+        "oracleResultHash": { "$ref": "#/$defs/sha256" },
+        "oracleObservedAt": { "type": "string", "format": "date-time" },
         "traceRows": {
           "type": "array",
           "items": { "$ref": "#/$defs/nonEmptyString" }
@@ -1555,6 +1904,10 @@
           "items": { "$ref": "#/$defs/readinessOverlayBinding" }
         },
         "artifactBindings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/readinessOverlayBinding" }
+        },
+        "targetPathBindings": {
           "type": "array",
           "items": { "$ref": "#/$defs/readinessOverlayBinding" }
         },

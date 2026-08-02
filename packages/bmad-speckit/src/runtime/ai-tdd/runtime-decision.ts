@@ -1,6 +1,10 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { createHash } = require('node:crypto');
 const { MODEL_IDS, loadAiTddProjectionManifests } = require('./projection-manifest');
+const {
+  resolveVerifiedSixModelStatus,
+} = require('../../main-agent/source-authority/scripts/requirements-contract-runtime-status-authority-core.cjs');
 
 const VIEW_MODE = 'AI-TDD Runtime Six-Model Panorama';
 
@@ -32,6 +36,169 @@ function normalizePath(value) {
 function isPathInside(parent, candidate) {
   const relative = path.relative(parent, candidate);
   return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+}
+
+function sha256File(filePath) {
+  try {
+    return `sha256:${createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')}`;
+  } catch {
+    return '';
+  }
+}
+
+function objectValue(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : null;
+}
+
+function resolveCompiledArtifactPath(recordPath, artifactPath) {
+  const raw = text(artifactPath);
+  if (!raw) return '';
+  if (path.isAbsolute(raw)) return path.resolve(raw);
+  const recordRoot = path.dirname(recordPath);
+  const projectRoot = path.resolve(recordRoot, '..', '..', '..', '..');
+  return path.resolve(projectRoot, raw);
+}
+
+function validateCompiledImplementPacket(record, recordPath, packet) {
+  const ref = objectValue(packet.compiledPromptRef);
+  const recordRoot = path.dirname(recordPath);
+  const blockingReasons = [];
+  if (objectValue(packet.compilerBlock)) blockingReasons.push('compiler_block_present');
+  if (!ref) return { ok: false, blockingReasons: ['compiledPromptRef_missing'] };
+
+  const artifacts = {};
+  for (const [name, pathField, hashField] of [
+    ['modelPacket', 'modelPacketPath', 'modelPacketHash'],
+    ['humanPrompt', 'humanPromptPath', 'humanPromptHash'],
+    ['auditReceipt', 'auditReceiptPath', 'auditReceiptHash'],
+    ['goalExecution', 'goalExecutionPath', 'goalExecutionHash'],
+  ]) {
+    const artifactPath = resolveCompiledArtifactPath(recordPath, ref[pathField]);
+    const expectedHash = text(ref[hashField]);
+    artifacts[name] = artifactPath;
+    if (!artifactPath || !expectedHash) {
+      blockingReasons.push(`${name}_reference_missing`);
+      continue;
+    }
+    if (!isPathInside(recordRoot, artifactPath)) {
+      blockingReasons.push(`${name}_outside_requirement_record`);
+      continue;
+    }
+    if (!fs.existsSync(artifactPath)) {
+      blockingReasons.push(`${name}_missing`);
+      continue;
+    }
+    if (sha256File(artifactPath) !== expectedHash) {
+      blockingReasons.push(`${name}_hash_mismatch`);
+    }
+  }
+
+  const modelPacket = readJson(artifacts.modelPacket);
+  const auditReceipt = readJson(artifacts.auditReceipt);
+  const manifest = objectValue(modelPacket?.contractExecutionManifest);
+  const receiptManifest = objectValue(auditReceipt?.contractExecutionManifest);
+  if (text(modelPacket?.artifactRole) !== 'execution_authority') {
+    blockingReasons.push('model_packet_not_execution_authority');
+  }
+  if (
+    text(modelPacket?.sourceDocumentHash) !== text(record.sourceDocumentHash) ||
+    text(modelPacket?.implementationConfirmationHash) !==
+      text(record.implementationConfirmationHash)
+  ) {
+    blockingReasons.push('model_packet_current_hash_mismatch');
+  }
+  if (
+    text(manifest?.schemaVersion) !== 'contract-execution-manifest/v1' ||
+    !text(manifest?.builderVersion) ||
+    !text(manifest?.manifestHash) ||
+    !text(manifest?.sourceProjectionHash) ||
+    text(manifest?.implementationConfirmationHash) !==
+      text(record.implementationConfirmationHash)
+  ) {
+    blockingReasons.push('contract_execution_manifest_invalid');
+  }
+  if (
+    text(auditReceipt?.decision) !== 'pass' ||
+    auditReceipt?.humanPromptRequiredFragmentsPassed !== true ||
+    auditReceipt?.goalDocumentRequiredFragmentsPassed !== true
+  ) {
+    blockingReasons.push('audit_receipt_not_pass');
+  }
+  if (
+    text(auditReceipt?.sourceDocumentHash) !== text(record.sourceDocumentHash) ||
+    text(auditReceipt?.implementationConfirmationHash) !==
+      text(record.implementationConfirmationHash) ||
+    text(receiptManifest?.manifestHash) !== text(manifest?.manifestHash) ||
+    text(receiptManifest?.sourceProjectionHash) !== text(manifest?.sourceProjectionHash)
+  ) {
+    blockingReasons.push('audit_receipt_manifest_mismatch');
+  }
+  const goalCommand = objectValue(auditReceipt?.goalCommand);
+  if (
+    text(goalCommand?.mode) !== 'native_goal_document_ref' ||
+    text(goalCommand?.documentHash) !== text(ref.goalExecutionHash)
+  ) {
+    blockingReasons.push('goal_execution_contract_not_bound');
+  }
+
+  return {
+    ok: blockingReasons.length === 0,
+    blockingReasons: unique(blockingReasons),
+  };
+}
+
+function resolveCompiledImplementPacket(record, recordPath) {
+  const packetDir = path.join(
+    path.dirname(recordPath),
+    'prompts',
+    'prompt-packets'
+  );
+  if (!fs.existsSync(packetDir)) {
+    return { status: 'missing', packetPath: '', blockingReasons: ['compiled_packet_missing'] };
+  }
+  const candidates = fs
+    .readdirSync(packetDir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+    .map((entry) => {
+      const packetPath = path.join(packetDir, entry.name);
+      return {
+        packetPath,
+        packet: readJson(packetPath),
+        updatedAt: fs.statSync(packetPath).mtimeMs,
+      };
+    })
+    .filter(({ packet }) => {
+      const ref = objectValue(packet?.compiledPromptRef);
+      return (
+        text(packet?.taskType) === 'implement' &&
+        text(packet?.authorityMode) === 'compiled_implementation_confirmation' &&
+        text(ref?.sourceDocumentHash) === text(record.sourceDocumentHash) &&
+        text(ref?.implementationConfirmationHash) ===
+          text(record.implementationConfirmationHash)
+      );
+    })
+    .sort((left, right) => right.updatedAt - left.updatedAt);
+
+  if (candidates.length === 0) {
+    return { status: 'missing', packetPath: '', blockingReasons: ['compiled_packet_missing'] };
+  }
+  for (const candidate of candidates) {
+    const validation = validateCompiledImplementPacket(record, recordPath, candidate.packet);
+    if (validation.ok) {
+      return {
+        status: 'usable',
+        packetPath: normalizePath(candidate.packetPath),
+        blockingReasons: [],
+      };
+    }
+  }
+  const latest = candidates[0];
+  const validation = validateCompiledImplementPacket(record, recordPath, latest.packet);
+  return {
+    status: 'invalid',
+    packetPath: normalizePath(latest.packetPath),
+    blockingReasons: validation.blockingReasons,
+  };
 }
 
 function unique(values) {
@@ -249,62 +416,36 @@ function loadActiveRequirementRecords(projectRoot, options = {}) {
   return { index, records, allRecords, closedRecords };
 }
 
-function modelStatusEvidence(record, modelId, currentMentalModel = '') {
-  const explicit = record.sixModelResults?.[modelId]?.status || record.sixModelResults?.[modelId];
-  if (typeof explicit === 'string') {
-    return { status: explicit, source: 'explicit sixModelResults' };
-  }
-  if (explicit && typeof explicit.status === 'string') {
-    return { status: explicit.status, source: 'explicit sixModelResults' };
-  }
-  if (modelId === 'requirement_confirmation') {
-    return record.sourceDocumentHash && record.implementationConfirmationHash
-      ? {
-          status: 'pass',
-          source: 'inferred from sourceDocumentHash + implementationConfirmationHash',
-        }
-      : { status: 'not_established', source: 'missing source/implementation confirmation hash' };
-  }
-  if (modelId === 'architecture_confirmation') {
-    if (/stale/iu.test(text(record.architectureConfirmationState))) {
-      return { status: 'stale', source: 'architectureConfirmationState' };
-    }
-    return record.architectureConfirmationHash || record.architectureConfirmationState === 'active'
-      ? { status: 'pass', source: 'inferred from architectureConfirmationHash' }
-      : { status: 'not_established', source: 'missing architecture confirmation evidence' };
-  }
-  if (modelId === 'implementation_readiness') {
-    const checks = asArray(record.gateChecks).concat(asArray(record.contractChecks));
-    if (checks.some((check) => /fail|blocked/iu.test(text(check.status || check.result)))) {
-      return { status: 'blocked', source: 'gateChecks/contractChecks' };
-    }
-    if (checks.some((check) => /pass|ready|ready_clean|repair_closed/iu.test(text(check.status || check.result)))) {
-      return { status: 'pass', source: 'gateChecks/contractChecks' };
-    }
-    return { status: 'not_established', source: 'missing readiness gate evidence' };
-  }
-  if (modelId === 'execution_closure') {
-    const iterations = asArray(record.executionIterations);
-    const closures = asArray(record.requirementClosures);
-    const artifactIndex = asArray(record.artifactIndex);
-    const requiredCommands = asArray(record.deliveryEvidence?.requiredCommands);
-    if (
-      iterations.length > 0 &&
-      closures.length > 0 &&
-      artifactIndex.length > 0 &&
-      requiredCommands.length > 0
-    ) {
-      return { status: 'pass', source: 'controlled ingest execution closure evidence' };
-    }
-    return { status: 'not_established', source: 'missing controlled ingest execution closure evidence' };
-  }
-  if (modelId === 'delivery_confirmation' && deliveryAwaitingAcceptance(record)) {
-    return { status: 'awaiting_user_acceptance', source: 'delivery acceptance request' };
-  }
-  if (modelId === currentMentalModel) {
-    return { status: 'not_established', source: 'inferred current position' };
-  }
-  return { status: 'not_established', source: 'no model evidence found' };
+function currentImplementationAttemptId(record) {
+  return (
+    text(record.currentAttemptId) ||
+    text(record.implementationAttemptId) ||
+    text(record.runId) ||
+    text(objectValue(record.closeout)?.currentAttemptId) ||
+    'missing-current-attempt'
+  );
+}
+
+function modelStatusEvidence(record, modelId, _currentMentalModel = '') {
+  const verified = resolveVerifiedSixModelStatus({
+    record,
+    modelId,
+    currentImplementationAttemptId: currentImplementationAttemptId(record),
+  });
+  return {
+    status: verified.effectiveStatus,
+    source:
+      verified.projectionIntegrity === 'valid'
+        ? `verified runtime status receipt (${verified.authorityClass})`
+        : verified.blockerRefs.join('; ') || 'runtime status authority not established',
+    projectionStatus: verified.projectionStatus,
+    projectionIntegrity: verified.projectionIntegrity,
+    decisionReceiptRef: verified.decisionReceiptRef,
+    decisionReceiptHash: verified.decisionReceiptHash,
+    authorityClass: verified.authorityClass,
+    blockerRefs: verified.blockerRefs,
+    evidenceRefs: verified.evidenceRefs,
+  };
 }
 
 function statusForModel(record, modelId) {
@@ -366,6 +507,7 @@ function nativeGoalHandoff(record) {
   const handoff = record?.nativeGoalHandoff;
   if (!handoff || typeof handoff !== 'object' || Array.isArray(handoff)) return null;
   if (!text(handoff.packetId) || !text(handoff.taskReportPath)) return null;
+  if (handoff.invoked !== true && handoff.imported !== true) return null;
   return {
     packetId: text(handoff.packetId),
     goalCommand: text(handoff.goalCommand),
@@ -376,6 +518,7 @@ function nativeGoalHandoff(record) {
     dispatchHost: text(handoff.dispatchHost),
     runtimeHost: text(handoff.runtimeHost),
     renderedHostLabel: text(handoff.renderedHostLabel),
+    invoked: handoff.invoked === true,
     imported: handoff.imported === true,
     importStatus: text(handoff.importStatus),
   };
@@ -534,10 +677,6 @@ function deliveryInfo(record) {
   };
 }
 
-function deliveryAwaitingAcceptance(record) {
-  return deliveryInfo(record).awaiting;
-}
-
 function safetyReason(
   record,
   modelStatus,
@@ -590,7 +729,7 @@ function canCompileGoalPacket(summary) {
     Boolean(summary.sourceDocumentHash) &&
     Boolean(summary.implementationConfirmationHash) &&
     ['implementation_readiness', 'execution_closure'].includes(summary.currentMentalModel) &&
-    summary.nextSafeAction === 'dispatch_implement' &&
+    ['dispatch-plan', 'dispatch_implement'].includes(summary.nextSafeAction) &&
     !summary.hasSafetyBlocker &&
     ['pass', 'not_established'].includes(summary.schemaModelStatus)
   );
@@ -614,39 +753,55 @@ function summarizeRecord(entry, options = {}) {
     isIndexedActive
   );
   const hasSafetyBlocker = SAFETY_PRIORITY[reason] > SAFETY_PRIORITY.explicit_user_selection;
-  const effective = resolveEffectiveCurrentModel({
-    record,
-    manifests,
-    currentMentalModel,
-    schemaModelStatus,
-  });
+  const compiledPacket = resolveCompiledImplementPacket(record, recordPath);
+  const dispatchPlanRequired =
+    currentMentalModel === 'implementation_readiness' &&
+    schemaModelStatus === 'pass' &&
+    !hasSafetyBlocker &&
+    compiledPacket.status !== 'usable';
+  const effective = dispatchPlanRequired
+    ? {
+        effectiveCurrentModel: currentMentalModel,
+        effectiveModelReason: 'compiled_dispatch_packet_required_before_execution',
+        advancedFromModel: '',
+      }
+    : resolveEffectiveCurrentModel({
+        record,
+        manifests,
+        currentMentalModel,
+        schemaModelStatus,
+      });
   const effectiveSchemaModelStatus = statusForModel(record, effective.effectiveCurrentModel);
-  const matrixAction = matrixActionFor({
-    record,
-    manifests,
-    effectiveCurrentModel: effective.effectiveCurrentModel,
-    effectiveSchemaModelStatus,
-    delivery,
-  });
+  const matrixAction = dispatchPlanRequired
+    ? null
+    : matrixActionFor({
+        record,
+        manifests,
+        effectiveCurrentModel: effective.effectiveCurrentModel,
+        effectiveSchemaModelStatus,
+        delivery,
+      });
   const packetBoundNativeGoalHandoff = nativeGoalHandoff(record);
   const nativeGoalTaskReportIngested = hasControlledNativeGoalTaskReportIngest(
     record,
     packetBoundNativeGoalHandoff
   );
-  const nextSafeAction = nextSafeActionFor({
-    record,
-    currentMentalModel,
-    effectiveCurrentModel: effective.effectiveCurrentModel,
-    schemaModelStatus,
-    effectiveSchemaModelStatus,
-    blockers,
-    delivery,
-    reconfirmation,
-    reason,
-    matrixAction,
-    nativeGoalHandoff: packetBoundNativeGoalHandoff,
-    nativeGoalTaskReportIngested,
-  });
+  const nextSafeAction = dispatchPlanRequired
+    ? 'dispatch-plan'
+    : nextSafeActionFor({
+        record,
+        currentMentalModel,
+        effectiveCurrentModel: effective.effectiveCurrentModel,
+        schemaModelStatus,
+        effectiveSchemaModelStatus,
+        blockers,
+        delivery,
+        reconfirmation,
+        reason,
+        matrixAction,
+        nativeGoalHandoff: packetBoundNativeGoalHandoff,
+        nativeGoalTaskReportIngested,
+      });
   const displayState =
     delivery.awaiting || schemaModelStatus === 'awaiting_user_acceptance'
       ? 'awaiting_user_acceptance'
@@ -665,6 +820,7 @@ function summarizeRecord(entry, options = {}) {
   }
   const summary = {
     recordId,
+    requirementSetId: text(record.requirementSetId) || recordId,
     sourceOrTitle: sourceOrTitle(record),
     activityState: entry.activityState,
     isTerminalClosed: entry.isTerminalClosed,
@@ -705,6 +861,8 @@ function summarizeRecord(entry, options = {}) {
     modelStatuses,
     nativeGoalHandoff: packetBoundNativeGoalHandoff,
     nativeGoalTaskReportIngested,
+    compiledPacket,
+    dispatchPlanRequired,
     recordPath: normalizePath(path.relative(process.cwd(), recordPath)),
   };
   if (options.includeRawRecord) summary.rawRecord = record;

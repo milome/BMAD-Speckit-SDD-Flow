@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-finalization-byte-manifest.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "candidateId",
+    "originClosureHashes",
+    "mandatoryCommandIdentityHashes",
+    "sealedFileHashes",
+    "finalizationByteManifestHash",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-finalization-byte-manifest/v1"
+    },
+    "candidateId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "originClosureHashes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/sha256" }
+    },
+    "mandatoryCommandIdentityHashes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/sha256" }
+    },
+    "sealedFileHashes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/sha256" }
+    },
+    "finalizationByteManifestHash": { "$ref": "#/$defs/sha256" },
+    "decision": {
+      "const": "pass"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

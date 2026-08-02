@@ -16,6 +16,7 @@ build/
 .pytest_cache/
 *.log
 coverage/
+/.artifacts/test-portfolio/
 
 # IDE
 .idea/
@@ -98,6 +99,8 @@ test-results/
 tests/typecheck/
 
 # Documentation archives
+/docs/adr/
+/docs/architecture/
 docs/BMAD/
 docs/design/
 docs/explanation/
@@ -111,6 +114,8 @@ docs/how-to/codex-consumer-mcp-install-layout.md
 docs/pr/
 docs/plans/
 docs/requirements/
+docs/superpowers/specs/2026-07-12-normalized-requirements-contract-package-design.md
+docs/superpowers/specs/2026-07-21-sequence-closure-single-compiler-chain-design.md
 docs/testplan/
 
 # Test story generated code (temporary, not part of project source)

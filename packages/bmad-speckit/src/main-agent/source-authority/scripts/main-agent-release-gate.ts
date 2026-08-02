@@ -8,8 +8,6 @@ import addFormats from 'ajv-formats';
 import { buildEvidenceProvenance, sameRunSummary } from './evidence-provenance';
 import { validatePrTopologyForReleaseGate, type PrTopology } from './parallel-mission-control';
 import { runSprintStatusAuthorizedUpdate } from './sprint-status-authorized-update';
-import { runCodexWorkerAdapter } from './main-agent-codex-worker-adapter';
-import type { ExecutionPacket } from './orchestration-dispatch-contract';
 
 const SOURCE_ROOT = path.resolve(__dirname, '..');
 const PACKAGE_RUNTIME = __dirname.includes(`${path.sep}dist${path.sep}`);
@@ -35,7 +33,10 @@ interface ReleaseGateReport {
   mode?: 'package_runtime_module';
   completion_intent?: {
     token: string;
+    runId: string;
     storyKey: string;
+    evidenceBundleId: string;
+    attemptId: string;
     contractHash: string;
     gateReportHash: string;
     singleUse: true;
@@ -52,6 +53,7 @@ interface ReleaseGateCliOptions {
   requirementSetId?: string;
   runId?: string;
   evidenceBundleId?: string;
+  attemptId?: string;
   singleSourceCommand?: string;
   rerunGateCommand?: string;
   storyKey?: string;
@@ -64,6 +66,9 @@ interface EvidenceProvenance {
   evidenceBundleId: string;
   contractHash?: string;
   gateReportHash?: string;
+  completionToken?: string;
+  attemptId?: string;
+  expiresAt?: string;
 }
 
 interface ExecutionAuditLedgerItem {
@@ -183,6 +188,33 @@ function readJson<T>(filePath: string): T {
   return JSON.parse(fs.readFileSync(filePath, 'utf8')) as T;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function mergeProvenance(value: unknown, binding: EvidenceProvenance): EvidenceProvenance {
+  return {
+    ...(isRecord(value) ? value : {}),
+    ...binding,
+  };
+}
+
+function stampDeliveryBinding(filePath: string, binding: EvidenceProvenance): void {
+  if (!fs.existsSync(filePath)) return;
+  const value = readJson<unknown>(filePath);
+  if (!isRecord(value)) {
+    throw new Error(`delivery artifact is not an object: ${filePath}`);
+  }
+  value.evidence_provenance = mergeProvenance(value.evidence_provenance, binding);
+  if (isRecord(value.prTopology)) {
+    value.prTopology.evidence_provenance = mergeProvenance(
+      value.prTopology.evidence_provenance,
+      binding
+    );
+  }
+  fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
 function writePackageRuntimeQualityGateReport(input: {
   root: string;
   qualityGatePath: string;
@@ -208,7 +240,7 @@ function writePackageRuntimeQualityGateReport(input: {
         passed: input.codexProofPath != null,
         summary: input.codexProofPath
           ? `proof=${path.relative(input.root, input.codexProofPath).replace(/\\/g, '/')}`
-          : 'proof not required for package runtime quality report',
+          : 'current main session did not provide a run-scoped quality proof',
       },
     ],
     mode: 'package_runtime_module',
@@ -327,198 +359,10 @@ function appendScriptProvenanceArgs(
 }
 
 function commandSupportsScriptProvenance(command: string): boolean {
-  return /main-agent-(host-matrix|dual-host)-pr-orchestrator\.(ts|js)\b/u.test(command);
-}
-
-function writeReleaseQualityProofCodexShim(proofDir: string): string {
-  const shimScriptPath = path.join(proofDir, 'release-quality-proof-codex-shim.cjs');
-  const shimBinPath =
-    process.platform === 'win32'
-      ? path.join(proofDir, 'release-quality-proof-codex-shim.cmd')
-      : path.join(proofDir, 'release-quality-proof-codex-shim');
-  fs.writeFileSync(
-    shimScriptPath,
-    [
-      "const fs = require('node:fs');",
-      "const path = require('node:path');",
-      "const input = fs.readFileSync(0, 'utf8');",
-      "const matchLine = (label) => input.match(new RegExp(`${label}: (.+)`, 'i'))?.[1]?.trim();",
-      "const packetId = matchLine('Packet ID');",
-      "const packetPath = matchLine('Read dispatch packet');",
-      'const taskReportPath = input.match(/write a JSON TaskReport to: (.+)/i)?.[1]?.trim();',
-      "const expectedDelta = matchLine('Expected delta') || 'release quality proof';",
-      'const requiredArtifacts = [',
-      "  '_bmad/_config/main-agent-quality-gate.thresholds.json',",
-      "  'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts',",
-      "  'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-release-gate.ts',",
-      '];',
-      'if (!packetId || !packetPath || !taskReportPath) {',
-      "  console.error('release quality proof shim missing prompt fields');",
-      '  process.exit(2);',
-      '}',
-      'const missing = [packetPath, ...requiredArtifacts].filter((item) => !fs.existsSync(path.resolve(process.cwd(), item)));',
-      'if (missing.length > 0) {',
-      "  console.error(`release quality proof shim missing artifacts: ${missing.join(', ')}`);",
-      '  process.exit(3);',
-      '}',
-      'const report = {',
-      '  packetId,',
-      "  status: 'done',",
-      '  filesChanged: [],',
-      '  validationsRun: [',
-      "    'release-quality-proof-deterministic-codex-exec-shim',",
-      '    ...requiredArtifacts.map((item) => `inspect:${item}`),',
-      '  ],',
-      '  evidence: [',
-      "    `dispatch-packet:${path.relative(process.cwd(), packetPath).replace(/\\\\/g, '/')}`,",
-      '    ...requiredArtifacts.map((item) => `artifact-exists:${item}`),',
-      '  ],',
-      '  downstreamContext: [expectedDelta],',
-      '};',
-      'fs.mkdirSync(path.dirname(taskReportPath), { recursive: true });',
-      "fs.writeFileSync(taskReportPath, `${JSON.stringify(report, null, 2)}\\n`, 'utf8');",
-      'process.exit(0);',
-      '',
-    ].join('\n'),
-    'utf8'
+  return (
+    /main-agent-(host-matrix|dual-host)-pr-orchestrator\.(ts|js)\b/u.test(command) ||
+    /\b(host-matrix|dual-host)-pr-orchestrator\b/u.test(command)
   );
-  fs.writeFileSync(
-    shimBinPath,
-    process.platform === 'win32'
-      ? `@echo off\r\n"${process.execPath}" "${shimScriptPath}" %*\r\n`
-      : `#!/usr/bin/env sh\n"${process.execPath}" "${shimScriptPath}" "$@"\n`,
-    'utf8'
-  );
-  if (process.platform !== 'win32') {
-    fs.chmodSync(shimBinPath, 0o755);
-  }
-  return shimBinPath;
-}
-
-function runReleaseQualityProofAdapter(input: {
-  root: string;
-  proofDir: string;
-  packetPath: string;
-  taskReportPath: string;
-  recordId?: string;
-  requirementSetId?: string;
-  runId?: string;
-}): {
-  report: ReturnType<typeof runCodexWorkerAdapter>;
-  proofMode: 'deterministic_release_shim' | 'live_codex_cli';
-} {
-  if (process.env.MAIN_AGENT_RELEASE_GATE_CODEX_PROOF_MODE === 'live') {
-    return {
-      proofMode: 'live_codex_cli',
-      report: runCodexWorkerAdapter({
-        projectRoot: input.root,
-        recordId: input.recordId,
-        requirementSetId: input.requirementSetId,
-        runId: input.recordId || input.requirementSetId ? input.runId : undefined,
-        packetPath: input.packetPath,
-        taskReportPath: input.taskReportPath,
-        timeoutMs: 120_000,
-        allowPolicyFailureForDeterministicShim: !input.recordId && !input.requirementSetId,
-      }),
-    };
-  }
-
-  const previousAllow = process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
-  process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = 'true';
-  try {
-    return {
-      proofMode: 'deterministic_release_shim',
-      report: runCodexWorkerAdapter({
-        projectRoot: input.root,
-        recordId: input.recordId,
-        requirementSetId: input.requirementSetId,
-        runId: input.recordId || input.requirementSetId ? input.runId : undefined,
-        packetPath: input.packetPath,
-        taskReportPath: input.taskReportPath,
-        timeoutMs: 120_000,
-        allowPolicyFailureForDeterministicShim: !input.recordId && !input.requirementSetId,
-        codexBinary: writeReleaseQualityProofCodexShim(input.proofDir),
-      }),
-    };
-  } finally {
-    if (previousAllow === undefined) {
-      delete process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE;
-    } else {
-      process.env.MAIN_AGENT_ALLOW_CODEX_BIN_OVERRIDE = previousAllow;
-    }
-  }
-}
-
-function writeRunScopedCodexQualityProof(
-  root: string,
-  provenance: EvidenceProvenance,
-  options: { recordId?: string; requirementSetId?: string } = {}
-): string | null {
-  const proofDir = path.join(root, '_bmad-output', 'runtime', 'gates', 'codex-quality-proof');
-  const packetPath = path.join(proofDir, `${provenance.runId}.packet.json`);
-  const taskReportPath = path.join(proofDir, `${provenance.runId}.task-report.json`);
-  const adapterReportPath = path.join(proofDir, `${provenance.runId}.adapter-report.json`);
-  const proofPath = path.join(proofDir, `${provenance.runId}.proof.json`);
-  fs.mkdirSync(proofDir, { recursive: true });
-  const packet: ExecutionPacket = {
-    packetId: `release-quality-proof-${sha256(provenance.runId).slice(0, 12)}`,
-    parentSessionId: `release-quality-proof-${provenance.runId}`,
-    sourceRecommendationPacketId: null,
-    flow: 'story',
-    phase: 'post_audit',
-    taskType: 'audit',
-    role: 'release-quality-proof-worker',
-    inputArtifacts: [
-      '_bmad/_config/main-agent-quality-gate.thresholds.json',
-      'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts',
-      'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-release-gate.ts',
-    ],
-    allowedWriteScope: ['_bmad-output/runtime/gates/codex-quality-proof/**'],
-    expectedDelta:
-      'Inspect release quality gate inputs and write the required TaskReport only; do not modify source files.',
-    successCriteria: [
-      'Codex worker adapter executes through main-agent-codex-worker-adapter in codex_exec mode.',
-      'TaskReport status is done with evidence for same-run release quality proof.',
-      'No source files outside _bmad-output/runtime/gates/codex-quality-proof are changed.',
-    ],
-    stopConditions: [
-      'Do not claim completion without writing a strict JSON TaskReport.',
-      'Do not edit application source or tests for this proof packet.',
-    ],
-    downstreamConsumer: 'main-agent-quality-gate-run-scoped-proof',
-  };
-  fs.writeFileSync(packetPath, `${JSON.stringify(packet, null, 2)}\n`, 'utf8');
-  const { report: adapter, proofMode } = runReleaseQualityProofAdapter({
-    root,
-    proofDir,
-    packetPath,
-    taskReportPath,
-    recordId: options.recordId,
-    requirementSetId: options.requirementSetId,
-    runId: provenance.runId,
-  });
-  fs.writeFileSync(adapterReportPath, `${JSON.stringify(adapter, null, 2)}\n`, 'utf8');
-  if (!adapter.scopePassed || adapter.taskReport.status !== 'done') {
-    return null;
-  }
-  const proof = {
-    reportType: 'codex_run_scoped_quality_proof',
-    generatedAt: new Date().toISOString(),
-    evidence_provenance: provenance,
-    codex: {
-      hostKind: 'codex',
-      mode: adapter.mode,
-      proofMode,
-      adapterExitCode: adapter.exitCode,
-      taskReportStatus: adapter.taskReport.status,
-      validationsRun: adapter.taskReport.validationsRun,
-      adapterReportPath,
-      taskReportPath,
-      packetPath,
-    },
-  };
-  fs.writeFileSync(proofPath, `${JSON.stringify(proof, null, 2)}\n`, 'utf8');
-  return proofPath;
 }
 
 function resolveOptionalPath(root: string, raw: string | undefined): string | null {
@@ -667,6 +511,9 @@ export function mainReleaseGate(argv: string[]): number {
   const qualityGatePath =
     resolveOptionalPath(root, args.qualityGatePath) ??
     path.join(root, '_bmad-output', 'runtime', 'gates', 'main-agent-quality-gate-report.json');
+  const mainSessionQualityProofPath =
+    resolveOptionalPath(root, args.codexProofPath) ??
+    resolveOptionalPath(root, process.env.MAIN_AGENT_RELEASE_GATE_CODEX_PROOF_PATH);
 
   const storyKey = normalizeText(args.storyKey) || 'S-release-gate';
   const expectedProvenance = buildEvidenceProvenance({
@@ -677,16 +524,12 @@ export function mainReleaseGate(argv: string[]): number {
     prefix: 'release-gate',
   });
   if (!args.qualityGatePath && !process.env.MAIN_AGENT_RELEASE_GATE_SKIP_QUALITY_PRODUCER) {
-    const codexProofPath = writeRunScopedCodexQualityProof(root, expectedProvenance, {
-      recordId: args.recordId,
-      requirementSetId: args.requirementSetId,
-    });
     if (PACKAGE_RUNTIME) {
       writePackageRuntimeQualityGateReport({
         root,
         qualityGatePath,
         provenance: expectedProvenance,
-        codexProofPath,
+        codexProofPath: mainSessionQualityProofPath,
       });
     } else {
       const qualityCommand = appendScriptProvenanceArgs(
@@ -694,8 +537,8 @@ export function mainReleaseGate(argv: string[]): number {
         expectedProvenance
       );
       runCommand(
-        codexProofPath
-          ? `${qualityCommand} --codexProofPath ${JSON.stringify(codexProofPath)}`
+        mainSessionQualityProofPath
+          ? `${qualityCommand} --codexProofPath ${JSON.stringify(mainSessionQualityProofPath)}`
           : qualityCommand
       );
     }
@@ -864,8 +707,10 @@ export function mainReleaseGate(argv: string[]): number {
       '_config',
       'orchestration-governance.contract.yaml'
     );
+    const contractHash = sha256File(contractPath);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
     const token = `${'release-gate:pass'}:${storyKey}:${Date.now()}:${crypto.randomBytes(8).toString('hex')}`;
+    const attemptId = normalizeText(args.attemptId) || `${expectedProvenance.runId}:release-gate`;
     const gateReportHash = sha256(
       JSON.stringify({
         generatedAt: report.generatedAt,
@@ -873,18 +718,29 @@ export function mainReleaseGate(argv: string[]): number {
         blocking_reasons: report.blocking_reasons,
       })
     );
+    const deliveryBinding: EvidenceProvenance = {
+      ...expectedProvenance,
+      contractHash,
+      gateReportHash,
+      completionToken: token,
+      attemptId,
+      expiresAt,
+    };
     report.completion_intent = {
       token,
+      runId: deliveryBinding.runId,
       storyKey,
-      contractHash: sha256File(contractPath),
+      evidenceBundleId: deliveryBinding.evidenceBundleId,
+      attemptId,
+      contractHash,
       gateReportHash,
       singleUse: true,
       expiresAt,
     };
-    report.evidence_provenance = {
-      ...report.evidence_provenance,
-      gateReportHash,
-    };
+    report.evidence_provenance = deliveryBinding;
+    for (const artifactPath of [hostMatrixPath, prTopologyPath, qualityGatePath]) {
+      stampDeliveryBinding(artifactPath, deliveryBinding);
+    }
   }
   const reportPath = writeReport(report);
   if (blockingReasons.length === 0 && args.skipSprintStatusUpdate !== 'true') {

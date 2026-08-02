@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-real-consumer-journey-input/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "consumerRoot",
+    "restoreCleanBaseline",
+    "phase",
+    "phaseRoot",
+    "phaseAuditAttemptId",
+    "packageRoot",
+    "packageManifest",
+    "distRoot",
+    "candidateTarball",
+    "candidatePackageReceipt",
+    "journeyEvidence",
+    "preConfirmationSnapshot",
+    "confirmationReceipt",
+    "runAllStages"
+  ],
+  "properties": {
+    "cwd": { "type": "string", "minLength": 1 },
+    "contract": { "type": "string", "minLength": 1 },
+    "consumerRoot": { "const": "D:\\Dev\\BMAD-Speckit-Consumer-Evidence-Closure" },
+    "restoreCleanBaseline": { "const": true },
+    "phase": { "enum": ["pre-candidate", "final"] },
+    "phaseRoot": { "type": "string", "minLength": 1 },
+    "phaseAuditAttemptId": { "type": "string", "minLength": 1 },
+    "packageRoot": { "const": "packages/bmad-speckit" },
+    "packageManifest": { "const": "packages/bmad-speckit/package.json" },
+    "distRoot": { "const": "packages/bmad-speckit/dist" },
+    "candidateTarball": { "type": "string", "minLength": 1 },
+    "candidatePackageReceipt": { "type": "string", "minLength": 1 },
+    "journeyEvidence": { "type": "string", "minLength": 1 },
+    "preConfirmationSnapshot": { "type": "string", "minLength": 1 },
+    "confirmationReceipt": { "type": "string", "minLength": 1 },
+    "runAllStages": { "const": true },
+    "json": { "type": "boolean" }
+  }
+}

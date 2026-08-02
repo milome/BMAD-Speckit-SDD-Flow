@@ -17,6 +17,8 @@
 - **Use explicit evidence before recommendation** - derive `implementationReadinessStatus` before any implementation-first suggestion
 - **Use the unified gate label `implementation-readiness`** when explaining implementation blocking or readiness repair
 - **Use shared readiness route labels** - use `upstream_planning_readiness`, `speckit_runtime_readiness`, `readiness_help_projection`, `governed_runtime_readiness_gate`, and `readiness_auto_remediation` consistently with `bmad-check-implementation-readiness`
+- **Natural-language governed runtime priority** - when an active RequirementRecord exists or may exist, generic next-step, continue, status, or what-now requests such as `下一步？`, `继续`, `现在该做什么？`, and `what next?` route to `bmads` / `bmad-speckit`, not `bmad-help`
+- **Explicit help intent only** - use `bmad-help` for explicit upstream BMAD workflow, method, agent, or catalog guidance, or when no governed runtime record exists
 - **最多 1 到 2 个关键问题** - ask only when evidence is insufficient
 - **Implementation entry may be `recommended` only when readiness is `ready_clean` or `repair_closed`**
 - **`standalone_tasks + high complexity` must upgrade to a story-oriented path**

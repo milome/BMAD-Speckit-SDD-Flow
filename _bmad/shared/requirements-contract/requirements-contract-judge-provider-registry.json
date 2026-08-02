@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "requirements-contract-judge-provider-registry/v1",
+  "owner": {
+    "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-provider-registry.ts",
+    "hash": "sha256:b88588bb76cb03559b1be77d7bc6788a61dce6331917686da5308ecad89193d6"
+  },
+  "sourceConfig": {
+    "path": "_bmad/_config/governance-remediation.yaml",
+    "hash": "sha256:493028eb1221c8e86ba625dc486d58ab7157d9d1330710d14cfe2fe1c82ad147"
+  },
+  "activeProviderRef": "local-sonnet-judge",
+  "providers": [
+    {
+      "providerRef": "local-sonnet-judge",
+      "provider": {
+        "enabled": true,
+        "transport": "cli",
+        "adapterRef": "ClaudeCodeCliJudgeAdapter",
+        "apiStyle": "cli",
+        "credentialRef": "local-sonnet-judge",
+        "endpoint": {
+          "command": "claude",
+          "baseUrl": "http://localhost:3010",
+          "resolutionMode": "path_search",
+          "routingOwnership": "transport_adapter",
+          "upstreamVersioning": "gateway_managed",
+          "explicitOperationPath": null
+        },
+        "authentication": {
+          "type": "bearer",
+          "sensitivity": "secret",
+          "arbitraryNonEmptyValueAllowed": false
+        },
+        "auditPolicy": {
+          "independenceClass": "different_provider_different_model",
+          "blindReview": true,
+          "allowPassAuthority": false,
+          "toolsAllowed": true,
+          "allowedTools": [
+            "Read"
+          ],
+          "implementationWritesAllowed": false
+        },
+        "requestPolicy": {
+          "timeoutMs": 1800000,
+          "maximumAttempts": 1,
+          "structuredResponseRequired": true,
+          "maxBudgetUsd": 5
+        }
+      },
+      "adapterRef": "ClaudeCodeCliJudgeAdapter"
+    }
+  ],
+  "registryHash": "sha256:4e4fa986eb0d107344e806b1d353da8e2590dc2b56932a233e87a686d1278890"
+}

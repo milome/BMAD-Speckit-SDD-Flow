@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-artifact-readback-receipt/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactId",
+    "artifactType",
+    "artifactPath",
+    "artifactHash",
+    "observedReadbackHash",
+    "artifactSchema",
+    "publicationReceipt",
+    "terminalCommandReceipt",
+    "contractHash",
+    "transactionId",
+    "implementationAttemptId",
+    "auditAttemptId",
+    "publishedAt",
+    "readbackAt",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-artifact-readback-receipt/v1" },
+    "artifactId": { "const": "TERMINAL-CLOSEOUT-PACKET" },
+    "artifactType": { "const": "requirements-contract-terminal-closeout-packet/v1" },
+    "artifactPath": {
+      "const": "docs/plans/evidence/loop-engineering-remediation/terminal-closeout-packet.json"
+    },
+    "artifactHash": { "$ref": "#/$defs/hash" },
+    "observedReadbackHash": { "$ref": "#/$defs/hash" },
+    "artifactSchema": { "$ref": "#/$defs/ref" },
+    "publicationReceipt": { "$ref": "#/$defs/ref" },
+    "terminalCommandReceipt": { "$ref": "#/$defs/ref" },
+    "contractHash": { "$ref": "#/$defs/hash" },
+    "transactionId": { "type": "string", "minLength": 1 },
+    "implementationAttemptId": { "type": "string", "minLength": 1 },
+    "auditAttemptId": { "type": "string", "minLength": 1 },
+    "publishedAt": { "type": "string", "format": "date-time" },
+    "readbackAt": { "type": "string", "format": "date-time" },
+    "decision": { "const": "pass" }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

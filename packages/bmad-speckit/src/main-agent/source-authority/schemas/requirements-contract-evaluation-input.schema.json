@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-evaluation-input.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["corpus", "out"],
+  "properties": {
+    "cwd": { "type": "string", "minLength": 1 },
+    "corpus": { "type": "string", "minLength": 1 },
+    "out": { "type": "string", "minLength": 1 },
+    "json": { "type": "boolean" }
+  }
+}

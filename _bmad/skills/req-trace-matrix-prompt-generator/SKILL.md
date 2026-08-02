@@ -58,6 +58,8 @@ Resolve bundled scripts from `<skill-dir>/scripts/...`. Resolve consumer project
 
 When a main-agent or host adapter has already resolved the installed req-trace skill directory, invoke the generator with `path.join(resolvedReqTraceSkillDir, 'scripts', 'generate_prompt.js')`. Do not hard-code installed skill roots.
 
+Every invocation must pass exactly one explicit `--entry` value. Direct req-trace compilation uses `--entry req_trace_direct`; Main Agent compilation uses `--entry main_agent_compile`. Missing, duplicated, unknown, standalone, or filename-inferred entry routes must block before artifacts are accepted.
+
 Use `--execution-host codex|claude-code|cursor-ide|cursor-cli|generic` when compiling packet artifacts with `--out-dir`.
 
 Compatibility aliases are accepted:
@@ -80,6 +82,7 @@ Prefer the bundled Node/js-yaml generator for local source documents:
 
 ```bash
 node <skill-dir>/scripts/generate_prompt.js \
+  --entry req_trace_direct \
   --source-document docs/prd.md \
   --requirement-record _bmad-output/runtime/requirement-records/<recordId>/requirement-record.json
 ```
@@ -88,6 +91,7 @@ Compile synchronized packet artifacts when the confirmed source includes AI-TDD 
 
 ```bash
 node <skill-dir>/scripts/generate_prompt.js \
+  --entry req_trace_direct \
   --source-document docs/prd.md \
   --requirement-record _bmad-output/runtime/requirement-records/<recordId>/requirement-record.json \
   --out-dir _bmad-output/runtime/requirement-records/<recordId>/trace-execution \
@@ -101,6 +105,7 @@ The legacy Python path is kept only as a backward-compatible launcher. It delega
 
 ```bash
 python <skill-dir>/scripts/generate_prompt.py \
+  --entry req_trace_direct \
   --source-document docs/prd.md \
   --requirement-record _bmad-output/runtime/requirement-records/<recordId>/requirement-record.json
 ```
@@ -112,6 +117,7 @@ Compatibility aliases:
 
 Useful options:
 
+- `--entry req_trace_direct|main_agent_compile` is mandatory and must match the invoking route. The generator reads authority, compiler route, dual-view policy, and artifact roles from the shared Goal contract profile.
 - `--final-gate "npm run test:e2e"` to append a final gate supplied outside the source document.
 - `--extra-rule "..."` to append a hard priority rule from the user.
 - `--source-label "..."` to override the displayed source.
@@ -122,9 +128,20 @@ Useful options:
 - `--execution-discipline-profile-ref <path>` to load an immutable main-agent generated execution discipline profile snapshot. The profile is `discipline_profile_only` and may be rendered into `human_prompt.txt`, `goal_execution.md`, and `audit_receipt.json`; it must not change confirmed source rows, required commands, packet authority, or mental model state.
 - `--goal-command-available true|false|auto` to declare whether the active host supports a native `/goal` command. `auto` is conservative and does not emit `/goal`. When true, the generated `/goal` command must reference `goal_execution.md` and `model_packet.json`; it requires `--out-dir` and is length-checked.
 - `--task-report-path <path>` is mandatory when `--goal-command-available true` and `--out-dir` are used. It is the packet-bound TaskReport path that the native `/goal` main session must overwrite with its final execution result.
-- `--no-auto-commit` only when the user explicitly says not to auto-commit after PASS.
+- Automatic commit is disabled by default.
+- `--auto-commit` only when the user explicitly requires a local commit after PASS; it never permits push.
+- `--no-auto-commit` remains a compatibility override and keeps automatic commit disabled.
 
 If the script emits a `BLOCK:` marker, do not hide it and do not produce an implementation prompt.
+
+The confirmed-source compiler emits four role-separated artifacts:
+
+- `model_packet.json`: machine-readable execution authority and the only final artifact authority.
+- `human_prompt.txt`: projection over `model_packet.json`.
+- `audit_receipt.json`: compiler self-audit receipt, not delivery proof.
+- `goal_execution.md`: native `/goal` execution-entry projection, not execution authority.
+
+Dual-view payloads, standalone source derivation, implementation-view input, or acceptance/evidence-view input are semantic-authority violations for both compiler entries and must block before any final artifact is written.
 
 ## Controlled Execution Discipline Profile Extension
 

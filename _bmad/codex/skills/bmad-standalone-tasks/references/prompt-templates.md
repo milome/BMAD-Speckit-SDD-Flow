@@ -1,6 +1,6 @@
 # Prompt templates for bmad-standalone-tasks
 
-Use these when invoking Codex worker adapter for implementation (general-purpose) and audit (code-reviewer). Replace `{DOC_PATH}` and any `{…}` placeholders.
+Use these when invoking current Codex main session for implementation (general-purpose) and audit (code-reviewer). Replace `{DOC_PATH}` and any `{…}` placeholders.
 
 ---
 
@@ -41,7 +41,7 @@ Use these when invoking Codex worker adapter for implementation (general-purpose
 
 ## Resume 实施子任务（general-purpose）
 
-当 Step 1 子任务未在一次调用内完成时，主 Agent 使用 **Codex worker adapter resume** 或重新发起 Codex worker adapter 时，可传入以下模板（填写断点与本批范围）。
+当 Step 1 子任务未在一次调用内完成时，主 Agent 使用 **current Codex main session resume** 或重新发起 current Codex main session 时，可传入以下模板（填写断点与本批范围）。
 
 ```
 你正在**接续**执行 TASKS/BUGFIX 文档的未完成任务。请先读取同目录下的 progress 文件确认已完成范围，再从本批起点开始执行。

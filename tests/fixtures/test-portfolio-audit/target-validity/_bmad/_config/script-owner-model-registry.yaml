@@ -1,0 +1,8 @@
+version: 1
+registry_id: script-owner-model-registry
+owner: main-agent-orchestration
+status: frozen
+scripts:
+  - scriptId: registry_script
+    path: src/registry-script.ts
+    sourceRepoPath: src/registry-script.ts

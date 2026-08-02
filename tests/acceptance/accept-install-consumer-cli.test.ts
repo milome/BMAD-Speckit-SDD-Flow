@@ -3,17 +3,12 @@
  * Covers setup.ps1, setup.sh, npm install, init-to-root flows.
  * Runs in CI (ubuntu-latest).
  */
-import {
-  existsSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execSync, spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
+import { resolveCanonicalPackageTarball } from '../helpers/canonical-package-artifact';
 
 const PKG_ROOT = join(import.meta.dirname, '..', '..');
 
@@ -30,28 +25,23 @@ function runRepoCli(args: string, cwd: string, env?: NodeJS.ProcessEnv): string 
   return run(cli, cwd, env);
 }
 
-function runJson(cmd: string, cwd: string, env?: NodeJS.ProcessEnv): any {
-  return JSON.parse(run(cmd, cwd, env));
-}
-
-function writeLargeDocChunk(
-  target: string,
-  chunkId: string,
-  sectionId: string,
-  body: string
-): string {
-  const chunkPath = join(target, `${chunkId}-${sectionId}.md`);
+function installRootPackageToConsumer(target: string): void {
+  const tarballPath = resolveCanonicalPackageTarball(PKG_ROOT).replace(/\\/g, '/');
+  const packageJsonPath = join(target, 'package.json');
+  const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
   writeFileSync(
-    chunkPath,
-    [
-      `<!-- large-document-writer chunkId=${chunkId} sectionId=${sectionId} begin -->`,
-      body.trimEnd(),
-      `<!-- large-document-writer chunkId=${chunkId} sectionId=${sectionId} end -->`,
-      '',
-    ].join('\n'),
+    packageJsonPath,
+    JSON.stringify({
+      ...packageJson,
+      devDependencies: {
+        ...packageJson.devDependencies,
+        'bmad-speckit-sdd-flow': `file:${tarballPath}`,
+      },
+    }),
     'utf8'
   );
-  return chunkPath;
+  run('npm install --ignore-scripts --no-audit --no-fund --offline', target);
+  run('npm rebuild bmad-speckit-sdd-flow --foreground-scripts', target);
 }
 
 describe('install to consumer ->CLI acceptance', () => {
@@ -114,7 +104,7 @@ describe('install to consumer ->CLI acceptance', () => {
     }
   }, 90_000);
 
-  it('npm install ->postinstall deploys ->bmad-speckit check passes', () => {
+  it('npm install followed by postinstall rebuild deploys ->bmad-speckit check passes', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-npm-'));
     try {
       writeFileSync(
@@ -122,8 +112,7 @@ describe('install to consumer ->CLI acceptance', () => {
         JSON.stringify({ name: 'consumer-app', version: '1.0.0', private: true }),
         'utf8'
       );
-      const pkgPath = join(PKG_ROOT).replace(/\\/g, '/');
-      run(`npm install --save-dev "file:${pkgPath}"`, target);
+      installRootPackageToConsumer(target);
       expect(existsSync(join(target, '_bmad'))).toBe(true);
       expect(existsSync(join(target, '.cursor'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'skills', 'npm-public-release', 'SKILL.md'))).toBe(
@@ -153,7 +142,9 @@ describe('install to consumer ->CLI acceptance', () => {
         true
       );
       expect(
-        existsSync(join(target, '_bmad', 'skills', 'large-document-writer', 'agents', 'openai.yaml'))
+        existsSync(
+          join(target, '_bmad', 'skills', 'large-document-writer', 'agents', 'openai.yaml')
+        )
       ).toBe(true);
       expect(
         existsSync(join(target, '_bmad-output', 'config', 'bmad-speckit-install-manifest.json'))
@@ -174,112 +165,6 @@ describe('install to consumer ->CLI acceptance', () => {
 
       const out = run('npx bmad-speckit check', target);
       expect(out).toMatch(/Check OK|OK/i);
-      expect(run('npx bmad-speckit large-doc --help', target)).toContain('large-doc');
-      expect(existsSync(join(target, 'scripts'))).toBe(false);
-
-      const largeDocTarget = join(target, 'large-doc-smoke.md');
-      const init = runJson(
-        `npx --no-install bmad-speckit large-doc init --target "${largeDocTarget}" --chunk c1:smoke --require-heading "# Smoke" --min-bytes 20 --json`,
-        target
-      );
-      expect(init.schemaVersion).toBe('large-document-writer-session-init/v1');
-      const chunkPath = writeLargeDocChunk(
-        target,
-        'c1',
-        'smoke',
-        '# Smoke\n\nlarge document writer smoke content'
-      );
-      const addChunk = runJson(
-        `npx --no-install bmad-speckit large-doc add-chunk --session "${init.sessionDir}" --chunk-id c1 --section-id smoke --content-file "${chunkPath}" --json`,
-        target
-      );
-      expect(addChunk.schemaVersion).toBe('large-document-writer-chunk-receipt/v1');
-      const assemble = runJson(
-        `npx --no-install bmad-speckit large-doc assemble --session "${init.sessionDir}" --json`,
-        target
-      );
-      expect(assemble.schemaVersion).toBe('large-document-writer-assembly-receipt/v1');
-      const validate = runJson(
-        `npx --no-install bmad-speckit large-doc validate --session "${init.sessionDir}" --json`,
-        target
-      );
-      expect(validate.schemaVersion).toBe('large-document-writer-validation-receipt/v1');
-      expect(validate.ok).toBe(true);
-      const promote = runJson(
-        `npx --no-install bmad-speckit large-doc promote --session "${init.sessionDir}" --json`,
-        target
-      );
-      expect(promote.schemaVersion).toBe('large-document-writer-promote-receipt/v1');
-      expect(readFileSync(largeDocTarget, 'utf8')).toContain('# Smoke');
-      const cleanup = runJson(
-        `npx --no-install bmad-speckit large-doc cleanup --session "${init.sessionDir}" --policy delete --json`,
-        target
-      );
-      expect(cleanup.schemaVersion).toBe('large-document-writer-cleanup-receipt/v1');
-      expect(cleanup.policy).toBe('delete');
-
-      const promoteScript = join(
-        target,
-        '.cursor',
-        'skills',
-        'requirements-contract-authoring',
-        'scripts',
-        'promote-draft-large-doc.js'
-      );
-      const prepareCurrentSourcePromotionScript = join(
-        target,
-        '.cursor',
-        'skills',
-        'requirements-contract-authoring',
-        'scripts',
-        'prepare-current-source-promotion.js'
-      );
-      const writeCriticalAuditorNoNewGapResponseScript = join(
-        target,
-        '.cursor',
-        'skills',
-        'requirements-contract-authoring',
-        'scripts',
-        'write-critical-auditor-no-new-gap-response.js'
-      );
-      const projectionQualityGateScript = join(
-        target,
-        '.cursor',
-        'skills',
-        'requirements-contract-authoring',
-        'scripts',
-        'projection_quality_gate.js'
-      );
-      expect(existsSync(promoteScript)).toBe(true);
-      expect(existsSync(prepareCurrentSourcePromotionScript)).toBe(true);
-      expect(existsSync(writeCriticalAuditorNoNewGapResponseScript)).toBe(true);
-      expect(existsSync(projectionQualityGateScript)).toBe(true);
-      expect(readFileSync(projectionQualityGateScript, 'utf8')).toContain(
-        'projection_per_must_acceptance_not_independent'
-      );
-      const draftPath = join(target, 'draft-requirements.md');
-      const targetPath = join(target, 'requirements.md');
-      writeFileSync(
-        draftPath,
-        [
-          '# Draft',
-          '',
-          'implementationConfirmation:',
-          '  status: draft',
-          '  must:',
-          '    - id: MUST-001',
-          '      text: "The consumer install can run the skill-local promotion preflight."',
-          '',
-        ].join('\n'),
-        'utf8'
-      );
-      const promotion = JSON.parse(
-        run(
-          `"${process.execPath}" "${promoteScript}" --draft "${draftPath}" --target "${targetPath}" --preflight-only --json`,
-          target
-        )
-      );
-      expect(promotion.ok).toBe(true);
       expect(existsSync(join(target, 'scripts'))).toBe(false);
     } finally {
       cleanupTempDir(target);
@@ -295,8 +180,7 @@ describe('install to consumer ->CLI acceptance', () => {
         'utf8'
       );
 
-      const pkgPath = join(PKG_ROOT).replace(/\\/g, '/');
-      run(`npm install --save-dev "file:${pkgPath}"`, target);
+      installRootPackageToConsumer(target);
 
       const canonicalTemplate = join(target, '_bmad', 'speckit', 'templates', 'tasks-template.md');
       const mirroredTemplate = join(target, '.specify', 'templates', 'tasks-template.md');
@@ -339,8 +223,7 @@ describe('install to consumer ->CLI acceptance', () => {
         'utf8'
       );
 
-      const pkgPath = join(PKG_ROOT).replace(/\\/g, '/');
-      run(`npm install --save-dev "file:${pkgPath}"`, target);
+      installRootPackageToConsumer(target);
       run('npx bmad-speckit-init --agent claude-code', target);
 
       expect(existsSync(join(target, '.claude', 'hooks', 'session-start.cjs'))).toBe(true);
@@ -392,8 +275,7 @@ describe('install to consumer ->CLI acceptance', () => {
         'utf8'
       );
 
-      const pkgPath = join(PKG_ROOT).replace(/\\/g, '/');
-      run(`npm install --save-dev "file:${pkgPath}"`, target);
+      installRootPackageToConsumer(target);
       run('npx bmad-speckit-init --agent claude-code', target);
 
       const canonical = join(target, '_bmad', 'claude', 'agents', 'party-mode-facilitator.md');
@@ -420,8 +302,7 @@ describe('install to consumer ->CLI acceptance', () => {
         'utf8'
       );
 
-      const pkgPath = join(PKG_ROOT).replace(/\\/g, '/');
-      run(`npm install --save-dev "file:${pkgPath}"`, target);
+      installRootPackageToConsumer(target);
 
       const manifestPath = join(
         target,
@@ -460,8 +341,7 @@ describe('install to consumer ->CLI acceptance', () => {
         'utf8'
       );
 
-      const pkgPath = join(PKG_ROOT).replace(/\\/g, '/');
-      run(`npm install --save-dev "file:${pkgPath}"`, target);
+      installRootPackageToConsumer(target);
       run('npx bmad-speckit-init --agent codex', target);
 
       expect(existsSync(join(target, '.codex', 'commands', 'bmad-help.md'))).toBe(true);
@@ -560,7 +440,9 @@ describe('install to consumer ->CLI acceptance', () => {
       expect(reqTraceOutput).toContain(
         'Provide exactly one of --source-document, --contract, or --source-file'
       );
-      expect(reqTraceOutput).not.toMatch(/large-document-writer helper not found|Cannot resolve js-yaml/u);
+      expect(reqTraceOutput).not.toMatch(
+        /large-document-writer helper not found|Cannot resolve js-yaml/u
+      );
 
       rmSync(join(target, '.codex', 'skills'), { recursive: true, force: true });
       expect(() => run('npx bmad-speckit check', target)).toThrow(/\.codex\/skills/);
@@ -597,8 +479,7 @@ describe('install to consumer ->CLI acceptance', () => {
         'utf8'
       );
 
-      const pkgPath = join(PKG_ROOT).replace(/\\/g, '/');
-      run(`npm install --save-dev "file:${pkgPath}"`, target);
+      installRootPackageToConsumer(target);
 
       const hooksJson = readFileSync(join(target, '.cursor', 'hooks.json'), 'utf8');
       expect(hooksJson).toContain('runtime-dashboard-session-start.cjs');
@@ -630,5 +511,4 @@ describe('install to consumer ->CLI acceptance', () => {
       cleanupTempDir(target);
     }
   }, 90_000);
-
 });

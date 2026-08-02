@@ -1,0 +1,11 @@
+{
+  "candidates": [
+    {
+      "identityKey": "vitest::tests/duplicate.test.ts",
+      "lifecycleState": "deletion_candidate",
+      "capabilityRefs": [],
+      "reasonCode": "EXACT_DUPLICATE",
+      "evidenceRefs": ["identity:vitest::tests/replacement.test.ts"]
+    }
+  ]
+}

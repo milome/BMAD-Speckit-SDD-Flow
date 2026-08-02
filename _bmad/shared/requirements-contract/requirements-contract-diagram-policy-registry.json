@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "requirements-contract-diagram-policy-registry/v1",
+  "owner": {
+    "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-project-profile.ts",
+    "hash": "sha256:5fda5d3d64ad5d044c43d1f32699284920add498331a8dad6e381b998a4c11e4"
+  },
+  "sequenceFirst": true,
+  "views": [
+    {
+      "view": "primary_business_sequence",
+      "consumerProductPolicy": "required_when_critical_interaction"
+    },
+    {
+      "view": "failure_compensation_sequence",
+      "consumerProductPolicy": "required_when_failure_or_compensation_semantics"
+    },
+    {
+      "view": "state_lifecycle",
+      "consumerProductPolicy": "required_when_authorized_state_transition"
+    },
+    {
+      "view": "deployment_delta",
+      "consumerProductPolicy": "required_when_deployment_semantics_change"
+    },
+    {
+      "view": "data_security_flow",
+      "consumerProductPolicy": "required_when_data_or_security_semantics_change"
+    },
+    {
+      "view": "scope_boundary",
+      "consumerProductPolicy": "table_unless_decision_receipt"
+    },
+    {
+      "view": "governance_flow",
+      "consumerProductPolicy": "forbidden"
+    }
+  ],
+  "readability": {
+    "minFontPx": 14,
+    "minParticipantGapPx": 24,
+    "minMessageRowHeightPx": 28,
+    "scale": 1
+  },
+  "decomposition": {
+    "maxParticipants": 8,
+    "maxMessages": 25,
+    "maxControlBlocks": 5
+  },
+  "syntheticFallbackAllowed": false
+}

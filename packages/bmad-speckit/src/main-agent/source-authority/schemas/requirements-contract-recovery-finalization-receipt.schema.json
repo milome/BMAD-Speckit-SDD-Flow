@@ -1,0 +1,190 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-recovery-finalization-receipt.schema.json",
+  "title": "Requirements Contract Recovery Finalization Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "contractHash",
+    "authorityBindings",
+    "transactionId",
+    "implementationAttemptId",
+    "architectureAuditAttemptId",
+    "finalizationRunId",
+    "commitCommandRunId",
+    "commitInvocationSequence",
+    "provisionalCandidate",
+    "initialPublicationReceipt",
+    "qualifiedRedReceipt",
+    "acceptedCommandReceipts",
+    "inputReceiptSetHash",
+    "logicalIntent",
+    "committingInvocationIntent",
+    "committingStateDecision",
+    "prepareReceipt",
+    "targetPromotedReceipt",
+    "staged",
+    "backup",
+    "fixedTarget",
+    "publication"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-recovery-finalization-receipt/v1"
+    },
+    "contractHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "authorityBindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primary", "architectureWave"],
+      "properties": {
+        "primary": {
+          "$ref": "#/$defs/pathHash"
+        },
+        "architectureWave": {
+          "$ref": "#/$defs/pathHash"
+        }
+      }
+    },
+    "transactionId": {
+      "type": "string",
+      "pattern": "^TX-[A-Za-z0-9._-]+$"
+    },
+    "implementationAttemptId": {
+      "type": "string",
+      "pattern": "^IMP-[A-Za-z0-9._-]+$"
+    },
+    "architectureAuditAttemptId": {
+      "type": "string",
+      "pattern": "^AUDIT-[A-Za-z0-9._-]+$"
+    },
+    "finalizationRunId": {
+      "type": "string",
+      "pattern": "^FINALIZE-[A-Za-z0-9._-]+$"
+    },
+    "commitCommandRunId": {
+      "type": "string",
+      "pattern": "^RUN-[A-Za-z0-9._-]+$"
+    },
+    "commitInvocationSequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "provisionalCandidate": {
+      "$ref": "#/$defs/pathHash"
+    },
+    "initialPublicationReceipt": {
+      "$ref": "#/$defs/pathHash"
+    },
+    "qualifiedRedReceipt": {
+      "$ref": "#/$defs/pathHash"
+    },
+    "acceptedCommandReceipts": {
+      "type": "object",
+      "minProperties": 3,
+      "maxProperties": 3,
+      "propertyNames": {
+        "pattern": "^CMD-[0-9]+$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/pathHash"
+      }
+    },
+    "inputReceiptSetHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "logicalIntent": {
+      "$ref": "#/$defs/pathHash"
+    },
+    "committingInvocationIntent": {
+      "$ref": "#/$defs/pathHash"
+    },
+    "committingStateDecision": {
+      "$ref": "#/$defs/pathHash"
+    },
+    "prepareReceipt": {
+      "$ref": "#/$defs/pathHash"
+    },
+    "targetPromotedReceipt": {
+      "$ref": "#/$defs/pathHash"
+    },
+    "staged": {
+      "$ref": "#/$defs/pathHash"
+    },
+    "backup": {
+      "$ref": "#/$defs/pathHash"
+    },
+    "fixedTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "expectedPreimageHash", "finalHash", "readbackHash"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expectedPreimageHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "finalHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "readbackHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "publication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "writer",
+        "explicitUtf8",
+        "atomicTargetPromotion",
+        "readbackVerified",
+        "committedAt"
+      ],
+      "properties": {
+        "writer": {
+          "const": "requirements-contract-recovery-finalize"
+        },
+        "explicitUtf8": {
+          "const": true
+        },
+        "atomicTargetPromotion": {
+          "const": true
+        },
+        "readbackVerified": {
+          "const": true
+        },
+        "committedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "pathHash": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    }
+  }
+}

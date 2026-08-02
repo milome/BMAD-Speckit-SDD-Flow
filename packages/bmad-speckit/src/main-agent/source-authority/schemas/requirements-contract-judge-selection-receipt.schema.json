@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-judge-selection-receipt.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "transactionId",
+    "auditAttemptId",
+    "providerRegistryHash",
+    "publicProviderConfigHash",
+    "capabilityReceiptHash",
+    "providerRef",
+    "configuredBaseUrlHash",
+    "transport",
+    "apiStyle",
+    "model",
+    "credentialRevision",
+    "independenceClass",
+    "blindReview",
+    "allowPassAuthority",
+    "runtimeFallbackAllowed",
+    "rubricHash",
+    "systemPromptHash",
+    "sourceHash",
+    "traceHash",
+    "redHash",
+    "baseEvidenceHash",
+    "auditUniverseHash",
+    "judgeAuditUnitSetRef",
+    "judgeAuditUnitSetHash",
+    "baseJudgeInputBundleHash",
+    "authorizedChallengeDerivationProtocolHash",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-judge-selection-receipt/v1"
+    },
+    "transactionId": { "type": "string", "minLength": 1 },
+    "auditAttemptId": { "type": "string", "minLength": 1 },
+    "providerRegistryHash": { "$ref": "#/$defs/hash" },
+    "publicProviderConfigHash": { "$ref": "#/$defs/hash" },
+    "capabilityReceiptHash": { "$ref": "#/$defs/hash" },
+    "providerRef": { "type": "string", "minLength": 1 },
+    "configuredBaseUrlHash": { "$ref": "#/$defs/hash" },
+    "transport": {
+      "enum": ["openai-compatible", "anthropic-compatible", "claude-code-cli"]
+    },
+    "apiStyle": { "enum": ["chat_completions", "messages", "cli"] },
+    "model": { "type": ["string", "null"], "minLength": 1 },
+    "credentialRevision": { "type": "integer", "minimum": 1 },
+    "independenceClass": { "type": "string", "minLength": 1 },
+    "blindReview": { "const": true },
+    "allowPassAuthority": { "const": false },
+    "runtimeFallbackAllowed": { "const": false },
+    "rubricHash": { "$ref": "#/$defs/hash" },
+    "systemPromptHash": { "$ref": "#/$defs/hash" },
+    "sourceHash": { "$ref": "#/$defs/hash" },
+    "traceHash": { "$ref": "#/$defs/hash" },
+    "redHash": { "$ref": "#/$defs/hash" },
+    "baseEvidenceHash": { "$ref": "#/$defs/hash" },
+    "auditUniverseHash": { "$ref": "#/$defs/hash" },
+    "judgeAuditUnitSetRef": { "$ref": "#/$defs/judgeAuditUnitSetRef" },
+    "judgeAuditUnitSetHash": { "$ref": "#/$defs/hash" },
+    "baseJudgeInputBundleHash": { "$ref": "#/$defs/hash" },
+    "authorizedChallengeDerivationProtocolHash": { "$ref": "#/$defs/hash" },
+    "decision": { "const": "frozen" }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "judgeAuditUnitSetRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash", "schemaVersion"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" },
+        "schemaVersion": { "const": "requirements-contract-judge-audit-unit-set/v1" }
+      }
+    }
+  }
+}

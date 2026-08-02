@@ -77,11 +77,6 @@ function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
-function writeJson(filePath, value) {
-  fs.mkdirSync(path.dirname(path.resolve(filePath)), { recursive: true });
-  fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
-}
-
 function listTemporaryExecutableHelpers(authoringDir) {
   if (!fs.existsSync(authoringDir)) return [];
   return fs
@@ -99,11 +94,6 @@ function uniqueStrings(values) {
   return [...new Set(values.map((value) => String(value)).filter(Boolean))];
 }
 
-function numberValue(value) {
-  const numeric = Number(value ?? 0);
-  return Number.isFinite(numeric) ? numeric : 0;
-}
-
 function isFiniteNumberValue(value) {
   if (value === null || value === undefined || value === "") return false;
   const numeric = Number(value);
@@ -112,14 +102,6 @@ function isFiniteNumberValue(value) {
 
 function strictNumberValue(value) {
   return Number(value);
-}
-
-function roundPerspective(roundIndex) {
-  if (roundIndex === 1) return "MUST atomicity, over-broad tasks, and missing decomposition";
-  if (roundIndex === 2) {
-    return "EVD/TRACE/ACC/E2E/FAIL/EDGE/artifact/command/AI-TDD projection materialization";
-  }
-  return "stale hash, authority bypass, negative boundary, reconfirmation, and delivery-vs-confirmation separation";
 }
 
 function selectCheckedProjectionGroups(request) {
@@ -139,63 +121,6 @@ function selectReviewedProjectionRefs(request, explicitRefs) {
   const selected = explicitRefs.length > 0 ? explicitRefs : projectionRefs.slice(0, 50);
   if (projectionRefs.length === 0) return uniqueStrings(selected);
   return uniqueStrings(selected.filter((ref) => projectionRefs.includes(ref)));
-}
-
-function buildResponse({ request, requestPath, roundIndex, reviewedProjectionRefs }) {
-  const gateDryRun = request.gateDryRun || {};
-  const reconciliation = gateDryRun.reconciliation || {};
-  const checkedProjectionGroups = selectCheckedProjectionGroups(request);
-  const checkedProjectionQualityRuleCodes = selectCheckedProjectionQualityRuleCodes(request);
-  const gateDryRunHash = gateDryRun.gateDryRunHash || gateDryRun.hash || null;
-  const reconciliationReportPath = gateDryRun.reconciliationReportPath
-    ? String(gateDryRun.reconciliationReportPath).replace(/\\/gu, "/")
-    : null;
-  return {
-    schemaVersion: "critical-auditor-round-response/v1",
-    requestHash: request.requestHash,
-    recordId: request.recordId,
-    roundIndex: request.roundIndex ?? roundIndex,
-    sourceHash: request.sourceDocumentHash,
-    sourceDocumentHash: request.sourceDocumentHash,
-    implementationConfirmationHash: request.implementationConfirmationHash,
-    packetHash: request.packetHash,
-    gateDryRunHash,
-    reconciliationIssueCount: numberValue(reconciliation.issueCount),
-    checkedProjectionGroups,
-    checkedProjectionQualityRuleCodes,
-    verdict: "no_new_valid_gap",
-    reviewedMustRefs: stringArray(request.mustRefs),
-    reviewedProjectionRefs,
-    priorFindingsDisposition: [
-      {
-        findingRef: "critical_auditor_receipt_missing",
-        disposition: roundIndex === 1 ? "new" : "resolved",
-        evidenceRefs: [toRootRelative(requestPath), reconciliationReportPath].filter(Boolean),
-        rationale:
-          roundIndex === 1
-            ? "The missing current round receipt is expected before this response is ingested; it is not a source or packet projection gap."
-            : "The current round is still pre-ingest; earlier current receipts are handled by the authoring-repair receipt loop.",
-      },
-      {
-        findingRef: "packet_source_reconciliation",
-        disposition: "resolved",
-        evidenceRefs: [reconciliationReportPath].filter(Boolean),
-        rationale: "The current gate dry-run reports packet/source reconciliation issueCount=0.",
-      },
-    ],
-    falsePositiveProofs: [],
-    gapCandidates: [],
-    validatedGaps: [],
-    rejectedGapCandidates: [
-      {
-        id: `ROUND${roundIndex}-NO-ACTIONABLE-GATE-BLOCKER`,
-        code: "missing_receipt_is_pre_response_state",
-        reason:
-          "critical_auditor_receipt_missing is the expected pre-response state for the active round and is not an actionable source, packet, or projection blocker.",
-      },
-    ],
-    rationale: `Round ${roundIndex} reviewed ${roundPerspective(roundIndex)}. The request is bound to current sourceDocumentHash=${request.sourceDocumentHash}, implementationConfirmationHash=${request.implementationConfirmationHash}, packetHash=${request.packetHash}, and gateDryRunHash=${gateDryRunHash}. The dry-run has actionableBlockingIssueCount=0 and reconciliation issueCount=0, so no new valid confirmation-blocking gap is found.`,
-  };
 }
 
 function validateRequestForNoNewGap(request, roundIndex, reviewedProjectionRefs) {
@@ -287,15 +212,14 @@ function writeCriticalAuditorNoNewGapResponse(args) {
     };
   }
 
-  const response = buildResponse({ request, requestPath, roundIndex, reviewedProjectionRefs });
-  writeJson(responsePath, response);
   return {
-    ok: true,
-    responsePath: toRootRelative(responsePath),
+    ok: false,
+    failureClass: "critical_auditor_independent_provider_evidence_required",
+    issues: ["deterministic_no_new_gap_response_writer_forbidden"],
+    request: toRootRelative(requestPath),
+    responseOut: toRootRelative(responsePath),
     roundIndex,
     requestHash: request.requestHash,
-    gateDryRunHash: response.gateDryRunHash,
-    reviewedProjectionRefs,
     receiptWritten: false,
   };
 }

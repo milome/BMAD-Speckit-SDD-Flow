@@ -1,0 +1,383 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "goal-contract-canonical-intent-bundle/v1",
+  "title": "Goal Contract Canonical Intent Bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "authorityState",
+    "sourceCompositionPolicyHash",
+    "orderedSourceSnapshotSetHash",
+    "sourceAuthorityBundleHash",
+    "canonicalIntentIR",
+    "canonicalIntentSemanticHash",
+    "specSpanRegistry",
+    "sourceObligationGraph",
+    "sourceObligationGraphHash",
+    "subordinateCoverage",
+    "compilerIdentity",
+    "canonicalIntentBundleHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-canonical-intent-bundle/v1"
+    },
+    "authorityState": {
+      "enum": [
+        "candidate_only",
+        "authoritative"
+      ]
+    },
+    "sourceCompositionPolicyHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "orderedSourceSnapshotSetHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "sourceAuthorityBundleHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "canonicalIntentIR": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/intentRecord"
+      }
+    },
+    "canonicalIntentSemanticHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "specSpanRegistry": {
+      "type": "object"
+    },
+    "sourceObligationGraph": {
+      "$ref": "#/$defs/sourceObligationGraph"
+    },
+    "sourceObligationGraphHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "subordinateCoverage": {
+      "type": "object"
+    },
+    "compilerIdentity": {
+      "$ref": "#/$defs/compilerIdentity"
+    },
+    "intentAuthorityEnvelope": {
+      "type": "object"
+    },
+    "authorityAttestationHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "canonicalIntentBundleHash": {
+      "$ref": "#/$defs/hash"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "authorityState": {
+            "const": "authoritative"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "intentAuthorityEnvelope",
+          "authorityAttestationHash"
+        ]
+      },
+      "else": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "intentAuthorityEnvelope"
+              ]
+            },
+            {
+              "required": [
+                "authorityAttestationHash"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "stringArray": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "nullableString": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "intentRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "intentRecordId",
+        "declaredSourceId",
+        "classification",
+        "ownership",
+        "referenceTargetId",
+        "sourceArtifactId",
+        "sourceSnapshotHash",
+        "sourceRole",
+        "namespace",
+        "sourceOrder",
+        "sourceKind",
+        "polarity",
+        "subject",
+        "action",
+        "target",
+        "applicabilityCondition",
+        "requiredOutcome",
+        "semanticCoordinateKey",
+        "semanticOwnershipKey",
+        "dependencyRefs",
+        "specSpanRefs"
+      ],
+      "properties": {
+        "intentRecordId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "declaredSourceId": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "classification": {
+          "enum": [
+            "positive",
+            "negative",
+            "boundary",
+            "evidence",
+            "dependency",
+            "applicability",
+            "context"
+          ]
+        },
+        "ownership": {
+          "enum": [
+            "owned_obligation",
+            "cross_source_reference"
+          ]
+        },
+        "referenceTargetId": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "sourceArtifactId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceSnapshotHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "sourceRole": {
+          "enum": [
+            "primary_implementation_authority",
+            "subordinate_component_specification"
+          ]
+        },
+        "namespace": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceOrder": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sourceKind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "polarity": {
+          "enum": [
+            "positive",
+            "negative"
+          ]
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1
+        },
+        "action": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "type": "string",
+          "minLength": 1
+        },
+        "applicabilityCondition": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requiredOutcome": {
+          "type": "string",
+          "minLength": 1
+        },
+        "semanticCoordinateKey": {
+          "$ref": "#/$defs/hash"
+        },
+        "semanticOwnershipKey": {
+          "$ref": "#/$defs/hash"
+        },
+        "dependencyRefs": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "specSpanRefs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^spec-span-[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "dependencyEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fromId",
+        "toId",
+        "dependencyId"
+      ],
+      "properties": {
+        "fromId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "toId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "dependencyId": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "crossSourceReferenceEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fromId",
+        "toId",
+        "targetId"
+      ],
+      "properties": {
+        "fromId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "toId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "targetId": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "sourceObligationGraph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "orderedSourceSnapshotSetHash",
+        "specSpanRegistryHash",
+        "obligations",
+        "dependencyEdges",
+        "crossSourceReferenceEdges"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "goal-contract-unified-source-obligation-graph/v1"
+        },
+        "orderedSourceSnapshotSetHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "specSpanRegistryHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "obligations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/intentRecord"
+          }
+        },
+        "dependencyEdges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dependencyEdge"
+          }
+        },
+        "crossSourceReferenceEdges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/crossSourceReferenceEdge"
+          }
+        }
+      }
+    },
+    "schemaArtifactHash": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaName",
+        "schemaArtifactHash"
+      ],
+      "properties": {
+        "schemaName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schemaArtifactHash": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "compilerIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "compilerVersion",
+        "schemaArtifactHashes",
+        "compilerIdentityHash"
+      ],
+      "properties": {
+        "compilerVersion": {
+          "const": "goal-contract-canonical-intent-compiler/v1"
+        },
+        "schemaArtifactHashes": {
+          "type": "array",
+          "minItems": 5,
+          "items": {
+            "$ref": "#/$defs/schemaArtifactHash"
+          }
+        },
+        "compilerIdentityHash": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    }
+  }
+}

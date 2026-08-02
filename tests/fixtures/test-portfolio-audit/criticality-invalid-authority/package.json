@@ -1,0 +1,75 @@
+{
+  "name": "test-portfolio-criticality-invalid-authority-fixture",
+  "version": "1.0.0",
+  "scripts": {
+    "critical:broad": "vitest run",
+    "critical:dynamic": "vitest run ${TEST_FILE}",
+    "critical:empty": "node -e \"console.log('noop')\"",
+    "critical:missing-test": "vitest run tests/missing.test.ts"
+  },
+  "testPortfolioAudit": {
+    "criticalBindings": [
+      {
+        "bindingId": "broad-main-agent",
+        "kinds": [
+          "main_agent_core"
+        ],
+        "scriptName": "critical:broad"
+      },
+      {
+        "bindingId": "missing-cli",
+        "kinds": [
+          "cli_bin"
+        ],
+        "scriptName": "critical:missing"
+      },
+      {
+        "bindingId": "broad-main-agent",
+        "kinds": [
+          "cli_bin"
+        ],
+        "scriptName": "critical:broad"
+      },
+      {
+        "bindingId": "unsupported-kind",
+        "kinds": [
+          "workflow_inferred"
+        ],
+        "scriptName": "critical:broad"
+      },
+      {
+        "bindingId": "empty-kind-set",
+        "kinds": [],
+        "scriptName": "critical:broad"
+      },
+      {
+        "bindingId": "empty-script-name",
+        "kinds": [
+          "cli_bin"
+        ],
+        "scriptName": ""
+      },
+      {
+        "bindingId": "dynamic-script",
+        "kinds": [
+          "cli_bin"
+        ],
+        "scriptName": "critical:dynamic"
+      },
+      {
+        "bindingId": "empty-expansion",
+        "kinds": [
+          "cli_bin"
+        ],
+        "scriptName": "critical:empty"
+      },
+      {
+        "bindingId": "missing-test",
+        "kinds": [
+          "cli_bin"
+        ],
+        "scriptName": "critical:missing-test"
+      }
+    ]
+  }
+}

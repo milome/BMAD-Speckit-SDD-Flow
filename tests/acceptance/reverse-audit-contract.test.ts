@@ -1430,6 +1430,52 @@ describe('reverse_audit_contract', () => {
     }
   });
 
+  it('treats missing expected-red test files as pre-implementation warnings only', () => {
+    const source = writeSource();
+    const render = runRenderer(source);
+    patchConfirmationRender(source, render);
+    fs.rmSync(path.join(tempDir, 'tests'), { recursive: true, force: true });
+
+    const confirmability = runStageAudit(AUDIT_CONTRACT_CONFIRMABILITY, source, render.reportPath);
+    const readiness = runStageAudit(AUDIT_IMPLEMENTATION_READINESS, source, render.reportPath);
+    const delivery = runStageAudit(AUDIT_DELIVERY_VERIFICATION, source, render.reportPath);
+
+    for (const audit of [confirmability, readiness]) {
+      expect(audit.result.status).toBe(0);
+      expect(audit.report.failedChecks).not.toContain('acceptance_test_file_missing');
+      expect(audit.report.warningChecks).toContain('acceptance_test_file_missing');
+    }
+
+    expect(delivery.result.status).toBe(1);
+    expect(delivery.report.failedChecks).toContain('acceptance_test_file_missing');
+  });
+
+  it('allows a draft with current render evidence only at contract confirmability', () => {
+    const source = writeSource('DRAFT');
+    const render = runRenderer(source);
+
+    const confirmability = runStageAudit(AUDIT_CONTRACT_CONFIRMABILITY, source, render.reportPath);
+    const readiness = runStageAudit(AUDIT_IMPLEMENTATION_READINESS, source, render.reportPath);
+
+    expect(confirmability.result.status).toBe(0);
+    expect(confirmability.report.failedChecks).not.toEqual(
+      expect.arrayContaining([
+        'confirmation_not_user_confirmed',
+        'missing_confirmation_html_hash',
+        'missing_confirmation_phrase',
+      ])
+    );
+
+    expect(readiness.result.status).toBe(1);
+    expect(readiness.report.failedChecks).toEqual(
+      expect.arrayContaining([
+        'confirmation_not_user_confirmed',
+        'missing_confirmation_html_hash',
+        'missing_confirmation_phrase',
+      ])
+    );
+  });
+
   it('fails when render report confirmInstruction does not include the current hashes', () => {
     const source = writeSource();
     const render = runRenderer(source);

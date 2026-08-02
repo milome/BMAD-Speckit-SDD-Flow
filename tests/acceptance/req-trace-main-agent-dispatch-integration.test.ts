@@ -12,6 +12,10 @@ import {
   buildExecutionStrategyOptions,
   selectExecutionStrategy,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/execution-strategy-selection';
+import {
+  cleanupRequirementWorkspace,
+  materializeAiTddManifestCloseoutRunnerFixture,
+} from '../helpers/requirement-fixture-runtime';
 
 function sha256Text(value: string): string {
   return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
@@ -28,9 +32,12 @@ type FakeReqTraceBehavior =
   | 'fallbackGoal'
   | 'inlineGoal'
   | 'missingAudit'
+  | 'missingEntryMetadata'
   | 'missingModel'
   | 'missingGoalDocument'
-  | 'overlongGoal';
+  | 'overlongGoal'
+  | 'wrongCompilerIdentity'
+  | 'wrongEntryMetadata';
 
 function writeFakeReqTraceSkill(root: string, behavior: FakeReqTraceBehavior): string {
   const skillDir = path.join(root, '_bmad', 'skills', 'req-trace-matrix-prompt-generator');
@@ -54,10 +61,18 @@ function writeFakeReqTraceSkill(root: string, behavior: FakeReqTraceBehavior): s
       "fs.writeFileSync(path.join(outDir, 'compiler-invocation.json'), JSON.stringify({ main: require.main.filename, argv: process.argv.slice(2) }, null, 2));",
       "const record = JSON.parse(fs.readFileSync(recordPath, 'utf8'));",
       "const profile = profilePath ? JSON.parse(fs.readFileSync(profilePath, 'utf8')) : null;",
+      "const compilerIdentity = { path: path.resolve(require.main.filename).replace(/\\\\/gu, '/'), hash: sha(fs.readFileSync(require.main.filename, 'utf8')) };",
+      behavior === 'missingEntryMetadata'
+        ? 'const entryMetadata = {};'
+        : behavior === 'wrongEntryMetadata'
+          ? "const entryMetadata = { entryScenario: 'req_trace_direct', entryExplicit: true, compilerIdentity };"
+          : behavior === 'wrongCompilerIdentity'
+            ? "const entryMetadata = { entryScenario: arg('--entry'), entryExplicit: process.argv.includes('--entry'), compilerIdentity: { ...compilerIdentity, hash: 'sha256:' + '0'.repeat(64) } };"
+            : "const entryMetadata = { entryScenario: arg('--entry'), entryExplicit: process.argv.includes('--entry'), compilerIdentity };",
       behavior === 'block'
         ? "fs.writeFileSync(path.join(outDir, 'audit_receipt.json'), JSON.stringify({ decision: 'blocked', blockingReasons: ['FAKE_BLOCK'], executionDisciplineProfile: profile }, null, 2)); console.log('BLOCK: FAKE_BLOCK'); process.exit(3);"
         : 'void 0;',
-      "const modelPacket = { artifactRole: 'execution_authority', sourceDocumentHash: record.sourceDocumentHash, implementationConfirmationHash: record.implementationConfirmationHash, executionDisciplineProfile: profile };",
+      "const modelPacket = { artifactRole: 'execution_authority', sourceDocumentHash: record.sourceDocumentHash, implementationConfirmationHash: record.implementationConfirmationHash, executionDisciplineProfile: profile, ...entryMetadata };",
       behavior === 'missingModel'
         ? 'void 0;'
         : "fs.writeFileSync(path.join(outDir, 'model_packet.json'), JSON.stringify(modelPacket, null, 2));",
@@ -71,7 +86,7 @@ function writeFakeReqTraceSkill(root: string, behavior: FakeReqTraceBehavior): s
             : behavior === 'overlongGoal'
               ? "console.log('BLOCK: GOAL_COMMAND_TOO_LONG'); process.exit(3);"
               : "const goalPath = path.join(outDir, 'goal_execution.md'); fs.writeFileSync(goalPath, `## Execution Discipline Profile\\nprofileId: ${profile.profileId}\\nprofileHash: ${profile.profileHash}\\n`); const goalCommand = { mode: 'native_goal_document_ref', documentHash: sha(fs.readFileSync(goalPath, 'utf8')) };",
-      "const receipt = { decision: 'pass', goalCommand, executionHost: arg('--execution-host'), humanPromptProfile: arg('--human-prompt-profile'), humanPromptLanguage: arg('--prompt-language'), continuationDirective: { strategy: 'test' }, humanPromptRequiredFragmentsPassed: true, executionDisciplineProfile: { profileId: profile.profileId, profileHash: profile.profileHash, humanPromptProfileRendered: true, goalExecutionProfileRendered: true } };",
+      "const receipt = { decision: 'pass', goalCommand, executionHost: arg('--execution-host'), humanPromptProfile: arg('--human-prompt-profile'), humanPromptLanguage: arg('--prompt-language'), continuationDirective: { strategy: 'test' }, humanPromptRequiredFragmentsPassed: true, executionDisciplineProfile: { profileId: profile.profileId, profileHash: profile.profileHash, humanPromptProfileRendered: true, goalExecutionProfileRendered: true }, ...entryMetadata };",
       behavior === 'missingAudit'
         ? 'void 0;'
         : "fs.writeFileSync(path.join(outDir, 'audit_receipt.json'), JSON.stringify(receipt, null, 2));",
@@ -219,9 +234,13 @@ describe('req-trace main-agent dispatch integration', () => {
       expect(invocation.argv).toContain('--requirement-record');
       expect(invocation.argv).toContain('--source-document');
       expect(invocation.argv).toContain('--out-dir');
+      expect(invocation.argv).toEqual(expect.arrayContaining(['--entry', 'main_agent_compile']));
       expect(invocation.argv).toContain('--execution-discipline-profile-ref');
       expect(invocation.argv).toEqual(expect.arrayContaining(['--goal-command-available', 'true']));
       expect(invocation.argv).toEqual(expect.arrayContaining(['--packet-id', 'implement-test']));
+      expect(result.productionArgv).toEqual(
+        expect.arrayContaining(['--entry', 'main_agent_compile'])
+      );
       const taskReportArgIndex = invocation.argv.indexOf('--task-report-path');
       expect(taskReportArgIndex).toBeGreaterThanOrEqual(0);
       expect(path.normalize(invocation.argv[taskReportArgIndex + 1])).toBe(
@@ -241,6 +260,12 @@ describe('req-trace main-agent dispatch integration', () => {
         readFileSync(result.compiledPromptRef!.modelPacketPath, 'utf8')
       );
       expect(modelPacket.artifactRole).toBe('execution_authority');
+      expect(modelPacket.entryScenario).toBe('main_agent_compile');
+      expect(modelPacket.entryExplicit).toBe(true);
+      expect(path.normalize(modelPacket.compilerIdentity.path)).toBe(
+        path.normalize(result.generatorRef!.path)
+      );
+      expect(modelPacket.compilerIdentity.hash).toBe(result.generatorRef!.hash);
       const humanPrompt = readFileSync(result.compiledPromptRef!.humanPromptPath, 'utf8');
       expect(humanPrompt).toContain('Execution Discipline Profile');
       expect(humanPrompt).toContain('compiled direct body');
@@ -248,8 +273,86 @@ describe('req-trace main-agent dispatch integration', () => {
       expect(humanPrompt).not.toContain('STORY-A3-DEV');
       expect(humanPrompt).not.toContain('standalone implementation prompt');
       const receipt = JSON.parse(readFileSync(result.compiledPromptRef!.auditReceiptPath, 'utf8'));
+      expect(receipt.entryScenario).toBe('main_agent_compile');
+      expect(receipt.entryExplicit).toBe(true);
+      expect(path.normalize(receipt.compilerIdentity.path)).toBe(
+        path.normalize(result.generatorRef!.path)
+      );
+      expect(receipt.compilerIdentity.hash).toBe(result.generatorRef!.hash);
       expect(receipt.goalCommand.mode).toBe('native_goal_document_ref');
       expect(result.compiledPromptRef?.goalExecutionPath).toContain('goal_execution.md');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('uses the repository compiler implementation for the confirmed Main Agent journey', () => {
+    const fixture = materializeAiTddManifestCloseoutRunnerFixture();
+    try {
+      const projectRoot = path.resolve('.');
+      const generatorPath = path.join(
+        projectRoot,
+        '_bmad',
+        'skills',
+        'req-trace-matrix-prompt-generator',
+        'scripts',
+        'generate_prompt.js'
+      );
+      const result = runMainAgentCompiledPrompt({
+        projectRoot,
+        recordPath: fixture.recordPath,
+        outDir: path.join(fixture.root, 'main-agent-compile'),
+        taskReportPath: path.join(fixture.root, 'task-reports', 'implement-real.json'),
+        packetId: 'implement-real',
+        flow: 'standalone_tasks',
+        executionHost: 'codex',
+        executionDisciplineProfile: resolveExecutionDisciplineProfile('standalone_tasks'),
+        goalCommandAvailable: 'true',
+      });
+
+      expect(result.status).toBe('pass');
+      expect(path.normalize(result.generatorRef!.path)).toBe(path.normalize(generatorPath));
+      expect(result.generatorRef!.hash).toBe(sha256Text(readFileSync(generatorPath, 'utf8')));
+      expect(result.productionArgv).toEqual(
+        expect.arrayContaining(['--entry', 'main_agent_compile'])
+      );
+      const packet = JSON.parse(readFileSync(result.compiledPromptRef!.modelPacketPath, 'utf8'));
+      const receipt = JSON.parse(
+        readFileSync(result.compiledPromptRef!.auditReceiptPath, 'utf8')
+      );
+      for (const artifact of [packet, receipt]) {
+        expect(artifact.entryScenario).toBe('main_agent_compile');
+        expect(artifact.entryExplicit).toBe(true);
+        expect(path.normalize(artifact.compilerIdentity.path)).toBe(path.normalize(generatorPath));
+        expect(artifact.compilerIdentity.hash).toBe(result.generatorRef!.hash);
+      }
+    } finally {
+      cleanupRequirementWorkspace(fixture.root);
+    }
+  });
+
+  it.each([
+    ['missingEntryMetadata', 'model_packet_entry_scenario_mismatch:missing'],
+    ['wrongEntryMetadata', 'model_packet_entry_scenario_mismatch:req_trace_direct'],
+    ['wrongCompilerIdentity', 'model_packet_compiler_hash_mismatch'],
+  ] as const)('blocks %s compiler metadata', (behavior, blocker) => {
+    const root = mkdtempSync(path.join(os.tmpdir(), `req-trace-dispatch-${behavior}-`));
+    try {
+      const fixture = writeRequirementRecord(root, { confirmed: true });
+      const result = runMainAgentCompiledPrompt({
+        projectRoot: root,
+        recordPath: fixture.recordPath,
+        packetId: `implement-${behavior}`,
+        flow: 'standalone_tasks',
+        executionHost: 'codex',
+        executionDisciplineProfile: resolveExecutionDisciplineProfile('standalone_tasks'),
+        goalCommandAvailable: 'true',
+        reqTraceSkillDir: writeFakeReqTraceSkill(root, behavior),
+      });
+
+      expect(result.status).toBe('blocked');
+      expect(result.blockingReasons).toContain(blocker);
+      expect(result.compiledPromptRef).toBeNull();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

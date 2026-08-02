@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "campaignId",
+    "attemptId",
+    "partitionManifestHash",
+    "partitionSetHash",
+    "sourceAuthorityBundleHash",
+    "sourceCompositionPolicyHash",
+    "implementationLineageHash",
+    "childClosureCount",
+    "childClosures",
+    "governedPathRefs",
+    "taskReportProvenanceRefs",
+    "deliverySurfaceRefs",
+    "policyRefs",
+    "coverageProofHash",
+    "campaignLineageKey",
+    "scopeManifestHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-parent-goal-campaign-scope-manifest/v1" },
+    "campaignId": { "type": "string", "minLength": 1 },
+    "attemptId": { "type": "string", "minLength": 1 },
+    "partitionManifestHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "partitionSetHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "sourceAuthorityBundleHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "sourceCompositionPolicyHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "implementationLineageHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "childClosureCount": { "type": "integer", "minimum": 1 },
+    "childClosures": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "partitionId",
+          "childContractHash",
+          "closureReceiptHash",
+          "governedFileManifestHash",
+          "subcontractEvidenceHash",
+          "productionReachabilityReceiptHash",
+          "dependencyClosureHash"
+        ],
+        "properties": {
+          "partitionId": { "type": "string", "minLength": 1 },
+          "childContractHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+          "closureReceiptHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+          "governedFileManifestHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+          "subcontractEvidenceHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+          "productionReachabilityReceiptHash": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "dependencyClosureHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "governedPathRefs": { "type": "array", "items": { "type": "string" } },
+    "taskReportProvenanceRefs": { "type": "array", "items": { "type": "string" } },
+    "priorFindingRefs": { "type": "array", "items": { "type": "string" } },
+    "deliverySurfaceRefs": { "type": "array", "items": { "type": "string" } },
+    "policyRefs": { "type": "array", "items": { "type": "string" } },
+    "coverageProofHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "campaignLineageKey": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "scopeManifestHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+  },
+  "additionalProperties": false
+}

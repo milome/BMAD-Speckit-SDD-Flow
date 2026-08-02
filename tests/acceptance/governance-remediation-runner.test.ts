@@ -176,6 +176,7 @@ function baseInput(root: string, outputPath: string) {
     outcome: 'blocked',
     hostKind: 'codex' as const,
     providerAdapter: createProvider(),
+    availableSkills: ['provider-recommended-skill', 'code-reviewer', 'speckit-workflow'],
     maxAttempts: 3,
   };
 }
@@ -499,14 +500,13 @@ describe('governance remediation runner', () => {
         }
       );
       expect(
-        result.executionIntentCandidate?.providerRecommendationItems.skills?.[0]?.filteredBecause
-      ).toEqual(
-        expect.arrayContaining(
-          result.executionIntentCandidate?.providerRecommendationItems.skills?.[0]?.matchedSkillId
-            ? ['replaced-by-better-match']
-            : ['not-available-in-inventory']
-        )
-      );
+        result.executionIntentCandidate?.providerRecommendationItems.skills?.[0]
+      ).toMatchObject({
+        matchedSkillId: 'provider-recommended-skill',
+        matchedBy: 'exact-id',
+        matchScore: 10000,
+        filteredBecause: [],
+      });
       expect(result.executionPlanDecision?.providerRecommendationItems.subagentRoles).toEqual([
         {
           value: 'provider-reviewer',

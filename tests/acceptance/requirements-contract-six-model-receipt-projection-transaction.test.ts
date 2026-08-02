@@ -1,0 +1,204 @@
+import { describe, expect, it } from 'vitest';
+import {
+  createRuntimeStatusProjectionUpdate,
+  runtimeStatusProjectionRecordPatch,
+  validateRuntimeStatusDecisionReceipt,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-runtime-status-decision-receipt';
+
+const hash = (digit: string) => `sha256:${digit.repeat(64)}`;
+
+function input(semanticModelHash = hash('3')) {
+  return {
+    recordId: 'REQ-TRANSACTION',
+    requirementSetId: 'REQSET-TRANSACTION',
+    modelId: 'implementation_readiness' as const,
+    implementationAttemptId: 'IMP-TRANSACTION',
+    sourceDocumentHash: hash('1'),
+    implementationConfirmationHash: hash('2'),
+    semanticModelHash,
+    stageInputs: [{ role: 'input', path: 'evidence/input.json', hash: hash('4') }],
+    deterministicGateOutputs: [{ role: 'gate', path: 'evidence/gate.json', hash: hash('5') }],
+    blockerRefs: [],
+    evidenceRefs: ['evidence/gate.json'],
+    authorityClass: 'deterministic_gate' as const,
+    decision: 'pass' as const,
+    effectiveStatus: 'pass' as const,
+    createdAt: '2026-07-15T00:00:00.000Z',
+    receiptPath: 'evidence/status/implementation-readiness.json',
+    projection: { status: 'pass' },
+  };
+}
+
+describe('six-model receipt to projection transaction', () => {
+  it('creates the immutable receipt before exposing the bound PASS projection', () => {
+    const update = createRuntimeStatusProjectionUpdate(input());
+
+    expect(update.authorityEstablished).toBe(true);
+    expect(update.receiptRef).not.toBeNull();
+    expect(validateRuntimeStatusDecisionReceipt(update.receiptRef?.receipt)).toBe(true);
+    expect(update.projection).toMatchObject({
+      status: 'pass',
+      currentAttemptId: 'IMP-TRANSACTION',
+      decisionReceiptRef: 'evidence/status/implementation-readiness.json',
+      decisionReceiptHash: update.receiptRef?.receipt.receiptHash,
+    });
+
+    const patch = runtimeStatusProjectionRecordPatch({
+      record: { sixModelResults: {}, runtimeStatusDecisionReceipts: [] },
+      modelId: 'implementation_readiness',
+      update,
+    });
+    expect(patch.runtimeStatusDecisionReceipts).toEqual([update.receiptRef]);
+    expect(patch.sixModelResults.implementation_readiness).toEqual(update.projection);
+    expect(patch.artifactIndex).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          artifactType: 'runtime_status_decision_receipt',
+          path: 'evidence/status/implementation-readiness.json',
+          contentHash: update.receiptRef?.receipt.receiptHash,
+          status: 'active',
+        }),
+        expect.objectContaining({
+          artifactType: 'runtime_status_stage_input',
+          path: 'evidence/input.json',
+          contentHash: hash('4'),
+          status: 'active',
+        }),
+        expect.objectContaining({
+          artifactType: 'runtime_status_deterministic_gate_output',
+          path: 'evidence/gate.json',
+          contentHash: hash('5'),
+          status: 'active',
+        }),
+      ])
+    );
+  });
+
+  it('does not fabricate a receipt or authoritative PASS from incomplete bindings', () => {
+    const update = createRuntimeStatusProjectionUpdate(input(''));
+
+    expect(update.authorityEstablished).toBe(false);
+    expect(update.receiptRef).toBeNull();
+    expect(update.projection).toMatchObject({
+      status: 'not_established',
+      blockingReasons: ['runtime_status_authority_context_missing:semanticModelHash'],
+    });
+  });
+
+  it('reuses an existing canonical artifact when a downstream model binds the same path and hash', () => {
+    const readinessUpdate = createRuntimeStatusProjectionUpdate(input());
+    const readinessRecord = runtimeStatusProjectionRecordPatch({
+      record: { sixModelResults: {}, runtimeStatusDecisionReceipts: [], artifactIndex: [] },
+      modelId: 'implementation_readiness',
+      update: readinessUpdate,
+    });
+    const readinessReceipt = readinessUpdate.receiptRef!.receipt;
+    const closureUpdate = createRuntimeStatusProjectionUpdate({
+      ...input(),
+      modelId: 'execution_closure',
+      receiptPath: 'evidence/status/execution-closure.json',
+      stageInputs: [
+        {
+          role: 'implementation_readiness_receipt',
+          path: readinessUpdate.receiptRef!.path,
+          hash: readinessReceipt.receiptHash,
+        },
+      ],
+      deterministicGateOutputs: [
+        {
+          role: 'task_report',
+          path: 'evidence/task-report.json',
+          hash: hash('6'),
+        },
+      ],
+    });
+
+    const closureRecord = runtimeStatusProjectionRecordPatch({
+      record: readinessRecord,
+      modelId: 'execution_closure',
+      update: closureUpdate,
+    });
+    const readinessArtifacts = closureRecord.artifactIndex.filter(
+      (entry: Record<string, unknown>) => entry.path === readinessUpdate.receiptRef!.path
+    );
+
+    expect(readinessArtifacts).toHaveLength(1);
+    expect(readinessArtifacts[0]).toMatchObject({
+      artifactType: 'runtime_status_decision_receipt',
+      sourceOfTruthRole: 'control',
+      contentHash: readinessReceipt.receiptHash,
+    });
+  });
+
+  it('canonicalizes Windows binding paths before receipt and artifact publication', () => {
+    const windowsInput = {
+      ...input(),
+      stageInputs: [
+        {
+          role: 'input',
+          path: 'C:\\workspace\\evidence\\input.json',
+          hash: hash('4'),
+        },
+      ],
+      deterministicGateOutputs: [
+        {
+          role: 'gate',
+          path: 'C:\\workspace\\evidence\\gate.json',
+          hash: hash('5'),
+        },
+      ],
+      evidenceRefs: ['C:\\workspace\\evidence\\gate.json'],
+      receiptPath: 'runtime\\status\\implementation-readiness.json',
+    };
+    const update = createRuntimeStatusProjectionUpdate(windowsInput);
+
+    expect(update.receiptRef).toMatchObject({
+      path: 'runtime/status/implementation-readiness.json',
+      receipt: {
+        stageInputs: [
+          {
+            path: 'C:/workspace/evidence/input.json',
+          },
+        ],
+        deterministicGateOutputs: [
+          {
+            path: 'C:/workspace/evidence/gate.json',
+          },
+        ],
+        evidenceRefs: ['C:/workspace/evidence/gate.json'],
+      },
+    });
+    expect(update.projection.decisionReceiptRef).toBe(
+      'runtime/status/implementation-readiness.json'
+    );
+
+    const patch = runtimeStatusProjectionRecordPatch({
+      record: { sixModelResults: {}, runtimeStatusDecisionReceipts: [], artifactIndex: [] },
+      modelId: 'implementation_readiness',
+      update,
+    });
+    expect(patch.artifactIndex).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: 'runtime/status/implementation-readiness.json',
+        }),
+        expect.objectContaining({
+          path: 'C:/workspace/evidence/input.json',
+        }),
+        expect.objectContaining({
+          path: 'C:/workspace/evidence/gate.json',
+        }),
+      ])
+    );
+  });
+
+  it('rejects receipt mutation after publication', () => {
+    const update = createRuntimeStatusProjectionUpdate(input());
+    const mutated = {
+      ...update.receiptRef?.receipt,
+      effectiveStatus: 'blocked',
+    };
+
+    expect(validateRuntimeStatusDecisionReceipt(mutated)).toBe(false);
+  });
+});

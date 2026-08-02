@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-normalized-package.schema.json",
+  "title": "Requirement Contract Model v2 Normalized Graph Fragment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["semanticBodies", "nodes", "edges"],
+  "properties": {
+    "semanticBodies": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "$ref": "#/$defs/sha256"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/semanticBody"
+      }
+    },
+    "nodes": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "$ref": "#/$defs/referenceId"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/semanticNode"
+      }
+    },
+    "edges": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/referenceId"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/typedEdge"
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "referenceId": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$"
+    },
+    "referenceArray": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/referenceId"
+      },
+      "uniqueItems": true
+    },
+    "schemaVersion": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*/v[0-9]+$"
+    },
+    "semanticBody": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "applicability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision", "reasonCode", "proofRefs"],
+      "properties": {
+        "decision": {
+          "enum": ["applicable", "not_applicable", "unresolved", "invalid"]
+        },
+        "reasonCode": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "proofRefs": {
+          "$ref": "#/$defs/referenceArray"
+        }
+      }
+    },
+    "semanticNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodeType", "bodySchemaVersion", "bodyHash", "applicability", "proofBindings"],
+      "properties": {
+        "nodeType": {
+          "enum": [
+            "requirement",
+            "scenario",
+            "sequence_step",
+            "participant",
+            "branch",
+            "ordering",
+            "temporal",
+            "target",
+            "task",
+            "red",
+            "oracle",
+            "acceptance",
+            "evidence_requirement",
+            "proof"
+          ]
+        },
+        "bodySchemaVersion": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "bodyHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "applicability": {
+          "$ref": "#/$defs/applicability"
+        },
+        "proofBindings": {
+          "$ref": "#/$defs/referenceArray"
+        }
+      }
+    },
+    "typedEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "edgeType",
+        "fromRef",
+        "fromHash",
+        "toRef",
+        "toHash",
+        "applicability",
+        "proofBindings",
+        "edgeHash"
+      ],
+      "properties": {
+        "edgeType": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "fromRef": {
+          "$ref": "#/$defs/referenceId"
+        },
+        "fromHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "toRef": {
+          "$ref": "#/$defs/referenceId"
+        },
+        "toHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "applicability": {
+          "$ref": "#/$defs/applicability"
+        },
+        "proofBindings": {
+          "$ref": "#/$defs/referenceArray"
+        },
+        "edgeHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    }
+  }
+}

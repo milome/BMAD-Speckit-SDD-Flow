@@ -1,0 +1,1463 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-implementation-confirmation.schema.json",
+  "title": "Requirements Contract Implementation Confirmation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractSchemaVersion",
+    "status",
+    "recordId",
+    "requirementSetId",
+    "entryFlow",
+    "entryFlowClass",
+    "workflowAdapter",
+    "contractAuthoringRequired",
+    "confirmationLanguage",
+    "confirmationProfile",
+    "requiredViewPacks",
+    "optionalViewPacks",
+    "confirmedAt",
+    "confirmedBy",
+    "sourceDocumentHash",
+    "implementationConfirmationHash",
+    "confirmationRender",
+    "preConfirmationDrilldown",
+    "applicability",
+    "must",
+    "notDone",
+    "mustNot",
+    "evidence",
+    "openQuestions",
+    "failurePaths",
+    "edgeCases",
+    "acceptanceTests",
+    "e2eSuites",
+    "traceRows",
+    "sequenceViews",
+    "flowViews",
+    "edgeCaseViews",
+    "boundaryViews",
+    "targetModificationPaths",
+    "requirementBoundary",
+    "artifactAutomationPlan",
+    "requiredCommands",
+    "suggestedCommands",
+    "requiredContractChecks",
+    "implementationTasks",
+    "closeoutReadinessPreview"
+  ],
+  "properties": {
+    "contractSchemaVersion": { "const": 1 },
+    "status": {
+      "enum": [
+        "draft",
+        "draft_updated_not_confirmation_ready",
+        "user_confirmed",
+        "reconfirm_required"
+      ]
+    },
+    "recordId": { "$ref": "#/$defs/nonEmpty" },
+    "requirementSetId": { "$ref": "#/$defs/nonEmpty" },
+    "entryFlow": { "enum": ["story", "bugfix", "standalone_tasks"] },
+    "entryFlowClass": {
+      "enum": ["full_story_entry", "corrective_entry", "task_packet_entry"]
+    },
+    "workflowAdapter": { "enum": ["bmad", "speckit", "direct", "legacy"] },
+    "contractAuthoringRequired": { "type": "boolean" },
+    "confirmationLanguage": {
+      "enum": ["not_selected", "zh-CN", "en-US", "bilingual"]
+    },
+    "confirmationProfile": { "const": "implementation_confirmation" },
+    "requiredViewPacks": { "$ref": "#/$defs/stringRefs" },
+    "optionalViewPacks": { "$ref": "#/$defs/stringRefs" },
+    "confirmedAt": {
+      "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }]
+    },
+    "confirmedBy": {
+      "oneOf": [{ "$ref": "#/$defs/nonEmpty" }, { "type": "null" }]
+    },
+    "sourceDocumentHash": { "$ref": "#/$defs/sha256" },
+    "implementationConfirmationHash": { "$ref": "#/$defs/sha256" },
+    "confirmationRender": { "$ref": "#/$defs/confirmationRender" },
+    "preConfirmationDrilldown": { "$ref": "#/$defs/preConfirmationDrilldown" },
+    "applicability": { "$ref": "#/$defs/applicability" },
+    "governanceEventTypeRegistryPolicy": {
+      "$ref": "#/$defs/governanceEventTypeRegistryPolicy"
+    },
+    "governanceEventTypeRegistry": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/governanceEventType" }
+    },
+    "controlledIngestWriterRegistry": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/controlledIngestWriter" }
+    },
+    "activeRequirementResolution": { "$ref": "#/$defs/referenceModule" },
+    "functionalResumeFailureCaseRegistry": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/referenceModule" }
+    },
+    "scoringDashboardSft": { "$ref": "#/$defs/referenceModule" },
+    "scriptsAndHooks": { "$ref": "#/$defs/referenceModule" },
+    "must": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/mustRow" }
+    },
+    "notDone": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/notDoneRow" }
+    },
+    "mustNot": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/mustNotRow" }
+    },
+    "evidence": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/evidenceRow" }
+    },
+    "openQuestions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/openQuestionRow" }
+    },
+    "failurePaths": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/failurePathRow" }
+    },
+    "edgeCases": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/edgeCaseRow" }
+    },
+    "acceptanceTests": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/acceptanceRow" }
+    },
+    "e2eSuites": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/e2eRow" }
+    },
+    "traceRows": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/traceRow" }
+    },
+    "sequenceViews": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/viewRow" }
+    },
+    "flowViews": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/viewRow" }
+    },
+    "edgeCaseViews": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/edgeCaseViewRow" }
+    },
+    "boundaryViews": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/viewRow" }
+    },
+    "targetModificationPaths": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/targetRow" }
+    },
+    "requirementBoundary": { "$ref": "#/$defs/requirementBoundary" },
+    "artifactAutomationPlan": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/artifactPlanRow" }
+    },
+    "currentTargetMap": { "$ref": "#/$defs/currentTargetMap" },
+    "requiredCommands": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/commandRow" }
+    },
+    "suggestedCommands": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/commandRow" }
+    },
+    "requiredContractChecks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/contractCheckRow" }
+    },
+    "implementationTasks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/taskRow" }
+    },
+    "aiTddContractExecutionManifestProjection": {
+      "$ref": "#/$defs/aiTddProjection"
+    },
+    "closeoutReadinessPreview": { "$ref": "#/$defs/closeoutPreview" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": { "const": "user_confirmed" }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "confirmedAt": { "type": "string", "format": "date-time" },
+          "confirmedBy": { "$ref": "#/$defs/nonEmpty" }
+        }
+      },
+      "else": {
+        "properties": {
+          "confirmedAt": { "type": "null" },
+          "confirmedBy": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "applicability": {
+            "properties": {
+              "governanceEvents": {
+                "properties": { "applies": { "const": true } },
+                "required": ["applies"]
+              }
+            },
+            "required": ["governanceEvents"]
+          }
+        },
+        "required": ["applicability"]
+      },
+      "then": {
+        "required": [
+          "governanceEventTypeRegistryPolicy",
+          "governanceEventTypeRegistry",
+          "controlledIngestWriterRegistry"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "applicability": {
+            "properties": {
+              "runtimeRecovery": {
+                "anyOf": [
+                  {
+                    "properties": { "applies": { "const": true } },
+                    "required": ["applies"]
+                  },
+                  {
+                    "properties": {
+                      "requiresFunctionalResumeFailureCaseRegistry": { "const": true }
+                    },
+                    "required": ["requiresFunctionalResumeFailureCaseRegistry"]
+                  },
+                  {
+                    "properties": {
+                      "activeRequirementResolutionRequired": { "const": true }
+                    },
+                    "required": ["activeRequirementResolutionRequired"]
+                  }
+                ]
+              }
+            },
+            "required": ["runtimeRecovery"]
+          }
+        },
+        "required": ["applicability"]
+      },
+      "then": {
+        "required": ["activeRequirementResolution", "functionalResumeFailureCaseRegistry"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "applicability": {
+            "properties": {
+              "scoringDashboardSft": {
+                "properties": { "applies": { "const": true } },
+                "required": ["applies"]
+              }
+            },
+            "required": ["scoringDashboardSft"]
+          }
+        },
+        "required": ["applicability"]
+      },
+      "then": { "required": ["scoringDashboardSft"] }
+    },
+    {
+      "if": {
+        "properties": {
+          "applicability": {
+            "properties": {
+              "currentTargetMap": {
+                "properties": { "applies": { "const": true } },
+                "required": ["applies"]
+              }
+            },
+            "required": ["currentTargetMap"]
+          }
+        },
+        "required": ["applicability"]
+      },
+      "then": { "required": ["currentTargetMap"] }
+    },
+    {
+      "if": {
+        "properties": {
+          "applicability": {
+            "properties": {
+              "scriptsAndHooks": {
+                "properties": { "applies": { "const": true } },
+                "required": ["applies"]
+              }
+            },
+            "required": ["scriptsAndHooks"]
+          }
+        },
+        "required": ["applicability"]
+      },
+      "then": { "required": ["scriptsAndHooks"] }
+    },
+    {
+      "if": {
+        "properties": {
+          "applicability": {
+            "properties": {
+              "aiTddContractGate": {
+                "properties": { "applies": { "const": true } },
+                "required": ["applies"]
+              }
+            },
+            "required": ["aiTddContractGate"]
+          }
+        },
+        "required": ["applicability"]
+      },
+      "then": { "required": ["aiTddContractExecutionManifestProjection"] }
+    }
+  ],
+  "$defs": {
+    "nonEmpty": { "type": "string", "minLength": 1 },
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "nullableNonEmpty": {
+      "oneOf": [{ "$ref": "#/$defs/nonEmpty" }, { "type": "null" }]
+    },
+    "nullableSha256": {
+      "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }]
+    },
+    "stringRefs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/nonEmpty" }
+    },
+    "localizedFields": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+      }
+    },
+    "sideEffectSafety": {
+      "oneOf": [
+        { "$ref": "#/$defs/nonEmpty" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "timeoutPolicy",
+            "failurePolicy",
+            "idempotencyPolicy",
+            "recoveryPolicy",
+            "assertionEvidence"
+          ],
+          "properties": {
+            "timeoutPolicy": { "$ref": "#/$defs/nonEmpty" },
+            "failurePolicy": { "$ref": "#/$defs/nonEmpty" },
+            "idempotencyPolicy": { "$ref": "#/$defs/nonEmpty" },
+            "recoveryPolicy": { "$ref": "#/$defs/nonEmpty" },
+            "assertionEvidence": { "$ref": "#/$defs/nonEmpty" }
+          }
+        }
+      ]
+    },
+    "confirmationRender": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["htmlPath", "summaryPath", "reportPath", "htmlHash", "confirmationPhrase"],
+      "properties": {
+        "htmlPath": { "$ref": "#/$defs/nullableNonEmpty" },
+        "summaryPath": { "$ref": "#/$defs/nullableNonEmpty" },
+        "reportPath": { "$ref": "#/$defs/nullableNonEmpty" },
+        "htmlHash": { "$ref": "#/$defs/nullableSha256" },
+        "confirmationPhrase": { "$ref": "#/$defs/nullableNonEmpty" }
+      }
+    },
+    "artifactRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "$ref": "#/$defs/nonEmpty" },
+        "hash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "packetRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash", "status"],
+      "properties": {
+        "path": { "$ref": "#/$defs/nonEmpty" },
+        "hash": { "$ref": "#/$defs/sha256" },
+        "status": { "enum": ["synchronized", "blocked", "stale"] }
+      }
+    },
+    "preConfirmationDrilldown": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "semanticKernelRef",
+        "mustDecompositionPacketRef",
+        "criticalAuditor",
+        "packetSourceReconciliation",
+        "preRenderGateReportPath"
+      ],
+      "properties": {
+        "semanticKernelRef": { "$ref": "#/$defs/artifactRef" },
+        "mustDecompositionPacketRef": { "$ref": "#/$defs/packetRef" },
+        "criticalAuditor": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "minimumRounds",
+            "consecutiveNoNewGapRounds",
+            "latestReceiptHash",
+            "convergenceVerdict"
+          ],
+          "properties": {
+            "minimumRounds": { "type": "integer", "minimum": 1 },
+            "consecutiveNoNewGapRounds": { "type": "integer", "minimum": 0 },
+            "latestReceiptHash": { "$ref": "#/$defs/sha256" },
+            "convergenceVerdict": {
+              "enum": [
+                "audit_not_run",
+                "blocked",
+                "blocked_by_validated_gap_fix",
+                "bounded_no_new_gap"
+              ]
+            }
+          }
+        },
+        "packetSourceReconciliation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["reportPath", "verdict"],
+          "properties": {
+            "reportPath": { "$ref": "#/$defs/nonEmpty" },
+            "verdict": { "enum": ["pass", "block", "stale"] }
+          }
+        },
+        "preRenderGateReportPath": { "$ref": "#/$defs/nonEmpty" }
+      }
+    },
+    "applicabilityDomain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["applies", "reasonCode"],
+      "properties": {
+        "applies": { "type": "boolean" },
+        "reasonCode": { "$ref": "#/$defs/nonEmpty" }
+      }
+    },
+    "runtimeRecoveryApplicability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "applies",
+        "reasonCode",
+        "requiresFunctionalResumeFailureCaseRegistry",
+        "activeRequirementResolutionRequired",
+        "retiredContextSurfaceForbidden"
+      ],
+      "properties": {
+        "applies": { "type": "boolean" },
+        "reasonCode": { "$ref": "#/$defs/nonEmpty" },
+        "requiresFunctionalResumeFailureCaseRegistry": { "type": "boolean" },
+        "activeRequirementResolutionRequired": { "type": "boolean" },
+        "retiredContextSurfaceForbidden": { "type": "boolean" }
+      }
+    },
+    "applicability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "governanceEvents",
+        "runtimeRecovery",
+        "scoringDashboardSft",
+        "currentTargetMap",
+        "scriptsAndHooks",
+        "aiTddContractGate"
+      ],
+      "properties": {
+        "governanceEvents": { "$ref": "#/$defs/applicabilityDomain" },
+        "runtimeRecovery": { "$ref": "#/$defs/runtimeRecoveryApplicability" },
+        "scoringDashboardSft": { "$ref": "#/$defs/applicabilityDomain" },
+        "currentTargetMap": { "$ref": "#/$defs/applicabilityDomain" },
+        "scriptsAndHooks": { "$ref": "#/$defs/applicabilityDomain" },
+        "aiTddContractGate": { "$ref": "#/$defs/applicabilityDomain" }
+      }
+    },
+    "mustRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "text", "evidenceRefs", "coveredByTraceRows"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmpty" },
+        "text": { "$ref": "#/$defs/nonEmpty" },
+        "textZh": { "$ref": "#/$defs/nonEmpty" },
+        "localized": { "$ref": "#/$defs/localizedFields" },
+        "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+        "coveredByTraceRows": { "$ref": "#/$defs/stringRefs" },
+        "coveredByFailurePath": { "$ref": "#/$defs/stringRefs" },
+        "coveredBySequenceViews": { "$ref": "#/$defs/stringRefs" },
+        "upstreamRequirementIds": { "$ref": "#/$defs/stringRefs" },
+        "riskLevel": { "enum": ["low", "medium", "high", "critical"] },
+        "perMustOracle": { "$ref": "#/$defs/nonEmpty" },
+        "sideEffectSafety": { "$ref": "#/$defs/sideEffectSafety" }
+      }
+    },
+    "notDoneRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "text", "evidenceRefs"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmpty" },
+        "text": { "$ref": "#/$defs/nonEmpty" },
+        "textZh": { "$ref": "#/$defs/nonEmpty" },
+        "localized": { "$ref": "#/$defs/localizedFields" },
+        "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+        "whyItBlocksCompletion": { "$ref": "#/$defs/nonEmpty" },
+        "whyItBlocksCompletionZh": { "$ref": "#/$defs/nonEmpty" },
+        "negativeAssertionRequired": { "type": "boolean" },
+        "coveredByFailurePath": { "$ref": "#/$defs/stringRefs" }
+      }
+    },
+    "mustNotRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "text"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmpty" },
+        "text": { "$ref": "#/$defs/nonEmpty" },
+        "textZh": { "$ref": "#/$defs/nonEmpty" },
+        "localized": { "$ref": "#/$defs/localizedFields" },
+        "scopeBoundary": { "$ref": "#/$defs/nonEmpty" },
+        "scopeBoundaryZh": { "$ref": "#/$defs/nonEmpty" },
+        "userApprovalRequiredIfChanged": { "type": "boolean" },
+        "coveredByBoundaryView": { "$ref": "#/$defs/stringRefs" }
+      }
+    },
+    "evidenceRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "text", "requiredCommandRefs"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmpty" },
+        "text": { "$ref": "#/$defs/nonEmpty" },
+        "textZh": { "$ref": "#/$defs/nonEmpty" },
+        "localized": { "$ref": "#/$defs/localizedFields" },
+        "gate": { "$ref": "#/$defs/nonEmpty" },
+        "oracle": { "$ref": "#/$defs/nonEmpty" },
+        "oracleZh": { "$ref": "#/$defs/nonEmpty" },
+        "requiredCommandRefs": { "$ref": "#/$defs/stringRefs" },
+        "artifactRefs": { "$ref": "#/$defs/stringRefs" },
+        "acceptanceType": { "$ref": "#/$defs/nonEmpty" },
+        "sideEffectSafety": { "$ref": "#/$defs/sideEffectSafety" },
+        "perMustOracles": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+        }
+      }
+    },
+    "openQuestionRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "question", "status"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmpty" },
+        "question": { "$ref": "#/$defs/nonEmpty" },
+        "text": { "$ref": "#/$defs/nonEmpty" },
+        "textZh": { "$ref": "#/$defs/nonEmpty" },
+        "requiredDecision": { "$ref": "#/$defs/nonEmpty" },
+        "requiredDecisionZh": { "$ref": "#/$defs/nonEmpty" },
+        "impactIfUnresolved": { "$ref": "#/$defs/nonEmpty" },
+        "impactIfUnresolvedZh": { "$ref": "#/$defs/nonEmpty" },
+        "localized": { "$ref": "#/$defs/localizedFields" },
+        "status": { "enum": ["open", "resolved"] },
+        "decisionReceiptRef": { "$ref": "#/$defs/nullableNonEmpty" }
+      }
+    },
+    "failurePathRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmpty" },
+        "title": { "$ref": "#/$defs/nonEmpty" },
+        "titleZh": { "$ref": "#/$defs/nonEmpty" },
+        "trigger": { "$ref": "#/$defs/nonEmpty" },
+        "triggerZh": { "$ref": "#/$defs/nonEmpty" },
+        "expectedBehavior": { "$ref": "#/$defs/nonEmpty" },
+        "expectedBehaviorZh": { "$ref": "#/$defs/nonEmpty" },
+        "forbiddenBehavior": { "$ref": "#/$defs/nonEmpty" },
+        "forbiddenBehaviorZh": { "$ref": "#/$defs/nonEmpty" },
+        "localized": { "$ref": "#/$defs/localizedFields" },
+        "blocksCompletionWhenViolated": { "type": "boolean" },
+        "linkedNegIds": { "$ref": "#/$defs/stringRefs" },
+        "linkedEvidenceIds": { "$ref": "#/$defs/stringRefs" },
+        "traceRows": { "$ref": "#/$defs/stringRefs" },
+        "acceptanceRefs": { "$ref": "#/$defs/stringRefs" },
+        "ownerMustRefs": { "$ref": "#/$defs/stringRefs" },
+        "viewRefs": { "$ref": "#/$defs/stringRefs" },
+        "sequenceViewRefs": { "$ref": "#/$defs/stringRefs" },
+        "requiredAssertions": { "$ref": "#/$defs/stringRefs" },
+        "userVisibleOutcome": { "$ref": "#/$defs/nonEmpty" }
+      }
+    },
+    "edgeCaseRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmpty" },
+        "category": { "$ref": "#/$defs/nonEmpty" },
+        "condition": { "$ref": "#/$defs/nonEmpty" },
+        "conditionZh": { "$ref": "#/$defs/nonEmpty" },
+        "expectedBehavior": { "$ref": "#/$defs/nonEmpty" },
+        "expectedBehaviorZh": { "$ref": "#/$defs/nonEmpty" },
+        "forbiddenBehavior": { "$ref": "#/$defs/nonEmpty" },
+        "forbiddenBehaviorZh": { "$ref": "#/$defs/nonEmpty" },
+        "localized": { "$ref": "#/$defs/localizedFields" },
+        "linkedFailurePathIds": { "$ref": "#/$defs/stringRefs" },
+        "linkedNegIds": { "$ref": "#/$defs/stringRefs" },
+        "linkedEvidenceIds": { "$ref": "#/$defs/stringRefs" },
+        "traceRows": { "$ref": "#/$defs/stringRefs" },
+        "viewRefs": { "$ref": "#/$defs/stringRefs" },
+        "blocksImplementation": { "type": "boolean" }
+      }
+    },
+    "acceptanceRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "suiteType",
+        "file",
+        "covers",
+        "traceRows",
+        "evidenceRefs",
+        "commandRefs",
+        "oracle",
+        "mockOnly"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmpty" },
+        "suiteType": {
+          "enum": ["unit", "integration", "acceptance", "contract", "e2e"]
+        },
+        "file": { "$ref": "#/$defs/nonEmpty" },
+        "covers": { "$ref": "#/$defs/stringRefs" },
+        "traceRows": { "$ref": "#/$defs/stringRefs" },
+        "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+        "commandRefs": { "$ref": "#/$defs/stringRefs" },
+        "sourceRequirementTexts": { "$ref": "#/$defs/stringRefs" },
+        "failurePathRefs": { "$ref": "#/$defs/stringRefs" },
+        "edgeCaseRefs": { "$ref": "#/$defs/stringRefs" },
+        "expectedPreImplementationState": {
+          "enum": [
+            "expected_red",
+            "unexpected_green",
+            "invalid_red",
+            "green",
+            "partial_green",
+            "missing_plan",
+            "missing_test",
+            "missing_artifact",
+            "stale",
+            "blocked",
+            "not_applicable"
+          ]
+        },
+        "redProofPlan": { "$ref": "#/$defs/nonEmpty" },
+        "oracle": { "$ref": "#/$defs/nonEmpty" },
+        "positiveControl": { "type": "boolean" },
+        "negativeControls": { "$ref": "#/$defs/stringRefs" },
+        "mockOnly": { "type": "boolean" }
+      }
+    },
+    "e2eRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "suiteType",
+        "file",
+        "covers",
+        "traceRows",
+        "evidenceRefs",
+        "failurePathRefs",
+        "edgeCaseRefs",
+        "commandRefs",
+        "oracle",
+        "mockOnly"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmpty" },
+        "suiteType": { "const": "e2e" },
+        "file": { "$ref": "#/$defs/nonEmpty" },
+        "covers": { "$ref": "#/$defs/stringRefs" },
+        "traceRows": { "$ref": "#/$defs/stringRefs" },
+        "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+        "sourceRequirementTexts": { "$ref": "#/$defs/stringRefs" },
+        "failurePathRefs": { "$ref": "#/$defs/stringRefs" },
+        "edgeCaseRefs": { "$ref": "#/$defs/stringRefs" },
+        "commandRefs": { "$ref": "#/$defs/stringRefs" },
+        "expectedPreImplementationState": {
+          "enum": [
+            "expected_red",
+            "unexpected_green",
+            "invalid_red",
+            "green",
+            "partial_green",
+            "missing_plan",
+            "missing_test",
+            "missing_artifact",
+            "stale",
+            "blocked",
+            "not_applicable"
+          ]
+        },
+        "redProofPlan": { "$ref": "#/$defs/nonEmpty" },
+        "oracle": { "$ref": "#/$defs/nonEmpty" },
+        "positiveControl": { "type": "boolean" },
+        "negativeControls": { "$ref": "#/$defs/stringRefs" },
+        "mockOnly": { "type": "boolean" }
+      }
+    },
+    "traceRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "covers",
+        "taskRefs",
+        "evidenceRefs",
+        "acceptanceRefs",
+        "contractValidationCommandRefs",
+        "deliveryEvidenceCommandRefs",
+        "status",
+        "blockingReason"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmpty" },
+        "covers": { "$ref": "#/$defs/stringRefs" },
+        "taskRefs": { "$ref": "#/$defs/stringRefs" },
+        "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+        "acceptanceRefs": { "$ref": "#/$defs/stringRefs" },
+        "contractValidationCommandRefs": { "$ref": "#/$defs/stringRefs" },
+        "deliveryEvidenceCommandRefs": { "$ref": "#/$defs/stringRefs" },
+        "sourceRequirementTexts": { "$ref": "#/$defs/stringRefs" },
+        "failurePathRefs": { "$ref": "#/$defs/stringRefs" },
+        "edgeCaseRefs": { "$ref": "#/$defs/stringRefs" },
+        "sequenceViewRefs": { "$ref": "#/$defs/stringRefs" },
+        "flowViewRefs": { "$ref": "#/$defs/stringRefs" },
+        "edgeCaseViewRefs": { "$ref": "#/$defs/stringRefs" },
+        "boundaryViewRefs": { "$ref": "#/$defs/stringRefs" },
+        "targetModificationPathRefs": { "$ref": "#/$defs/stringRefs" },
+        "artifactRefs": { "$ref": "#/$defs/stringRefs" },
+        "closureAssertion": { "$ref": "#/$defs/nonEmpty" },
+        "closureAssertionZh": { "$ref": "#/$defs/nonEmpty" },
+        "targetStateAssertion": { "$ref": "#/$defs/nonEmpty" },
+        "targetStateAssertionZh": { "$ref": "#/$defs/nonEmpty" },
+        "acceptanceSummary": { "$ref": "#/$defs/nonEmpty" },
+        "acceptanceSummaryZh": { "$ref": "#/$defs/nonEmpty" },
+        "localized": { "$ref": "#/$defs/localizedFields" },
+        "status": { "enum": ["PENDING", "PASS", "BLOCKED", "STALE"] },
+        "blockingReason": { "$ref": "#/$defs/nullableNonEmpty" }
+      }
+    },
+    "viewRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmpty" },
+        "title": { "$ref": "#/$defs/nonEmpty" },
+        "visualKind": { "$ref": "#/$defs/nonEmpty" },
+        "scope": { "$ref": "#/$defs/nonEmpty" },
+        "covers": { "$ref": "#/$defs/stringRefs" },
+        "traceRows": { "$ref": "#/$defs/stringRefs" },
+        "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+        "acceptanceRefs": { "$ref": "#/$defs/stringRefs" },
+        "failurePathRefs": { "$ref": "#/$defs/stringRefs" },
+        "mermaid": { "$ref": "#/$defs/nonEmpty" }
+      }
+    },
+    "edgeCaseViewRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmpty" },
+        "title": { "$ref": "#/$defs/nonEmpty" },
+        "visualKind": { "$ref": "#/$defs/nonEmpty" },
+        "scope": { "$ref": "#/$defs/nonEmpty" },
+        "covers": { "$ref": "#/$defs/stringRefs" },
+        "traceRows": { "$ref": "#/$defs/stringRefs" },
+        "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+        "acceptanceRefs": { "$ref": "#/$defs/stringRefs" },
+        "failurePathRefs": { "$ref": "#/$defs/stringRefs" },
+        "edgeCaseRefs": { "$ref": "#/$defs/stringRefs" },
+        "cases": { "$ref": "#/$defs/stringRefs" },
+        "mermaid": { "$ref": "#/$defs/nonEmpty" }
+      }
+    },
+    "targetRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "path",
+        "coverageRole",
+        "changeType",
+        "intent",
+        "ownerModel",
+        "requirementRefs",
+        "traceRefs",
+        "evidenceRefs",
+        "artifactRefs",
+        "requiresReconfirmationOnChange"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmpty" },
+        "path": { "$ref": "#/$defs/nonEmpty" },
+        "coverageRole": { "$ref": "#/$defs/nonEmpty" },
+        "changeType": { "enum": ["code", "test", "schema", "reference", "configuration"] },
+        "intent": { "$ref": "#/$defs/nonEmpty" },
+        "ownerModel": { "$ref": "#/$defs/nonEmpty" },
+        "requirementRefs": { "$ref": "#/$defs/stringRefs" },
+        "traceRefs": { "$ref": "#/$defs/stringRefs" },
+        "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+        "artifactRefs": { "$ref": "#/$defs/stringRefs" },
+        "requiresReconfirmationOnChange": { "type": "boolean" },
+        "perMustResponsibilities": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+        },
+        "perMustRows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/perMustProjectionRow" }
+        }
+      }
+    },
+    "perMustProjectionRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mustRef"],
+      "properties": {
+        "mustRef": { "$ref": "#/$defs/nonEmpty" },
+        "traceRows": { "$ref": "#/$defs/stringRefs" },
+        "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+        "acceptanceRefs": { "$ref": "#/$defs/stringRefs" },
+        "failurePathRefs": { "$ref": "#/$defs/stringRefs" },
+        "edgeCaseRefs": { "$ref": "#/$defs/stringRefs" },
+        "assertion": { "$ref": "#/$defs/nonEmpty" },
+        "responsibility": { "$ref": "#/$defs/nonEmpty" }
+      }
+    },
+    "boundaryPartition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requirementIds", "viewRefs", "diagramRefs"],
+      "properties": {
+        "requirementIds": { "$ref": "#/$defs/stringRefs" },
+        "viewRefs": { "$ref": "#/$defs/stringRefs" },
+        "diagramRefs": { "$ref": "#/$defs/stringRefs" }
+      }
+    },
+    "requirementBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["business", "governance"],
+      "properties": {
+        "business": { "$ref": "#/$defs/boundaryPartition" },
+        "governance": { "$ref": "#/$defs/boundaryPartition" }
+      }
+    },
+    "artifactPlanRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifactId", "path", "artifactType", "ownerModel"],
+      "properties": {
+        "artifactId": { "$ref": "#/$defs/nonEmpty" },
+        "path": { "$ref": "#/$defs/nonEmpty" },
+        "artifactType": { "$ref": "#/$defs/nonEmpty" },
+        "sourceOfTruthRole": { "$ref": "#/$defs/nonEmpty" },
+        "ownerModel": { "$ref": "#/$defs/nonEmpty" },
+        "producer": { "$ref": "#/$defs/nonEmpty" },
+        "consumer": { "$ref": "#/$defs/nonEmpty" },
+        "inputArtifacts": { "$ref": "#/$defs/stringRefs" },
+        "outputArtifacts": { "$ref": "#/$defs/stringRefs" },
+        "canAffectControlFlow": { "type": "boolean" },
+        "userApprovalRequired": { "type": "boolean" },
+        "retention": { "$ref": "#/$defs/nonEmpty" },
+        "cleanupPolicy": { "$ref": "#/$defs/nonEmpty" },
+        "orphanRisk": { "$ref": "#/$defs/nonEmpty" },
+        "containsSensitiveData": { "type": "boolean" },
+        "trainingDataEligible": { "type": "boolean" },
+        "group": { "$ref": "#/$defs/nonEmpty" },
+        "linkedRequirements": { "$ref": "#/$defs/stringRefs" },
+        "traceRows": { "$ref": "#/$defs/stringRefs" },
+        "evidenceRefs": { "$ref": "#/$defs/stringRefs" }
+      }
+    },
+    "commandRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "command", "purpose"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmpty" },
+        "commandRef": { "$ref": "#/$defs/nonEmpty" },
+        "command": { "$ref": "#/$defs/nonEmpty" },
+        "purpose": { "$ref": "#/$defs/nonEmpty" },
+        "targetFiles": { "$ref": "#/$defs/stringRefs" },
+        "traceRows": { "$ref": "#/$defs/stringRefs" },
+        "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+        "perMustAssertions": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+        },
+        "perMustRows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/perMustProjectionRow" }
+        }
+      }
+    },
+    "contractCheckRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "gate", "requiredBefore", "decisionField"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmpty" },
+        "gate": { "$ref": "#/$defs/nonEmpty" },
+        "requiredBefore": { "$ref": "#/$defs/nonEmpty" },
+        "decisionField": { "$ref": "#/$defs/nonEmpty" }
+      }
+    },
+    "taskRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "requirementRefs", "targetPaths", "traceRefs", "evidenceRefs"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmpty" },
+        "title": { "$ref": "#/$defs/nonEmpty" },
+        "requirementRefs": { "$ref": "#/$defs/stringRefs" },
+        "targetPaths": { "$ref": "#/$defs/stringRefs" },
+        "traceRefs": { "$ref": "#/$defs/stringRefs" },
+        "evidenceRefs": { "$ref": "#/$defs/stringRefs" }
+      }
+    },
+    "closeoutPreview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "orphanPolicy",
+        "currentAttemptPolicy",
+        "recordClosedPolicy",
+        "requiredCommands",
+        "blockingConditions"
+      ],
+      "properties": {
+        "orphanPolicy": { "$ref": "#/$defs/nonEmpty" },
+        "currentAttemptPolicy": { "$ref": "#/$defs/nonEmpty" },
+        "recordClosedPolicy": { "$ref": "#/$defs/nonEmpty" },
+        "requiredCommands": { "$ref": "#/$defs/stringRefs" },
+        "blockingConditions": { "$ref": "#/$defs/stringRefs" }
+      }
+    },
+    "referenceModule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["moduleId", "moduleHash", "artifactRefs"],
+      "properties": {
+        "moduleId": { "$ref": "#/$defs/nonEmpty" },
+        "moduleHash": { "$ref": "#/$defs/sha256" },
+        "artifactRefs": { "$ref": "#/$defs/stringRefs" }
+      }
+    },
+    "governanceEventTypeRegistryPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "controlFieldVocabulary",
+        "payloadKindContracts",
+        "controlWriteModePolicies",
+        "eventSpecificRequirements"
+      ],
+      "properties": {
+        "controlFieldVocabulary": { "$ref": "#/$defs/stringRefs" },
+        "payloadKindContracts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "payloadKind",
+              "requiredFields",
+              "forbiddenFields",
+              "allowedControlWriteModes"
+            ],
+            "properties": {
+              "payloadKind": { "$ref": "#/$defs/nonEmpty" },
+              "requiredFields": { "$ref": "#/$defs/stringRefs" },
+              "forbiddenFields": { "$ref": "#/$defs/stringRefs" },
+              "allowedControlWriteModes": { "$ref": "#/$defs/stringRefs" }
+            }
+          }
+        },
+        "controlWriteModePolicies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["allowedControlWriteMode", "allowedWritesControlFields"],
+            "properties": {
+              "allowedControlWriteMode": { "$ref": "#/$defs/nonEmpty" },
+              "allowedWritesControlFields": { "$ref": "#/$defs/stringRefs" }
+            }
+          }
+        },
+        "eventSpecificRequirements": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/referenceModule" }
+        }
+      }
+    },
+    "governanceEventType": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eventType", "payloadContract", "writesControlFields"],
+      "properties": {
+        "eventType": { "$ref": "#/$defs/nonEmpty" },
+        "payloadContract": { "$ref": "#/$defs/referenceModule" },
+        "writesControlFields": { "$ref": "#/$defs/stringRefs" }
+      }
+    },
+    "controlledIngestWriter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["writerId", "eventTypes", "writerHash"],
+      "properties": {
+        "writerId": { "$ref": "#/$defs/nonEmpty" },
+        "eventTypes": { "$ref": "#/$defs/stringRefs" },
+        "writerHash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "summaryRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "detail"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmpty" },
+        "title": { "$ref": "#/$defs/nonEmpty" },
+        "detail": { "$ref": "#/$defs/nonEmpty" },
+        "traceRows": { "$ref": "#/$defs/stringRefs" },
+        "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+        "requirementRefs": { "$ref": "#/$defs/stringRefs" },
+        "perMustAssertions": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+        },
+        "perMustResponsibilities": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+        },
+        "perMustRows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/perMustProjectionRow" }
+        }
+      }
+    },
+    "currentTargetMap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "displayProfile",
+        "introduction",
+        "sourceStateProjection",
+        "currentSummary",
+        "targetSummary",
+        "diffRows",
+        "process",
+        "artifactPaths",
+        "canonicalArtifacts",
+        "pathRegistry",
+        "existingArtifacts"
+      ],
+      "properties": {
+        "schemaVersion": { "$ref": "#/$defs/nonEmpty" },
+        "displayProfile": { "$ref": "#/$defs/nonEmpty" },
+        "introduction": { "$ref": "#/$defs/nonEmpty" },
+        "sourceStateProjection": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mode",
+            "currentSectionHeadings",
+            "targetSectionHeadings",
+            "currentRows",
+            "targetRows"
+          ],
+          "properties": {
+            "mode": { "$ref": "#/$defs/nonEmpty" },
+            "currentSectionHeadings": { "$ref": "#/$defs/stringRefs" },
+            "targetSectionHeadings": { "$ref": "#/$defs/stringRefs" },
+            "currentRows": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/sourceStateRow" }
+            },
+            "targetRows": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/sourceStateRow" }
+            }
+          }
+        },
+        "currentSummary": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/summaryRow" }
+        },
+        "targetSummary": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/summaryRow" }
+        },
+        "diffRows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["dimension", "currentState", "targetState", "action"],
+            "properties": {
+              "id": { "$ref": "#/$defs/nonEmpty" },
+              "dimension": { "$ref": "#/$defs/nonEmpty" },
+              "currentState": { "$ref": "#/$defs/nonEmpty" },
+              "targetState": { "$ref": "#/$defs/nonEmpty" },
+              "action": { "$ref": "#/$defs/nonEmpty" },
+              "targetFiles": { "$ref": "#/$defs/stringRefs" },
+              "traceRows": { "$ref": "#/$defs/stringRefs" },
+              "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+              "requirementRefs": { "$ref": "#/$defs/stringRefs" },
+              "perMustAssertions": {
+                "type": "object",
+                "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+              },
+              "perMustResponsibilities": {
+                "type": "object",
+                "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+              },
+              "perMustRows": {
+                "type": "array",
+                "items": { "$ref": "#/$defs/perMustProjectionRow" }
+              }
+            }
+          }
+        },
+        "process": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["phase", "currentState", "targetState"],
+            "properties": {
+              "id": { "$ref": "#/$defs/nonEmpty" },
+              "phase": { "$ref": "#/$defs/nonEmpty" },
+              "currentState": { "$ref": "#/$defs/nonEmpty" },
+              "targetState": { "$ref": "#/$defs/nonEmpty" },
+              "traceRows": { "$ref": "#/$defs/stringRefs" },
+              "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+              "requirementRefs": { "$ref": "#/$defs/stringRefs" },
+              "perMustRows": {
+                "type": "array",
+                "items": { "$ref": "#/$defs/perMustProjectionRow" }
+              }
+            }
+          }
+        },
+        "artifactPaths": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/currentTargetArtifactPath" }
+        },
+        "canonicalArtifacts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/currentTargetCanonicalArtifact" }
+        },
+        "pathRegistry": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/currentTargetPathRegistry" }
+        },
+        "existingArtifacts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/currentTargetExistingArtifact" }
+        }
+      }
+    },
+    "sourceStateRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "text", "sourceLine"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmpty" },
+        "text": { "$ref": "#/$defs/nonEmpty" },
+        "sourceLine": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "currentTargetArtifactPath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "targetRole", "traceRows", "evidenceRefs"],
+      "properties": {
+        "path": { "$ref": "#/$defs/nonEmpty" },
+        "targetRole": { "$ref": "#/$defs/nonEmpty" },
+        "traceRows": { "$ref": "#/$defs/stringRefs" },
+        "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+        "requirementRefs": { "$ref": "#/$defs/stringRefs" },
+        "perMustResponsibilities": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+        },
+        "perMustRows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/perMustProjectionRow" }
+        }
+      }
+    },
+    "currentTargetCanonicalArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "targetPathOrField",
+        "functionDescription",
+        "controlPlaneRole",
+        "traceRows",
+        "evidenceRefs"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmpty" },
+        "targetPathOrField": { "$ref": "#/$defs/nonEmpty" },
+        "functionDescription": { "$ref": "#/$defs/nonEmpty" },
+        "controlPlaneRole": { "$ref": "#/$defs/nonEmpty" },
+        "traceRows": { "$ref": "#/$defs/stringRefs" },
+        "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+        "requirementRefs": { "$ref": "#/$defs/stringRefs" },
+        "perMustResponsibilities": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+        },
+        "perMustRows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/perMustProjectionRow" }
+        }
+      }
+    },
+    "currentTargetPathRegistry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "category",
+        "fixedPath",
+        "sourceOfTruthRole",
+        "description",
+        "traceRows",
+        "evidenceRefs"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmpty" },
+        "category": { "$ref": "#/$defs/nonEmpty" },
+        "fixedPath": { "$ref": "#/$defs/nonEmpty" },
+        "sourceOfTruthRole": { "$ref": "#/$defs/nonEmpty" },
+        "description": { "$ref": "#/$defs/nonEmpty" },
+        "traceRows": { "$ref": "#/$defs/stringRefs" },
+        "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+        "requirementRefs": { "$ref": "#/$defs/stringRefs" },
+        "perMustResponsibilities": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+        },
+        "perMustRows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/perMustProjectionRow" }
+        }
+      }
+    },
+    "currentTargetExistingArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "currentPath",
+        "currentFunction",
+        "targetTreatment",
+        "completionProofPolicy",
+        "traceRows",
+        "evidenceRefs"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmpty" },
+        "currentPath": { "$ref": "#/$defs/nonEmpty" },
+        "currentFunction": { "$ref": "#/$defs/nonEmpty" },
+        "targetTreatment": { "$ref": "#/$defs/nonEmpty" },
+        "completionProofPolicy": { "$ref": "#/$defs/nonEmpty" },
+        "traceRows": { "$ref": "#/$defs/stringRefs" },
+        "evidenceRefs": { "$ref": "#/$defs/stringRefs" },
+        "requirementRefs": { "$ref": "#/$defs/stringRefs" },
+        "perMustResponsibilities": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+        },
+        "perMustRows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/perMustProjectionRow" }
+        }
+      }
+    },
+    "aiTddProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "applies",
+        "requiredSections",
+        "atomicImplementationTaskLineage",
+        "errorCaseCoverage",
+        "commandTargets",
+        "traceClosure",
+        "canonicalSurfaces",
+        "legacyDenial",
+        "closeoutProof",
+        "evidenceTrustStates"
+      ],
+      "properties": {
+        "schemaVersion": { "$ref": "#/$defs/nonEmpty" },
+        "applies": { "type": "boolean" },
+        "requiredSections": { "$ref": "#/$defs/stringRefs" },
+        "atomicImplementationTaskLineage": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["taskId", "requirementRefs", "traceRefs"],
+            "properties": {
+              "taskId": { "$ref": "#/$defs/nonEmpty" },
+              "requirementRefs": { "$ref": "#/$defs/stringRefs" },
+              "traceRefs": { "$ref": "#/$defs/stringRefs" }
+            }
+          }
+        },
+        "errorCaseCoverage": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["failurePathRef", "negRefs", "acceptanceRefs", "viewRefs"],
+            "properties": {
+              "failurePathRef": { "$ref": "#/$defs/nonEmpty" },
+              "negRefs": { "$ref": "#/$defs/stringRefs" },
+              "acceptanceRefs": { "$ref": "#/$defs/stringRefs" },
+              "viewRefs": { "$ref": "#/$defs/stringRefs" }
+            }
+          }
+        },
+        "commandTargets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["commandRef", "targetFiles", "traceRefs", "evidenceRefs"],
+            "properties": {
+              "commandRef": { "$ref": "#/$defs/nonEmpty" },
+              "targetFiles": { "$ref": "#/$defs/stringRefs" },
+              "traceRefs": { "$ref": "#/$defs/stringRefs" },
+              "evidenceRefs": { "$ref": "#/$defs/stringRefs" }
+            }
+          }
+        },
+        "traceClosure": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["traceRef", "acceptanceRefs"],
+            "properties": {
+              "traceRef": { "$ref": "#/$defs/nonEmpty" },
+              "acceptanceRefs": { "$ref": "#/$defs/stringRefs" }
+            }
+          }
+        },
+        "canonicalSurfaces": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["artifactRef", "traceRefs", "evidenceRefs"],
+            "properties": {
+              "artifactRef": { "$ref": "#/$defs/nonEmpty" },
+              "traceRefs": { "$ref": "#/$defs/stringRefs" },
+              "evidenceRefs": { "$ref": "#/$defs/stringRefs" }
+            }
+          }
+        },
+        "legacyDenial": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["legacyRef", "policy", "evidenceRefs"],
+            "properties": {
+              "legacyRef": { "$ref": "#/$defs/nonEmpty" },
+              "policy": { "$ref": "#/$defs/nonEmpty" },
+              "evidenceRefs": { "$ref": "#/$defs/stringRefs" }
+            }
+          }
+        },
+        "closeoutProof": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["proofRef", "requiredCommands"],
+            "properties": {
+              "proofRef": { "$ref": "#/$defs/nonEmpty" },
+              "requiredCommands": { "$ref": "#/$defs/stringRefs" }
+            }
+          }
+        },
+        "evidenceTrustStates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["evidenceRef", "oracle", "commandRefs"],
+            "properties": {
+              "evidenceRef": { "$ref": "#/$defs/nonEmpty" },
+              "oracle": { "$ref": "#/$defs/nonEmpty" },
+              "commandRefs": { "$ref": "#/$defs/stringRefs" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

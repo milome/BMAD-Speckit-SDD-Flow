@@ -10,13 +10,13 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
-  readdirSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { resolveCanonicalPackageTarball } from '../helpers/canonical-package-artifact';
 import { writeMinimalRegistryAndProjectContext } from '../helpers/runtime-registry-fixture';
 
 const PKG_ROOT = join(import.meta.dirname, '..', '..');
@@ -40,6 +40,30 @@ function run(cmd: string, cwd: string): string {
   });
 }
 
+function runJson(cmd: string, cwd: string): any {
+  return JSON.parse(run(cmd, cwd));
+}
+
+function writeLargeDocChunk(
+  target: string,
+  chunkId: string,
+  sectionId: string,
+  body: string
+): string {
+  const chunkPath = join(target, `${chunkId}-${sectionId}.md`);
+  writeFileSync(
+    chunkPath,
+    [
+      `<!-- large-document-writer chunkId=${chunkId} sectionId=${sectionId} begin -->`,
+      body.trimEnd(),
+      `<!-- large-document-writer chunkId=${chunkId} sectionId=${sectionId} end -->`,
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  return chunkPath;
+}
+
 function findFirstExistingPath(candidates: string[]): string | null {
   return candidates.find((candidate) => existsSync(candidate)) ?? null;
 }
@@ -51,17 +75,8 @@ function expectFirstExistingPath(candidates: string[]): string {
 }
 
 describe('npm pack root package → clean install → CLI', () => {
-  it('prepublishOnly → pack → install tgz → version + sync + ensure-run', () => {
-    run('npm run prepublishOnly', PKG_ROOT);
-
-    // Pack into an isolated temp dir so parallel vitest workers do not delete each other's tarball.
-    const packDir = mkdtempSync(join(tmpdir(), 'bmad-speckit-root-pack-'));
-    run(`npm pack --silent --pack-destination "${packDir.replace(/\\/g, '/')}"`, PKG_ROOT);
-    const tgzName = readdirSync(packDir).find(
-      (f) => f.startsWith('bmad-speckit-sdd-flow-') && f.endsWith('.tgz')
-    );
-    expect(tgzName).toBeTruthy();
-    const tgzPath = join(packDir, tgzName!);
+  it('canonical tgz → install → version + sync + ensure-run', () => {
+    const tgzPath = resolveCanonicalPackageTarball(PKG_ROOT);
 
     const consumer = mkdtempSync(join(tmpdir(), 'accept-pack-'));
     try {
@@ -114,6 +129,48 @@ describe('npm pack root package → clean install → CLI', () => {
       ]);
       expect(run('npx bmad-speckit large-doc --help', consumer)).toContain('large-doc');
       expect(existsSync(join(consumer, 'scripts'))).toBe(false);
+
+      const largeDocTarget = join(consumer, 'large-doc-smoke.md');
+      const init = runJson(
+        `npx --no-install bmad-speckit large-doc init --target "${largeDocTarget}" --chunk c1:smoke --require-heading "# Smoke" --min-bytes 20 --json`,
+        consumer
+      );
+      expect(init.schemaVersion).toBe('large-document-writer-session-init/v1');
+      const chunkPath = writeLargeDocChunk(
+        consumer,
+        'c1',
+        'smoke',
+        '# Smoke\n\nlarge document writer smoke content'
+      );
+      const addChunk = runJson(
+        `npx --no-install bmad-speckit large-doc add-chunk --session "${init.sessionDir}" --chunk-id c1 --section-id smoke --content-file "${chunkPath}" --json`,
+        consumer
+      );
+      expect(addChunk.schemaVersion).toBe('large-document-writer-chunk-receipt/v1');
+      const assemble = runJson(
+        `npx --no-install bmad-speckit large-doc assemble --session "${init.sessionDir}" --json`,
+        consumer
+      );
+      expect(assemble.schemaVersion).toBe('large-document-writer-assembly-receipt/v1');
+      const validate = runJson(
+        `npx --no-install bmad-speckit large-doc validate --session "${init.sessionDir}" --json`,
+        consumer
+      );
+      expect(validate.schemaVersion).toBe('large-document-writer-validation-receipt/v1');
+      expect(validate.ok).toBe(true);
+      const promote = runJson(
+        `npx --no-install bmad-speckit large-doc promote --session "${init.sessionDir}" --json`,
+        consumer
+      );
+      expect(promote.schemaVersion).toBe('large-document-writer-promote-receipt/v1');
+      expect(readFileSync(largeDocTarget, 'utf8')).toContain('# Smoke');
+      const cleanup = runJson(
+        `npx --no-install bmad-speckit large-doc cleanup --session "${init.sessionDir}" --policy delete --json`,
+        consumer
+      );
+      expect(cleanup.schemaVersion).toBe('large-document-writer-cleanup-receipt/v1');
+      expect(cleanup.policy).toBe('delete');
+
       const installedPromoteScript = join(
         rootInstallDir,
         '_bmad',
@@ -174,6 +231,30 @@ describe('npm pack root package → clean install → CLI', () => {
       expect(run(`"${process.execPath}" "${installedPromoteScript}" --help`, consumer)).toContain(
         '--preflight-only'
       );
+      const draftPath = join(consumer, 'draft-requirements.md');
+      const targetPath = join(consumer, 'requirements.md');
+      writeFileSync(
+        draftPath,
+        [
+          '# Draft',
+          '',
+          'implementationConfirmation:',
+          '  status: draft',
+          '  must:',
+          '    - id: MUST-001',
+          '      text: "The consumer install can run the skill-local promotion preflight."',
+          '',
+        ].join('\n'),
+        'utf8'
+      );
+      const promotion = JSON.parse(
+        run(
+          `"${process.execPath}" "${installedPromoteScript}" --draft "${draftPath}" --target "${targetPath}" --preflight-only --json`,
+          consumer
+        )
+      );
+      expect(promotion.ok).toBe(true);
+
       const bundledRe =
         findFirstExistingPath([
           join(
@@ -225,9 +306,11 @@ describe('npm pack root package → clean install → CLI', () => {
       mkdirSync(tasksDir, { recursive: true });
       writeFileSync(
         tasksPath,
-        ['# Tasks', '', '- [ ] T001 Implement runtime flow in packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context.ts'].join(
-          '\n'
-        ),
+        [
+          '# Tasks',
+          '',
+          '- [ ] T001 Implement runtime flow in packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context.ts',
+        ].join('\n'),
         'utf8'
       );
 
@@ -276,7 +359,6 @@ describe('npm pack root package → clean install → CLI', () => {
       expect((resolveRun.stdout || '').trim()).toMatch(/"resolvedMode"\s*:\s*"en"/);
     } finally {
       rmSync(consumer, { recursive: true, force: true });
-      rmSync(packDir, { recursive: true, force: true });
     }
   }, 360_000);
 });

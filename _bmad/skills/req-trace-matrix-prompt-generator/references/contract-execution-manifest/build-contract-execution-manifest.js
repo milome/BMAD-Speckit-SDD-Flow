@@ -37,6 +37,18 @@ function normalizePath(value) {
   return text(value).replace(/\\/gu, '/');
 }
 
+function isTestFileRef(value) {
+  const normalized = normalizePath(value).toLowerCase();
+  const fileName = normalized.split('/').pop() ?? '';
+  if (!/\.(?:py|tsx?|jsx?|mjs|cjs|java|kt|go|rs|cs|rb|php|feature)$/u.test(fileName)) {
+    return false;
+  }
+  return (
+    /(?:^|\/)(?:tests?|__tests__)(?:\/|$)/u.test(normalized) ||
+    /(?:^|[._-])(?:test|spec)(?:[._-]|$)/u.test(fileName)
+  );
+}
+
 function commandId(row) {
   return text(row.id) || text(row.commandId);
 }
@@ -60,14 +72,32 @@ function extractCommandFileRefs(command) {
   const tokens = text(command).replace(/\r?\n/gu, ' ').match(/"[^"]+"|'[^']+'|\S+/gu) ?? [];
   for (const token of tokens) {
     const ref = token.replace(/^['"]|['"]$/gu, '');
-    if (
-      /(?:^|[\\/])[^\\/]+\.(?:tsx|ts|jsx|json|mjs|cjs|js|ya?ml|md)$/iu.test(ref) &&
-      (/[\\/]/u.test(ref) || /\.(?:test|spec)\./iu.test(ref))
-    ) {
+    if (/(?:^|[\\/])[^\\/]+\.(?:py|tsx|ts|jsx|json|mjs|cjs|js|ya?ml|md)$/iu.test(ref)) {
       refs.add(normalizePath(ref));
     }
   }
   return [...refs];
+}
+
+function commandFileRefs(row) {
+  return unique([
+    ...extractCommandFileRefs(text(row.command)),
+    text(row.file),
+    text(row.path),
+    text(row.testFile),
+    text(row.testPath),
+    ...strings(row.files),
+    ...strings(row.testFiles),
+    ...strings(row.targetFiles).filter(isTestFileRef),
+  ])
+    .filter(Boolean)
+    .map(normalizePath);
+}
+
+function commandTargetFileRefs(row) {
+  return unique([...commandFileRefs(row), ...strings(row.targetFiles)])
+    .filter(Boolean)
+    .map(normalizePath);
 }
 
 function requirementRows(confirmation) {
@@ -383,7 +413,7 @@ function commandTargetCollection(confirmation) {
         ...idRefs(row, ['evidenceRefs', 'linkedEvidenceIds']),
         ...linkedTraceRows.flatMap((trace) => strings(trace.evidenceRefs)),
       ]);
-      const files = extractCommandFileRefs(text(row.command));
+      const files = commandTargetFileRefs(row);
       const missing = [
         ...(files.length > 0 ? [] : ['command_target_files_missing']),
         ...(traceRefs.length > 0 ? [] : ['command_target_trace_refs_missing']),
@@ -608,14 +638,19 @@ function evidenceTrustStates(confirmation) {
 }
 
 function buildDerivedContractExecutionManifest(input) {
+  const activeV2 = input.sourceFormatVersion === 'v2';
   const confirmation = input.confirmation ?? {};
-  const projection = nested(confirmation.aiTddContractExecutionManifestProjection);
+  const projection = { ...nested(confirmation.aiTddContractExecutionManifestProjection) };
+  if (activeV2) {
+    delete projection.currentTargetMap;
+    delete projection.currentTargetMapRefs;
+  }
   const acceptance = acceptanceRows(confirmation);
   const targetRows = targetArtifacts(confirmation);
   const controls = negativeControls(confirmation, targetRows);
   const commandTargets = commandTargetCollection(confirmation);
   const traceClosures = traceClosureAssertions(confirmation);
-  const currentTargetMap = currentTargetMapSection(confirmation);
+  const currentTargetMap = activeV2 ? null : currentTargetMapSection(confirmation);
   const targetMods = targetModificationPaths(confirmation);
   const targetModCoverage = targetModificationPathCoverage(confirmation, targetMods);
   const canonicalSurfaces = canonicalSurfaceReconciliation(targetRows);
@@ -637,6 +672,7 @@ function buildDerivedContractExecutionManifest(input) {
   ]);
   const overrides = {};
   for (const [key, value] of Object.entries(providedManifest)) {
+    if (activeV2 && key === 'currentTargetMap') continue;
     if (!projectionOnlyKeys.has(key)) overrides[key] = value;
   }
   const commandTargetOverride =
@@ -658,6 +694,26 @@ function buildDerivedContractExecutionManifest(input) {
     }
     return fallback;
   };
+  const closeoutGateSections = [
+    commandTargets,
+    traceClosures,
+    ...(currentTargetMap ? [currentTargetMap] : []),
+    targetModCoverage,
+    canonicalSurfaces,
+    legacyControls,
+    closeout,
+    evidenceTrust,
+  ];
+  const requiredManifestSections = [
+    'commandTargetCollection',
+    'traceClosureAssertions',
+    ...(currentTargetMap ? ['currentTargetMap'] : []),
+    'targetModificationPathCoverage',
+    'canonicalSurfaceReconciliation',
+    'legacyDenial',
+    'closeoutProof',
+    'evidenceTrustStates',
+  ];
   const rawManifest = {
     ...projection,
     ...overrides,
@@ -677,7 +733,7 @@ function buildDerivedContractExecutionManifest(input) {
       commandRefs: commandRefs(row),
       artifactRefs: strings(row.artifactRefs),
       canonicalSurfaceRefs: strings(row.canonicalSurfaceRefs),
-      currentTargetMapRefs: strings(row.currentTargetMapRefs),
+      ...(activeV2 ? {} : { currentTargetMapRefs: strings(row.currentTargetMapRefs) }),
       targetModificationPaths: strings(row.targetModificationPaths),
       acceptanceRefs: strings(row.acceptanceRefs),
       status: text(row.status),
@@ -687,7 +743,7 @@ function buildDerivedContractExecutionManifest(input) {
       command: text(row.command),
       role: text(row.role) || text(row.commandRole) || text(row.gate),
       expectedMode: text(row.expectedMode) || text(row.expectedExitCodeAfterImplementation),
-      files: extractCommandFileRefs(text(row.command)),
+      files: commandFileRefs(row),
       traceRefs: idRefs(row, ['traceRows', 'traceRefs']),
       evidenceRefs: idRefs(row, ['evidenceRefs']),
     })),
@@ -703,7 +759,9 @@ function buildDerivedContractExecutionManifest(input) {
     errorCaseCoverage: overrides.errorCaseCoverage ?? errorCaseCoverage(confirmation, acceptance),
     commandTargetCollection: commandTargetOverride ?? commandTargets,
     traceClosureAssertions: overrides.traceClosureAssertions ?? traceClosures,
-    currentTargetMap: derivedSection('currentTargetMap', currentTargetMap),
+    ...(currentTargetMap
+      ? { currentTargetMap: derivedSection('currentTargetMap', currentTargetMap) }
+      : {}),
     targetModificationPathCoverage: derivedSection(
       'targetModificationPathCoverage',
       targetModCoverage
@@ -715,30 +773,19 @@ function buildDerivedContractExecutionManifest(input) {
     legacyDenial: derivedSection('legacyDenial', legacyControls),
     closeoutProof: derivedSection('closeoutProof', closeout),
     evidenceTrustStates: derivedSection('evidenceTrustStates', evidenceTrust),
-    closeoutGates: overrides.closeoutGates ?? {
-      decision: [
-        commandTargets,
-        traceClosures,
-        currentTargetMap,
-        targetModCoverage,
-        canonicalSurfaces,
-        legacyControls,
-        closeout,
-        evidenceTrust,
-      ].every((section) => section.ready === true)
+    closeoutGates: activeV2
+      ? {
+          decision: closeoutGateSections.every((section) => section.ready === true)
+            ? 'pass'
+            : 'blocked',
+          requiredManifestSections,
+        }
+      : overrides.closeoutGates ?? {
+          decision: closeoutGateSections.every((section) => section.ready === true)
         ? 'pass'
         : 'blocked',
-      requiredManifestSections: [
-        'commandTargetCollection',
-        'traceClosureAssertions',
-        'currentTargetMap',
-        'targetModificationPathCoverage',
-        'canonicalSurfaceReconciliation',
-        'legacyDenial',
-        'closeoutProof',
-        'evidenceTrustStates',
-      ],
-    },
+          requiredManifestSections,
+        },
   };
   return buildContractExecutionManifest({ ...input, manifest: rawManifest });
 }
@@ -758,6 +805,7 @@ function buildContractExecutionManifest(input) {
     confirmation,
     manifest: input.manifest,
     builderVersion: input.builderVersion ?? CANONICAL_BUILDER_VERSION,
+    sourceFormatVersion: input.sourceFormatVersion,
   });
   const manifest = {
     ...normalized.manifest,

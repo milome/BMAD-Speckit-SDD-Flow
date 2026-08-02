@@ -220,11 +220,11 @@ function createRegistration(
       codex: {
         preferredRoute: {
           tool: 'codex',
-          subtypeOrExecutor: 'worker:audit',
+          subtypeOrExecutor: 'main-session:audit',
         },
         fallbackRoute: {
           tool: 'codex',
-          subtypeOrExecutor: 'worker:audit',
+          subtypeOrExecutor: 'main-session:audit',
         },
         closeout: {
           contractVersion: REVIEW_HOST_CLOSEOUT_V1_VERSION,
@@ -362,7 +362,7 @@ const REVIEWER_HOST_ROUTE_SUMMARY: Record<ReviewerHostId, ReviewerHostRouteSumma
     preferredRoute: REVIEWER_REGISTRY.story_audit.hosts.codex.preferredRoute,
     fallbackRoute: REVIEWER_REGISTRY.story_audit.hosts.codex.fallbackRoute,
     fallbackReason:
-      'Codex uses the no-hooks worker adapter for audit packets; flat or no-op reviewer fallback is disabled.',
+      'The current Codex main session executes audit packets through the dedicated reviewer carrier; worker and no-op fallbacks are disabled.',
   },
 };
 

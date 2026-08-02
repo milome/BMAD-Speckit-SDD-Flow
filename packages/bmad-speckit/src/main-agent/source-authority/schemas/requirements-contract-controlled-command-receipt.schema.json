@@ -1,0 +1,288 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-controlled-command-receipt.schema.json",
+  "title": "Requirements Contract Controlled Command Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "commandRunId",
+    "invocationSequence",
+    "commandId",
+    "argv",
+    "argvHash",
+    "orderedChildren",
+    "cwd",
+    "executorIdentity",
+    "hostIdentity",
+    "transactionId",
+    "implementationAttemptId",
+    "architectureAuditAttemptId",
+    "activePhaseAuditAttemptId",
+    "contractHash",
+    "inputSnapshotHash",
+    "startedAt",
+    "endedAt",
+    "exitCode",
+    "signal",
+    "stdoutPath",
+    "stdoutHash",
+    "stderrPath",
+    "stderrHash",
+    "acceptanceRefs",
+    "traceRefs",
+    "publication",
+    "decision",
+    "passAuthorityScope"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-controlled-command-receipt/v1"
+    },
+    "commandRunId": {
+      "type": "string",
+      "pattern": "^RUN-[A-Za-z0-9._-]+$"
+    },
+    "invocationSequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "commandId": {
+      "type": "string",
+      "pattern": "^CMD-[0-9]+$"
+    },
+    "argv": {
+      "$ref": "#/$defs/argv"
+    },
+    "argvHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "orderedChildren": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/childCommand"
+      }
+    },
+    "cwd": {
+      "type": "string",
+      "minLength": 1
+    },
+    "executorIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["class", "id"],
+      "properties": {
+        "class": {
+          "const": "goal_controlled_executor"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "hostIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["platform", "architecture", "nodeVersion"],
+      "properties": {
+        "platform": {
+          "type": "string",
+          "minLength": 1
+        },
+        "architecture": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nodeVersion": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "transactionId": {
+      "type": "string",
+      "pattern": "^TX-[A-Za-z0-9._-]+$"
+    },
+    "implementationAttemptId": {
+      "type": "string",
+      "pattern": "^IMP-[A-Za-z0-9._-]+$"
+    },
+    "architectureAuditAttemptId": {
+      "type": "string",
+      "pattern": "^AUDIT-[A-Za-z0-9._-]+$"
+    },
+    "activePhaseAuditAttemptId": {
+      "type": "string",
+      "pattern": "^AUDIT-[A-Za-z0-9._-]+$"
+    },
+    "contractHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "inputSnapshotHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "startedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "endedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "exitCode": {
+      "const": 0
+    },
+    "signal": {
+      "type": ["string", "null"]
+    },
+    "stdoutPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "stdoutHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "stderrPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "stderrHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "acceptanceRefs": {
+      "$ref": "#/$defs/nonEmptyStrings"
+    },
+    "traceRefs": {
+      "$ref": "#/$defs/nonEmptyStrings"
+    },
+    "publication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "writer",
+        "targetPath",
+        "publishedAt",
+        "readbackAt",
+        "explicitUtf8",
+        "createOnly",
+        "readbackVerified"
+      ],
+      "properties": {
+        "writer": {
+          "type": "string",
+          "minLength": 1
+        },
+        "targetPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "readbackAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "explicitUtf8": {
+          "const": true
+        },
+        "createOnly": {
+          "const": true
+        },
+        "readbackVerified": {
+          "const": true
+        }
+      }
+    },
+    "decision": {
+      "const": "pass"
+    },
+    "passAuthorityScope": {
+      "const": "command_only"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "argv": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "nonEmptyStrings": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "childCommand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "argv",
+        "argvHash",
+        "cwd",
+        "startedAt",
+        "endedAt",
+        "exitCode",
+        "stdoutPath",
+        "stdoutHash",
+        "stderrPath",
+        "stderrHash"
+      ],
+      "properties": {
+        "commandId": {
+          "type": "string",
+          "pattern": "^CMD-[0-9]+$"
+        },
+        "argv": {
+          "$ref": "#/$defs/argv"
+        },
+        "argvHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "cwd": {
+          "type": "string",
+          "minLength": 1
+        },
+        "startedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "endedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "exitCode": {
+          "type": "integer"
+        },
+        "signal": {
+          "type": ["string", "null"]
+        },
+        "stdoutPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stdoutHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "stderrPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stderrHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    }
+  }
+}

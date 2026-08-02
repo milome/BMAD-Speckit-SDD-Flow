@@ -1,0 +1,702 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-recovery-lineage-receipt.schema.json",
+  "title": "Requirements Contract Recovery Lineage Receipt",
+  "x-commandRoles": {
+    "preEdit": "CMD-01",
+    "bootstrap": "CMD-33",
+    "postBootstrap": "CMD-02"
+  },
+  "x-finalizedCommandReceiptRoles": ["CMD-01", "CMD-33", "CMD-02"],
+  "x-finalizerCommandRole": "CMD-36",
+  "x-buildCommandRole": "CMD-12",
+  "x-maxClockSkewMs": 2000,
+  "x-commandReceiptBindings": {
+    "CMD-01": {
+      "acceptanceRefs": ["AC-03", "AC-46", "AC-196"],
+      "traceRefs": ["TR-03", "TR-46", "TR-196"]
+    },
+    "CMD-02": {
+      "acceptanceRefs": ["AC-01", "AC-02", "AC-03", "AC-46", "AC-196"],
+      "traceRefs": ["TR-01", "TR-02", "TR-03", "TR-46", "TR-196"]
+    },
+    "CMD-12": {
+      "acceptanceRefs": ["AC-43", "AC-45", "AC-46", "AC-186", "AC-205", "AC-216"],
+      "traceRefs": ["TR-43", "TR-45", "TR-46", "TR-186", "TR-205", "TR-216"]
+    },
+    "CMD-33": {
+      "acceptanceRefs": [
+        "AC-46",
+        "AC-180",
+        "AC-196",
+        "AC-199",
+        "AC-204",
+        "AC-207",
+        "AC-209",
+        "AC-215"
+      ],
+      "traceRefs": [
+        "TR-46",
+        "TR-180",
+        "TR-196",
+        "TR-199",
+        "TR-204",
+        "TR-207",
+        "TR-209",
+        "TR-215"
+      ]
+    },
+    "CMD-36": {
+      "acceptanceRefs": [
+        "AC-46",
+        "AC-129",
+        "AC-204",
+        "AC-205",
+        "AC-206",
+        "AC-207",
+        "AC-208",
+        "AC-209",
+        "AC-210",
+        "AC-211",
+        "AC-212",
+        "AC-213",
+        "AC-214",
+        "AC-215",
+        "AC-216",
+        "AC-217",
+        "AC-218",
+        "AC-219"
+      ],
+      "traceRefs": [
+        "TR-46",
+        "TR-129",
+        "TR-204",
+        "TR-205",
+        "TR-206",
+        "TR-207",
+        "TR-208",
+        "TR-209",
+        "TR-210",
+        "TR-211",
+        "TR-212",
+        "TR-213",
+        "TR-214",
+        "TR-215",
+        "TR-216",
+        "TR-217",
+        "TR-218",
+        "TR-219"
+      ]
+    }
+  },
+  "x-transactionRoots": {
+    "transaction": "docs/plans/evidence/loop-engineering-remediation/recovery-finalization-transactions",
+    "failure": "docs/plans/evidence/loop-engineering-remediation/recovery-finalization-attempts"
+  },
+  "x-finalizationReceiptTarget": {
+    "path": "docs/plans/evidence/loop-engineering-remediation/recovery-lineage-finalization-receipt.json",
+    "schemaVersion": "requirements-contract-recovery-finalization-receipt/v1"
+  },
+  "x-excludedControlPathPrefixes": [
+    ".codex-tmp/",
+    "docs/plans/evidence/loop-engineering-remediation/attempts/",
+    "docs/plans/evidence/loop-engineering-remediation/command-runs/",
+    "docs/plans/evidence/loop-engineering-remediation/recovery-finalization-attempts/",
+    "docs/plans/evidence/loop-engineering-remediation/recovery-finalization-transactions/"
+  ],
+  "x-recoveryOwnerBindings": [
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-controlled-command-receipt.schema.json",
+      "targetRefs": ["packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-controlled-command-receipt.schema.json"],
+      "sourceObligationRefs": ["S174"],
+      "acceptanceRefs": ["AC-208"],
+      "traceRefs": ["TR-208"],
+      "verificationRefs": ["tests/acceptance/requirements-contract-recovery-finalization-schema.test.ts"]
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-recovery-finalization-receipt.schema.json",
+      "targetRefs": ["packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-recovery-finalization-receipt.schema.json"],
+      "sourceObligationRefs": ["S176", "S177", "S178"],
+      "acceptanceRefs": ["AC-211", "AC-212"],
+      "traceRefs": ["TR-211", "TR-212"],
+      "verificationRefs": ["tests/acceptance/requirements-contract-recovery-finalization-schema.test.ts"]
+    },
+    {
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-recovery-finalization-state-decision-receipt.schema.json",
+      "targetRefs": ["packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-recovery-finalization-state-decision-receipt.schema.json"],
+      "sourceObligationRefs": ["S177", "S179"],
+      "acceptanceRefs": ["AC-212", "AC-213"],
+      "traceRefs": ["TR-212", "TR-213"],
+      "verificationRefs": ["tests/acceptance/requirements-contract-recovery-finalization-schema.test.ts"]
+    },
+    {
+      "path": "tests/acceptance/requirements-contract-recovery-command-identity-authority.test.ts",
+      "targetRefs": ["tests/acceptance/requirements-contract-recovery-command-identity-authority.test.ts"],
+      "sourceObligationRefs": ["S172", "S181"],
+      "acceptanceRefs": ["AC-206", "AC-215"],
+      "traceRefs": ["TR-206", "TR-215"],
+      "verificationRefs": ["tests/acceptance/requirements-contract-recovery-command-identity-authority.test.ts"]
+    },
+    {
+      "path": "tests/acceptance/requirements-contract-recovery-finalization-schema.test.ts",
+      "targetRefs": ["tests/acceptance/requirements-contract-recovery-finalization-schema.test.ts"],
+      "sourceObligationRefs": ["S176", "S181"],
+      "acceptanceRefs": ["AC-211", "AC-215"],
+      "traceRefs": ["TR-211", "TR-215"],
+      "verificationRefs": ["tests/acceptance/requirements-contract-recovery-finalization-schema.test.ts"]
+    }
+  ],
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "state",
+    "contractHash",
+    "authorityBindings",
+    "transactionId",
+    "implementationAttemptId",
+    "architectureAuditAttemptId",
+    "preCandidateAuditAttemptId",
+    "finalAuditAttemptId",
+    "finalizationRunId",
+    "requirementSetId",
+    "preEditAttemptContext",
+    "predecessorContractHash",
+    "predecessorBaselineSnapshotHash",
+    "predecessorPassAuthorityDecision",
+    "historicalGapDecision",
+    "passAuthority",
+    "gitStatusHash",
+    "frozenUniverseHash",
+    "sourceHashBindings",
+    "semanticModelHashBindings",
+    "grandfatheredCandidateManifest",
+    "consumer",
+    "commandReceiptRefs",
+    "qualifiedRedReceipt",
+    "fixedTarget",
+    "finalizationReceiptTarget",
+    "createdAt"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-recovery-lineage-receipt/v1"
+    },
+    "state": {
+      "enum": ["provisional", "finalized"]
+    },
+    "contractHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "authorityBindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primary", "architectureWave"],
+      "properties": {
+        "primary": {
+          "$ref": "#/$defs/pathHash"
+        },
+        "architectureWave": {
+          "$ref": "#/$defs/pathHash"
+        }
+      }
+    },
+    "authorityHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "transactionId": {
+      "type": "string",
+      "pattern": "^TX-[A-Za-z0-9._-]+$"
+    },
+    "implementationAttemptId": {
+      "type": "string",
+      "pattern": "^IMP-[A-Za-z0-9._-]+$"
+    },
+    "architectureAuditAttemptId": {
+      "type": "string",
+      "pattern": "^AUDIT-[A-Za-z0-9._-]+$"
+    },
+    "preCandidateAuditAttemptId": {
+      "type": "string",
+      "pattern": "^AUDIT-[A-Za-z0-9._-]+$"
+    },
+    "finalAuditAttemptId": {
+      "type": "string",
+      "pattern": "^AUDIT-[A-Za-z0-9._-]+$"
+    },
+    "finalizationRunId": {
+      "type": "string",
+      "pattern": "^FINALIZE-[A-Za-z0-9._-]+$"
+    },
+    "auditAttemptId": {
+      "type": "string",
+      "pattern": "^AUDIT-G00-[A-Za-z0-9._-]+$"
+    },
+    "requirementSetId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "preEditAttemptContext": {
+      "$ref": "#/$defs/pathHash"
+    },
+    "predecessorContractHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "predecessorBaselineSnapshotHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "predecessorPassAuthorityDecision": {
+      "const": "revoked"
+    },
+    "historicalGapDecision": {
+      "const": "untrusted_observation_only"
+    },
+    "passAuthority": {
+      "const": false
+    },
+    "gitStatusHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "frozenUniverseHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "sourceHashBindings": {
+      "type": "object"
+    },
+    "semanticModelHashBindings": {
+      "type": "object"
+    },
+    "grandfatheredCandidateManifest": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "predecessorExists",
+          "predecessorHash",
+          "currentExists",
+          "currentHash",
+          "changeClass",
+          "targetRefs",
+          "requirementRefs",
+          "acceptanceRefs",
+          "traceRefs",
+          "qualifiedRedRefs",
+          "verificationRefs"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "predecessorExists": {
+            "type": "boolean"
+          },
+          "predecessorHash": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/sha256"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "currentExists": {
+            "type": "boolean"
+          },
+          "currentHash": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/sha256"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "changeClass": {
+            "enum": [
+              "unchanged_predecessor_candidate",
+              "changed_predecessor_candidate",
+              "new_current_candidate",
+              "deleted_predecessor_candidate"
+            ]
+          },
+          "targetRefs": {
+            "$ref": "#/$defs/nonEmptyStrings"
+          },
+          "requirementRefs": {
+            "$ref": "#/$defs/nonEmptyStrings"
+          },
+          "acceptanceRefs": {
+            "$ref": "#/$defs/nonEmptyStrings"
+          },
+          "traceRefs": {
+            "$ref": "#/$defs/nonEmptyStrings"
+          },
+          "qualifiedRedRefs": {
+            "$ref": "#/$defs/nonEmptyStrings"
+          },
+          "verificationRefs": {
+            "$ref": "#/$defs/nonEmptyStrings"
+          }
+        }
+      }
+    },
+    "consumer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "normalizedRoot",
+        "existsBefore",
+        "projectName",
+        "markerSchemaVersion",
+        "bootstrapId",
+        "markerHash",
+        "packageHash",
+        "repositoryRoot",
+        "clean",
+        "baselineCommit",
+        "baselineTree",
+        "branch",
+        "remotes",
+        "gitUserName",
+        "gitUserEmail",
+        "commitSubject",
+        "authorTimestamp",
+        "committerTimestamp",
+        "trackedFiles",
+        "trackedFileIndexCanonicalization",
+        "baselineFileIndexHash",
+        "partialCreationRecovery"
+      ],
+      "properties": {
+        "normalizedRoot": {
+          "type": "string",
+          "minLength": 1
+        },
+        "existsBefore": {
+          "type": "boolean"
+        },
+        "projectName": {
+          "const": "bmad-speckit-consumer-evidence-closure"
+        },
+        "markerSchemaVersion": {
+          "const": "bmad-speckit-consumer-project/v1"
+        },
+        "bootstrapId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "markerHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "packageHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "repositoryRoot": {
+          "type": "string",
+          "minLength": 1
+        },
+        "clean": {
+          "const": true
+        },
+        "baselineCommit": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "baselineTree": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "branch": {
+          "const": "main"
+        },
+        "remotes": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "gitUserName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "gitUserEmail": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commitSubject": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authorTimestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "committerTimestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "trackedFiles": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "prefixItems": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["mode", "blob", "path"],
+              "properties": {
+                "mode": {
+                  "const": "100644"
+                },
+                "blob": {
+                  "const": "30c40f12b99e3649d73e5c3169aa2e2d3ed00059"
+                },
+                "path": {
+                  "const": "bmad-speckit-consumer-project.json"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["mode", "blob", "path"],
+              "properties": {
+                "mode": {
+                  "const": "100644"
+                },
+                "blob": {
+                  "const": "11dee9f2bfc07c686c63696c46b3fd358ebce372"
+                },
+                "path": {
+                  "const": "package.json"
+                }
+              }
+            }
+          ],
+          "items": false
+        },
+        "trackedFileIndexCanonicalization": {
+          "const": "mode + SP + gitBlob + SP + path, rows in git index order, LF separators, no trailing LF"
+        },
+        "baselineFileIndexHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "partialCreationRecovery": {
+          "enum": ["not_required", "rolled_back"]
+        }
+      }
+    },
+    "commandReceiptRefs": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^CMD-[0-9]+$"
+      },
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/pathHash"
+          },
+          {
+            "$ref": "#/$defs/currentInvocation"
+          }
+        ]
+      }
+    },
+    "pendingFinalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["missingReceiptRoles", "requiredReceiptCount"],
+      "properties": {
+        "missingReceiptRoles": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^CMD-[0-9]+$"
+          }
+        },
+        "requiredReceiptCount": {
+          "const": 1
+        }
+      }
+    },
+    "provisionalPublication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["receiptPath", "schemaVersion"],
+      "properties": {
+        "receiptPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schemaVersion": {
+          "const": "requirements-contract-recovery-publication-receipt/v1"
+        }
+      }
+    },
+    "qualifiedRedReceipt": {
+      "$ref": "#/$defs/pathHash"
+    },
+    "fixedTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "preimageHash"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "preimageHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "finalizationReceiptTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "schemaVersion"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schemaVersion": {
+          "const": "requirements-contract-recovery-finalization-receipt/v1"
+        }
+      }
+    },
+    "provisionalCandidate": {
+      "$ref": "#/$defs/pathHash"
+    },
+    "initialPublicationReceipt": {
+      "$ref": "#/$defs/pathHash"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "state": {
+          "const": "provisional"
+        },
+        "commandReceiptRefs": {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 2,
+          "maxProperties": 2,
+          "required": ["CMD-01", "CMD-33"],
+          "properties": {
+            "CMD-01": {
+              "$ref": "#/$defs/pathHash"
+            },
+            "CMD-33": {
+              "$ref": "#/$defs/currentInvocation"
+            }
+          }
+        }
+      },
+      "required": ["pendingFinalization", "provisionalPublication"],
+      "not": {
+        "anyOf": [
+          {
+            "required": ["provisionalCandidate"]
+          },
+          {
+            "required": ["initialPublicationReceipt"]
+          }
+        ]
+      }
+    },
+    {
+      "properties": {
+        "state": {
+          "const": "finalized"
+        },
+        "commandReceiptRefs": {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 3,
+          "maxProperties": 3,
+          "required": ["CMD-01", "CMD-33", "CMD-02"],
+          "properties": {
+            "CMD-01": {
+              "$ref": "#/$defs/pathHash"
+            },
+            "CMD-33": {
+              "$ref": "#/$defs/pathHash"
+            },
+            "CMD-02": {
+              "$ref": "#/$defs/pathHash"
+            }
+          }
+        }
+      },
+      "required": ["provisionalCandidate", "initialPublicationReceipt"],
+      "not": {
+        "anyOf": [
+          {
+            "required": ["pendingFinalization"]
+          },
+          {
+            "required": ["provisionalPublication"]
+          }
+        ]
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "pathHash": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "currentInvocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["applicability", "commandRunId", "invocationSequence"],
+      "properties": {
+        "applicability": {
+          "const": "current_invocation"
+        },
+        "commandRunId": {
+          "type": "string",
+          "pattern": "^RUN-[A-Za-z0-9._-]+$"
+        },
+        "invocationSequence": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "nonEmptyStrings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

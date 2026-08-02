@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { evaluateAuditTriadConvergence } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-triad-orchestrator';
 import {
-  createAuditTriadExecutionPlan,
-  evaluateAuditTriadConvergence,
-} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-triad-orchestrator';
+  createFixtureAuditTriadPlan,
+  createFixtureAuditTriadRound,
+} from '../helpers/audit-triad-fixture-runtime';
 import {
   cleanupRequirementWorkspace,
   materializeRequirementFixture,
@@ -14,44 +15,21 @@ describe('Audit triad reset on reconfirmation', () => {
     const fixture = materializeRequirementFixture();
     try {
       const compiled = writeCompiledImplementPacket({ root: fixture.root, fixture });
-      const plan = createAuditTriadExecutionPlan({
-        projectRoot: fixture.root,
-        recordId: fixture.recordId,
-        stage: 'implement',
-        callPoint: 'audit_review',
+      const plan = createFixtureAuditTriadPlan({
+        fixture,
+        compiled,
         attemptId: 'audit-current',
-        sourceDocumentHash: fixture.sourceDocumentHash,
-        implementationConfirmationHash: fixture.implementationConfirmationHash,
-        modelPacketHash: compiled.compiledPromptRef.modelPacketHash,
-        auditReceiptHash: compiled.compiledPromptRef.auditReceiptHash,
-        goalExecutionHash: compiled.compiledPromptRef.goalExecutionHash,
       });
-      const staleSourceRound = {
-        schemaVersion: 'audit-triad-round-receipt/v1' as const,
-        roundId: 'r1',
-        stageProfileId: plan.stageProfileId,
+      const staleSourceRound = createFixtureAuditTriadRound(plan, 'r1', {
         perspectiveResults: {
           product_intent: { agentId: 'p1', validGaps: [] },
           model_projection: { agentId: 'm1', validGaps: [] },
           main_agent_execution: { agentId: 'e1', validGaps: [] },
         },
-        coveredCheckItemIds: plan.subagents[0].requiredCheckItemIds,
-        vetoItemResults: [],
-        validatedGapRefs: [],
-        invalidGapRefs: [],
         sourceDocumentHash: 'sha256:stale-source',
-        implementationConfirmationHash: plan.implementationConfirmationHash,
-        modelPacketHash: plan.modelPacketHash,
-        auditReceiptHash: plan.auditReceiptHash,
-        goalExecutionHash: plan.goalExecutionHash,
-        criticalAuditorProfileHash: plan.criticalAuditorProfileHash,
-        criticalAuditorStageProfileHash: plan.criticalAuditorStageProfileHash,
-        requiredCheckItemSetHash: plan.requiredCheckItemSetHash,
-        currentAttemptHash: plan.currentAttemptHash,
-        currentEvidenceHash: plan.currentEvidenceHash,
         scoreReceiptRefs: ['score.json'],
         runAuditorHostReceiptRefs: ['host.json'],
-      };
+      });
       const decision = evaluateAuditTriadConvergence({
         plan,
         rounds: [

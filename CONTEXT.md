@@ -164,6 +164,18 @@ _Avoid_: diagnostic artifact write, chat draft, external prompt generation
 The authoring decision that either allows Source Materialization or blocks it with source-bound reasons before the Implementation Source Document is changed.
 _Avoid_: best-effort write, late-only reverse audit, implicit checkpoint approval
 
+**Deterministic Generation Defect**:
+A reproducible authoring or renderer defect whose repair is fully derivable from existing source authority without new authority input.
+_Avoid_: authority gap, missing user decision, arbitrary fallback
+
+**Authority Gap**:
+A missing or invalid Target Authority, Validation Authority, user confirmation, or source-hash safety condition that authoring automation cannot fabricate.
+_Avoid_: auto-repairable blocker, renderer defect, inferred fallback
+
+**Auto-Repairing Source Materialization**:
+A Source Materialization attempt that repairs Deterministic Generation Defects before emitting its Source Mutation Decision.
+_Avoid_: blocker bypass, temporary generator, best-effort source write
+
 **Target Authority**:
 Source-bound proof that target modification paths refer to the intended project files.
 _Avoid_: hardcoded governance path, inferred fallback, unrelated test path
@@ -183,6 +195,22 @@ _Avoid_: draft implementation confirmation, completion evidence, no-gap receipt
 **Execution-Ready Implementation Confirmation**:
 An Implementation Confirmation Block that has explicit user confirmation, passed required reverse-audit gates, and can be used by downstream req-trace or model-packet generation.
 _Avoid_: draft block, diagnostic artifact, pre-write projection
+
+**Minimum Sufficient Verified Contract**:
+The contract quality standard that preserves every applicable confirmed intent and verification boundary while omitting questions, views, diagrams, and evidence that add no decision or proof value.
+_Avoid_: maximal contract, all-in-all contract, short contract
+
+**Sequence Contract**:
+The confirmed requirement-critical interaction semantics, ordering constraints, and observable outcomes independent of any visual representation.
+_Avoid_: sequence diagram, Mermaid, implementation task order
+
+**Sequence Diagram**:
+A user-facing visual projection of a Sequence Contract that carries no requirement, execution, or completion authority.
+_Avoid_: sequence authority, mandatory sequence artifact, task dependency graph
+
+**Diagram Value Gate**:
+The decision that permits a Sequence Diagram only when the diagram adds distinct decision, interface, verification, or failure-analysis value beyond the Sequence Contract.
+_Avoid_: always-render rule, diagram completeness gate, sequence applicability
 
 ## Relationships
 
@@ -217,8 +245,15 @@ _Avoid_: draft block, diagnostic artifact, pre-write projection
 - An **Implementation Source Document** owns at most one **Implementation Confirmation Block**.
 - **Source Materialization** requires an allowing **Source Mutation Decision**.
 - A **Source Mutation Decision** consumes **Target Authority**, **Validation Authority**, and a **Requirement Coverage Ledger** before allowing source changes.
+- **Auto-Repairing Source Materialization** can repair **Deterministic Generation Defects**, but it cannot convert an **Authority Gap** into authority.
+- An **Authority Gap** blocks **Source Materialization** until source-bound or explicit authority is provided.
 - A **Diagnostic Authoring Artifact** cannot become an **Implementation Confirmation Block** without a new allowing **Source Mutation Decision**.
 - An **Execution-Ready Implementation Confirmation** requires explicit user confirmation and cannot be inferred from a draft block, diagnostic artifact, or pre-write projection.
+- An **Execution-Ready Implementation Confirmation** satisfies the **Minimum Sufficient Verified Contract** standard only when every included element supports a user decision, implementation boundary, or completion proof.
+- A **Minimum Sufficient Verified Contract** represents an inapplicable domain with proof of non-applicability instead of empty questions, diagrams, or evidence sections.
+- A **Sequence Contract** can be applicable and complete without producing a **Sequence Diagram**.
+- A **Sequence Diagram** exists only after its **Sequence Contract** passes the **Diagram Value Gate**.
+- A **Sequence Diagram** cannot add Participants, Messages, Branches, ordering constraints, or outcomes that are absent from its **Sequence Contract**.
 
 ## Example Dialogue
 
@@ -333,6 +368,15 @@ _Avoid_: draft block, diagnostic artifact, pre-write projection
 > **Dev:** "Can req-trace compile a draft implementation confirmation if all pre-write gates passed?"
 > **Domain expert:** "No. Req-trace requires an **Execution-Ready Implementation Confirmation**, not a draft block or diagnostic artifact."
 
+> **Dev:** "Can authoring automatically fix every blocker before writing an implementation confirmation?"
+> **Domain expert:** "Only **Deterministic Generation Defects**. An **Authority Gap** still requires source-bound or explicit authority before **Source Materialization**."
+
+> **Dev:** "Should a high-quality contract include every possible diagram and evidence section?"
+> **Domain expert:** "No. A **Minimum Sufficient Verified Contract** preserves every applicable obligation and proof boundary, but omits content that adds no decision or verification value."
+
+> **Dev:** "If Sequence semantics apply, must we always render Mermaid?"
+> **Domain expert:** "No. The **Sequence Contract** remains valid without a diagram; render a **Sequence Diagram** only when the **Diagram Value Gate** proves that the visual adds distinct value."
+
 ## Flagged Ambiguities
 
 - "record_closed" was previously used as if it could be a **Current Mental Model**; resolved: it is only a derived **Record Lifecycle State** or terminal close event.
@@ -380,3 +424,6 @@ _Avoid_: draft block, diagnostic artifact, pre-write projection
 - "required command" could have meant any runnable check; resolved: execution readiness requires **Validation Authority**.
 - "draft artifact" could have meant a recoverable source mutation; resolved: blocked attempts write **Diagnostic Authoring Artifacts**, not source semantics.
 - "execution-ready" could have meant any complete-looking draft; resolved: only an **Execution-Ready Implementation Confirmation** with explicit user confirmation and required reverse-audit evidence can feed req-trace or model-packet generation.
+- "blocker" was used to mean both deterministic renderer/materializer defects and missing authority; resolved: **Deterministic Generation Defects** are repairable by **Auto-Repairing Source Materialization**, while an **Authority Gap** cannot be fabricated.
+- "high-quality contract" could have meant maximal documentation or the shortest possible document; resolved: use **Minimum Sufficient Verified Contract**, which is complete for applicable intent and proof while excluding content with no decision or verification value.
+- "Sequence applicability" could have implied that Mermaid is mandatory; resolved: **Sequence Contract** applicability and **Sequence Diagram** value are separate decisions, and only the latter is controlled by the **Diagram Value Gate**.

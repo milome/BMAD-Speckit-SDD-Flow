@@ -35,6 +35,9 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
     } else if (token === '--evidenceBundleId' && value) {
       out.evidenceBundleId = value;
       index += 1;
+    } else if (token === '--attemptId' && value) {
+      out.attemptId = value;
+      index += 1;
     } else if (token === '--record-id' && value) {
       out.recordId = value;
       index += 1;
@@ -95,7 +98,7 @@ function runStepWithEnv(
 
 export function mainDeliveryEvidenceRun(argv: string[]): number {
   const args = parseArgs(argv);
-  const provider: ProviderMode = args.provider === 'real' ? 'real' : 'mock';
+  const provider: ProviderMode = args.provider === 'mock' ? 'mock' : 'real';
   const steps: StepResult[] = [];
   const root = process.cwd();
   const storyKey = args.storyKey ?? 'S-release-gate';
@@ -104,6 +107,7 @@ export function mainDeliveryEvidenceRun(argv: string[]): number {
     runId: args.runId,
     storyKey,
     evidenceBundleId: args.evidenceBundleId,
+    attemptId: args.attemptId,
     prefix: 'release-gate',
   });
   const commonReleaseArgs = [
@@ -113,6 +117,7 @@ export function mainDeliveryEvidenceRun(argv: string[]): number {
     provenance.storyKey,
     '--evidenceBundleId',
     provenance.evidenceBundleId,
+    ...(args.attemptId ? ['--attemptId', args.attemptId] : []),
     ...(args.recordId ? ['--record-id', args.recordId] : []),
     ...(args.requirementSetId ? ['--requirement-set-id', args.requirementSetId] : []),
   ];

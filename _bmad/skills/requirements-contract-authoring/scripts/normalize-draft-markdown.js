@@ -70,6 +70,51 @@ function quoteYamlScalar(value) {
   return `${leading}"${escaped}"${trailing}`;
 }
 
+function yamlBlockScalarHeader(value) {
+  const trimmed = value.trim();
+  if (!/^[>|](?:[1-9][+-]?|[+-][1-9]?)?$/u.test(trimmed)) return null;
+  const indentMatch = trimmed.match(/[1-9]/u);
+  return {
+    explicitIndent: indentMatch ? Number(indentMatch[0]) : null,
+  };
+}
+
+function hasSingleQuoteTerminator(value, startIndex = 0) {
+  for (let index = startIndex; index < value.length; index += 1) {
+    if (value[index] !== "'") continue;
+    if (value[index + 1] === "'") {
+      index += 1;
+      continue;
+    }
+    return true;
+  }
+  return false;
+}
+
+function hasDoubleQuoteTerminator(value, startIndex = 0) {
+  let escaped = false;
+  for (let index = startIndex; index < value.length; index += 1) {
+    const character = value[index];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (character === "\\") {
+      escaped = true;
+      continue;
+    }
+    if (character === '"') return true;
+  }
+  return false;
+}
+
+function yamlQuotedScalarMode(value) {
+  const trimmed = value.trimStart();
+  if (trimmed.startsWith("'") && !hasSingleQuoteTerminator(trimmed, 1)) return "single";
+  if (trimmed.startsWith('"') && !hasDoubleQuoteTerminator(trimmed, 1)) return "double";
+  return null;
+}
+
 function normalizeMarkdown(raw) {
   const normalizations = [];
   const input = raw.replace(/^\uFEFF/u, "").replace(/\r\n?/gu, "\n");
@@ -81,6 +126,7 @@ function normalizeMarkdown(raw) {
   let openedMermaidFence = false;
   let mermaidFenceRepairs = 0;
   let yamlScalarQuotes = 0;
+  let yamlScalarContinuation = null;
 
   const output = lines.map((line) => {
     if (line === "`mermaid") {
@@ -106,10 +152,57 @@ function normalizeMarkdown(raw) {
       if (line.trim() && currentIndent <= implementationIndent) {
         inImplementationConfirmation = false;
         implementationIndent = null;
+        yamlScalarContinuation = null;
       }
     }
 
     if (inImplementationConfirmation) {
+      const currentIndent = line.match(/^\s*/u)?.[0].length ?? 0;
+      if (yamlScalarContinuation?.kind === "single") {
+        if (hasSingleQuoteTerminator(line)) yamlScalarContinuation = null;
+        return line;
+      }
+      if (yamlScalarContinuation?.kind === "double") {
+        if (hasDoubleQuoteTerminator(line)) yamlScalarContinuation = null;
+        return line;
+      }
+      if (yamlScalarContinuation?.kind === "block") {
+        if (!line.trim()) return line;
+        if (yamlScalarContinuation.contentIndent === null) {
+          if (currentIndent <= yamlScalarContinuation.keyIndent) {
+            yamlScalarContinuation = null;
+          } else {
+            yamlScalarContinuation.contentIndent =
+              yamlScalarContinuation.explicitIndent === null
+                ? currentIndent
+                : yamlScalarContinuation.keyIndent + yamlScalarContinuation.explicitIndent;
+            return line;
+          }
+        } else if (currentIndent >= yamlScalarContinuation.contentIndent) {
+          return line;
+        } else {
+          yamlScalarContinuation = null;
+        }
+      }
+
+      const entryMatch = /^(\s+(?:-\s+)?[A-Za-z0-9_-]+:\s+)(.*)$/u.exec(line);
+      if (entryMatch) {
+        const blockHeader = yamlBlockScalarHeader(entryMatch[2]);
+        if (blockHeader) {
+          yamlScalarContinuation = {
+            kind: "block",
+            keyIndent: currentIndent,
+            contentIndent: null,
+            explicitIndent: blockHeader.explicitIndent,
+          };
+        } else {
+          const quotedMode = yamlQuotedScalarMode(entryMatch[2]);
+          if (quotedMode) {
+            yamlScalarContinuation = { kind: quotedMode };
+          }
+        }
+      }
+
       const scalarMatch = /^(\s+[A-Za-z0-9_-]+:\s+)(.*)$/u.exec(line);
       if (scalarMatch) {
         const before = scalarMatch[2];

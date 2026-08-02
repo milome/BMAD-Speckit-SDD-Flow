@@ -11,6 +11,16 @@
     "outDir": "dist",
     "rootDir": "."
   },
-  "include": ["packages/scoring/**/*", "scripts/**/*", "tests/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "packages/scoring/**/*.ts",
+    "scripts/**/*.d.cts",
+    "tests/typecheck/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "packages/scoring/**/__tests__/**",
+    "packages/scoring/**/*.test.ts",
+    "packages/scoring/**/*.spec.ts"
+  ]
 }

@@ -1,0 +1,44 @@
+name: Unsupported dynamic routes
+
+on:
+  workflow_dispatch:
+    inputs:
+      test:
+        required: true
+        type: string
+
+jobs:
+  manual:
+    runs-on: ubuntu-latest
+    steps:
+      - run: npm run explicit
+
+  dynamic-matrix:
+    strategy:
+      matrix: ${{ fromJSON(inputs.matrix) }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - run: npm run broad
+
+  dynamic-working-directory:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.package }}
+    steps:
+      - run: npm run broad
+
+  dynamic-command:
+    runs-on: ubuntu-latest
+    steps:
+      - run: npx vitest run ${{ inputs.test }}
+
+  missing-test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: npx vitest run tests/missing.test.ts
+
+  unknown-test-command:
+    runs-on: ubuntu-latest
+    steps:
+      - run: node tools/custom-test-runner.cjs

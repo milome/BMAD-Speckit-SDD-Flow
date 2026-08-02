@@ -540,7 +540,7 @@ describe('requirements-contract-authoring published contract', () => {
     }
   });
 
-  it('keeps skill resolver candidates aligned with supported host surfaces', () => {
+  it('keeps skill resolution centralized on the package-owned _bmad surface', () => {
     const resolverFiles = [
       'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts',
       'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate.ts',
@@ -551,21 +551,25 @@ describe('requirements-contract-authoring published contract', () => {
 
     for (const relativePath of resolverFiles) {
       const content = fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
-      for (const surface of ['.codex', '.cursor', '.claude', '.agents']) {
-        expect(content, `${relativePath} should resolve ${surface}/skills`).toContain(
-          `'${surface}', 'skills'`
-        );
-      }
-      expect(content, `${relativePath} should retain source skill fallback`).toContain(
-        "'_bmad', 'skills'"
+      expect(content, `${relativePath} should use the package-owned resolver`).toContain(
+        'resolvePackageOwnedBmadPath'
       );
-      expect(content, `${relativePath} should resolve global Cursor skills`).toContain(
-        "path.join(home, '.cursor', 'skills'"
+      expect(content, `${relativePath} should resolve the skill namespace`).toContain(
+        "'skills'"
       );
-      expect(content, `${relativePath} should resolve global Claude skills`).toContain(
-        "path.join(home, '.claude', 'skills'"
-      );
+      expect(content).not.toMatch(/['"]\.(?:codex|cursor|claude|agents)['"],\s*['"]skills['"]/u);
     }
+
+    const packageResolver = fs.readFileSync(
+      path.join(
+        ROOT,
+        'packages/bmad-speckit/src/main-agent/runtime/package-bmad-root.ts'
+      ),
+      'utf8'
+    );
+    expect(packageResolver).toContain("path.join(resolvePackageRoot(startDir), '_bmad')");
+    expect(packageResolver).toContain("path.join(packageRoot, 'dist', 'main-agent')");
+    expect(packageResolver).toContain("path.join(packageRoot, 'src', 'main-agent')");
   });
 
   it('requires the pre-confirmation atomic decomposition loop before any confirmable HTML', () => {

@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-consumer-cli-capability-observation.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "transactionId",
+    "implementationAttemptId",
+    "executionHost",
+    "goalCommandAvailable",
+    "installedCliRef",
+    "capabilityProbeArgv",
+    "capabilityProbeArgvHash",
+    "exitCode",
+    "stdoutHash",
+    "stderrHash",
+    "observedAt",
+    "readbackVerified"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-consumer-cli-capability-observation/v1"
+    },
+    "transactionId": {
+      "type": "string",
+      "pattern": "^TX-[A-Z0-9][A-Z0-9._-]*$"
+    },
+    "implementationAttemptId": {
+      "type": "string",
+      "pattern": "^IMPL-ATTEMPT-[A-Z0-9][A-Z0-9._-]*$"
+    },
+    "executionHost": {
+      "enum": ["codex", "claude-code", "cursor-ide", "cursor-cli", "generic"]
+    },
+    "goalCommandAvailable": { "type": "boolean" },
+    "installedCliRef": { "$ref": "#/$defs/fileRef" },
+    "capabilityProbeArgv": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "capabilityProbeArgvHash": { "$ref": "#/$defs/sha256" },
+    "exitCode": { "const": 0 },
+    "stdoutHash": { "$ref": "#/$defs/sha256" },
+    "stderrHash": { "$ref": "#/$defs/sha256" },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "readbackVerified": { "const": true }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "fileRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  }
+}

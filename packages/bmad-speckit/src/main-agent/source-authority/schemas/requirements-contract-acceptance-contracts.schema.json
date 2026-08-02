@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-acceptance-contracts.schema.json",
+  "title": "Requirements Contract Acceptance Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "canonicalByteDomain",
+    "canonicalFileName",
+    "requirementSetId",
+    "sourceAuthorityHash",
+    "semanticModelHash",
+    "acceptanceRootProofManifest",
+    "acceptanceRootIds",
+    "acceptanceRootCount",
+    "acceptanceRootSetHash",
+    "contracts"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-acceptance-manifest/v1"
+    },
+    "canonicalByteDomain": {
+      "const": "requirements-contract-acceptance-manifest/v1"
+    },
+    "canonicalFileName": {
+      "const": "acceptance-contracts.json"
+    },
+    "requirementSetId": {
+      "$ref": "#/$defs/stableId"
+    },
+    "sourceAuthorityHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "semanticModelHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "acceptanceRootProofManifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash", "rootSetHash"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "(?:^|/)acceptance-root-proof-manifest\\.json$"
+        },
+        "hash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "rootSetHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "acceptanceRootIds": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/referenceId"
+      },
+      "uniqueItems": true
+    },
+    "acceptanceRootCount": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "acceptanceRootSetHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "contracts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/acceptanceContract"
+      },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "referenceId": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$"
+    },
+    "referenceArray": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/referenceId"
+      },
+      "uniqueItems": true
+    },
+    "applicability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision", "proofRefs"],
+      "properties": {
+        "decision": {
+          "enum": ["applicable", "not_applicable", "unresolved", "invalid"]
+        },
+        "proofRefs": {
+          "$ref": "#/$defs/referenceArray"
+        }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["oracleRefs", "commandRefs", "evidenceRequirementRefs"],
+      "properties": {
+        "oracleRefs": {
+          "$ref": "#/$defs/referenceArray"
+        },
+        "commandRefs": {
+          "$ref": "#/$defs/referenceArray"
+        },
+        "evidenceRequirementRefs": {
+          "$ref": "#/$defs/referenceArray"
+        }
+      }
+    },
+    "acceptanceContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "acceptanceRootRef",
+        "requirementRefs",
+        "text",
+        "applicability",
+        "verification",
+        "contractHash"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/referenceId"
+        },
+        "acceptanceRootRef": {
+          "$ref": "#/$defs/referenceId"
+        },
+        "requirementRefs": {
+          "$ref": "#/$defs/referenceArray"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "applicability": {
+          "$ref": "#/$defs/applicability"
+        },
+        "verification": {
+          "$ref": "#/$defs/verification"
+        },
+        "contractHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    }
+  }
+}

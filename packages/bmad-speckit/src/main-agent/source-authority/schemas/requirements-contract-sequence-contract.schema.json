@@ -1,0 +1,761 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/requirements-contract-sequence-contract.schema.json",
+  "title": "Requirements Contract Sequence Contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "projectKind",
+    "projectProfileHash",
+    "semanticModelHash",
+    "sequenceContractHash",
+    "integrationBoundaries",
+    "sequenceScenarios"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-sequence-contract/v1"
+    },
+    "projectKind": {
+      "enum": ["consumer_product", "governance_framework", "hybrid"]
+    },
+    "projectProfileHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "semanticModelHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "sequenceContractHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "integrationBoundaries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/integrationBoundary"
+      }
+    },
+    "sequenceScenarios": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/scenario"
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "nonEmptyStringArray": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "stringArray": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "verificationBindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["oracleRef", "redTestRef", "commandRefs", "evidenceRefs"],
+      "properties": {
+        "oracleRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "redTestRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commandRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "evidenceRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        }
+      }
+    },
+    "proofProperties": {
+      "sourceSpanRefs": {
+        "$ref": "#/$defs/nonEmptyStringArray"
+      },
+      "sourceHashes": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "$ref": "#/$defs/sha256"
+        },
+        "uniqueItems": true
+      },
+      "semanticResolutionReceiptRefs": {
+        "$ref": "#/$defs/nonEmptyStringArray"
+      },
+      "repositoryRefs": {
+        "$ref": "#/$defs/nonEmptyStringArray"
+      },
+      "policyApplicabilityReceiptRefs": {
+        "$ref": "#/$defs/nonEmptyStringArray"
+      },
+      "decisionReceiptRefs": {
+        "$ref": "#/$defs/stringArray"
+      },
+      "requirementRefs": {
+        "$ref": "#/$defs/nonEmptyStringArray"
+      },
+      "targetRefs": {
+        "$ref": "#/$defs/nonEmptyStringArray"
+      },
+      "verificationBindings": {
+        "$ref": "#/$defs/verificationBindings"
+      },
+      "semanticModelHash": {
+        "$ref": "#/$defs/sha256"
+      }
+    },
+    "participant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "label",
+        "owningSystem",
+        "sourceSpanRefs",
+        "sourceHashes",
+        "semanticResolutionReceiptRefs",
+        "repositoryRefs",
+        "policyApplicabilityReceiptRefs",
+        "decisionReceiptRefs",
+        "requirementRefs",
+        "targetRefs",
+        "verificationBindings",
+        "semanticModelHash"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$"
+        },
+        "kind": {
+          "enum": [
+            "human_actor",
+            "runtime_component",
+            "data_store",
+            "external_system",
+            "queue_or_topic"
+          ]
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owningSystem": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceSpanRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "sourceHashes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/sha256"
+          },
+          "uniqueItems": true
+        },
+        "semanticResolutionReceiptRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "repositoryRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "policyApplicabilityReceiptRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "decisionReceiptRefs": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "requirementRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "targetRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "verificationBindings": {
+          "$ref": "#/$defs/verificationBindings"
+        },
+        "semanticModelHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "order",
+        "type",
+        "from",
+        "to",
+        "operation",
+        "owningSystem",
+        "integrationBoundaryRef",
+        "sourceSpanRefs",
+        "sourceHashes",
+        "semanticResolutionReceiptRefs",
+        "repositoryRefs",
+        "policyApplicabilityReceiptRefs",
+        "decisionReceiptRefs",
+        "requirementRefs",
+        "targetRefs",
+        "verificationBindings",
+        "semanticModelHash"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^MSG-[0-9]{3}$"
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "type": {
+          "enum": [
+            "request",
+            "response",
+            "command",
+            "query",
+            "external_call",
+            "persistence_read",
+            "persistence_write",
+            "event_publish",
+            "event_consume",
+            "state_transition",
+            "authorization",
+            "retry",
+            "compensation",
+            "idempotency",
+            "user_visible_result"
+          ]
+        },
+        "from": {
+          "type": "string",
+          "minLength": 1
+        },
+        "to": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owningSystem": {
+          "type": "string",
+          "minLength": 1
+        },
+        "integrationBoundaryRef": {
+          "type": ["string", "null"]
+        },
+        "sourceSpanRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "sourceHashes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/sha256"
+          },
+          "uniqueItems": true
+        },
+        "semanticResolutionReceiptRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "repositoryRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "policyApplicabilityReceiptRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "decisionReceiptRefs": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "requirementRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "targetRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "verificationBindings": {
+          "$ref": "#/$defs/verificationBindings"
+        },
+        "semanticModelHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "branch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "condition",
+        "testScenarioRefs",
+        "owningSystem",
+        "sourceSpanRefs",
+        "sourceHashes",
+        "semanticResolutionReceiptRefs",
+        "repositoryRefs",
+        "policyApplicabilityReceiptRefs",
+        "decisionReceiptRefs",
+        "requirementRefs",
+        "targetRefs",
+        "verificationBindings",
+        "semanticModelHash"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^BR-[0-9]{3}$"
+        },
+        "condition": {
+          "type": "string",
+          "minLength": 1
+        },
+        "testScenarioRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "owningSystem": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceSpanRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "sourceHashes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/sha256"
+          },
+          "uniqueItems": true
+        },
+        "semanticResolutionReceiptRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "repositoryRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "policyApplicabilityReceiptRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "decisionReceiptRefs": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "requirementRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "targetRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "verificationBindings": {
+          "$ref": "#/$defs/verificationBindings"
+        },
+        "semanticModelHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "stateTransition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "fromState",
+        "toState",
+        "triggerStepRef",
+        "owningSystem",
+        "sourceSpanRefs",
+        "sourceHashes",
+        "semanticResolutionReceiptRefs",
+        "repositoryRefs",
+        "policyApplicabilityReceiptRefs",
+        "decisionReceiptRefs",
+        "requirementRefs",
+        "targetRefs",
+        "verificationBindings",
+        "semanticModelHash"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^STATE-[0-9]{3}$"
+        },
+        "fromState": {
+          "type": "string",
+          "minLength": 1
+        },
+        "toState": {
+          "type": "string",
+          "minLength": 1
+        },
+        "triggerStepRef": {
+          "type": "string",
+          "pattern": "^MSG-[0-9]{3}$"
+        },
+        "owningSystem": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceSpanRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "sourceHashes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/sha256"
+          },
+          "uniqueItems": true
+        },
+        "semanticResolutionReceiptRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "repositoryRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "policyApplicabilityReceiptRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "decisionReceiptRefs": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "requirementRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "targetRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "verificationBindings": {
+          "$ref": "#/$defs/verificationBindings"
+        },
+        "semanticModelHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "orderingConstraint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "before",
+        "after",
+        "reason",
+        "oracleRef",
+        "testRefs",
+        "owningSystem",
+        "sourceSpanRefs",
+        "sourceHashes",
+        "semanticResolutionReceiptRefs",
+        "repositoryRefs",
+        "policyApplicabilityReceiptRefs",
+        "decisionReceiptRefs",
+        "requirementRefs",
+        "targetRefs",
+        "verificationBindings",
+        "semanticModelHash"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^ORD-[0-9]{3}$"
+        },
+        "before": {
+          "type": "string",
+          "pattern": "^MSG-[0-9]{3}$"
+        },
+        "after": {
+          "type": "string",
+          "pattern": "^MSG-[0-9]{3}$"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "oracleRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "testRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "owningSystem": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceSpanRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "sourceHashes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/sha256"
+          },
+          "uniqueItems": true
+        },
+        "semanticResolutionReceiptRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "repositoryRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "policyApplicabilityReceiptRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "decisionReceiptRefs": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "requirementRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "targetRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "verificationBindings": {
+          "$ref": "#/$defs/verificationBindings"
+        },
+        "semanticModelHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "temporalConstraint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "stepRef",
+        "correlationKey",
+        "deadlineMs",
+        "eventualConsistencyWindowMs",
+        "duplicatePolicy",
+        "orderingPolicy",
+        "oracleRef",
+        "testRefs",
+        "owningSystem",
+        "sourceSpanRefs",
+        "sourceHashes",
+        "semanticResolutionReceiptRefs",
+        "repositoryRefs",
+        "policyApplicabilityReceiptRefs",
+        "decisionReceiptRefs",
+        "requirementRefs",
+        "targetRefs",
+        "verificationBindings",
+        "semanticModelHash"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^TMP-[0-9]{3}$"
+        },
+        "stepRef": {
+          "type": "string",
+          "pattern": "^MSG-[0-9]{3}$"
+        },
+        "correlationKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "deadlineMs": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "eventualConsistencyWindowMs": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "duplicatePolicy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "orderingPolicy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "oracleRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "testRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "owningSystem": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceSpanRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "sourceHashes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/sha256"
+          },
+          "uniqueItems": true
+        },
+        "semanticResolutionReceiptRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "repositoryRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "policyApplicabilityReceiptRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "decisionReceiptRefs": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "requirementRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "targetRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "verificationBindings": {
+          "$ref": "#/$defs/verificationBindings"
+        },
+        "semanticModelHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "trigger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actorRef", "event", "sourceRefs"],
+      "properties": {
+        "actorRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "event": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        }
+      }
+    },
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "owningSystem",
+        "requirementRefs",
+        "trigger",
+        "participants",
+        "steps",
+        "branches",
+        "orderingConstraints",
+        "temporalConstraints",
+        "stateTransitions"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^SCN-[A-Z0-9]+(?:-[A-Z0-9]+)*-[0-9]{3}$"
+        },
+        "owningSystem": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requirementRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "trigger": {
+          "$ref": "#/$defs/trigger"
+        },
+        "participants": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "$ref": "#/$defs/participant"
+          }
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/step"
+          }
+        },
+        "branches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/branch"
+          }
+        },
+        "orderingConstraints": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/orderingConstraint"
+          }
+        },
+        "temporalConstraints": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/temporalConstraint"
+          }
+        },
+        "stateTransitions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/stateTransition"
+          }
+        }
+      }
+    },
+    "integrationBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fromOwningSystem", "toOwningSystem", "proofRefs"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fromOwningSystem": {
+          "type": "string",
+          "minLength": 1
+        },
+        "toOwningSystem": {
+          "type": "string",
+          "minLength": 1
+        },
+        "proofRefs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "goal-contract-semantic-provider-registry/v1",
+  "enabled": false,
+  "activeProviderRef": null,
+  "providers": {},
+  "roleContracts": {
+    "implementation_view": "goal_contract_implementation_view/v1",
+    "acceptance_evidence_view": "goal_contract_acceptance_evidence_view/v1"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-runtime-build-authority-receipt.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "hashDomainRegistry",
+    "sourceInputManifestHash",
+    "buildScriptHash",
+    "dependencyLockHash",
+    "runtimeAssetManifestHash",
+    "distRuntimeHash",
+    "packageRuntimeHash",
+    "distBuildHash",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "bmad-speckit-runtime-build-authority/v1" },
+    "hashDomainRegistry": {
+      "type": "object",
+      "required": ["schemaVersion"],
+      "properties": {
+        "schemaVersion": { "const": "requirements-contract-hash-domains/v2" }
+      }
+    },
+    "sourceInputManifestHash": { "$ref": "#/$defs/hash" },
+    "buildScriptHash": { "$ref": "#/$defs/hash" },
+    "dependencyLockHash": { "$ref": "#/$defs/hash" },
+    "runtimeAssetManifestHash": { "$ref": "#/$defs/hash" },
+    "distRuntimeHash": { "$ref": "#/$defs/hash" },
+    "packageRuntimeHash": { "$ref": "#/$defs/hash" },
+    "distBuildHash": { "$ref": "#/$defs/hash" },
+    "decision": { "const": "pass" }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

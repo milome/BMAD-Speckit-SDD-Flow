@@ -2,13 +2,21 @@ const Module = require('node:module');
 const fs = require('node:fs');
 const path = require('node:path');
 
-require('ts-node/register/transpile-only');
+if (!process.features?.typescript) {
+  require('ts-node/register/transpile-only');
+}
 
 const packageRoot = path.resolve(__dirname, '..');
 const originalResolveFilename = Module._resolveFilename;
 
 function resolvePackageSource(request, parent) {
-  if (!request.startsWith('../src/') && !request.startsWith('../../src/')) return null;
+  if (
+    !path.isAbsolute(request) &&
+    !request.startsWith('./') &&
+    !request.startsWith('../')
+  ) {
+    return null;
+  }
   const parentDir = parent?.filename ? path.dirname(parent.filename) : __dirname;
   const base = path.resolve(parentDir, request);
   const candidates = [

@@ -58,16 +58,27 @@ export interface NativeGoalInvocationReceipt {
   command: string;
   args: string[];
   taskReportPath: string;
+  taskReportHash: string | null;
   nativeGoalCommandPrepared?: boolean;
   nativeGoalCommandUsed: boolean;
   startedAt: string;
   endedAt: string;
   exitCode: number;
   stdoutRef: string;
+  stdoutHash: string;
   stderrRef: string;
+  stderrHash: string;
   packetId: string;
   attemptId: string;
   recordId?: string;
+  sourceDocumentHash: string;
+  implementationConfirmationHash: string;
+  modelPacketHash: string;
+  auditReceiptHash: string;
+  transactionManifestPath: string;
+  transactionManifestHash: string;
+  currentDispatchPointerPath: string;
+  currentDispatchPointerHash: string;
 }
 
 function sha256File(filePath: string): string {
@@ -80,6 +91,17 @@ function sha256Text(value: string): string {
 
 function safeSegment(value: string): string {
   return value.replace(/[^A-Za-z0-9._-]+/g, '-') || 'unknown';
+}
+
+export function resolveGeneratorAuditReceipt(
+  receipt: Record<string, unknown>
+): Record<string, unknown> {
+  const generatorAudit = receipt.generatorAudit;
+  return generatorAudit &&
+    typeof generatorAudit === 'object' &&
+    !Array.isArray(generatorAudit)
+    ? (generatorAudit as Record<string, unknown>)
+    : receipt;
 }
 
 export function normalizeRuntimeHost(host: string | null | undefined): CanonicalRuntimeHost {
@@ -209,11 +231,16 @@ export function validateNativeGoalReadiness(input: {
     const receipt = JSON.parse(
       fs.readFileSync(input.compiledPromptRef.auditReceiptPath, 'utf8')
     ) as Record<string, unknown>;
-    const goalCommand = receipt.goalCommand as Record<string, unknown> | undefined;
+    const goalCommand = resolveGeneratorAuditReceipt(receipt).goalCommand as
+      | Record<string, unknown>
+      | undefined;
     if (goalCommand?.mode !== 'native_goal_document_ref')
       invalidFields.push('audit_receipt.goalCommand.mode');
     if (goalCommand?.documentHash !== input.compiledPromptRef.goalExecutionHash) {
       invalidFields.push('audit_receipt.goalCommand.documentHash');
+    }
+    if (goalCommand?.taskReportPath !== input.compiledPromptRef.taskReportPath) {
+      invalidFields.push('audit_receipt.goalCommand.taskReportPath');
     }
   }
   if (invalidFields.length === 0) return null;
@@ -270,6 +297,7 @@ export function writeNativeGoalInvocationReceipt(input: {
   command?: string;
   args?: string[];
   taskReportPath?: string;
+  taskReportHash?: string | null;
   nativeGoalCommandPrepared?: boolean;
   nativeGoalCommandUsed?: boolean;
   stdoutRef: string;
@@ -277,6 +305,14 @@ export function writeNativeGoalInvocationReceipt(input: {
   exitCode: number;
   startedAt?: string;
   endedAt?: string;
+  sourceDocumentHash?: string;
+  implementationConfirmationHash?: string;
+  modelPacketHash?: string;
+  auditReceiptHash?: string;
+  transactionManifestPath?: string;
+  transactionManifestHash?: string;
+  currentDispatchPointerPath?: string;
+  currentDispatchPointerHash?: string;
 }): { receipt: NativeGoalInvocationReceipt; path: string } {
   const receipt: NativeGoalInvocationReceipt = {
     schemaVersion: 'native-goal-invocation-receipt/v1',
@@ -290,16 +326,27 @@ export function writeNativeGoalInvocationReceipt(input: {
     command: input.command ?? 'not_available',
     args: input.args ?? [],
     taskReportPath: input.taskReportPath ?? 'not_available',
+    taskReportHash: input.taskReportHash ?? null,
     nativeGoalCommandPrepared: input.nativeGoalCommandPrepared !== false,
     nativeGoalCommandUsed: input.nativeGoalCommandUsed !== false,
     startedAt: input.startedAt ?? new Date().toISOString(),
     endedAt: input.endedAt ?? new Date().toISOString(),
     exitCode: input.exitCode,
     stdoutRef: input.stdoutRef,
+    stdoutHash: fs.existsSync(input.stdoutRef) ? sha256File(input.stdoutRef) : 'missing',
     stderrRef: input.stderrRef,
+    stderrHash: fs.existsSync(input.stderrRef) ? sha256File(input.stderrRef) : 'missing',
     packetId: input.packetId,
     attemptId: input.attemptId,
     recordId: input.recordId,
+    sourceDocumentHash: input.sourceDocumentHash ?? 'not_available',
+    implementationConfirmationHash: input.implementationConfirmationHash ?? 'not_available',
+    modelPacketHash: input.modelPacketHash ?? 'not_available',
+    auditReceiptHash: input.auditReceiptHash ?? 'not_available',
+    transactionManifestPath: input.transactionManifestPath ?? 'not_available',
+    transactionManifestHash: input.transactionManifestHash ?? 'not_available',
+    currentDispatchPointerPath: input.currentDispatchPointerPath ?? 'not_available',
+    currentDispatchPointerHash: input.currentDispatchPointerHash ?? 'not_available',
   };
   const filePath = path.join(
     runtimeModeDir(input.projectRoot, input.recordId, input.attemptId),
@@ -317,6 +364,16 @@ export function validateNativeGoalInvocationReceipt(input: {
   packetId: string;
   host: string;
   goalExecutionHash: string;
+  taskReportPath?: string;
+  taskReportHash?: string;
+  sourceDocumentHash?: string;
+  implementationConfirmationHash?: string;
+  modelPacketHash?: string;
+  auditReceiptHash?: string;
+  transactionManifestPath?: string;
+  transactionManifestHash?: string;
+  currentDispatchPointerPath?: string;
+  currentDispatchPointerHash?: string;
 }): RuntimeBlocker | null {
   const filePath = path.join(
     runtimeModeDir(input.projectRoot, input.recordId, input.attemptId),
@@ -349,16 +406,82 @@ export function validateNativeGoalInvocationReceipt(input: {
   const invalidFields: string[] = [];
   if (receipt.packetId !== input.packetId) invalidFields.push('packetId');
   if (receipt.attemptId !== input.attemptId) invalidFields.push('attemptId');
+  if (receipt.recordId !== input.recordId) invalidFields.push('recordId');
   if (receipt.invokedCommandKind !== 'host_native_goal') invalidFields.push('invokedCommandKind');
+  if (receipt.executionSurface !== 'host_native_goal') invalidFields.push('executionSurface');
   if (receipt.goalExecutionHash !== input.goalExecutionHash)
     invalidFields.push('goalExecutionHash');
   if (!receipt.goalCommandTextHash) invalidFields.push('goalCommandTextHash');
   if (!receipt.command) invalidFields.push('command');
   if (!Array.isArray(receipt.args) || receipt.args.length === 0) invalidFields.push('args');
   if (!receipt.taskReportPath) invalidFields.push('taskReportPath');
+  if (
+    input.taskReportPath &&
+    path.resolve(receipt.taskReportPath) !== path.resolve(input.taskReportPath)
+  ) {
+    invalidFields.push('taskReportPath');
+  }
+  if (input.taskReportHash && receipt.taskReportHash !== input.taskReportHash) {
+    invalidFields.push('taskReportHash');
+  }
+  if (input.sourceDocumentHash && receipt.sourceDocumentHash !== input.sourceDocumentHash) {
+    invalidFields.push('sourceDocumentHash');
+  }
+  if (
+    input.implementationConfirmationHash &&
+    receipt.implementationConfirmationHash !== input.implementationConfirmationHash
+  ) {
+    invalidFields.push('implementationConfirmationHash');
+  }
+  if (input.modelPacketHash && receipt.modelPacketHash !== input.modelPacketHash) {
+    invalidFields.push('modelPacketHash');
+  }
+  if (input.auditReceiptHash && receipt.auditReceiptHash !== input.auditReceiptHash) {
+    invalidFields.push('auditReceiptHash');
+  }
+  if (
+    input.transactionManifestPath &&
+    path.resolve(receipt.transactionManifestPath) !== path.resolve(input.transactionManifestPath)
+  ) {
+    invalidFields.push('transactionManifestPath');
+  }
+  if (
+    input.transactionManifestHash &&
+    receipt.transactionManifestHash !== input.transactionManifestHash
+  ) {
+    invalidFields.push('transactionManifestHash');
+  }
+  if (
+    input.currentDispatchPointerPath &&
+    path.resolve(receipt.currentDispatchPointerPath) !==
+      path.resolve(input.currentDispatchPointerPath)
+  ) {
+    invalidFields.push('currentDispatchPointerPath');
+  }
+  if (
+    input.currentDispatchPointerHash &&
+    receipt.currentDispatchPointerHash !== input.currentDispatchPointerHash
+  ) {
+    invalidFields.push('currentDispatchPointerHash');
+  }
+  if (receipt.nativeGoalCommandPrepared !== true) {
+    invalidFields.push('nativeGoalCommandPrepared');
+  }
   if (receipt.nativeGoalCommandUsed !== true) invalidFields.push('nativeGoalCommandUsed');
-  if (!receipt.stdoutRef) invalidFields.push('stdoutRef');
-  if (!receipt.stderrRef) invalidFields.push('stderrRef');
+  if (
+    !receipt.stdoutRef ||
+    !fs.existsSync(receipt.stdoutRef) ||
+    receipt.stdoutHash !== sha256File(receipt.stdoutRef)
+  ) {
+    invalidFields.push('stdoutRef');
+  }
+  if (
+    !receipt.stderrRef ||
+    !fs.existsSync(receipt.stderrRef) ||
+    receipt.stderrHash !== sha256File(receipt.stderrRef)
+  ) {
+    invalidFields.push('stderrRef');
+  }
   if (receipt.exitCode !== 0) invalidFields.push('exitCode');
   if (invalidFields.length === 0) return null;
   return {

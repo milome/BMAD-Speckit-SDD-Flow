@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "requirements-contract-evaluation-corpus/v1",
+  "cases": [
+    {
+      "id": "SEM-EQUIVALENT",
+      "kind": "semantic_equivalence",
+      "expectedEquivalent": true,
+      "source": {
+        "actor": "operator",
+        "action": "publish",
+        "polarity": "required",
+        "threshold": 1
+      },
+      "projection": {
+        "threshold": 1,
+        "polarity": "required",
+        "action": "publish",
+        "actor": "operator"
+      }
+    },
+    {
+      "id": "SEM-MUTATION",
+      "kind": "semantic_equivalence",
+      "expectedEquivalent": false,
+      "source": {
+        "actor": "operator",
+        "action": "publish",
+        "polarity": "required",
+        "threshold": 1
+      },
+      "projection": {
+        "actor": "operator",
+        "action": "publish",
+        "polarity": "optional",
+        "threshold": 1
+      }
+    },
+    {
+      "id": "JUDGE-BLOCKER",
+      "kind": "judge_decision",
+      "blocker": true,
+      "judgeDecision": "block",
+      "challengeRequested": true
+    },
+    {
+      "id": "JUDGE-CLEAN",
+      "kind": "judge_decision",
+      "blocker": false,
+      "judgeDecision": "pass",
+      "challengeRequested": false
+    }
+  ]
+}

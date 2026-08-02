@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-judge-capability-receipt.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "transactionId",
+    "auditAttemptId",
+    "providerRef",
+    "publicProviderConfigHash",
+    "credentialRevision",
+    "credentialResolutionDecision",
+    "credentialRedactionDecision",
+    "configuredBaseUrlHash",
+    "transport",
+    "apiStyle",
+    "endpointResolutionMode",
+    "upstreamVersioning",
+    "configuredModel",
+    "returnedModel",
+    "transportSuccess",
+    "structuredOutputSupport",
+    "originPreservationDecision",
+    "fallbackObserved",
+    "probeRequestHash",
+    "probeResponseHash",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "requirements-contract-judge-capability-receipt/v1"
+    },
+    "transactionId": { "type": "string", "minLength": 1 },
+    "auditAttemptId": { "type": "string", "minLength": 1 },
+    "providerRef": { "type": "string", "minLength": 1 },
+    "publicProviderConfigHash": { "$ref": "#/$defs/hash" },
+    "credentialRevision": { "type": "integer", "minimum": 1 },
+    "credentialResolutionDecision": { "const": "pass" },
+    "credentialRedactionDecision": { "const": "pass" },
+    "configuredBaseUrlHash": { "$ref": "#/$defs/hash" },
+    "transport": {
+      "enum": ["openai-compatible", "anthropic-compatible", "claude-code-cli"]
+    },
+    "apiStyle": { "enum": ["chat_completions", "messages", "cli"] },
+    "endpointResolutionMode": { "enum": ["transport_managed", "path_search"] },
+    "upstreamVersioning": { "enum": ["gateway_managed", "cli_managed"] },
+    "configuredModel": { "type": ["string", "null"], "minLength": 1 },
+    "returnedModel": { "type": "string", "minLength": 1 },
+    "transportSuccess": { "const": true },
+    "structuredOutputSupport": { "const": true },
+    "originPreservationDecision": { "const": "pass" },
+    "fallbackObserved": { "const": false },
+    "probeRequestHash": { "$ref": "#/$defs/hash" },
+    "probeResponseHash": { "$ref": "#/$defs/hash" },
+    "decision": { "const": "pass" }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}
