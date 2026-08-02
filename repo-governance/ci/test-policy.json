@@ -764,7 +764,9 @@
       "packages/bmad-speckit/src/main-agent/**",
       "packages/bmad-speckit/src/utils/main-agent/**",
       "_bmad/**",
-      "repo-governance/ci/**"
+      "repo-governance/ci/**",
+      "scripts/**",
+      ".eslintrc.cjs"
     ],
     "releaseSurfacePathRules": [
       ".github/workflows/publish-npm.yml",
