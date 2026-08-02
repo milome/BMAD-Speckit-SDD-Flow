@@ -61,7 +61,8 @@ jobs:
 
       - run: npm install --global npm@10.9.4
 
-      - run: npm ci
+      # classify must preserve a pristine checkout for catalog provenance.
+      - run: npm ci --ignore-scripts
 
       - name: Resolve governed profile and changed paths
         id: profile
