@@ -505,7 +505,7 @@ function packageOwner(changedPath, tests, facts) {
       packageIds: catalogPackageIds,
     });
   }
-  return catalogPackageIds[0] || longestPackageIds[0];
+  return catalogPackageIds[0] || null;
 }
 
 function isProductPath(changedPath) {

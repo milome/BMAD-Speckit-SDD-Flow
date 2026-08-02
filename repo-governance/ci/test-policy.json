@@ -780,6 +780,7 @@
     "highDiffusionPathRules": [
       "packages/bmad-speckit/src/main-agent/**",
       "packages/bmad-speckit/src/utils/main-agent/**",
+      "packages/runtime-context/**",
       "_bmad/**",
       "repo-governance/ci/**",
       "scripts/**",
