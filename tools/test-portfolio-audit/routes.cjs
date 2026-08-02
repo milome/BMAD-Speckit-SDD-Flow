@@ -6,7 +6,7 @@ const { normalizeRepoPath, sha256Bytes } = require('./canonical.cjs');
 
 const KNOWN_WRAPPER = Object.freeze({
   path: 'tools/run-root-tests.cjs',
-  sourceSha256: 'sha256:2b7569597161915c94f45fe4811ae6f6385df4c6f84faad5f83b1f86c0812447',
+  sourceSha256: 'sha256:e4908f7adbd922dc7d80246304a6cf38ab388171f579807f56359108c7864a22',
   delegatedScripts: ['test:governance-fixtures', 'test:vitest:default', 'test:bmad-speckit'],
 });
 
@@ -245,7 +245,9 @@ function expandKnownWrapper(argv, context, state) {
 
   const absolutePath = path.resolve(context.repoRoot, wrapperPath);
   const actualSha256 = fs.existsSync(absolutePath)
-    ? sha256Bytes(fs.readFileSync(absolutePath))
+    ? sha256Bytes(
+        Buffer.from(fs.readFileSync(absolutePath, 'utf8').replace(/\r\n?/gu, '\n'), 'utf8')
+      )
     : null;
   if (actualSha256 !== KNOWN_WRAPPER.sourceSha256) {
     return {
@@ -256,6 +258,19 @@ function expandKnownWrapper(argv, context, state) {
           sourceRef: `source:${wrapperPath}`,
           expectedSha256: KNOWN_WRAPPER.sourceSha256,
           actualSha256,
+        },
+      ],
+      wrapperSourceSha256: actualSha256,
+    };
+  }
+  if (argv.length !== 2) {
+    return {
+      invocations: [],
+      issues: [
+        {
+          code: 'KNOWN_WRAPPER_MODE_UNSUPPORTED',
+          sourceRef: `source:${wrapperPath}`,
+          argv: argv.slice(2),
         },
       ],
       wrapperSourceSha256: actualSha256,

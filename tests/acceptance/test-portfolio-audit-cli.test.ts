@@ -23,7 +23,7 @@ const { reduceAudit } = require('../../tools/test-portfolio-audit/audit.cjs');
 const temporaryRoots: string[] = [];
 const cliPath = join(process.cwd(), 'tools', 'test-portfolio-audit', 'run.cjs');
 const routeFixture = join(process.cwd(), 'tests', 'fixtures', 'test-portfolio-audit', 'routes');
-// Produced by 30f95de8 against the LF-normalized standalone route fixture.
+// Updated from remote CI whenever the LF-normalized Base route fixture intentionally changes.
 const BASE_ROUTE_AUDIT_SHA256 =
   'sha256:57c46ab3dee916ae738f22b743ed683f19044631a3c99ee3a3a69980f1acb0d0';
 const BASE_ROUTE_SUMMARY_SHA256 =

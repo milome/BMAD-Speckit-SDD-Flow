@@ -13,7 +13,7 @@ const {
 
 const FIXTURE = join(process.cwd(), 'tests/fixtures/test-portfolio-audit/routes');
 const KNOWN_WRAPPER_SHA256 =
-  'sha256:2b7569597161915c94f45fe4811ae6f6385df4c6f84faad5f83b1f86c0812447';
+  'sha256:e4908f7adbd922dc7d80246304a6cf38ab388171f579807f56359108c7864a22';
 
 type Issue = {
   code: string;
@@ -208,6 +208,28 @@ describe('test portfolio execution routes', () => {
         (row: Invocation) => row.sourceRef === 'source:tools/run-root-tests.cjs'
       )
     ).toBe(false);
+
+    for (const [scriptName, argv] of [
+      ['delegate-explicit', ['tests/shared.test.ts']],
+      [
+        'delegate-ci-manifest',
+        ['--ci-manifest', '.artifacts/test-portfolio/ci-run-manifest.json'],
+      ],
+    ] as const) {
+      const unsupported = expandPackageScript({
+        repoRoot: FIXTURE,
+        packagePath: 'package.json',
+        scriptName,
+      });
+      expect(unsupported.invocations).toEqual([]);
+      expect(unsupported.issues).toContainEqual(
+        expect.objectContaining({
+          code: 'KNOWN_WRAPPER_MODE_UNSUPPORTED',
+          sourceRef: 'source:tools/run-root-tests.cjs',
+          argv,
+        })
+      );
+    }
 
     const drift = expandPackageScript({
       repoRoot: join(FIXTURE, 'wrapper-drift'),

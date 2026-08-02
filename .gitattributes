@@ -6,3 +6,4 @@ tests/fixtures/goal-contract-release-gate/*.md text eol=lf
 tests/fixtures/goal-contract-release-gate/*.json text eol=lf
 tests/acceptance/fixtures/requirements-contract/*.md text eol=lf
 tests/acceptance/fixtures/requirements-contract/*.json text eol=lf
+_bmad/shared/critical-auditor-profile/critical-auditor-profile.json text eol=lf

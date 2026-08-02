@@ -102,11 +102,6 @@
       "observedAt": "2026-08-01T20:51:19.000Z"
     },
     {
-      "testPath": "tests/acceptance/ci-dev-remediation-handoff.test.ts",
-      "reasonCode": "KNOWN_FAILING_TEST_FIXTURE_DRIFT",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
       "testPath": "tests/acceptance/confirmation-projection-hash-policy.test.ts",
       "reasonCode": "KNOWN_REQUIREMENT_SOURCE_AUTHORITY_GAP",
       "observedAt": "2026-08-01T23:51:07.000Z"
@@ -209,11 +204,6 @@
     {
       "testPath": "tests/acceptance/main-agent-execution-audit-ledger.test.ts",
       "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
-      "testPath": "tests/acceptance/main-agent-gap-closure-evidence-gate.test.ts",
-      "reasonCode": "KNOWN_PACKAGE_RUNTIME_HASH_DRIFT",
       "observedAt": "2026-08-02T10:55:16.000Z"
     },
     {
@@ -352,11 +342,6 @@
       "observedAt": "2026-08-02T10:55:16.000Z"
     },
     {
-      "testPath": "tests/acceptance/requirements-contract-candidate-package-provenance.test.ts",
-      "reasonCode": "KNOWN_NODE_VERSION_DRIFT",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
       "testPath": "tests/acceptance/requirements-contract-canonical-assets-manifest.test.ts",
       "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
       "observedAt": "2026-08-02T10:55:16.000Z"
@@ -450,11 +435,6 @@
       "testPath": "tests/acceptance/requirements-contract-finalization-safe-writer-installed-cli.test.ts",
       "reasonCode": "KNOWN_MISSING_PACKAGE_ASSET_ROOT",
       "observedAt": "2026-08-01T18:09:08.069Z"
-    },
-    {
-      "testPath": "tests/acceptance/requirements-contract-gap-closure-readonly-auditor-adapter.test.ts",
-      "reasonCode": "KNOWN_MISSING_DIST_ARTIFACT",
-      "observedAt": "2026-08-02T10:55:16.000Z"
     },
     {
       "testPath": "tests/acceptance/requirements-contract-gold-template-render.test.ts",
@@ -597,11 +577,6 @@
       "observedAt": "2026-08-02T10:55:16.000Z"
     },
     {
-      "testPath": "tests/acceptance/requirements-contract-terminal-command-supervisor-installed-cli.test.ts",
-      "reasonCode": "KNOWN_MISSING_DIST_ARTIFACT",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
       "testPath": "tests/acceptance/requirements-contract-validation-facade.test.ts",
       "reasonCode": "KNOWN_REQUIREMENT_SOURCE_AUTHORITY_GAP",
       "observedAt": "2026-08-01T20:25:00.000Z"
@@ -650,26 +625,6 @@
       "testPath": "tests/acceptance/subagent-evidence-envelope.test.ts",
       "reasonCode": "KNOWN_FAILING_TEST_FIXTURE_DRIFT",
       "observedAt": "2026-08-01T11:09:57.276Z"
-    },
-    {
-      "testPath": "tests/acceptance/test-portfolio-audit-analyzers.test.ts",
-      "reasonCode": "KNOWN_FAILING_TEST_FIXTURE_DRIFT",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
-      "testPath": "tests/acceptance/test-portfolio-audit-cli.test.ts",
-      "reasonCode": "KNOWN_FAILING_TEST_FIXTURE_DRIFT",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
-      "testPath": "tests/acceptance/test-portfolio-audit-probe.test.ts",
-      "reasonCode": "KNOWN_CROSS_PLATFORM_PATH_DRIFT",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
-      "testPath": "tests/acceptance/test-portfolio-audit-routes.test.ts",
-      "reasonCode": "KNOWN_FAILING_TEST_FIXTURE_DRIFT",
-      "observedAt": "2026-08-02T10:55:16.000Z"
     }
   ]
 }

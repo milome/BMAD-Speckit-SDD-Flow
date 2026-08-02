@@ -5,8 +5,9 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { requirementsContractGapClosureReadonlyAuditorAdapterCommand } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-gap-closure-readonly-auditor-adapter';
+import { resolveCanonicalPackageTarball } from '../helpers/canonical-package-artifact';
 
-const PACKAGE_CLI = path.resolve(__dirname, '../../packages/bmad-speckit/bin/bmad-speckit.js');
+const REPO_ROOT = path.resolve(__dirname, '../..');
 
 function sha256(value: string | Buffer): string {
   return `sha256:${crypto.createHash('sha256').update(value).digest('hex')}`;
@@ -15,6 +16,28 @@ function sha256(value: string | Buffer): string {
 function writeJson(filePath: string, value: unknown): void {
   mkdirSync(path.dirname(filePath), { recursive: true });
   writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+function extractCanonicalPackageCli(root: string): string {
+  const tarballPath = resolveCanonicalPackageTarball(REPO_ROOT);
+  const extraction = spawnSync('tar', ['-xf', tarballPath, '-C', root], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+    windowsHide: true,
+  });
+  if (extraction.status !== 0) {
+    throw new Error(
+      [
+        `canonical package extraction failed: ${tarballPath}`,
+        extraction.stdout,
+        extraction.stderr,
+        extraction.error?.message,
+      ]
+        .filter(Boolean)
+        .join('\n')
+    );
+  }
+  return path.join(root, 'package', 'node_modules', 'bmad-speckit', 'bin', 'bmad-speckit.js');
 }
 
 describe('requirements-contract gap closure readonly auditor adapter', () => {
@@ -36,10 +59,11 @@ describe('requirements-contract gap closure readonly auditor adapter', () => {
   it('is exposed through the package CLI without accepting a path outside the project root', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'gap-closure-auditor-adapter-cli-'));
     try {
+      const packageCli = extractCanonicalPackageCli(root);
       const result = spawnSync(
         process.execPath,
         [
-          PACKAGE_CLI,
+          packageCli,
           'requirements-contract-gap-closure-readonly-auditor-adapter',
           '--project-root',
           root,
@@ -123,7 +147,6 @@ describe('requirements-contract gap closure readonly auditor adapter', () => {
         'codex.js'
       );
       const transportSource = [
-        '#!/usr/bin/env node',
         "const fs = require('node:fs');",
         "const crypto = require('node:crypto');",
         'const args = process.argv.slice(2);',
@@ -137,12 +160,19 @@ describe('requirements-contract gap closure readonly auditor adapter', () => {
       ].join('\n');
       mkdirSync(path.dirname(javascriptEntry), { recursive: true });
       writeFileSync(javascriptEntry, transportSource, 'utf8');
-      writeFileSync(path.join(binRoot, 'codex.cmd'), '@echo off\r\n', 'utf8');
+      writeFileSync(
+        path.join(binRoot, 'codex.cmd'),
+        `@echo off\r\n"${process.execPath}" "%~dp0node_modules\\@openai\\codex\\bin\\codex.js" %*\r\n`,
+        'utf8'
+      );
       const unixExecutable = path.join(binRoot, 'codex');
-      writeFileSync(unixExecutable, transportSource, 'utf8');
+      writeFileSync(unixExecutable, `#!/usr/bin/env node\n${transportSource}`, 'utf8');
       chmodSync(unixExecutable, 0o755);
-      process.env.PATH = binRoot;
-      process.env.Path = binRoot;
+      const fixturePath = [binRoot, originalPath ?? originalPathAlias]
+        .filter(Boolean)
+        .join(path.delimiter);
+      process.env.PATH = fixturePath;
+      if (process.platform === 'win32') process.env.Path = fixturePath;
 
       const result = await requirementsContractGapClosureReadonlyAuditorAdapterCommand({
         projectRoot: root,
@@ -159,8 +189,18 @@ describe('requirements-contract gap closure readonly auditor adapter', () => {
         'turn.completed'
       );
     } finally {
-      process.env.PATH = originalPath;
-      process.env.Path = originalPathAlias;
+      if (originalPath === undefined) {
+        delete process.env.PATH;
+      } else {
+        process.env.PATH = originalPath;
+      }
+      if (process.platform === 'win32') {
+        if (originalPathAlias === undefined) {
+          delete process.env.Path;
+        } else {
+          process.env.Path = originalPathAlias;
+        }
+      }
       rmSync(root, { recursive: true, force: true });
     }
   });

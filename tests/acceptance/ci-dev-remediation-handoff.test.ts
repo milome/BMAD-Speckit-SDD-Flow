@@ -8,7 +8,7 @@ import {
 } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -184,7 +184,7 @@ describe('CI dev remediation handoff', () => {
         testReportSha256: sha256Bytes(readFileSync(reportPath)),
         runReceiptSha256: sha256Bytes(readFileSync(receiptPath)),
         selectionArtifacts: selectionPaths.map((selectionPath) => ({
-          path: selectionPath.replace(`${repoRoot}\\`, '').replace(/\\/gu, '/'),
+          path: relative(repoRoot, selectionPath).replace(/\\/gu, '/'),
           sha256: sha256Bytes(readFileSync(selectionPath)),
         })),
         summary: {

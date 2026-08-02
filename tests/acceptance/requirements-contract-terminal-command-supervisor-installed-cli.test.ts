@@ -15,9 +15,10 @@ import {
   createTerminalCloseoutFixture,
   terminalCommandIds,
 } from './helpers/requirements-contract-terminal-closeout-fixture';
+import { resolveCanonicalPackageTarball } from '../helpers/canonical-package-artifact';
 
 const BASE = 'docs/plans/evidence/loop-engineering-remediation';
-const PACKAGE_ROOT = path.resolve('packages/bmad-speckit');
+const REPO_ROOT = path.resolve(__dirname, '../..');
 const NPM_CLI =
   process.env.npm_execpath ??
   path.join(path.dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js');
@@ -45,6 +46,26 @@ function run(executable: string, args: string[], cwd: string): string {
     );
   }
   return result.stdout;
+}
+
+function resolveInstalledBmadSpeckit(consumerRoot: string): string {
+  const candidates = [
+    path.join(
+      consumerRoot,
+      'node_modules',
+      'bmad-speckit-sdd-flow',
+      'node_modules',
+      'bmad-speckit'
+    ),
+    path.join(consumerRoot, 'node_modules', 'bmad-speckit'),
+  ];
+  const installedPackage = candidates.find((candidate) =>
+    existsSync(path.join(candidate, 'bin', 'bmad-speckit.js'))
+  );
+  if (!installedPackage) {
+    throw new Error(`installed bmad-speckit package missing: ${candidates.join(', ')}`);
+  }
+  return installedPackage;
 }
 
 function writeText(root: string, relativePath: string, text: string): string {
@@ -173,18 +194,10 @@ it('executes the terminal command supervisor from a clean tarball install withou
   const fixtureState = prepareTerminalFixture();
   const { fixture, roles } = fixtureState;
   const installRoot = path.join(fixture.root, 'install');
-  const packRoot = path.join(installRoot, 'pack');
   const consumerRoot = path.join(installRoot, 'consumer');
   try {
-    mkdirSync(packRoot, { recursive: true });
     mkdirSync(consumerRoot, { recursive: true });
-    run(process.execPath, ['scripts/build-main-agent-dist.cjs'], PACKAGE_ROOT);
-    const packOutput = run(
-      process.execPath,
-      [NPM_CLI, 'pack', '--ignore-scripts', '--silent', '--pack-destination', packRoot],
-      PACKAGE_ROOT
-    ).trim();
-    const tarballPath = path.join(packRoot, packOutput.split(/\r?\n/u).at(-1) ?? '');
+    const tarballPath = resolveCanonicalPackageTarball(REPO_ROOT);
     writeJson(consumerRoot, 'package.json', {
       name: 'requirements-terminal-installed-consumer',
       private: true,
@@ -203,8 +216,10 @@ it('executes the terminal command supervisor from a clean tarball install withou
       consumerRoot
     );
 
-    const installedPackage = path.join(consumerRoot, 'node_modules', 'bmad-speckit');
+    const installedRootPackage = path.join(consumerRoot, 'node_modules', 'bmad-speckit-sdd-flow');
+    const installedPackage = resolveInstalledBmadSpeckit(consumerRoot);
     const binPath = path.join(installedPackage, 'bin', 'bmad-speckit.js');
+    expect(lstatSync(installedRootPackage).isSymbolicLink()).toBe(false);
     expect(lstatSync(installedPackage).isSymbolicLink()).toBe(false);
     expect(realpathSync(binPath).startsWith(`${realpathSync(installedPackage)}${path.sep}`)).toBe(
       true

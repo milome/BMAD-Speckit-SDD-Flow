@@ -9,6 +9,8 @@
     "package-node": "npm run test --prefix package-node",
     "package-node-alt": "npm --prefix package-node run test",
     "delegate": "node tools/run-root-tests.cjs",
+    "delegate-explicit": "node tools/run-root-tests.cjs tests/shared.test.ts",
+    "delegate-ci-manifest": "node tools/run-root-tests.cjs --ci-manifest .artifacts/test-portfolio/ci-run-manifest.json",
     "test:governance-fixtures": "node --test tests/governance.test.js",
     "test:vitest:default": "npm run broad",
     "test:bmad-speckit": "npm run package-node",

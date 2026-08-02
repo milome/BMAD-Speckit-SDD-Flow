@@ -4,7 +4,7 @@
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-canonical-assets-manifest.ts",
     "hash": "sha256:4e6d0843fdee9cfc47e7322e8c9e91bdcc696198ad02d2bf1f16652c9096dd8d"
   },
-  "manifestHash": "sha256:d0da1b92d2bddb00f59ddafad3bf3e1414c35f882eb54f42fe4b61b1f74616d8",
+  "manifestHash": "sha256:1e0be8d4a8cfaf40fca8d41a410d81f9105027dbceaecccc54c981c3a0f6effd",
   "assets": [
     {
       "assetId": "semantic_ir_schema",
@@ -749,7 +749,7 @@
       "role": "critical_auditor_profile",
       "assetKind": "profile",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:bff97bb8703dfd9f453ee27b67cf3a1f8cb5e0e40fb7a17eb78b409e10f1bbdf"
+      "sha256": "sha256:010bc67d6904d17baab1a9e3d42793d22a5cc6f9241629e692031ff98c4305f3"
     },
     {
       "assetId": "judge_provider_registry_projection",

@@ -24,6 +24,16 @@ function runOrExit(command, commandArgs) {
   }
 }
 
+if (args[0] === '--ci-manifest') {
+  runOrExit('node', ['tools/ci/run-vitest-shard.cjs', '--manifest', args[1], ...args.slice(2)]);
+  process.exit(0);
+}
+
+if (process.env.CI_RUN_MANIFEST) {
+  console.error('CI_GOVERNED_SHARD_ARGS_REQUIRED');
+  process.exit(1);
+}
+
 if (args.length > 0) {
   runOrExit('npx', ['vitest', 'run', ...args]);
   process.exit(0);

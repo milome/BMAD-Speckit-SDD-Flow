@@ -474,10 +474,11 @@ describe('test portfolio runtime probe child runner', () => {
     const packageRoot = dirname(require.resolve('vitest/package.json'));
     const vitestPackage = require('vitest/package.json');
     const expectedCli = join(packageRoot, String(vitestPackage.bin.vitest).replace(/^\.\//, ''));
+    const sandboxRoot = join(tmpdir(), 'test-portfolio-audit-probe-sandbox');
 
     expect(
       buildProbeCommand({
-        sandboxRoot: 'D:/sandbox',
+        sandboxRoot,
         candidate: candidate('tests/clean.test.ts'),
       })
     ).toEqual({
@@ -487,13 +488,13 @@ describe('test portfolio runtime probe child runner', () => {
         'run',
         '--no-cache',
         '--config',
-        join('D:/sandbox', 'vitest.config.ts'),
+        join(sandboxRoot, 'vitest.config.ts'),
         'tests/clean.test.ts',
       ],
     });
     expect(
       buildProbeCommand({
-        sandboxRoot: 'D:/sandbox',
+        sandboxRoot,
         candidate: candidate('packages/bmad-speckit/tests/clean.test.js', {
           runnerId: 'bmad-speckit-node-test',
         }),
@@ -501,7 +502,7 @@ describe('test portfolio runtime probe child runner', () => {
     ).toEqual({
       command: process.execPath,
       args: [
-        join('D:/sandbox', 'packages/bmad-speckit/scripts/run-node-tests.cjs'),
+        join(sandboxRoot, 'packages/bmad-speckit/scripts/run-node-tests.cjs'),
         'packages/bmad-speckit/tests/clean.test.js',
       ],
     });
@@ -513,9 +514,11 @@ describe('test portfolio runtime probe child runner', () => {
       args: string[];
       options: Record<string, unknown>;
     }> = [];
+    const sandboxRoot = join(tmpdir(), 'test-portfolio-audit-probe-spawn-sandbox');
+    const ownedTempRoot = join(tmpdir(), 'test-portfolio-audit-probe-owned-temp');
     const result = runProbeTest({
-      sandboxRoot: 'D:/sandbox',
-      tempRoot: 'D:/owned-temp',
+      sandboxRoot,
+      tempRoot: ownedTempRoot,
       childEnv: { KEEP: 'yes' },
       candidate: candidate('tests/clean.test.ts'),
       timeoutMs: 1234,
@@ -529,16 +532,16 @@ describe('test portfolio runtime probe child runner', () => {
     expect(calls).toHaveLength(1);
     expect(calls[0].command).toBe(process.execPath);
     expect(calls[0].options).toMatchObject({
-      cwd: 'D:/sandbox',
+      cwd: sandboxRoot,
       encoding: 'utf8',
       timeout: 1234,
       windowsHide: true,
     });
     expect(calls[0].options.env).toMatchObject({
       KEEP: 'yes',
-      TMP: 'D:/owned-temp',
-      TEMP: 'D:/owned-temp',
-      TMPDIR: 'D:/owned-temp',
+      TMP: ownedTempRoot,
+      TEMP: ownedTempRoot,
+      TMPDIR: ownedTempRoot,
     });
   });
 });
