@@ -63,10 +63,18 @@ const SOURCE_TEXT = [
   '',
   TASK_IDS.join(' -> '),
   '',
+  '## Verification Commands',
+  '',
+  '```powershell',
+  'node --test packages/bmad-speckit/tests/goal-contract-effective-revision-source-coverage.test.js',
+  '```',
+  '',
   '## Implementation Tasks',
   '',
-  ...TASK_IDS.flatMap((id) => [
-    `### ${id}: Deterministic task`,
+  ...TASK_IDS.flatMap((id, index) => [
+    `### ${id}: Deterministic task${
+      index === 0 ? '' : `; Dependencies: ${TASK_IDS[index - 1]}`
+    }`,
     '',
     ...(id === 'GH-T10'
       ? [
