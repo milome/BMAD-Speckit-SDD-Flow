@@ -203,7 +203,7 @@ function joinCiEvidence({ manifest, laneResults }) {
 
 function parseCliArgs(args) {
   const options = {
-    outputDir: '.artifacts/test-portfolio/final',
+    'output-dir': '.artifacts/test-portfolio/final',
   };
   for (let index = 0; index < args.length; index += 2) {
     const flag = args[index];

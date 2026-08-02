@@ -11,7 +11,10 @@ const {
 const { buildShardPlan } = require('../../tools/ci/build-shard-plan.cjs');
 const { summarizeTimingEvents } = require('../../tools/ci/summarize-test-timings.cjs');
 const { createRunManifestPlan } = require('../../tools/ci/write-ci-run-manifest.cjs');
-const { joinCiEvidence } = require('../../tools/ci/join-ci-evidence.cjs');
+const {
+  joinCiEvidence,
+  parseCliArgs,
+} = require('../../tools/ci/join-ci-evidence.cjs');
 
 function fixture() {
   const manifest = createRunManifestPlan(input);
@@ -80,6 +83,19 @@ describe('fail-closed CI Evidence Join', () => {
     expect(source.indexOf('module.exports = {')).toBeLessThan(
       source.indexOf('if (require.main === module)')
     );
+  });
+
+  it('defaults the final manifest to the workflow upload directory', () => {
+    expect(
+      parseCliArgs([
+        '--manifest',
+        '.artifacts/test-portfolio/ci-run-manifest.json',
+        '--lane-results-dir',
+        '.artifacts/test-portfolio/lane-results',
+      ])
+    ).toMatchObject({
+      'output-dir': '.artifacts/test-portfolio/final',
+    });
   });
 
   it.each(['failed', 'cancelled', 'skipped'])('rejects a required %s lane', (outcome) => {
