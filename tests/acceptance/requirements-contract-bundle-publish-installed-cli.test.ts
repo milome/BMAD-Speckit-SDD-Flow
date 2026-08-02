@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -12,8 +13,9 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { expect, it } from 'vitest';
 import { createRecordedConfirmationHistory } from './helpers/requirement-record-confirmation-fixture';
+import { resolveCanonicalPackageTarball } from '../helpers/canonical-package-artifact';
 
-const PACKAGE_ROOT = path.resolve('packages/bmad-speckit');
+const REPO_ROOT = path.resolve(__dirname, '../..');
 const NPM_CLI =
   process.env.npm_execpath ??
   path.join(path.dirname(process.execPath), 'node_modules/npm/bin/npm-cli.js');
@@ -48,22 +50,40 @@ function writeJson(filePath: string, value: unknown): void {
   writeFileSync(filePath, `${JSON.stringify(value)}\n`, 'utf8');
 }
 
+function resolveInstalledPackageCli(consumerRoot: string): string {
+  const candidates = [
+    path.join(
+      consumerRoot,
+      'node_modules',
+      'bmad-speckit-sdd-flow',
+      'node_modules',
+      'bmad-speckit',
+      'bin',
+      'bmad-speckit.js'
+    ),
+    path.join(
+      consumerRoot,
+      'node_modules',
+      'bmad-speckit',
+      'bin',
+      'bmad-speckit.js'
+    ),
+  ];
+  const packageCli = candidates.find((candidate) => existsSync(candidate));
+  if (!packageCli) {
+    throw new Error(`installed canonical package CLI missing: ${candidates.join(', ')}`);
+  }
+  return packageCli;
+}
+
 it(
   'publishes a Bundle revision through the clean-installed package CLI',
   () => {
     const root = mkdtempSync(path.join(tmpdir(), 'requirements-bundle-installed-'));
     try {
-      const packRoot = path.join(root, 'pack');
       const consumerRoot = path.join(root, 'consumer');
-      mkdirSync(packRoot);
       mkdirSync(consumerRoot);
-      run(process.execPath, ['scripts/build-main-agent-dist.cjs'], PACKAGE_ROOT);
-      const packOutput = run(
-        process.execPath,
-        [NPM_CLI, 'pack', '--ignore-scripts', '--silent', '--pack-destination', packRoot],
-        PACKAGE_ROOT
-      ).trim();
-      const tarballPath = path.join(packRoot, packOutput.split(/\r?\n/u).at(-1) ?? '');
+      const tarballPath = resolveCanonicalPackageTarball(REPO_ROOT);
       writeJson(path.join(consumerRoot, 'package.json'), {
         name: 'requirements-bundle-installed-consumer',
         private: true,
@@ -133,10 +153,7 @@ it(
       }
 
       const receiptPath = path.join(consumerRoot, 'bundle-publication-receipt.json');
-      const binPath = path.join(
-        consumerRoot,
-        'node_modules/bmad-speckit/bin/bmad-speckit.js'
-      );
+      const binPath = resolveInstalledPackageCli(consumerRoot);
       const stdout = run(
         process.execPath,
         [

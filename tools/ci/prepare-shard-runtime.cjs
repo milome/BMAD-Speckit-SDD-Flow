@@ -6,6 +6,9 @@ const { spawnSync } = require('node:child_process');
 const { fail } = require('./canonical-artifact.cjs');
 
 const RUNTIME_INIT_SCRIPTS = Object.freeze(['init:claude', 'init:cursor', 'init:codex']);
+const EPHEMERAL_INSTALL_ENV = Object.freeze({
+  BMAD_SPECKIT_SKIP_INSTALL_STATE: '1',
+});
 
 function errorDetails(error) {
   return {
@@ -14,9 +17,13 @@ function errorDetails(error) {
   };
 }
 
-function defaultRunNpmScript(scriptName, { repoRoot }) {
+function defaultRunNpmScript(scriptName, { repoRoot, env = {} }) {
   const result = spawnSync('npm', ['run', scriptName], {
     cwd: repoRoot,
+    env: {
+      ...process.env,
+      ...env,
+    },
     shell: process.platform === 'win32',
     stdio: 'inherit',
   });
@@ -104,7 +111,10 @@ function defaultSyncPackageRuntime({ repoRoot }) {
 
 function initializeAgentSurfaces({ repoRoot, runNpmScript = defaultRunNpmScript }) {
   for (const scriptName of RUNTIME_INIT_SCRIPTS) {
-    runNpmScript(scriptName, { repoRoot });
+    runNpmScript(scriptName, {
+      repoRoot,
+      env: EPHEMERAL_INSTALL_ENV,
+    });
   }
 }
 

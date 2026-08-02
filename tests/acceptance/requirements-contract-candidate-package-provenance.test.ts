@@ -9,6 +9,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import Ajv2020 from 'ajv/dist/2020.js';
 import { describe, expect, it } from 'vitest';
 import { requirementsContractCandidatePackageCommand } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-candidate-package';
 import { createRuntimeBuildAuthorityReceipt } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-runtime-build-authority';
@@ -103,7 +104,31 @@ describe('requirements contract candidate package provenance', () => {
       });
 
       expect(result.schemaVersion).toBe('requirements-contract-candidate-package-receipt/v2');
-      expect(result.packArgv).toEqual(['npm.cmd', 'pack', '--json', '--ignore-scripts']);
+      expect(result.packArgv).toEqual([
+        process.platform === 'win32' ? 'npm.cmd' : 'npm',
+        'pack',
+        '--json',
+        '--ignore-scripts',
+      ]);
+      const receiptSchema = JSON.parse(
+        readFileSync(
+          path.join(
+            process.cwd(),
+            'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-candidate-package-receipt.schema.json'
+          ),
+          'utf8'
+        )
+      );
+      const validateReceipt = new Ajv2020({ allErrors: true, strict: false }).compile(
+        receiptSchema
+      );
+      expect(validateReceipt(result), JSON.stringify(validateReceipt.errors)).toBe(true);
+      expect(
+        validateReceipt({
+          ...result,
+          packArgv: [process.platform === 'win32' ? 'npm.cmd' : 'npm', 'pack'],
+        })
+      ).toBe(false);
       expect(result.nodeVersion).toBe('v22.22.1');
       expect(result.npmVersion).toBe('10.9.4');
       expect(result.originalTarballRef.hash).toBe(result.canonicalTarballRef.hash);

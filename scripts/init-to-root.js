@@ -73,6 +73,7 @@ const fullMode = args.includes('--full');
 const noPackageJson = args.includes('--no-package-json');
 const withPackageJson = args.includes('--with-package-json');
 const withMcp = args.includes('--with-mcp');
+const skipInstallState = process.env.BMAD_SPECKIT_SKIP_INSTALL_STATE === '1';
 const agentArgIndex = args.findIndex((a) => a === '--agent');
 let requestedAgentTarget =
   agentArgIndex >= 0 && args[agentArgIndex + 1] ? args[agentArgIndex + 1] : null;
@@ -390,6 +391,7 @@ const TARGET = targetArg
   : (process.env.INIT_CWD && path.resolve(process.env.INIT_CWD)) || process.cwd();
 const installSurfaceManifestTools = resolveInstallSurfaceManifestTools();
 const installTracker =
+  !skipInstallState &&
   installSurfaceManifestTools &&
   typeof installSurfaceManifestTools.createInstallStateTracker === 'function' &&
   typeof installSurfaceManifestTools.collectManagedSurfaceSpecs === 'function'

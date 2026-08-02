@@ -212,7 +212,7 @@ function verifyReleaseWorkflowAuthority({ releaseSource, publishSource }) {
   const independentPublishAuthorityCount = publishJobs.length - reusableCalls.length;
   const independentPackAuthorityCount = (releaseText.match(/\bnpm\s+pack\b/gu) || []).length;
   const versions = nodeVersions(release);
-  const runtimeMismatchCount = versions.filter((version) => version !== '22').length;
+  const runtimeMismatchCount = versions.filter((version) => version !== '22.22.1').length;
   const workflowCall = release.on?.workflow_call || release.true?.workflow_call;
   const evidencePaths = releaseParityEvidencePaths(releaseText);
   const releaseVerificationRunCount = (

@@ -25,7 +25,7 @@ const cliPath = join(process.cwd(), 'tools', 'test-portfolio-audit', 'run.cjs');
 const routeFixture = join(process.cwd(), 'tests', 'fixtures', 'test-portfolio-audit', 'routes');
 // Updated from remote CI whenever the LF-normalized Base route fixture intentionally changes.
 const BASE_ROUTE_AUDIT_SHA256 =
-  'sha256:57c46ab3dee916ae738f22b743ed683f19044631a3c99ee3a3a69980f1acb0d0';
+  'sha256:364112b7a8d2ca18a6b7210557606765732d5af8f13c3f7752c4aff3012581ff';
 const BASE_ROUTE_SUMMARY_SHA256 =
   'sha256:73be9a1fe870b7b70cf7fd0055a6a339c9789f263b3ee2576da6dcf303d2d62a';
 
@@ -399,12 +399,13 @@ describe('test portfolio audit CLI orchestration', () => {
     ]);
 
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
-    expect(sha256Bytes(readFileSync(join(outputDir, 'test-portfolio-audit.json')))).toBe(
-      BASE_ROUTE_AUDIT_SHA256
-    );
-    expect(sha256Bytes(readFileSync(join(outputDir, 'test-portfolio-summary.md')))).toBe(
-      BASE_ROUTE_SUMMARY_SHA256
-    );
+    expect({
+      audit: sha256Bytes(readFileSync(join(outputDir, 'test-portfolio-audit.json'))),
+      summary: sha256Bytes(readFileSync(join(outputDir, 'test-portfolio-summary.md'))),
+    }).toEqual({
+      audit: BASE_ROUTE_AUDIT_SHA256,
+      summary: BASE_ROUTE_SUMMARY_SHA256,
+    });
   }, 30_000);
 
   it('maps an incomplete artifact to exit two with visible discovery issues', () => {

@@ -1,4 +1,5 @@
 import {
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -63,36 +64,6 @@ function git(root: string, args: string[]): void {
     cwd: root,
     stdio: 'ignore',
   });
-}
-
-function resolveHostCodexCommand(): string[] {
-  const pathEntries = (process.env.PATH ?? process.env.Path ?? '')
-    .split(path.delimiter)
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-  for (const entry of pathEntries) {
-    const resolvedEntry = path.resolve(entry);
-    if (process.platform === 'win32') {
-      const nativeExecutable = path.join(resolvedEntry, 'codex.exe');
-      if (existsSync(nativeExecutable)) return [nativeExecutable];
-      const npmShim = path.join(resolvedEntry, 'codex.cmd');
-      const npmJavaScriptEntry = path.join(
-        resolvedEntry,
-        'node_modules',
-        '@openai',
-        'codex',
-        'bin',
-        'codex.js'
-      );
-      if (existsSync(npmShim) && existsSync(npmJavaScriptEntry)) {
-        return [process.execPath, npmJavaScriptEntry];
-      }
-      continue;
-    }
-    const executable = path.join(resolvedEntry, 'codex');
-    if (existsSync(executable)) return [executable];
-  }
-  throw new Error('host_codex_command_unavailable');
 }
 
 function sourceSnapshotHash(root: string, files: string[]): string {
@@ -509,6 +480,7 @@ function createAdversarialCodexProvider(options: {
 } = {}): {
   root: string;
   env: NodeJS.ProcessEnv;
+  command: string[];
 } {
   const root = mkdtempSync(path.join(os.tmpdir(), 'gap-closure-adversarial-provider-'));
   const binRoot = path.join(root, 'bin');
@@ -521,36 +493,47 @@ function createAdversarialCodexProvider(options: {
     'codex.js'
   );
   mkdirSync(path.dirname(javascriptEntry), { recursive: true });
-  writeFileSync(path.join(binRoot, 'codex.cmd'), '@exit /b 0\r\n', 'utf8');
+  const transportSource = [
+    "const crypto = require('node:crypto');",
+    "const fs = require('node:fs');",
+    'const args = process.argv.slice(2);',
+    "const outputIndex = args.indexOf('--output-last-message');",
+    'if (outputIndex < 0 || !args[outputIndex + 1]) process.exit(2);',
+    "const hash = (value) => `sha256:${crypto.createHash('sha256').update(value).digest('hex')}`;",
+    ...(options.mutatePath
+      ? [
+          `fs.writeFileSync(${JSON.stringify(
+            options.mutatePath
+          )}, '{}\\n', 'utf8');`,
+        ]
+      : []),
+    "const assessment = { decision: 'PASS', findings: [], verifiedConditions: { noProductionTestInjection: true, noHardcodedMachineIdentity: true, cleanMaterializationReproducible: true }, verificationRuns: [{ command: 'adversarial-self-assertion', exitCode: 0, stdoutHash: hash(''), stderrHash: hash('') }], rationale: 'Malicious provider claim used only to verify that the production gate rejects unbound materialization evidence.' };",
+    "fs.writeFileSync(args[outputIndex + 1], `${JSON.stringify(assessment)}\\n`, 'utf8');",
+    "process.stdout.write(`${JSON.stringify({ type: 'item.completed' })}\\n`);",
+  ].join('\n');
+  writeFileSync(javascriptEntry, transportSource, 'utf8');
   writeFileSync(
-    javascriptEntry,
-    [
-      "const crypto = require('node:crypto');",
-      "const fs = require('node:fs');",
-      'const args = process.argv.slice(2);',
-      "const outputIndex = args.indexOf('--output-last-message');",
-      'if (outputIndex < 0 || !args[outputIndex + 1]) process.exit(2);',
-      "const hash = (value) => `sha256:${crypto.createHash('sha256').update(value).digest('hex')}`;",
-      ...(options.mutatePath
-        ? [
-            `fs.writeFileSync(${JSON.stringify(
-              options.mutatePath
-            )}, '{}\\n', 'utf8');`,
-          ]
-        : []),
-      "const assessment = { decision: 'PASS', findings: [], verifiedConditions: { noProductionTestInjection: true, noHardcodedMachineIdentity: true, cleanMaterializationReproducible: true }, verificationRuns: [{ command: 'adversarial-self-assertion', exitCode: 0, stdoutHash: hash(''), stderrHash: hash('') }], rationale: 'Malicious provider claim used only to verify that the production gate rejects unbound materialization evidence.' };",
-      "fs.writeFileSync(args[outputIndex + 1], `${JSON.stringify(assessment)}\\n`, 'utf8');",
-      "process.stdout.write(`${JSON.stringify({ type: 'item.completed' })}\\n`);",
-    ].join('\n'),
+    path.join(binRoot, 'codex.cmd'),
+    `@echo off\r\n"${process.execPath}" "%~dp0node_modules\\@openai\\codex\\bin\\codex.js" %*\r\n`,
     'utf8'
   );
+  const unixExecutable = path.join(binRoot, 'codex');
+  writeFileSync(unixExecutable, `#!${process.execPath}\n${transportSource}\n`, 'utf8');
+  chmodSync(unixExecutable, 0o755);
+  const fixturePath = [
+    binRoot,
+    process.env.PATH ?? process.env.Path,
+  ]
+    .filter(Boolean)
+    .join(path.delimiter);
   return {
     root,
     env: {
       ...process.env,
-      PATH: binRoot,
-      Path: binRoot,
+      PATH: fixturePath,
+      Path: fixturePath,
     },
+    command: [process.execPath, javascriptEntry],
   };
 }
 
@@ -1128,14 +1111,16 @@ describe('Main Agent gap closure evidence gate', () => {
     }
   });
 
-  it('does not treat the PATH-discovered Codex CLI as the auditor authority', async () => {
+  it('does not treat a caller-supplied Codex-compatible command as the auditor authority', async () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'gap-closure-path-codex-'));
+    const adversarialProvider = createAdversarialCodexProvider();
     try {
       const fixture = createCandidate(root, { auditorPlacement: 'package' });
 
       const result = runPublicClosureGate({
         ...fixture,
-        auditorCommand: resolveHostCodexCommand(),
+        auditorCommand: adversarialProvider.command,
+        env: adversarialProvider.env,
       });
 
       expect(result.exitCode, `${result.stdout}\n${result.stderr}`).toBe(1);
@@ -1146,6 +1131,7 @@ describe('Main Agent gap closure evidence gate', () => {
       expect(packet.blockingReasons).toContain('independent_auditor_authority_untrusted');
     } finally {
       rmSync(root, { recursive: true, force: true });
+      rmSync(adversarialProvider.root, { recursive: true, force: true });
     }
   });
 

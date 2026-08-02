@@ -1,4 +1,12 @@
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import * as crypto from 'node:crypto';
 import * as os from 'node:os';
@@ -8,6 +16,9 @@ import { requirementsContractGapClosureReadonlyAuditorAdapterCommand } from '../
 import { resolveCanonicalPackageTarball } from '../helpers/canonical-package-artifact';
 
 const REPO_ROOT = path.resolve(__dirname, '../..');
+const NPM_CLI =
+  process.env.npm_execpath ??
+  path.join(path.dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js');
 
 function sha256(value: string | Buffer): string {
   return `sha256:${crypto.createHash('sha256').update(value).digest('hex')}`;
@@ -18,26 +29,73 @@ function writeJson(filePath: string, value: unknown): void {
   writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 }
 
-function extractCanonicalPackageCli(root: string): string {
+function installCanonicalPackageCli(root: string): string {
   const tarballPath = resolveCanonicalPackageTarball(REPO_ROOT);
-  const extraction = spawnSync('tar', ['-xf', tarballPath, '-C', root], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-    windowsHide: true,
+  const consumerRoot = path.join(root, 'consumer');
+  mkdirSync(consumerRoot, { recursive: true });
+  writeJson(path.join(consumerRoot, 'package.json'), {
+    name: 'gap-closure-readonly-auditor-adapter-consumer',
+    private: true,
   });
-  if (extraction.status !== 0) {
+  const installation = spawnSync(
+    process.execPath,
+    [
+      NPM_CLI,
+      'install',
+      '--ignore-scripts',
+      '--no-audit',
+      '--no-fund',
+      '--no-package-lock',
+      tarballPath,
+    ],
+    {
+      cwd: consumerRoot,
+      env: {
+        ...process.env,
+        NODE_PATH: '',
+        npm_config_audit: 'false',
+        npm_config_fund: 'false',
+        npm_config_update_notifier: 'false',
+      },
+      encoding: 'utf8',
+      windowsHide: true,
+    }
+  );
+  if (installation.status !== 0) {
     throw new Error(
       [
-        `canonical package extraction failed: ${tarballPath}`,
-        extraction.stdout,
-        extraction.stderr,
-        extraction.error?.message,
+        `canonical package installation failed: ${tarballPath}`,
+        installation.stdout,
+        installation.stderr,
+        installation.error?.message,
       ]
         .filter(Boolean)
         .join('\n')
     );
   }
-  return path.join(root, 'package', 'node_modules', 'bmad-speckit', 'bin', 'bmad-speckit.js');
+  const candidates = [
+    path.join(
+      consumerRoot,
+      'node_modules',
+      'bmad-speckit-sdd-flow',
+      'node_modules',
+      'bmad-speckit',
+      'bin',
+      'bmad-speckit.js'
+    ),
+    path.join(
+      consumerRoot,
+      'node_modules',
+      'bmad-speckit',
+      'bin',
+      'bmad-speckit.js'
+    ),
+  ];
+  const packageCli = candidates.find((candidate) => existsSync(candidate));
+  if (!packageCli) {
+    throw new Error(`installed canonical package CLI missing: ${candidates.join(', ')}`);
+  }
+  return packageCli;
 }
 
 describe('requirements-contract gap closure readonly auditor adapter', () => {
@@ -59,7 +117,7 @@ describe('requirements-contract gap closure readonly auditor adapter', () => {
   it('is exposed through the package CLI without accepting a path outside the project root', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'gap-closure-auditor-adapter-cli-'));
     try {
-      const packageCli = extractCanonicalPackageCli(root);
+      const packageCli = installCanonicalPackageCli(root);
       const result = spawnSync(
         process.execPath,
         [
