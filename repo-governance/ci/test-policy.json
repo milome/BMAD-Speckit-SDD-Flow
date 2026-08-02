@@ -763,7 +763,7 @@
     "highDiffusionPathRules": [
       "packages/bmad-speckit/src/main-agent/**",
       "packages/bmad-speckit/src/utils/main-agent/**",
-      "_bmad/shared/requirements-contract/**",
+      "_bmad/**",
       "repo-governance/ci/**"
     ],
     "releaseSurfacePathRules": [

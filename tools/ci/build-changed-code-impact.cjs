@@ -516,6 +516,29 @@ function isProductPath(changedPath) {
   );
 }
 
+function matchesManagedPathRule(changedPath, rule) {
+  const candidate = normalizeRelativePath(changedPath);
+  const pattern = normalizeRelativePath(rule);
+  if (pattern.endsWith('/**')) {
+    const base = pattern.slice(0, -3).replace(/\/+$/u, '');
+    return candidate === base || candidate.startsWith(`${base}/`);
+  }
+  return candidate === pattern;
+}
+
+function isManagedImpactPath(changedPath, policy) {
+  const selection = isObject(policy?.selection) ? policy.selection : {};
+  const managedRules = [
+    ...(Array.isArray(selection.releaseSurfacePathRules)
+      ? selection.releaseSurfacePathRules
+      : []),
+    ...(Array.isArray(selection.highDiffusionPathRules)
+      ? selection.highDiffusionPathRules
+      : []),
+  ];
+  return managedRules.some((rule) => matchesManagedPathRule(changedPath, rule));
+}
+
 function criticalBindingKinds(test) {
   return stableUnique(
     (test.classifications?.criticalBindings || [])
@@ -745,7 +768,7 @@ function buildChangedCodeImpact({ repoRoot, baseSha, commitSha, catalog, facts, 
       pathBindings.push(binding);
       continue;
     }
-    if (isProductPath(changedPath)) {
+    if (isProductPath(changedPath) && !isManagedImpactPath(changedPath, policy)) {
       unmappedChangedProductPaths.push(changedPath);
       unresolvedRefs.push(`path:${changedPath}`);
     }
