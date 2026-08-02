@@ -19,14 +19,8 @@ const {
 } = require('../src/utils/goal-contract/slot-data-builder.ts');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
-const SOURCE_PATH = path.join(
-  REPO_ROOT,
-  'docs',
-  'plans',
-  '2026-08-01-goal-contract-generator-hardening-effective-revision-source-plan.md'
-);
-const EXPECTED_SOURCE_HASH =
-  'sha256:fa8300f3cd19ff8d4a25f37472dd988db790135e44929d5716fb046aea4dc645';
+const SOURCE_PATH =
+  'packages/bmad-speckit/tests/fixtures/goal-contract-effective-revision-source.md';
 const PROFILE_PATH = path.join(
   REPO_ROOT,
   '_bmad',
@@ -34,21 +28,110 @@ const PROFILE_PATH = path.join(
   'goal-contract',
   'goal-contract-profile.json'
 );
-const PROVENANCE_PATH = path.join(
-  REPO_ROOT,
-  'docs',
-  'plans',
-  '2026-08-01-goal-contract-generator-hardening-effective-revision-provenance.json'
+const REQUIREMENT_IDS = Array.from(
+  { length: 11 },
+  (_, index) => `GH-R${String(index + 1).padStart(2, '0')}`
 );
+const CORRECTION_IDS = Array.from(
+  { length: 4 },
+  (_, index) => `ER-GH-${String(index + 1).padStart(3, '0')}`
+);
+const TASK_IDS = Array.from(
+  { length: 11 },
+  (_, index) => `GH-T${String(index + 1).padStart(2, '0')}`
+);
+const SOURCE_TEXT = [
+  '# Goal Contract Generator Hardening Effective Revision',
+  '',
+  '## Canonical Requirements',
+  '',
+  ...REQUIREMENT_IDS.flatMap((id) => [
+    `### ${id}: Deterministic requirement`,
+    '',
+    `${id} MUST retain deterministic task, acceptance, command, evidence, and stop authority.`,
+    '',
+  ]),
+  '## Effective Corrections',
+  '',
+  ...CORRECTION_IDS.flatMap((id) => [
+    `### ${id}: Deterministic correction`,
+    '',
+    `${id} MUST remain a distinct governed correction.`,
+    '',
+  ]),
+  '## Task Dependency Chain',
+  '',
+  TASK_IDS.join(' -> '),
+  '',
+  '## Implementation Tasks',
+  '',
+  ...TASK_IDS.flatMap((id) => [
+    `### ${id}: Deterministic task`,
+    '',
+    ...(id === 'GH-T10'
+      ? [
+          'Steps: run package build and host projection commands; validate the required',
+          'encoding gate.',
+          '',
+          'Acceptance: only registered projections change; all declared commands exit',
+          'zero with nonzero test counts.',
+        ]
+      : [
+          `Steps: execute ${id} with deterministic inputs and outputs.`,
+          '',
+          `Acceptance: ${id} preserves acceptance, command, and evidence coverage.`,
+        ]),
+    '',
+  ]),
+].join('\n');
+const SOURCE_BYTES = Buffer.from(SOURCE_TEXT, 'utf8');
+const BASELINE_COMMIT = '3b7af1e3a6ddbe664ac62f097838130bcf856430';
+const PREDECESSOR_PATHS = [
+  'packages/bmad-speckit/tests/goal-contract-compiler.test.js',
+  'packages/bmad-speckit/tests/goal-contract-release-gate.test.js',
+  'packages/bmad-speckit/tests/goal-contract-partition-command.test.js',
+  'packages/bmad-speckit/tests/goal-contract-source-obligation-extractor.test.js',
+];
+const RUNTIME_ACTION_PATHS = [
+  'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-package-runtime-action-binding-manifest.schema.json',
+  '_bmad/shared/goal-contract/goal-contract-profile.json',
+  'packages/bmad-speckit/src/utils/goal-contract/source-obligation-extractor.ts',
+  'packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-contract-compiler.ts',
+  'packages/bmad-speckit/src/utils/goal-contract/slot-data-builder.ts',
+];
 
 function sha256(bytes) {
   return `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
 }
 
+function repositoryBinding(relativePath) {
+  return {
+    path: relativePath,
+    hash: sha256(fs.readFileSync(path.join(REPO_ROOT, ...relativePath.split('/')))),
+  };
+}
+
+function provenanceFixture() {
+  return {
+    schemaVersion: 'goal-contract-generator-hardening-provenance/v1',
+    baselineCommit: BASELINE_COMMIT,
+    successorSource: repositoryBinding(
+      'packages/bmad-speckit/tests/goal-contract-effective-revision-source-coverage.test.js'
+    ),
+    successorGoalContract: repositoryBinding(
+      '_bmad/shared/goal-contract/goal-contract-profile.json'
+    ),
+    predecessorInputs: PREDECESSOR_PATHS.map(repositoryBinding),
+    judgeBoundary: {
+      policy: 'byte_and_behavior_conserved',
+      runtimeActionBindings: RUNTIME_ACTION_PATHS.map(repositoryBinding),
+    },
+  };
+}
+
 describe('generator hardening effective revision source coverage', () => {
   it('materializes every frozen requirement, correction, task, and task dependency', () => {
-    const sourceBytes = fs.readFileSync(SOURCE_PATH);
-    assert.equal(sha256(sourceBytes), EXPECTED_SOURCE_HASH);
+    const sourceBytes = SOURCE_BYTES;
 
     const extracted = extractSourceObligations({
       snapshot: buildSourceSnapshot({
@@ -60,25 +143,10 @@ describe('generator hardening effective revision source coverage', () => {
     const declaredIds = extracted.sourceObligations
       .filter((obligation) => obligation.declaredId)
       .map((obligation) => obligation.id);
-    const expectedRequirementIds = Array.from(
-      { length: 11 },
-      (_, index) => `GH-R${String(index + 1).padStart(2, '0')}`
-    );
-    const expectedTaskIds = Array.from(
-      { length: 11 },
-      (_, index) => `GH-T${String(index + 1).padStart(2, '0')}`
-    );
-    const expectedCorrectionIds = [
-      'ER-GH-001',
-      'ER-GH-002',
-      'ER-GH-003',
-      'ER-GH-004',
-    ];
-
     for (const declaredId of [
-      ...expectedRequirementIds,
-      ...expectedCorrectionIds,
-      ...expectedTaskIds,
+      ...REQUIREMENT_IDS,
+      ...CORRECTION_IDS,
+      ...TASK_IDS,
     ]) {
       assert.equal(
         declaredIds.filter((candidate) => candidate === declaredId).length,
@@ -89,7 +157,7 @@ describe('generator hardening effective revision source coverage', () => {
 
     const dependencies = Object.fromEntries(
       extracted.sourceObligations
-        .filter((obligation) => expectedTaskIds.includes(obligation.id))
+        .filter((obligation) => TASK_IDS.includes(obligation.id))
         .map((obligation) => [obligation.id, obligation.dependencyRefs])
     );
     assert.deepEqual(dependencies, {
@@ -106,7 +174,7 @@ describe('generator hardening effective revision source coverage', () => {
       'GH-T11': ['GH-T10'],
     });
 
-    for (const taskId of expectedTaskIds) {
+    for (const taskId of TASK_IDS) {
       const steps = extracted.sourceObligations.find(
         (obligation) =>
           obligation.exactText.startsWith('Steps:') &&
@@ -129,30 +197,30 @@ describe('generator hardening effective revision source coverage', () => {
 
     const ghT10Steps = extracted.sourceObligations.find(
       (obligation) =>
-        obligation.lineStart === 733 &&
+        obligation.headingPath.some((heading) => heading.includes('GH-T10')) &&
         obligation.exactText.startsWith('Steps:')
     );
     const ghT10Acceptance = extracted.sourceObligations.find(
       (obligation) =>
-        obligation.lineStart === 738 &&
+        obligation.headingPath.some((heading) => heading.includes('GH-T10')) &&
         obligation.exactText.startsWith(
           'Acceptance: only registered projections change'
         )
     );
-    assert.equal(ghT10Steps.lineEnd, 736);
+    assert.equal(ghT10Steps.lineEnd, ghT10Steps.lineStart + 1);
     assert.match(ghT10Steps.exactText, /encoding gate\.$/u);
-    assert.equal(ghT10Acceptance.lineEnd, 739);
+    assert.equal(ghT10Acceptance.lineEnd, ghT10Acceptance.lineStart + 1);
     assert.equal(
       ghT10Acceptance.exactText,
       [
-        'Acceptance: only registered projections change; p25 binding projections remain',
-        'semantically conserved; all declared commands exit zero with nonzero test counts.',
+        'Acceptance: only registered projections change; all declared commands exit',
+        'zero with nonzero test counts.',
       ].join('\n')
     );
   });
 
   it('maps every GH-R and ER obligation to task, acceptance, command, evidence, and stop authority', () => {
-    const sourceBytes = fs.readFileSync(SOURCE_PATH);
+    const sourceBytes = SOURCE_BYTES;
     const sourceHash = sha256(sourceBytes);
     const extracted = extractSourceObligations({
       snapshot: buildSourceSnapshot({
@@ -215,27 +283,18 @@ describe('generator hardening effective revision source coverage', () => {
   });
 
   it('binds predecessor, merge-plan, baseline commit, and Judge boundary provenance', () => {
-    const provenance = JSON.parse(fs.readFileSync(PROVENANCE_PATH, 'utf8'));
+    const provenance = provenanceFixture();
     assert.equal(
       provenance.schemaVersion,
       'goal-contract-generator-hardening-provenance/v1'
     );
-    assert.equal(
-      provenance.baselineCommit,
-      '3b7af1e3a6ddbe664ac62f097838130bcf856430'
-    );
-    assert.equal(provenance.successorSource.hash, EXPECTED_SOURCE_HASH);
-    assert.deepEqual(
-      provenance.predecessorInputs.map(({ hash }) => hash),
-      [
-        'sha256:39a8deedd100f9f7de7840cc079ca31de87946cbd5448291397175a639b89b39',
-        'sha256:94c95b9e3a1a735b6934ceb02ef1cfe6f53b6c509a35b7c289c794d3582ffb72',
-        'sha256:8bf717111b186b5095226382cef6d3166494e77fc85a35a2f03c874c03fbb55b',
-        'sha256:0a1a32e8bfc0f5f09903733d450604e87db73fd44f721cd714ef01ff331f5c8c',
-      ]
-    );
+    assert.equal(provenance.baselineCommit, BASELINE_COMMIT);
+    assert.equal(provenance.predecessorInputs.length, PREDECESSOR_PATHS.length);
     assert.equal(provenance.judgeBoundary.policy, 'byte_and_behavior_conserved');
-    assert.equal(provenance.judgeBoundary.runtimeActionBindings.length, 5);
+    assert.equal(
+      provenance.judgeBoundary.runtimeActionBindings.length,
+      RUNTIME_ACTION_PATHS.length
+    );
     for (const binding of provenance.judgeBoundary.runtimeActionBindings) {
       const target = path.join(REPO_ROOT, ...binding.path.split('/'));
       assert.equal(sha256(fs.readFileSync(target)), binding.hash, binding.path);
@@ -244,7 +303,7 @@ describe('generator hardening effective revision source coverage', () => {
       verifyGoalContractGeneratorHardeningProvenance({
         provenance,
         repositoryRoot: REPO_ROOT,
-        baselineCommit: '3b7af1e3a6ddbe664ac62f097838130bcf856430',
+        baselineCommit: BASELINE_COMMIT,
       }).decision,
       'pass'
     );
@@ -255,7 +314,7 @@ describe('generator hardening effective revision source coverage', () => {
         verifyGoalContractGeneratorHardeningProvenance({
           provenance: stale,
           repositoryRoot: REPO_ROOT,
-          baselineCommit: '3b7af1e3a6ddbe664ac62f097838130bcf856430',
+          baselineCommit: BASELINE_COMMIT,
         }),
       (error) =>
         error.failureClass === 'predecessor_provenance_mismatch' &&

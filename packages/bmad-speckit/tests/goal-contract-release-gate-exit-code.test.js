@@ -20,6 +20,8 @@ const DIST_COMMAND = path.join(
   'commands',
   'goal-contract.js'
 );
+const POWERSHELL_EXECUTABLE =
+  process.platform === 'win32' ? 'pwsh.exe' : 'pwsh';
 const COMMAND_RUNNER = [
   'const { goalContractCommand } = require(process.argv[1]);',
   'Promise.resolve(goalContractCommand({}, process.argv.slice(2)))',
@@ -131,7 +133,7 @@ function runPowerShellWrapper(args, propagate) {
     ? `& { ${invocation}; $nativeStatus = $LASTEXITCODE; exit $nativeStatus }`
     : `& { ${invocation} }`;
   return spawnSync(
-    'pwsh.exe',
+    POWERSHELL_EXECUTABLE,
     ['-NoLogo', '-NoProfile', '-Command', command],
     {
       cwd: PACKAGE_ROOT,

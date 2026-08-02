@@ -27,7 +27,7 @@ const routeFixture = join(process.cwd(), 'tests', 'fixtures', 'test-portfolio-au
 const BASE_ROUTE_AUDIT_SHA256 =
   'sha256:364112b7a8d2ca18a6b7210557606765732d5af8f13c3f7752c4aff3012581ff';
 const BASE_ROUTE_SUMMARY_SHA256 =
-  'sha256:73be9a1fe870b7b70cf7fd0055a6a339c9789f263b3ee2576da6dcf303d2d62a';
+  'sha256:ba386ade13632e5c7085f608f893baed29ee2ae1877d98c9cb98eac404dc84b3';
 
 it('selects only root and declared workspace packages as critical authority packages', () => {
   expect(

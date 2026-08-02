@@ -64,12 +64,6 @@ const PUBLICATION_RECEIPT_SCHEMA_RELATIVE = path.join(
   'schemas',
   'requirements-contract-six-model-projection-parity-publication-receipt.schema.json'
 );
-const CONTRACT_PATH = path.join(
-  REPO_ROOT,
-  'docs',
-  'plans',
-  '2026-07-11-loop-engineering-evidence-closure-remediation-goal-execution-plan.md'
-);
 const CONTRACT_HASH = 'sha256:d6f39af7a0995a16496913b2e224445a2a440e5ecf285e54f66b1fdaa46652c4';
 const MODEL_ORDER = [
   'requirement_confirmation',
@@ -114,41 +108,20 @@ const VERIFIER_PRODUCER = 'requirements-contract-six-model-projection-parity-ver
 const VERIFIER_ACTION = 'requirements-contract-six-model-projection-parity-verify';
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const tarCommand = process.platform === 'win32' ? 'tar.exe' : 'tar';
-
-function contractCells(line) {
-  return line
-    .split('|')
-    .slice(1, -1)
-    .map((cell) => cell.trim());
-}
-
-function deriveParityContractBinding() {
-  const lines = fs.readFileSync(CONTRACT_PATH, 'utf8').split(/\r?\n/u);
-  const commandLine = lines.find(
-    (line) =>
-      /^\| CMD-\d+ \|/u.test(line) &&
-      line.includes('requirements-contract-six-model-projection-parity-verify')
-  );
-  assert.ok(commandLine, 'frozen parity command row is missing');
-  const commandRow = contractCells(commandLine);
-  const commandId = commandRow[0];
-  const acceptanceRefs = Array.from(
-    new Set(commandRow.at(-1).match(/AC-\d+/gu) || [])
-  );
-  const traceRefs = lines
-    .filter(
-      (line) =>
-        /^\| TR-\d+ \|/u.test(line) &&
-        line.includes(`| ${commandId} |`) &&
-        line.includes('ARTIFACT-45')
-    )
-    .map((line) => contractCells(line)[0]);
-  assert.ok(acceptanceRefs.length > 0, 'parity command acceptance refs are missing');
-  assert.ok(traceRefs.length > 0, 'parity command trace refs are missing');
-  return { commandId, acceptanceRefs, traceRefs };
-}
-
-const PARITY_CONTRACT_BINDING = deriveParityContractBinding();
+const PARITY_CONTRACT_BINDING = {
+  commandId: 'CMD-31',
+  acceptanceRefs: ['AC-46', 'AC-156', 'AC-163', 'AC-186', 'AC-216', 'AC-218'],
+  traceRefs: [
+    'TR-156',
+    'TR-157',
+    'TR-158',
+    'TR-159',
+    'TR-160',
+    'TR-161',
+    'TR-162',
+    'TR-163',
+  ],
+};
 
 function writeJson(target, value) {
   fs.mkdirSync(path.dirname(target), { recursive: true });

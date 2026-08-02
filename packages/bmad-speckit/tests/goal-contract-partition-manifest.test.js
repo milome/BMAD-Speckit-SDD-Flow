@@ -1944,19 +1944,33 @@ describe('goal-contract partition manifest', () => {
   });
 
   it('resolves source and dist schema roots to the correct asset owner', () => {
+    const repositoryRoot = path.join(path.parse(process.cwd()).root, 'repo');
+    const packageRoot = path.join(repositoryRoot, 'packages', 'bmad-speckit');
     assert.equal(
       resolveAssetRoot({
-        filename: 'D:/repo/packages/bmad-speckit/src/utils/goal-contract/partition-manifest.ts',
-        dirname: 'D:/repo/packages/bmad-speckit/src/utils/goal-contract',
+        filename: path.join(
+          packageRoot,
+          'src',
+          'utils',
+          'goal-contract',
+          'partition-manifest.ts'
+        ),
+        dirname: path.join(packageRoot, 'src', 'utils', 'goal-contract'),
       }),
-      path.normalize('D:/repo')
+      repositoryRoot
     );
     assert.equal(
       resolveAssetRoot({
-        filename: 'D:/repo/packages/bmad-speckit/dist/utils/goal-contract/partition-manifest.js',
-        dirname: 'D:/repo/packages/bmad-speckit/dist/utils/goal-contract',
+        filename: path.join(
+          packageRoot,
+          'dist',
+          'utils',
+          'goal-contract',
+          'partition-manifest.js'
+        ),
+        dirname: path.join(packageRoot, 'dist', 'utils', 'goal-contract'),
       }),
-      path.normalize('D:/repo/packages/bmad-speckit')
+      packageRoot
     );
   });
 
