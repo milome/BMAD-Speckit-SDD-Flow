@@ -114,6 +114,12 @@ jobs:
       - name: Prepare the canonical package once
         run: npm run ci:prepare-package -- --commit-sha "$GITHUB_SHA"
 
+      - name: Diagnose tracked changes before planning
+        shell: bash
+        run: |
+          echo "=== tracked changes before ci:catalog ==="
+          git status --short --untracked-files=no
+
       - name: Generate the governed test plan within budget
         id: planning
         shell: bash
