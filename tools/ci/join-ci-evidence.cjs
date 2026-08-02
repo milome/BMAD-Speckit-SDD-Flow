@@ -271,12 +271,12 @@ function main(args = process.argv.slice(2)) {
   return finalized.status === 'complete' ? 0 : 1;
 }
 
-if (require.main === module) {
-  process.exitCode = main();
-}
-
 module.exports = {
   joinCiEvidence,
   main,
   parseCliArgs,
 };
+
+if (require.main === module) {
+  process.exitCode = main();
+}

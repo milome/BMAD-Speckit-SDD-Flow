@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { describe, expect, it } from 'vitest';
 
@@ -72,6 +73,15 @@ function expectedFailureFixture() {
 }
 
 describe('fail-closed CI Evidence Join', () => {
+  it('publishes join exports before the CLI enters circular manifest validation', () => {
+    const source = readFileSync('tools/ci/join-ci-evidence.cjs', 'utf8');
+
+    expect(source.indexOf('module.exports = {')).toBeGreaterThanOrEqual(0);
+    expect(source.indexOf('module.exports = {')).toBeLessThan(
+      source.indexOf('if (require.main === module)')
+    );
+  });
+
   it.each(['failed', 'cancelled', 'skipped'])('rejects a required %s lane', (outcome) => {
     const { manifest, laneResults } = fixture();
     laneResults[0].outcome = outcome;
