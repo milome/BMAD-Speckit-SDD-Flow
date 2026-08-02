@@ -756,7 +756,24 @@
         "state": "retained_on_demand"
       }
     ],
-    "exceptions": []
+    "exceptions": [
+      {
+        "testPath": "tests/ralph-method/schema.test.ts",
+        "packageId": "@bmad-speckit/ralph-method"
+      },
+      {
+        "testPath": "tests/ralph-method/verify-ralph-compliance.test.ts",
+        "packageId": "@bmad-speckit/ralph-method"
+      },
+      {
+        "testPath": "tests/ralph-method/verify-tdd-trace.test.ts",
+        "packageId": "@bmad-speckit/ralph-method"
+      },
+      {
+        "testPath": "tests/ralph-method/write-tracking-files.test.ts",
+        "packageId": "@bmad-speckit/ralph-method"
+      }
+    ]
   },
   "selection": {
     "expansionOrder": ["trace_capability", "feature", "package"],
