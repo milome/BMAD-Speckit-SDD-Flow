@@ -207,6 +207,8 @@ jobs:
 
       - run: npm install --global npm@10.9.4
 
+      - run: git config core.filemode false
+
       - run: npm ci
 
       - uses: actions/download-artifact@v4
