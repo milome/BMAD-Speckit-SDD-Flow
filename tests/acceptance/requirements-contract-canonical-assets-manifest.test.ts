@@ -364,9 +364,52 @@ const REQUIRED_PARTITION_ASSETS = [
     assetKind: 'schema',
   },
   {
+    assetId: 'goal_contract_partition_impact_policy',
+    version: 'goal-contract-partition-impact-policy/v1',
+    path: '_bmad/shared/goal-contract/goal-contract-partition-impact-policy.json',
+    assetKind: 'profile',
+  },
+  {
+    assetId: 'goal_contract_partition_impact_policy_schema',
+    version: 'goal-contract-partition-impact-policy/v1',
+    path: '_bmad/shared/goal-contract/goal-contract-partition-impact-policy.schema.json',
+    assetKind: 'schema',
+  },
+  {
+    assetId: 'goal_contract_partition_impact_graph_schema',
+    version: 'goal-contract-partition-impact-graph/v1',
+    path: '_bmad/shared/goal-contract/goal-contract-partition-impact-graph.schema.json',
+    assetKind: 'schema',
+  },
+  {
+    assetId: 'goal_contract_partition_closure_feasibility_receipt_schema',
+    version: 'goal-contract-partition-closure-feasibility-receipt/v1',
+    path:
+      '_bmad/shared/goal-contract/goal-contract-partition-closure-feasibility-receipt.schema.json',
+    assetKind: 'schema',
+  },
+  {
+    assetId: 'goal_contract_partition_impact_drift_receipt_schema',
+    version: 'goal-contract-partition-impact-drift-receipt/v1',
+    path: '_bmad/shared/goal-contract/goal-contract-partition-impact-drift-receipt.schema.json',
+    assetKind: 'schema',
+  },
+  {
     assetId: 'goal_contract_partition_manifest_schema',
     version: 'goal-contract-partition-manifest/v1',
     path: '_bmad/shared/goal-contract/goal-contract-partition-manifest.schema.json',
+    assetKind: 'schema',
+  },
+  {
+    assetId: 'goal_contract_partition_output_authority_schema',
+    version: 'goal-contract-partition-output-authority/v1',
+    path: '_bmad/shared/goal-contract/goal-contract-partition-output-authority.schema.json',
+    assetKind: 'schema',
+  },
+  {
+    assetId: 'goal_contract_lifecycle_authority_binding_schema',
+    version: 'goal-contract-lifecycle-authority-binding/v1',
+    path: '_bmad/shared/goal-contract/goal-contract-lifecycle-authority-binding.schema.json',
     assetKind: 'schema',
   },
   {

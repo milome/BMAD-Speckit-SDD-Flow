@@ -10,6 +10,11 @@ const {
   hashControlPlaneValue,
 } = require('../src/utils/goal-contract/control-plane/canonical-hash.ts');
 const {
+  activateStandalonePartitionGeneration,
+  goalContractAuthorityWriterBinding,
+  preflightRequirementRecordPartitionAuthoritySupersession,
+} = require('../src/utils/goal-contract/control-plane/partition-output-paths.ts');
+const {
   activateGoalCampaignFromSuccessorAuthority,
 } = require('../src/utils/goal-contract/control-plane/campaign-activation.ts');
 
@@ -22,6 +27,7 @@ const SOURCE_COMMAND = path.resolve(
   'commands',
   'goal-contract.ts'
 );
+const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
 const SOURCE_RUNNER = [
   'const { goalContractCommand } = require(process.argv[1]);',
   'Promise.resolve(goalContractCommand({}, process.argv.slice(2)))',
@@ -29,9 +35,14 @@ const SOURCE_RUNNER = [
   '.catch((error)=>{console.error(error);process.exitCode=1;});',
 ].join('');
 const {
+  commitRequirementRecordPartitionAuthoritySupersession,
+  recoverRequirementRecordPartitionAuthorityProjection,
+  readRequirementRecordPartitionAuthorityProjection,
   loadAuthoritySupersessionForRelease,
+  prepareRequirementRecordPartitionAuthoritySupersession,
   prepareAuthoritySupersession,
   promoteAuthoritySupersessionAttempt,
+  projectRequirementRecordPartitionAuthority,
   stageAuthoritySupersessionAttempt,
   verifyAuthoritySupersessionReceipt,
 } = require(MODULE_PATH);
@@ -41,6 +52,7 @@ const {
 
 const hash = (value) =>
   `sha256:${createHash('sha256').update(value).digest('hex')}`;
+const sha256Json = (value) => hash(JSON.stringify(value));
 const canonicalText = (value) =>
   `${JSON.stringify(value, null, 2)}\n`;
 const partitionId = (value) =>
@@ -51,16 +63,319 @@ function writeJson(filePath, value) {
   fs.writeFileSync(filePath, canonicalText(value), 'utf8');
 }
 
-function runSourceCommand(args) {
+function runSourceCommand(args, { cwd = path.dirname(SOURCE_COMMAND) } = {}) {
   return spawnSync(
     process.execPath,
     ['-e', SOURCE_RUNNER, SOURCE_COMMAND, ...args],
     {
-      cwd: path.dirname(SOURCE_COMMAND),
+      cwd,
       encoding: 'utf8',
       maxBuffer: 4 * 1024 * 1024,
     }
   );
+}
+
+function requirementRecordFixture({
+  root,
+  sourceHash,
+  authorized = true,
+  tamperWriterBinding = false,
+  invalidWriterRegistryHash = false,
+}) {
+  const recordId = 'REQ-GH-004';
+  const recordPath = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    recordId,
+    'requirement-record.json'
+  );
+  const sourceDocumentHash = hash('requirement-source');
+  const implementationConfirmationHash = hash('requirement-confirmation');
+  const architectureConfirmationHash = hash(
+    'requirement-architecture-confirmation'
+  );
+  let controlledIngestWriterRegistry = authorized
+    ? [
+        goalContractAuthorityWriterBinding({
+          registryHash: hash('goal-contract-writer-registry-source'),
+          architectureConfirmationHash,
+        }),
+      ]
+    : [];
+  if (tamperWriterBinding) {
+    controlledIngestWriterRegistry = [
+      {
+        ...controlledIngestWriterRegistry[0],
+        scriptContentHash: hash('stale-writer-script'),
+      },
+    ];
+  }
+  if (invalidWriterRegistryHash) {
+    controlledIngestWriterRegistry = [
+      {
+        ...controlledIngestWriterRegistry[0],
+        registryHash: 'invalid-registry-hash',
+      },
+    ];
+  }
+  const record = {
+    schemaVersion: 'requirement-record/v1',
+    recordId,
+    requirementSetId: recordId,
+    status: 'user_confirmed',
+    sourcePath: 'docs/design/requirement-source.md',
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    semanticModelHash: hash('requirement-semantics'),
+    confirmationHistory: [
+      {
+        eventType: 'confirmation_recorded',
+        recordId,
+        requirementSetId: recordId,
+        confirmedAt: '2026-08-01T00:00:00.000Z',
+        confirmedBy: 'user',
+        sourcePath: 'docs/design/requirement-source.md',
+        sourceDocumentHash,
+        implementationConfirmationHash,
+        confirmationPageHash: hash('confirmation-page'),
+        confirmationText: 'confirmed',
+        renderReportPath: 'confirmation/render-report.json',
+        htmlPath: 'confirmation/confirmation.html',
+      },
+    ],
+    controlledIngestWriterRegistryRequired: true,
+    controlledIngestWriterRegistry,
+    controlledIngestWriterRegistryHash: sha256Json({
+      schemaVersion: 'controlled-ingest-writer-registry/v1',
+      sourceDocumentHash,
+      implementationConfirmationHash,
+      writers: controlledIngestWriterRegistry,
+    }),
+    architectureConfirmationState: {
+      status: 'active',
+      currentArchitectureConfirmationHash:
+        architectureConfirmationHash,
+    },
+    nativeGoalHandoff: {
+      masterImplementationPlanHash: sourceHash,
+    },
+    updatedAt: '2026-08-01T00:00:00.000Z',
+  };
+  writeJson(recordPath, record);
+  return {
+    repositoryRoot: path.resolve(root),
+    record,
+    recordPath,
+    authorityRoot: path.join(
+      root,
+      '_bmad-output',
+      'runtime',
+      'requirement-records',
+      recordId,
+      'goal-contract'
+    ),
+  };
+}
+
+function requirementRecordAuthorityInput(fixture, sourceHash) {
+  return {
+    repositoryRoot: fixture.repositoryRoot,
+    recordPath: fixture.recordPath,
+    sourceHash,
+    partitionRunId: `partition-run-${'a'.repeat(64)}`,
+    authorityRoot: fixture.authorityRoot,
+    partitionPlanHash: hash('requirement-record-partition-plan'),
+    partitionManifestHash: hash('requirement-record-partition-manifest'),
+    partitionManifestDocumentHash: hash(
+      'requirement-record-partition-manifest-document'
+    ),
+    partitionSetHash: hash('requirement-record-partition-set'),
+    eventChainProjection: hash('requirement-record-event-chain-projection'),
+    recordedAt: '2026-08-01T00:00:01.000Z',
+  };
+}
+
+function writePartitionSourcePlan(root) {
+  const sourcePath = path.join(root, 'partition-source-plan.md');
+  fs.writeFileSync(
+    sourcePath,
+    [
+      '# Partition Source Plan',
+      '',
+      '## Implementation Task Breakdown',
+      '',
+      '- [ ] TASK-001: MUST create deterministic partition input.',
+      '',
+      '## Acceptance Criteria',
+      '',
+      '- [ ] AC-001: MUST prove exact source coverage.',
+      '',
+      '## Completion Evidence Packet',
+      '',
+      '- [ ] EVD-001: MUST bind the exact source bytes.',
+      '',
+      '## Required Test Commands',
+      '',
+      '- [ ] CMD-001: Run `node --version`.',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  return sourcePath;
+}
+
+function writeFrozenPartitionContract(root, sourcePlanPath) {
+  const sourcePlanHash = hash(fs.readFileSync(sourcePlanPath));
+  const goalContractPath = path.join(
+    root,
+    'partition-frozen-goal-contract.md'
+  );
+  const coverageReceiptPath = path.join(
+    root,
+    'partition-source-coverage.json'
+  );
+  const generationReceiptPath = path.join(
+    root,
+    'partition-generation.json'
+  );
+  fs.writeFileSync(
+    goalContractPath,
+    [
+      '---',
+      'goalContractVersion: goal-execution-contract/v1',
+      'contractMode: frozen',
+      'rewritePolicy: forbidden',
+      `sourcePlanPath: ${sourcePlanPath.replace(/\\/gu, '/')}`,
+      `sourcePlanHash: ${sourcePlanHash}`,
+      `coverageReceiptPath: ${coverageReceiptPath.replace(/\\/gu, '/')}`,
+      `generationReceiptPath: ${generationReceiptPath.replace(/\\/gu, '/')}`,
+      '---',
+      '',
+      '# Frozen Goal Contract',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  const goalContractDocumentHash = hash(
+    fs.readFileSync(goalContractPath)
+  );
+  writeJson(coverageReceiptPath, {
+    schemaVersion: 'goal-contract-source-coverage-receipt/v1',
+    decision: 'pass',
+    sourcePlanPath: sourcePlanPath.replace(/\\/gu, '/'),
+    sourcePlanHash,
+    goalContractDocumentHash,
+    unmappedSourceObligations: [],
+  });
+  writeJson(generationReceiptPath, {
+    schemaVersion: 'goal-contract-generation-receipt/v1',
+    sourcePlanPath: sourcePlanPath.replace(/\\/gu, '/'),
+    sourcePlanHash,
+    goalContractDocumentHash,
+    compilationReceipt: {
+      profileBytesHash: hash(
+        fs.readFileSync(
+          path.join(
+            REPO_ROOT,
+            '_bmad',
+            'shared',
+            'goal-contract',
+            'goal-contract-profile.json'
+          )
+        )
+      ),
+      templateBytesHash: hash(
+        fs.readFileSync(
+          path.join(
+            REPO_ROOT,
+            '_bmad',
+            'shared',
+            'goal-contract',
+            'goal-execution-contract-template.md'
+          )
+        )
+      ),
+    },
+  });
+  return { goalContractPath, sourcePlanHash };
+}
+
+function stageValidRequirementRecordAuthority(root) {
+  const sourcePath = writePartitionSourcePlan(root);
+  const frozen = writeFrozenPartitionContract(root, sourcePath);
+  const generated = runSourceCommand(
+    [
+      'partition',
+      '--governed',
+      '--entry',
+      'standalone_goal_contract',
+      '--source',
+      sourcePath,
+      '--goal-contract',
+      frozen.goalContractPath,
+      '--sequence-mode',
+      'disabled',
+      '--json',
+    ],
+    { cwd: root }
+  );
+  assert.equal(
+    generated.status,
+    0,
+    generated.stderr || generated.stdout
+  );
+  const payload = JSON.parse(generated.stdout);
+  const fixture = requirementRecordFixture({
+    root,
+    sourceHash: frozen.sourcePlanHash,
+  });
+  const partitionRunId = payload.partitionManifest.partitionRunId;
+  const runRoot = path.join(
+    fixture.authorityRoot,
+    'partition-runs',
+    partitionRunId
+  );
+  fs.mkdirSync(path.dirname(runRoot), { recursive: true });
+  fs.cpSync(payload.unitRoot, runRoot, { recursive: true });
+  return {
+    fixture,
+    standalone: payload,
+    input: {
+      repositoryRoot: fixture.repositoryRoot,
+      recordPath: fixture.recordPath,
+      sourceHash: frozen.sourcePlanHash,
+      partitionRunId,
+      authorityRoot: fixture.authorityRoot,
+      partitionPlanHash: payload.partitionPlanHash,
+      partitionManifestHash: payload.partitionManifestHash,
+      partitionManifestDocumentHash:
+        payload.partitionManifestDocumentHash,
+      partitionSetHash: payload.partitionManifest.partitionSetHash,
+      eventChainProjection: hash(
+        'requirement-record-event-chain-projection'
+      ),
+      recordedAt: '2026-08-01T00:00:01.000Z',
+    },
+  };
+}
+
+function requiredAuthorityReceiptPaths(manifest) {
+  return [
+    manifest.partitionAnalysisReceiptPath,
+    manifest.globalCoverageReceiptPath,
+    manifest.partitionImpactGraphPath,
+    manifest.partitionClosureFeasibilityReceiptPath,
+    manifest.partitionImpactDriftReceiptPath,
+    ...manifest.partitions.flatMap((partition) => [
+      partition.selectionReceiptPath,
+      `receipts/children/${partition.partitionId}.compilation.json`,
+      `receipts/children/${partition.partitionId}.coverage.json`,
+      `receipts/children/${partition.partitionId}.generation.json`,
+      `receipts/children/${partition.partitionId}.membership.json`,
+    ]),
+  ];
 }
 
 function coverageRecord({
@@ -702,6 +1017,443 @@ describe('goal contract authority supersession', () => {
     ]) {
       assert.equal(typeof lifecycle[name], 'function', name);
     }
+  });
+
+  it('exposes RequirementRecord supersession and projection through the control-plane facade', () => {
+    const controlPlane = require(
+      '../src/utils/goal-contract/control-plane/index.ts'
+    );
+    for (const name of [
+      'commitRequirementRecordPartitionAuthoritySupersession',
+      'readRequirementRecordPartitionAuthorityProjection',
+      'recoverRequirementRecordPartitionAuthorityProjection',
+    ]) {
+      assert.equal(typeof controlPlane[name], 'function', name);
+    }
+  });
+
+  it('prepares and projects RequirementRecord authority only for the bound source identity', () => {
+    const sourceHash = hash('goal-source');
+    const record = {
+      recordId: 'REQ-GH-004',
+      requirementSetId: 'REQ-GH-004',
+      nativeGoalHandoff: {
+        masterImplementationPlanHash: sourceHash,
+      },
+    };
+    const prepared = prepareRequirementRecordPartitionAuthoritySupersession({
+      record,
+      sourceHash,
+      partitionRunId: `partition-run-${'a'.repeat(64)}`,
+      authorityRoot: '_bmad-output/runtime/requirement-records/REQ-GH-004/goal-contract',
+      partitionPlanHash: hash('partition-plan'),
+      partitionManifestHash: hash('partition-manifest'),
+      partitionManifestDocumentHash: hash('partition-manifest-document'),
+      partitionSetHash: hash('partition-set'),
+      eventChainProjection: hash('pointer-projection'),
+    });
+    const reduced = prepared.reduce(record);
+
+    assert.equal(
+      prepared.writerId,
+      'goal-contract-authority-supersession'
+    );
+    assert.equal(
+      prepared.eventType,
+      'goal_contract_partition_authority_superseded'
+    );
+    assert.equal(
+      reduced.nativeGoalHandoff.goalContractPartitionAuthority.sourceHash,
+      sourceHash
+    );
+    assert.deepEqual(
+      projectRequirementRecordPartitionAuthority(reduced),
+      prepared.payload
+    );
+    assert.throws(
+      () =>
+        prepareRequirementRecordPartitionAuthoritySupersession({
+          ...prepared.payload,
+          record,
+          sourceHash: hash('other-source'),
+        }),
+      (error) =>
+        error.failureClass ===
+        'partition_authority_source_identity_mismatch'
+    );
+  });
+
+  it('preflights RequirementRecord authority without modifying record or run bytes', () => {
+    const root = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'requirement-record-partition-authority-')
+    );
+    const sourceHash = hash('goal-source');
+    const fixture = requirementRecordFixture({
+      root,
+      sourceHash,
+      authorized: false,
+    });
+    const before = fs.readFileSync(fixture.recordPath, 'utf8');
+
+    assert.throws(
+      () =>
+        preflightRequirementRecordPartitionAuthoritySupersession(
+          {
+            ...requirementRecordAuthorityInput(fixture, sourceHash),
+            requirementSetId: fixture.record.requirementSetId,
+          }
+        ),
+      (error) =>
+        error.failureClass === 'partition_authority_writer_not_authorized'
+    );
+    assert.equal(fs.readFileSync(fixture.recordPath, 'utf8'), before);
+    assert.equal(fs.existsSync(fixture.authorityRoot), false);
+  });
+
+  it('commits authorized RequirementRecord partition authority through the control store before projecting its sidecar', () => {
+    const root = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'requirement-record-partition-authority-')
+    );
+    const { fixture, input } =
+      stageValidRequirementRecordAuthority(root);
+
+    const committed = commitRequirementRecordPartitionAuthoritySupersession(
+      input
+    );
+
+    const record = JSON.parse(fs.readFileSync(fixture.recordPath, 'utf8'));
+    const pointer = JSON.parse(
+      fs.readFileSync(
+        path.join(fixture.authorityRoot, 'active-partition-run.json'),
+        'utf8'
+      )
+    );
+    assert.equal(
+      record.nativeGoalHandoff.goalContractPartitionAuthority.sourceHash,
+      input.sourceHash
+    );
+    assert.equal(
+      pointer.schemaVersion,
+      'goal-contract-partition-active-requirement-record-run/v1'
+    );
+    assert.equal(pointer.recordPath.replace(/\\/gu, '/'), fixture.recordPath.replace(/\\/gu, '/'));
+    assert.equal(pointer.recordHash, committed.afterRecordHash);
+    assert.equal(pointer.recordRevision, record.recordRevision);
+    assert.equal(pointer.eventChainHead, committed.event.eventHash);
+    assert.equal(
+      fs.existsSync(
+        path.join(fixture.authorityRoot, 'pointer-projection-blocked.json')
+      ),
+      false
+    );
+  });
+
+  it('rejects RequirementRecord authority when the canonical partition run is missing', () => {
+    const root = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'requirement-record-partition-authority-')
+    );
+    const sourceHash = hash('goal-source');
+    const fixture = requirementRecordFixture({ root, sourceHash });
+    const before = fs.readFileSync(fixture.recordPath, 'utf8');
+
+    assert.throws(
+      () =>
+        commitRequirementRecordPartitionAuthoritySupersession(
+          requirementRecordAuthorityInput(fixture, sourceHash)
+        ),
+      (error) =>
+        error.failureClass === 'partition_authority_run_incomplete'
+    );
+    assert.equal(fs.readFileSync(fixture.recordPath, 'utf8'), before);
+    assert.equal(
+      fs.existsSync(
+        path.join(fixture.authorityRoot, 'active-partition-run.json')
+      ),
+      false
+    );
+  });
+
+  it('rejects caller-listed standalone receipts that omit manifest-derived authority artifacts', () => {
+    const root = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'requirement-record-partition-authority-')
+    );
+    const { standalone } =
+      stageValidRequirementRecordAuthority(root);
+    const authority = {
+      authorityMode: 'standalone_bootstrap',
+      sourceHash: standalone.sourceHash,
+      generationKey: standalone.generationKey,
+      unitRoot: standalone.unitRoot,
+      activePointerPath: standalone.activePointerPath,
+      partitionPlanPath: standalone.partitionPlanPath,
+      partitionManifestPath: standalone.partitionManifestPath,
+    };
+    fs.rmSync(standalone.activePointerPath, { force: true });
+    const childContractPaths =
+      standalone.partitionManifest.partitions.map(
+        (partition) => partition.childContractPath
+      );
+    const requiredReceiptPaths = requiredAuthorityReceiptPaths(
+      standalone.partitionManifest
+    );
+
+    assert.throws(
+      () =>
+        activateStandalonePartitionGeneration({
+          authority,
+          partitionPlanBytes: fs.readFileSync(
+            standalone.partitionPlanPath
+          ),
+          partitionManifestBytes: fs.readFileSync(
+            standalone.partitionManifestPath
+          ),
+          partitionManifestHash:
+            standalone.partitionManifestHash,
+          partitionManifestDocumentHash:
+            standalone.partitionManifestDocumentHash,
+          childContractPaths,
+          requiredReceiptPaths: requiredReceiptPaths.slice(1),
+        }),
+      (error) =>
+        error.failureClass ===
+        'partition_authority_artifact_set_mismatch'
+    );
+    assert.equal(fs.existsSync(standalone.activePointerPath), false);
+  });
+
+  it('rejects tampered child bytes before committing RequirementRecord authority', () => {
+    const root = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'requirement-record-partition-authority-')
+    );
+    const { fixture, input } =
+      stageValidRequirementRecordAuthority(root);
+    const before = fs.readFileSync(fixture.recordPath, 'utf8');
+    const runRoot = path.join(
+      fixture.authorityRoot,
+      'partition-runs',
+      input.partitionRunId
+    );
+    const manifest = JSON.parse(
+      fs.readFileSync(
+        path.join(runRoot, 'partition-manifest.json'),
+        'utf8'
+      )
+    );
+    fs.appendFileSync(
+      path.join(runRoot, manifest.partitions[0].childContractPath),
+      '\n# tampered\n',
+      'utf8'
+    );
+
+    assert.throws(
+      () =>
+        commitRequirementRecordPartitionAuthoritySupersession(input),
+      (error) =>
+        error.failureClass ===
+        'partition_child_contract_hash_mismatch'
+    );
+    assert.equal(fs.readFileSync(fixture.recordPath, 'utf8'), before);
+  });
+
+  it('rejects payload hashes that do not match the staged partition run', () => {
+    const root = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'requirement-record-partition-authority-')
+    );
+    const { fixture, input } =
+      stageValidRequirementRecordAuthority(root);
+    const before = fs.readFileSync(fixture.recordPath, 'utf8');
+
+    assert.throws(
+      () =>
+        commitRequirementRecordPartitionAuthoritySupersession({
+          ...input,
+          partitionManifestHash: hash('mismatched-manifest'),
+        }),
+      (error) =>
+        error.failureClass ===
+        'partition_authority_payload_hash_mismatch'
+    );
+    assert.equal(fs.readFileSync(fixture.recordPath, 'utf8'), before);
+  });
+
+  it('rejects a valid authority unit copied beneath a different partition run id', () => {
+    const root = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'requirement-record-partition-authority-')
+    );
+    const { fixture, input } =
+      stageValidRequirementRecordAuthority(root);
+    const before = fs.readFileSync(fixture.recordPath, 'utf8');
+    const copiedRunId = `partition-run-${'b'.repeat(64)}`;
+    fs.cpSync(
+      path.join(
+        fixture.authorityRoot,
+        'partition-runs',
+        input.partitionRunId
+      ),
+      path.join(
+        fixture.authorityRoot,
+        'partition-runs',
+        copiedRunId
+      ),
+      { recursive: true }
+    );
+
+    assert.throws(
+      () =>
+        commitRequirementRecordPartitionAuthoritySupersession({
+          ...input,
+          partitionRunId: copiedRunId,
+        }),
+      (error) =>
+        error.failureClass ===
+        'partition_authority_run_binding_mismatch'
+    );
+    assert.equal(fs.readFileSync(fixture.recordPath, 'utf8'), before);
+  });
+
+  it('rejects an unauthorized RequirementRecord writer without modifying the record or pointer', () => {
+    const root = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'requirement-record-partition-authority-')
+    );
+    const sourceHash = hash('goal-source');
+    const fixture = requirementRecordFixture({
+      root,
+      sourceHash,
+      authorized: false,
+    });
+    const before = fs.readFileSync(fixture.recordPath, 'utf8');
+
+    assert.throws(
+      () =>
+        commitRequirementRecordPartitionAuthoritySupersession(
+          requirementRecordAuthorityInput(fixture, sourceHash)
+        ),
+      (error) =>
+        error.failureClass === 'partition_authority_writer_not_authorized'
+    );
+    assert.equal(fs.readFileSync(fixture.recordPath, 'utf8'), before);
+    assert.equal(
+      fs.existsSync(
+        path.join(fixture.authorityRoot, 'active-partition-run.json')
+      ),
+      false
+    );
+  });
+
+  it('rejects a stale rich writer binding before committing the RequirementRecord', () => {
+    const root = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'requirement-record-partition-authority-')
+    );
+    const sourceHash = hash('goal-source');
+    const fixture = requirementRecordFixture({
+      root,
+      sourceHash,
+      tamperWriterBinding: true,
+    });
+    const before = fs.readFileSync(fixture.recordPath, 'utf8');
+
+    assert.throws(
+      () =>
+        commitRequirementRecordPartitionAuthoritySupersession(
+          requirementRecordAuthorityInput(fixture, sourceHash)
+        ),
+      (error) =>
+        error.failureClass === 'partition_authority_writer_not_authorized'
+    );
+    assert.equal(fs.readFileSync(fixture.recordPath, 'utf8'), before);
+    assert.equal(
+      fs.existsSync(
+        path.join(fixture.authorityRoot, 'active-partition-run.json')
+      ),
+      false
+    );
+  });
+
+  it('maps an invalid rich writer registry hash to unauthorized before committing the RequirementRecord', () => {
+    const root = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'requirement-record-partition-authority-')
+    );
+    const sourceHash = hash('goal-source');
+    const fixture = requirementRecordFixture({
+      root,
+      sourceHash,
+      invalidWriterRegistryHash: true,
+    });
+    const before = fs.readFileSync(fixture.recordPath, 'utf8');
+
+    assert.throws(
+      () =>
+        commitRequirementRecordPartitionAuthoritySupersession(
+          requirementRecordAuthorityInput(fixture, sourceHash)
+        ),
+      (error) =>
+        error.failureClass === 'partition_authority_writer_not_authorized'
+    );
+    assert.equal(fs.readFileSync(fixture.recordPath, 'utf8'), before);
+    assert.equal(
+      fs.existsSync(
+        path.join(fixture.authorityRoot, 'active-partition-run.json')
+      ),
+      false
+    );
+  });
+
+  it('retains committed RequirementRecord authority, blocks pointer consumers, and recovers a failed sidecar projection deterministically', () => {
+    const root = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'requirement-record-partition-authority-')
+    );
+    const { fixture, input } =
+      stageValidRequirementRecordAuthority(root);
+
+    assert.throws(
+      () =>
+        commitRequirementRecordPartitionAuthoritySupersession({
+          ...input,
+          writeProjection() {
+            throw new Error('injected pointer projection failure');
+          },
+        }),
+      (error) =>
+        error.failureClass === 'partition_authority_pointer_projection_pending'
+    );
+    const committedRecord = JSON.parse(
+      fs.readFileSync(fixture.recordPath, 'utf8')
+    );
+    assert.equal(
+      committedRecord.nativeGoalHandoff.goalContractPartitionAuthority
+        .partitionRunId,
+      input.partitionRunId
+    );
+    assert.equal(
+      fs.existsSync(
+        path.join(fixture.authorityRoot, 'pointer-projection-blocked.json')
+      ),
+      true
+    );
+    assert.throws(
+      () =>
+        readRequirementRecordPartitionAuthorityProjection({
+          recordPath: fixture.recordPath,
+        }),
+      (error) =>
+        error.failureClass ===
+        'partition_authority_pointer_projection_blocked'
+    );
+
+    const recovered = recoverRequirementRecordPartitionAuthorityProjection({
+      recordPath: fixture.recordPath,
+    });
+    const pointer = JSON.parse(
+      fs.readFileSync(recovered.pointerPath, 'utf8')
+    );
+    assert.equal(pointer.recordHash, committedRecord.recordHash);
+    assert.equal(pointer.eventChainHead, committedRecord.eventChainHead);
+    assert.equal(
+      fs.existsSync(
+        path.join(fixture.authorityRoot, 'pointer-projection-blocked.json')
+      ),
+      false
+    );
   });
 
   it('stages and loads one successor-pinned release authority without source recompilation', () => {

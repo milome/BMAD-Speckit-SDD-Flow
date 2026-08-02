@@ -59,7 +59,14 @@ const packageBmadRequiredFiles = [
   'shared/goal-contract/goal-contract-execution-projection.schema.json',
   'shared/goal-contract/goal-contract-partition-policy.json',
   'shared/goal-contract/goal-contract-partition-policy.schema.json',
+  'shared/goal-contract/goal-contract-partition-impact-policy.json',
+  'shared/goal-contract/goal-contract-partition-impact-policy.schema.json',
+  'shared/goal-contract/goal-contract-partition-impact-graph.schema.json',
+  'shared/goal-contract/goal-contract-partition-closure-feasibility-receipt.schema.json',
+  'shared/goal-contract/goal-contract-partition-impact-drift-receipt.schema.json',
   'shared/goal-contract/goal-contract-partition-manifest.schema.json',
+  'shared/goal-contract/goal-contract-partition-output-authority.schema.json',
+  'shared/goal-contract/goal-contract-lifecycle-authority-binding.schema.json',
   'shared/goal-contract/goal-contract-partition-analysis-receipt.schema.json',
   'shared/goal-contract/goal-contract-partition-global-coverage-receipt.schema.json',
   'shared/goal-contract/goal-contract-partition-selection-receipt.schema.json',
@@ -580,12 +587,9 @@ function writeRequirementsContractProjection(fileName, value) {
 
 function refreshRequirementsContractConsumerRegistry() {
   const fileName = 'requirements-contract-consumer-registry.json';
-  const consumerRegistryModule = require(path.join(
-    distRoot,
-    'source-authority',
-    'rules',
-    'requirements-contract-consumer-registry.js'
-  ));
+  const consumerRegistryModule = require(
+    '../dist/main-agent/source-authority/rules/requirements-contract-consumer-registry.js'
+  );
   writeRequirementsContractProjection(
     fileName,
     consumerRegistryModule.createRequirementsContractConsumerRegistry(repoRoot)
@@ -593,12 +597,9 @@ function refreshRequirementsContractConsumerRegistry() {
 }
 
 function refreshRequirementsContractArtifactRoleRegistry() {
-  const classifier = require(path.join(
-    distRoot,
-    'source-authority',
-    'scripts',
-    'requirements-contract-artifact-role-classifier.js'
-  ));
+  const classifier = require(
+    '../dist/main-agent/source-authority/scripts/requirements-contract-artifact-role-classifier.js'
+  );
   const ownerPath = path.resolve(
     repoRoot,
     classifier.REQUIREMENTS_CONTRACT_ARTIFACT_ROLE_REGISTRY_OWNER_PATH
@@ -612,35 +613,26 @@ function refreshRequirementsContractArtifactRoleRegistry() {
 }
 
 function publishRequirementsContractDerivedRegistries() {
-  const judgeProviderRegistryModule = require(path.join(
-    distRoot,
-    'source-authority',
-    'scripts',
-    'requirements-contract-judge-provider-registry.js'
-  ));
+  const judgeProviderRegistryModule = require(
+    '../dist/main-agent/source-authority/scripts/requirements-contract-judge-provider-registry.js'
+  );
   writeRequirementsContractProjection(
     'requirements-contract-judge-provider-registry.json',
     judgeProviderRegistryModule.createRequirementsContractJudgeProviderRegistryProjection(repoRoot)
   );
   refreshRequirementsContractArtifactRoleRegistry();
   refreshRequirementsContractConsumerRegistry();
-  const projectionRegistryModule = require(path.join(
-    distRoot,
-    'source-authority',
-    'rules',
-    'requirements-contract-projection-registry.js'
-  ));
+  const projectionRegistryModule = require(
+    '../dist/main-agent/source-authority/rules/requirements-contract-projection-registry.js'
+  );
   projectionRegistryModule.synchronizeRequirementsContractProjectionSurfaces(repoRoot);
   writeRequirementsContractProjection(
     'requirements-contract-projection-registry.json',
     projectionRegistryModule.createRequirementsContractProjectionRegistry(repoRoot)
   );
-  const canonicalAssetsModule = require(path.join(
-    distRoot,
-    'source-authority',
-    'rules',
-    'requirements-contract-canonical-assets-manifest.js'
-  ));
+  const canonicalAssetsModule = require(
+    '../dist/main-agent/source-authority/rules/requirements-contract-canonical-assets-manifest.js'
+  );
   writeRequirementsContractProjection(
     'requirements-contract-canonical-assets-manifest.json',
     canonicalAssetsModule.createRequirementsContractCanonicalAssetsManifest(repoRoot)
@@ -676,12 +668,9 @@ function writeRuntimeManifest() {
     consumer: 'release-parity-verifier',
   });
   runtimeManifestEntries.sort((left, right) => left.target.localeCompare(right.target));
-  const hashDomains = require(path.join(
-    distRoot,
-    'source-authority',
-    'scripts',
-    'requirements-contract-hash-domains.js'
-  ));
+  const hashDomains = require(
+    '../dist/main-agent/source-authority/scripts/requirements-contract-hash-domains.js'
+  );
   const entries = runtimeManifestEntries.map((entry) => {
     const sourcePath = path.resolve(packageRoot, entry.source);
     const targetPath = path.resolve(packageRoot, entry.target);
@@ -718,12 +707,9 @@ function writeRuntimeManifest() {
 }
 
 function writeRuntimeBuildAuthorityReceipt() {
-  const authority = require(path.join(
-    distRoot,
-    'source-authority',
-    'scripts',
-    'requirements-contract-runtime-build-authority.js'
-  ));
+  const authority = require(
+    '../dist/main-agent/source-authority/scripts/requirements-contract-runtime-build-authority.js'
+  );
   const packageAssetEntries = packageBmadRequiredFiles
     .map((relativePath) => ({
       source: `_bmad/${portable(relativePath)}`,
@@ -822,20 +808,14 @@ try {
 
   for (const asset of declaredAssets) copyDeclaredAsset(asset);
 
-  const actionBindingManifestModule = require(path.join(
-    distRoot,
-    'source-authority',
-    'scripts',
-    'requirements-contract-package-runtime-action-binding-manifest.js'
-  ));
+  const actionBindingManifestModule = require(
+    '../dist/main-agent/source-authority/scripts/requirements-contract-package-runtime-action-binding-manifest.js'
+  );
   actionBindingManifestModule.publishPackageRuntimeActionBindingManifest(repoRoot);
   publishRequirementsContractDerivedRegistries();
-  const bundledRuntimeSync = require(path.join(
-    distRoot,
-    'source-authority',
-    'scripts',
-    'requirements-contract-bundled-runtime-sync.js'
-  )).syncBundledWorkspaceRuntime({
+  const bundledRuntimeSync = require(
+    '../dist/main-agent/source-authority/scripts/requirements-contract-bundled-runtime-sync.js'
+  ).syncBundledWorkspaceRuntime({
     repoRoot,
     packageRoot,
   });

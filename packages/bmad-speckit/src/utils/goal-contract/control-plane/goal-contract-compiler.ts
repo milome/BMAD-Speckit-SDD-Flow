@@ -55,6 +55,23 @@ export type GoalContractCompilerModule = never;
 const COMPILATION_RECEIPT_SCHEMA =
   'goal-contract-compilation-receipt.schema.json';
 const DETERMINISTIC_GENERATED_AT = '1970-01-01T00:00:00.000Z';
+const EFFECTIVE_REVISION_TASK_AUTHORITY = Object.freeze({
+  'GH-R01': ['GH-T01', 'GH-T02'],
+  'GH-R02': ['GH-T03'],
+  'GH-R03': ['GH-T04'],
+  'GH-R04': ['GH-T05'],
+  'GH-R05': ['GH-T05'],
+  'GH-R06': ['GH-T09'],
+  'GH-R07': ['GH-T06'],
+  'GH-R08': ['GH-T07', 'GH-T08'],
+  'GH-R09': ['GH-T08'],
+  'GH-R10': ['GH-T08', 'GH-T10'],
+  'GH-R11': ['GH-T10', 'GH-T11'],
+  'ER-GH-001': ['GH-T05'],
+  'ER-GH-002': ['GH-T09'],
+  'ER-GH-003': ['GH-T06', 'GH-T07'],
+  'ER-GH-004': ['GH-T08'],
+});
 const ALLOWED_REQUEST_FIELDS = new Set([
   'sourceCompositionPolicy',
   'compositeSourceAuthorityBundle',
@@ -377,6 +394,181 @@ function canonicalSourceProjection(canonicalBundle, authorityBundle) {
   };
 }
 
+function normalizeGoalContractSourceCoverageMappings(
+  sourceObligations: unknown
+) {
+  if (!Array.isArray(sourceObligations)) {
+    throw failure('source_coverage_unmapped', {
+      field: 'sourceObligations',
+    });
+  }
+  return sourceObligations.map((obligation) => {
+    if (!isRecord(obligation) || typeof obligation.id !== 'string') {
+      throw failure('source_coverage_unmapped', {
+        field: 'sourceObligations',
+      });
+    }
+    const existing = Array.isArray(obligation.stopConditionRefs)
+      ? obligation.stopConditionRefs.filter(
+          (value) => typeof value === 'string' && value.length > 0
+        )
+      : [];
+    return {
+      ...obligation,
+      goalTaskRefs:
+        EFFECTIVE_REVISION_TASK_AUTHORITY[obligation.id] ||
+        obligation.goalTaskRefs,
+      stopConditionRefs:
+        existing.length > 0 ? [...new Set(existing)].sort() : ['STOP002'],
+    };
+  });
+}
+
+function buildGoalContractSourceCoverageMatrix(sourceObligations) {
+  return [
+    '| Source ID | Intent Record | Declared ID | Source Artifact | Namespace | SpecSpan Refs | Parent Tasks | Goal Tasks | Acceptance | Commands | Evidence | Stop Conditions |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    ...sourceObligations.map(
+      (obligation) =>
+        `| ${obligation.id} | ${
+          obligation.canonicalIntentRecordId || 'none'
+        } | ${obligation.declaredSourceId || 'none'} | ${
+          obligation.sourceArtifactId
+        } | ${obligation.namespace} | ${(
+          obligation.specSpanRefs || []
+        ).join(', ')} | ${(obligation.parentTaskRefs || []).join(', ') || 'none'} | ${(
+          obligation.goalTaskRefs || []
+        ).join(', ')} | ${(obligation.acceptanceRefs || []).join(', ')} | ${(
+          obligation.commandRefs || []
+        ).join(', ')} | ${(obligation.evidenceRefs || []).join(', ')} | ${(
+          obligation.stopConditionRefs || []
+        ).join(', ')} |`
+    ),
+  ].join('\n');
+}
+
+function createGoalContractSourceCoverageReceipt(request: unknown) {
+  if (
+    !isRecord(request) ||
+    typeof request.sourcePlanHash !== 'string' ||
+    !/^sha256:[0-9a-f]{64}$/u.test(request.sourcePlanHash) ||
+    !Array.isArray(request.sourceObligations) ||
+    !isRecord(request.coverageAudit)
+  ) {
+    throw failure('source_coverage_unmapped');
+  }
+  const requiredFields = [
+    'goalTaskRefs',
+    'acceptanceRefs',
+    'commandRefs',
+    'evidenceRefs',
+    'stopConditionRefs',
+  ];
+  for (const obligation of request.sourceObligations) {
+    if (!isRecord(obligation) || typeof obligation.id !== 'string') {
+      throw failure('source_coverage_unmapped', {
+        field: 'sourceObligations',
+      });
+    }
+    for (const field of requiredFields) {
+      if (
+        !Array.isArray(obligation[field]) ||
+        obligation[field].length === 0
+      ) {
+        throw failure('source_coverage_unmapped', {
+          sourceObligationId: obligation.id,
+          field,
+        });
+      }
+    }
+  }
+  const unmappedSourceObligations = Array.isArray(
+    request.coverageAudit.unmappedSourceObligations
+  )
+    ? [...request.coverageAudit.unmappedSourceObligations]
+    : [];
+  if (
+    request.coverageAudit.decision !== 'pass' ||
+    unmappedSourceObligations.length > 0
+  ) {
+    throw failure('source_coverage_unmapped', {
+      coverageAudit: request.coverageAudit,
+    });
+  }
+  return Object.freeze({
+    sourcePlanHash: request.sourcePlanHash,
+    sourceObligations: request.sourceObligations,
+    unmappedSourceObligations,
+  });
+}
+
+function verifyGoalContractGeneratorHardeningProvenance(request: unknown) {
+  if (
+    !isRecord(request) ||
+    !isRecord(request.provenance) ||
+    typeof request.repositoryRoot !== 'string' ||
+    typeof request.baselineCommit !== 'string'
+  ) {
+    throw failure('predecessor_provenance_mismatch');
+  }
+  const provenance = request.provenance;
+  if (
+    provenance.schemaVersion !==
+      'goal-contract-generator-hardening-provenance/v1' ||
+    provenance.baselineCommit !== request.baselineCommit ||
+    !isRecord(provenance.successorSource) ||
+    !isRecord(provenance.successorGoalContract) ||
+    !Array.isArray(provenance.predecessorInputs) ||
+    !isRecord(provenance.judgeBoundary) ||
+    !Array.isArray(provenance.judgeBoundary.runtimeActionBindings)
+  ) {
+    throw failure('predecessor_provenance_mismatch');
+  }
+  const repositoryRoot = path.resolve(request.repositoryRoot);
+  const bindings = [
+    provenance.successorSource,
+    provenance.successorGoalContract,
+    ...provenance.predecessorInputs,
+    ...provenance.judgeBoundary.runtimeActionBindings,
+  ];
+  for (const binding of bindings) {
+    if (
+      !isRecord(binding) ||
+      typeof binding.path !== 'string' ||
+      typeof binding.hash !== 'string' ||
+      !/^sha256:[0-9a-f]{64}$/u.test(binding.hash)
+    ) {
+      throw failure('predecessor_provenance_mismatch', {
+        path: isRecord(binding) ? binding.path : null,
+      });
+    }
+    const resolvedPath = path.resolve(repositoryRoot, binding.path);
+    if (
+      path.isAbsolute(binding.path) ||
+      (resolvedPath !== repositoryRoot &&
+        !resolvedPath.startsWith(`${repositoryRoot}${path.sep}`)) ||
+      !fs.existsSync(resolvedPath)
+    ) {
+      throw failure('predecessor_provenance_mismatch', {
+        path: binding.path,
+      });
+    }
+    const actualHash = sha256(fs.readFileSync(resolvedPath));
+    if (actualHash !== binding.hash) {
+      throw failure('predecessor_provenance_mismatch', {
+        path: binding.path,
+        expectedHash: binding.hash,
+        actualHash,
+      });
+    }
+  }
+  return Object.freeze({
+    decision: 'pass',
+    baselineCommit: provenance.baselineCommit,
+    verifiedBindingCount: bindings.length,
+  });
+}
+
 function coverageRecords(policy, authorityBundle, canonicalBundle) {
   const records = canonicalBundle.canonicalIntentIR;
   const primaryRecords = records.filter(
@@ -571,10 +763,16 @@ function compileGoalContract(request: unknown = {}) {
     authorityBundle,
     canonicalBundle
   );
-  const source = canonicalSourceProjection(
+  const sourceProjection = canonicalSourceProjection(
     canonicalBundle,
     authorityBundle
   );
+  const source = {
+    ...sourceProjection,
+    sourceObligations: normalizeGoalContractSourceCoverageMappings(
+      sourceProjection.sourceObligations
+    ),
+  };
   const goalContractSemanticModel = {
     schemaVersion: 'goal-contract-semantic-model/v1',
     sources: [
@@ -643,15 +841,25 @@ function compileGoalContract(request: unknown = {}) {
     runtimeRecordId,
     authorityBindings,
   });
+  const mappedSourceObligations =
+    normalizeGoalContractSourceCoverageMappings(
+      built.registries.sourceObligations
+    );
+  const sourceCoverageReceipt = createGoalContractSourceCoverageReceipt({
+    sourcePlanHash: source.sourcePlanHash,
+    sourceObligations: mappedSourceObligations,
+    coverageAudit: built.coverageAudit,
+  });
   const rendererInput = {
     profile,
-    slotData: built.slotData,
-    validateHashes: true,
-    coverageReceipt: {
-      sourcePlanHash: source.sourcePlanHash,
-      sourceObligations: built.registries.sourceObligations,
-      unmappedSourceObligations: [],
+    slotData: {
+      ...built.slotData,
+      sourceCoverageMatrix: buildGoalContractSourceCoverageMatrix(
+        mappedSourceObligations
+      ),
     },
+    validateHashes: true,
+    coverageReceipt: sourceCoverageReceipt,
     generationMode: compilePolicy.generationMode,
   };
   const rendered = rendererModule().renderGoalContract({
@@ -702,7 +910,11 @@ function compileGoalContract(request: unknown = {}) {
         )
       ),
     ].sort(),
-    registries: built.registries,
+    registries: {
+      ...built.registries,
+      sourceObligations: mappedSourceObligations,
+    },
+    sourceCoverageAudit: built.coverageAudit,
     implementationProofAudit: built.implementationProofAudit,
     rendererAudit: rendered.audit,
   };
@@ -777,6 +989,9 @@ function createGoalContractCompilationReceipt(
 module.exports = {
   compileGoalContract,
   compileGoalContractPolicy,
+  createGoalContractSourceCoverageReceipt,
   createGoalContractCompilationReceipt,
   goalContractCompilerIdentity,
+  normalizeGoalContractSourceCoverageMappings,
+  verifyGoalContractGeneratorHardeningProvenance,
 };

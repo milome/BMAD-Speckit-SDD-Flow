@@ -272,6 +272,13 @@ describe('canonical control-plane facade', () => {
     assert.ok(
       Object.keys(bundle.schemaArtifactHashes).every((name) => name.endsWith('.schema.json'))
     );
+    assert.equal(
+      Object.hasOwn(
+        bundle.schemaArtifactHashes,
+        'goal-contract-partition-output-authority.schema.json'
+      ),
+      true
+    );
     assert.equal(Object.hasOwn(bundle, 'campaignActivationReceipt'), false);
     assert.equal(Object.hasOwn(bundle, 'subcontractExecutionLease'), false);
     assert.equal(Object.hasOwn(bundle, 'goalCampaignClosureReceipt'), false);

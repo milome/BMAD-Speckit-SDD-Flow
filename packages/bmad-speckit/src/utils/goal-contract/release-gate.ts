@@ -31,6 +31,11 @@ const { hashControlPlaneValue } = require(
     ? './control-plane/canonical-hash.ts'
     : './control-plane/canonical-hash'
 );
+const { validateGoalContractSchema } = require(
+  __filename.endsWith('.ts')
+    ? './control-plane/schema-registry.ts'
+    : './control-plane/schema-registry'
+);
 
 export type GoalContractReleaseGateModule = never;
 
@@ -796,6 +801,136 @@ function evaluatePartitionSequenceRelease({
   });
 }
 
+function evaluatePartitionClosureFeasibilityRelease({
+  currentManifest = null,
+  partitionId = null,
+  partitionManifestPath = null,
+} = {}) {
+  const hardened = Boolean(
+    currentManifest?.partitionImpactGraphHash
+  );
+  if (!hardened) {
+    return Object.freeze({
+      decision: 'pass',
+      componentDecision: 'not_applicable',
+      blockingReasons: [],
+    });
+  }
+  const blockingReasons = [];
+  const authorityRoot =
+    typeof partitionManifestPath === 'string' &&
+    partitionManifestPath.length > 0
+      ? path.dirname(path.resolve(partitionManifestPath))
+      : null;
+  const receiptPath = resolveAuthorityBoundPath(
+    authorityRoot,
+    currentManifest.partitionClosureFeasibilityReceiptPath
+  );
+  let receipt = null;
+  if (!receiptPath || !fs.existsSync(receiptPath)) {
+    blockingReasons.push(
+      'partition_closure_feasibility_missing'
+    );
+  } else {
+    try {
+      receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'));
+    } catch {
+      blockingReasons.push(
+        'partition_closure_feasibility_invalid'
+      );
+    }
+  }
+  if (
+    receiptPath &&
+    fs.existsSync(receiptPath) &&
+    sha256File(receiptPath) !==
+      currentManifest.partitionClosureFeasibilityReceiptHash
+  ) {
+    blockingReasons.push(
+      'partition_closure_feasibility_not_current'
+    );
+  }
+  if (receipt) {
+    try {
+      validateGoalContractSchema(
+        'goal-contract-partition-closure-feasibility-receipt.schema.json',
+        receipt
+      );
+    } catch {
+      blockingReasons.push(
+        'partition_closure_feasibility_invalid'
+      );
+    }
+    const {
+      receiptHash,
+      ...semanticReceipt
+    } = receipt;
+    if (
+      receiptHash !== hashControlPlaneValue(semanticReceipt) ||
+      receipt.partitionPlanBasisHash !==
+        currentManifest.partitionPlanBasisHash ||
+      receipt.partitionImpactGraphHash !==
+        currentManifest.partitionImpactGraphHash
+    ) {
+      blockingReasons.push(
+        'partition_closure_feasibility_not_current'
+      );
+    }
+    const manifestPartition =
+      currentManifest.partitions?.find(
+        (partition) => partition.partitionId === partitionId
+      );
+    const partitionRecord = receipt.partitionRecords?.find(
+      (record) => record.partitionId === partitionId
+    );
+    if (!manifestPartition || !partitionRecord) {
+      blockingReasons.push(
+        'partition_closure_feasibility_not_current'
+      );
+    } else {
+      const {
+        partitionClosureFeasibilityHash,
+        ...semanticRecord
+      } = partitionRecord;
+      if (
+        partitionClosureFeasibilityHash !==
+          hashControlPlaneValue(semanticRecord) ||
+        manifestPartition.partitionClosureFeasibilityHash !==
+          partitionClosureFeasibilityHash
+      ) {
+        blockingReasons.push(
+          'partition_closure_feasibility_not_current'
+        );
+      }
+      if (partitionRecord.decision !== 'pass') {
+        blockingReasons.push(
+          'partition_closure_feasibility_blocked',
+          ...(partitionRecord.blockingIssues || []).map(
+            ({ issueCode }) => issueCode
+          )
+        );
+      }
+    }
+    if (
+      currentManifest.partitionClosureFeasibilityDecision !==
+        receipt.decision ||
+      receipt.decision !== 'pass'
+    ) {
+      blockingReasons.push(
+        'partition_closure_feasibility_blocked'
+      );
+    }
+  }
+  const canonicalBlockingReasons = unique(blockingReasons);
+  return Object.freeze({
+    decision:
+      canonicalBlockingReasons.length === 0 ? 'pass' : 'blocked',
+    componentDecision:
+      canonicalBlockingReasons.length === 0 ? 'pass' : 'blocked',
+    blockingReasons: canonicalBlockingReasons,
+  });
+}
+
 function evaluatePartitionRelease(input) {
   const blockingReasons = [];
   const binding = input.binding.fields;
@@ -818,6 +953,7 @@ function evaluatePartitionRelease(input) {
     selection: 'pass',
     childCoverage: 'pass',
     childGeneration: 'pass',
+    feasibility: 'not_applicable',
     dependencies: 'not_applicable',
     compatibility: 'not_applicable',
   };
@@ -1001,6 +1137,17 @@ function evaluatePartitionRelease(input) {
       reason.includes('manifest') || reason === 'partition_id_not_current'
     )
   ) componentDecisions.manifest = 'blocked';
+  const feasibilityRelease =
+    evaluatePartitionClosureFeasibilityRelease({
+      currentManifest,
+      partitionId: binding.partitionId,
+      partitionManifestPath: manifestPath,
+    });
+  blockingReasons.push(
+    ...feasibilityRelease.blockingReasons
+  );
+  componentDecisions.feasibility =
+    feasibilityRelease.componentDecision;
 
   const selectionPath = successorPinned
     ? resolveAuthorityBoundPath(
@@ -1407,6 +1554,7 @@ function goalContractReleaseGateCommand(
 module.exports = {
   checkGoalContractReleaseGate,
   evaluateGoalContractRelease,
+  evaluatePartitionClosureFeasibilityRelease,
   evaluatePartitionSequenceRelease,
   goalContractReleaseGateCommand,
   parseGoalContractBinding,

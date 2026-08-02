@@ -6,6 +6,18 @@ export interface ControlledIngestWriterProjection {
   writerId: string;
   eventTypes: string[];
   writerHash: string;
+  scriptPath?: string;
+  scriptContentHash?: string;
+  ownerModel?: string;
+  allowedWriteApis?: unknown[];
+  allowedPaths?: unknown[];
+  payloadContractRefs?: unknown[];
+  writesControlFields?: unknown[];
+  receiptPath?: string;
+  beforeAfterHashRequired?: boolean;
+  canModifyWriterRegistry?: boolean;
+  registryHash?: string;
+  architectureConfirmationHash?: string;
 }
 
 export interface ControlledIngestWriterRegistrySnapshot {
@@ -106,10 +118,38 @@ export function projectControlledIngestWriterRegistry(
     if (row.beforeAfterHashRequired !== true || row.canModifyWriterRegistry !== false) {
       throw new Error(`controlled_ingest_writer_mutation_policy_invalid:${writerId}`);
     }
-    return {
+    const projection: ControlledIngestWriterProjection = {
       writerId,
       eventTypes,
       writerHash: sha256Text(stableStringify(writerHashMaterial(row, eventTypes))),
+    };
+    if (writerId !== 'goal-contract-authority-supersession') {
+      return projection;
+    }
+    return {
+      ...projection,
+      scriptPath: text(row.scriptPath),
+      scriptContentHash: text(row.scriptContentHash),
+      ownerModel: text(row.ownerModel),
+      allowedWriteApis: Array.isArray(row.allowedWriteApis)
+        ? row.allowedWriteApis
+        : [],
+      allowedPaths: Array.isArray(row.allowedPaths)
+        ? row.allowedPaths
+        : [],
+      payloadContractRefs: Array.isArray(row.payloadContractRefs)
+        ? row.payloadContractRefs
+        : [],
+      writesControlFields: Array.isArray(row.writesControlFields)
+        ? row.writesControlFields
+        : [],
+      receiptPath: text(row.receiptPath),
+      beforeAfterHashRequired: row.beforeAfterHashRequired === true,
+      canModifyWriterRegistry: row.canModifyWriterRegistry === true,
+      registryHash: text(row.registryHash),
+      architectureConfirmationHash: text(
+        row.architectureConfirmationHash
+      ),
     };
   });
   if (new Set(writers.map((writer) => writer.writerId)).size !== writers.length) {

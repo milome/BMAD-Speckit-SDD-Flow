@@ -20,6 +20,14 @@ const {
     ? './partition-closure-scope.ts'
     : './partition-closure-scope'
 );
+const {
+  lifecycleAuthorityFieldsFromManifest,
+  verifyLifecycleAuthorityBinding,
+} = require(
+  __filename.endsWith('.ts')
+    ? './lifecycle-authority-binding.ts'
+    : './lifecycle-authority-binding'
+);
 
 const EVIDENCE_SCHEMA =
   'goal-contract-subcontract-evidence.schema.json';
@@ -33,6 +41,11 @@ const FORBIDDEN_AUTHORITY_FIELDS = new Set([
   'copiedPass',
   'closeoutApproved',
   'historicalReceipt',
+  'releaseDecision',
+  'activationDecision',
+  'leaseDecision',
+  'childClosureDecision',
+  'campaignClosureDecision',
 ]);
 const REQUIRED_EVIDENCE_CATEGORIES = Object.freeze([
   'targeted_positive',
@@ -560,6 +573,21 @@ function compileSubcontractEvidence(request: unknown = {}) {
   if (!partition) {
     throw failure('subcontract_manifest_membership_missing');
   }
+  verifyLifecycleAuthorityBinding({
+    record: activation,
+    partitionManifest: manifest,
+    campaignId: activation.campaignId,
+    attemptId: activation.attemptId,
+  });
+  verifyLifecycleAuthorityBinding({
+    record: lease,
+    partitionManifest: manifest,
+    campaignId: activation.campaignId,
+    attemptId: lease.attemptId,
+    partitionId,
+    childContractHash: partition.childContractHash,
+    nodeAttemptId: lease.nodeAttemptId,
+  });
   const closureScopeMode = deriveClosureScopeMode(partition);
   for (const [actual, expected, field] of [
     [lease.partitionId, partitionId, 'partitionId'],
@@ -707,6 +735,15 @@ function compileSubcontractEvidence(request: unknown = {}) {
       lease.childContractHash,
       'childContractHash'
     ),
+    ...lifecycleAuthorityFieldsFromManifest(manifest),
+    ...(lease.nodeAttemptId === undefined
+      ? {}
+      : {
+          nodeAttemptId: requireText(
+            lease.nodeAttemptId,
+            'nodeAttemptId'
+          ),
+        }),
     sourceCompositionPolicyHash: requireHash(
       request.sourceCompositionPolicyHash,
       'sourceCompositionPolicyHash'

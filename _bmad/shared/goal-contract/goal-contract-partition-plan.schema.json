@@ -142,6 +142,32 @@
       "items": { "$ref": "#/$defs/childProjection" }
     },
     "partitionSetHash": { "$ref": "#/$defs/hash" },
+    "partitionPlanBasisHash": { "$ref": "#/$defs/hash" },
+    "repositoryTreeHash": { "$ref": "#/$defs/hash" },
+    "partitionImpactPolicyHash": { "$ref": "#/$defs/hash" },
+    "partitionImpactAnalyzerIdentityHash": { "$ref": "#/$defs/hash" },
+    "partitionImpactGraphPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "partitionImpactGraphHash": { "$ref": "#/$defs/hash" },
+    "partitionImpactGraphDocumentHash": { "$ref": "#/$defs/hash" },
+    "partitionClosureFeasibilityReceiptPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "partitionClosureFeasibilityReceiptHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "partitionClosureFeasibilityDecision": {
+      "enum": ["blocked", "pass"]
+    },
+    "partitionImpactDriftReceiptPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "partitionImpactDriftReceiptHash": { "$ref": "#/$defs/hash" },
+    "driftHash": { "$ref": "#/$defs/hash" },
     "partitionPlanHash": { "$ref": "#/$defs/hash" }
   },
   "$defs": {

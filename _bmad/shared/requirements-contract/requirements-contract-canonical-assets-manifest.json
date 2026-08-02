@@ -2,9 +2,9 @@
   "schemaVersion": "requirements-contract-canonical-assets-manifest/v2",
   "owner": {
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-canonical-assets-manifest.ts",
-    "hash": "sha256:500c674b49bacbca5f6e2e0492fa858e12e9ee9714e6833b9616650172e8935c"
+    "hash": "sha256:4e6d0843fdee9cfc47e7322e8c9e91bdcc696198ad02d2bf1f16652c9096dd8d"
   },
-  "manifestHash": "sha256:f9af516e22a36598bf7c780856b8c28fdc2c52c5450e6b003f0ee987f599c48f",
+  "manifestHash": "sha256:d0da1b92d2bddb00f59ddafad3bf3e1414c35f882eb54f42fe4b61b1f74616d8",
   "assets": [
     {
       "assetId": "semantic_ir_schema",
@@ -291,13 +291,76 @@
       "sha256": "sha256:0e344e728103082cc9680571db6fe8dee3f3add6d386927792b6fd7d079faa15"
     },
     {
+      "assetId": "goal_contract_partition_impact_policy",
+      "version": "goal-contract-partition-impact-policy/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-partition-impact-policy.json",
+      "role": "goal_contract_partition_impact_policy",
+      "assetKind": "profile",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:58d70416ddb32f948d7a86df82421017e915a2b6a88eff4b816eaa57dc2035a8"
+    },
+    {
+      "assetId": "goal_contract_partition_impact_policy_schema",
+      "version": "goal-contract-partition-impact-policy/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-partition-impact-policy.schema.json",
+      "role": "goal_contract_partition_impact_policy_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:fc3db344251c0dc65d9c14dde46f2a184c88b507f2eb667bdd4ac8444e01d719"
+    },
+    {
+      "assetId": "goal_contract_partition_impact_graph_schema",
+      "version": "goal-contract-partition-impact-graph/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-partition-impact-graph.schema.json",
+      "role": "goal_contract_partition_impact_graph_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:8f15901e26363c4d4cb850715ecf247dab91242d7ea2758e5186b25cd91ae7c1"
+    },
+    {
+      "assetId": "goal_contract_partition_closure_feasibility_receipt_schema",
+      "version": "goal-contract-partition-closure-feasibility-receipt/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-partition-closure-feasibility-receipt.schema.json",
+      "role": "goal_contract_partition_closure_feasibility_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:4a69c23ca0815d7032be7df2782af35345d9d2ab61e90a7dc2dd60b394f606a5"
+    },
+    {
+      "assetId": "goal_contract_partition_impact_drift_receipt_schema",
+      "version": "goal-contract-partition-impact-drift-receipt/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-partition-impact-drift-receipt.schema.json",
+      "role": "goal_contract_partition_impact_drift_receipt_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:fc8bca421cae1268f64bc47431d7b72f26cb9bc7128c905fa899d8015b02093d"
+    },
+    {
       "assetId": "goal_contract_partition_manifest_schema",
       "version": "goal-contract-partition-manifest/v1",
       "path": "_bmad/shared/goal-contract/goal-contract-partition-manifest.schema.json",
       "role": "goal_contract_partition_manifest_schema",
       "assetKind": "schema",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:cf224b2b5508ffcef3dfb0cf56a240c85b5bcdcf84ea442c98081f2d04ed4255"
+      "sha256": "sha256:e477962fb36f88905e942fe7ca89489d30860baed78d66e18312aaaef92995b1"
+    },
+    {
+      "assetId": "goal_contract_partition_output_authority_schema",
+      "version": "goal-contract-partition-output-authority/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-partition-output-authority.schema.json",
+      "role": "goal_contract_partition_output_authority_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:bfe8690ca0594153592d8c8577baf2d22633315c6aeca30f3b95295120d0a23c"
+    },
+    {
+      "assetId": "goal_contract_lifecycle_authority_binding_schema",
+      "version": "goal-contract-lifecycle-authority-binding/v1",
+      "path": "_bmad/shared/goal-contract/goal-contract-lifecycle-authority-binding.schema.json",
+      "role": "goal_contract_lifecycle_authority_binding_schema",
+      "assetKind": "schema",
+      "authorityClass": "deterministic_contract",
+      "sha256": "sha256:778000396ccbfc335a23c2c784f04d2177f53183358c281f4703a67e7719cc5b"
     },
     {
       "assetId": "goal_contract_partition_analysis_receipt_schema",
@@ -306,7 +369,7 @@
       "role": "goal_contract_partition_analysis_receipt_schema",
       "assetKind": "schema",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:159591704acc70574319585992924277f12133a20defcf6bea31f9bf871d6e19"
+      "sha256": "sha256:462c94873cfb9b71520c86ababe97cb22603d4d0190efbb6fb4e07a82d71b67a"
     },
     {
       "assetId": "goal_contract_partition_global_coverage_receipt_schema",
@@ -351,7 +414,7 @@
       "role": "goal_contract_partition_child_generation_receipt_schema",
       "assetKind": "schema",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:9ea25f58859cd2e7aefc86301b9fcd717f1303ff8613c97f55ebef4e71096a02"
+      "sha256": "sha256:d82f5a29afca00537d4bc11105afefc5ad816c6cb874fa6d4e29b884e51b73ba"
     },
     {
       "assetId": "goal_contract_partition_plan_schema",
@@ -360,7 +423,7 @@
       "role": "goal_contract_partition_plan_schema",
       "assetKind": "schema",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:63e9f710658043ea9001ec62c1d822b14ac106af866f64222cbd34317496e2ec"
+      "sha256": "sha256:b9d980595f35dc4b95dfad2a29bdeaecc6615ade0a0a32946298fca1e0225907"
     },
     {
       "assetId": "goal_contract_authority_supersession_receipt_schema",
@@ -396,7 +459,7 @@
       "role": "goal_contract_campaign_activation_receipt_schema",
       "assetKind": "schema",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:b5afb80913a50c44808ca37389dc060bcfcc1fcb7b2e658f229626475e70cbd6"
+      "sha256": "sha256:80b36d977c79bdb47d69d4d8b0ceb0ff612ca489c8656c0641dd592e0460b84d"
     },
     {
       "assetId": "goal_contract_subcontract_execution_lease_schema",
@@ -405,7 +468,7 @@
       "role": "goal_contract_subcontract_execution_lease_schema",
       "assetKind": "schema",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:44bdf55117efc528dd03d6e11d865b2f82371dcd005ccb2cb97f005f9e0ab62f"
+      "sha256": "sha256:0c54808ab9358ffc80fcaed98e261763ff92f093ec9d7baad4d2200a2f58e534"
     },
     {
       "assetId": "goal_contract_subcontract_evidence_schema",
@@ -414,7 +477,7 @@
       "role": "goal_contract_subcontract_evidence_schema",
       "assetKind": "schema",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:08c6b91ae7b2f137622d961f6aadd025aeaed314c9f36b0cf8c34002f5a8b59f"
+      "sha256": "sha256:bbb1b61599ac96cc5adc49bea2ddb10b2db0b6f4c44897e7b4478e2ca0c35180"
     },
     {
       "assetId": "goal_contract_subcontract_closure_receipt_schema",
@@ -423,7 +486,7 @@
       "role": "goal_contract_subcontract_closure_receipt_schema",
       "assetKind": "schema",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:b6319d997c34c75f55f4be4a363b8279ed4e53d786c45018e55f827a8bfe861e"
+      "sha256": "sha256:abadc4155374b87d757b5e4736de70297a4e09c7478f7570b88f89af412368c6"
     },
     {
       "assetId": "goal_contract_campaign_closure_receipt_schema",
@@ -432,7 +495,7 @@
       "role": "goal_contract_campaign_closure_receipt_schema",
       "assetKind": "schema",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:a3c695274609646cc5bccb23b990cdd24e98f7b8e7f1de4c3c0fafafd73bc948"
+      "sha256": "sha256:73fd202c13f2f3083e8b7cb43aceea82b7f711cd553d5f38483de09204695d2f"
     },
     {
       "assetId": "closeout_packet_schema",

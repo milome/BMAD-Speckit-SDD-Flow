@@ -150,7 +150,10 @@ function parseDeclaredId(text) {
     return listMatch[2];
   }
   const taskHeadingMatch = /^Task\s+([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+)\b/u.exec(text);
-  return taskHeadingMatch?.[1] || null;
+  if (taskHeadingMatch) return taskHeadingMatch[1];
+  const declaredHeadingMatch =
+    /^([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+)\s*[:：]\s*\S/u.exec(text);
+  return declaredHeadingMatch?.[1] || null;
 }
 
 function classifyDeclaredObligation(text, headingPath, fallbackKind) {
@@ -160,7 +163,15 @@ function classifyDeclaredObligation(text, headingPath, fallbackKind) {
   if (/^CMD-/u.test(declaredId || '')) return 'verification_command';
   if (
     declaredId &&
-    new RegExp(`^Task\\s+${declaredId.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}\\b`, 'u').test(text)
+    (new RegExp(
+      `^Task\\s+${declaredId.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}\\b`,
+      'u'
+    ).test(text) ||
+      new RegExp(
+        `^${declaredId.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}\\s*[:：]`,
+        'u'
+      ).test(text)) &&
+    /-T\d+[A-Z]?$/u.test(declaredId)
   ) {
     return 'declared_execution_task';
   }
@@ -190,7 +201,11 @@ function classifyDeclaredObligation(text, headingPath, fallbackKind) {
 function isExplicitTaskHeading(obligation) {
   if (!obligation.declaredId) return false;
   const escapedId = obligation.id.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
-  return new RegExp(`^Task\\s+${escapedId}\\b`, 'u').test(obligation.exactText);
+  return (
+    new RegExp(`^Task\\s+${escapedId}\\b`, 'u').test(obligation.exactText) ||
+    (/-T\d+[A-Z]?$/u.test(obligation.id) &&
+      new RegExp(`^${escapedId}\\s*[:：]`, 'u').test(obligation.exactText))
+  );
 }
 
 function extractReferencedIds(text, declaredId) {
@@ -215,6 +230,109 @@ function extractDependencyRefs(text, declaredId) {
       )
     ),
   ].sort();
+}
+
+function arrowTaskDependencyMap(sourceObligations) {
+  const taskIdPattern = '[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-T\\d+[A-Z]?';
+  const chainPattern = new RegExp(
+    `^\\s*(${taskIdPattern}(?:\\s*(?:->|→|=>)\\s*${taskIdPattern})+)\\s*$`,
+    'u'
+  );
+  const taskPattern = new RegExp(taskIdPattern, 'gu');
+  const knownTaskIds = new Set(
+    sourceObligations
+      .filter(
+        (obligation) =>
+          obligation.declaredId &&
+          obligation.kind === 'declared_execution_task'
+      )
+      .map((obligation) => obligation.id)
+  );
+  const dependenciesByTaskId = new Map(
+    [...knownTaskIds].map((taskId) => [taskId, []])
+  );
+  const unknownDependencies = [];
+  for (const obligation of sourceObligations) {
+    for (const line of String(obligation.exactText || '').split(/\r?\n/gu)) {
+      const chain = chainPattern.exec(line);
+      if (!chain) continue;
+      const taskIds = [...chain[1].matchAll(taskPattern)].map(
+        (match) => match[0]
+      );
+      for (let index = 1; index < taskIds.length; index += 1) {
+        const dependencyId = taskIds[index - 1];
+        const sourceId = taskIds[index];
+        if (
+          !knownTaskIds.has(sourceId) ||
+          !knownTaskIds.has(dependencyId)
+        ) {
+          unknownDependencies.push({ sourceId, dependencyId });
+          continue;
+        }
+        dependenciesByTaskId.set(
+          sourceId,
+          [
+            ...new Set([
+              ...(dependenciesByTaskId.get(sourceId) || []),
+              dependencyId,
+            ]),
+          ].sort()
+        );
+      }
+    }
+  }
+  if (unknownDependencies.length > 0) {
+    throw failure('source_obligation_dependency_unknown', {
+      unknownDependencies: unknownDependencies.sort(
+        (left, right) =>
+          left.sourceId.localeCompare(right.sourceId, 'en') ||
+          left.dependencyId.localeCompare(right.dependencyId, 'en')
+      ),
+    });
+  }
+  return dependenciesByTaskId;
+}
+
+function projectArrowTaskDependencies(sourceObligations) {
+  const dependenciesByTaskId = arrowTaskDependencyMap(sourceObligations);
+  return sourceObligations.map((obligation) => {
+    const arrowDependencies = dependenciesByTaskId.get(obligation.id) || [];
+    if (arrowDependencies.length === 0) return obligation;
+    return {
+      ...obligation,
+      dependencyRefs: [
+        ...new Set([...obligation.dependencyRefs, ...arrowDependencies]),
+      ].sort(),
+    };
+  });
+}
+
+function materializeLeadingCorrectionObligations(sourceObligations) {
+  const materializedIds = new Set();
+  return sourceObligations.map((obligation) => {
+    const match =
+      /^`(ER-[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+)`\s+(?:is\b|requires\b)/u.exec(
+        obligation.exactText
+      );
+    const correctionId = match?.[1];
+    if (!correctionId || materializedIds.has(correctionId)) {
+      return obligation;
+    }
+    materializedIds.add(correctionId);
+    const withoutSelf = (values) =>
+      values.filter((value) => value !== correctionId);
+    return {
+      ...obligation,
+      id: correctionId,
+      declaredId: true,
+      taskRefs: withoutSelf(obligation.taskRefs),
+      acceptanceRefs: withoutSelf(obligation.acceptanceRefs),
+      commandRefs: withoutSelf(obligation.commandRefs),
+      evidenceRefs: withoutSelf(obligation.evidenceRefs),
+      dependencyRefs: withoutSelf(obligation.dependencyRefs),
+      atomicGroupRefs: withoutSelf(obligation.atomicGroupRefs),
+    };
+  });
 }
 
 function deterministicValidationKind(kind) {
@@ -418,20 +536,22 @@ function extractSourceObligations(
   let inFence = false;
   let fenceStart = 0;
   let fenceLines = [];
+  let proseStart = 0;
+  let proseLines = [];
 
   function currentHeadingPath() {
     return headingStack.map((entry) => entry.title);
   }
 
-  function pushText(lineNumber, text, kind = null) {
+  function pushText(lineStart, text, kind = null, lineEnd = lineStart) {
     const trimmed = text.trim();
     if (!trimmed) return;
     const headingPath = currentHeadingPath();
     const base = {
       sourcePlanPath,
       kind: kind || classifyText(trimmed, headingPath),
-      lineStart: lineNumber,
-      lineEnd: lineNumber,
+      lineStart,
+      lineEnd,
       headingPath,
       text: trimmed,
     };
@@ -441,10 +561,35 @@ function extractSourceObligations(
     });
   }
 
+  function isExtractableProse(text) {
+    return (
+      /^\s*\*{0,2}(?:依赖|dependencies?)\s*[:：]\*{0,2}/iu.test(text) ||
+      /^\s*Steps\s*[:：]/iu.test(text) ||
+      /^\s*Acceptance\s*[:：]/iu.test(text) ||
+      /^\s*`ER-[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+`\s+(?:is\b|requires\b)/u.test(
+        text
+      ) ||
+      /\b(MUST|must|Run|Create|Modify|Add|Fail|Stop|release|receipt|coverage)\b/u.test(
+        text
+      )
+    );
+  }
+
+  function flushProse(lineEnd) {
+    if (proseLines.length === 0) return;
+    const text = proseLines.join('\n');
+    if (isExtractableProse(text)) {
+      pushText(proseStart, text, null, lineEnd);
+    }
+    proseStart = 0;
+    proseLines = [];
+  }
+
   lines.forEach((line, index) => {
     const lineNumber = index + 1;
     const fenceMatch = /^(```|~~~)/u.exec(line.trim());
     if (fenceMatch) {
+      flushProse(lineNumber - 1);
       if (!inFence) {
         inFence = true;
         fenceStart = lineNumber;
@@ -475,6 +620,7 @@ function extractSourceObligations(
 
     const heading = /^(#{1,6})\s+(.+?)\s*$/u.exec(line);
     if (heading) {
+      flushProse(lineNumber - 1);
       const level = heading[1].length;
       const title = heading[2].trim();
       while (headingStack.length > 0 && headingStack.at(-1).level >= level) headingStack.pop();
@@ -494,15 +640,23 @@ function extractSourceObligations(
       return;
     }
 
-    if (/^\s*>/u.test(line)) pushText(lineNumber, line, 'heading_requirement');
-    else if (/^\s*(?:[-*]\s+|\d+\.\s+)/u.test(line)) pushText(lineNumber, line);
-    else if (
-      /^\s*\*{0,2}(?:依赖|dependencies?)\s*[:：]\*{0,2}/iu.test(line) ||
-      /\b(MUST|must|Run|Create|Modify|Add|Fail|Stop|release|receipt|coverage)\b/u.test(line)
-    ) {
+    if (line.trim() === '') {
+      flushProse(lineNumber - 1);
+    } else if (/^\s*>/u.test(line)) {
+      flushProse(lineNumber - 1);
+      pushText(lineNumber, line, 'heading_requirement');
+    } else if (/^\s*(?:[-*+]\s+|\d+[.)]\s+)/u.test(line)) {
+      flushProse(lineNumber - 1);
       pushText(lineNumber, line);
+    } else if (/^\s*(?:[-*_]){3,}\s*$|^\s*\|/u.test(line)) {
+      flushProse(lineNumber - 1);
+    } else {
+      if (proseLines.length === 0) proseStart = lineNumber;
+      proseLines.push(line);
     }
   });
+
+  flushProse(lines.length);
 
   if (inFence) {
     const base = {
@@ -522,6 +676,8 @@ function extractSourceObligations(
   let sourceObligations = rawObligations
     .filter((item) => item.text && item.text.trim())
     .map((item, index) => makeObligation(index, item, snapshot, legacyIds));
+  sourceObligations =
+    materializeLeadingCorrectionObligations(sourceObligations);
   if (sourceObligations.some(isExplicitTaskHeading)) {
     sourceObligations = sourceObligations.map((obligation) =>
       obligation.kind === 'declared_execution_task' && !isExplicitTaskHeading(obligation)
@@ -532,6 +688,7 @@ function extractSourceObligations(
         : obligation
     );
   }
+  sourceObligations = projectArrowTaskDependencies(sourceObligations);
 
   const declaredIds = sourceObligations.filter((item) => item.declaredId).map((item) => item.id);
   const duplicateIds = [

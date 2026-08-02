@@ -74,6 +74,7 @@ function activationFixture({
 function closureFixture({
   activation,
   partition,
+  leaseReceiptHash,
   predecessorClosureReceiptHashes = [],
 }) {
   const payload = {
@@ -81,7 +82,7 @@ function closureFixture({
     campaignId: activation.campaignId,
     campaignActivationHash: activation.campaignActivationHash,
     activationReceiptHash: activation.receiptHash,
-    leaseReceiptHash: hash(`lease:${partition.partitionId}`),
+    leaseReceiptHash,
     attemptId: activation.attemptId,
     partitionId: partition.partitionId,
     partitionManifestHash: activation.partitionManifestHash,
@@ -185,9 +186,15 @@ function fixture() {
     partitionPlanHash,
     partitionSetHash,
   });
+  const ownerLease = leaseFixture({
+    activation,
+    partition: partitions[0],
+    leaseOrdinal: 1,
+  });
   const ownerClosure = closureFixture({
     activation,
     partition: partitions[0],
+    leaseReceiptHash: ownerLease.receiptHash,
   });
   const invalidatedLease = leaseFixture({
     activation,
@@ -197,11 +204,13 @@ function fixture() {
   const invalidatedClosure = closureFixture({
     activation,
     partition: partitions[1],
+    leaseReceiptHash: invalidatedLease.receiptHash,
     predecessorClosureReceiptHashes: [ownerClosure.receiptHash],
   });
   return {
     activation,
     manifest,
+    ownerLease,
     ownerClosure,
     invalidatedLease,
     invalidatedClosure,
@@ -246,6 +255,10 @@ function compileRequest(overrides = {}) {
         },
       ],
       preservedClosureReceipts: [current.ownerClosure],
+      baseLeaseReceipts: [
+        current.ownerLease,
+        current.invalidatedLease,
+      ],
       invalidatedLeaseReceipts: [current.invalidatedLease],
       invalidatedClosureReceipts: [current.invalidatedClosure],
       repairAttemptId: 'attempt-repair-001',
@@ -416,6 +429,42 @@ describe('goal campaign repair authority', () => {
           expectedRepairAttemptId: 'attempt-repair-001',
         }),
       { failureClass: 'campaign_repair_authorization_invalid' }
+    );
+
+    const forgedLeaseBinding = compileRequest();
+    const forgedClosure = structuredClone(
+      forgedLeaseBinding.ownerClosure
+    );
+    forgedClosure.leaseReceiptHash = hash('forged-owner-lease');
+    forgedClosure.receiptHash = hashReceiptPayload(forgedClosure);
+    forgedLeaseBinding.request.preservedClosureReceipts = [
+      forgedClosure,
+    ];
+    assert.throws(
+      () =>
+        compileGoalCampaignRepairAuthority(
+          forgedLeaseBinding.request
+        ),
+      { failureClass: 'campaign_repair_authority_binding_invalid' }
+    );
+
+    const mismatchedInvalidatedLease = compileRequest();
+    const {
+      receiptHash: _ignoredInvalidatedLeaseHash,
+      ...invalidatedLeasePayload
+    } = mismatchedInvalidatedLease.invalidatedLease;
+    mismatchedInvalidatedLease.request.invalidatedLeaseReceipts = [
+      signed({
+        ...invalidatedLeasePayload,
+        issuedAt: '2026-07-31T01:21:00.000Z',
+      }),
+    ];
+    assert.throws(
+      () =>
+        compileGoalCampaignRepairAuthority(
+          mismatchedInvalidatedLease.request
+        ),
+      { failureClass: 'campaign_repair_authority_binding_invalid' }
     );
   });
 

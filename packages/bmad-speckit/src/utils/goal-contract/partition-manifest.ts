@@ -43,6 +43,7 @@ type PartitionSemanticOverrides = {
   completionPredicateIds?: unknown[];
   evidenceContractIds?: unknown[];
   failureClasses?: unknown[];
+  governedPaths?: unknown[];
   inheritedConstraintIds?: unknown[];
   outcome?: string;
   ownedArtifactPaths?: unknown[];
@@ -402,6 +403,11 @@ function derivedPartitionFields(
           .filter((scope) => intersects(scope.taskIds, taskIds))
           .map((scope) => scope.path)
       );
+  const governedPaths = unique(
+    (input.executionProjection.fileScopeIndex || [])
+      .filter((scope) => intersects(scope.taskIds, taskIds))
+      .map((scope) => scope.path)
+  );
   const sharedArtifactDependencies = [];
   const compatibilityReceiptRequirements = [];
   for (const ownership of sharedOwnership || []) {
@@ -496,6 +502,7 @@ function derivedPartitionFields(
       slices.flatMap((slice) => slice.completionPredicateIds || [])
     ),
     ownedArtifactPaths,
+    governedPaths,
     sharedArtifactDependencies,
     compatibilityReceiptRequirements,
     blockedConditions: [],
@@ -534,6 +541,11 @@ function partitionSemanticRecord(
     partitionRoleDerived: partition.partitionRoleDerived === true,
     ownedArtifactPaths: unique(
       derived.ownedArtifactPaths ?? partition.ownedArtifactPaths
+    ),
+    governedPaths: unique(
+      derived.governedPaths ??
+        partition.governedPaths ??
+        partition.ownedArtifactPaths
     ),
     sharedArtifactDependencies: [
       ...(derived.sharedArtifactDependencies ??
@@ -1235,6 +1247,7 @@ function validateFinalizationPartitionPlan(partitionPlan) {
     }
   }
   for (let index = 0; index < order.length; index += 1) {
+    const partition = partitionPlan.partitions[index];
     const selection = partitionPlan.selections[index];
     const projection = partitionPlan.childProjectionInputs[index];
     const selectionSemantic = structuredClone(selection);
@@ -1255,6 +1268,16 @@ function validateFinalizationPartitionPlan(partitionPlan) {
       sourceAuthorityBundleHash:
         partitionPlan.sourceAuthorityBundleHash,
       partitionSetHash: partitionPlan.partitionSetHash,
+      ...(partitionPlan.partitionImpactGraphHash
+        ? {
+            partitionClosureFeasibilityHash:
+              partition.partitionClosureFeasibilityHash,
+            closureRelevantArtifactIds:
+              partition.closureRelevantArtifactIds,
+            closureRelevantCommandIds:
+              partition.closureRelevantCommandIds,
+          }
+        : {}),
     };
     if (
       stableStringify(projection) !==
@@ -1422,6 +1445,10 @@ function pendingChildReceiptPayload(receipt) {
   return payload;
 }
 
+function projectionGovernedPaths(projection) {
+  return projection.governedPaths ?? projection.ownedArtifactPaths ?? [];
+}
+
 function validatePendingChildReceipt({
   partitionPlan,
   projection,
@@ -1462,6 +1489,19 @@ function validatePendingChildReceipt({
     displayOrdinal,
     partitionId: projection.partitionId,
     partitionSetHash: partitionPlan.partitionSetHash,
+    ...(partitionPlan.partitionImpactGraphHash
+      ? {
+          partitionImpactGraphHash:
+            partitionPlan.partitionImpactGraphHash,
+          partitionClosureFeasibilityHash:
+            projection.partitionClosureFeasibilityHash,
+          closureRelevantArtifactIds:
+            projection.closureRelevantArtifactIds,
+          closureRelevantCommandIds:
+            projection.closureRelevantCommandIds,
+          driftHash: partitionPlan.driftHash,
+        }
+      : {}),
     selectionHash: projection.selectionHash,
     goalContractHash: partitionPlan.goalContractHash,
     sourceCompositionPolicyHash:
@@ -1482,7 +1522,7 @@ function validatePendingChildReceipt({
         ({ declaredSourceId }) => declaredSourceId
       ),
     ]),
-    governedPaths: projection.ownedArtifactPaths,
+    governedPaths: projectionGovernedPaths(projection),
     dependencyPartitionIds: projection.dependencyPartitionIds,
   };
   for (const [field, expected] of Object.entries(authorityFields)) {
@@ -1525,7 +1565,7 @@ function validatePendingChildReceipt({
     namespaceRefs: projection.namespaceRefs,
     sourceArtifactRefs: projection.sourceArtifactRefs,
     specSpanRefs: projection.specSpanRefs,
-    governedPaths: projection.ownedArtifactPaths,
+    governedPaths: projectionGovernedPaths(projection),
   })) {
     if (
       stableStringify(parseChildArrayBinding(fields, field)) !==
@@ -1550,7 +1590,8 @@ function validatePendingChildReceipt({
 function compatibilityRecordsForPartition({
   partitionId,
   ownerRecords,
-  partitionRunId,
+  partitionRunId: _partitionRunId,
+  artifactPaths,
 }) {
   const sharedArtifactDependencies = [];
   const compatibilityReceiptRequirements = [];
@@ -1563,11 +1604,11 @@ function compatibilityRecordsForPartition({
     compatibilityReceiptRequirements.push({
       artifactPath: record.artifactPath,
       predecessorPartitionId: record.ownerPartitionId,
-      receiptPath:
-        `partition-runs/${partitionRunId}/partitions/${partitionId}` +
-        `/compatibility/${sha256Text(
-          `${record.artifactPath}|${record.ownerPartitionId}`
-        ).slice('sha256:'.length, 'sha256:'.length + 16)}.receipt.json`,
+      receiptPath: artifactPaths.compatibilityReceiptPath({
+        partitionId,
+        artifactPath: record.artifactPath,
+        predecessorPartitionId: record.ownerPartitionId,
+      }),
     });
   }
   return {
@@ -1581,10 +1622,180 @@ function compatibilityRecordsForPartition({
   };
 }
 
+function finalizationArtifactPaths({ partitionRunId, layout }) {
+  if (layout === 'authority_unit') {
+    return Object.freeze({
+      partitionPlanPath: 'partition-plan.json',
+      partitionManifestPath: 'partition-manifest.json',
+      partitionAnalysisReceiptPath:
+        'receipts/partition-analysis.receipt.json',
+      globalCoverageReceiptPath: 'receipts/global-coverage.receipt.json',
+      selectionReceiptPath(partitionId) {
+        return `receipts/partitions/${partitionId}/selection.receipt.json`;
+      },
+      compatibilityReceiptPath({
+        partitionId,
+        artifactPath,
+        predecessorPartitionId,
+      }) {
+        return (
+          `receipts/partitions/${partitionId}/compatibility/` +
+          `${sha256Text(
+            `${artifactPath}|${predecessorPartitionId}`
+          ).slice('sha256:'.length, 'sha256:'.length + 16)}.receipt.json`
+        );
+      },
+    });
+  }
+  const root = `partition-runs/${partitionRunId}`;
+  return Object.freeze({
+    partitionPlanPath: `${root}/partition-plan.json`,
+    partitionManifestPath: `${root}/partition-manifest.json`,
+    partitionAnalysisReceiptPath:
+      `${root}/partition-analysis.receipt.json`,
+    globalCoverageReceiptPath: `${root}/global-coverage.receipt.json`,
+    selectionReceiptPath(partitionId) {
+      return `${root}/partitions/${partitionId}/selection.receipt.json`;
+    },
+    compatibilityReceiptPath({
+      partitionId,
+      artifactPath,
+      predecessorPartitionId,
+    }) {
+      return (
+        `${root}/partitions/${partitionId}/compatibility/` +
+        `${sha256Text(
+          `${artifactPath}|${predecessorPartitionId}`
+        ).slice('sha256:'.length, 'sha256:'.length + 16)}.receipt.json`
+      );
+    },
+  });
+}
+
+function validatePartitionImpactFinalizationInput({
+  partitionPlan,
+  partitionImpactAuthority,
+}) {
+  const hardened = Boolean(
+    partitionPlan.partitionImpactGraphHash
+  );
+  if (!hardened) return null;
+  if (
+    !partitionImpactAuthority ||
+    typeof partitionImpactAuthority !== 'object'
+  ) {
+    throw failure('partition_impact_authority_missing');
+  }
+  const bindings = {
+    repositoryTreeHash:
+      partitionImpactAuthority.impactGraph?.repositoryTreeHash,
+    partitionPlanBasisHash:
+      partitionImpactAuthority.impactGraph
+        ?.partitionPlanBasisHash,
+    partitionImpactPolicyHash:
+      partitionImpactAuthority.impactGraph
+        ?.partitionImpactPolicyHash,
+    partitionImpactAnalyzerIdentityHash:
+      partitionImpactAuthority.impactGraph?.analyzerIdentityHash,
+    partitionImpactGraphHash:
+      partitionImpactAuthority.impactGraph?.impactGraphHash,
+    partitionImpactGraphDocumentHash:
+      sha256Text(partitionImpactAuthority.impactGraphBytes || ''),
+    partitionClosureFeasibilityReceiptHash:
+      sha256Text(
+        partitionImpactAuthority.closureFeasibilityBytes || ''
+      ),
+    partitionClosureFeasibilityDecision:
+      partitionImpactAuthority.closureFeasibility?.decision,
+    partitionImpactDriftReceiptHash:
+      sha256Text(partitionImpactAuthority.impactDriftBytes || ''),
+    driftHash:
+      partitionImpactAuthority.impactDrift?.driftHash,
+  };
+  const mismatchedFields = Object.entries(bindings)
+    .filter(
+      ([field, value]) => partitionPlan[field] !== value
+    )
+    .map(([field]) => field)
+    .sort();
+  if (
+    mismatchedFields.length > 0 ||
+    partitionPlan.partitionClosureFeasibilityDecision !== 'pass'
+  ) {
+    throw failure('partition_impact_authority_binding_mismatch', {
+      mismatchedFields,
+    });
+  }
+  return partitionImpactAuthority;
+}
+
+function buildFinalPartitionAnalysisReceipt({
+  partitionAnalysisReceipt,
+  partitionPlan,
+  partitionRunId,
+  artifactPaths,
+}) {
+  if (
+    !partitionAnalysisReceipt ||
+    typeof partitionAnalysisReceipt !== 'object'
+  ) {
+    throw failure('partition_analysis_receipt_missing');
+  }
+  const receipt = {
+    ...structuredClone(partitionAnalysisReceipt),
+    runId: partitionRunId,
+    partitionRunId,
+    partitionCount: partitionPlan.topologicalOrder.length,
+    partitionIds: [...partitionPlan.topologicalOrder],
+    partitionSetHash: partitionPlan.partitionSetHash,
+    partitionManifestPath: artifactPaths.partitionManifestPath,
+    globalCoverageReceiptPath:
+      artifactPaths.globalCoverageReceiptPath,
+    partitionPlanHash: partitionPlan.partitionPlanHash,
+    partitionPlanBasisHash:
+      partitionPlan.partitionPlanBasisHash,
+    repositoryTreeHash: partitionPlan.repositoryTreeHash,
+    partitionImpactPolicyHash:
+      partitionPlan.partitionImpactPolicyHash,
+    partitionImpactAnalyzerIdentityHash:
+      partitionPlan.partitionImpactAnalyzerIdentityHash,
+    partitionImpactGraphHash:
+      partitionPlan.partitionImpactGraphHash,
+    partitionImpactGraphDocumentHash:
+      partitionPlan.partitionImpactGraphDocumentHash,
+    partitionClosureFeasibilityReceiptHash:
+      partitionPlan.partitionClosureFeasibilityReceiptHash,
+    partitionClosureFeasibilityDecision:
+      partitionPlan.partitionClosureFeasibilityDecision,
+    partitionImpactDriftReceiptHash:
+      partitionPlan.partitionImpactDriftReceiptHash,
+    driftHash: partitionPlan.driftHash,
+  };
+  validateSchema(
+    'goal-contract-partition-analysis-receipt.schema.json',
+    receipt,
+    'partition_analysis_receipt_schema_invalid'
+  );
+  const receiptBytes = canonicalText(receipt);
+  return Object.freeze({
+    receipt: Object.freeze(receipt),
+    receiptBytes,
+    receiptHash: sha256Text(receiptBytes),
+  });
+}
+
 function finalizePartitionManifest({
   partitionPlan,
   childCompilationReceipts,
+  artifactLayout,
+  partitionAnalysisReceipt,
+  partitionImpactAuthority,
 }) {
+  const impactAuthority =
+    validatePartitionImpactFinalizationInput({
+      partitionPlan,
+      partitionImpactAuthority,
+    });
   const { projections, selections } =
     validateFinalizationPartitionPlan(partitionPlan);
   if (!Array.isArray(childCompilationReceipts)) {
@@ -1651,12 +1862,43 @@ function finalizePartitionManifest({
     partitionPolicyHash: partitionPlan.partitionPolicyHash,
     partitionPlanHash: partitionPlan.partitionPlanHash,
     partitionSetHash: partitionPlan.partitionSetHash,
+    ...(impactAuthority
+      ? {
+          repositoryTreeHash:
+            partitionPlan.repositoryTreeHash,
+          partitionImpactPolicyHash:
+            partitionPlan.partitionImpactPolicyHash,
+          partitionImpactAnalyzerIdentityHash:
+            partitionPlan.partitionImpactAnalyzerIdentityHash,
+          partitionImpactGraphHash:
+            partitionPlan.partitionImpactGraphHash,
+          partitionImpactGraphDocumentHash:
+            partitionPlan.partitionImpactGraphDocumentHash,
+          partitionClosureFeasibilityReceiptHash:
+            partitionPlan.partitionClosureFeasibilityReceiptHash,
+          partitionImpactDriftReceiptHash:
+            partitionPlan.partitionImpactDriftReceiptHash,
+          driftHash: partitionPlan.driftHash,
+        }
+      : {}),
     orderedChildContractHashes,
   });
   const partitionRunId = `partition-run-${hashControlPlaneValue({
     partitionPlanHash: partitionPlan.partitionPlanHash,
     orderedChildContractHashes,
   }).slice('sha256:'.length)}`;
+  const artifactPaths = finalizationArtifactPaths({
+    partitionRunId,
+    layout: artifactLayout,
+  });
+  const finalAnalysis = impactAuthority
+    ? buildFinalPartitionAnalysisReceipt({
+        partitionAnalysisReceipt,
+        partitionPlan,
+        partitionRunId,
+        artifactPaths,
+      })
+    : null;
   const partitions = partitionPlan.topologicalOrder.map(
     (partitionId, index) => {
       const basePartition = partitionPlan.partitions[index];
@@ -1666,6 +1908,7 @@ function finalizePartitionManifest({
         partitionId,
         ownerRecords,
         partitionRunId,
+        artifactPaths,
       });
       const ownerConsumerRecords = (
         partitionPlan.ownerConsumerRecords || []
@@ -1697,7 +1940,7 @@ function finalizePartitionManifest({
         namespaceRefs: selection.namespaceRefs,
         sourceArtifactRefs: selection.sourceArtifactRefs,
         specSpanRefs: selection.specSpanRefs,
-        governedPaths: selection.ownedArtifactPaths,
+        governedPaths: projectionGovernedPaths(selection),
         dependencyPartitionIds: selection.dependencyPartitionIds,
         ownedArtifactPaths: selection.ownedArtifactPaths,
         sharedArtifactDependencies:
@@ -1708,8 +1951,7 @@ function finalizePartitionManifest({
         executionLeaseRequired: true,
         selectionSetHash: selection.selectionHash,
         selectionReceiptPath:
-          `partition-runs/${partitionRunId}/partitions/` +
-          `${partitionId}/selection.receipt.json`,
+          artifactPaths.selectionReceiptPath(partitionId),
       };
       return {
         ...membership,
@@ -1787,12 +2029,14 @@ function finalizePartitionManifest({
     optimizerVersion: partitionPlan.optimizerVersion,
     selectedCandidateId: partitionPlan.selectedCandidateId,
     partitionPlanPath:
-      `partition-runs/${partitionRunId}/partition-plan.json`,
+      artifactPaths.partitionPlanPath,
     partitionPlanHash: partitionPlan.partitionPlanHash,
     partitionAnalysisReceiptPath:
-      `partition-runs/${partitionRunId}/partition-plan.json`,
+      artifactPaths.partitionAnalysisReceiptPath,
     partitionAnalysisReceiptHash:
-      partitionPlan.partitionPlanHash,
+      finalAnalysis
+        ? finalAnalysis.receiptHash
+        : partitionPlan.partitionPlanHash,
     partitionSetHash: partitionPlan.partitionSetHash,
     partitionCount: partitions.length,
     topologicalOrder: partitionPlan.topologicalOrder,
@@ -1801,6 +2045,38 @@ function finalizePartitionManifest({
     ),
     orderedChildContractHashes,
     partitionManifestHash,
+    ...(impactAuthority
+      ? {
+          repositoryTreeHash:
+            partitionPlan.repositoryTreeHash,
+          partitionPlanBasisHash:
+            partitionPlan.partitionPlanBasisHash,
+          partitionImpactPolicyHash:
+            partitionPlan.partitionImpactPolicyHash,
+          partitionImpactAnalyzerIdentityHash:
+            partitionPlan.partitionImpactAnalyzerIdentityHash,
+          partitionImpactGraphPath:
+            partitionPlan.partitionImpactGraphPath,
+          partitionImpactGraphHash:
+            partitionPlan.partitionImpactGraphHash,
+          partitionImpactGraphDocumentHash:
+            partitionPlan.partitionImpactGraphDocumentHash,
+          partitionClosureFeasibilityReceiptPath:
+            partitionPlan
+              .partitionClosureFeasibilityReceiptPath,
+          partitionClosureFeasibilityReceiptHash:
+            partitionPlan
+              .partitionClosureFeasibilityReceiptHash,
+          partitionClosureFeasibilityDecision:
+            partitionPlan
+              .partitionClosureFeasibilityDecision,
+          partitionImpactDriftReceiptPath:
+            partitionPlan.partitionImpactDriftReceiptPath,
+          partitionImpactDriftReceiptHash:
+            partitionPlan.partitionImpactDriftReceiptHash,
+          driftHash: partitionPlan.driftHash,
+        }
+      : {}),
     namespaceOwnership:
       structuredClone(partitionPlan.namespaceOwnership),
     subordinateTaskMappings:
@@ -1814,7 +2090,7 @@ function finalizePartitionManifest({
       scopeEscapeObligationIds: [],
     },
     globalCoverageReceiptPath:
-      `partition-runs/${partitionRunId}/global-coverage.receipt.json`,
+      artifactPaths.globalCoverageReceiptPath,
     partitions,
   };
   validateManifestSequenceState(manifest, {
@@ -1851,6 +2127,10 @@ function finalizePartitionManifest({
   const partitionManifestBytes = canonicalText(manifest);
   return Object.freeze({
     manifest: Object.freeze(manifest),
+    analysisReceipt: finalAnalysis?.receipt,
+    analysisReceiptBytes: finalAnalysis?.receiptBytes,
+    partitionAnalysisReceiptHash:
+      finalAnalysis?.receiptHash,
     partitionManifestBytes,
     partitionManifestHash,
     partitionManifestDocumentHash: sha256Text(

@@ -38,6 +38,15 @@ const {
     ? './subcontract-closure.ts'
     : './subcontract-closure'
 );
+const {
+  lifecycleAuthorityFieldsFromManifest,
+  verifyLifecycleAuthorityBinding,
+  verifyLifecyclePredecessorOrigin,
+} = require(
+  __filename.endsWith('.ts')
+    ? './lifecycle-authority-binding.ts'
+    : './lifecycle-authority-binding'
+);
 
 const REPAIR_AUTHORITY_SCHEMA =
   'goal-contract-campaign-repair-authority-receipt.schema.json';
@@ -243,6 +252,7 @@ function verifyBoundReceipts({
   manifest,
   byId,
   order,
+  leaseByPartition,
 }: {
   receipts: unknown;
   bindingKind:
@@ -255,6 +265,7 @@ function verifyBoundReceipts({
   manifest: SchemaRecord;
   byId: Map<string, SchemaRecord>;
   order: Map<string, number>;
+  leaseByPartition: Map<string, SchemaRecord>;
 }): SchemaRecord[] {
   if (!Array.isArray(receipts)) {
     throw failure('campaign_repair_authority_request_invalid', {
@@ -315,6 +326,31 @@ function verifyBoundReceipts({
         });
       }
     }
+    const boundLease = leaseByPartition.get(candidate.partitionId);
+    if (
+      !boundLease ||
+      (bindingKind === 'invalidated_lease'
+        ? candidate.receiptHash !== boundLease.receiptHash
+        :
+        (candidate.leaseReceiptHash !== boundLease.receiptHash ||
+          candidate.nodeAttemptId !== boundLease.nodeAttemptId))
+    ) {
+      throw failure('campaign_repair_authority_binding_invalid', {
+        bindingKind,
+        partitionId: candidate.partitionId,
+        field: 'leaseReceiptHash',
+      });
+    }
+    verifyLifecyclePredecessorOrigin({
+      record: candidate,
+      partitionManifest: manifest,
+      campaignId: activation.campaignId,
+      campaignAttemptId: activation.attemptId,
+      predecessorOrigin: 'base',
+      partitionId: candidate.partitionId,
+      childContractHash: partition.childContractHash,
+      nodeAttemptId: boundLease.nodeAttemptId,
+    });
     if (
       bindingKind === 'invalidated_lease' &&
       (candidate.selectionHash !== partition.selectionSetHash ||
@@ -365,6 +401,84 @@ function verifyBoundReceipts({
     });
   }
   return orderedBindings;
+}
+
+function indexBaseLeases({
+  receipts,
+  activation,
+  manifest,
+  byId,
+  order,
+}: {
+  receipts: unknown;
+  activation: SchemaRecord;
+  manifest: SchemaRecord;
+  byId: Map<string, SchemaRecord>;
+  order: Map<string, number>;
+}): Map<string, SchemaRecord> {
+  if (!Array.isArray(receipts)) {
+    throw failure('campaign_repair_authority_request_invalid', {
+      field: 'baseLeaseReceipts',
+    });
+  }
+  const leaseByPartition = new Map<string, SchemaRecord>();
+  for (const candidate of receipts) {
+    if (!isRecord(candidate)) {
+      throw failure('campaign_repair_authority_binding_invalid', {
+        bindingKind: 'base_lease',
+      });
+    }
+    try {
+      validateGoalContractSchema(LEASE_SCHEMA, candidate);
+    } catch (error) {
+      throw failure('campaign_repair_authority_binding_invalid', {
+        bindingKind: 'base_lease',
+        reason: (error as { failureClass?: string }).failureClass,
+      });
+    }
+    const partition = byId.get(candidate.partitionId);
+    const ordinal = order.get(candidate.partitionId);
+    if (
+      !partition ||
+      ordinal === undefined ||
+      leaseByPartition.has(candidate.partitionId) ||
+      !verifyReceiptSelfHash(candidate) ||
+      candidate.decision !== 'pass' ||
+      candidate.campaignId !== activation.campaignId ||
+      candidate.campaignActivationHash !==
+        activation.campaignActivationHash ||
+      candidate.activationReceiptHash !== activation.receiptHash ||
+      candidate.attemptId !== activation.attemptId ||
+      candidate.partitionManifestHash !==
+        manifest.partitionManifestHash ||
+      candidate.partitionPlanHash !== manifest.partitionPlanHash ||
+      candidate.partitionSetHash !== manifest.partitionSetHash ||
+      candidate.sourceCompositionPolicyHash !==
+        manifest.sourceCompositionPolicyHash ||
+      candidate.sourceAuthorityBundleHash !==
+        manifest.sourceAuthorityBundleHash ||
+      candidate.childContractHash !== partition.childContractHash ||
+      candidate.selectionHash !== partition.selectionSetHash ||
+      candidate.leaseOrdinal !== ordinal + 1
+    ) {
+      throw failure('campaign_repair_authority_binding_invalid', {
+        bindingKind: 'base_lease',
+        partitionId: candidate.partitionId,
+      });
+    }
+    verifyLifecyclePredecessorOrigin({
+      record: candidate,
+      partitionManifest: manifest,
+      campaignId: activation.campaignId,
+      campaignAttemptId: activation.attemptId,
+      predecessorOrigin: 'base',
+      partitionId: candidate.partitionId,
+      childContractHash: partition.childContractHash,
+      nodeAttemptId: candidate.nodeAttemptId,
+    });
+    leaseByPartition.set(candidate.partitionId, candidate);
+  }
+  return leaseByPartition;
 }
 
 function currentOwnedPaths(manifest: SchemaRecord): Set<string> {
@@ -577,6 +691,12 @@ function compileGoalCampaignRepairAuthority(request: unknown = {}) {
     request.baseActivationReceipt,
     request.partitionManifest
   );
+  verifyLifecycleAuthorityBinding({
+    record: activation,
+    partitionManifest: manifest,
+    campaignId: activation.campaignId,
+    attemptId: activation.attemptId,
+  });
   const repairAttemptId = requireText(
     request.repairAttemptId,
     'repairAttemptId'
@@ -600,6 +720,13 @@ function compileGoalCampaignRepairAuthority(request: unknown = {}) {
     changedPaths,
   });
   const { byId, order } = partitionIndex(manifest);
+  const leaseByPartition = indexBaseLeases({
+    receipts: request.baseLeaseReceipts,
+    activation,
+    manifest,
+    byId,
+    order,
+  });
   const preservedPartitionIds = [...evaluation.preservedPartitionIds];
   const invalidatedPartitionIds = [...evaluation.invalidatedPartitionIds];
   if (
@@ -622,6 +749,7 @@ function compileGoalCampaignRepairAuthority(request: unknown = {}) {
     manifest,
     byId,
     order,
+    leaseByPartition,
   });
   const invalidatedLeaseBindings = verifyBoundReceipts({
     receipts: request.invalidatedLeaseReceipts,
@@ -632,6 +760,7 @@ function compileGoalCampaignRepairAuthority(request: unknown = {}) {
     manifest,
     byId,
     order,
+    leaseByPartition,
   });
   const invalidatedClosureBindings = verifyBoundReceipts({
     receipts: request.invalidatedClosureReceipts,
@@ -642,6 +771,7 @@ function compileGoalCampaignRepairAuthority(request: unknown = {}) {
     manifest,
     byId,
     order,
+    leaseByPartition,
   });
   const governedPathAdditions = normalizeAdditions(
     request.governedPathAdditions,
@@ -673,6 +803,7 @@ function compileGoalCampaignRepairAuthority(request: unknown = {}) {
     sourceCompositionPolicyHash:
       manifest.sourceCompositionPolicyHash,
     sourceAuthorityBundleHash: manifest.sourceAuthorityBundleHash,
+    ...lifecycleAuthorityFieldsFromManifest(manifest),
     baselineAuthority,
     currentAuthority,
     changedPaths,
@@ -795,6 +926,13 @@ function verifyGoalCampaignRepairAuthority(
       throw failure('campaign_repair_authority_base_stale', { field });
     }
   }
+  verifyLifecycleAuthorityBinding({
+    record: receipt,
+    partitionManifest: manifest,
+    campaignId: activation.campaignId,
+    attemptId: expectedRepairAttemptId,
+    attemptField: 'repairAttemptId',
+  });
   const changedPaths = normalizeChangedPaths(receipt.changedPaths);
   if (!equalCanonical(changedPaths, receipt.changedPaths)) {
     throw failure('campaign_repair_authority_hash_invalid');
@@ -930,6 +1068,7 @@ function commitGoalCampaignRepairAuthority(request: unknown = {}) {
     'baseActivationReceipt',
     'partitionManifest',
     'partitionManifestDocumentHash',
+    'baseLeaseReceipts',
     'preservedClosureReceipts',
     'invalidatedLeaseReceipts',
     'invalidatedClosureReceipts',
@@ -1014,6 +1153,7 @@ function commitGoalCampaignRepairAuthority(request: unknown = {}) {
     currentAuthority,
     changedPaths,
     governedPathAdditions: request.governedPathAdditions,
+    baseLeaseReceipts: leases,
     preservedClosureReceipts: closures.filter((candidate) =>
       preserved.has(candidate.partitionId)
     ),

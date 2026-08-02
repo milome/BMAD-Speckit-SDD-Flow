@@ -34,9 +34,37 @@ const {
   compileIntentAuthorityEnvelope,
 } = require(modulePath('./intent-authority'));
 const {
+  compilePartitionImpactGraph,
+  verifyPartitionImpactGraph,
+} = require(modulePath('./partition-impact-graph'));
+const {
+  compilePartitionClosureFeasibility,
+  verifyPartitionClosureFeasibility,
+} = require(modulePath('./partition-closure-feasibility'));
+const {
+  loadPartitionImpactPolicy,
+} = require(modulePath('./partition-impact-policy'));
+const {
+  compilePartitionImpactAuthority,
+  compilePartitionImpactDriftBaseline,
   compilePartitions,
   projectExecutionArtifacts,
 } = require(modulePath('./partition-compiler'));
+const {
+  commitRequirementRecordPartitionAuthoritySupersession,
+  readRequirementRecordPartitionAuthorityProjection,
+  recoverRequirementRecordPartitionAuthorityProjection,
+} = require(modulePath('./authority-supersession'));
+const {
+  activateStandalonePartitionGeneration,
+  assertRawNonAuthoritativeContainmentRoot,
+  assertImmutableAuthorityUnit,
+  computePartitionGenerationKey,
+  goalContractAuthorityWriterBinding,
+  preflightRequirementRecordPartitionAuthoritySupersession,
+  resolveCanonicalPartitionOutputPaths,
+  writeImmutableAuthorityFile,
+} = require(modulePath('./partition-output-paths'));
 const {
   goalContractSchemaArtifactHash,
   validateGoalContractSchema,
@@ -44,6 +72,9 @@ const {
 const {
   compileSourceCompositionPolicy,
 } = require(modulePath('./source-composition-policy'));
+const {
+  resolveSupervisorReadinessProjection,
+} = require(modulePath('./supervisor-readiness-projection'));
 const {
   compileOrderedSourceSnapshotSet,
   compileSourceSnapshot,
@@ -68,7 +99,13 @@ const KERNEL_SCHEMA_NAMES = Object.freeze([
   'goal-contract-compilation-receipt.schema.json',
   'goal-contract-composite-source-authority-bundle.schema.json',
   'goal-contract-intent-authority-envelope.schema.json',
+  'goal-contract-lifecycle-authority-binding.schema.json',
+  'goal-contract-partition-closure-feasibility-receipt.schema.json',
+  'goal-contract-partition-impact-drift-receipt.schema.json',
+  'goal-contract-partition-impact-graph.schema.json',
+  'goal-contract-partition-impact-policy.schema.json',
   'goal-contract-partition-manifest.schema.json',
+  'goal-contract-partition-output-authority.schema.json',
   'goal-contract-partition-plan.schema.json',
   'goal-contract-source-composition-policy.schema.json',
   'goal-contract-spec-span-registry.schema.json',
@@ -76,6 +113,7 @@ const KERNEL_SCHEMA_NAMES = Object.freeze([
   'goal-contract-subcontract-evidence.schema.json',
   'goal-contract-subcontract-execution-lease.schema.json',
   'goal-contract-subordinate-source-coverage-receipt.schema.json',
+  'goal-contract-supervisor-readiness-projection.schema.json',
 ]);
 const RECEIPT_SCHEMAS = Object.freeze({
   'goal-contract-campaign-activation-receipt/v1': {
@@ -181,6 +219,10 @@ function schemaArtifactHashes() {
       ])
     )
   );
+}
+
+function goalContractKernelSchemaArtifactHashes() {
+  return schemaArtifactHashes();
 }
 
 function compileExecutionBundle(request: unknown = {}) {
@@ -381,20 +423,40 @@ module.exports = {
   closeGoalCampaign,
   closeSubcontract,
   commitGoalCampaignRepairAuthority,
+  commitRequirementRecordPartitionAuthoritySupersession,
   compileCanonicalIntent,
   compileCompositeSourceAuthorityBundle,
   compileExecutionBundle,
   compileGoalCampaignRepairAuthority,
   compileGoalContract,
   compileIntentAuthorityEnvelope,
+  compilePartitionClosureFeasibility,
+  compilePartitionImpactAuthority,
+  compilePartitionImpactDriftBaseline,
+  compilePartitionImpactGraph,
   compilePartitions,
   compileSourceCompositionPolicy,
   compileSourceSnapshot,
   compileSpecSpanRegistry,
   compileSubcontractEvidence,
+  activateStandalonePartitionGeneration,
+  assertRawNonAuthoritativeContainmentRoot,
+  assertImmutableAuthorityUnit,
+  computePartitionGenerationKey,
+  goalContractAuthorityWriterBinding,
+  goalContractKernelSchemaArtifactHashes,
   issueSubcontractExecutionLease,
+  loadPartitionImpactPolicy,
+  preflightRequirementRecordPartitionAuthoritySupersession,
   projectExecutionArtifacts,
+  resolveCanonicalPartitionOutputPaths,
+  readRequirementRecordPartitionAuthorityProjection,
+  recoverRequirementRecordPartitionAuthorityProjection,
   resolveSpecSpan,
+  resolveSupervisorReadinessProjection,
   verifyGoalCampaignRepairAuthority,
+  verifyPartitionClosureFeasibility,
+  verifyPartitionImpactGraph,
   verifyControlPlaneReceipt,
+  writeImmutableAuthorityFile,
 };

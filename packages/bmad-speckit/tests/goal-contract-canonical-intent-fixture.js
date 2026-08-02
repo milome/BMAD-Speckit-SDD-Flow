@@ -5,7 +5,7 @@ const yaml = require('js-yaml');
 
 const subordinatePath = path.resolve(
   __dirname,
-  '../../../docs/superpowers/plans/2026-07-27-bounded-code-reviewer-component-design.md'
+  'fixtures/bounded-code-reviewer-component-design.md'
 );
 const primaryPath = path.resolve(
   __dirname,

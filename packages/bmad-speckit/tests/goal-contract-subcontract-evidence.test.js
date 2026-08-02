@@ -338,13 +338,18 @@ describe('deterministic subcontract evidence', () => {
     }
   });
 
-  it('rejects model, verdict, score, and boolean closeout authority', () => {
+  it('rejects model, verdict, score, and control-decision authority', () => {
     for (const [field, value] of [
       ['modelResponseText', 'PASS'],
       ['score', 100],
       ['verdict', 'approved'],
       ['readonlyObservation', 'clean'],
       ['closeoutApproved', true],
+      ['releaseDecision', 'pass'],
+      ['activationDecision', 'pass'],
+      ['leaseDecision', 'pass'],
+      ['childClosureDecision', 'pass'],
+      ['campaignClosureDecision', 'pass'],
     ]) {
       const current = fixture();
       assert.throws(

@@ -90,13 +90,22 @@ function createPendingChildCompilationReceipt({
   }
   const expectedPartitionId =
     partitionPlan.topologicalOrder?.[displayOrdinal - 1];
+  if (expectedPartitionId !== childProjectionInput.partitionId) {
+    throw failure('partition_child_projection_mismatch', {
+      reason: 'topological_order_mismatch',
+      expectedPartitionId,
+      actualPartitionId: childProjectionInput.partitionId,
+    });
+  }
   if (
-    expectedPartitionId !== childProjectionInput.partitionId ||
     stableStringify(
       partitionPlan.childProjectionInputs?.[displayOrdinal - 1]
     ) !== stableStringify(childProjectionInput)
   ) {
-    throw failure('partition_child_projection_mismatch');
+    throw failure('partition_child_projection_mismatch', {
+      reason: 'projection_input_currentness_mismatch',
+      partitionId: childProjectionInput.partitionId,
+    });
   }
   const bytes = Buffer.isBuffer(childContractBytes)
     ? childContractBytes
@@ -120,6 +129,21 @@ function createPendingChildCompilationReceipt({
       .digest('hex')}`,
     partitionPlanHash: partitionPlan.partitionPlanHash,
     partitionSetHash: partitionPlan.partitionSetHash,
+    ...(partitionPlan.partitionImpactGraphHash
+      ? {
+          partitionImpactGraphHash:
+            partitionPlan.partitionImpactGraphHash,
+          partitionClosureFeasibilityHash:
+            childProjectionInput.partitionClosureFeasibilityHash,
+          closureRelevantArtifactIds: [
+            ...(childProjectionInput.closureRelevantArtifactIds || []),
+          ],
+          closureRelevantCommandIds: [
+            ...(childProjectionInput.closureRelevantCommandIds || []),
+          ],
+          driftHash: partitionPlan.driftHash,
+        }
+      : {}),
     selectionHash: childProjectionInput.selectionHash,
     goalContractHash: partitionPlan.goalContractHash,
     sourceCompositionPolicyHash:
@@ -146,7 +170,11 @@ function createPendingChildCompilationReceipt({
       ),
     ].sort(),
     governedPaths: [
-      ...(childProjectionInput.ownedArtifactPaths || []),
+      ...(
+        childProjectionInput.governedPaths ??
+        childProjectionInput.ownedArtifactPaths ??
+        []
+      ),
     ],
     dependencyPartitionIds: [
       ...(childProjectionInput.dependencyPartitionIds || []),
@@ -1064,6 +1092,10 @@ function canonicalizeForSchema(schemaId, payload) {
   return canonical;
 }
 
+function serializeValidatedPartitionReceipt({ schemaId, payload }) {
+  return stableStringify(canonicalizeForSchema(schemaId, payload));
+}
+
 function assertCanonicalReceiptBytes(filePath, payload) {
   const expected = stableStringify(payload);
   const actual = fs.readFileSync(filePath, 'utf8');
@@ -1473,6 +1505,7 @@ module.exports = {
   derivePartitionCapabilityState,
   finalizePartitionRun,
   readValidatedPartitionReceipt,
+  serializeValidatedPartitionReceipt,
   resolveAssetRoot,
   validateDependencyCompatibilityReceipt,
   writeSequenceApplicabilityReceipt,

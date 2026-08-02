@@ -52,6 +52,9 @@
       "$ref": "#/$defs/hash"
     },
     "partitionManifestHash": { "$ref": "#/$defs/hash" },
+    "graphHash": { "$ref": "#/$defs/hash" },
+    "feasibilityHash": { "$ref": "#/$defs/hash" },
+    "driftHash": { "$ref": "#/$defs/hash" },
     "partitionPlanHash": { "$ref": "#/$defs/hash" },
     "partitionSetHash": { "$ref": "#/$defs/hash" },
     "sourceCompositionPolicyHash": { "$ref": "#/$defs/hash" },

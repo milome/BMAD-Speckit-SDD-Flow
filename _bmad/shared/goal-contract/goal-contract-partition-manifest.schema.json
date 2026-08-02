@@ -185,6 +185,51 @@
     "partitionManifestHash": {
       "$ref": "#/$defs/hash"
     },
+    "partitionPlanBasisHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "repositoryTreeHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "partitionImpactPolicyHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "partitionImpactAnalyzerIdentityHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "partitionImpactGraphPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "partitionImpactGraphHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "partitionImpactGraphDocumentHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "partitionClosureFeasibilityReceiptPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "partitionClosureFeasibilityReceiptHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "partitionClosureFeasibilityDecision": {
+      "enum": [
+        "blocked",
+        "pass"
+      ]
+    },
+    "partitionImpactDriftReceiptPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "partitionImpactDriftReceiptHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "driftHash": {
+      "$ref": "#/$defs/hash"
+    },
     "namespaceOwnership": {
       "type": "array",
       "minItems": 1,
@@ -498,6 +543,15 @@
         "selectionReceiptPath": {
           "type": "string",
           "minLength": 1
+        },
+        "partitionClosureFeasibilityHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "closureRelevantArtifactIds": {
+          "$ref": "#/$defs/uniqueStrings"
+        },
+        "closureRelevantCommandIds": {
+          "$ref": "#/$defs/uniqueStrings"
         },
         "sourceCompositionPolicyHash": {
           "$ref": "#/$defs/hash"

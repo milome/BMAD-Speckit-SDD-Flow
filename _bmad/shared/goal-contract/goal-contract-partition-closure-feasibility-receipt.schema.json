@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "partitionPlanBasisHash",
+    "partitionImpactGraphHash",
+    "repositoryTreeHash",
+    "partitionImpactPolicyHash",
+    "partitionImpactAnalyzerIdentityHash",
+    "partitionRecords",
+    "blockingIssues",
+    "decision",
+    "receiptHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-partition-closure-feasibility-receipt/v1"
+    },
+    "partitionPlanBasisHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "partitionImpactGraphHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "repositoryTreeHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "partitionImpactPolicyHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "partitionImpactAnalyzerIdentityHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "partitionRecords": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/partitionRecord"
+      }
+    },
+    "blockingIssues": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/issue"
+      }
+    },
+    "decision": {
+      "enum": [
+        "blocked",
+        "pass"
+      ]
+    },
+    "receiptHash": {
+      "$ref": "#/$defs/hash"
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "strings": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "partitionRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "partitionId",
+        "availableOwnerSet",
+        "closureRelevantArtifactIds",
+        "closureRelevantCommandIds",
+        "blockingIssues",
+        "decision",
+        "partitionClosureFeasibilityHash"
+      ],
+      "properties": {
+        "partitionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "availableOwnerSet": {
+          "$ref": "#/$defs/strings"
+        },
+        "closureRelevantArtifactIds": {
+          "$ref": "#/$defs/strings"
+        },
+        "closureRelevantCommandIds": {
+          "$ref": "#/$defs/strings"
+        },
+        "blockingIssues": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/issue"
+          }
+        },
+        "decision": {
+          "enum": [
+            "blocked",
+            "pass"
+          ]
+        },
+        "partitionClosureFeasibilityHash": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "issue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "issueCode",
+        "partitionId",
+        "affectedArtifactPaths",
+        "affectedCommandIds",
+        "currentOwnerPartitionId",
+        "blockingOwnerPartitionId",
+        "partitionDependencyPath",
+        "minimalConflictChain",
+        "provenanceRefs",
+        "repairClass"
+      ],
+      "properties": {
+        "issueCode": {
+          "enum": [
+            "future_owned_artifact_dependency",
+            "future_owned_regression_dependency",
+            "partition_closure_dependency_cycle",
+            "partition_impact_coverage_incomplete",
+            "partition_impact_owner_ambiguous",
+            "partition_impact_owner_missing"
+          ]
+        },
+        "partitionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "affectedArtifactPaths": {
+          "$ref": "#/$defs/strings"
+        },
+        "affectedCommandIds": {
+          "$ref": "#/$defs/strings"
+        },
+        "currentOwnerPartitionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "blockingOwnerPartitionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "partitionDependencyPath": {
+          "$ref": "#/$defs/strings"
+        },
+        "minimalConflictChain": {
+          "$ref": "#/$defs/strings"
+        },
+        "provenanceRefs": {
+          "$ref": "#/$defs/strings"
+        },
+        "repairClass": {
+          "enum": [
+            "source_command_assignment_required",
+            "source_dependency_change_required",
+            "source_owned_path_assignment_required",
+            "source_task_colocation_required",
+            "unsupported_relation_registration_required"
+          ]
+        }
+      }
+    }
+  }
+}

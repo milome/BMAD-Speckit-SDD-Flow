@@ -79,7 +79,10 @@ const { verifyCompositeSourceAuthorityBundle } = require(
 );
 const { validateGoalContractSchema } = require(modulePath('./schema-registry'));
 const { verifySourceCompositionPolicy } = require(modulePath('./source-composition-policy'));
-const { verifyOrderedSourceSnapshotSet } = require(modulePath('./source-snapshot'));
+const {
+  verifyOrderedSourceSnapshotSet,
+  verifySourceSnapshot,
+} = require(modulePath('./source-snapshot'));
 const { compileExecutionProjection } = require(modulePath('../execution-projection'));
 const { hashSourceObligationGraph } = require(modulePath('../source-obligation-extractor'));
 const { buildPartitionComponents } = require(modulePath('../partition-components'));
@@ -87,8 +90,21 @@ const { optimizePartitions } = require(modulePath('../partition-optimizer'));
 const { assertCurrentPartitionPolicyBinding } = require(modulePath('../partition-policy'));
 const { finalizePartitionManifest } = require(modulePath('../partition-manifest'));
 const { createPendingChildCompilationReceipt } = require(modulePath('../partition-receipts'));
+const { compilePartitionImpactGraph } = require(modulePath('./partition-impact-graph'));
+const { compilePartitionClosureFeasibility } = require(
+  modulePath('./partition-closure-feasibility')
+);
 
 const HASH_PATTERN = /^sha256:[0-9a-f]{64}$/u;
+const TASK_ID_PATTERN =
+  /^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-T\d+[A-Z]?$/u;
+const TASK_FILE_SCOPE_FIELDS = new Set([
+  'Files',
+  'Create',
+  'Modify',
+  'Delete',
+]);
+const NO_PRODUCTION_FILES = 'No production files';
 const COMMAND_KINDS = Object.freeze(['direct', 'impacted', 'integration', 'regression']);
 const ALLOWED_REQUEST_FIELDS = new Set([
   'sourceCompositionPolicy',
@@ -106,6 +122,23 @@ const ALLOWED_REQUEST_FIELDS = new Set([
   'sequenceExecutionState',
   'repositoryFacts',
 ]);
+const IMPACT_DRIFT_BASELINE_FIELDS = new Set([
+  'repositoryTreeHash',
+  'partitionPlanBasisHash',
+  'partitionSetHash',
+  'partitionImpactGraphHash',
+  'partitionClosureFeasibilityReceiptHash',
+]);
+const PARTITION_IMPACT_ARTIFACT_PATHS = Object.freeze({
+  partitionAnalysisReceiptPath:
+    'receipts/partition-analysis.receipt.json',
+  partitionImpactGraphPath:
+    'receipts/partition-impact-graph.json',
+  partitionClosureFeasibilityReceiptPath:
+    'receipts/partition-closure-feasibility.receipt.json',
+  partitionImpactDriftReceiptPath:
+    'receipts/partition-impact-drift.receipt.json',
+});
 
 function failure(failureClass, extra = {}) {
   return Object.assign(new Error(failureClass), {
@@ -134,12 +167,543 @@ function unique(values = []) {
   return canonicalIdentifierList(values);
 }
 
+function normalizeTaskFileScopePath(value) {
+  const token = String(value || '').trim();
+  const normalized = token.replace(/\\/gu, '/');
+  if (
+    token.length === 0 ||
+    token !== value ||
+    /\s/u.test(token) ||
+    TASK_ID_PATTERN.test(token) ||
+    /[*?[\]{}]/u.test(token) ||
+    path.posix.isAbsolute(normalized) ||
+    /^[A-Za-z]:\//u.test(normalized) ||
+    normalized.startsWith('//') ||
+    normalized === '.' ||
+    normalized.split('/').some(
+      (segment) => segment.length === 0 || segment === '.' || segment === '..'
+    ) ||
+    /[<>:"|]/u.test(normalized)
+  ) {
+    return null;
+  }
+  return path.posix.normalize(normalized);
+}
+
+function taskFileScopeReason(value) {
+  const token = String(value ?? '');
+  const normalized = token.replace(/\\/gu, '/');
+  if (TASK_ID_PATTERN.test(token)) return 'task_id';
+  if (/[*?[\]{}]/u.test(token)) return 'whole_repository_wildcard';
+  if (
+    path.posix.isAbsolute(normalized) ||
+    /^[A-Za-z]:\//u.test(normalized) ||
+    normalized.startsWith('//')
+  ) {
+    return 'absolute_path';
+  }
+  if (normalized.split('/').includes('..')) return 'path_escape';
+  if (/\s/u.test(token)) return 'prose_directive';
+  return 'invalid_path';
+}
+
+function throwTaskFileScopeInvalid({
+  taskId,
+  fieldName,
+  offendingToken,
+  reasonCode,
+  sourceBinding,
+}) {
+  throw failure('task_file_scope_invalid', {
+    errorCode: 'ER-GH-001',
+    taskId,
+    fieldName,
+    offendingToken,
+    reasonCode,
+    ...(sourceBinding || {}),
+  });
+}
+
+function validateTaskFileScopeCells({
+  taskId,
+  cells = [],
+  declaredPathFamilies = [],
+  declaredGeneratedSurfaceClasses = [],
+} = {}) {
+  const normalizedTaskId = String(taskId || '');
+  const declaredClasses = new Set([
+    ...unique(declaredPathFamilies),
+    ...unique(declaredGeneratedSurfaceClasses),
+  ]);
+  const tokenCount = (cells || []).reduce(
+    (count, cell) => count + (Array.isArray(cell?.tokens) ? cell.tokens.length : 0),
+    0
+  );
+  const normalizedCells = (cells || []).map((cell) => {
+    const fieldName = String(cell?.fieldName || '');
+    const tokens = Array.isArray(cell?.tokens) ? cell.tokens : [];
+    if (!TASK_FILE_SCOPE_FIELDS.has(fieldName) || tokens.length === 0) {
+      throwTaskFileScopeInvalid({
+        taskId: normalizedTaskId,
+        fieldName,
+        offendingToken: tokens[0] ?? null,
+        reasonCode: 'field_invalid',
+        sourceBinding: cell?.sourceBinding,
+      });
+    }
+    const normalizedTokens = tokens.map((rawToken) => {
+      const offendingToken = String(rawToken ?? '');
+      if (offendingToken === NO_PRODUCTION_FILES) {
+        if (tokenCount !== 1) {
+          throwTaskFileScopeInvalid({
+            taskId: normalizedTaskId,
+            fieldName,
+            offendingToken,
+            reasonCode: 'no_production_files_mixed',
+            sourceBinding: cell?.sourceBinding,
+          });
+        }
+        return offendingToken;
+      }
+      if (declaredClasses.has(offendingToken)) {
+        return offendingToken;
+      }
+      const normalizedPath = normalizeTaskFileScopePath(offendingToken);
+      if (!normalizedPath) {
+        throwTaskFileScopeInvalid({
+          taskId: normalizedTaskId,
+          fieldName,
+          offendingToken,
+          reasonCode: taskFileScopeReason(offendingToken),
+          sourceBinding: cell?.sourceBinding,
+        });
+      }
+      return normalizedPath;
+    });
+    return {
+      fieldName,
+      tokens: unique(normalizedTokens),
+    };
+  });
+  return Object.freeze({
+    decision: 'pass',
+    taskId: normalizedTaskId,
+    normalizedCells: Object.freeze(normalizedCells),
+  });
+}
+
+function normalizeTaskFileScopeToken(value) {
+  const trimmed = String(value || '').trim().replace(/[.。]\s*$/u, '');
+  const quoted = /^`([^`\r\n]+)`$/u.exec(trimmed);
+  return quoted ? quoted[1] : trimmed;
+}
+
+function canonicalTaskFileScopeField(value) {
+  const normalized = String(value || '').toLowerCase();
+  if (['files', '文件'].includes(normalized)) return 'Files';
+  if (['create', 'add', '创建', '新增'].includes(normalized)) return 'Create';
+  if (['modify', 'regenerate', '修改', '重新生成'].includes(normalized)) {
+    return 'Modify';
+  }
+  if (['delete', '删除'].includes(normalized)) return 'Delete';
+  return null;
+}
+
+function taskSourceSections(snapshotSet, taskId) {
+  const escapedTaskId = String(taskId).replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+  const taskTokenPattern = new RegExp(
+    `(?:^|\\s)${escapedTaskId}(?=[:：\\s]|$)`,
+    'u'
+  );
+  const sections = [];
+  for (const snapshot of snapshotSet.sourceSnapshots || []) {
+    const lines = Buffer.from(
+      snapshot.frozenBytesBase64,
+      'base64'
+    )
+      .toString('utf8')
+      .replace(/\r\n/gu, '\n')
+      .replace(/\r/gu, '\n')
+      .split('\n');
+    for (let index = 0; index < lines.length; index += 1) {
+      const heading = /^(#{1,6})\s+(.+)$/u.exec(lines[index]);
+      if (!heading || !taskTokenPattern.test(heading[2])) continue;
+      const headingLevel = heading[1].length;
+      let endIndex = lines.length;
+      for (let cursor = index + 1; cursor < lines.length; cursor += 1) {
+        const nextHeading = /^(#{1,6})\s+/u.exec(lines[cursor]);
+        if (nextHeading && nextHeading[1].length <= headingLevel) {
+          endIndex = cursor;
+          break;
+        }
+      }
+      sections.push({
+        sourceArtifactId: snapshot.sourceArtifactId,
+        sourceSnapshotHash: snapshot.sourceSnapshotHash,
+        lineStart: index + 1,
+        lines: lines.slice(index, endIndex),
+      });
+    }
+  }
+  return sections;
+}
+
+function taskFileScopeCellsFromSection(section) {
+  const cells = [];
+  let activeField = null;
+  for (let offset = 1; offset < section.lines.length; offset += 1) {
+    const rawLine = section.lines[offset];
+    const trimmed = rawLine.trim();
+    if (trimmed.length === 0) continue;
+    const marker = /^\*{0,2}(Files|Create|Modify|Delete|文件|创建|修改|删除)\*{0,2}\s*[:：]?\s*$/iu.exec(
+      trimmed
+    );
+    if (marker) {
+      activeField = canonicalTaskFileScopeField(marker[1]);
+      continue;
+    }
+    const bullet = /^(?:[-*]|\d+\.)\s+(?:\[[ xX]\]\s*)?(.*)$/u.exec(
+      trimmed
+    );
+    if (!bullet) {
+      activeField = null;
+      continue;
+    }
+    const inline = /^\*{0,2}(Files|Create|Modify|Delete|Add|Regenerate|文件|创建|修改|新增|删除|重新生成)\*{0,2}(?:\s*[:：]\s*(.+)|\s+(`[^`\r\n]+`[.。]?))$/iu.exec(
+      bullet[1]
+    );
+    const fieldName = inline
+      ? canonicalTaskFileScopeField(inline[1])
+      : activeField;
+    if (!fieldName) continue;
+    const offendingToken = normalizeTaskFileScopeToken(
+      inline ? inline[2] || inline[3] : bullet[1]
+    );
+    cells.push({
+      fieldName,
+      tokens: [offendingToken],
+      sourceBinding: {
+        sourceArtifactId: section.sourceArtifactId,
+        sourceSnapshotHash: section.sourceSnapshotHash,
+        lineStart: section.lineStart + offset,
+        lineEnd: section.lineStart + offset,
+      },
+    });
+  }
+  return cells;
+}
+
+function projectedTaskPaths(reconciledGraph) {
+  const pathsByTaskId = new Map();
+  for (const slice of reconciledGraph?.traceSlices || []) {
+    const tokens = Array.isArray(slice?.allowedPaths)
+      ? slice.allowedPaths.map((candidate) =>
+          typeof candidate === 'string'
+            ? candidate
+            : candidate?.literal || candidate?.path || candidate?.id
+        )
+      : [];
+    for (const taskId of unique(slice.taskIds || slice.goalIds)) {
+      const current = pathsByTaskId.get(taskId) || [];
+      pathsByTaskId.set(taskId, unique([...current, ...tokens]));
+    }
+  }
+  return pathsByTaskId;
+}
+
+function compileTaskFileScopeAuthority({
+  orderedSourceSnapshotSet,
+  reconciledGraph,
+  sourceSnapshot = null,
+} = {}) {
+  const snapshotSet =
+    orderedSourceSnapshotSet?.schemaVersion ===
+    'goal-contract-ordered-source-snapshot-set/v1'
+      ? verifyOrderedSourceSnapshotSet(orderedSourceSnapshotSet)
+      : {
+          orderedSourceSnapshotSetHash:
+            orderedSourceSnapshotSet?.orderedSourceSnapshotSetHash,
+          sourceSnapshots: [
+            verifySourceSnapshot(sourceSnapshot),
+          ],
+        };
+  const pathsByTaskId = projectedTaskPaths(reconciledGraph);
+  const taskIds = unique([
+    ...(reconciledGraph?.tasks || []).map((task) => task.id),
+    ...pathsByTaskId.keys(),
+  ]);
+  const records = taskIds.map((taskId) => {
+    const sections = taskSourceSections(snapshotSet, taskId);
+    if (sections.length > 1) {
+      throwTaskFileScopeInvalid({
+        taskId,
+        fieldName: 'Files',
+        offendingToken: taskId,
+        reasonCode: 'source_task_ambiguous',
+      });
+    }
+    const sourceCells =
+      sections.length === 1
+        ? taskFileScopeCellsFromSection(sections[0])
+        : [];
+    const sourceValidation =
+      sourceCells.length > 0
+        ? validateTaskFileScopeCells({
+            taskId,
+            cells: sourceCells,
+          })
+        : null;
+    const projectedPaths = pathsByTaskId.get(taskId) || [];
+    if (projectedPaths.length > 0) {
+      validateTaskFileScopeCells({
+        taskId,
+        cells: [{ fieldName: 'Files', tokens: projectedPaths }],
+      });
+    }
+    if (sourceValidation) {
+      const sourcePaths = unique(
+        sourceValidation.normalizedCells
+          .flatMap((cell) => cell.tokens)
+          .filter((token) => token !== NO_PRODUCTION_FILES)
+      );
+      if (
+        stableControlPlaneStringify(sourcePaths) !==
+        stableControlPlaneStringify(unique(projectedPaths))
+      ) {
+        throwTaskFileScopeInvalid({
+          taskId,
+          fieldName: 'Files',
+          offendingToken:
+            projectedPaths.find((token) => !sourcePaths.includes(token)) ||
+            sourcePaths.find((token) => !projectedPaths.includes(token)) ||
+            taskId,
+          reasonCode: 'projection_mismatch',
+          sourceBinding: sourceCells[0]?.sourceBinding,
+        });
+      }
+    }
+    return {
+      taskId,
+      sourceBound: sourceValidation !== null,
+      cells: sourceValidation?.normalizedCells || [],
+      projectedPaths: unique(projectedPaths),
+    };
+  });
+  const semanticAuthority = {
+    schemaVersion: 'goal-contract-task-file-scope-authority/v1',
+    orderedSourceSnapshotSetHash:
+      snapshotSet.orderedSourceSnapshotSetHash,
+    records,
+  };
+  return deepFreeze({
+    ...semanticAuthority,
+    taskFileScopeAuthorityHash:
+      hashControlPlaneValue(semanticAuthority),
+  });
+}
+
 function intersects(left = [], right = new Set<string>()) {
   return (left || []).some((value) => right.has(String(value)));
 }
 
 function sha256Text(value) {
   return `sha256:${createHash('sha256').update(String(value), 'utf8').digest('hex')}`;
+}
+
+function compilePartitionImpactDriftBaseline(input = {}) {
+  if (!isRecord(input)) {
+    throw failure('partition_impact_drift_input_invalid');
+  }
+  const forbiddenFields = Object.keys(input)
+    .filter((field) => !IMPACT_DRIFT_BASELINE_FIELDS.has(field))
+    .sort(compareIds);
+  if (forbiddenFields.length > 0) {
+    throw failure('partition_impact_drift_authority_injection', {
+      forbiddenFields,
+    });
+  }
+  const authority = Object.fromEntries(
+    [...IMPACT_DRIFT_BASELINE_FIELDS].map((field) => [
+      field,
+      requireHash(input[field], field),
+    ])
+  );
+  const driftBasis = {
+    ...authority,
+    changedArtifactIds: [],
+    impactedPartitionIds: [],
+  };
+  const driftHash = hashControlPlaneValue(driftBasis);
+  const semanticDecisionHash = hashControlPlaneValue({
+    mode: 'generation_baseline',
+    decision: 'baseline_frozen',
+    driftHash,
+  });
+  const payload = {
+    schemaVersion:
+      'goal-contract-partition-impact-drift-receipt/v1',
+    mode: 'generation_baseline',
+    ...driftBasis,
+    decision: 'baseline_frozen',
+    driftHash,
+    semanticDecisionHash,
+  };
+  const receipt = {
+    ...payload,
+    receiptHash: hashControlPlaneValue(payload),
+  };
+  try {
+    validateGoalContractSchema(
+      'goal-contract-partition-impact-drift-receipt.schema.json',
+      receipt
+    );
+  } catch (error) {
+    throw failure('partition_impact_drift_schema_invalid', {
+      validationErrors: error.validationErrors || [],
+    });
+  }
+  return deepFreeze(receipt);
+}
+
+function canonicalArtifactBytes(value) {
+  return `${stableControlPlaneStringify(value)}\n`;
+}
+
+function compilePartitionImpactAuthority(input = {}) {
+  if (
+    !isRecord(input) ||
+    !isRecord(input.partitionPlan) ||
+    !isRecord(input.reconciledGraph)
+  ) {
+    throw failure('partition_impact_authority_input_invalid');
+  }
+  const impactGraph = compilePartitionImpactGraph({
+    repositoryRoot: input.repositoryRoot,
+    packageRoot: input.packageRoot,
+    partitionPlan: input.partitionPlan,
+    reconciledGraph: input.reconciledGraph,
+  });
+  const impactGraphBytes = canonicalArtifactBytes(impactGraph);
+  const impactGraphDocumentHash = sha256Text(impactGraphBytes);
+  const closureFeasibility =
+    compilePartitionClosureFeasibility({
+      partitionPlan: input.partitionPlan,
+      impactGraph,
+      packageRoot: input.packageRoot,
+    });
+  if (closureFeasibility.decision !== 'pass') {
+    throw failure('partition_closure_feasibility_blocked', {
+      blockingIssues: structuredClone(
+        closureFeasibility.blockingIssues
+      ),
+      partitionClosureFeasibilityReceiptHash:
+        closureFeasibility.receiptHash,
+    });
+  }
+  const closureFeasibilityBytes =
+    canonicalArtifactBytes(closureFeasibility);
+  const closureFeasibilityDocumentHash = sha256Text(
+    closureFeasibilityBytes
+  );
+  const impactDrift = compilePartitionImpactDriftBaseline({
+    repositoryTreeHash: impactGraph.repositoryTreeHash,
+    partitionPlanBasisHash:
+      impactGraph.partitionPlanBasisHash,
+    partitionSetHash: input.partitionPlan.partitionSetHash,
+    partitionImpactGraphHash: impactGraph.impactGraphHash,
+    partitionClosureFeasibilityReceiptHash:
+      closureFeasibilityDocumentHash,
+  });
+  const impactDriftBytes = canonicalArtifactBytes(impactDrift);
+  const impactDriftDocumentHash = sha256Text(impactDriftBytes);
+  const feasibilityByPartitionId = new Map(
+    closureFeasibility.partitionRecords.map((record) => [
+      record.partitionId,
+      record,
+    ])
+  );
+  const projectFeasibility = (record) => {
+    const feasibility = feasibilityByPartitionId.get(
+      record.partitionId
+    );
+    if (!feasibility || feasibility.decision !== 'pass') {
+      throw failure('partition_impact_coverage_incomplete', {
+        partitionId: record.partitionId,
+      });
+    }
+    return {
+      ...record,
+      partitionClosureFeasibilityHash:
+        feasibility.partitionClosureFeasibilityHash,
+      closureRelevantArtifactIds: [
+        ...feasibility.closureRelevantArtifactIds,
+      ],
+      closureRelevantCommandIds: [
+        ...feasibility.closureRelevantCommandIds,
+      ],
+    };
+  };
+  const {
+    partitionPlanHash: _corePartitionPlanHash,
+    ...coreSemanticPlan
+  } = input.partitionPlan;
+  const semanticPlan = {
+    ...coreSemanticPlan,
+    partitionPlanBasisHash:
+      impactGraph.partitionPlanBasisHash,
+    repositoryTreeHash: impactGraph.repositoryTreeHash,
+    partitionImpactPolicyHash:
+      impactGraph.partitionImpactPolicyHash,
+    partitionImpactAnalyzerIdentityHash:
+      impactGraph.analyzerIdentityHash,
+    partitionImpactGraphPath:
+      PARTITION_IMPACT_ARTIFACT_PATHS.partitionImpactGraphPath,
+    partitionImpactGraphHash: impactGraph.impactGraphHash,
+    partitionImpactGraphDocumentHash:
+      impactGraphDocumentHash,
+    partitionClosureFeasibilityReceiptPath:
+      PARTITION_IMPACT_ARTIFACT_PATHS
+        .partitionClosureFeasibilityReceiptPath,
+    partitionClosureFeasibilityReceiptHash:
+      closureFeasibilityDocumentHash,
+    partitionClosureFeasibilityDecision:
+      closureFeasibility.decision,
+    partitionImpactDriftReceiptPath:
+      PARTITION_IMPACT_ARTIFACT_PATHS
+        .partitionImpactDriftReceiptPath,
+    partitionImpactDriftReceiptHash:
+      impactDriftDocumentHash,
+    driftHash: impactDrift.driftHash,
+    partitions: input.partitionPlan.partitions.map(
+      projectFeasibility
+    ),
+    childProjectionInputs:
+      input.partitionPlan.childProjectionInputs.map(
+        projectFeasibility
+      ),
+  };
+  const partitionPlan = {
+    ...semanticPlan,
+    partitionPlanHash: hashControlPlaneValue(semanticPlan),
+  };
+  validatePlanSchema(partitionPlan);
+  return deepFreeze({
+    schemaVersion:
+      'goal-contract-partition-impact-authority/v1',
+    artifactPaths: PARTITION_IMPACT_ARTIFACT_PATHS,
+    partitionPlan,
+    partitionPlanBytes: canonicalArtifactBytes(partitionPlan),
+    partitionPlanHash: partitionPlan.partitionPlanHash,
+    impactGraph,
+    impactGraphBytes,
+    impactGraphDocumentHash,
+    closureFeasibility,
+    closureFeasibilityBytes,
+    closureFeasibilityDocumentHash,
+    impactDrift,
+    impactDriftBytes,
+    impactDriftDocumentHash,
+  });
 }
 
 function commandReferences(slice) {
@@ -548,6 +1112,16 @@ function projectOwnedArtifactPaths({ components, fileScopeById, sharedArtifactOw
   );
 }
 
+function projectGovernedArtifactPaths({ taskIds, fileScopeIndex }) {
+  const partitionTaskIds = new Set(unique(taskIds));
+  return unique(
+    (fileScopeIndex || [])
+      .filter((scope) => intersects(scope.taskIds, partitionTaskIds))
+      .map((scope) => scope.path)
+      .filter(Boolean)
+  );
+}
+
 function partitionRecords(
   optimization,
   componentGraph,
@@ -639,6 +1213,10 @@ function partitionRecords(
         fileScopeById,
         sharedArtifactOwnership: componentGraph.sharedArtifactOwnership,
       }),
+      governedPaths: projectGovernedArtifactPaths({
+        taskIds: optimized.primaryTaskIds,
+        fileScopeIndex: projection.fileScopeIndex,
+      }),
       blockedConditions: [],
       failureClasses: [],
       estimatedClosureCost: {
@@ -690,6 +1268,7 @@ function selectionRecords({
       completionPredicateIds: partition.completionPredicateIds,
       evidenceContractIds: partition.evidenceContractIds,
       ownedArtifactPaths: partition.ownedArtifactPaths,
+      governedPaths: partition.governedPaths,
       namespacedObligations,
       namespaceRefs: unique(namespacedObligations.map(({ namespace }) => namespace)),
       sourceArtifactRefs: unique(
@@ -843,6 +1422,12 @@ function validatePlanSchema(plan) {
 }
 
 function compilePartitionBundle(request, authority) {
+  const taskFileScopeAuthority =
+    compileTaskFileScopeAuthority({
+      orderedSourceSnapshotSet: authority.snapshotSet,
+      reconciledGraph: request.reconciledGraph,
+      sourceSnapshot: request.sourceSnapshot,
+    });
   const authorityProjection = sourceAuthorityProjection(authority);
   const reconciledGraphHash = canonicalGraphHash(request.reconciledGraph);
   const commandAuthority = typedCommandAuthority(request.reconciledGraph);
@@ -951,6 +1536,7 @@ function compilePartitionBundle(request, authority) {
     componentGraph,
     optimization,
     partitionPolicyBinding,
+    taskFileScopeAuthority,
     partitionPlan,
     partitionPlanBytes,
     partitionPlanHash: partitionPlan.partitionPlanHash,
@@ -980,7 +1566,13 @@ function normalizeProjectedChildPath(value) {
   return path.posix.normalize(normalized);
 }
 
-function projectExecutionArtifacts({ partitionPlan, renderChildContract }) {
+function projectExecutionArtifacts({
+  partitionPlan,
+  renderChildContract,
+  artifactLayout,
+  partitionAnalysisReceipt,
+  partitionImpactAuthority,
+}) {
   if (!partitionPlan || typeof renderChildContract !== 'function') {
     throw failure('execution_projection_request_invalid');
   }
@@ -1021,11 +1613,18 @@ function projectExecutionArtifacts({ partitionPlan, renderChildContract }) {
   const finalized = finalizePartitionManifest({
     partitionPlan,
     childCompilationReceipts,
+    artifactLayout,
+    partitionAnalysisReceipt,
+    partitionImpactAuthority,
   });
   return deepFreeze({
     schemaVersion: 'goal-contract-execution-projection-bundle/v1',
     partitionPlanHash: partitionPlan.partitionPlanHash,
     partitionSetHash: partitionPlan.partitionSetHash,
+    analysisReceipt: finalized.analysisReceipt,
+    analysisReceiptBytes: finalized.analysisReceiptBytes,
+    partitionAnalysisReceiptHash:
+      finalized.partitionAnalysisReceiptHash,
     childCompilationReceipts,
     orderedChildContractHashes: finalized.orderedChildContractHashes,
     partitionManifest: finalized.manifest,
@@ -1289,9 +1888,13 @@ function verifyPartitionPlan(plan, request: PartitionCompileRequest = {}) {
 module.exports = {
   canonicalIdentifierList,
   compileLegacySingleSourcePartitions,
+  compilePartitionImpactAuthority,
+  compilePartitionImpactDriftBaseline,
   compilePartitions,
+  compileTaskFileScopeAuthority,
   projectOwnerConsumerRecords,
   projectOwnedArtifactPaths,
   projectExecutionArtifacts,
+  validateTaskFileScopeCells,
   verifyPartitionPlan,
 };

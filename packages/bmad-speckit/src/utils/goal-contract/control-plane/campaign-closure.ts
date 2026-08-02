@@ -21,6 +21,14 @@ const {
 } = require(
   __filename.endsWith('.ts') ? './schema-registry.ts' : './schema-registry'
 );
+const {
+  lifecycleAuthorityFieldsFromManifest,
+  verifyLifecycleAuthorityBinding,
+} = require(
+  __filename.endsWith('.ts')
+    ? './lifecycle-authority-binding.ts'
+    : './lifecycle-authority-binding'
+);
 
 const ACTIVATION_SCHEMA =
   'goal-contract-campaign-activation-receipt.schema.json';
@@ -217,6 +225,12 @@ function verifyActivationAndManifest({
   ) {
     throw failure('goal_campaign_activation_stale');
   }
+  verifyLifecycleAuthorityBinding({
+    record: activation,
+    partitionManifest: manifest,
+    campaignId: activation.campaignId,
+    attemptId: activation.attemptId,
+  });
 }
 
 function classifyChildSet(
@@ -338,6 +352,15 @@ function verifyChildClosures({
         });
       }
     }
+    verifyLifecycleAuthorityBinding({
+      record: closure,
+      partitionManifest: manifest,
+      campaignId: activation.campaignId,
+      attemptId: closure.attemptId,
+      partitionId,
+      childContractHash: partition.childContractHash,
+      nodeAttemptId: closure.nodeAttemptId,
+    });
     for (const field of [
       'subcontractModelAuditCount',
       'reviewerInvocationCount',
@@ -543,6 +566,8 @@ function closeGoalCampaign(request: unknown = {}) {
     request.finalExecutionProjectionHash,
     'finalExecutionProjectionHash'
   );
+  const lifecycleAuthorityFields =
+    lifecycleAuthorityFieldsFromManifest(manifest);
   const subcontractClosureSetHash = hashControlPlaneValue({
     schemaVersion: 'goal-contract-subcontract-closure-set/v1',
     sourceCompositionPolicyHash:
@@ -555,6 +580,9 @@ function closeGoalCampaign(request: unknown = {}) {
     sourceCompositionPolicyHash:
       activation.sourceCompositionPolicyHash,
     campaignActivationHash: activation.campaignActivationHash,
+    partitionManifestHash: manifest.partitionManifestHash,
+    attemptId: activation.attemptId,
+    ...lifecycleAuthorityFields,
     subcontractClosureSetHash,
     finalExecutionProjectionHash,
   });
@@ -571,6 +599,7 @@ function closeGoalCampaign(request: unknown = {}) {
     partitionPlanHash: activation.partitionPlanHash,
     partitionManifestHash: activation.partitionManifestHash,
     partitionSetHash: activation.partitionSetHash,
+    ...lifecycleAuthorityFields,
     finalExecutionProjectionHash,
     orderedChildClosureReceiptHashes,
     compatibilityReceiptHashes,

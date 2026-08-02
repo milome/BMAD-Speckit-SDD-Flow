@@ -15,6 +15,13 @@ const {
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
 const ASSET_DIR = path.join('_bmad', 'shared', 'goal-contract');
 const MANIFEST_SCHEMA = 'goal-contract-partition-manifest.schema.json';
+const OUTPUT_AUTHORITY_SCHEMA =
+  'goal-contract-partition-output-authority.schema.json';
+const LIFECYCLE_AUTHORITY_SCHEMA =
+  'goal-contract-lifecycle-authority-binding.schema.json';
+const SUPERVISOR_READINESS_SCHEMA =
+  'goal-contract-supervisor-readiness-projection.schema.json';
+const HASH = `sha256:${'a'.repeat(64)}`;
 
 function tempPackageRoot(prefix = 'goal-contract-schema-') {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
@@ -119,5 +126,117 @@ describe('goal-contract schema registry', () => {
     assert.notEqual(after.schemaArtifactHash, before.schemaArtifactHash);
     assert.notEqual(after, before);
     assert.equal(validateGoalContractSchema(name, 'valid', { packageRoot: root }), 'valid');
+  });
+
+  it('validates standalone authority and RequirementRecord projection pointers', () => {
+    const standalonePointer = {
+      schemaVersion: 'goal-contract-partition-active-generation/v1',
+      authorityMode: 'standalone_bootstrap',
+      sourceHash: HASH,
+      generationKey: HASH,
+      generationRoot:
+        'C:/workspace/_bmad-output/runtime/goal-contract-partition-bootstrap/source/generations/generation',
+      partitionPlanPath:
+        'C:/workspace/_bmad-output/runtime/goal-contract-partition-bootstrap/source/generations/generation/partition-plan.json',
+      partitionPlanHash: HASH,
+      partitionManifestPath:
+        'C:/workspace/_bmad-output/runtime/goal-contract-partition-bootstrap/source/generations/generation/partition-manifest.json',
+      partitionManifestHash: HASH,
+      partitionManifestDocumentHash: HASH,
+      childContractHashes: [
+        {
+          path: 'children/p01-root-goal-execution-plan.md',
+          hash: HASH,
+        },
+      ],
+      requiredReceiptHashes: [
+        {
+          path: 'receipts/global-coverage.receipt.json',
+          hash: HASH,
+        },
+      ],
+    };
+    const requirementRecordPointer = {
+      schemaVersion:
+        'goal-contract-partition-active-requirement-record-run/v1',
+      authorityMode: 'requirement_record',
+      requirementSetId: 'REQ-GH-004',
+      sourceHash: HASH,
+      partitionRunId: `partition-run-${'b'.repeat(64)}`,
+      authorityRoot:
+        'C:/workspace/_bmad-output/runtime/requirement-records/REQ-GH-004/goal-contract',
+      recordPath:
+        'C:/workspace/_bmad-output/runtime/requirement-records/REQ-GH-004/requirement-record.json',
+      recordHash: HASH,
+      recordRevision: 3,
+      eventChainHead: HASH,
+      eventId: 'goal-contract-partition-authority:REQ-GH-004',
+      eventChainProjection: HASH,
+      partitionPlanHash: HASH,
+      partitionManifestHash: HASH,
+      partitionManifestDocumentHash: HASH,
+      partitionSetHash: HASH,
+      pointerProjectionHash: HASH,
+    };
+
+    assert.deepEqual(
+      validateGoalContractSchema(OUTPUT_AUTHORITY_SCHEMA, standalonePointer),
+      standalonePointer
+    );
+    assert.deepEqual(
+      validateGoalContractSchema(
+        OUTPUT_AUTHORITY_SCHEMA,
+        requirementRecordPointer
+      ),
+      requirementRecordPointer
+    );
+    assert.throws(
+      () =>
+        validateGoalContractSchema(OUTPUT_AUTHORITY_SCHEMA, {
+          ...standalonePointer,
+          sourceHash: 'sha256:invalid',
+        }),
+      (error) => error.failureClass === 'canonical_schema_invalid'
+    );
+    assert.throws(
+      () =>
+        validateGoalContractSchema(OUTPUT_AUTHORITY_SCHEMA, {
+          ...requirementRecordPointer,
+          authorityMode: 'standalone_bootstrap',
+        }),
+      (error) => error.failureClass === 'canonical_schema_invalid'
+    );
+  });
+
+  it('binds the output authority schema into the Kernel schema identity', () => {
+    const kernel = require(
+      '../src/utils/goal-contract/control-plane/index.ts'
+    );
+
+    assert.equal(
+      typeof kernel.goalContractKernelSchemaArtifactHashes,
+      'function'
+    );
+    assert.equal(
+      kernel.goalContractKernelSchemaArtifactHashes()[
+        OUTPUT_AUTHORITY_SCHEMA
+      ],
+      goalContractSchemaArtifactHash(OUTPUT_AUTHORITY_SCHEMA)
+    );
+    for (const schemaName of [
+      'goal-contract-partition-closure-feasibility-receipt.schema.json',
+      'goal-contract-partition-impact-drift-receipt.schema.json',
+      'goal-contract-partition-impact-graph.schema.json',
+      'goal-contract-partition-impact-policy.schema.json',
+      LIFECYCLE_AUTHORITY_SCHEMA,
+      SUPERVISOR_READINESS_SCHEMA,
+    ]) {
+      assert.equal(
+        kernel.goalContractKernelSchemaArtifactHashes()[
+          schemaName
+        ],
+        goalContractSchemaArtifactHash(schemaName)
+      );
+    }
   });
 });

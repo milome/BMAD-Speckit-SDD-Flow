@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "analyzerId",
+    "analyzerVersion",
+    "allowedRoots",
+    "analyzedExtensions",
+    "hashOnlyTextExtensions",
+    "excludedPathPrefixes",
+    "binaryExtensions",
+    "maxCandidateFiles",
+    "maxVisitedDirectories",
+    "maxBytesPerFile",
+    "maxAggregateBytes",
+    "maxResolvedEdges",
+    "maxConflictChainsPerPartition",
+    "maxDiagnosticRecords",
+    "maxCliOutputBytes",
+    "supportedRelationKinds",
+    "unsupportedSyntaxDecision"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-partition-impact-policy/v1"
+    },
+    "analyzerId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "analyzerVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "allowedRoots": {
+      "$ref": "#/$defs/paths"
+    },
+    "analyzedExtensions": {
+      "$ref": "#/$defs/extensions"
+    },
+    "hashOnlyTextExtensions": {
+      "$ref": "#/$defs/extensions"
+    },
+    "excludedPathPrefixes": {
+      "$ref": "#/$defs/paths"
+    },
+    "binaryExtensions": {
+      "$ref": "#/$defs/extensions"
+    },
+    "maxCandidateFiles": {
+      "$ref": "#/$defs/positiveInteger"
+    },
+    "maxVisitedDirectories": {
+      "$ref": "#/$defs/positiveInteger"
+    },
+    "maxBytesPerFile": {
+      "$ref": "#/$defs/positiveInteger"
+    },
+    "maxAggregateBytes": {
+      "$ref": "#/$defs/positiveInteger"
+    },
+    "maxResolvedEdges": {
+      "$ref": "#/$defs/positiveInteger"
+    },
+    "maxConflictChainsPerPartition": {
+      "$ref": "#/$defs/positiveInteger"
+    },
+    "maxDiagnosticRecords": {
+      "$ref": "#/$defs/positiveInteger"
+    },
+    "maxCliOutputBytes": {
+      "$ref": "#/$defs/positiveInteger"
+    },
+    "supportedRelationKinds": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "unsupportedSyntaxDecision": {
+      "const": "blocked"
+    }
+  },
+  "$defs": {
+    "positiveInteger": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "extensions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^\\.[a-z0-9]+$"
+      }
+    },
+    "paths": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

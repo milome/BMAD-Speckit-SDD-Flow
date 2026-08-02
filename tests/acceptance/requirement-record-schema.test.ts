@@ -330,6 +330,85 @@ describe('requirement-record.schema.json', () => {
     expect(validate(record), JSON.stringify(validate.errors, null, 2)).toBe(true);
   });
 
+  it('binds the goal-contract authority writer and reduced authority payload', () => {
+    const validate = loadValidator();
+    const record = validRecord() as ReturnType<typeof validRecord> & {
+      controlledIngestWriterRegistryRequired?: boolean;
+      controlledIngestWriterRegistry?: Array<Record<string, unknown>>;
+      controlledIngestWriterRegistryHash?: string;
+      nativeGoalHandoff?: Record<string, unknown>;
+    };
+    const hash =
+      'sha256:7777777777777777777777777777777777777777777777777777777777777777';
+    record.controlledIngestWriterRegistryRequired = true;
+    record.controlledIngestWriterRegistry = [
+      {
+        writerId: 'goal-contract-authority-supersession',
+        eventTypes: ['goal_contract_partition_authority_superseded'],
+        writerHash: hash,
+        scriptPath:
+          'packages/bmad-speckit/src/utils/goal-contract/control-plane/authority-supersession.ts',
+        scriptContentHash: hash,
+        ownerModel: 'implementation_readiness',
+        allowedWriteApis: ['appendControlEventAndReplay'],
+        allowedPaths: [
+          '_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json',
+          '_bmad-output/runtime/requirement-records/<requirement-set-id>/events/control-events.jsonl',
+          '_bmad-output/runtime/requirement-records/<requirement-set-id>/events/receipts/<event-id>.json',
+          '_bmad-output/runtime/requirement-records/<requirement-set-id>/goal-contract/partition-runs/<partition-run-id>',
+          '_bmad-output/runtime/requirement-records/<requirement-set-id>/goal-contract/active-partition-run.json',
+          '_bmad-output/runtime/requirement-records/<requirement-set-id>/goal-contract/pointer-projection-blocked.json',
+        ],
+        payloadContractRefs: [
+          'goal-contract-partition-authority-supersession/v1',
+        ],
+        writesControlFields: [
+          'nativeGoalHandoff.goalContractPartitionAuthority',
+        ],
+        receiptPath:
+          '_bmad-output/runtime/requirement-records/<requirement-set-id>/events/receipts/<event-id>.json',
+        beforeAfterHashRequired: true,
+        canModifyWriterRegistry: false,
+        registryHash: hash,
+        architectureConfirmationHash:
+          record.architectureConfirmationState
+            .currentArchitectureConfirmationHash,
+      },
+    ];
+    record.controlledIngestWriterRegistryHash = hash;
+    record.nativeGoalHandoff = {
+      masterImplementationPlanHash: hash,
+      goalContractPartitionAuthority: {
+        schemaVersion:
+          'goal-contract-partition-authority-supersession/v1',
+        requirementSetId: record.requirementSetId,
+        sourceHash: hash,
+        partitionRunId: `partition-run-${'8'.repeat(64)}`,
+        authorityRoot:
+          '_bmad-output/runtime/requirement-records/REQ-SCHEMA-001/goal-contract',
+        partitionPlanHash: hash,
+        partitionManifestHash: hash,
+        partitionManifestDocumentHash: hash,
+        partitionSetHash: hash,
+        eventChainProjection: hash,
+      },
+    };
+
+    expect(validate(record), JSON.stringify(validate.errors, null, 2)).toBe(
+      true
+    );
+    delete record.controlledIngestWriterRegistry[0].allowedPaths;
+    expect(validate(record)).toBe(false);
+    record.controlledIngestWriterRegistry[0].allowedPaths = [];
+    (
+      record.nativeGoalHandoff.goalContractPartitionAuthority as Record<
+        string,
+        unknown
+      >
+    ).partitionRunId = 'partition-run-invalid';
+    expect(validate(record)).toBe(false);
+  });
+
   it('accepts receipt-backed six-model runtime status authority', () => {
     const validate = loadValidator();
     const record = validRecord() as ReturnType<typeof validRecord> & Record<string, unknown>;

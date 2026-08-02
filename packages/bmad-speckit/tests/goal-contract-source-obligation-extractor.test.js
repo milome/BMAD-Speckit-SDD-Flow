@@ -119,6 +119,110 @@ describe('goal-contract source obligation extractor', () => {
     assert.deepEqual(obligation.headingPath, ['Plan', 'Implementation Tasks']);
   });
 
+  it('accumulates complete multiline prose paragraphs with exact source spans', () => {
+    const sourceText = [
+      '# Plan',
+      '',
+      '## Implementation Steps',
+      '',
+      'Steps: Run the focused package tests and the required',
+      'encoding gate.',
+      '',
+      '## Acceptance Criteria',
+      '',
+      'Acceptance: preserve every declared path and the exact',
+      'source span.',
+      '',
+      'Single-line MUST remain a single obligation.',
+      '',
+      '```text',
+      'node --version',
+      '```',
+      '',
+    ].join('\r\n');
+    const result = extractSourceObligations({
+      snapshot: buildSourceSnapshot({
+        sourceType: 'source_plan',
+        sourcePath: 'docs/plans/source.md',
+        rawBytes: Buffer.from(sourceText, 'utf8'),
+      }),
+    });
+
+    const steps = result.sourceObligations.find((item) =>
+      item.exactText.startsWith('Steps:')
+    );
+    const acceptance = result.sourceObligations.find((item) =>
+      item.exactText.startsWith('Acceptance:')
+    );
+    const singleLine = result.sourceObligations.find((item) =>
+      item.exactText.startsWith('Single-line')
+    );
+    const heading = result.sourceObligations.find(
+      (item) => item.exactText === 'Acceptance Criteria'
+    );
+    const fence = result.sourceObligations.find(
+      (item) => item.kind === 'command_block'
+    );
+
+    assert.equal(
+      steps.exactText,
+      'Steps: Run the focused package tests and the required\nencoding gate.'
+    );
+    assert.equal(steps.lineStart, 5);
+    assert.equal(steps.lineEnd, 6);
+    assert.equal(
+      sourceText
+        .replace(/\r\n/gu, '\n')
+        .split('\n')
+        .slice(steps.lineStart - 1, steps.lineEnd)
+        .join('\n'),
+      steps.exactText
+    );
+    assert.equal(
+      Buffer.from(sourceText, 'utf8')
+        .subarray(steps.startByte, steps.endByteExclusive)
+        .toString('utf8'),
+      'Steps: Run the focused package tests and the required\r\nencoding gate.'
+    );
+    assert.equal(
+      acceptance.exactText,
+      'Acceptance: preserve every declared path and the exact\nsource span.'
+    );
+    assert.equal(acceptance.lineStart, 10);
+    assert.equal(acceptance.lineEnd, 11);
+    assert.equal(singleLine.lineStart, singleLine.lineEnd);
+    assert.equal(heading.lineStart, heading.lineEnd);
+    assert.equal(fence.lineStart, 15);
+    assert.equal(fence.lineEnd, 17);
+  });
+
+  it('extracts a Steps paragraph even when its prose has no legacy keyword', () => {
+    const sourceText = [
+      '# Plan',
+      '',
+      'Steps: Preserve the declared ordering and exact source span.',
+      '',
+    ].join('\n');
+    const result = extractSourceObligations({
+      snapshot: buildSourceSnapshot({
+        sourceType: 'source_plan',
+        sourcePath: 'docs/plans/source.md',
+        rawBytes: Buffer.from(sourceText, 'utf8'),
+      }),
+    });
+
+    const steps = result.sourceObligations.find((item) =>
+      item.exactText.startsWith('Steps:')
+    );
+    assert.ok(steps);
+    assert.equal(
+      steps.exactText,
+      'Steps: Preserve the declared ordering and exact source span.'
+    );
+    assert.equal(steps.lineStart, 3);
+    assert.equal(steps.lineEnd, 3);
+  });
+
   it('recognizes task headings and limits dependencies to explicit relation fragments', () => {
     const sourceText = [
       '# Plan',
@@ -149,6 +253,84 @@ describe('goal-contract source obligation extractor', () => {
     assert.deepEqual(heading.dependencyRefs, []);
     assert.deepEqual(codeBlock.dependencyRefs, []);
     assert.deepEqual(dependentTask.dependencyRefs, ['P04-T04']);
+  });
+
+  it('projects fenced arrow chains onto the declared dependent tasks', () => {
+    const sourceText = [
+      '# Plan',
+      '',
+      '## Task DAG',
+      '',
+      '```text',
+      'GH-T01 -> GH-T02 -> GH-T03',
+      'GH-T03 → GH-T04 => GH-T05',
+      '```',
+      '',
+      '### GH-T01: Freeze baseline',
+      '### GH-T02: Normalize obligations',
+      '### GH-T03: Compile impact graph',
+      '### GH-T04: Prove feasibility',
+      '### GH-T05: Finalize manifest',
+      '',
+    ].join('\n');
+    const result = extractSourceObligations({
+      snapshot: buildSourceSnapshot({
+        sourceType: 'source_plan',
+        sourcePath: 'docs/plans/source.md',
+        rawBytes: Buffer.from(sourceText, 'utf8'),
+      }),
+    });
+    const dependencies = Object.fromEntries(
+      result.sourceObligations
+        .filter((item) => /^GH-T0[1-5]$/u.test(item.id))
+        .map((item) => [item.id, item.dependencyRefs])
+    );
+    const codeBlock = result.sourceObligations.find(
+      (item) => item.kind === 'command_block'
+    );
+
+    assert.deepEqual(dependencies, {
+      'GH-T01': [],
+      'GH-T02': ['GH-T01'],
+      'GH-T03': ['GH-T02'],
+      'GH-T04': ['GH-T03'],
+      'GH-T05': ['GH-T04'],
+    });
+    assert.deepEqual(codeBlock.dependencyRefs, []);
+  });
+
+  it('rejects unknown task IDs in fenced arrow chains', () => {
+    const sourceText = [
+      '# Plan',
+      '',
+      '```text',
+      'GH-T01 -> GH-T99',
+      '```',
+      '',
+      '### GH-T01: Freeze baseline',
+      '',
+    ].join('\n');
+
+    assert.throws(
+      () =>
+        extractSourceObligations({
+          snapshot: buildSourceSnapshot({
+            sourceType: 'source_plan',
+            sourcePath: 'docs/plans/source.md',
+            rawBytes: Buffer.from(sourceText, 'utf8'),
+          }),
+        }),
+      (error) => {
+        assert.equal(error.failureClass, 'source_obligation_dependency_unknown');
+        assert.deepEqual(error.unknownDependencies, [
+          {
+            sourceId: 'GH-T99',
+            dependencyId: 'GH-T01',
+          },
+        ]);
+        return true;
+      }
+    );
   });
 
   it('classifies nested declared records by explicit ID syntax before task scope', () => {

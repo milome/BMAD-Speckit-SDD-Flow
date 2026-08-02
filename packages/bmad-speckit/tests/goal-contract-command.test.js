@@ -81,6 +81,7 @@ describe('partition compiler identity', () => {
       '_bmad/shared/goal-contract/goal-contract-partition-plan.schema.json',
       '_bmad/shared/goal-contract/goal-contract-execution-projection.schema.json',
       '_bmad/shared/goal-contract/goal-contract-partition-manifest.schema.json',
+      '_bmad/shared/goal-contract/goal-contract-partition-output-authority.schema.json',
       '_bmad/shared/goal-contract/goal-contract-authority-supersession-receipt.schema.json',
       '_bmad/shared/goal-contract/goal-contract-source-grounded-coverage-receipt.schema.json',
     ]) {
@@ -527,6 +528,11 @@ describe('bmad-speckit goal-contract command', () => {
     assert.equal(superseded.status, 0, superseded.stderr || superseded.stdout);
     const payload = JSON.parse(superseded.stdout);
     assert.equal(payload.ok, true);
+    assert.equal(payload.authorityMode, 'raw_non_authoritative');
+    assert.equal(
+      payload.rawContainmentRoot.replace(/\\/gu, '/'),
+      authorityRoot.replace(/\\/gu, '/')
+    );
     assert.equal(payload.partitionCount, children.length);
     assert.equal(payload.atomicPromotion, true);
     assert.equal(payload.supersessionMode, 'source_grounded_hard_cut');

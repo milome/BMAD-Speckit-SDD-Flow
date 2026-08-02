@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "mode",
+    "repositoryTreeHash",
+    "partitionPlanBasisHash",
+    "partitionSetHash",
+    "partitionImpactGraphHash",
+    "partitionClosureFeasibilityReceiptHash",
+    "changedArtifactIds",
+    "impactedPartitionIds",
+    "decision",
+    "driftHash",
+    "semanticDecisionHash",
+    "receiptHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-partition-impact-drift-receipt/v1"
+    },
+    "mode": {
+      "const": "generation_baseline"
+    },
+    "repositoryTreeHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "partitionPlanBasisHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "partitionSetHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "partitionImpactGraphHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "partitionClosureFeasibilityReceiptHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "changedArtifactIds": {
+      "$ref": "#/$defs/ids"
+    },
+    "impactedPartitionIds": {
+      "$ref": "#/$defs/ids"
+    },
+    "decision": {
+      "const": "baseline_frozen"
+    },
+    "driftHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "semanticDecisionHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "receiptHash": {
+      "$ref": "#/$defs/hash"
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "ids": {
+      "type": "array",
+      "maxItems": 0,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

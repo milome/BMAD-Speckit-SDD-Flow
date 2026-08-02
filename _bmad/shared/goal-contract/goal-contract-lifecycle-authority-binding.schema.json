@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "scope",
+    "partitionManifestHash",
+    "campaignId",
+    "attemptId",
+    "graphHash",
+    "feasibilityHash",
+    "driftHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-lifecycle-authority-binding/v1"
+    },
+    "scope": {
+      "enum": ["campaign", "partition"]
+    },
+    "partitionManifestHash": { "$ref": "#/$defs/hash" },
+    "childContractHash": { "$ref": "#/$defs/hash" },
+    "campaignId": { "$ref": "#/$defs/nonEmpty" },
+    "attemptId": { "$ref": "#/$defs/nonEmpty" },
+    "nodeAttemptId": { "$ref": "#/$defs/nonEmpty" },
+    "partitionId": { "$ref": "#/$defs/nonEmpty" },
+    "graphHash": { "$ref": "#/$defs/hash" },
+    "feasibilityHash": { "$ref": "#/$defs/hash" },
+    "driftHash": { "$ref": "#/$defs/hash" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "scope": { "const": "partition" }
+        }
+      },
+      "then": {
+        "required": ["partitionId", "childContractHash"]
+      }
+    },
+    {
+      "if": {
+        "required": ["nodeAttemptId"]
+      },
+      "then": {
+        "properties": {
+          "scope": { "const": "partition" }
+        },
+        "required": ["partitionId", "childContractHash"]
+      }
+    }
+  ],
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "nonEmpty": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

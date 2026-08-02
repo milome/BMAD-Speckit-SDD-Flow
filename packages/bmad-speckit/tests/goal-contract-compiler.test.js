@@ -13,8 +13,10 @@ const {
 const {
   compileGoalContract,
   compileGoalContractPolicy,
+  createGoalContractSourceCoverageReceipt,
   createGoalContractCompilationReceipt,
   goalContractCompilerIdentity,
+  normalizeGoalContractSourceCoverageMappings,
 } = require('../src/utils/goal-contract/control-plane/goal-contract-compiler.ts');
 const {
   hashControlPlaneValue,
@@ -231,6 +233,56 @@ describe('pure GoalContractCompiler', () => {
     });
     assert.equal(earlyReceipt.goalContractHash, laterReceipt.goalContractHash);
     assert.notEqual(earlyReceipt.receiptHash, laterReceipt.receiptHash);
+  });
+
+  it('derives the source coverage receipt from audited mappings', () => {
+    const input = buildCompilerInput();
+    const result = compileGoalContract(input);
+    const coverageReceipt =
+      result.deterministicRendererInput.coverageReceipt;
+
+    assert.equal(result.sourceCoverageAudit.decision, 'pass');
+    assert.deepEqual(
+      coverageReceipt.unmappedSourceObligations,
+      result.sourceCoverageAudit.unmappedSourceObligations
+    );
+    assert.ok(
+      coverageReceipt.sourceObligations.every(
+        (obligation) =>
+          obligation.goalTaskRefs.length > 0 &&
+          obligation.acceptanceRefs.length > 0 &&
+          obligation.commandRefs.length > 0 &&
+          obligation.evidenceRefs.length > 0 &&
+          obligation.stopConditionRefs.length > 0
+      )
+    );
+
+    const normalized = normalizeGoalContractSourceCoverageMappings([
+      {
+        id: 'GH-R01',
+        goalTaskRefs: ['GH-T01'],
+        acceptanceRefs: ['ACC-01'],
+        commandRefs: ['CMD-01'],
+        evidenceRefs: [],
+      },
+    ]);
+    assert.throws(
+      () =>
+        createGoalContractSourceCoverageReceipt({
+          sourcePlanHash: `sha256:${'a'.repeat(64)}`,
+          sourceObligations: normalized,
+          coverageAudit: {
+            decision: 'pass',
+            unmappedSourceObligations: [],
+            orphanGeneratedRefs: [],
+            blockingReasons: [],
+          },
+        }),
+      (error) =>
+        error.failureClass === 'source_coverage_unmapped' &&
+        error.sourceObligationId === 'GH-R01' &&
+        error.field === 'evidenceRefs'
+    );
   });
 
   it('derives complete subordinate coverage and source-specific provenance', () => {

@@ -1,0 +1,216 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "goal-contract-supervisor-readiness-projection.schema.json",
+  "title": "Goal Contract Supervisor Readiness Projection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "authorityMode",
+    "sourceHash",
+    "activePointerPath",
+    "authorityUnitRoot",
+    "partitionRunId",
+    "partitionManifestHash",
+    "partitionManifestDocumentHash",
+    "lifecycleRoot",
+    "partitions"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-contract-supervisor-readiness-projection/v1"
+    },
+    "authorityMode": {
+      "enum": [
+        "standalone_bootstrap",
+        "requirement_record"
+      ]
+    },
+    "sourceHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "generationKey": {
+      "$ref": "#/$defs/hash"
+    },
+    "requirementSetId": {
+      "$ref": "#/$defs/requirementSetId"
+    },
+    "activePointerPath": {
+      "$ref": "#/$defs/normalizedPath"
+    },
+    "authorityUnitRoot": {
+      "$ref": "#/$defs/normalizedPath"
+    },
+    "partitionRunId": {
+      "$ref": "#/$defs/partitionRunId"
+    },
+    "partitionManifestHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "partitionManifestDocumentHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "lifecycleRoot": {
+      "$ref": "#/$defs/normalizedPath"
+    },
+    "partitions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/partitionReadiness"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "authorityMode": {
+            "const": "standalone_bootstrap"
+          }
+        },
+        "required": [
+          "authorityMode"
+        ]
+      },
+      "then": {
+        "required": [
+          "generationKey"
+        ],
+        "not": {
+          "required": [
+            "requirementSetId"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "authorityMode": {
+            "const": "requirement_record"
+          }
+        },
+        "required": [
+          "authorityMode"
+        ]
+      },
+      "then": {
+        "required": [
+          "requirementSetId"
+        ],
+        "not": {
+          "required": [
+            "generationKey"
+          ]
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "partitionId": {
+      "type": "string",
+      "pattern": "^partition-[0-9a-f]{64}$"
+    },
+    "partitionRunId": {
+      "type": "string",
+      "pattern": "^partition-run-[0-9a-f]{64}$"
+    },
+    "requirementSetId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "normalizedPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$"
+    },
+    "relativeChildPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))children/.+$"
+    },
+    "relativeLifecyclePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))lifecycle/.+\\.json$"
+    },
+    "artifactRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "hash"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/relativeLifecyclePath"
+        },
+        "hash": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "partitionReadiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rootGoalId",
+        "partitionId",
+        "partitionManifestHash",
+        "childContractPath",
+        "childContractHash",
+        "dagOrder",
+        "childReleaseRef",
+        "activationRef",
+        "leaseRef",
+        "evidenceRef",
+        "childClosureRef",
+        "campaignClosureRef"
+      ],
+      "properties": {
+        "rootGoalId": {
+          "$ref": "#/$defs/hash"
+        },
+        "partitionId": {
+          "$ref": "#/$defs/partitionId"
+        },
+        "partitionManifestHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "childContractPath": {
+          "$ref": "#/$defs/relativeChildPath"
+        },
+        "childContractHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "dagOrder": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "childReleaseRef": {
+          "$ref": "#/$defs/artifactRef"
+        },
+        "activationRef": {
+          "$ref": "#/$defs/artifactRef"
+        },
+        "leaseRef": {
+          "$ref": "#/$defs/artifactRef"
+        },
+        "evidenceRef": {
+          "$ref": "#/$defs/artifactRef"
+        },
+        "childClosureRef": {
+          "$ref": "#/$defs/artifactRef"
+        },
+        "campaignClosureRef": {
+          "$ref": "#/$defs/artifactRef"
+        }
+      }
+    }
+  }
+}

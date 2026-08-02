@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const CONTROL_WRITER_SCRIPTS = [
+  'packages/bmad-speckit/src/utils/goal-contract/control-plane/authority-supersession.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-architecture-confirmation.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate.ts',
