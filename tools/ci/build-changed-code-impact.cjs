@@ -490,13 +490,17 @@ function packageOwner(changedPath, tests, facts) {
   }
   const packageDirectory = longestRecords[0].packageDirectory;
   const catalogPackageIds = stableUnique(
-    tests
-      .filter(
-        (test) =>
-          test.testPath === packageDirectory || test.testPath.startsWith(`${packageDirectory}/`)
-      )
-      .map((test) => test.packageId)
-      .filter((packageId) => typeof packageId === 'string' && packageId.trim() !== '')
+    [
+      ...tests
+        .filter(
+          (test) =>
+            test.testPath === packageDirectory || test.testPath.startsWith(`${packageDirectory}/`)
+        )
+        .map((test) => test.packageId),
+      ...tests
+        .filter((test) => longestPackageIds.includes(test.packageId))
+        .map((test) => test.packageId),
+    ].filter((packageId) => typeof packageId === 'string' && packageId.trim() !== '')
   );
   if (catalogPackageIds.length > 1) {
     fail('IMPACT_PACKAGE_TEST_IDENTITY_CONFLICT', {
