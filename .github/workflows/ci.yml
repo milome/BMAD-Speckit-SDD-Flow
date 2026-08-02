@@ -139,6 +139,7 @@ jobs:
 
           run_planning() {
             run_stage ci:catalog npm run ci:catalog -- --changed-paths .artifacts/test-portfolio/changed-paths.json
+            run_stage ci:profile-policy npm run ci:profile-policy -- --catalog .artifacts/test-portfolio/test-catalog.json --output .artifacts/test-portfolio/test-profile-policy.json
             run_stage ci:timing-bootstrap npm run ci:timing-bootstrap
             run_stage ci:freeze-core npm run ci:freeze-core -- --catalog .artifacts/test-portfolio/test-catalog.json --facts .artifacts/test-portfolio/test-catalog-facts.json --timing-summary .artifacts/test-portfolio/ci-test-timing-summary.json --commit-sha "$GITHUB_SHA" --environment-class linux-x64-node22 --output .artifacts/test-portfolio/core-freeze.json
             run_stage ci:coverage-gap npm run ci:coverage-gap -- --catalog .artifacts/test-portfolio/test-catalog.json --core-freeze .artifacts/test-portfolio/core-freeze.json
@@ -146,6 +147,7 @@ jobs:
               --catalog .artifacts/test-portfolio/test-catalog.json
               --core-freeze .artifacts/test-portfolio/core-freeze.json
               --coverage-report .artifacts/test-portfolio/six-model-coverage-gap-report.json
+              --profile-policy .artifacts/test-portfolio/test-profile-policy.json
               --requested-profile "$PROFILE"
             )
             if [ -n "$BASE_SHA" ]; then
