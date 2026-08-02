@@ -61,6 +61,8 @@ jobs:
 
       - run: npm install --global npm@10.9.4
 
+      - run: git config core.filemode false
+
       # classify must preserve a pristine checkout for catalog provenance.
       - run: npm ci --ignore-scripts
 
@@ -113,12 +115,6 @@ jobs:
 
       - name: Prepare the canonical package once
         run: npm run ci:prepare-package -- --commit-sha "$GITHUB_SHA"
-
-      - name: Diagnose tracked changes before planning
-        shell: bash
-        run: |
-          echo "=== tracked changes before ci:catalog ==="
-          git status --short --untracked-files=no
 
       - name: Generate the governed test plan within budget
         id: planning
