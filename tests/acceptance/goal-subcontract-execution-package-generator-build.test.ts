@@ -1,8 +1,9 @@
 import Ajv2020 from 'ajv/dist/2020.js';
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   cleanupFixtures,
   createFixture,
@@ -13,6 +14,13 @@ import {
   sha256,
   SKILL_ROOT,
 } from '../helpers/goal-subcontract-execution-package-fixture';
+
+const buildScript = createRequire(import.meta.url)(
+  path.join(SKILL_ROOT, 'scripts', 'build-execution-package.js')
+) as {
+  git?: (repositoryRoot: string, args: string[], failureClass: string, input?: string) => string;
+  writeAtomic: (root: string, relativePath: string, content: string) => string;
+};
 
 afterEach(cleanupFixtures);
 
@@ -68,7 +76,107 @@ function auditPackage(packageRoot: string, expectedHash: string) {
   ]);
 }
 
+function temporaryFiles(root: string): string[] {
+  return fs.existsSync(root) ? fs.readdirSync(root).filter((entry) => entry.endsWith('.tmp')) : [];
+}
+
 describe('goal subcontract execution package compile', () => {
+  it('exports the hardened git helper for other package auditors', () => {
+    expect(buildScript.git).toBeTypeOf('function');
+  });
+
+  it('forwards optional stdin through the shared git helper', () => {
+    const fixture = createFixture();
+    const first = buildScript.git?.(
+      fixture.root,
+      ['hash-object', '--stdin'],
+      'shared_git_input_failed',
+      'first payload'
+    );
+    const second = buildScript.git?.(
+      fixture.root,
+      ['hash-object', '--stdin'],
+      'shared_git_input_failed',
+      'second payload'
+    );
+
+    expect(first).toMatch(/^[a-f0-9]{40,64}$/u);
+    expect(second).toMatch(/^[a-f0-9]{40,64}$/u);
+    expect(first).not.toBe(second);
+  });
+
+  it('preserves the requested failure class when git spawn returns null stderr', () => {
+    const fixture = createFixture();
+    const result = runScript(
+      'build-execution-package.js',
+      ['--request', fixture.requestPath, '--out', fixture.packageA, '--json'],
+      { env: { ...process.env, PATH: '' } }
+    );
+
+    expect(result.status).not.toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      ok: false,
+      failureClass: 'invalid_compile_request',
+      details: {
+        stderr: expect.any(String),
+      },
+    });
+  });
+
+  it('accepts functional display titles containing oauth-2 and utf-8 subjects', () => {
+    const fixture = createFixture();
+    const manifestPath = path.join(fixture.root, 'partition-manifest.json');
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    manifest.partitions[0].displayTitle = 'Rotate OAuth-2 tokens with UTF-8 claims';
+    writeJson(manifestPath, manifest);
+    const request = JSON.parse(fs.readFileSync(fixture.requestPath, 'utf8'));
+    request.partitionManifest.hash = hashFile(manifestPath);
+    writeJson(fixture.requestPath, request);
+
+    const result = compile(fixture.requestPath, fixture.packageA);
+
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+  });
+
+  it.each(['write', 'rename'])('cleans atomic temp files when the %s step fails', (failureStep) => {
+    const fixture = createFixture();
+    const outputRoot = path.join(fixture.root, `atomic-${failureStep}`);
+    const originalWriteFileSync = fs.writeFileSync;
+    const writeSpy =
+      failureStep === 'write'
+        ? vi.spyOn(fs, 'writeFileSync').mockImplementation(((...args: unknown[]) => {
+            const result = Reflect.apply(originalWriteFileSync, fs, args);
+            if (String(args[0]).endsWith('.tmp')) throw new Error('injected write failure');
+            return result;
+          }) as typeof fs.writeFileSync)
+        : undefined;
+    const renameSpy =
+      failureStep === 'rename'
+        ? vi.spyOn(fs, 'renameSync').mockImplementation(() => {
+            throw new Error('injected rename failure');
+          })
+        : undefined;
+
+    try {
+      expect(() => buildScript.writeAtomic(outputRoot, 'artifact.json', '{"ok":true}\n')).toThrow(
+        `injected ${failureStep} failure`
+      );
+      expect(temporaryFiles(outputRoot)).toEqual([]);
+    } finally {
+      writeSpy?.mockRestore();
+      renameSpy?.mockRestore();
+    }
+  });
+
+  it('keeps the builder entrypoint below 800 lines', () => {
+    const source = fs.readFileSync(
+      path.join(SKILL_ROOT, 'scripts', 'build-execution-package.js'),
+      'utf8'
+    );
+
+    expect(source.split(/\r?\n/u).length).toBeLessThan(800);
+  });
+
   it('generates deterministic packages and an absent record branch', () => {
     const fixture = createFixture();
     const headBefore = git(fixture.root, ['rev-parse', 'HEAD']);
@@ -387,6 +495,7 @@ describe('goal subcontract execution package compile', () => {
     for (const displayTitle of [
       'AUTH-01',
       'Complete AUTH-01 implementation',
+      'Refresh credentials for AUTH-02',
       'Authentication',
       '认证能力',
     ]) {
