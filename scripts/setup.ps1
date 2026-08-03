@@ -59,7 +59,8 @@ $OPTIONAL_SKILLS = @(
     'git-push-monitor',
     'bmad-eval-analytics',
     'requirements-contract-authoring',
-    'req-trace-matrix-prompt-generator'
+    'req-trace-matrix-prompt-generator',
+    'goal-contract-partition-orchestrator'
 )
 $V6_CORE_SKILLS = @(
     'bmad-party-mode',

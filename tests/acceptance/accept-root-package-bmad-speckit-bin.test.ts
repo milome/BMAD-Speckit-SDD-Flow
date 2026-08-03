@@ -114,6 +114,23 @@ describe('root package bmad-speckit bin', () => {
       expect(existsSync(join(target, '.cursor', 'skills', 'npm-public-release', 'SKILL.md'))).toBe(
         true
       );
+      expect(
+        existsSync(
+          join(target, '.cursor', 'skills', 'goal-contract-partition-orchestrator', 'SKILL.md')
+        )
+      ).toBe(true);
+      expect(
+        existsSync(
+          join(
+            target,
+            '.cursor',
+            'skills',
+            'goal-contract-partition-orchestrator',
+            'references',
+            'partition-protocol.md'
+          )
+        )
+      ).toBe(true);
       expect(existsSync(join(target, '.cursor', 'hooks', 'emit-runtime-policy.cjs'))).toBe(true);
       expect(existsSync(join(target, 'node_modules', 'bmad-speckit-sdd-flow'))).toBe(false);
     } finally {

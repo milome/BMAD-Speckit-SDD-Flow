@@ -100,6 +100,41 @@ describe('npm pack root package → clean install → CLI', () => {
         )
       ).toBe(true);
       expect(
+        existsSync(
+          join(
+            rootInstallDir,
+            '_bmad',
+            'skills',
+            'goal-contract-partition-orchestrator',
+            'SKILL.md'
+          )
+        )
+      ).toBe(true);
+      expect(
+        existsSync(
+          join(
+            rootInstallDir,
+            '_bmad',
+            'skills',
+            'goal-contract-partition-orchestrator',
+            'references',
+            'partition-protocol.md'
+          )
+        )
+      ).toBe(true);
+      expect(
+        existsSync(
+          join(
+            rootInstallDir,
+            '_bmad',
+            'skills',
+            'goal-contract-partition-orchestrator',
+            'agents',
+            'openai.yaml'
+          )
+        )
+      ).toBe(true);
+      expect(
         expectFirstExistingPath([
           join(rootInstallDir, 'node_modules', 'bmad-speckit', 'dist', 'commands', 'large-doc.js'),
           join(rootInstallDir, 'packages', 'bmad-speckit', 'dist', 'commands', 'large-doc.js'),
