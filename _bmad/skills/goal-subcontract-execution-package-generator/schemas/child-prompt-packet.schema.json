@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "child-prompt-packet.schema.json",
+  "title": "Goal Child Prompt Packet",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "packageId",
+    "partitionId",
+    "displayTitle",
+    "ordinal",
+    "contract",
+    "predecessorPartitionIds",
+    "ownedArtifactPaths",
+    "requiredCommandIds",
+    "evidenceSchema",
+    "closureSchema",
+    "executionPolicy",
+    "commitPolicy"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-subcontract-child-prompt-packet/v2"
+    },
+    "packageId": { "type": "string", "minLength": 1 },
+    "partitionId": { "type": "string", "minLength": 1 },
+    "displayTitle": { "type": "string", "minLength": 1 },
+    "ordinal": { "type": "integer", "minimum": 1 },
+    "contract": {
+      "type": "object",
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "predecessorPartitionIds": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "ownedArtifactPaths": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+    "requiredCommandIds": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "evidenceSchema": { "$ref": "#/$defs/sourceBinding" },
+    "closureSchema": { "$ref": "#/$defs/sourceBinding" },
+    "executionPolicy": {
+      "type": "object",
+      "required": [
+        "predecessorClosureRequired",
+        "stageOwnedPathsOnly",
+        "closureStatus",
+        "commitVerificationFields"
+      ],
+      "properties": {
+        "predecessorClosureRequired": { "const": true },
+        "stageOwnedPathsOnly": { "const": true },
+        "closureStatus": { "const": "closed" },
+        "commitVerificationFields": {
+          "const": [
+            "hash",
+            "parentHash",
+            "treeHash",
+            "subject",
+            "changedPaths",
+            "diff",
+            "reachability",
+            "trailers"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "commitPolicy": {
+      "type": "object",
+      "required": [
+        "commitCount",
+        "subjectPattern",
+        "requiredTrailers",
+        "forbiddenLifecycleSubjects"
+      ],
+      "properties": {
+        "commitCount": { "const": 1 },
+        "subjectPattern": { "type": "string", "minLength": 1 },
+        "requiredTrailers": {
+          "type": "array",
+          "const": [
+            "Functional-Outcome",
+            "Affected-Scope",
+            "Child-Contract",
+            "Contract-Hash",
+            "Evidence",
+            "Validation"
+          ]
+        },
+        "forbiddenLifecycleSubjects": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "sourceBinding": {
+      "type": "object",
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

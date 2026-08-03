@@ -11,7 +11,9 @@ describe('goal-execution-contract-generator skill contract', () => {
       'utf8'
     );
 
-    expect(skill).toContain('bmad-speckit goal-contract generate --source <path> --out <path> --json');
+    expect(skill).toContain(
+      'bmad-speckit goal-contract generate --entry standalone_goal_contract --source <path> --out <path> --json'
+    );
     expect(skill).toContain('coverage receipt');
     expect(skill).toContain('large-document-writer is transport only');
     expect(skill).toContain('Codex, Claude Code, and Cursor');
@@ -43,7 +45,11 @@ describe('goal-execution-contract-generator skill contract', () => {
       );
       expect(generatorSkill).not.toContain('3 consecutive no-gap');
       expect(generatorSkill).toContain('multi-view-doc-review-loop');
-      expect(generatorSkill).toContain('single final docs-review');
+      expect(generatorSkill).toContain('latest-hash three-perspective PASS');
+      expect(generatorSkill).toContain('do not run a separate final docs-review');
+      expect(generatorSkill).toContain(
+        'Preserve any existing final docs-review only for unrelated non-standalone documentation workflows'
+      );
       expect(generatorSkill).toContain('check-contract-command-portability.js');
 
       expect(reviewSkill).toContain('auditEpochId');

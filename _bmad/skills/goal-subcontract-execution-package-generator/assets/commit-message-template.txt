@@ -1,0 +1,8 @@
+<type>(<functional-scope>): <specific functional capability>
+
+Functional-Outcome: <concrete delivered capability>
+Affected-Scope: <module, API, workflow, or user-facing surface>
+Child-Contract: <partitionId>
+Contract-Hash: <sha256>
+Evidence: <path>#<sha256>
+Validation: <command IDs>
