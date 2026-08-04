@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "goal-contract-e04-latest-pointer/v1",
+  "auditEpochId": "MA-GS-E04-20260804T070655Z-03",
+  "aggregateReceiptPath": ".artifacts/ma-gs-e04-20260804T070655Z-03-aggregate-audit-receipt.json",
+  "targetHash": "sha256:a3f7a7caca975f6a60a26d561a9e73fae33134c45567c1791ced79a304eb4f29",
+  "sourceHash": "sha256:91d0e8023655f65980379748194a8ce7173e759a110382516207ba6426ef807c",
+  "decision": "pass"
+}

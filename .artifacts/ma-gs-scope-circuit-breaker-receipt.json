@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "ma-gs-scope-circuit-breaker-receipt/v1",
+  "baselineClassification": "The lifecycle test normalization is part of the frozen repository baseline. Generated partition runtime artifacts and docs/receipts are authority evidence, not implementation diff.",
+  "counts": {
+    "productionFilesChanged": 0,
+    "totalImplementationFiles": 1,
+    "handwrittenAdditions": 6,
+    "handwrittenDeletions": 2,
+    "handwrittenLines": 8,
+    "totalDiffLines": 8,
+    "newRequirementRecordFields": 0,
+    "newRequirementRecordEvents": 0,
+    "newSplitters": 0,
+    "newDispatchPrimitives": 0
+  },
+  "thresholds": {
+    "productionFiles": 15,
+    "totalFiles": 45,
+    "handwrittenLines": 4000,
+    "totalDiffLines": 6000,
+    "newRequirementRecordFields": 0,
+    "newRequirementRecordEvents": 0,
+    "newSplitters": 0,
+    "newDispatchPrimitives": 0
+  },
+  "decision": "pass"
+}

@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "ma-gs-goal-authority-lf-normalization-receipt/v1",
+  "failureClass": "git_index_goal_document_hash_mismatch",
+  "rootCause": "Windows core.autocrlf checked out canonical template/profile projections with CRLF; LF slot insertion produced a mixed-EOL Goal whose Git-cleaned index bytes no longer matched generation, E04 and readiness hashes.",
+  "oldGoalContractHash": "sha256:e3b4f3ff1ca8f8583014fbd71e3eb1b9dabe904b9426f0e2dd52c61e68101fa7",
+  "oldGoalDocumentHash": "sha256:e3dc24bc28dc277fd79718f7c113314ac9f45dd1b13d03b088080d661374b740",
+  "oldGitCleanedGoalDocumentHash": "sha256:899ca1fe26b6420860863cd060d1be64ca501eeb2513a30de6e935cdae6b2285",
+  "canonicalTemplateHash": "sha256:0b2903baf933aa6f658ba7613ed314862624ca3c0db5d193b9effae977240d70",
+  "canonicalProfileHash": "sha256:a68d317cf38f1de70d888ca98daec553db86721bb44e5238b622da78aff1e5d6",
+  "newGoalContractHash": "sha256:d44faa626e9eb58694cf6457df9d11d124cf2e2be158d3336dadb080e8cb5138",
+  "newGoalDocumentHash": "sha256:a3f7a7caca975f6a60a26d561a9e73fae33134c45567c1791ced79a304eb4f29",
+  "goalGenerationRuns": {
+    "count": 2,
+    "documentHash": "sha256:a3f7a7caca975f6a60a26d561a9e73fae33134c45567c1791ced79a304eb4f29",
+    "identical": true
+  },
+  "e04AuditEpochId": "MA-GS-E04-20260804T070655Z-03",
+  "oldPartitionGenerationKey": "sha256:650d02b352c6373c2b61a3cefeef70b07a8d48a39a636425aae8fbdbd9202ac5",
+  "failedPartitionAttempt": {
+    "failureClass": "partition_immutable_bytes_conflict",
+    "targetPath": "_bmad-output/runtime/goal-contract-partition-bootstrap/91d0e8023655f65980379748194a8ce7173e759a110382516207ba6426ef807c/generations/650d02b352c6373c2b61a3cefeef70b07a8d48a39a636425aae8fbdbd9202ac5/partition-plan.json",
+    "existingHash": "sha256:925768e5cacfd2f9e59b1e788d4cadf22da0400b97a68861b739a4e05073acc1",
+    "requestedHash": "sha256:909ca637ea98d8f62a21056749e57a50a4f03702b38445942b2d14f6f5ca5e4e",
+    "capturePath": ".artifacts/ma-gs-formal-governed-partition-capture-a3f7a7ca/partition-1.stdout.json",
+    "captureHash": "sha256:5663d18f6e0eac8fe554825667e85be14d88e17596b75e410ef6fa702825f012"
+  },
+  "currentPartitionGenerationKey": "sha256:8141a95df3e0f0df0596d9ef557c20d5d386e2795aa668d2cde049bb43539e6d",
+  "partitionRuns": {
+    "count": 2,
+    "stdoutBytes": 332048,
+    "stdoutHash": "sha256:822fcda233a4a15b43afc9c07366c1acda6c99182c5abb4ea3270919b5dcf3aa",
+    "identical": true,
+    "capturePaths": [
+      ".artifacts/ma-gs-formal-governed-partition-capture-b7672357/partition-1.stdout.json",
+      ".artifacts/ma-gs-formal-governed-partition-capture-b7672357/partition-2.stdout.json"
+    ]
+  },
+  "assetRoots": [
+    "_bmad/shared/goal-contract",
+    "packages/bmad-speckit/_bmad/shared/goal-contract"
+  ],
+  "restoredAssetHashes": {
+    "rootTemplate": "sha256:431361c99ebb9e213c439b83a48d809c3bde5e7824705051cd57ca37cd773885",
+    "rootProfile": "sha256:6c7ff29e6c1c52a4a943705e3579cf7aeb51bc437da77fe3bf13022e5ee63407",
+    "packageTemplate": "sha256:431361c99ebb9e213c439b83a48d809c3bde5e7824705051cd57ca37cd773885",
+    "packageProfile": "sha256:6c7ff29e6c1c52a4a943705e3579cf7aeb51bc437da77fe3bf13022e5ee63407"
+  },
+  "assetsRestored": true,
+  "sourceSemanticsChanged": false,
+  "goalExecutableSemanticsChanged": false,
+  "decision": "pass"
+}

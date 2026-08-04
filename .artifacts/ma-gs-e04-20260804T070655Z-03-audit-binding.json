@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "goal-contract-e04-audit-binding/v1",
+  "auditEpochId": "MA-GS-E04-20260804T070655Z-03",
+  "targetPath": "docs/plans/2026-08-03-main-agent-goal-subcontract-controlled-integration-goal-execution-plan.md",
+  "targetHash": "sha256:a3f7a7caca975f6a60a26d561a9e73fae33134c45567c1791ced79a304eb4f29",
+  "sourcePath": "docs/plans/2026-08-03-main-agent-goal-subcontract-controlled-integration.md",
+  "sourceHash": "sha256:91d0e8023655f65980379748194a8ce7173e759a110382516207ba6426ef807c",
+  "generationReceiptPath": "docs/plans/.2026-08-03-main-agent-goal-subcontract-controlled-integration-goal-execution-plan.generation.json",
+  "generationReceiptHash": "sha256:b7c2d3028715dd6bf20f06f2cb029abe4bc8938d9f462404f29b4495d638c2c0",
+  "coverageReceiptPath": "docs/plans/.2026-08-03-main-agent-goal-subcontract-controlled-integration-goal-execution-plan.coverage.json",
+  "coverageReceiptHash": "sha256:3c21c43e27337d208ca00841283d0df2b48ae629ea037d14c2afe5f797e28c71",
+  "repositoryIdentity": "git:0f99807307ac75ff25f6bbe876f10c040a2aeb50@dev",
+  "state": "closed"
+}
