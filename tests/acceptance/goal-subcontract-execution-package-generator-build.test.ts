@@ -139,6 +139,95 @@ describe('goal subcontract execution package compile', () => {
     expect(audit.status, audit.stderr || audit.stdout).toBe(0);
   });
 
+  it('rejects generation-relative child paths in a final v2 manifest', () => {
+    const fixture = createFixture();
+    const authorityRoot = path.join(fixture.root, '_bmad-output', 'runtime', 'generation-a');
+    const authorityChildren = path.join(authorityRoot, 'contracts');
+    fs.mkdirSync(authorityChildren, { recursive: true });
+
+    for (const child of fixture.children) {
+      fs.renameSync(
+        path.join(fixture.root, child.path),
+        path.join(authorityChildren, path.basename(child.path))
+      );
+    }
+    fs.renameSync(
+      path.join(fixture.root, 'partition-manifest.json'),
+      path.join(authorityRoot, 'partition-manifest.json')
+    );
+
+    const request = JSON.parse(fs.readFileSync(fixture.requestPath, 'utf8'));
+    request.partitionManifest.path = '_bmad-output/runtime/generation-a/partition-manifest.json';
+    request.children = request.children.map(
+      (child: { partitionId: string; path: string; hash: string }) => ({
+        ...child,
+        path: `_bmad-output/runtime/generation-a/${child.path}`,
+      })
+    );
+    writeJson(fixture.requestPath, request);
+
+    const result = compile(fixture.requestPath, fixture.packageA);
+
+    expect(result.status).not.toBe(0);
+    expect(JSON.parse(result.stdout).failureClass).toBe('partition_manifest_not_final');
+    expect(fs.existsSync(path.join(fixture.packageA, 'package-manifest.json'))).toBe(false);
+  });
+
+  it('accepts manifest child paths that are already repository relative', () => {
+    const fixture = createFixture();
+    const authorityRoot = path.join(fixture.root, '_bmad-output', 'runtime', 'generation-a');
+    const authorityChildren = path.join(authorityRoot, 'contracts');
+    const authorityManifest = path.join(authorityRoot, 'partition-manifest.json');
+    fs.mkdirSync(authorityChildren, { recursive: true });
+
+    for (const child of fixture.children) {
+      fs.renameSync(
+        path.join(fixture.root, child.path),
+        path.join(authorityChildren, path.basename(child.path))
+      );
+    }
+    fs.renameSync(path.join(fixture.root, 'partition-manifest.json'), authorityManifest);
+
+    const manifest = JSON.parse(fs.readFileSync(authorityManifest, 'utf8'));
+    manifest.partitions = manifest.partitions.map(
+      (partition: { childContractPath: string }) => ({
+        ...partition,
+        childContractPath:
+          `_bmad-output/runtime/generation-a/contracts/` +
+          path.basename(partition.childContractPath),
+      })
+    );
+    writeJson(authorityManifest, manifest);
+
+    const request = JSON.parse(fs.readFileSync(fixture.requestPath, 'utf8'));
+    request.partitionManifest = {
+      path: '_bmad-output/runtime/generation-a/partition-manifest.json',
+      hash: hashFile(authorityManifest),
+    };
+    request.children = request.children.map(
+      (child: { partitionId: string; path: string; hash: string }) => ({
+        ...child,
+        path: `_bmad-output/runtime/generation-a/contracts/${path.basename(child.path)}`,
+      })
+    );
+    writeJson(fixture.requestPath, request);
+
+    const result = compile(fixture.requestPath, fixture.packageA);
+
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    const packageManifest = JSON.parse(
+      fs.readFileSync(path.join(fixture.packageA, 'package-manifest.json'), 'utf8')
+    );
+    expect(
+      packageManifest.children.map(
+        (child: { contract: { path: string } }) => child.contract.path
+      )
+    ).toEqual([
+      '_bmad-output/runtime/generation-a/contracts/AUTH-01.md',
+      '_bmad-output/runtime/generation-a/contracts/AUTH-02.md',
+    ]);
+  });
+
   it('preserves a supplied RequirementRecord binding', () => {
     const fixture = createFixture({
       status: 'present',

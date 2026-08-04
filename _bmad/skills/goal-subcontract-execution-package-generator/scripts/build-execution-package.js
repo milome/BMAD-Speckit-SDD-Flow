@@ -91,6 +91,31 @@ function resolveExistingInside(root, relativePath, failureClass = 'path_escape')
   return realResolved;
 }
 
+function projectManifestChildPath(repositoryRoot, childContractPath) {
+  const manifestChildPath = String(childContractPath || '').replace(/\\/gu, '/');
+  if (
+    !manifestChildPath ||
+    path.posix.isAbsolute(manifestChildPath) ||
+    /^[A-Za-z]:\//u.test(manifestChildPath) ||
+    manifestChildPath.split('/').some((segment) => segment === '..') ||
+    path.posix.normalize(manifestChildPath) !== manifestChildPath
+  ) {
+    failure('partition_manifest_not_final', { childContractPath });
+  }
+  const repositoryCandidate = resolveExistingInside(
+    repositoryRoot,
+    manifestChildPath,
+    'source_path_escape'
+  );
+  if (!fs.existsSync(repositoryCandidate) || !fs.statSync(repositoryCandidate).isFile()) {
+    failure('partition_manifest_not_final', {
+      childContractPath,
+      reason: 'child_contract_path_not_repository_root_relative',
+    });
+  }
+  return manifestChildPath;
+}
+
 function readJson(filePath, failureClass = 'invalid_json') {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -659,9 +684,13 @@ function buildExecutionPackage({ requestPath, outputRoot }) {
   }
   const children = manifest.partitions.map((partition, index) => {
     const supplied = request.children[index];
+    const projectedChildPath = projectManifestChildPath(
+      repositoryRoot,
+      partition.childContractPath
+    );
     if (
       supplied?.partitionId !== partition.partitionId ||
-      supplied.path !== partition.childContractPath ||
+      supplied.path !== projectedChildPath ||
       supplied.hash !== partition.childContractHash
     ) {
       failure('child_membership_mismatch', { partitionId: partition.partitionId });
@@ -851,6 +880,7 @@ module.exports = {
   normalizeRecordBinding,
   parseArgs,
   projectChildIdentities,
+  projectManifestChildPath,
   readJson,
   renderCampaignPrompt,
   renderChildPrompt,

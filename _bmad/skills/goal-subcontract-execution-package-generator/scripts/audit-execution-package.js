@@ -18,6 +18,7 @@ const {
   normalizeDisplayTitle,
   normalizeRecordBinding,
   parseArgs,
+  projectManifestChildPath,
   readJson,
   renderCampaignPrompt,
   renderChildPrompt,
@@ -138,12 +139,16 @@ function auditExecutionPackage(packageRoot, expectedPackageManifestHash) {
   }
   verifyRepositoryBaseline(repositoryRoot, manifest.repositoryBaseline);
   const children = sourcePartitionManifest.partitions.map((partition, index) => {
+    const projectedChildPath = projectManifestChildPath(
+      repositoryRoot,
+      partition.childContractPath
+    );
     const child = {
       partitionId: partition.partitionId,
       displayTitle: normalizeDisplayTitle(partition),
       ordinal: index + 1,
       contract: {
-        path: partition.childContractPath,
+        path: projectedChildPath,
         hash: partition.childContractHash,
       },
       predecessorPartitionIds: partition.dependencyPartitionIds,
