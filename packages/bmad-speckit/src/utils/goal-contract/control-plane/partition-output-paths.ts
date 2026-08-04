@@ -440,6 +440,7 @@ function resolveCanonicalPartitionOutputPaths(
         generationKey.slice('sha256:'.length)
       );
   return Object.freeze({
+    repositoryRoot,
     authorityMode: requirementRecordMode
       ? 'requirement_record'
       : 'standalone_bootstrap',
@@ -658,6 +659,26 @@ function requireRelativeAuthorityArtifact(
   return targetPath;
 }
 
+function requireAuthorityChildArtifact(
+  authority: Record<string, unknown>,
+  childContractPath: unknown
+): string {
+  const unitRelativePath = requireRelativeAuthorityArtifact(
+    authority,
+    childContractPath
+  );
+  if (typeof authority.repositoryRoot !== 'string') {
+    return unitRelativePath;
+  }
+  const repositoryRelativePath = path.resolve(
+    authority.repositoryRoot,
+    String(childContractPath)
+  );
+  return isWithin(authority.unitRoot as string, repositoryRelativePath)
+    ? repositoryRelativePath
+    : unitRelativePath;
+}
+
 function readCanonicalAuthorityJson(
   authority: Record<string, unknown>,
   relativePath: string,
@@ -753,6 +774,13 @@ function semanticPartitionManifestHash(
     partitionPolicyHash: manifest.partitionPolicyHash,
     partitionPlanHash: manifest.partitionPlanHash,
     partitionSetHash: manifest.partitionSetHash,
+    ...(manifest.aggregateValidation
+      ? {
+          taskExecutionRoleAuthorityHash:
+            manifest.taskExecutionRoleAuthorityHash,
+          aggregateValidation: manifest.aggregateValidation,
+        }
+      : {}),
     ...(impactAuthority
       ? {
           repositoryTreeHash: manifest.repositoryTreeHash,
@@ -942,6 +970,7 @@ function validateImmutablePartitionAuthorityUnit(
   }
 
   const childContractHashes = [];
+  const manifestChildContractPaths = [];
   const requiredReceiptPaths = [
     analysisPath,
     String(manifest.globalCoverageReceiptPath || ''),
@@ -960,7 +989,7 @@ function validateImmutablePartitionAuthorityUnit(
   for (const partition of partitions) {
     const partitionId = String(partition.partitionId);
     const childContractPath = String(partition.childContractPath || '');
-    const childPath = requireRelativeAuthorityArtifact(
+    const childPath = requireAuthorityChildArtifact(
       authority,
       childContractPath
     );
@@ -976,8 +1005,14 @@ function validateImmutablePartitionAuthorityUnit(
       'partition_child_contract_hash_mismatch',
       partitionId
     );
+    manifestChildContractPaths.push(childContractPath);
     childContractHashes.push(
-      Object.freeze({ path: childContractPath, hash: childHash })
+      Object.freeze({
+        path: path
+          .relative(authority.unitRoot as string, childPath)
+          .replace(/\\/gu, '/'),
+        hash: childHash,
+      })
     );
     requiredReceiptPaths.push(
       String(partition.selectionReceiptPath || ''),
@@ -1327,7 +1362,7 @@ function validateImmutablePartitionAuthorityUnit(
     }
   }
 
-  const derivedChildPaths = childContractHashes.map(({ path }) => path);
+  const derivedChildPaths = manifestChildContractPaths;
   const derivedReceiptPaths = normalizeRelativeArtifactSet(
     authority,
     requiredReceiptPaths,

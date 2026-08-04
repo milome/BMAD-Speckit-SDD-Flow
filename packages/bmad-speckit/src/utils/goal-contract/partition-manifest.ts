@@ -1786,6 +1786,7 @@ function buildFinalPartitionAnalysisReceipt({
 
 function finalizePartitionManifest({
   partitionPlan,
+  displayTitles = {},
   childCompilationReceipts,
   artifactLayout,
   partitionAnalysisReceipt,
@@ -1862,6 +1863,14 @@ function finalizePartitionManifest({
     partitionPolicyHash: partitionPlan.partitionPolicyHash,
     partitionPlanHash: partitionPlan.partitionPlanHash,
     partitionSetHash: partitionPlan.partitionSetHash,
+    ...(partitionPlan.aggregateValidation
+      ? {
+          taskExecutionRoleAuthorityHash:
+            partitionPlan.taskExecutionRoleAuthorityHash,
+          aggregateValidation:
+            partitionPlan.aggregateValidation,
+        }
+      : {}),
     ...(impactAuthority
       ? {
           repositoryTreeHash:
@@ -1921,7 +1930,9 @@ function finalizePartitionManifest({
         ...structuredClone(basePartition),
         displayOrdinal: index + 1,
         displayTitle:
-          basePartition.displayTitle || `Partition ${index + 1}`,
+          displayTitles[partitionId] ||
+          basePartition.displayTitle ||
+          `Partition ${index + 1}`,
         sourceCompositionPolicyHash:
           partitionPlan.sourceCompositionPolicyHash,
         partitionPlanHash: partitionPlan.partitionPlanHash,
@@ -1962,11 +1973,17 @@ function finalizePartitionManifest({
   const primaryBinding = partitionPlan.orderedSourceBindings[0];
   const requiredObligationIds = unique([
     ...partitionPlan.coverageObligations.sourceObligationIds,
+    ...(partitionPlan.aggregateValidation?.tasks || []).flatMap(
+      ({ sourceObligationIds }) => sourceObligationIds || []
+    ),
     ...partitionPlan.coverageObligations.subordinateDeclaredSourceIds,
   ]);
-  const coveredObligationIds = unique(
-    partitions.flatMap(({ obligationRefs }) => obligationRefs)
-  );
+  const coveredObligationIds = unique([
+    ...partitions.flatMap(({ obligationRefs }) => obligationRefs),
+    ...(partitionPlan.aggregateValidation?.tasks || []).flatMap(
+      ({ sourceObligationIds }) => sourceObligationIds || []
+    ),
+  ]);
   if (
     stableStringify(requiredObligationIds) !==
     stableStringify(coveredObligationIds)
@@ -2022,6 +2039,14 @@ function finalizePartitionManifest({
     sequenceCoverage: partitionPlan.sequenceCoverage,
     sequenceClosureStatus: partitionPlan.sequenceClosureStatus,
     childContractAuthority: partitionPlan.childContractAuthority,
+    ...(partitionPlan.aggregateValidation
+      ? {
+          taskExecutionRoleAuthorityHash:
+            partitionPlan.taskExecutionRoleAuthorityHash,
+          aggregateValidation:
+            structuredClone(partitionPlan.aggregateValidation),
+        }
+      : {}),
     executionProjectionHash:
       partitionPlan.executionProjectionHash,
     taskDagHash: partitionPlan.taskDagHash,
