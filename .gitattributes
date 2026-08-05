@@ -8,7 +8,16 @@ tests/fixtures/goal-contract-release-gate/*.md text eol=lf
 tests/fixtures/goal-contract-release-gate/*.json text eol=lf
 tests/acceptance/fixtures/requirements-contract/*.md text eol=lf
 tests/acceptance/fixtures/requirements-contract/*.json text eol=lf
-_bmad/shared/critical-auditor-profile/critical-auditor-profile.json text eol=lf
+# Package build authority hashes bind these repository _bmad assets as raw bytes.
+_bmad/_schemas/** text eol=lf
+_bmad/core/agents/code-reviewer/** text eol=lf
+_bmad/core/skills/bmad-party-mode/** text eol=lf
+_bmad/runtime/hooks/** text eol=lf
+_bmad/shared/contract-execution-manifest/** text eol=lf
+_bmad/shared/critical-auditor-profile/** text eol=lf
+_bmad/shared/goal-contract/** text eol=lf
+_bmad/skills/goal-execution-contract-generator/** text eol=lf
+_bmad/skills/requirements-contract-authoring/** text eol=lf
 # Requirements-contract projection hashes bind raw bytes across all published surfaces.
 _bmad/shared/requirements-contract/** text eol=lf
 .claude/shared/requirements-contract/** text eol=lf

@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -37,6 +38,16 @@ function readJson(filePath: string): Record<string, unknown> {
   return JSON.parse(readFileSync(filePath, 'utf8')) as Record<string, unknown>;
 }
 
+function gitNullList(args: string[]): string[] {
+  return execFileSync('git', args, {
+    cwd: ROOT,
+    encoding: 'utf8',
+  })
+    .split('\0')
+    .filter(Boolean)
+    .map((entry) => entry.replace(/\\/gu, '/'));
+}
+
 describe.sequential('runtime build single producer authority', () => {
   it('binds the dist runtime receipt to build-main-agent-dist as the current producer', () => {
     const receipt = readJson(DIST_AUTHORITY_RECEIPT);
@@ -71,6 +82,40 @@ describe.sequential('runtime build single producer authority', () => {
         (entry) => entry.owner === 'package-root-_bmad'
       )
     ).toBe(true);
+  });
+
+  it('pins package asset authority bytes to LF across clean Windows worktrees', () => {
+    const receipt = readJson(DIST_AUTHORITY_RECEIPT);
+    const packageAssetPaths = [
+      ...new Set(
+        (
+          receipt.packageAssetEntries as Array<{
+            source: string;
+          }>
+        ).map((entry) => entry.source)
+      ),
+    ].sort();
+    const trackedPaths = gitNullList(['ls-files', '-z', '--', ...packageAssetPaths]);
+    expect(trackedPaths).toEqual(packageAssetPaths);
+
+    const attributeOutput = gitNullList([
+      'check-attr',
+      '-z',
+      'eol',
+      '--',
+      ...trackedPaths,
+    ]);
+    const attributeValues = new Map<string, string>();
+    for (let index = 0; index + 2 < attributeOutput.length; index += 3) {
+      attributeValues.set(attributeOutput[index], attributeOutput[index + 2]);
+    }
+
+    for (const trackedPath of trackedPaths) {
+      expect(
+        attributeValues.get(trackedPath),
+        `${trackedPath} must use eol=lf because package asset hashes bind raw bytes`
+      ).toBe('lf');
+    }
   });
 
   it('accepts package-scoped receipt extensions while validating core authority', () => {
