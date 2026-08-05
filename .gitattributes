@@ -1,7 +1,12 @@
 # Shell scripts: force LF for WSL/Linux compatibility
 *.sh text eol=lf
+# Dependency lock hashes bind deterministic LF bytes.
+package-lock.json text eol=lf
 # TypeScript: deterministic formatting across Windows and Unix
 *.ts text eol=lf
+# Main-agent dist source and build authority hashes bind package text bytes.
+packages/bmad-speckit/src/** text eol=lf
+packages/bmad-speckit/scripts/** text eol=lf
 # Requirements-contract schema hashes bind deterministic LF bytes.
 packages/bmad-speckit/src/main-agent/source-authority/schemas/** text eol=lf
 tests/fixtures/goal-contract-release-gate/*.md text eol=lf

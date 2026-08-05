@@ -48,6 +48,14 @@ function gitNullList(args: string[]): string[] {
     .map((entry) => entry.replace(/\\/gu, '/'));
 }
 
+function gitNullListForPaths(prefix: string[], paths: string[]): string[] {
+  const values: string[] = [];
+  for (let index = 0; index < paths.length; index += 100) {
+    values.push(...gitNullList([...prefix, '--', ...paths.slice(index, index + 100)]));
+  }
+  return values;
+}
+
 describe.sequential('runtime build single producer authority', () => {
   it('binds the dist runtime receipt to build-main-agent-dist as the current producer', () => {
     const receipt = readJson(DIST_AUTHORITY_RECEIPT);
@@ -84,27 +92,42 @@ describe.sequential('runtime build single producer authority', () => {
     ).toBe(true);
   });
 
-  it('pins package asset authority bytes to LF across clean Windows worktrees', () => {
+  it('pins raw build authority inputs to LF across clean Windows worktrees', () => {
     const receipt = readJson(DIST_AUTHORITY_RECEIPT);
-    const packageAssetPaths = [
+    const runtimeManifest = readJson(DIST_RUNTIME_MANIFEST) as {
+      entries: Array<{ source: string }>;
+    };
+    const packageAuthorityPaths = [
       ...new Set(
-        (
-          receipt.packageAssetEntries as Array<{
+        [
+          ...(receipt.packageAssetEntries as Array<{
             source: string;
-          }>
-        ).map((entry) => entry.source)
+          }>).map((entry) => entry.source),
+          'package-lock.json',
+        ]
       ),
     ].sort();
-    const trackedPaths = gitNullList(['ls-files', '-z', '--', ...packageAssetPaths]);
-    expect(trackedPaths).toEqual(packageAssetPaths);
+    const runtimeSourcePaths = runtimeManifest.entries.map((entry) =>
+      path
+        .relative(ROOT, path.resolve(PACKAGE_ROOT, entry.source))
+        .replace(/\\/gu, '/')
+    );
+    const declaredPaths = [...new Set([...packageAuthorityPaths, ...runtimeSourcePaths])].sort();
+    const trackedPaths = [
+      ...new Set(gitNullListForPaths(['ls-files', '-z'], declaredPaths)),
+    ].sort();
+    const trackedPathSet = new Set(trackedPaths);
+    for (const packageAuthorityPath of packageAuthorityPaths) {
+      expect(
+        trackedPathSet.has(packageAuthorityPath),
+        `build authority source must be tracked: ${packageAuthorityPath}`
+      ).toBe(true);
+    }
 
-    const attributeOutput = gitNullList([
-      'check-attr',
-      '-z',
-      'eol',
-      '--',
-      ...trackedPaths,
-    ]);
+    const attributeOutput = gitNullListForPaths(
+      ['check-attr', '-z', 'eol'],
+      trackedPaths
+    );
     const attributeValues = new Map<string, string>();
     for (let index = 0; index + 2 < attributeOutput.length; index += 3) {
       attributeValues.set(attributeOutput[index], attributeOutput[index + 2]);
@@ -113,7 +136,7 @@ describe.sequential('runtime build single producer authority', () => {
     for (const trackedPath of trackedPaths) {
       expect(
         attributeValues.get(trackedPath),
-        `${trackedPath} must use eol=lf because package asset hashes bind raw bytes`
+        `${trackedPath} must use eol=lf because build authority hashes bind raw bytes`
       ).toBe('lf');
     }
   });
