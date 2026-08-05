@@ -317,6 +317,31 @@ function verifyFinalManifest(
     partitionPolicyHash: manifest.partitionPolicyHash,
     partitionPlanHash: manifest.partitionPlanHash,
     partitionSetHash: manifest.partitionSetHash,
+    ...(manifest.aggregateValidation
+      ? {
+          taskExecutionRoleAuthorityHash:
+            manifest.taskExecutionRoleAuthorityHash,
+          aggregateValidation: manifest.aggregateValidation,
+        }
+      : {}),
+    ...(manifest.partitionImpactGraphHash
+      ? {
+          repositoryTreeHash: manifest.repositoryTreeHash,
+          partitionImpactPolicyHash:
+            manifest.partitionImpactPolicyHash,
+          partitionImpactAnalyzerIdentityHash:
+            manifest.partitionImpactAnalyzerIdentityHash,
+          partitionImpactGraphHash:
+            manifest.partitionImpactGraphHash,
+          partitionImpactGraphDocumentHash:
+            manifest.partitionImpactGraphDocumentHash,
+          partitionClosureFeasibilityReceiptHash:
+            manifest.partitionClosureFeasibilityReceiptHash,
+          partitionImpactDriftReceiptHash:
+            manifest.partitionImpactDriftReceiptHash,
+          driftHash: manifest.driftHash,
+        }
+      : {}),
     orderedChildContractHashes:
       manifest.orderedChildContractHashes,
   });

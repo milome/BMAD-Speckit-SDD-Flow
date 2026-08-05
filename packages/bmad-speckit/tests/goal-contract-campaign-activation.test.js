@@ -384,6 +384,97 @@ describe('Goal Campaign activation and execution leases', () => {
     );
   });
 
+  it('accepts the aggregate and impact authority manifest hash domain', () => {
+    const fixture = campaignFixture();
+    const partitionManifest = structuredClone(
+      fixture.partitionManifest
+    );
+    Object.assign(partitionManifest, {
+      taskExecutionRoleAuthorityHash: hash(
+        'task-execution-role-authority'
+      ),
+      aggregateValidation: {
+        aggregateValidationHash: hash('aggregate-validation'),
+        commandOrder: ['command-aggregate'],
+        taskOrder: ['task-aggregate'],
+        tasks: [],
+      },
+      repositoryTreeHash: hash('repository-tree'),
+      partitionImpactPolicyHash: hash('partition-impact-policy'),
+      partitionImpactAnalyzerIdentityHash: hash(
+        'partition-impact-analyzer'
+      ),
+      partitionImpactGraphHash: hash('partition-impact-graph'),
+      partitionImpactGraphDocumentHash: hash(
+        'partition-impact-graph-document'
+      ),
+      partitionClosureFeasibilityReceiptHash: hash(
+        'partition-closure-feasibility'
+      ),
+      partitionImpactDriftReceiptHash: hash(
+        'partition-impact-drift'
+      ),
+      driftHash: hash('partition-drift'),
+    });
+    partitionManifest.partitionManifestHash =
+      hashControlPlaneValue({
+        goalContractHash: partitionManifest.goalContractHash,
+        sourceCompositionPolicyHash:
+          partitionManifest.sourceCompositionPolicyHash,
+        sourceAuthorityBundleHash:
+          partitionManifest.sourceAuthorityBundleHash,
+        partitionPolicyHash:
+          partitionManifest.partitionPolicyHash,
+        partitionPlanHash: partitionManifest.partitionPlanHash,
+        partitionSetHash: partitionManifest.partitionSetHash,
+        taskExecutionRoleAuthorityHash:
+          partitionManifest.taskExecutionRoleAuthorityHash,
+        aggregateValidation:
+          partitionManifest.aggregateValidation,
+        repositoryTreeHash: partitionManifest.repositoryTreeHash,
+        partitionImpactPolicyHash:
+          partitionManifest.partitionImpactPolicyHash,
+        partitionImpactAnalyzerIdentityHash:
+          partitionManifest.partitionImpactAnalyzerIdentityHash,
+        partitionImpactGraphHash:
+          partitionManifest.partitionImpactGraphHash,
+        partitionImpactGraphDocumentHash:
+          partitionManifest.partitionImpactGraphDocumentHash,
+        partitionClosureFeasibilityReceiptHash:
+          partitionManifest.partitionClosureFeasibilityReceiptHash,
+        partitionImpactDriftReceiptHash:
+          partitionManifest.partitionImpactDriftReceiptHash,
+        driftHash: partitionManifest.driftHash,
+        orderedChildContractHashes:
+          partitionManifest.orderedChildContractHashes,
+      });
+    const childReleaseGateReceipts =
+      fixture.childReleaseGateReceipts.map((receipt) => ({
+        ...receipt,
+        partitionManifestAuthorityHash:
+          partitionManifest.partitionManifestHash,
+      }));
+    const executionAuthorization = {
+      ...fixture.executionAuthorization,
+      authorizedPartitionManifestHash:
+        partitionManifest.partitionManifestHash,
+    };
+
+    const activated = activateGoalCampaign(
+      activationRequest(fixture, {
+        partitionManifest,
+        childReleaseGateReceipts,
+        executionAuthorization,
+      })
+    );
+
+    assert.equal(activated.receipt.decision, 'pass');
+    assert.equal(
+      activated.receipt.partitionManifestHash,
+      partitionManifest.partitionManifestHash
+    );
+  });
+
   it('rejects caller authority injection and requires explicit recovery', () => {
     const fixture = campaignFixture();
     const request = activationRequest(fixture);
