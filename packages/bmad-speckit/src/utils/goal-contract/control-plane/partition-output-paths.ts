@@ -51,6 +51,7 @@ const GENERATION_KEY_FIELDS = Object.freeze([
   'methodologyProfileHash',
   'partitionPolicyHash',
   'sourceCompositionPolicyHash',
+  'partitionImpactGraphHash',
 ]);
 
 function failure(
@@ -674,9 +675,71 @@ function requireAuthorityChildArtifact(
     authority.repositoryRoot,
     String(childContractPath)
   );
+  if (authority.repositoryRootRelativeChildren === true) {
+    if (
+      !isWithin(
+        authority.unitRoot as string,
+        repositoryRelativePath
+      )
+    ) {
+      throw failure('canonical_partition_child_path_invalid', {
+        childContractPath,
+      });
+    }
+    return repositoryRelativePath;
+  }
   return isWithin(authority.unitRoot as string, repositoryRelativePath)
     ? repositoryRelativePath
     : unitRelativePath;
+}
+
+function comparableRealPath(value: string): string {
+  const normalized = path.resolve(value);
+  return process.platform === 'win32'
+    ? normalized.toLowerCase()
+    : normalized;
+}
+
+function assertCanonicalAuthorityPath(
+  rootPath: string,
+  targetPath: string
+) {
+  const relativePath = path.relative(
+    path.resolve(rootPath),
+    path.resolve(targetPath)
+  );
+  if (
+    relativePath === '..' ||
+    relativePath.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relativePath)
+  ) {
+    throw failure('canonical_partition_authority_symlink_rejected', {
+      targetPath: normalizePath(targetPath),
+    });
+  }
+  let realRoot;
+  let realTarget;
+  try {
+    realRoot = fs.realpathSync.native(rootPath);
+    realTarget = fs.realpathSync.native(targetPath);
+  } catch {
+    throw failure('canonical_partition_authority_symlink_rejected', {
+      targetPath: normalizePath(targetPath),
+    });
+  }
+  const expectedRealTarget = path.resolve(
+    realRoot,
+    relativePath
+  );
+  if (
+    !isSameOrWithin(realRoot, realTarget) ||
+    comparableRealPath(realTarget) !==
+      comparableRealPath(expectedRealTarget)
+  ) {
+    throw failure('canonical_partition_authority_symlink_rejected', {
+      targetPath: normalizePath(targetPath),
+    });
+  }
 }
 
 function readCanonicalAuthorityJson(
@@ -691,6 +754,10 @@ function readCanonicalAuthorityJson(
       targetPath: normalizePath(targetPath),
     });
   }
+  assertCanonicalAuthorityPath(
+    authority.unitRoot as string,
+    targetPath
+  );
   const bytes = fs.readFileSync(targetPath);
   let value;
   try {
@@ -738,6 +805,34 @@ function assertAuthorityBinding(
   field: string
 ) {
   if (actual !== expected) {
+    throw failure(failureClass, { field, actual, expected });
+  }
+}
+
+function assertAuthorityPathBinding(
+  actual: unknown,
+  expected: unknown,
+  failureClass: string,
+  field: string
+) {
+  if (
+    typeof actual !== 'string' ||
+    typeof expected !== 'string'
+  ) {
+    throw failure(failureClass, { field, actual, expected });
+  }
+  let actualRealPath;
+  let expectedRealPath;
+  try {
+    actualRealPath = fs.realpathSync.native(actual);
+    expectedRealPath = fs.realpathSync.native(expected);
+  } catch {
+    throw failure(failureClass, { field, actual, expected });
+  }
+  if (
+    comparableRealPath(actualRealPath) !==
+    comparableRealPath(expectedRealPath)
+  ) {
     throw failure(failureClass, { field, actual, expected });
   }
 }
@@ -1016,6 +1111,10 @@ function validateImmutablePartitionAuthorityUnit(
         targetPath: normalizePath(childPath),
       });
     }
+    assertCanonicalAuthorityPath(
+      authority.unitRoot as string,
+      childPath
+    );
     const childHash = sha256Bytes(fs.readFileSync(childPath));
     assertAuthorityBinding(
       childHash,
@@ -1059,6 +1158,10 @@ function validateImmutablePartitionAuthorityUnit(
       targetPath: normalizePath(globalTarget),
     });
   }
+  assertCanonicalAuthorityPath(
+    authority.unitRoot as string,
+    globalTarget
+  );
   const globalCoverage = readValidatedPartitionReceipt(
     globalTarget,
     'goal-contract-partition-global-coverage-receipt/v1'
@@ -1088,6 +1191,10 @@ function validateImmutablePartitionAuthorityUnit(
         targetPath: normalizePath(selectionTarget),
       });
     }
+    assertCanonicalAuthorityPath(
+      authority.unitRoot as string,
+      selectionTarget
+    );
     const selection = readValidatedPartitionReceipt(
       selectionTarget,
       'goal-contract-partition-selection-receipt/v1'
@@ -1148,6 +1255,10 @@ function validateImmutablePartitionAuthorityUnit(
         targetPath: normalizePath(coverageTarget),
       });
     }
+    assertCanonicalAuthorityPath(
+      authority.unitRoot as string,
+      coverageTarget
+    );
     const coverage = readValidatedPartitionReceipt(
       coverageTarget,
       'goal-contract-partition-child-coverage-receipt/v1'
@@ -1179,6 +1290,10 @@ function validateImmutablePartitionAuthorityUnit(
         targetPath: normalizePath(generationTarget),
       });
     }
+    assertCanonicalAuthorityPath(
+      authority.unitRoot as string,
+      generationTarget
+    );
     const generation = readValidatedPartitionReceipt(
       generationTarget,
       'goal-contract-partition-child-generation-receipt/v1'
@@ -1451,6 +1566,7 @@ function loadCanonicalPartitionAuthorityForRelease(
     !input ||
     typeof input !== 'object' ||
     Array.isArray(input) ||
+    typeof input.repositoryRoot !== 'string' ||
     typeof input.partitionManifestPath !== 'string' ||
     typeof input.goalPath !== 'string'
   ) {
@@ -1459,6 +1575,7 @@ function loadCanonicalPartitionAuthorityForRelease(
   const partitionManifestPath = path.resolve(
     input.partitionManifestPath
   );
+  const repositoryRoot = path.resolve(input.repositoryRoot);
   const unitRoot = path.dirname(partitionManifestPath);
   const generationsRoot = path.dirname(unitRoot);
   const authorityRoot = path.dirname(generationsRoot);
@@ -1474,27 +1591,53 @@ function loadCanonicalPartitionAuthorityForRelease(
     'active-generation.json'
   );
   let pointer: Record<string, unknown>;
+  let pointerBytes: Buffer;
   try {
-    pointer = JSON.parse(
-      fs.readFileSync(activePointerPath, 'utf8')
-    );
+    pointerBytes = fs.readFileSync(activePointerPath);
+    pointer = JSON.parse(pointerBytes.toString('utf8'));
   } catch {
     throw failure('canonical_partition_active_pointer_invalid', {
       activePointerPath: normalizePath(activePointerPath),
     });
   }
   validateGoalContractSchema(OUTPUT_AUTHORITY_SCHEMA, pointer);
+  const expectedAuthorityRoot = path.join(
+    repositoryRoot,
+    '_bmad-output',
+    'runtime',
+    'goal-contract-partition-bootstrap',
+    String(pointer.sourceHash).slice('sha256:'.length)
+  );
+  const expectedUnitRoot = path.join(
+    expectedAuthorityRoot,
+    'generations',
+    String(pointer.generationKey).slice('sha256:'.length)
+  );
+  if (
+    comparableRealPath(authorityRoot) !==
+      comparableRealPath(expectedAuthorityRoot) ||
+    comparableRealPath(unitRoot) !==
+      comparableRealPath(expectedUnitRoot)
+  ) {
+    throw failure('canonical_partition_authority_root_invalid', {
+      authorityRoot: normalizePath(authorityRoot),
+      expectedAuthorityRoot: normalizePath(
+        expectedAuthorityRoot
+      ),
+      unitRoot: normalizePath(unitRoot),
+      expectedUnitRoot: normalizePath(expectedUnitRoot),
+    });
+  }
+  assertCanonicalAuthorityPath(
+    authorityRoot,
+    activePointerPath
+  );
   const authority = Object.freeze({
     authorityMode: 'standalone_bootstrap',
     sourceHash: pointer.sourceHash,
     generationKey: pointer.generationKey,
-    repositoryRoot: path.resolve(
-      authorityRoot,
-      '..',
-      '..',
-      '..',
-      '..'
-    ),
+    repositoryRoot,
+    repositoryRootRelativeChildren: true,
     authorityRoot,
     unitRoot,
     activePointerPath,
@@ -1520,12 +1663,27 @@ function loadCanonicalPartitionAuthorityForRelease(
     partitionManifestDocumentHash:
       validated.partitionManifestDocumentHash,
   })) {
-    assertAuthorityBinding(
-      pointer[field],
-      expected,
-      'canonical_partition_active_pointer_mismatch',
-      field
-    );
+    if (
+      [
+        'generationRoot',
+        'partitionPlanPath',
+        'partitionManifestPath',
+      ].includes(field)
+    ) {
+      assertAuthorityPathBinding(
+        pointer[field],
+        expected,
+        'canonical_partition_active_pointer_mismatch',
+        field
+      );
+    } else {
+      assertAuthorityBinding(
+        pointer[field],
+        expected,
+        'canonical_partition_active_pointer_mismatch',
+        field
+      );
+    }
   }
   assertAuthorityBinding(
     stableControlPlaneStringify(pointer.childContractHashes),
@@ -1622,14 +1780,19 @@ function loadCanonicalPartitionAuthorityForRelease(
       ].map((artifact) => [artifact.path, artifact.hash])
     )
   );
+  const currentPointerBytes =
+    fs.readFileSync(activePointerPath);
+  if (!currentPointerBytes.equals(pointerBytes)) {
+    throw failure('canonical_partition_active_pointer_changed', {
+      activePointerPath: normalizePath(activePointerPath),
+    });
+  }
   return Object.freeze({
     authorityMode: 'canonical_governed',
     repositoryRoot: authority.repositoryRoot,
     authorityRoot: normalizePath(unitRoot),
     activePointerPath: normalizePath(activePointerPath),
-    activePointerHash: sha256Bytes(
-      fs.readFileSync(activePointerPath)
-    ),
+    activePointerHash: sha256Bytes(pointerBytes),
     artifactHashes,
     partitionPlan,
     partitionPlanHash: validated.partitionPlanHash,

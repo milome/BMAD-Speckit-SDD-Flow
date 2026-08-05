@@ -17,7 +17,7 @@ const require = createRequire(import.meta.url);
 const {
   auditCompletedChild,
   prepareCompletedCampaignAuditContext,
-} = require(path.join(SKILL_ROOT, 'scripts', 'audit-completed-campaign.js'));
+} = require('../../_bmad/skills/goal-subcontract-execution-package-generator/scripts/audit-completed-campaign.js');
 
 afterEach(cleanupFixtures);
 

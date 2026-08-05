@@ -36,9 +36,12 @@ const {
 } = require('../src/utils/goal-contract/source-obligation-extractor.ts');
 const {
   goalContractAuthorityWriterBinding,
+  loadCanonicalPartitionAuthorityForRelease,
+  semanticPartitionManifestHash,
 } = require('../src/utils/goal-contract/control-plane/partition-output-paths.ts');
 const {
   hashControlPlaneValue,
+  stableControlPlaneStringify,
 } = require('../src/utils/goal-contract/control-plane/canonical-hash.ts');
 const {
   compileSourceCompositionPolicy,
@@ -53,6 +56,13 @@ const {
   compileTaskFileScopeAuthority,
   validateTaskFileScopeCells,
 } = require('../src/utils/goal-contract/control-plane/partition-compiler.ts');
+const {
+  buildPartitionPlanGlobalCoverageReceipt,
+  buildPartitionPlanSelectionReceipt,
+} = require('../src/utils/goal-contract/partition-selector.ts');
+const {
+  serializeValidatedPartitionReceipt,
+} = require('../src/utils/goal-contract/partition-receipts.ts');
 const {
   currentPartitionCompilerIdentityHash,
   partitionCompilerIdentityAssetPaths,
@@ -660,6 +670,246 @@ function parsePayload(result) {
   assert.equal(result.signal, null, result.stderr || result.stdout);
   assert.notEqual(result.stdout.trim(), '', result.stderr);
   return JSON.parse(result.stdout);
+}
+
+function writeCanonicalJson(filePath, value) {
+  fs.writeFileSync(
+    filePath,
+    `${stableControlPlaneStringify(value)}\n`,
+    'utf8'
+  );
+}
+
+function writeValidatedReceipt(filePath, schemaId, value) {
+  fs.writeFileSync(
+    filePath,
+    serializeValidatedPartitionReceipt({
+      schemaId,
+      payload: value,
+    }),
+    'utf8'
+  );
+}
+
+function withReceiptHash(value) {
+  const semantic = structuredClone(value);
+  delete semantic.receiptHash;
+  return {
+    ...semantic,
+    receiptHash: hashControlPlaneValue(semantic),
+  };
+}
+
+function stageCanonicalReleaseFixture() {
+  const root = tempRoot();
+  const source = writeSourcePlan(root);
+  const frozen = writeFrozenSuccessorContract(root, source, {
+    slotWrappedFrontMatter: true,
+  });
+  const partitionResult = runSourceCommand(
+    [
+      'partition',
+      '--governed',
+      '--entry',
+      'standalone_goal_contract',
+      '--source',
+      source,
+      '--goal-contract',
+      frozen.goalContractPath,
+      '--sequence-mode',
+      'disabled',
+      '--json',
+    ],
+    { cwd: root }
+  );
+  assert.equal(
+    partitionResult.status,
+    0,
+    partitionResult.stderr || partitionResult.stdout
+  );
+  const payload = parsePayload(partitionResult);
+  const child = payload.partitionManifest.partitions[0];
+  return {
+    root,
+    source,
+    payload,
+    child,
+    childPath: path.resolve(root, child.childContractPath),
+  };
+}
+
+function rewriteFirstChildAsUnitRelative(fixture) {
+  const { payload, root } = fixture;
+  const manifest = JSON.parse(
+    fs.readFileSync(payload.partitionManifestPath, 'utf8')
+  );
+  const partition = manifest.partitions[0];
+  const partitionId = partition.partitionId;
+  const childPath = path.resolve(root, partition.childContractPath);
+  const unitRelativeChildPath = path
+    .relative(payload.unitRoot, childPath)
+    .replace(/\\/gu, '/');
+  const receiptRoot = path.join(payload.unitRoot, 'receipts', 'children');
+  const compilationPath = path.join(
+    receiptRoot,
+    `${partitionId}.compilation.json`
+  );
+  const coveragePath = path.join(
+    receiptRoot,
+    `${partitionId}.coverage.json`
+  );
+  const generationPath = path.join(
+    receiptRoot,
+    `${partitionId}.generation.json`
+  );
+  const membershipPath = path.join(
+    receiptRoot,
+    `${partitionId}.membership.json`
+  );
+  const renderEvidencePath = path.join(
+    payload.unitRoot,
+    'evidence',
+    'render-evidence.json'
+  );
+  const partitionPlan = JSON.parse(
+    fs.readFileSync(payload.partitionPlanPath, 'utf8')
+  );
+  const compilation = JSON.parse(
+    fs.readFileSync(compilationPath, 'utf8')
+  );
+  compilation.childContractPath = unitRelativeChildPath;
+  const nextCompilation = withReceiptHash(compilation);
+  writeCanonicalJson(compilationPath, nextCompilation);
+
+  partition.childContractPath = unitRelativeChildPath;
+  partition.childCompilationReceiptHash =
+    nextCompilation.receiptHash;
+  delete partition.childMembershipHash;
+  partition.childMembershipHash =
+    hashControlPlaneValue(partition);
+  manifest.partitionManifestHash =
+    semanticPartitionManifestHash(manifest);
+  const manifestBytes =
+    `${stableControlPlaneStringify(manifest)}\n`;
+  const manifestDocumentHash = hash(manifestBytes);
+  fs.writeFileSync(
+    payload.partitionManifestPath,
+    manifestBytes,
+    'utf8'
+  );
+
+  const globalCoveragePath = path.join(
+    payload.unitRoot,
+    manifest.globalCoverageReceiptPath
+  );
+  writeValidatedReceipt(
+    globalCoveragePath,
+    'goal-contract-partition-global-coverage-receipt/v1',
+    buildPartitionPlanGlobalCoverageReceipt({
+      partitionPlan,
+      candidateManifest: manifest,
+    })
+  );
+  const selectionPath = path.join(
+    payload.unitRoot,
+    partition.selectionReceiptPath
+  );
+  writeValidatedReceipt(
+    selectionPath,
+    'goal-contract-partition-selection-receipt/v1',
+    buildPartitionPlanSelectionReceipt({
+      partitionPlan,
+      partitionManifest: manifest,
+      partitionId,
+    })
+  );
+  const globalCoverageHash = hash(
+    fs.readFileSync(globalCoveragePath)
+  );
+  const selectionHash = hash(
+    fs.readFileSync(selectionPath)
+  );
+
+  const coverage = JSON.parse(
+    fs.readFileSync(coveragePath, 'utf8')
+  );
+  coverage.partitionManifestHash = manifestDocumentHash;
+  coverage.globalCoverageReceiptHash =
+    globalCoverageHash;
+  coverage.selectionReceiptHash = selectionHash;
+  writeValidatedReceipt(
+    coveragePath,
+    'goal-contract-partition-child-coverage-receipt/v1',
+    coverage
+  );
+  const coverageHash = hash(fs.readFileSync(coveragePath));
+
+  const generation = JSON.parse(
+    fs.readFileSync(generationPath, 'utf8')
+  );
+  generation.partitionManifestHash = manifestDocumentHash;
+  generation.globalCoverageReceiptHash =
+    globalCoverageHash;
+  generation.selectionReceiptHash = selectionHash;
+  generation.coverageReceiptHash = coverageHash;
+  writeValidatedReceipt(
+    generationPath,
+    'goal-contract-partition-child-generation-receipt/v1',
+    generation
+  );
+
+  const membership = JSON.parse(
+    fs.readFileSync(membershipPath, 'utf8')
+  );
+  membership.childContractPath = unitRelativeChildPath;
+  membership.childCompilationReceiptHash =
+    nextCompilation.receiptHash;
+  membership.partitionManifestHash =
+    manifest.partitionManifestHash;
+  writeCanonicalJson(
+    membershipPath,
+    withReceiptHash(membership)
+  );
+  const renderEvidence = JSON.parse(
+    fs.readFileSync(renderEvidencePath, 'utf8')
+  );
+  renderEvidence.partitionManifestHash =
+    manifest.partitionManifestHash;
+  renderEvidence.partitionManifestDocumentHash =
+    manifestDocumentHash;
+  writeCanonicalJson(renderEvidencePath, renderEvidence);
+
+  const pointer = JSON.parse(
+    fs.readFileSync(payload.activePointerPath, 'utf8')
+  );
+  pointer.partitionManifestHash =
+    manifest.partitionManifestHash;
+  pointer.partitionManifestDocumentHash =
+    manifestDocumentHash;
+  const changedReceiptPaths = new Map(
+    [
+      compilationPath,
+      globalCoveragePath,
+      selectionPath,
+      coveragePath,
+      generationPath,
+      membershipPath,
+      renderEvidencePath,
+    ].map((targetPath) => [
+      path
+        .relative(payload.unitRoot, targetPath)
+        .replace(/\\/gu, '/'),
+      hash(fs.readFileSync(targetPath)),
+    ])
+  );
+  pointer.requiredReceiptHashes =
+    pointer.requiredReceiptHashes.map((record) => ({
+      ...record,
+      hash: changedReceiptPaths.get(record.path) || record.hash,
+    }));
+  writeCanonicalJson(payload.activePointerPath, pointer);
+  fixture.child = partition;
+  fixture.childPath = childPath;
 }
 
 describe('bmad-speckit goal-contract partition command', () => {
@@ -1419,6 +1669,234 @@ describe('bmad-speckit goal-contract partition command', () => {
     assert.equal(releasePayload.ok, true);
     assert.equal(releasePayload.decision, 'pass');
     assert.deepEqual(releasePayload.blockingReasons, []);
+  });
+
+  it('rejects a self-consistent canonical manifest that uses a unit-relative child path', () => {
+    const fixture = stageCanonicalReleaseFixture();
+    rewriteFirstChildAsUnitRelative(fixture);
+
+    assert.throws(
+      () =>
+        loadCanonicalPartitionAuthorityForRelease({
+          repositoryRoot: fixture.root,
+          partitionManifestPath:
+            fixture.payload.partitionManifestPath,
+          goalPath: fixture.childPath,
+          expectedPartitionPlanHash:
+            fixture.payload.partitionPlanHash,
+        }),
+      (error) =>
+        error.failureClass ===
+        'canonical_partition_child_path_invalid'
+    );
+  });
+
+  it('anchors canonical release authority to the governed repository root', () => {
+    const fixture = stageCanonicalReleaseFixture();
+
+    assert.throws(
+      () =>
+        loadCanonicalPartitionAuthorityForRelease({
+          repositoryRoot: path.join(fixture.root, 'wrong-root'),
+          partitionManifestPath:
+            fixture.payload.partitionManifestPath,
+          goalPath: fixture.childPath,
+          expectedPartitionPlanHash:
+            fixture.payload.partitionPlanHash,
+        }),
+      (error) =>
+        error.failureClass ===
+        'canonical_partition_authority_root_invalid'
+    );
+  });
+
+  it('rejects an active pointer that changes during canonical release validation', () => {
+    const fixture = stageCanonicalReleaseFixture();
+    const activePointerPath = path.resolve(
+      fixture.payload.activePointerPath
+    );
+    const originalReadFileSync = fs.readFileSync;
+    let pointerReadCount = 0;
+    fs.readFileSync = (filePath, ...args) => {
+      const bytes = originalReadFileSync(filePath, ...args);
+      if (path.resolve(filePath) !== activePointerPath) {
+        return bytes;
+      }
+      pointerReadCount += 1;
+      if (pointerReadCount !== 2) return bytes;
+      return typeof bytes === 'string'
+        ? `${bytes}\n`
+        : Buffer.concat([bytes, Buffer.from('\n')]);
+    };
+    try {
+      assert.throws(
+        () =>
+          loadCanonicalPartitionAuthorityForRelease({
+            repositoryRoot: fixture.root,
+            partitionManifestPath:
+              fixture.payload.partitionManifestPath,
+            goalPath: fixture.childPath,
+            expectedPartitionPlanHash:
+              fixture.payload.partitionPlanHash,
+          }),
+        (error) =>
+          error.failureClass ===
+          'canonical_partition_active_pointer_changed'
+      );
+    } finally {
+      fs.readFileSync = originalReadFileSync;
+    }
+  });
+
+  it('rejects canonical authority artifacts reached through a junction', () => {
+    const fixture = stageCanonicalReleaseFixture();
+    const childrenPath = path.join(
+      fixture.payload.unitRoot,
+      'children'
+    );
+    const externalChildrenPath = path.join(
+      fixture.root,
+      'external-children'
+    );
+    fs.renameSync(childrenPath, externalChildrenPath);
+    fs.symlinkSync(
+      externalChildrenPath,
+      childrenPath,
+      'junction'
+    );
+
+    assert.throws(
+      () =>
+        loadCanonicalPartitionAuthorityForRelease({
+          repositoryRoot: fixture.root,
+          partitionManifestPath:
+            fixture.payload.partitionManifestPath,
+          goalPath: fixture.childPath,
+          expectedPartitionPlanHash:
+            fixture.payload.partitionPlanHash,
+        }),
+      (error) =>
+        error.failureClass ===
+        'canonical_partition_authority_symlink_rejected'
+    );
+  });
+
+  it('allows a repository-root junction without allowing authority-subtree redirects', () => {
+    const fixture = stageCanonicalReleaseFixture();
+    const aliasRoot = `${fixture.root}-alias`;
+    fs.symlinkSync(
+      fixture.root,
+      aliasRoot,
+      process.platform === 'win32' ? 'junction' : 'dir'
+    );
+    const manifestPath = path.join(
+      aliasRoot,
+      path.relative(
+        fixture.root,
+        fixture.payload.partitionManifestPath
+      )
+    );
+    const goalPath = path.join(
+      aliasRoot,
+      path.relative(fixture.root, fixture.childPath)
+    );
+
+    const authority =
+      loadCanonicalPartitionAuthorityForRelease({
+        repositoryRoot: aliasRoot,
+        partitionManifestPath: manifestPath,
+        goalPath,
+        expectedPartitionPlanHash:
+          fixture.payload.partitionPlanHash,
+      });
+
+    assert.equal(authority.authorityMode, 'canonical_governed');
+    assert.equal(
+      authority.partitionPlanHash,
+      fixture.payload.partitionPlanHash
+    );
+  });
+
+  it('routes every supersession-specific marker to fail-closed successor verification', () => {
+    const fixture = stageCanonicalReleaseFixture();
+    const unrelatedPath = path.join(
+      fixture.payload.unitRoot,
+      'unrelated-extra-file.json'
+    );
+    fs.writeFileSync(unrelatedPath, '{}\n', 'utf8');
+    const unrelatedResult = runSourceCommand(
+      [
+        'release-gate',
+        '--goal',
+        fixture.childPath,
+        '--source',
+        fixture.source,
+        '--partition-manifest',
+        fixture.payload.partitionManifestPath,
+        '--json',
+      ],
+      { cwd: fixture.root }
+    );
+    assert.equal(
+      unrelatedResult.status,
+      0,
+      unrelatedResult.stderr || unrelatedResult.stdout
+    );
+    fs.rmSync(unrelatedPath);
+
+    const markers = [
+      'receipts/source-grounded-coverage.receipt.json',
+      'receipts/legacy-comparison.diagnostic.json',
+      'receipts/equivalence.receipt.json',
+      'receipts/checkpoint-mappings.json',
+      'receipts/render-evidence.json',
+      'receipts/pending/partial.receipt.json',
+      'receipts/membership/partial.receipt.json',
+    ];
+    for (const relativePath of markers) {
+      const markerPath = path.join(
+        fixture.payload.unitRoot,
+        relativePath
+      );
+      fs.mkdirSync(path.dirname(markerPath), {
+        recursive: true,
+      });
+      fs.writeFileSync(markerPath, '{}\n', 'utf8');
+      const result = runSourceCommand(
+        [
+          'release-gate',
+          '--goal',
+          fixture.childPath,
+          '--source',
+          fixture.source,
+          '--partition-manifest',
+          fixture.payload.partitionManifestPath,
+          '--json',
+        ],
+        { cwd: fixture.root }
+      );
+      assert.equal(
+        result.status,
+        1,
+        `${relativePath}\n${result.stderr || result.stdout}`
+      );
+      fs.rmSync(markerPath);
+      for (const markerDirectory of [
+        'receipts/pending',
+        'receipts/membership',
+      ]) {
+        const directoryPath = path.join(
+          fixture.payload.unitRoot,
+          markerDirectory
+        );
+        if (
+          fs.existsSync(directoryPath) &&
+          fs.readdirSync(directoryPath).length === 0
+        ) {
+          fs.rmdirSync(directoryPath);
+        }
+      }
+    }
   });
 
   it('projects source task outcomes into functional child display titles', () => {

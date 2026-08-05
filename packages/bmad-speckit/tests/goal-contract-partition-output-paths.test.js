@@ -23,6 +23,7 @@ const HASHES = Object.freeze({
   methodologyProfileHash: `sha256:${'5'.repeat(64)}`,
   partitionPolicyHash: `sha256:${'6'.repeat(64)}`,
   sourceCompositionPolicyHash: `sha256:${'7'.repeat(64)}`,
+  partitionImpactGraphHash: `sha256:${'8'.repeat(64)}`,
 });
 const hash = (value) =>
   `sha256:${createHash('sha256').update(value).digest('hex')}`;
@@ -169,6 +170,23 @@ describe('goal contract partition output authority paths', () => {
       repositoryRoot,
       ...HASHES,
       compilerIdentityHash: `sha256:${'8'.repeat(64)}`,
+    });
+
+    assert.notEqual(changed.generationKey, original.generationKey);
+    assert.notEqual(changed.unitRoot, original.unitRoot);
+    assert.equal(changed.authorityRoot, original.authorityRoot);
+  });
+
+  it('isolates generations when the governed repository impact graph changes', () => {
+    const repositoryRoot = path.resolve('C:/workspace/repository');
+    const original = resolveCanonicalPartitionOutputPaths({
+      repositoryRoot,
+      ...HASHES,
+    });
+    const changed = resolveCanonicalPartitionOutputPaths({
+      repositoryRoot,
+      ...HASHES,
+      partitionImpactGraphHash: `sha256:${'9'.repeat(64)}`,
     });
 
     assert.notEqual(changed.generationKey, original.generationKey);

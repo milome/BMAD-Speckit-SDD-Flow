@@ -181,6 +181,7 @@ function validateFinalManifestChildMembership({
   binding,
   currentPartitionPlan = null,
   currentRepositoryRoot = null,
+  strictRepositoryRelativeChildPath = false,
 }) {
   const blockingReasons = [];
   const resolvedGoalPath = resolveBoundPath(goalPath);
@@ -361,13 +362,15 @@ function validateFinalManifestChildMembership({
       partition.childContractPath
     )
       ? path.resolve(partition.childContractPath)
-      : repositoryRelativeChildPath &&
-          repositoryRelativeChildPath === resolvedGoalPath
+      : strictRepositoryRelativeChildPath
         ? repositoryRelativeChildPath
-        : path.resolve(
-            path.dirname(resolvedManifestPath),
-            partition.childContractPath
-          );
+        : repositoryRelativeChildPath &&
+            repositoryRelativeChildPath === resolvedGoalPath
+          ? repositoryRelativeChildPath
+          : path.resolve(
+              path.dirname(resolvedManifestPath),
+              partition.childContractPath
+            );
     if (
       !resolvedGoalPath ||
       expectedChildPath !== resolvedGoalPath
@@ -985,6 +988,8 @@ function evaluatePartitionRelease(input) {
       binding,
       currentPartitionPlan: authority?.partitionPlan || null,
       currentRepositoryRoot: authority?.repositoryRoot || null,
+      strictRepositoryRelativeChildPath:
+        authority?.authorityMode === 'canonical_governed',
     });
     blockingReasons.push(...membership.blockingReasons);
     if (manifestPath && fs.existsSync(manifestPath)) {

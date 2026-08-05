@@ -3652,6 +3652,8 @@ async function governedPartition(args) {
     partitionPolicyHash: authority.optimizerPolicyBinding.partitionPolicyHash,
     sourceCompositionPolicyHash:
       authority.partitionPlan.sourceCompositionPolicyHash,
+    partitionImpactGraphHash:
+      partitionImpactAuthority.impactGraph.impactGraphHash,
   };
   const generationKey = computePartitionGenerationKey(generationInput);
   const { projectExecutionArtifacts } = loadPartitionModule(
@@ -4111,14 +4113,35 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
             'authority-supersession.receipt.json',
             'release-authority.json',
             'receipts/sequence-applicability.receipt.json',
+            'receipts/source-grounded-coverage.receipt.json',
+            'receipts/legacy-comparison.diagnostic.json',
+            'receipts/equivalence.receipt.json',
+            'receipts/checkpoint-mappings.json',
+            'receipts/render-evidence.json',
           ];
-          if (
+          const supersessionDirectories = [
+            'receipts/pending',
+            'receipts/membership',
+          ];
+          const supersessionMarkerPresent =
             supersessionMarkers.some((relativePath) =>
               fs.existsSync(
                 path.join(inferredAuthorityRoot, relativePath)
               )
-            )
-          ) {
+            ) ||
+            supersessionDirectories.some((relativePath) => {
+              const directoryPath = path.join(
+                inferredAuthorityRoot,
+                relativePath
+              );
+              if (!fs.existsSync(directoryPath)) return false;
+              try {
+                return fs.readdirSync(directoryPath).length > 0;
+              } catch {
+                return true;
+              }
+            });
+          if (supersessionMarkerPresent) {
             const { loadAuthoritySupersessionForRelease } =
               loadPartitionModule(
                 'utils/goal-contract/control-plane/authority-supersession'
@@ -4137,6 +4160,7 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
               );
             partitionAuthority =
               loadCanonicalPartitionAuthorityForRelease({
+                repositoryRoot: process.cwd(),
                 partitionManifestPath: manifestPath,
                 goalPath,
                 expectedPartitionPlanHash:
