@@ -1,6 +1,3 @@
-import { mkdtempSync, rmSync } from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   buildMainAgentDispatchInstruction,
@@ -11,38 +8,34 @@ import {
   resolveMainAgentOrchestrationSurface,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import {
-  buildPassImplementationEntryGate,
-  buildSixModelResultsForImplementationReady,
-  writeMinimalRegistryAndProjectContext,
-} from '../helpers/runtime-registry-fixture';
-import { writeFakeReqTraceSkill } from '../helpers/requirement-fixture-runtime';
+  publishImplementationPromptFixture,
+} from './helpers/prompt-transaction-implementation-publication-fixture';
 
 describe('main-agent story E2E orchestration', () => {
-  it('hydrates a dispatch packet, claims it, dispatches it, and completes it through the main-agent loop', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-e2e-story-'));
-    try {
-      writeMinimalRegistryAndProjectContext(root, {
+  it('hydrates a dispatch packet, claims it, dispatches it, and completes it through the main-agent loop', async () => {
+    const { fixture } = await publishImplementationPromptFixture({
+      configureRecord: (record) => ({
+        ...record,
         flow: 'story',
         stage: 'implement',
+        entryFlow: 'story',
         sourceMode: 'full_bmad',
         storyId: '14.6',
         runId: 'run-14-6',
         artifactRoot: '_bmad-output/implementation-artifacts/epic-14/story-14.6',
         artifactPath: '_bmad-output/implementation-artifacts/epic-14/story-14.6/spec.md',
-        implementationEntryGate: buildPassImplementationEntryGate({
-          flow: 'story',
-          artifactPath: '_bmad-output/implementation-artifacts/epic-14/story-14.6/spec.md',
-        }),
-        confirmedSource: true,
-        currentMentalModel: 'implementation_readiness',
-        sixModelResults: buildSixModelResultsForImplementationReady(),
-      });
-      writeFakeReqTraceSkill(root);
-
+      }),
+    });
+    const root = fixture.root;
+    const recordId = fixture.authority.recordId;
+    const requirementSetId = fixture.identity.requirementSetId;
+    try {
       const hydrated = ensureMainAgentDispatchPacket({
         projectRoot: root,
         flow: 'story',
         stage: 'implement',
+        recordId,
+        requirementSetId,
       });
       expect(hydrated.pendingPacketStatus).toBe('ready_for_main_agent');
 
@@ -50,6 +43,8 @@ describe('main-agent story E2E orchestration', () => {
         projectRoot: root,
         flow: 'story',
         stage: 'implement',
+        recordId,
+        requirementSetId,
         host: 'codex',
         hydratePacket: true,
       });
@@ -71,6 +66,8 @@ describe('main-agent story E2E orchestration', () => {
           projectRoot: root,
           flow: 'story',
           stage: 'implement',
+          recordId,
+          requirementSetId,
         }).pendingPacketStatus
       ).toBe('claimed_by_main_agent');
 
@@ -80,6 +77,8 @@ describe('main-agent story E2E orchestration', () => {
           projectRoot: root,
           flow: 'story',
           stage: 'implement',
+          recordId,
+          requirementSetId,
         }).pendingPacketStatus
       ).toBe('dispatched');
 
@@ -89,10 +88,12 @@ describe('main-agent story E2E orchestration', () => {
           projectRoot: root,
           flow: 'story',
           stage: 'implement',
+          recordId,
+          requirementSetId,
         }).pendingPacketStatus
       ).toBe('completed');
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      fixture.cleanup();
     }
   });
 });

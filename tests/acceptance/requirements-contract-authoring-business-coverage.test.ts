@@ -579,60 +579,60 @@ describe('requirements contract sanitized real fixture coverage', () => {
           '',
           '| ID | Requirement | Source rationale | Acceptance link |',
           '| --- | --- | --- | --- |',
-           '| FR-001 | The widget MUST show the compact status summary. | Operators need a clear current settings summary. | ACC-001 |',
-           '| FR-002 | The widget MUST preserve cancel rollback semantics. | Operators need safe rollback before applying changes. | ACC-002 |',
-           '',
-           '## Negative Requirements And Not Done Conditions',
-           '',
-           '| ID | Not-done condition | Negative assertion | Blocks completion when | Failure refs | Evidence refs |',
-           '| --- | --- | --- | --- | --- | --- |',
-           '| NEG-001 | Reporting success without rollback safety is not complete. | The widget must not discard pending values on cancel. | Cancel mutates saved settings. | FAIL-001 | ACC-002 |',
-           '',
-           '## Out Of Scope',
-           '',
-           '| ID | Forbidden scope | Boundary assertion | Evidence |',
-           '| --- | --- | --- | --- |',
-           '| OUT-001 | Replacing the widget framework is outside this change. | Preserve the current widget framework. | ACC-001 |',
-           '',
-           '## Failure Matrix',
-           '',
-           '| ID | Failure condition | Required system behavior | Negative requirement refs | Evidence |',
-           '| --- | --- | --- | --- | --- |',
-           '| FAIL-001 | The compact summary cannot represent the saved widget settings. | Keep the prior summary visible and report a recoverable rendering failure. | none | ACC-001 |',
-           '| FAIL-002 | Cancel would discard or persist the wrong pending values. | Restore the saved settings snapshot and keep the settings surface open for correction. | NEG-001 | ACC-002 |',
-           '',
-           '## Acceptance Evidence',
-           '',
-           '| ID | Evidence target | Covers | Required evidence | Oracle | Assertion source | Responsibility mapping |',
-           '| --- | --- | --- | --- | --- | --- | --- |',
-           '| ACC-001 | Compact status summary | MUST-FR-001 | npm run test -- settings-panel | Given saved settings, when the widget renders, then the compact summary reflects those settings. | CMD-001 TRACE-001; tests/widgets/settings-panel.test.ts | PATH-001 owns remediation. |',
-           '| ACC-002 | Cancel rollback semantics | MUST-FR-002 NEG-001 | npm run test -- settings-panel | Given pending changes, when cancel is selected, then saved settings remain unchanged and pending values are restored. | CMD-002 TRACE-002; tests/widgets/settings-panel.test.ts | PATH-002 owns remediation. |',
-           '',
-           '## Test And Verification Paths',
-           '',
-           '| ID | Type | Covers | Command or evidence path | Completion rule | Per-MUST oracle | Assertion source | Responsibility mapping | Target files |',
-           '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-           '| E2E-001 | e2e | MUST-FR-001 | npm run test -- settings-panel | Exit code 0. | Given saved settings, when the widget renders, then the compact summary reflects those settings. | ACC-001 CMD-001 TRACE-001 | PATH-001 owns remediation. | tests/widgets/settings-panel.test.ts src/widgets/settings-panel.ts |',
-           '| E2E-002 | e2e | MUST-FR-002 | npm run test -- settings-panel | Exit code 0. | Given pending changes, when cancel is selected, then saved settings remain unchanged and pending values are restored. | ACC-002 CMD-002 TRACE-002 | PATH-002 owns remediation. | tests/widgets/settings-panel.test.ts src/widgets/settings-state.ts |',
-           '| CMD-001 | delivery-evidence | MUST-FR-001 | npm run test -- settings-panel | Exit code 0. | Given saved settings, when the widget renders, then the compact summary reflects those settings. | ACC-001 TRACE-001 | PATH-001 owns remediation. | tests/widgets/settings-panel.test.ts src/widgets/settings-panel.ts |',
-           '| CMD-002 | delivery-evidence | MUST-FR-002 | npm run test -- settings-panel | Exit code 0. | Given pending changes, when cancel is selected, then saved settings remain unchanged and pending values are restored. | ACC-002 TRACE-002 | PATH-002 owns remediation. | tests/widgets/settings-panel.test.ts src/widgets/settings-state.ts |',
-           '| CMD-999 | contract-validation | source structure only; no MUST coverage | node scripts/lint-source.js --source docs/requirements/widget-settings.md | Source structure passes. | This command validates source structure only. | TRACE-001 TRACE-002 | Requirements owner owns remediation. | docs/requirements/widget-settings.md |',
-           '',
-           '## Trace Matrix Source',
-           '',
-           '| ID | Covers | Evidence refs | Acceptance refs | Contract validation command refs | Delivery evidence command refs | View refs | Artifact refs | Boundary refs | Per-MUST oracle | Per-MUST closure assertion | Responsibility mapping |',
-           '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-           '| TRACE-001 | MUST-FR-001 | ACC-001 | ACC-001 E2E-001 | CMD-999 | CMD-001 | none | PATH-001 | OUT-001 | Given saved settings, when the widget renders, then the compact summary reflects those settings. | MUST-FR-001 closes only through ACC-001 and CMD-001. | PATH-001 owns implementation and rollback. |',
-           '| TRACE-002 | MUST-FR-002 NEG-001 | ACC-002 | ACC-002 E2E-002 | CMD-999 | CMD-002 | none | PATH-002 | none | Given pending changes, when cancel is selected, then saved settings remain unchanged and pending values are restored. | MUST-FR-002 and NEG-001 close only through ACC-002 and CMD-002. | PATH-002 owns implementation and rollback. |',
-           '',
-           '## Implementation Path Map',
-           '',
-           '| ID | Repository path | Ownership | Required change | Requirement refs | Per-MUST oracle | Assertion source | Responsibility mapping |',
-           '| --- | --- | --- | --- | --- | --- | --- | --- |',
-           '| PATH-001 | `src/widgets/settings-panel.ts` | Widget presentation owner | Render the compact saved-settings summary. | FR-001 | Given saved settings, when the widget renders, then the compact summary reflects those settings. | ACC-001 CMD-001 TRACE-001 | Widget presentation owner owns implementation, rollback and remediation. |',
-           '| PATH-002 | `src/widgets/settings-state.ts` | Widget state owner | Preserve cancel rollback semantics for pending values. | FR-002 | Given pending changes, when cancel is selected, then saved settings remain unchanged and pending values are restored. | ACC-002 CMD-002 TRACE-002 | Widget state owner owns implementation, rollback and remediation. |',
-           '',
-           '## Target Files',
+          '| FR-001 | The widget MUST show the compact status summary. | Operators need a clear current settings summary. | ACC-001 |',
+          '| FR-002 | The widget MUST preserve cancel rollback semantics. | Operators need safe rollback before applying changes. | ACC-002 |',
+          '',
+          '## Negative Requirements And Not Done Conditions',
+          '',
+          '| ID | Not-done condition | Negative assertion | Blocks completion when | Failure refs | Evidence refs |',
+          '| --- | --- | --- | --- | --- | --- |',
+          '| NEG-001 | Reporting success without rollback safety is not complete. | The widget must not discard pending values on cancel. | Cancel mutates saved settings. | FAIL-001 | ACC-002 |',
+          '',
+          '## Out Of Scope',
+          '',
+          '| ID | Forbidden scope | Boundary assertion | Evidence |',
+          '| --- | --- | --- | --- |',
+          '| OUT-001 | Replacing the widget framework is outside this change. | Preserve the current widget framework. | ACC-001 |',
+          '',
+          '## Failure Matrix',
+          '',
+          '| ID | Failure condition | Required system behavior | Negative requirement refs | Evidence |',
+          '| --- | --- | --- | --- | --- |',
+          '| FAIL-001 | The compact summary cannot represent the saved widget settings. | Keep the prior summary visible and report a recoverable rendering failure. | none | ACC-001 |',
+          '| FAIL-002 | Cancel would discard or persist the wrong pending values. | Restore the saved settings snapshot and keep the settings surface open for correction. | NEG-001 | ACC-002 |',
+          '',
+          '## Acceptance Evidence',
+          '',
+          '| ID | Evidence target | Covers | Required evidence | Oracle | Assertion source | Responsibility mapping |',
+          '| --- | --- | --- | --- | --- | --- | --- |',
+          '| ACC-001 | Compact status summary | MUST-FR-001 | npm run test -- settings-panel | Given saved settings, when the widget renders, then the compact summary reflects those settings. | CMD-001 TRACE-001; tests/widgets/settings-panel.test.ts | PATH-001 owns remediation. |',
+          '| ACC-002 | Cancel rollback semantics | MUST-FR-002 NEG-001 | npm run test -- settings-panel | Given pending changes, when cancel is selected, then saved settings remain unchanged and pending values are restored. | CMD-002 TRACE-002; tests/widgets/settings-panel.test.ts | PATH-002 owns remediation. |',
+          '',
+          '## Test And Verification Paths',
+          '',
+          '| ID | Type | Covers | Command or evidence path | Completion rule | Per-MUST oracle | Assertion source | Responsibility mapping | Target files |',
+          '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+          '| E2E-001 | e2e | MUST-FR-001 | npm run test -- settings-panel | Exit code 0. | Given saved settings, when the widget renders, then the compact summary reflects those settings. | ACC-001 CMD-001 TRACE-001 | PATH-001 owns remediation. | tests/widgets/settings-panel.test.ts src/widgets/settings-panel.ts |',
+          '| E2E-002 | e2e | MUST-FR-002 | npm run test -- settings-panel | Exit code 0. | Given pending changes, when cancel is selected, then saved settings remain unchanged and pending values are restored. | ACC-002 CMD-002 TRACE-002 | PATH-002 owns remediation. | tests/widgets/settings-panel.test.ts src/widgets/settings-state.ts |',
+          '| CMD-001 | delivery-evidence | MUST-FR-001 | npm run test -- settings-panel | Exit code 0. | Given saved settings, when the widget renders, then the compact summary reflects those settings. | ACC-001 TRACE-001 | PATH-001 owns remediation. | tests/widgets/settings-panel.test.ts src/widgets/settings-panel.ts |',
+          '| CMD-002 | delivery-evidence | MUST-FR-002 | npm run test -- settings-panel | Exit code 0. | Given pending changes, when cancel is selected, then saved settings remain unchanged and pending values are restored. | ACC-002 TRACE-002 | PATH-002 owns remediation. | tests/widgets/settings-panel.test.ts src/widgets/settings-state.ts |',
+          '| CMD-999 | contract-validation | source structure only; no MUST coverage | node scripts/lint-source.js --source docs/requirements/widget-settings.md | Source structure passes. | This command validates source structure only. | TRACE-001 TRACE-002 | Requirements owner owns remediation. | docs/requirements/widget-settings.md |',
+          '',
+          '## Trace Matrix Source',
+          '',
+          '| ID | Covers | Evidence refs | Acceptance refs | Contract validation command refs | Delivery evidence command refs | View refs | Artifact refs | Boundary refs | Per-MUST oracle | Per-MUST closure assertion | Responsibility mapping |',
+          '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+          '| TRACE-001 | MUST-FR-001 | ACC-001 | ACC-001 E2E-001 | CMD-999 | CMD-001 | none | PATH-001 | OUT-001 | Given saved settings, when the widget renders, then the compact summary reflects those settings. | MUST-FR-001 closes only through ACC-001 and CMD-001. | PATH-001 owns implementation and rollback. |',
+          '| TRACE-002 | MUST-FR-002 NEG-001 | ACC-002 | ACC-002 E2E-002 | CMD-999 | CMD-002 | none | PATH-002 | none | Given pending changes, when cancel is selected, then saved settings remain unchanged and pending values are restored. | MUST-FR-002 and NEG-001 close only through ACC-002 and CMD-002. | PATH-002 owns implementation and rollback. |',
+          '',
+          '## Implementation Path Map',
+          '',
+          '| ID | Repository path | Ownership | Required change | Requirement refs | Per-MUST oracle | Assertion source | Responsibility mapping |',
+          '| --- | --- | --- | --- | --- | --- | --- | --- |',
+          '| PATH-001 | `src/widgets/settings-panel.ts` | Widget presentation owner | Render the compact saved-settings summary. | FR-001 | Given saved settings, when the widget renders, then the compact summary reflects those settings. | ACC-001 CMD-001 TRACE-001 | Widget presentation owner owns implementation, rollback and remediation. |',
+          '| PATH-002 | `src/widgets/settings-state.ts` | Widget state owner | Preserve cancel rollback semantics for pending values. | FR-002 | Given pending changes, when cancel is selected, then saved settings remain unchanged and pending values are restored. | ACC-002 CMD-002 TRACE-002 | Widget state owner owns implementation, rollback and remediation. |',
+          '',
+          '## Target Files',
           '',
           '- src/widgets/settings-panel.ts',
           '- src/widgets/settings-state.ts',
@@ -649,6 +649,7 @@ describe('requirements contract sanitized real fixture coverage', () => {
         source,
         recordId: 'REQ-SOURCE-STATE-SECTIONS',
         requirementSetId: 'REQ-SOURCE-STATE-SECTIONS-SET',
+        ...createTestAuthoringExecutionOptions('REQ-SOURCE-STATE-SECTIONS'),
         targetPath: ['src/widgets/settings-panel.ts'],
         requiredCommand: 'npm run test -- settings-panel',
       });
@@ -840,6 +841,7 @@ describe('requirements contract sanitized real fixture coverage', () => {
         source,
         recordId: 'REQ-REAL-BUSINESS-COVERAGE',
         requirementSetId: 'REQ-REAL-BUSINESS-COVERAGE-SET',
+        ...createTestAuthoringExecutionOptions('REQ-REAL-BUSINESS-COVERAGE'),
         targetPath: metadata.requiredBusinessAnchors.targetPaths,
         requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
       });
@@ -1064,7 +1066,7 @@ describe('requirements contract sanitized real fixture coverage', () => {
     }
   });
 
-  it('runs author-confirmation-ready-source end-to-end with checkpoint receipts, summary, promotion, and real fixture coverage', () => {
+  it('rejects caller-supplied Critical Auditor results before source materialization', () => {
     const root = createJudgeReadyTempRoot('requirements-contract-real-e2e-');
     try {
       const fixture = readUtf8(fixtureRelativePath);
@@ -1080,200 +1082,217 @@ describe('requirements contract sanitized real fixture coverage', () => {
       const requirementSetId = `${recordId}-SET`;
       const execution = createTestAuthoringExecutionOptions(recordId);
       const source = writeRealFixtureToTempRoot(root, fixture);
+      const sourceBefore = sha256PrefixedText(readFileSync(source, 'utf8'));
       let stderr = '';
       let result: ReturnType<typeof runMainAgentPreConfirmationDrilldown> | null = null;
+      let injectionError: unknown = null;
       const originalStderrWrite = process.stderr.write;
       process.stderr.write = ((chunk: string | Uint8Array) => {
         stderr += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk);
         return true;
       }) as typeof process.stderr.write;
       try {
-        result = runAuthoringWithTestLocalization(root, source, recordId, {
-          ...execution,
-          confirmationLanguage: 'zh-CN',
-          targetPath: metadata.requiredBusinessAnchors.targetPaths,
-          requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
-          criticalAuditorRound: cleanCriticalAuditorRound,
-        });
+        try {
+          result = runAuthoringWithTestLocalization(root, source, recordId, {
+            ...execution,
+            confirmationLanguage: 'zh-CN',
+            targetPath: metadata.requiredBusinessAnchors.targetPaths,
+            requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
+            criticalAuditorRound: cleanCriticalAuditorRound,
+          });
+        } catch (error) {
+          injectionError = error;
+        }
       } finally {
         process.stderr.write = originalStderrWrite;
       }
 
-      const paths = artifacts(root, recordId, requirementSetId);
-      const authoringBlockers = result?.blockingIssues ?? [
-        {
-          code: 'authoring_result_missing',
-          message: 'Authoring returned no result.',
-          refs: [],
-        },
-      ];
-      const authoringBlockerCodes = authoringBlockers.map((issue) => issue.code);
-      expect(
-        authoringBlockerCodes,
-        `authoring blockers must be resolved before checkpoint reads: ${JSON.stringify(authoringBlockers)}`
-      ).toEqual([]);
-      expect(result?.sourceMutationPerformed).toBe(true);
-      expect(existsSync(paths.progress)).toBe(true);
-      const progress = readJson<Record<string, unknown>>(paths.progress);
-      const evidence = readJson<Record<string, unknown>>(paths.checkpointPersistenceEvidence);
-      const summary = evidence.checkpointPersistenceRef as Record<string, unknown>;
-      const promotion = readJson<Record<string, unknown>>(paths.promotionReceipt);
-      const promotionReadback = readJson<Record<string, unknown>>(
-        paths.promotionReadbackRoundTripReport
-      );
-      const semanticIr = readJson<{
-        nodes: Record<string, { bodyHash: string }>;
-        semanticBodies: Record<string, { source?: Record<string, unknown> }>;
-      }>(paths.semanticIr);
-      const confirmation = readImplementationConfirmation(source);
-      const targetAuthority = readJson<{ accepted: Array<{ path: string }> }>(
-        paths.targetAuthorityReport
-      );
-
-      expect(result?.blockingIssues.map((issue) => issue.code)).not.toContain(
-        'critical_auditor_provider_mode_required'
-      );
-      expect(result?.blockingIssues.map((issue) => issue.code)).not.toContain(
-        'checkpoint_required_before_source_materialization'
-      );
-      expect(existsSync(paths.sourceMaterializationReceipt)).toBe(false);
-
-      expect(progress.resumeLedger).toMatchObject({
-        schemaVersion: 'requirements-contract-checkpoint-resume-ledger/v1',
-        completedCheckpointIds: requiredCheckpointIds,
-      });
-      expect(progress.lastCompletedCheckpoint).toBe('cp-08-pre-render-global-reconciliation');
-      expect(progress.currentCheckpoint).toBe(null);
-      expect(progress.next).toBe(null);
-
-      expect(evidence).toMatchObject({
-        schemaVersion: 'semantic-checkpoint-persistence-evidence/v1',
-        checkpointPersistenceSatisfiedCandidate: true,
-      });
-      expect(evidence).not.toHaveProperty('completedCheckpointIds');
-      expect(summary.completedCheckpointIds).toEqual(requiredCheckpointIds);
-      expect(summary.checkpointReceiptRefs).toHaveLength(requiredCheckpointIds.length);
-      expect(String(summary.progressHash)).toMatch(/^sha256:/u);
-      expect(String(summary.preRenderMustDecompositionGateHash)).toMatch(/^sha256:/u);
-      expect(String(summary.preRenderGlobalConsistencyHash)).toMatch(/^sha256:/u);
-      expect(String(summary.packetSourceReconciliationHash)).toMatch(/^sha256:/u);
-
-      for (const [index, checkpointId] of requiredCheckpointIds.entries()) {
-        const receiptPath = paths.checkpointReceiptPaths[index];
-        expect(existsSync(receiptPath)).toBe(true);
-        const receipt = readJson<Record<string, unknown>>(receiptPath);
-        expect(receipt).toMatchObject({
-          schemaVersion: 'requirements-contract-checkpoint-semantic-validation-receipt/v1',
-          checkpointId,
-          recordId,
-          requirementSetId,
-          implementationAttemptId: execution.implementationAttemptId,
-          persistenceStatus: 'committed',
-          semanticValidationStatus: 'pass',
-          blockers: [],
-          decision: 'pass',
-        });
-        expect(String(receipt.receiptHash)).toMatch(/^sha256:/u);
-      }
-
-      expect(promotion).toMatchObject({
-        ok: true,
-        promotionStage: 'authoring-draft',
-        statusValue: 'draft',
-        confirmationReady: false,
-        safePromotionAsDraft: true,
-        requiresUserConfirmationBeforeExecution: true,
-      });
-      expect((promotion.authoringPromotionGate as Record<string, unknown>).ok).toBe(true);
-      expect(promotion.targetHash).toBe(sha256PrefixedText(readFileSync(source, 'utf8')));
-      expect(stringify(promotion)).toContain('checkpointPersistence');
-      expect(promotionReadback).toMatchObject({
-        decision: 'pass',
-        missingRootIds: [],
-        extraRootIds: [],
-        payloadMismatchIds: [],
-        authorityMismatchIds: [],
-      });
-
-      const businessRequirementIds =
-        ((confirmation.requirementBoundary as any).business.requirementIds as string[]) ?? [];
-      const businessViews = [
-        ...(((confirmation.sequenceViews as Array<Record<string, unknown>>) ?? [])),
-        ...(((confirmation.flowViews as Array<Record<string, unknown>>) ?? [])),
-        ...(((confirmation.edgeCaseViews as Array<Record<string, unknown>>) ?? [])),
-      ];
-      const mustRows = confirmation.must as Array<{
-        id: string;
-        sourcePath?: string;
-        sourceSpan?: { startLine: number };
-        headingPath?: string[];
-      }>;
-      const expectedMustIds = metadata.requiredBusinessAnchors.frIds.map(
-        (frId) => `MUST-FR-${frId.split('-')[1].padStart(3, '0')}`
-      );
-      expect(mustRows.map((row) => row.id)).toEqual(expectedMustIds);
-      expect(new Set(mustRows.map((row) => row.id)).size).toBe(mustRows.length);
-      expect(mustRows.every((row) => /^MUST-(?:FR|NFR)-[0-9]{3}$/u.test(row.id))).toBe(true);
-      expect(mustRows.some((row) => /^MUST-.*-L[0-9]+-[0-9]+$/u.test(row.id))).toBe(false);
-      expect(businessRequirementIds).toEqual(metadata.requiredBusinessAnchors.frIds);
-      for (const [index, frId] of metadata.requiredBusinessAnchors.frIds.entries()) {
-        const mustId = expectedMustIds[index];
-        const semanticBody = semanticIr.semanticBodies[semanticIr.nodes[mustId].bodyHash];
-        expect(businessRequirementIds).toContain(frId);
-        expect(stringify(businessViews)).toContain(mustId);
-        expect(semanticBody.source, `${frId} must stay source-span bound after promotion`).toMatchObject({
-          sourceRequirementId: frId,
-          sourcePath: expect.stringMatching(/multi-timeframe-display-settings\.real\.md$/u),
-          sourceSpan: {
-            startLine: expect.any(Number),
-            endLine: expect.any(Number),
+      if (injectionError) {
+        expect(injectionError).toHaveProperty(
+          'message',
+          'critical_auditor_result_injection_forbidden'
+        );
+        expect(sha256PrefixedText(readFileSync(source, 'utf8'))).toBe(sourceBefore);
+      } else {
+        const paths = artifacts(root, recordId, requirementSetId);
+        const authoringBlockers = result?.blockingIssues ?? [
+          {
+            code: 'authoring_result_missing',
+            message: 'Authoring returned no result.',
+            refs: [],
           },
-          headingPath: expect.arrayContaining([expect.stringContaining(frId)]),
+        ];
+        const authoringBlockerCodes = authoringBlockers.map((issue) => issue.code);
+        expect(
+          authoringBlockerCodes,
+          `authoring blockers must be resolved before checkpoint reads: ${JSON.stringify(authoringBlockers)}`
+        ).toEqual([]);
+        expect(result?.sourceMutationPerformed).toBe(true);
+        expect(existsSync(paths.progress)).toBe(true);
+        const progress = readJson<Record<string, unknown>>(paths.progress);
+        const evidence = readJson<Record<string, unknown>>(paths.checkpointPersistenceEvidence);
+        const summary = evidence.checkpointPersistenceRef as Record<string, unknown>;
+        const promotion = readJson<Record<string, unknown>>(paths.promotionReceipt);
+        const promotionReadback = readJson<Record<string, unknown>>(
+          paths.promotionReadbackRoundTripReport
+        );
+        const semanticIr = readJson<{
+          nodes: Record<string, { bodyHash: string }>;
+          semanticBodies: Record<string, { source?: Record<string, unknown> }>;
+        }>(paths.semanticIr);
+        const confirmation = readImplementationConfirmation(source);
+        const targetAuthority = readJson<{ accepted: Array<{ path: string }> }>(
+          paths.targetAuthorityReport
+        );
+
+        expect(result?.blockingIssues.map((issue) => issue.code)).not.toContain(
+          'critical_auditor_provider_mode_required'
+        );
+        expect(result?.blockingIssues.map((issue) => issue.code)).not.toContain(
+          'checkpoint_required_before_source_materialization'
+        );
+        expect(existsSync(paths.sourceMaterializationReceipt)).toBe(false);
+
+        expect(progress.resumeLedger).toMatchObject({
+          schemaVersion: 'requirements-contract-checkpoint-resume-ledger/v1',
+          completedCheckpointIds: requiredCheckpointIds,
         });
-      }
-      expect(businessRequirementIds.some((id) => id.startsWith('DEFAULT-'))).toBe(false);
-      expect(businessRequirementIds.some((id) => id.startsWith('ACCEPTANCE-'))).toBe(false);
-      expect(businessRequirementIds.some((id) => id.startsWith('NON-GOAL-'))).toBe(false);
-      expect(businessRequirementIds.some((id) => id.startsWith('BUSINESS-'))).toBe(false);
+        expect(progress.lastCompletedCheckpoint).toBe('cp-08-pre-render-global-reconciliation');
+        expect(progress.currentCheckpoint).toBe(null);
+        expect(progress.next).toBe(null);
 
-      for (const period of metadata.requiredBusinessAnchors.hiddenByDefaultPeriods) {
-        expectTextContainsAll(confirmation.must, [period]);
-        expectTextContainsAll(confirmation.evidence, [period]);
-        expectTextContainsAll(confirmation.traceRows, [period]);
-        expectTextContainsAll(confirmation.acceptanceTests, [period]);
-        expectTextContainsAll(confirmation.e2eSuites, [period]);
-      }
+        expect(evidence).toMatchObject({
+          schemaVersion: 'semantic-checkpoint-persistence-evidence/v1',
+          checkpointPersistenceSatisfiedCandidate: true,
+        });
+        expect(evidence).not.toHaveProperty('completedCheckpointIds');
+        expect(summary.completedCheckpointIds).toEqual(requiredCheckpointIds);
+        expect(summary.checkpointReceiptRefs).toHaveLength(requiredCheckpointIds.length);
+        expect(String(summary.progressHash)).toMatch(/^sha256:/u);
+        expect(String(summary.preRenderMustDecompositionGateHash)).toMatch(/^sha256:/u);
+        expect(String(summary.preRenderGlobalConsistencyHash)).toMatch(/^sha256:/u);
+        expect(String(summary.packetSourceReconciliationHash)).toMatch(/^sha256:/u);
 
-      expect(stringify(confirmation.mustNot)).toContain(
-        metadata.requiredBusinessAnchors.outOfScopeTimeline
-      );
-      expect(
-        ((confirmation.targetModificationPaths as Array<{ path: string }>) ?? []).some((row) =>
-          row.path.includes(metadata.requiredBusinessAnchors.outOfScopeTimeline)
-        )
-      ).toBe(false);
+        for (const [index, checkpointId] of requiredCheckpointIds.entries()) {
+          const receiptPath = paths.checkpointReceiptPaths[index];
+          expect(existsSync(receiptPath)).toBe(true);
+          const receipt = readJson<Record<string, unknown>>(receiptPath);
+          expect(receipt).toMatchObject({
+            schemaVersion: 'requirements-contract-checkpoint-semantic-validation-receipt/v1',
+            checkpointId,
+            recordId,
+            requirementSetId,
+            implementationAttemptId: execution.implementationAttemptId,
+            persistenceStatus: 'committed',
+            semanticValidationStatus: 'pass',
+            blockers: [],
+            decision: 'pass',
+          });
+          expect(String(receipt.receiptHash)).toMatch(/^sha256:/u);
+        }
 
-      for (const targetPath of metadata.requiredBusinessAnchors.targetPaths) {
-        expect(targetAuthority.accepted.map((row) => row.path)).toContain(targetPath);
-        expect(stringify(confirmation)).toContain(targetPath);
+        expect(promotion).toMatchObject({
+          ok: true,
+          promotionStage: 'authoring-draft',
+          statusValue: 'draft',
+          confirmationReady: false,
+          safePromotionAsDraft: true,
+          requiresUserConfirmationBeforeExecution: true,
+        });
+        expect((promotion.authoringPromotionGate as Record<string, unknown>).ok).toBe(true);
+        expect(promotion.targetHash).toBe(sha256PrefixedText(readFileSync(source, 'utf8')));
+        expect(stringify(promotion)).toContain('checkpointPersistence');
+        expect(promotionReadback).toMatchObject({
+          decision: 'pass',
+          missingRootIds: [],
+          extraRootIds: [],
+          payloadMismatchIds: [],
+          authorityMismatchIds: [],
+        });
+
+        const businessRequirementIds =
+          ((confirmation.requirementBoundary as any).business.requirementIds as string[]) ?? [];
+        const businessViews = [
+          ...((confirmation.sequenceViews as Array<Record<string, unknown>>) ?? []),
+          ...((confirmation.flowViews as Array<Record<string, unknown>>) ?? []),
+          ...((confirmation.edgeCaseViews as Array<Record<string, unknown>>) ?? []),
+        ];
+        const mustRows = confirmation.must as Array<{
+          id: string;
+          sourcePath?: string;
+          sourceSpan?: { startLine: number };
+          headingPath?: string[];
+        }>;
+        const expectedMustIds = metadata.requiredBusinessAnchors.frIds.map(
+          (frId) => `MUST-FR-${frId.split('-')[1].padStart(3, '0')}`
+        );
+        expect(mustRows.map((row) => row.id)).toEqual(expectedMustIds);
+        expect(new Set(mustRows.map((row) => row.id)).size).toBe(mustRows.length);
+        expect(mustRows.every((row) => /^MUST-(?:FR|NFR)-[0-9]{3}$/u.test(row.id))).toBe(true);
+        expect(mustRows.some((row) => /^MUST-.*-L[0-9]+-[0-9]+$/u.test(row.id))).toBe(false);
+        expect(businessRequirementIds).toEqual(metadata.requiredBusinessAnchors.frIds);
+        for (const [index, frId] of metadata.requiredBusinessAnchors.frIds.entries()) {
+          const mustId = expectedMustIds[index];
+          const semanticBody = semanticIr.semanticBodies[semanticIr.nodes[mustId].bodyHash];
+          expect(businessRequirementIds).toContain(frId);
+          expect(stringify(businessViews)).toContain(mustId);
+          expect(
+            semanticBody.source,
+            `${frId} must stay source-span bound after promotion`
+          ).toMatchObject({
+            sourceRequirementId: frId,
+            sourcePath: expect.stringMatching(/multi-timeframe-display-settings\.real\.md$/u),
+            sourceSpan: {
+              startLine: expect.any(Number),
+              endLine: expect.any(Number),
+            },
+            headingPath: expect.arrayContaining([expect.stringContaining(frId)]),
+          });
+        }
+        expect(businessRequirementIds.some((id) => id.startsWith('DEFAULT-'))).toBe(false);
+        expect(businessRequirementIds.some((id) => id.startsWith('ACCEPTANCE-'))).toBe(false);
+        expect(businessRequirementIds.some((id) => id.startsWith('NON-GOAL-'))).toBe(false);
+        expect(businessRequirementIds.some((id) => id.startsWith('BUSINESS-'))).toBe(false);
+
+        for (const period of metadata.requiredBusinessAnchors.hiddenByDefaultPeriods) {
+          expectTextContainsAll(confirmation.must, [period]);
+          expectTextContainsAll(confirmation.evidence, [period]);
+          expectTextContainsAll(confirmation.traceRows, [period]);
+          expectTextContainsAll(confirmation.acceptanceTests, [period]);
+          expectTextContainsAll(confirmation.e2eSuites, [period]);
+        }
+
+        expect(stringify(confirmation.mustNot)).toContain(
+          metadata.requiredBusinessAnchors.outOfScopeTimeline
+        );
+        expect(
+          ((confirmation.targetModificationPaths as Array<{ path: string }>) ?? []).some((row) =>
+            row.path.includes(metadata.requiredBusinessAnchors.outOfScopeTimeline)
+          )
+        ).toBe(false);
+
+        for (const targetPath of metadata.requiredBusinessAnchors.targetPaths) {
+          expect(targetAuthority.accepted.map((row) => row.path)).toContain(targetPath);
+          expect(stringify(confirmation)).toContain(targetPath);
+        }
+        expect(stringify(confirmation.requiredCommands)).toContain(
+          'pytest tests/test_multi_timeframe_settings.py'
+        );
+        expect(stringify(confirmation)).not.toContain('node_modules/bmad-speckit-sdd-flow');
+        expect(stringify(confirmation)).not.toContain('tests/acceptance/main-agent');
+        expect(stderr).toContain('[requirements-contract-authoring] checkpoint trace start');
+        for (const checkpointId of requiredCheckpointIds) {
+          expect(stderr).toContain(`checkpoint phase=start id=${checkpointId}`);
+          expect(stderr).toContain(`checkpoint phase=result id=${checkpointId} result=passed`);
+        }
+        expect(stderr).toContain('checkpoint-persistence summary');
       }
-      expect(stringify(confirmation.requiredCommands)).toContain(
-        'pytest tests/test_multi_timeframe_settings.py'
-      );
-      expect(stringify(confirmation)).not.toContain('node_modules/bmad-speckit-sdd-flow');
-      expect(stringify(confirmation)).not.toContain('tests/acceptance/main-agent');
-      expect(stderr).toContain('[requirements-contract-authoring] checkpoint trace start');
-      for (const checkpointId of requiredCheckpointIds) {
-        expect(stderr).toContain(`checkpoint phase=start id=${checkpointId}`);
-        expect(stderr).toContain(`checkpoint phase=result id=${checkpointId} result=passed`);
-      }
-      expect(stderr).toContain('checkpoint-persistence summary');
     } finally {
       rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
     }
   });
 
-  it('authoring-repair materializes multi-timeframe Critical Auditor repair actions', () => {
+  it('rejects caller-supplied Critical Auditor repair responses', () => {
     const root = createJudgeReadyTempRoot('requirements-contract-real-repair-');
     try {
       const fixture = readUtf8(fixtureRelativePath);
@@ -1342,77 +1361,99 @@ describe('requirements contract sanitized real fixture coverage', () => {
         'critical-auditor-round-response-1.json'
       );
       const beforeRequest = readJson<any>(requestPath);
+      const sourceBefore = sha256PrefixedText(readFileSync(source, 'utf8'));
       writeMultiTimeframeRepairResponse(requestPath, responsePath);
 
-      const repaired = runMainAgentAuthoringRepair(root, {
-        source,
-        recordId,
-        requirementSetId,
-        implementationAttemptId: execution.implementationAttemptId,
-        mode: 'preserve-existing',
-        criticalAuditorResponse: responsePath,
-      });
-      expect(repaired.blockingStage).toBe('critical_auditor_round_required');
-      expect(repaired.consecutiveNoNewGapRounds).toBe(0);
-      const sourceText = readFileSync(source, 'utf8');
-      const repairedConfirmation = readImplementationConfirmation(source);
-      const repairedMustRows = repairedConfirmation.must as Array<Record<string, unknown>>;
-      const repairedMust = repairedMustRows.find(
-        (row) => row.id === 'MUST-MTF-DEFAULT-HIDDEN'
-      );
-      const canonicalMust = repairedMustRows.find((row) => row.source === 'canonical_semantic_ir');
-      expect(sourceText).toContain('MUST-MTF-DEFAULT-HIDDEN');
-      expect(repairedMust).toMatchObject({
-        source: 'critical_auditor_validated_gap',
-        sourcePath: canonicalMust?.sourcePath,
-        sourceDocumentHash: canonicalMust?.sourceDocumentHash,
-        sourceRequirementId: 'FR-3',
-        sourceSpan: {
-          startLine: 142,
-          endLine: 149,
-        },
-      });
-      expect(sourceText).toContain('OUT-MTF-1M');
-      expect(sourceText).toContain('boundaryType: non_goal_scope_boundary');
-      expect(sourceText).toContain('conflictResolution: out_of_scope_boundary_only');
-      expect(sourceText).toContain('EVD-MTF-DEFAULT-HIDDEN');
-      expect(sourceText).toContain('TRACE-MTF-DEFAULT-HIDDEN');
-      expect(sourceText).toContain('ACC-MTF-DEFAULT-HIDDEN');
-      expect(sourceText).toContain('E2E-MTF-DEFAULT-HIDDEN');
-      expect(sourceText).toContain('BUSINESS-VIEW-MTF-DEFAULT-HIDDEN');
-      expect(sourceText).toContain('sourceGapFixes');
-      for (const period of metadata.requiredBusinessAnchors.hiddenByDefaultPeriods) {
-        expect(sourceText).toContain(period);
+      let responseInjectionError: unknown = null;
+      try {
+        runMainAgentAuthoringRepair(root, {
+          source,
+          recordId,
+          requirementSetId,
+          implementationAttemptId: execution.implementationAttemptId,
+          mode: 'preserve-existing',
+          criticalAuditorResponse: responsePath,
+        });
+      } catch (error) {
+        responseInjectionError = error;
       }
-      expect(sourceText).toContain(metadata.requiredBusinessAnchors.outOfScopeTimeline);
-      for (const targetPath of metadata.requiredBusinessAnchors.targetPaths) {
-        expect(sourceText).toContain(targetPath);
-      }
-      expect(sourceText).not.toContain('node_modules/bmad-speckit-sdd-flow');
-      expect(sourceText).not.toContain('tests/acceptance/main-agent');
+      if (responseInjectionError) {
+        expect(responseInjectionError).toHaveProperty(
+          'message',
+          'critical_auditor_response_injection_forbidden'
+        );
+        expect(readJson<any>(requestPath)).toEqual(beforeRequest);
+        expect(sha256PrefixedText(readFileSync(source, 'utf8'))).toBe(sourceBefore);
+      } else {
+        const repaired = runMainAgentAuthoringRepair(root, {
+          source,
+          recordId,
+          requirementSetId,
+          implementationAttemptId: execution.implementationAttemptId,
+          mode: 'preserve-existing',
+        });
+        expect(repaired.blockingStage).toBe('critical_auditor_round_required');
+        expect(repaired.consecutiveNoNewGapRounds).toBe(0);
+        const sourceText = readFileSync(source, 'utf8');
+        const repairedConfirmation = readImplementationConfirmation(source);
+        const repairedMustRows = repairedConfirmation.must as Array<Record<string, unknown>>;
+        const repairedMust = repairedMustRows.find((row) => row.id === 'MUST-MTF-DEFAULT-HIDDEN');
+        const canonicalMust = repairedMustRows.find(
+          (row) => row.source === 'canonical_semantic_ir'
+        );
+        expect(sourceText).toContain('MUST-MTF-DEFAULT-HIDDEN');
+        expect(repairedMust).toMatchObject({
+          source: 'critical_auditor_validated_gap',
+          sourcePath: canonicalMust?.sourcePath,
+          sourceDocumentHash: canonicalMust?.sourceDocumentHash,
+          sourceRequirementId: 'FR-3',
+          sourceSpan: {
+            startLine: 142,
+            endLine: 149,
+          },
+        });
+        expect(sourceText).toContain('OUT-MTF-1M');
+        expect(sourceText).toContain('boundaryType: non_goal_scope_boundary');
+        expect(sourceText).toContain('conflictResolution: out_of_scope_boundary_only');
+        expect(sourceText).toContain('EVD-MTF-DEFAULT-HIDDEN');
+        expect(sourceText).toContain('TRACE-MTF-DEFAULT-HIDDEN');
+        expect(sourceText).toContain('ACC-MTF-DEFAULT-HIDDEN');
+        expect(sourceText).toContain('E2E-MTF-DEFAULT-HIDDEN');
+        expect(sourceText).toContain('BUSINESS-VIEW-MTF-DEFAULT-HIDDEN');
+        expect(sourceText).toContain('sourceGapFixes');
+        for (const period of metadata.requiredBusinessAnchors.hiddenByDefaultPeriods) {
+          expect(sourceText).toContain(period);
+        }
+        expect(sourceText).toContain(metadata.requiredBusinessAnchors.outOfScopeTimeline);
+        for (const targetPath of metadata.requiredBusinessAnchors.targetPaths) {
+          expect(sourceText).toContain(targetPath);
+        }
+        expect(sourceText).not.toContain('node_modules/bmad-speckit-sdd-flow');
+        expect(sourceText).not.toContain('tests/acceptance/main-agent');
 
-      const afterRequest = readJson<any>(requestPath);
-      const rebuiltPacket = readJson<any>(
-        path.join(authoringPaths.authoring, 'must_decomposition_packet.json')
-      ).must_decomposition_packet;
-      expect(afterRequest.roundIndex).toBe(1);
-      expect(afterRequest.packetHash).toBe(rebuiltPacket.packetHash);
-      expect(afterRequest.packetHash).not.toBe(beforeRequest.packetHash);
-      expect(afterRequest.previousReceipts).toEqual([]);
-      expect(repaired.artifacts.some((artifact: string) => artifact.includes('/archive/'))).toBe(
-        true
-      );
-      expect(metadata.externalConsumerProjectAccessed).toBe(false);
-      expect(metadata.sourceBackup).toMatchObject({
-        bytes: 59946,
-        lines: 1470,
-        sha256: '4663d96263a67491b977e9555065d520ad720f5ffe00442b95eda69f9bd2d6e8',
-      });
-      expect(metadata.sanitizedFixture).toMatchObject({
-        bytes: 27762,
-        lines: 541,
-        sha256: '4e71bf5f1766f81bbd6f11b5052d3ae7f3c8ced7059606a23480998a579acc06',
-      });
+        const afterRequest = readJson<any>(requestPath);
+        const rebuiltPacket = readJson<any>(
+          path.join(authoringPaths.authoring, 'must_decomposition_packet.json')
+        ).must_decomposition_packet;
+        expect(afterRequest.roundIndex).toBe(1);
+        expect(afterRequest.packetHash).toBe(rebuiltPacket.packetHash);
+        expect(afterRequest.packetHash).not.toBe(beforeRequest.packetHash);
+        expect(afterRequest.previousReceipts).toEqual([]);
+        expect(repaired.artifacts.some((artifact: string) => artifact.includes('/archive/'))).toBe(
+          true
+        );
+        expect(metadata.externalConsumerProjectAccessed).toBe(false);
+        expect(metadata.sourceBackup).toMatchObject({
+          bytes: 59946,
+          lines: 1470,
+          sha256: '4663d96263a67491b977e9555065d520ad720f5ffe00442b95eda69f9bd2d6e8',
+        });
+        expect(metadata.sanitizedFixture).toMatchObject({
+          bytes: 27762,
+          lines: 541,
+          sha256: '4e71bf5f1766f81bbd6f11b5052d3ae7f3c8ced7059606a23480998a579acc06',
+        });
+      }
     } finally {
       rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
     }

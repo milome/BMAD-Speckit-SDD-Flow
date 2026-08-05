@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
@@ -114,6 +115,31 @@ function actionUniverseHash(actionIds: string[]): string {
       'utf8'
     )
     .digest('hex')}`;
+}
+
+function gitNullList(args: string[]): string[] {
+  return execFileSync('git', args, {
+    cwd: ROOT,
+    encoding: 'utf8',
+  })
+    .split('\0')
+    .filter(Boolean)
+    .map((entry) => entry.replace(/\\/gu, '/'));
+}
+
+function actionBindingTrackedHashInputPaths(manifest: ActionBindingManifest): string[] {
+  const declaredPaths = [
+    ...new Set(
+      manifest.actions.flatMap((action) => [
+        action.sourceHandlerRef.path,
+        ...action.inputSchemaRefs.map((ref) => ref.path),
+        ...action.outputSchemaRefs.map((ref) => ref.path),
+        ...action.behaviorTestRefs.map((ref) => ref.path),
+      ])
+    ),
+  ].sort();
+  const trackedPaths = new Set(gitNullList(['ls-files', '-z', '--', ...declaredPaths]));
+  return declaredPaths.filter((declaredPath) => trackedPaths.has(declaredPath));
 }
 
 function readManifest(): ActionBindingManifest | null {
@@ -261,6 +287,33 @@ describe('requirements contract package runtime action binding', () => {
         ? 'pass'
         : 'block'
     );
+  });
+
+  it('pins tracked action-binding hash inputs to LF across clean Windows worktrees', () => {
+    const manifest = readManifest();
+    if (!manifest) return;
+
+    const trackedHashInputPaths = actionBindingTrackedHashInputPaths(manifest);
+    expect(trackedHashInputPaths.length).toBeGreaterThan(0);
+
+    const attributeOutput = gitNullList([
+      'check-attr',
+      '-z',
+      'eol',
+      '--',
+      ...trackedHashInputPaths,
+    ]);
+    const attributeValues = new Map<string, string>();
+    for (let index = 0; index + 2 < attributeOutput.length; index += 3) {
+      attributeValues.set(attributeOutput[index], attributeOutput[index + 2]);
+    }
+
+    for (const trackedHashInputPath of trackedHashInputPaths) {
+      expect(
+        attributeValues.get(trackedHashInputPath),
+        `${trackedHashInputPath} must use eol=lf because action-binding hashes bind raw bytes`
+      ).toBe('lf');
+    }
   });
 
   it('binds current Recovery and Judge runtime owners without legacy schema paths', () => {

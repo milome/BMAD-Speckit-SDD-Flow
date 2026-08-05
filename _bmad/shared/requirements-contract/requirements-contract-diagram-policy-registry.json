@@ -2,7 +2,7 @@
   "schemaVersion": "requirements-contract-diagram-policy-registry/v1",
   "owner": {
     "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-project-profile.ts",
-    "hash": "sha256:5fda5d3d64ad5d044c43d1f32699284920add498331a8dad6e381b998a4c11e4"
+    "hash": "sha256:b62dec8d75d3c1917d24074a315b342286ee1ff02d6adcc5fe126061e6682669"
   },
   "sequenceFirst": true,
   "views": [

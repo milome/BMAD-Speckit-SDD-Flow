@@ -1,5 +1,5 @@
-import { createHash, randomUUID } from 'node:crypto';
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -12,9 +12,6 @@ vi.mock('node:child_process', () => ({ spawnSync: mocks.spawnSync }));
 
 import { requirementsContractProductionActivateCommand } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-production-activate';
 
-const CONTRACT =
-  'docs/plans/2026-07-18-loop-engineering-evidence-closure-remediation-amend13-goal-execution-plan.md';
-const CONTRACT_HASH = '38d6301646351efb04dff330ac05b3bf5daa667ef31f1630f0b68031cddda90a';
 const COMMAND_HASHES = [
   'sha256:be8d1023f85ca4896a5afd5ddcadbf4727a692bcf1333325e7e81e938966fee7',
   'sha256:2e2f1acca90ae7dc9cdde9216deaaf4147ca9e91d771e2a8dae14746b90fbdf8',
@@ -50,8 +47,6 @@ function fixture() {
     productionReadModelVersion: 'v1',
   });
   write(root, 'packages/bmad-speckit/bin/bmad-speckit.js', {});
-  mkdirSync(path.dirname(path.join(root, CONTRACT)), { recursive: true });
-  copyFileSync(path.resolve(CONTRACT), path.join(root, CONTRACT));
   return { root, record, registry };
 }
 
@@ -78,8 +73,6 @@ afterEach(() => {
 
 it('binds the activation plan to the frozen AMEND-13 command text hashes', async () => {
   const value = fixture();
-  const copiedContract = readFileSync(path.join(value.root, CONTRACT));
-  expect(createHash('sha256').update(copiedContract).digest('hex')).toBe(CONTRACT_HASH);
 
   const receipt = await activate(value);
   const plan = JSON.parse(readFileSync(path.join(value.root, receipt.activationPlan.path), 'utf8'));

@@ -14,7 +14,10 @@ import {
   writeOrchestrationStateAtPath,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state';
 import { createRuntimeStatusDecisionReceipt } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-runtime-status-decision-receipt';
-import { defaultRuntimeContextFile, writeRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
+import {
+  defaultRuntimeContextFile,
+  writeRuntimeContext,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context';
 import {
   defaultRuntimeContextRegistry,
   writeRuntimeContextRegistry,
@@ -180,9 +183,9 @@ function sourceRequiredCommandsForFixtureRoot(root: string): Record<string, unkn
     const parsed = objectRecord(yaml.load(match.groups?.body ?? ''));
     const confirmation = objectRecord(parsed.implementationConfirmation ?? parsed);
     if (Array.isArray(confirmation.requiredCommands)) {
-      return confirmation.requiredCommands.map(objectRecord).filter(
-        (command) => Object.keys(command).length > 0
-      );
+      return confirmation.requiredCommands
+        .map(objectRecord)
+        .filter((command) => Object.keys(command).length > 0);
     }
   }
   return [];
@@ -562,10 +565,47 @@ export function materializeRequirementFixture(
     })
   );
   if (input.orchestrationNextAction || input.pendingPacket || input.lastTaskReport) {
+    const pendingPacketPath = input.pendingPacket
+      ? packetArtifactPath(root, requirementSetId, input.pendingPacket.packetId)
+      : null;
+    if (input.pendingPacket && pendingPacketPath) {
+      const packetKind = input.pendingPacket.packetKind ?? 'execution';
+      const packetPayload =
+        packetKind === 'recommendation'
+          ? {
+              packetId: input.pendingPacket.packetId,
+              parentSessionId: requirementSetId,
+              flow: 'standalone_tasks',
+              phase: 'implement',
+              recommendedRole: 'implementation-worker',
+              recommendedTaskType: 'implement',
+              inputArtifacts: [recordPath, sourcePath],
+              allowedWriteScope: ['scripts/**', 'tests/**', '_bmad-output/**'],
+              expectedDelta: 'fixture recommendation packet',
+              successCriteria: ['fixture recommendation is consumed'],
+              stopConditions: ['fixture blocker'],
+            }
+          : {
+              packetId: input.pendingPacket.packetId,
+              parentSessionId: requirementSetId,
+              flow: 'standalone_tasks',
+              phase: 'implement',
+              taskType: 'implement',
+              role: 'implementation-worker',
+              inputArtifacts: [recordPath, sourcePath],
+              allowedWriteScope: ['scripts/**', 'tests/**', '_bmad-output/**'],
+              expectedDelta: 'fixture implementation packet',
+              successCriteria: ['fixture task report is ingested'],
+              stopConditions: ['fixture blocker'],
+              // 该矩阵 fixture 验证编排状态，不伪造已发布的 compiled dispatch pointer。
+              authorityMode: 'legacy_generic_prompt',
+            };
+      writeJson(pendingPacketPath, packetPayload);
+    }
     const packet = input.pendingPacket
       ? {
           packetId: input.pendingPacket.packetId,
-          packetPath: packetArtifactPath(root, requirementSetId, input.pendingPacket.packetId),
+          packetPath: pendingPacketPath,
           packetKind: input.pendingPacket.packetKind ?? 'execution',
           status: input.pendingPacket.status ?? 'completed',
           createdAt: '2026-05-30T00:00:00.000Z',
@@ -719,14 +759,14 @@ export function writeFakeReqTraceSkill(
       "const record = JSON.parse(fs.readFileSync(recordPath, 'utf8'));",
       "const profile = profilePath ? JSON.parse(fs.readFileSync(profilePath, 'utf8')) : null;",
       "const packetId = packetIdArg || record.requirementSetId || record.recordId || 'fixture';",
-      "const projectRoot = recordPath.split(`${path.sep}_bmad-output${path.sep}`)[0] || process.cwd();",
+      'const projectRoot = recordPath.split(`${path.sep}_bmad-output${path.sep}`)[0] || process.cwd();',
       "const sessionId = record.requirementSetId || record.recordId || 'fixture';",
       "const taskReportPath = taskReportPathArg || path.join(projectRoot, '_bmad-output', 'runtime', 'governance', 'task-reports', sessionId, `${packetId}.json`);",
       `const modelPacket = { schemaVersion: 'model-packet-fixture/v1', artifactRole: 'execution_authority', packetId, taskReportPath, sourceDocumentHash: record.sourceDocumentHash, implementationConfirmationHash: record.implementationConfirmationHash, executionDisciplineProfile: profile, requiredCommands: ${JSON.stringify(sourceRequiredCommands)}, traceOrder: ['TRACE-010','TRACE-011','TRACE-012','TRACE-013','TRACE-014','TRACE-015','TRACE-016'] };`,
       "const modelPath = path.join(outDir, 'model_packet.json');",
       "const humanPath = path.join(outDir, 'human_prompt.txt');",
       "const goalPath = path.join(outDir, 'goal_execution.md');",
-      "const commandText = `/goal Execute ${packetId} by following ${goalPath}; use ${modelPath} as authority; stop only on final pass or reconfirm_required.`;",
+      'const commandText = `/goal Execute ${packetId} by following ${goalPath}; use ${modelPath} as authority; stop only on final pass or reconfirm_required.`;',
       "fs.writeFileSync(modelPath, JSON.stringify(modelPacket, null, 2) + '\\n', 'utf8');",
       "fs.writeFileSync(humanPath, `model_packet.json is the machine-readable execution authority\\nprofileId: ${profile?.profileId || 'none'}\\nprofileHash: ${profile?.profileHash || 'none'}\\n`, 'utf8');",
       "fs.writeFileSync(goalPath, `# Fixture Goal\\nPacket ID: ${packetId}\\nwrite a JSON TaskReport to: ${taskReportPath}\\nprofileId: ${profile?.profileId || 'none'}\\nprofileHash: ${profile?.profileHash || 'none'}\\n`, 'utf8');",

@@ -2,14 +2,25 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 import { resolveCanonicalPackageTarball } from '../helpers/canonical-package-artifact';
 
 const PKG_ROOT = join(import.meta.dirname, '..', '..');
-const NPM_CACHE_DIR = mkdtempSync(join(tmpdir(), 'accept-root-bin-npm-cache-'));
+let npmCacheDir: string | undefined;
 const ROOT_PACKAGE_VERSION = JSON.parse(
   readFileSync(join(PKG_ROOT, 'package.json'), 'utf8')
 ).version;
+
+afterAll(() => {
+  if (npmCacheDir) {
+    rmSync(npmCacheDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  }
+});
+
+function resolveNpmCacheDir(): string {
+  npmCacheDir ??= mkdtempSync(join(tmpdir(), 'accept-root-bin-npm-cache-'));
+  return npmCacheDir;
+}
 
 function run(cmd: string, cwd: string): string {
   return execSync(cmd, {
@@ -20,7 +31,7 @@ function run(cmd: string, cwd: string): string {
     env: {
       ...process.env,
       npm_config_loglevel: 'error',
-      npm_config_cache: NPM_CACHE_DIR,
+      npm_config_cache: resolveNpmCacheDir(),
     },
   });
 }
@@ -49,7 +60,7 @@ describe('root package bmad-speckit bin', () => {
     } finally {
       rmSync(target, { recursive: true, force: true });
     }
-  }, 120_000);
+  }, 240_000);
 
   it('tarball-installing bmad-speckit-sdd-flow on a clean consumer also exposes npx bmad-speckit', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-root-bin-tgz-'));

@@ -422,6 +422,7 @@ describe('exact Vitest shard execution', () => {
       expect(calls[0].env.CI_COMMIT_SHA).toBe('a'.repeat(40));
       expect(calls[0].env.CI_PLAN_HASH).toBe(input.planHash);
       expect(calls[0].env.CI_GOVERNED_SHARD).toBe('1');
+      expect(calls[0].env.BMAD_SPECKIT_PRESERVE_PACKED_RUNTIME).toBe('1');
       expect(result.outcome).toBe('passed');
       expect(result.executedIdentityKeys).toEqual([
         'vitest::tests/a.test.ts',

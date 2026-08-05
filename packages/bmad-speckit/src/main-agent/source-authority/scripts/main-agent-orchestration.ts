@@ -25,6 +25,7 @@ import {
   type OrchestrationHost,
 } from './orchestration-dispatch-contract';
 import { resolveExecutionDisciplineProfile } from './execution-discipline-profiles';
+import { resolvePackageOwnedBmadPath } from '../../runtime/package-bmad-root';
 import {
   buildExecutionStrategyOptions,
   selectExecutionStrategy,
@@ -7324,6 +7325,7 @@ function latestCommittedCriticalAuditorGapRound(input: {
         projectRoot: input.root,
         receipt,
         response,
+        requireJudgeInvocationProvenance: false,
         roundIndex,
         transaction: input.transaction,
         auditInputHash: normalizeText(request.auditInputHash),
@@ -8487,8 +8489,11 @@ function extractInlineImplementationConfirmationBoundaryBlocks(input: {
   });
 }
 
-function resolveSourceMustRequirements(root: string, sourcePath: string): SourceMustRequirement[] {
-  const sourceText = fs.readFileSync(sourcePath, 'utf8');
+function resolveSourceMustRequirements(
+  root: string,
+  sourcePath: string,
+  sourceText: string
+): SourceMustRequirement[] {
   const explicit = extractExplicitSourceMustRequirements(sourceText);
   if (explicit.length > 0) {
     return explicit;
@@ -9939,7 +9944,11 @@ function analyzeRequirementsContractSourceAuthority(input: {
     sourceText: input.sourceText,
     blocks: structuredBlocks,
   });
-  const inlineMustRequirements = resolveSourceMustRequirements(input.root, input.sourcePath);
+  const inlineMustRequirements = resolveSourceMustRequirements(
+    input.root,
+    input.sourcePath,
+    input.sourceText
+  );
   const forbiddenLineBasedMustRequirements = inlineMustRequirements.filter((row) =>
     isForbiddenLineBasedMustId(row.id)
   );
@@ -15379,13 +15388,19 @@ function promoteImplementationConfirmationDraftWithReceipt(input: {
   };
 }
 
-function rollbackPromotedSourceAfterReadbackFailure(input: {
+export interface PromotionReadbackRollbackPaths {
+  promotionReceipt: string;
+  promotionReadbackRoundTripReport: string;
+  promotionReadbackRollbackReceipt: string;
+}
+
+export function rollbackPromotedSourceAfterReadbackFailure(input: {
   root: string;
   sourcePath: string;
   sourceExistedBeforePromotion: boolean;
   expectedOriginalHash: string;
   promotionReceipt: Record<string, unknown> | null;
-  paths: PreConfirmationPaths;
+  paths: PromotionReadbackRollbackPaths;
   reasonCode: string;
   createdAt: string;
 }): {
@@ -15508,6 +15523,29 @@ function rollbackPromotedSourceAfterReadbackFailure(input: {
     writeJsonUtf8(input.paths.promotionReadbackRollbackReceipt, receipt);
     return { ok: false, receipt };
   }
+}
+
+export function evaluateIntakeTargetPromotionRace(input: {
+  entryMode: 'existing_source' | 'intake_to_new_source';
+  targetSourceExistedBeforeAuthoring: boolean;
+  targetExistsBeforePromotion: boolean;
+}): {
+  code: 'target_created_before_promotion';
+  blockingStage: 'target_created_before_promotion';
+  nextRequiredAction: 'stop_target_created_before_promotion';
+} | null {
+  if (
+    input.entryMode === 'intake_to_new_source' &&
+    !input.targetSourceExistedBeforeAuthoring &&
+    input.targetExistsBeforePromotion
+  ) {
+    return {
+      code: 'target_created_before_promotion',
+      blockingStage: 'target_created_before_promotion',
+      nextRequiredAction: 'stop_target_created_before_promotion',
+    };
+  }
+  return null;
 }
 
 function normalizeImplementationConfirmationDraftForPromotion(input: {
@@ -23018,6 +23056,7 @@ function criticalAuditorReceiptMatchesCurrent(input: {
   projectRoot: string;
   receipt: Record<string, unknown> | null;
   response: Record<string, unknown> | null;
+  requireJudgeInvocationProvenance: boolean;
   roundIndex: number;
   transaction: CriticalAuditorStagingTransaction;
   auditInputHash: string;
@@ -23071,23 +23110,28 @@ function criticalAuditorReceiptMatchesCurrent(input: {
       recordObject(receipt.independentProviderEvidence).providerRunId
     );
     if (!providerRunId) return false;
-    validateCriticalAuditorProviderInvocationReceipt({
-      projectRoot: input.projectRoot,
-      receiptRef: receipt.providerInvocationReceiptRef,
-      requestHash: input.requestHash,
-      sourceDocumentHash: input.sourceDocumentHash,
-      sourceBytesHash: input.sourceBytesHash,
-      semanticModelHash: input.semanticModelHash,
-      projectionSetHash: input.projectionSetHash,
-      providerRunId,
-      expectedProviderBinding:
-        expectation as unknown as CriticalAuditorJudgeRuntimeBinding,
-    });
-    validateCriticalAuditorJudgeHostExecution(
-      input.projectRoot,
-      receipt.judgeAdapterHostExecution,
-      receipt.providerInvocationReceiptRef
-    );
+    const hasInvocationProvenance =
+      Object.keys(recordObject(receipt.providerInvocationReceiptRef)).length > 0 ||
+      Object.keys(recordObject(receipt.judgeAdapterHostExecution)).length > 0;
+    if (input.requireJudgeInvocationProvenance || hasInvocationProvenance) {
+      validateCriticalAuditorProviderInvocationReceipt({
+        projectRoot: input.projectRoot,
+        receiptRef: receipt.providerInvocationReceiptRef,
+        requestHash: input.requestHash,
+        sourceDocumentHash: input.sourceDocumentHash,
+        sourceBytesHash: input.sourceBytesHash,
+        semanticModelHash: input.semanticModelHash,
+        projectionSetHash: input.projectionSetHash,
+        providerRunId,
+        expectedProviderBinding:
+          expectation as unknown as CriticalAuditorJudgeRuntimeBinding,
+      });
+      validateCriticalAuditorJudgeHostExecution(
+        input.projectRoot,
+        receipt.judgeAdapterHostExecution,
+        receipt.providerInvocationReceiptRef
+      );
+    }
   } catch {
     return false;
   }
@@ -24050,95 +24094,8 @@ function runCriticalAuditorReceiptLoop(input: {
   const issues: PreConfirmationDrilldownIssue[] = [];
   let latestReceiptHash: string | null = null;
   let consecutiveNoNewGapRounds = 0;
-  if (!input.roundProvider) {
-    const roundIndex = 1;
-    const gateDryRun = buildCriticalAuditorGateDryRunSummary({
-      root: input.root,
-      sourcePath: input.sourcePath,
-      paths: input.paths,
-      roundIndex,
-    });
-    const candidateRequest = buildCriticalAuditorRoundRequest({
-      root: input.root,
-      sourcePath: input.sourcePath,
-      recordId: input.recordId,
-      roundIndex,
-      transactionId: input.transaction.transactionId,
-      namespaceVersion: input.transaction.namespaceVersion,
-      sourceDocumentHash: input.sourceDocumentHash,
-      semanticModelHash: input.semanticModelHash,
-      implementationConfirmationHash: input.implementationConfirmationHash,
-      packetHash: input.packetHash,
-      projectionSetHash,
-      auditAttemptId,
-      independentProviderBinding: providerBinding.binding,
-      independentProviderBindingIssueCodes: providerBinding.issueCodes,
-      auditInputHash: input.auditInputHash,
-      mustRequirements: input.mustRefs.map((id, index) => ({
-        id,
-        text: input.sourceRequirementTexts[index] ?? id,
-        sourceLine: index + 1,
-      })),
-      packet: input.packet,
-      confirmation: sourceExtraction.confirmation,
-      previousReceipts: [],
-      gateDryRun,
-      createdAt: input.createdAt,
-    });
-    const requestPath = criticalAuditorRequestPath(input.transaction, roundIndex);
-    writeOrReuseCriticalAuditorRoundRequest({
-      requestPath,
-      candidate: candidateRequest,
-    });
-    const providerIssue = preConfirmationIssue(
-      'critical_auditor_provider_mode_required',
-      'A real Critical Auditor round provider is required; synthetic clean receipts are not allowed',
-      ['critical_auditor_receipt_loop'],
-      'critical_auditor'
-    );
-    const outcomeCommit = commitCriticalAuditorCheckpointOutcome({
-      root: input.root,
-      sourcePath: input.sourcePath,
-      paths: input.paths,
-      transaction: input.transaction,
-      recordId: input.recordId,
-      requirementSetId: input.requirementSetId,
-      implementationAttemptId: input.implementationAttemptId,
-      auditInputHash: input.auditInputHash,
-      sourceDocumentHash: input.sourceDocumentHash,
-      semanticModelHash: input.semanticModelHash,
-      implementationConfirmationHash: input.implementationConfirmationHash,
-      packetHash: input.packetHash,
-      projectionSetHash,
-      roundIndex,
-      requestPath,
-      bindingRounds,
-      blockingIssues: [providerIssue],
-      createdAt: input.createdAt,
-    });
-    return {
-      latestReceiptHash: null,
-      consecutiveNoNewGapRounds: 0,
-      receipts: [],
-      requestPath,
-      continuation: {
-        providerMode: 'main_session_inline',
-        transactionId: input.transaction.transactionId,
-        namespaceVersion: input.transaction.namespaceVersion,
-        roundIndex,
-        requestPath: toRootRelativePath(input.root, requestPath),
-        responsePath: toRootRelativePath(
-          input.root,
-          criticalAuditorResponsePath(input.transaction, roundIndex)
-        ),
-        nextRequiredAction: 'run_main_session_critical_auditor_round',
-      },
-      issues: [
-        providerIssue,
-        ...(outcomeCommit.ok ? [] : [outcomeCommit.issue]),
-      ],
-    };
-  }
+  let pendingRequestPath: string | null = null;
+  let continuation: Record<string, unknown> | null = null;
   const provider = input.roundProvider;
   const maxRounds = input.maxRounds && input.maxRounds > 0 ? input.maxRounds : 12;
 
@@ -24240,6 +24197,7 @@ function runCriticalAuditorReceiptLoop(input: {
         projectRoot: input.root,
         receipt: existingReceipt,
         response: existingResponse,
+        requireJudgeInvocationProvenance: Boolean(provider),
         roundIndex,
         transaction: input.transaction,
         auditInputHash: input.auditInputHash,
@@ -24290,6 +24248,7 @@ function runCriticalAuditorReceiptLoop(input: {
         projectRoot: input.root,
         receipt: existingReceipt,
         response: existingResponse,
+        requireJudgeInvocationProvenance: Boolean(provider),
         roundIndex,
         transaction: input.transaction,
         auditInputHash: input.auditInputHash,
@@ -24336,51 +24295,81 @@ function runCriticalAuditorReceiptLoop(input: {
         projectionSetHash,
       };
       let auditResult: CriticalAuditorRoundResult;
-      try {
-        auditResult = provider({
-          roundIndex,
-          transactionId: input.transaction.transactionId,
-          namespaceVersion: input.transaction.namespaceVersion,
-          auditInputHash: input.auditInputHash,
-          recordId: input.recordId,
-          requirementSetId: input.requirementSetId,
-          implementationAttemptId: input.implementationAttemptId,
-          sourceDocumentHash: input.sourceDocumentHash,
-          sourceBytesHash: requestSourceBytesHash,
-          semanticModelHash: input.semanticModelHash,
-          implementationConfirmationHash: input.implementationConfirmationHash,
-          packetHash: input.packetHash,
-          projectionSetHash,
-          independentProviderExpectation,
-          roundPerspective,
-          gateDryRun: frozenGateDryRun,
-          packetProjectionSummary: {
-            projectionGroups: projectionInventory.projectionGroups,
-            projectionRefs: projectionInventory.projectionRefs,
-          },
-          mustRefs: input.mustRefs,
-          sourceRequirementTexts: input.sourceRequirementTexts,
-          mustPacketCount: input.mustPacketCount,
-          consecutiveNoNewGapRounds,
-          previousReceipts: receipts,
-        });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        const code = normalizeText(message.split(':')[0]) || 'critical_auditor_provider_failed';
-        const providerFailureIssue = preConfirmationIssue(
-          code,
-          message,
-          [`round-${roundIndex}`],
-          'critical_auditor'
-        );
-        issues.push(providerFailureIssue);
-        const outcomeCommit = commitRoundOutcome({
-          blockingIssues: [providerFailureIssue],
-        });
-        if (!outcomeCommit.ok) {
-          issues.push(outcomeCommit.issue);
+      if (!provider) {
+        if (!existingResponse) {
+          const providerIssue = preConfirmationIssue(
+            'critical_auditor_provider_mode_required',
+            'A real Critical Auditor round provider is required; synthetic clean receipts are not allowed',
+            ['critical_auditor_receipt_loop'],
+            'critical_auditor'
+          );
+          issues.push(providerIssue);
+          const outcomeCommit = commitRoundOutcome({
+            blockingIssues: [providerIssue],
+          });
+          if (!outcomeCommit.ok) {
+            issues.push(outcomeCommit.issue);
+          }
+          pendingRequestPath = requestPath;
+          continuation = {
+            providerMode: 'main_session_inline',
+            transactionId: input.transaction.transactionId,
+            namespaceVersion: input.transaction.namespaceVersion,
+            roundIndex,
+            requestPath: toRootRelativePath(input.root, requestPath),
+            responsePath: toRootRelativePath(input.root, responsePath),
+            nextRequiredAction: 'run_main_session_critical_auditor_round',
+          };
+          break;
         }
-        break;
+        auditResult = existingResponse as unknown as CriticalAuditorRoundResult;
+      } else {
+        try {
+          auditResult = provider({
+            roundIndex,
+            transactionId: input.transaction.transactionId,
+            namespaceVersion: input.transaction.namespaceVersion,
+            auditInputHash: input.auditInputHash,
+            recordId: input.recordId,
+            requirementSetId: input.requirementSetId,
+            implementationAttemptId: input.implementationAttemptId,
+            sourceDocumentHash: input.sourceDocumentHash,
+            sourceBytesHash: requestSourceBytesHash,
+            semanticModelHash: input.semanticModelHash,
+            implementationConfirmationHash: input.implementationConfirmationHash,
+            packetHash: input.packetHash,
+            projectionSetHash,
+            independentProviderExpectation,
+            roundPerspective,
+            gateDryRun: frozenGateDryRun,
+            packetProjectionSummary: {
+              projectionGroups: projectionInventory.projectionGroups,
+              projectionRefs: projectionInventory.projectionRefs,
+            },
+            mustRefs: input.mustRefs,
+            sourceRequirementTexts: input.sourceRequirementTexts,
+            mustPacketCount: input.mustPacketCount,
+            consecutiveNoNewGapRounds,
+            previousReceipts: receipts,
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          const code = normalizeText(message.split(':')[0]) || 'critical_auditor_provider_failed';
+          const providerFailureIssue = preConfirmationIssue(
+            code,
+            message,
+            [`round-${roundIndex}`],
+            'critical_auditor'
+          );
+          issues.push(providerFailureIssue);
+          const outcomeCommit = commitRoundOutcome({
+            blockingIssues: [providerFailureIssue],
+          });
+          if (!outcomeCommit.ok) {
+            issues.push(outcomeCommit.issue);
+          }
+          break;
+        }
       }
       const bindingIssues = validateCriticalAuditorRoundResultBinding({
         projectRoot: input.root,
@@ -24393,6 +24382,7 @@ function runCriticalAuditorReceiptLoop(input: {
         confirmation: sourceExtraction.confirmation,
         independentProviderExpectation,
         sourceBytesHash: requestSourceBytesHash,
+        requireJudgeInvocationProvenance: Boolean(provider),
       });
       if (bindingIssues.length > 0) {
         const judgeAdapterHostExecution = recordObject(
@@ -24506,6 +24496,7 @@ function runCriticalAuditorReceiptLoop(input: {
           projectRoot: input.root,
           receipt: existingReceipt,
           response: persistedResponse,
+          requireJudgeInvocationProvenance: Boolean(provider),
           roundIndex,
           transaction: input.transaction,
           auditInputHash: input.auditInputHash,
@@ -24738,7 +24729,14 @@ function runCriticalAuditorReceiptLoop(input: {
     );
   }
 
-  return { latestReceiptHash, consecutiveNoNewGapRounds, receipts, issues };
+  return {
+    latestReceiptHash,
+    consecutiveNoNewGapRounds,
+    receipts,
+    requestPath: pendingRequestPath,
+    continuation,
+    issues,
+  };
 }
 
 function readCriticalAuditorReceipts(authoringDir: string): Record<string, unknown>[] {
@@ -26327,6 +26325,7 @@ function validateCriticalAuditorRoundResultBinding(input: {
   confirmation: Record<string, unknown>;
   independentProviderExpectation: CriticalAuditorIndependentProviderExpectation;
   sourceBytesHash: string;
+  requireJudgeInvocationProvenance: boolean;
 }): PreConfirmationDrilldownIssue[] {
   const issues: PreConfirmationDrilldownIssue[] = [];
   const result = input.auditResult;
@@ -26344,7 +26343,7 @@ function validateCriticalAuditorRoundResultBinding(input: {
       )
     )
   );
-  if (providerValidation.ok) {
+  if (providerValidation.ok && input.requireJudgeInvocationProvenance) {
     try {
       const providerRunId = normalizeText(
         recordObject(result.independentProviderEvidence).providerRunId
@@ -28382,61 +28381,22 @@ function writePreConfirmationRequirementRecord(input: {
   });
 }
 
-function resolveSkillScript(root: string, relativeScript: string): string {
-  const home = process.env.USERPROFILE || process.env.HOME || '';
-  const packageRoot = path.resolve(__dirname, '..', '..', '..', '..');
-  const repoRoot = path.resolve(__dirname, '..', '..', '..', '..', '..', '..');
-  const candidates = [
-    path.join(root, '_bmad', 'skills', 'requirements-contract-authoring'),
-    path.join(root, '.codex', 'skills', 'requirements-contract-authoring'),
-    path.join(root, '.cursor', 'skills', 'requirements-contract-authoring'),
-    path.join(root, '.claude', 'skills', 'requirements-contract-authoring'),
-    path.join(root, '.agents', 'skills', 'requirements-contract-authoring'),
-    path.join(repoRoot, '_bmad', 'skills', 'requirements-contract-authoring'),
-    path.join(repoRoot, '.codex', 'skills', 'requirements-contract-authoring'),
-    path.join(repoRoot, '.cursor', 'skills', 'requirements-contract-authoring'),
-    path.join(repoRoot, '.claude', 'skills', 'requirements-contract-authoring'),
-    path.join(packageRoot, '_bmad', 'skills', 'requirements-contract-authoring'),
-    path.resolve(__dirname, '..', '_bmad', 'skills', 'requirements-contract-authoring'),
-    path.resolve(__dirname, '..', '.codex', 'skills', 'requirements-contract-authoring'),
-    path.resolve(__dirname, '..', '.cursor', 'skills', 'requirements-contract-authoring'),
-    path.resolve(__dirname, '..', '.claude', 'skills', 'requirements-contract-authoring'),
-    ...(home
-      ? [
-          path.join(home, '.codex', 'skills', 'requirements-contract-authoring'),
-          path.join(home, '.cursor', 'skills', 'requirements-contract-authoring'),
-          path.join(home, '.claude', 'skills', 'requirements-contract-authoring'),
-          path.join(home, '.agents', 'skills', 'requirements-contract-authoring'),
-        ]
-      : []),
-  ];
-  for (const skillDir of candidates) {
-    if (!fs.existsSync(path.join(skillDir, 'SKILL.md'))) continue;
-    const scriptPath = path.join(skillDir, 'scripts', relativeScript);
-    if (fs.existsSync(scriptPath)) return scriptPath;
-  }
-  return path.join(candidates[0], 'scripts', relativeScript);
+function resolveSkillScript(_root: string, relativeScript: string): string {
+  return resolvePackageOwnedBmadPath(
+    'skills',
+    'requirements-contract-authoring',
+    'scripts',
+    relativeScript
+  );
 }
 
-function resolveEncodingIntegrityScript(root: string): string {
-  const home = process.env.USERPROFILE || process.env.HOME || '';
-  const packageRoot = path.resolve(__dirname, '..', '..', '..', '..');
-  const repoRoot = path.resolve(__dirname, '..', '..', '..', '..', '..', '..');
-  const candidates = [
-    path.join(root, '_bmad', 'skills', 'encoding-integrity-guardian'),
-    path.join(root, '.codex', 'skills', 'encoding-integrity-guardian'),
-    path.join(root, '.cursor', 'skills', 'encoding-integrity-guardian'),
-    path.join(root, '.claude', 'skills', 'encoding-integrity-guardian'),
-    path.join(packageRoot, '_bmad', 'skills', 'encoding-integrity-guardian'),
-    path.join(repoRoot, '_bmad', 'skills', 'encoding-integrity-guardian'),
-    path.join(repoRoot, '.codex', 'skills', 'encoding-integrity-guardian'),
-    ...(home ? [path.join(home, '.codex', 'skills', 'encoding-integrity-guardian')] : []),
-  ];
-  for (const skillDir of candidates) {
-    const scriptPath = path.join(skillDir, 'scripts', 'check-encoding-integrity.js');
-    if (fs.existsSync(scriptPath)) return scriptPath;
-  }
-  return path.join(candidates[0], 'scripts', 'check-encoding-integrity.js');
+function resolveEncodingIntegrityScript(_root: string): string {
+  return resolvePackageOwnedBmadPath(
+    'skills',
+    'encoding-integrity-guardian',
+    'scripts',
+    'check-encoding-integrity.js'
+  );
 }
 
 function runNodeJson(
@@ -28449,7 +28409,12 @@ function runNodeJson(
   stderr: string;
   json: Record<string, unknown> | null;
 } {
-  const packageRoot = path.resolve(__dirname, '..');
+  let packageRoot = path.resolve(__dirname, '..', '..', '..', '..');
+  try {
+    packageRoot = path.dirname(resolvePackageOwnedBmadPath());
+  } catch {
+    // Source worktrees may not have materialized package assets before the dist build.
+  }
   const packageNodeModules = path.join(packageRoot, 'node_modules');
   const nodePath = [packageNodeModules, process.env.NODE_PATH].filter(Boolean).join(path.delimiter);
   const result = spawnSync(process.execPath, [scriptPath, ...args], {
@@ -29380,6 +29345,7 @@ export function runMainAgentPreConfirmationDrilldown(
       ? resolveRootRelativePath(root, targetSourceArg)
       : resolveRootRelativePath(root, sourceArg);
   let semanticInputPath = intakePath ?? sourcePath;
+  const authoritySourcePath = semanticInputPath;
   if (!fs.existsSync(semanticInputPath)) {
     throw new Error(`source document not found: ${semanticInputPath}`);
   }
@@ -29486,6 +29452,7 @@ export function runMainAgentPreConfirmationDrilldown(
   }
 
   let sourceSnapshot = readCanonicalUtf8Source(semanticInputPath);
+  const authoritySourceSnapshot = sourceSnapshot;
   const originalSourceText = sourceSnapshot.sourceText;
   const sourceHashBefore = semanticSourceDocumentHashForText(originalSourceText);
   let stagingTransaction = resolveActiveCriticalAuditorStagingTransaction({
@@ -29506,13 +29473,13 @@ export function runMainAgentPreConfirmationDrilldown(
   const sourcePrdInstanceLintRequired = shouldRunSourcePrdInstanceLint({
     explicit: options.entrySource,
     entryMode,
-    sourcePath: semanticInputPath,
+    sourcePath: authoritySourcePath,
     sourceText,
   });
   const detectedEntrySource = detectSourcePrdAuthoringEntrySource({
     explicit: options.entrySource,
     entryMode,
-    sourcePath: semanticInputPath,
+    sourcePath: authoritySourcePath,
     sourceText,
   });
   const entrySource = sourcePrdInstanceLintRequired ? detectedEntrySource : undefined;
@@ -29522,7 +29489,7 @@ export function runMainAgentPreConfirmationDrilldown(
       entryIntakeAuthority = materializeSessionEntryIntake({
         projectRoot: root,
         requirementSetId: identity.requirementSetId,
-        source: sourceSnapshot,
+        source: authoritySourceSnapshot,
         identity: {
           sessionId: normalizeText(options.sessionId),
           turnId: normalizeText(options.sessionTurnId),
@@ -29538,7 +29505,7 @@ export function runMainAgentPreConfirmationDrilldown(
         projectRoot: root,
         requirementSetId: identity.requirementSetId,
         entrySource: detectedEntrySource,
-        source: sourceSnapshot,
+        source: authoritySourceSnapshot,
         capturedAt: createdAt,
         intakeReceiptPath: paths.intakeReceipt,
       });
@@ -29638,7 +29605,7 @@ export function runMainAgentPreConfirmationDrilldown(
   const explicitRequiredCommands = normalizeStringList(options.requiredCommand);
   const sourceAuthorityAnalysis = analyzeRequirementsContractSourceAuthority({
     root,
-    sourcePath: semanticInputPath,
+    sourcePath: authoritySourcePath,
     sourceText,
     explicitTargetPaths,
     explicitRequiredCommands,
@@ -29666,7 +29633,7 @@ export function runMainAgentPreConfirmationDrilldown(
         requirementSetId: identity.requirementSetId,
         recordId: identity.recordId,
         entrySource: detectedEntrySource,
-        sourceDocumentHash: sourceSnapshot.sourceHash,
+        sourceDocumentHash: authoritySourceSnapshot.sourceHash,
         targetPaths: explicitTargetPaths,
         requiredCommands: explicitRequiredCommands,
         capturedAt: createdAt,
@@ -29698,7 +29665,7 @@ export function runMainAgentPreConfirmationDrilldown(
   writeAuthorityReports({
     paths,
     root,
-    sourcePath: semanticInputPath,
+    sourcePath: authoritySourcePath,
     sourceText,
     targetAuthority: { ...targetAuthority, accepted: projectionTargetAuthorityRecords },
     validationAuthority,
@@ -29713,7 +29680,7 @@ export function runMainAgentPreConfirmationDrilldown(
       productionSemanticSourceRootLineageWitnesses =
         planProductionSemanticSourceRootLineageWitnesses({
           root,
-          sourcePath: semanticInputPath,
+          sourcePath: authoritySourcePath,
           sourceText,
           packetHash,
           mustRequirements,
@@ -29754,7 +29721,7 @@ export function runMainAgentPreConfirmationDrilldown(
     try {
       productionSemanticSourceRootCandidates = planProductionSemanticSourceRootCandidates({
         root,
-        sourcePath: semanticInputPath,
+        sourcePath: authoritySourcePath,
         sourceText,
         packetHash,
         mustRequirements,
@@ -29843,7 +29810,7 @@ export function runMainAgentPreConfirmationDrilldown(
   }
   const projectionSanity = projectionDomainSanityCheck({
     root,
-    sourcePath: semanticInputPath,
+    sourcePath: authoritySourcePath,
     sourceText,
     targetRecords: projectionTargetAuthorityRecords,
     validationRecords: validationAuthority.accepted,
@@ -31633,11 +31600,16 @@ export function runMainAgentPreConfirmationDrilldown(
       criticalAuditorProviderContractBlockedRoute(
         finalAuditIssues.map((issue) => issue.code)
       );
+    const finalProviderMissing = finalAuditIssues.some(
+      (issue) => issue.code === 'critical_auditor_provider_mode_required'
+    );
+    const finalBlockingStage = finalProviderMissing
+      ? 'critical_auditor_provider_mode_required'
+      : providerContractBlockedRoute?.blockingStage ??
+        'critical_auditor_receipt_binding_invalid';
     writeSourcePromotionBlockDecision({
       transaction: stagingTransaction,
-      blockingStage:
-        providerContractBlockedRoute?.blockingStage ??
-        'critical_auditor_receipt_binding_invalid',
+      blockingStage: finalBlockingStage,
       root,
       createdAt,
     });
@@ -31666,18 +31638,23 @@ export function runMainAgentPreConfirmationDrilldown(
       recordId: identity.recordId,
       requirementSetId: identity.requirementSetId,
       paths,
-      substate: 'blocked_by_render_gate',
+      substate: finalProviderMissing ? 'critical_auditor_round_required' : 'blocked_by_render_gate',
       issues: finalAuditIssues,
       sourceDocumentHash: auditedPreviewSourceDocumentHash,
       implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
       criticalAuditorProviderMode,
-      blockingStage:
-        providerContractBlockedRoute?.blockingStage ??
-        'critical_auditor_receipt_binding_invalid',
+      blockingStage: finalBlockingStage,
       sourceMutationPerformed: false,
-      criticalAuditorContinuation: providerContractBlockedRoute,
+      allowedArtifacts: finalProviderMissing ? ['advisory', 'staging'] : undefined,
+      forbiddenArtifacts: finalProviderMissing
+        ? ['promotion-receipt', 'source-materialization-receipt', 'source mutation']
+        : undefined,
+      criticalAuditorContinuation:
+        providerContractBlockedRoute ?? finalCriticalAuditorLoop.continuation ?? null,
       stagingTransaction,
-      nextRequiredAction: providerContractBlockedRoute?.nextRequiredAction,
+      nextRequiredAction: finalProviderMissing
+        ? 'run_main_session_critical_auditor_round'
+        : providerContractBlockedRoute?.nextRequiredAction,
     });
   }
   try {
@@ -31728,7 +31705,7 @@ export function runMainAgentPreConfirmationDrilldown(
     const renderRoundTripReport = runSourcePrdSemanticRoundTrip({
       root,
       parsedSourcePath: sourcePath,
-      authoritySourcePath: semanticInputPath,
+      authoritySourcePath,
       sourceText: auditedPreviewText,
       reportPath: paths.renderRoundTripReport,
       recordId: identity.recordId,
@@ -32097,13 +32074,14 @@ export function runMainAgentPreConfirmationDrilldown(
       stagingTransaction,
     });
   }
-  if (
-    entryMode === 'intake_to_new_source' &&
-    !targetSourceExistedBeforeAuthoring &&
-    fs.existsSync(sourcePath)
-  ) {
+  const intakeTargetPromotionRace = evaluateIntakeTargetPromotionRace({
+    entryMode,
+    targetSourceExistedBeforeAuthoring,
+    targetExistsBeforePromotion: fs.existsSync(sourcePath),
+  });
+  if (intakeTargetPromotionRace) {
     const issue = preConfirmationIssue(
-      'target_created_before_promotion',
+      intakeTargetPromotionRace.code,
       'Intake target source was created before authoring-draft promotion; source promotion is forbidden.',
       [toRootRelativePath(root, sourcePath)],
       'source_mutation_gate'
@@ -32111,7 +32089,7 @@ export function runMainAgentPreConfirmationDrilldown(
     writeSourcePromotionBlockDecision({
       transaction: stagingTransaction,
       currentSourceHash: safeCurrentSourceDocumentHash(sourcePath),
-      blockingStage: 'target_created_before_promotion',
+      blockingStage: intakeTargetPromotionRace.blockingStage,
       createdAt,
     });
     writeRequirementsAuthoringTransaction({
@@ -32128,7 +32106,7 @@ export function runMainAgentPreConfirmationDrilldown(
         : null,
       scaleRoutingDecision:
         normalizeText(previewPostPacketScaleAssessment.routingDecision?.decision) || null,
-      nextRequiredAction: 'stop_target_created_before_promotion',
+      nextRequiredAction: intakeTargetPromotionRace.nextRequiredAction,
     });
     return buildPreConfirmationResult({
       root,
@@ -32143,7 +32121,7 @@ export function runMainAgentPreConfirmationDrilldown(
       sourceDocumentHash: safeCurrentSourceDocumentHash(sourcePath),
       implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
       criticalAuditorProviderMode,
-      blockingStage: 'target_created_before_promotion',
+      blockingStage: intakeTargetPromotionRace.blockingStage,
       sourceMutationPerformed: false,
       stagingTransaction,
     });
@@ -32577,7 +32555,7 @@ export function runMainAgentPreConfirmationDrilldown(
       const promotionReadbackRoundTripReport = runSourcePrdSemanticRoundTrip({
         root,
         parsedSourcePath: sourcePath,
-        authoritySourcePath: semanticInputPath,
+        authoritySourcePath,
         sourceText: fs.readFileSync(sourcePath, 'utf8'),
         reportPath: paths.promotionReadbackRoundTripReport,
         recordId: identity.recordId,

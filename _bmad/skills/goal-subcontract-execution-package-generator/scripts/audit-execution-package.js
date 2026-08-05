@@ -141,6 +141,7 @@ function auditExecutionPackage(packageRoot, expectedPackageManifestHash) {
   const children = sourcePartitionManifest.partitions.map((partition, index) => {
     const projectedChildPath = projectManifestChildPath(
       repositoryRoot,
+      partitionManifestPath,
       partition.childContractPath
     );
     const child = {

@@ -9,7 +9,7 @@ import {
   readJson,
   removeTempRoot,
   runIntakeAuthoring,
-  writeMinimalConsumerRequirement,
+  writeLintReadyMinimalConsumerRequirement,
 } from './helpers/requirements-contract-authoring-fixture';
 
 describe('requirements contract intake first authoring', () => {
@@ -21,7 +21,7 @@ describe('requirements contract intake first authoring', () => {
         '_bmad-output/runtime/requirement-records/REQ-INTAKE-FIRST/authoring/intake'
       );
       mkdirSync(intakeDir, { recursive: true });
-      const { sourcePath: intake, authoringOptions } = writeMinimalConsumerRequirement(
+      const { sourcePath: intake, authoringOptions } = writeLintReadyMinimalConsumerRequirement(
         root,
         '_bmad-output/runtime/requirement-records/REQ-INTAKE-FIRST/authoring/intake/intake-source.md',
         createMinimalConsumerRequirementDescriptor('REQ-INTAKE-FIRST')

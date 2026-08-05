@@ -2,8 +2,19 @@
 *.sh text eol=lf
 # TypeScript: deterministic formatting across Windows and Unix
 *.ts text eol=lf
+# Requirements-contract schema hashes bind deterministic LF bytes.
+packages/bmad-speckit/src/main-agent/source-authority/schemas/** text eol=lf
 tests/fixtures/goal-contract-release-gate/*.md text eol=lf
 tests/fixtures/goal-contract-release-gate/*.json text eol=lf
 tests/acceptance/fixtures/requirements-contract/*.md text eol=lf
 tests/acceptance/fixtures/requirements-contract/*.json text eol=lf
 _bmad/shared/critical-auditor-profile/critical-auditor-profile.json text eol=lf
+# Requirements-contract projection hashes bind raw bytes across all published surfaces.
+_bmad/shared/requirements-contract/** text eol=lf
+.claude/shared/requirements-contract/** text eol=lf
+.codex/shared/requirements-contract/** text eol=lf
+.cursor/shared/requirements-contract/** text eol=lf
+packages/bmad-speckit/_bmad/shared/requirements-contract/** text eol=lf
+# Projection registries bind the raw bytes of this governance input.
+_bmad/_config/governance-remediation.yaml text eol=lf
+packages/bmad-speckit/_bmad/_config/governance-remediation.yaml text eol=lf

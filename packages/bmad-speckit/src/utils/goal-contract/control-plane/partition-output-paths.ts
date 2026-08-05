@@ -101,6 +101,126 @@ function requireSha256(value: unknown, field: string): string {
   return value;
 }
 
+function sourceIdentityFailure(
+  reason: string,
+  details: Record<string, unknown> = {}
+): Error {
+  return failure('goal_contract_source_identity_invalid', {
+    reason,
+    ...details,
+  });
+}
+
+function resolveGoalContractSourceIdentity(
+  input: Record<string, unknown>
+) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    throw sourceIdentityFailure('request_invalid');
+  }
+  if (
+    input.profile !== 'standalone_frozen' &&
+    input.profile !== 'main_agent_compiled'
+  ) {
+    throw sourceIdentityFailure(
+      input.profile === undefined ? 'profile_missing' : 'profile_invalid'
+    );
+  }
+  const profile = input.profile;
+  const handoff = input.nativeGoalHandoff as
+    | Record<string, unknown>
+    | undefined;
+  if (!handoff || typeof handoff !== 'object' || Array.isArray(handoff)) {
+    throw sourceIdentityFailure('native_goal_handoff_invalid');
+  }
+
+  let sourceIdentityHash: string;
+  let sourceIdentityField: string;
+  let bindingHashes: Record<string, string>;
+  if (profile === 'standalone_frozen') {
+    if (
+      handoff.sourceDocumentHash !== undefined ||
+      [
+        'goalExecutionHash',
+        'modelPacketHash',
+        'currentDispatchPointerHash',
+        'transactionManifestHash',
+      ].some((field) => handoff[field] !== undefined)
+    ) {
+      throw sourceIdentityFailure('source_identity_field_mismatch');
+    }
+    try {
+      sourceIdentityHash = requireSha256(
+        handoff.masterImplementationPlanHash,
+        'nativeGoalHandoff.masterImplementationPlanHash'
+      );
+    } catch {
+      throw sourceIdentityFailure('source_identity_field_mismatch');
+    }
+    sourceIdentityField =
+      'nativeGoalHandoff.masterImplementationPlanHash';
+    bindingHashes = {};
+  } else {
+    if (handoff.masterImplementationPlanHash !== undefined) {
+      throw sourceIdentityFailure('source_identity_field_mismatch');
+    }
+    try {
+      sourceIdentityHash = requireSha256(
+        handoff.sourceDocumentHash,
+        'nativeGoalHandoff.sourceDocumentHash'
+      );
+    } catch {
+      throw sourceIdentityFailure('source_identity_field_mismatch');
+    }
+    sourceIdentityField = 'nativeGoalHandoff.sourceDocumentHash';
+    bindingHashes = {};
+    for (const field of [
+      'goalExecutionHash',
+      'modelPacketHash',
+      'currentDispatchPointerHash',
+      'transactionManifestHash',
+    ]) {
+      try {
+        bindingHashes[field] = requireSha256(
+          handoff[field],
+          `nativeGoalHandoff.${field}`
+        );
+      } catch {
+        throw sourceIdentityFailure('binding_hash_missing', { field });
+      }
+    }
+  }
+
+  if (
+    input.sourceIdentityHash !== undefined &&
+    input.sourceIdentityHash !== sourceIdentityHash
+  ) {
+    throw sourceIdentityFailure('source_identity_hash_mismatch');
+  }
+  if (
+    input.sourceIdentityField !== undefined &&
+    input.sourceIdentityField !== sourceIdentityField
+  ) {
+    throw sourceIdentityFailure('source_identity_field_mismatch');
+  }
+  if (
+    input.bindingHashes !== undefined &&
+    stableControlPlaneStringify(input.bindingHashes) !==
+      stableControlPlaneStringify(bindingHashes)
+  ) {
+    throw sourceIdentityFailure('binding_hash_mismatch');
+  }
+  const payload = {
+    profile,
+    sourceIdentityHash,
+    sourceIdentityField,
+    bindingHashes: Object.freeze(bindingHashes),
+  };
+  return Object.freeze({
+    ...payload,
+    resolutionHash: hashControlPlaneValue(payload),
+  });
+}
+
 function computePartitionGenerationKey(input: Record<string, unknown>): string {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     throw failure('partition_generation_identity_invalid');
@@ -272,17 +392,16 @@ function preflightRequirementRecordPartitionAuthoritySupersession(
       recordPath: normalizePath(recordPath),
     });
   }
-  const handoff = record.nativeGoalHandoff as Record<string, unknown>;
-  const sourceIdentity =
-    handoff.masterImplementationPlanHash ??
-    (
-      handoff.goalContractSourceIdentity as
-        | Record<string, unknown>
-        | undefined
-    )?.masterImplementationPlanHash;
-  if (sourceIdentity !== sourceHash) {
+  const sourceIdentity = resolveGoalContractSourceIdentity({
+    profile:
+      input.sourceIdentityProfile === 'main_agent_compiled'
+        ? 'main_agent_compiled'
+        : 'standalone_frozen',
+    nativeGoalHandoff: record.nativeGoalHandoff,
+  });
+  if (sourceIdentity.sourceIdentityHash !== sourceHash) {
     throw failure('partition_authority_source_identity_mismatch', {
-      expectedSourceHash: sourceIdentity,
+      expectedSourceHash: sourceIdentity.sourceIdentityHash,
       actualSourceHash: sourceHash,
     });
   }
@@ -1573,6 +1692,7 @@ module.exports = {
   computePartitionGenerationKey,
   goalContractAuthorityWriterBinding,
   preflightRequirementRecordPartitionAuthoritySupersession,
+  resolveGoalContractSourceIdentity,
   resolveCanonicalPartitionOutputPaths,
   resolveRawPartitionOutputPaths,
   validateImmutablePartitionAuthorityUnit,

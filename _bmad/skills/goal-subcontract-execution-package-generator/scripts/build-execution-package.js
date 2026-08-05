@@ -91,7 +91,19 @@ function resolveExistingInside(root, relativePath, failureClass = 'path_escape')
   return realResolved;
 }
 
-function projectManifestChildPath(repositoryRoot, childContractPath) {
+function resolveManifestChildCandidate(repositoryRoot, projectedPath) {
+  const resolvedPath = resolveExistingInside(
+    repositoryRoot,
+    projectedPath,
+    'source_path_escape'
+  );
+  if (!fs.existsSync(resolvedPath) || !fs.statSync(resolvedPath).isFile()) {
+    return null;
+  }
+  return { projectedPath, resolvedPath };
+}
+
+function projectManifestChildPath(repositoryRoot, partitionManifestPath, childContractPath) {
   const manifestChildPath = String(childContractPath || '').replace(/\\/gu, '/');
   if (
     !manifestChildPath ||
@@ -102,18 +114,39 @@ function projectManifestChildPath(repositoryRoot, childContractPath) {
   ) {
     failure('partition_manifest_not_final', { childContractPath });
   }
-  const repositoryCandidate = resolveExistingInside(
-    repositoryRoot,
-    manifestChildPath,
-    'source_path_escape'
+  const manifestRelativePath = path
+    .relative(repositoryRoot, partitionManifestPath)
+    .replace(/\\/gu, '/');
+  const repositoryProjectedPath = path.posix.normalize(manifestChildPath);
+  const manifestProjectedPath = path.posix.normalize(
+    path.posix.join(path.posix.dirname(manifestRelativePath), manifestChildPath)
   );
-  if (!fs.existsSync(repositoryCandidate) || !fs.statSync(repositoryCandidate).isFile()) {
+  const repositoryCandidate = resolveManifestChildCandidate(
+    repositoryRoot,
+    repositoryProjectedPath
+  );
+  const manifestCandidate = resolveManifestChildCandidate(
+    repositoryRoot,
+    manifestProjectedPath
+  );
+  if (
+    repositoryCandidate &&
+    manifestCandidate &&
+    repositoryCandidate.resolvedPath !== manifestCandidate.resolvedPath
+  ) {
     failure('partition_manifest_not_final', {
       childContractPath,
-      reason: 'child_contract_path_not_repository_root_relative',
+      reason: 'ambiguous_child_contract_path',
     });
   }
-  return manifestChildPath;
+  const selectedCandidate = repositoryCandidate ?? manifestCandidate;
+  if (!selectedCandidate) {
+    failure('partition_manifest_not_final', {
+      childContractPath,
+      reason: 'child_contract_path_not_found',
+    });
+  }
+  return selectedCandidate.projectedPath;
 }
 
 function readJson(filePath, failureClass = 'invalid_json') {
@@ -686,6 +719,7 @@ function buildExecutionPackage({ requestPath, outputRoot }) {
     const supplied = request.children[index];
     const projectedChildPath = projectManifestChildPath(
       repositoryRoot,
+      manifestPath,
       partition.childContractPath
     );
     if (

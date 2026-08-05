@@ -26,6 +26,23 @@ function slash(value: string): string {
   return value.replace(/\\/gu, '/');
 }
 
+function canonicalInstalledRuntimeBytes(relativePath: string, bytes: Buffer): Buffer {
+  if (
+    !relativePath.startsWith('bin/') ||
+    bytes.length < 3 ||
+    bytes[0] !== 0x23 ||
+    bytes[1] !== 0x21
+  ) {
+    return bytes;
+  }
+  const lineFeedIndex = bytes.indexOf(0x0a);
+  if (lineFeedIndex <= 0 || bytes[lineFeedIndex - 1] !== 0x0d) return bytes;
+  return Buffer.concat([
+    bytes.subarray(0, lineFeedIndex - 1),
+    bytes.subarray(lineFeedIndex),
+  ]);
+}
+
 function filesBelow(root: string, base = root): string[] {
   if (!fs.existsSync(root)) return [];
   const stat = fs.statSync(root);
@@ -52,7 +69,10 @@ export function createPackageRuntimeIndex(packageRoot: string): PackageRuntimeIn
       ) {
         return null;
       }
-      const bytes = fs.readFileSync(filePath);
+      const bytes = canonicalInstalledRuntimeBytes(
+        relativePath,
+        fs.readFileSync(filePath)
+      );
       return {
         path: relativePath,
         bytes: bytes.length,

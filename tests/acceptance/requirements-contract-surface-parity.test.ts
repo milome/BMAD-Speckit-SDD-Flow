@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import {
   existsSync,
   mkdirSync,
@@ -44,6 +45,10 @@ const REGISTRY_PATH = path.join(
   'requirements-contract',
   'requirements-contract-projection-registry.json'
 );
+const PROJECTION_HASH_INPUT_PATHS = [
+  '_bmad/_config/governance-remediation.yaml',
+  'packages/bmad-speckit/_bmad/_config/governance-remediation.yaml',
+];
 const SCHEMA_PATH = path.join(
   ROOT,
   'packages',
@@ -57,6 +62,20 @@ const SCHEMA_PATH = path.join(
 
 function fileHash(filePath: string): string {
   return `sha256:${createHash('sha256').update(readFileSync(filePath)).digest('hex')}`;
+}
+
+function resolveEolAttributes(paths: string[]): Map<string, string> {
+  const fields = execFileSync('git', ['check-attr', '-z', 'eol', '--', ...paths], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  })
+    .split('\0')
+    .filter(Boolean);
+  const attributes = new Map<string, string>();
+  for (let index = 0; index < fields.length; index += 3) {
+    attributes.set(fields[index], fields[index + 2]);
+  }
+  return attributes;
 }
 
 describe('requirements contract surface parity', () => {
@@ -136,6 +155,28 @@ describe('requirements contract surface parity', () => {
         projections: registry.projections,
       })
     );
+  });
+
+  it('pins projection authority bytes to LF across clean Windows worktrees', () => {
+    expect(existsSync(REGISTRY_PATH), 'projection registry is missing').toBe(true);
+    if (!existsSync(REGISTRY_PATH)) return;
+
+    const registry = JSON.parse(
+      readFileSync(REGISTRY_PATH, 'utf8')
+    ) as ProjectionRegistry;
+    const projectionPaths = [
+      path.relative(ROOT, REGISTRY_PATH).replace(/\\/gu, '/'),
+      ...PROJECTION_HASH_INPUT_PATHS,
+      ...registry.projections.flatMap((projection) => projection.surfacePaths),
+    ];
+    const attributes = resolveEolAttributes([...new Set(projectionPaths)]);
+
+    for (const projectionPath of projectionPaths) {
+      expect(
+        attributes.get(projectionPath),
+        `${projectionPath} must use eol=lf because projection hashes bind raw bytes`
+      ).toBe('lf');
+    }
   });
 
   it('derives exact canonical and surface hashes without repository evidence paths', () => {

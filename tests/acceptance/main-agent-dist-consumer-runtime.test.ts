@@ -12,7 +12,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 import { resolveCanonicalPackageTarball } from '../helpers/canonical-package-artifact';
 
 const REPO_ROOT = join(import.meta.dirname, '..', '..');
@@ -20,7 +20,18 @@ const CONSUMER_RUNTIME_DIR = join(REPO_ROOT, '.tmp', 'main-agent-consumer-runtim
 const INSTALL_EVIDENCE_DIR = join(CONSUMER_RUNTIME_DIR, 'install-evidence');
 const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const npxCmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-const npmCacheDir = mkdtempSync(join(tmpdir(), 'main-agent-consumer-runtime-npm-cache-'));
+let npmCacheDir: string | undefined;
+
+afterAll(() => {
+  if (npmCacheDir) {
+    rmSync(npmCacheDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  }
+});
+
+function resolveNpmCacheDir(): string {
+  npmCacheDir ??= mkdtempSync(join(tmpdir(), 'main-agent-consumer-runtime-npm-cache-'));
+  return npmCacheDir;
+}
 
 type ProcessResult = {
   command: string;
@@ -62,7 +73,7 @@ function runProcess(
     env: {
       ...process.env,
       npm_config_loglevel: 'error',
-      npm_config_cache: npmCacheDir,
+      npm_config_cache: resolveNpmCacheDir(),
       BMAD_SKIP_CONSUMER_MCP_INSTALL: '1',
       ...env,
     },
