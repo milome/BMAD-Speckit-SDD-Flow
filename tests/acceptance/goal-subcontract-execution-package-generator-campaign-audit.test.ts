@@ -1,5 +1,6 @@
 import Ajv2020 from 'ajv/dist/2020.js';
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { prepareCampaign } from '../helpers/goal-subcontract-campaign-fixture';
@@ -11,6 +12,12 @@ import {
   runScript,
   SKILL_ROOT,
 } from '../helpers/goal-subcontract-execution-package-fixture';
+
+const require = createRequire(import.meta.url);
+const {
+  auditCompletedChild,
+  prepareCompletedCampaignAuditContext,
+} = require(path.join(SKILL_ROOT, 'scripts', 'audit-completed-campaign.js'));
 
 afterEach(cleanupFixtures);
 
@@ -42,6 +49,66 @@ function writeArtifacts(artifactsPath: string, artifacts: unknown): void {
 }
 
 describe('goal subcontract completed campaign audit', () => {
+  it('audits one completed child through the same hash-bound seam used by aggregate audit', () => {
+    const fixture = prepareCampaign();
+    const artifacts = readArtifacts(fixture.artifactsPath);
+    const context = prepareCompletedCampaignAuditContext(
+      fixture.packageA,
+      fixture.packageManifestHash
+    );
+    const result = auditCompletedChild({
+      context,
+      childIndex: 0,
+      result: artifacts.childResults[0],
+      expectedParent: context.manifest.repositoryBaseline.headCommit,
+      priorCommitHashes: [],
+    });
+
+    expect(result.auditReceipt).toMatchObject({
+      schemaVersion: 'goal-subcontract-completed-child-audit/v1',
+      packageManifestHash: fixture.packageManifestHash,
+      partitionId: 'AUTH-01',
+      childContractHash: fixture.children[0].hash,
+      childIndex: 0,
+      commitHash: artifacts.childResults[0].commit.hash,
+      decision: 'pass',
+    });
+    expect(result.auditReceipt.receiptHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
+  });
+
+  it('rejects the legacy contractHash and status closure shape at the child audit seam', () => {
+    const fixture = prepareCampaign();
+    const artifacts = readArtifacts(fixture.artifactsPath);
+    const context = prepareCompletedCampaignAuditContext(
+      fixture.packageA,
+      fixture.packageManifestHash
+    );
+    const closurePath = path.join(
+      fixture.root,
+      artifacts.childResults[0].closure.path
+    );
+    writeArtifacts(closurePath, {
+      partitionId: 'AUTH-01',
+      contractHash: fixture.children[0].hash,
+      status: 'closed',
+    });
+    artifacts.childResults[0].closure.hash = hashFile(closurePath);
+
+    expect(() =>
+      auditCompletedChild({
+        context,
+        childIndex: 0,
+        result: artifacts.childResults[0],
+        expectedParent: context.manifest.repositoryBaseline.headCommit,
+        priorCommitHashes: [],
+      })
+    ).toThrow(
+      expect.objectContaining({
+        failureClass: 'child_closure_schema_invalid',
+      })
+    );
+  });
+
   it('emits done with an absent RequirementRecord and does not mutate Git', () => {
     const fixture = prepareCampaign();
     const headBefore = git(fixture.root, ['rev-parse', 'HEAD']);

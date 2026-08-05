@@ -93,8 +93,8 @@ export function prepareCampaign(
     });
     const closurePath = writeJson(fixture.root, closureRelative, {
       partitionId: child.partitionId,
-      contractHash: child.hash,
-      status: 'closed',
+      childContractHash: child.hash,
+      decision: 'pass',
     });
     const evidenceHash = hashFile(evidencePath);
     const closureHash = hashFile(closurePath);

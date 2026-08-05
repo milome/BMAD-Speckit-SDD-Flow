@@ -76,11 +76,11 @@ export function createFixture(requirementRecordBinding?: object) {
   });
   const closureSchemaPath = writeJson(root, 'schemas/closure.json', {
     type: 'object',
-    required: ['partitionId', 'contractHash', 'status'],
+    required: ['partitionId', 'childContractHash', 'decision'],
     properties: {
       partitionId: { type: 'string', minLength: 1 },
-      contractHash: { type: 'string', pattern: '^sha256:[a-f0-9]{64}$' },
-      status: { const: 'closed' },
+      childContractHash: { type: 'string', pattern: '^sha256:[a-f0-9]{64}$' },
+      decision: { const: 'pass' },
     },
     additionalProperties: false,
   });
