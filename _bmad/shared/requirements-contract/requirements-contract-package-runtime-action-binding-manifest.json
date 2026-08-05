@@ -988,12 +988,12 @@
         {
           "role": "installed-cli",
           "packagePath": "bin/bmad-speckit.js",
-          "hash": "sha256:d45e4ced973afd0c61fa88341a31740b71e2322c568704caa1985ef80d604c88"
+          "hash": "sha256:7e9f43f7370eb1c4e0bb4fcc1a88e8b2ca09b1fd90c539e3f5515f1798c35113"
         },
         {
           "role": "installed-generator",
           "packagePath": "_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js",
-          "hash": "sha256:c50b6750832676736ee4fe0d2bfd828bd11bd826edbd7ca4a556a2bd0854d62f"
+          "hash": "sha256:d12e3dce641097209809f6b296ff95547f055ebcf7e41337af4360bf9a444ddf"
         },
         {
           "role": "installed-stage-registry",
