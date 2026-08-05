@@ -102,6 +102,109 @@ function requireSha256(value: unknown, field: string): string {
   return value;
 }
 
+const MAIN_AGENT_SOURCE_IDENTITY_FIELDS = Object.freeze([
+  'sourceDocumentHash',
+  'goalExecutionHash',
+  'modelPacketHash',
+  'currentDispatchPointerHash',
+  'transactionManifestHash',
+]);
+
+function requireSourceIdentityHash(value: unknown, field: string): string {
+  if (
+    typeof value !== 'string' ||
+    !/^sha256:[0-9a-f]{64}$/u.test(value)
+  ) {
+    throw failure('goal_contract_source_identity_binding_invalid', {
+      field,
+    });
+  }
+  return value;
+}
+
+function resolveGoalContractSourceIdentity(
+  input: Record<string, unknown>
+) {
+  if (
+    !input ||
+    typeof input !== 'object' ||
+    Array.isArray(input)
+  ) {
+    throw failure('goal_contract_source_identity_request_invalid');
+  }
+  const profile = input.profile;
+  if (
+    profile !== 'standalone_frozen' &&
+    profile !== 'main_agent_compiled'
+  ) {
+    throw failure('goal_contract_source_identity_profile_invalid');
+  }
+  const handoff = input.nativeGoalHandoff;
+  if (
+    !handoff ||
+    typeof handoff !== 'object' ||
+    Array.isArray(handoff)
+  ) {
+    throw failure('goal_contract_source_identity_missing');
+  }
+  const nativeGoalHandoff = handoff as Record<string, unknown>;
+  let sourceIdentityField;
+  let sourceIdentityHash;
+  let bindingHashes;
+
+  if (profile === 'standalone_frozen') {
+    const hasCompiledBinding = MAIN_AGENT_SOURCE_IDENTITY_FIELDS.some(
+      (field) => nativeGoalHandoff[field] !== undefined
+    );
+    if (hasCompiledBinding) {
+      throw failure('goal_contract_source_identity_profile_mismatch', {
+        profile,
+      });
+    }
+    sourceIdentityField = 'masterImplementationPlanHash';
+    sourceIdentityHash = requireSourceIdentityHash(
+      nativeGoalHandoff[sourceIdentityField],
+      `nativeGoalHandoff.${sourceIdentityField}`
+    );
+    bindingHashes = {
+      masterImplementationPlanHash: sourceIdentityHash,
+    };
+  } else {
+    if (
+      nativeGoalHandoff.masterImplementationPlanHash !== undefined ||
+      nativeGoalHandoff.goalContractSourceIdentity !== undefined
+    ) {
+      throw failure('goal_contract_source_identity_profile_mismatch', {
+        profile,
+      });
+    }
+    bindingHashes = Object.fromEntries(
+      MAIN_AGENT_SOURCE_IDENTITY_FIELDS.map((field) => [
+        field,
+        requireSourceIdentityHash(
+          nativeGoalHandoff[field],
+          `nativeGoalHandoff.${field}`
+        ),
+      ])
+    );
+    sourceIdentityField = 'sourceDocumentHash';
+    sourceIdentityHash = bindingHashes[sourceIdentityField];
+  }
+
+  const resolutionHash = hashControlPlaneValue({
+    profile,
+    sourceIdentityField,
+    bindingHashes,
+  });
+  return Object.freeze({
+    profile,
+    sourceIdentityHash,
+    sourceIdentityField,
+    bindingHashes: Object.freeze(bindingHashes),
+    resolutionHash,
+  });
+}
+
 function computePartitionGenerationKey(input: Record<string, unknown>): string {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     throw failure('partition_generation_identity_invalid');
@@ -274,16 +377,13 @@ function preflightRequirementRecordPartitionAuthoritySupersession(
     });
   }
   const handoff = record.nativeGoalHandoff as Record<string, unknown>;
-  const sourceIdentity =
-    handoff.masterImplementationPlanHash ??
-    (
-      handoff.goalContractSourceIdentity as
-        | Record<string, unknown>
-        | undefined
-    )?.masterImplementationPlanHash;
-  if (sourceIdentity !== sourceHash) {
+  const identity = resolveGoalContractSourceIdentity({
+    profile: input.sourceIdentityProfile ?? 'standalone_frozen',
+    nativeGoalHandoff: handoff,
+  });
+  if (identity.sourceIdentityHash !== sourceHash) {
     throw failure('partition_authority_source_identity_mismatch', {
-      expectedSourceHash: sourceIdentity,
+      expectedSourceHash: identity.sourceIdentityHash,
       actualSourceHash: sourceHash,
     });
   }
@@ -423,6 +523,8 @@ function resolveCanonicalPartitionOutputPaths(
       repositoryRoot,
       requirementSetId,
       sourceHash,
+      sourceIdentityProfile:
+        input.sourceIdentityProfile ?? 'standalone_frozen',
       recordPath: path.join(
         repositoryRoot,
         '_bmad-output',
@@ -1980,5 +2082,6 @@ module.exports = {
   resolveRawPartitionOutputPaths,
   semanticPartitionManifestHash,
   validateImmutablePartitionAuthorityUnit,
+  resolveGoalContractSourceIdentity,
   writeImmutableAuthorityFile,
 };
