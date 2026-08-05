@@ -628,6 +628,34 @@ describe('Goal Campaign activation and execution leases', () => {
     );
   });
 
+  it('issues a lease when the final manifest omits compiler identity', () => {
+    const fixture = campaignFixture();
+    const partitionManifest = structuredClone(
+      fixture.partitionManifest
+    );
+    delete partitionManifest.compilerIdentityHash;
+    const activated = activateGoalCampaign(
+      activationRequest(fixture, { partitionManifest })
+    );
+    const [owner] = partitionManifest.partitions;
+
+    const ownerLease = issueSubcontractExecutionLease({
+      receiptRoot: path.join(fixture.root, 'receipts'),
+      activationReceipt: activated.receipt,
+      partitionManifest,
+      partitionId: owner.partitionId,
+      predecessorClosureReceipts: [],
+      attemptId: fixture.attemptId,
+      issuedAt: fixture.issuedAt,
+    });
+
+    assert.equal(ownerLease.receipt.decision, 'pass');
+    assert.equal(
+      ownerLease.receipt.partitionManifestHash,
+      partitionManifest.partitionManifestHash
+    );
+  });
+
   it('requires the activation receipt to be committed at its derived path', () => {
     const fixture = campaignFixture();
     const activated = activateGoalCampaign(activationRequest(fixture));

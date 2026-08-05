@@ -1179,7 +1179,6 @@ function issueSubcontractExecutionLease(request: unknown = {}) {
     sourceAuthorityBundleHash:
       activation.sourceAuthorityBundleHash,
     goalContractHash: activation.goalContractHash,
-    compilerIdentityHash: activation.compilerIdentityHash,
     partitionPlanHash: activation.partitionPlanHash,
     partitionManifestHash: activation.partitionManifestHash,
     partitionSetHash: activation.partitionSetHash,
