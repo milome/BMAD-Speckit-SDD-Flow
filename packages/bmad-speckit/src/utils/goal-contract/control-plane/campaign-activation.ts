@@ -605,7 +605,6 @@ function activateGoalCampaign(request: unknown = {}) {
     intentAuthorityAttestationHash:
       intentEnvelope.authorityAttestationHash,
     goalContractHash: goalContract.goalContractHash,
-    compilerIdentityHash: goalContract.compilerIdentityHash,
   });
   const subordinateCoverageReceiptHashes = verifySubordinateCoverage(
     authorityBundle,

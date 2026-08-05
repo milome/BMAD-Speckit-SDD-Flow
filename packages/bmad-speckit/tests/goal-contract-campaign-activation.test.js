@@ -367,6 +367,23 @@ describe('Goal Campaign activation and execution leases', () => {
     assert.equal(fs.existsSync(activated.receiptPath), true);
   });
 
+  it('sources compiler identity from the Goal bundle when the final manifest omits it', () => {
+    const fixture = campaignFixture();
+    const partitionManifest = structuredClone(
+      fixture.partitionManifest
+    );
+    delete partitionManifest.compilerIdentityHash;
+
+    const activated = activateGoalCampaign(
+      activationRequest(fixture, { partitionManifest })
+    );
+
+    assert.equal(
+      activated.receipt.compilerIdentityHash,
+      fixture.goalContractBundle.compilerIdentityHash
+    );
+  });
+
   it('rejects caller authority injection and requires explicit recovery', () => {
     const fixture = campaignFixture();
     const request = activationRequest(fixture);
