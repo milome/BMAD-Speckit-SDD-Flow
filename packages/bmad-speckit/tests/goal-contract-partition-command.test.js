@@ -1356,6 +1356,71 @@ describe('bmad-speckit goal-contract partition command', () => {
     }
   });
 
+  it('releases a governed child from the canonical immutable generation without a supersession bundle', () => {
+    const root = tempRoot();
+    const source = writeSourcePlan(root);
+    const frozen = writeFrozenSuccessorContract(root, source, {
+      slotWrappedFrontMatter: true,
+    });
+    const partitionResult = runSourceCommand(
+      [
+        'partition',
+        '--governed',
+        '--entry',
+        'standalone_goal_contract',
+        '--source',
+        source,
+        '--goal-contract',
+        frozen.goalContractPath,
+        '--sequence-mode',
+        'disabled',
+        '--json',
+      ],
+      { cwd: root }
+    );
+
+    assert.equal(
+      partitionResult.status,
+      0,
+      partitionResult.stderr || partitionResult.stdout
+    );
+    const partitionPayload = parsePayload(partitionResult);
+    const child = partitionPayload.partitionManifest.partitions[0];
+    const childPath = [
+      path.resolve(root, child.childContractPath),
+      path.resolve(partitionPayload.unitRoot, child.childContractPath),
+    ].find((candidate) => fs.existsSync(candidate));
+    assert.ok(childPath, child.childContractPath);
+    assert.equal(
+      fs.existsSync(path.join(partitionPayload.unitRoot, 'bundle-manifest.json')),
+      false
+    );
+
+    const releaseResult = runSourceCommand(
+      [
+        'release-gate',
+        '--goal',
+        childPath,
+        '--source',
+        source,
+        '--partition-manifest',
+        partitionPayload.partitionManifestPath,
+        '--json',
+      ],
+      { cwd: root }
+    );
+
+    assert.equal(
+      releaseResult.status,
+      0,
+      releaseResult.stderr || releaseResult.stdout
+    );
+    const releasePayload = parsePayload(releaseResult);
+    assert.equal(releasePayload.ok, true);
+    assert.equal(releasePayload.decision, 'pass');
+    assert.deepEqual(releasePayload.blockingReasons, []);
+  });
+
   it('projects source task outcomes into functional child display titles', () => {
     const root = tempRoot();
     const { sourcePath } = writeStructuredDependencySourcePlan(root);

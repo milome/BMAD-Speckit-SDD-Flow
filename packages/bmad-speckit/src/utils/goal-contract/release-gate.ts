@@ -36,6 +36,11 @@ const { validateGoalContractSchema } = require(
     ? './control-plane/schema-registry.ts'
     : './control-plane/schema-registry'
 );
+const { semanticPartitionManifestHash } = require(
+  __filename.endsWith('.ts')
+    ? './control-plane/partition-output-paths.ts'
+    : './control-plane/partition-output-paths'
+);
 
 export type GoalContractReleaseGateModule = never;
 
@@ -147,9 +152,11 @@ function resolveAuthorityBoundPath(authorityRoot, value) {
   return resolved;
 }
 
-function successorArtifactHash(authority, targetPath) {
+function pinnedArtifactHash(authority, targetPath) {
   if (
-    authority?.authorityMode !== 'successor_pinned' ||
+    !['canonical_governed', 'successor_pinned'].includes(
+      authority?.authorityMode
+    ) ||
     typeof targetPath !== 'string'
   ) {
     return null;
@@ -173,6 +180,7 @@ function validateFinalManifestChildMembership({
   partitionManifestPath,
   binding,
   currentPartitionPlan = null,
+  currentRepositoryRoot = null,
 }) {
   const blockingReasons = [];
   const resolvedGoalPath = resolveBoundPath(goalPath);
@@ -205,17 +213,8 @@ function validateFinalManifestChildMembership({
   const orderedChildContractHashes =
     manifest?.orderedChildContractHashes || [];
   if (manifest) {
-    const expectedManifestHash = hashControlPlaneValue({
-      goalContractHash: manifest.goalContractHash,
-      sourceCompositionPolicyHash:
-        manifest.sourceCompositionPolicyHash,
-      sourceAuthorityBundleHash:
-        manifest.sourceAuthorityBundleHash,
-      partitionPolicyHash: manifest.partitionPolicyHash,
-      partitionPlanHash: manifest.partitionPlanHash,
-      partitionSetHash: manifest.partitionSetHash,
-      orderedChildContractHashes,
-    });
+    const expectedManifestHash =
+      semanticPartitionManifestHash(manifest);
     if (manifest.partitionManifestHash !== expectedManifestHash) {
       blockingReasons.push('partition_manifest_hash_mismatch');
     }
@@ -350,14 +349,25 @@ function validateFinalManifestChildMembership({
         );
       }
     }
+    const repositoryRelativeChildPath =
+      currentRepositoryRoot &&
+      typeof partition.childContractPath === 'string'
+        ? path.resolve(
+            currentRepositoryRoot,
+            partition.childContractPath
+          )
+        : null;
     const expectedChildPath = path.isAbsolute(
       partition.childContractPath
     )
       ? path.resolve(partition.childContractPath)
-      : path.resolve(
-          path.dirname(resolvedManifestPath),
-          partition.childContractPath
-        );
+      : repositoryRelativeChildPath &&
+          repositoryRelativeChildPath === resolvedGoalPath
+        ? repositoryRelativeChildPath
+        : path.resolve(
+            path.dirname(resolvedManifestPath),
+            partition.childContractPath
+          );
     if (
       !resolvedGoalPath ||
       expectedChildPath !== resolvedGoalPath
@@ -974,6 +984,7 @@ function evaluatePartitionRelease(input) {
       partitionManifestPath: manifestPath,
       binding,
       currentPartitionPlan: authority?.partitionPlan || null,
+      currentRepositoryRoot: authority?.repositoryRoot || null,
     });
     blockingReasons.push(...membership.blockingReasons);
     if (manifestPath && fs.existsSync(manifestPath)) {
@@ -1015,14 +1026,19 @@ function evaluatePartitionRelease(input) {
   const currentPolicyArtifactHash =
     authority?.optimizerPolicyBinding?.partitionPolicyArtifactHash ||
     ZERO_HASH;
-  const currentAnalysisHash =
+  const currentAnalysisReceiptHash =
     (planBound
-      ? authority?.partitionPlanHash ||
-        currentManifest?.partitionAnalysisReceiptHash
+      ? currentManifest?.partitionAnalysisReceiptHash ||
+        authority?.partitionPlanHash
       : authority?.compiled?.partitionAnalysisReceiptHash) ||
     ZERO_HASH;
-  const successorPinned =
-    authority?.authorityMode === 'successor_pinned';
+  const currentAnalysisAuthorityHash = planBound
+    ? authority?.partitionPlanHash || currentAnalysisReceiptHash
+    : currentAnalysisReceiptHash;
+  const pinnedAuthority =
+    ['canonical_governed', 'successor_pinned'].includes(
+      authority?.authorityMode
+    );
 
   compareField({
     actual: binding.masterSourceHash,
@@ -1117,7 +1133,10 @@ function evaluatePartitionRelease(input) {
   ) {
     blockingReasons.push('partition_manifest_binding_not_current');
   }
-  if (binding.partitionAnalysisReceiptHash !== currentAnalysisHash) {
+  if (
+    binding.partitionAnalysisReceiptHash !==
+    currentAnalysisAuthorityHash
+  ) {
     blockingReasons.push('partition_analysis_receipt_not_current');
   }
   const partition = currentManifest?.partitions?.find(
@@ -1149,7 +1168,7 @@ function evaluatePartitionRelease(input) {
   componentDecisions.feasibility =
     feasibilityRelease.componentDecision;
 
-  const selectionPath = successorPinned
+  const selectionPath = pinnedAuthority
     ? resolveAuthorityBoundPath(
         authority.authorityRoot,
         partition?.selectionReceiptPath
@@ -1163,7 +1182,7 @@ function evaluatePartitionRelease(input) {
       ? inferReceiptsDir({
           explicitReceiptsDir:
             input.receiptsDir ||
-            (successorPinned
+            (pinnedAuthority
               ? authority.authorityRoot
               : null),
           selectionReceiptPath: selectionPath,
@@ -1171,7 +1190,7 @@ function evaluatePartitionRelease(input) {
           manifestPath,
         })
       : null;
-  const globalCoveragePath = successorPinned
+  const globalCoveragePath = pinnedAuthority
     ? resolveAuthorityBoundPath(
         authority.authorityRoot,
         currentManifest?.globalCoverageReceiptPath
@@ -1241,7 +1260,7 @@ function evaluatePartitionRelease(input) {
   let expectedSelection = null;
   if (authority && currentManifest && partition) {
     try {
-      if (successorPinned) {
+      if (pinnedAuthority) {
         expectedGlobalCoverage =
           buildPartitionPlanGlobalCoverageReceipt({
             partitionPlan: authority.partitionPlan,
@@ -1276,8 +1295,8 @@ function evaluatePartitionRelease(input) {
       stableStringify(expectedGlobalCoverage) ||
     globalCoverage.decision !== 'pass' ||
     globalCoverageHash !==
-      (successorPinned
-        ? successorArtifactHash(
+      (pinnedAuthority
+        ? pinnedArtifactHash(
             authority,
             globalCoveragePath
           )
@@ -1294,8 +1313,8 @@ function evaluatePartitionRelease(input) {
       !expectedSelection ||
       stableStringify(selection) !== stableStringify(expectedSelection) ||
       selectionHash !==
-        (successorPinned
-          ? successorArtifactHash(authority, selectionPath)
+        (pinnedAuthority
+          ? pinnedArtifactHash(authority, selectionPath)
           : binding.selectionReceiptHash)
     ) {
       blockingReasons.push('partition_selection_not_current');
@@ -1343,7 +1362,7 @@ function evaluatePartitionRelease(input) {
       partitionPolicyHash: currentPolicyHash,
       partitionPolicyArtifactHash: currentPolicyArtifactHash,
       partitionManifestHash: currentManifestHash,
-      partitionAnalysisReceiptHash: currentAnalysisHash,
+      partitionAnalysisReceiptHash: currentAnalysisReceiptHash,
       partitionSetHash: currentManifest.partitionSetHash,
       partitionId: partition.partitionId,
       partitionRole: partition.partitionRole,
@@ -1464,7 +1483,7 @@ function evaluatePartitionRelease(input) {
       methodologyProfileArtifactHash:
         currentMethodologyArtifactHash,
       executionProjectionHash: currentProjectionHash,
-      partitionAnalysisReceiptHash: currentAnalysisHash,
+      partitionAnalysisReceiptHash: currentAnalysisReceiptHash,
       partitionManifestHash: activeManifestHash,
       partitionManifestAuthorityHash:
         currentManifest?.partitionManifestHash || ZERO_HASH,

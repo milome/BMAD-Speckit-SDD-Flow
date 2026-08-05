@@ -760,6 +760,24 @@ function normalizeRelativeArtifactSet(
   return normalized.sort();
 }
 
+function normalizeChildArtifactSet(
+  authority: Record<string, unknown>,
+  values: unknown,
+  failureClass: string
+): string[] {
+  if (!Array.isArray(values)) {
+    throw failure(failureClass);
+  }
+  const normalized = values.map((childContractPath) => {
+    requireAuthorityChildArtifact(authority, childContractPath);
+    return String(childContractPath).replace(/\\/gu, '/');
+  });
+  if (new Set(normalized).size !== normalized.length) {
+    throw failure(failureClass, { reason: 'duplicate_path' });
+  }
+  return normalized.sort();
+}
+
 function semanticPartitionManifestHash(
   manifest: Record<string, unknown>
 ): string {
@@ -1369,7 +1387,7 @@ function validateImmutablePartitionAuthorityUnit(
     'partition_authority_artifact_set_invalid'
   );
   if (input.childContractPaths !== undefined) {
-    const callerChildPaths = normalizeRelativeArtifactSet(
+    const callerChildPaths = normalizeChildArtifactSet(
       authority,
       input.childContractPaths,
       'partition_authority_artifact_set_invalid'
@@ -1423,6 +1441,227 @@ function validateImmutablePartitionAuthorityUnit(
     childContractHashes: Object.freeze(childContractHashes),
     requiredReceiptHashes: Object.freeze(requiredReceiptHashes),
     manifest: Object.freeze(manifest),
+  });
+}
+
+function loadCanonicalPartitionAuthorityForRelease(
+  input: Record<string, unknown>
+) {
+  if (
+    !input ||
+    typeof input !== 'object' ||
+    Array.isArray(input) ||
+    typeof input.partitionManifestPath !== 'string' ||
+    typeof input.goalPath !== 'string'
+  ) {
+    throw failure('canonical_partition_release_request_invalid');
+  }
+  const partitionManifestPath = path.resolve(
+    input.partitionManifestPath
+  );
+  const unitRoot = path.dirname(partitionManifestPath);
+  const generationsRoot = path.dirname(unitRoot);
+  const authorityRoot = path.dirname(generationsRoot);
+  if (
+    path.basename(generationsRoot) !== 'generations' ||
+    partitionManifestPath !==
+      path.join(unitRoot, 'partition-manifest.json')
+  ) {
+    throw failure('canonical_partition_authority_root_invalid');
+  }
+  const activePointerPath = path.join(
+    authorityRoot,
+    'active-generation.json'
+  );
+  let pointer: Record<string, unknown>;
+  try {
+    pointer = JSON.parse(
+      fs.readFileSync(activePointerPath, 'utf8')
+    );
+  } catch {
+    throw failure('canonical_partition_active_pointer_invalid', {
+      activePointerPath: normalizePath(activePointerPath),
+    });
+  }
+  validateGoalContractSchema(OUTPUT_AUTHORITY_SCHEMA, pointer);
+  const authority = Object.freeze({
+    authorityMode: 'standalone_bootstrap',
+    sourceHash: pointer.sourceHash,
+    generationKey: pointer.generationKey,
+    repositoryRoot: path.resolve(
+      authorityRoot,
+      '..',
+      '..',
+      '..',
+      '..'
+    ),
+    authorityRoot,
+    unitRoot,
+    activePointerPath,
+    partitionPlanPath: path.join(unitRoot, 'partition-plan.json'),
+    partitionManifestPath,
+  });
+  const validated = validateImmutablePartitionAuthorityUnit({
+    authority,
+    expectedSourceHash: pointer.sourceHash,
+    expectedGenerationKey: pointer.generationKey,
+    expectedPartitionPlanHash: input.expectedPartitionPlanHash,
+    expectedPartitionManifestHash: pointer.partitionManifestHash,
+    expectedPartitionManifestDocumentHash:
+      pointer.partitionManifestDocumentHash,
+  });
+  for (const [field, expected] of Object.entries({
+    authorityMode: 'standalone_bootstrap',
+    generationRoot: normalizePath(unitRoot),
+    partitionPlanPath: normalizePath(authority.partitionPlanPath),
+    partitionPlanHash: validated.partitionPlanHash,
+    partitionManifestPath: normalizePath(partitionManifestPath),
+    partitionManifestHash: validated.partitionManifestHash,
+    partitionManifestDocumentHash:
+      validated.partitionManifestDocumentHash,
+  })) {
+    assertAuthorityBinding(
+      pointer[field],
+      expected,
+      'canonical_partition_active_pointer_mismatch',
+      field
+    );
+  }
+  assertAuthorityBinding(
+    stableControlPlaneStringify(pointer.childContractHashes),
+    stableControlPlaneStringify(validated.childContractHashes),
+    'canonical_partition_active_pointer_mismatch',
+    'childContractHashes'
+  );
+  assertAuthorityBinding(
+    stableControlPlaneStringify(pointer.requiredReceiptHashes),
+    stableControlPlaneStringify(validated.requiredReceiptHashes),
+    'canonical_partition_active_pointer_mismatch',
+    'requiredReceiptHashes'
+  );
+
+  const manifest = validated.manifest as Record<string, unknown>;
+  const partitionPlan = JSON.parse(
+    fs.readFileSync(authority.partitionPlanPath, 'utf8')
+  ) as Record<string, unknown>;
+  const resolvedGoalPath = path.resolve(input.goalPath);
+  const partition = (
+    manifest.partitions as Record<string, unknown>[]
+  ).find((candidate) => {
+    try {
+      return (
+        requireAuthorityChildArtifact(
+          authority,
+          String(candidate.childContractPath || '')
+        ) === resolvedGoalPath
+      );
+    } catch {
+      return false;
+    }
+  });
+  if (
+    !partition ||
+    !fs.existsSync(resolvedGoalPath) ||
+    sha256Bytes(fs.readFileSync(resolvedGoalPath)) !==
+      partition.childContractHash
+  ) {
+    throw failure('canonical_partition_child_membership_invalid', {
+      goalPath: normalizePath(resolvedGoalPath),
+    });
+  }
+  const generationPath = requireRelativeAuthorityArtifact(
+    authority,
+    `receipts/children/${partition.partitionId}.generation.json`
+  );
+  const generation = readValidatedPartitionReceipt(
+    generationPath,
+    'goal-contract-partition-child-generation-receipt/v1'
+  ) as Record<string, unknown>;
+  for (const [field, expected] of Object.entries({
+    decision: 'pass',
+    masterSourceHash: manifest.masterSourceHash,
+    sourceSnapshotHash: manifest.sourceSnapshotHash,
+    methodologyProfileHash: manifest.methodologyProfileHash,
+    executionProjectionHash: manifest.executionProjectionHash,
+    taskDagHash: manifest.taskDagHash,
+    partitionPolicyHash: manifest.partitionPolicyHash,
+    partitionAnalysisReceiptHash:
+      manifest.partitionAnalysisReceiptHash,
+    partitionSetHash: manifest.partitionSetHash,
+    partitionId: partition.partitionId,
+    goalContractHash: partition.childContractHash,
+  })) {
+    assertAuthorityBinding(
+      generation[field],
+      expected,
+      'canonical_partition_generation_binding_mismatch',
+      field
+    );
+  }
+  for (const field of [
+    'methodologyProfileArtifactHash',
+    'partitionPolicyArtifactHash',
+  ]) {
+    requireSha256(generation[field], field);
+  }
+  const artifactHashes = Object.freeze(
+    Object.fromEntries(
+      [
+        ...validated.childContractHashes,
+        ...validated.requiredReceiptHashes,
+        {
+          path: 'partition-plan.json',
+          hash: sha256Bytes(
+            fs.readFileSync(authority.partitionPlanPath)
+          ),
+        },
+        {
+          path: 'partition-manifest.json',
+          hash: validated.partitionManifestDocumentHash,
+        },
+      ].map((artifact) => [artifact.path, artifact.hash])
+    )
+  );
+  return Object.freeze({
+    authorityMode: 'canonical_governed',
+    repositoryRoot: authority.repositoryRoot,
+    authorityRoot: normalizePath(unitRoot),
+    activePointerPath: normalizePath(activePointerPath),
+    activePointerHash: sha256Bytes(
+      fs.readFileSync(activePointerPath)
+    ),
+    artifactHashes,
+    partitionPlan,
+    partitionPlanHash: validated.partitionPlanHash,
+    methodology: Object.freeze({
+      methodologyProfileHash: generation.methodologyProfileHash,
+      methodologyProfileArtifactHash:
+        generation.methodologyProfileArtifactHash,
+    }),
+    optimizerPolicyBinding: Object.freeze({
+      partitionPolicyHash: generation.partitionPolicyHash,
+      partitionPolicyArtifactHash:
+        generation.partitionPolicyArtifactHash,
+    }),
+    projection: Object.freeze({
+      executionProjectionHash: generation.executionProjectionHash,
+      taskDagHash: generation.taskDagHash,
+      sequenceConstraintBinding: Object.freeze({
+        sequenceMode: partitionPlan.sequenceMode,
+        applicabilityDecision:
+          partitionPlan.sequenceApplicability,
+        sequenceCoverage: partitionPlan.sequenceCoverage,
+        sequenceClosureStatus:
+          partitionPlan.sequenceClosureStatus,
+        childContractAuthority:
+          partitionPlan.childContractAuthority,
+      }),
+    }),
+    compiled: Object.freeze({
+      manifest,
+      partitionManifestHash:
+        validated.partitionManifestDocumentHash,
+    }),
   });
 }
 
@@ -1572,9 +1811,11 @@ module.exports = {
   assertImmutableAuthorityUnit,
   computePartitionGenerationKey,
   goalContractAuthorityWriterBinding,
+  loadCanonicalPartitionAuthorityForRelease,
   preflightRequirementRecordPartitionAuthoritySupersession,
   resolveCanonicalPartitionOutputPaths,
   resolveRawPartitionOutputPaths,
+  semanticPartitionManifestHash,
   validateImmutablePartitionAuthorityUnit,
   writeImmutableAuthorityFile,
 };
