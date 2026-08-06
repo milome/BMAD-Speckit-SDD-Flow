@@ -649,39 +649,19 @@ export function runMainAgentGoalSubcontractCampaign(input: UnknownRecord) {
     throw failure('main_agent_goal_task_report_provenance_mismatch');
   }
 
-  const invocationValue = resolved.invokeCampaign({
-    ...input,
-    children,
-    packageResult,
-    packageAudit,
-  });
-  if (
-    !isRecord(invocationValue) ||
-    invocationValue.hostInvocationCount !== 1 ||
-    !Array.isArray(invocationValue.childInvocations) ||
-    invocationValue.childInvocations.length !== children.length ||
-    !invocationValue.childInvocations.every(isRecord)
-  ) {
-    throw failure('main_agent_goal_campaign_input_invalid', {
-      stage: 'invoke_campaign',
-    });
-  }
-  const childInvocations = invocationValue.childInvocations as UnknownRecord[];
-  if (
-    childInvocations.some(
-      (invocation, index) =>
-        invocation.partitionId !== children[index].partitionId
-    )
-  ) {
-    throw failure('main_agent_goal_campaign_input_invalid', {
-      stage: 'invoke_campaign_child_order',
-    });
-  }
-
   const childResults: UnknownRecord[] = [];
-  for (let index = 0; index < children.length; index += 1) {
-    const child = children[index];
-    const invocation = childInvocations[index];
+  let expectedChildIndex = 0;
+  let childAuthorizationFailed = false;
+  const onChildInvocation = (invocation: UnknownRecord) => {
+    if (childAuthorizationFailed) {
+      throw failure('main_agent_goal_child_dispatched_after_audit_failure');
+    }
+    const child = children[expectedChildIndex];
+    if (!child || invocation.partitionId !== child.partitionId) {
+      throw failure('main_agent_goal_campaign_input_invalid', {
+        stage: 'invoke_campaign_child_order',
+      });
+    }
     const auditValue = resolved.auditCompletedChild({
       child,
       invocation,
@@ -696,37 +676,62 @@ export function runMainAgentGoalSubcontractCampaign(input: UnknownRecord) {
     }
     const audit = auditValue;
     childResults.push(audit);
-    if (
-      audit.status !== 'closed' ||
-      audit.partitionId !== child.partitionId ||
-      !isSha256Hash(audit.commitHash)
-    ) {
-      const blockedResult = {
-        status: 'blocked',
-        children,
-        childResults,
-        packageResult,
-        packageAudit,
+    expectedChildIndex += 1;
+    const authorized =
+      audit.status === 'closed' &&
+      audit.partitionId === child.partitionId &&
+      isSha256Hash(audit.commitHash);
+    if (!authorized) childAuthorizationFailed = true;
+    return { authorized };
+  };
+  const invocationValue = resolved.invokeCampaign({
+    ...input,
+    children,
+    packageResult,
+    packageAudit,
+    onChildInvocation,
+  });
+  if (
+    !isRecord(invocationValue) ||
+    invocationValue.hostInvocationCount !== 1 ||
+    !Array.isArray(invocationValue.childInvocations) ||
+    !invocationValue.childInvocations.every(isRecord)
+  ) {
+    throw failure('main_agent_goal_campaign_input_invalid', {
+      stage: 'invoke_campaign',
+    });
+  }
+  const childInvocations = invocationValue.childInvocations as UnknownRecord[];
+  if (childInvocations.length !== expectedChildIndex) {
+    throw failure('main_agent_goal_campaign_input_invalid', {
+      stage: 'invoke_campaign_child_authorization_protocol',
+    });
+  }
+  if (childAuthorizationFailed || childResults.length !== children.length) {
+    const audit = childResults.at(-1) ?? {};
+    const blockedResult = {
+      status: 'blocked',
+      children,
+      childResults,
+      packageResult,
+      packageAudit,
+      packageManifestHash: packageResult.packageManifestHash,
+      requirementRecordBinding,
+      driftFlags:
+        typeof audit.failureClass === 'string' ? [audit.failureClass] : [],
+      ...(requirementRecordBinding?.status === 'absent'
+        ? { downstreamAction: 'main_agent_resolve_requirement_record' }
+        : {}),
+    };
+    const taskReport = projectGovernedSkillCampaignTaskReport({
+      packetId: input.packetId,
+      campaignResult: blockedResult,
+      provenance: {
         packageManifestHash: packageResult.packageManifestHash,
-        requirementRecordBinding,
-        driftFlags:
-          typeof audit.failureClass === 'string'
-            ? [audit.failureClass]
-            : [],
-        ...(requirementRecordBinding?.status === 'absent'
-          ? { downstreamAction: 'main_agent_resolve_requirement_record' }
-          : {}),
-      };
-      const taskReport = projectGovernedSkillCampaignTaskReport({
-        packetId: input.packetId,
-        campaignResult: blockedResult,
-        provenance: {
-          packageManifestHash: packageResult.packageManifestHash,
-        },
-      });
-      resolved.persistTaskReport(taskReport);
-      return Object.freeze({ ...blockedResult, taskReport });
-    }
+      },
+    });
+    resolved.persistTaskReport(taskReport);
+    return Object.freeze({ ...blockedResult, taskReport });
   }
 
   const aggregateAuditValue = resolved.auditCompletedCampaign({

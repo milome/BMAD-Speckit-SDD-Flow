@@ -270,14 +270,18 @@ describe('Main Agent governed Goal source-authority adapter', () => {
           events.push('audit-package');
           return { status: 'pass', packageManifestHash: HASHES[0] };
         },
-        invokeCampaign: () => {
+        invokeCampaign: (campaignInput: any) => {
           events.push('invoke-campaign');
+          const childInvocations = [
+            { partitionId: 'partition-1' },
+            { partitionId: 'partition-2' },
+          ];
+          for (const invocation of childInvocations) {
+            expect(campaignInput.onChildInvocation(invocation)).toEqual({ authorized: true });
+          }
           return {
             hostInvocationCount: 1,
-            childInvocations: [
-              { partitionId: 'partition-1' },
-              { partitionId: 'partition-2' },
-            ],
+            childInvocations,
           };
         },
         auditCompletedChild: ({ child }: any) => {
@@ -378,14 +382,15 @@ describe('Main Agent governed Goal source-authority adapter', () => {
           status: 'pass',
           packageManifestHash: HASHES[0],
         }),
-        invokeCampaign: () => {
+        invokeCampaign: (campaignInput: any) => {
           invoked.push('campaign');
+          const childInvocations = [{ partitionId: 'partition-1' }];
+          expect(campaignInput.onChildInvocation(childInvocations[0])).toEqual({
+            authorized: false,
+          });
           return {
             hostInvocationCount: 1,
-            childInvocations: [
-              { partitionId: 'partition-1' },
-              { partitionId: 'partition-2' },
-            ],
+            childInvocations,
           };
         },
         auditCompletedChild: ({ child }: any) => ({
@@ -568,10 +573,11 @@ describe('Main Agent governed Goal source-authority adapter', () => {
             status: 'pass',
             packageManifestHash: HASHES[0],
           }),
-          invokeCampaign: () => ({
-            hostInvocationCount: 1,
-            childInvocations: [{ partitionId: 'partition-1' }],
-          }),
+          invokeCampaign: (campaignInput: any) => {
+            const invocation = { partitionId: 'partition-1' };
+            expect(campaignInput.onChildInvocation(invocation)).toEqual({ authorized: true });
+            return { hostInvocationCount: 1, childInvocations: [invocation] };
+          },
           auditCompletedChild: () => ({
             status: 'closed',
             partitionId: 'partition-1',
@@ -606,10 +612,11 @@ describe('Main Agent governed Goal source-authority adapter', () => {
           status: 'pass',
           packageManifestHash: HASHES[0],
         }),
-        invokeCampaign: () => ({
-          hostInvocationCount: 1,
-          childInvocations: [{ partitionId: 'partition-1' }],
-        }),
+        invokeCampaign: (campaignInput: any) => {
+          const invocation = { partitionId: 'partition-1' };
+          expect(campaignInput.onChildInvocation(invocation)).toEqual({ authorized: true });
+          return { hostInvocationCount: 1, childInvocations: [invocation] };
+        },
         auditCompletedChild: () => ({
           status: 'closed',
           partitionId: 'partition-1',
