@@ -1149,6 +1149,17 @@ function verifyCommittedRepairPredecessor({
   return closure;
 }
 
+function hasValidPredecessorClosureSelfHash(
+  closure: unknown
+): boolean {
+  try {
+    return verifyReceiptSelfHash(closure);
+  } catch {
+    // Untrusted predecessor data must fail as stale, even if it cannot be canonicalized.
+    return false;
+  }
+}
+
 function issueSubcontractExecutionLease(request: unknown = {}) {
   if (!isRecord(request)) {
     throw failure('subcontract_execution_lease_request_invalid');
@@ -1296,7 +1307,7 @@ function issueSubcontractExecutionLease(request: unknown = {}) {
         }
       }
       if (
-        !verifyReceiptSelfHash(closure) ||
+        !hasValidPredecessorClosureSelfHash(closure) ||
         closure.decision !== 'pass' ||
         closure.attemptId !== expectedClosureAttemptId ||
         closure.partitionManifestHash !== manifest.partitionManifestHash ||

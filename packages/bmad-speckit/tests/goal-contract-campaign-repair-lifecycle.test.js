@@ -125,6 +125,17 @@ function fixture() {
   const graphHash = hash('partition-impact-graph');
   const feasibilityHash = hash('partition-closure-feasibility');
   const driftHash = hash('partition-impact-drift');
+  const repositoryTreeHash = hash('repository-tree');
+  const partitionImpactPolicyHash = hash('partition-impact-policy');
+  const partitionImpactAnalyzerIdentityHash = hash(
+    'partition-impact-analyzer'
+  );
+  const partitionImpactGraphDocumentHash = hash(
+    'partition-impact-graph-document'
+  );
+  const partitionImpactDriftReceiptHash = hash(
+    'partition-impact-drift'
+  );
   const lifecycleAuthorityFields = {
     graphHash,
     feasibilityHash,
@@ -173,6 +184,14 @@ function fixture() {
     partitionPolicyHash,
     partitionPlanHash,
     partitionSetHash,
+    repositoryTreeHash,
+    partitionImpactPolicyHash,
+    partitionImpactAnalyzerIdentityHash,
+    partitionImpactGraphHash: graphHash,
+    partitionImpactGraphDocumentHash,
+    partitionClosureFeasibilityReceiptHash: feasibilityHash,
+    partitionImpactDriftReceiptHash,
+    driftHash,
     orderedChildContractHashes,
   });
   const manifest = {
@@ -188,8 +207,13 @@ function fixture() {
     partitionPlanHash,
     partitionManifestHash,
     partitionSetHash,
+    repositoryTreeHash,
+    partitionImpactPolicyHash,
+    partitionImpactAnalyzerIdentityHash,
     partitionImpactGraphHash: graphHash,
+    partitionImpactGraphDocumentHash,
     partitionClosureFeasibilityReceiptHash: feasibilityHash,
+    partitionImpactDriftReceiptHash,
     driftHash,
     partitionCount: partitions.length,
     topologicalOrder: partitions.map(({ partitionId: id }) => id),
@@ -561,6 +585,25 @@ describe('goal campaign repair lifecycle', () => {
           attemptId: repairAttemptId,
           nodeAttemptId: 'node-repair-001',
           issuedAt: '2026-07-31T04:19:00.000Z',
+        }),
+      { failureClass: 'subcontract_predecessor_closure_stale' }
+    );
+    const malformedOwnerClosure = {
+      ...current.ownerClosure,
+      predecessorClosureReceiptHashes: [undefined],
+    };
+    assert.throws(
+      () =>
+        issueSubcontractExecutionLease({
+          receiptRoot: current.receiptRoot,
+          activationReceipt: current.baseActivation,
+          repairAuthorityReceipt: repair.receipt,
+          partitionManifest: current.manifest,
+          partitionId: current.repairId,
+          predecessorClosureReceipts: [malformedOwnerClosure],
+          attemptId: repairAttemptId,
+          nodeAttemptId: 'node-repair-001',
+          issuedAt: '2026-07-31T04:19:15.000Z',
         }),
       { failureClass: 'subcontract_predecessor_closure_stale' }
     );
