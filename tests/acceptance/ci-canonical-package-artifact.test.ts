@@ -6,6 +6,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   rmSync,
   statSync,
   symlinkSync,
@@ -13,7 +14,7 @@ import {
 } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
-import { delimiter, join } from 'node:path';
+import { delimiter, join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { resolveCanonicalPackageTarball } from '../helpers/canonical-package-artifact';
 
@@ -251,6 +252,64 @@ describe('canonical package artifact', () => {
         expect(inspectedStaging).toBe(true);
       } finally {
         rmSync(repoRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
+  it.runIf(process.platform === 'win32')(
+    'maps workspace links from an external dependency source back into staging',
+    () => {
+      const repoRoot = fixtureRepo();
+      const dependencySourceRoot = mkdtempSync(join(tmpdir(), 'canonical-package-source-'));
+      const projectedNodeModules = join(repoRoot, 'node_modules');
+      try {
+        git(repoRoot, 'init');
+        git(repoRoot, 'config', 'user.email', 'ci@example.invalid');
+        git(repoRoot, 'config', 'user.name', 'CI Test');
+        git(repoRoot, 'add', 'package.json');
+        git(repoRoot, 'commit', '-m', 'baseline');
+        const commitSha = git(repoRoot, 'rev-parse', 'HEAD');
+        mkdirSync(join(dependencySourceRoot, 'node_modules'), { recursive: true });
+        symlinkSync(
+          dependencySourceRoot,
+          join(dependencySourceRoot, 'node_modules', 'fixture-package'),
+          'junction'
+        );
+        symlinkSync(join(dependencySourceRoot, 'node_modules'), projectedNodeModules, 'junction');
+
+        preparePackageArtifact({
+          repoRoot,
+          commitSha,
+          listTarEntries: () => ['package/package.json'],
+          runCommand: (request: any) => {
+            if (request.kind === 'build') {
+              const stagedWorkspace = join(request.cwd, 'node_modules', 'fixture-package');
+              expect(lstatSync(stagedWorkspace).isSymbolicLink()).toBe(true);
+              expect(resolve(realpathSync(stagedWorkspace))).toBe(resolve(request.cwd));
+            }
+            if (request.kind === 'npm_pack') {
+              mkdirSync(request.outputDir, { recursive: true });
+              writeFileSync(
+                join(request.outputDir, 'fixture-package-1.2.3.tgz'),
+                'tarball',
+                'utf8'
+              );
+              return {
+                status: 0,
+                stdout: JSON.stringify([{ filename: 'fixture-package-1.2.3.tgz' }]),
+              };
+            }
+            return { status: 0, stdout: '' };
+          },
+        });
+      } finally {
+        rmSync(projectedNodeModules, { recursive: true, force: true });
+        rmSync(join(dependencySourceRoot, 'node_modules', 'fixture-package'), {
+          recursive: true,
+          force: true,
+        });
+        rmSync(repoRoot, { recursive: true, force: true });
+        rmSync(dependencySourceRoot, { recursive: true, force: true });
       }
     }
   );

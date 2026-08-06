@@ -205,12 +205,15 @@ function materializeDependencyEntry({ sourcePath, targetPath, activeDirectories 
   }
 }
 
-function projectDependencyEntry({ sourcePath, targetPath, repoRoot, stagingRoot }) {
+function projectDependencyEntry({ sourcePath, targetPath, sourceWorkspaceRoot, stagingRoot }) {
   const sourceStat = fs.lstatSync(sourcePath);
   if (sourceStat.isSymbolicLink()) {
     const resolvedSource = fs.realpathSync(sourcePath);
-    const resolvedTarget = pathInside(repoRoot, resolvedSource)
-      ? path.resolve(stagingRoot, path.relative(path.resolve(repoRoot), resolvedSource))
+    const resolvedTarget = pathInside(sourceWorkspaceRoot, resolvedSource)
+      ? path.resolve(
+          stagingRoot,
+          path.relative(path.resolve(sourceWorkspaceRoot), resolvedSource)
+        )
       : resolvedSource;
     if (!fs.existsSync(resolvedTarget)) {
       fail('CANONICAL_PACKAGE_WORKSPACE_DEPENDENCY_MISSING', {
@@ -248,6 +251,7 @@ function projectDependencyEntry({ sourcePath, targetPath, repoRoot, stagingRoot 
 function projectNodeModules({ repoRoot, stagingRoot }) {
   const sourceRoot = path.join(repoRoot, 'node_modules');
   if (!fs.existsSync(sourceRoot)) return;
+  const sourceWorkspaceRoot = path.dirname(fs.realpathSync(sourceRoot));
   const targetRoot = path.join(stagingRoot, 'node_modules');
   fs.mkdirSync(targetRoot, { recursive: true });
 
@@ -261,7 +265,7 @@ function projectNodeModules({ repoRoot, stagingRoot }) {
         projectDependencyEntry({
           sourcePath: path.join(sourcePath, scopedEntry.name),
           targetPath: path.join(targetPath, scopedEntry.name),
-          repoRoot,
+          sourceWorkspaceRoot,
           stagingRoot,
         });
       }
@@ -270,7 +274,7 @@ function projectNodeModules({ repoRoot, stagingRoot }) {
     projectDependencyEntry({
       sourcePath,
       targetPath,
-      repoRoot,
+      sourceWorkspaceRoot,
       stagingRoot,
     });
   }
