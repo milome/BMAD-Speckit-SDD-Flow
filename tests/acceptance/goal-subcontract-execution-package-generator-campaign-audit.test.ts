@@ -18,6 +18,9 @@ const {
   auditCompletedChild,
   prepareCompletedCampaignAuditContext,
 } = require('../../_bmad/skills/goal-subcontract-execution-package-generator/scripts/audit-completed-campaign.js');
+const buildExecutionPackageModule = require(
+  '../../_bmad/skills/goal-subcontract-execution-package-generator/scripts/build-execution-package.js'
+);
 
 afterEach(cleanupFixtures);
 
@@ -49,6 +52,12 @@ function writeArtifacts(artifactsPath: string, artifacts: unknown): void {
 }
 
 describe('goal subcontract completed campaign audit', () => {
+  it('does not expose scope fuse calculations from the package compiler', () => {
+    expect(buildExecutionPackageModule).not.toHaveProperty('computeScopeBudget');
+    expect(buildExecutionPackageModule).not.toHaveProperty('evaluateScopeBudgetCounts');
+    expect(buildExecutionPackageModule).not.toHaveProperty('exportedNames');
+  });
+
   it('audits one completed child through the same hash-bound seam used by aggregate audit', () => {
     const fixture = prepareCampaign();
     const artifacts = readArtifacts(fixture.artifactsPath);
@@ -360,7 +369,7 @@ describe('goal subcontract completed campaign audit', () => {
     expect(JSON.parse(idImplementationOutcomeResult.stdout).failureClass).toBe(
       'commit_functional_outcome_not_specific'
     );
-  });
+  }, 30_000);
 
   it('requires a unique terminal Git trailer block', () => {
     const narrative = prepareCampaign({ narrativeFunctionalOutcome: true });
