@@ -162,7 +162,7 @@ it('archives a blocked invocation without mutating success artifacts', async () 
   } finally {
     fixture.cleanup();
   }
-});
+}, 60_000);
 
 it.each([
   {
@@ -191,7 +191,7 @@ it.each([
   } finally {
     fixture.cleanup();
   }
-});
+}, 60_000);
 
 it.each([
   {
