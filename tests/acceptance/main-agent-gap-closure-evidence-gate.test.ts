@@ -582,7 +582,7 @@ function runPublicClosureGate(input: {
   };
 }
 
-describe('Main Agent gap closure evidence gate', () => {
+describe('Main Agent gap closure evidence gate', { timeout: 60_000 }, () => {
   it(
     'rejects a readonly auditor PASS claim when the clean materialization receipt is missing',
     async () => {

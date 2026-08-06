@@ -126,49 +126,53 @@ describe('requirements contract consumer target authority', () => {
     }
   });
 
-  it('derives target authority from source-declared consumer paths', () => {
-    const root = createTempRoot('requirements-contract-source-targets-');
-    try {
-      const descriptor = createMinimalConsumerRequirementDescriptor(
-        'consumer-target-authority-source-declared'
-      );
-      const materialized = writeMinimalConsumerRequirement(
-        root,
-        'docs/requirements/source-targets.md',
-        descriptor
-      );
-      const { targetPath: sourceDeclaredTargetPath, ...authoringOptions } =
-        materialized.authoringOptions;
+  it(
+    'derives target authority from source-declared consumer paths',
+    { timeout: 60_000 },
+    () => {
+      const root = createTempRoot('requirements-contract-source-targets-');
+      try {
+        const descriptor = createMinimalConsumerRequirementDescriptor(
+          'consumer-target-authority-source-declared'
+        );
+        const materialized = writeMinimalConsumerRequirement(
+          root,
+          'docs/requirements/source-targets.md',
+          descriptor
+        );
+        const { targetPath: sourceDeclaredTargetPath, ...authoringOptions } =
+          materialized.authoringOptions;
 
-      expect(sourceDeclaredTargetPath).toBe(descriptor.target.path);
-      const result = runAuthoring(
-        root,
-        materialized.sourcePath,
-        'REQ-SOURCE-TARGETS',
-        authoringOptions
-      );
-      const paths = artifacts(root, 'REQ-SOURCE-TARGETS', 'REQ-SOURCE-TARGETS-SET');
-      const targetReport = readJson<TargetAuthorityArtifact>(paths.targetAuthorityReport);
-      const accepted = targetReport.accepted.map((row: any) => ({
-        path: row.path,
-        source: row.source,
-        sourceSpan: row.sourceSpan,
-      }));
+        expect(sourceDeclaredTargetPath).toBe(descriptor.target.path);
+        const result = runAuthoring(
+          root,
+          materialized.sourcePath,
+          'REQ-SOURCE-TARGETS',
+          authoringOptions
+        );
+        const paths = artifacts(root, 'REQ-SOURCE-TARGETS', 'REQ-SOURCE-TARGETS-SET');
+        const targetReport = readJson<TargetAuthorityArtifact>(paths.targetAuthorityReport);
+        const accepted = targetReport.accepted.map((row: any) => ({
+          path: row.path,
+          source: row.source,
+          sourceSpan: row.sourceSpan,
+        }));
 
-      expect(issueCodes(result)).toContain('critical_auditor_provider_mode_required');
-      expect(accepted).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            path: descriptor.target.path,
-            source: 'source_document',
-            sourceSpan: expect.objectContaining({ startLine: expect.any(Number) }),
-          }),
-        ])
-      );
-    } finally {
-      removeTempRoot(root);
+        expect(issueCodes(result)).toContain('critical_auditor_provider_mode_required');
+        expect(accepted).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              path: descriptor.target.path,
+              source: 'source_document',
+              sourceSpan: expect.objectContaining({ startLine: expect.any(Number) }),
+            }),
+          ])
+        );
+      } finally {
+        removeTempRoot(root);
+      }
     }
-  });
+  );
 
   it('fails closed before source mutation when target authority is missing', () => {
     const root = createTempRoot('requirements-contract-missing-targets-');

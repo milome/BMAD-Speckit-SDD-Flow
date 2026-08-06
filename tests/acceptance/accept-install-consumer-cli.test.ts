@@ -40,7 +40,7 @@ function installRootPackageToConsumer(target: string): void {
     }),
     'utf8'
   );
-  run('npm install --ignore-scripts --no-audit --no-fund --offline', target);
+  run('npm install --ignore-scripts --no-audit --no-fund --prefer-offline', target);
   run('npm rebuild bmad-speckit-sdd-flow --foreground-scripts', target);
 }
 
