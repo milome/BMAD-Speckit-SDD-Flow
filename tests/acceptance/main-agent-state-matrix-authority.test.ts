@@ -1,37 +1,56 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   buildMainAgentDispatchInstruction,
   resolveMainAgentOrchestrationSurface,
   runMainAgentAutomaticLoop,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
+import { requirementsContractPromptTransactionPublishCommand } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher';
 import {
   cleanupRequirementWorkspace,
   materializeRequirementFixture,
-  writeFakeReqTraceSkill,
-  writeCompiledImplementPacket,
 } from '../helpers/requirement-fixture-runtime';
+import { prepareAuditDispatchRuntime } from './helpers/prompt-transaction-audit-dispatch-fixture';
+import { compiledPromptRunnerFor } from './helpers/prompt-transaction-compiled-runner-fixture';
+import { publishImplementationPromptFixture } from './helpers/prompt-transaction-implementation-publication-fixture';
+import { materializePromptPublicationFixture } from './helpers/prompt-transaction-publication-fixture';
 
 describe('Main Agent state matrix authority', () => {
-  it('dispatches audit only after execution_closure pass and closeout only after audit_review pass', () => {
-    const auditFixture = materializeRequirementFixture({
-      currentMentalModel: 'execution_closure',
-      sixModelResults: {
-        requirement_confirmation: { status: 'pass' },
-        architecture_confirmation: { status: 'pass' },
-        implementation_readiness: { status: 'pass' },
-        execution_closure: { status: 'pass' },
-      },
-    });
+  it('dispatches audit only after execution_closure pass and closeout only after audit_review pass', async () => {
+    const auditFixture = materializePromptPublicationFixture();
     try {
-      writeFakeReqTraceSkill(auditFixture.root);
-      writeCompiledImplementPacket({ root: auditFixture.root, fixture: auditFixture });
+      auditFixture.options.currentDispatchPointer = path.join(
+        auditFixture.root,
+        'docs',
+        'plans',
+        'evidence',
+        'loop-engineering-remediation',
+        'current-dispatch-pointer-receipt.json'
+      );
+      prepareAuditDispatchRuntime(auditFixture);
+      let publishOutput = '';
+      const stdout = vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
+        publishOutput += String(chunk);
+        return true;
+      });
+      const publishCode = await requirementsContractPromptTransactionPublishCommand(
+        auditFixture.options,
+        {
+          runCompiledPrompt: compiledPromptRunnerFor(auditFixture, {
+            extraPacket: {
+              packetId: auditFixture.identity.implementationAttemptId,
+            },
+          }),
+        }
+      ).finally(() => stdout.mockRestore());
+      expect(publishCode, publishOutput).toBe(0);
+
       const instruction = buildMainAgentDispatchInstruction({
         projectRoot: auditFixture.root,
-        recordId: auditFixture.recordId,
-        requirementSetId: auditFixture.requirementSetId,
-        runId: auditFixture.runId,
+        recordId: auditFixture.authority.recordId,
+        requirementSetId: auditFixture.identity.requirementSetId,
+        runId: auditFixture.identity.implementationAttemptId,
         flow: 'standalone_tasks',
         stage: 'implement',
         host: 'codex',
@@ -74,21 +93,19 @@ describe('Main Agent state matrix authority', () => {
         cleanupRequirementWorkspace(closeoutFixture.root);
       }
 
-      const blockedLoopFixture = materializeRequirementFixture({
-        currentMentalModel: 'implementation_readiness',
-        sixModelResults: {
-          requirement_confirmation: { status: 'pass' },
-          architecture_confirmation: { status: 'pass' },
-          implementation_readiness: { status: 'pass' },
-        },
-    });
-    try {
-      writeFakeReqTraceSkill(blockedLoopFixture.root);
-      const result = runMainAgentAutomaticLoop({
-        projectRoot: blockedLoopFixture.root,
-          recordId: blockedLoopFixture.recordId,
-          requirementSetId: blockedLoopFixture.requirementSetId,
-          runId: blockedLoopFixture.runId,
+      const { fixture: blockedLoopFixture } = await publishImplementationPromptFixture({
+        goalMode: 'direct_prompt',
+        configureRecord: (record, fixture) => ({
+          ...record,
+          transactionId: fixture.identity.transactionId,
+        }),
+      });
+      try {
+        const result = runMainAgentAutomaticLoop({
+          projectRoot: blockedLoopFixture.root,
+          recordId: blockedLoopFixture.authority.recordId,
+          requirementSetId: blockedLoopFixture.identity.requirementSetId,
+          runId: blockedLoopFixture.identity.implementationAttemptId,
           flow: 'standalone_tasks',
           stage: 'implement',
         });
@@ -99,15 +116,15 @@ describe('Main Agent state matrix authority', () => {
           '_bmad-output',
           'runtime',
           'requirement-records',
-          blockedLoopFixture.recordId,
+          blockedLoopFixture.authority.recordId,
           'decision-matrix'
         );
         expect(fs.existsSync(matrixDir)).toBe(true);
       } finally {
-        cleanupRequirementWorkspace(blockedLoopFixture.root);
+        blockedLoopFixture.cleanup();
       }
     } finally {
-      cleanupRequirementWorkspace(auditFixture.root);
+      auditFixture.cleanup();
     }
   });
 });

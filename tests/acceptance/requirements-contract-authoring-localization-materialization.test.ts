@@ -59,6 +59,8 @@ function englishLocalizationSource(): string {
     '',
     '| ID | Type | Covers | Command or evidence path | Completion rule | Per-MUST oracle | Assertion source | Responsibility mapping | Target files |',
     '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    '| E2E-001 | e2e | MUST-FR-001 | python -m pytest tests/trader/test_gateway_profile_registry.py | Exit code 0. | GDS trigger ticks route through DataService. | ACC-001 CMD-001 TRACE-001 | PATH-001 owns remediation. | tests/trader/test_gateway_profile_registry.py src/dataservice/gds_trigger.py |',
+    '| E2E-002 | e2e | MUST-FR-002 | python -m pytest tests/trader/test_gateway_profile_registry.py | Exit code 0. | HKFE symbol and exchange semantics remain unchanged. | ACC-002 CMD-002 TRACE-002 | PATH-001 owns remediation. | tests/trader/test_gateway_profile_registry.py src/dataservice/gds_trigger.py |',
     '| CMD-001 | delivery-evidence | MUST-FR-001 | python -m pytest tests/trader/test_gateway_profile_registry.py | Exit code 0. | GDS trigger ticks route through DataService. | ACC-001 TRACE-001 | PATH-001 owns remediation. | tests/trader/test_gateway_profile_registry.py src/dataservice/gds_trigger.py |',
     '| CMD-002 | delivery-evidence | MUST-FR-002 | python -m pytest tests/trader/test_gateway_profile_registry.py | Exit code 0. | HKFE symbol and exchange semantics remain unchanged. | ACC-002 TRACE-002 | PATH-001 owns remediation. | tests/trader/test_gateway_profile_registry.py src/dataservice/gds_trigger.py |',
     '| CMD-003 | delivery-evidence | MUST-NFR-001 | python -m pytest tests/trader/test_gateway_profile_registry.py | Exit code 0. | Stale trigger data is rejected before processing. | ACC-003 TRACE-003 | PATH-001 owns remediation. | tests/trader/test_gateway_profile_registry.py src/dataservice/gds_trigger.py |',
@@ -69,8 +71,8 @@ function englishLocalizationSource(): string {
     '',
     '| ID | Covers | Evidence refs | Acceptance refs | Contract validation command refs | Delivery evidence command refs | View refs | Artifact refs | Boundary refs | Per-MUST oracle | Per-MUST closure assertion | Responsibility mapping |',
     '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-    '| TRACE-001 | MUST-FR-001 | ACC-001 | ACC-001 | CMD-999 | CMD-001 | none | PATH-001 | none | GDS trigger ticks route through DataService. | MUST-FR-001 closes through ACC-001 and CMD-001. | PATH-001 owns implementation and remediation. |',
-    '| TRACE-002 | MUST-FR-002 | ACC-002 | ACC-002 | CMD-999 | CMD-002 | none | PATH-001 | none | HKFE symbol and exchange semantics remain unchanged. | MUST-FR-002 closes through ACC-002 and CMD-002. | PATH-001 owns implementation and remediation. |',
+    '| TRACE-001 | MUST-FR-001 | ACC-001 | ACC-001 E2E-001 | CMD-999 | CMD-001 | none | PATH-001 | none | GDS trigger ticks route through DataService. | MUST-FR-001 closes through ACC-001, E2E-001, and CMD-001. | PATH-001 owns implementation and remediation. |',
+    '| TRACE-002 | MUST-FR-002 | ACC-002 | ACC-002 E2E-002 | CMD-999 | CMD-002 | none | PATH-001 | none | HKFE symbol and exchange semantics remain unchanged. | MUST-FR-002 closes through ACC-002, E2E-002, and CMD-002. | PATH-001 owns implementation and remediation. |',
     '| TRACE-003 | MUST-NFR-001 | ACC-003 | ACC-003 E2E-003 | CMD-999 | CMD-003 | none | PATH-001 | none | Stale trigger data is rejected before processing. | MUST-NFR-001 closes through ACC-003 and CMD-003. | PATH-001 owns implementation and remediation. |',
     '| TRACE-004 | NEG-001 | ACC-003 | ACC-003 E2E-003 | CMD-999 | CMD-003 | none | PATH-001 | none | Stale trigger data is rejected before processing. | NEG-001 closes through ACC-003, E2E-003, and CMD-003. | PATH-001 owns implementation and remediation. |',
     '',
@@ -158,7 +160,9 @@ describe('requirements contract authoring localization materialization', () => {
         const localizationRequestPath = path.join(paths.authoring, 'localization-request.json');
 
         expect(blocked.ok).toBe(false);
-        expect(blocked.substate).toBe('localization_translation_required');
+        expect(blocked.substate, JSON.stringify(blocked.blockingIssues, null, 2)).toBe(
+          'localization_translation_required'
+        );
         expect(blocked.blockingStage).toBe('authoring_localization_provider_required');
         expect(issueCodes(blocked)).toContain('confirmation_localization_translation_required');
         expect(existsSync(localizationRequestPath)).toBe(true);
@@ -286,7 +290,10 @@ describe('requirements contract authoring localization materialization', () => {
       writeFileSync(targetSource, stale, 'utf8');
 
       const repairBlocked = runAuthoring(root, targetSource, `${recordId}-REPAIR`, options);
-      expect(repairBlocked.substate).toBe('localization_translation_required');
+      expect(
+        repairBlocked.substate,
+        JSON.stringify(repairBlocked.blockingIssues, null, 2)
+      ).toBe('localization_translation_required');
       const repairPaths = artifacts(root, `${recordId}-REPAIR`, `${recordId}-REPAIR-SET`);
       const repairResponsePath = writeLocalizationResponse(
         root,

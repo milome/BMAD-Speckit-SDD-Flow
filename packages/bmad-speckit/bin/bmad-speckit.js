@@ -1742,7 +1742,7 @@ const unknownTopLevelHelp =
   requestedTopLevelAction &&
   !requestedTopLevelAction.startsWith('-') &&
   requestedTopLevelAction !== 'help' &&
-  process.argv.slice(3).includes('--help') &&
+  process.argv.includes('--help', 3) &&
   !program.commands.some((command) => command.name() === requestedTopLevelAction);
 
 if (unknownTopLevelHelp) {

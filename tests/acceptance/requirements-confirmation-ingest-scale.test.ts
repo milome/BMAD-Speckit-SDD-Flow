@@ -9,6 +9,7 @@ import {
   implementationConfirmationHashFor,
   sourceDocumentHashFor,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-implementation-confirmation-codec';
+import { materializeRequirementsEffectivePassFixture } from '../helpers/requirements-effective-pass-fixture';
 
 const ROOT = process.cwd();
 const CORPUS = JSON.parse(
@@ -43,7 +44,16 @@ function replacementLine(index: number): string {
   return `    - "scale-replacement-${String(index).padStart(6, '0')}-${'x'.repeat(48)}"`;
 }
 
-function writeScaleSource(): { sourcePath: string; sourceText: string; payload: string[] } {
+function writeScaleSource(): {
+  sourcePath: string;
+  sourceText: string;
+  payload: string[];
+  effectivePassReceiptPath: string;
+} {
+  const effectivePass = materializeRequirementsEffectivePassFixture({
+    root: tempDir,
+    recordId: 'REQ-CONFIRM-SCALE',
+  });
   const lines = [
     '# Scale Confirmation',
     '',
@@ -79,6 +89,9 @@ function writeScaleSource(): { sourcePath: string; sourceText: string; payload: 
     '      canModifyWriterRegistry: false',
     `      registryHash: "sha256:${'b'.repeat(64)}"`,
     `      architectureConfirmationHash: "sha256:${'c'.repeat(64)}"`,
+    '  preConfirmationDrilldown:',
+    '    criticalAuditor:',
+    `      latestReceiptHash: ${effectivePass.receipt.receiptHash}`,
   ];
   while (lines.length < CORPUS.sourceSpan.startLine - 2) {
     lines.push(`  # scale-prefix-${String(lines.length + 1).padStart(6, '0')}`);
@@ -95,7 +108,12 @@ function writeScaleSource(): { sourcePath: string; sourceText: string; payload: 
   const sourceText = lines.join('\n');
   const sourcePath = path.join(tempDir, 'scale-prd.md');
   fs.writeFileSync(sourcePath, sourceText, 'utf8');
-  return { sourcePath, sourceText, payload };
+  return {
+    sourcePath,
+    sourceText,
+    payload,
+    effectivePassReceiptPath: effectivePass.receiptPath,
+  };
 }
 
 describe('requirements confirmation ingest scale corpus', () => {
@@ -103,7 +121,7 @@ describe('requirements confirmation ingest scale corpus', () => {
     'ingests the frozen exact-line fixture without argument expansion or stack failure',
     { timeout: 180_000 },
     () => {
-      const { sourcePath, sourceText, payload } = writeScaleSource();
+      const { sourcePath, sourceText, payload, effectivePassReceiptPath } = writeScaleSource();
       expect(CORPUS.schemaVersion).toBe('requirements-confirmation-ingest-scale/v1');
       expect(sourceText.split('\n')).toHaveLength(CORPUS.totalLines);
       expect(Buffer.byteLength(sourceText, 'utf8')).toBeGreaterThanOrEqual(CORPUS.minUtf8Bytes);
@@ -168,6 +186,8 @@ describe('requirements confirmation ingest scale corpus', () => {
           'scale-test',
           '--runtime-root',
           path.join(tempDir, 'runtime'),
+          '--requirements-effective-pass-receipt',
+          effectivePassReceiptPath,
           '--confirmed-at',
           '2026-07-19T04:00:00.000Z',
         ],

@@ -224,6 +224,8 @@ export function expandSixModelAuthority(input: {
           ? 'pass'
           : status === 'stale'
             ? 'stale'
+            : status === 'not_established'
+              ? 'not_established'
             : status === 'awaiting_user_acceptance'
               ? 'awaiting_user_acceptance'
               : 'blocked';
@@ -801,11 +803,28 @@ export function writeCompiledImplementPacket(input: {
   const humanPromptPath = path.join(outDir, 'human_prompt.txt');
   const auditReceiptPath = path.join(outDir, 'audit_receipt.json');
   const goalExecutionPath = path.join(outDir, 'goal_execution.md');
+  const sourceProjectionHash = sha256Text(
+    stableStringify({
+      sourceDocumentHash: input.fixture.sourceDocumentHash,
+      implementationConfirmationHash: input.fixture.implementationConfirmationHash,
+    })
+  );
+  const manifestPayload = {
+    schemaVersion: 'contract-execution-manifest/v1',
+    builderVersion: 'requirement-fixture-runtime/v1',
+    sourceProjectionHash,
+    implementationConfirmationHash: input.fixture.implementationConfirmationHash,
+  };
+  const contractExecutionManifest = {
+    ...manifestPayload,
+    manifestHash: sha256Text(stableStringify(manifestPayload)),
+  };
   writeJson(modelPacketPath, {
     schemaVersion: 'model-packet-fixture/v1',
     artifactRole: 'execution_authority',
     sourceDocumentHash: input.fixture.sourceDocumentHash,
     implementationConfirmationHash: input.fixture.implementationConfirmationHash,
+    contractExecutionManifest,
   });
   const profile = resolveExecutionDisciplineProfile('standalone_tasks');
   fs.writeFileSync(
@@ -820,6 +839,11 @@ export function writeCompiledImplementPacket(input: {
   );
   writeJson(auditReceiptPath, {
     decision: 'pass',
+    sourceDocumentHash: input.fixture.sourceDocumentHash,
+    implementationConfirmationHash: input.fixture.implementationConfirmationHash,
+    humanPromptRequiredFragmentsPassed: true,
+    goalDocumentRequiredFragmentsPassed: true,
+    contractExecutionManifest,
     goalCommand: {
       mode: 'native_goal_document_ref',
       documentHash: sha256File(goalExecutionPath),

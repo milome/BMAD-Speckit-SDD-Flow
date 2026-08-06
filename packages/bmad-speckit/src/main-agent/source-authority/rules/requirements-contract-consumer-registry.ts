@@ -14,6 +14,18 @@ export const REQUIREMENTS_CONTRACT_VALIDATION_MODES = [
 ] as const;
 
 const SCRIPT_ROOT = 'packages/bmad-speckit/src/main-agent/source-authority/scripts';
+const PRODUCTION_DISCOVERY_RULES = [
+  { root: 'scripts', fileNamePattern: '\\.(?:cjs|mjs|js|jsx|cts|mts|ts|tsx)$' },
+  { root: 'src', fileNamePattern: '\\.(?:cjs|mjs|js|jsx|cts|mts|ts|tsx)$' },
+  { root: 'bin', fileNamePattern: '\\.(?:cjs|mjs|js|jsx|cts|mts|ts|tsx)$' },
+  { root: '_bmad/shared', fileNamePattern: '\\.(?:cjs|mjs|js|jsx|cts|mts|ts|tsx)$' },
+  { root: 'packages', fileNamePattern: '\\.(?:cjs|mjs|js|jsx|cts|mts|ts|tsx)$' },
+  { root: '_bmad/codex', fileNamePattern: '\\.(?:cjs|mjs|js|jsx|cts|mts|ts|tsx)$' },
+  {
+    root: 'node_modules/bmad-speckit',
+    fileNamePattern: '\\.(?:cjs|mjs|js|jsx|cts|mts|ts|tsx)$',
+  },
+] as const;
 
 const NON_PRODUCTION_DIRECTORY_NAMES = new Set([
   '.git',
@@ -28,6 +40,17 @@ const NON_PRODUCTION_DIRECTORY_NAMES = new Set([
   'test-results',
   'tests',
 ]);
+
+const SEMANTIC_READER_PATTERNS = [
+  /\bimplementationConfirmation\b/u,
+  /\bcurrentTargetMap\b/u,
+  /\bRequirementContractModelV(?:1|2)\b/u,
+  /\brequirements-contract-read-facade\b/u,
+  /(?:logicalModel|semanticModel|requirementContract)\s*(?:\.\s*(?:semanticBodies|nodes|edges)|\[\s*['"](?:semanticBodies|nodes|edges)['"]\s*\])/u,
+  /(?:semantic-ir|trace-graph|target-bindings|task-graph|red-contracts|oracle-registry|acceptance-contracts|evidence-requirements|business-behavior-delta|implementation-impact-map)\.json/u,
+] as const;
+const CONSUMER_MIRROR_PATH_PATTERN =
+  /^(?:packages\/bmad-speckit\/(?:dist|_bmad)\/|node_modules\/bmad-speckit\/)/u;
 
 type ValidationMode = (typeof REQUIREMENTS_CONTRACT_VALIDATION_MODES)[number];
 
@@ -917,6 +940,48 @@ function discoverConsumerPaths(root: string, rules: readonly ConsumerDiscoveryRu
   return [...discovered].sort();
 }
 
+function isSemanticReaderSource(source: string): boolean {
+  return SEMANTIC_READER_PATTERNS.some((pattern) => pattern.test(source));
+}
+
+function canonicalDeclaredConsumerPath(
+  relativePath: string,
+  declaredPaths: readonly string[]
+): string {
+  if (declaredPaths.includes(relativePath) || !CONSUMER_MIRROR_PATH_PATTERN.test(relativePath)) {
+    return relativePath;
+  }
+  const sourceFileName = path.posix.basename(relativePath).replace(/\.js$/u, '.ts');
+  const candidates = declaredPaths.filter(
+    (declaredPath) => path.posix.basename(declaredPath) === sourceFileName
+  );
+  return candidates.length === 1 ? candidates[0] : relativePath;
+}
+
+function discoverProductionConsumerPaths(
+  root: string,
+  declaredPaths: readonly string[]
+): string[] {
+  const discovered = new Set<string>();
+  for (const rule of PRODUCTION_DISCOVERY_RULES) {
+    const pattern = new RegExp(rule.fileNamePattern, 'u');
+    for (const filePath of filesBelow(path.resolve(root, rule.root))) {
+      const relativePath = normalize(path.relative(root, filePath));
+      if (
+        relativePath === REQUIREMENTS_CONTRACT_CONSUMER_REGISTRY_OWNER_PATH ||
+        /\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(relativePath) ||
+        !pattern.test(path.basename(filePath))
+      ) {
+        continue;
+      }
+      const source = readFileSync(filePath, 'utf8');
+      if (!isSemanticReaderSource(source)) continue;
+      discovered.add(canonicalDeclaredConsumerPath(relativePath, declaredPaths));
+    }
+  }
+  return [...discovered].sort();
+}
+
 export class RequirementsContractConsumerScopeAmendmentError extends Error {
   readonly code = 'scope_amendment_required';
   readonly discoveredConsumerPaths: string[];
@@ -946,17 +1011,18 @@ export function createRequirementsContractConsumerRegistry(root = process.cwd())
   const declaredPaths = [
     ...new Set(CONSUMER_DEFINITIONS.map((definition) => consumerPath(definition))),
   ].sort();
-  const discoveryRules = createConsumerDiscoveryRules();
-  const discoveredPaths = discoverConsumerPaths(root, discoveryRules);
-  const missingConsumerPaths = discoveredPaths.filter(
+  const productionDiscoveredPaths = discoverProductionConsumerPaths(root, declaredPaths);
+  const missingConsumerPaths = productionDiscoveredPaths.filter(
     (discoveredPath) => !declaredPaths.includes(discoveredPath)
   );
   if (missingConsumerPaths.length > 0) {
     throw new RequirementsContractConsumerScopeAmendmentError(
-      discoveredPaths,
+      productionDiscoveredPaths,
       missingConsumerPaths
     );
   }
+  const discoveryRules = createConsumerDiscoveryRules();
+  const discoveredPaths = discoverConsumerPaths(root, discoveryRules);
 
   const consumers = CONSUMER_DEFINITIONS.map((definition) => {
     const consumerFilePath = consumerPath(definition);

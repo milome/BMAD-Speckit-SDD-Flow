@@ -23,10 +23,7 @@ type ScopeAmendmentError = Error & {
 const SCRIPT_ROOT = 'packages/bmad-speckit/src/main-agent/source-authority/scripts';
 const ROOT = process.cwd();
 const KNOWN_UNDECLARED_READERS = [
-  `${SCRIPT_ROOT}/ai-tdd-contract-gate.ts`,
-  `${SCRIPT_ROOT}/main-agent-compiled-prompt-runner.ts`,
   `${SCRIPT_ROOT}/requirements-contract-production-semantic-pipeline.ts`,
-  `${SCRIPT_ROOT}/run-confirmed-trace-slice.ts`,
 ].sort();
 const SEMANTIC_READER_SOURCE = `
 import { readFileSync } from 'node:fs';

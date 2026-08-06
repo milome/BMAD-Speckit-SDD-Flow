@@ -25316,11 +25316,13 @@ function pendingCriticalAuditorDraftText(input: {
   transaction: CriticalAuditorStagingTransaction;
   recordId: string;
   packetHash: string;
+  candidateDraftText: string;
 }): string | null {
   if (
     !fs.existsSync(input.transaction.draftSource) ||
     safeCurrentSourceDocumentHash(input.transaction.draftSource) !==
-      input.transaction.auditSourceHash
+      input.transaction.auditSourceHash ||
+    sha256File(input.transaction.draftSource) !== sha256Text(input.candidateDraftText)
   ) {
     return null;
   }
@@ -30443,6 +30445,10 @@ export function runMainAgentPreConfirmationDrilldown(
     });
   }
 
+  const currentDraftText = materializeImplementationConfirmationText(
+    sourceText,
+    draftConfirmation
+  );
   const preRendererDraftText =
     pendingFinalCriticalAuditorDraftText({
       transaction: stagingTransaction,
@@ -30453,8 +30459,9 @@ export function runMainAgentPreConfirmationDrilldown(
       transaction: stagingTransaction,
       recordId: identity.recordId,
       packetHash,
+      candidateDraftText: currentDraftText,
     }) ??
-    materializeImplementationConfirmationText(sourceText, draftConfirmation);
+    currentDraftText;
   let materializedDraftText = preRendererDraftText;
   let productionSourcePrdRender: ReturnType<
     typeof renderProductionClassifiedRequirementSourcePrd
