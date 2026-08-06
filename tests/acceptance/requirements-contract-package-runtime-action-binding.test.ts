@@ -127,19 +127,39 @@ function gitNullList(args: string[]): string[] {
     .map((entry) => entry.replace(/\\/gu, '/'));
 }
 
+function actionBindingRuntimeTextHashInputPaths(manifest: ActionBindingManifest): string[] {
+  return [
+    ...new Set(
+      manifest.actions.flatMap((action) =>
+        (action.runtimeRefs ?? []).flatMap((runtimeRef) => {
+          const packagePath = runtimeRef.packagePath.replace(/\\/gu, '/');
+          if (packagePath.startsWith('dist/')) return [];
+          return [
+            packagePath.startsWith('_bmad/') ? packagePath : `packages/bmad-speckit/${packagePath}`,
+          ];
+        })
+      )
+    ),
+  ].sort();
+}
+
 function actionBindingTrackedHashInputPaths(manifest: ActionBindingManifest): string[] {
   const declaredPaths = [
-    ...new Set(
-      manifest.actions.flatMap((action) => [
+    ...new Set([
+      ...actionBindingRuntimeTextHashInputPaths(manifest),
+      ...manifest.actions.flatMap((action) => [
         action.sourceHandlerRef.path,
         ...action.inputSchemaRefs.map((ref) => ref.path),
         ...action.outputSchemaRefs.map((ref) => ref.path),
         ...action.behaviorTestRefs.map((ref) => ref.path),
-      ])
-    ),
+      ]),
+    ]),
   ].sort();
-  const trackedPaths = new Set(gitNullList(['ls-files', '-z', '--', ...declaredPaths]));
-  return declaredPaths.filter((declaredPath) => trackedPaths.has(declaredPath));
+  const trackedPaths = gitNullList(['ls-files', '-z', '--', ...declaredPaths]).sort();
+  expect(trackedPaths, 'every declared action-binding raw-byte hash input must be tracked').toEqual(
+    declaredPaths
+  );
+  return declaredPaths;
 }
 
 function readManifest(): ActionBindingManifest | null {
@@ -159,7 +179,9 @@ function expectRepositoryFileRef(ref: FileRef): void {
 
 function registeredRuntimeActionIds(): string[] {
   const cliSource = readFileSync(CLI_PATH, 'utf8');
-  const directActionIds = [...cliSource.matchAll(/\.command\('(?<actionId>requirements-contract-[a-z0-9-]+)'\)/gu)]
+  const directActionIds = [
+    ...cliSource.matchAll(/\.command\('(?<actionId>requirements-contract-[a-z0-9-]+)'\)/gu),
+  ]
     .map((match) => match.groups?.actionId ?? '')
     .filter(Boolean);
   if (
@@ -295,6 +317,9 @@ describe('requirements contract package runtime action binding', () => {
 
     const trackedHashInputPaths = actionBindingTrackedHashInputPaths(manifest);
     expect(trackedHashInputPaths.length).toBeGreaterThan(0);
+    expect(trackedHashInputPaths).toContain(
+      '_bmad/shared/requirements-contract/requirements-contract-judge-provider-registry.json'
+    );
 
     const attributeOutput = gitNullList([
       'check-attr',

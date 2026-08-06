@@ -7,6 +7,7 @@ package-lock.json text eol=lf
 # Main-agent dist source and build authority hashes bind package text bytes.
 packages/bmad-speckit/src/** text eol=lf
 packages/bmad-speckit/scripts/** text eol=lf
+packages/bmad-speckit/bin/** text eol=lf
 # Requirements-contract schema hashes bind deterministic LF bytes.
 packages/bmad-speckit/src/main-agent/source-authority/schemas/** text eol=lf
 tests/fixtures/goal-contract-release-gate/*.md text eol=lf
