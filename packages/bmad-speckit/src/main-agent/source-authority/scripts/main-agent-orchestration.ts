@@ -25422,6 +25422,15 @@ function findNextCriticalAuditorRound(authoringDir: string): number {
   return receipts.length + 1;
 }
 
+function findCurrentCriticalAuditorResponsePath(authoringDir: string): string {
+  const roundIndex = findNextCriticalAuditorRound(authoringDir);
+  const responsePath = path.join(
+    authoringDir,
+    `critical-auditor-round-response-${roundIndex}.json`
+  );
+  return fs.existsSync(responsePath) ? responsePath : '';
+}
+
 function archiveCriticalAuditorArtifacts(input: {
   authoringDir: string;
   stagingDir?: string;
@@ -27212,7 +27221,7 @@ export function runMainAgentAuthoringRepair(
       ],
     });
   }
-  const responsePath = '';
+  const responsePath = findCurrentCriticalAuditorResponsePath(paths.authoringDir);
   const initialMaterializationGate = verifySourceMaterializationBeforeAudit({
     root,
     sourcePath,

@@ -774,11 +774,62 @@ function criticalAuditorResponseIdentity(request: Record<string, any>): Record<s
     namespaceVersion: request.namespaceVersion,
     sourceHash: request.sourceHash,
     sourceDocumentHash: request.sourceDocumentHash,
+    sourceBytesHash: request.sourceBytesHash,
     semanticModelHash: request.semanticModelHash,
     implementationConfirmationHash: request.implementationConfirmationHash,
     packetHash: request.packetHash,
     projectionSetHash: request.projectionSetHash,
   };
+}
+
+function priorFindingsDispositionFromRequest(
+  request: Record<string, any>
+): Record<string, unknown>[] {
+  const dispositions = new Map<string, Record<string, unknown>>();
+  const addDisposition = (
+    finding: Record<string, any>,
+    disposition: 'unchanged' | 'rejected',
+    evidenceRef: string
+  ) => {
+    const findingRef = ['findingRef', 'gapId', 'id', 'code', 'blockerCode']
+      .map((field) => String(finding[field] ?? '').trim())
+      .find(Boolean);
+    if (!findingRef || dispositions.has(findingRef)) return;
+    dispositions.set(findingRef, {
+      findingRef,
+      disposition,
+      evidenceRefs: evidenceRef ? [evidenceRef] : [],
+    });
+  };
+
+  for (const envelope of request.previousReceipts ?? []) {
+    const receipt = envelope.criticalAuditorReceipt ?? envelope;
+    const evidenceRef = String(receipt.receiptHash ?? receipt.responseHash ?? '').trim();
+    for (const key of [
+      'gapCandidates',
+      'validatedGaps',
+      'mutationPressureFindings',
+      'overBroadTaskFindings',
+      'missingProjectionFindings',
+      'invalidProofFindings',
+      'legacyBypassFindings',
+      'sourceMaterializationFindings',
+    ]) {
+      for (const finding of receipt[key] ?? []) {
+        addDisposition(finding, 'unchanged', evidenceRef);
+      }
+    }
+    for (const finding of receipt.rejectedGapCandidates ?? []) {
+      addDisposition(finding, 'rejected', evidenceRef);
+    }
+  }
+
+  const gateDryRun = request.gateDryRun ?? {};
+  const gateEvidenceRef = String(gateDryRun.reportPath ?? '').trim();
+  for (const issue of gateDryRun.actionableBlockingIssues ?? []) {
+    addDisposition(issue, 'unchanged', gateEvidenceRef);
+  }
+  return [...dispositions.values()];
 }
 
 function nextNumericId(existingIds: unknown[], prefix: string, offset = 1): string {
@@ -829,13 +880,7 @@ function writeNoNewGapResponse(
     verdict: 'no_new_valid_gap',
     reviewedMustRefs: request.mustRefs,
     reviewedProjectionRefs: projectionRefs.length ? [projectionRefs[0]] : [],
-    priorFindingsDisposition: [
-      {
-        findingRef: `ROUND-${request.roundIndex}-BASELINE`,
-        disposition: request.roundIndex === 1 ? 'new' : 'unchanged',
-        evidenceRefs: [request.gateDryRun.reportPath],
-      },
-    ],
+    priorFindingsDisposition: priorFindingsDispositionFromRequest(request),
     rejectedGapCandidates: [
       { id: `REJ-${request.roundIndex}`, reason: 'no new valid gap detected' },
     ],
@@ -869,13 +914,7 @@ function writeNewValidGapResponse(
     verdict: 'new_valid_gap',
     reviewedMustRefs: request.mustRefs,
     reviewedProjectionRefs: projectionRefs.length ? [projectionRefs[0]] : [],
-    priorFindingsDisposition: [
-      {
-        findingRef: `ROUND-${request.roundIndex}-GAP`,
-        disposition: 'new',
-        evidenceRefs: [request.gateDryRun.reportPath],
-      },
-    ],
+    priorFindingsDisposition: priorFindingsDispositionFromRequest(request),
     gapCandidates: [{ id: `GAP-CANDIDATE-${request.roundIndex}` }],
     validatedGaps: [
       {
@@ -927,13 +966,7 @@ function writeBlockedResponse(
     verdict: 'blocked',
     reviewedMustRefs: request.mustRefs,
     reviewedProjectionRefs: projectionRefs.length ? [projectionRefs[0]] : [],
-    priorFindingsDisposition: [
-      {
-        findingRef: `ROUND-${request.roundIndex}-BLOCKED`,
-        disposition: 'new',
-        evidenceRefs: [request.gateDryRun.reportPath],
-      },
-    ],
+    priorFindingsDisposition: priorFindingsDispositionFromRequest(request),
     validatedGaps: [],
     sourceMaterializationFindings: [
       {
@@ -969,13 +1002,7 @@ function writeInsufficientAuditResponse(
     verdict: 'insufficient_audit',
     reviewedMustRefs: request.mustRefs,
     reviewedProjectionRefs: projectionRefs.length ? [projectionRefs[0]] : [],
-    priorFindingsDisposition: [
-      {
-        findingRef: `ROUND-${request.roundIndex}-INSUFFICIENT`,
-        disposition: 'new',
-        evidenceRefs: [request.gateDryRun.reportPath],
-      },
-    ],
+    priorFindingsDisposition: priorFindingsDispositionFromRequest(request),
     validatedGaps: [],
     invalidProofFindings: [
       {
@@ -1585,7 +1612,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
           recordId,
           requirementSetId: `${recordId}-SET`,
           mode: 'preserve-existing',
-          criticalAuditorResponse: paths.response(round),
         });
       }
 
@@ -1740,7 +1766,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(result.blockingStage).toBe('critical_auditor_blocked');
@@ -1778,7 +1803,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(result.blockingStage).toBe('critical_auditor_insufficient_audit');
@@ -1825,7 +1849,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(blockedResult.blockingIssues.map((issue: any) => issue.code)).toContain(
@@ -1849,7 +1872,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(insufficientResult.blockingIssues.map((issue: any) => issue.code)).toContain(
@@ -1884,7 +1906,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
@@ -1921,7 +1942,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
@@ -1963,7 +1983,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(result.blockingStage).toBe('packet_source_projection_resynchronization_required');
@@ -2087,7 +2106,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(result.blockingStage).toBe('source_gap_fix_materialization_required');
@@ -2122,7 +2140,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
       expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
         'critical_auditor_validated_gap_repair_actions_missing'
@@ -2155,7 +2172,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
       expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
         'critical_auditor_repair_action_type_unknown'
@@ -2187,7 +2203,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
       expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
         'critical_auditor_repair_action_field_missing'
@@ -2373,7 +2388,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
       expect(result).toMatchObject({
         ok: false,
@@ -2480,7 +2494,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(repaired).toMatchObject({
@@ -2579,7 +2592,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(repaired).toMatchObject({
@@ -2688,7 +2700,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(result.blockingStage).toBe('critical_auditor_round_required');
@@ -3926,7 +3937,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
       const repairedConfirmation = readInlineConfirmation(source);
       const rebuiltPacket = readJson(paths.packet).must_decomposition_packet;
@@ -3966,7 +3976,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       const archiveArtifact = result.artifacts.find((artifact: string) =>
@@ -4026,7 +4035,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
       const archiveArtifact = completed.artifacts.find((artifact: string) =>
         artifact.includes('/archive/')
@@ -4123,7 +4131,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(resumed, JSON.stringify(resumed.blockingIssues, null, 2)).toMatchObject({
@@ -4216,7 +4223,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
       expect(result.status).toBe('blocked');
       expect(result.consecutiveNoNewGapRounds).toBe(1);
@@ -4233,7 +4239,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(2),
       });
       expect(result.status).toBe('blocked');
       expect(result.consecutiveNoNewGapRounds).toBe(2);
@@ -4249,7 +4254,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(3),
       });
       expect(result).toMatchObject({
         ok: true,
@@ -4291,7 +4295,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
       expect(
         result,
@@ -4606,7 +4609,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
       const codes = result.blockingIssues.map((issue: any) => issue.code);
       expect(codes).toContain('critical_auditor_response_gate_dry_run_hash_mismatch');
@@ -4661,7 +4663,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(result.blockingStage).toBe('critical_auditor_response_invalid');
@@ -4788,7 +4789,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
       const resultCodes = result.blockingIssues.map((issue: any) => issue.code);
       expect(resultCodes, JSON.stringify(resultCodes)).toContain(
@@ -4823,7 +4823,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
       expect(result).toMatchObject({
         ok: false,

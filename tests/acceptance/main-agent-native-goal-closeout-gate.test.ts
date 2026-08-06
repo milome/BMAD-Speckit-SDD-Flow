@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
 import { mainDeliveryCloseoutGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate';
 import { writeNativeGoalInvocationReceipt } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/host-runtime-mode';
+import { createRecordedConfirmationHistory } from './helpers/requirement-record-confirmation-fixture';
 
 const HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
 const RECORD_ID = 'REQ-NATIVE-CLOSEOUT';
@@ -128,12 +129,20 @@ function evidenceArtifactRef(root: string) {
 function baseRecord(root: string, extra: Record<string, unknown> = {}) {
   const recipe = resolveArchitectureConfirmationHashRecipe();
   const artifact = evidenceArtifactRef(root);
+  const sourcePath = path.join(root, 'source.md');
   return {
     recordId: RECORD_ID,
     requirementSetId: RECORD_ID,
     status: 'user_confirmed',
+    sourcePath,
     sourceDocumentHash: HASH,
     implementationConfirmationHash: HASH,
+    confirmationHistory: createRecordedConfirmationHistory({
+      recordId: RECORD_ID,
+      sourcePath,
+      sourceDocumentHash: HASH,
+      implementationConfirmationHash: HASH,
+    }),
     currentMentalModel: 'audit_review',
     sixModelResults: {
       requirement_confirmation: modelResult('requirement_confirmation'),

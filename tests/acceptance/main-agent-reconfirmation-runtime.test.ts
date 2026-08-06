@@ -1,5 +1,4 @@
 import { execFileSync } from 'node:child_process';
-import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -14,6 +13,10 @@ import {
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import { resolveSixModelRuntimeDecision } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/six-model-runtime-decision';
 import { appendControlEventAndReplay } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-control-store';
+import {
+  implementationConfirmationHashFor,
+  sourceDocumentHashFor,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-implementation-confirmation-codec';
 
 const ROOT = process.cwd();
 const INGEST = path.join(
@@ -39,53 +42,6 @@ beforeEach(() => {
 afterEach(() => {
   fs.rmSync(tempDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
 });
-
-function sha256Text(value: string): string {
-  return `sha256:${crypto.createHash('sha256').update(value, 'utf8').digest('hex')}`;
-}
-
-function stableStringify(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
-  if (!value || typeof value !== 'object') return JSON.stringify(value);
-  return `{${Object.keys(value as Record<string, unknown>)
-    .sort()
-    .map(
-      (key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`
-    )
-    .join(',')}}`;
-}
-
-function semanticConfirmationForHash(
-  confirmation: Record<string, unknown>
-): Record<string, unknown> {
-  const bookkeeping = new Set([
-    'status',
-    'confirmedAt',
-    'confirmedBy',
-    'sourceDocumentHash',
-    'implementationConfirmationHash',
-    'reconfirmationRequest',
-    'confirmationRender',
-  ]);
-  return Object.fromEntries(Object.entries(confirmation).filter(([key]) => !bookkeeping.has(key)));
-}
-
-function sourceDocumentHashFor(
-  sourceText: string,
-  blockText: string,
-  confirmation: Record<string, unknown>
-): string {
-  return sha256Text(
-    sourceText.replace(
-      blockText,
-      `implementationConfirmation:${stableStringify(semanticConfirmationForHash(confirmation))}`
-    )
-  );
-}
-
-function implementationConfirmationHashFor(confirmation: Record<string, unknown>): string {
-  return sha256Text(stableStringify(semanticConfirmationForHash(confirmation)));
-}
 
 function writeText(filePath: string, value: string): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -145,6 +101,37 @@ function writeSource(): {
     openQuestions: [],
     failurePaths: [],
     edgeCases: [],
+    controlledIngestWriterRegistry: [
+      {
+        writerId: 'requirements-confirmation-ingest',
+        scriptPath:
+          '_bmad/skills/requirements-contract-authoring/scripts/ingest-confirmation-event.js',
+        scriptContentHash:
+          'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        ownerModel: 'requirements_contract',
+        allowedWriteApis: [
+          'appendControlEvent',
+          'atomicWriteRequirementRecord',
+          'appendArtifactIndex',
+        ],
+        allowedPaths: [
+          '_bmad-output/runtime/requirement-records/<requirement-set-id>/requirement-record.json',
+          '_bmad-output/runtime/requirement-records/<requirement-set-id>/events/control-events.jsonl',
+          '_bmad-output/runtime/requirement-records/<requirement-set-id>/artifact-index.jsonl',
+          '_bmad-output/runtime/requirement-records/artifact-index.jsonl',
+        ],
+        allowedEventTypes: ['confirmation_recorded', 'artifact_index_recorded'],
+        payloadContractRefs: ['confirmation_recorded', 'artifact_index_recorded'],
+        writesControlFields: ['confirmationHistory', 'artifactIndex'],
+        receiptPath:
+          '_bmad-output/runtime/requirement-records/<requirement-set-id>/receipts/requirements-confirmation-ingest/<receipt-id>.json',
+        beforeAfterHashRequired: true,
+        canModifyWriterRegistry: false,
+        registryHash:
+          'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        architectureConfirmationHash: ARCH_HASH,
+      },
+    ],
   };
   const block = yaml
     .dump(
