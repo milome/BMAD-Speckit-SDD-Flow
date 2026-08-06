@@ -70,6 +70,10 @@ const {
   currentPartitionCompilerIdentityHash,
   partitionCompilerIdentityAssetPaths,
 } = require('../src/commands/goal-contract.ts');
+const {
+  kernelPlanPath,
+  primaryPath,
+} = require('./goal-contract-canonical-intent-fixture.js');
 
 function tempRoot() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'goal-contract-partition-cli-'));
@@ -3037,12 +3041,7 @@ describe('bmad-speckit goal-contract partition command', () => {
 
   it('derives an inspect-only terminal task as final integration', () => {
     const root = tempRoot();
-    const source = path.join(
-      REPO_ROOT,
-      'docs',
-      'plans',
-      '2026-07-28-canonical-intent-control-plane-kernel-implementation-plan.md'
-    );
+    const source = kernelPlanPath;
     const out = path.join(root, 'partition-manifest.json');
 
     const result = runSourceCommand([
@@ -3617,12 +3616,7 @@ describe('bmad-speckit goal-contract partition command', () => {
 
   it('does not misclassify the real judge-role plan as Sequence-required', () => {
     const root = tempRoot();
-    const source = path.join(
-      REPO_ROOT,
-      'docs',
-      'plans',
-      '2026-07-25-judge-role-separation-implementation-task-list.md'
-    );
+    const source = primaryPath;
     const out = path.join(root, 'judge-role-manifest.json');
     const result = runSourceCommand([
       'partition',
