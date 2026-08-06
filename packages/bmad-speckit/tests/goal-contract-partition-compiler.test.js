@@ -12,6 +12,7 @@ const {
   compileCompositeSourceAuthorityBundle,
 } = require('../src/utils/goal-contract/control-plane/composite-source-authority-bundle.ts');
 const {
+  compileMainAgentGoalAuthorityBundle,
   compileGoalContract,
   compileGoalContractPolicy,
   goalContractCompilerIdentity,
@@ -378,6 +379,75 @@ describe('pure PartitionCompiler', () => {
     ].map((match) => match[2]);
 
     assert.deepEqual(sourceOnlyRequires, []);
+  });
+
+  it('compiles and verifies deterministic machine-only Main Agent Goal authority', () => {
+    const partitionInput = makeInput();
+    const boundHash = (id) => hashControlPlaneValue({ id });
+    const implementationView = { tasks: [{ taskId: 'TASK-01' }] };
+    const acceptanceEvidenceView = {
+      acceptanceItems: [{ acceptanceId: 'AC-01' }],
+    };
+    const reconciledViews = {
+      reconciliationReceiptHash: boundHash('reconciliation'),
+    };
+    const mainAgentAuthorityBindings = {
+      currentDispatchPointerHash: boundHash('dispatch-pointer'),
+      transactionManifestHash: boundHash('transaction-manifest'),
+      requirementRecordId: 'REQ-001',
+      requirementRecordHash: boundHash('requirement-record'),
+      requirementRecordRevision: 1,
+      requirementRecordEventChainHead: boundHash('event-chain-head'),
+      activeBundleRevision: 1,
+      activeBundleHash: boundHash('active-bundle'),
+      semanticIRHash: boundHash('semantic-ir'),
+      semanticConservationManifestHash: boundHash('conservation'),
+      sourceAuthorityHash: boundHash('source-authority'),
+      sourceSnapshotHash: boundHash('source-snapshot'),
+      sourceRootToSpecSpanMappingHash: boundHash('source-root-mapping'),
+      modelPacketHash: boundHash('model-packet'),
+      modelPacketParityReceiptHash: boundHash('model-packet-parity'),
+      goalExecutionHash: boundHash('goal-execution'),
+    };
+    const request = {
+      profile: 'main_agent_compiled',
+      canonicalIntentBundle: partitionInput.canonicalIntentBundle,
+      mainAgentAuthorityBindings,
+      implementationView,
+      acceptanceEvidenceView,
+      reconciledViews,
+      compilerIdentity: goalContractCompilerIdentity(),
+    };
+
+    const first = compileMainAgentGoalAuthorityBundle(request);
+    const second = compileMainAgentGoalAuthorityBundle(request);
+    assert.deepEqual(first, second);
+    assert.equal(first.authorityProfile, 'main_agent_compiled');
+    assert.equal(first.goalProjectionHash, mainAgentAuthorityBindings.goalExecutionHash);
+    assert.equal(first.markdownHash, mainAgentAuthorityBindings.goalExecutionHash);
+    assert.equal(Object.hasOwn(first, 'markdown'), false);
+    assert.match(first.goalContractBundleHash, /^sha256:[0-9a-f]{64}$/u);
+
+    assert.doesNotThrow(() =>
+      compilePartitions({
+        ...partitionInput,
+        goalContractBundle: first,
+        subordinateCoverageReceipts:
+          first.subordinateSourceCoverageReceipts,
+      })
+    );
+    const tampered = structuredClone(first);
+    tampered.mainAgentProfileBindings.semanticIRHash = boundHash('tampered');
+    assert.throws(
+      () =>
+        compilePartitions({
+          ...partitionInput,
+          goalContractBundle: tampered,
+          subordinateCoverageReceipts:
+            first.subordinateSourceCoverageReceipts,
+        }),
+      (error) => error.failureClass === 'goal_contract_bundle_hash_mismatch'
+    );
   });
 
   it('compiles deterministic core-only PartitionPlan authority', () => {
@@ -1057,6 +1127,25 @@ describe('pure PartitionCompiler', () => {
       (error) =>
         error.failureClass === 'partition_readiness_ownership_overlap' &&
         error.path === 'src/runtime.ts'
+    );
+
+    assert.throws(
+      () =>
+        validateExecutablePartitionReadiness({
+          partitions: [
+            {
+              ...partition,
+              primaryTaskIds: ['PLAN-T01', 'PLAN-T03'],
+              ownedArtifactPaths: ['src/runtime.ts', 'src/other.ts'],
+            },
+          ],
+          executableTaskIds: ['PLAN-T01', 'PLAN-T03'],
+          aggregateTaskIds: ['PLAN-T02'],
+        }),
+      (error) =>
+        error.failureClass ===
+          'partition_readiness_task_boundary_invalid' &&
+        error.partitionId === 'partition-runtime'
     );
   });
 

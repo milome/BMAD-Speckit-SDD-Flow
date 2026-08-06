@@ -5,6 +5,8 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const Ajv2020 = require('ajv/dist/2020');
+const addFormats = require('ajv-formats');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const REPO_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
@@ -50,6 +52,7 @@ const {
   compileOrderedSourceSnapshotSet,
 } = require('../src/utils/goal-contract/control-plane/source-snapshot.ts');
 const {
+  loadGoalContractSchema,
   validateGoalContractSchema,
 } = require('../src/utils/goal-contract/control-plane/schema-registry.ts');
 const {
@@ -195,6 +198,87 @@ function writeRoleAwareSourcePlan(root) {
     'utf8'
   );
   return sourcePath;
+}
+
+function writeExecutableBoundarySourcePlan(
+  root,
+  { sharedOwnedPath = false } = {}
+) {
+  const sourcePath = path.join(
+    root,
+    'executable-boundary-source-plan.md'
+  );
+  const tasks = [
+    [
+      'PLAN-T01',
+      'Unsafe inputs fail before side effects',
+      'none',
+      'src/preflight.ts',
+    ],
+    [
+      'PLAN-T02',
+      'Source authority resolves one canonical identity',
+      'PLAN-T01',
+      sharedOwnedPath
+        ? 'src/preflight.ts'
+        : 'src/source-authority.ts',
+    ],
+    [
+      'PLAN-T03',
+      'Certified partitions preserve execution topology',
+      'PLAN-T02',
+      'src/partition-runtime.ts',
+    ],
+  ];
+  fs.writeFileSync(
+    sourcePath,
+    [
+      '# Executable Boundary Source Plan',
+      '',
+      ...tasks.flatMap(
+        ([taskId, title, dependency, ownedPath]) => [
+          `### Task ${taskId}: ${title} [Dependencies: ${dependency}]`,
+          '',
+          '**Execution Class:** `executable_child`',
+          '**Owned Production Paths:** the task\'s explicit Files section',
+          '',
+          '**Files**',
+          '',
+          `- Modify \`${ownedPath}\`.`,
+          '',
+          '**Run**',
+          '',
+          `- CMD-${taskId}-01: Run \`node --version\`.`,
+          '',
+          `AC-${taskId}: MUST satisfy the ${taskId} acceptance oracle.`,
+          '',
+          `EVD-${taskId}: MUST bind ${taskId} to CMD-${taskId}-01.`,
+          '',
+        ]
+      ),
+      '### Task PLAN-T04: Aggregate certified child evidence [Dependencies: PLAN-T03]',
+      '',
+      '**Execution Class:** `aggregate_only`',
+      '**Owned Production Paths:** `none`',
+      '**Aggregate Gate Phase:** `final_aggregate`',
+      '**Aggregate Validation Commands:** `CMD-PLAN-T04-01`',
+      '',
+      '**Files**',
+      '',
+      '- No production files.',
+      '',
+      '**Run**',
+      '',
+      '- CMD-PLAN-T04-01: Run `node --help`.',
+      '',
+      'AC-PLAN-T04: MUST satisfy the aggregate acceptance oracle.',
+      '',
+      'EVD-PLAN-T04: MUST bind PLAN-T04 to CMD-PLAN-T04-01.',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  return { sourcePath, tasks };
 }
 
 function writeSharedDependencySourcePlan(root) {
@@ -2102,6 +2186,183 @@ describe('bmad-speckit goal-contract partition command', () => {
         (error) => error.failureClass === 'canonical_schema_invalid'
       );
     }
+  });
+
+  it('exposes one strict Main Agent source-authority certification schema', () => {
+    const manifestSchema = loadGoalContractSchema(
+      'goal-contract-partition-manifest.schema.json'
+    ).schema;
+    const ajv = new Ajv2020({ allErrors: true, strict: false });
+    addFormats(ajv);
+    const validateCertification = ajv.compile({
+      $schema: manifestSchema.$schema,
+      $defs: manifestSchema.$defs,
+      $ref: '#/$defs/mainAgentGoalSourceAuthorityCertification',
+    });
+    const certification = {
+      schemaVersion: 'main-agent-goal-source-authority-certification/v1',
+      authorityProfile: 'main_agent_compiled',
+      sourceAuthorityCompilationReceipt: {
+        sourceAuthorityHash: hash('source-authority'),
+        sourceSnapshotHash: hash('source-snapshot'),
+      },
+      goalContractBundleHash: hash('goal-contract-bundle'),
+      partitionManifestHash: hash('partition-manifest'),
+      partitionCoverageReceiptHash: hash('partition-coverage'),
+      currentDispatchPointerHash: hash('dispatch-pointer'),
+      transactionManifestHash: hash('transaction-manifest'),
+      requirementRecordBinding: {
+        status: 'present',
+        recordId: 'record-1',
+        requirementSetId: 'set-1',
+        recordPathHash: hash('record-path'),
+      },
+      runtimeBundleBinding: {
+        runtimeBundleHash: hash('runtime-bundle'),
+      },
+      semanticAuthorityBinding: {
+        canonicalIntentBundleHash: hash('canonical-intent-bundle'),
+      },
+      modelPacketBinding: {
+        modelPacketHash: hash('model-packet'),
+      },
+      goalProjectionBinding: {
+        goalProjectionHash: hash('goal-projection'),
+      },
+      viewReconciliationBinding: {
+        reconciledViewsHash: hash('reconciled-views'),
+      },
+      certifiedAt: '2026-08-05T00:00:00.000Z',
+      certificationHash: hash('certification'),
+    };
+
+    assert.equal(
+      validateCertification(certification),
+      true,
+      JSON.stringify(validateCertification.errors)
+    );
+    const missingField = structuredClone(certification);
+    delete missingField.partitionManifestHash;
+    assert.equal(validateCertification(missingField), false);
+    const unknownField = { ...certification, lifecycleStatus: 'closed' };
+    assert.equal(validateCertification(unknownField), false);
+  });
+
+  it('preserves explicit executable task boundaries, dependencies, commands, and functional titles', () => {
+    const root = tempRoot();
+    const { sourcePath, tasks } =
+      writeExecutableBoundarySourcePlan(root);
+    const frozen = writeFrozenSuccessorContract(root, sourcePath, {
+      slotWrappedFrontMatter: true,
+    });
+    const result = runSourceCommand(
+      [
+        'partition',
+        '--governed',
+        '--entry',
+        'standalone_goal_contract',
+        '--source',
+        sourcePath,
+        '--goal-contract',
+        frozen.goalContractPath,
+        '--sequence-mode',
+        'disabled',
+        '--json',
+      ],
+      { cwd: root }
+    );
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const payload = parsePayload(result);
+    const manifest = payload.partitionManifest;
+    assert.equal(manifest.partitionCount, tasks.length);
+    assert.equal(manifest.partitions.length, tasks.length);
+
+    const partitions = tasks.map(([taskId]) => {
+      const partition = manifest.partitions.find(
+        (candidate) =>
+          candidate.primaryTaskIds.length === 1 &&
+          candidate.primaryTaskIds[0] === taskId
+      );
+      assert.ok(partition, taskId);
+      return partition;
+    });
+    for (let index = 0; index < tasks.length; index += 1) {
+      const [taskId, title] = tasks[index];
+      const partition = partitions[index];
+      assert.equal(partition.displayTitle, title);
+      assert.deepEqual(
+        partition.commandIds,
+        [`CMD-${taskId}-01`]
+      );
+      assert.deepEqual(
+        partition.dependencyPartitionIds,
+        index === 0
+          ? []
+          : [partitions[index - 1].partitionId]
+      );
+    }
+    assert.deepEqual(
+      manifest.topologicalOrder,
+      partitions.map(({ partitionId }) => partitionId)
+    );
+  });
+
+  it('does not activate a standalone generation before explicit child readiness passes', () => {
+    const root = tempRoot();
+    const { sourcePath } = writeExecutableBoundarySourcePlan(root, {
+      sharedOwnedPath: true,
+    });
+    const frozen = writeFrozenSuccessorContract(root, sourcePath, {
+      slotWrappedFrontMatter: true,
+    });
+    const result = runSourceCommand(
+      [
+        'partition',
+        '--governed',
+        '--entry',
+        'standalone_goal_contract',
+        '--source',
+        sourcePath,
+        '--goal-contract',
+        frozen.goalContractPath,
+        '--sequence-mode',
+        'disabled',
+        '--json',
+      ],
+      { cwd: root }
+    );
+
+    assert.equal(result.status, 1, result.stderr || result.stdout);
+    const payload = parsePayload(result);
+    assert.equal(
+      payload.failureClass,
+      'partition_readiness_empty_ownership'
+    );
+    const forbiddenArtifacts = [];
+    const visit = (directory) => {
+      if (!fs.existsSync(directory)) return;
+      for (const entry of fs.readdirSync(directory, {
+        withFileTypes: true,
+      })) {
+        const target = path.join(directory, entry.name);
+        if (entry.isDirectory()) visit(target);
+        if (
+          entry.isFile() &&
+          (entry.name === 'active-generation.json' ||
+            entry.name === 'partition-manifest.json' ||
+            target
+              .replace(/\\/gu, '/')
+              .includes('/children/'))
+        ) {
+          forbiddenArtifacts.push(
+            path.relative(root, target).replace(/\\/gu, '/')
+          );
+        }
+      }
+    };
+    visit(path.join(root, '_bmad-output'));
+    assert.deepEqual(forbiddenArtifacts, []);
   });
 
   it('keeps shared task paths governed by every declaring child while retaining one owner', () => {

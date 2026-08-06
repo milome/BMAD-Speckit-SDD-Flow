@@ -74,6 +74,9 @@ const { hashControlPlaneValue, stableControlPlaneStringify } = require(
   modulePath('./canonical-hash')
 );
 const { verifyCanonicalIntentBundle } = require(modulePath('./canonical-intent-compiler'));
+const { compileMainAgentGoalAuthorityBundle } = require(
+  modulePath('./goal-contract-compiler')
+);
 const { verifyCompositeSourceAuthorityBundle } = require(
   modulePath('./composite-source-authority-bundle')
 );
@@ -96,6 +99,24 @@ const { compilePartitionClosureFeasibility } = require(
 );
 
 const HASH_PATTERN = /^sha256:[0-9a-f]{64}$/u;
+const MAIN_AGENT_AUTHORITY_BINDING_FIELDS = Object.freeze([
+  'currentDispatchPointerHash',
+  'transactionManifestHash',
+  'requirementRecordId',
+  'requirementRecordHash',
+  'requirementRecordRevision',
+  'requirementRecordEventChainHead',
+  'activeBundleRevision',
+  'activeBundleHash',
+  'semanticIRHash',
+  'semanticConservationManifestHash',
+  'sourceAuthorityHash',
+  'sourceSnapshotHash',
+  'sourceRootToSpecSpanMappingHash',
+  'modelPacketHash',
+  'modelPacketParityReceiptHash',
+  'goalExecutionHash',
+]);
 const TASK_ID_PATTERN =
   /^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-T\d+[A-Z]?$/u;
 const TASK_FILE_SCOPE_FIELDS = new Set([
@@ -1045,6 +1066,74 @@ function projectExecutableReconciledGraph(
   };
 }
 
+function candidatePreservesExecutableTaskBoundaries(
+  candidate,
+  executableTaskIds
+) {
+  const expectedTaskIds = unique(executableTaskIds);
+  const partitionTaskIds = (candidate?.partitions || []).map((partition) =>
+    unique(partition?.primaryTaskIds || [])
+  );
+  if (
+    partitionTaskIds.length !== expectedTaskIds.length ||
+    partitionTaskIds.some((taskIds) => taskIds.length !== 1)
+  ) {
+    return false;
+  }
+  const actualTaskIds = partitionTaskIds.flat();
+  return (
+    new Set(actualTaskIds).size === actualTaskIds.length &&
+    stableControlPlaneStringify(unique(actualTaskIds)) ===
+      stableControlPlaneStringify(expectedTaskIds)
+  );
+}
+
+function selectExecutableTaskBoundaryCandidate({
+  optimization,
+  executableTaskIds,
+  taskExecutionRoleAuthorityHash,
+  taskExecutionRoleAuthority,
+} = {}) {
+  const selectionConstraintSemantic = {
+    schemaVersion: 'goal-contract-partition-selection-constraint/v1',
+    mode: 'one_executable_task_per_partition',
+    executableTaskIds: unique(executableTaskIds),
+    taskExecutionRoleAuthorityHash,
+  };
+  const selectionConstraint = {
+    ...selectionConstraintSemantic,
+    selectionConstraintHash: hashControlPlaneValue(
+      selectionConstraintSemantic
+    ),
+  };
+  const candidate = (optimization?.candidates || []).find((entry) =>
+    candidatePreservesExecutableTaskBoundaries(
+      entry,
+      selectionConstraint.executableTaskIds
+    )
+  );
+  if (!candidate) {
+    throw failure('partition_readiness_task_boundary_unavailable', {
+      executableTaskIds: selectionConstraint.executableTaskIds,
+    });
+  }
+  return deepFreeze({
+    ...optimization,
+    taskExecutionRoleAuthority,
+    selectionConstraint,
+    selectedCandidateId: candidate.candidateId,
+    partitionCount: candidate.partitions.length,
+    partitions: candidate.partitions,
+    topologicalOrder: candidate.partitions.map(
+      ({ partitionId }) => partitionId
+    ),
+    candidates: optimization.candidates.map((entry) => ({
+      ...entry,
+      selected: entry.candidateId === candidate.candidateId,
+    })),
+  });
+}
+
 function validateExecutablePartitionReadiness({
   partitions = [],
   executableTaskIds = [],
@@ -1064,6 +1153,12 @@ function validateExecutablePartitionReadiness({
       throw failure('partition_readiness_aggregate_task_leak', {
         partitionId,
         taskId: aggregateTaskId,
+      });
+    }
+    if (primaryTaskIds.length !== 1) {
+      throw failure('partition_readiness_task_boundary_invalid', {
+        partitionId,
+        taskIds: primaryTaskIds,
       });
     }
     for (const taskId of primaryTaskIds) {
@@ -1549,6 +1644,40 @@ function verifyGoalContractBundle(bundle, authority) {
   if (!isRecord(bundle) || bundle.schemaVersion !== 'goal-contract-bundle/v1') {
     throw failure('goal_contract_bundle_invalid');
   }
+  if (bundle.authorityProfile === 'main_agent_compiled') {
+    if (!isRecord(bundle.mainAgentProfileBindings)) {
+      throw failure('goal_contract_bundle_hash_mismatch');
+    }
+    const mainAgentAuthorityBindings = Object.fromEntries(
+      MAIN_AGENT_AUTHORITY_BINDING_FIELDS.map((field) => [
+        field,
+        bundle.mainAgentProfileBindings[field],
+      ])
+    );
+    let expected;
+    try {
+      expected = compileMainAgentGoalAuthorityBundle({
+        profile: 'main_agent_compiled',
+        canonicalIntentBundle: authority.canonicalIntentBundle,
+        mainAgentAuthorityBindings,
+        implementationView: bundle.implementationView,
+        acceptanceEvidenceView: bundle.acceptanceEvidenceView,
+        reconciledViews: bundle.reconciledViews,
+        compilerIdentity: bundle.compilerIdentity,
+      });
+    } catch (error) {
+      throw failure('goal_contract_bundle_hash_mismatch', {
+        reason: error?.failureClass || error?.message,
+      });
+    }
+    if (
+      stableControlPlaneStringify(expected) !==
+      stableControlPlaneStringify(bundle)
+    ) {
+      throw failure('goal_contract_bundle_hash_mismatch');
+    }
+    return bundle;
+  }
   const fields = [
     ['sourceCompositionPolicyHash', authority.policy.sourceCompositionPolicyHash],
     ['orderedSourceSnapshotSetHash', authority.snapshotSet.orderedSourceSnapshotSetHash],
@@ -1984,6 +2113,43 @@ function candidateSummaries(optimization) {
   }));
 }
 
+function escapeRegularExpression(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+}
+
+function normalizeFunctionalDisplayTitles(partitionPlan, displayTitles) {
+  if (!partitionPlan?.taskExecutionRoleAuthorityHash) {
+    return displayTitles;
+  }
+  return Object.freeze(
+    Object.fromEntries(
+      partitionPlan.partitions.map((partition) => {
+        const [taskId] = partition.primaryTaskIds || [];
+        let title = String(
+          displayTitles?.[partition.partitionId] || ''
+        ).trim();
+        title = title
+          .replace(
+            new RegExp(
+              `^(?:Task\\s+)?${escapeRegularExpression(taskId)}:\\s*`,
+              'iu'
+            ),
+            ''
+          )
+          .replace(/\s*\[Dependencies:\s*[^\]\r\n]*\]\s*$/iu, '')
+          .trim();
+        if (title.length === 0) {
+          throw failure('partition_display_title_missing', {
+            partitionId: partition.partitionId,
+            taskId,
+          });
+        }
+        return [partition.partitionId, title];
+      })
+    )
+  );
+}
+
 function namespaceOwnership(authority) {
   return [
     authority.sourceAuthorityBundle.primarySource,
@@ -2099,12 +2265,23 @@ function compilePartitionBundle(request, authority) {
     executionProjection,
     policy: partitionPolicyBinding.policy,
   });
-  const optimization = optimizePartitions({
+  const optimizerResult = optimizePartitions({
     componentGraph,
     executionProjection,
     policyBinding: partitionPolicyBinding,
     projectionAuthority,
   });
+  const optimization =
+    taskExecutionRoleAuthority.mode === 'explicit'
+      ? selectExecutableTaskBoundaryCandidate({
+          optimization: optimizerResult,
+          executableTaskIds:
+            taskExecutionRoleAuthority.executableTaskIds,
+          taskExecutionRoleAuthorityHash:
+            taskExecutionRoleAuthority.taskExecutionRoleAuthorityHash,
+          taskExecutionRoleAuthority,
+        })
+      : optimizerResult;
   const partitions = partitionRecords(
     optimization,
     componentGraph,
@@ -2277,6 +2454,10 @@ function projectExecutionArtifacts({
   if (!partitionPlan || typeof renderChildContract !== 'function') {
     throw failure('execution_projection_request_invalid');
   }
+  const functionalDisplayTitles = normalizeFunctionalDisplayTitles(
+    partitionPlan,
+    displayTitles
+  );
   const childPaths = new Set();
   const childCompilationReceipts = partitionPlan.childProjectionInputs.map(
     (childProjectionInput, index) => {
@@ -2313,7 +2494,7 @@ function projectExecutionArtifacts({
   );
   const finalized = finalizePartitionManifest({
     partitionPlan,
-    displayTitles,
+    displayTitles: functionalDisplayTitles,
     childCompilationReceipts,
     artifactLayout,
     partitionAnalysisReceipt,

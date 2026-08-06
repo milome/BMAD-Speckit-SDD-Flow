@@ -669,13 +669,162 @@ function canonicalPartitionMembership(partitions) {
     .sort((left, right) => left.partitionId.localeCompare(right.partitionId));
 }
 
+function candidatePreservesExecutableTaskBoundaries(
+  candidate,
+  executableTaskIds
+) {
+  const expectedTaskIds = unique(executableTaskIds);
+  const partitionTaskIds = (candidate?.partitions || []).map((partition) =>
+    unique(partition?.primaryTaskIds || [])
+  );
+  if (
+    partitionTaskIds.length !== expectedTaskIds.length ||
+    partitionTaskIds.some((taskIds) => taskIds.length !== 1)
+  ) {
+    return false;
+  }
+  const actualTaskIds = partitionTaskIds.flat();
+  return (
+    new Set(actualTaskIds).size === actualTaskIds.length &&
+    stableStringify(unique(actualTaskIds)) ===
+      stableStringify(expectedTaskIds)
+  );
+}
+
+function executableTaskBoundarySelectionConstraint(
+  optimization,
+  executionProjection,
+  taskExecutionRoleAuthority
+) {
+  let authority = null;
+  const embeddedAuthority = optimization?.taskExecutionRoleAuthority;
+  if (
+    taskExecutionRoleAuthority &&
+    embeddedAuthority &&
+    stableStringify(taskExecutionRoleAuthority) !==
+      stableStringify(embeddedAuthority)
+  ) {
+    throw failure('partition_manifest_currentness_mismatch', {
+      reason: 'task_execution_role_authority_mismatch',
+    });
+  }
+  const authorityInput =
+    taskExecutionRoleAuthority || embeddedAuthority;
+  if (authorityInput) {
+    const {
+      taskExecutionRoleAuthorityHash,
+      ...authoritySemantic
+    } = authorityInput;
+    if (
+      authorityInput.schemaVersion !==
+        'goal-contract-task-execution-role-authority/v1' ||
+      !['explicit', 'legacy'].includes(
+        authorityInput.mode
+      ) ||
+      taskExecutionRoleAuthorityHash !==
+        hashControlPlaneValue(authoritySemantic)
+    ) {
+      throw failure('partition_manifest_currentness_mismatch', {
+        reason: 'task_execution_role_authority_invalid',
+      });
+    }
+    authority = authorityInput;
+  }
+  const constraint = optimization?.selectionConstraint;
+  if (authority?.mode !== 'explicit') {
+    if (constraint) {
+      throw failure('partition_manifest_currentness_mismatch', {
+        reason: 'selection_constraint_authority_missing',
+      });
+    }
+    return null;
+  }
+  if (!constraint) {
+    throw failure('partition_manifest_currentness_mismatch', {
+      reason: 'selection_constraint_missing',
+    });
+  }
+  const { selectionConstraintHash, ...constraintSemantic } = constraint;
+  const expectedTaskIds = unique(authority.executableTaskIds);
+  if (
+    constraint.schemaVersion !==
+      'goal-contract-partition-selection-constraint/v1' ||
+    constraint.mode !== 'one_executable_task_per_partition' ||
+    !/^sha256:[0-9a-f]{64}$/u.test(
+      constraint.taskExecutionRoleAuthorityHash || ''
+    ) ||
+    selectionConstraintHash !==
+      hashControlPlaneValue(constraintSemantic) ||
+    stableStringify(unique(constraint.executableTaskIds)) !==
+      stableStringify(expectedTaskIds) ||
+    stableStringify(expectedTaskIds) !==
+      stableStringify(
+        unique(
+          (executionProjection?.atomicTasks || []).map(
+            ({ taskId }) => taskId
+          )
+        )
+      )
+  ) {
+    throw failure('partition_manifest_currentness_mismatch', {
+      reason: 'selection_constraint_invalid',
+    });
+  }
+  if (
+    constraint.taskExecutionRoleAuthorityHash !==
+    authority.taskExecutionRoleAuthorityHash
+  ) {
+    throw failure('partition_manifest_currentness_mismatch', {
+      reason: 'selection_constraint_authority_mismatch',
+    });
+  }
+  return constraint;
+}
+
+function applyExecutableTaskBoundarySelection(
+  optimization,
+  selectionConstraint,
+  taskExecutionRoleAuthority
+) {
+  if (!selectionConstraint) return optimization;
+  const candidate = (optimization.candidates || []).find((entry) =>
+    candidatePreservesExecutableTaskBoundaries(
+      entry,
+      selectionConstraint.executableTaskIds
+    )
+  );
+  if (!candidate) {
+    throw failure('partition_manifest_currentness_mismatch', {
+      reason: 'selection_constraint_unsatisfied',
+    });
+  }
+  return {
+    ...optimization,
+    ...(taskExecutionRoleAuthority
+      ? { taskExecutionRoleAuthority }
+      : {}),
+    selectionConstraint,
+    selectedCandidateId: candidate.candidateId,
+    partitionCount: candidate.partitions.length,
+    partitions: candidate.partitions,
+    topologicalOrder: candidate.partitions.map(
+      ({ partitionId }) => partitionId
+    ),
+    candidates: optimization.candidates.map((entry) => ({
+      ...entry,
+      selected: entry.candidateId === candidate.candidateId,
+    })),
+  };
+}
+
 function selectedCandidate(
   optimization,
   componentGraph,
   executionProjection,
   sourceSnapshotHash,
   policyBinding,
-  effectiveDependencies
+  effectiveDependencies,
+  taskExecutionRoleAuthority
 ) {
   const candidates = optimization.candidates || [];
   const rejectedCandidateSummaries =
@@ -778,27 +927,41 @@ function selectedCandidate(
     return canonical;
   });
   canonicalCandidates.sort(compareCandidates);
+  const selectionConstraint =
+    executableTaskBoundarySelectionConstraint(
+      optimization,
+      executionProjection,
+      taskExecutionRoleAuthority
+    );
+  const eligibleCandidates = selectionConstraint
+    ? canonicalCandidates.filter((candidate) =>
+        candidatePreservesExecutableTaskBoundaries(
+          candidate,
+          selectionConstraint.executableTaskIds
+        )
+      )
+    : canonicalCandidates;
   if (
-    canonicalCandidates.length > 1 &&
-    compareCandidates(canonicalCandidates[0], canonicalCandidates[1]) === 0
+    eligibleCandidates.length > 1 &&
+    compareCandidates(eligibleCandidates[0], eligibleCandidates[1]) === 0
   ) {
     const withoutSelection = (candidate) => {
       const { selected: _selected, ...rest } = candidate;
       return rest;
     };
     if (
-      stableStringify(withoutSelection(canonicalCandidates[0])) !==
-      stableStringify(withoutSelection(canonicalCandidates[1]))
+      stableStringify(withoutSelection(eligibleCandidates[0])) !==
+      stableStringify(withoutSelection(eligibleCandidates[1]))
     ) {
       throw failure('partition_manifest_currentness_mismatch', {
         reason: 'candidate_selection_nondeterministic',
       });
     }
   }
-  if (canonicalCandidates[0]?.candidateId !== selected.candidateId) {
+  if (eligibleCandidates[0]?.candidateId !== selected.candidateId) {
     throw failure('partition_manifest_currentness_mismatch', {
       reason: 'selected_candidate_not_optimal',
-      expectedCandidateId: canonicalCandidates[0]?.candidateId,
+      expectedCandidateId: eligibleCandidates[0]?.candidateId,
       actualCandidateId: selected.candidateId,
     });
   }
@@ -820,13 +983,27 @@ function providerReceiptSummary(receipt, viewType) {
 }
 
 function deriveCanonicalOptimization(input) {
+  const taskExecutionRoleAuthority =
+    input.taskExecutionRoleAuthority ||
+    input.optimization?.taskExecutionRoleAuthority;
+  const selectionConstraint =
+    executableTaskBoundarySelectionConstraint(
+      input.optimization,
+      input.executionProjection,
+      taskExecutionRoleAuthority
+    );
   try {
-    return optimizePartitions({
+    const optimization = optimizePartitions({
       componentGraph: input.componentGraph,
       executionProjection: input.executionProjection,
       policyBinding: input.policyBinding,
       projectionAuthority: input.projectionAuthority,
     });
+    return applyExecutableTaskBoundarySelection(
+      optimization,
+      selectionConstraint,
+      taskExecutionRoleAuthority
+    );
   } catch (error) {
     throw failure('partition_manifest_currentness_mismatch', {
       reason: 'optimization_input_currentness_mismatch',
@@ -905,6 +1082,9 @@ function validateManifestSequenceState(manifest, expectedState = null) {
 
 function compilePartitionManifest(input) {
   assertManifestInputAuthorityBindings(input);
+  const taskExecutionRoleAuthority =
+    input.taskExecutionRoleAuthority ||
+    input.optimization?.taskExecutionRoleAuthority;
   const canonicalOptimization = deriveCanonicalOptimization(input);
   const dependencyState = validateOptimizationDependencies(input);
   const sequenceState = manifestSequenceState(input.executionProjection);
@@ -954,7 +1134,8 @@ function compilePartitionManifest(input) {
     input.executionProjection,
     input.sourceSnapshot.aggregateHash,
     input.policyBinding,
-    dependencyState.effectiveDependencies
+    dependencyState.effectiveDependencies,
+    taskExecutionRoleAuthority
   );
   validateCanonicalOptimizationReceipt(input, canonicalOptimization);
   const implementationViewReceiptHash =
@@ -1053,6 +1234,15 @@ function compilePartitionManifest(input) {
     partitionPolicyHash: input.policyBinding.partitionPolicyHash,
     optimizerVersion: input.optimization.optimizerVersion,
     selectedCandidateId: input.optimization.selectedCandidateId,
+    ...(taskExecutionRoleAuthority?.mode === 'explicit'
+      ? {
+          taskExecutionRoleAuthorityHash:
+            taskExecutionRoleAuthority.taskExecutionRoleAuthorityHash,
+          aggregateValidation: structuredClone(
+            taskExecutionRoleAuthority.aggregateValidation
+          ),
+        }
+      : {}),
     partitionAnalysisReceiptPath:
       receiptPaths.partitionAnalysisReceiptPath,
     partitionAnalysisReceiptHash,

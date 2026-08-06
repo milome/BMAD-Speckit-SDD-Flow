@@ -350,6 +350,107 @@
       "type": "string",
       "pattern": "^sha256:[0-9a-f]{64}$"
     },
+    "nonEmptyAuthorityObject": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "mainAgentRequirementRecordBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "recordId",
+        "requirementSetId",
+        "recordPathHash"
+      ],
+      "properties": {
+        "status": {
+          "const": "present"
+        },
+        "recordId": {
+          "$ref": "#/$defs/id"
+        },
+        "requirementSetId": {
+          "$ref": "#/$defs/id"
+        },
+        "recordPathHash": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "mainAgentGoalSourceAuthorityCertification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "authorityProfile",
+        "sourceAuthorityCompilationReceipt",
+        "goalContractBundleHash",
+        "partitionManifestHash",
+        "partitionCoverageReceiptHash",
+        "currentDispatchPointerHash",
+        "transactionManifestHash",
+        "requirementRecordBinding",
+        "runtimeBundleBinding",
+        "semanticAuthorityBinding",
+        "modelPacketBinding",
+        "goalProjectionBinding",
+        "viewReconciliationBinding",
+        "certifiedAt",
+        "certificationHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "main-agent-goal-source-authority-certification/v1"
+        },
+        "authorityProfile": {
+          "const": "main_agent_compiled"
+        },
+        "sourceAuthorityCompilationReceipt": {
+          "$ref": "#/$defs/nonEmptyAuthorityObject"
+        },
+        "goalContractBundleHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "partitionManifestHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "partitionCoverageReceiptHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "currentDispatchPointerHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "transactionManifestHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "requirementRecordBinding": {
+          "$ref": "#/$defs/mainAgentRequirementRecordBinding"
+        },
+        "runtimeBundleBinding": {
+          "$ref": "#/$defs/nonEmptyAuthorityObject"
+        },
+        "semanticAuthorityBinding": {
+          "$ref": "#/$defs/nonEmptyAuthorityObject"
+        },
+        "modelPacketBinding": {
+          "$ref": "#/$defs/nonEmptyAuthorityObject"
+        },
+        "goalProjectionBinding": {
+          "$ref": "#/$defs/nonEmptyAuthorityObject"
+        },
+        "viewReconciliationBinding": {
+          "$ref": "#/$defs/nonEmptyAuthorityObject"
+        },
+        "certifiedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "certificationHash": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
     "hashArray": {
       "type": "array",
       "uniqueItems": true,

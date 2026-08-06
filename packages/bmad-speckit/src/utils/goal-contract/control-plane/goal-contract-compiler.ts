@@ -82,6 +82,39 @@ const ALLOWED_REQUEST_FIELDS = new Set([
   'contractProfileBytes',
   'templateBytes',
 ]);
+const MAIN_AGENT_ALLOWED_REQUEST_FIELDS = new Set([
+  'profile',
+  'canonicalIntentBundle',
+  'mainAgentAuthorityBindings',
+  'implementationView',
+  'acceptanceEvidenceView',
+  'reconciledViews',
+  'compilerIdentity',
+]);
+const MAIN_AGENT_AUTHORITY_BINDING_FIELDS = Object.freeze([
+  'currentDispatchPointerHash',
+  'transactionManifestHash',
+  'requirementRecordId',
+  'requirementRecordHash',
+  'requirementRecordRevision',
+  'requirementRecordEventChainHead',
+  'activeBundleRevision',
+  'activeBundleHash',
+  'semanticIRHash',
+  'semanticConservationManifestHash',
+  'sourceAuthorityHash',
+  'sourceSnapshotHash',
+  'sourceRootToSpecSpanMappingHash',
+  'modelPacketHash',
+  'modelPacketParityReceiptHash',
+  'goalExecutionHash',
+]);
+const MAIN_AGENT_HASH_BINDING_FIELDS = new Set(
+  MAIN_AGENT_AUTHORITY_BINDING_FIELDS.filter(
+    (field) => field.endsWith('Hash') || field.endsWith('Head')
+  )
+);
+const SHA256_PATTERN = /^sha256:[0-9a-f]{64}$/u;
 
 function failure(failureClass, details = {}) {
   return Object.assign(new Error(failureClass), {
@@ -101,6 +134,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function sha256(bytes) {
   return `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
+}
+
+function requireSha256(value, field) {
+  if (typeof value !== 'string' || !SHA256_PATTERN.test(value)) {
+    throw failure('main_agent_goal_authority_binding_invalid', { field });
+  }
+  return value;
 }
 
 function normalizedBytes(value, field) {
@@ -688,6 +728,222 @@ function coverageRecords(policy, authorityBundle, canonicalBundle) {
   };
 }
 
+function semanticModelRecords(canonicalBundle) {
+  return canonicalBundle.canonicalIntentIR.map((obligation) =>
+    Object.fromEntries(
+      Object.entries({
+        intentRecordId: obligation.intentRecordId,
+        declaredSourceId: obligation.declaredSourceId,
+        classification: obligation.classification,
+        ownership: obligation.ownership,
+        sourceArtifactId: obligation.sourceArtifactId,
+        sourceSnapshotHash: obligation.sourceSnapshotHash,
+        sourceRole: obligation.sourceRole,
+        namespace: obligation.namespace,
+        specSpanRefs: obligation.specSpanRefs,
+        parentTaskRefs: obligation.parentTaskRefs,
+        dependencyRefs: obligation.dependencyRefs,
+      }).filter(([, value]) => value !== undefined)
+    )
+  );
+}
+
+function canonicalSubordinateCoverageReceipts(canonicalBundle) {
+  const coverage = canonicalBundle.subordinateCoverage;
+  if (
+    coverage?.schemaVersion ===
+    'goal-contract-subordinate-source-coverage-receipt-set/v1'
+  ) {
+    return structuredClone(coverage.receipts);
+  }
+  return coverage?.receiptHash ? [structuredClone(coverage)] : [];
+}
+
+function verifyMainAgentAuthorityBindings(value) {
+  if (
+    !isRecord(value) ||
+    Object.keys(value).some(
+      (field) => !MAIN_AGENT_AUTHORITY_BINDING_FIELDS.includes(field)
+    ) ||
+    MAIN_AGENT_AUTHORITY_BINDING_FIELDS.some(
+      (field) => value[field] === undefined
+    )
+  ) {
+    throw failure('main_agent_goal_authority_binding_invalid');
+  }
+  for (const field of MAIN_AGENT_HASH_BINDING_FIELDS) {
+    requireSha256(value[field], field);
+  }
+  if (
+    typeof value.requirementRecordId !== 'string' ||
+    value.requirementRecordId.length === 0 ||
+    !(
+      (Number.isInteger(value.requirementRecordRevision) &&
+        value.requirementRecordRevision >= 0) ||
+      (typeof value.requirementRecordRevision === 'string' &&
+        value.requirementRecordRevision.length > 0)
+    ) ||
+    !(
+      (Number.isInteger(value.activeBundleRevision) &&
+        value.activeBundleRevision >= 0) ||
+      (typeof value.activeBundleRevision === 'string' &&
+        value.activeBundleRevision.length > 0)
+    )
+  ) {
+    throw failure('main_agent_goal_authority_binding_invalid');
+  }
+  return structuredClone(value);
+}
+
+function compileMainAgentGoalAuthorityBundle(request: unknown = {}) {
+  if (
+    !isRecord(request) ||
+    request.profile !== 'main_agent_compiled'
+  ) {
+    throw failure('main_agent_goal_authority_request_invalid');
+  }
+  const unknown = Object.keys(request).filter(
+    (field) => !MAIN_AGENT_ALLOWED_REQUEST_FIELDS.has(field)
+  );
+  if (unknown.length > 0) {
+    throw failure('goal_contract_authority_injection', {
+      forbiddenFields: unknown.sort(),
+    });
+  }
+  const canonicalBundle = verifyCanonicalIntentBundle(
+    request.canonicalIntentBundle
+  );
+  if (
+    canonicalBundle.authorityState !== 'authoritative' ||
+    !canonicalBundle.authorityAttestationHash
+  ) {
+    throw failure('goal_contract_authority_missing');
+  }
+  const compilerIdentity = verifyCompilerIdentity(
+    request.compilerIdentity ?? goalContractCompilerIdentity()
+  );
+  const authorityBindings = verifyMainAgentAuthorityBindings(
+    request.mainAgentAuthorityBindings
+  );
+  for (const field of [
+    'implementationView',
+    'acceptanceEvidenceView',
+    'reconciledViews',
+  ]) {
+    if (!isRecord(request[field])) {
+      throw failure('main_agent_goal_authority_request_invalid', { field });
+    }
+  }
+  const implementationView = structuredClone(request.implementationView);
+  const acceptanceEvidenceView = structuredClone(
+    request.acceptanceEvidenceView
+  );
+  const reconciledViews = structuredClone(request.reconciledViews);
+  const mainAgentProfileBindings = {
+    ...authorityBindings,
+    specSpanRegistryHash:
+      canonicalBundle.specSpanRegistry.specSpanRegistryHash,
+    implementationViewHash: hashControlPlaneValue(implementationView),
+    acceptanceEvidenceViewHash: hashControlPlaneValue(
+      acceptanceEvidenceView
+    ),
+    reconciliationReceiptHash: hashControlPlaneValue(reconciledViews),
+  };
+  const mainAgentProfileBindingsHash = hashControlPlaneValue(
+    mainAgentProfileBindings
+  );
+  const subordinateSourceCoverageReceipts =
+    canonicalSubordinateCoverageReceipts(canonicalBundle);
+  const goalContractSemanticModel = {
+    schemaVersion: 'goal-contract-semantic-model/v1',
+    authorityProfile: 'main_agent_compiled',
+    records: semanticModelRecords(canonicalBundle),
+    implementationView,
+    acceptanceEvidenceView,
+    reconciledViews,
+  };
+  const goalContractSemanticHash = hashControlPlaneValue({
+    schemaVersion: 'goal-contract-semantics/v2',
+    authorityProfile: 'main_agent_compiled',
+    canonicalIntentSemanticHash:
+      canonicalBundle.canonicalIntentSemanticHash,
+    goalContractSemanticModel,
+    mainAgentProfileBindingsHash,
+  });
+  const goalContractHash = hashControlPlaneValue({
+    schemaVersion: 'goal-contract-authority/v2',
+    authorityProfile: 'main_agent_compiled',
+    goalContractSemanticHash,
+    authorityAttestationHash:
+      canonicalBundle.authorityAttestationHash,
+    sourceCompositionPolicyHash:
+      canonicalBundle.sourceCompositionPolicyHash,
+    mainAgentProfileBindingsHash,
+    compilerIdentityHash: compilerIdentity.compilerIdentityHash,
+  });
+  const bundleCore = {
+    schemaVersion: 'goal-contract-bundle/v1',
+    authorityProfile: 'main_agent_compiled',
+    sourceCompositionPolicyHash:
+      canonicalBundle.sourceCompositionPolicyHash,
+    orderedSourceSnapshotSetHash:
+      canonicalBundle.orderedSourceSnapshotSetHash,
+    sourceAuthorityBundleHash:
+      canonicalBundle.sourceAuthorityBundleHash,
+    canonicalIntentSemanticHash:
+      canonicalBundle.canonicalIntentSemanticHash,
+    canonicalIntentBundleHash:
+      canonicalBundle.canonicalIntentBundleHash,
+    authorityAttestationHash:
+      canonicalBundle.authorityAttestationHash,
+    compilerIdentity,
+    compilerIdentityHash: compilerIdentity.compilerIdentityHash,
+    goalContractSemanticModel,
+    goalContractSemanticHash,
+    mainAgentProfileBindings,
+    mainAgentProfileBindingsHash,
+    implementationView,
+    acceptanceEvidenceView,
+    reconciledViews,
+    goalContractHash,
+    goalProjectionHash: mainAgentProfileBindings.goalExecutionHash,
+    markdownHash: mainAgentProfileBindings.goalExecutionHash,
+    subordinateSourceCoverageReceipts,
+  };
+  const goalContractBundleHash = hashControlPlaneValue({
+    schemaVersion: 'goal-contract-bundle-authority/v1',
+    ...bundleCore,
+  });
+  const sourceReceiptPayload = {
+    schemaVersion:
+      'main-agent-goal-source-authority-compilation-receipt/v1',
+    authorityProfile: 'main_agent_compiled',
+    goalContractBundleHash,
+    goalContractSemanticHash,
+    goalContractHash,
+    mainAgentProfileBindingsHash,
+    sourceAuthorityHash: mainAgentProfileBindings.sourceAuthorityHash,
+    sourceSnapshotHash: mainAgentProfileBindings.sourceSnapshotHash,
+    specSpanRegistryHash: mainAgentProfileBindings.specSpanRegistryHash,
+    sourceRootToSpecSpanMappingHash:
+      mainAgentProfileBindings.sourceRootToSpecSpanMappingHash,
+    implementationViewHash:
+      mainAgentProfileBindings.implementationViewHash,
+    acceptanceEvidenceViewHash:
+      mainAgentProfileBindings.acceptanceEvidenceViewHash,
+    reconciliationReceiptHash:
+      mainAgentProfileBindings.reconciliationReceiptHash,
+  };
+  return Object.freeze({
+    ...bundleCore,
+    goalContractBundleHash,
+    sourceAuthorityCompilationReceipt: Object.freeze({
+      ...sourceReceiptPayload,
+      receiptHash: hashReceiptPayload(sourceReceiptPayload),
+    }),
+  });
+}
+
 function compileGoalContract(request: unknown = {}) {
   if (!isRecord(request)) {
     throw failure('goal_contract_compile_request_invalid');
@@ -989,6 +1245,7 @@ function createGoalContractCompilationReceipt(
 module.exports = {
   compileGoalContract,
   compileGoalContractPolicy,
+  compileMainAgentGoalAuthorityBundle,
   createGoalContractSourceCoverageReceipt,
   createGoalContractCompilationReceipt,
   goalContractCompilerIdentity,
