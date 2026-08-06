@@ -34,7 +34,7 @@ const GENERIC_CHINESE_DOMAIN_LABEL =
   /^(?:认证|授权|支付|报表|设置|配置|基础设施|前端|后端|接口|安全|用户管理|数据处理)(?:功能|能力|模块|改造|实现)?$/u;
 const SHA256_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 const GIT_OBJECT_PATTERN = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u;
-
+const AUTHORITY_PROFILES = new Set(['standalone_frozen', 'main_agent_compiled']);
 function sorted(value) {
   if (Array.isArray(value)) return value.map(sorted);
   if (!value || typeof value !== 'object') return value;
@@ -238,7 +238,19 @@ function loadAjv2020(repositoryRoot) {
 function compileJsonSchema(repositoryRoot, schema, failureClass, details = {}) {
   try {
     const Ajv2020 = loadAjv2020(repositoryRoot);
-    return new Ajv2020({ allErrors: true, strict: false }).compile(schema);
+    const ajv = new Ajv2020({ allErrors: true, strict: false });
+    for (const base of [
+      __filename,
+      path.join(process.cwd(), 'package.json'),
+      ...(repositoryRoot ? [path.join(repositoryRoot, 'package.json')] : []),
+    ]) {
+      try {
+        const loaded = createRequire(base)('ajv-formats');
+        (loaded.default || loaded)(ajv);
+        break;
+      } catch {}
+    }
+    return ajv.compile(schema);
   } catch (error) {
     if (error.failureClass) throw error;
     failure(failureClass, { ...details, message: error.message });
@@ -315,6 +327,71 @@ function normalizeRecordBinding(binding) {
     requirementSetId: binding.requirementSetId,
     recordPathHash: binding.recordPathHash,
   };
+}
+
+function compileMainAgentCertificationValidator(repositoryRoot) {
+  const schemaPath = path.join(__dirname, '..', '..', '..', 'shared', 'goal-contract',
+    'goal-contract-partition-manifest.schema.json');
+  const schema = readJson(schemaPath, 'certification_schema_invalid');
+  return compileJsonSchema(repositoryRoot, {
+    $schema: schema.$schema,
+    $defs: schema.$defs,
+    $ref: '#/$defs/mainAgentGoalSourceAuthorityCertification',
+  }, 'certification_schema_invalid', { path: schemaPath });
+}
+
+function verifyAuthorityProfile({
+  repositoryRoot,
+  input,
+  goalPath,
+  partitionManifest,
+  requirementRecordBinding,
+}) {
+  const authorityProfile = input.authorityProfile || 'standalone_frozen';
+  if (!AUTHORITY_PROFILES.has(authorityProfile)) failure('invalid_authority_profile');
+  if (authorityProfile === 'standalone_frozen') {
+    if (!hasExactGoalFreezeDirectives(fs.readFileSync(goalPath, 'utf8'))) {
+      failure('goal_contract_not_frozen');
+    }
+    return { authorityProfile };
+  }
+  const sourceFields = [
+    'certification',
+    'goalContractBundle',
+    'partitionCoverageReceipt',
+    'currentDispatchPointer',
+    'transactionManifest',
+  ];
+  const bindings = Object.fromEntries(
+    sourceFields.map((field) => {
+      const binding = normalizeSourceBinding(input[field]);
+      verifySource(repositoryRoot, binding, `${field}_hash_mismatch`);
+      return [field, binding];
+    })
+  );
+  const certificationPath = resolveExistingInside(repositoryRoot,
+    bindings.certification.path, 'certification_path_escape');
+  const certification = readJson(certificationPath, 'certification_schema_invalid');
+  validateSchemaInstance(compileMainAgentCertificationValidator(repositoryRoot),
+    certification, 'certification_schema_invalid');
+  const certificationCore = { ...certification };
+  delete certificationCore.certifiedAt;
+  delete certificationCore.certificationHash;
+  if (certification.certificationHash !== sha256(stableJson(certificationCore))) {
+    failure('certification_hash_mismatch');
+  }
+  if (
+    certification.goalContractBundleHash !== bindings.goalContractBundle.hash ||
+    certification.partitionManifestHash !== partitionManifest.partitionManifestHash ||
+    certification.partitionCoverageReceiptHash !== bindings.partitionCoverageReceipt.hash ||
+    certification.currentDispatchPointerHash !== bindings.currentDispatchPointer.hash ||
+    certification.transactionManifestHash !== bindings.transactionManifest.hash ||
+    certification.goalProjectionBinding?.goalProjectionHash !== input.goalContract.hash ||
+    stableJson(certification.requirementRecordBinding) !== stableJson(requirementRecordBinding)
+  ) {
+    failure('certification_authority_mismatch');
+  }
+  return { authorityProfile, ...bindings };
 }
 
 function isNonFunctionalText(value, child = {}) {
@@ -658,8 +735,6 @@ function buildExecutionPackage({ requestPath, outputRoot }) {
     request.goalContract,
     'goal_contract_hash_mismatch'
   );
-  const goalText = fs.readFileSync(goalPath, 'utf8');
-  if (!hasExactGoalFreezeDirectives(goalText)) failure('goal_contract_not_frozen');
   const manifestPath = verifySource(
     repositoryRoot,
     request.partitionManifest,
@@ -715,9 +790,17 @@ function buildExecutionPackage({ requestPath, outputRoot }) {
   const partitionManifest = normalizeSourceBinding(request.partitionManifest);
   const evidenceSchema = normalizeSourceBinding(request.evidenceSchema);
   const closureSchema = normalizeSourceBinding(request.closureSchema);
+  const authority = verifyAuthorityProfile({
+    repositoryRoot,
+    input: request,
+    goalPath,
+    partitionManifest: manifest,
+    requirementRecordBinding,
+  });
   const seed = {
     repositoryRoot,
     repositoryBaseline,
+    ...authority,
     goalContract,
     partitionManifest,
     evidenceSchema,
@@ -812,6 +895,7 @@ function buildExecutionPackage({ requestPath, outputRoot }) {
     packageId,
     repositoryRoot,
     repositoryBaseline,
+    ...authority,
     goalContract,
     partitionManifest: {
       ...partitionManifest,
@@ -894,6 +978,7 @@ module.exports = {
   validateSchemaInstance,
   verifyRepositoryBaseline,
   verifyManifest,
+  verifyAuthorityProfile,
   verifySource,
   writeAtomic,
 };

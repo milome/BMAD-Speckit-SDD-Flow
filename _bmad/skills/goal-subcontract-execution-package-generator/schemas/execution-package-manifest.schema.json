@@ -43,6 +43,14 @@
       },
       "additionalProperties": false
     },
+    "authorityProfile": {
+      "enum": ["standalone_frozen", "main_agent_compiled"]
+    },
+    "certification": { "$ref": "#/$defs/sourceBinding" },
+    "goalContractBundle": { "$ref": "#/$defs/sourceBinding" },
+    "partitionCoverageReceipt": { "$ref": "#/$defs/sourceBinding" },
+    "currentDispatchPointer": { "$ref": "#/$defs/sourceBinding" },
+    "transactionManifest": { "$ref": "#/$defs/sourceBinding" },
     "goalContract": { "$ref": "#/$defs/sourceBinding" },
     "partitionManifest": { "$ref": "#/$defs/partitionManifestBinding" },
     "evidenceSchema": { "$ref": "#/$defs/sourceBinding" },
@@ -160,6 +168,20 @@
       }
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "required": ["authorityProfile"],
+        "properties": { "authorityProfile": { "const": "main_agent_compiled" } }
+      },
+      "then": {
+        "required": ["certification", "goalContractBundle", "partitionCoverageReceipt", "currentDispatchPointer", "transactionManifest"],
+        "properties": {
+          "requirementRecordBinding": { "properties": { "status": { "const": "present" } } }
+        }
+      }
+    }
+  ],
   "$defs": {
     "nonEmptyString": {
       "type": "string",

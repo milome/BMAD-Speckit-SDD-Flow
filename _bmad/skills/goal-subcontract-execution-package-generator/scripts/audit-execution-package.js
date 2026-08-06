@@ -13,7 +13,6 @@ const {
   createHandoffTemplate,
   createTaskReportTemplate,
   failure,
-  hasExactGoalFreezeDirectives,
   normalizeCollectionCommands,
   normalizeDisplayTitle,
   normalizeRecordBinding,
@@ -27,6 +26,7 @@ const {
   sha256,
   stableJson,
   validateSchemaInstance,
+  verifyAuthorityProfile,
   verifyManifest,
   verifyRepositoryBaseline,
   verifySource,
@@ -102,9 +102,6 @@ function auditExecutionPackage(packageRoot, expectedPackageManifestHash) {
   );
   const goalContract = sourceBinding(manifest.goalContract);
   const goalPath = verifySource(repositoryRoot, goalContract, 'goal_contract_hash_mismatch');
-  if (!hasExactGoalFreezeDirectives(fs.readFileSync(goalPath, 'utf8'))) {
-    failure('goal_contract_not_frozen');
-  }
   const partitionManifestBinding = sourceBinding(manifest.partitionManifest);
   const partitionManifestPath = verifySource(
     repositoryRoot,
@@ -160,12 +157,21 @@ function auditExecutionPackage(packageRoot, expectedPackageManifestHash) {
   });
   const childByPartitionId = createChildIdentityMap(children);
   const requirementRecordBinding = normalizeRecordBinding(manifest.requirementRecordBinding);
+  const authority = verifyAuthorityProfile({
+    repositoryRoot,
+    input: manifest,
+    goalPath,
+    partitionManifest: sourcePartitionManifest,
+    requirementRecordBinding,
+  });
+  const authorityProjection = manifest.authorityProfile ? authority : {};
   const collectionVerificationCommands = normalizeCollectionCommands(
     manifest.collectionVerificationCommands
   );
   const seed = {
     repositoryRoot,
     repositoryBaseline: manifest.repositoryBaseline,
+    ...authorityProjection,
     goalContract,
     partitionManifest: partitionManifestBinding,
     evidenceSchema,
@@ -249,6 +255,7 @@ function auditExecutionPackage(packageRoot, expectedPackageManifestHash) {
     packageId,
     repositoryRoot,
     repositoryBaseline: manifest.repositoryBaseline,
+    ...authorityProjection,
     goalContract,
     partitionManifest: {
       ...partitionManifestBinding,
