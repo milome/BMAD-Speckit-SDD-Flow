@@ -12,7 +12,7 @@ const {
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const PROJECT_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
-const TS_SOURCE_REGISTER = path.join(PACKAGE_ROOT, 'tests', 'register-ts-source.cjs');
+const BUILD_MAIN_AGENT_DIST = path.join(PACKAGE_ROOT, 'scripts', 'build-main-agent-dist.cjs');
 
 function tempCsv(name, text) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-tdd-projection-'));
@@ -22,11 +22,7 @@ function tempCsv(name, text) {
 }
 
 function materializePackageMirror() {
-  const result = spawnSync('node', [
-    '-r',
-    TS_SOURCE_REGISTER,
-    'scripts/prepublish-check.js',
-  ], {
+  const result = spawnSync('node', [BUILD_MAIN_AGENT_DIST], {
     cwd: PROJECT_ROOT,
     encoding: 'utf8',
     env: {
@@ -38,7 +34,7 @@ function materializePackageMirror() {
   assert.strictEqual(
     result.status,
     0,
-    `prepublish mirror materialization failed: ${result.stderr || result.stdout}`
+    `package mirror build failed: ${result.stderr || result.stdout}`
   );
 }
 
@@ -67,6 +63,26 @@ describe('AI-TDD projection manifest parser', () => {
           row.runtimeNextAction !== 'record_closed'
       )
     );
+    const partitionRoutes = manifests.skillRoutes.filter(
+      (row) => row.routeId === 'GOAL_CONTRACT_PARTITION'
+    );
+    assert.equal(partitionRoutes.length, 1);
+    assert.deepEqual(partitionRoutes[0], {
+      routeId: 'GOAL_CONTRACT_PARTITION',
+      modelId: 'implementation_readiness',
+      condition: 'frozen_goal_contract_partition_requested',
+      skill: 'goal-contract-partition-orchestrator',
+      mode: 'partition_frozen_goal_contract',
+      inputAuthority: 'source_plan|frozen_goal_execution_contract|hash_bound_receipts',
+      outputs: 'partition-plan.json|partition-manifest.json|children/*|receipts/*',
+      runtimeNextAction: '',
+      displayRouteAlias: 'partition_goal_contract',
+      canSuggestTransition: 'false',
+      canWriteControlState: 'false',
+      controlledIngestWritesState: 'false',
+      blockedIf: 'frozen_successor_missing_or_hash_mismatch',
+      terminalEvent: '',
+    });
   });
 
   it('materializes generated package mirror CSV assets byte-equivalent to canonical assets', () => {

@@ -1,0 +1,5 @@
+interface:
+  # prettier-ignore
+  display_name: "Goal Subcontract Execution Package Generator"
+  short_description: 'Compile and audit Goal child execution packages'
+  default_prompt: 'Use $goal-subcontract-execution-package-generator to compile or audit an ordered Goal child-contract execution package.'

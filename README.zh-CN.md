@@ -222,6 +222,7 @@ BMAD-Speckit-SDD-Flow 安装的是分层技能面。规范核心层 `_bmad/skill
 | `$requirements-contract-authoring`     | 需要创建或更新可确认的 PRD、BUGFIX、TASKS 或 story 源文档。 | 内联 `implementationConfirmation`、traceRows、证据期望和确认 HTML。 | 为用户确认准备源文档，不是独立权威。                     |
 | `$req-trace-matrix-prompt-generator`   | 需要从需求源生成严格的 trace matrix prompt。                | 可用于提示词的需求追溯矩阵合同。                                    | 生成追溯编写输入，不关闭运行时门禁。                     |
 | `$goal-execution-contract-generator`   | 需要为 `/goal` 生成冻结执行合同。                           | `docs/plans` 下的 goal 执行合同。                                   | 为 `/goal` 生成合同，但不执行 `/goal`。                  |
+| `$goal-contract-partition-orchestrator` | 需要拆分已经冻结的 Goal Execution Contract。                | 诊断性子合同候选和 partition manifest v2 验证证据。                 | 不把当前原始 `--out` 当作权威；ER-GH-004 完成前阻断受治理激活。 |
 | `$grill-with-docs`                     | 需要基于现有文档做对抗式澄清。                              | 追问、矛盾点和证据缺口。                                            | 在确认或执行前提高需求清晰度。                           |
 | `$docs-review`                         | 需要检查 README、文档或 diff 的清晰度、结构和风格。         | 文档审查 findings。                                                 | 可选伴随技能；除非另行加入，否则不是项目安装面的一部分。 |
 | `$bmad-create-product-brief`           | 需要在 PRD 前梳理产品意图。                                 | Product brief 与发现记录。                                          | 进入 2.x 控制面的 1.x 上游工作流输入。                   |

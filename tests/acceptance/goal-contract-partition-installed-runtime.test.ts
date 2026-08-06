@@ -362,6 +362,29 @@ describe('goal-contract partition installed runtime', () => {
     expect(fs.lstatSync(installedRoot).isSymbolicLink()).toBe(false);
     expect(fs.existsSync(path.join(installedRoot, 'dist', 'commands', 'goal-contract.js'))).toBe(true);
     expect(fs.existsSync(path.join(installedRoot, '_bmad', 'shared', 'goal-contract'))).toBe(true);
+    expect(
+      fs.existsSync(
+        path.join(
+          installedRoot,
+          '_bmad',
+          'skills',
+          'goal-contract-partition-orchestrator',
+          'SKILL.md'
+        )
+      )
+    ).toBe(true);
+    expect(
+      fs.existsSync(
+        path.join(
+          installedRoot,
+          '_bmad',
+          'skills',
+          'goal-contract-partition-orchestrator',
+          'references',
+          'partition-protocol.md'
+        )
+      )
+    ).toBe(true);
     expect(fs.existsSync(path.join(installedRoot, 'src'))).toBe(false);
     expect(fs.existsSync(path.join(installedRoot, 'dist', '_bmad'))).toBe(false);
 

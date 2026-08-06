@@ -44,6 +44,13 @@ function installRootPackageToConsumer(target: string): void {
   run('npm rebuild bmad-speckit-sdd-flow --foreground-scripts', target);
 }
 
+function expectGoalContractPartitionSkill(target: string, platformDir: string): void {
+  const skillRoot = join(target, platformDir, 'skills', 'goal-contract-partition-orchestrator');
+  expect(existsSync(join(skillRoot, 'SKILL.md'))).toBe(true);
+  expect(existsSync(join(skillRoot, 'references', 'partition-protocol.md'))).toBe(true);
+  expect(existsSync(join(skillRoot, 'agents', 'openai.yaml'))).toBe(true);
+}
+
 describe('install to consumer ->CLI acceptance', () => {
   it('init-to-root deploy ->bmad-speckit check passes', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-init-'));
@@ -58,6 +65,7 @@ describe('install to consumer ->CLI acceptance', () => {
       expect(existsSync(join(target, '.cursor', 'commands', 'bmads.md'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'skills', 'bmad-speckit', 'SKILL.md'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'skills', 'bmads', 'SKILL.md'))).toBe(true);
+      expectGoalContractPartitionSkill(target, '.cursor');
       expect(
         existsSync(join(target, '.cursor', 'skills', 'encoding-integrity-guardian', 'SKILL.md'))
       ).toBe(true);
@@ -122,6 +130,7 @@ describe('install to consumer ->CLI acceptance', () => {
       expect(existsSync(join(target, '.cursor', 'commands', 'bmads.md'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'skills', 'bmad-speckit', 'SKILL.md'))).toBe(true);
       expect(existsSync(join(target, '.cursor', 'skills', 'bmads', 'SKILL.md'))).toBe(true);
+      expectGoalContractPartitionSkill(target, '.cursor');
       expect(existsSync(join(target, '.cursor', 'hooks', 'emit-runtime-policy.cjs'))).toBe(true);
       expect(
         existsSync(join(target, '.cursor', 'hooks', 'runtime-dashboard-session-start.cjs'))
@@ -232,6 +241,7 @@ describe('install to consumer ->CLI acceptance', () => {
       expect(existsSync(join(target, '.claude', 'commands', 'bmads.md'))).toBe(true);
       expect(existsSync(join(target, '.claude', 'skills', 'bmad-speckit', 'SKILL.md'))).toBe(true);
       expect(existsSync(join(target, '.claude', 'skills', 'bmads', 'SKILL.md'))).toBe(true);
+      expectGoalContractPartitionSkill(target, '.claude');
       expect(
         existsSync(join(target, '.claude', 'skills', 'encoding-integrity-guardian', 'SKILL.md'))
       ).toBe(true);
@@ -350,6 +360,7 @@ describe('install to consumer ->CLI acceptance', () => {
       expect(existsSync(join(target, '.codex', 'skills', 'bmad-help', 'SKILL.md'))).toBe(true);
       expect(existsSync(join(target, '.codex', 'skills', 'bmad-speckit', 'SKILL.md'))).toBe(true);
       expect(existsSync(join(target, '.codex', 'skills', 'bmads', 'SKILL.md'))).toBe(true);
+      expectGoalContractPartitionSkill(target, '.codex');
       expect(
         existsSync(join(target, '.codex', 'skills', 'encoding-integrity-guardian', 'SKILL.md'))
       ).toBe(true);

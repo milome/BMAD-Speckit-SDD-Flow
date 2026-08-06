@@ -1,0 +1,4 @@
+interface:
+  display_name: "Goal Contract Partition Orchestrator"
+  short_description: "Inspect frozen Goal partitions as diagnostic candidates"
+  default_prompt: "Use $goal-contract-partition-orchestrator to validate diagnostic child-contract candidates from a frozen Goal Execution Contract without promoting them as governed authority."

@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "campaign-task-report-binding.schema.json",
+  "title": "Goal Campaign TaskReport Binding",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "status",
+    "packageId",
+    "packageManifestHash",
+    "campaignReportHash",
+    "childClosureSetHash",
+    "commitSetHash",
+    "childSummaries",
+    "aggregateAuditDecision",
+    "requirementRecordBinding"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "goal-subcontract-campaign-task-report/v2"
+    },
+    "status": { "const": "done" },
+    "packageId": { "type": "string", "minLength": 1 },
+    "packageManifestHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "campaignReportHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "childClosureSetHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "commitSetHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "childSummaries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "partitionId",
+          "displayTitle",
+          "functionalOutcome",
+          "status",
+          "commitSubject",
+          "commitHash",
+          "evidenceHash",
+          "closureHash",
+          "validationCommandIds"
+        ],
+        "properties": {
+          "partitionId": { "type": "string", "minLength": 1 },
+          "displayTitle": { "type": "string", "minLength": 1 },
+          "functionalOutcome": { "type": "string", "minLength": 1 },
+          "status": { "const": "closed" },
+          "commitSubject": { "type": "string", "minLength": 1 },
+          "commitHash": {
+            "type": "string",
+            "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$"
+          },
+          "evidenceHash": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "closureHash": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "validationCommandIds": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "aggregateAuditDecision": { "const": "pass" },
+    "requirementRecordBinding": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["status", "recordId", "requirementSetId", "recordPathHash"],
+          "properties": {
+            "status": { "const": "present" },
+            "recordId": { "type": "string", "minLength": 1 },
+            "requirementSetId": { "type": "string", "minLength": 1 },
+            "recordPathHash": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["status", "downstreamAction"],
+          "properties": {
+            "status": { "const": "absent" },
+            "downstreamAction": {
+              "const": "main_agent_resolve_requirement_record"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "additionalProperties": false
+}
