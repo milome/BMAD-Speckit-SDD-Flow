@@ -27,6 +27,7 @@ import {
 import { resolveExecutionDisciplineProfile } from './execution-discipline-profiles';
 import {
   buildExecutionStrategyOptions,
+  exactExecutionStrategySelectionPhrase,
   selectExecutionStrategy,
 } from './execution-strategy-selection';
 import {
@@ -252,6 +253,7 @@ import {
   resolveCurrentDispatchPointer,
   type CurrentDispatchPointerExpectedIdentity,
 } from './requirements-contract-current-dispatch-pointer';
+import { resolveCampaignRuntimeBinding } from './campaign-runtime-binding';
 import {
   runNativeGoalInvocation,
   type NativeGoalAttemptBundle,
@@ -1583,6 +1585,7 @@ function recordIdentityFromPath(
 
 function ensurePolicyDefaultExecutionStrategy(input: {
   compiledPromptRef: NonNullable<ExecutionPacket['compiledPromptRef']>;
+  campaignRuntimeBindingRef?: ExecutionPacket['campaignRuntimeBindingRef'];
 }): ExecutionPacket['executionStrategy'] {
   const optionsResult = buildExecutionStrategyOptions({
     compiledPromptRef: input.compiledPromptRef,
@@ -1595,6 +1598,27 @@ function ensurePolicyDefaultExecutionStrategy(input: {
     selectedBy: 'policy',
     policyDefaultAllowed: true,
   });
+  if (
+    selection.strategyId === 'governed_skill_adapter' &&
+    !input.campaignRuntimeBindingRef
+  ) {
+    const direct = optionsResult.options.find(
+      (option) => option.strategyId === 'compiled_trace_direct'
+    );
+    if (!direct || direct.availability !== 'available') return null;
+    return selectExecutionStrategy({
+      optionsResult,
+      strategyId: 'compiled_trace_direct',
+      selectedBy: 'user',
+      exactPhrase: exactExecutionStrategySelectionPhrase({
+        strategyId: 'compiled_trace_direct',
+        strategyOptionsHash: optionsResult.strategyOptionsHash,
+        modelPacketHash: optionsResult.modelPacketHash,
+        sourceDocumentHash: optionsResult.sourceDocumentHash,
+        implementationConfirmationHash: optionsResult.implementationConfirmationHash,
+      }),
+    });
+  }
   return selection;
 }
 
@@ -1710,6 +1734,26 @@ function nativeGoalAttemptBundleFromCurrentPointer(input: {
     transactionManifestHash: pointer.transactionManifestRef.hash,
     currentDispatchPointerPath: pointerPath,
     currentDispatchPointerHash: sha256File(pointerPath),
+  };
+}
+
+function currentCampaignRuntimeBindingRefFromDispatchPointer(input: {
+  projectRoot: string;
+  record: Record<string, unknown> | null;
+}): ExecutionPacket['campaignRuntimeBindingRef'] {
+  const pointerPath = canonicalCurrentDispatchPointerPath(input.projectRoot);
+  const { pointer } = resolveCurrentDispatchPointer({
+    authorityRoot: input.projectRoot,
+    pointerPath,
+    expected: currentDispatchPointerExpectedIdentityFromRecord(input.record),
+  });
+  const ref = pointer.campaignRuntimeBindingRef;
+  if (!ref) return null;
+  return {
+    path: ref.path,
+    hash: ref.hash,
+    readbackHash: ref.readbackHash,
+    readbackVerified: true,
   };
 }
 
@@ -34938,6 +34982,17 @@ export function ensureMainAgentDispatchPacket(
     (taskType === 'implement' || taskType === 'remediate') && dispatchCompiledPromptRef
       ? ensurePolicyDefaultExecutionStrategy({
           compiledPromptRef: dispatchCompiledPromptRef,
+          campaignRuntimeBindingRef: currentCampaignRuntimeBindingRefFromDispatchPointer({
+            projectRoot: input.projectRoot,
+            record: activeRecord,
+          }),
+        })
+      : null;
+  const campaignRuntimeBindingRef =
+    dispatchCompiledPromptRef && (taskType === 'implement' || taskType === 'remediate')
+      ? currentCampaignRuntimeBindingRefFromDispatchPointer({
+          projectRoot: input.projectRoot,
+          record: activeRecord,
         })
       : null;
   const sddArtifactManifestRef =
@@ -34990,6 +35045,7 @@ export function ensureMainAgentDispatchPacket(
           compiledPromptRef: dispatchCompiledPromptRef,
           executionDisciplineProfile,
           executionStrategy,
+          campaignRuntimeBindingRef,
           sddArtifactManifestRef,
           auditExecutionProfile: auditExecution?.profile ?? null,
           auditTriadExecutionPlanRef: auditExecution?.triadRef ?? null,
@@ -39386,6 +39442,39 @@ export function runMainAgentAutomaticLoop(input: {
           instruction.sessionId,
           instruction.packetId
         );
+      const governedCampaign =
+        instruction.packet.executionStrategy?.strategyId === 'governed_skill_adapter'
+          ? (() => {
+              const pointerPath = canonicalCurrentDispatchPointerPath(input.projectRoot);
+              const pointerResolution = resolveCurrentDispatchPointer({
+                authorityRoot: input.projectRoot,
+                pointerPath,
+                expected: currentDispatchPointerExpectedIdentityFromRecord(activeRecord),
+              });
+              const binding = resolveCampaignRuntimeBinding({
+                pointerPath,
+                pointerHash: pointerResolution.pointerHash,
+                packetPath: instruction.packetPath,
+                packetHash: sha256File(instruction.packetPath),
+                pointer: pointerResolution.pointer,
+                packet: instruction.packet as unknown as Record<string, unknown>,
+              });
+              return {
+                children: binding.binding.children as Array<Record<string, unknown>>,
+                requirementRecordBinding:
+                  (modelPacketRead.modelPacket.requirementRecordBinding as
+                    | Record<string, unknown>
+                    | undefined) ??
+                  { status: 'absent' },
+                packageRequestRef: binding.binding.packageRequestRef,
+                partitionManifestRef: binding.binding.partitionManifestRef,
+                dependencies: {
+                  ...binding.dependencies,
+                  persistTaskReport: () => undefined,
+                },
+              };
+            })()
+          : undefined;
       const nativeResult: NativeGoalInvocationResult = runNativeGoalInvocation({
         projectRoot: input.projectRoot,
         host: instruction.host,
@@ -39401,6 +39490,7 @@ export function runMainAgentAutomaticLoop(input: {
         attemptId: instruction.packetId,
         timeoutMs: Number(args.codexTimeoutMs) > 0 ? Number(args.codexTimeoutMs) : undefined,
         executor: input.nativeGoalExecutor,
+        governedCampaign,
       });
       const exactStatePath = path.join(
         orchestrationStateDirForRecordPath(input.projectRoot, activeRecordPath),
