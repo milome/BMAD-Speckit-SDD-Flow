@@ -144,6 +144,7 @@ describe('one-build one-pack package lifecycle', () => {
       const prepared = preparePackageArtifact({
         repoRoot,
         commitSha: 'a'.repeat(40),
+        listTarEntries: () => ['package/package.json'],
         runCommand: (request: any) => {
           commands.push(request);
           if (request.kind === 'npm_pack') {

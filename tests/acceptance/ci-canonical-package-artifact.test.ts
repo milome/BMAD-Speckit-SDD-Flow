@@ -1,10 +1,13 @@
 import { execFileSync } from 'node:child_process';
 import {
   chmodSync,
+  existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
+  statSync,
   symlinkSync,
   writeFileSync,
 } from 'node:fs';
@@ -122,7 +125,11 @@ describe('canonical package artifact', () => {
       );
       process.env.PATH = `${installLargePackOutputNpm(repoRoot)}${delimiter}${previousPath || ''}`;
 
-      preparePackageArtifact({ repoRoot, commitSha });
+      preparePackageArtifact({
+        repoRoot,
+        commitSha,
+        listTarEntries: () => ['package/package.json'],
+      });
 
       expect(readFileSync(generatedPath, 'utf8')).toBe('baseline');
       expect(git(repoRoot, 'status', '--porcelain', '--untracked-files=no')).toBe('');
@@ -141,6 +148,7 @@ describe('canonical package artifact', () => {
       const prepared = preparePackageArtifact({
         repoRoot,
         commitSha: 'e'.repeat(40),
+        listTarEntries: () => ['package/package.json'],
       });
 
       expect(validatePackageDescriptor({ repoRoot, descriptor: prepared })).toEqual(prepared);
@@ -158,6 +166,7 @@ describe('canonical package artifact', () => {
       const prepared = preparePackageArtifact({
         repoRoot,
         commitSha: 'a'.repeat(40),
+        listTarEntries: () => ['package/package.json'],
         runCommand: (request: any) => {
           calls.push(request);
           if (request.kind === 'npm_pack') {
@@ -186,6 +195,99 @@ describe('canonical package artifact', () => {
       expect(JSON.parse(readFileSync(prepared.descriptorPath, 'utf8')).tarballSha256).toBe(
         prepared.tarballSha256
       );
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it.runIf(process.platform === 'win32')(
+    'materializes external dependency directories with file hardlinks inside staging',
+    () => {
+      const repoRoot = fixtureRepo();
+      const sourceBin = join(repoRoot, 'node_modules', '.bin', 'fixture.cmd');
+      let inspectedStaging = false;
+      try {
+        git(repoRoot, 'init');
+        git(repoRoot, 'config', 'user.email', 'ci@example.invalid');
+        git(repoRoot, 'config', 'user.name', 'CI Test');
+        git(repoRoot, 'add', 'package.json');
+        git(repoRoot, 'commit', '-m', 'baseline');
+        const commitSha = git(repoRoot, 'rev-parse', 'HEAD');
+        mkdirSync(join(repoRoot, 'node_modules', '.bin'), { recursive: true });
+        writeFileSync(sourceBin, '@echo off\r\n', 'utf8');
+
+        preparePackageArtifact({
+          repoRoot,
+          commitSha,
+          listTarEntries: () => ['package/package.json'],
+          runCommand: (request: any) => {
+            if (request.kind === 'build') {
+              const stagedBinDir = join(request.cwd, 'node_modules', '.bin');
+              const stagedBin = join(stagedBinDir, 'fixture.cmd');
+              expect(lstatSync(stagedBinDir).isSymbolicLink()).toBe(false);
+              expect(lstatSync(stagedBinDir).isDirectory()).toBe(true);
+              const sourceStat = statSync(sourceBin, { bigint: true });
+              const stagedStat = statSync(stagedBin, { bigint: true });
+              expect(stagedStat.dev).toBe(sourceStat.dev);
+              expect(stagedStat.ino).toBe(sourceStat.ino);
+              inspectedStaging = true;
+            }
+            if (request.kind === 'npm_pack') {
+              mkdirSync(request.outputDir, { recursive: true });
+              writeFileSync(
+                join(request.outputDir, 'fixture-package-1.2.3.tgz'),
+                'tarball',
+                'utf8'
+              );
+              return {
+                status: 0,
+                stdout: JSON.stringify([{ filename: 'fixture-package-1.2.3.tgz' }]),
+              };
+            }
+            return { status: 0, stdout: '' };
+          },
+        });
+
+        expect(inspectedStaging).toBe(true);
+      } finally {
+        rmSync(repoRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
+  it('rejects parent traversal entries before writing the package descriptor', () => {
+    const repoRoot = fixtureRepo();
+    const descriptorPath = join(
+      repoRoot,
+      '.artifacts',
+      'test-portfolio',
+      'package',
+      'canonical-package.json'
+    );
+    try {
+      expect(() =>
+        preparePackageArtifact({
+          repoRoot,
+          commitSha: '9'.repeat(40),
+          listTarEntries: () => ['package/package.json', 'package/../escape'],
+          runCommand: (request: any) => {
+            if (request.kind === 'npm_pack') {
+              mkdirSync(request.outputDir, { recursive: true });
+              writeFileSync(
+                join(request.outputDir, 'fixture-package-1.2.3.tgz'),
+                'tarball',
+                'utf8'
+              );
+              return {
+                status: 0,
+                stdout: JSON.stringify([{ filename: 'fixture-package-1.2.3.tgz' }]),
+              };
+            }
+            return { status: 0, stdout: '' };
+          },
+        })
+      ).toThrow('CANONICAL_PACKAGE_TAR_ENTRY_UNSAFE');
+      expect(existsSync(descriptorPath)).toBe(false);
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
     }
@@ -230,6 +332,7 @@ describe('canonical package artifact', () => {
       const prepared = preparePackageArtifact({
         repoRoot,
         commitSha: 'b'.repeat(40),
+        listTarEntries: () => ['package/package.json'],
         runCommand: (request: any) => {
           if (request.kind === 'npm_pack') {
             mkdirSync(request.outputDir, { recursive: true });
@@ -280,6 +383,7 @@ describe('canonical package artifact', () => {
       const prepared = preparePackageArtifact({
         repoRoot,
         commitSha: 'c'.repeat(40),
+        listTarEntries: () => ['package/package.json'],
         runCommand: (request: any) => {
           if (request.kind === 'npm_pack') {
             mkdirSync(request.outputDir, { recursive: true });
@@ -351,6 +455,7 @@ describe('canonical package artifact', () => {
       const prepared = preparePackageArtifact({
         repoRoot,
         commitSha: fixtureCommitSha,
+        listTarEntries: () => ['package/package.json'],
         runCommand: (request: any) => {
           if (request.kind === 'npm_pack') {
             mkdirSync(request.outputDir, { recursive: true });

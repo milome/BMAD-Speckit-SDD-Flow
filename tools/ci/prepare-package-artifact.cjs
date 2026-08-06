@@ -14,6 +14,7 @@ const {
 } = require('./canonical-artifact.cjs');
 
 const NPM_PACK_JSON_CAPTURE_MAX_BYTES = 32 * 1024 * 1024;
+const TAR_ENTRY_LIST_CAPTURE_MAX_BYTES = 32 * 1024 * 1024;
 const PACKAGE_WORKSPACE_PREFIX = 'bmad-ci-package-';
 const BUILD_COMMAND = Object.freeze({ command: 'npm', args: ['run', 'prepack'] });
 const PACK_COMMAND = Object.freeze({
@@ -123,10 +124,85 @@ function dependencyLinkType(targetPath) {
   return process.platform === 'win32' ? 'junction' : 'dir';
 }
 
+function tarEntryHasParentTraversal(entry) {
+  return String(entry).split(/[\\/]/u).includes('..');
+}
+
+function assertSafeTarEntries(entries) {
+  if (!Array.isArray(entries) || entries.some((entry) => typeof entry !== 'string')) {
+    fail('CANONICAL_PACKAGE_TAR_LIST_FAILED');
+  }
+  const unsafeEntry = entries.find(tarEntryHasParentTraversal);
+  if (unsafeEntry !== undefined) {
+    fail('CANONICAL_PACKAGE_TAR_ENTRY_UNSAFE', { entry: unsafeEntry });
+  }
+}
+
+function defaultListTarEntries({ tarball }) {
+  const result = spawnSync('tar', ['-tf', tarball], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    maxBuffer: TAR_ENTRY_LIST_CAPTURE_MAX_BYTES,
+  });
+  const entries = String(result.stdout || '')
+    .split(/\r?\n/u)
+    .filter((entry) => entry !== '');
+  assertSafeTarEntries(entries);
+  if (result.error || result.status !== 0) {
+    fail('CANONICAL_PACKAGE_TAR_LIST_FAILED', {
+      status: result.status ?? null,
+      code: result.error?.code ?? null,
+      stderr: String(result.stderr || '').slice(-4096),
+      maxBytes: TAR_ENTRY_LIST_CAPTURE_MAX_BYTES,
+    });
+  }
+  return entries;
+}
+
 function dependencyLinkTarget(targetPath, dependencyPath) {
   if (dependencyLinkType(dependencyPath) === 'junction') return path.resolve(dependencyPath);
   const relative = path.relative(path.dirname(targetPath), dependencyPath);
   return relative !== '' && !path.isAbsolute(relative) ? relative : dependencyPath;
+}
+
+function materializeDependencyEntry({ sourcePath, targetPath, activeDirectories = new Set() }) {
+  const sourceStat = fs.lstatSync(sourcePath);
+  const resolvedSource = sourceStat.isSymbolicLink() ? fs.realpathSync(sourcePath) : sourcePath;
+  const resolvedStat = sourceStat.isSymbolicLink() ? fs.statSync(resolvedSource) : sourceStat;
+
+  if (resolvedStat.isFile()) {
+    try {
+      fs.linkSync(resolvedSource, targetPath);
+    } catch (error) {
+      fail('CANONICAL_PACKAGE_DEPENDENCY_HARDLINK_FAILED', {
+        sourcePath,
+        targetPath,
+        code: error?.code ?? null,
+      });
+    }
+    return;
+  }
+  if (!resolvedStat.isDirectory()) {
+    fail('CANONICAL_PACKAGE_DEPENDENCY_ENTRY_UNSUPPORTED', { sourcePath });
+  }
+
+  const resolvedDirectory = fs.realpathSync(resolvedSource);
+  if (activeDirectories.has(resolvedDirectory)) {
+    fail('CANONICAL_PACKAGE_DEPENDENCY_CYCLE', { sourcePath });
+  }
+  activeDirectories.add(resolvedDirectory);
+  try {
+    fs.mkdirSync(targetPath);
+    for (const entry of fs.readdirSync(resolvedDirectory, { withFileTypes: true })) {
+      materializeDependencyEntry({
+        sourcePath: path.join(resolvedDirectory, entry.name),
+        targetPath: path.join(targetPath, entry.name),
+        activeDirectories,
+      });
+    }
+  } finally {
+    activeDirectories.delete(resolvedDirectory);
+  }
 }
 
 function projectDependencyEntry({ sourcePath, targetPath, repoRoot, stagingRoot }) {
@@ -141,6 +217,10 @@ function projectDependencyEntry({ sourcePath, targetPath, repoRoot, stagingRoot 
         dependencyPath: sourcePath,
       });
     }
+    if (process.platform === 'win32' && !pathInside(stagingRoot, resolvedTarget)) {
+      materializeDependencyEntry({ sourcePath: resolvedSource, targetPath });
+      return;
+    }
     fs.symlinkSync(
       dependencyLinkTarget(targetPath, resolvedTarget),
       targetPath,
@@ -149,12 +229,20 @@ function projectDependencyEntry({ sourcePath, targetPath, repoRoot, stagingRoot 
     return;
   }
   if (sourceStat.isDirectory()) {
+    if (process.platform === 'win32') {
+      materializeDependencyEntry({ sourcePath, targetPath });
+      return;
+    }
     const linkType = dependencyLinkType(sourcePath);
     const linkTarget = dependencyLinkTarget(targetPath, sourcePath);
     fs.symlinkSync(linkTarget, targetPath, linkType);
     return;
   }
-  fs.copyFileSync(sourcePath, targetPath);
+  if (process.platform === 'win32') {
+    materializeDependencyEntry({ sourcePath, targetPath });
+  } else {
+    fs.copyFileSync(sourcePath, targetPath);
+  }
 }
 
 function projectNodeModules({ repoRoot, stagingRoot }) {
@@ -368,6 +456,7 @@ function preparePackageArtifact({
   outputDir = '.artifacts/test-portfolio/package',
   commitSha,
   runCommand = defaultRunCommand,
+  listTarEntries = defaultListTarEntries,
 }) {
   const normalizedCommitSha = normalizeCommitSha(commitSha);
   const packageOutput = path.resolve(repoRoot, outputDir);
@@ -422,6 +511,7 @@ function preparePackageArtifact({
     if (!fs.existsSync(tarball) || !fs.statSync(tarball).isFile()) {
       fail('CANONICAL_PACKAGE_TARBALL_MISSING');
     }
+    assertSafeTarEntries(listTarEntries({ tarball }));
     const descriptor = {
       schemaVersion: 'canonical-package/v1',
       commitSha: normalizedCommitSha,
