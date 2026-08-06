@@ -119,7 +119,8 @@ function pathInside(parent, candidate) {
 }
 
 function dependencyLinkType(targetPath) {
-  return fs.statSync(targetPath).isDirectory() ? 'dir' : 'file';
+  if (!fs.statSync(targetPath).isDirectory()) return 'file';
+  return process.platform === 'win32' ? 'junction' : 'dir';
 }
 
 function dependencyLinkTarget(targetPath, dependencyPath) {
