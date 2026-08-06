@@ -254,7 +254,7 @@ describe('main-agent unified ingress e2e', () => {
     }
   });
 
-  it('emits S3f recovery/back-switch fields when forced cli ingress can recover hooks', async () => {
+  it('emits S3f recovery fields and blocks back-switch when execution parity fails', async () => {
     const root = await prepareRoot('cursor', true);
     try {
       const receipt = runUnifiedIngress({
@@ -276,7 +276,11 @@ describe('main-agent unified ingress e2e', () => {
       expect(receipt.hostRecovery.before_parity_snapshot.inspect?.pendingPacketStatus).toBe(
         'invalidated'
       );
-      expect(receipt.hostRecovery.after_parity_snapshot.inspect).toBeNull();
+      expect(receipt.hostRecovery.after_parity_snapshot.inspect).toMatchObject({
+        status: 'blocked',
+        resolvedHost: 'cursor',
+        pendingPacketStatus: 'invalidated',
+      });
       expect(receipt.hostRecovery.parity_diff).toMatchObject({
         hostModeChanged: false,
         orchestrationEntryChanged: false,
@@ -284,6 +288,18 @@ describe('main-agent unified ingress e2e', () => {
       });
       expect(receipt.hostRecovery.recovery_log_path).toEqual(expect.any(String));
       expect(fs.existsSync(receipt.hostRecovery.recovery_log_path as string)).toBe(true);
+      const recoveryLog = JSON.parse(
+        fs.readFileSync(receipt.hostRecovery.recovery_log_path as string, 'utf8')
+      ) as {
+        recovered: boolean;
+        inspect_parity_passed: boolean;
+        back_switch_allowed: boolean;
+      };
+      expect(recoveryLog).toMatchObject({
+        recovered: true,
+        inspect_parity_passed: false,
+        back_switch_allowed: false,
+      });
       const state = readOrchestrationState(root.root, receipt.runLoop.sessionId!);
       expect(state?.hostRecovery).toMatchObject({
         degradation_level: 'cli_forced',
