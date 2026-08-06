@@ -35,7 +35,12 @@ function makeStories(): RalphUserStory[] {
 
 afterEach(() => {
   while (tempRoots.length > 0) {
-    fs.rmSync(tempRoots.pop()!, { recursive: true, force: true });
+    fs.rmSync(tempRoots.pop()!, {
+      recursive: true,
+      force: true,
+      maxRetries: 5,
+      retryDelay: 100,
+    });
   }
 });
 
