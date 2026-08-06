@@ -25,7 +25,10 @@ import {
   type OrchestrationHost,
 } from './orchestration-dispatch-contract';
 import { resolveExecutionDisciplineProfile } from './execution-discipline-profiles';
-import { resolvePackageOwnedBmadPath } from '../../runtime/package-bmad-root';
+import {
+  resolveInstalledSkillPath,
+  resolvePackageOwnedBmadPath,
+} from '../../runtime/package-bmad-root';
 import {
   buildExecutionStrategyOptions,
   selectExecutionStrategy,
@@ -24305,6 +24308,32 @@ function runCriticalAuditorReceiptLoop(input: {
     }
     let acceptedResponse = receipt ? existingResponse : null;
     if (!receipt) {
+      if (!provider && !existingResponse) {
+        const providerIssue = preConfirmationIssue(
+          'critical_auditor_provider_mode_required',
+          'A real Critical Auditor round provider is required; synthetic clean receipts are not allowed',
+          ['critical_auditor_receipt_loop'],
+          'critical_auditor'
+        );
+        issues.push(providerIssue);
+        const outcomeCommit = commitRoundOutcome({
+          blockingIssues: [providerIssue],
+        });
+        if (!outcomeCommit.ok) {
+          issues.push(outcomeCommit.issue);
+        }
+        pendingRequestPath = requestPath;
+        continuation = {
+          providerMode: 'main_session_inline',
+          transactionId: input.transaction.transactionId,
+          namespaceVersion: input.transaction.namespaceVersion,
+          roundIndex,
+          requestPath: toRootRelativePath(input.root, requestPath),
+          responsePath: toRootRelativePath(input.root, responsePath),
+          nextRequiredAction: 'run_main_session_critical_auditor_round',
+        };
+        break;
+      }
       if (!providerBinding.binding) {
         const bindingFailureIssues = providerBinding.issueCodes.map((code) =>
           preConfirmationIssue(
@@ -24334,32 +24363,6 @@ function runCriticalAuditorReceiptLoop(input: {
       };
       let auditResult: CriticalAuditorRoundResult;
       if (!provider) {
-        if (!existingResponse) {
-          const providerIssue = preConfirmationIssue(
-            'critical_auditor_provider_mode_required',
-            'A real Critical Auditor round provider is required; synthetic clean receipts are not allowed',
-            ['critical_auditor_receipt_loop'],
-            'critical_auditor'
-          );
-          issues.push(providerIssue);
-          const outcomeCommit = commitRoundOutcome({
-            blockingIssues: [providerIssue],
-          });
-          if (!outcomeCommit.ok) {
-            issues.push(outcomeCommit.issue);
-          }
-          pendingRequestPath = requestPath;
-          continuation = {
-            providerMode: 'main_session_inline',
-            transactionId: input.transaction.transactionId,
-            namespaceVersion: input.transaction.namespaceVersion,
-            roundIndex,
-            requestPath: toRootRelativePath(input.root, requestPath),
-            responsePath: toRootRelativePath(input.root, responsePath),
-            nextRequiredAction: 'run_main_session_critical_auditor_round',
-          };
-          break;
-        }
         auditResult = existingResponse as unknown as CriticalAuditorRoundResult;
       } else {
         try {
@@ -28419,18 +28422,18 @@ function writePreConfirmationRequirementRecord(input: {
   });
 }
 
-function resolveSkillScript(_root: string, relativeScript: string): string {
-  return resolvePackageOwnedBmadPath(
-    'skills',
+function resolveSkillScript(root: string, relativeScript: string): string {
+  return resolveInstalledSkillPath(
+    root,
     'requirements-contract-authoring',
     'scripts',
     relativeScript
   );
 }
 
-function resolveEncodingIntegrityScript(_root: string): string {
-  return resolvePackageOwnedBmadPath(
-    'skills',
+function resolveEncodingIntegrityScript(root: string): string {
+  return resolveInstalledSkillPath(
+    root,
     'encoding-integrity-guardian',
     'scripts',
     'check-encoding-integrity.js'
