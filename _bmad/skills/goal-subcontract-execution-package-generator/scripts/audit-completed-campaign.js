@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 'use strict';
 
-const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const { auditExecutionPackage } = require('./audit-execution-package');
@@ -9,6 +8,7 @@ const {
   compileBoundSchema,
   compileBundledSchema,
   failure,
+  git,
   isNonFunctionalText,
   parseArgs,
   readJson,
@@ -18,16 +18,6 @@ const {
   validateSchemaInstance,
   writeAtomic,
 } = require('./build-execution-package');
-
-function git(repositoryRoot, args, failureClass, input) {
-  const result = spawnSync('git', ['-C', repositoryRoot, ...args], {
-    encoding: 'utf8',
-    input,
-    windowsHide: true,
-  });
-  if (result.status !== 0) failure(failureClass, { stderr: result.stderr.trim() });
-  return result.stdout.trim();
-}
 
 function verifyBoundFile(repositoryRoot, binding, failureClass) {
   if (!binding?.path || !binding?.hash) failure(failureClass);
@@ -244,13 +234,7 @@ function publishOutputSet(outputRoot, outputs) {
   }
 }
 
-function auditCompletedCampaign({
-  packageRoot,
-  expectedPackageManifestHash,
-  artifactsPath,
-  outputRoot,
-}) {
-  const manifest = auditExecutionPackage(packageRoot, expectedPackageManifestHash);
+function loadCampaignAuditContext(manifest, artifactsPath) {
   const repositoryRoot = path.resolve(manifest.repositoryRoot || '');
   const evidenceValidator = compileBoundSchema(
     repositoryRoot,
@@ -278,145 +262,225 @@ function auditCompletedCampaign({
   ) {
     failure('child_result_set_incomplete');
   }
+  return { artifacts, closureValidator, evidenceValidator, repositoryRoot };
+}
+
+function verifyChildResultArtifacts({
+  child,
+  closureValidator,
+  evidenceValidator,
+  repositoryRoot,
+  result,
+}) {
+  if (
+    result?.partitionId !== child.partitionId ||
+    result.status !== 'closed' ||
+    result.contractHash !== child.contract.hash
+  ) {
+    failure('child_result_mismatch', { partitionId: child.partitionId });
+  }
+  const evidence = verifyBoundJson({
+    repositoryRoot,
+    binding: result.evidence,
+    hashFailureClass: 'child_evidence_hash_mismatch',
+    validator: evidenceValidator,
+    schemaFailureClass: 'child_evidence_schema_invalid',
+  });
+  const closure = verifyBoundJson({
+    repositoryRoot,
+    binding: result.closure,
+    hashFailureClass: 'child_closure_hash_mismatch',
+    validator: closureValidator,
+    schemaFailureClass: 'child_closure_schema_invalid',
+  });
+  if (
+    ('partitionId' in evidence && evidence.partitionId !== child.partitionId) ||
+    closure.partitionId !== child.partitionId ||
+    closure.contractHash !== child.contract.hash ||
+    closure.status !== 'closed'
+  ) {
+    failure('child_closure_schema_invalid', { partitionId: child.partitionId });
+  }
+}
+
+function verifyChildValidationResults({
+  child,
+  evidenceValidator,
+  repositoryRoot,
+  result,
+}) {
+  if (
+    !Array.isArray(result.validationResults) ||
+    result.validationResults.length !== child.requiredCommandIds.length ||
+    new Set(result.validationResults.map((entry) => entry?.id)).size !==
+      result.validationResults.length
+  ) {
+    failure('child_validation_incomplete', { partitionId: child.partitionId });
+  }
+  for (const commandId of child.requiredCommandIds) {
+    const validation = result.validationResults.find((entry) => entry.id === commandId);
+    if (!validation || validation.status !== 'pass') {
+      failure('child_validation_incomplete', { partitionId: child.partitionId, commandId });
+    }
+    verifyBoundJson({
+      repositoryRoot,
+      binding: validation.evidence,
+      hashFailureClass: 'child_validation_evidence_mismatch',
+      validator: evidenceValidator,
+      schemaFailureClass: 'child_validation_evidence_schema_invalid',
+    });
+  }
+}
+
+function verifyCommitReceipt(commit, commits, child) {
+  if (
+    !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u.test(commit?.hash || '') ||
+    !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u.test(commit?.parentHash || '') ||
+    !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u.test(commit?.treeHash || '') ||
+    typeof commit?.subject !== 'string' ||
+    !Array.isArray(commit?.changedPaths) ||
+    commit.changedPaths.length === 0 ||
+    commits.includes(commit.hash)
+  ) {
+    failure('child_commit_set_invalid', { partitionId: child.partitionId });
+  }
+}
+
+function readCommitPaths(repositoryRoot, commit, child) {
+  const actualPaths = git(
+    repositoryRoot,
+    ['show', '--no-renames', '--pretty=format:', '--name-only', commit.hash],
+    'child_commit_paths_mismatch'
+  )
+    .split(/\r?\n/u)
+    .filter(Boolean)
+    .sort();
+  const actualDiff = git(
+    repositoryRoot,
+    ['show', '--no-renames', '--no-ext-diff', '--format=', '--patch', commit.hash],
+    'child_commit_diff_missing'
+  );
+  if (!actualDiff.trim()) {
+    failure('child_commit_diff_missing', { partitionId: child.partitionId });
+  }
+  return actualPaths;
+}
+
+function readCommitSnapshot(repositoryRoot, commit, child) {
+  git(repositoryRoot, ['cat-file', '-e', `${commit.hash}^{commit}`], 'child_commit_not_reachable');
+  git(
+    repositoryRoot,
+    ['merge-base', '--is-ancestor', commit.hash, 'HEAD'],
+    'child_commit_not_reachable'
+  );
+  const commitAndParents = git(
+    repositoryRoot,
+    ['rev-list', '--parents', '-n', '1', commit.hash],
+    'child_commit_parent_mismatch'
+  ).split(/\s+/u);
+  if (commitAndParents.length !== 2) {
+    failure('child_commit_parent_mismatch', { partitionId: child.partitionId });
+  }
+  const actualTree = git(
+    repositoryRoot,
+    ['rev-parse', `${commit.hash}^{tree}`],
+    'child_commit_tree_mismatch'
+  );
+  const actualSubject = git(
+    repositoryRoot,
+    ['show', '-s', '--format=%s', commit.hash],
+    'child_commit_message_missing'
+  );
+  const actualBody = git(
+    repositoryRoot,
+    ['show', '-s', '--format=%b', commit.hash],
+    'child_commit_message_missing'
+  );
+  return {
+    actualBody,
+    actualParent: commitAndParents[1],
+    actualPaths: readCommitPaths(repositoryRoot, commit, child),
+    actualSubject,
+    actualTree,
+  };
+}
+
+function verifyCommitSnapshot({ child, commit, expectedParent, repositoryRoot, result, snapshot }) {
+  const ownedPaths = new Set(child.ownedArtifactPaths);
+  if (snapshot.actualPaths.some((changedPath) => !ownedPaths.has(changedPath))) {
+    failure('child_commit_scope_escape', { partitionId: child.partitionId });
+  }
+  if (
+    snapshot.actualParent !== expectedParent ||
+    commit.parentHash !== snapshot.actualParent ||
+    commit.treeHash !== snapshot.actualTree ||
+    commit.subject !== snapshot.actualSubject ||
+    !sameOrdered([...commit.changedPaths].sort(), snapshot.actualPaths)
+  ) {
+    failure('child_commit_binding_mismatch', { partitionId: child.partitionId });
+  }
+  return verifyFunctionalMessage({
+    repositoryRoot,
+    subject: snapshot.actualSubject,
+    body: snapshot.actualBody,
+    child,
+    result,
+  });
+}
+
+function auditChildCommit({ child, commits, expectedParent, repositoryRoot, result }) {
+  const commit = result.commit;
+  verifyCommitReceipt(commit, commits, child);
+  const snapshot = readCommitSnapshot(repositoryRoot, commit, child);
+  const verifiedMessage = verifyCommitSnapshot({
+    child,
+    commit,
+    expectedParent,
+    repositoryRoot,
+    result,
+    snapshot,
+  });
+  return {
+    commit,
+    commitSubject: snapshot.actualSubject,
+    functionalOutcome: verifiedMessage.functionalOutcome,
+  };
+}
+
+function attachDeclaredPartitionIds(children) {
+  const partitionIds = children.map((child) => child.partitionId);
+  return children.map((child) => ({ ...child, partitionIds }));
+}
+
+function auditCampaignChildren({
+  artifacts,
+  closureValidator,
+  evidenceValidator,
+  manifest,
+  repositoryRoot,
+}) {
   const commits = [];
   const closures = [];
   const childSummaries = [];
   let expectedParent = manifest.repositoryBaseline.headCommit;
-  for (const [index, child] of manifest.children.entries()) {
+  for (const [index, child] of attachDeclaredPartitionIds(manifest.children).entries()) {
     const result = artifacts.childResults[index];
-    if (
-      result?.partitionId !== child.partitionId ||
-      result.status !== 'closed' ||
-      result.contractHash !== child.contract.hash
-    ) {
-      failure('child_result_mismatch', { partitionId: child.partitionId });
-    }
-    const evidence = verifyBoundJson({
-      repositoryRoot,
-      binding: result.evidence,
-      hashFailureClass: 'child_evidence_hash_mismatch',
-      validator: evidenceValidator,
-      schemaFailureClass: 'child_evidence_schema_invalid',
-    });
-    const closure = verifyBoundJson({
-      repositoryRoot,
-      binding: result.closure,
-      hashFailureClass: 'child_closure_hash_mismatch',
-      validator: closureValidator,
-      schemaFailureClass: 'child_closure_schema_invalid',
-    });
-    if (
-      ('partitionId' in evidence && evidence.partitionId !== child.partitionId) ||
-      closure.partitionId !== child.partitionId ||
-      closure.contractHash !== child.contract.hash ||
-      closure.status !== 'closed'
-    ) {
-      failure('child_closure_schema_invalid', { partitionId: child.partitionId });
-    }
-    if (
-      !Array.isArray(result.validationResults) ||
-      result.validationResults.length !== child.requiredCommandIds.length ||
-      new Set(result.validationResults.map((entry) => entry?.id)).size !==
-        result.validationResults.length
-    ) {
-      failure('child_validation_incomplete', { partitionId: child.partitionId });
-    }
-    for (const commandId of child.requiredCommandIds) {
-      const validation = result.validationResults.find((entry) => entry.id === commandId);
-      if (!validation || validation.status !== 'pass') {
-        failure('child_validation_incomplete', { partitionId: child.partitionId, commandId });
-      }
-      verifyBoundJson({
-        repositoryRoot,
-        binding: validation.evidence,
-        hashFailureClass: 'child_validation_evidence_mismatch',
-        validator: evidenceValidator,
-        schemaFailureClass: 'child_validation_evidence_schema_invalid',
-      });
-    }
-    const commit = result.commit;
-    if (
-      !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u.test(commit?.hash || '') ||
-      !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u.test(commit?.parentHash || '') ||
-      !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u.test(commit?.treeHash || '') ||
-      typeof commit?.subject !== 'string' ||
-      !Array.isArray(commit?.changedPaths) ||
-      commit.changedPaths.length === 0 ||
-      commits.includes(commit.hash)
-    ) {
-      failure('child_commit_set_invalid', { partitionId: child.partitionId });
-    }
-    git(
-      repositoryRoot,
-      ['cat-file', '-e', `${commit.hash}^{commit}`],
-      'child_commit_not_reachable'
-    );
-    git(
-      repositoryRoot,
-      ['merge-base', '--is-ancestor', commit.hash, 'HEAD'],
-      'child_commit_not_reachable'
-    );
-    const commitAndParents = git(
-      repositoryRoot,
-      ['rev-list', '--parents', '-n', '1', commit.hash],
-      'child_commit_parent_mismatch'
-    ).split(/\s+/u);
-    if (commitAndParents.length !== 2) {
-      failure('child_commit_parent_mismatch', { partitionId: child.partitionId });
-    }
-    const actualParent = commitAndParents[1];
-    const actualTree = git(
-      repositoryRoot,
-      ['rev-parse', `${commit.hash}^{tree}`],
-      'child_commit_tree_mismatch'
-    );
-    const actualSubject = git(
-      repositoryRoot,
-      ['show', '-s', '--format=%s', commit.hash],
-      'child_commit_message_missing'
-    );
-    const actualBody = git(
-      repositoryRoot,
-      ['show', '-s', '--format=%b', commit.hash],
-      'child_commit_message_missing'
-    );
-    const actualPaths = git(
-      repositoryRoot,
-      ['show', '--no-renames', '--pretty=format:', '--name-only', commit.hash],
-      'child_commit_paths_mismatch'
-    )
-      .split(/\r?\n/u)
-      .filter(Boolean)
-      .sort();
-    const actualDiff = git(
-      repositoryRoot,
-      ['show', '--no-renames', '--no-ext-diff', '--format=', '--patch', commit.hash],
-      'child_commit_diff_missing'
-    );
-    if (!actualDiff.trim()) {
-      failure('child_commit_diff_missing', { partitionId: child.partitionId });
-    }
-    const ownedPaths = new Set(child.ownedArtifactPaths);
-    if (actualPaths.some((changedPath) => !ownedPaths.has(changedPath))) {
-      failure('child_commit_scope_escape', { partitionId: child.partitionId });
-    }
-    if (
-      actualParent !== expectedParent ||
-      commit.parentHash !== actualParent ||
-      commit.treeHash !== actualTree ||
-      commit.subject !== actualSubject ||
-      !sameOrdered([...commit.changedPaths].sort(), actualPaths)
-    ) {
-      failure('child_commit_binding_mismatch', { partitionId: child.partitionId });
-    }
-    const verifiedMessage = verifyFunctionalMessage({
-      repositoryRoot,
-      subject: actualSubject,
-      body: actualBody,
+    verifyChildResultArtifacts({
       child,
+      closureValidator,
+      evidenceValidator,
+      repositoryRoot,
       result,
     });
-    commits.push(commit.hash);
+    verifyChildValidationResults({ child, evidenceValidator, repositoryRoot, result });
+    const commitAudit = auditChildCommit({
+      child,
+      commits,
+      expectedParent,
+      repositoryRoot,
+      result,
+    });
+    commits.push(commitAudit.commit.hash);
     closures.push({
       partitionId: child.partitionId,
       evidenceHash: result.evidence.hash,
@@ -425,18 +489,25 @@ function auditCompletedCampaign({
     childSummaries.push({
       partitionId: child.partitionId,
       displayTitle: child.displayTitle,
-      functionalOutcome: verifiedMessage.functionalOutcome,
+      functionalOutcome: commitAudit.functionalOutcome,
       status: 'closed',
-      commitSubject: actualSubject,
-      commitHash: commit.hash,
+      commitSubject: commitAudit.commitSubject,
+      commitHash: commitAudit.commit.hash,
       evidenceHash: result.evidence.hash,
       closureHash: result.closure.hash,
       validationCommandIds: [...child.requiredCommandIds],
     });
-    expectedParent = commit.hash;
+    expectedParent = commitAudit.commit.hash;
   }
-  const ownedPaths = [...new Set(manifest.children.flatMap((child) => child.ownedArtifactPaths))];
+  return { childSummaries, closures, commits };
+}
+
+function auditOwnedPathDrift(repositoryRoot, children, commits) {
+  const ownedPaths = [...new Set(children.flatMap((child) => child.ownedArtifactPaths))];
   const finalChildCommit = commits.at(-1);
+  if (!finalChildCommit || ownedPaths.length === 0) {
+    failure('child_result_set_incomplete');
+  }
   const committedOwnedPathHistory = git(
     repositoryRoot,
     [
@@ -467,6 +538,14 @@ function auditCompletedCampaign({
       pendingChanges: pendingOwnedPathDrift.split(/\r?\n/u).filter(Boolean),
     });
   }
+}
+
+function auditCollectionVerification({
+  artifacts,
+  evidenceValidator,
+  manifest,
+  repositoryRoot,
+}) {
   if (
     !Array.isArray(artifacts.collectionVerificationResults) ||
     artifacts.collectionVerificationResults.length !==
@@ -485,11 +564,18 @@ function auditCompletedCampaign({
       schemaFailureClass: 'collection_evidence_schema_invalid',
     });
   }
+}
+
+function auditCampaignBlockers(artifacts) {
   for (const field of ['openObligations', 'drift', 'retries', 'scopeChanges', 'blockers']) {
     if (!Array.isArray(artifacts[field]) || artifacts[field].length > 0) {
       failure('campaign_open_blocker', { field });
     }
   }
+}
+
+function createCampaignReports(manifest, childAudit) {
+  const { childSummaries, closures, commits } = childAudit;
   const childClosureSetHash = sha256(stableJson(closures));
   const commitSetHash = sha256(stableJson(commits));
   const campaignCore = {
@@ -516,6 +602,7 @@ function auditCompletedCampaign({
     aggregateAuditDecision: 'pass',
     requirementRecordBinding: manifest.requirementRecordBinding,
   };
+  const taskReportHash = sha256(stableJson(taskReport));
   const handoff = {
     schemaVersion: 'goal-subcontract-main-agent-handoff/v2',
     status: 'ready_for_main_agent',
@@ -524,31 +611,54 @@ function auditCompletedCampaign({
     goalContractHash: manifest.goalContract.hash,
     partitionManifestHash: manifest.partitionManifest.hash,
     campaignReportHash,
-    taskReportHash: sha256(stableJson(taskReport)),
+    taskReportHash,
     childClosureSetHash,
     commitSetHash,
     childSummaries,
     aggregateAuditDecision: 'pass',
     requirementRecordBinding: manifest.requirementRecordBinding,
   };
+  return { campaignReport, handoff, taskReport };
+}
+
+function publishCampaignReports(repositoryRoot, outputRoot, reports) {
   const taskReportValidator = compileBundledSchema(
     'campaign-task-report-binding.schema.json',
     'invalid_task_report',
     repositoryRoot
   );
-  validateSchemaInstance(taskReportValidator, taskReport, 'invalid_task_report');
+  validateSchemaInstance(taskReportValidator, reports.taskReport, 'invalid_task_report');
   publishOutputSet(outputRoot, {
-    'campaign-audit-report.json': stableJson(campaignReport),
-    'task-report.json': stableJson(taskReport),
-    'main-agent-handoff.json': stableJson(handoff),
+    'campaign-audit-report.json': stableJson(reports.campaignReport),
+    'task-report.json': stableJson(reports.taskReport),
+    'main-agent-handoff.json': stableJson(reports.handoff),
   });
+}
+
+function auditCompletedCampaign({
+  packageRoot,
+  expectedPackageManifestHash,
+  artifactsPath,
+  outputRoot,
+}) {
+  const manifest = auditExecutionPackage(packageRoot, expectedPackageManifestHash);
+  if (!Array.isArray(manifest.children) || manifest.children.length === 0) {
+    failure('child_result_set_incomplete');
+  }
+  const context = loadCampaignAuditContext(manifest, artifactsPath);
+  const childAudit = auditCampaignChildren({ ...context, manifest });
+  auditOwnedPathDrift(context.repositoryRoot, manifest.children, childAudit.commits);
+  auditCollectionVerification({ ...context, manifest });
+  auditCampaignBlockers(context.artifacts);
+  const reports = createCampaignReports(manifest, childAudit);
+  publishCampaignReports(context.repositoryRoot, outputRoot, reports);
   return {
     ok: true,
     status: 'done',
     packageId: manifest.packageId,
     packageManifestHash: manifest.packageManifestHash,
-    campaignReportHash,
-    taskReportHash: handoff.taskReportHash,
+    campaignReportHash: reports.campaignReport.campaignReportHash,
+    taskReportHash: reports.handoff.taskReportHash,
     requirementRecordBindingStatus: manifest.requirementRecordBinding.status,
   };
 }

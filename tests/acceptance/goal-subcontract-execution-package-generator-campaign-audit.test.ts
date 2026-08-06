@@ -1,4 +1,5 @@
 import Ajv2020 from 'ajv/dist/2020.js';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -41,7 +42,73 @@ function writeArtifacts(artifactsPath: string, artifacts: unknown): void {
   fs.writeFileSync(artifactsPath, `${JSON.stringify(artifacts, null, 2)}\n`, 'utf8');
 }
 
+type CampaignFixtureOptions = NonNullable<Parameters<typeof prepareCampaign>[0]>;
+
+function expectAuditResultFailure(
+  result: ReturnType<typeof audit>,
+  expectedFailureClass: string
+): void {
+  expect(result.status).not.toBe(0);
+  expect(JSON.parse(result.stdout).failureClass).toBe(expectedFailureClass);
+}
+
+function expectAuditFailure(
+  options: CampaignFixtureOptions,
+  expectedFailureClass: string
+): ReturnType<typeof prepareCampaign> {
+  const fixture = prepareCampaign(options);
+  const result = audit(
+    fixture.packageA,
+    fixture.artifactsPath,
+    fixture.finalOut,
+    fixture.packageManifestHash
+  );
+  expectAuditResultFailure(result, expectedFailureClass);
+  return fixture;
+}
+
+function auditWithManifest(manifest: object) {
+  const executionAuditPath = path.join(SKILL_ROOT, 'scripts', 'audit-execution-package.js');
+  const campaignAuditPath = path.join(SKILL_ROOT, 'scripts', 'audit-completed-campaign.js');
+  const harness = `
+    const executionAuditPath = process.argv[1];
+    const campaignAuditPath = process.argv[2];
+    const executionAudit = require(executionAuditPath);
+    executionAudit.auditExecutionPackage = () => JSON.parse(process.argv[3]);
+    delete require.cache[require.resolve(campaignAuditPath)];
+    const { auditCompletedCampaign } = require(campaignAuditPath);
+    try {
+      auditCompletedCampaign({
+        packageRoot: 'unused',
+        expectedPackageManifestHash: 'sha256:${'a'.repeat(64)}',
+        artifactsPath: 'unused',
+        outputRoot: 'unused',
+      });
+      process.stdout.write(JSON.stringify({ ok: true }));
+    } catch (error) {
+      process.stdout.write(JSON.stringify({
+        ok: false,
+        failureClass: error.failureClass || 'completed_campaign_audit_failed',
+      }));
+      process.exitCode = 1;
+    }
+  `;
+  return spawnSync(
+    process.execPath,
+    ['-e', harness, executionAuditPath, campaignAuditPath, JSON.stringify(manifest)],
+    {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      windowsHide: true,
+    }
+  );
+}
+
 describe('goal subcontract completed campaign audit', () => {
+  it('rejects an empty manifest child set before auditing repository state', () => {
+    expectAuditResultFailure(auditWithManifest({ children: [] }), 'child_result_set_incomplete');
+  });
+
   it('emits done with an absent RequirementRecord and does not mutate Git', () => {
     const fixture = prepareCampaign();
     const headBefore = git(fixture.root, ['rev-parse', 'HEAD']);
@@ -155,8 +222,7 @@ describe('goal subcontract completed campaign audit', () => {
       '--json',
     ]);
 
-    expect(result.status).not.toBe(0);
-    expect(JSON.parse(result.stdout).failureClass).toBe('expected_package_manifest_hash_missing');
+    expectAuditResultFailure(result, 'expected_package_manifest_hash_missing');
   });
 
   it('emits TaskReports that satisfy present and absent binding schema branches', () => {
@@ -202,8 +268,8 @@ describe('goal subcontract completed campaign audit', () => {
     expect(validate(fabricatedAbsent)).toBe(false);
   });
 
-  it('rejects lifecycle-only commit subjects', () => {
-    const fixture = prepareCampaign({ invalidSubject: true });
+  it('accepts functional commit subjects containing oauth-2 and utf-8 tokens', () => {
+    const fixture = prepareCampaign({ technicalTokenSubject: true });
     const result = audit(
       fixture.packageA,
       fixture.artifactsPath,
@@ -211,153 +277,42 @@ describe('goal subcontract completed campaign audit', () => {
       fixture.packageManifestHash
     );
 
-    expect(result.status).not.toBe(0);
-    expect(JSON.parse(result.stdout).failureClass).toBe('commit_subject_not_functional');
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+  });
+
+  it('rejects commit subjects containing another declared partition ID', () => {
+    expectAuditFailure({ crossPartitionSubject: true }, 'commit_subject_not_functional');
+  });
+
+  it('rejects lifecycle-only commit subjects', () => {
+    const fixture = expectAuditFailure({ invalidSubject: true }, 'commit_subject_not_functional');
     expect(fs.existsSync(path.join(fixture.finalOut, 'task-report.json'))).toBe(false);
   });
 
   it('rejects opaque or title-only subjects and lifecycle-only functional outcomes', () => {
-    const opaque = prepareCampaign({ opaqueSubject: true });
-    const opaqueResult = audit(
-      opaque.packageA,
-      opaque.artifactsPath,
-      opaque.finalOut,
-      opaque.packageManifestHash
-    );
-    expect(JSON.parse(opaqueResult.stdout).failureClass).toBe('commit_subject_not_functional');
-
-    const titleOnly = prepareCampaign({ titleOnlySubject: true });
-    const titleOnlyResult = audit(
-      titleOnly.packageA,
-      titleOnly.artifactsPath,
-      titleOnly.finalOut,
-      titleOnly.packageManifestHash
-    );
-    expect(JSON.parse(titleOnlyResult.stdout).failureClass).toBe('commit_subject_not_functional');
-
-    const invalidOutcome = prepareCampaign({ invalidFunctionalOutcome: true });
-    const invalidOutcomeResult = audit(
-      invalidOutcome.packageA,
-      invalidOutcome.artifactsPath,
-      invalidOutcome.finalOut,
-      invalidOutcome.packageManifestHash
-    );
-    expect(JSON.parse(invalidOutcomeResult.stdout).failureClass).toBe(
+    expectAuditFailure({ opaqueSubject: true }, 'commit_subject_not_functional');
+    expectAuditFailure({ titleOnlySubject: true }, 'commit_subject_not_functional');
+    expectAuditFailure(
+      { invalidFunctionalOutcome: true },
       'commit_functional_outcome_not_specific'
     );
-
-    const englishSubject = prepareCampaign({ englishLifecycleSubject: true });
-    const englishSubjectResult = audit(
-      englishSubject.packageA,
-      englishSubject.artifactsPath,
-      englishSubject.finalOut,
-      englishSubject.packageManifestHash
-    );
-    expect(JSON.parse(englishSubjectResult.stdout).failureClass).toBe(
-      'commit_subject_not_functional'
-    );
-
-    const englishOutcome = prepareCampaign({ englishLifecycleOutcome: true });
-    const englishOutcomeResult = audit(
-      englishOutcome.packageA,
-      englishOutcome.artifactsPath,
-      englishOutcome.finalOut,
-      englishOutcome.packageManifestHash
-    );
-    expect(JSON.parse(englishOutcomeResult.stdout).failureClass).toBe(
-      'commit_functional_outcome_not_specific'
-    );
-
-    const idImplementationSubject = prepareCampaign({
-      idImplementationSubject: true,
-    });
-    const idImplementationSubjectResult = audit(
-      idImplementationSubject.packageA,
-      idImplementationSubject.artifactsPath,
-      idImplementationSubject.finalOut,
-      idImplementationSubject.packageManifestHash
-    );
-    expect(JSON.parse(idImplementationSubjectResult.stdout).failureClass).toBe(
-      'commit_subject_not_functional'
-    );
-
-    const idImplementationOutcome = prepareCampaign({
-      idImplementationOutcome: true,
-    });
-    const idImplementationOutcomeResult = audit(
-      idImplementationOutcome.packageA,
-      idImplementationOutcome.artifactsPath,
-      idImplementationOutcome.finalOut,
-      idImplementationOutcome.packageManifestHash
-    );
-    expect(JSON.parse(idImplementationOutcomeResult.stdout).failureClass).toBe(
-      'commit_functional_outcome_not_specific'
-    );
-  });
+    expectAuditFailure({ englishLifecycleSubject: true }, 'commit_subject_not_functional');
+    expectAuditFailure({ englishLifecycleOutcome: true }, 'commit_functional_outcome_not_specific');
+    expectAuditFailure({ idImplementationSubject: true }, 'commit_subject_not_functional');
+    expectAuditFailure({ idImplementationOutcome: true }, 'commit_functional_outcome_not_specific');
+  }, 60_000);
 
   it('requires a unique terminal Git trailer block', () => {
-    const narrative = prepareCampaign({ narrativeFunctionalOutcome: true });
-    const narrativeResult = audit(
-      narrative.packageA,
-      narrative.artifactsPath,
-      narrative.finalOut,
-      narrative.packageManifestHash
-    );
-    expect(JSON.parse(narrativeResult.stdout).failureClass).toBe('commit_trailers_incomplete');
-
-    const duplicate = prepareCampaign({ duplicateFunctionalOutcome: true });
-    const duplicateResult = audit(
-      duplicate.packageA,
-      duplicate.artifactsPath,
-      duplicate.finalOut,
-      duplicate.packageManifestHash
-    );
-    expect(JSON.parse(duplicateResult.stdout).failureClass).toBe('commit_trailers_ambiguous');
-
-    const narrativeDuplicate = prepareCampaign({
-      narrativeDuplicateFunctionalOutcome: true,
-    });
-    const narrativeDuplicateResult = audit(
-      narrativeDuplicate.packageA,
-      narrativeDuplicate.artifactsPath,
-      narrativeDuplicate.finalOut,
-      narrativeDuplicate.packageManifestHash
-    );
-    expect(JSON.parse(narrativeDuplicateResult.stdout).failureClass).toBe(
+    expectAuditFailure({ narrativeFunctionalOutcome: true }, 'commit_trailers_incomplete');
+    expectAuditFailure({ duplicateFunctionalOutcome: true }, 'commit_trailers_ambiguous');
+    expectAuditFailure({ narrativeDuplicateFunctionalOutcome: true }, 'commit_trailers_ambiguous');
+    expectAuditFailure({ blankAffectedScope: true }, 'commit_trailers_incomplete');
+    expectAuditFailure({ extraValidationTrailer: true }, 'commit_trailers_mismatch');
+    expectAuditFailure(
+      { caseVariantDuplicateFunctionalOutcome: true },
       'commit_trailers_ambiguous'
     );
-
-    const blankScope = prepareCampaign({ blankAffectedScope: true });
-    const blankScopeResult = audit(
-      blankScope.packageA,
-      blankScope.artifactsPath,
-      blankScope.finalOut,
-      blankScope.packageManifestHash
-    );
-    expect(JSON.parse(blankScopeResult.stdout).failureClass).toBe('commit_trailers_incomplete');
-
-    const extraValidation = prepareCampaign({ extraValidationTrailer: true });
-    const extraValidationResult = audit(
-      extraValidation.packageA,
-      extraValidation.artifactsPath,
-      extraValidation.finalOut,
-      extraValidation.packageManifestHash
-    );
-    expect(JSON.parse(extraValidationResult.stdout).failureClass).toBe('commit_trailers_mismatch');
-
-    const caseVariantDuplicate = prepareCampaign({
-      caseVariantDuplicateFunctionalOutcome: true,
-    });
-    const caseVariantDuplicateResult = audit(
-      caseVariantDuplicate.packageA,
-      caseVariantDuplicate.artifactsPath,
-      caseVariantDuplicate.finalOut,
-      caseVariantDuplicate.packageManifestHash
-    );
-    expect(JSON.parse(caseVariantDuplicateResult.stdout).failureClass).toBe(
-      'commit_trailers_ambiguous'
-    );
-  });
+  }, 60_000);
 
   it('validates evidence and closure JSON against their bound schemas', () => {
     const invalidEvidence = prepareCampaign();
@@ -378,9 +333,7 @@ describe('goal subcontract completed campaign audit', () => {
       invalidEvidence.finalOut,
       invalidEvidence.packageManifestHash
     );
-    expect(JSON.parse(invalidEvidenceResult.stdout).failureClass).toBe(
-      'child_evidence_schema_invalid'
-    );
+    expectAuditResultFailure(invalidEvidenceResult, 'child_evidence_schema_invalid');
 
     const invalidClosure = prepareCampaign();
     const invalidClosureArtifacts = readArtifacts(invalidClosure.artifactsPath);
@@ -397,9 +350,7 @@ describe('goal subcontract completed campaign audit', () => {
       invalidClosure.finalOut,
       invalidClosure.packageManifestHash
     );
-    expect(JSON.parse(invalidClosureResult.stdout).failureClass).toBe(
-      'child_closure_schema_invalid'
-    );
+    expectAuditResultFailure(invalidClosureResult, 'child_closure_schema_invalid');
   });
 
   it('rejects stale evidence and unreachable commits', () => {
@@ -415,8 +366,7 @@ describe('goal subcontract completed campaign audit', () => {
       stale.finalOut,
       stale.packageManifestHash
     );
-    expect(staleResult.status).not.toBe(0);
-    expect(JSON.parse(staleResult.stdout).failureClass).toBe('child_evidence_hash_mismatch');
+    expectAuditResultFailure(staleResult, 'child_evidence_hash_mismatch');
 
     const unreachable = prepareCampaign();
     const artifacts = JSON.parse(fs.readFileSync(unreachable.artifactsPath, 'utf8'));
@@ -428,8 +378,7 @@ describe('goal subcontract completed campaign audit', () => {
       unreachable.finalOut,
       unreachable.packageManifestHash
     );
-    expect(unreachableResult.status).not.toBe(0);
-    expect(JSON.parse(unreachableResult.stdout).failureClass).toBe('child_commit_not_reachable');
+    expectAuditResultFailure(unreachableResult, 'child_commit_not_reachable');
   });
 
   it('rejects incomplete child closure, validation, and commit proof', () => {
@@ -443,9 +392,7 @@ describe('goal subcontract completed campaign audit', () => {
       missingClosure.finalOut,
       missingClosure.packageManifestHash
     );
-    expect(JSON.parse(missingClosureResult.stdout).failureClass).toBe(
-      'child_closure_hash_mismatch'
-    );
+    expectAuditResultFailure(missingClosureResult, 'child_closure_hash_mismatch');
 
     const missingValidation = prepareCampaign();
     const missingValidationArtifacts = readArtifacts(missingValidation.artifactsPath);
@@ -457,9 +404,7 @@ describe('goal subcontract completed campaign audit', () => {
       missingValidation.finalOut,
       missingValidation.packageManifestHash
     );
-    expect(JSON.parse(missingValidationResult.stdout).failureClass).toBe(
-      'child_validation_incomplete'
-    );
+    expectAuditResultFailure(missingValidationResult, 'child_validation_incomplete');
 
     const missingCommitProof = prepareCampaign();
     const missingCommitArtifacts = readArtifacts(missingCommitProof.artifactsPath);
@@ -471,7 +416,7 @@ describe('goal subcontract completed campaign audit', () => {
       missingCommitProof.finalOut,
       missingCommitProof.packageManifestHash
     );
-    expect(JSON.parse(missingCommitResult.stdout).failureClass).toBe('child_commit_set_invalid');
+    expectAuditResultFailure(missingCommitResult, 'child_commit_set_invalid');
   });
 
   it('rejects parent mismatch, changed-path scope escape, and aggregate failure', () => {
@@ -485,34 +430,10 @@ describe('goal subcontract completed campaign audit', () => {
       parentMismatch.finalOut,
       parentMismatch.packageManifestHash
     );
-    expect(JSON.parse(parentResult.stdout).failureClass).toBe('child_commit_binding_mismatch');
-
-    const mergeCommit = prepareCampaign({ mergeCommit: true });
-    const mergeCommitResult = audit(
-      mergeCommit.packageA,
-      mergeCommit.artifactsPath,
-      mergeCommit.finalOut,
-      mergeCommit.packageManifestHash
-    );
-    expect(JSON.parse(mergeCommitResult.stdout).failureClass).toBe('child_commit_parent_mismatch');
-
-    const scopeEscape = prepareCampaign({ scopeEscape: true });
-    const scopeResult = audit(
-      scopeEscape.packageA,
-      scopeEscape.artifactsPath,
-      scopeEscape.finalOut,
-      scopeEscape.packageManifestHash
-    );
-    expect(JSON.parse(scopeResult.stdout).failureClass).toBe('child_commit_scope_escape');
-
-    const renameScopeEscape = prepareCampaign({ renameScopeEscape: true });
-    const renameScopeResult = audit(
-      renameScopeEscape.packageA,
-      renameScopeEscape.artifactsPath,
-      renameScopeEscape.finalOut,
-      renameScopeEscape.packageManifestHash
-    );
-    expect(JSON.parse(renameScopeResult.stdout).failureClass).toBe('child_commit_scope_escape');
+    expectAuditResultFailure(parentResult, 'child_commit_binding_mismatch');
+    expectAuditFailure({ mergeCommit: true }, 'child_commit_parent_mismatch');
+    expectAuditFailure({ scopeEscape: true }, 'child_commit_scope_escape');
+    expectAuditFailure({ renameScopeEscape: true }, 'child_commit_scope_escape');
 
     const aggregateFailure = prepareCampaign();
     const aggregateArtifacts = readArtifacts(aggregateFailure.artifactsPath);
@@ -524,25 +445,17 @@ describe('goal subcontract completed campaign audit', () => {
       aggregateFailure.finalOut,
       aggregateFailure.packageManifestHash
     );
-    expect(JSON.parse(aggregateResult.stdout).failureClass).toBe(
-      'collection_verification_incomplete'
-    );
+    expectAuditResultFailure(aggregateResult, 'collection_verification_incomplete');
     expect(fs.existsSync(path.join(aggregateFailure.finalOut, 'task-report.json'))).toBe(false);
   });
 
   it('rejects post-closure drift on child-owned paths and allows unrelated commits', () => {
-    for (const fixture of [
-      prepareCampaign({ postChildOwnedCommit: true }),
-      prepareCampaign({ stagedOwnedDrift: true }),
-      prepareCampaign({ worktreeOwnedDrift: true }),
-    ]) {
-      const result = audit(
-        fixture.packageA,
-        fixture.artifactsPath,
-        fixture.finalOut,
-        fixture.packageManifestHash
-      );
-      expect(JSON.parse(result.stdout).failureClass).toBe('child_owned_path_drift');
+    for (const options of [
+      { postChildOwnedCommit: true },
+      { stagedOwnedDrift: true },
+      { worktreeOwnedDrift: true },
+    ] satisfies CampaignFixtureOptions[]) {
+      expectAuditFailure(options, 'child_owned_path_drift');
     }
 
     const unrelated = prepareCampaign({ postUnrelatedCommit: true });
@@ -571,8 +484,7 @@ describe('goal subcontract completed campaign audit', () => {
       fixture.packageManifestHash
     );
 
-    expect(result.status).not.toBe(0);
-    expect(JSON.parse(result.stdout).failureClass).toBe('package_output_conflict');
+    expectAuditResultFailure(result, 'package_output_conflict');
     expect(fs.existsSync(path.join(fixture.finalOut, 'task-report.json'))).toBe(false);
     expect(fs.existsSync(path.join(fixture.finalOut, 'campaign-audit-report.json'))).toBe(false);
   });

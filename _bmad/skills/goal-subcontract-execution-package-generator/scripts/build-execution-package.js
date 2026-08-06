@@ -1,95 +1,38 @@
 #!/usr/bin/env node
 'use strict';
 
-const { spawnSync } = require('node:child_process');
-const { createHash } = require('node:crypto');
 const fs = require('node:fs');
 const { createRequire } = require('node:module');
 const path = require('node:path');
+const {
+  createChildIdentityMap,
+  createChildPacket,
+  createCommitPolicy,
+  createExecutionPolicy,
+  createHandoffTemplate,
+  createTaskReportTemplate,
+  formatChildIdentity,
+  isNonFunctionalText,
+  normalizeDisplayTitle,
+  projectChildIdentities,
+  renderCampaignPrompt,
+  renderChildPrompt,
+} = require('./build-execution-package-projections');
+const {
+  failure,
+  git,
+  parseArgs,
+  readJson,
+  resolveExistingInside,
+  resolveInside,
+  sha256,
+  stableJson,
+  verifySource,
+  writeAtomic,
+} = require('./build-execution-package-shared');
 
-const COMMIT_VERIFICATION_FIELDS = [
-  'hash',
-  'parentHash',
-  'treeHash',
-  'subject',
-  'changedPaths',
-  'diff',
-  'reachability',
-  'trailers',
-];
-const REQUIRED_COMMIT_TRAILERS = [
-  'Functional-Outcome',
-  'Affected-Scope',
-  'Child-Contract',
-  'Contract-Hash',
-  'Evidence',
-  'Validation',
-];
-const ENGLISH_LIFECYCLE_PREFIX =
-  /^(?:close(?:d|s|ing)?|complete(?:d|s|ing)?|execute(?:d|s|ing)?|process(?:ed|es|ing)?|implement(?:ed|s|ing)?|implementation)\b/iu;
-const CHINESE_LIFECYCLE_PREFIX = /^(?:闭合|完成|执行|处理|实现)/u;
-const GENERIC_ENGLISH_DOMAIN_LABEL =
-  /^(?:authentication|authorization|payments?|reporting|settings?|configuration|infrastructure|frontend|backend|api|security|user management|data processing)(?:\s+(?:capability|feature|module|improvements?|changes?|updates?|work|implementation|api))?$/iu;
-const GENERIC_CHINESE_DOMAIN_LABEL =
-  /^(?:认证|授权|支付|报表|设置|配置|基础设施|前端|后端|接口|安全|用户管理|数据处理)(?:功能|能力|模块|改造|实现)?$/u;
 const SHA256_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 const GIT_OBJECT_PATTERN = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u;
-
-function sorted(value) {
-  if (Array.isArray(value)) return value.map(sorted);
-  if (!value || typeof value !== 'object') return value;
-  return Object.keys(value)
-    .sort()
-    .reduce((result, key) => ({ ...result, [key]: sorted(value[key]) }), {});
-}
-
-function stableJson(value) {
-  return `${JSON.stringify(sorted(value), null, 2)}\n`;
-}
-
-function sha256(value) {
-  return `sha256:${createHash('sha256').update(value).digest('hex')}`;
-}
-
-function failure(failureClass, details = {}) {
-  const error = new Error(failureClass);
-  error.failureClass = failureClass;
-  error.details = details;
-  throw error;
-}
-
-function parseArgs(argv) {
-  const result = {};
-  for (let index = 0; index < argv.length; index += 1) {
-    if (argv[index].startsWith('--')) result[argv[index].slice(2)] = argv[index + 1] ?? true;
-  }
-  return result;
-}
-
-function resolveInside(root, relativePath, failureClass = 'path_escape') {
-  if (!relativePath || path.isAbsolute(relativePath)) failure(failureClass, { path: relativePath });
-  const resolvedRoot = path.resolve(root);
-  const resolved = path.resolve(resolvedRoot, relativePath);
-  const relative = path.relative(resolvedRoot, resolved);
-  if (relative.startsWith('..') || path.isAbsolute(relative)) {
-    failure(failureClass, { path: relativePath });
-  }
-  return resolved;
-}
-
-function isInside(root, candidate) {
-  const relative = path.relative(root, candidate);
-  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
-}
-
-function resolveExistingInside(root, relativePath, failureClass = 'path_escape') {
-  const resolved = resolveInside(root, relativePath, failureClass);
-  if (!fs.existsSync(resolved)) return resolved;
-  const realRoot = fs.realpathSync.native(path.resolve(root));
-  const realResolved = fs.realpathSync.native(resolved);
-  if (!isInside(realRoot, realResolved)) failure(failureClass, { path: relativePath });
-  return realResolved;
-}
 
 function resolveManifestChildCandidate(repositoryRoot, projectedPath) {
   const resolvedPath = resolveExistingInside(
@@ -147,36 +90,6 @@ function projectManifestChildPath(repositoryRoot, partitionManifestPath, childCo
     });
   }
   return selectedCandidate.projectedPath;
-}
-
-function readJson(filePath, failureClass = 'invalid_json') {
-  try {
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  } catch (error) {
-    failure(failureClass, { path: filePath, message: error.message });
-  }
-}
-
-function verifySource(repositoryRoot, binding, failureClass) {
-  if (!binding || typeof binding.path !== 'string' || typeof binding.hash !== 'string') {
-    failure('invalid_source_binding');
-  }
-  const sourcePath = resolveExistingInside(repositoryRoot, binding.path, 'source_path_escape');
-  if (!fs.existsSync(sourcePath) || !fs.statSync(sourcePath).isFile()) {
-    failure('source_file_missing', { path: binding.path });
-  }
-  const actualHash = sha256(fs.readFileSync(sourcePath));
-  if (actualHash !== binding.hash) failure(failureClass, { path: binding.path, actualHash });
-  return sourcePath;
-}
-
-function git(repositoryRoot, args, failureClass) {
-  const result = spawnSync('git', ['-C', repositoryRoot, ...args], {
-    encoding: 'utf8',
-    windowsHide: true,
-  });
-  if (result.status !== 0) failure(failureClass, { stderr: result.stderr.trim() });
-  return result.stdout.trim();
 }
 
 function captureRepositoryBaseline(repositoryRoot) {
@@ -301,30 +214,6 @@ function validateSchemaInstance(validator, value, failureClass, details = {}) {
   }
 }
 
-function writeAtomic(root, relativePath, content) {
-  fs.mkdirSync(root, { recursive: true });
-  const target = resolveInside(root, relativePath, 'package_output_path_escape');
-  fs.mkdirSync(path.dirname(target), { recursive: true });
-  const realRoot = fs.realpathSync.native(path.resolve(root));
-  const realParent = fs.realpathSync.native(path.dirname(target));
-  if (!isInside(realRoot, realParent)) {
-    failure('package_output_path_escape', { path: relativePath });
-  }
-  if (fs.existsSync(target)) {
-    const realTarget = fs.realpathSync.native(target);
-    if (!isInside(realRoot, realTarget) || fs.lstatSync(target).isSymbolicLink()) {
-      failure('package_output_path_escape', { path: relativePath });
-    }
-    if (fs.readFileSync(target, 'utf8') === content) return target;
-    failure('package_output_conflict', { path: relativePath });
-  }
-  const temporary = `${target}.${process.pid}.${sha256(content).slice(7, 19)}.tmp`;
-  if (fs.existsSync(temporary)) failure('package_output_conflict', { path: relativePath });
-  fs.writeFileSync(temporary, content, 'utf8');
-  fs.renameSync(temporary, target);
-  return target;
-}
-
 function normalizeRecordBinding(binding) {
   if (binding === undefined) {
     return { status: 'absent', downstreamAction: 'main_agent_resolve_requirement_record' };
@@ -347,184 +236,6 @@ function normalizeRecordBinding(binding) {
     recordId: binding.recordId,
     requirementSetId: binding.requirementSetId,
     recordPathHash: binding.recordPathHash,
-  };
-}
-
-function isNonFunctionalText(value, child = {}) {
-  const text = String(value || '').trim();
-  const normalized = text.toLowerCase();
-  const partitionId = String(child.partitionId || '')
-    .trim()
-    .toLowerCase();
-  const displayTitle = String(child.displayTitle || '')
-    .trim()
-    .toLowerCase();
-  return (
-    !text ||
-    CHINESE_LIFECYCLE_PREFIX.test(text) ||
-    ENGLISH_LIFECYCLE_PREFIX.test(text) ||
-    GENERIC_ENGLISH_DOMAIN_LABEL.test(text) ||
-    GENERIC_CHINESE_DOMAIN_LABEL.test(text) ||
-    /\b(?:[a-z][a-z0-9]*-\d+|g\d+)\b/iu.test(text) ||
-    /\b(?:implementation|subcontract|child\s+contract|goal\s+contract)\b/iu.test(text) ||
-    (partitionId !== '' && normalized.includes(partitionId)) ||
-    (displayTitle !== '' && normalized === displayTitle)
-  );
-}
-
-function normalizeDisplayTitle(partition) {
-  const partitionId = String(partition?.partitionId || '').trim();
-  const displayTitle = String(partition?.displayTitle || '').trim();
-  if (isNonFunctionalText(displayTitle, { partitionId })) {
-    failure('child_display_title_not_human_readable', {
-      partitionId,
-      displayTitle,
-    });
-  }
-  return displayTitle;
-}
-
-function formatChildIdentity(child) {
-  return `${child.displayTitle} (${child.partitionId})`;
-}
-
-function projectChildIdentities(children) {
-  return children.map(({ partitionId, displayTitle }) => ({
-    partitionId,
-    displayTitle,
-  }));
-}
-
-function createChildIdentityMap(children) {
-  const childByPartitionId = new Map(children.map((child) => [child.partitionId, child]));
-  if (childByPartitionId.size !== children.length) failure('partition_manifest_not_final');
-  for (const child of children) {
-    if (
-      !Array.isArray(child.predecessorPartitionIds) ||
-      child.predecessorPartitionIds.some((partitionId) => !childByPartitionId.has(partitionId))
-    ) {
-      failure('partition_manifest_not_final', { partitionId: child.partitionId });
-    }
-  }
-  return childByPartitionId;
-}
-
-function createCommitPolicy() {
-  return {
-    commitCount: 1,
-    subjectPattern: '<type>(<functional-scope>): <specific functional capability>',
-    requiredTrailers: REQUIRED_COMMIT_TRAILERS,
-    forbiddenLifecycleSubjects: [
-      '闭合令牌刷新子合同',
-      '完成 AUTH-03',
-      '执行认证改造',
-      'complete AUTH-03 implementation',
-    ],
-  };
-}
-
-function createExecutionPolicy() {
-  return {
-    predecessorClosureRequired: true,
-    stageOwnedPathsOnly: true,
-    closureStatus: 'closed',
-    commitVerificationFields: COMMIT_VERIFICATION_FIELDS,
-  };
-}
-
-function createChildPacket({
-  packageId,
-  child,
-  evidenceSchema,
-  closureSchema,
-  commitPolicy,
-  executionPolicy,
-}) {
-  return {
-    schemaVersion: 'goal-subcontract-child-prompt-packet/v2',
-    packageId,
-    ...child,
-    evidenceSchema,
-    closureSchema,
-    executionPolicy,
-    commitPolicy,
-  };
-}
-
-function renderChildPrompt(
-  child,
-  childByPartitionId,
-  evidenceSchema,
-  closureSchema,
-  executionPolicy
-) {
-  return [
-    `# Execute ${formatChildIdentity(child)}`,
-    '',
-    `Contract: ${child.contract.path}#${child.contract.hash}`,
-    `Predecessors: ${
-      child.predecessorPartitionIds
-        .map((partitionId) => formatChildIdentity(childByPartitionId.get(partitionId)))
-        .join(', ') || 'none'
-    }`,
-    `Owned paths: ${child.ownedArtifactPaths.join(', ')}`,
-    `Required commands: ${child.requiredCommandIds.join(', ')}`,
-    `Evidence schema: ${evidenceSchema.path}#${evidenceSchema.hash}`,
-    `Closure schema: ${closureSchema.path}#${closureSchema.hash}`,
-    `Required closure status: ${executionPolicy.closureStatus}`,
-    `Commit verification: ${executionPolicy.commitVerificationFields.join(', ')}`,
-    '',
-    'Start only after every predecessor has a schema-valid closed closure artifact.',
-    'Validate evidence and closure JSON against the bound schemas before claiming closure.',
-    'Stage only changed paths declared in Owned paths and create exactly one atomic local commit.',
-    'Inspect the actual commit diff and verify it is non-empty and limited to Owned paths.',
-    'Verify the actual commit hash, parent, tree, changed paths, diff, reachability, subject, and unique terminal trailers.',
-    'The commit subject must describe the specific functional capability; lifecycle-only summaries fail.',
-    'Use the partition ID only in trace fields; pair every human-facing reference with the display title or verified functional outcome.',
-    '',
-  ].join('\n');
-}
-
-function renderCampaignPrompt(children, collectionVerificationCommands) {
-  return [
-    '# Goal Child Campaign',
-    '',
-    `Execute in order: ${children.map(formatChildIdentity).join(' -> ')}.`,
-    '',
-    'Collection verification commands:',
-    ...collectionVerificationCommands.map(({ id, command }) => `- ${id}: ${command}`),
-    '',
-    'Record schema-valid evidence for every collection command.',
-    'Do not report done until every child and collection audit passes.',
-    '',
-  ].join('\n');
-}
-
-function createTaskReportTemplate({ packageId, children, requirementRecordBinding }) {
-  return {
-    schemaVersion: 'goal-subcontract-campaign-task-report-template/v2',
-    status: 'pending_audit',
-    packageId,
-    childIdentities: projectChildIdentities(children),
-    requirementRecordBinding,
-  };
-}
-
-function createHandoffTemplate({
-  packageId,
-  goalContractHash,
-  partitionManifestHash,
-  children,
-  requirementRecordBinding,
-}) {
-  return {
-    schemaVersion: 'goal-subcontract-main-agent-handoff-template/v2',
-    status: 'pending_audit',
-    packageId,
-    goalContractHash,
-    partitionManifestHash,
-    childIdentities: projectChildIdentities(children),
-    requirementRecordBinding,
   };
 }
 
@@ -593,13 +304,7 @@ function normalizeCollectionCommands(commands) {
   return normalized;
 }
 
-function verifyManifest(manifest) {
-  const coverageFields = [
-    'uncoveredObligationIds',
-    'duplicateObligationIds',
-    'unmappedObligationIds',
-    'scopeEscapeObligationIds',
-  ];
+function readManifestIdentity(manifest) {
   if (
     manifest?.schemaVersion !== 'goal-contract-partition-manifest/v2' ||
     manifest?.manifestAuthorityMode !== 'final_child_membership' ||
@@ -621,6 +326,16 @@ function verifyManifest(manifest) {
   ) {
     failure('partition_manifest_not_final');
   }
+  return ids;
+}
+
+function verifyManifestCoverage(manifest) {
+  const coverageFields = [
+    'uncoveredObligationIds',
+    'duplicateObligationIds',
+    'unmappedObligationIds',
+    'scopeEscapeObligationIds',
+  ];
   if (
     !manifest.coverage ||
     coverageFields.some(
@@ -629,43 +344,59 @@ function verifyManifest(manifest) {
   ) {
     failure('partition_coverage_incomplete');
   }
+}
+
+function isInvalidOwnedPath(ownedPath) {
+  return (
+    typeof ownedPath !== 'string' ||
+    ownedPath.trim() === '' ||
+    path.isAbsolute(ownedPath) ||
+    resolveInside('.', ownedPath, 'partition_manifest_not_final') !==
+      path.resolve('.', ownedPath)
+  );
+}
+
+function verifyManifestPartition(partition, index, ordinalByPartitionId) {
+  const dependencies = partition.dependencyPartitionIds;
+  const ownedPaths = partition.ownedArtifactPaths;
+  const commandIds = partition.commandIds;
+  const invalidDependency = (dependencyId) =>
+    !ordinalByPartitionId.has(dependencyId) ||
+    dependencyId === partition.partitionId ||
+    ordinalByPartitionId.get(dependencyId) >= index;
+  if (
+    !Array.isArray(dependencies) ||
+    new Set(dependencies).size !== dependencies.length ||
+    dependencies.some(invalidDependency) ||
+    !SHA256_PATTERN.test(partition.childContractHash || '') ||
+    typeof partition.childContractPath !== 'string' ||
+    partition.childContractPath.trim() === '' ||
+    !Array.isArray(ownedPaths) ||
+    ownedPaths.length === 0 ||
+    new Set(ownedPaths).size !== ownedPaths.length ||
+    ownedPaths.some(isInvalidOwnedPath) ||
+    !Array.isArray(commandIds) ||
+    commandIds.length === 0 ||
+    new Set(commandIds).size !== commandIds.length ||
+    commandIds.some((commandId) => typeof commandId !== 'string' || !commandId.trim())
+  ) {
+    failure('partition_manifest_not_final', { partitionId: partition.partitionId });
+  }
+  return { ownedPaths, commandIds };
+}
+
+function verifyManifest(manifest) {
+  const ids = readManifestIdentity(manifest);
+  verifyManifestCoverage(manifest);
   const ordinalByPartitionId = new Map(ids.map((id, index) => [id, index]));
   const allOwnedPaths = [];
   const allCommandIds = [];
   for (const [index, partition] of manifest.partitions.entries()) {
-    const dependencies = partition.dependencyPartitionIds;
-    const ownedPaths = partition.ownedArtifactPaths;
-    const commandIds = partition.commandIds;
-    if (
-      !Array.isArray(dependencies) ||
-      new Set(dependencies).size !== dependencies.length ||
-      dependencies.some(
-        (dependencyId) =>
-          !ordinalByPartitionId.has(dependencyId) ||
-          dependencyId === partition.partitionId ||
-          ordinalByPartitionId.get(dependencyId) >= index
-      ) ||
-      !SHA256_PATTERN.test(partition.childContractHash || '') ||
-      typeof partition.childContractPath !== 'string' ||
-      partition.childContractPath.trim() === '' ||
-      !Array.isArray(ownedPaths) ||
-      ownedPaths.length === 0 ||
-      new Set(ownedPaths).size !== ownedPaths.length ||
-      ownedPaths.some(
-        (ownedPath) =>
-          typeof ownedPath !== 'string' ||
-          ownedPath.trim() === '' ||
-          path.isAbsolute(ownedPath) ||
-          resolveInside('.', ownedPath, 'partition_manifest_not_final') !==
-            path.resolve('.', ownedPath)
-      ) ||
-      !Array.isArray(commandIds) ||
-      commandIds.length === 0 ||
-      new Set(commandIds).size !== commandIds.length ||
-      commandIds.some((commandId) => typeof commandId !== 'string' || !commandId.trim())
-    ) {
-      failure('partition_manifest_not_final', { partitionId: partition.partitionId });
-    }
+    const { ownedPaths, commandIds } = verifyManifestPartition(
+      partition,
+      index,
+      ordinalByPartitionId
+    );
     allOwnedPaths.push(...ownedPaths);
     allCommandIds.push(...commandIds);
   }
@@ -677,7 +408,7 @@ function verifyManifest(manifest) {
   }
 }
 
-function buildExecutionPackage({ requestPath, outputRoot }) {
+function loadCompileInputs(requestPath) {
   const request = readJson(path.resolve(requestPath), 'invalid_compile_request');
   if (request.schemaVersion !== 'goal-subcontract-execution-package-request/v1') {
     failure('invalid_compile_request');
@@ -712,10 +443,15 @@ function buildExecutionPackage({ requestPath, outputRoot }) {
     'closure_schema_hash_mismatch',
     'closure_schema_invalid'
   );
+  return { request, repositoryRoot, manifest, manifestPath };
+}
+
+function projectChildren({ request, repositoryRoot, manifest, manifestPath }) {
   if (!Array.isArray(request.children) || request.children.length !== manifest.partitions.length) {
     failure('child_membership_mismatch');
   }
-  const children = manifest.partitions.map((partition, index) => {
+  const partitionIds = manifest.partitions.map(({ partitionId }) => partitionId);
+  return manifest.partitions.map((partition, index) => {
     const supplied = request.children[index];
     const projectedChildPath = projectManifestChildPath(
       repositoryRoot,
@@ -732,7 +468,7 @@ function buildExecutionPackage({ requestPath, outputRoot }) {
     verifySource(repositoryRoot, supplied, 'child_contract_hash_mismatch');
     return {
       partitionId: partition.partitionId,
-      displayTitle: normalizeDisplayTitle(partition),
+      displayTitle: normalizeDisplayTitle(partition, partitionIds),
       ordinal: index + 1,
       contract: normalizeSourceBinding(supplied),
       predecessorPartitionIds: partition.dependencyPartitionIds || [],
@@ -740,6 +476,9 @@ function buildExecutionPackage({ requestPath, outputRoot }) {
       requiredCommandIds: partition.commandIds || [],
     };
   });
+}
+
+function createPackageContext({ request, repositoryRoot, children }) {
   const collectionVerificationCommands = normalizeCollectionCommands(
     request.collectionVerificationCommands
   );
@@ -761,70 +500,99 @@ function buildExecutionPackage({ requestPath, outputRoot }) {
     collectionVerificationCommands,
   };
   const packageId = `goal-subcontract-package-${sha256(stableJson(seed)).slice(7, 23)}`;
-  const commitPolicy = createCommitPolicy();
-  const executionPolicy = createExecutionPolicy();
-  const childPacketValidator = compileBundledSchema(
-    'child-prompt-packet.schema.json',
-    'invalid_child_packet',
-    repositoryRoot
-  );
-  const packageManifestValidator = compileBundledSchema(
-    'execution-package-manifest.schema.json',
-    'invalid_package_manifest',
-    repositoryRoot
-  );
+  return {
+    ...seed,
+    packageId,
+    commitPolicy: createCommitPolicy(),
+    executionPolicy: createExecutionPolicy(),
+  };
+}
+
+function compilePackageValidators(repositoryRoot) {
+  return {
+    childPacketValidator: compileBundledSchema(
+      'child-prompt-packet.schema.json',
+      'invalid_child_packet',
+      repositoryRoot
+    ),
+    packageManifestValidator: compileBundledSchema(
+      'execution-package-manifest.schema.json',
+      'invalid_package_manifest',
+      repositoryRoot
+    ),
+  };
+}
+
+function createArtifactEmitter(outputRoot) {
   const artifacts = [];
-  const childByPartitionId = createChildIdentityMap(children);
   const emit = (kind, relativePath, content) => {
     writeAtomic(outputRoot, relativePath, content);
     artifacts.push({ kind, path: relativePath, hash: sha256(content) });
   };
-  const projectedChildren = children.map((child) => {
-    const prefix = `${String(child.ordinal).padStart(2, '0')}-${child.partitionId}`;
-    const packetPath = `children/${prefix}.packet.json`;
-    const promptPath = `children/${prefix}.prompt.md`;
-    const packet = createChildPacket({
-      packageId,
-      child,
-      evidenceSchema,
-      closureSchema,
-      executionPolicy,
-      commitPolicy,
-    });
-    validateSchemaInstance(childPacketValidator, packet, 'invalid_child_packet', {
-      partitionId: child.partitionId,
-    });
-    const packetContent = stableJson(packet);
-    const promptContent = renderChildPrompt(
-      child,
-      childByPartitionId,
-      evidenceSchema,
-      closureSchema,
-      executionPolicy
-    );
-    emit('child-packet', packetPath, packetContent);
-    emit('child-prompt', promptPath, promptContent);
-    return {
-      ...child,
-      packetPath,
-      packetHash: sha256(packetContent),
-      promptPath,
-      promptHash: sha256(promptContent),
-    };
+  return { artifacts, emit };
+}
+
+function projectChildArtifact({ child, context, childByPartitionId, validator, emit }) {
+  const prefix = `${String(child.ordinal).padStart(2, '0')}-${child.partitionId}`;
+  const packetPath = `children/${prefix}.packet.json`;
+  const promptPath = `children/${prefix}.prompt.md`;
+  const packet = createChildPacket({
+    packageId: context.packageId,
+    child,
+    evidenceSchema: context.evidenceSchema,
+    closureSchema: context.closureSchema,
+    executionPolicy: context.executionPolicy,
+    commitPolicy: context.commitPolicy,
   });
+  validateSchemaInstance(validator, packet, 'invalid_child_packet', {
+    partitionId: child.partitionId,
+  });
+  const packetContent = stableJson(packet);
+  const promptContent = renderChildPrompt(
+    child,
+    childByPartitionId,
+    context.evidenceSchema,
+    context.closureSchema,
+    context.executionPolicy
+  );
+  emit('child-packet', packetPath, packetContent);
+  emit('child-prompt', promptPath, promptContent);
+  return {
+    ...child,
+    packetPath,
+    packetHash: sha256(packetContent),
+    promptPath,
+    promptHash: sha256(promptContent),
+  };
+}
+
+function emitChildArtifacts({ context, validator, emit }) {
+  const childByPartitionId = createChildIdentityMap(context.children);
+  return context.children.map((child) =>
+    projectChildArtifact({
+      child,
+      context,
+      childByPartitionId,
+      validator,
+      emit,
+    })
+  );
+}
+
+function emitCampaignArtifacts(context, emit) {
   emit(
     'campaign-prompt',
     'campaign-prompt.md',
-    renderCampaignPrompt(children, collectionVerificationCommands)
+    renderCampaignPrompt(context.children, context.collectionVerificationCommands)
   );
   emit(
     'task-report-template',
     'templates/task-report.json',
     stableJson(
       createTaskReportTemplate({
-        packageId,
-        children,
-        requirementRecordBinding,
+        packageId: context.packageId,
+        children: context.children,
+        requirementRecordBinding: context.requirementRecordBinding,
       })
     )
   );
@@ -833,41 +601,70 @@ function buildExecutionPackage({ requestPath, outputRoot }) {
     'templates/main-agent-handoff.json',
     stableJson(
       createHandoffTemplate({
-        packageId,
-        goalContractHash: goalContract.hash,
-        partitionManifestHash: partitionManifest.hash,
-        children,
-        requirementRecordBinding,
+        packageId: context.packageId,
+        goalContractHash: context.goalContract.hash,
+        partitionManifestHash: context.partitionManifest.hash,
+        children: context.children,
+        requirementRecordBinding: context.requirementRecordBinding,
       })
     )
   );
-  const manifestCore = {
+}
+
+function createManifestCore(context, projectedChildren, artifacts) {
+  return {
     schemaVersion: 'goal-subcontract-execution-package/v2',
-    packageId,
-    repositoryRoot,
-    repositoryBaseline,
-    goalContract,
+    packageId: context.packageId,
+    repositoryRoot: context.repositoryRoot,
+    repositoryBaseline: context.repositoryBaseline,
+    goalContract: context.goalContract,
     partitionManifest: {
-      ...partitionManifest,
-      partitionManifestHash: manifest.partitionManifestHash,
+      ...context.partitionManifest,
+      partitionManifestHash: context.manifest.partitionManifestHash,
     },
-    evidenceSchema,
-    closureSchema,
-    requirementRecordBinding,
+    evidenceSchema: context.evidenceSchema,
+    closureSchema: context.closureSchema,
+    requirementRecordBinding: context.requirementRecordBinding,
     children: projectedChildren,
     artifacts,
-    collectionVerificationCommands,
+    collectionVerificationCommands: context.collectionVerificationCommands,
   };
+}
+
+function buildExecutionPackage({ requestPath, outputRoot }) {
+  const inputs = loadCompileInputs(requestPath);
+  const children = projectChildren(inputs);
+  const context = {
+    ...createPackageContext({
+      request: inputs.request,
+      repositoryRoot: inputs.repositoryRoot,
+      children,
+    }),
+    manifest: inputs.manifest,
+  };
+  const validators = compilePackageValidators(context.repositoryRoot);
+  const { artifacts, emit } = createArtifactEmitter(outputRoot);
+  const projectedChildren = emitChildArtifacts({
+    context,
+    validator: validators.childPacketValidator,
+    emit,
+  });
+  emitCampaignArtifacts(context, emit);
+  const manifestCore = createManifestCore(context, projectedChildren, artifacts);
   const packageManifestHash = sha256(stableJson(manifestCore));
   const packageManifest = { ...manifestCore, packageManifestHash };
-  validateSchemaInstance(packageManifestValidator, packageManifest, 'invalid_package_manifest');
+  validateSchemaInstance(
+    validators.packageManifestValidator,
+    packageManifest,
+    'invalid_package_manifest'
+  );
   writeAtomic(outputRoot, 'package-manifest.json', stableJson(packageManifest));
   return {
     ok: true,
-    packageId,
+    packageId: context.packageId,
     packageManifestHash,
     childCount: children.length,
-    requirementRecordBindingStatus: requirementRecordBinding.status,
+    requirementRecordBindingStatus: context.requirementRecordBinding.status,
   };
 }
 
@@ -906,6 +703,7 @@ module.exports = {
   createTaskReportTemplate,
   failure,
   formatChildIdentity,
+  git,
   hasExactGoalFreezeDirectives,
   isNonFunctionalText,
   main,
