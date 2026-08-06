@@ -540,7 +540,7 @@
         },
         {
           "path": "tests/acceptance/main-agent-gap-closure-evidence-gate.test.ts",
-          "hash": "sha256:67f43377a6b992502f6fea2f2a5a74ca234aeb872d323618ed84ec658fb3b835"
+          "hash": "sha256:99f5306af5670d0869a1d90c4c3e83b373cfe7ef34632e196c68236332e76552"
         }
       ],
       "packageDistRef": {

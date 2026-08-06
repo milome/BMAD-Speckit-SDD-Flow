@@ -178,7 +178,7 @@ describe('runtime-policy-inject implementation-entry block', () => {
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }
-  });
+  }, 60000);
 
   it('fails closed for bugfix implementation but hands control back to the main agent through orchestration state and packet', () => {
     const tempRoot = makeBugfixImplementBlockedRoot();

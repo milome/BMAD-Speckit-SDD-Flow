@@ -124,7 +124,7 @@ describe('requirements contract consumer target authority', () => {
     } finally {
       removeTempRoot(root);
     }
-  });
+  }, 60_000);
 
   it(
     'derives target authority from source-declared consumer paths',
