@@ -443,7 +443,7 @@ describe('req-trace main-agent dispatch integration', () => {
     }
   });
 
-  it('blocks strategy selection from human_prompt.txt alone and keeps old-skill strategies uncertified', () => {
+  it('keeps direct as the preview policy default while old-skill strategies are uncertified', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'req-trace-dispatch-strategy-'));
     try {
       const fixture = writeRequirementRecord(root, { confirmed: true });
@@ -487,14 +487,14 @@ describe('req-trace main-agent dispatch integration', () => {
         options.options.find((option) => option.strategyId === 'governed_skill_adapter')
           ?.availability
       ).toBe('blocked_until_adapter_certification_gate');
-      expect(() =>
+      expect(
         selectExecutionStrategy({
           optionsResult: options,
           strategyId: 'governed_skill_adapter',
           selectedBy: 'policy',
           policyDefaultAllowed: true,
-        })
-      ).toThrow(/execution strategy is not available/u);
+        }).strategyId
+      ).toBe('compiled_trace_direct');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

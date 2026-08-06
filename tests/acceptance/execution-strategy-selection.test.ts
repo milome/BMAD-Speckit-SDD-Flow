@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -7,6 +8,7 @@ import {
   appendExecutionStrategySelection,
   buildExecutionStrategyOptions,
   exactExecutionStrategySelectionPhrase,
+  sha256Stable,
   selectExecutionStrategy,
   toExecutionStrategySelectionEvent,
   validateExecutionStrategySelectionEvent,
@@ -82,6 +84,10 @@ function compiledRef() {
   };
 }
 
+function hashFile(filePath: string): string {
+  return `sha256:${createHash('sha256').update(readFileSync(filePath)).digest('hex')}`;
+}
+
 describe('execution strategy selection', () => {
   it('renders available direct strategy and blocked future strategies only after model packet gate pass', () => {
     const blocked = buildExecutionStrategyOptions({
@@ -150,6 +156,190 @@ describe('execution strategy selection', () => {
         exactPhrase: 'wrong',
       })
     ).toThrow(/exact phrase mismatch/u);
+  });
+
+  it('defaults policy to the current certified adapter and binds certification drift', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'execution-strategy-certified-'));
+    try {
+      const packetDir = path.join(root, '_bmad-output', 'runtime', 'trace-execution', 'packet-1');
+      const evidenceDir = path.join(
+        root,
+        'docs',
+        'plans',
+        'evidence',
+        'loop-engineering-remediation'
+      );
+      mkdirSync(packetDir, { recursive: true });
+      mkdirSync(evidenceDir, { recursive: true });
+      const modelPacketPath = path.join(packetDir, 'model_packet.json');
+      const transactionManifestPath = path.join(packetDir, 'prompt-transaction-manifest.json');
+      const pointerPath = path.join(evidenceDir, 'current-dispatch-pointer-receipt.json');
+      const certificationPath = path.join(
+        packetDir,
+        'main-agent-goal-source-authority-certification.json'
+      );
+      const bindingPath = path.join(packetDir, 'campaign-runtime-binding.json');
+      const packageRequestPath = path.join(packetDir, 'package-request.json');
+      const partitionManifestPath = path.join(packetDir, 'partition-manifest.json');
+      const childPath = path.join(packetDir, 'child-1.md');
+      const runtimeDependencyPath = path.join(packetDir, 'campaign-runtime-dependencies.cjs');
+      const executionPacketPath = path.join(packetDir, 'execution-packet.json');
+      writeFileSync(modelPacketPath, '{"packetId":"packet-1"}\n', 'utf8');
+      writeFileSync(transactionManifestPath, '{"transactionId":"transaction-1"}\n', 'utf8');
+      writeFileSync(childPath, '# Child 1\n', 'utf8');
+      writeFileSync(partitionManifestPath, '{"partitions":[]}\n', 'utf8');
+      writeFileSync(
+        packageRequestPath,
+        `${JSON.stringify({
+          schemaVersion: 'goal-subcontract-execution-package-request/v1',
+          partitionManifest: {
+            path: partitionManifestPath,
+            hash: hashFile(partitionManifestPath),
+          },
+        })}\n`,
+        'utf8'
+      );
+      writeFileSync(
+        runtimeDependencyPath,
+        'module.exports = { compileExecutionPackage() {}, auditExecutionPackage() {}, auditCompletedChild() {}, auditCompletedCampaign() {} };\n',
+        'utf8'
+      );
+      const packageRequestRef = {
+        path: packageRequestPath,
+        hash: hashFile(packageRequestPath),
+      };
+      const partitionManifestRef = {
+        path: partitionManifestPath,
+        hash: hashFile(partitionManifestPath),
+      };
+      writeFileSync(
+        executionPacketPath,
+        '{"packetId":"packet-1"}\n',
+        'utf8'
+      );
+      const certificationCore = {
+        schemaVersion: 'main-agent-goal-source-authority-certification/v1',
+        authorityProfile: 'main_agent_compiled',
+        decision: 'PASS',
+        transactionManifestHash: hashFile(transactionManifestPath),
+        modelPacketBinding: { modelPacketHash: hashFile(modelPacketPath) },
+        packetRef: { path: executionPacketPath },
+        packageRequestRef,
+        partitionManifestRef,
+      };
+      writeFileSync(
+        certificationPath,
+        `${JSON.stringify({
+          ...certificationCore,
+          certifiedAt: '2026-08-06T00:00:00.000Z',
+          certificationHash: sha256Stable(certificationCore),
+        })}\n`,
+        'utf8'
+      );
+      const dependencyRef = {
+        moduleRef: {
+          path: runtimeDependencyPath,
+          hash: hashFile(runtimeDependencyPath),
+        },
+      };
+      writeFileSync(
+        bindingPath,
+        `${JSON.stringify({
+          schemaVersion: 'main-agent-campaign-runtime-binding/v1',
+          pointerRef: { path: pointerPath },
+          packetRef: { path: executionPacketPath },
+          certificationRef: {
+            path: certificationPath,
+            hash: hashFile(certificationPath),
+          },
+          packageRequestRef,
+          partitionManifestRef,
+          children: [{ partitionId: 'child-1', path: childPath, hash: hashFile(childPath) }],
+          runtimeDependencies: {
+            compileExecutionPackage: {
+              ...dependencyRef,
+              exportName: 'compileExecutionPackage',
+            },
+            auditExecutionPackage: {
+              ...dependencyRef,
+              exportName: 'auditExecutionPackage',
+            },
+            auditCompletedChild: {
+              ...dependencyRef,
+              exportName: 'auditCompletedChild',
+            },
+            auditCompletedCampaign: {
+              ...dependencyRef,
+              exportName: 'auditCompletedCampaign',
+            },
+          },
+        })}\n`,
+        'utf8'
+      );
+      const bindingHash = hashFile(bindingPath);
+      writeFileSync(
+        pointerPath,
+        `${JSON.stringify({
+          modelPacketRef: { path: modelPacketPath, hash: hashFile(modelPacketPath) },
+          transactionManifestRef: {
+            path: transactionManifestPath,
+            hash: hashFile(transactionManifestPath),
+          },
+          campaignRuntimeBindingRef: {
+            path: bindingPath,
+            hash: bindingHash,
+            readbackHash: bindingHash,
+            readbackVerified: true,
+          },
+          sourceDocumentHash: HASH_B,
+          implementationConfirmationHash: HASH_C,
+        })}\n`,
+        'utf8'
+      );
+      const ref = {
+        ...compiledRef(),
+        modelPacketPath,
+        modelPacketHash: hashFile(modelPacketPath),
+      };
+      const certified = buildExecutionStrategyOptions({
+        compiledPromptRef: ref,
+        modelPacketGateDecision: 'pass',
+      });
+      expect(certified.policyDefaultStrategyId).toBe('governed_skill_adapter');
+      expect(
+        certified.options.find((option) => option.strategyId === 'governed_skill_adapter')
+      ).toMatchObject({ availability: 'available' });
+      expect(
+        selectExecutionStrategy({
+          optionsResult: certified,
+          strategyId: 'compiled_trace_direct',
+          selectedBy: 'policy',
+          policyDefaultAllowed: true,
+        }).strategyId
+      ).toBe('governed_skill_adapter');
+
+      const originalHash = certified.strategyOptionsHash;
+      writeFileSync(
+        certificationPath,
+        `${JSON.stringify({ ...certificationCore, transactionManifestHash: HASH_F })}\n`,
+        'utf8'
+      );
+      const stale = buildExecutionStrategyOptions({
+        compiledPromptRef: ref,
+        modelPacketGateDecision: 'pass',
+      });
+      expect(stale.policyDefaultStrategyId).toBeNull();
+      expect(stale.strategyOptionsHash).not.toBe(originalHash);
+      expect(
+        stale.options
+          .filter((option) =>
+            ['compiled_trace_direct', 'governed_skill_adapter'].includes(option.strategyId)
+          )
+          .every((option) => option.availability !== 'available')
+      ).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it('controlled-ingests available strategy selection and schema rejects missing hashes', () => {

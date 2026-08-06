@@ -134,6 +134,22 @@ function baseRecord(root: string, extra: Record<string, unknown> = {}) {
     status: 'user_confirmed',
     sourceDocumentHash: HASH,
     implementationConfirmationHash: HASH,
+    confirmationHistory: [
+      {
+        eventType: 'confirmation_recorded',
+        recordId: RECORD_ID,
+        requirementSetId: RECORD_ID,
+        confirmedAt: '2026-06-19T00:00:00.000Z',
+        confirmedBy: 'test-user',
+        sourcePath: 'docs/requirements/native-closeout.md',
+        sourceDocumentHash: HASH,
+        implementationConfirmationHash: HASH,
+        confirmationPageHash: HASH,
+        confirmationText: 'confirmed native closeout fixture',
+        renderReportPath: 'confirmation/render-report.json',
+        htmlPath: 'confirmation/confirmation.html',
+      },
+    ],
     currentMentalModel: 'audit_review',
     sixModelResults: {
       requirement_confirmation: modelResult('requirement_confirmation'),

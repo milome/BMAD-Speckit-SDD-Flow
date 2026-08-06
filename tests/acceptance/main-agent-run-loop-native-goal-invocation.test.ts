@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -7,6 +8,8 @@ import {
   runMainAgentAutomaticLoop,
   type NativeGoalControlledExecutor,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
+import { packetArtifactPath } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract';
+import { writeGovernedJson } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-governed-write';
 import {
   executeRequiredCommandsForPublishedFixture,
   publishImplementationPromptFixture,
@@ -15,6 +18,128 @@ import {
 function writeJson(filePath: string, value: unknown): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+function hashFile(filePath: string): string {
+  return `sha256:${createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')}`;
+}
+
+function attachCampaignRuntimeBinding(input: {
+  fixture: Awaited<ReturnType<typeof publishImplementationPromptFixture>>['fixture'];
+  pointer: Record<string, unknown>;
+  packetId: string;
+}): Record<string, unknown> {
+  const root = input.fixture.root;
+  const runtimeDir = path.join(root, '_bmad-output', 'runtime', 'campaign-binding');
+  const packageRequestPath = path.join(runtimeDir, 'package-request.json');
+  const partitionManifestPath = path.join(runtimeDir, 'partition-manifest.json');
+  const childPaths = [
+    path.join(runtimeDir, 'child-1.md'),
+    path.join(runtimeDir, 'child-2.md'),
+  ];
+  const dependencyPath = path.join(runtimeDir, 'campaign-dependencies.cjs');
+  const certificationPath = path.join(runtimeDir, 'certification.json');
+  const bindingPath = path.join(runtimeDir, 'binding.json');
+  const packetPath = packetArtifactPath(
+    root,
+    input.fixture.identity.requirementSetId,
+    input.packetId
+  );
+  for (const [index, childPath] of childPaths.entries()) {
+    fs.mkdirSync(path.dirname(childPath), { recursive: true });
+    fs.writeFileSync(childPath, `# Child ${index + 1}\n`, 'utf8');
+  }
+  writeJson(partitionManifestPath, {
+    schemaVersion: 'goal-contract-partition-manifest/v1',
+    partitions: childPaths.map((childPath, index) => ({
+      partitionId: `child-${index + 1}`,
+      childContractPath: childPath,
+      childContractHash: hashFile(childPath),
+    })),
+  });
+  writeJson(packageRequestPath, {
+    schemaVersion: 'goal-subcontract-execution-package-request/v1',
+    partitionManifest: {
+      path: partitionManifestPath,
+      hash: hashFile(partitionManifestPath),
+    },
+    children: childPaths.map((childPath, index) => ({
+      partitionId: `child-${index + 1}`,
+      path: childPath,
+      hash: hashFile(childPath),
+    })),
+  });
+  fs.writeFileSync(
+    dependencyPath,
+    [
+      `const PACKAGE_HASH = 'sha256:${'1'.repeat(64)}';`,
+      `const CAMPAIGN_HASH = 'sha256:${'2'.repeat(64)}';`,
+      `const COMMIT_HASH = 'sha256:${'3'.repeat(64)}';`,
+      'module.exports = {',
+      '  compileExecutionPackage() { return { packageManifestHash: PACKAGE_HASH, packageManifestPath: "package/package-manifest.json", campaignPromptPath: "package/campaign-prompt.md", campaignPromptHash: "sha256:4444444444444444444444444444444444444444444444444444444444444444", packageCompileReceiptPath: "package/compile-receipt.json", packageCompileReceiptHash: "sha256:5555555555555555555555555555555555555555555555555555555555555555" }; },',
+      '  auditExecutionPackage() { return { status: "pass", packageManifestHash: PACKAGE_HASH }; },',
+      '  auditCompletedChild({ child }) { return { status: "closed", partitionId: child.partitionId, commitHash: COMMIT_HASH, filesChanged: [], validationsRun: ["campaign-child"], evidence: ["campaign-child-proof"] }; },',
+      '  auditCompletedCampaign() { return { status: "done", packageManifestHash: PACKAGE_HASH, campaignReportHash: CAMPAIGN_HASH }; },',
+      '};',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  const packageRequestRef = { path: packageRequestPath, hash: hashFile(packageRequestPath) };
+  const partitionManifestRef = {
+    path: partitionManifestPath,
+    hash: hashFile(partitionManifestPath),
+  };
+  const dependencyModuleRef = { path: dependencyPath, hash: hashFile(dependencyPath) };
+  writeJson(certificationPath, {
+    schemaVersion: 'main-agent-goal-source-authority-certification/v1',
+    authorityProfile: 'main_agent_compiled',
+    decision: 'PASS',
+    transactionManifestHash: (input.pointer.transactionManifestRef as Record<string, unknown>)
+      .hash,
+    modelPacketBinding: {
+      modelPacketHash: (input.pointer.modelPacketRef as Record<string, unknown>).hash,
+    },
+    packetRef: { path: packetPath },
+    packageRequestRef,
+    partitionManifestRef,
+  });
+  writeJson(bindingPath, {
+    schemaVersion: 'main-agent-campaign-runtime-binding/v1',
+    pointerRef: { path: input.fixture.options.currentDispatchPointer },
+    packetRef: { path: packetPath },
+    certificationRef: { path: certificationPath, hash: hashFile(certificationPath) },
+    packageRequestRef,
+    partitionManifestRef,
+    children: childPaths.map((childPath, index) => ({
+      partitionId: `child-${index + 1}`,
+      path: childPath,
+      hash: hashFile(childPath),
+    })),
+    runtimeDependencies: Object.fromEntries(
+      [
+        'compileExecutionPackage',
+        'auditExecutionPackage',
+        'auditCompletedChild',
+        'auditCompletedCampaign',
+      ].map((exportName) => [
+        exportName,
+        { moduleRef: dependencyModuleRef, exportName },
+      ])
+    ),
+  });
+  const bindingHash = hashFile(bindingPath);
+  const currentPointer = {
+    ...input.pointer,
+    campaignRuntimeBindingRef: {
+      path: bindingPath,
+      hash: bindingHash,
+      readbackHash: bindingHash,
+      readbackVerified: true,
+    },
+  };
+  writeGovernedJson(input.fixture.options.currentDispatchPointer, currentPointer);
+  return currentPointer;
 }
 
 function receiptPath(root: string, recordId: string, attemptId: string): string {
@@ -301,6 +426,65 @@ describe('main-agent run-loop native goal invocation routing', () => {
           ].map((artifactType) => expect.objectContaining({ artifactType }))
         )
       );
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('resolves a certified campaign binding from the current pointer and authorizes children serially', async () => {
+    const { fixture, pointer } = await publishImplementationPromptFixture();
+    const packetId = 'campaign-runtime-packet';
+    try {
+      const currentPointer = attachCampaignRuntimeBinding({ fixture, pointer, packetId });
+      ensureMainAgentDispatchPacket({
+        projectRoot: fixture.root,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        host: 'codex',
+        preferredPacketId: packetId,
+      });
+      const events: string[] = [];
+      const executor: NativeGoalControlledExecutor = (request) => {
+        executeRequiredCommandsForPublishedFixture({ fixture, pointer: currentPointer });
+        const childInvocations: Array<Record<string, unknown>> = [];
+        for (const child of request.children ?? []) {
+          events.push(`dispatch:${child.partitionId}`);
+          childInvocations.push(child);
+          const authorized = request.reportChildResult?.(child) ?? false;
+          events.push(`authorize:${child.partitionId}:${authorized}`);
+          if (!authorized) break;
+        }
+        return { exitCode: 0, childInvocations };
+      };
+
+      const result = runMainAgentAutomaticLoop({
+        projectRoot: fixture.root,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        host: 'codex',
+        nativeGoalExecutor: executor,
+      });
+
+      expect(result.dispatchInstruction?.packet.executionStrategy?.strategyId).toBe(
+        'governed_skill_adapter'
+      );
+      expect(result.dispatchInstruction?.packet.campaignRuntimeBindingRef).toEqual(
+        currentPointer.campaignRuntimeBindingRef
+      );
+      expect(events).toEqual([
+        'dispatch:child-1',
+        'authorize:child-1:true',
+        'dispatch:child-2',
+        'authorize:child-2:true',
+      ]);
+      expect(result.status).toBe('completed');
+      expect(result.taskReport).toMatchObject({ packetId, status: 'done' });
     } finally {
       fixture.cleanup();
     }
