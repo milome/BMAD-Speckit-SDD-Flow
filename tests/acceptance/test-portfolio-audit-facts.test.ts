@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -116,8 +116,31 @@ describe('test portfolio audit facts', () => {
         .filter(
           (test: { runnerId: string; testPath: string }) =>
             test.runnerId === 'node-test' && test.testPath.startsWith('tests/fixtures/')
-        )
-        .map((test: { identityKey: string }) => test.identityKey)
+      )
+      .map((test: { identityKey: string }) => test.identityKey)
     ).toEqual([]);
   }, 300_000);
+
+  it('excludes untracked test-shaped files from the retained inventory', async () => {
+    const untrackedTestPath = join(FIXTURE, 'tests/local-only.test.ts');
+    writeFileSync(untrackedTestPath, "test('local only', () => {});\n", 'utf8');
+
+    try {
+      const facts = await collectAuditFacts({
+        repoRoot: FIXTURE,
+        probeLimit: 0,
+        probeBudgetMs: 0,
+        probeSandboxRoot: null,
+        timings: {},
+      });
+
+      expect(
+        facts.inventory.tests.map((test: { testPath: string }) => test.testPath)
+      ).not.toContain('tests/local-only.test.ts');
+      expect(facts.discovery.runnerResolved).not.toContain('tests/local-only.test.ts');
+      expect(facts.discovery.candidates).not.toContain('tests/local-only.test.ts');
+    } finally {
+      rmSync(untrackedTestPath, { force: true });
+    }
+  }, 30_000);
 });
