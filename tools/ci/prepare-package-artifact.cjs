@@ -124,6 +124,7 @@ function dependencyLinkType(targetPath) {
 }
 
 function dependencyLinkTarget(targetPath, dependencyPath) {
+  if (dependencyLinkType(dependencyPath) === 'junction') return path.resolve(dependencyPath);
   const relative = path.relative(path.dirname(targetPath), dependencyPath);
   return relative !== '' && !path.isAbsolute(relative) ? relative : dependencyPath;
 }
@@ -148,7 +149,9 @@ function projectDependencyEntry({ sourcePath, targetPath, repoRoot, stagingRoot 
     return;
   }
   if (sourceStat.isDirectory()) {
-    fs.symlinkSync(dependencyLinkTarget(targetPath, sourcePath), targetPath, 'dir');
+    const linkType = dependencyLinkType(sourcePath);
+    const linkTarget = dependencyLinkTarget(targetPath, sourcePath);
+    fs.symlinkSync(linkTarget, targetPath, linkType);
     return;
   }
   fs.copyFileSync(sourcePath, targetPath);

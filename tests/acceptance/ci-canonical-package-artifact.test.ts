@@ -113,6 +113,7 @@ describe('canonical package artifact', () => {
       git(repoRoot, 'commit', '-m', 'baseline');
       const commitSha = git(repoRoot, 'rev-parse', 'HEAD');
       mkdirSync(join(repoRoot, 'node_modules'), { recursive: true });
+      mkdirSync(join(repoRoot, 'node_modules', '.bin'), { recursive: true });
       const workspaceLink = join(repoRoot, 'node_modules', 'fixture-workspace');
       symlinkSync(
         workspacePackage,
