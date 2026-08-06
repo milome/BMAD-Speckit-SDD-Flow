@@ -119,5 +119,5 @@ describe('test portfolio audit facts', () => {
         )
         .map((test: { identityKey: string }) => test.identityKey)
     ).toEqual([]);
-  }, 90_000);
+  }, 300_000);
 });

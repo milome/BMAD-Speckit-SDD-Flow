@@ -7287,6 +7287,44 @@ function resolveActiveCriticalAuditorStagingTransaction(input: {
   throw new Error('critical_auditor_staging_repair_chain_limit_exceeded');
 }
 
+function criticalAuditorStagingChainIncludesRepair(input: {
+  paths: PreConfirmationPaths;
+  recordId: string;
+  sourceStartHash: string;
+  activeTransactionId: string;
+}): boolean {
+  let transaction = createCriticalAuditorStagingTransaction({
+    paths: input.paths,
+    recordId: input.recordId,
+    sourceStartHash: input.sourceStartHash,
+  });
+  let includesRepair = false;
+  for (let depth = 0; depth < 12; depth += 1) {
+    if (transaction.transactionId === input.activeTransactionId) {
+      return includesRepair;
+    }
+    const transition = readJsonIfExists(transaction.auditSourceTransition);
+    const repairCommit = readJsonIfExists(transaction.repairCommit);
+    if (transition && repairCommit) {
+      throw new Error('critical_auditor_staging_transition_conflict');
+    }
+    const nextAuditSourceHash = normalizeText(
+      repairCommit?.nextAuditSourceHash ?? transition?.nextAuditSourceHash
+    );
+    if (!nextAuditSourceHash) {
+      throw new Error('critical_auditor_active_transaction_unreachable');
+    }
+    includesRepair ||= Boolean(repairCommit);
+    transaction = createCriticalAuditorStagingTransaction({
+      paths: input.paths,
+      recordId: input.recordId,
+      sourceStartHash: input.sourceStartHash,
+      auditSourceHash: nextAuditSourceHash,
+    });
+  }
+  throw new Error('critical_auditor_staging_repair_chain_limit_exceeded');
+}
+
 function latestCommittedCriticalAuditorGapRound(input: {
   root: string;
   transaction: CriticalAuditorStagingTransaction;
@@ -29461,12 +29499,30 @@ export function runMainAgentPreConfirmationDrilldown(
     recordId: identity.recordId,
     sourceStartHash: sourceHashBefore,
   });
+  const localizationTransaction = createCriticalAuditorStagingTransaction({
+    paths,
+    recordId: identity.recordId,
+    sourceStartHash: stagingTransaction.sourceStartHash,
+  });
   let stagingPaths = criticalAuditorStagingPaths(paths, stagingTransaction);
   if (stagingTransaction.auditSourceHash !== sourceHashBefore) {
-    semanticInputPath = stagingTransaction.draftSource;
-    sourceSnapshot = readCanonicalUtf8Source(semanticInputPath);
-    if (safeCurrentSourceDocumentHash(semanticInputPath) !== stagingTransaction.auditSourceHash) {
+    if (
+      !fs.existsSync(stagingTransaction.draftSource) ||
+      safeCurrentSourceDocumentHash(stagingTransaction.draftSource) !==
+        stagingTransaction.auditSourceHash
+    ) {
       throw new Error('critical_auditor_staging_repair_active_draft_hash_mismatch');
+    }
+    if (
+      criticalAuditorStagingChainIncludesRepair({
+        paths,
+        recordId: identity.recordId,
+        sourceStartHash: sourceHashBefore,
+        activeTransactionId: stagingTransaction.transactionId,
+      })
+    ) {
+      semanticInputPath = stagingTransaction.draftSource;
+      sourceSnapshot = readCanonicalUtf8Source(semanticInputPath);
     }
   }
   const sourceText = sourceSnapshot.sourceText;
@@ -30167,7 +30223,7 @@ export function runMainAgentPreConfirmationDrilldown(
       language,
       createdAt,
       sourceDocumentHash: sourceHashBefore,
-      transaction: stagingTransaction,
+      transaction: localizationTransaction,
       responsePath: localizationResponsePath,
     });
     if (localization.request) {
@@ -31136,7 +31192,7 @@ export function runMainAgentPreConfirmationDrilldown(
       language,
       createdAt,
       sourceDocumentHash: sourceHashBefore,
-      transaction: stagingTransaction,
+      transaction: localizationTransaction,
       responsePath: localizationResponsePath,
     });
     if (auditedLocalization.request) {
@@ -31403,6 +31459,21 @@ export function runMainAgentPreConfirmationDrilldown(
   );
   const auditedPreviewImplementationConfirmationHash =
     implementationConfirmationHashForPreConfirmation(auditedPreviewExtraction.confirmation);
+  // Semantic authority remains source-rooted, while materialization evidence binds
+  // the finalized audited draft bytes consumed by checkpoint validation.
+  writeControlledMustCandidateArtifacts({
+    root,
+    sourcePath: paths.draftSourcePreview,
+    paths,
+    recordId: identity.recordId,
+    requirementSetId: identity.requirementSetId,
+    createdAt,
+    sourceText: auditedPreviewText,
+    candidates: controlledCandidates,
+    mustRequirements,
+    draftConfirmation: auditedPreviewExtraction.confirmation,
+    decision: 'draft_materialization_allowed',
+  });
   // The post-audit preview intentionally replaces seed metadata with the current
   // Critical Auditor convergence summary. Continue with the audited hashes so
   // source-race and checkpoint gates remain the authoritative promotion blockers.

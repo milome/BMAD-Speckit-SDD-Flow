@@ -23,6 +23,12 @@ _bmad/shared/critical-auditor-profile/** text eol=lf
 _bmad/shared/goal-contract/** text eol=lf
 _bmad/skills/goal-execution-contract-generator/** text eol=lf
 _bmad/skills/requirements-contract-authoring/** text eol=lf
+# Req-trace frontmatter is parsed as raw bytes across canonical and generated surfaces.
+_bmad/skills/req-trace-matrix-prompt-generator/** text eol=lf
+.codex/skills/req-trace-matrix-prompt-generator/** text eol=lf
+.cursor/skills/req-trace-matrix-prompt-generator/** text eol=lf
+.claude/skills/req-trace-matrix-prompt-generator/** text eol=lf
+packages/bmad-speckit/_bmad/skills/req-trace-matrix-prompt-generator/** text eol=lf
 # Requirements-contract projection hashes bind raw bytes across all published surfaces.
 _bmad/shared/requirements-contract/** text eol=lf
 .claude/shared/requirements-contract/** text eol=lf

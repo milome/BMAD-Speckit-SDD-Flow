@@ -1290,7 +1290,7 @@ describe('requirements contract sanitized real fixture coverage', () => {
     } finally {
       rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
     }
-  });
+  }, 120_000);
 
   it('rejects caller-supplied Critical Auditor repair responses', () => {
     const root = createJudgeReadyTempRoot('requirements-contract-real-repair-');

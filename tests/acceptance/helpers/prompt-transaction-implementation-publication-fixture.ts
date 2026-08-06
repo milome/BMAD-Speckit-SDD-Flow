@@ -11,6 +11,7 @@ import { prepareAuditDispatchRuntime } from './prompt-transaction-audit-dispatch
 import { compiledPromptRunnerFor } from './prompt-transaction-compiled-runner-fixture';
 import {
   materializePromptPublicationFixture,
+  setPromptPublicationGoalAvailability,
   setPromptPublicationReadiness,
   writeJson,
 } from './prompt-transaction-publication-fixture';
@@ -138,10 +139,14 @@ export async function publishImplementationPromptFixture(options: {
     fixture: PublicationFixture
   ) => Record<string, unknown> | void;
   fixture?: PublicationFixture;
+  goalMode?: 'native_goal_document_ref' | 'direct_prompt';
   prepareRuntime?: boolean;
 } = {}) {
   const fixture = options.fixture ?? materializePromptPublicationFixture();
   fixture.options.currentDispatchPointer = canonicalCurrentDispatchPointerPath(fixture.root);
+  if (options.goalMode === 'direct_prompt') {
+    setPromptPublicationGoalAvailability(fixture, false);
+  }
   options.configureFixture?.(fixture);
   if (options.prepareRuntime !== false) {
     prepareAuditDispatchRuntime(fixture, {
@@ -190,7 +195,7 @@ export async function publishImplementationPromptFixture(options: {
     return true;
   });
   const runCompiledPrompt = compiledPromptRunnerFor(fixture, {
-    goalMode: 'native_goal_document_ref',
+    goalMode: options.goalMode ?? 'native_goal_document_ref',
     extraPacket: {
       packetId: fixture.identity.implementationAttemptId,
     },
@@ -220,8 +225,11 @@ export async function publishImplementationPromptFixture(options: {
     string,
     unknown
   >;
-  const goalCommandText = String(continuationDirective.directive || '');
-  if (!goalCommandText) {
+  const goalCommandText = String(continuationDirective?.directive || '');
+  if (
+    (options.goalMode ?? 'native_goal_document_ref') === 'native_goal_document_ref' &&
+    !goalCommandText
+  ) {
     fixture.cleanup();
     throw new Error('implementation_prompt_publication_goal_command_missing');
   }
