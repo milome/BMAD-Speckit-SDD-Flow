@@ -13950,6 +13950,18 @@ function buildPreConfirmationImplementationConfirmationDraft(input: {
   const perMustTraceIds = perMustClosures.map((row) => row.traceId);
   const allEvidenceIds = perMustClosures.map((row) => row.evidenceId);
   const perMustAcceptanceIds = perMustClosures.flatMap((row) => [row.acceptanceId, row.e2eId]);
+  const perMustAssertionsForProjection = (
+    projectionKey: 'acceptanceId' | 'e2eId',
+    projectionId: string
+  ): Record<string, string> =>
+    Object.fromEntries(
+      perMustClosures
+        .filter((row) => row[projectionKey] === projectionId)
+        .map((row) => [
+          row.mustId,
+          row.sourceAuthority?.oracle || row.requirement.text,
+        ])
+    );
   const allFailureIds =
     sourceBusinessFailureRows.length > 0 ? sourceBusinessFailureRows.map((row) => row.id) : [];
   const allEdgeIds = perMustClosures.map((row) => row.edgeId);
@@ -14919,6 +14931,7 @@ function buildPreConfirmationImplementationConfirmationDraft(input: {
         expectedPreImplementationState: 'expected_red',
         redProofPlan: `Before implementation, ${row.mustId} acceptance must fail without source-backed product behavior and packet-backed proof surfaces.`,
         oracle: row.sourceAuthority?.oracle || row.requirement.text,
+        perMustAssertions: perMustAssertionsForProjection('acceptanceId', row.acceptanceId),
         positiveControl: true,
         negativeControls: negativeRequirementIds,
         mockOnly: false,
@@ -14986,6 +14999,7 @@ function buildPreConfirmationImplementationConfirmationDraft(input: {
       expectedPreImplementationState: 'expected_red',
       redProofPlan: `Before implementation, ${row.mustId} E2E proof must be red and cannot be satisfied by renderer smoke output.`,
       oracle: row.sourceAuthority?.oracle || row.requirement.text,
+      perMustAssertions: perMustAssertionsForProjection('e2eId', row.e2eId),
       positiveControl: true,
       negativeControls: negativeRequirementIds,
       mockOnly: false,

@@ -401,11 +401,17 @@ describe('production confirmation projection facade', () => {
     confirmation.e2eScenarios = [];
     confirmation.businessViews = [];
     confirmation.architectureImpacts = [];
+    (confirmation.acceptanceTests as Record<string, unknown>[])[0].perMustAssertions = {
+      'MUST-001': 'The primary source acceptance independently verifies MUST-001.',
+    };
     confirmation.acceptanceTests = [
       ...(confirmation.acceptanceTests as Record<string, unknown>[]),
       {
         ...(confirmation.acceptanceTests as Record<string, unknown>[])[0],
         oracle: 'A second proof surface remains bound to the same source acceptance.',
+        perMustAssertions: {
+          'MUST-002': 'The shared source acceptance independently verifies MUST-002.',
+        },
       },
     ];
 
@@ -458,6 +464,10 @@ describe('production confirmation projection facade', () => {
     expect(result.confirmation.acceptanceTests[0].oracle).toContain(
       'A second proof surface remains bound to the same source acceptance.'
     );
+    expect(result.confirmation.acceptanceTests[0].perMustAssertions).toEqual({
+      'MUST-001': 'The primary source acceptance independently verifies MUST-001.',
+      'MUST-002': 'The shared source acceptance independently verifies MUST-002.',
+    });
     expect(result.projectionReceipt).toMatchObject({
       stagingOnlyFields: expect.arrayContaining([
         'outOfScope',

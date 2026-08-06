@@ -207,6 +207,26 @@ function mergeUniqueArrayValues(left: unknown[], right: unknown[]): unknown[] {
   return merged;
 }
 
+function mergePerMustAssertions(
+  left: Record<string, unknown>,
+  right: Record<string, unknown>
+): Record<string, unknown> {
+  const merged = { ...left };
+  for (const [mustRef, nextAssertion] of Object.entries(right)) {
+    const previousAssertion = merged[mustRef];
+    if (previousAssertion === undefined || previousAssertion === null) {
+      merged[mustRef] = nextAssertion;
+    } else if (
+      typeof previousAssertion === 'string' &&
+      typeof nextAssertion === 'string' &&
+      previousAssertion !== nextAssertion
+    ) {
+      merged[mustRef] = `${previousAssertion} | ${nextAssertion}`;
+    }
+  }
+  return merged;
+}
+
 function mergeDuplicateRows(value: unknown): unknown {
   if (!Array.isArray(value)) return value;
   const rows = value.filter((row) => row && typeof row === 'object' && !Array.isArray(row));
@@ -226,6 +246,19 @@ function mergeDuplicateRows(value: unknown): unknown {
       const previousValue = existing[key];
       if (Array.isArray(previousValue) && Array.isArray(nextValue)) {
         existing[key] = mergeUniqueArrayValues(previousValue, nextValue);
+      } else if (
+        key === 'perMustAssertions' &&
+        previousValue &&
+        typeof previousValue === 'object' &&
+        !Array.isArray(previousValue) &&
+        nextValue &&
+        typeof nextValue === 'object' &&
+        !Array.isArray(nextValue)
+      ) {
+        existing[key] = mergePerMustAssertions(
+          previousValue as Record<string, unknown>,
+          nextValue as Record<string, unknown>
+        );
       } else if (
         MERGEABLE_TEXT_FIELDS.has(key) &&
         typeof previousValue === 'string' &&

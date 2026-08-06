@@ -1,9 +1,11 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { runMainAgentPreConfirmationDrilldown } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import {
   artifacts,
   cleanCriticalAuditorRound,
+  createTestAuthoringExecutionOptions,
   createMinimalConsumerRequirementDescriptor,
   createTempRoot,
   expectSourceHashUnchanged,
@@ -232,10 +234,16 @@ describe('requirements contract staging transaction', () => {
       const beforeHash = sha256File(source);
       let changed = false;
 
-      const result = runAuthoring(root, source, 'REQ-STAGING-SOURCE-RACE', {
+      const recordId = 'REQ-STAGING-SOURCE-RACE';
+      const result = runMainAgentPreConfirmationDrilldown(root, {
+        ...createTestAuthoringExecutionOptions(recordId),
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
         targetPath: 'vnpy/chart/multi_timeframe_widget.py',
         requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
-        criticalAuditorRound: (input) => {
+        get maxCriticalAuditorRounds() {
+          // Production reads this after freezing the transaction's source hash.
           if (!changed) {
             writeFileSync(
               source,
@@ -244,7 +252,7 @@ describe('requirements contract staging transaction', () => {
             );
             changed = true;
           }
-          return cleanCriticalAuditorRound(input);
+          return 3;
         },
       });
       const afterHash = sha256File(source);

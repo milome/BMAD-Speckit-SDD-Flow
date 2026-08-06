@@ -785,6 +785,16 @@ function withGovernedCriticalAuditorFixture<T>(
   return result;
 }
 
+export function runPreConfirmationWithGovernedCriticalAuditorFixture(
+  root: string,
+  seed: string,
+  options: Record<string, unknown>
+) {
+  return withGovernedCriticalAuditorFixture(root, seed, options, (forwardedOptions) =>
+    runMainAgentPreConfirmationDrilldown(root, forwardedOptions)
+  );
+}
+
 export function runAuthoring(
   root: string,
   source: string,

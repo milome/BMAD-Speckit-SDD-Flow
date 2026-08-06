@@ -25,6 +25,7 @@ import {
   artifacts,
   cleanCriticalAuditorRound,
   readJson,
+  runPreConfirmationWithGovernedCriticalAuditorFixture,
 } from './helpers/requirements-contract-authoring-fixture';
 import {
   buildInteractionSourceRoots,
@@ -699,7 +700,7 @@ describe('production interaction candidate extraction', () => {
       expect(outOfScopeId).toMatch(/^OUT-/u);
       const source = writeProductionInteractionSource(root, descriptor);
       const result = withSuppressedStderr(() =>
-        runMainAgentPreConfirmationDrilldown(root, {
+        runPreConfirmationWithGovernedCriticalAuditorFixture(root, descriptor.refs.recordId, {
           source: source.sourcePath,
           recordId: descriptor.refs.recordId,
           requirementSetId: descriptor.refs.requirementSetId,
