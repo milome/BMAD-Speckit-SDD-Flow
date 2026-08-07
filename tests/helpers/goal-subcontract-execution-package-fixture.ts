@@ -41,7 +41,10 @@ export function git(root: string, args: string[]): string {
   return result.stdout.trim();
 }
 
-export function createFixture(requirementRecordBinding?: object) {
+export function createFixture(
+  requirementRecordBinding?: object,
+  options: { canonicalPartitionIds?: boolean } = {}
+) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'goal-subcontract-package-'));
   roots.push(root);
   git(root, ['init', '--quiet']);
@@ -53,9 +56,12 @@ export function createFixture(requirementRecordBinding?: object) {
     'goal.md',
     '# Frozen Goal\n\ncontractMode: frozen\nrewritePolicy: forbidden\n'
   );
+  const partitionIds = options.canonicalPartitionIds
+    ? [`partition-${'1'.repeat(64)}`, `partition-${'2'.repeat(64)}`]
+    : ['AUTH-01', 'AUTH-02'];
   const childSpecs = [
-    ['AUTH-01', 'Refresh expired access tokens', 'src/auth/refresh.ts'],
-    ['AUTH-02', 'Revoke rotated refresh tokens', 'src/auth/revoke.ts'],
+    [partitionIds[0], 'Refresh expired access tokens', 'src/auth/refresh.ts'],
+    [partitionIds[1], 'Revoke rotated refresh tokens', 'src/auth/revoke.ts'],
   ] as const;
   const children = childSpecs.map(([partitionId, title, ownedPath], index) => {
     const relativePath = `contracts/${partitionId}.md`;
@@ -75,14 +81,44 @@ export function createFixture(requirementRecordBinding?: object) {
     additionalProperties: false,
   });
   const closureSchemaPath = writeJson(root, 'schemas/closure.json', {
-    type: 'object',
-    required: ['partitionId', 'childContractHash', 'decision'],
-    properties: {
-      partitionId: { type: 'string', minLength: 1 },
-      childContractHash: { type: 'string', pattern: '^sha256:[a-f0-9]{64}$' },
-      decision: { const: 'pass' },
-    },
-    additionalProperties: false,
+    oneOf: [
+      {
+        type: 'object',
+        required: ['partitionId', 'childContractHash', 'decision'],
+        properties: {
+          partitionId: { type: 'string', minLength: 1 },
+          childContractHash: { type: 'string', pattern: '^sha256:[a-f0-9]{64}$' },
+          decision: { const: 'pass' },
+        },
+        additionalProperties: false,
+      },
+      {
+        type: 'object',
+        required: [
+          'schemaVersion',
+          'attemptId',
+          'partitionId',
+          'childContractHash',
+          'predecessorClosureReceiptHashes',
+          'decision',
+          'receiptHash',
+        ],
+        properties: {
+          schemaVersion: { const: 'goal-contract-subcontract-closure-receipt/v1' },
+          attemptId: { type: 'string', minLength: 1 },
+          partitionId: { type: 'string', minLength: 1 },
+          childContractHash: { type: 'string', pattern: '^sha256:[a-f0-9]{64}$' },
+          predecessorClosureReceiptHashes: {
+            type: 'array',
+            uniqueItems: true,
+            items: { type: 'string', pattern: '^sha256:[a-f0-9]{64}$' },
+          },
+          decision: { const: 'pass' },
+          receiptHash: { type: 'string', pattern: '^sha256:[a-f0-9]{64}$' },
+        },
+        additionalProperties: false,
+      },
+    ],
   });
   const manifest = {
     schemaVersion: 'goal-contract-partition-manifest/v2',

@@ -15,12 +15,11 @@ import {
 
 const require = createRequire(import.meta.url);
 const {
+  auditCompletedCampaign,
   auditCompletedChild,
   prepareCompletedCampaignAuditContext,
 } = require('../../_bmad/skills/goal-subcontract-execution-package-generator/scripts/audit-completed-campaign.js');
-const buildExecutionPackageModule = require(
-  '../../_bmad/skills/goal-subcontract-execution-package-generator/scripts/build-execution-package.js'
-);
+const buildExecutionPackageModule = require('../../_bmad/skills/goal-subcontract-execution-package-generator/scripts/build-execution-package.js');
 
 afterEach(cleanupFixtures);
 
@@ -28,9 +27,14 @@ function audit(
   packageRoot: string,
   artifactsPath: string,
   out: string,
-  expectedPackageManifestHash: string
+  expectedPackageManifestHash: string,
+  repairTrust?: {
+    repairAuthorityHash: string;
+    repairAuthorityPath: string;
+    finalValidationHash: string;
+  }
 ) {
-  return runScript('audit-completed-campaign.js', [
+  const args = [
     '--package',
     packageRoot,
     '--expected-package-manifest-hash',
@@ -40,7 +44,20 @@ function audit(
     '--out',
     out,
     '--json',
-  ]);
+  ];
+  if (repairTrust) {
+    args.push(
+      '--expected-repair-authority-artifact-hash',
+      repairTrust.repairAuthorityHash,
+      '--expected-repair-authority-path',
+      repairTrust.repairAuthorityPath,
+      '--expected-final-validation-artifact-hash',
+      repairTrust.finalValidationHash,
+      '--expected-final-validation-command-ids',
+      'CMD-MA-GS-T09-05,CMD-MA-GS-T09-08'
+    );
+  }
+  return runScript('audit-completed-campaign.js', args);
 }
 
 function readArtifacts(artifactsPath: string) {
@@ -49,6 +66,303 @@ function readArtifacts(artifactsPath: string) {
 
 function writeArtifacts(artifactsPath: string, artifacts: unknown): void {
   fs.writeFileSync(artifactsPath, `${JSON.stringify(artifacts, null, 2)}\n`, 'utf8');
+}
+
+function signedReceipt(core: Record<string, unknown>) {
+  return {
+    ...core,
+    receiptHash: buildExecutionPackageModule.sha256(
+      JSON.stringify(JSON.parse(buildExecutionPackageModule.stableJson(core)))
+    ),
+  };
+}
+
+function writeBoundJson(root: string, relativePath: string, value: unknown) {
+  const filePath = path.join(root, relativePath);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  writeArtifacts(filePath, value);
+  return { path: relativePath, hash: hashFile(filePath) };
+}
+
+function prepareRepairAuditScenario() {
+  const fixture = prepareCampaign({ canonicalPartitionIds: true });
+  const artifacts = readArtifacts(fixture.artifactsPath);
+  const packageManifest = readArtifacts(path.join(fixture.packageA, 'package-manifest.json'));
+  const preservedResult = artifacts.childResults[0];
+  const repairedResult = artifacts.childResults[1];
+  const repairedChild = fixture.children[1];
+
+  git(fixture.root, ['reset', '--hard', preservedResult.commit.hash]);
+  git(fixture.root, [
+    'commit',
+    '--quiet',
+    '--allow-empty',
+    '-m',
+    'chore(goal-campaign): authorize bounded repair replay',
+  ]);
+  const amendmentCommitHash = git(fixture.root, ['rev-parse', 'HEAD']);
+  fs.appendFileSync(
+    path.join(fixture.root, repairedChild.ownedPath),
+    `export const repaired = '${repairedChild.partitionId}';\n`,
+    'utf8'
+  );
+  git(fixture.root, ['add', '--', repairedChild.ownedPath]);
+  git(fixture.root, [
+    'commit',
+    '--quiet',
+    '-m',
+    repairedResult.commit.subject,
+    '-m',
+    [
+      'Functional-Outcome: 刷新凭据轮换后立即撤销旧刷新令牌',
+      'Affected-Scope: authentication refresh flow',
+      `Child-Contract: ${repairedChild.partitionId}`,
+      `Contract-Hash: ${repairedChild.hash}`,
+      `Evidence: ${repairedResult.evidence.path}#${repairedResult.evidence.hash}`,
+      `Validation: CMD-${repairedChild.partitionId}`,
+    ].join('\n'),
+  ]);
+  const repairedCommitHash = git(fixture.root, ['rev-parse', 'HEAD']);
+  repairedResult.commit = {
+    hash: repairedCommitHash,
+    parentHash: amendmentCommitHash,
+    treeHash: git(fixture.root, ['rev-parse', `${repairedCommitHash}^{tree}`]),
+    subject: repairedResult.commit.subject,
+    changedPaths: [repairedChild.ownedPath],
+  };
+
+  git(fixture.root, ['reset', '--hard', amendmentCommitHash]);
+  fs.appendFileSync(
+    path.join(fixture.root, repairedChild.ownedPath),
+    `export const repaired = '${repairedChild.partitionId}';\n`,
+    'utf8'
+  );
+  git(fixture.root, ['add', '--', repairedChild.ownedPath]);
+  git(fixture.root, [
+    'commit',
+    '--quiet',
+    '-m',
+    'fix(auth): integrate repaired child output into validated head',
+  ]);
+  const finalHead = git(fixture.root, ['rev-parse', 'HEAD']);
+  const baseAttemptId = 'attempt-campaign-audit-001';
+  const repairAttemptId = 'repair-attempt-campaign-audit-001';
+  const preservedClosure = signedReceipt({
+    schemaVersion: 'goal-contract-subcontract-closure-receipt/v1',
+    attemptId: baseAttemptId,
+    partitionId: preservedResult.partitionId,
+    childContractHash: fixture.children[0].hash,
+    predecessorClosureReceiptHashes: [],
+    decision: 'pass',
+  });
+  const repairedClosure = signedReceipt({
+    schemaVersion: 'goal-contract-subcontract-closure-receipt/v1',
+    attemptId: repairAttemptId,
+    partitionId: repairedResult.partitionId,
+    childContractHash: repairedChild.hash,
+    predecessorClosureReceiptHashes: [preservedClosure.receiptHash],
+    decision: 'pass',
+  });
+  const effectiveClosureReceipts = [
+    writeBoundJson(
+      fixture.root,
+      'campaign-evidence/control-plane/base/AUTH-01.receipt.json',
+      preservedClosure
+    ),
+    writeBoundJson(
+      fixture.root,
+      'campaign-evidence/control-plane/repair/AUTH-02.receipt.json',
+      repairedClosure
+    ),
+  ];
+  const campaignActivationHash = `sha256:${'a'.repeat(64)}`;
+  const repairAuthorization = {
+    authorizerIdentity: 'main-agent:controlled-repair',
+    authorizationKind: 'main_agent_controlled_dispatch',
+    authorizationSourceHash: `sha256:${'b'.repeat(64)}`,
+    authorizationStatementHash: `sha256:${'c'.repeat(64)}`,
+  };
+  const repairAuthority = signedReceipt({
+    schemaVersion: 'goal-contract-campaign-repair-authority-receipt/v1',
+    campaignId: `goal-campaign-${campaignActivationHash.slice(7)}`,
+    campaignActivationHash,
+    baseActivationReceiptHash: `sha256:${'d'.repeat(64)}`,
+    baseAttemptId,
+    repairAttemptId,
+    basePartitionManifestDocumentHash: packageManifest.partitionManifest.hash,
+    partitionManifestHash: packageManifest.partitionManifest.partitionManifestHash,
+    partitionPlanHash: `sha256:${'e'.repeat(64)}`,
+    partitionSetHash: `sha256:${'f'.repeat(64)}`,
+    sourceCompositionPolicyHash: `sha256:${'1'.repeat(64)}`,
+    sourceAuthorityBundleHash: `sha256:${'2'.repeat(64)}`,
+    baselineAuthority: { sourceCompositionMode: 'single_source' },
+    currentAuthority: { sourceCompositionMode: 'single_source' },
+    changedPaths: [repairedChild.ownedPath],
+    campaignWide: false,
+    changedAuthorityFields: [],
+    invalidationDecision: 'selective_invalidation',
+    preservedPartitionIds: [preservedResult.partitionId],
+    invalidatedPartitionIds: [repairedResult.partitionId],
+    baseChildReleaseBindings: fixture.children.map((child, index) => ({
+      ordinal: index + 1,
+      partitionId: child.partitionId,
+      childReleaseReceiptHash: `sha256:${String(index + 3).repeat(64)}`,
+    })),
+    preservedClosureBindings: [
+      {
+        ordinal: 1,
+        partitionId: preservedResult.partitionId,
+        closureReceiptHash: preservedClosure.receiptHash,
+      },
+    ],
+    invalidatedLeaseBindings: [
+      {
+        ordinal: 2,
+        partitionId: repairedResult.partitionId,
+        leaseReceiptHash: `sha256:${'6'.repeat(64)}`,
+      },
+    ],
+    invalidatedClosureBindings: [
+      {
+        ordinal: 2,
+        partitionId: repairedResult.partitionId,
+        closureReceiptHash: repairedClosure.receiptHash,
+        subcontractEvidenceHash: repairedResult.evidence.hash,
+      },
+    ],
+    governedPathAdditions: [],
+    repairAuthorization,
+    repairAuthorizationHash: buildExecutionPackageModule.sha256(
+      JSON.stringify(JSON.parse(buildExecutionPackageModule.stableJson(repairAuthorization)))
+    ),
+    authorizationCount: 1,
+    modelInvocationCount: 0,
+    createdAt: '2026-08-07T00:00:00.000Z',
+    decision: 'pass',
+  });
+  const repairAuthorityBinding = writeBoundJson(
+    fixture.root,
+    `campaign-evidence/control-plane/campaigns/${repairAuthority.campaignId}/repair/authority.receipt.json`,
+    repairAuthority
+  );
+  const chainAnchor = signedReceipt({
+    schemaVersion: 'goal-subcontract-repair-chain-anchor/v1',
+    repairAttemptId,
+    amendmentCommitHash,
+    parentCommitHash: preservedResult.commit.hash,
+    treeHash: git(fixture.root, ['rev-parse', `${amendmentCommitHash}^{tree}`]),
+    subject: git(fixture.root, ['show', '-s', '--format=%s', amendmentCommitHash]),
+    repairAuthorityReceiptHash: repairAuthority.receiptHash,
+    decision: 'pass',
+  });
+  const chainAnchorBinding = writeBoundJson(
+    fixture.root,
+    'campaign-evidence/repair-chain-anchor.receipt.json',
+    chainAnchor
+  );
+  const repairClosureSetHash = buildExecutionPackageModule.sha256(
+    buildExecutionPackageModule.stableJson([
+      {
+        partitionId: preservedResult.partitionId,
+        attemptId: baseAttemptId,
+        path: effectiveClosureReceipts[0].path,
+        closureReceiptHash: preservedClosure.receiptHash,
+        artifactHash: effectiveClosureReceipts[0].hash,
+      },
+      {
+        partitionId: repairedResult.partitionId,
+        attemptId: repairAttemptId,
+        path: effectiveClosureReceipts[1].path,
+        closureReceiptHash: repairedClosure.receiptHash,
+        artifactHash: effectiveClosureReceipts[1].hash,
+      },
+    ])
+  );
+  const ownedPathBindings = fixture.children
+    .map((child) => ({
+      path: child.ownedPath,
+      blobHash: git(fixture.root, ['rev-parse', `${finalHead}:${child.ownedPath}`]),
+    }))
+    .sort((left, right) => left.path.localeCompare(right.path));
+  const ownedPathSetHash = buildExecutionPackageModule.sha256(
+    buildExecutionPackageModule.stableJson(ownedPathBindings)
+  );
+  const postChildCommitHashes = [finalHead];
+  const postChildCommitSetHash = buildExecutionPackageModule.sha256(
+    buildExecutionPackageModule.stableJson(postChildCommitHashes)
+  );
+  const validationCommands = [
+    {
+      id: 'CMD-MA-GS-T09-05',
+      schemaVersion: 'ma-gs-t09-05-attempt/v1',
+    },
+    {
+      id: 'CMD-MA-GS-T09-08',
+      schemaVersion: 'ma-gs-t09-08-attempt/v1',
+    },
+  ];
+  const validationEvidence = validationCommands.map(({ id, schemaVersion }) =>
+    writeBoundJson(fixture.root, `campaign-evidence/final-validation-${id.toLowerCase()}.json`, {
+      schemaVersion,
+      taskId: 'MA-GS-T09',
+      commandId: id,
+      boundHead: finalHead,
+      decision: 'pass',
+    })
+  );
+  const finalValidationBinding = writeBoundJson(
+    fixture.root,
+    'campaign-evidence/final-validation.receipt.json',
+    signedReceipt({
+      schemaVersion: 'goal-subcontract-repair-final-validation/v1',
+      repairAttemptId,
+      repairAuthorityReceiptHash: repairAuthority.receiptHash,
+      repairClosureSetHash,
+      boundHead: finalHead,
+      boundTree: git(fixture.root, ['rev-parse', `${finalHead}^{tree}`]),
+      unreachableChildCommitHashes: [repairedCommitHash],
+      parentDiscontinuities: [],
+      ownedPathBindings,
+      ownedPathSetHash,
+      postChildCommitHashes,
+      postChildCommitSetHash,
+      validationResults: [
+        {
+          id: validationCommands[0].id,
+          evidenceSchemaVersion: validationCommands[0].schemaVersion,
+          status: 'pass',
+          evidence: validationEvidence[0],
+        },
+        {
+          id: validationCommands[1].id,
+          evidenceSchemaVersion: validationCommands[1].schemaVersion,
+          status: 'pass',
+          evidence: validationEvidence[1],
+        },
+      ],
+      repositoryState: { head: finalHead, stagedCount: 0 },
+      decision: 'pass',
+    })
+  );
+  artifacts.repairProvenance = {
+    repairAuthority: repairAuthorityBinding,
+    chainAnchor: chainAnchorBinding,
+    effectiveClosureReceipts,
+    finalValidation: finalValidationBinding,
+  };
+  writeArtifacts(fixture.artifactsPath, artifacts);
+  return {
+    fixture,
+    artifacts,
+    baseAttemptId,
+    repairAttemptId,
+    repairAuthority,
+    repairAuthorityBinding,
+    effectiveClosureReceipts,
+    finalValidationBinding,
+    finalHead,
+    repairedCommitHash,
+  };
 }
 
 describe('goal subcontract completed campaign audit', () => {
@@ -92,10 +406,7 @@ describe('goal subcontract completed campaign audit', () => {
       fixture.packageA,
       fixture.packageManifestHash
     );
-    const closurePath = path.join(
-      fixture.root,
-      artifacts.childResults[0].closure.path
-    );
+    const closurePath = path.join(fixture.root, artifacts.childResults[0].closure.path);
     writeArtifacts(closurePath, {
       partitionId: 'AUTH-01',
       contractHash: fixture.children[0].hash,
@@ -217,6 +528,362 @@ describe('goal subcontract completed campaign audit', () => {
     );
     expect(report.status).toBe('done');
     expect(report.requirementRecordBinding.recordId).toBe('RR-42');
+  });
+
+  it('audits a repaired suffix from an authorized repair chain anchor', () => {
+    const {
+      fixture,
+      repairAttemptId,
+      repairAuthority,
+      repairAuthorityBinding,
+      finalValidationBinding,
+      finalHead,
+      repairedCommitHash,
+    } = prepareRepairAuditScenario();
+
+    expect(git(fixture.root, ['branch', '--contains', repairedCommitHash])).toBe('');
+    expect(git(fixture.root, ['rev-parse', 'HEAD'])).toBe(finalHead);
+
+    const result = audit(
+      fixture.packageA,
+      fixture.artifactsPath,
+      fixture.finalOut,
+      fixture.packageManifestHash,
+      {
+        repairAuthorityHash: repairAuthorityBinding.hash,
+        repairAuthorityPath: repairAuthorityBinding.path,
+        finalValidationHash: finalValidationBinding.hash,
+      }
+    );
+
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    const report = readArtifacts(path.join(fixture.finalOut, 'task-report.json'));
+    const finalValidation = readArtifacts(path.join(fixture.root, finalValidationBinding.path));
+    expect(report).toMatchObject({
+      repairAttemptId,
+      repairAuthorityReceiptHash: repairAuthority.receiptHash,
+      repairAuthorityArtifactHash: repairAuthorityBinding.hash,
+      finalValidationHead: finalHead,
+      finalValidationReceiptHash: finalValidation.receiptHash,
+      finalValidationArtifactHash: finalValidationBinding.hash,
+      aggregateAuditDecision: 'pass',
+    });
+    expect(report.repairClosureSetHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
+  });
+
+  it('rejects a repaired closure set with a stale predecessor receipt hash', () => {
+    const {
+      fixture,
+      artifacts,
+      effectiveClosureReceipts,
+      repairAuthorityBinding,
+      finalValidationBinding,
+    } = prepareRepairAuditScenario();
+    const repairedClosurePath = path.join(fixture.root, effectiveClosureReceipts[1].path);
+    const repairedClosure = readArtifacts(repairedClosurePath);
+    const staleClosure = signedReceipt({
+      ...Object.fromEntries(
+        Object.entries(repairedClosure).filter(([key]) => key !== 'receiptHash')
+      ),
+      predecessorClosureReceiptHashes: [`sha256:${'f'.repeat(64)}`],
+    });
+    writeArtifacts(repairedClosurePath, staleClosure);
+    artifacts.repairProvenance.effectiveClosureReceipts[1].hash = hashFile(repairedClosurePath);
+    writeArtifacts(fixture.artifactsPath, artifacts);
+
+    const result = audit(
+      fixture.packageA,
+      fixture.artifactsPath,
+      fixture.finalOut,
+      fixture.packageManifestHash,
+      {
+        repairAuthorityHash: repairAuthorityBinding.hash,
+        repairAuthorityPath: repairAuthorityBinding.path,
+        finalValidationHash: finalValidationBinding.hash,
+      }
+    );
+
+    expect(result.status).toBe(1);
+    expect(JSON.parse(result.stdout).failureClass).toBe(
+      'campaign_repair_predecessor_closure_stale'
+    );
+  });
+
+  it('rejects repair provenance when final validation does not bind current HEAD', () => {
+    const { fixture, artifacts, repairAuthorityBinding, finalValidationBinding } =
+      prepareRepairAuditScenario();
+    git(fixture.root, [
+      'commit',
+      '--quiet',
+      '--allow-empty',
+      '-m',
+      'chore(goal-campaign): advance beyond validated head',
+    ]);
+    artifacts.repairProvenance.finalValidation = finalValidationBinding;
+    writeArtifacts(fixture.artifactsPath, artifacts);
+
+    const result = audit(
+      fixture.packageA,
+      fixture.artifactsPath,
+      fixture.finalOut,
+      fixture.packageManifestHash,
+      {
+        repairAuthorityHash: repairAuthorityBinding.hash,
+        repairAuthorityPath: repairAuthorityBinding.path,
+        finalValidationHash: finalValidationBinding.hash,
+      }
+    );
+
+    expect(result.status).toBe(1);
+    expect(JSON.parse(result.stdout).failureClass).toBe('campaign_repair_final_validation_stale');
+  });
+
+  it('rejects repair artifacts without external trust-root hashes', () => {
+    const { fixture } = prepareRepairAuditScenario();
+
+    const result = audit(
+      fixture.packageA,
+      fixture.artifactsPath,
+      fixture.finalOut,
+      fixture.packageManifestHash
+    );
+
+    expect(result.status).toBe(1);
+    expect(JSON.parse(result.stdout).failureClass).toBe('campaign_repair_trust_binding_missing');
+  });
+
+  it('rejects repair artifacts that do not match the external trust-root hashes', () => {
+    const { fixture, repairAuthorityBinding } = prepareRepairAuditScenario();
+
+    const result = audit(
+      fixture.packageA,
+      fixture.artifactsPath,
+      fixture.finalOut,
+      fixture.packageManifestHash,
+      {
+        repairAuthorityHash: repairAuthorityBinding.hash,
+        repairAuthorityPath: repairAuthorityBinding.path,
+        finalValidationHash: `sha256:${'f'.repeat(64)}`,
+      }
+    );
+
+    expect(result.status).toBe(1);
+    expect(JSON.parse(result.stdout).failureClass).toBe('campaign_repair_trust_binding_mismatch');
+  });
+
+  it('rejects a repair authority outside its canonical campaign path', () => {
+    const { fixture, artifacts, repairAuthority, finalValidationBinding } =
+      prepareRepairAuditScenario();
+    const noncanonicalBinding = writeBoundJson(
+      fixture.root,
+      'campaign-evidence/noncanonical-repair-authority.receipt.json',
+      repairAuthority
+    );
+    artifacts.repairProvenance.repairAuthority = noncanonicalBinding;
+    writeArtifacts(fixture.artifactsPath, artifacts);
+
+    const result = audit(
+      fixture.packageA,
+      fixture.artifactsPath,
+      fixture.finalOut,
+      fixture.packageManifestHash,
+      {
+        repairAuthorityHash: noncanonicalBinding.hash,
+        repairAuthorityPath: noncanonicalBinding.path,
+        finalValidationHash: finalValidationBinding.hash,
+      }
+    );
+
+    expect(result.status).toBe(1);
+    expect(JSON.parse(result.stdout).failureClass).toBe('campaign_repair_authority_path_invalid');
+  });
+
+  it('rejects repair authority that does not satisfy the canonical schema', () => {
+    const { fixture, artifacts, repairAuthority, repairAuthorityBinding, finalValidationBinding } =
+      prepareRepairAuditScenario();
+    const authorityPath = path.join(fixture.root, repairAuthorityBinding.path);
+    const invalidAuthority = signedReceipt(
+      Object.fromEntries(
+        Object.entries(repairAuthority).filter(
+          ([key]) => key !== 'campaignActivationHash' && key !== 'receiptHash'
+        )
+      )
+    );
+    writeArtifacts(authorityPath, invalidAuthority);
+    artifacts.repairProvenance.repairAuthority.hash = hashFile(authorityPath);
+    writeArtifacts(fixture.artifactsPath, artifacts);
+
+    const result = audit(
+      fixture.packageA,
+      fixture.artifactsPath,
+      fixture.finalOut,
+      fixture.packageManifestHash,
+      {
+        repairAuthorityHash: hashFile(authorityPath),
+        repairAuthorityPath: repairAuthorityBinding.path,
+        finalValidationHash: finalValidationBinding.hash,
+      }
+    );
+
+    expect(result.status).toBe(1);
+    expect(JSON.parse(result.stdout).failureClass).toBe('campaign_repair_authority_invalid');
+  });
+
+  it('rejects reused evidence across final validation commands', () => {
+    const { fixture, artifacts, repairAuthorityBinding, finalValidationBinding } =
+      prepareRepairAuditScenario();
+    const finalValidationPath = path.join(fixture.root, finalValidationBinding.path);
+    const finalValidation = readArtifacts(finalValidationPath);
+    finalValidation.validationResults[1].evidence = finalValidation.validationResults[0].evidence;
+    const reboundFinalValidation = signedReceipt(
+      Object.fromEntries(Object.entries(finalValidation).filter(([key]) => key !== 'receiptHash'))
+    );
+    writeArtifacts(finalValidationPath, reboundFinalValidation);
+    artifacts.repairProvenance.finalValidation.hash = hashFile(finalValidationPath);
+    writeArtifacts(fixture.artifactsPath, artifacts);
+
+    const result = audit(
+      fixture.packageA,
+      fixture.artifactsPath,
+      fixture.finalOut,
+      fixture.packageManifestHash,
+      {
+        repairAuthorityHash: repairAuthorityBinding.hash,
+        repairAuthorityPath: repairAuthorityBinding.path,
+        finalValidationHash: hashFile(finalValidationPath),
+      }
+    );
+
+    expect(result.status).toBe(1);
+    expect(JSON.parse(result.stdout).failureClass).toBe('campaign_repair_final_validation_invalid');
+  });
+
+  it('rejects owned-path drift introduced immediately before publication', () => {
+    const { fixture, repairAuthorityBinding, finalValidationBinding } =
+      prepareRepairAuditScenario();
+
+    expect(() =>
+      auditCompletedCampaign({
+        packageRoot: fixture.packageA,
+        expectedPackageManifestHash: fixture.packageManifestHash,
+        artifactsPath: fixture.artifactsPath,
+        outputRoot: fixture.finalOut,
+        expectedRepairAuthorityArtifactHash: repairAuthorityBinding.hash,
+        expectedRepairAuthorityPath: repairAuthorityBinding.path,
+        expectedFinalValidationArtifactHash: finalValidationBinding.hash,
+        expectedValidationCommandIds: ['CMD-MA-GS-T09-05', 'CMD-MA-GS-T09-08'],
+        beforePublish: () => {
+          fs.appendFileSync(
+            path.join(fixture.root, fixture.children[0].ownedPath),
+            '\n// concurrent owned-path drift\n',
+            'utf8'
+          );
+        },
+      })
+    ).toThrow(
+      expect.objectContaining({
+        failureClass: 'campaign_repair_repository_state_changed',
+      })
+    );
+  });
+
+  it('rejects externally bound final validation with a stale self-hash', () => {
+    const { fixture, artifacts, repairAuthorityBinding, finalValidationBinding } =
+      prepareRepairAuditScenario();
+    const finalValidationPath = path.join(fixture.root, finalValidationBinding.path);
+    const finalValidation = readArtifacts(finalValidationPath);
+    finalValidation.boundTree = 'f'.repeat(40);
+    writeArtifacts(finalValidationPath, finalValidation);
+    artifacts.repairProvenance.finalValidation.hash = hashFile(finalValidationPath);
+    writeArtifacts(fixture.artifactsPath, artifacts);
+
+    const result = audit(
+      fixture.packageA,
+      fixture.artifactsPath,
+      fixture.finalOut,
+      fixture.packageManifestHash,
+      {
+        repairAuthorityHash: repairAuthorityBinding.hash,
+        repairAuthorityPath: repairAuthorityBinding.path,
+        finalValidationHash: hashFile(finalValidationPath),
+      }
+    );
+
+    expect(result.status).toBe(1);
+    expect(JSON.parse(result.stdout).failureClass).toBe(
+      'campaign_repair_final_validation_self_hash_mismatch'
+    );
+  });
+
+  it('rejects final validation evidence bound to a stale HEAD', () => {
+    const { fixture, artifacts, repairAuthorityBinding, finalValidationBinding } =
+      prepareRepairAuditScenario();
+    const finalValidationPath = path.join(fixture.root, finalValidationBinding.path);
+    const finalValidation = readArtifacts(finalValidationPath);
+    const evidenceBinding = finalValidation.validationResults[0].evidence;
+    const evidencePath = path.join(fixture.root, evidenceBinding.path);
+    const evidence = readArtifacts(evidencePath);
+    writeArtifacts(evidencePath, { ...evidence, boundHead: 'f'.repeat(40) });
+    finalValidation.validationResults[0].evidence.hash = hashFile(evidencePath);
+    const reboundFinalValidation = signedReceipt(
+      Object.fromEntries(Object.entries(finalValidation).filter(([key]) => key !== 'receiptHash'))
+    );
+    writeArtifacts(finalValidationPath, reboundFinalValidation);
+    artifacts.repairProvenance.finalValidation.hash = hashFile(finalValidationPath);
+    writeArtifacts(fixture.artifactsPath, artifacts);
+
+    const result = audit(
+      fixture.packageA,
+      fixture.artifactsPath,
+      fixture.finalOut,
+      fixture.packageManifestHash,
+      {
+        repairAuthorityHash: repairAuthorityBinding.hash,
+        repairAuthorityPath: repairAuthorityBinding.path,
+        finalValidationHash: hashFile(finalValidationPath),
+      }
+    );
+
+    expect(result.status).toBe(1);
+    expect(JSON.parse(result.stdout).failureClass).toBe('campaign_repair_final_validation_stale');
+  });
+
+  it('rejects final validation with stale audited owned-path blobs', () => {
+    const { fixture, artifacts, repairAuthorityBinding, finalValidationBinding } =
+      prepareRepairAuditScenario();
+    const finalValidationPath = path.join(fixture.root, finalValidationBinding.path);
+    const finalValidation = readArtifacts(finalValidationPath);
+    const staleOwnedPathBindings = finalValidation.ownedPathBindings.map(
+      (binding: { path: string; blobHash: string }, index: number) =>
+        index === 1 ? { ...binding, blobHash: 'f'.repeat(40) } : binding
+    );
+    const staleFinalValidation = signedReceipt({
+      ...Object.fromEntries(
+        Object.entries(finalValidation).filter(([key]) => key !== 'receiptHash')
+      ),
+      ownedPathBindings: staleOwnedPathBindings,
+      ownedPathSetHash: buildExecutionPackageModule.sha256(
+        buildExecutionPackageModule.stableJson(staleOwnedPathBindings)
+      ),
+    });
+    writeArtifacts(finalValidationPath, staleFinalValidation);
+    artifacts.repairProvenance.finalValidation.hash = hashFile(finalValidationPath);
+    writeArtifacts(fixture.artifactsPath, artifacts);
+
+    const result = audit(
+      fixture.packageA,
+      fixture.artifactsPath,
+      fixture.finalOut,
+      fixture.packageManifestHash,
+      {
+        repairAuthorityHash: repairAuthorityBinding.hash,
+        repairAuthorityPath: repairAuthorityBinding.path,
+        finalValidationHash: hashFile(finalValidationPath),
+      }
+    );
+
+    expect(result.status).toBe(1);
+    expect(JSON.parse(result.stdout).failureClass).toBe('campaign_repair_final_validation_stale');
   });
 
   it('requires an external trusted package-manifest hash for completed-campaign audit', () => {

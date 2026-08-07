@@ -24,6 +24,8 @@ const requiredFiles = [
   'schemas/execution-package-manifest.schema.json',
   'schemas/child-prompt-packet.schema.json',
   'schemas/campaign-task-report-binding.schema.json',
+  'schemas/campaign-repair-authority-receipt.schema.json',
+  'schemas/repair-final-validation-binding.schema.json',
   'assets/commit-message-template.txt',
 ];
 

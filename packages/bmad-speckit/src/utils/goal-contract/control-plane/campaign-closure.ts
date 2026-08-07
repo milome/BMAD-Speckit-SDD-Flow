@@ -29,6 +29,13 @@ const {
     ? './lifecycle-authority-binding.ts'
     : './lifecycle-authority-binding'
 );
+const {
+  verifyGoalCampaignRepairAuthority,
+} = require(
+  __filename.endsWith('.ts')
+    ? './campaign-repair-authority.ts'
+    : './campaign-repair-authority'
+);
 
 const ACTIVATION_SCHEMA =
   'goal-contract-campaign-activation-receipt.schema.json';
@@ -38,6 +45,8 @@ const COMPATIBILITY_SCHEMA =
   'goal-contract-dependency-compatibility-receipt.schema.json';
 const CAMPAIGN_CLOSURE_SCHEMA =
   'goal-contract-campaign-closure-receipt.schema.json';
+const REPAIR_AUTHORITY_SCHEMA =
+  'goal-contract-campaign-repair-authority-receipt.schema.json';
 const HASH_PATTERN = /^sha256:[0-9a-f]{64}$/u;
 
 // Schema validation establishes the shape before these dynamic records are consumed.
@@ -264,16 +273,73 @@ function classifyChildSet(
   return records;
 }
 
+function resolveRepairAuthority({
+  receiptRoot,
+  activation,
+  manifest,
+  candidate,
+  partitionManifestDocumentHash,
+}: {
+  receiptRoot: string;
+  activation: SchemaRecord;
+  manifest: SchemaRecord;
+  candidate: unknown;
+  partitionManifestDocumentHash: unknown;
+}): SchemaRecord | null {
+  if (candidate === undefined) return null;
+  if (!isRecord(candidate)) {
+    throw failure('goal_campaign_repair_authority_stale');
+  }
+  const repairAuthority = readMatchingReceipt({
+    targetPath: path.resolve(
+      receiptRoot,
+      'campaigns',
+      activation.campaignId,
+      'repair',
+      'authority.receipt.json'
+    ),
+    schemaName: REPAIR_AUTHORITY_SCHEMA,
+    candidate,
+    failureClass: 'goal_campaign_repair_authority_stale',
+  });
+  verifyGoalCampaignRepairAuthority(repairAuthority, {
+    baseActivationReceipt: activation,
+    partitionManifest: manifest,
+    expectedRepairAttemptId: repairAuthority.repairAttemptId,
+    partitionManifestDocumentHash: requireHash(
+      partitionManifestDocumentHash,
+      'partitionManifestDocumentHash'
+    ),
+  });
+  const expected = new Set(manifest.topologicalOrder);
+  const preserved = new Set(repairAuthority.preservedPartitionIds);
+  const invalidated = new Set(repairAuthority.invalidatedPartitionIds);
+  if (
+    preserved.size + invalidated.size !== expected.size ||
+    [...expected].some(
+      (partitionId) =>
+        preserved.has(partitionId) === invalidated.has(partitionId)
+    )
+  ) {
+    throw failure('goal_campaign_repair_authority_stale', {
+      reason: 'partition_coverage_invalid',
+    });
+  }
+  return repairAuthority;
+}
+
 function verifyChildClosures({
   receiptRoot,
   activation,
   manifest,
   candidates,
+  repairAuthority,
 }: {
   receiptRoot: string;
   activation: SchemaRecord;
   manifest: SchemaRecord;
   candidates: SchemaRecord[];
+  repairAuthority: SchemaRecord | null;
 }): {
   closures: SchemaRecord[];
   byPartition: Map<string, SchemaRecord>;
@@ -288,12 +354,15 @@ function verifyChildClosures({
     if (!isRecord(partition)) {
       throw failure('goal_campaign_manifest_stale', { partitionId });
     }
+    const repaired =
+      repairAuthority?.invalidatedPartitionIds.includes(partitionId) ===
+      true;
     const closure = readMatchingReceipt({
       targetPath: path.resolve(
         receiptRoot,
         'campaigns',
         activation.campaignId,
-        'closures',
+        ...(repaired ? ['repair', 'closures'] : ['closures']),
         `${String(index + 1).padStart(4, '0')}-${partitionId}.receipt.json`
       ),
       schemaName: CHILD_CLOSURE_SCHEMA,
@@ -312,7 +381,13 @@ function verifyChildClosures({
         activation.receiptHash,
         'activationReceiptHash',
       ],
-      [closure.attemptId, activation.attemptId, 'attemptId'],
+      [
+        closure.attemptId,
+        repaired
+          ? repairAuthority?.repairAttemptId
+          : activation.attemptId,
+        'attemptId',
+      ],
       [closure.partitionId, partitionId, 'partitionId'],
       [
         closure.partitionManifestHash,
@@ -349,6 +424,22 @@ function verifyChildClosures({
         throw failure('goal_campaign_child_stale', {
           partitionId,
           field,
+        });
+      }
+    }
+    if (repairAuthority && !repaired) {
+      const preservedBinding =
+        repairAuthority.preservedClosureBindings.find(
+          (binding) => binding.partitionId === partitionId
+        );
+      if (
+        !preservedBinding ||
+        preservedBinding.ordinal !== index + 1 ||
+        preservedBinding.closureReceiptHash !== closure.receiptHash
+      ) {
+        throw failure('goal_campaign_repair_authority_stale', {
+          partitionId,
+          reason: 'preserved_closure_binding_mismatch',
         });
       }
     }
@@ -544,6 +635,14 @@ function closeGoalCampaign(request: unknown = {}) {
     failureClass: 'goal_campaign_activation_stale',
   });
   verifyActivationAndManifest({ activation, manifest });
+  const repairAuthority = resolveRepairAuthority({
+    receiptRoot,
+    activation,
+    manifest,
+    candidate: request.repairAuthorityReceipt,
+    partitionManifestDocumentHash:
+      request.partitionManifestDocumentHash,
+  });
   const candidates = classifyChildSet(
     manifest,
     request.childClosureReceipts
@@ -553,6 +652,7 @@ function closeGoalCampaign(request: unknown = {}) {
     activation,
     manifest,
     candidates,
+    repairAuthority,
   });
   const compatibilityReceiptHashes = verifyCompatibilityReceipts({
     repositoryRoot,
@@ -568,10 +668,20 @@ function closeGoalCampaign(request: unknown = {}) {
   );
   const lifecycleAuthorityFields =
     lifecycleAuthorityFieldsFromManifest(manifest);
+  const attemptId =
+    repairAuthority?.repairAttemptId ?? activation.attemptId;
+  const repairProvenance = repairAuthority
+    ? {
+        baseAttemptId: repairAuthority.baseAttemptId,
+        repairAttemptId: repairAuthority.repairAttemptId,
+        repairAuthorityReceiptHash: repairAuthority.receiptHash,
+      }
+    : {};
   const subcontractClosureSetHash = hashControlPlaneValue({
     schemaVersion: 'goal-contract-subcontract-closure-set/v1',
     sourceCompositionPolicyHash:
       activation.sourceCompositionPolicyHash,
+    ...repairProvenance,
     topologicallyOrderedChildClosureReceiptHashes:
       orderedChildClosureReceiptHashes,
   });
@@ -581,7 +691,8 @@ function closeGoalCampaign(request: unknown = {}) {
       activation.sourceCompositionPolicyHash,
     campaignActivationHash: activation.campaignActivationHash,
     partitionManifestHash: manifest.partitionManifestHash,
-    attemptId: activation.attemptId,
+    attemptId,
+    ...repairProvenance,
     ...lifecycleAuthorityFields,
     subcontractClosureSetHash,
     finalExecutionProjectionHash,
@@ -591,7 +702,8 @@ function closeGoalCampaign(request: unknown = {}) {
     campaignId: activation.campaignId,
     campaignActivationHash: activation.campaignActivationHash,
     activationReceiptHash: activation.receiptHash,
-    attemptId: activation.attemptId,
+    attemptId,
+    ...repairProvenance,
     sourceCompositionPolicyHash:
       activation.sourceCompositionPolicyHash,
     sourceAuthorityBundleHash: activation.sourceAuthorityBundleHash,

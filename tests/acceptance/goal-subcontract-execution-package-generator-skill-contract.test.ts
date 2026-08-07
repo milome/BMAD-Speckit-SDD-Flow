@@ -16,6 +16,8 @@ const requiredFiles = [
   'schemas/execution-package-manifest.schema.json',
   'schemas/child-prompt-packet.schema.json',
   'schemas/campaign-task-report-binding.schema.json',
+  'schemas/campaign-repair-authority-receipt.schema.json',
+  'schemas/repair-final-validation-binding.schema.json',
   'assets/commit-message-template.txt',
 ];
 
@@ -24,6 +26,29 @@ describe('goal-subcontract-execution-package-generator skill contract', () => {
     for (const relativePath of requiredFiles) {
       expect(existsSync(join(SKILL_ROOT, relativePath)), `missing ${relativePath}`).toBe(true);
     }
+  });
+
+  it('keeps the bundled repair authority schema identical to the canonical schema', () => {
+    const bundled = JSON.parse(
+      readFileSync(
+        join(SKILL_ROOT, 'schemas', 'campaign-repair-authority-receipt.schema.json'),
+        'utf8'
+      )
+    );
+    const canonical = JSON.parse(
+      readFileSync(
+        join(
+          ROOT,
+          '_bmad',
+          'shared',
+          'goal-contract',
+          'goal-contract-campaign-repair-authority-receipt.schema.json'
+        ),
+        'utf8'
+      )
+    );
+
+    expect(bundled).toEqual(canonical);
   });
 
   it('keeps compile and audit inside the approved boundary', () => {

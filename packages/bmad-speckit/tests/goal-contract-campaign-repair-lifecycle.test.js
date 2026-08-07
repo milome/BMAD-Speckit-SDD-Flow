@@ -15,6 +15,9 @@ const {
   closeSubcontract,
 } = require('../src/utils/goal-contract/control-plane/subcontract-closure.ts');
 const {
+  closeGoalCampaign,
+} = require('../src/utils/goal-contract/control-plane/campaign-closure.ts');
+const {
   compileSubcontractEvidence,
   REQUIRED_EVIDENCE_CATEGORIES,
 } = require('../src/utils/goal-contract/control-plane/subcontract-evidence.ts');
@@ -1131,6 +1134,51 @@ describe('goal campaign repair lifecycle', () => {
     assert.match(
       dependentClosed.receiptPath.replace(/\\/gu, '/'),
       /\/repair\/closures\//u
+    );
+    const campaignClosed = closeGoalCampaign({
+      repositoryRoot: current.root,
+      receiptRoot: current.receiptRoot,
+      activationReceipt: current.baseActivation,
+      repairAuthorityReceipt: repair.receipt,
+      partitionManifest: current.manifest,
+      partitionManifestDocumentHash: sha256(
+        fs.readFileSync(
+          path.join(current.authorityRoot, 'partition-manifest.json')
+        )
+      ),
+      childClosureReceipts: [
+        current.ownerClosure,
+        closed.receipt,
+        dependentClosed.receipt,
+      ],
+      finalExecutionProjectionHash: hash(
+        'repair-final-execution-projection'
+      ),
+      closedAt: '2026-07-31T04:28:30.000Z',
+    });
+    assert.strictEqual(
+      campaignClosed.receipt.repairAuthorityReceiptHash,
+      repair.receipt.receiptHash
+    );
+    assert.strictEqual(
+      campaignClosed.receipt.baseAttemptId,
+      current.baseActivation.attemptId
+    );
+    assert.strictEqual(
+      campaignClosed.receipt.repairAttemptId,
+      repairAttemptId
+    );
+    assert.strictEqual(
+      campaignClosed.receipt.attemptId,
+      repairAttemptId
+    );
+    assert.deepStrictEqual(
+      campaignClosed.receipt.orderedChildClosureReceiptHashes,
+      [
+        current.ownerClosure.receiptHash,
+        closed.receipt.receiptHash,
+        dependentClosed.receipt.receiptHash,
+      ]
     );
     const crossOriginDependentLease = signed({
       ...dependentLeasePayload,

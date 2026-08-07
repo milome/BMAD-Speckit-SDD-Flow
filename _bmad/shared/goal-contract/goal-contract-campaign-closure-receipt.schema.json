@@ -2,6 +2,20 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "additionalProperties": false,
+  "dependentRequired": {
+    "baseAttemptId": [
+      "repairAttemptId",
+      "repairAuthorityReceiptHash"
+    ],
+    "repairAttemptId": [
+      "baseAttemptId",
+      "repairAuthorityReceiptHash"
+    ],
+    "repairAuthorityReceiptHash": [
+      "baseAttemptId",
+      "repairAttemptId"
+    ]
+  },
   "required": [
     "schemaVersion",
     "campaignId",
@@ -35,6 +49,9 @@
     "campaignActivationHash": { "$ref": "#/$defs/hash" },
     "activationReceiptHash": { "$ref": "#/$defs/hash" },
     "attemptId": { "type": "string", "minLength": 1 },
+    "baseAttemptId": { "type": "string", "minLength": 1 },
+    "repairAttemptId": { "type": "string", "minLength": 1 },
+    "repairAuthorityReceiptHash": { "$ref": "#/$defs/hash" },
     "sourceCompositionPolicyHash": { "$ref": "#/$defs/hash" },
     "sourceAuthorityBundleHash": { "$ref": "#/$defs/hash" },
     "goalContractHash": { "$ref": "#/$defs/hash" },

@@ -38,9 +38,12 @@ export function prepareCampaign(
     worktreeOwnedDrift?: boolean;
     renameScopeEscape?: boolean;
     scopeEscape?: boolean;
+    canonicalPartitionIds?: boolean;
   } = {}
 ) {
-  const fixture = createFixture(options.requirementRecordBinding);
+  const fixture = createFixture(options.requirementRecordBinding, {
+    canonicalPartitionIds: options.canonicalPartitionIds,
+  });
   const compiled = runScript('build-execution-package.js', [
     '--request',
     fixture.requestPath,
