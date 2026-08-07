@@ -36473,6 +36473,7 @@ function confirmationTextFromRenderReport(report: Record<string, unknown>): stri
     throw new Error('route-confirmation-drift projection refresh requires render report hashes');
   }
   return [
+    '确认以上范围进入下一阶段',
     `sourceDocumentHash=${sourceDocumentHash}`,
     `implementationConfirmationHash=${implementationConfirmationHash}`,
     `confirmationPageHash=${confirmationPageHash}`,

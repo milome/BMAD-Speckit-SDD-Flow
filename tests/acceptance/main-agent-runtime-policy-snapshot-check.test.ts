@@ -5,11 +5,18 @@ import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { mainIngestImplementationEvidence } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-implementation-evidence';
 import { mainRuntimePolicySnapshotCheck } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check';
+import { createRequirementsContractNormalizedTraceGraph } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-normalized-trace-graph';
 
 const SOURCE_HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
 const IMPLEMENTATION_HASH =
   'sha256:2222222222222222222222222222222222222222222222222222222222222222';
 const ARCHITECTURE_HASH = 'sha256:3333333333333333333333333333333333333333333333333333333333333333';
+const TRANSACTION_ID = 'TX-RUNTIME-POLICY-001';
+const IMPLEMENTATION_ATTEMPT_ID = 'IMP-RUNTIME-POLICY-001';
+const SEMANTIC_MODEL_HASH = sha256Buffer('runtime-policy-semantic-model');
+const PACKET_HASH = sha256Buffer('runtime-policy-model-packet');
+const RUN_ID = 'run-019';
+const CLOSEOUT_ATTEMPT_ID = 'closeout-019';
 
 const globalContractTraceabilityPolicy = {
   schemaVersion: 'global-contract-traceability-policy/v1',
@@ -85,8 +92,13 @@ function writeJson(filePath: string, value: unknown): void {
   writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 }
 
-function artifactRef(artifactPath: string, hash: string, overrides: Record<string, unknown> = {}) {
-  return {
+function artifactRef(
+  root: string,
+  artifactPath: string,
+  hash: string,
+  overrides: Record<string, unknown> = {}
+) {
+  const artifact = {
     artifactType: 'runtime_policy_snapshot',
     sourceOfTruthRole: 'projection',
     path: artifactPath,
@@ -99,9 +111,115 @@ function artifactRef(artifactPath: string, hash: string, overrides: Record<strin
     outputVersion: 'runtime-policy-snapshot-v1',
     ...overrides,
   };
+  const schemaPath = `${path.resolve(root, artifactPath)}.schema.json`;
+  const readbackReceiptPath = `${path.resolve(root, artifactPath)}.readback-receipt.json`;
+  writeJson(schemaPath, {
+    $schema: 'https://json-schema.org/draft/2020-12/schema',
+    type: 'object',
+  });
+  const portableSchemaPath = path.relative(root, schemaPath).replace(/\\/g, '/');
+  const portableReceiptPath = path.relative(root, readbackReceiptPath).replace(/\\/g, '/');
+  const receiptPayload = {
+    schemaVersion: 'requirements-contract-evidence-artifact-readback-receipt/v1',
+    artifactId: path.basename(artifactPath),
+    artifactType: String(artifact.artifactType),
+    artifactPath,
+    artifactHash: hash,
+    artifactSchemaPath: portableSchemaPath,
+    artifactSchemaHash: sha256Buffer(readFileSync(schemaPath)),
+    producerIdentity: {
+      class: 'controlled_artifact_producer',
+      id: String(artifact.producer),
+    },
+    requirementSetId: 'REQ-RUNTIME-POLICY',
+    requirementRefs: artifact.relatedRequirementIds.map(String),
+    transactionId: TRANSACTION_ID,
+    implementationAttemptId: IMPLEMENTATION_ATTEMPT_ID,
+    publishedAt: '2026-05-19T00:00:00.000Z',
+    readbackAt: '2026-05-19T00:00:01.000Z',
+    publication: {
+      targetPath: artifactPath,
+      publishedHash: hash,
+      readbackHash: hash,
+      readbackVerified: true,
+    },
+    decision: 'pass',
+  };
+  writeJson(readbackReceiptPath, {
+    ...receiptPayload,
+    receiptHash: stableHash(receiptPayload),
+  });
+  return {
+    ...artifact,
+    schemaPath: portableSchemaPath,
+    readbackReceiptPath: portableReceiptPath,
+  };
+}
+
+function bindIndependentOracleAuthority(
+  packet: Record<string, unknown>,
+  requirementIds: string[]
+): void {
+  const commandRun = (packet.commandRuns as Array<Record<string, unknown>>)[0];
+  commandRun.coveredRequirementIds = requirementIds;
+  const nodes = requirementIds.flatMap((requirementId) => {
+    const oracleId = `ORACLE-${requirementId}`;
+    return [
+      {
+        id: requirementId,
+        nodeType: 'requirement' as const,
+        bodyHash: sha256Buffer(`${requirementId}:body`),
+        sourceRootRef: `${requirementId}:source`,
+        sourceRootPayloadHash: sha256Buffer(`${requirementId}:source-root`),
+        authorityClass: 'source_authorized',
+      },
+      {
+        id: oracleId,
+        nodeType: 'oracle' as const,
+        bodyHash: sha256Buffer(`${oracleId}:body`),
+        sourceRootRef: `${oracleId}:source`,
+        sourceRootPayloadHash: sha256Buffer(`${oracleId}:source-root`),
+        authorityClass: 'independent_oracle',
+      },
+    ];
+  });
+  const graph = createRequirementsContractNormalizedTraceGraph({
+    requirementSetId: String(packet.requirementSetId),
+    sourceAuthorityHash: String(packet.sourceDocumentHash),
+    semanticModelHash: String(packet.semanticModelHash),
+    semanticConservationManifestHash: sha256Buffer('runtime-policy-conservation'),
+    nodes,
+    edges: requirementIds.map((requirementId) => ({
+      edgeId: `EDGE-${requirementId}`,
+      edgeType: 'verified_by' as const,
+      fromRef: requirementId,
+      toRef: `ORACLE-${requirementId}`,
+      sourceRef: `${requirementId}:trace`,
+      sourceHash: sha256Buffer(`${requirementId}:edge`),
+      proofRefs: [`PROOF-${requirementId}`],
+      applicability: 'applicable' as const,
+    })),
+  });
+  packet.normalizedTraceGraph = graph;
+  packet.independentOracleResults = requirementIds.map((requirementId) => ({
+    requirementId,
+    oracleId: `ORACLE-${requirementId}`,
+    decision: 'pass',
+    transactionId: TRANSACTION_ID,
+    implementationAttemptId: IMPLEMENTATION_ATTEMPT_ID,
+    sourceDocumentHash: SOURCE_HASH,
+    semanticModelHash: SEMANTIC_MODEL_HASH,
+    packetHash: PACKET_HASH,
+    graphHash: graph.graphHash,
+    commandId: commandRun.commandId,
+    outputHash: commandRun.outputHash,
+    evidenceRefs: packet.evidenceRefs,
+    observedAt: '2026-05-19T00:00:05.000Z',
+  }));
 }
 
 function writeFixture(root: string, locale = 'zh-CN') {
+  writeJson(path.join(root, 'package-lock.json'), { lockfileVersion: 3, packages: {} });
   const base = path.join(
     root,
     '_bmad-output',
@@ -151,6 +269,7 @@ function writeFixture(root: string, locale = 'zh-CN') {
   writeJson(snapshotPath, snapshot);
   const snapshotHash = sha256Buffer(readFileSync(snapshotPath));
   const runtimeRef = artifactRef(
+    root,
     path.relative(root, snapshotPath).replace(/\\/g, '/'),
     snapshotHash
   );
@@ -165,6 +284,10 @@ function writeFixture(root: string, locale = 'zh-CN') {
     contractAuthoringRequired: true,
     sourceDocumentHash: SOURCE_HASH,
     implementationConfirmationHash: IMPLEMENTATION_HASH,
+    transactionId: TRANSACTION_ID,
+    currentAttemptId: IMPLEMENTATION_ATTEMPT_ID,
+    semanticModelHash: SEMANTIC_MODEL_HASH,
+    packetHash: PACKET_HASH,
     confirmationHistory: [
       {
         eventType: 'confirmation_recorded',
@@ -191,8 +314,10 @@ function writeFixture(root: string, locale = 'zh-CN') {
     artifactIndex: [runtimeRef],
     runtimePolicySnapshotRef: runtimeRef,
   });
-  const summaryPath = path.join(evidenceDir, 'implementation-delta-summary.md');
-  writeFileSync(summaryPath, 'TRACE-019 runtime policy snapshot test delta.\n', 'utf8');
+  const summaryPath = path.join(evidenceDir, 'implementation-delta-summary.json');
+  writeJson(summaryPath, {
+    summary: 'TRACE-019 runtime policy snapshot test delta.',
+  });
   const negativePath = path.join(evidenceDir, 'negative-assertions.json');
   writeJson(negativePath, {
     assertions: [
@@ -210,6 +335,7 @@ function writeEvidencePacket(root: string, fixture: ReturnType<typeof writeFixtu
     'implementation-evidence-packet.json'
   );
   const summaryRef = artifactRef(
+    root,
     path.relative(root, fixture.summaryPath).replace(/\\/g, '/'),
     sha256Buffer(readFileSync(fixture.summaryPath)),
     {
@@ -218,6 +344,7 @@ function writeEvidencePacket(root: string, fixture: ReturnType<typeof writeFixtu
     }
   );
   const negativeRef = artifactRef(
+    root,
     path.relative(root, fixture.negativePath).replace(/\\/g, '/'),
     sha256Buffer(readFileSync(fixture.negativePath)),
     {
@@ -225,12 +352,22 @@ function writeEvidencePacket(root: string, fixture: ReturnType<typeof writeFixtu
       sourceOfTruthRole: 'evidence',
     }
   );
-  writeJson(evidencePath, {
+  const command =
+    'npx ts-node --project tsconfig.node.json --transpile-only packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.ts';
+  const commandOutputPath = path.join(path.dirname(evidencePath), 'command-output.txt');
+  writeFileSync(commandOutputPath, 'runtime_policy_snapshot=pass\n', 'utf8');
+  const environment = { platform: process.platform, architecture: process.arch };
+  const runtimeVersions = { node: process.version };
+  const packet: Record<string, unknown> = {
     eventType: 'execution_iteration_recorded',
     recordId: 'REQ-RUNTIME-POLICY',
     requirementSetId: 'REQ-RUNTIME-POLICY',
+    transactionId: TRANSACTION_ID,
+    implementationAttemptId: IMPLEMENTATION_ATTEMPT_ID,
+    semanticModelHash: SEMANTIC_MODEL_HASH,
+    packetHash: PACKET_HASH,
     executionIterationId: 'exec-019',
-    runId: 'run-019',
+    runId: RUN_ID,
     status: 'done',
     sourceDocumentHash: SOURCE_HASH,
     implementationConfirmationHash: IMPLEMENTATION_HASH,
@@ -249,24 +386,53 @@ function writeEvidencePacket(root: string, fixture: ReturnType<typeof writeFixtu
     commandRuns: [
       {
         commandId: 'CMD-RUNTIME-POLICY-SNAPSHOT-CHECK',
-        command:
-          'npx ts-node --project tsconfig.node.json --transpile-only packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.ts',
-        runId: 'run-019',
-        closeoutAttemptId: 'closeout-019',
+        command,
+        normalizedCommand: command,
+        cwd: root,
+        executorIdentity: {
+          class: 'controlled_detached_executor',
+          id: 'EXECUTOR-RUNTIME-POLICY',
+        },
+        runtimeVersions,
+        dependencyLockHashes: [
+          {
+            path: 'package-lock.json',
+            hash: sha256Buffer(readFileSync(path.join(root, 'package-lock.json'))),
+          },
+        ],
+        environment,
+        environmentFingerprint: stableHash({ environment, runtimeVersions }),
+        environmentCompatibilityDecision: 'pass',
+        transactionId: TRANSACTION_ID,
+        implementationAttemptId: IMPLEMENTATION_ATTEMPT_ID,
+        sourceDocumentHash: SOURCE_HASH,
+        semanticModelHash: SEMANTIC_MODEL_HASH,
+        packetHash: PACKET_HASH,
+        runId: RUN_ID,
+        closeoutAttemptId: CLOSEOUT_ATTEMPT_ID,
         exitCode: 0,
         startedAt: '2026-05-19T00:00:00.000Z',
         completedAt: '2026-05-19T00:00:05.000Z',
+        outputPath: commandOutputPath,
+        outputHash: sha256Buffer(readFileSync(commandOutputPath)),
         outputSummary: 'runtime_policy_snapshot=pass',
       },
     ],
     artifactRefs: [summaryRef, negativeRef, fixture.runtimeRef],
     runtimePolicySnapshotRef: fixture.runtimeRef,
+    entryFlowState: {
+      entryFlow: 'standalone_tasks',
+      entryFlowClass: 'task_packet_entry',
+      workflowAdapter: 'direct',
+      contractAuthoringRequired: true,
+      globalContractTraceabilityPolicy,
+      traceStatusPolicy,
+    },
     deliveryEvidence: {
       requiredCommands: [
         {
           commandId: 'CMD-RUNTIME-POLICY-SNAPSHOT-CHECK',
-          command:
-            'npx ts-node --project tsconfig.node.json --transpile-only packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-runtime-policy-snapshot-check.ts',
+          command,
           commandType: 'delivery_evidence',
           blockingIfMissing: true,
           traceRows: ['TRACE-019'],
@@ -274,16 +440,20 @@ function writeEvidencePacket(root: string, fixture: ReturnType<typeof writeFixtu
           artifactRefs: [summaryRef],
         },
       ],
+      historicalRunRefs: [
+        {
+          commandId: 'CMD-RUNTIME-POLICY-SNAPSHOT-CHECK',
+          runId: RUN_ID,
+          closeoutAttemptId: CLOSEOUT_ATTEMPT_ID,
+        },
+      ],
     },
-    requirementClosures: [
-      { requirementId: 'MUST-026', status: 'pass' },
-      { requirementId: 'NEG-014', status: 'pass' },
-      { requirementId: 'OUT-012', status: 'pass' },
-      { requirementId: 'EVD-026', status: 'pass' },
-    ],
+    requirementClosures: [{ requirementId: 'MUST-026', status: 'pass' }],
     gateChecks: [{ gate: 'Runtime Policy Snapshot Check', decision: 'pass' }],
-    closeoutAttemptId: 'closeout-019',
-  });
+    closeoutAttemptId: CLOSEOUT_ATTEMPT_ID,
+  };
+  bindIndependentOracleAuthority(packet, ['MUST-026']);
+  writeJson(evidencePath, packet);
   return evidencePath;
 }
 

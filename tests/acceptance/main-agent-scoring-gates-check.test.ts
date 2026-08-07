@@ -13,6 +13,10 @@ const SOURCE_HASH = 'sha256:1111111111111111111111111111111111111111111111111111
 const IMPLEMENTATION_HASH =
   'sha256:2222222222222222222222222222222222222222222222222222222222222222';
 const ARCHITECTURE_HASH = 'sha256:3333333333333333333333333333333333333333333333333333333333333333';
+const TRANSACTION_ID = 'TX-SCORING-GATES-001';
+const IMPLEMENTATION_ATTEMPT_ID = 'IMP-SCORING-GATES-001';
+const SEMANTIC_MODEL_HASH = sha256Text('scoring-gates-semantic-model');
+const PACKET_HASH = sha256Text('scoring-gates-model-packet');
 
 const globalContractTraceabilityPolicy = {
   schemaVersion: 'global-contract-traceability-policy/v1',
@@ -70,18 +74,45 @@ function sha256File(file: string): string {
   return `sha256:${crypto.createHash('sha256').update(readFileSync(file)).digest('hex')}`;
 }
 
+function sha256Text(value: string): string {
+  return `sha256:${crypto.createHash('sha256').update(value, 'utf8').digest('hex')}`;
+}
+
+function stableHash(value: unknown): string {
+  const sort = (input: unknown): unknown => {
+    if (input === null || typeof input !== 'object') return input;
+    if (Array.isArray(input)) return input.map(sort);
+    return Object.fromEntries(
+      Object.entries(input as Record<string, unknown>)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, item]) => [key, sort(item)])
+    );
+  };
+  return sha256Text(JSON.stringify(sort(value)));
+}
+
 function writeJson(file: string, value: unknown): void {
   mkdirSync(path.dirname(file), { recursive: true });
   writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 }
 
 function artifactRef(root: string, file: string, artifactType: string, role = 'evidence') {
-  return {
+  const artifactPath = path.relative(root, file).replace(/\\/g, '/');
+  const artifactHash = sha256File(file);
+  const schemaPath = `${file}.schema.json`;
+  const readbackReceiptPath = `${file}.readback-receipt.json`;
+  writeJson(schemaPath, {
+    $schema: 'https://json-schema.org/draft/2020-12/schema',
+    type: 'object',
+  });
+  const portableSchemaPath = path.relative(root, schemaPath).replace(/\\/g, '/');
+  const portableReceiptPath = path.relative(root, readbackReceiptPath).replace(/\\/g, '/');
+  const artifact = {
     eventType: 'artifact_indexed',
     artifactType,
     sourceOfTruthRole: role,
-    path: path.relative(root, file).replace(/\\/g, '/'),
-    contentHash: sha256File(file),
+    path: artifactPath,
+    contentHash: artifactHash,
     producer: 'main-agent-scoring-gates-check.test',
     purpose: 'prove score materialization/evaluation gate behavior',
     relatedRequirementIds: ['MUST-027', 'NEG-015', 'OUT-013', 'EVD-027', 'TRACE-020'],
@@ -91,9 +122,45 @@ function artifactRef(root: string, file: string, artifactType: string, role = 'e
     traceRows: ['TRACE-020'],
     evidenceRefs: ['EVD-027'],
   };
+  const receiptPayload = {
+    schemaVersion: 'requirements-contract-evidence-artifact-readback-receipt/v1',
+    artifactId: path.basename(file),
+    artifactType,
+    artifactPath,
+    artifactHash,
+    artifactSchemaPath: portableSchemaPath,
+    artifactSchemaHash: sha256File(schemaPath),
+    producerIdentity: {
+      class: 'controlled_artifact_producer',
+      id: artifact.producer,
+    },
+    requirementSetId: 'REQ-SCORING-GATES',
+    requirementRefs: artifact.relatedRequirementIds,
+    transactionId: TRANSACTION_ID,
+    implementationAttemptId: IMPLEMENTATION_ATTEMPT_ID,
+    publishedAt: '2026-05-19T00:00:00.000Z',
+    readbackAt: '2026-05-19T00:00:01.000Z',
+    publication: {
+      targetPath: artifactPath,
+      publishedHash: artifactHash,
+      readbackHash: artifactHash,
+      readbackVerified: true,
+    },
+    decision: 'pass',
+  };
+  writeJson(readbackReceiptPath, {
+    ...receiptPayload,
+    receiptHash: stableHash(receiptPayload),
+  });
+  return {
+    ...artifact,
+    schemaPath: portableSchemaPath,
+    readbackReceiptPath: portableReceiptPath,
+  };
 }
 
 function writeFixture(root: string, overrides: Record<string, unknown> = {}) {
+  writeJson(path.join(root, 'package-lock.json'), { lockfileVersion: 3, packages: {} });
   fs.mkdirSync(path.join(root, '_bmad', '_config'), { recursive: true });
   fs.mkdirSync(path.join(root, 'packages', 'scoring', 'rules'), { recursive: true });
   fs.cpSync(
@@ -189,6 +256,10 @@ function writeFixture(root: string, overrides: Record<string, unknown> = {}) {
     contractAuthoringRequired: true,
     sourceDocumentHash: SOURCE_HASH,
     implementationConfirmationHash: IMPLEMENTATION_HASH,
+    transactionId: TRANSACTION_ID,
+    currentAttemptId: IMPLEMENTATION_ATTEMPT_ID,
+    semanticModelHash: SEMANTIC_MODEL_HASH,
+    packetHash: PACKET_HASH,
     confirmationHistory: [
       {
         eventType: 'confirmation_recorded',
@@ -477,10 +548,19 @@ describe('main-agent scoring gates check', () => {
         rerunLoops: [],
       });
       const packetPath = path.join(path.dirname(scoreRecordPath), 'packet.json');
+      const command = 'npx vitest run tests/acceptance/main-agent-scoring-gates-check.test.ts';
+      const commandOutputPath = path.join(path.dirname(scoreRecordPath), 'command-output.txt');
+      writeFileSync(commandOutputPath, 'score_evaluation=fail\n', 'utf8');
+      const environment = { platform: process.platform, architecture: process.arch };
+      const runtimeVersions = { node: process.version };
       writeJson(packetPath, {
         eventType: 'execution_iteration_recorded',
         recordId: 'REQ-SCORING-GATES',
         requirementSetId: 'REQ-SCORING-GATES',
+        transactionId: TRANSACTION_ID,
+        implementationAttemptId: IMPLEMENTATION_ATTEMPT_ID,
+        semanticModelHash: SEMANTIC_MODEL_HASH,
+        packetHash: PACKET_HASH,
         executionIterationId: 'exec-score-failed-001',
         runId: 'run-score-failed-001',
         status: 'rerun_required',
@@ -506,12 +586,37 @@ describe('main-agent scoring gates check', () => {
         commandRuns: [
           {
             commandId: 'CMD-SCORING-GATES-INGEST',
-            command: 'npx vitest run tests/acceptance/main-agent-scoring-gates-check.test.ts',
+            command,
+            normalizedCommand: command,
+            cwd: root,
+            executorIdentity: {
+              class: 'controlled_detached_executor',
+              id: 'EXECUTOR-SCORING-GATES',
+            },
+            runtimeVersions,
+            dependencyLockHashes: [
+              {
+                path: 'package-lock.json',
+                hash: sha256File(path.join(root, 'package-lock.json')),
+              },
+            ],
+            environment,
+            environmentFingerprint: stableHash({ environment, runtimeVersions }),
+            environmentCompatibilityDecision: 'pass',
+            transactionId: TRANSACTION_ID,
+            implementationAttemptId: IMPLEMENTATION_ATTEMPT_ID,
+            sourceDocumentHash: SOURCE_HASH,
+            semanticModelHash: SEMANTIC_MODEL_HASH,
+            packetHash: PACKET_HASH,
             runId: 'run-score-failed-001',
             closeoutAttemptId: 'closeout-score-failed-001',
             exitCode: 0,
             startedAt: '2026-05-19T00:00:00.000Z',
             completedAt: '2026-05-19T00:00:05.000Z',
+            outputPath: commandOutputPath,
+            outputHash: sha256File(commandOutputPath),
+            outputSummary: 'score_evaluation=fail',
+            coveredRequirementIds: ['MUST-027'],
           },
         ],
         artifactRefs: [scoreRef],
@@ -519,13 +624,28 @@ describe('main-agent scoring gates check', () => {
           requiredCommands: [
             {
               commandId: 'CMD-SCORING-GATES-INGEST',
-              command: 'npx vitest run tests/acceptance/main-agent-scoring-gates-check.test.ts',
+              command,
               commandType: 'delivery_evidence',
               blockingIfMissing: true,
               negativeOrRegression: true,
               artifactRefs: [scoreRef],
             },
           ],
+          historicalRunRefs: [
+            {
+              commandId: 'CMD-SCORING-GATES-INGEST',
+              runId: 'run-score-failed-001',
+              closeoutAttemptId: 'closeout-score-failed-001',
+            },
+          ],
+        },
+        entryFlowState: {
+          entryFlow: 'standalone_tasks',
+          entryFlowClass: 'task_packet_entry',
+          workflowAdapter: 'direct',
+          contractAuthoringRequired: true,
+          globalContractTraceabilityPolicy,
+          traceStatusPolicy,
         },
         gateChecks: [
           {

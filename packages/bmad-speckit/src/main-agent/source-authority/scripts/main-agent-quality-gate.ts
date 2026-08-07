@@ -203,7 +203,11 @@ function buildRunScopedCodexProofCheck(args: QualityGateCliOptions): Check | nul
       };
     }>(proofPath);
     const provenance = proof.evidence_provenance;
+    const validationsRun = proof.codex?.validationsRun;
     const mismatches = [
+      proof.reportType === 'codex_run_scoped_quality_proof'
+        ? null
+        : `reportType=${proof.reportType ?? 'missing'}`,
       provenance?.runId === runId ? null : `runId=${provenance?.runId ?? 'missing'}`,
       provenance?.storyKey === storyKey ? null : `storyKey=${provenance?.storyKey ?? 'missing'}`,
       provenance?.evidenceBundleId === evidenceBundleId
@@ -214,6 +218,11 @@ function buildRunScopedCodexProofCheck(args: QualityGateCliOptions): Check | nul
       proof.codex?.taskReportStatus === 'done'
         ? null
         : `taskReportStatus=${proof.codex?.taskReportStatus ?? 'missing'}`,
+      Array.isArray(validationsRun) &&
+      validationsRun.length > 0 &&
+      validationsRun.every((validation) => Boolean(normalizeText(validation)))
+        ? null
+        : 'validationsRun=missing_or_invalid',
     ].filter((item): item is string => item !== null);
     return {
       id: 'codex-run-scoped-proof',

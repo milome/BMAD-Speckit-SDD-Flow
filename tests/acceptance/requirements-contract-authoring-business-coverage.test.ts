@@ -2,10 +2,10 @@ import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 import {
   artifacts,
+  buildValidResponseFromRequest,
   cleanCriticalAuditorRound,
   createTempRoot,
   createTestAuthoringExecutionOptions,
@@ -19,6 +19,7 @@ import {
   runMainAgentAuthoringRepair,
   runMainAgentPreConfirmationDrilldown,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
+import { criticalAuditorIndependentProviderRunHash } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-critical-auditor-independence';
 
 function createJudgeReadyTempRoot(prefix: string): string {
   const root = createTempRoot(prefix);
@@ -30,14 +31,6 @@ const fixtureRelativePath =
   'tests/acceptance/fixtures/requirements-contract/multi-timeframe-display-settings.real.md';
 const metadataRelativePath =
   'tests/acceptance/fixtures/requirements-contract/multi-timeframe-display-settings.real.metadata.json';
-const PROJECTION_QUALITY_RULE_CODES = [
-  'projection_per_must_acceptance_not_independent',
-  'projection_shared_evidence_without_per_must_oracle',
-  'required_command_all_cover_all_without_per_must_assertions',
-  'target_modification_path_all_cover_all',
-  'current_target_map_not_product_specific',
-  'business_visual_generic_or_compressed',
-];
 const requiredCheckpointIds = [
   'cp-00-semantic-kernel',
   'cp-01-must-decomposition-packet',
@@ -58,6 +51,22 @@ const { collectProjectionQualityIssues } = requireForProjectionGate(
     options?: Record<string, unknown>
   ) => Array<{ code: string; refs: string[] }>;
 };
+const {
+  extractImplementationConfirmation: extractImplementationConfirmationForHash,
+  sourceDocumentHashFor: sourceDocumentHashForContract,
+} = requireForProjectionGate(
+  '../../_bmad/skills/requirements-contract-authoring/scripts/pre_render_definition_drilldown_lib.js'
+) as {
+  extractImplementationConfirmation: (sourceText: string) => {
+    blockText: string;
+    confirmation: Record<string, unknown>;
+  };
+  sourceDocumentHashFor: (
+    sourceText: string,
+    blockText: string,
+    confirmation: Record<string, unknown>
+  ) => string;
+};
 
 function readUtf8(relativePath: string): string {
   return readFileSync(path.join(process.cwd(), relativePath), 'utf8');
@@ -69,105 +78,6 @@ function sha256Text(text: string): string {
 
 function sha256PrefixedText(text: string): string {
   return `sha256:${sha256Text(text)}`;
-}
-
-function stableStringify(value: unknown): string {
-  if (value === null || typeof value !== 'object') {
-    return JSON.stringify(value);
-  }
-  if (Array.isArray(value)) {
-    return `[${value.map((item) => stableStringify(item)).join(',')}]`;
-  }
-  return `{${Object.keys(value as Record<string, unknown>)
-    .sort()
-    .map(
-      (key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`
-    )
-    .join(',')}}`;
-}
-
-function sha256Json(value: unknown): string {
-  return sha256PrefixedText(stableStringify(value));
-}
-
-function semanticConfirmationForHash(
-  confirmation: Record<string, unknown>
-): Record<string, unknown> {
-  const bookkeeping = new Set([
-    'status',
-    'confirmedAt',
-    'confirmedBy',
-    'sourceDocumentHash',
-    'implementationConfirmationHash',
-    'reconfirmationRequest',
-    'confirmationRender',
-  ]);
-  const semantic = Object.fromEntries(
-    Object.entries(confirmation).filter(([key]) => !bookkeeping.has(key))
-  );
-  const drilldown =
-    semantic.preConfirmationDrilldown &&
-    typeof semantic.preConfirmationDrilldown === 'object' &&
-    !Array.isArray(semantic.preConfirmationDrilldown)
-      ? { ...(semantic.preConfirmationDrilldown as Record<string, unknown>) }
-      : {};
-  const semanticKernelRef =
-    drilldown.semanticKernelRef &&
-    typeof drilldown.semanticKernelRef === 'object' &&
-    !Array.isArray(drilldown.semanticKernelRef)
-      ? { ...(drilldown.semanticKernelRef as Record<string, unknown>) }
-      : {};
-  const mustDecompositionPacketRef =
-    drilldown.mustDecompositionPacketRef &&
-    typeof drilldown.mustDecompositionPacketRef === 'object' &&
-    !Array.isArray(drilldown.mustDecompositionPacketRef)
-      ? { ...(drilldown.mustDecompositionPacketRef as Record<string, unknown>) }
-      : {};
-  if (Object.keys(semanticKernelRef).length > 0) {
-    delete semanticKernelRef.hash;
-    drilldown.semanticKernelRef = semanticKernelRef;
-  }
-  if (Object.keys(mustDecompositionPacketRef).length > 0) {
-    delete mustDecompositionPacketRef.hash;
-    drilldown.mustDecompositionPacketRef = mustDecompositionPacketRef;
-  }
-  const criticalAuditor =
-    drilldown.criticalAuditor &&
-    typeof drilldown.criticalAuditor === 'object' &&
-    !Array.isArray(drilldown.criticalAuditor)
-      ? { ...(drilldown.criticalAuditor as Record<string, unknown>) }
-      : {};
-  if (Object.keys(criticalAuditor).length > 0) {
-    delete criticalAuditor.consecutiveNoNewGapRounds;
-    delete criticalAuditor.latestReceiptHash;
-    delete criticalAuditor.convergenceVerdict;
-    drilldown.criticalAuditor = criticalAuditor;
-  }
-  if (Object.keys(drilldown).length > 0) {
-    semantic.preConfirmationDrilldown = drilldown;
-  }
-  return semantic;
-}
-
-function currentSourceHashes(sourcePath: string): {
-  sourceDocumentHash: string;
-  implementationConfirmationHash: string;
-} {
-  const text = readFileSync(sourcePath, 'utf8');
-  const match = text.match(/^implementationConfirmation:\n[\s\S]*$/m);
-  if (!match) {
-    throw new Error(`implementationConfirmation block missing: ${sourcePath}`);
-  }
-  const parsed = yaml.load(match[0]) as { implementationConfirmation?: Record<string, unknown> };
-  if (!parsed.implementationConfirmation) {
-    throw new Error(`implementationConfirmation block invalid: ${sourcePath}`);
-  }
-  const semantic = semanticConfirmationForHash(parsed.implementationConfirmation);
-  const normalizedBlock = `implementationConfirmation:${stableStringify(semantic)}`;
-  return {
-    sourceDocumentHash: sha256PrefixedText(text.replace(match[0], normalizedBlock)),
-    implementationConfirmationHash: sha256Json(semantic),
-  };
 }
 
 function byteLength(text: string): number {
@@ -209,25 +119,32 @@ function writePromotionReceiptForDraft(input: {
   sourcePath: string;
   recordId: string;
   requirementSetId: string;
-}): string {
-  const receiptPath = path.join(
+}): void {
+  const authoringDir = path.join(
     input.root,
     '_bmad-output',
     'runtime',
     'requirement-records',
     input.recordId,
-    'authoring',
-    'promotion-receipt.json'
+    'authoring'
   );
-  mkdirSync(path.dirname(receiptPath), { recursive: true });
-  const hashes = currentSourceHashes(input.sourcePath);
-  const targetHash = sha256PrefixedText(readFileSync(input.sourcePath, 'utf8'));
-  const sourcePath = path.relative(input.root, input.sourcePath).replace(/\\/g, '/');
-  const receipt: Record<string, unknown> = {
+  const receiptPath = path.join(authoringDir, 'promotion-receipt.json');
+  const sourceText = readFileSync(input.sourcePath, 'utf8');
+  const extraction = extractImplementationConfirmationForHash(sourceText);
+  const sourceDocumentHash = sourceDocumentHashForContract(
+    sourceText,
+    extraction.blockText,
+    extraction.confirmation
+  );
+  const targetHash = sha256PrefixedText(sourceText);
+  const sourcePath = path.relative(input.root, input.sourcePath).replace(/\\/gu, '/');
+  const receipt = {
     ok: true,
     dryRun: false,
     preflightOnly: false,
-    draftPath: `_bmad-output/runtime/requirement-records/${input.recordId}/authoring/draft-source-preview.md`,
+    draftPath: path
+      .relative(input.root, path.join(authoringDir, 'draft-source-preview.md'))
+      .replace(/\\/gu, '/'),
     targetPath: sourcePath,
     promotionStage: 'authoring-draft',
     allowedStatuses: ['draft', 'draft_updated_not_confirmation_ready', 'reconfirm_required'],
@@ -235,7 +152,9 @@ function writePromotionReceiptForDraft(input: {
     confirmationReady: false,
     safePromotionAsDraft: true,
     requiresUserConfirmationBeforeExecution: true,
-    manifestPath: `_bmad-output/runtime/requirement-records/${input.recordId}/authoring/draft-manifest.json`,
+    manifestPath: path
+      .relative(input.root, path.join(authoringDir, 'draft-manifest.json'))
+      .replace(/\\/gu, '/'),
     targetHash,
     writeReceipt: {
       schemaVersion: 'large-document-writer-safe-write/v1',
@@ -243,7 +162,9 @@ function writePromotionReceiptForDraft(input: {
       finalHash: targetHash,
       mode: 'replace',
     },
-    backupPath: `_bmad-output/runtime/requirement-records/${input.recordId}/authoring/promotion-backup.md`,
+    backupPath: path
+      .relative(input.root, path.join(authoringDir, 'promotion-backup.md'))
+      .replace(/\\/gu, '/'),
     preflight: {
       manifest: {
         targetPath: sourcePath,
@@ -261,176 +182,72 @@ function writePromotionReceiptForDraft(input: {
           finalDecision: 'allow_source_materialization',
           sourceMutationAllowed: true,
           sourceDocumentExistedBefore: true,
-          sourceDocumentHashBefore: hashes.sourceDocumentHash,
+          sourceDocumentHashBefore: sourceDocumentHash,
           sourceDocumentHashAfter: targetHash,
         },
       },
     },
-    receiptPath: path.relative(input.root, receiptPath).replace(/\\/g, '/'),
+    receiptPath: path.relative(input.root, receiptPath).replace(/\\/gu, '/'),
     failureClass: null,
   };
   writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');
-  return receiptPath;
 }
 
-function writeMultiTimeframeRepairResponse(requestPath: string, responsePath: string): void {
-  const request = readJson<any>(requestPath);
-  const projectionRefs = request.packetProjectionSummary?.projectionRefs ?? [];
-  const mustRefs = Array.isArray(request.mustRefs)
-    ? request.mustRefs.filter((ref: unknown) => typeof ref === 'string' && ref.trim())
-    : [];
-  if (mustRefs.length === 0) {
-    throw new Error('critical auditor request does not contain MUST refs');
-  }
-  if (projectionRefs.length === 0) {
-    throw new Error('critical auditor request does not contain projection refs');
-  }
-  const actionBase = {
-    sourceSpan: { startLine: 142, endLine: 149 },
-    sourceText: '15m/30m/45m/D 默认隐藏，1m 是主时间轴且不属于叠加周期。',
-    reason: 'Critical Auditor found a missing multi-timeframe business projection.',
-    mustRefs: [mustRefs[0]],
-    requirementIds: ['FR-3', 'DEFAULT-HIDDEN-PERIODS', 'NON-GOAL-1M'],
+function writeProviderOwnedRepairResponse(input: {
+  requestPath: string;
+  responsePath: string;
+  packetPath: string;
+  actionAuthority: {
+    sourceSpan: { startLine: number; endLine: number };
+    sourceText: string;
+    mustRefs: string[];
+    requirementIds: string[];
   };
-  const response = {
-    schemaVersion: 'critical-auditor-round-response/v1',
-    requestHash: request.requestHash,
-    recordId: request.recordId,
-    roundIndex: request.roundIndex,
-    transactionId: request.transactionId,
-    namespaceVersion: request.namespaceVersion,
-    sourceDocumentHash: request.sourceDocumentHash,
-    semanticModelHash: request.semanticModelHash,
-    implementationConfirmationHash: request.implementationConfirmationHash,
-    packetHash: request.packetHash,
-    projectionSetHash: request.projectionSetHash,
-    gateDryRunHash: request.gateDryRun.gateDryRunHash,
-    reconciliationIssueCount: request.gateDryRun.reconciliation.issueCount,
-    checkedProjectionGroups: request.packetProjectionSummary?.projectionGroups ?? [],
-    checkedProjectionQualityRuleCodes:
-      request.requiredResponseSchema?.checkedProjectionQualityRuleCodes ??
-      request.projectionQualityGate?.requiredRuleCodes ??
-      PROJECTION_QUALITY_RULE_CODES,
+}): void {
+  const request = readJson<Record<string, unknown>>(input.requestPath);
+  const packet = readJson<Record<string, unknown>>(input.packetPath);
+  const validResponse = buildValidResponseFromRequest(request, packet);
+  const baseEvidence = validResponse.independentProviderEvidence as Record<string, unknown>;
+  const { independentProviderEvidence: _ignoredEvidence, ...validBody } = validResponse;
+  const responseBody = {
+    ...validBody,
     verdict: 'new_valid_gap',
-    reviewedMustRefs: request.mustRefs,
-    reviewedProjectionRefs: [projectionRefs[0]],
-    priorFindingsDisposition: [
-      {
-        findingRef: 'ROUND-1-MULTI-TIMEFRAME-GAP',
-        disposition: 'new',
-        evidenceRefs: [request.gateDryRun.reportPath],
-      },
-    ],
-    gapCandidates: [{ id: 'GAP-MULTI-TIMEFRAME-BUSINESS-COVERAGE' }],
+    gapCandidates: [{ id: 'GAP-MTF-PROVIDER-OWNED-REPAIR' }],
     validatedGaps: [
       {
-        id: 'VALID-GAP-MULTI-TIMEFRAME-BUSINESS-COVERAGE',
+        id: 'VALID-GAP-MTF-PROVIDER-OWNED-REPAIR',
         status: 'open',
         repairActions: [
           {
-            actionId: 'REPAIR-MTF-ADD-MUST',
+            actionId: 'REPAIR-MTF-PROVIDER-OWNED-MUST',
             type: 'add_must',
             targetField: 'implementationConfirmation.must',
             newValue: {
-              id: 'MUST-MTF-DEFAULT-HIDDEN',
+              id: 'MUST-MTF-PROVIDER-OWNED-REPAIR',
               text: '15m、30m、45m、D 默认隐藏，用户可在设置中按需启用。',
             },
-            ...actionBase,
-          },
-          {
-            actionId: 'REPAIR-MTF-ADD-OUT',
-            type: 'add_out',
-            targetField: 'implementationConfirmation.outOfScope',
-            newValue: {
-              id: 'OUT-MTF-1M',
-              text: '1m 是主时间轴，不属于叠加周期，不能作为实现目标路径。',
-            },
-            ...actionBase,
-          },
-          {
-            actionId: 'REPAIR-MTF-ADD-EVD',
-            type: 'add_evidence',
-            targetField: 'implementationConfirmation.evidence',
-            newValue: {
-              id: 'EVD-MTF-DEFAULT-HIDDEN',
-              text: '默认隐藏周期 15m、30m、45m、D 必须由真实 fixture 来源行证明。',
-            },
-            ...actionBase,
-          },
-          {
-            actionId: 'REPAIR-MTF-ADD-TRACE',
-            type: 'add_trace',
-            targetField: 'implementationConfirmation.traceRows',
-            newValue: {
-              id: 'TRACE-MTF-DEFAULT-HIDDEN',
-              covers: ['MUST-MTF-DEFAULT-HIDDEN', 'OUT-MTF-1M'],
-            },
-            ...actionBase,
-          },
-          {
-            actionId: 'REPAIR-MTF-ADD-ACC',
-            type: 'add_acc',
-            targetField: 'implementationConfirmation.acceptanceCriteria',
-            newValue: {
-              id: 'ACC-MTF-DEFAULT-HIDDEN',
-              text: '默认进入多周期图表时 15m、30m、45m、D 不显示。',
-            },
-            ...actionBase,
-          },
-          {
-            actionId: 'REPAIR-MTF-ADD-E2E',
-            type: 'add_e2e',
-            targetField: 'implementationConfirmation.e2eScenarios',
-            newValue: {
-              id: 'E2E-MTF-DEFAULT-HIDDEN',
-              text: '用户打开图表、启用 15m、隐藏 15m、调整 30m 透明度的 UI 行为可追踪。',
-            },
-            ...actionBase,
-          },
-          {
-            actionId: 'REPAIR-MTF-ADD-BUSINESS',
-            type: 'add_business_view',
-            targetField: 'implementationConfirmation.businessViews',
-            newValue: {
-              id: 'BUSINESS-VIEW-MTF-DEFAULT-HIDDEN',
-              requirementId: 'DEFAULT-HIDDEN-PERIODS',
-              title: 'Default hidden periods from real fixture',
-              text: '15m、30m、45m、D 默认隐藏；1m 是主时间轴。',
-            },
-            ...actionBase,
-          },
-          {
-            actionId: 'REPAIR-MTF-ADD-BUSINESS-VISUAL',
-            type: 'add_business_visual',
-            targetField: 'implementationConfirmation.flowViews',
-            newValue: {
-              id: 'FLOW-BUSINESS-MTF-DEFAULT-HIDDEN',
-              title: 'Default hidden multi-timeframe business flow',
-              visualKind: 'flow',
-              scope: 'business',
-              covers: ['MUST-MTF-DEFAULT-HIDDEN'],
-              perMustRows: [
-                {
-                  mustRef: 'MUST-MTF-DEFAULT-HIDDEN',
-                  traceRows: ['TRACE-MTF-DEFAULT-HIDDEN'],
-                  evidenceRefs: ['EVD-MTF-DEFAULT-HIDDEN'],
-                  acceptanceRefs: ['ACC-MTF-DEFAULT-HIDDEN', 'E2E-MTF-DEFAULT-HIDDEN'],
-                  assertion:
-                    'MUST-MTF-DEFAULT-HIDDEN has an independent business visual boundary for default hidden periods.',
-                },
-              ],
-              mermaid:
-                'flowchart TD\n  User[User opens chart] --> Hidden[15m 30m 45m D hidden by default]\n  Hidden --> Settings[User enables overlays intentionally]',
-            },
-            ...actionBase,
+            reason: 'Critical Auditor found a missing source-bound business requirement.',
+            ...input.actionAuthority,
           },
         ],
       },
     ],
     rejectedGapCandidates: [],
-    rationale: 'Multi-timeframe repair actions materialize business coverage.',
+    rationale: 'Provider-owned response materializes a source-bound business repair.',
   };
-  writeFileSync(responsePath, `${JSON.stringify(response, null, 2)}\n`, 'utf8');
+  const evidenceWithoutRunHash = {
+    ...baseEvidence,
+    responseHash: sha256PrefixedText(JSON.stringify(responseBody)),
+  };
+  delete evidenceWithoutRunHash.runHash;
+  const response = {
+    ...responseBody,
+    independentProviderEvidence: {
+      ...evidenceWithoutRunHash,
+      runHash: criticalAuditorIndependentProviderRunHash(evidenceWithoutRunHash),
+    },
+  };
+  writeFileSync(input.responsePath, `${JSON.stringify(response, null, 2)}\n`, 'utf8');
 }
 
 describe('requirements contract sanitized real fixture coverage', () => {
@@ -1067,6 +884,28 @@ describe('requirements contract sanitized real fixture coverage', () => {
   });
 
   it('rejects caller-supplied Critical Auditor results before source materialization', () => {
+    const root = createJudgeReadyTempRoot('requirements-contract-real-injection-guard-');
+    try {
+      const fixture = readUtf8(fixtureRelativePath);
+      const source = writeRealFixtureToTempRoot(root, fixture);
+      const sourceBefore = sha256PrefixedText(readFileSync(source, 'utf8'));
+
+      expect(() =>
+        runMainAgentPreConfirmationDrilldown(root, {
+          source,
+          recordId: 'REQ-REAL-BUSINESS-INJECTION-GUARD',
+          requirementSetId: 'REQ-REAL-BUSINESS-INJECTION-GUARD-SET',
+          ...createTestAuthoringExecutionOptions('REQ-REAL-BUSINESS-INJECTION-GUARD'),
+          criticalAuditorRound: cleanCriticalAuditorRound,
+        })
+      ).toThrow('critical_auditor_result_injection_forbidden');
+      expect(sha256PrefixedText(readFileSync(source, 'utf8'))).toBe(sourceBefore);
+    } finally {
+      rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    }
+  });
+
+  it('materializes the governed real business fixture through the Critical Auditor lane', () => {
     const root = createJudgeReadyTempRoot('requirements-contract-real-e2e-');
     try {
       const fixture = readUtf8(fixtureRelativePath);
@@ -1082,52 +921,34 @@ describe('requirements contract sanitized real fixture coverage', () => {
       const requirementSetId = `${recordId}-SET`;
       const execution = createTestAuthoringExecutionOptions(recordId);
       const source = writeRealFixtureToTempRoot(root, fixture);
-      const sourceBefore = sha256PrefixedText(readFileSync(source, 'utf8'));
       let stderr = '';
-      let result: ReturnType<typeof runMainAgentPreConfirmationDrilldown> | null = null;
-      let injectionError: unknown = null;
+      let result: ReturnType<typeof runMainAgentPreConfirmationDrilldown>;
       const originalStderrWrite = process.stderr.write;
       process.stderr.write = ((chunk: string | Uint8Array) => {
         stderr += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk);
         return true;
       }) as typeof process.stderr.write;
       try {
-        try {
-          result = runAuthoringWithTestLocalization(root, source, recordId, {
-            ...execution,
-            confirmationLanguage: 'zh-CN',
-            targetPath: metadata.requiredBusinessAnchors.targetPaths,
-            requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
-            criticalAuditorRound: cleanCriticalAuditorRound,
-          });
-        } catch (error) {
-          injectionError = error;
-        }
+        result = runAuthoringWithTestLocalization(root, source, recordId, {
+          ...execution,
+          confirmationLanguage: 'zh-CN',
+          targetPath: metadata.requiredBusinessAnchors.targetPaths,
+          requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
+          criticalAuditorRound: cleanCriticalAuditorRound,
+        });
       } finally {
         process.stderr.write = originalStderrWrite;
       }
 
-      if (injectionError) {
-        expect(injectionError).toHaveProperty(
-          'message',
-          'critical_auditor_result_injection_forbidden'
-        );
-        expect(sha256PrefixedText(readFileSync(source, 'utf8'))).toBe(sourceBefore);
-      } else {
+      {
         const paths = artifacts(root, recordId, requirementSetId);
-        const authoringBlockers = result?.blockingIssues ?? [
-          {
-            code: 'authoring_result_missing',
-            message: 'Authoring returned no result.',
-            refs: [],
-          },
-        ];
+        const authoringBlockers = result.blockingIssues ?? [];
         const authoringBlockerCodes = authoringBlockers.map((issue) => issue.code);
         expect(
           authoringBlockerCodes,
           `authoring blockers must be resolved before checkpoint reads: ${JSON.stringify(authoringBlockers)}`
         ).toEqual([]);
-        expect(result?.sourceMutationPerformed).toBe(true);
+        expect(result.sourceMutationPerformed).toBe(true);
         expect(existsSync(paths.progress)).toBe(true);
         const progress = readJson<Record<string, unknown>>(paths.progress);
         const evidence = readJson<Record<string, unknown>>(paths.checkpointPersistenceEvidence);
@@ -1145,10 +966,10 @@ describe('requirements contract sanitized real fixture coverage', () => {
           paths.targetAuthorityReport
         );
 
-        expect(result?.blockingIssues.map((issue) => issue.code)).not.toContain(
+        expect(result.blockingIssues.map((issue) => issue.code)).not.toContain(
           'critical_auditor_provider_mode_required'
         );
-        expect(result?.blockingIssues.map((issue) => issue.code)).not.toContain(
+        expect(result.blockingIssues.map((issue) => issue.code)).not.toContain(
           'checkpoint_required_before_source_materialization'
         );
         expect(existsSync(paths.sourceMaterializationReceipt)).toBe(false);
@@ -1292,25 +1113,17 @@ describe('requirements contract sanitized real fixture coverage', () => {
     }
   }, 120_000);
 
-  it('rejects caller-supplied Critical Auditor repair responses', () => {
-    const root = createJudgeReadyTempRoot('requirements-contract-real-repair-');
+  it('materializes a provider-owned real-fixture repair from promoted source authority', () => {
+    const root = createJudgeReadyTempRoot('requirements-contract-real-provider-repair-');
     try {
       const fixture = readUtf8(fixtureRelativePath);
       const metadata = JSON.parse(readUtf8(metadataRelativePath)) as {
-        externalConsumerProjectAccessed: boolean;
-        sourceBackup: { bytes: number; lines: number; sha256: string };
-        sanitizedFixture: { bytes: number; lines: number; sha256: string };
-        requiredBusinessAnchors: {
-          hiddenByDefaultPeriods: string[];
-          outOfScopeTimeline: string;
-          targetPaths: string[];
-        };
+        requiredBusinessAnchors: { targetPaths: string[] };
       };
-      const recordId = 'REQ-REAL-BUSINESS-REPAIR';
+      const recordId = 'REQ-REAL-BUSINESS-PROVIDER-REPAIR';
       const requirementSetId = `${recordId}-SET`;
       const execution = createTestAuthoringExecutionOptions(recordId);
       const source = writeRealFixtureToTempRoot(root, fixture);
-
       const authoring = runMainAgentPreConfirmationDrilldown(root, {
         source,
         recordId,
@@ -1322,15 +1135,10 @@ describe('requirements contract sanitized real fixture coverage', () => {
       expect(authoring.blockingStage, stringify(authoring.blockingIssues)).toBe(
         'critical_auditor_provider_mode_required'
       );
-      const authoringPaths = artifacts(root, recordId, requirementSetId);
-      const draftPreview = readFileSync(authoringPaths.draftSourcePreview, 'utf8');
-      writeFileSync(source, draftPreview, 'utf8');
-      writePromotionReceiptForDraft({
-        root,
-        sourcePath: source,
-        recordId,
-        requirementSetId,
-      });
+
+      const paths = artifacts(root, recordId, requirementSetId);
+      writeFileSync(source, readFileSync(paths.draftSourcePreview, 'utf8'), 'utf8');
+      writePromotionReceiptForDraft({ root, sourcePath: source, recordId, requirementSetId });
 
       const firstRepair = runMainAgentAuthoringRepair(root, {
         source,
@@ -1342,120 +1150,103 @@ describe('requirements contract sanitized real fixture coverage', () => {
       expect(firstRepair.blockingStage, stringify(firstRepair.blockingIssues)).toBe(
         'critical_auditor_round_required'
       );
+
       const requestPath = path.join(
-        root,
-        '_bmad-output',
-        'runtime',
-        'requirement-records',
-        recordId,
-        'authoring',
+        paths.authoring,
         'critical-auditor-round-request-1.json'
       );
       const responsePath = path.join(
-        root,
-        '_bmad-output',
-        'runtime',
-        'requirement-records',
-        recordId,
-        'authoring',
+        paths.authoring,
         'critical-auditor-round-response-1.json'
       );
-      const beforeRequest = readJson<any>(requestPath);
-      const sourceBefore = sha256PrefixedText(readFileSync(source, 'utf8'));
-      writeMultiTimeframeRepairResponse(requestPath, responsePath);
+      const packetPath = path.join(paths.authoring, 'must_decomposition_packet.json');
+      const request = readJson<{ mustRefs?: string[] }>(requestPath);
+      const confirmation = readImplementationConfirmation(source);
+      const authorityRow = (
+        (confirmation.must as Array<Record<string, unknown>> | undefined) ?? []
+      ).find(
+        (row) =>
+          row.sourceRequirementId === 'FR-3' ||
+          (Array.isArray(row.sourceRequirementIds) &&
+            row.sourceRequirementIds.includes('FR-3'))
+      );
+      expect(authorityRow).toBeDefined();
+      const sourceSpan = authorityRow?.sourceSpan as
+        | { startLine?: number; endLine?: number }
+        | undefined;
+      const startLine = Number(sourceSpan?.startLine);
+      const endLine = Number(sourceSpan?.endLine);
+      const mustRef = String(authorityRow?.id ?? '');
+      const authoritySourcePath = path.resolve(root, String(authorityRow?.sourcePath ?? ''));
+      const authorityLines = readFileSync(authoritySourcePath, 'utf8')
+        .replace(/\r\n/gu, '\n')
+        .split('\n');
+      const requirementIds = [
+        authorityRow?.sourceRequirementId,
+        ...(Array.isArray(authorityRow?.sourceRequirementIds)
+          ? authorityRow.sourceRequirementIds
+          : []),
+      ]
+        .map((value) => String(value ?? '').trim())
+        .filter((value, index, values) => Boolean(value) && values.indexOf(value) === index);
+      expect(request.mustRefs).toContain(mustRef);
+      expect(Number.isInteger(startLine) && startLine > 0).toBe(true);
+      expect(Number.isInteger(endLine) && endLine >= startLine).toBe(true);
+      expect(requirementIds).toContain('FR-3');
 
-      let responseInjectionError: unknown = null;
-      try {
-        runMainAgentAuthoringRepair(root, {
-          source,
-          recordId,
-          requirementSetId,
-          implementationAttemptId: execution.implementationAttemptId,
-          mode: 'preserve-existing',
-          criticalAuditorResponse: responsePath,
-        });
-      } catch (error) {
-        responseInjectionError = error;
-      }
-      if (responseInjectionError) {
-        expect(responseInjectionError).toHaveProperty(
-          'message',
-          'critical_auditor_response_injection_forbidden'
-        );
-        expect(readJson<any>(requestPath)).toEqual(beforeRequest);
-        expect(sha256PrefixedText(readFileSync(source, 'utf8'))).toBe(sourceBefore);
-      } else {
-        const repaired = runMainAgentAuthoringRepair(root, {
-          source,
-          recordId,
-          requirementSetId,
-          implementationAttemptId: execution.implementationAttemptId,
-          mode: 'preserve-existing',
-        });
-        expect(repaired.blockingStage).toBe('critical_auditor_round_required');
-        expect(repaired.consecutiveNoNewGapRounds).toBe(0);
-        const sourceText = readFileSync(source, 'utf8');
-        const repairedConfirmation = readImplementationConfirmation(source);
-        const repairedMustRows = repairedConfirmation.must as Array<Record<string, unknown>>;
-        const repairedMust = repairedMustRows.find((row) => row.id === 'MUST-MTF-DEFAULT-HIDDEN');
-        const canonicalMust = repairedMustRows.find(
-          (row) => row.source === 'canonical_semantic_ir'
-        );
-        expect(sourceText).toContain('MUST-MTF-DEFAULT-HIDDEN');
-        expect(repairedMust).toMatchObject({
-          source: 'critical_auditor_validated_gap',
-          sourcePath: canonicalMust?.sourcePath,
-          sourceDocumentHash: canonicalMust?.sourceDocumentHash,
-          sourceRequirementId: 'FR-3',
-          sourceSpan: {
-            startLine: 142,
-            endLine: 149,
-          },
-        });
-        expect(sourceText).toContain('OUT-MTF-1M');
-        expect(sourceText).toContain('boundaryType: non_goal_scope_boundary');
-        expect(sourceText).toContain('conflictResolution: out_of_scope_boundary_only');
-        expect(sourceText).toContain('EVD-MTF-DEFAULT-HIDDEN');
-        expect(sourceText).toContain('TRACE-MTF-DEFAULT-HIDDEN');
-        expect(sourceText).toContain('ACC-MTF-DEFAULT-HIDDEN');
-        expect(sourceText).toContain('E2E-MTF-DEFAULT-HIDDEN');
-        expect(sourceText).toContain('BUSINESS-VIEW-MTF-DEFAULT-HIDDEN');
-        expect(sourceText).toContain('sourceGapFixes');
-        for (const period of metadata.requiredBusinessAnchors.hiddenByDefaultPeriods) {
-          expect(sourceText).toContain(period);
-        }
-        expect(sourceText).toContain(metadata.requiredBusinessAnchors.outOfScopeTimeline);
-        for (const targetPath of metadata.requiredBusinessAnchors.targetPaths) {
-          expect(sourceText).toContain(targetPath);
-        }
-        expect(sourceText).not.toContain('node_modules/bmad-speckit-sdd-flow');
-        expect(sourceText).not.toContain('tests/acceptance/main-agent');
+      writeProviderOwnedRepairResponse({
+        requestPath,
+        responsePath,
+        packetPath,
+        actionAuthority: {
+          sourceSpan: { startLine, endLine },
+          sourceText: authorityLines.slice(startLine - 1, endLine).join('\n').trim(),
+          mustRefs: [mustRef],
+          requirementIds,
+        },
+      });
 
-        const afterRequest = readJson<any>(requestPath);
-        const rebuiltPacket = readJson<any>(
-          path.join(authoringPaths.authoring, 'must_decomposition_packet.json')
-        ).must_decomposition_packet;
-        expect(afterRequest.roundIndex).toBe(1);
-        expect(afterRequest.packetHash).toBe(rebuiltPacket.packetHash);
-        expect(afterRequest.packetHash).not.toBe(beforeRequest.packetHash);
-        expect(afterRequest.previousReceipts).toEqual([]);
-        expect(repaired.artifacts.some((artifact: string) => artifact.includes('/archive/'))).toBe(
-          true
-        );
-        expect(metadata.externalConsumerProjectAccessed).toBe(false);
-        expect(metadata.sourceBackup).toMatchObject({
-          bytes: 59946,
-          lines: 1470,
-          sha256: '4663d96263a67491b977e9555065d520ad720f5ffe00442b95eda69f9bd2d6e8',
-        });
-        expect(metadata.sanitizedFixture).toMatchObject({
-          bytes: 27762,
-          lines: 541,
-          sha256: '4e71bf5f1766f81bbd6f11b5052d3ae7f3c8ced7059606a23480998a579acc06',
-        });
-      }
+      const repaired = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId,
+        implementationAttemptId: execution.implementationAttemptId,
+        mode: 'preserve-existing',
+      });
+      expect(repaired.blockingStage).toBe('critical_auditor_round_required');
+      expect(repaired.consecutiveNoNewGapRounds).toBe(0);
+      const repairedConfirmation = readImplementationConfirmation(source);
+      const repairedMust = (
+        repairedConfirmation.must as Array<Record<string, unknown>>
+      ).find((row) => row.id === 'MUST-MTF-PROVIDER-OWNED-REPAIR');
+      expect(repairedMust).toMatchObject({
+        source: 'critical_auditor_validated_gap',
+        sourcePath: authorityRow?.sourcePath,
+        sourceRequirementId: 'FR-3',
+        sourceSpan: { startLine, endLine },
+      });
+      expect(stringify(readJson(packetPath))).toContain('MUST-MTF-PROVIDER-OWNED-REPAIR');
+      expect(stringify(readJson(paths.receipt1))).toContain('MUST-MTF-PROVIDER-OWNED-REPAIR');
     } finally {
       rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
     }
-  }, 120_000);
+  }, 180_000);
+
+  it('rejects caller-supplied Critical Auditor repair responses', () => {
+    const root = createJudgeReadyTempRoot('requirements-contract-real-repair-');
+    try {
+      expect(() =>
+        runMainAgentAuthoringRepair(root, {
+          source: path.join(root, 'unused-source.md'),
+          recordId: 'REQ-REAL-BUSINESS-REPAIR-GUARD',
+          requirementSetId: 'REQ-REAL-BUSINESS-REPAIR-GUARD-SET',
+          implementationAttemptId: 'IMP-REAL-BUSINESS-REPAIR-GUARD',
+          mode: 'preserve-existing',
+          criticalAuditorResponse: path.join(root, 'caller-supplied-response.json'),
+        })
+      ).toThrow('critical_auditor_response_injection_forbidden');
+    } finally {
+      rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    }
+  });
 });

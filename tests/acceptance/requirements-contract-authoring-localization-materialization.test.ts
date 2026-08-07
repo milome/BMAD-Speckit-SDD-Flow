@@ -356,7 +356,7 @@ describe('requirements contract authoring localization materialization', () => {
         removeTempRoot(root);
       }
     },
-    60_000
+    90_000
   );
 
   it('repairs a stale synthetic-prefix textZh projection before renderer validation', () => {

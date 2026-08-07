@@ -171,8 +171,21 @@ function looksPlaceholder(command: string): boolean {
   );
 }
 
-function resolveSkillDir(_projectRoot: string, skillName: string): string {
-  return resolvePackageOwnedBmadPath('skills', skillName);
+function resolveSkillDir(projectRoot: string, skillName: string): string {
+  const consumerCandidates = ['.codex', '.cursor', '.claude', '_bmad', '.agents'].map(
+    (surface) => path.join(projectRoot, surface, 'skills', skillName)
+  );
+  const consumerSkill = consumerCandidates.find((candidate) =>
+    fs.existsSync(path.join(candidate, 'SKILL.md'))
+  );
+  if (consumerSkill) return consumerSkill;
+  try {
+    const packageSkill = resolvePackageOwnedBmadPath('skills', skillName);
+    if (fs.existsSync(path.join(packageSkill, 'SKILL.md'))) return packageSkill;
+  } catch {}
+  return skillName === 'encoding-integrity-guardian'
+    ? '<encoding-integrity-guardian-dir>'
+    : '<skill-dir>';
 }
 
 function commandTemplateValues(input: {

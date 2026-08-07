@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   NO_ACTIVE_REQUIREMENT,
   requirementRecordIndexPath,
@@ -12,6 +12,17 @@ import {
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/resolve-active-requirement';
 import { mainEmitRuntimePolicy } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/emit-runtime-policy';
 import { mainMainAgentOrchestration } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
+import {
+  requirementsContractPromptTransactionPublishCommand,
+  type PromptTransactionPublisherDeps,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher';
+import { compiledPromptRunnerFor } from './helpers/prompt-transaction-compiled-runner-fixture';
+import { prepareAuditDispatchRuntime } from './helpers/prompt-transaction-audit-dispatch-fixture';
+import {
+  materializePromptPublicationFixture,
+  setPromptPublicationReadiness,
+  writeJson,
+} from './helpers/prompt-transaction-publication-fixture';
 
 let root: string;
 
@@ -246,6 +257,64 @@ function writeFakeReqTraceSkill(projectRoot: string): void {
   );
 }
 
+function canonicalCurrentDispatchPointerPath(projectRoot: string): string {
+  return path.join(
+    projectRoot,
+    'docs',
+    'plans',
+    'evidence',
+    'loop-engineering-remediation',
+    'current-dispatch-pointer-receipt.json'
+  );
+}
+
+async function writePublishedDispatchFixture(): Promise<
+  ReturnType<typeof materializePromptPublicationFixture>
+> {
+  const initialRoot = root;
+  const fixture = materializePromptPublicationFixture();
+  fs.rmSync(initialRoot, { recursive: true, force: true });
+  root = fixture.root;
+  fs.cpSync(path.join(process.cwd(), '_bmad'), path.join(root, '_bmad'), {
+    recursive: true,
+  });
+  setPromptPublicationReadiness(fixture, { decision: 'pass' });
+  fixture.options.currentDispatchPointer = canonicalCurrentDispatchPointerPath(root);
+  prepareAuditDispatchRuntime(fixture, { executionClosureStatus: 'not_established' });
+
+  const record = JSON.parse(fs.readFileSync(fixture.paths.recordPath, 'utf8'));
+  writeJson(fixture.paths.recordPath, {
+    ...record,
+    currentMentalModel: 'implementation_readiness',
+    stage: 'implement',
+    confirmationHistory: (record.confirmationHistory ?? []).map((event: Record<string, unknown>) =>
+      event.eventType === 'confirmation_recorded'
+        ? {
+            ...event,
+            confirmationText:
+              event.confirmationText ?? `confirmed ${fixture.identity.requirementSetId}`,
+            renderReportPath:
+              event.renderReportPath ?? fixture.options.requirementsConfirmationReceipt,
+            htmlPath: event.htmlPath ?? fixture.paths.requirementsPage,
+          }
+        : event
+    ),
+  });
+
+  const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+  const runCompiledPrompt = compiledPromptRunnerFor(fixture, {
+    goalMode: 'native_goal_document_ref',
+    extraPacket: {
+      packetId: fixture.identity.implementationAttemptId,
+    },
+  }) as unknown as NonNullable<PromptTransactionPublisherDeps['runCompiledPrompt']>;
+  const code = await requirementsContractPromptTransactionPublishCommand(fixture.options, {
+    runCompiledPrompt,
+  }).finally(() => stdout.mockRestore());
+  expect(code).toBe(0);
+  return fixture;
+}
+
 describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
   it('fails closed with NO_ACTIVE_REQUIREMENT when no active requirement exists', () => {
     expect(() => resolveActiveRequirement({ root })).toThrow(NO_ACTIVE_REQUIREMENT);
@@ -441,15 +510,12 @@ describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
     ]);
   });
 
-  it('dispatch-plan hydrates requirement-scoped state when explicit record args bypass a stale legacy state', () => {
-    const { recordPath, indexPath } = writeRequirementRecord({
-      requirementSetId: 'REQSET-EXPLICIT-001',
-      architectureConfirmationState: {
-        status: 'active',
-        currentArchitectureConfirmationHash:
-          'sha256:4444444444444444444444444444444444444444444444444444444444444444',
-      },
-    });
+  it('dispatch-plan hydrates requirement-scoped state when explicit record args bypass a stale legacy state', async () => {
+    const fixture = await writePublishedDispatchFixture();
+    const { recordPath } = fixture.paths;
+    const indexPath = requirementRecordIndexPath(root);
+    const recordId = fixture.authority.recordId;
+    const requirementSetId = fixture.identity.requirementSetId;
     writeFakeReqTraceSkill(root);
     fs.writeFileSync(
       indexPath,
@@ -535,9 +601,9 @@ describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
         '--action',
         'dispatch-plan',
         '--record-id',
-        'REQ-ACTIVE-001',
+        recordId,
         '--requirement-set-id',
-        'REQSET-EXPLICIT-001',
+        requirementSetId,
       ])
     );
 
@@ -547,11 +613,11 @@ describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
       path.dirname(recordPath),
       'orchestration',
       'orchestration-state',
-      'REQSET-EXPLICIT-001.json'
+      `${requirementSetId}.json`
     );
-    expect(instruction.sessionId).toBe('REQSET-EXPLICIT-001');
+    expect(instruction.sessionId).toBe(requirementSetId);
     expect(instruction.packetPath.replace(/\\/g, '/')).toContain(
-      '_bmad-output/runtime/requirement-records/REQSET-EXPLICIT-001/prompts/prompt-packets'
+      `_bmad-output/runtime/requirement-records/${requirementSetId}/prompts/prompt-packets`
     );
     expect(fs.existsSync(expectedStatePath)).toBe(true);
 
@@ -562,15 +628,15 @@ describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
         '--action',
         'inspect',
         '--record-id',
-        'REQ-ACTIVE-001',
+        recordId,
         '--requirement-set-id',
-        'REQSET-EXPLICIT-001',
+        requirementSetId,
       ])
     );
     expect(inspectResult.code, inspectResult.stderr).toBe(0);
     const surface = JSON.parse(inspectResult.stdout);
     expect(surface.source).toBe('requirement_record');
-    expect(surface.sessionId).toBe('REQSET-EXPLICIT-001');
+    expect(surface.sessionId).toBe(requirementSetId);
     expect(surface.orchestrationStatePath).toBe(expectedStatePath);
     expect(surface.pendingPacketStatus).toBe('ready_for_main_agent');
     expect(surface.runtimeResumeProjection.observedLegacyState).toMatchObject({
@@ -579,30 +645,11 @@ describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
     });
   });
 
-  it('dispatch-plan replaces stale pending packet when lifecycle now requires implement', () => {
-    const { recordPath } = writeRequirementRecord({
-      requirementSetId: 'REQSET-STALE-PACKET-001',
-      architectureConfirmationState: {
-        status: 'active',
-        currentArchitectureConfirmationHash:
-          'sha256:4444444444444444444444444444444444444444444444444444444444444444',
-      },
-      rerunLoops: [
-        {
-          rerunLoopId: 'rerun-stale',
-          status: 'resolved',
-          sourceRefs: [{ sourceType: 'gate_check', id: 'delivery-closeout:old' }],
-        },
-      ],
-      gateChecks: [
-        {
-          checkId: 'delivery-closeout:old',
-          gate: 'Delivery Closeout Gate',
-          decision: 'pass',
-          closeoutAttemptId: 'current-attempt',
-        },
-      ],
-    });
+  it('dispatch-plan replaces stale pending packet when lifecycle now requires implement', async () => {
+    const fixture = await writePublishedDispatchFixture();
+    const { recordPath } = fixture.paths;
+    const recordId = fixture.authority.recordId;
+    const requirementSetId = fixture.identity.requirementSetId;
     writeFakeReqTraceSkill(root);
     const stateDir = path.join(path.dirname(recordPath), 'orchestration', 'orchestration-state');
     const packetDir = path.join(path.dirname(recordPath), 'prompts', 'prompt-packets');
@@ -614,7 +661,7 @@ describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
       `${JSON.stringify(
         {
           packetId: 'remediate-stale',
-          parentSessionId: 'REQSET-STALE-PACKET-001',
+          parentSessionId: requirementSetId,
           flow: 'standalone_tasks',
           phase: 'implement',
           taskType: 'remediate',
@@ -631,11 +678,11 @@ describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
       'utf8'
     );
     fs.writeFileSync(
-      path.join(stateDir, 'REQSET-STALE-PACKET-001.json'),
+      path.join(stateDir, `${requirementSetId}.json`),
       `${JSON.stringify(
         {
           version: 1,
-          sessionId: 'REQSET-STALE-PACKET-001',
+          sessionId: requirementSetId,
           host: 'cursor',
           flow: 'standalone_tasks',
           currentPhase: 'implement',
@@ -679,9 +726,9 @@ describe('Active Requirement Resolver / ResolvedRuntimeContext', () => {
         '--action',
         'dispatch-plan',
         '--record-id',
-        'REQ-ACTIVE-001',
+        recordId,
         '--requirement-set-id',
-        'REQSET-STALE-PACKET-001',
+        requirementSetId,
       ])
     );
 

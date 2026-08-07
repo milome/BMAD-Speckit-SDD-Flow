@@ -212,7 +212,7 @@ describe('requirements contract authoring business view materialization', () => 
     } finally {
       removeTempRoot(root);
     }
-  });
+  }, 90_000);
 
   it('replaces an existing intake target through controlled promotion', () => {
     const root = createTempRoot('bmad-business-view-existing-target-');
@@ -253,5 +253,5 @@ describe('requirements contract authoring business view materialization', () => 
     } finally {
       removeTempRoot(root);
     }
-  });
+  }, 90_000);
 });

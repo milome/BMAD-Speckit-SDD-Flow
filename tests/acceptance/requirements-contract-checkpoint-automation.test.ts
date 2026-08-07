@@ -158,6 +158,23 @@ function fileHash(filePath: string): string {
   return `sha256:${createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')}`;
 }
 
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+  }
+  return `{${Object.keys(value as Record<string, unknown>)
+    .sort()
+    .map(
+      (key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`
+    )
+    .join(',')}}`;
+}
+
+function stableJsonHash(value: unknown): string {
+  return `sha256:${createHash('sha256').update(stableStringify(value), 'utf8').digest('hex')}`;
+}
+
 function mustGateSource(packetHash = fixedHash('a'), overrides = ''): string {
   const inventedTraceBackRef = overrides.includes('SOURCE_INVENTED_TRACE_ROW')
     ? ''
@@ -532,9 +549,14 @@ function writeMustGateFixture(overrides = '') {
         mustEvidenceProjection: [
           { id: 'EVD-001', materializedTo: ['implementationConfirmation.evidence[EVD-001]'] },
         ],
-        mustTraceProjection: [
-          { id: 'TRACE-001', materializedTo: ['implementationConfirmation.traceRows[TRACE-001]'] },
-        ],
+        mustTraceProjection: overrides.includes('SOURCE_INVENTED_TRACE_ROW')
+          ? []
+          : [
+              {
+                id: 'TRACE-001',
+                materializedTo: ['implementationConfirmation.traceRows[TRACE-001]'],
+              },
+            ],
         mustAcceptanceProjection: [
           {
             id: 'ACC-001',
@@ -849,6 +871,110 @@ function writeValidMustGateArtifactsForSource(source: string, authoringDir: stri
       'utf8'
     );
   }
+  const sourceBytesHash = fileHash(source);
+  const createdAt = '2026-05-25T00:00:00.000Z';
+  const candidateArtifactPath = path.join(authoringDir, 'controlled-must-candidates.json');
+  const draftConfirmationPath = path.join(
+    authoringDir,
+    'draft-implementation-confirmation.json'
+  );
+  fs.writeFileSync(
+    path.join(authoringDir, 'critical-auditor-checkpoint-outcome.json'),
+    JSON.stringify(
+      {
+        schemaVersion: 'critical-auditor-checkpoint-outcome/v1',
+        recordId: finalExtracted.confirmation.recordId,
+        requirementSetId: finalExtracted.confirmation.requirementSetId,
+        auditInputHash,
+        sourceDocumentHash,
+        verdict: 'no_new_valid_gap',
+        consecutiveNoNewGapRounds: 3,
+        decision: 'pass',
+        blockingIssues: [],
+      },
+      null,
+      2
+    ),
+    'utf8'
+  );
+  fs.writeFileSync(
+    candidateArtifactPath,
+    JSON.stringify(
+      {
+        schemaVersion: 'requirements-authoring-controlled-must-candidates/v1',
+        sourcePath: source,
+        sourceDocumentHash: sourceBytesHash,
+        sourceHash: sourceBytesHash,
+        recordId: finalExtracted.confirmation.recordId,
+        requirementSetId: finalExtracted.confirmation.requirementSetId,
+        createdAt,
+        candidateCount: mustRows.length,
+        acceptedCandidateCount: mustRows.length,
+        mustCount: mustRows.length,
+        failClosed: false,
+        candidates: mustRows.map((must: any) => ({
+          id: must.id,
+          decision: 'accepted_for_draft',
+        })),
+        decision: 'draft_materialization_allowed',
+      },
+      null,
+      2
+    ),
+    'utf8'
+  );
+  fs.writeFileSync(
+    draftConfirmationPath,
+    JSON.stringify(
+      {
+        schemaVersion: 'requirements-authoring-draft-implementation-confirmation/v1',
+        sourcePath: source,
+        sourceDocumentHash: sourceBytesHash,
+        recordId: finalExtracted.confirmation.recordId,
+        requirementSetId: finalExtracted.confirmation.requirementSetId,
+        createdAt,
+        status: 'draft',
+        candidateCount: mustRows.length,
+        acceptedCandidateCount: mustRows.length,
+        mustCount: mustRows.length,
+        failClosed: false,
+        mustRequirements: mustRows,
+        implementationConfirmation: finalExtracted.confirmation,
+        decision: 'draft_materialization_allowed',
+      },
+      null,
+      2
+    ),
+    'utf8'
+  );
+  const receiptHashInput = {
+    sourcePath: source,
+    sourceDocumentHash: sourceBytesHash,
+    recordId: finalExtracted.confirmation.recordId,
+    requirementSetId: finalExtracted.confirmation.requirementSetId,
+    createdAt,
+    candidateCount: mustRows.length,
+    acceptedCandidateCount: mustRows.length,
+    mustCount: mustRows.length,
+    decision: 'draft_materialization_allowed',
+  };
+  fs.writeFileSync(
+    path.join(authoringDir, 'authoring-materialization-receipt.json'),
+    JSON.stringify(
+      {
+        schemaVersion: 'requirements-authoring-materialization-receipt/v1',
+        ...receiptHashInput,
+        candidateArtifactPath,
+        draftImplementationConfirmationPath: draftConfirmationPath,
+        failClosed: false,
+        requiresUserConfirmationBeforeExecution: true,
+        receiptHash: stableJsonHash(receiptHashInput),
+      },
+      null,
+      2
+    ),
+    'utf8'
+  );
 }
 
 function writeSmallSource(root = tempDir): string {
@@ -2176,7 +2302,7 @@ describe('requirements contract checkpoint automation', () => {
     writeValidMustGateArtifactsForSource(source, authoringDirForGlobalGateRecord(tempDir));
 
     const plan = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'plan'], tempDir);
-    expect(plan.result.status).toBe(0);
+    expect(plan.result.status, `${plan.result.stdout}\n${plan.result.stderr}`).toBe(0);
     expect(() => JSON.parse(plan.result.stdout)).not.toThrow();
     expect(plan.result.stderr).toContain('[需求契约]');
     expect(plan.result.stderr).toContain('现在在做什么：');
@@ -2198,7 +2324,7 @@ describe('requirements contract checkpoint automation', () => {
       ],
       tempDir
     );
-    expect(run.result.status).toBe(0);
+    expect(run.result.status, `${run.result.stdout}\n${run.result.stderr}`).toBe(0);
     expect(() => JSON.parse(run.result.stdout)).not.toThrow();
     expect(run.result.stderr).toContain('[需求契约]');
     expect(run.result.stderr).toContain('现在在做什么：');
@@ -2206,7 +2332,7 @@ describe('requirements contract checkpoint automation', () => {
     expect(run.result.stderr).toContain('机器信息：');
 
     const status = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'status'], tempDir);
-    expect(status.result.status).toBe(0);
+    expect(status.result.status, `${status.result.stdout}\n${status.result.stderr}`).toBe(0);
     expect(() => JSON.parse(status.result.stdout)).not.toThrow();
     expect(status.result.stderr).toContain('[需求契约]');
     expect(status.result.stderr).toContain('现在在做什么：');
@@ -2214,7 +2340,7 @@ describe('requirements contract checkpoint automation', () => {
     expect(status.result.stderr).toContain('机器信息：');
 
     const resume = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'resume'], tempDir);
-    expect(resume.result.status).toBe(0);
+    expect(resume.result.status, `${resume.result.stdout}\n${resume.result.stderr}`).toBe(0);
     expect(() => JSON.parse(resume.result.stdout)).not.toThrow();
     expect(resume.result.stderr).toContain('[需求契约]');
     expect(resume.result.stderr).toContain('现在在做什么：');
