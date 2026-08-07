@@ -14,6 +14,10 @@ import {
 import { resolveSixModelRuntimeDecision } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/six-model-runtime-decision';
 import { appendControlEventAndReplay } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-control-store';
 import {
+  createAuditTriadExecutionPlan,
+  sha256Json as sha256AuditTriadJson,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-triad-orchestrator';
+import {
   implementationConfirmationHashFor,
   sourceDocumentHashFor,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-implementation-confirmation-codec';
@@ -32,6 +36,14 @@ const OLD_IMPLEMENTATION_HASH =
   'sha256:2222222222222222222222222222222222222222222222222222222222222222';
 const PAGE_HASH = 'sha256:3333333333333333333333333333333333333333333333333333333333333333';
 const ARCH_HASH = 'sha256:4444444444444444444444444444444444444444444444444444444444444444';
+const SEMANTIC_HASH =
+  'sha256:5555555555555555555555555555555555555555555555555555555555555555';
+const PROJECTION_SET_HASH =
+  'sha256:6666666666666666666666666666666666666666666666666666666666666666';
+const MODEL_PACKET_HASH =
+  'sha256:7777777777777777777777777777777777777777777777777777777777777777';
+const AUDIT_RECEIPT_HASH =
+  'sha256:8888888888888888888888888888888888888888888888888888888888888888';
 
 let tempDir = '';
 
@@ -169,6 +181,7 @@ function baseRecord(overrides: Record<string, unknown> = {}): Record<string, unk
     workflowAdapter: 'direct',
     contractAuthoringRequired: true,
     sourceDocumentHash: OLD_SOURCE_HASH,
+    semanticModelHash: SEMANTIC_HASH,
     implementationConfirmationHash: OLD_IMPLEMENTATION_HASH,
     confirmationPageHash: PAGE_HASH,
     latestConfirmationProjectionHash: PAGE_HASH,
@@ -374,49 +387,73 @@ function writeExecutionClosureInputs(recordPath: string, attemptId: string): voi
   writeJson(path.join(base, 'command-results', 'summary.json'), []);
 }
 
-function auditPlan(attemptId: string): Record<string, unknown> {
-  return {
-    schemaVersion: 'audit-triad-execution-plan/v1',
+function auditPlan(attemptId: string) {
+  for (const fileName of [
+    'governance-remediation.yaml',
+    'audit-item-mapping.yaml',
+    'code-reviewer-config.yaml',
+  ]) {
+    writeText(
+      path.join(tempDir, '_bmad', '_config', fileName),
+      fs.readFileSync(path.join(ROOT, '_bmad', '_config', fileName), 'utf8')
+    );
+  }
+  return createAuditTriadExecutionPlan({
+    projectRoot: tempDir,
     recordId: 'REQ-RECONFIRM-RUNTIME',
-    requirementSetId: 'REQ-RECONFIRM-RUNTIME',
+    stage: 'implement',
+    callPoint: 'audit_review',
     attemptId,
-    stageProfileId: 'audit-review',
     sourceDocumentHash: OLD_SOURCE_HASH,
+    semanticModelHash: SEMANTIC_HASH,
     implementationConfirmationHash: OLD_IMPLEMENTATION_HASH,
-    currentAttemptHash: 'sha256:5555555555555555555555555555555555555555555555555555555555555555',
-    currentEvidenceHash: 'sha256:6666666666666666666666666666666666666666666666666666666666666666',
-    criticalAuditorProfileHash:
-      'sha256:7777777777777777777777777777777777777777777777777777777777777777',
-    criticalAuditorStageProfileHash:
-      'sha256:8888888888888888888888888888888888888888888888888888888888888888',
-    requiredCheckItemSetHash:
-      'sha256:9999999999999999999999999999999999999999999999999999999999999999',
-    roundPolicy: { consecutiveNoGapRoundsRequired: 1 },
-    subagents: [{ requiredCheckItemIds: ['CHK-001'] }],
-  };
+    projectionSetHash: PROJECTION_SET_HASH,
+    modelPacketHash: MODEL_PACKET_HASH,
+    auditReceiptHash: AUDIT_RECEIPT_HASH,
+  });
 }
 
-function auditRound(plan: Record<string, unknown>): Record<string, unknown> {
-  return {
+function auditRound(plan: ReturnType<typeof createAuditTriadExecutionPlan>): Record<string, unknown> {
+  const readonlyAuditorInvocationId = 'readonly-auditor-reconfirmation-fixture';
+  const round = {
+    schemaVersion: 'audit-triad-round-receipt/v1',
     roundId: 'round-1',
+    verdict: 'blocked',
     stageProfileId: plan.stageProfileId,
+    auditEpochId: plan.auditEpochId,
+    auditTargetBundleHash: plan.auditTargetBundleHash,
+    readonlyAuditorInvocationId,
     perspectiveResults: {
-      product_intent: { agentId: 'product' },
-      model_projection: { agentId: 'model' },
-      main_agent_execution: { agentId: 'execution' },
+      product_intent: { agentId: readonlyAuditorInvocationId, validGaps: [] },
+      model_projection: { agentId: readonlyAuditorInvocationId, validGaps: [] },
+      main_agent_execution: { agentId: readonlyAuditorInvocationId, validGaps: [] },
     },
-    coveredCheckItemIds: ['CHK-001'],
+    coveredCheckItemIds: plan.subagents[0].requiredCheckItemIds,
     validatedGapRefs: [],
-    vetoItemResults: [],
+    invalidGapRefs: [],
+    vetoItemResults: plan.vetoItemIds.map((itemId) => ({ itemId, passed: true })),
     sourceDocumentHash: plan.sourceDocumentHash,
+    semanticModelHash: plan.semanticModelHash,
     implementationConfirmationHash: plan.implementationConfirmationHash,
+    projectionSetHash: plan.projectionSetHash,
+    checkedProjectionQualityRuleCodes: plan.checkedProjectionQualityRuleCodes,
+    qualityRuleSetHash: plan.qualityRuleSetHash,
+    modelPacketHash: plan.modelPacketHash,
+    auditReceiptHash: plan.auditReceiptHash,
+    goalExecutionHash: plan.goalExecutionHash,
     currentAttemptHash: plan.currentAttemptHash,
     currentEvidenceHash: plan.currentEvidenceHash,
     criticalAuditorProfileHash: plan.criticalAuditorProfileHash,
     criticalAuditorStageProfileHash: plan.criticalAuditorStageProfileHash,
     requiredCheckItemSetHash: plan.requiredCheckItemSetHash,
+    criticalAuditorRequestHash:
+      'sha256:9999999999999999999999999999999999999999999999999999999999999999',
     scoreReceiptRefs: ['score-receipt.json'],
     runAuditorHostReceiptRefs: ['host-receipt.json'],
+  };
+  return {
+    ...round,
+    receiptHash: sha256AuditTriadJson(round),
   };
 }
 
@@ -678,8 +715,10 @@ describe('main-agent reconfirmation runtime', () => {
   });
 
   it('open request blocks execution closure and audit review gates', () => {
+    const attemptId = 'attempt-open-reconfirmation';
     const recordPath = writeRecord(
       baseRecord({
+        currentAttemptId: attemptId,
         currentMentalModel: 'execution_closure',
         currentStage: 'execution_closure',
         reconfirmationRequests: [
@@ -692,7 +731,6 @@ describe('main-agent reconfirmation runtime', () => {
         ],
       })
     );
-    const attemptId = 'attempt-open-reconfirmation';
     writeExecutionClosureInputs(recordPath, attemptId);
     const executionExit = mainExecutionClosureGate([
       '--requirement-record',

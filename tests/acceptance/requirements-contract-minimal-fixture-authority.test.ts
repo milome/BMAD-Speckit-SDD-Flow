@@ -153,7 +153,7 @@ describe('requirements contract minimal fixture authority', () => {
     for (const callerPath of migratedCallers) {
       const callerSource = readFileSync(path.resolve(callerPath), 'utf8');
       const callIndexes = Array.from(
-        callerSource.matchAll(/writeMinimalConsumerRequirement\(/gu),
+        callerSource.matchAll(/write(?:LintReady)?MinimalConsumerRequirement\(/gu),
         (match) => match.index
       );
       expect(callIndexes.length, callerPath).toBeGreaterThan(0);

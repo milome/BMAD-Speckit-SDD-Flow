@@ -7127,8 +7127,16 @@ function transitionCriticalAuditorAuditSource(input: {
     commitHash: sha256Json(payload),
   };
   const existing = readJsonIfExists(input.previous.auditSourceTransition);
-  if (existing && sha256Json(existing) !== sha256Json(transition)) {
-    throw new Error('critical_auditor_audit_source_transition_conflict');
+  if (existing) {
+    const { commitHash: existingCommitHash, ...existingPayload } = existing;
+    const { committedAt: _existingCommittedAt, ...existingIdentity } = existingPayload;
+    const { committedAt: _nextCommittedAt, ...nextIdentity } = payload;
+    if (
+      normalizeText(existingCommitHash) !== sha256Json(existingPayload) ||
+      sha256Json(existingIdentity) !== sha256Json(nextIdentity)
+    ) {
+      throw new Error('critical_auditor_audit_source_transition_conflict');
+    }
   }
   if (!existing) {
     writeJsonUtf8(input.previous.auditSourceTransition, transition);
@@ -9099,7 +9107,7 @@ function sourceProjectionOnlyHeadingSignal(headingPath: string[]): string | null
     /^(?:(?:authoritative|source|contract|requirement)\s+)*(?:authority\s+)?(?:provenance|lineage|references?|citations?|metadata)$/iu.test(
       localHeading
     ) ||
-    /^(?:source authority provenance|authority provenance|source lineage|来源|溯源|引用|出处)$/u.test(
+    /^(?:source authority provenance|authority provenance|source lineage|template authority|validation provenance|来源|溯源|引用|出处)$/u.test(
       localHeading
     )
   ) {
@@ -25347,7 +25355,13 @@ function pendingFinalCriticalAuditorDraftText(input: {
   recordId: string;
   packetHash: string;
 }): string | null {
-  const finalDraftSource = path.join(input.transaction.stagingDir, 'final-draft-source.md');
+  const explicitFinalDraftSource = path.join(
+    input.transaction.stagingDir,
+    'final-draft-source.md'
+  );
+  const finalDraftSource = fs.existsSync(explicitFinalDraftSource)
+    ? explicitFinalDraftSource
+    : input.transaction.draftSource;
   const request = readJsonIfExists(criticalAuditorRequestPath(input.transaction, 1));
   const kernel = recordObject(readJsonIfExists(input.transaction.semanticKernel)?.semanticKernel);
   const packet = recordObject(
@@ -25355,10 +25369,8 @@ function pendingFinalCriticalAuditorDraftText(input: {
   );
   if (
     !fs.existsSync(finalDraftSource) ||
-    !request ||
     Object.keys(kernel).length === 0 ||
-    Object.keys(packet).length === 0 ||
-    !criticalAuditorRoundRequestHashMatchesContent(request)
+    Object.keys(packet).length === 0
   ) {
     return null;
   }
@@ -25379,6 +25391,7 @@ function pendingFinalCriticalAuditorDraftText(input: {
   const semanticModelHash = normalizeText(kernel.semanticModelHash);
   const semanticKernelHash = normalizeText(kernel.kernelHash);
   if (
+    sourceDocumentHash !== input.transaction.auditSourceHash ||
     !semanticModelHash.startsWith('sha256:') ||
     !semanticKernelHash.startsWith('sha256:')
   ) {
@@ -25402,7 +25415,9 @@ function pendingFinalCriticalAuditorDraftText(input: {
     Number(criticalAuditor.consecutiveNoNewGapRounds ?? 0) >= 3 &&
     normalizeText(criticalAuditor.convergenceVerdict) === 'bounded_no_new_gap';
   const requestMatchesFinalDraft =
-    normalizeText(request.schemaVersion) === 'critical-auditor-round-request/v1' &&
+    Boolean(request) &&
+    criticalAuditorRoundRequestHashMatchesContent(request) &&
+    normalizeText(request?.schemaVersion) === 'critical-auditor-round-request/v1' &&
     Number(request.roundIndex) === 1 &&
     normalizeText(request.recordId) === input.recordId &&
     normalizeText(request.transactionId) === input.transaction.transactionId &&
@@ -30563,6 +30578,10 @@ export function runMainAgentPreConfirmationDrilldown(
       });
     }
   }
+  const postAuditConfirmationBaseText =
+    entryMode === 'intake_to_new_source' && productionSourcePrdRender
+      ? materializedDraftText
+      : sourceText;
   const stagedDraftText = fs.existsSync(stagingTransaction.draftSource)
     ? fs.readFileSync(stagingTransaction.draftSource, 'utf8')
     : null;
@@ -31286,7 +31305,10 @@ export function runMainAgentPreConfirmationDrilldown(
     }
     fs.writeFileSync(
       paths.draftSourcePreview,
-      materializeImplementationConfirmationText(sourceText, auditedConfirmation),
+      materializeImplementationConfirmationText(
+        postAuditConfirmationBaseText,
+        auditedConfirmation
+      ),
       'utf8'
     );
   }
@@ -31396,7 +31418,7 @@ export function runMainAgentPreConfirmationDrilldown(
     });
     writeJsonUtf8(canonicalProjectionReceiptPath, canonicalProjection.projectionReceipt);
     let canonicalDraftSource = materializeImplementationConfirmationText(
-      sourceText,
+      postAuditConfirmationBaseText,
       canonicalProjection.confirmation
     );
     const canonicalDraftExtractionForHash = extractImplementationConfirmationBlock(

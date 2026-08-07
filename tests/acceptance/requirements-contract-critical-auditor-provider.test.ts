@@ -38,12 +38,12 @@ function createAuthoringConsumerFixture(root: string, recordId: string) {
     ),
     'utf8'
   );
-  const materialization = writeMinimalConsumerRequirement(
+  const { sourcePath, authoringOptions } = writeMinimalConsumerRequirement(
     root,
     `docs/requirements/${recordId.toLowerCase()}.md`,
     createMinimalConsumerRequirementDescriptor(recordId)
   );
-  return materialization;
+  return { sourcePath, authoringOptions };
 }
 
 function sha256Json(value: unknown): string {

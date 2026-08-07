@@ -40,6 +40,7 @@ const STAGING_ONLY_FIELDS = new Set([
   'e2eScenarios',
   'businessViews',
   'architectureImpacts',
+  'upstreamProofs',
 ]);
 const CANONICAL_FIELDS = new Set<string>([
   ...REQUIRED_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS,

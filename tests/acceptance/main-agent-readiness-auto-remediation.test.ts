@@ -24,6 +24,7 @@ import {
   buildImplementationEntryIndexKey,
   writeRuntimeContextRegistry,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
+import { writePassingSourcePrdLintReport } from '../helpers/source-prd-lint-fixture';
 
 function sha256Text(value: string): string {
   return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
@@ -595,6 +596,10 @@ function makeSourceFixture(
     contractChecks: [],
     artifactIndex: [],
     extensionRefs: [],
+  });
+  writePassingSourcePrdLintReport({
+    requirementRecordPath: recordPath,
+    sourcePath,
   });
   writeJson(path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json'), {
     schemaVersion: 'requirement-record-index/v1',
