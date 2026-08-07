@@ -8,6 +8,9 @@ const { after, before, test } = require('node:test');
 const {
   assertCurrentPartitionRuntimeEpoch,
 } = require('../src/utils/goal-contract/partition-receipts.ts');
+const {
+  packFromHermeticStaging,
+} = require('./helpers/hermetic-npm-pack.js');
 
 const packageRoot = path.resolve(__dirname, '..');
 let packageTestSession;
@@ -127,10 +130,12 @@ test(
       const packStartedAt = Date.now();
       const pack = parsePackedPackage(
         expectSuccess(
-          runNpm(
-            ['pack', packageRoot, '--json', '--pack-destination', packRoot],
-            { cwd: packRoot, env: npmEnv, timeout: 300_000 }
-          ),
+          packFromHermeticStaging({
+            packageRoot,
+            packDestination: packRoot,
+            runNpm,
+            npmOptions: { env: npmEnv, timeout: 300_000 },
+          }),
           'fresh package pack failed'
         ).stdout
       );
@@ -298,10 +303,12 @@ test(
       const nextStartedAt = Date.now();
       const nextPack = parsePackedPackage(
         expectSuccess(
-          runNpm(
-            ['pack', packageRoot, '--json', '--pack-destination', nextPackRoot],
-            { cwd: nextPackRoot, env: npmEnv, timeout: 300_000 }
-          ),
+          packFromHermeticStaging({
+            packageRoot,
+            packDestination: nextPackRoot,
+            runNpm,
+            npmOptions: { env: npmEnv, timeout: 300_000 },
+          }),
           'next package pack failed'
         ).stdout
       );
