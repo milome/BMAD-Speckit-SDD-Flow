@@ -1,6 +1,3 @@
-import { mkdtempSync, rmSync } from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   claimMainAgentPendingPacket,
@@ -11,35 +8,34 @@ import {
   resolveMainAgentOrchestrationSurface,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import {
-  buildPassImplementationEntryGate,
-  buildSixModelResultsForImplementationReady,
-  writeMinimalRegistryAndProjectContext,
-} from '../helpers/runtime-registry-fixture';
-import { writeFakeReqTraceSkill } from '../helpers/requirement-fixture-runtime';
+  publishImplementationPromptFixture,
+} from './helpers/prompt-transaction-implementation-publication-fixture';
 
 describe('main-agent packet lifecycle E2E', () => {
-  it('observes the full packet lifecycle through the main-agent surface', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-packet-e2e-'));
-    try {
-      writeMinimalRegistryAndProjectContext(root, {
+  it('observes the full packet lifecycle through the main-agent surface', async () => {
+    const { fixture } = await publishImplementationPromptFixture({
+      configureRecord: (record) => ({
+        ...record,
         flow: 'story',
         stage: 'implement',
+        entryFlow: 'story',
         sourceMode: 'full_bmad',
         storyId: '15.1',
         runId: 'run-15-1',
-        implementationEntryGate: buildPassImplementationEntryGate({
-          flow: 'story',
-        }),
-        confirmedSource: true,
-        currentMentalModel: 'implementation_readiness',
-        sixModelResults: buildSixModelResultsForImplementationReady(),
-      });
-      writeFakeReqTraceSkill(root);
-
+        artifactRoot: '_bmad-output/implementation-artifacts/epic-15/story-15.1',
+        artifactPath: '_bmad-output/implementation-artifacts/epic-15/story-15.1/spec.md',
+      }),
+    });
+    const root = fixture.root;
+    const recordId = fixture.authority.recordId;
+    const requirementSetId = fixture.identity.requirementSetId;
+    try {
       const ready = ensureMainAgentDispatchPacket({
         projectRoot: root,
         flow: 'story',
         stage: 'implement',
+        recordId,
+        requirementSetId,
       });
       const sessionId = ready.sessionId!;
       const packetId = ready.orchestrationState!.pendingPacket!.packetId;
@@ -51,6 +47,8 @@ describe('main-agent packet lifecycle E2E', () => {
           projectRoot: root,
           flow: 'story',
           stage: 'implement',
+          recordId,
+          requirementSetId,
         }).pendingPacketStatus
       ).toBe('claimed_by_main_agent');
 
@@ -60,6 +58,8 @@ describe('main-agent packet lifecycle E2E', () => {
           projectRoot: root,
           flow: 'story',
           stage: 'implement',
+          recordId,
+          requirementSetId,
         }).pendingPacketStatus
       ).toBe('dispatched');
 
@@ -69,6 +69,8 @@ describe('main-agent packet lifecycle E2E', () => {
           projectRoot: root,
           flow: 'story',
           stage: 'implement',
+          recordId,
+          requirementSetId,
         }).pendingPacketStatus
       ).toBe('completed');
 
@@ -78,10 +80,12 @@ describe('main-agent packet lifecycle E2E', () => {
           projectRoot: root,
           flow: 'story',
           stage: 'implement',
+          recordId,
+          requirementSetId,
         }).pendingPacketStatus
       ).toBe('invalidated');
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      fixture.cleanup();
     }
   });
 });

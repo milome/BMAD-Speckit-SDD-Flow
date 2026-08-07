@@ -105,6 +105,7 @@ describe('governed CI workflow DAG', () => {
   it('prepares generated runtime before every isolated shard execution', () => {
     const workflow = readWorkflow();
     const steps = workflow.jobs['execute-shard'].steps;
+    const checkout = steps.find((step: any) => step.uses === 'actions/checkout@v4');
     const prepareIndex = steps.findIndex((step: any) =>
       String(step.run || '').includes('npm run ci:prepare-shard-runtime')
     );
@@ -112,6 +113,7 @@ describe('governed CI workflow DAG', () => {
       String(step.run || '').includes('npm run ci:run-shard')
     );
 
+    expect(checkout?.with?.['fetch-depth']).toBe(0);
     expect(prepareIndex).toBeGreaterThanOrEqual(0);
     expect(executeIndex).toBeGreaterThan(prepareIndex);
   });

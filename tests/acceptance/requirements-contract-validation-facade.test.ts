@@ -5,6 +5,7 @@ import {
   type RequirementContractModelV2,
   type RequirementContractRequirementV2,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-model';
+import { semanticModelHash } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-hash-domains';
 import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 import { validateRequirementsContractDocument } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-validation-facade';
 
@@ -85,13 +86,14 @@ function unresolvedModel(): RequirementContractModelV2 {
     },
     edges: {},
   };
-  return { ...preimage, semanticModelHash: sha256Stable(preimage) };
+  return { ...preimage, semanticModelHash: semanticModelHash(preimage) };
 }
 
 it('permits blocking unresolved decisions only in draft mode', () => {
   const model = unresolvedModel();
+  const draft = validateRequirementsContractDocument(model, 'draft');
 
-  expect(validateRequirementsContractDocument(model, 'draft')).toMatchObject({
+  expect(draft, JSON.stringify(draft, null, 2)).toMatchObject({
     ok: true,
     decision: 'pass',
     mode: 'draft',

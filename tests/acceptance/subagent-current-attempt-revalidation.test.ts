@@ -9,6 +9,7 @@ import {
   runSubagentCurrentAttemptRevalidation,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-current-attempt-revalidation';
 import { sha256Object } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope';
+import { createRecordedConfirmationHistory } from './helpers/requirement-record-confirmation-fixture';
 
 type SubagentCurrentAttemptRevalidationReport = ReturnType<
   typeof evaluateSubagentCurrentAttemptRevalidation
@@ -51,12 +52,20 @@ function artifactRef(
 }
 
 function record(root: string, artifactRefs: Record<string, unknown>[] = []) {
+  const sourcePath = path.join(root, 'source.md');
   return {
     recordId: 'REQ-CLOSED-LOOP-DESIGN',
     requirementSetId: 'REQ-CLOSED-LOOP-DESIGN',
     status: 'user_confirmed',
+    sourcePath,
     sourceDocumentHash: SOURCE_HASH,
     implementationConfirmationHash: IMPLEMENTATION_HASH,
+    confirmationHistory: createRecordedConfirmationHistory({
+      recordId: 'REQ-CLOSED-LOOP-DESIGN',
+      sourcePath,
+      sourceDocumentHash: SOURCE_HASH,
+      implementationConfirmationHash: IMPLEMENTATION_HASH,
+    }),
     architectureConfirmationState: {
       status: 'active',
       currentArchitectureConfirmationHash: ARCHITECTURE_HASH,

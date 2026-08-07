@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "goal-contract-e04-perspective-receipt/v1",
+  "auditEpochId": "MA-GS-E04-20260804T055832Z-02",
+  "perspective": "execution_acceptance",
+  "reviewMode": "local_selective_revalidation",
+  "targetPath": "docs/plans/2026-08-03-main-agent-goal-subcontract-controlled-integration-goal-execution-plan.md",
+  "targetHash": "sha256:e3dc24bc28dc277fd79718f7c113314ac9f45dd1b13d03b088080d661374b740",
+  "sourceHash": "sha256:91d0e8023655f65980379748194a8ce7173e759a110382516207ba6426ef807c",
+  "decision": "pass",
+  "issues": [],
+  "checks": {
+    "sourceObligationCount": 896,
+    "unmappedSourceObligations": 0,
+    "deterministicRegeneration": "pass",
+    "commandPortability": "pass",
+    "testCommandNonzeroCountPredicate": "test_commands_only",
+    "buildCommandPassCondition": "exit_zero_plus_generated_file_readback",
+    "encodingCommandPassCondition": "exit_zero_checkedFiles_gt_0_findings_0",
+    "noNewExecutionSemantics": "pass"
+  },
+  "reviewedAt": "2026-08-04T05:58:32.000Z"
+}

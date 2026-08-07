@@ -206,6 +206,55 @@ describe('strict command resolution preflight', () => {
     }
   );
 
+  it('fails closed when no consumer or package-owned skill can resolve a command-only placeholder', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'strict-command-skill-dir-missing-'));
+    const previousCwd = process.cwd();
+    try {
+      mkdirSync(path.join(root, 'scripts'), { recursive: true });
+      mkdirSync(path.join(root, 'tests', 'acceptance'), { recursive: true });
+      writeFileSync(path.join(root, 'scripts', 'example.ts'), 'export {};\n', 'utf8');
+      writeFileSync(
+        path.join(root, 'tests', 'acceptance', 'example.test.ts'),
+        'export {};\n',
+        'utf8'
+      );
+      writeJson(path.join(root, 'package.json'), { scripts: {} });
+      const sourcePath = writeSource(
+        root,
+        `
+    - id: CMD-MISSING-SKILL
+      commandId: CMD-MISSING-SKILL
+      kind: contract_validation
+      command: node <skill-dir>/scripts/missing.ts
+      packageScripts: []
+      entrypoints: []
+      testGlobs: []
+      mustResolve:
+        packageScriptsExist: false
+        entrypointsExist: false
+        testFilesExist: false
+`
+      );
+      const recordPath = writeRecord(root, sourcePath);
+      process.chdir(root);
+      const code = mainStrictCommandResolutionPreflight([
+        '--requirement-record',
+        recordPath,
+        '--evaluated-at',
+        '2026-05-22T00:00:02.000Z',
+        '--json',
+      ]);
+      expect(code).toBe(1);
+      const record = JSON.parse(readFileSync(recordPath, 'utf8'));
+      expect(record.gateChecks.at(-1).blockingReasons).toContain(
+        'command_unresolved:CMD-MISSING-SKILL:command_placeholder_or_unsubstituted_token'
+      );
+    } finally {
+      process.chdir(previousCwd);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('fails closed for missing entrypoints and empty test globs', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'strict-command-block-'));
     const previousCwd = process.cwd();

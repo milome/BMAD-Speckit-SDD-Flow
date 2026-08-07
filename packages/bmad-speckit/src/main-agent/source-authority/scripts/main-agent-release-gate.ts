@@ -215,12 +215,100 @@ function stampDeliveryBinding(filePath: string, binding: EvidenceProvenance): vo
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 }
 
-function writePackageRuntimeQualityGateReport(input: {
+function validatePackageRuntimeCodexProof(input: {
+  root: string;
+  provenance: EvidenceProvenance;
+  codexProofPath: string | null;
+}): { id: string; passed: boolean; summary: string } {
+  const id = 'codex-run-scoped-proof';
+  if (!input.codexProofPath) {
+    return {
+      id,
+      passed: false,
+      summary: 'current main session did not provide a run-scoped quality proof',
+    };
+  }
+  if (!fs.existsSync(input.codexProofPath)) {
+    return {
+      id,
+      passed: false,
+      summary: `missing Codex run-scoped proof: ${input.codexProofPath}`,
+    };
+  }
+  try {
+    const proof = readJson<{
+      reportType?: string;
+      evidence_provenance?: {
+        runId?: string;
+        storyKey?: string;
+        evidenceBundleId?: string;
+      };
+      codex?: {
+        hostKind?: string;
+        mode?: string;
+        taskReportStatus?: string;
+        validationsRun?: unknown;
+      };
+    }>(input.codexProofPath);
+    const provenance = proof.evidence_provenance;
+    const validationsRun = proof.codex?.validationsRun;
+    const mismatches = [
+      proof.reportType === 'codex_run_scoped_quality_proof'
+        ? null
+        : `reportType=${proof.reportType ?? 'missing'}`,
+      provenance?.runId === input.provenance.runId
+        ? null
+        : `runId=${provenance?.runId ?? 'missing'}`,
+      provenance?.storyKey === input.provenance.storyKey
+        ? null
+        : `storyKey=${provenance?.storyKey ?? 'missing'}`,
+      provenance?.evidenceBundleId === input.provenance.evidenceBundleId
+        ? null
+        : `evidenceBundleId=${provenance?.evidenceBundleId ?? 'missing'}`,
+      proof.codex?.hostKind === 'codex' ? null : `hostKind=${proof.codex?.hostKind ?? 'missing'}`,
+      proof.codex?.mode === 'codex_exec' ? null : `mode=${proof.codex?.mode ?? 'missing'}`,
+      proof.codex?.taskReportStatus === 'done'
+        ? null
+        : `taskReportStatus=${proof.codex?.taskReportStatus ?? 'missing'}`,
+      Array.isArray(validationsRun) &&
+      validationsRun.length > 0 &&
+      validationsRun.every(
+        (validation) => typeof validation === 'string' && normalizeText(validation).length > 0
+      )
+        ? null
+        : 'validationsRun=missing_or_invalid',
+    ].filter((item): item is string => item !== null);
+    return {
+      id,
+      passed: mismatches.length === 0,
+      summary:
+        mismatches.length === 0
+          ? `proof=${path.relative(input.root, input.codexProofPath).replace(/\\/g, '/')}`
+          : `Codex run-scoped proof mismatch: ${mismatches.join(', ')}`,
+    };
+  } catch (error) {
+    return {
+      id,
+      passed: false,
+      summary: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+export function writePackageRuntimeQualityGateReport(input: {
   root: string;
   qualityGatePath: string;
   provenance: EvidenceProvenance;
   codexProofPath: string | null;
 }): string {
+  const checks = [
+    {
+      id: 'package-runtime-dispatch',
+      passed: true,
+      summary: 'quality gate resolved through package runtime',
+    },
+    validatePackageRuntimeCodexProof(input),
+  ];
   const report = {
     reportType: 'main_agent_quality_gate',
     thresholdsPath: '_bmad/_config/main-agent-quality-gate.thresholds.json',
@@ -228,21 +316,8 @@ function writePackageRuntimeQualityGateReport(input: {
       ...input.provenance,
       gateReportHash: '',
     },
-    critical_failures: 0,
-    checks: [
-      {
-        id: 'package-runtime-dispatch',
-        passed: true,
-        summary: 'quality gate resolved through package runtime',
-      },
-      {
-        id: 'codex-run-scoped-proof',
-        passed: input.codexProofPath != null,
-        summary: input.codexProofPath
-          ? `proof=${path.relative(input.root, input.codexProofPath).replace(/\\/g, '/')}`
-          : 'current main session did not provide a run-scoped quality proof',
-      },
-    ],
+    critical_failures: checks.filter((check) => !check.passed).length,
+    checks,
     mode: 'package_runtime_module',
   };
   report.evidence_provenance.gateReportHash = sha256(

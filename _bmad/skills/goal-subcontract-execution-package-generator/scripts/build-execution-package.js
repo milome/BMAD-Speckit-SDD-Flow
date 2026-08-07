@@ -34,6 +34,64 @@ const {
 const SHA256_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 const GIT_OBJECT_PATTERN = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u;
 
+function resolveManifestChildCandidate(repositoryRoot, projectedPath) {
+  const resolvedPath = resolveExistingInside(
+    repositoryRoot,
+    projectedPath,
+    'source_path_escape'
+  );
+  if (!fs.existsSync(resolvedPath) || !fs.statSync(resolvedPath).isFile()) {
+    return null;
+  }
+  return { projectedPath, resolvedPath };
+}
+
+function projectManifestChildPath(repositoryRoot, partitionManifestPath, childContractPath) {
+  const manifestChildPath = String(childContractPath || '').replace(/\\/gu, '/');
+  if (
+    !manifestChildPath ||
+    path.posix.isAbsolute(manifestChildPath) ||
+    /^[A-Za-z]:\//u.test(manifestChildPath) ||
+    manifestChildPath.split('/').some((segment) => segment === '..') ||
+    path.posix.normalize(manifestChildPath) !== manifestChildPath
+  ) {
+    failure('partition_manifest_not_final', { childContractPath });
+  }
+  const manifestRelativePath = path
+    .relative(repositoryRoot, partitionManifestPath)
+    .replace(/\\/gu, '/');
+  const repositoryProjectedPath = path.posix.normalize(manifestChildPath);
+  const manifestProjectedPath = path.posix.normalize(
+    path.posix.join(path.posix.dirname(manifestRelativePath), manifestChildPath)
+  );
+  const repositoryCandidate = resolveManifestChildCandidate(
+    repositoryRoot,
+    repositoryProjectedPath
+  );
+  const manifestCandidate = resolveManifestChildCandidate(
+    repositoryRoot,
+    manifestProjectedPath
+  );
+  if (
+    repositoryCandidate &&
+    manifestCandidate &&
+    repositoryCandidate.resolvedPath !== manifestCandidate.resolvedPath
+  ) {
+    failure('partition_manifest_not_final', {
+      childContractPath,
+      reason: 'ambiguous_child_contract_path',
+    });
+  }
+  const selectedCandidate = repositoryCandidate ?? manifestCandidate;
+  if (!selectedCandidate) {
+    failure('partition_manifest_not_final', {
+      childContractPath,
+      reason: 'child_contract_path_not_found',
+    });
+  }
+  return selectedCandidate.projectedPath;
+}
+
 function captureRepositoryBaseline(repositoryRoot) {
   const headCommit = git(repositoryRoot, ['rev-parse', 'HEAD'], 'repository_baseline_missing');
   const treeHash = git(
@@ -385,19 +443,24 @@ function loadCompileInputs(requestPath) {
     'closure_schema_hash_mismatch',
     'closure_schema_invalid'
   );
-  return { request, repositoryRoot, manifest };
+  return { request, repositoryRoot, manifest, manifestPath };
 }
 
-function projectChildren({ request, repositoryRoot, manifest }) {
+function projectChildren({ request, repositoryRoot, manifest, manifestPath }) {
   if (!Array.isArray(request.children) || request.children.length !== manifest.partitions.length) {
     failure('child_membership_mismatch');
   }
   const partitionIds = manifest.partitions.map(({ partitionId }) => partitionId);
   return manifest.partitions.map((partition, index) => {
     const supplied = request.children[index];
+    const projectedChildPath = projectManifestChildPath(
+      repositoryRoot,
+      manifestPath,
+      partition.childContractPath
+    );
     if (
       supplied?.partitionId !== partition.partitionId ||
-      supplied.path !== partition.childContractPath ||
+      supplied.path !== projectedChildPath ||
       supplied.hash !== partition.childContractHash
     ) {
       failure('child_membership_mismatch', { partitionId: partition.partitionId });
@@ -649,6 +712,7 @@ module.exports = {
   normalizeRecordBinding,
   parseArgs,
   projectChildIdentities,
+  projectManifestChildPath,
   readJson,
   renderCampaignPrompt,
   renderChildPrompt,

@@ -43,6 +43,14 @@ function runNode(script: string, args: string[]) {
   });
 }
 
+function expectedTargetRef(targetPath: string): string {
+  const resolved = path.resolve(targetPath);
+  const relative = path.relative(ROOT, resolved);
+  const isRepoRelative =
+    relative !== '' && relative !== '..' && !relative.startsWith(`..${path.sep}`);
+  return path.normalize(isRepoRelative ? relative : resolved);
+}
+
 function writeProductSourceFixture() {
   const sourceDir = path.join(tempDir, 'product-src');
   fs.mkdirSync(sourceDir, { recursive: true });
@@ -409,9 +417,9 @@ describe('generate-architecture-confirmation-artifact', () => {
     const fixture = writeFixture();
     const productSources = writeProductSourceFixture();
     const expectedProductTargetRefs = [
-      path.normalize(productSources.hostPath),
-      path.normalize(productSources.widgetPath),
-      path.normalize(productSources.dialogPath),
+      expectedTargetRef(productSources.hostPath),
+      expectedTargetRef(productSources.widgetPath),
+      expectedTargetRef(productSources.dialogPath),
     ];
     const expectedSupplementalTargetRefs = [
       path.normalize('tests/product/test_display_settings_batch_and_rollback.py'),

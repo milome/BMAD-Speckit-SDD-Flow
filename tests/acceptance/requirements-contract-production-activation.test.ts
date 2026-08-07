@@ -1,6 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
 import {
-  copyFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -33,8 +32,6 @@ const mutableFs = createRequire(path.resolve('package.json'))(
 const REGISTRY = '_bmad/shared/requirements-contract/requirements-contract-consumer-registry.json';
 const LOCK =
   '_bmad/shared/requirements-contract/.requirements-contract-consumer-registry.activation.lock';
-const CONTRACT =
-  'docs/plans/2026-07-18-loop-engineering-evidence-closure-remediation-amend13-goal-execution-plan.md';
 const roots: string[] = [];
 
 function write(root: string, relativePath: string, value: string): void {
@@ -77,8 +74,6 @@ function fixture() {
     registeredStatusFacade.canonicalPath,
     'export const facadeBinding = resolveVerifiedSixModelStatus;\n'
   );
-  mkdirSync(path.dirname(path.join(root, CONTRACT)), { recursive: true });
-  copyFileSync(path.resolve(CONTRACT), path.join(root, CONTRACT));
   return {
     root,
     record,

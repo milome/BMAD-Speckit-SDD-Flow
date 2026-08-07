@@ -6,26 +6,21 @@ import * as yaml from 'js-yaml';
 import { describe, expect, it, vi } from 'vitest';
 import {
   SHORT_FEEDBACK_WINDOW_MS,
-  runMainAgentAuthoringRepair,
+  runMainAgentAuthoringRepair as runMainAgentAuthoringRepairRaw,
   runMainAgentPreConfirmationDrilldown,
   validateWrittenDeepReviewInput,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 
-const PROJECTION_QUALITY_RULE_CODES = [
-  'projection_per_must_acceptance_not_independent',
-  'projection_shared_evidence_without_per_must_oracle',
-  'required_command_all_cover_all_without_per_must_assertions',
-  'target_modification_path_all_cover_all',
-  'current_target_map_not_product_specific',
-  'business_visual_generic_or_compressed',
-];
-
-function checkedProjectionQualityRuleCodesForRequest(input: any): string[] {
-  return (
-    input.requiredResponseSchema?.checkedProjectionQualityRuleCodes ??
-    input.projectionQualityGate?.requiredRuleCodes ??
-    PROJECTION_QUALITY_RULE_CODES
-  );
+function runMainAgentAuthoringRepair(
+  root: string,
+  options: Parameters<typeof runMainAgentAuthoringRepairRaw>[1]
+): ReturnType<typeof runMainAgentAuthoringRepairRaw> {
+  return runMainAgentAuthoringRepairRaw(root, {
+    ...options,
+    implementationAttemptId:
+      options.implementationAttemptId ??
+      `implementation-attempt-${options.requirementSetId ?? options.recordId}`,
+  });
 }
 
 function stableStringify(value: unknown): string {
@@ -92,10 +87,6 @@ function promotionReceiptPath(root: string, recordId: string): string {
 
 function requestPath(root: string, recordId: string, round: number): string {
   return path.join(authoringDir(root, recordId), `critical-auditor-round-request-${round}.json`);
-}
-
-function responsePath(root: string, recordId: string, round: number): string {
-  return path.join(authoringDir(root, recordId), `critical-auditor-round-response-${round}.json`);
 }
 
 function readJson(file: string): any {
@@ -165,6 +156,26 @@ function writeSourceWithConfirmation(
       '      evidenceRefs: ["EVD-001"]',
       '      coveredByTraceRows: ["TRACE-001"]',
       '      coveredBySequenceViews: ["SEQ-001"]',
+      '  notDone:',
+      '    - id: NEG-001',
+      '      text: "A stale or missing promotion receipt does not count as audit readiness."',
+      '      evidenceRefs: ["EVD-001"]',
+      '      whyItBlocksCompletion: "Deep audit would not be bound to the current source."',
+      '      negativeAssertionRequired: true',
+      '      coveredByFailurePath: ["FAIL-001"]',
+      '      coveredByTraceRows: ["TRACE-001"]',
+      '  mustNot:',
+      '    - id: OUT-001',
+      '      text: "Do not change unrelated authoring workflows."',
+      '      scopeBoundary: "Only the source materialization gate is in scope."',
+      '      userApprovalRequiredIfChanged: true',
+      '      evidenceRefs: ["EVD-001"]',
+      '  outOfScope:',
+      '    - id: OUT-001',
+      '      text: "Do not change unrelated authoring workflows."',
+      '      scopeBoundary: "Only the source materialization gate is in scope."',
+      '      userApprovalRequiredIfChanged: true',
+      '      evidenceRefs: ["EVD-001"]',
       '  evidence:',
       '    - id: EVD-001',
       '      text: "Receipt binds written source hash."',
@@ -174,7 +185,7 @@ function writeSourceWithConfirmation(
       '      artifactRefs: ["ART-001"]',
       '  traceRows:',
       '    - id: TRACE-001',
-      '      covers: ["MUST-001"]',
+      '      covers: ["MUST-001", "NEG-001"]',
       '      taskRefs: ["TASK-001"]',
       '      evidenceRefs: ["EVD-001"]',
       '      contractValidationCommandRefs: ["CMD-001"]',
@@ -182,10 +193,19 @@ function writeSourceWithConfirmation(
       '      sequenceViewRefs: ["SEQ-001"]',
       '      artifactRefs: ["ART-001"]',
       '      status: PENDING',
+      '  failurePaths:',
+      '    - id: FAIL-001',
+      '      title: "Deep audit starts without current promotion proof"',
+      '      trigger: "The promotion receipt is stale or missing."',
+      '      expectedBehavior: "Block deep audit until current promotion proof exists."',
+      '      forbiddenBehavior: "Do not treat stale source materialization evidence as current."',
+      '      blocksCompletionWhenViolated: true',
+      '      linkedNegIds: ["NEG-001"]',
+      '      linkedEvidenceIds: ["EVD-001"]',
       '  acceptanceTests:',
       '    - id: ACC-001',
       '      file: tests/acceptance/main-agent-source-materialization-before-audit.test.ts',
-      '      covers: ["MUST-001"]',
+      '      covers: ["MUST-001", "NEG-001"]',
       '      traceRows: ["TRACE-001"]',
       '      evidenceRefs: ["EVD-001"]',
       '      commandRefs: ["CMD-001"]',
@@ -326,87 +346,6 @@ function writeLegacySourceMaterializationReceipt(input: {
   return receiptPath;
 }
 
-function writeValidatedGapResponse(request: string, response: string): void {
-  const body = readJson(request);
-  const projectionRefs = body.packetProjectionSummary?.projectionRefs ?? [];
-  writeFileSync(
-    response,
-    `${JSON.stringify(
-      {
-        schemaVersion: 'critical-auditor-round-response/v1',
-        requestHash: body.requestHash,
-        recordId: body.recordId,
-        roundIndex: body.roundIndex,
-        sourceDocumentHash: body.sourceDocumentHash,
-        implementationConfirmationHash: body.implementationConfirmationHash,
-        packetHash: body.packetHash,
-        gateDryRunHash: body.gateDryRun.gateDryRunHash,
-        reconciliationIssueCount: body.gateDryRun.reconciliation.issueCount,
-        checkedProjectionGroups: body.packetProjectionSummary.projectionGroups,
-        checkedProjectionQualityRuleCodes: checkedProjectionQualityRuleCodesForRequest(body),
-        verdict: 'new_valid_gap',
-        reviewedMustRefs: body.mustRefs,
-        reviewedProjectionRefs: projectionRefs.slice(0, 1),
-        priorFindingsDisposition: [
-          {
-            findingRef: 'ROUND-1-GAP',
-            disposition: 'new',
-            evidenceRefs: [body.gateDryRun.reportPath],
-          },
-        ],
-        validatedGaps: [
-          {
-            id: 'GAP-001',
-            status: 'open',
-            finding: 'Source lacks a materialized gap-fix row.',
-            repairActions: [
-              {
-                actionId: 'REPAIR-GAP-001',
-                type: 'add_must',
-                sourceSpan: { startLine: 1, endLine: 1 },
-                sourceText: 'Source gap fix must be materialized into semantic contract rows.',
-                targetField: 'implementationConfirmation.must',
-                newValue: {
-                  id: 'MUST-GAP-FIX-001',
-                  text: 'Source gap fix must be materialized into semantic contract rows.',
-                },
-                reason: 'Validated gap requires a source-bound semantic contract row.',
-                mustRefs: body.mustRefs?.length ? [body.mustRefs[0]] : ['MUST-001'],
-                requirementIds: ['REQ-GAP-FIX-001'],
-              },
-            ],
-          },
-        ],
-        rejectedGapCandidates: [],
-        rationale: 'A new valid gap requires source repair before the next audit round.',
-      },
-      null,
-      2
-    )}\n`,
-    'utf8'
-  );
-}
-
-function cleanCriticalAuditorRound(input: any) {
-  return {
-    verdict: 'no_new_valid_gap' as const,
-    gateDryRunHash: input.gateDryRun.hash,
-    reconciliationIssueCount: input.gateDryRun.reconciliation.issueCount,
-    checkedProjectionGroups: input.packetProjectionSummary.projectionGroups,
-    checkedProjectionQualityRuleCodes: checkedProjectionQualityRuleCodesForRequest(input),
-    reviewedProjectionRefs: input.packetProjectionSummary.projectionRefs.slice(0, 1),
-    priorFindingsDisposition: [
-      {
-        findingRef: `ROUND-${input.roundIndex}-BASELINE`,
-        disposition: input.roundIndex === 1 ? 'new' : 'unchanged',
-        evidenceRefs: [input.gateDryRun.reportPath],
-      },
-    ],
-    rejectedGapCandidates: [{ id: `REJ-${input.roundIndex}`, reason: 'no new valid gap detected' }],
-    rationale: `Round ${input.roundIndex} found no new valid gap.`,
-  };
-}
-
 describe('source materialization before deep audit', () => {
   it('defines the short feedback window used before source promotion', () => {
     expect(SHORT_FEEDBACK_WINDOW_MS).toBe(300000);
@@ -422,7 +361,6 @@ describe('source materialization before deep audit', () => {
         recordId: 'REQ-SOURCE-MAT',
         requirementSetId: 'REQSET-SOURCE-MAT',
         confirmationLanguage: 'zh-CN',
-        criticalAuditorRound: cleanCriticalAuditorRound,
       });
       const receiptPath = sourceMaterializationReceiptPath(root, 'REQSET-SOURCE-MAT');
 
@@ -448,7 +386,6 @@ describe('source materialization before deep audit', () => {
           recordId: 'REQ-SOURCE-MAT',
           requirementSetId: '../escaped-requirement-records',
           confirmationLanguage: 'zh-CN',
-          criticalAuditorRound: cleanCriticalAuditorRound,
         })
       ).toThrow(/requirementSetId must not contain path separators or traversal segments/u);
       expect(existsSync(escaped)).toBe(false);
@@ -459,7 +396,6 @@ describe('source materialization before deep audit', () => {
           recordId: '../escaped-requirement-records',
           requirementSetId: 'REQSET-SOURCE-MAT',
           confirmationLanguage: 'zh-CN',
-          criticalAuditorRound: cleanCriticalAuditorRound,
         })
       ).toThrow(/recordId must not contain path separators or traversal segments/u);
       expect(existsSync(escaped)).toBe(false);
@@ -542,50 +478,29 @@ describe('source materialization before deep audit', () => {
     }
   });
 
-  it('refreshes the promotion receipt and resets no-new-gap counter after a valid gap fix', () => {
+  it('rejects legacy Critical Auditor response injection before source mutation', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'source-materialization-gap-fix-'));
     try {
       const recordId = 'REQ-SOURCE-MAT-GAP-FIX';
       const source = writeSourceWithConfirmation(root, recordId);
       const receiptPath = writePromotionReceipt({ root, source, recordId });
       const beforeReceipt = readJson(receiptPath);
+      const beforeSource = readFileSync(source, 'utf8');
       const legacyReceiptPath = sourceMaterializationReceiptPath(root, recordId);
 
-      const first = runMainAgentAuthoringRepair(root, {
-        source,
-        recordId,
-        mode: 'preserve-existing',
-      });
-      expect(first.blockingStage).toBe('critical_auditor_round_required');
-      const firstRequest = readJson(requestPath(root, recordId, 1));
-      expect(firstRequest).toMatchObject({
-        purpose: 'critical_auditor_round',
-        purposeGuard: {
-          purpose: 'critical_auditor_round',
-          parentPurpose: 'staging_transaction_deep_audit',
-          sourceMaterializationRequiredBeforeDeepAudit: false,
-        },
-      });
-      writeValidatedGapResponse(requestPath(root, recordId, 1), responsePath(root, recordId, 1));
+      expect(() =>
+        runMainAgentAuthoringRepair(root, {
+          source,
+          recordId,
+          mode: 'preserve-existing',
+          criticalAuditorResponse: path.join(root, 'synthetic-response.json'),
+        })
+      ).toThrow(/critical_auditor_response_injection_forbidden/u);
 
-      const gapResult = runMainAgentAuthoringRepair(root, {
-        source,
-        recordId,
-        mode: 'preserve-existing',
-        criticalAuditorResponse: responsePath(root, recordId, 1),
-      });
-      const afterReceipt = readJson(receiptPath);
-      expect(gapResult.blockingStage).toBe('critical_auditor_round_required');
-      expect(gapResult.consecutiveNoNewGapRounds).toBe(0);
-      expect(afterReceipt.targetHash).not.toBe(beforeReceipt.targetHash);
-      expect(
-        afterReceipt.authoringPromotionGate.decisions.sourceMutation.sourceDocumentHashAfter
-      ).toBe(afterReceipt.targetHash);
-      expect(afterReceipt.promotionStage).toBe('authoring-draft');
+      expect(readJson(receiptPath)).toEqual(beforeReceipt);
+      expect(readFileSync(source, 'utf8')).toBe(beforeSource);
       expect(existsSync(legacyReceiptPath)).toBe(false);
-      expect(readFileSync(source, 'utf8')).toContain('sourceGapFixes:');
-      expect(existsSync(requestPath(root, recordId, 1))).toBe(true);
-      expect(existsSync(requestPath(root, recordId, 2))).toBe(false);
+      expect(existsSync(requestPath(root, recordId, 1))).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

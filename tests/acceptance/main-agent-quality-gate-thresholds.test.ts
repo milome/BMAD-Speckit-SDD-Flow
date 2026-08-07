@@ -98,6 +98,62 @@ describe('main-agent quality gate thresholds', () => {
     }
   });
 
+  it.each([
+    ['wrong report type', { reportType: 'main_agent_quality_gate' }],
+    ['missing report type', { reportType: undefined }],
+    ['empty validations', { validationsRun: [] }],
+    ['invalid validations', { validationsRun: ['valid-command', ''] }],
+  ])('fails closed when run-scoped Codex proof has %s', (_caseName, tamper) => {
+    const dir = mkdtempSync(path.join(os.tmpdir(), 'quality-gate-codex-proof-shape-'));
+    try {
+      const proofPath = path.join(dir, 'codex-proof.json');
+      const proof = {
+        reportType: 'codex_run_scoped_quality_proof',
+        evidence_provenance: {
+          runId: 'run-quality',
+          storyKey: 'S-quality',
+          evidenceBundleId: 'bundle-quality',
+        },
+        codex: {
+          hostKind: 'codex',
+          mode: 'codex_exec',
+          taskReportStatus: 'done',
+          validationsRun: ['fake-codex-exec'],
+        },
+      };
+      if ('reportType' in tamper) {
+        proof.reportType = tamper.reportType;
+      } else {
+        proof.codex.validationsRun = tamper.validationsRun;
+      }
+      writeFileSync(proofPath, JSON.stringify(proof, null, 2), 'utf8');
+
+      expect(() =>
+        execFileSync(
+          process.execPath,
+          [
+            path.join(ROOT, 'node_modules', 'ts-node', 'dist', 'bin.js'),
+            '--project',
+            'tsconfig.node.json',
+            '--transpile-only',
+            'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-quality-gate.ts',
+            '--runId',
+            'run-quality',
+            '--storyKey',
+            'S-quality',
+            '--evidenceBundleId',
+            'bundle-quality',
+            '--codexProofPath',
+            proofPath,
+          ],
+          { cwd: ROOT, encoding: 'utf8' }
+        )
+      ).toThrow();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('emits same-run provenance when run-scoped Codex proof is valid', () => {
     const dir = mkdtempSync(path.join(os.tmpdir(), 'quality-gate-codex-proof-'));
     try {

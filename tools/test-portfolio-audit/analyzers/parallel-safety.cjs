@@ -334,6 +334,41 @@ function collectCommandHints(sourceFile) {
   return hints;
 }
 
+function collectProcessWrappers(sourceFile) {
+  const wrappers = new Map();
+
+  function recordWrapper(name, body) {
+    if (!name || !body) return;
+    const processCalls = new Set();
+    walk(body, (candidate) => {
+      if (!ts.isCallExpression(candidate)) return;
+      const candidateName = callName(candidate.expression);
+      if (PROCESS_CALLS.has(candidateName)) processCalls.add(candidateName);
+    });
+    if (processCalls.size === 0) return;
+    wrappers.set(name, {
+      background: [...processCalls].some((processCall) => BACKGROUND_CALLS.has(processCall)),
+    });
+  }
+
+  walk(sourceFile, (node) => {
+    if (ts.isFunctionDeclaration(node) && node.name && node.body) {
+      recordWrapper(node.name.text, node.body);
+      return;
+    }
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.initializer &&
+      (ts.isArrowFunction(node.initializer) || ts.isFunctionExpression(node.initializer))
+    ) {
+      recordWrapper(node.name.text, node.initializer.body);
+    }
+  });
+
+  return wrappers;
+}
+
 function commandText(call, sourceFile, commandHints) {
   const parts = call.arguments.map((argument) => expressionText(argument, sourceFile));
   for (const argument of call.arguments) {
@@ -378,6 +413,7 @@ function collectIsolationFacts(sourceFile, testPath) {
   const facts = createFacts();
   const safeEnvPositions = collectProvenEnvRestorePositions(sourceFile);
   const commandHints = collectCommandHints(sourceFile);
+  const processWrappers = collectProcessWrappers(sourceFile);
 
   walk(sourceFile, (node) => {
     const assignment = assignmentParts(node);
@@ -406,7 +442,8 @@ function collectIsolationFacts(sourceFile, testPath) {
     if (hasFixedPort(node)) {
       addFact(facts, 'fixedPorts', lineRef(sourceFile, testPath, node, 'fixed-port'));
     }
-    if (PROCESS_CALLS.has(name)) {
+    const processWrapper = processWrappers.get(name);
+    if (PROCESS_CALLS.has(name) || processWrapper) {
       const command = commandText(node, sourceFile, commandHints);
       if (isRootBuildPackInstall(command)) {
         addFact(
@@ -418,7 +455,7 @@ function collectIsolationFacts(sourceFile, testPath) {
       if (isGitMutation(command)) {
         addFact(facts, 'gitMutations', lineRef(sourceFile, testPath, node, 'git-mutation'));
       }
-      if (BACKGROUND_CALLS.has(name)) {
+      if (BACKGROUND_CALLS.has(name) || processWrapper?.background) {
         addFact(
           facts,
           'backgroundProcesses',

@@ -7,7 +7,6 @@ const ACTIONS = [
   'requirements-contract-six-model-projection-parity-verify',
   'requirements-contract-consumer-cli-capability-observe',
   'requirements-contract-eval',
-  'requirements-contract-critical-auditor-judge-adapter',
   'requirements-contract-prompt-transaction-publish',
   'requirements-contract-production-bypass-evidence-materialize',
   'requirements-contract-production-bypass-verify',

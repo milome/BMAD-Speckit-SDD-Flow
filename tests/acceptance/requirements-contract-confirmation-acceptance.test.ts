@@ -230,6 +230,15 @@ function writeConfirmationFixture(root: string, options: ConfirmationFixtureOpti
   };
 }
 
+function cleanupConfirmationFixture(root: string): void {
+  rmSync(root, {
+    recursive: true,
+    force: true,
+    maxRetries: 5,
+    retryDelay: 100,
+  });
+}
+
 describe('package confirmation acceptance authority', () => {
   it('commits first confirmation and requirement_confirmation pass in one control transaction', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'confirmation-acceptance-'));
@@ -307,7 +316,7 @@ describe('package confirmation acceptance authority', () => {
       );
       expect(existsSync(path.join(fixture.runtimeRoot, 'artifact-index.jsonl'))).toBe(true);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupConfirmationFixture(root);
     }
   });
 
@@ -371,7 +380,7 @@ describe('package confirmation acceptance authority', () => {
       expect(readFileSync(fixture.htmlPath, 'utf8')).toBe(fixture.htmlText);
       expect(readFileSync(fixture.reportPath, 'utf8')).toBe(fixture.reportText);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupConfirmationFixture(root);
     }
   });
 
@@ -399,7 +408,7 @@ describe('package confirmation acceptance authority', () => {
       expect(readFileSync(fixture.sourcePath, 'utf8')).toBe(fixture.sourceText);
       expect(existsSync(fixture.recordPath)).toBe(false);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupConfirmationFixture(root);
     }
   });
 
@@ -447,9 +456,9 @@ describe('package confirmation acceptance authority', () => {
       expect(staleResult.mismatches).toContain('requirements_effective_pass_receipt_stale');
       expect(existsSync(stale.recordPath)).toBe(false);
 
-      rmSync(path.dirname(stale.sourcePath), { recursive: true, force: true });
+      cleanupConfirmationFixture(path.dirname(stale.sourcePath));
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupConfirmationFixture(root);
     }
   });
 
@@ -504,8 +513,8 @@ describe('package confirmation acceptance authority', () => {
       );
       expect(existsSync(uncontrolled.recordPath)).toBe(false);
     } finally {
-      rmSync(root, { recursive: true, force: true });
-      rmSync(uncontrolledRoot, { recursive: true, force: true });
+      cleanupConfirmationFixture(root);
+      cleanupConfirmationFixture(uncontrolledRoot);
     }
   });
 
@@ -552,7 +561,7 @@ describe('package confirmation acceptance authority', () => {
         )
       ).toBe(false);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupConfirmationFixture(root);
     }
   });
 
@@ -578,7 +587,7 @@ describe('package confirmation acceptance authority', () => {
       expect(replay.ok).toBe(false);
       expect(replay.error).toContain('control_store_duplicate_event');
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupConfirmationFixture(root);
     }
   });
 });

@@ -691,6 +691,10 @@
         },
         "redProofPlan": { "$ref": "#/$defs/nonEmpty" },
         "oracle": { "$ref": "#/$defs/nonEmpty" },
+        "perMustAssertions": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+        },
         "positiveControl": { "type": "boolean" },
         "negativeControls": { "$ref": "#/$defs/stringRefs" },
         "mockOnly": { "type": "boolean" }
@@ -740,6 +744,10 @@
         },
         "redProofPlan": { "$ref": "#/$defs/nonEmpty" },
         "oracle": { "$ref": "#/$defs/nonEmpty" },
+        "perMustAssertions": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/nonEmpty" }
+        },
         "positiveControl": { "type": "boolean" },
         "negativeControls": { "$ref": "#/$defs/stringRefs" },
         "mockOnly": { "type": "boolean" }

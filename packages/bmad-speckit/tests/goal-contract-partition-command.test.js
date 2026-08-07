@@ -47,6 +47,9 @@ const {
   compileOrderedSourceSnapshotSet,
 } = require('../src/utils/goal-contract/control-plane/source-snapshot.ts');
 const {
+  validateGoalContractSchema,
+} = require('../src/utils/goal-contract/control-plane/schema-registry.ts');
+const {
   compileTaskFileScopeAuthority,
   validateTaskFileScopeCells,
 } = require('../src/utils/goal-contract/control-plane/partition-compiler.ts');
@@ -133,6 +136,55 @@ function writeStructuredDependencySourcePlan(root) {
     sourcePath,
     tasks,
   };
+}
+
+function writeRoleAwareSourcePlan(root) {
+  const sourcePath = path.join(root, 'role-aware-source-plan.md');
+  fs.writeFileSync(
+    sourcePath,
+    [
+      '# Role-aware Partition Source Plan',
+      '',
+      '### Task PLAN-T01: Deliver runtime capability [Dependencies: none]',
+      '',
+      '**Execution Class:** `executable_child`',
+      '**Owned Production Paths:** the task\'s explicit Files section',
+      '',
+      '**Files**',
+      '',
+      '- Modify `src/runtime.ts`.',
+      '',
+      '**Run**',
+      '',
+      '- CMD-PLAN-T01-01: Run `node --version`.',
+      '',
+      'AC-PLAN-T01: MUST satisfy the runtime capability acceptance oracle.',
+      '',
+      'EVD-PLAN-T01: MUST bind PLAN-T01 to CMD-PLAN-T01-01.',
+      '',
+      '### Task PLAN-T02: Verify aggregate evidence [Dependencies: PLAN-T01]',
+      '',
+      '**Execution Class:** `aggregate_only`',
+      '**Owned Production Paths:** `none`',
+      '**Aggregate Gate Phase:** `final_aggregate`',
+      '**Aggregate Validation Commands:** `CMD-PLAN-T02-01`',
+      '',
+      '**Files**',
+      '',
+      '- No production files.',
+      '',
+      '**Run**',
+      '',
+      '- CMD-PLAN-T02-01: Run `node --help`.',
+      '',
+      'AC-PLAN-T02: MUST satisfy the aggregate evidence acceptance oracle.',
+      '',
+      'EVD-PLAN-T02: MUST bind PLAN-T02 to CMD-PLAN-T02-01.',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  return sourcePath;
 }
 
 function writeSharedDependencySourcePlan(root) {
@@ -1206,7 +1258,7 @@ describe('bmad-speckit goal-contract partition command', () => {
         feasibilityRecord.closureRelevantCommandIds
       );
       assert.equal(
-        fs.existsSync(path.join(payload.unitRoot, partition.childContractPath)),
+        fs.existsSync(path.join(root, partition.childContractPath)),
         true
       );
       assert.equal(
@@ -1304,6 +1356,82 @@ describe('bmad-speckit goal-contract partition command', () => {
     }
   });
 
+  it('projects source task outcomes into functional child display titles', () => {
+    const root = tempRoot();
+    const { sourcePath } = writeStructuredDependencySourcePlan(root);
+    const frozen = writeFrozenSuccessorContract(root, sourcePath, {
+      slotWrappedFrontMatter: true,
+    });
+    const result = runSourceCommand(
+      [
+        'partition',
+        '--governed',
+        '--entry',
+        'standalone_goal_contract',
+        '--source',
+        sourcePath,
+        '--goal-contract',
+        frozen.goalContractPath,
+        '--sequence-mode',
+        'disabled',
+        '--json',
+      ],
+      { cwd: root }
+    );
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const payload = parsePayload(result);
+    const titles = payload.partitionManifest.partitions.map(
+      ({ displayTitle }) => displayTitle
+    );
+    const projectedTitles = titles.join('; ');
+
+    assert.match(projectedTitles, /Freeze source authority/u);
+    assert.match(projectedTitles, /Normalize source obligations/u);
+    assert.match(projectedTitles, /Finalize partition authority/u);
+    assert.ok(titles.every((title) => !/^Partition \d+(?::|$)/u.test(title)));
+  });
+
+  it('publishes standalone governed child paths relative to the repository root', () => {
+    const root = tempRoot();
+    const { sourcePath } = writeStructuredDependencySourcePlan(root);
+    const frozen = writeFrozenSuccessorContract(root, sourcePath, {
+      slotWrappedFrontMatter: true,
+    });
+    const result = runSourceCommand(
+      [
+        'partition',
+        '--governed',
+        '--entry',
+        'standalone_goal_contract',
+        '--source',
+        sourcePath,
+        '--goal-contract',
+        frozen.goalContractPath,
+        '--sequence-mode',
+        'disabled',
+        '--json',
+      ],
+      { cwd: root }
+    );
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const payload = parsePayload(result);
+    const unitRootPath = path.relative(root, payload.unitRoot).replace(/\\/gu, '/');
+
+    for (const partition of payload.partitionManifest.partitions) {
+      assert.match(
+        partition.childContractPath,
+        new RegExp(`^${unitRootPath.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}/children/`, 'u')
+      );
+      assert.equal(
+        fs.existsSync(path.join(root, partition.childContractPath)),
+        true,
+        partition.childContractPath
+      );
+    }
+  });
+
   it('preserves a frozen source-plan DAG and Files ownership in governed children', () => {
     const root = tempRoot();
     const { sourcePath, tasks } = writeStructuredDependencySourcePlan(root);
@@ -1370,6 +1498,69 @@ describe('bmad-speckit goal-contract partition command', () => {
     );
   });
 
+  it('excludes aggregate-only tasks from child membership and binds ordered aggregate validation', () => {
+    const root = tempRoot();
+    const sourcePath = writeRoleAwareSourcePlan(root);
+    const frozen = writeFrozenSuccessorContract(root, sourcePath, {
+      slotWrappedFrontMatter: true,
+    });
+    const result = runSourceCommand(
+      [
+        'partition',
+        '--governed',
+        '--entry',
+        'standalone_goal_contract',
+        '--source',
+        sourcePath,
+        '--goal-contract',
+        frozen.goalContractPath,
+        '--sequence-mode',
+        'disabled',
+        '--json',
+      ],
+      { cwd: root }
+    );
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const payload = parsePayload(result);
+    const manifest = payload.partitionManifest;
+    assert.deepEqual(
+      manifest.partitions.flatMap((partition) => partition.primaryTaskIds),
+      ['PLAN-T01']
+    );
+    assert.deepEqual(manifest.aggregateValidation.taskOrder, ['PLAN-T02']);
+    assert.deepEqual(manifest.aggregateValidation.commandOrder, ['CMD-PLAN-T02-01']);
+    assert.deepEqual(
+      manifest.aggregateValidation.tasks[0].dependencyTaskIds,
+      ['PLAN-T01']
+    );
+    assert.match(
+      manifest.aggregateValidation.aggregateValidationHash,
+      /^sha256:[0-9a-f]{64}$/u
+    );
+    assert.equal(
+      manifest.partitions.some((partition) =>
+        partition.primaryTaskIds.includes('PLAN-T02')
+      ),
+      false
+    );
+    for (const field of [
+      'taskExecutionRoleAuthorityHash',
+      'aggregateValidation',
+    ]) {
+      const partialManifest = structuredClone(manifest);
+      delete partialManifest[field];
+      assert.throws(
+        () =>
+          validateGoalContractSchema(
+            'goal-contract-partition-manifest.schema.json',
+            partialManifest
+          ),
+        (error) => error.failureClass === 'canonical_schema_invalid'
+      );
+    }
+  });
+
   it('keeps shared task paths governed by every declaring child while retaining one owner', () => {
     const root = tempRoot();
     const { sourcePath } = writeSharedDependencySourcePlan(root);
@@ -1427,7 +1618,7 @@ describe('bmad-speckit goal-contract partition command', () => {
 
     for (const partition of [ownerPartition, consumerPartition]) {
       const childBytes = fs.readFileSync(
-        path.join(payload.unitRoot, partition.childContractPath),
+        path.join(root, partition.childContractPath),
         'utf8'
       );
       const governedLine = childBytes

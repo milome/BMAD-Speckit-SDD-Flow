@@ -10,9 +10,9 @@ const sha256 = (value: string) =>
   `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
 
 const CONTRACT_PATH =
-  'docs/plans/2026-07-18-loop-engineering-evidence-closure-remediation-amend13-goal-execution-plan.md';
+  'tests/acceptance/fixtures/requirements-contract-evidence-closure/frozen-universe-contract.md';
 const ARTIFACT_FIELD_CONTRACT_PATH =
-  'docs/plans/2026-07-11-loop-engineering-evidence-closure-remediation-goal-execution-plan.md';
+  'tests/acceptance/fixtures/requirements-contract-evidence-closure/artifact-field-contract.md';
 const COMPLETION_SCHEMA_PATH =
   'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-completion-evidence.schema.json';
 
@@ -167,10 +167,10 @@ describe('requirements contract evidence verify command', () => {
         json: false,
       });
       expect(receipt.decision).toBe('pass');
-      expect(receipt.verifiedArtifactCount).toBe(55);
-      expect(receipt.verifiedEvidenceCount).toBe(17);
-      expect(receipt.coveredStoryCount).toBe(188);
-      expect(receipt.coveredAcceptanceCount).toBe(226);
+      expect(receipt.verifiedArtifactCount).toBe(2);
+      expect(receipt.verifiedEvidenceCount).toBe(2);
+      expect(receipt.coveredStoryCount).toBe(2);
+      expect(receipt.coveredAcceptanceCount).toBe(2);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

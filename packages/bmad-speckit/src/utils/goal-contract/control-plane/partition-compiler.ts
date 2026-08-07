@@ -105,6 +105,12 @@ const TASK_FILE_SCOPE_FIELDS = new Set([
   'Delete',
 ]);
 const NO_PRODUCTION_FILES = 'No production files';
+const EXECUTABLE_CHILD = 'executable_child';
+const AGGREGATE_ONLY = 'aggregate_only';
+const AGGREGATE_PHASE_ORDER = new Map([
+  ['post_child_execution', 0],
+  ['final_aggregate', 1],
+]);
 const COMMAND_KINDS = Object.freeze(['direct', 'impacted', 'integration', 'regression']);
 const ALLOWED_REQUEST_FIELDS = new Set([
   'sourceCompositionPolicy',
@@ -309,7 +315,7 @@ function canonicalTaskFileScopeField(value) {
   return null;
 }
 
-function taskSourceSections(snapshotSet, taskId) {
+function taskSourceSections(snapshotSet, taskId, allowedSourceRoles = null) {
   const escapedTaskId = String(taskId).replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
   const taskTokenPattern = new RegExp(
     `(?:^|\\s)${escapedTaskId}(?=[:：\\s]|$)`,
@@ -317,6 +323,12 @@ function taskSourceSections(snapshotSet, taskId) {
   );
   const sections = [];
   for (const snapshot of snapshotSet.sourceSnapshots || []) {
+    if (
+      allowedSourceRoles &&
+      !allowedSourceRoles.has(snapshot.sourceRole)
+    ) {
+      continue;
+    }
     const lines = Buffer.from(
       snapshot.frozenBytesBase64,
       'base64'
@@ -411,22 +423,37 @@ function projectedTaskPaths(reconciledGraph) {
   return pathsByTaskId;
 }
 
+function resolveTaskSourceSnapshotSet({
+  orderedSourceSnapshotSet,
+  sourceSnapshot = null,
+} = {}) {
+  if (
+    orderedSourceSnapshotSet?.schemaVersion ===
+    'goal-contract-ordered-source-snapshot-set/v1'
+  ) {
+    return verifyOrderedSourceSnapshotSet(orderedSourceSnapshotSet);
+  }
+  return {
+    orderedSourceSnapshotSetHash:
+      orderedSourceSnapshotSet?.orderedSourceSnapshotSetHash,
+    sourceSnapshots: [
+      {
+        ...verifySourceSnapshot(sourceSnapshot),
+        sourceRole: 'primary_implementation_authority',
+      },
+    ],
+  };
+}
+
 function compileTaskFileScopeAuthority({
   orderedSourceSnapshotSet,
   reconciledGraph,
   sourceSnapshot = null,
 } = {}) {
-  const snapshotSet =
-    orderedSourceSnapshotSet?.schemaVersion ===
-    'goal-contract-ordered-source-snapshot-set/v1'
-      ? verifyOrderedSourceSnapshotSet(orderedSourceSnapshotSet)
-      : {
-          orderedSourceSnapshotSetHash:
-            orderedSourceSnapshotSet?.orderedSourceSnapshotSetHash,
-          sourceSnapshots: [
-            verifySourceSnapshot(sourceSnapshot),
-          ],
-        };
+  const snapshotSet = resolveTaskSourceSnapshotSet({
+    orderedSourceSnapshotSet,
+    sourceSnapshot,
+  });
   const pathsByTaskId = projectedTaskPaths(reconciledGraph);
   const taskIds = unique([
     ...(reconciledGraph?.tasks || []).map((task) => task.id),
@@ -500,6 +527,606 @@ function compileTaskFileScopeAuthority({
     taskFileScopeAuthorityHash:
       hashControlPlaneValue(semanticAuthority),
   });
+}
+
+function declarationValues(section, pattern) {
+  return section.lines
+    .map((line, offset) => ({
+      line: line.trim(),
+      lineNumber: section.lineStart + offset,
+    }))
+    .map(({ line, lineNumber }) => {
+      const match = pattern.exec(line);
+      return match
+        ? {
+            value: match[1].trim(),
+            lineNumber,
+          }
+        : null;
+    })
+    .filter(Boolean);
+}
+
+function normalizeDeclarationToken(value) {
+  const token = String(value || '').trim();
+  const quoted = /^`([^`\r\n]+)`$/u.exec(token);
+  return (quoted ? quoted[1] : token).trim();
+}
+
+function parseDeclaredCommandIds(value) {
+  const backtickTokens = [...String(value || '').matchAll(/`([^`\r\n]+)`/gu)]
+    .map((match) => match[1].trim())
+    .filter(Boolean);
+  const tokens =
+    backtickTokens.length > 0
+      ? backtickTokens
+      : String(value || '')
+          .split(/[,，]/u)
+          .map((token) => token.trim())
+          .filter(Boolean);
+  return [...new Set(tokens)];
+}
+
+function sourceDeclaredDependencies(section) {
+  const match = /\[Dependencies:\s*([^\]]+)\]/iu.exec(
+    section.lines[0] || ''
+  );
+  if (!match) return [];
+  const value = match[1].trim();
+  if (/^none$/iu.test(value)) return [];
+  return unique(
+    value
+      .split(/[,，]/u)
+      .map(normalizeDeclarationToken)
+      .filter(Boolean)
+  );
+}
+
+function graphTaskDependencies(reconciledGraph, task) {
+  const taskId = String(task?.id || task?.taskId || '');
+  return unique([
+    ...(task?.dependencies || task?.dependencyIds || []),
+    ...(reconciledGraph?.dependencies || [])
+      .filter(
+        (dependency) =>
+          String(dependency?.from || dependency?.taskId || '') === taskId
+      )
+      .map((dependency) => dependency?.to || dependency?.dependsOn),
+  ]);
+}
+
+function recordTaskRefs(record) {
+  return unique(record?.taskIds || record?.goalIds || []);
+}
+
+function recordSliceRefs(record) {
+  return unique(record?.traceIds || record?.sliceIds || []);
+}
+
+function aggregateTaskProjection({
+  taskId,
+  section,
+  phase,
+  commandIds,
+  task,
+  reconciledGraph,
+}) {
+  const slices = (reconciledGraph?.traceSlices || []).filter((slice) =>
+    recordTaskRefs(slice).includes(taskId)
+  );
+  const sliceIds = new Set(
+    slices.map((slice) => String(slice.id || slice.sliceId || ''))
+  );
+  const acceptanceRecords = (reconciledGraph?.acceptanceItems || []).filter(
+    (acceptance) =>
+      recordTaskRefs(acceptance).includes(taskId) ||
+      recordSliceRefs(acceptance).some((sliceId) => sliceIds.has(sliceId))
+  );
+  const evidenceIds = unique([
+    ...slices.flatMap((slice) => slice.evidenceIds || []),
+    ...acceptanceRecords.flatMap(
+      (acceptance) => acceptance.expectedEvidenceIds || []
+    ),
+    ...(reconciledGraph?.expectedEvidence || [])
+      .filter((evidence) =>
+        unique([
+          ...(evidence?.producerTaskIds || []),
+          evidence?.producer,
+        ]).includes(taskId)
+      )
+      .map((evidence) => evidence.id || evidence.evidenceContractId),
+  ]);
+  return {
+    taskId,
+    phase,
+    dependencyTaskIds: unique([
+      ...sourceDeclaredDependencies(section),
+      ...graphTaskDependencies(reconciledGraph, task),
+    ]),
+    commandIds,
+    sourceObligationIds: unique(
+      slices.flatMap((slice) => slice.sourceIds || [])
+    ),
+    acceptanceIds: unique([
+      ...slices.flatMap((slice) => slice.acceptanceIds || []),
+      ...acceptanceRecords.map(
+        (acceptance) => acceptance.id || acceptance.predicateId
+      ),
+    ]),
+    evidenceIds,
+  };
+}
+
+function compileTaskExecutionRoleAuthority({
+  orderedSourceSnapshotSet,
+  reconciledGraph,
+  sourceSnapshot = null,
+} = {}) {
+  const snapshotSet = resolveTaskSourceSnapshotSet({
+    orderedSourceSnapshotSet,
+    sourceSnapshot,
+  });
+  const sourceRoles = new Set(['primary_implementation_authority']);
+  const tasks = (reconciledGraph?.tasks || []).map((task, sourceOrder) => ({
+    task,
+    sourceOrder,
+    taskId: String(task?.id || task?.taskId || ''),
+  }));
+  const records = tasks.map(({ task, sourceOrder, taskId }) => {
+    const sections = taskSourceSections(snapshotSet, taskId, sourceRoles);
+    if (sections.length > 1) {
+      throw failure('partition_execution_class_ambiguous', {
+        taskId,
+        reason: 'source_task_ambiguous',
+      });
+    }
+    const section = sections[0] || null;
+    const executionClassDeclarations = section
+      ? declarationValues(
+          section,
+          /^\*\*Execution Class:\*\*\s*(.+)$/iu
+        )
+      : [];
+    return {
+      task,
+      taskId,
+      sourceOrder,
+      section,
+      executionClassDeclarations,
+    };
+  });
+  const explicit = records.some(
+    ({ executionClassDeclarations }) =>
+      executionClassDeclarations.length > 0
+  );
+  if (!explicit) {
+    const aggregateValidation = {
+      taskOrder: [],
+      commandOrder: [],
+      tasks: [],
+    };
+    const semanticAuthority = {
+      schemaVersion:
+        'goal-contract-task-execution-role-authority/v1',
+      mode: 'legacy',
+      executableTaskIds: records.map(({ taskId }) => taskId),
+      aggregateTaskIds: [],
+      aggregateValidation: {
+        ...aggregateValidation,
+        aggregateValidationHash:
+          hashControlPlaneValue(aggregateValidation),
+      },
+    };
+    return deepFreeze({
+      ...semanticAuthority,
+      taskExecutionRoleAuthorityHash:
+        hashControlPlaneValue(semanticAuthority),
+    });
+  }
+
+  const resolvedTaskFileScopeAuthority =
+    compileTaskFileScopeAuthority({
+      orderedSourceSnapshotSet,
+      reconciledGraph,
+      sourceSnapshot,
+    });
+  const fileScopeByTaskId = new Map(
+    (resolvedTaskFileScopeAuthority.records || []).map((record) => [
+      record.taskId,
+      record,
+    ])
+  );
+  const completeCommandAuthority = typedCommandAuthority(reconciledGraph);
+  const aggregateTasks = [];
+  const executableTaskIds = [];
+  for (const record of records) {
+    const {
+      task,
+      taskId,
+      section,
+      executionClassDeclarations,
+    } = record;
+    if (executionClassDeclarations.length === 0) {
+      throw failure('partition_execution_class_missing', { taskId });
+    }
+    if (executionClassDeclarations.length !== 1) {
+      throw failure('partition_execution_class_ambiguous', { taskId });
+    }
+    const executionClass = normalizeDeclarationToken(
+      executionClassDeclarations[0].value
+    );
+    if (![EXECUTABLE_CHILD, AGGREGATE_ONLY].includes(executionClass)) {
+      throw failure('partition_execution_class_invalid', {
+        taskId,
+        executionClass,
+      });
+    }
+    if (executionClass === EXECUTABLE_CHILD) {
+      executableTaskIds.push(taskId);
+      continue;
+    }
+    const ownershipDeclarations = declarationValues(
+      section,
+      /^\*\*Owned Production Paths:\*\*\s*(.+)$/iu
+    );
+    if (
+      ownershipDeclarations.length !== 1 ||
+      normalizeDeclarationToken(
+        ownershipDeclarations[0]?.value
+      ).toLowerCase() !== 'none'
+    ) {
+      throw failure('partition_aggregate_ownership_invalid', {
+        taskId,
+      });
+    }
+    const fileScopeRecord = fileScopeByTaskId.get(taskId);
+    const sourceFileScopeTokens = unique(
+      (fileScopeRecord?.cells || []).flatMap((cell) => cell.tokens || [])
+    );
+    if (
+      !fileScopeRecord?.sourceBound ||
+      (fileScopeRecord.projectedPaths || []).length > 0 ||
+      sourceFileScopeTokens.length === 0 ||
+      sourceFileScopeTokens.some(
+        (token) => token !== NO_PRODUCTION_FILES
+      )
+    ) {
+      throw failure('partition_aggregate_ownership_invalid', {
+        taskId,
+      });
+    }
+    const phaseDeclarations = declarationValues(
+      section,
+      /^\*\*Aggregate Gate Phase:\*\*\s*(.+)$/iu
+    );
+    const phase = normalizeDeclarationToken(
+      phaseDeclarations[0]?.value
+    );
+    if (
+      phaseDeclarations.length !== 1 ||
+      !AGGREGATE_PHASE_ORDER.has(phase)
+    ) {
+      throw failure('partition_aggregate_phase_invalid', {
+        taskId,
+        phase,
+      });
+    }
+    const commandDeclarations = declarationValues(
+      section,
+      /^\*\*Aggregate Validation Commands:\*\*\s*(.+)$/iu
+    );
+    const commandIds =
+      commandDeclarations.length === 1
+        ? parseDeclaredCommandIds(commandDeclarations[0].value)
+        : [];
+    if (commandDeclarations.length !== 1 || commandIds.length === 0) {
+      throw failure('partition_aggregate_command_missing', {
+        taskId,
+      });
+    }
+    const taskScopedCommandIds = [
+      ...new Set(
+        (reconciledGraph?.traceSlices || [])
+          .filter((slice) => recordTaskRefs(slice).includes(taskId))
+          .flatMap((slice) =>
+            COMMAND_KINDS.flatMap(
+              (kind) => slice?.[`${kind}Commands`] || []
+            )
+          )
+          .filter(Boolean)
+          .map(String)
+      ),
+    ];
+    const missingTypedCommandIds = commandIds.filter(
+      (commandId) => !completeCommandAuthority.recordsById.has(commandId)
+    );
+    if (
+      missingTypedCommandIds.length > 0 ||
+      stableControlPlaneStringify(commandIds) !==
+        stableControlPlaneStringify(taskScopedCommandIds)
+    ) {
+      throw failure(
+        'partition_aggregate_command_authority_invalid',
+        {
+          taskId,
+          declaredCommandIds: commandIds,
+          taskScopedCommandIds,
+          missingTypedCommandIds,
+        }
+      );
+    }
+    aggregateTasks.push(
+      aggregateTaskProjection({
+        taskId,
+        section,
+        phase,
+        commandIds,
+        task,
+        reconciledGraph,
+      })
+    );
+  }
+
+  const knownTaskIds = new Set([
+    ...executableTaskIds,
+    ...aggregateTasks.map(({ taskId }) => taskId),
+  ]);
+  let previousPhase = -1;
+  const completedTaskIds = new Set(executableTaskIds);
+  for (const aggregateTask of aggregateTasks) {
+    const phaseOrder = AGGREGATE_PHASE_ORDER.get(aggregateTask.phase);
+    if (phaseOrder < previousPhase) {
+      throw failure('partition_aggregate_order_invalid', {
+        taskId: aggregateTask.taskId,
+      });
+    }
+    previousPhase = phaseOrder;
+    for (const dependencyTaskId of aggregateTask.dependencyTaskIds) {
+      if (
+        !knownTaskIds.has(dependencyTaskId) ||
+        !completedTaskIds.has(dependencyTaskId)
+      ) {
+        throw failure('partition_aggregate_dependency_invalid', {
+          taskId: aggregateTask.taskId,
+          dependencyTaskId,
+        });
+      }
+    }
+    completedTaskIds.add(aggregateTask.taskId);
+  }
+  const aggregateValidationSemantic = {
+    taskOrder: aggregateTasks.map(({ taskId }) => taskId),
+    commandOrder: aggregateTasks.flatMap(
+      ({ commandIds }) => commandIds
+    ),
+    tasks: aggregateTasks,
+  };
+  const semanticAuthority = {
+    schemaVersion:
+      'goal-contract-task-execution-role-authority/v1',
+    mode: 'explicit',
+    executableTaskIds: unique(executableTaskIds),
+    aggregateTaskIds: aggregateTasks.map(({ taskId }) => taskId),
+    aggregateValidation: {
+      ...aggregateValidationSemantic,
+      aggregateValidationHash:
+        hashControlPlaneValue(aggregateValidationSemantic),
+    },
+  };
+  return deepFreeze({
+    ...semanticAuthority,
+    taskExecutionRoleAuthorityHash:
+      hashControlPlaneValue(semanticAuthority),
+  });
+}
+
+function projectExecutableReconciledGraph(
+  reconciledGraph,
+  taskExecutionRoleAuthority
+) {
+  if (taskExecutionRoleAuthority.mode !== 'explicit') {
+    return reconciledGraph;
+  }
+  const executableTaskIds = new Set(
+    taskExecutionRoleAuthority.executableTaskIds
+  );
+  const aggregateTaskIds = new Set(
+    taskExecutionRoleAuthority.aggregateTaskIds
+  );
+  const tasks = (reconciledGraph?.tasks || []).filter((task) =>
+    executableTaskIds.has(String(task?.id || task?.taskId || ''))
+  );
+  for (const task of tasks) {
+    const taskId = String(task?.id || task?.taskId || '');
+    const aggregateDependency = graphTaskDependencies(
+      reconciledGraph,
+      task
+    ).find((dependencyTaskId) =>
+      aggregateTaskIds.has(dependencyTaskId)
+    );
+    if (aggregateDependency) {
+      throw failure('partition_execution_role_dependency_invalid', {
+        taskId,
+        dependencyTaskId: aggregateDependency,
+      });
+    }
+  }
+  const traceSlices = [];
+  for (const slice of reconciledGraph?.traceSlices || []) {
+    const taskIds = recordTaskRefs(slice);
+    const executableRefs = taskIds.filter((taskId) =>
+      executableTaskIds.has(taskId)
+    );
+    const aggregateRefs = taskIds.filter((taskId) =>
+      aggregateTaskIds.has(taskId)
+    );
+    if (executableRefs.length > 0 && aggregateRefs.length > 0) {
+      throw failure('partition_execution_role_mixed_slice', {
+        sliceId: slice.id || slice.sliceId || null,
+        taskIds,
+      });
+    }
+    if (executableRefs.length > 0) traceSlices.push(slice);
+  }
+  const executableSliceIds = new Set(
+    traceSlices.map((slice) => String(slice.id || slice.sliceId || ''))
+  );
+  const executableSourceIds = new Set(
+    traceSlices.flatMap((slice) =>
+      (slice.sourceIds || []).map(String)
+    )
+  );
+  const executableCommandIds = new Set(
+    traceSlices.flatMap(commandReferences)
+  );
+  const acceptanceItems = (
+    reconciledGraph?.acceptanceItems || []
+  ).filter((acceptance) => {
+    const taskRefs = recordTaskRefs(acceptance);
+    const sliceRefs = recordSliceRefs(acceptance);
+    const commandRefs = unique(
+      acceptance?.requiredCommands || []
+    );
+    return (
+      taskRefs.some((taskId) => executableTaskIds.has(taskId)) ||
+      sliceRefs.some((sliceId) => executableSliceIds.has(sliceId)) ||
+      commandRefs.some((commandId) =>
+        executableCommandIds.has(commandId)
+      )
+    );
+  });
+  const executableEvidenceIds = new Set([
+    ...traceSlices.flatMap((slice) => slice.evidenceIds || []),
+    ...acceptanceItems.flatMap(
+      (acceptance) => acceptance.expectedEvidenceIds || []
+    ),
+  ]);
+  return {
+    ...reconciledGraph,
+    sourceObligations: (
+      reconciledGraph?.sourceObligations || []
+    ).filter((source) =>
+      executableSourceIds.has(String(source?.id || ''))
+    ),
+    tasks: tasks.map((task) => ({
+      ...task,
+      dependencies: unique(task?.dependencies || []).filter(
+        (taskId) => executableTaskIds.has(taskId)
+      ),
+      dependencyIds: unique(task?.dependencyIds || []).filter(
+        (taskId) => executableTaskIds.has(taskId)
+      ),
+    })),
+    traceSlices,
+    dependencies: (reconciledGraph?.dependencies || []).filter(
+      (dependency) =>
+        executableTaskIds.has(
+          String(dependency?.from || dependency?.taskId || '')
+        ) &&
+        executableTaskIds.has(
+          String(dependency?.to || dependency?.dependsOn || '')
+        )
+    ),
+    acceptanceItems,
+    expectedEvidence: (
+      reconciledGraph?.expectedEvidence || []
+    ).filter((evidence) => {
+      const evidenceId = String(
+        evidence?.id || evidence?.evidenceContractId || ''
+      );
+      return (
+        executableEvidenceIds.has(evidenceId) ||
+        unique([
+          ...(evidence?.producerTaskIds || []),
+          evidence?.producer,
+        ]).some((taskId) => executableTaskIds.has(taskId))
+      );
+    }),
+  };
+}
+
+function validateExecutablePartitionReadiness({
+  partitions = [],
+  executableTaskIds = [],
+  aggregateTaskIds = [],
+} = {}) {
+  const executableTasks = new Set(unique(executableTaskIds));
+  const aggregateTasks = new Set(unique(aggregateTaskIds));
+  const taskOwners = new Map();
+  const pathOwners = new Map();
+  for (const partition of partitions || []) {
+    const partitionId = String(partition?.partitionId || '');
+    const primaryTaskIds = unique(partition?.primaryTaskIds || []);
+    const aggregateTaskId = primaryTaskIds.find((taskId) =>
+      aggregateTasks.has(taskId)
+    );
+    if (aggregateTaskId) {
+      throw failure('partition_readiness_aggregate_task_leak', {
+        partitionId,
+        taskId: aggregateTaskId,
+      });
+    }
+    for (const taskId of primaryTaskIds) {
+      if (!executableTasks.has(taskId)) {
+        throw failure('partition_readiness_task_membership_invalid', {
+          partitionId,
+          taskId,
+        });
+      }
+      const owners = taskOwners.get(taskId) || [];
+      owners.push(partitionId);
+      taskOwners.set(taskId, owners);
+    }
+    const ownedArtifactPaths = unique(
+      partition?.ownedArtifactPaths || []
+    );
+    if (ownedArtifactPaths.length === 0) {
+      throw failure('partition_readiness_empty_ownership', {
+        partitionId,
+      });
+    }
+    if (unique(partition?.commandIds || []).length === 0) {
+      throw failure(
+        'partition_readiness_required_command_missing',
+        { partitionId }
+      );
+    }
+    if (
+      unique(
+        partition?.completionPredicateIds ||
+          partition?.acceptanceIds ||
+          []
+      ).length === 0
+    ) {
+      throw failure(
+        'partition_readiness_atomic_commit_unprovable',
+        { partitionId }
+      );
+    }
+    for (const artifactPath of ownedArtifactPaths) {
+      const owner = pathOwners.get(artifactPath);
+      if (owner && owner !== partitionId) {
+        throw failure(
+          'partition_readiness_ownership_overlap',
+          {
+            path: artifactPath,
+            partitionIds: [owner, partitionId].sort(compareIds),
+          }
+        );
+      }
+      pathOwners.set(artifactPath, partitionId);
+    }
+  }
+  for (const taskId of executableTasks) {
+    const owners = taskOwners.get(taskId) || [];
+    if (owners.length !== 1) {
+      throw failure(
+        'partition_readiness_task_membership_invalid',
+        { taskId, partitionIds: owners }
+      );
+    }
+  }
+  return Object.freeze({ decision: 'pass' });
 }
 
 function intersects(left = [], right = new Set<string>()) {
@@ -1428,9 +2055,24 @@ function compilePartitionBundle(request, authority) {
       reconciledGraph: request.reconciledGraph,
       sourceSnapshot: request.sourceSnapshot,
     });
+  const taskExecutionRoleAuthority =
+    compileTaskExecutionRoleAuthority({
+      orderedSourceSnapshotSet: authority.snapshotSet,
+      reconciledGraph: request.reconciledGraph,
+      sourceSnapshot: request.sourceSnapshot,
+    });
+  const executableReconciledGraph =
+    projectExecutableReconciledGraph(
+      request.reconciledGraph,
+      taskExecutionRoleAuthority
+    );
   const authorityProjection = sourceAuthorityProjection(authority);
-  const reconciledGraphHash = canonicalGraphHash(request.reconciledGraph);
-  const commandAuthority = typedCommandAuthority(request.reconciledGraph);
+  const reconciledGraphHash = canonicalGraphHash(
+    executableReconciledGraph
+  );
+  const commandAuthority = typedCommandAuthority(
+    executableReconciledGraph
+  );
   const projectionAuthority = {
     ...authorityProjection,
     sourceSnapshotHash: authority.snapshotSet.orderedSourceSnapshotSetHash,
@@ -1440,7 +2082,7 @@ function compilePartitionBundle(request, authority) {
     methodologyProfileHash: authority.methodologyProfile.methodologyProfileHash,
     semanticModelHash: authority.goalContractBundle.goalContractSemanticHash,
     traceGraphHash: reconciledGraphHash,
-    reconciledGraph: request.reconciledGraph,
+    reconciledGraph: executableReconciledGraph,
     reconciledGraphHash,
     sequenceApplicabilityReceipt: request.sequenceApplicabilityReceipt,
     sequenceConstraintInput: request.sequenceConstraintInput,
@@ -1467,9 +2109,18 @@ function compilePartitionBundle(request, authority) {
     optimization,
     componentGraph,
     executionProjection,
-    request.reconciledGraph,
+    executableReconciledGraph,
     commandAuthority
   );
+  if (taskExecutionRoleAuthority.mode === 'explicit') {
+    validateExecutablePartitionReadiness({
+      partitions,
+      executableTaskIds:
+        taskExecutionRoleAuthority.executableTaskIds,
+      aggregateTaskIds:
+        taskExecutionRoleAuthority.aggregateTaskIds,
+    });
+  }
   const obligations = subordinateObligations(authority);
   const selections = selectionRecords({
     partitions,
@@ -1500,6 +2151,15 @@ function compilePartitionBundle(request, authority) {
     sequenceCoverage: executionProjection.sequenceConstraintBinding.sequenceCoverage,
     sequenceClosureStatus: executionProjection.sequenceConstraintBinding.sequenceClosureStatus,
     childContractAuthority: executionProjection.sequenceConstraintBinding.childContractAuthority,
+    ...(taskExecutionRoleAuthority.mode === 'explicit'
+      ? {
+          taskExecutionRoleAuthorityHash:
+            taskExecutionRoleAuthority
+              .taskExecutionRoleAuthorityHash,
+          aggregateValidation:
+            taskExecutionRoleAuthority.aggregateValidation,
+        }
+      : {}),
     namespaceOwnership: namespaceOwnership(authority),
     subordinateTaskMappings: subordinateTaskMappings({
       authority,
@@ -1532,11 +2192,14 @@ function compilePartitionBundle(request, authority) {
     schemaVersion: 'goal-contract-partition-bundle/v1',
     executionProjection,
     projectionAuthority,
-    reconciledGraphAuthority: canonicalizeSets(request.reconciledGraph),
+    reconciledGraphAuthority: canonicalizeSets(
+      executableReconciledGraph
+    ),
     componentGraph,
     optimization,
     partitionPolicyBinding,
     taskFileScopeAuthority,
+    taskExecutionRoleAuthority,
     partitionPlan,
     partitionPlanBytes,
     partitionPlanHash: partitionPlan.partitionPlanHash,
@@ -1566,8 +2229,46 @@ function normalizeProjectedChildPath(value) {
   return path.posix.normalize(normalized);
 }
 
+function resolveRepositoryRelativeChildContractPath({
+  repositoryRoot,
+  childContractPath,
+} = {}) {
+  if (
+    typeof repositoryRoot !== 'string' ||
+    repositoryRoot.length === 0
+  ) {
+    throw failure('partition_repository_root_invalid');
+  }
+  const normalized = normalizeProjectedChildPath(
+    childContractPath
+  );
+  if (normalized === '.') {
+    throw failure('partition_child_path_invalid', {
+      childContractPath,
+    });
+  }
+  const resolvedRoot = path.resolve(repositoryRoot);
+  const resolvedChild = path.resolve(
+    resolvedRoot,
+    ...normalized.split('/')
+  );
+  const relative = path.relative(resolvedRoot, resolvedChild);
+  if (
+    relative.length === 0 ||
+    relative === '..' ||
+    relative.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relative)
+  ) {
+    throw failure('partition_child_path_escape', {
+      childContractPath,
+    });
+  }
+  return relative.replace(/\\/gu, '/');
+}
+
 function projectExecutionArtifacts({
   partitionPlan,
+  displayTitles = {},
   renderChildContract,
   artifactLayout,
   partitionAnalysisReceipt,
@@ -1612,6 +2313,7 @@ function projectExecutionArtifacts({
   );
   const finalized = finalizePartitionManifest({
     partitionPlan,
+    displayTitles,
     childCompilationReceipts,
     artifactLayout,
     partitionAnalysisReceipt,
@@ -1891,10 +2593,13 @@ module.exports = {
   compilePartitionImpactAuthority,
   compilePartitionImpactDriftBaseline,
   compilePartitions,
+  compileTaskExecutionRoleAuthority,
   compileTaskFileScopeAuthority,
   projectOwnerConsumerRecords,
   projectOwnedArtifactPaths,
   projectExecutionArtifacts,
+  resolveRepositoryRelativeChildContractPath,
+  validateExecutablePartitionReadiness,
   validateTaskFileScopeCells,
   verifyPartitionPlan,
 };

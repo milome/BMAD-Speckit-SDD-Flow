@@ -64,7 +64,8 @@ const FREEZE_RECEIPT_PATH = path.join(
 const require = createRequire(import.meta.url);
 
 function fileHash(filePath: string): string {
-  return `sha256:${createHash('sha256').update(readFileSync(filePath)).digest('hex')}`;
+  const canonicalText = readFileSync(filePath, 'utf8').replace(/\r\n/gu, '\n');
+  return `sha256:${createHash('sha256').update(canonicalText, 'utf8').digest('hex')}`;
 }
 
 describe('requirements contract frozen V1 legacy inventory', () => {

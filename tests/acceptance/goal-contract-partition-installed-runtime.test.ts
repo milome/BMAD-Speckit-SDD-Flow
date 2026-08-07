@@ -192,28 +192,110 @@ function partition(
   };
 }
 
-function writeSimpleSource(root: string) {
-  const source = path.join(root, 'source.md');
+function writeSimpleSource(
+  root: string,
+  options: {
+    fileName?: string;
+    title?: string;
+    id?: string;
+    capability?: string;
+  } = {}
+) {
+  const {
+    fileName = 'source.md',
+    title = 'Installed Partition',
+    id = 'INSTALLED',
+    capability = 'installed runtime capability',
+  } = options;
+  const source = path.join(root, fileName);
   fs.writeFileSync(
     source,
     [
-      '# Installed Partition',
+      `# ${title}`,
       '',
       '## Implementation Task Breakdown',
       '',
-      '- [ ] TASK-INSTALLED: MUST close the installed runtime capability.',
+      `- [ ] TASK-${id}: MUST close the ${capability}.`,
       '',
       '## Acceptance Criteria',
       '',
-      '- [ ] AC-INSTALLED: MUST prove observable completion.',
+      `- [ ] AC-${id}: MUST prove observable completion for ${capability}.`,
       '',
       '## Completion Evidence Packet',
       '',
-      '- [ ] EVD-INSTALLED: MUST bind current source bytes.',
+      `- [ ] EVD-${id}: MUST bind current source bytes for ${capability}.`,
       '',
       '## Required Test Commands',
       '',
-      '- [ ] CMD-INSTALLED: Run `node --version`.',
+      `- [ ] CMD-${id}: Run \`node --version\` for ${capability}.`,
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  return source;
+}
+
+function writeJudgePartitionSource(root: string) {
+  const source = path.join(root, 'judge-role-separation-source.md');
+  fs.writeFileSync(
+    source,
+    [
+      '# Judge Role Separation Authority',
+      '',
+      '## Implementation Task Breakdown',
+      '',
+      '### Task J01-T01: Implement Judge Request Authority',
+      '',
+      '- Dependencies: none.',
+      '- Target modification paths:',
+      '  - `packages/bmad-speckit/src/judge/request-authority-01.ts`',
+      '  - `packages/bmad-speckit/src/judge/request-authority-02.ts`',
+      '  - `packages/bmad-speckit/src/judge/request-authority-03.ts`',
+      '  - `packages/bmad-speckit/src/judge/request-authority-04.ts`',
+      '  - `packages/bmad-speckit/src/judge/request-authority-05.ts`',
+      '  - `packages/bmad-speckit/src/judge/request-authority-06.ts`',
+      '  - `packages/bmad-speckit/src/judge/request-authority-07.ts`',
+      '  - `packages/bmad-speckit/src/judge/request-authority-08.ts`',
+      '  - `packages/bmad-speckit/src/judge/request-authority-09.ts`',
+      '- Requirements:',
+      '  - MUST implement Judge request authority across all declared write scopes.',
+      '- Acceptance refs: `AC-J01-T01-01`.',
+      '- Evidence refs: `EVD-J01-T01-01`.',
+      '- Command refs: `CMD-J01-T01-01`.',
+      '',
+      '- AC-J01-T01-01: MUST validate Judge request authority.',
+      '- EVD-J01-T01-01: MUST bind Judge request authority evidence.',
+      '- CMD-J01-T01-01: Run `node --version`.',
+      '',
+      '### Task J01-T02: Implement Judge Provider Authority',
+      '',
+      '- Dependencies: J01-T01.',
+      '- Target modification paths:',
+      '  - `packages/bmad-speckit/src/judge/provider-authority.ts`',
+      '- Requirements:',
+      '  - MUST implement Judge provider authority.',
+      '- Acceptance refs: `AC-J01-T02-01`.',
+      '- Evidence refs: `EVD-J01-T02-01`.',
+      '- Command refs: `CMD-J01-T02-01`.',
+      '',
+      '- AC-J01-T02-01: MUST validate Judge provider authority.',
+      '- EVD-J01-T02-01: MUST bind Judge provider authority evidence.',
+      '- CMD-J01-T02-01: Run `node --version`.',
+      '',
+      '### Task J01-T03: Implement Judge Receipt Authority',
+      '',
+      '- Dependencies: J01-T02.',
+      '- Target modification paths:',
+      '  - `packages/bmad-speckit/src/judge/receipt-authority.ts`',
+      '- Requirements:',
+      '  - MUST implement Judge receipt authority.',
+      '- Acceptance refs: `AC-J01-T03-01`.',
+      '- Evidence refs: `EVD-J01-T03-01`.',
+      '- Command refs: `CMD-J01-T03-01`.',
+      '',
+      '- AC-J01-T03-01: MUST validate Judge receipt authority.',
+      '- EVD-J01-T03-01: MUST bind Judge receipt authority evidence.',
+      '- CMD-J01-T03-01: Run `node --version`.',
       '',
     ].join('\n'),
     'utf8'
@@ -426,29 +508,34 @@ describe('goal-contract partition installed runtime', () => {
 
     const decisions: string[] = [];
     const selfHostingApplicabilityReceiptPaths: string[] = [];
-    for (const [name, source, sequenceMode] of [
-      [
-        'dynamic-master',
-        path.join(
-          repoRoot,
-          'docs',
-          'superpowers',
-          'plans',
-          '2026-07-25-dynamic-goal-contract-partition-compiler-implementation-plan.md'
-        ),
-        'required',
-      ],
-      [
-        'judge-role-separation',
-        path.join(
-          repoRoot,
-          'docs',
-          'plans',
-          '2026-07-25-judge-role-separation-implementation-task-list.md'
-        ),
-        'auto',
-      ],
-    ] as const) {
+    const selfHostingCases = [
+      {
+        name: 'dynamic-master',
+        source: writeSimpleSource(root, {
+          fileName: 'dynamic-master-source.md',
+          title: 'Dynamic Master Partition Authority',
+          id: 'DYNAMIC-MASTER',
+          capability: 'dynamic master partition authority',
+        }),
+        sequenceMode: 'required',
+        expectedTaskIds: ['TASK-DYNAMIC-MASTER'],
+      },
+      {
+        name: 'judge-role-separation',
+        source: writeJudgePartitionSource(root),
+        sequenceMode: 'auto',
+        expectedTaskIds: ['J01-T01', 'J01-T02', 'J01-T03', 'J01-T01-A01'],
+      },
+    ] as const;
+    const expectedSourceHashes = selfHostingCases.map(
+      ({ source }) =>
+        `sha256:${createHash('sha256').update(fs.readFileSync(source)).digest('hex')}`
+    );
+    expect(new Set(expectedSourceHashes).size).toBe(selfHostingCases.length);
+    const observedSourceHashes: string[] = [];
+    for (const { name, source, sequenceMode, expectedTaskIds } of selfHostingCases) {
+      const expectedSourceHash =
+        `sha256:${createHash('sha256').update(fs.readFileSync(source)).digest('hex')}`;
       const selfHost = partition(
         installedCli,
         source,
@@ -459,6 +546,27 @@ describe('goal-contract partition installed runtime', () => {
       if (selfHost.result.status === 0) {
         expect(selfHost.payload.sequenceApplicability).toBe('not_applicable_with_proof');
         expect(fs.existsSync(selfHost.out)).toBe(true);
+        expect(selfHost.payload.sequenceApplicabilityReceipt.sourceSnapshotHash).toBe(
+          expectedSourceHash
+        );
+        const manifest = JSON.parse(fs.readFileSync(selfHost.out, 'utf8')) as {
+          partitions?: Array<{ primaryTaskIds?: string[] }>;
+          coverageObligations?: { atomicTaskIds?: string[] };
+        };
+        const manifestTaskIds = new Set(manifest.coverageObligations?.atomicTaskIds ?? []);
+        for (const expectedTaskId of expectedTaskIds) {
+          expect(manifestTaskIds.has(expectedTaskId), `${name}:${expectedTaskId}`).toBe(true);
+        }
+        if (name === 'judge-role-separation') {
+          expect(
+            manifest.partitions?.some((partition) =>
+              partition.primaryTaskIds?.includes('J01-T01-A01')
+            )
+          ).toBe(true);
+        }
+        observedSourceHashes.push(
+          String(selfHost.payload.sequenceApplicabilityReceipt.sourceSnapshotHash)
+        );
       } else {
         expect(selfHost.payload.failureClass).toBe('sequence_closure_required_unavailable');
         expect(fs.existsSync(selfHost.out)).toBe(false);
@@ -475,10 +583,12 @@ describe('goal-contract partition installed runtime', () => {
           failureClass: 'sequence_closure_required_unavailable',
           blockingReasons: ['canonical_sequence_closure_producer_unavailable'],
         });
+        expect(receipt.sourceSnapshotHash).toBe(expectedSourceHash);
         expect(receipt.freshnessRoot).toMatch(/^sha256:[a-f0-9]{64}$/u);
         expect(selfHost.payload.sequenceApplicabilityReceiptHash).toMatch(
           /^sha256:[a-f0-9]{64}$/u
         );
+        observedSourceHashes.push(String(receipt.sourceSnapshotHash));
       }
       expect(selfHost.payload.sequenceApplicabilityReceiptPath).toEqual(
         expect.any(String)
@@ -487,6 +597,7 @@ describe('goal-contract partition installed runtime', () => {
         selfHost.payload.sequenceApplicabilityReceiptPath
       );
     }
+    expect(observedSourceHashes).toEqual(expectedSourceHashes);
 
     const releaseFixture = writeReleaseGateFixture(root);
     const blockedReleaseArgs = [

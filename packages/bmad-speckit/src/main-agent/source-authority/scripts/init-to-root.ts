@@ -550,14 +550,6 @@ function copyFileWithRetry(src, dest, maxAttempts = 20) {
 
 const PLATFORM_SKILLS_DIRS = ['.codex/skills', '.claude/skills', '.cursor/skills'];
 
-function isCodexSkillFrontmatterFile(filePath) {
-  const portablePath = String(filePath || '').replace(/\\/g, '/');
-  return (
-    path.basename(filePath) === 'SKILL.md' &&
-    (portablePath.includes('/.codex/skills/') || portablePath.startsWith('.codex/skills/'))
-  );
-}
-
 function hasRequiredSkillFrontmatter(raw) {
   const lines = String(raw || '').split(/\r?\n/u);
   if (lines[0] !== '---') return false;
@@ -578,11 +570,8 @@ function normalizePlatformSkillFrontmatterFile(filePath) {
   const raw = fs.readFileSync(filePath, 'utf8').replace(/^\uFEFF/u, '');
   const withoutPolicy = raw.replace(/^<!--\s*BLOCK_LABEL_POLICY=[^>]*-->\s*\r?\n?/u, '');
   if (hasRequiredSkillFrontmatter(withoutPolicy)) {
-    const preserved = isCodexSkillFrontmatterFile(filePath)
-      ? withoutPolicy.replace(/\r\n/gu, '\n')
-      : withoutPolicy;
-    if (preserved !== raw) {
-      fs.writeFileSync(filePath, preserved, 'utf8');
+    if (withoutPolicy !== raw) {
+      fs.writeFileSync(filePath, withoutPolicy, 'utf8');
     }
     return;
   }

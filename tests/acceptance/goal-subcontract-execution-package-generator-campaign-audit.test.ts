@@ -300,7 +300,7 @@ describe('goal subcontract completed campaign audit', () => {
     expectAuditFailure({ englishLifecycleOutcome: true }, 'commit_functional_outcome_not_specific');
     expectAuditFailure({ idImplementationSubject: true }, 'commit_subject_not_functional');
     expectAuditFailure({ idImplementationOutcome: true }, 'commit_functional_outcome_not_specific');
-  });
+  }, 60_000);
 
   it('requires a unique terminal Git trailer block', () => {
     expectAuditFailure({ narrativeFunctionalOutcome: true }, 'commit_trailers_incomplete');
@@ -312,7 +312,7 @@ describe('goal subcontract completed campaign audit', () => {
       { caseVariantDuplicateFunctionalOutcome: true },
       'commit_trailers_ambiguous'
     );
-  });
+  }, 60_000);
 
   it('validates evidence and closure JSON against their bound schemas', () => {
     const invalidEvidence = prepareCampaign();

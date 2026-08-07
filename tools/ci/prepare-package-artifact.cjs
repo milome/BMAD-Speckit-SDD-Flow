@@ -15,6 +15,10 @@ const {
 
 const NPM_PACK_JSON_CAPTURE_MAX_BYTES = 32 * 1024 * 1024;
 const PACKAGE_WORKSPACE_PREFIX = 'bmad-ci-package-';
+const MATERIALIZE_COMMAND = Object.freeze({
+  command: 'npm',
+  args: ['ci', '--offline', '--ignore-scripts'],
+});
 const BUILD_COMMAND = Object.freeze({ command: 'npm', args: ['run', 'prepack'] });
 const PACK_COMMAND = Object.freeze({
   command: 'npm',
@@ -67,7 +71,12 @@ function commandHash(command, args) {
 }
 
 function expectedBuildCommandHash() {
-  return commandHash(BUILD_COMMAND.command, BUILD_COMMAND.args);
+  return sha256Bytes(
+    canonicalJsonBytes({
+      materialize: MATERIALIZE_COMMAND,
+      build: BUILD_COMMAND,
+    })
+  );
 }
 
 function expectedPackCommandHash() {
@@ -118,8 +127,59 @@ function pathInside(parent, candidate) {
   return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..');
 }
 
+function canonicalExistingPath(targetPath) {
+  try {
+    const resolved = fs.realpathSync(targetPath);
+    return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
+  } catch {
+    return null;
+  }
+}
+
+function gitResolvedPath(cwd, args) {
+  const result = spawnSync('git', ['rev-parse', ...args], {
+    cwd,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  });
+  if (result.error || result.status !== 0) return null;
+  const output = String(result.stdout || '').trim();
+  return output === '' ? null : path.resolve(cwd, output);
+}
+
+function stagedWorktreeDependency({ repoRoot, stagingRoot, resolvedSource }) {
+  if (pathInside(repoRoot, resolvedSource)) {
+    const stagedSource = path.resolve(
+      stagingRoot,
+      path.relative(path.resolve(repoRoot), resolvedSource)
+    );
+    return fs.existsSync(stagedSource) ? stagedSource : null;
+  }
+
+  const sourceWorktreeRoot = gitResolvedPath(resolvedSource, ['--show-toplevel']);
+  const repoCommonDir = gitResolvedPath(repoRoot, ['--git-common-dir']);
+  const sourceCommonDir = sourceWorktreeRoot
+    ? gitResolvedPath(sourceWorktreeRoot, ['--git-common-dir'])
+    : null;
+  if (
+    !sourceWorktreeRoot ||
+    !repoCommonDir ||
+    !sourceCommonDir ||
+    canonicalExistingPath(repoCommonDir) !== canonicalExistingPath(sourceCommonDir)
+  ) {
+    return null;
+  }
+
+  const relativeSource = path.relative(sourceWorktreeRoot, resolvedSource);
+  const stagedSource = path.resolve(stagingRoot, relativeSource);
+  return pathInside(stagingRoot, stagedSource) && fs.existsSync(stagedSource)
+    ? stagedSource
+    : null;
+}
+
 function dependencyLinkType(targetPath) {
-  return fs.statSync(targetPath).isDirectory() ? 'dir' : 'file';
+  if (!fs.statSync(targetPath).isDirectory()) return 'file';
+  return process.platform === 'win32' ? 'junction' : 'dir';
 }
 
 function dependencyLinkTarget(targetPath, dependencyPath) {
@@ -131,9 +191,8 @@ function projectDependencyEntry({ sourcePath, targetPath, repoRoot, stagingRoot 
   const sourceStat = fs.lstatSync(sourcePath);
   if (sourceStat.isSymbolicLink()) {
     const resolvedSource = fs.realpathSync(sourcePath);
-    const resolvedTarget = pathInside(repoRoot, resolvedSource)
-      ? path.resolve(stagingRoot, path.relative(path.resolve(repoRoot), resolvedSource))
-      : resolvedSource;
+    const resolvedTarget =
+      stagedWorktreeDependency({ repoRoot, stagingRoot, resolvedSource }) ?? resolvedSource;
     if (!fs.existsSync(resolvedTarget)) {
       fail('CANONICAL_PACKAGE_WORKSPACE_DEPENDENCY_MISSING', {
         dependencyPath: sourcePath,
@@ -147,7 +206,11 @@ function projectDependencyEntry({ sourcePath, targetPath, repoRoot, stagingRoot 
     return;
   }
   if (sourceStat.isDirectory()) {
-    fs.symlinkSync(dependencyLinkTarget(targetPath, sourcePath), targetPath, 'dir');
+    fs.symlinkSync(
+      dependencyLinkTarget(targetPath, sourcePath),
+      targetPath,
+      dependencyLinkType(sourcePath)
+    );
     return;
   }
   fs.copyFileSync(sourcePath, targetPath);
@@ -391,6 +454,18 @@ function preparePackageArtifact({
   let cleanupError;
   let workspaceCleanupError;
   try {
+    const materialized = runCommand({
+      kind: 'materialize',
+      ...MATERIALIZE_COMMAND,
+      cwd: packageWorkspaceRoot,
+      env: { ...process.env, CI_COMMIT_SHA: normalizedCommitSha },
+    });
+    if (materialized?.status !== 0) {
+      fail('CANONICAL_PACKAGE_MATERIALIZATION_FAILED', {
+        status: materialized?.status ?? null,
+      });
+    }
+
     const build = runCommand({
       kind: 'build',
       ...buildCommand,

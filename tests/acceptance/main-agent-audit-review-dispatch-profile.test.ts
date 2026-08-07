@@ -87,22 +87,15 @@ describe('Main Agent audit review dispatch profile contract', () => {
         'model_projection',
         'main_agent_execution',
       ]);
+      const recordRoot = path.dirname(fixture.paths.recordPath);
       const profilePath = path.join(
-        fixture.root,
-        '_bmad-output',
-        'runtime',
-        'requirement-records',
-        fixture.authority.recordId,
+        recordRoot,
         'audit-review',
         'audit-current',
         'audit-execution-profile-packet.json'
       );
       const triadPath = path.join(
-        fixture.root,
-        '_bmad-output',
-        'runtime',
-        'requirement-records',
-        fixture.authority.recordId,
+        recordRoot,
         'audit-triad',
         'audit-current',
         'audit-triad-execution-plan.json'

@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "goal-contract-e04-supersession-receipt/v1",
+  "supersessionId": "MA-GS-E04-SUPERSESSION-20260804T034744Z-01",
+  "supersededAuditEpochId": "MA-GS-E04-20260804T025646Z-01",
+  "sourcePath": "docs/plans/2026-08-03-main-agent-goal-subcontract-controlled-integration.md",
+  "sourceHash": "sha256:1d0d99f3636168e958a26613482e7d31829c1e3c921eb78f207267f7514b2ddb",
+  "targetPath": "docs/plans/2026-08-03-main-agent-goal-subcontract-controlled-integration-goal-execution-plan.md",
+  "targetHash": "sha256:0d154bf613b3a6496181c261d50582ba59458e9ea0fd32bc1468eedc5f07ac35",
+  "supersededReceipts": [
+    {
+      "path": ".artifacts/ma-gs-e04-audit-epoch-01.json",
+      "sha256": "03db5b62850233201414c96859d247da0fbf4710bf9fea6e872f73a020f7d54b"
+    },
+    {
+      "path": ".artifacts/ma-gs-e04-goal-semantics-receipt.json",
+      "sha256": "60c3a59ed4c2a6ae14722ba2079eb5a9e9791202df5504b9d4231e6674e5ddc6"
+    },
+    {
+      "path": ".artifacts/ma-gs-e04-execution-determinism-receipt.json",
+      "sha256": "c91b3cf408bb8aa4e9d0fc7e6533448d213b69779f6ff610650577c69a725f3f"
+    },
+    {
+      "path": ".artifacts/ma-gs-e04-change-path-receipt.json",
+      "sha256": "1735b4eabe4d1d76c2b265078e6d2cf55befab4cede32e7881fdf274196cd2b7"
+    },
+    {
+      "path": ".artifacts/ma-gs-e04-aggregate-audit-receipt.json",
+      "sha256": "552e67dd159e7198ab31448d78f0c492c280dd7fb32ecdd7e9ad5e2c97a1c010"
+    }
+  ],
+  "governedReadinessFailures": [
+    {
+      "authorityClass": "formal_repository_root",
+      "failureClass": "partition_impact_scan_limit_exceeded",
+      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
+      "pathBytes": 1523086,
+      "pathSha256": "ac69c64decabed92eec08558153fc20ee020d6b5503670c33a726518bae0ed5b",
+      "policyLimit": {
+        "name": "maxBytesPerFile",
+        "bytes": 1048576
+      },
+      "evidencePath": ".artifacts/ma-gs-formal-governed-partition-capture/partition-1.stdout.json",
+      "evidenceSha256": "1543b35e15e11a70f5e76342d94c75463e0d4879a042c259ca7f935fff4cd727"
+    },
+    {
+      "authorityClass": "diagnostic_only",
+      "failureClass": "partition_impact_coverage_incomplete",
+      "sourcePath": "packages/bmad-speckit/tests/goal-contract-campaign-repair-lifecycle.test.js",
+      "line": 406,
+      "relationClass": "dynamic_module_specifier",
+      "evidencePath": ".artifacts/ma-gs-impact-limit-diagnostic-capture/partition.stdout.json",
+      "evidenceSha256": "3c055ddcb201069b29afbdc01ea9ea64778480b43ccae5d98c199400b20b53d9",
+      "governedAuthorityEligible": false
+    }
+  ],
+  "decision": "blocked",
+  "latestHashPass": false,
+  "priorPassAuthority": "superseded",
+  "recoveryDecision": "contract_amendment_required",
+  "blockedActions": [
+    "governed_partition_promotion",
+    "child_contract_execution",
+    "aggregate_acceptance",
+    "controlled_task_report_ingest",
+    "delivery_closeout"
+  ],
+  "requiredRecovery": [
+    "replace the oversized required orchestration modification path with an existing sub-1MiB hook without changing strategy, dispatch, or ingest semantics",
+    "remove or statically express the closure-relevant dynamic module relation before the next governed readiness run",
+    "safely revise the Source Plan, regenerate the frozen Goal and receipts, and rerun latest-hash E04 before governed partition"
+  ],
+  "recordedAt": "2026-08-04T03:47:44.8831282Z"
+}

@@ -18,6 +18,7 @@ const {
   normalizeDisplayTitle,
   normalizeRecordBinding,
   parseArgs,
+  projectManifestChildPath,
   readJson,
   renderCampaignPrompt,
   renderChildPrompt,
@@ -135,6 +136,7 @@ function verifyPackageSourceBindings(manifest) {
     evidenceSchema,
     goalContract,
     partitionManifestBinding,
+    partitionManifestPath,
     repositoryRoot,
     sourcePartitionManifest,
   };
@@ -151,14 +153,19 @@ function verifyPackageBaseline(repositoryRoot, repositoryBaseline) {
   verifyRepositoryBaseline(repositoryRoot, repositoryBaseline);
 }
 
-function projectSourceChildren(repositoryRoot, sourcePartitionManifest) {
+function projectSourceChildren(repositoryRoot, partitionManifestPath, sourcePartitionManifest) {
   return sourcePartitionManifest.partitions.map((partition, index) => {
+    const projectedChildPath = projectManifestChildPath(
+      repositoryRoot,
+      partitionManifestPath,
+      partition.childContractPath
+    );
     const child = {
       partitionId: partition.partitionId,
       displayTitle: normalizeDisplayTitle(partition),
       ordinal: index + 1,
       contract: {
-        path: partition.childContractPath,
+        path: projectedChildPath,
         hash: partition.childContractHash,
       },
       predecessorPartitionIds: partition.dependencyPartitionIds,
@@ -443,6 +450,7 @@ function auditExecutionPackage(packageRoot, expectedPackageManifestHash) {
   );
   const children = projectSourceChildren(
     sourceBindings.repositoryRoot,
+    sourceBindings.partitionManifestPath,
     sourceBindings.sourcePartitionManifest
   );
   const context = createProjectionContext(receipt.manifest, sourceBindings, children);

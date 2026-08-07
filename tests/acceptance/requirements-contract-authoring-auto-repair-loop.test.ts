@@ -1,9 +1,8 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   artifacts,
-  cleanCriticalAuditorRound,
   createTempRoot,
   readJson,
   removeTempRoot,
@@ -21,11 +20,31 @@ function sourceWithDerivableViews(): string {
     '',
     '目标文件：`src/auto_repair_target.py`',
     '',
+    '## Product Context',
+    '',
+    'The authoring workflow derives confirmation-ready views from source-bound requirement rows.',
+    '',
+    '## Success Criteria',
+    '',
+    'ACC-001 and ACC-002 prove atomic publication and rejection without source corruption.',
+    '',
+    '## In Scope',
+    '',
+    'Source-bound requirement derivation, validation, publication, and rollback are in scope.',
+    '',
+    '## User Journeys',
+    '',
+    'An author submits source rows and receives either a validated draft or explicit blockers.',
+    '',
     '## Functional Requirements',
     '',
     '| FR ID | Requirement |',
     '| --- | --- |',
     '| FR-001 | The system MUST publish a confirmation-ready source from source-bound rows. |',
+    '',
+    '## Non-Functional Requirements',
+    '',
+    'No additional non-functional requirements are introduced by this fixture.',
     '',
     '## Negative Requirements And Not Done Conditions',
     '',
@@ -38,6 +57,12 @@ function sourceWithDerivableViews(): string {
     '| ID | Failure condition | Required system behavior | Negative requirement refs | Evidence | Requirement refs |',
     '| --- | --- | --- | --- | --- | --- |',
     '| FAIL-001 | Source-bound requirement rows are missing, invalid, or internally inconsistent. | Reject publication, preserve the previous valid source, and report the invalid business requirement rows. | NEG-001 | ACC-001 ACC-002 E2E-001 | MUST-FR-001 |',
+    '',
+    '## Architecture Decision Records',
+    '',
+    '| ADR ID | Decision | Rationale |',
+    '| --- | --- | --- |',
+    '| ADR-001 | Keep validation and rollback inside the governed authoring boundary. | The source must remain unchanged when validation fails. |',
     '',
     '## Acceptance Evidence',
     '',
@@ -66,6 +91,28 @@ function sourceWithDerivableViews(): string {
     '| ID | Repository path | Ownership | Required change | Requirement refs | Per-MUST oracle | Assertion source | Responsibility mapping |',
     '| --- | --- | --- | --- | --- | --- | --- | --- |',
     '| PATH-001 | `src/auto_repair_target.py` | Source publication owner | Publish only validated source-bound rows and preserve the prior valid source on failure. | MUST-FR-001 NEG-001 | ACC-001 and ACC-002 pass without partial publication. | ACC-001 ACC-002 CMD-001 CMD-002 TRACE-001 TRACE-002 | Source publication owner owns implementation and rollback. |',
+    '',
+    '## Source Current State',
+    '',
+    '| ID | Current behavior | Current path | Limitation | Evidence |',
+    '| --- | --- | --- | --- | --- |',
+    '| CUR-001 | Source rows are available for governed derivation. | `src/auto_repair_target.py` | Invalid rows must not be published. | ACC-002 |',
+    '',
+    '## Source Target State',
+    '',
+    '| ID | Target behavior | Target path | Acceptance state | Evidence |',
+    '| --- | --- | --- | --- | --- |',
+    '| TGT-001 | Valid rows publish atomically and invalid rows preserve the prior source. | `src/auto_repair_target.py` | ACC-001 and ACC-002 pass. | ACC-001 ACC-002 |',
+    '',
+    '## Current Target Map',
+    '',
+    '| ID | Current refs | Target refs | Transition | Invariant | Requirement refs | Per-MUST oracle | Assertion source | Responsibility mapping |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    '| CTM-001 | CUR-001 | TGT-001 | Validate then publish atomically. | Invalid rows never replace the prior source. | MUST-FR-001 NEG-001 | ACC-001 and ACC-002 pass. | TRACE-001 TRACE-002 | PATH-001 owns publication and rollback. |',
+    '',
+    '## Human-Readable ID-Bound Views',
+    '',
+    'TRACE-001 and TRACE-002 describe the happy path, failure path, state transition, edge cases, and governance boundary.',
     '',
     '## Out Of Scope',
     '',
@@ -118,7 +165,7 @@ describe('requirements contract authoring auto-repair loop', () => {
         targetPath: 'tests/trader/test_gateway_profile_registry.py',
         requiredCommand: 'python -m pytest tests/trader/test_gateway_profile_registry.py',
         confirmationLanguage: 'en-US',
-        criticalAuditorRound: cleanCriticalAuditorRound,
+        entrySource: 'source_prd_draft',
       });
 
       const paths = artifacts(root, recordId, `${recordId}-SET`);
@@ -126,11 +173,15 @@ describe('requirements contract authoring auto-repair loop', () => {
       expect(existsSync(registryPath)).toBe(true);
       expect(readJson<Record<string, unknown>>(registryPath)).toMatchObject({
         sourceKind: 'typescript_typed_map',
+        autoRepairEnabled: true,
       });
       expect(result.blockingIssues.map((issue) => issue.code)).not.toContain(
         'repair_registry_unclassified_issue_code'
       );
-      expect(readFileSync(targetSource, 'utf8')).toContain('implementationConfirmation:');
+      expect(result.blockingIssues.map((issue) => issue.code)).toContain(
+        'source_prd_lint_non_pass'
+      );
+      expect(existsSync(targetSource)).toBe(false);
 
       const diagnosticRecordId = 'REQ-TEST-AUTO-REPAIR-DIAGNOSTIC';
       const diagnosticTarget = path.join(root, 'diagnostic-generated.md');
@@ -143,14 +194,27 @@ describe('requirements contract authoring auto-repair loop', () => {
           targetPath: 'tests/trader/test_gateway_profile_registry.py',
           requiredCommand: 'python -m pytest tests/trader/test_gateway_profile_registry.py',
           confirmationLanguage: 'en-US',
+          entrySource: 'source_prd_draft',
           noAutoRepair: true,
         }
       );
       const diagnosticPaths = artifacts(root, diagnosticRecordId, `${diagnosticRecordId}-SET`);
-      expect(existsSync(path.join(diagnosticPaths.authoring, 'repair-registry.json'))).toBe(true);
+      const diagnosticRegistryPath = path.join(
+        diagnosticPaths.authoring,
+        'repair-registry.json'
+      );
+      expect(existsSync(diagnosticRegistryPath)).toBe(true);
+      expect(readJson<Record<string, unknown>>(diagnosticRegistryPath)).toMatchObject({
+        sourceKind: 'typescript_typed_map',
+        autoRepairEnabled: false,
+      });
       expect(diagnostic.blockingIssues.map((issue) => issue.code)).not.toContain(
         'repair_registry_unclassified_issue_code'
       );
+      expect(diagnostic.blockingIssues.map((issue) => issue.code)).toContain(
+        'source_prd_lint_non_pass'
+      );
+      expect(existsSync(diagnosticTarget)).toBe(false);
     } finally {
       removeTempRoot(root);
     }

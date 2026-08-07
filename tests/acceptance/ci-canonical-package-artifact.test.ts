@@ -4,6 +4,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -132,6 +133,182 @@ describe('canonical package artifact', () => {
     }
   });
 
+  it('rebinds workspace junctions from sibling worktrees into the isolated commit workspace', () => {
+    const repoRoot = fixtureRepo();
+    const siblingParent = mkdtempSync(join(tmpdir(), 'canonical-package-sibling-'));
+    const siblingRoot = join(siblingParent, 'w');
+    const workspacePackage = join(repoRoot, 'packages', 'fixture-workspace');
+    const previousPath = process.env.PATH;
+    let siblingAdded = false;
+    try {
+      mkdirSync(workspacePackage, { recursive: true });
+      writeFileSync(
+        join(workspacePackage, 'package.json'),
+        JSON.stringify({ name: 'fixture-workspace', version: '1.0.0' }),
+        'utf8'
+      );
+      git(repoRoot, 'init');
+      git(repoRoot, 'config', 'user.email', 'ci@example.invalid');
+      git(repoRoot, 'config', 'user.name', 'CI Test');
+      git(repoRoot, 'add', 'package.json', 'packages/fixture-workspace/package.json');
+      git(repoRoot, 'commit', '-m', 'baseline');
+      const commitSha = git(repoRoot, 'rev-parse', 'HEAD');
+      git(repoRoot, 'worktree', 'add', '--detach', siblingRoot, commitSha);
+      siblingAdded = true;
+
+      mkdirSync(join(repoRoot, 'node_modules'), { recursive: true });
+      symlinkSync(
+        join(siblingRoot, 'packages', 'fixture-workspace'),
+        join(repoRoot, 'node_modules', 'fixture-workspace'),
+        process.platform === 'win32' ? 'junction' : 'dir'
+      );
+      process.env.PATH = `${installLargePackOutputNpm(repoRoot)}${delimiter}${previousPath || ''}`;
+
+      preparePackageArtifact({ repoRoot, commitSha });
+    } finally {
+      if (previousPath === undefined) delete process.env.PATH;
+      else process.env.PATH = previousPath;
+      rmSync(join(repoRoot, 'node_modules'), { recursive: true, force: true });
+      if (siblingAdded) {
+        git(repoRoot, 'worktree', 'remove', '--force', siblingRoot);
+      }
+      rmSync(siblingParent, { recursive: true, force: true });
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('preserves non-commit dependency junctions until offline materialization', () => {
+    const repoRoot = fixtureRepo();
+    const runtimeDependency = join(
+      repoRoot,
+      '.runtime-deps',
+      'node_modules',
+      'fixture-runtime'
+    );
+    let projectedDependency: string | undefined;
+    try {
+      mkdirSync(runtimeDependency, { recursive: true });
+      writeFileSync(
+        join(runtimeDependency, 'package.json'),
+        JSON.stringify({ name: 'fixture-runtime', version: '1.0.0' }),
+        'utf8'
+      );
+      writeFileSync(join(repoRoot, '.gitignore'), '.runtime-deps/\n', 'utf8');
+      git(repoRoot, 'init');
+      git(repoRoot, 'config', 'user.email', 'ci@example.invalid');
+      git(repoRoot, 'config', 'user.name', 'CI Test');
+      git(repoRoot, 'add', 'package.json', '.gitignore');
+      git(repoRoot, 'commit', '-m', 'baseline');
+      const commitSha = git(repoRoot, 'rev-parse', 'HEAD');
+      mkdirSync(join(repoRoot, 'node_modules'), { recursive: true });
+      symlinkSync(
+        runtimeDependency,
+        join(repoRoot, 'node_modules', 'fixture-runtime'),
+        process.platform === 'win32' ? 'junction' : 'dir'
+      );
+
+      preparePackageArtifact({
+        repoRoot,
+        commitSha,
+        runCommand: (request: any) => {
+          if (request.kind === 'materialize') {
+            projectedDependency = realpathSync(
+              join(request.cwd, 'node_modules', 'fixture-runtime')
+            );
+          }
+          if (request.kind === 'npm_pack') {
+            mkdirSync(request.outputDir, { recursive: true });
+            writeFileSync(
+              join(request.outputDir, 'fixture-package-1.2.3.tgz'),
+              'tarball',
+              'utf8'
+            );
+            return {
+              status: 0,
+              stdout: JSON.stringify([{ filename: 'fixture-package-1.2.3.tgz' }]),
+            };
+          }
+          return { status: 0, stdout: '' };
+        },
+      });
+
+      expect(projectedDependency).toBe(realpathSync(runtimeDependency));
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('preserves sibling worktree runtime dependency junctions until offline materialization', () => {
+    const repoRoot = fixtureRepo();
+    const siblingParent = mkdtempSync(join(tmpdir(), 'canonical-package-runtime-sibling-'));
+    const siblingRoot = join(siblingParent, 'w');
+    let siblingAdded = false;
+    let projectedDependency: string | undefined;
+    try {
+      git(repoRoot, 'init');
+      git(repoRoot, 'config', 'user.email', 'ci@example.invalid');
+      git(repoRoot, 'config', 'user.name', 'CI Test');
+      git(repoRoot, 'add', 'package.json');
+      git(repoRoot, 'commit', '-m', 'baseline');
+      const commitSha = git(repoRoot, 'rev-parse', 'HEAD');
+      git(repoRoot, 'worktree', 'add', '--detach', siblingRoot, commitSha);
+      siblingAdded = true;
+
+      const runtimeDependency = join(
+        siblingRoot,
+        '.runtime-deps',
+        'node_modules',
+        'fixture-runtime'
+      );
+      mkdirSync(runtimeDependency, { recursive: true });
+      writeFileSync(
+        join(runtimeDependency, 'package.json'),
+        JSON.stringify({ name: 'fixture-runtime', version: '1.0.0' }),
+        'utf8'
+      );
+      mkdirSync(join(repoRoot, 'node_modules'), { recursive: true });
+      symlinkSync(
+        runtimeDependency,
+        join(repoRoot, 'node_modules', 'fixture-runtime'),
+        process.platform === 'win32' ? 'junction' : 'dir'
+      );
+
+      preparePackageArtifact({
+        repoRoot,
+        commitSha,
+        runCommand: (request: any) => {
+          if (request.kind === 'materialize') {
+            projectedDependency = realpathSync(
+              join(request.cwd, 'node_modules', 'fixture-runtime')
+            );
+          }
+          if (request.kind === 'npm_pack') {
+            mkdirSync(request.outputDir, { recursive: true });
+            writeFileSync(
+              join(request.outputDir, 'fixture-package-1.2.3.tgz'),
+              'tarball',
+              'utf8'
+            );
+            return {
+              status: 0,
+              stdout: JSON.stringify([{ filename: 'fixture-package-1.2.3.tgz' }]),
+            };
+          }
+          return { status: 0, stdout: '' };
+        },
+      });
+
+      expect(projectedDependency).toBe(realpathSync(runtimeDependency));
+    } finally {
+      rmSync(join(repoRoot, 'node_modules'), { recursive: true, force: true });
+      if (siblingAdded) {
+        git(repoRoot, 'worktree', 'remove', '--force', siblingRoot);
+      }
+      rmSync(siblingParent, { recursive: true, force: true });
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
   it('captures npm-pack JSON above the Node default within the governed budget', () => {
     const repoRoot = fixtureRepo();
     const previousPath = process.env.PATH;
@@ -150,7 +327,7 @@ describe('canonical package artifact', () => {
     }
   });
 
-  it('builds once, packs once, and freezes the exact tarball hash', () => {
+  it('materializes once, builds once, packs once, and freezes the exact tarball hash', () => {
     const repoRoot = fixtureRepo();
     const calls: any[] = [];
     try {
@@ -171,9 +348,21 @@ describe('canonical package artifact', () => {
         },
       });
 
+      expect(calls.map((command) => command.kind)).toEqual([
+        'materialize',
+        'build',
+        'npm_pack',
+        'cleanup',
+      ]);
+      expect(calls.filter((command) => command.kind === 'materialize')).toHaveLength(1);
       expect(calls.filter((command) => command.kind === 'build')).toHaveLength(1);
       expect(calls.filter((command) => command.kind === 'npm_pack')).toHaveLength(1);
       expect(calls.filter((command) => command.kind === 'cleanup')).toHaveLength(1);
+      expect(calls.find((command) => command.kind === 'materialize').args).toEqual([
+        'ci',
+        '--offline',
+        '--ignore-scripts',
+      ]);
       expect(calls.find((command) => command.kind === 'build').args).toEqual(['run', 'prepack']);
       expect(calls.find((command) => command.kind === 'npm_pack').args).toContain(
         '--ignore-scripts'
@@ -185,6 +374,27 @@ describe('canonical package artifact', () => {
       expect(JSON.parse(readFileSync(prepared.descriptorPath, 'utf8')).tarballSha256).toBe(
         prepared.tarballSha256
       );
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed before build when dependency materialization fails', () => {
+    const repoRoot = fixtureRepo();
+    const calls: string[] = [];
+    try {
+      expect(() =>
+        preparePackageArtifact({
+          repoRoot,
+          commitSha: '9'.repeat(40),
+          runCommand: (request: any) => {
+            calls.push(request.kind);
+            if (request.kind === 'materialize') return { status: 17, stdout: '' };
+            return { status: 0, stdout: '' };
+          },
+        })
+      ).toThrow('CANONICAL_PACKAGE_MATERIALIZATION_FAILED');
+      expect(calls).toEqual(['materialize', 'cleanup']);
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
     }
@@ -216,7 +426,7 @@ describe('canonical package artifact', () => {
 
         expect(didThrow).toBe(true);
         expect(thrownValue).toBe(primaryError);
-        expect(calls).toEqual(['build', 'cleanup']);
+        expect(calls).toEqual(['materialize', 'build', 'cleanup']);
       } finally {
         rmSync(repoRoot, { recursive: true, force: true });
       }

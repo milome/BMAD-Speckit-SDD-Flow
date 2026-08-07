@@ -569,6 +569,7 @@ export function buildValidResponseFromRequest(
     requestHash: request.requestHash,
     sourceHash: request.sourceHash,
     sourceDocumentHash: request.sourceDocumentHash,
+    sourceBytesHash: request.sourceBytesHash,
     semanticModelHash: request.semanticModelHash,
     implementationConfirmationHash: request.implementationConfirmationHash,
     packetHash: request.packetHash,
@@ -603,6 +604,10 @@ export function buildValidResponseFromRequest(
   const evidenceWithoutRunHash = {
     ...binding,
     requestedModel: binding.model,
+    model:
+      typeof binding.model === 'string' && binding.model.trim()
+        ? binding.model
+        : 'fixture-main-session-judge',
     transactionId: request.transactionId,
     auditAttemptId: request.auditAttemptId,
     providerRunId: `critical-auditor-run/${String(request.requestHash).slice(-24)}`,
@@ -629,6 +634,7 @@ export function withIndependentProviderEvidence<T extends Record<string, unknown
   const evidenceWithoutRunHash = {
     ...expectation,
     requestedModel: expectation.model,
+    model: expectation.model ?? 'fixture-main-session-judge',
     providerRunId: `critical-auditor-run/${input.roundIndex}/${expectation.requestHash.slice(-16)}`,
     responseHash: sha256Text(JSON.stringify(result)),
   };
@@ -687,18 +693,123 @@ export function cleanCriticalAuditorRound(input: CriticalAuditorFixtureInput) {
   });
 }
 
+function withGovernedCriticalAuditorFixture<T>(
+  root: string,
+  seed: string,
+  options: Record<string, unknown>,
+  invoke: (forwardedOptions: Record<string, unknown>) => T
+): T {
+  const judgeRuntimeConfig = path.join(
+    root,
+    '_bmad',
+    '_config',
+    'governance-remediation.yaml'
+  );
+  if (!existsSync(judgeRuntimeConfig)) {
+    installJudgeRuntimeConfig(root);
+  }
+  if (options.criticalAuditorRound !== cleanCriticalAuditorRound) {
+    return invoke(options);
+  }
+  const forwardedOptions = {
+    ...createTestAuthoringExecutionOptions(seed),
+    criticalAuditorProviderMode: 'main_session_inline',
+    ...options,
+  };
+  delete forwardedOptions.criticalAuditorRound;
+  let result = invoke(forwardedOptions);
+  const seenRequestHashes = new Set<string>();
+  const maxFixtureResponseCount = 12;
+  for (
+    let responseCount = 0;
+    responseCount < maxFixtureResponseCount;
+    responseCount += 1
+  ) {
+    const continuation = (
+      result as {
+        criticalAuditorContinuation?: Record<string, unknown> | null;
+      }
+    ).criticalAuditorContinuation;
+    if (
+      continuation?.providerMode !== 'main_session_inline' ||
+      continuation.nextRequiredAction !== 'run_main_session_critical_auditor_round'
+    ) {
+      return result;
+    }
+    const continuationPath = (field: 'requestPath' | 'responsePath'): string => {
+      const pathRef = String(continuation[field] ?? '').trim();
+      if (!pathRef) {
+        throw new Error(`critical auditor fixture continuation ${field} is missing`);
+      }
+      const resolved = path.isAbsolute(pathRef)
+        ? path.resolve(pathRef)
+        : path.resolve(root, pathRef);
+      const relative = path.relative(path.resolve(root), resolved);
+      if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) {
+        throw new Error(`critical auditor fixture continuation ${field} escapes the project root`);
+      }
+      return resolved;
+    };
+    const requestPath = continuationPath('requestPath');
+    const responsePath = continuationPath('responsePath');
+    const request = readJson<Record<string, unknown>>(requestPath);
+    const requestHash = String(request.requestHash ?? '').trim();
+    if (!/^sha256:[a-f0-9]{64}$/u.test(requestHash)) {
+      throw new Error('critical auditor fixture continuation requestHash is invalid');
+    }
+    if (seenRequestHashes.has(requestHash)) {
+      throw new Error(`critical auditor fixture repeated continuation request ${requestHash}`);
+    }
+    seenRequestHashes.add(requestHash);
+    const packet = stagingMustDecompositionPacket(root, seed);
+    mkdirSync(path.dirname(responsePath), { recursive: true });
+    writeFileSync(
+      responsePath,
+      `${JSON.stringify(buildValidResponseFromRequest(request, packet), null, 2)}\n`,
+      'utf8'
+    );
+    result = invoke(forwardedOptions);
+  }
+  const exhaustedContinuation = (
+    result as {
+      criticalAuditorContinuation?: Record<string, unknown> | null;
+    }
+  ).criticalAuditorContinuation;
+  if (
+    exhaustedContinuation?.providerMode === 'main_session_inline' &&
+    exhaustedContinuation.nextRequiredAction === 'run_main_session_critical_auditor_round'
+  ) {
+    throw new Error(
+      `critical auditor fixture exceeded ${maxFixtureResponseCount} continuation responses`
+    );
+  }
+  return result;
+}
+
+export function runPreConfirmationWithGovernedCriticalAuditorFixture(
+  root: string,
+  seed: string,
+  options: Record<string, unknown>
+) {
+  return withGovernedCriticalAuditorFixture(root, seed, options, (forwardedOptions) =>
+    runMainAgentPreConfirmationDrilldown(root, forwardedOptions)
+  );
+}
+
 export function runAuthoring(
   root: string,
   source: string,
   recordId: string,
   options: Record<string, unknown> = {}
 ) {
-  return runMainAgentPreConfirmationDrilldown(root, {
-    source,
-    recordId,
-    requirementSetId: `${recordId}-SET`,
-    ...options,
-  });
+  return withGovernedCriticalAuditorFixture(root, recordId, options, (forwardedOptions) =>
+    runMainAgentPreConfirmationDrilldown(root, {
+      source,
+      recordId,
+      requirementSetId: `${recordId}-SET`,
+      ...forwardedOptions,
+    })
+  );
 }
 
 export function writeTestLocalizationResponse(
@@ -772,13 +883,15 @@ export function runIntakeAuthoring(
   recordId: string,
   options: Record<string, unknown> = {}
 ) {
-  return runMainAgentPreConfirmationDrilldown(root, {
-    intakeSource,
-    targetSource,
-    recordId,
-    requirementSetId: `${recordId}-SET`,
-    ...options,
-  });
+  return withGovernedCriticalAuditorFixture(root, recordId, options, (forwardedOptions) =>
+    runMainAgentPreConfirmationDrilldown(root, {
+      intakeSource,
+      targetSource,
+      recordId,
+      requirementSetId: `${recordId}-SET`,
+      ...forwardedOptions,
+    })
+  );
 }
 
 export function issueCodes(result: { blockingIssues?: Array<{ code: string }> }): string[] {
@@ -1011,7 +1124,7 @@ export function writeLintReadyMinimalConsumerRequirement(
     '',
     '## Success Criteria',
     '',
-    `${refs.acceptanceId} and ${verification.requiredCommand} prove checkpoint closure.`,
+    `${refs.acceptanceId} proves checkpoint closure when the required verification command succeeds.`,
     '',
     '## In Scope',
     '',

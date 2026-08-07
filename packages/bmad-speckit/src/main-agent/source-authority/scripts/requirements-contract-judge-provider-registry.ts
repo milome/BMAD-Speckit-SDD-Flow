@@ -112,9 +112,11 @@ function adapterFor(
     (provider.transport === 'claude-code-cli' ||
       (provider.transport === 'cli' && provider.adapterRef === 'ClaudeCodeCliJudgeAdapter'))
   ) {
-    const endpoint = record(provider.endpoint, 'judge_provider_endpoint_invalid');
-    if (endpoint.command !== 'claude') {
-      throw new Error('judge_provider_adapter_command_mismatch');
+    if (provider.transport === 'claude-code-cli') {
+      const endpoint = record(provider.endpoint, 'judge_provider_endpoint_invalid');
+      if (endpoint.command !== 'claude') {
+        throw new Error('judge_provider_adapter_command_mismatch');
+      }
     }
     return {
       adapterRef: 'ClaudeCodeCliJudgeAdapter',

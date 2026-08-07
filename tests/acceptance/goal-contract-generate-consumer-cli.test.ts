@@ -35,7 +35,7 @@ function writeSourcePlan(root: string): string {
       '- Generate a source-covered goal contract.',
       '',
       '```powershell',
-      'npx --no-install bmad-speckit goal-contract generate --source fixtures/goal-contract/source-plan.md --out generated/goal-execution-plan.md --json',
+      'npx --no-install bmad-speckit goal-contract generate --entry standalone_goal_contract --source fixtures/goal-contract/source-plan.md --out generated/goal-execution-plan.md --json',
       '```',
       '',
       '## Completion Criteria',
@@ -63,7 +63,7 @@ describe('goal-contract generate consumer CLI', () => {
       const out = join(target, 'generated', 'goal-execution-plan.md');
 
       const stdout = run(
-        `npx --no-install bmad-speckit goal-contract generate --source "${source}" --out "${out}" --json`,
+        `npx --no-install bmad-speckit goal-contract generate --entry standalone_goal_contract --source "${source}" --out "${out}" --json`,
         target
       );
       const payload = JSON.parse(stdout);

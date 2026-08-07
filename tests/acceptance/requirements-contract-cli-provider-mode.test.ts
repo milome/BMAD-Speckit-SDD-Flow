@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   artifacts,
+  createTestAuthoringExecutionOptions,
   createTempRoot,
   expectSourceHashUnchanged,
   removeTempRoot,
@@ -17,7 +18,9 @@ describe('requirements contract provider mode', () => {
       const source = writeConsumerRequirement(root);
       const beforeHash = sha256File(source);
 
-      const result = runAuthoring(root, source, 'REQ-PROVIDER-MODE');
+      const result = runAuthoring(root, source, 'REQ-PROVIDER-MODE', {
+        ...createTestAuthoringExecutionOptions('REQ-PROVIDER-MODE'),
+      });
 
       expect(result.ok).toBe(false);
       expect(result.criticalAuditorProviderMode).toBe('main_session_inline');

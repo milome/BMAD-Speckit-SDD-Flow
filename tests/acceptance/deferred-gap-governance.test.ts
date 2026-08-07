@@ -116,7 +116,10 @@ describe('deferred gap governance', () => {
     expect(sprintTemplate).toContain('planned_work_items:');
     expect(sprintChecklist).toContain('every deferred gap appears under `deferred_gap_plan.items`');
     expect(workflow).toContain("cron: '0 2 * * 1'");
-    expect(workflow).toContain('npx bmad-speckit deferred-gap-audit');
+    expect(workflow).toContain(
+      'node packages/bmad-speckit/bin/bmad-speckit.js deferred-gap-audit'
+    );
+    expect(workflow).not.toContain('npx bmad-speckit deferred-gap-audit');
   });
 
   it('blocks pre-continue when a deferred gap disappears without resolution evidence and enqueues remediation follow-up', () => {

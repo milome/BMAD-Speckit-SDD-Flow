@@ -142,6 +142,21 @@ function classifyText(text, headingPath) {
   return classifyHeading(headingPath);
 }
 
+function isTaskExecutionMetadataLine(text) {
+  return /^\s*\*{0,2}(?:Execution Class|Owned Production Paths|Aggregate Gate Phase|Aggregate Validation Commands)\*{0,2}\s*[:：]/iu.test(
+    text
+  );
+}
+
+function isReadinessSupersessionLine(text) {
+  return (
+    /\bE04\b/iu.test(text) &&
+    /supersed|historical evidence|latest-hash|执行效力|历史证据|不得继续作为|不得继续授权/iu.test(
+      text
+    )
+  );
+}
+
 function parseDeclaredId(text) {
   const listMatch = /^(?:[-*]|\d+\.)\s+(\[[ xX]\]\s*)?([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+)\b(.*)$/u.exec(
     text
@@ -645,6 +660,12 @@ function extractSourceObligations(
     } else if (/^\s*>/u.test(line)) {
       flushProse(lineNumber - 1);
       pushText(lineNumber, line, 'heading_requirement');
+    } else if (isTaskExecutionMetadataLine(line)) {
+      flushProse(lineNumber - 1);
+      pushText(lineNumber, line, 'task_execution_role');
+    } else if (isReadinessSupersessionLine(line)) {
+      flushProse(lineNumber - 1);
+      pushText(lineNumber, line, 'authority_supersession');
     } else if (/^\s*(?:[-*+]\s+|\d+[.)]\s+)/u.test(line)) {
       flushProse(lineNumber - 1);
       pushText(lineNumber, line);

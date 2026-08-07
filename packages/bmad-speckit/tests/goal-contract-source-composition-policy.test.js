@@ -1,4 +1,5 @@
 const assert = require('node:assert');
+const path = require('node:path');
 const { describe, it } = require('node:test');
 
 const {
@@ -11,7 +12,10 @@ const {
 const {
   authorityRecord: buildAuthorityRecord,
   extractRequiredSubordinateBinding,
+  kernelPlanPath,
+  primaryPath,
   subordinateBinding,
+  subordinatePath,
 } = require('./goal-contract-canonical-intent-fixture.js');
 
 function authorityRecord(mode, requiredSubordinateBindings = []) {
@@ -27,6 +31,14 @@ function expectFailure(action, failureClass) {
 }
 
 describe('goal-contract source composition policy', () => {
+  it('loads canonical authority inputs from repository-tracked shared fixtures', () => {
+    const fixtureRoot = path.resolve(__dirname, 'fixtures');
+
+    for (const fixturePath of [primaryPath, kernelPlanPath, subordinatePath]) {
+      assert.equal(path.dirname(fixturePath), fixtureRoot);
+    }
+  });
+
   it('extracts subordinate bindings without assuming authority ID prefixes', () => {
     const sourceArtifactId = 'component-specification';
     const binding = extractRequiredSubordinateBinding(

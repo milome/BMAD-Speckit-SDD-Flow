@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "goal-contract-e04-perspective-receipt/v1",
+  "auditEpochId": "MA-GS-E04-20260804T025646Z-01",
+  "perspective": "goal_semantics_boundaries",
+  "reviewMode": "local_timeout_takeover",
+  "targetPath": "docs/plans/2026-08-03-main-agent-goal-subcontract-controlled-integration-goal-execution-plan.md",
+  "targetHash": "sha256:0d154bf613b3a6496181c261d50582ba59458e9ea0fd32bc1468eedc5f07ac35",
+  "sourceHash": "sha256:1d0d99f3636168e958a26613482e7d31829c1e3c921eb78f207267f7514b2ddb",
+  "decision": "pass",
+  "issues": [],
+  "checks": {
+    "rootAuthorityAndAbsentRecordBoundary": "pass",
+    "semanticIrAndSpecSpanTraceability": "pass",
+    "machineOnlyGoalAuthority": "pass",
+    "noSecondParentGoalContract": "pass",
+    "sourceOnlyMinimalScope": "pass",
+    "scopeCircuitBreakerRecovery": "pass"
+  },
+  "reviewedAt": "2026-08-04T03:06:32.000Z"
+}

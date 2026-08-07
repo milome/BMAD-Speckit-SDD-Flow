@@ -16,6 +16,7 @@ import {
   sha256Stable,
   validateSemanticResolutionReceipt,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
+import { semanticModelHash as semanticModelHashForContract } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-hash-domains';
 import { validateRequirementsContractSemanticConservationManifest } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-conservation-manifest';
 import { validateRequirementContractModelV2 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-model';
 import * as productionSemanticPipeline from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-production-semantic-pipeline';
@@ -155,7 +156,7 @@ function authoringPaths(root: string, requirementSetId: string) {
 
 function semanticIrHash(ir: Record<string, unknown>): string {
   const { semanticModelHash: _semanticModelHash, ...preimage } = ir;
-  return sha256Stable(preimage);
+  return semanticModelHashForContract(preimage);
 }
 
 function fileHash(filePath: string): string {

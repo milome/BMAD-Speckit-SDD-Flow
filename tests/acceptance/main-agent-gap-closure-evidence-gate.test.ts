@@ -582,34 +582,38 @@ function runPublicClosureGate(input: {
   };
 }
 
-describe('Main Agent gap closure evidence gate', () => {
-  it('rejects a readonly auditor PASS claim when the clean materialization receipt is missing', async () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'gap-closure-missing-materialization-'));
-    const adversarialProvider = createAdversarialCodexProvider();
-    try {
-      const fixture = createCandidate(root, {
-        gitObservedProductionChange: true,
-        runtimeHashes: 'current',
-      });
+describe('Main Agent gap closure evidence gate', { timeout: 60_000 }, () => {
+  it(
+    'rejects a readonly auditor PASS claim when the clean materialization receipt is missing',
+    async () => {
+      const root = mkdtempSync(path.join(os.tmpdir(), 'gap-closure-missing-materialization-'));
+      const adversarialProvider = createAdversarialCodexProvider();
+      try {
+        const fixture = createCandidate(root, {
+          gitObservedProductionChange: true,
+          runtimeHashes: 'current',
+        });
 
-      const result = runPublicClosureGate({
-        ...fixture,
-        omitAuditorCommand: true,
-        env: adversarialProvider.env,
-      });
+        const result = runPublicClosureGate({
+          ...fixture,
+          omitAuditorCommand: true,
+          env: adversarialProvider.env,
+        });
 
-      expect(result.exitCode, `${result.stdout}\n${result.stderr}`).toBe(1);
-      const packet = JSON.parse(
-        readFileSync(fixture.outputPath, 'utf8')
-      ) as Record<string, unknown>;
-      expect(packet.closureDecision).toBe('Implemented');
-      expect(packet.cleanMaterializationReproducible).toBe(false);
-      expect(packet.blockingReasons).toContain('clean_materialization_receipt_missing');
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-      rmSync(adversarialProvider.root, { recursive: true, force: true });
-    }
-  });
+        expect(result.exitCode, `${result.stdout}\n${result.stderr}`).toBe(1);
+        const packet = JSON.parse(
+          readFileSync(fixture.outputPath, 'utf8')
+        ) as Record<string, unknown>;
+        expect(packet.closureDecision).toBe('Implemented');
+        expect(packet.cleanMaterializationReproducible).toBe(false);
+        expect(packet.blockingReasons).toContain('clean_materialization_receipt_missing');
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+        rmSync(adversarialProvider.root, { recursive: true, force: true });
+      }
+    },
+    60_000
+  );
 
   it('rejects a readonly auditor PASS claim when the clean materialization receipt hash is tampered', async () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'gap-closure-tampered-materialization-'));

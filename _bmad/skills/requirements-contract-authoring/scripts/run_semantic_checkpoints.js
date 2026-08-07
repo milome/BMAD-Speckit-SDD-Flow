@@ -319,6 +319,14 @@ function semanticAuthoringPaths(sourcePath, progressPath = '') {
     compilerClosureReport: path.join(authoringDir, 'compiler-closure-report.json'),
     mustDecompositionPacket: path.join(authoringDir, 'must_decomposition_packet.json'),
     mustDecompositionReceipt: path.join(authoringDir, 'must_decomposition_receipt.json'),
+    authoringMaterializationReceipt: path.join(
+      authoringDir,
+      'authoring-materialization-receipt.json'
+    ),
+    draftImplementationConfirmation: path.join(
+      authoringDir,
+      'draft-implementation-confirmation.json'
+    ),
     packetSourceReconciliation: path.join(authoringDir, 'must_packet_source_reconciliation_report.json'),
     preRenderMustDecompositionGate: path.join(authoringDir, 'pre-render-must-decomposition-gate-report.json'),
     criticalAuditorOutcome: path.join(authoringDir, 'critical-auditor-checkpoint-outcome.json'),
@@ -442,6 +450,12 @@ function currentAuthoringEvidence(sourcePath, progressPath = '') {
   const reconciliation = readSemanticJson(paths.packetSourceReconciliation);
   const gateReport = readSemanticJson(paths.preRenderMustDecompositionGate);
   const criticalAuditorOutcomeDocument = readSemanticJson(paths.criticalAuditorOutcome);
+  const authoringMaterializationReceiptDocument = readSemanticJson(
+    paths.authoringMaterializationReceipt
+  );
+  const draftImplementationConfirmationDocument = readSemanticJson(
+    paths.draftImplementationConfirmation
+  );
   return {
     ...paths,
     ...binding,
@@ -456,6 +470,8 @@ function currentAuthoringEvidence(sourcePath, progressPath = '') {
     reconciliation,
     gateReport,
     criticalAuditorOutcomeDocument,
+    authoringMaterializationReceiptDocument,
+    draftImplementationConfirmationDocument,
   };
 }
 
@@ -769,6 +785,107 @@ function validateCheckpointAuthoringEvidence({ sourcePath, checkpoint, progressP
       'run_critical_auditor_until_three_no_new_gap_rounds'
     );
   }
+  if (checkpoint.id === 'cp-03-packet-to-source-materialization') {
+    const receipt = evidence.authoringMaterializationReceiptDocument;
+    const sourceBytesHash = sha256File(sourcePath);
+    if (!receipt) {
+      issue(
+        'authoring_materialization_receipt_required_before_checkpoint',
+        'authoring-materialization-receipt.json is required before cp-03 can be recorded',
+        [evidence.authoringMaterializationReceipt],
+        'rerun_authoring_draft_materialization'
+      );
+    } else {
+      const receiptHashInput = {
+        sourcePath: receipt.sourcePath,
+        sourceDocumentHash: receipt.sourceDocumentHash,
+        recordId: receipt.recordId,
+        requirementSetId: receipt.requirementSetId,
+        createdAt: receipt.createdAt,
+        candidateCount: receipt.candidateCount,
+        acceptedCandidateCount: receipt.acceptedCandidateCount,
+        mustCount: receipt.mustCount,
+        decision: receipt.decision,
+      };
+      const expectedReceiptHash = `sha256:${crypto
+        .createHash('sha256')
+        .update(stableStringify(receiptHashInput), 'utf8')
+        .digest('hex')}`;
+      const candidateArtifactPath = path.resolve(String(receipt.candidateArtifactPath ?? ''));
+      const draftConfirmationPath = path.resolve(
+        String(receipt.draftImplementationConfirmationPath ?? '')
+      );
+      const candidateArtifact = readSemanticJson(candidateArtifactPath);
+      const draftConfirmation = readSemanticJson(draftConfirmationPath);
+      if (
+        String(receipt.schemaVersion ?? '').trim() !==
+          'requirements-authoring-materialization-receipt/v1' ||
+        String(receipt.sourceDocumentHash ?? '').trim() !== sourceBytesHash ||
+        String(receipt.decision ?? '').trim() !== 'draft_materialization_allowed' ||
+        receipt.requiresUserConfirmationBeforeExecution !== true ||
+        String(receipt.receiptHash ?? '').trim() !== expectedReceiptHash ||
+        !candidateArtifact ||
+        String(candidateArtifact.sourceDocumentHash ?? '').trim() !==
+          sourceBytesHash ||
+        String(candidateArtifact.decision ?? '').trim() !==
+          'draft_materialization_allowed' ||
+        !draftConfirmation ||
+        String(draftConfirmation.sourceDocumentHash ?? '').trim() !==
+          sourceBytesHash ||
+        String(draftConfirmation.decision ?? '').trim() !==
+          'draft_materialization_allowed'
+      ) {
+        issue(
+          'authoring_materialization_receipt_binding_mismatch',
+          'authoring-materialization-receipt.json is not bound to the current materialized draft artifacts',
+          [
+            evidence.authoringMaterializationReceipt,
+            String(receipt.receiptHash ?? ''),
+            expectedReceiptHash,
+            candidateArtifactPath,
+            draftConfirmationPath,
+          ],
+          'rerun_authoring_draft_materialization'
+        );
+      }
+    }
+  }
+  if (checkpoint.id === 'cp-05-implementation-confirmation-core') {
+    const draftConfirmation = evidence.draftImplementationConfirmationDocument;
+    const sourceBytesHash = sha256File(sourcePath);
+    const draftConfirmationBody =
+      draftConfirmation?.implementationConfirmation &&
+      typeof draftConfirmation.implementationConfirmation === 'object' &&
+      !Array.isArray(draftConfirmation.implementationConfirmation)
+        ? draftConfirmation.implementationConfirmation
+        : null;
+    if (
+      !draftConfirmation ||
+      String(draftConfirmation.schemaVersion ?? '').trim() !==
+        'requirements-authoring-draft-implementation-confirmation/v1' ||
+      String(draftConfirmation.status ?? '').trim() !== 'draft' ||
+      String(draftConfirmation.sourceDocumentHash ?? '').trim() !==
+        sourceBytesHash ||
+      String(draftConfirmation.decision ?? '').trim() !==
+        'draft_materialization_allowed' ||
+      !draftConfirmationBody ||
+      String(draftConfirmation.recordId ?? '').trim() !==
+        String(draftConfirmationBody.recordId ?? '').trim() ||
+      String(draftConfirmation.requirementSetId ?? '').trim() !==
+        String(draftConfirmationBody.requirementSetId ?? '').trim()
+    ) {
+      issue(
+        'draft_implementation_confirmation_binding_mismatch',
+        'draft-implementation-confirmation.json is not bound to the current implementationConfirmation',
+        [
+          evidence.draftImplementationConfirmation,
+          sourceBytesHash,
+          String(draftConfirmation?.sourceDocumentHash ?? ''),
+        ],
+        'rerun_authoring_draft_materialization'
+      );
+    }
+  }
   if (
     ['cp-03-packet-to-source-materialization', 'cp-04-id-freeze', 'cp-05-implementation-confirmation-core', 'cp-06-projections', 'cp-07-human-readable-views', 'cp-08-pre-render-global-reconciliation'].includes(checkpoint.id) &&
     evidence.gateReport?.verdict !== 'PASS'
@@ -834,6 +951,18 @@ function checkpointValidatedInputs({ sourcePath, checkpoint, progressPath = '', 
       { role: 'packet_source_reconciliation', path: evidence.packetSourceReconciliation },
       { role: 'pre_render_must_decomposition_gate', path: evidence.preRenderMustDecompositionGate }
     );
+  }
+  if (checkpoint.id === 'cp-03-packet-to-source-materialization') {
+    candidates.push({
+      role: 'authoring_materialization_receipt',
+      path: evidence.authoringMaterializationReceipt,
+    });
+  }
+  if (checkpoint.id === 'cp-05-implementation-confirmation-core') {
+    candidates.push({
+      role: 'draft_implementation_confirmation',
+      path: evidence.draftImplementationConfirmation,
+    });
   }
   if (checkpoint.id === 'cp-08-pre-render-global-reconciliation') {
     candidates.push({

@@ -1070,6 +1070,8 @@ describe('parallel safety analyzer', () => {
     ['fixed-port.test.ts', 'PARALLEL_FIXED_PORT'],
     ['root-pack.test.ts', 'PARALLEL_ROOT_BUILD_OR_PACK'],
     ['root-build-script.test.ts', 'PARALLEL_ROOT_BUILD_OR_PACK'],
+    ['root-build-wrapper.test.ts', 'PARALLEL_ROOT_BUILD_OR_PACK'],
+    ['root-pack-wrapper.test.ts', 'PARALLEL_ROOT_BUILD_OR_PACK'],
   ])('marks %s unsafe with exact issue code', async (testPath, issueCode) => {
     const parallelSafety = loadParallelSafety();
     const result = await parallelSafety.analyzeTestFile({

@@ -403,7 +403,7 @@ describe('goal campaign repair lifecycle', () => {
     );
     const registryModule = require.cache[registryPath];
     const bindingModule = require.cache[bindingPath];
-    const registry = require(registryPath);
+    const registry = require('../src/utils/goal-contract/control-plane/schema-registry.ts');
     const calls = [];
     require.cache[registryPath].exports = {
       ...registry,
@@ -416,7 +416,7 @@ describe('goal campaign repair lifecycle', () => {
     try {
       const {
         verifyLifecycleAuthorityBinding,
-      } = require(bindingPath);
+      } = require('../src/utils/goal-contract/control-plane/lifecycle-authority-binding.ts');
       const partitionManifest = {
         partitionManifestHash: hash('manifest'),
         partitionImpactGraphHash: hash('graph'),

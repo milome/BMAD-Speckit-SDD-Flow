@@ -1,8 +1,12 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 
 const {
   normalizePlatformSkillFrontmatterContent,
+  normalizePlatformSkillFrontmatterFile,
 } = require('../src/services/platform-skill-frontmatter');
 
 function readDescription(content) {
@@ -22,6 +26,30 @@ describe('platform skill frontmatter normalization', () => {
     ].join('\n');
 
     assert.strictEqual(normalizePlatformSkillFrontmatterContent(raw, 'existing-skill'), raw);
+  });
+
+  it('preserves CRLF bytes for valid Codex skill frontmatter', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'platform-skill-frontmatter-'));
+    const skillPath = path.join(root, '.codex', 'skills', 'existing-skill', 'SKILL.md');
+    const raw = [
+      '---',
+      'name: existing-skill',
+      'description: Short description.',
+      '---',
+      '',
+      '# Existing Skill',
+      '',
+    ].join('\r\n');
+
+    try {
+      fs.mkdirSync(path.dirname(skillPath), { recursive: true });
+      fs.writeFileSync(skillPath, raw, 'utf8');
+
+      assert.strictEqual(normalizePlatformSkillFrontmatterFile(skillPath), false);
+      assert.strictEqual(fs.readFileSync(skillPath, 'utf8'), raw);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it('normalizes existing overlong descriptions to curated summaries', () => {
