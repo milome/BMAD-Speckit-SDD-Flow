@@ -808,7 +808,7 @@
       "behaviorTestRefs": [
         {
           "path": "tests/acceptance/requirements-contract-production-activate-command.test.ts",
-          "hash": "sha256:06d83d2f25746a3e4f528015ada09b5af02bfa3b88ed7e82018d3103dd4e0dc4"
+          "hash": "sha256:d46394bf75521621770c3fc3f91423840beacaed918dd098ebb18b470a0d83c9"
         },
         {
           "path": "tests/acceptance/requirements-contract-production-activation-plan-receipt-schema.test.ts",
@@ -988,12 +988,12 @@
         {
           "role": "installed-cli",
           "packagePath": "bin/bmad-speckit.js",
-          "hash": "sha256:d45e4ced973afd0c61fa88341a31740b71e2322c568704caa1985ef80d604c88"
+          "hash": "sha256:9f75d04490a7a32d2073305d38abe40cde75d0b879479f3c97448ee352c0219a"
         },
         {
           "role": "installed-generator",
           "packagePath": "_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js",
-          "hash": "sha256:72acd9198d02eeffbd052c81841527e51603d2dbba294b515f6281f7184f5121"
+          "hash": "sha256:e754d1c1048d9f65c93f53bce3f1daacc83256d6bcf12e60a94dcb181d7fa97a"
         },
         {
           "role": "installed-stage-registry",

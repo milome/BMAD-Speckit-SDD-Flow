@@ -22,9 +22,6 @@ type ScopeAmendmentError = Error & {
 
 const SCRIPT_ROOT = 'packages/bmad-speckit/src/main-agent/source-authority/scripts';
 const ROOT = process.cwd();
-const KNOWN_UNDECLARED_READERS = [
-  `${SCRIPT_ROOT}/requirements-contract-production-semantic-pipeline.ts`,
-].sort();
 const SEMANTIC_READER_SOURCE = `
 import { readFileSync } from 'node:fs';
 
@@ -49,9 +46,11 @@ describe('requirements contract repository-wide production consumer inventory', 
     const root = mkdtempSync(path.join(tmpdir(), 'requirements-consumer-inventory-'));
     const productionReaders = [
       'scripts/alpha.ts',
+      'scripts/requirements-contract-consumer-registry.js',
       '_bmad/shared/runtime/beta.js',
       'packages/example/src/gamma.ts',
       'packages/example/dist/delta.js',
+      'packages/runtime-emit/dist/unregistered-reader.cjs',
       'node_modules/bmad-speckit/dist/epsilon.js',
     ].sort();
 
@@ -93,23 +92,9 @@ describe('requirements contract repository-wide production consumer inventory', 
     }
   });
 
-  it('blocks the current repository when proven production semantic readers are undeclared', () => {
-    let scopeError: ScopeAmendmentError | undefined;
-    try {
-      createRequirementsContractConsumerRegistry(ROOT);
-    } catch (error) {
-      scopeError = error as ScopeAmendmentError;
-    }
+  it('keeps the current repository production semantic reader inventory closed', () => {
+    const registry = createRequirementsContractConsumerRegistry(ROOT);
 
-    expect(scopeError).toMatchObject({
-      code: 'scope_amendment_required',
-    });
-    if (!scopeError) return;
-    expect(scopeError.missingConsumerPaths).toEqual(
-      expect.arrayContaining(KNOWN_UNDECLARED_READERS)
-    );
-    expect(scopeError.unregisteredConsumerCount).toBeGreaterThanOrEqual(
-      KNOWN_UNDECLARED_READERS.length
-    );
+    expect(registry.discovery.unregisteredConsumerCount).toBe(0);
   });
 });
