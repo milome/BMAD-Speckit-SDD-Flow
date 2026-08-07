@@ -2,6 +2,8 @@
 *.sh text eol=lf
 # TypeScript: deterministic formatting across Windows and Unix
 *.ts text eol=lf
+# Node executable entrypoints: match npm's installed shebang bytes
+packages/bmad-speckit/bin/*.js text eol=lf
 tests/fixtures/goal-contract-release-gate/*.md text eol=lf
 tests/fixtures/goal-contract-release-gate/*.json text eol=lf
 tests/acceptance/fixtures/requirements-contract/*.md text eol=lf
