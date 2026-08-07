@@ -220,7 +220,7 @@ describe('goal-contract partition impact graph', () => {
     assert.match(graph.impactGraphHash, /^sha256:[0-9a-f]{64}$/u);
   });
 
-  it('fails closed when a required governed path is a symlink', () => {
+  it('fails closed when a required governed path is a symlink', (t) => {
     const compilePartitionImpactGraph = requireFunction(
       'compilePartitionImpactGraph'
     );
@@ -228,7 +228,18 @@ describe('goal-contract partition impact graph', () => {
     const linkPath = path.join(input.repositoryRoot, 'src', 'base.ts');
     fs.unlinkSync(linkPath);
     write(input.repositoryRoot, 'src/base-target.ts', 'export const value = 1;\n');
-    fs.symlinkSync('base-target.ts', linkPath, 'file');
+    try {
+      fs.symlinkSync('base-target.ts', linkPath, 'file');
+    } catch (error) {
+      if (
+        process.platform === 'win32' &&
+        ['EPERM', 'EACCES'].includes(error.code)
+      ) {
+        t.skip('Windows host does not permit file symlink creation');
+        return;
+      }
+      throw error;
+    }
 
     assert.throws(
       () => compilePartitionImpactGraph(input),

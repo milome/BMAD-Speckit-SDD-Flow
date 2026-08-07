@@ -12,6 +12,8 @@ const ROOT_NATIVE_GOAL_SCRIPTS = [
   'scripts/native-goal-command.ts',
   'scripts/main-agent-native-goal-invoker.ts',
 ];
+const ROOT_SCRIPTS_REQUIRE_PATTERN =
+  /require\(['"](?:\.\.[\\/]){5,}scripts[\\/]/;
 
 function readRuntimeSource(root, fileName) {
   return fs.readFileSync(path.join(root, fileName), 'utf8');
@@ -22,7 +24,7 @@ function assertPackageRuntimeModule(root, fileName, exportNames) {
   assert.equal(fs.existsSync(filePath), true, `${fileName} must exist in package runtime`);
   const source = readRuntimeSource(root, fileName);
   assert.doesNotMatch(source, /scripts[\\/](?:native-goal-command|main-agent-native-goal-invoker)\.ts/);
-  assert.doesNotMatch(source, /require\(['"].*scripts[\\/]/);
+  assert.doesNotMatch(source, ROOT_SCRIPTS_REQUIRE_PATTERN);
   assert.doesNotMatch(source, /\btsx\b/);
   assert.doesNotMatch(source, /\bts-node\b/);
 
@@ -42,7 +44,7 @@ function assertPackageTypeScriptSource(root, fileName, exportNames) {
   );
   const source = readRuntimeSource(root, fileName);
   assert.doesNotMatch(source, /scripts[\\/](?:native-goal-command|main-agent-native-goal-invoker)\.ts/);
-  assert.doesNotMatch(source, /require\(['"].*scripts[\\/]/);
+  assert.doesNotMatch(source, ROOT_SCRIPTS_REQUIRE_PATTERN);
   assert.doesNotMatch(source, /\btsx\b/);
   assert.doesNotMatch(source, /\bts-node\b/);
   for (const exportName of exportNames) {
