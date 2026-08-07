@@ -4,6 +4,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   cleanCriticalAuditorRound,
+  createTestAuthoringExecutionOptions,
   runPreConfirmationWithGovernedCriticalAuditorFixture,
 } from './helpers/requirements-contract-authoring-fixture';
 
@@ -84,13 +85,13 @@ describe('source PRD authoring entry-source lint gate', () => {
       const recordId = `REQ-SOURCE-PRD-${entrySource.toUpperCase().replace(/_/gu, '-')}`;
 
       const result = runPreConfirmationWithGovernedCriticalAuditorFixture(root, recordId, {
+        ...createTestAuthoringExecutionOptions(recordId),
         source,
         entrySource,
         recordId,
         requirementSetId: `${recordId}-SET`,
         targetPath: 'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts',
         requiredCommand: 'npx vitest run tests/acceptance/source-prd-authoring-entry-source-lint.test.ts',
-        criticalAuditorRound: cleanCriticalAuditorRound,
       });
 
       const dir = authoringDir(root, recordId);
@@ -124,6 +125,14 @@ describe('source PRD authoring entry-source lint gate', () => {
       });
       expect(transaction.sourcePrdEntrySource).toBe(entrySource);
       expect(existsSync(path.join(dir, 'staging'))).toBe(true);
+      expect(result).toMatchObject({
+        blockingStage: 'critical_auditor_provider_mode_required',
+        criticalAuditorContinuation: {
+          providerMode: 'main_session_inline',
+          roundIndex: 1,
+          nextRequiredAction: 'run_main_session_critical_auditor_round',
+        },
+      });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

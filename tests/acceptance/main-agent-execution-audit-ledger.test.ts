@@ -119,6 +119,12 @@ describe('main-agent execution audit ledger', () => {
       const auditDir = path.join(root, '_bmad-output', 'runtime', 'task-audits', runId);
       fs.mkdirSync(auditDir, { recursive: true });
       const ledgerPath = path.join(auditDir, 'TASKS_v1.audit-log.md');
+      const artifacts = writeReleaseArtifacts(root, {
+        runId,
+        storyKey: 'S-release-gate-ledger',
+        evidenceBundleId: `${runId}:bundle`,
+        gateReportHash: 'acceptance-gate-hash',
+      });
       fs.writeFileSync(
         ledgerPath,
         JSON.stringify(
@@ -133,7 +139,7 @@ describe('main-agent execution audit ledger', () => {
                 taskId: 'T1.8',
                 status: 'pass',
                 updatedAt: '2026-04-27T00:01:00.000Z',
-                evidenceRefs: ['_bmad-output/runtime/gates/main-agent-quality-gate-report.json'],
+                evidenceRefs: [artifacts.qualityGatePath],
               },
               {
                 taskId: 'T1.9',
@@ -152,12 +158,6 @@ describe('main-agent execution audit ledger', () => {
 
       const defaultReportPath = path.join(root, 'default-report.json');
       const explicitReportPath = path.join(root, 'explicit-report.json');
-      const artifacts = writeReleaseArtifacts(root, {
-        runId,
-        storyKey: 'S-release-gate-ledger',
-        evidenceBundleId: `${runId}:bundle`,
-        gateReportHash: 'acceptance-gate-hash',
-      });
       const defaultRun = runReleaseGate(defaultReportPath, artifacts);
       const explicitRun = runReleaseGate(explicitReportPath, artifacts, ledgerPath);
 

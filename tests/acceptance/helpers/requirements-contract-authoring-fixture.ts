@@ -713,6 +713,7 @@ function withGovernedCriticalAuditorFixture<T>(
   }
   const forwardedOptions = {
     ...createTestAuthoringExecutionOptions(seed),
+    criticalAuditorProviderMode: 'main_session_inline',
     ...options,
   };
   delete forwardedOptions.criticalAuditorRound;
@@ -1123,7 +1124,7 @@ export function writeLintReadyMinimalConsumerRequirement(
     '',
     '## Success Criteria',
     '',
-    `${refs.acceptanceId} and ${verification.requiredCommand} prove checkpoint closure.`,
+    `${refs.acceptanceId} proves checkpoint closure when the required verification command succeeds.`,
     '',
     '## In Scope',
     '',

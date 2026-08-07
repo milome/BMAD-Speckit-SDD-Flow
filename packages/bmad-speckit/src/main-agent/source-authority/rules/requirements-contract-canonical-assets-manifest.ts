@@ -779,8 +779,12 @@ const CANONICAL_ASSETS = [
 ] as const;
 
 function fileHash(root: string, relativePath: string): string {
+  const bytes = readFileSync(path.resolve(root, relativePath));
+  if (bytes.includes(0x0d)) {
+    throw new Error(`requirements_contract_projection_hash_input_not_lf:${relativePath}`);
+  }
   return `sha256:${createHash('sha256')
-    .update(readFileSync(path.resolve(root, relativePath)))
+    .update(bytes)
     .digest('hex')}`;
 }
 

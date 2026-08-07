@@ -2550,6 +2550,19 @@ function loadCanonicalStandaloneGenerationForRelease({
       goalPath: resolvedGoalPath,
     });
   }
+  const childGeneration = readJson(
+    path.join(
+      root,
+      'receipts',
+      'children',
+      `${child.partitionId}.generation.json`
+    ),
+    'partition_child_generation_receipt_invalid'
+  );
+  validateGoalContractSchema(
+    'goal-contract-partition-child-generation-receipt.schema.json',
+    childGeneration
+  );
   return Object.freeze({
     authorityMode: 'standalone_bootstrap',
     authorityRoot: root.replace(/\\/gu, '/'),
@@ -2575,21 +2588,24 @@ function loadCanonicalStandaloneGenerationForRelease({
       methodologyProfileHash:
         partitionPlan.methodologyProfileHash,
       methodologyProfileArtifactHash:
-        partitionPlan.methodologyProfileArtifactHash,
+        childGeneration.methodologyProfileArtifactHash,
     }),
     optimizerPolicyBinding: Object.freeze({
       partitionPolicyHash: partitionPlan.partitionPolicyHash,
       partitionPolicyArtifactHash:
-        partitionPlan.partitionPolicyArtifactHash,
+        childGeneration.partitionPolicyArtifactHash,
     }),
     projection: Object.freeze({
       executionProjectionHash: manifest.executionProjectionHash,
       taskDagHash: manifest.taskDagHash,
       sequenceConstraintBinding: Object.freeze({
         sequenceMode: manifest.sequenceMode,
-        sequenceApplicability: manifest.sequenceApplicability,
+        applicabilityDecision:
+          manifest.sequenceApplicability,
         sequenceCoverage: manifest.sequenceCoverage,
         sequenceClosureStatus: manifest.sequenceClosureStatus,
+        childContractAuthority:
+          manifest.childContractAuthority,
       }),
     }),
     compiled: Object.freeze({

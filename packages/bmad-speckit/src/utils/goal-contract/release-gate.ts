@@ -147,9 +147,16 @@ function resolveAuthorityBoundPath(authorityRoot, value) {
   return resolved;
 }
 
-function successorArtifactHash(authority, targetPath) {
+function usesAuthorityRootArtifacts(authority) {
+  return (
+    authority?.authorityMode === 'successor_pinned' ||
+    authority?.authorityMode === 'standalone_bootstrap'
+  );
+}
+
+function authorityArtifactHash(authority, targetPath) {
   if (
-    authority?.authorityMode !== 'successor_pinned' ||
+    !usesAuthorityRootArtifacts(authority) ||
     typeof targetPath !== 'string'
   ) {
     return null;
@@ -205,6 +212,8 @@ function validateFinalManifestChildMembership({
   const orderedChildContractHashes =
     manifest?.orderedChildContractHashes || [];
   if (manifest) {
+    const impactAuthority =
+      typeof manifest.partitionImpactGraphHash === 'string';
     const expectedManifestHash = hashControlPlaneValue({
       goalContractHash: manifest.goalContractHash,
       sourceCompositionPolicyHash:
@@ -214,6 +223,31 @@ function validateFinalManifestChildMembership({
       partitionPolicyHash: manifest.partitionPolicyHash,
       partitionPlanHash: manifest.partitionPlanHash,
       partitionSetHash: manifest.partitionSetHash,
+      ...(manifest.aggregateValidation
+        ? {
+            taskExecutionRoleAuthorityHash:
+              manifest.taskExecutionRoleAuthorityHash,
+            aggregateValidation: manifest.aggregateValidation,
+          }
+        : {}),
+      ...(impactAuthority
+        ? {
+            repositoryTreeHash: manifest.repositoryTreeHash,
+            partitionImpactPolicyHash:
+              manifest.partitionImpactPolicyHash,
+            partitionImpactAnalyzerIdentityHash:
+              manifest.partitionImpactAnalyzerIdentityHash,
+            partitionImpactGraphHash:
+              manifest.partitionImpactGraphHash,
+            partitionImpactGraphDocumentHash:
+              manifest.partitionImpactGraphDocumentHash,
+            partitionClosureFeasibilityReceiptHash:
+              manifest.partitionClosureFeasibilityReceiptHash,
+            partitionImpactDriftReceiptHash:
+              manifest.partitionImpactDriftReceiptHash,
+            driftHash: manifest.driftHash,
+          }
+        : {}),
       orderedChildContractHashes,
     });
     if (manifest.partitionManifestHash !== expectedManifestHash) {
@@ -1017,12 +1051,13 @@ function evaluatePartitionRelease(input) {
     ZERO_HASH;
   const currentAnalysisHash =
     (planBound
-      ? authority?.partitionPlanHash ||
-        currentManifest?.partitionAnalysisReceiptHash
+      ? currentManifest?.partitionAnalysisReceiptHash
       : authority?.compiled?.partitionAnalysisReceiptHash) ||
     ZERO_HASH;
-  const successorPinned =
-    authority?.authorityMode === 'successor_pinned';
+  const currentChildAnalysisBindingHash = planBound
+    ? authority?.partitionPlanHash || ZERO_HASH
+    : currentAnalysisHash;
+  const authorityRootBound = usesAuthorityRootArtifacts(authority);
 
   compareField({
     actual: binding.masterSourceHash,
@@ -1117,7 +1152,10 @@ function evaluatePartitionRelease(input) {
   ) {
     blockingReasons.push('partition_manifest_binding_not_current');
   }
-  if (binding.partitionAnalysisReceiptHash !== currentAnalysisHash) {
+  if (
+    binding.partitionAnalysisReceiptHash !==
+    currentChildAnalysisBindingHash
+  ) {
     blockingReasons.push('partition_analysis_receipt_not_current');
   }
   const partition = currentManifest?.partitions?.find(
@@ -1149,7 +1187,7 @@ function evaluatePartitionRelease(input) {
   componentDecisions.feasibility =
     feasibilityRelease.componentDecision;
 
-  const selectionPath = successorPinned
+  const selectionPath = authorityRootBound
     ? resolveAuthorityBoundPath(
         authority.authorityRoot,
         partition?.selectionReceiptPath
@@ -1163,7 +1201,7 @@ function evaluatePartitionRelease(input) {
       ? inferReceiptsDir({
           explicitReceiptsDir:
             input.receiptsDir ||
-            (successorPinned
+            (authorityRootBound
               ? authority.authorityRoot
               : null),
           selectionReceiptPath: selectionPath,
@@ -1171,7 +1209,7 @@ function evaluatePartitionRelease(input) {
           manifestPath,
         })
       : null;
-  const globalCoveragePath = successorPinned
+  const globalCoveragePath = authorityRootBound
     ? resolveAuthorityBoundPath(
         authority.authorityRoot,
         currentManifest?.globalCoverageReceiptPath
@@ -1241,7 +1279,7 @@ function evaluatePartitionRelease(input) {
   let expectedSelection = null;
   if (authority && currentManifest && partition) {
     try {
-      if (successorPinned) {
+      if (authorityRootBound) {
         expectedGlobalCoverage =
           buildPartitionPlanGlobalCoverageReceipt({
             partitionPlan: authority.partitionPlan,
@@ -1276,8 +1314,8 @@ function evaluatePartitionRelease(input) {
       stableStringify(expectedGlobalCoverage) ||
     globalCoverage.decision !== 'pass' ||
     globalCoverageHash !==
-      (successorPinned
-        ? successorArtifactHash(
+      (authorityRootBound
+        ? authorityArtifactHash(
             authority,
             globalCoveragePath
           )
@@ -1294,8 +1332,8 @@ function evaluatePartitionRelease(input) {
       !expectedSelection ||
       stableStringify(selection) !== stableStringify(expectedSelection) ||
       selectionHash !==
-        (successorPinned
-          ? successorArtifactHash(authority, selectionPath)
+        (authorityRootBound
+          ? authorityArtifactHash(authority, selectionPath)
           : binding.selectionReceiptHash)
     ) {
       blockingReasons.push('partition_selection_not_current');

@@ -5,6 +5,7 @@ import {
   buildValidResponseFromRequest,
   cleanCriticalAuditorRound,
   createTempRoot,
+  createTestAuthoringExecutionOptions,
   installJudgeRuntimeConfig,
   issueCodes,
   readJson,
@@ -50,7 +51,7 @@ describe('requirements contract ID namespace synchronization', () => {
     } finally {
       removeTempRoot(root);
     }
-  });
+  }, 60_000);
 
   it('archives stale namespace artifacts and restarts at round one when response namespace drifts', () => {
     const root = createTempRoot('requirements-contract-namespace-stale-');
@@ -58,13 +59,26 @@ describe('requirements contract ID namespace synchronization', () => {
       installJudgeRuntimeConfig(root);
       const recordId = 'REQ-NAMESPACE-STALE';
       const source = writeConsumerRequirement(root);
-      runAuthoring(root, source, recordId, {
+      const authoringOptions = {
+        ...createTestAuthoringExecutionOptions(recordId),
         targetPath: 'vnpy/chart/multi_timeframe_widget.py',
         requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
+        criticalAuditorProviderMode: 'main_session_inline',
+      };
+      const first = runAuthoring(root, source, recordId, authoringOptions);
+      expect(first.criticalAuditorContinuation).toMatchObject({
+        providerMode: 'main_session_inline',
+        roundIndex: 1,
+        nextRequiredAction: 'run_main_session_critical_auditor_round',
       });
-      const request = readJson<Record<string, unknown>>(roundArtifact(root, recordId, 'request', 1));
+      const continuation = first.criticalAuditorContinuation as {
+        requestPath: string;
+        responsePath: string;
+      };
+      const requestPath = path.resolve(root, continuation.requestPath);
+      const responsePath = path.resolve(root, continuation.responsePath);
+      const request = readJson<Record<string, unknown>>(requestPath);
       const packet = stagingMustDecompositionPacket(root, recordId);
-      const responsePath = roundArtifact(root, recordId, 'response', 1);
       writeFileSync(
         responsePath,
         `${JSON.stringify(
@@ -78,12 +92,7 @@ describe('requirements contract ID namespace synchronization', () => {
         'utf8'
       );
 
-      const result = runAuthoring(root, source, recordId, {
-        targetPath: 'vnpy/chart/multi_timeframe_widget.py',
-        requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
-        criticalAuditorProviderMode: 'response_file',
-        criticalAuditorResponseFile: responsePath,
-      });
+      const result = runAuthoring(root, source, recordId, authoringOptions);
       const archiveRoot = path.join(
         root,
         '_bmad-output',
@@ -97,7 +106,14 @@ describe('requirements contract ID namespace synchronization', () => {
         ? readdirSync(archiveRoot).filter((entry) => entry.endsWith('-stale-namespace'))
         : [];
 
-      expect(issueCodes(result)).toContain('id_namespace_mismatch');
+      expect(
+        issueCodes(result),
+        JSON.stringify({
+          blockingStage: result.blockingStage,
+          issueCodes: issueCodes(result),
+          continuation: result.criticalAuditorContinuation,
+        })
+      ).toContain('id_namespace_mismatch');
       expect(archiveEntries.length).toBeGreaterThanOrEqual(1);
       expect(existsSync(roundArtifact(root, recordId, 'request', 1))).toBe(true);
       expect(existsSync(roundArtifact(root, recordId, 'receipt', 1))).toBe(false);

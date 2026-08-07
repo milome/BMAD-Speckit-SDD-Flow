@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { appendControlEventAndReplay } from '../../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-control-store';
 import {
   IMPLEMENTATION_HASH,
@@ -52,16 +53,21 @@ export function appendModelResult(
 }
 
 export function transition(recordPath: string, fromModel: MentalModel, toModel: MentalModel): void {
+  const record = JSON.parse(readFileSync(recordPath, 'utf8')) as JsonObject;
+  const transitionOrdinal = ((record.mentalModelTransitions as unknown[]) ?? []).length;
+  const recordedAt = new Date(
+    Date.parse('2026-05-28T00:00:02.000Z') + transitionOrdinal
+  ).toISOString();
   appendControlEventAndReplay({
     recordPath,
     writerId: 'controlled-six-model-transition-writer',
     eventType: 'mental_model_transition_recorded',
-    recordedAt: '2026-05-28T00:00:02.000Z',
+    recordedAt,
     payload: {
       eventType: 'mental_model_transition_recorded',
       fromModel,
       toModel,
-      recordedAt: '2026-05-28T00:00:02.000Z',
+      recordedAt,
       recordedBy: 'six-model-routing-e2e',
       sourceRefs: [{ sourceType: 'model_result', id: fromModel }],
     },

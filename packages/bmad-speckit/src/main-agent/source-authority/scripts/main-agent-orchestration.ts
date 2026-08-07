@@ -2052,8 +2052,6 @@ function hasCommittedAuditReadonlyAuditorInvocation(input: {
 }
 
 function resolveDefaultAuditReadonlyAuditorCommand(): string[] {
-  if (process.platform !== 'win32') return ['codex'];
-
   const pathEntries = (process.env.PATH ?? process.env.Path ?? '')
     .split(path.delimiter)
     .map((entry) => entry.trim())
@@ -2064,6 +2062,22 @@ function resolveDefaultAuditReadonlyAuditorCommand(): string[] {
     const normalizedEntry = resolvedEntry.toLowerCase();
     if (visited.has(normalizedEntry)) continue;
     visited.add(normalizedEntry);
+
+    if (process.platform !== 'win32') {
+      const executable = path.join(resolvedEntry, 'codex');
+      if (
+        !fs.existsSync(executable) ||
+        !fs.statSync(executable).isFile()
+      ) {
+        continue;
+      }
+      try {
+        fs.accessSync(executable, fs.constants.X_OK);
+        return [executable];
+      } catch {
+        continue;
+      }
+    }
 
     const nativeExecutable = path.join(resolvedEntry, 'codex.exe');
     if (fs.existsSync(nativeExecutable)) return [nativeExecutable];
@@ -9548,22 +9562,43 @@ function resolveTargetAuthority(input: {
   const seen = new Set<string>();
   const rejected: Array<Record<string, unknown>> = [];
   const candidateRecords = [...explicitRecords, ...input.sourceRecords];
-  const accepted = candidateRecords.filter((record) => {
+  const accepted: TargetAuthorityRecord[] = [];
+  const acceptedByPath = new Map<string, TargetAuthorityRecord>();
+  for (const record of candidateRecords) {
     const normalizedPath = record.path.replace(/\\/g, '/');
     if (seen.has(normalizedPath)) {
-      return false;
+      const existing = acceptedByPath.get(normalizedPath);
+      if (existing) {
+        existing.sourceMustRefs = uniqueNonEmpty([
+          ...(existing.sourceMustRefs ?? []),
+          ...(record.sourceMustRefs ?? []),
+        ]);
+        existing.sourceTraceRefs = uniqueNonEmpty([
+          ...(existing.sourceTraceRefs ?? []),
+          ...(record.sourceTraceRefs ?? []),
+        ]);
+        existing.sourceAcceptanceRefs = uniqueNonEmpty([
+          ...(existing.sourceAcceptanceRefs ?? []),
+          ...(record.sourceAcceptanceRefs ?? []),
+        ]);
+        existing.sourcePathId ||= record.sourcePathId;
+        existing.sourceOracle ||= record.sourceOracle;
+        existing.responsibilityMapping ||= record.responsibilityMapping;
+      }
+      continue;
     }
     seen.add(normalizedPath);
     if (pathEscapesProjectRoot(input.root, record.path)) {
       rejected.push({ ...record, reason: 'target_path_outside_project_root' });
-      return false;
+      continue;
     }
     if (/^(?:https?:|mailto:)/iu.test(record.path)) {
       rejected.push({ ...record, reason: 'url_target_path_not_allowed_for_source_mutation' });
-      return false;
+      continue;
     }
-    return true;
-  });
+    accepted.push(record);
+    acceptedByPath.set(normalizedPath, record);
+  }
   const issues =
     accepted.length === 0
       ? [
@@ -9825,6 +9860,33 @@ function buildValidationAuthority(input: {
     ...command,
     source: 'source_document',
   }));
+  sourceDerived.sort((left, right) =>
+    stableStringify({
+      command: left.command,
+      sourceCommandId: left.sourceCommandId ?? '',
+      sourceCommandType: left.sourceCommandType ?? '',
+      sourceMustRefs: [...(left.sourceMustRefs ?? [])].sort(),
+      sourceTraceRefs: [...(left.sourceTraceRefs ?? [])].sort(),
+      sourceAcceptanceRefs: [...(left.sourceAcceptanceRefs ?? [])].sort(),
+      sourcePathRefs: [...(left.sourcePathRefs ?? [])].sort(),
+      sourceOracle: left.sourceOracle ?? '',
+      responsibilityMapping: left.responsibilityMapping ?? '',
+      sourceTargetFiles: [...(left.sourceTargetFiles ?? [])].sort(),
+    }).localeCompare(
+      stableStringify({
+        command: right.command,
+        sourceCommandId: right.sourceCommandId ?? '',
+        sourceCommandType: right.sourceCommandType ?? '',
+        sourceMustRefs: [...(right.sourceMustRefs ?? [])].sort(),
+        sourceTraceRefs: [...(right.sourceTraceRefs ?? [])].sort(),
+        sourceAcceptanceRefs: [...(right.sourceAcceptanceRefs ?? [])].sort(),
+        sourcePathRefs: [...(right.sourcePathRefs ?? [])].sort(),
+        sourceOracle: right.sourceOracle ?? '',
+        responsibilityMapping: right.responsibilityMapping ?? '',
+        sourceTargetFiles: [...(right.sourceTargetFiles ?? [])].sort(),
+      })
+    )
+  );
   const rejected: Array<Record<string, unknown>> = [];
   const accepted: ValidationAuthorityRecord[] = [];
   const acceptedTargetRecords = [...input.targetRecords];
@@ -14048,9 +14110,14 @@ function buildPreConfirmationImplementationConfirmationDraft(input: {
         edgeId: owner.edgeId,
         failurePathRefs:
           sourceFailureRefs.length > 0 ? sourceFailureRefs : owner.failureIds.slice(0, 1),
+        contractCommandRefs: sourceRefsFromTableField(sourceTraceBlock, [
+          'Contract validation command refs',
+        ]).filter((ref) => /^CMD-\d{1,3}$/u.test(ref)),
         deliveryCommandRefs: uniqueNonEmpty([
           ...stringsFrom(row.sourceCommandRefs),
-          ...sourceTraceRefs.filter((ref) => /^CMD-\d{1,3}$/u.test(ref)),
+          ...sourceRefsFromTableField(sourceTraceBlock, [
+            'Delivery evidence command refs',
+          ]).filter((ref) => /^CMD-\d{1,3}$/u.test(ref)),
         ]),
       },
     ];
@@ -14907,7 +14974,7 @@ function buildPreConfirmationImplementationConfirmationDraft(input: {
           sourceRequirementTexts: [row.text],
           taskRefs: [row.taskId],
           evidenceRefs: [row.evidenceId],
-          contractValidationCommandRefs: commandIds,
+          contractValidationCommandRefs: row.contractCommandRefs,
           deliveryEvidenceCommandRefs: row.deliveryCommandRefs,
           acceptanceRefs: [row.acceptanceId, row.sourceE2eId],
           failurePathRefs: row.failurePathRefs,
@@ -24587,6 +24654,27 @@ function runCriticalAuditorReceiptLoop(input: {
         persistedResponse = null;
       }
       if (
+        persistedResponse &&
+        normalizeText(persistedResponse.namespaceVersion) !==
+          responseExpectation.namespaceVersion
+      ) {
+        const namespaceIssue = preConfirmationIssue(
+          'id_namespace_mismatch',
+          'Critical Auditor response namespaceVersion does not match the active namespace',
+          ['namespaceVersion'],
+          'critical_auditor'
+        );
+        issues.push(namespaceIssue);
+        const outcomeCommit = commitRoundOutcome({
+          includeResponse: true,
+          blockingIssues: [namespaceIssue],
+        });
+        if (!outcomeCommit.ok) {
+          issues.push(outcomeCommit.issue);
+        }
+        break;
+      }
+      if (
         persistedResponseConflicts()
       ) {
         const responseConflictIssue = preConfirmationIssue(
@@ -29307,9 +29395,20 @@ function runSourcePrdSemanticRoundTrip(input: {
           `Source PRD round-trip changed semantic source provenance ${candidate.sourceRootId}`
         );
       }
+      const candidateSemantics = recordObject(candidate.semanticBody.semantics);
+      const baselineSemantics = recordObject(baselineRoot.semanticBody.semantics);
       semanticBody = {
         ...candidate.semanticBody,
         source: baselineSemanticSource,
+        ...(Object.keys(candidateSemantics).length > 0 &&
+        Object.keys(baselineSemantics).length > 0
+          ? {
+              semantics: {
+                ...candidateSemantics,
+                invariants: baselineSemantics.invariants,
+              },
+            }
+          : {}),
       };
     }
     return {
@@ -31857,6 +31956,12 @@ export function runMainAgentPreConfirmationDrilldown(
         ]),
         'requirements_contract_render_roundtrip_gate'
       );
+      writeSourcePromotionBlockDecision({
+        transaction: stagingTransaction,
+        blockingStage: 'render_roundtrip_semantic_conservation_failed',
+        root,
+        createdAt,
+      });
       return buildPreConfirmationResult({
         root,
         sourcePath,
@@ -31884,6 +31989,12 @@ export function runMainAgentPreConfirmationDrilldown(
       ],
       'requirements_contract_render_roundtrip_gate'
     );
+    writeSourcePromotionBlockDecision({
+      transaction: stagingTransaction,
+      blockingStage: 'render_roundtrip_semantic_conservation_failed',
+      root,
+      createdAt,
+    });
     return buildPreConfirmationResult({
       root,
       sourcePath,

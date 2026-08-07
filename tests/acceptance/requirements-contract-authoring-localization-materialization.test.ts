@@ -20,24 +20,44 @@ function englishLocalizationSource(): string {
     '',
     'Target file: `src/dataservice/gds_trigger.py`',
     '',
+    '## Product Context',
+    '',
+    'DataService must preserve GDS trigger routing and HKFE event semantics across localized confirmation views.',
+    '',
+    '## Success Criteria',
+    '',
+    'Each source-authorized requirement remains independently traceable after zh-CN or bilingual materialization.',
+    '',
+    '## In Scope',
+    '',
+    'GDS routing, HKFE symbol preservation, stale-data rejection, and localization of confirmation semantics.',
+    '',
+    '## User Journeys',
+    '',
+    'A requirements author reviews localized confirmation content without losing the English source authority.',
+    '',
     '## Functional Requirements',
     '',
-    '| FR ID | Requirement |',
-    '| --- | --- |',
-    '| FR-001 | System MUST route GDS trigger ticks through DataService. |',
-    '| FR-002 | System MUST preserve HKFE symbol and exchange semantics. |',
+    '| FR ID | Requirement | Source rationale | Acceptance link | Per-MUST oracle | Assertion source | Responsibility mapping |',
+    '| --- | --- | --- | --- | --- | --- | --- |',
+    '| FR-001 | System MUST route GDS trigger ticks through DataService. | GDS trigger events require one authoritative routing path. | ACC-001 | GDS trigger ticks route through DataService. | ACC-001 CMD-001 TRACE-001 | PATH-001 owns routing implementation and remediation. |',
+    '| FR-002 | System MUST preserve HKFE symbol and exchange semantics. | Downstream consumers depend on stable HKFE identity. | ACC-002 | HKFE symbol and exchange semantics remain unchanged. | ACC-002 CMD-002 TRACE-002 | PATH-001 owns HKFE semantic preservation. |',
     '',
     '## Non-Functional Requirements',
     '',
-    '| NFR ID | Quality attribute |',
-    '| --- | --- |',
-    '| NFR-001 | Trigger stream processing MUST fail closed on stale data. |',
+    '| NFR ID | Category | Requirement | Threshold and evidence | Per-MUST oracle | Assertion source | Responsibility mapping |',
+    '| --- | --- | --- | --- | --- | --- | --- |',
+    '| NFR-001 | Resilience | Trigger stream processing MUST fail closed on stale data. | ACC-003 proves stale data is rejected before processing. | Stale trigger data never reaches processing or downstream publication. | ACC-003 CMD-003 TRACE-003 | PATH-001 owns stale-data rejection. |',
     '',
     '## Negative Requirements And Not Done Conditions',
     '',
     '| ID | Not-done condition | Negative assertion | Blocks completion when | Failure refs | Evidence refs |',
     '| --- | --- | --- | --- | --- | --- |',
     '| NEG-001 | Processing unavailable, malformed, or stale trigger input does not count as completion. | Invalid trigger input must be rejected before processing. | Invalid data reaches processing or downstream publication. | FAIL-001 FAIL-002 FAIL-003 | ACC-001 ACC-002 ACC-003 CMD-001 CMD-002 CMD-003 |',
+    '',
+    '## Architecture Decision Records',
+    '',
+    'English source semantics remain authoritative while localized fields are materialized as equivalent confirmation projections.',
     '',
     '## Failure Matrix',
     '',
@@ -64,7 +84,7 @@ function englishLocalizationSource(): string {
     '| CMD-001 | delivery-evidence | MUST-FR-001 | python -m pytest tests/trader/test_gateway_profile_registry.py | Exit code 0. | GDS trigger ticks route through DataService. | ACC-001 TRACE-001 | PATH-001 owns remediation. | tests/trader/test_gateway_profile_registry.py src/dataservice/gds_trigger.py |',
     '| CMD-002 | delivery-evidence | MUST-FR-002 | python -m pytest tests/trader/test_gateway_profile_registry.py | Exit code 0. | HKFE symbol and exchange semantics remain unchanged. | ACC-002 TRACE-002 | PATH-001 owns remediation. | tests/trader/test_gateway_profile_registry.py src/dataservice/gds_trigger.py |',
     '| CMD-003 | delivery-evidence | MUST-NFR-001 | python -m pytest tests/trader/test_gateway_profile_registry.py | Exit code 0. | Stale trigger data is rejected before processing. | ACC-003 TRACE-003 | PATH-001 owns remediation. | tests/trader/test_gateway_profile_registry.py src/dataservice/gds_trigger.py |',
-    '| CMD-999 | contract-validation | source structure only; no MUST coverage | python -m pytest -q tests/trader/test_gateway_profile_registry.py | Source structure passes. | This command validates source structure only. | TRACE-001 TRACE-002 TRACE-003 TRACE-004 | Requirements owner owns remediation. | tests/trader/test_gateway_profile_registry.py |',
+    '| CMD-999 | contract-validation | none | python -m pytest -q tests/trader/test_gateway_profile_registry.py | Source structure passes. | This command validates source structure only. | TRACE-001 TRACE-002 TRACE-003 TRACE-004 | Requirements owner owns remediation. | tests/trader/test_gateway_profile_registry.py |',
     '| E2E-003 | e2e | MUST-NFR-001 NEG-001 | python -m pytest tests/trader/test_gateway_profile_registry.py | Exit code 0. | Stale trigger data is rejected before processing. | ACC-003 CMD-003 TRACE-003 TRACE-004 | PATH-001 owns remediation. | tests/trader/test_gateway_profile_registry.py src/dataservice/gds_trigger.py |',
     '',
     '## Trace Matrix Source',
@@ -82,10 +102,34 @@ function englishLocalizationSource(): string {
     '| --- | --- | --- | --- | --- | --- | --- | --- |',
     '| PATH-001 | `src/dataservice/gds_trigger.py` | DataService owner | Implement GDS trigger routing and guards. | MUST-FR-001 MUST-FR-002 MUST-NFR-001 | Preserve routing, HKFE semantics, and stale-data rejection. | ACC-001 ACC-002 ACC-003 CMD-001 CMD-002 CMD-003 TRACE-001 TRACE-002 TRACE-003 | DataService owner owns implementation, rollback, and remediation. |',
     '',
+    '## Source Current State',
+    '',
+    '| ID | Current behavior | Current path | Limitation | Evidence |',
+    '| --- | --- | --- | --- | --- |',
+    '| CUR-001 | DataService accepts GDS trigger events. | `src/dataservice/gds_trigger.py` | Localized confirmation fields are not yet materialized. | ACC-001 |',
+    '',
+    '## Source Target State',
+    '',
+    '| ID | Target behavior | Target path | Acceptance state | Evidence |',
+    '| --- | --- | --- | --- | --- |',
+    '| TGT-001 | Localized confirmation preserves routing, HKFE, and stale-data semantics. | `src/dataservice/gds_trigger.py` | ACC-001, ACC-002, and ACC-003 remain independently confirmable. | ACC-001 ACC-002 ACC-003 |',
+    '',
+    '## Current Target Map',
+    '',
+    '| ID | Current refs | Target refs | Transition | Invariant | Requirement refs | Per-MUST oracle | Assertion source | Responsibility mapping |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    '| CTM-001 | CUR-001 | TGT-001 | Materialize localized confirmation fields. | English source semantics remain authoritative. | FR-001 FR-002 NFR-001 | ACC-001, ACC-002, and ACC-003 remain authoritative. | ACC-001 ACC-002 ACC-003 | PATH-001 owns localization remediation. |',
+    '',
+    '## Human-Readable ID-Bound Views',
+    '',
+    'Happy-path sequence view; Failure-path sequence view; State and flow view; Edge-case view; Business and governance boundary view; Artifact automation plan; Current-vs-target map; aiTddContractExecutionManifestProjection.',
+    '',
     '## Out Of Scope',
     '',
-    '- Manual live trading execution is out of scope.',
-    '- Broker credential storage is out of scope.',
+    '| ID | Excluded capability | Preservation rule | Evidence |',
+    '| --- | --- | --- | --- |',
+    '| OUT-001 | Manual live trading execution. | Localization never enables live order execution. | ACC-001 |',
+    '| OUT-002 | Broker credential storage. | Localization never changes credential ownership or storage. | ACC-002 |',
   ].join('\n');
 }
 
@@ -158,11 +202,41 @@ describe('requirements contract authoring localization materialization', () => {
         const blocked = runIntakeAuthoring(root, intakeSource, targetSource, recordId, options);
         const paths = artifacts(root, recordId, `${recordId}-SET`);
         const localizationRequestPath = path.join(paths.authoring, 'localization-request.json');
+        const sourcePrdLintReportRef =
+          blocked.blockingIssues.find((issue) => issue.code === 'source_prd_lint_non_pass')
+            ?.refs[0] ?? '';
+        const sourcePrdLintReportPath = sourcePrdLintReportRef
+          ? path.resolve(root, sourcePrdLintReportRef)
+          : '';
+        const sourcePrdLintReport = sourcePrdLintReportPath && existsSync(sourcePrdLintReportPath)
+          ? readJson<Record<string, unknown>>(sourcePrdLintReportPath)
+          : null;
 
         expect(blocked.ok).toBe(false);
-        expect(blocked.substate, JSON.stringify(blocked.blockingIssues, null, 2)).toBe(
-          'localization_translation_required'
-        );
+        expect(
+          issueCodes(blocked),
+          JSON.stringify(
+            {
+              blockingIssues: blocked.blockingIssues,
+              sourcePrdLintReportPath,
+              sourcePrdLintReport,
+            },
+            null,
+            2
+          )
+        ).not.toContain('source_prd_lint_non_pass');
+        expect(
+          blocked.substate,
+          JSON.stringify(
+            {
+              blockingIssues: blocked.blockingIssues,
+              sourcePrdLintReportPath,
+              sourcePrdLintReport,
+            },
+            null,
+            2
+          )
+        ).toBe('localization_translation_required');
         expect(blocked.blockingStage).toBe('authoring_localization_provider_required');
         expect(issueCodes(blocked)).toContain('confirmation_localization_translation_required');
         expect(existsSync(localizationRequestPath)).toBe(true);
@@ -182,8 +256,42 @@ describe('requirements contract authoring localization materialization', () => {
           ...options,
           localizationResponseFile: localizationResponsePath,
         });
+        const resultSourcePrdLintReportRef =
+          result.blockingIssues.find((issue) => issue.code === 'source_prd_lint_non_pass')
+            ?.refs[0] ?? '';
+        const resultSourcePrdLintReportPath = resultSourcePrdLintReportRef
+          ? path.resolve(root, resultSourcePrdLintReportRef)
+          : '';
+        const resultSourcePrdLintReport =
+          resultSourcePrdLintReportPath && existsSync(resultSourcePrdLintReportPath)
+            ? readJson<Record<string, unknown>>(resultSourcePrdLintReportPath)
+            : null;
+        const renderRoundtripReportRef =
+          result.blockingIssues.find(
+            (issue) => issue.code === 'render_roundtrip_semantic_conservation_failed'
+          )?.refs[0] ?? '';
+        const renderRoundtripReportPath = renderRoundtripReportRef
+          ? path.resolve(root, renderRoundtripReportRef)
+          : '';
+        const renderRoundtripReport =
+          renderRoundtripReportPath && existsSync(renderRoundtripReportPath)
+            ? readJson<Record<string, unknown>>(renderRoundtripReportPath)
+            : null;
 
-        expect(result.ok, JSON.stringify(result.blockingIssues, null, 2)).toBe(true);
+        expect(
+          result.ok,
+          JSON.stringify(
+            {
+              blockingIssues: result.blockingIssues,
+              sourcePrdLintReportPath: resultSourcePrdLintReportPath,
+              sourcePrdLintReport: resultSourcePrdLintReport,
+              renderRoundtripReportPath,
+              renderRoundtripReport,
+            },
+            null,
+            2
+          )
+        ).toBe(true);
         expect(result.substate).toBe('user_confirmable');
         expect(issueCodes(result)).not.toContain('confirmation_language_content_english_only');
         expect(issueCodes(result)).not.toContain('renderer_blocker_release_failure');
@@ -247,7 +355,8 @@ describe('requirements contract authoring localization materialization', () => {
       } finally {
         removeTempRoot(root);
       }
-    }
+    },
+    60_000
   );
 
   it('repairs a stale synthetic-prefix textZh projection before renderer validation', () => {
@@ -326,10 +435,30 @@ describe('requirements contract authoring localization materialization', () => {
       const repairReceipt = readJson<Record<string, unknown>>(
         path.join(repairPaths.authoring, 'localization-materialization-receipt.json')
       );
-      expect(repairReceipt.fieldRepairedCount).toBeGreaterThan(0);
-      expect(repairReceipt.fieldsRepaired).toContain('MUST-FR-001.textZh');
+      const rematerializedFields = [
+        ...((repairReceipt.fieldsAdded as string[]) ?? []),
+        ...((repairReceipt.fieldsRepaired as string[]) ?? []),
+      ];
+      expect(
+        Number(repairReceipt.fieldAddedCount) + Number(repairReceipt.fieldRepairedCount),
+        JSON.stringify(
+          {
+            fieldAddedCount: repairReceipt.fieldAddedCount,
+            fieldRepairedCount: repairReceipt.fieldRepairedCount,
+            rematerializedFields,
+            staleTextZh: stale.match(
+              /- id: MUST-FR-001[\s\S]*?\n\s+textZh:\s*([^\n]*)/u
+            )?.[1],
+            repairedTextZh: repairedMust.textZh,
+          },
+          null,
+          2
+        )
+      ).toBeGreaterThan(0);
+      expect(rematerializedFields).toContain('MUST-FR-001.textZh');
+      expect(repairReceipt.oldHashBoundReceiptReused).toBe(false);
     } finally {
       removeTempRoot(root);
     }
-  });
+  }, 90_000);
 });

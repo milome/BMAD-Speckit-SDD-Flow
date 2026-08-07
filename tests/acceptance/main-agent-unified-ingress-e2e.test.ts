@@ -276,7 +276,13 @@ describe('main-agent unified ingress e2e', () => {
       expect(receipt.hostRecovery.before_parity_snapshot.inspect?.pendingPacketStatus).toBe(
         'invalidated'
       );
-      expect(receipt.hostRecovery.after_parity_snapshot.inspect).toBeNull();
+      expect(receipt.hostRecovery.after_parity_snapshot.inspect).toMatchObject({
+        status: 'blocked',
+        finalNextAction: 'await_user',
+        packetId: expect.any(String),
+        pendingPacketStatus: 'invalidated',
+        resolvedHost: 'cursor',
+      });
       expect(receipt.hostRecovery.parity_diff).toMatchObject({
         hostModeChanged: false,
         orchestrationEntryChanged: false,

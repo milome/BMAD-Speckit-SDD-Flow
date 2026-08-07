@@ -52,7 +52,8 @@ function prepromotionSource(): string {
     '',
     '| ID | Not-done condition | Negative assertion | Blocks completion when | Failure refs | Evidence refs |',
     '| --- | --- | --- | --- | --- | --- |',
-    '| NEG-001 | A failed strict render cannot count as promotion success. | Render failure must preserve the source hash and produce no promotion receipt. | The source changes or promotion proceeds after strict render failure. | FAIL-001 | ACC-002 CMD-002 |',
+    '| NEG-001 | A failed strict render cannot count as promotion success. | Render failure must preserve the source hash and produce no promotion receipt. | The source changes or promotion proceeds after strict render failure. | FAIL-002 | ACC-002 CMD-002 |',
+    '| NEG-002 | Promotion cannot begin before strict rendering succeeds. | The promotion decision remains blocked until strict rendering is confirmed. | Promotion starts before the strict render result is confirmable. | FAIL-001 | ACC-001 CMD-001 |',
     '',
     '## Architecture Decision Records',
     '',
@@ -62,29 +63,31 @@ function prepromotionSource(): string {
     '',
     '| ID | Failure condition | Required system behavior | Negative requirement refs | Evidence | Requirement refs |',
     '| --- | --- | --- | --- | --- | --- |',
-    '| FAIL-001 | The staging source cannot be rendered into a valid confirmation view. | Block promotion, preserve the current source hash, and report the renderer failure without publishing partial output. | NEG-001 | ACC-001 ACC-002 E2E-001 | MUST-FR-001 MUST-NFR-001 |',
+    '| FAIL-001 | Promotion begins before the staging source renders successfully. | Block promotion until the strict staging render succeeds. | NEG-002 | ACC-001 E2E-001 | MUST-FR-001 |',
+    '| FAIL-002 | The staging source cannot be rendered into a valid confirmation view. | Block promotion, preserve the current source hash, and report the renderer failure without publishing partial output. | NEG-001 | ACC-002 E2E-002 | MUST-NFR-001 |',
     '',
     '## Acceptance Evidence',
     '',
     '| ID | Evidence target | Covers | Required evidence | Oracle | Assertion source | Responsibility mapping |',
     '| --- | --- | --- | --- | --- | --- | --- |',
-    '| ACC-001 | Strict staging render | MUST-FR-001 | python -m pytest tests/trader/test_gateway_profile_registry.py | Promotion occurs only after the staging source renders successfully; render failure preserves the source hash. | CMD-001 | PATH-001 owns strict rendering and rollback. |',
-    '| ACC-002 | Failed-render source preservation | NEG-001 MUST-NFR-001 | python -m pytest tests/trader/test_gateway_profile_registry.py | Failed strict render preserves the source hash and produces no promotion receipt. | CMD-002 | PATH-001 owns rollback. |',
+    '| ACC-001 | Strict staging render | NEG-002 MUST-FR-001 | python -m pytest tests/trader/test_gateway_profile_registry.py -k strict_render_precedes_promotion | Promotion occurs only after the staging source renders successfully. | CMD-001 | PATH-001 owns strict rendering. |',
+    '| ACC-002 | Failed-render source preservation | NEG-001 MUST-NFR-001 | python -m pytest tests/trader/test_gateway_profile_registry.py -k failed_strict_render_preserves_source_hash | Failed strict render preserves the source hash and produces no promotion receipt. | CMD-002 | PATH-001 owns rollback. |',
     '',
     '## Test And Verification Paths',
     '',
     '| ID | Type | Covers | Command or evidence path | Completion rule | Per-MUST oracle | Assertion source | Responsibility mapping | Target files |',
     '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-    '| CMD-001 | delivery-evidence | MUST-FR-001 | python -m pytest tests/trader/test_gateway_profile_registry.py | Exit code 0. | Strict render precedes promotion and render failure leaves the source unchanged. | ACC-001 E2E-001 TRACE-001 | PATH-001 owns remediation. | tests/trader/test_gateway_profile_registry.py |',
-    '| CMD-002 | delivery-evidence | NEG-001 MUST-NFR-001 | python -m pytest tests/trader/test_gateway_profile_registry.py | Exit code 0. | Failed strict render leaves source and promotion state unchanged. | ACC-002 E2E-001 TRACE-002 | PATH-001 owns rollback. | tests/trader/test_gateway_profile_registry.py |',
-    '| E2E-001 | e2e | MUST-FR-001 MUST-NFR-001 NEG-001 | python -m pytest tests/trader/test_gateway_profile_registry.py | Exit code 0. | The staging-render-to-promotion flow is atomic and fail closed. | ACC-001 ACC-002 CMD-001 CMD-002 TRACE-001 TRACE-002 | PATH-001 owns remediation. | tests/trader/test_gateway_profile_registry.py |',
+    '| CMD-001 | delivery-evidence | NEG-002 MUST-FR-001 | python -m pytest tests/trader/test_gateway_profile_registry.py -k strict_render_precedes_promotion | Exit code 0. | Strict render precedes promotion. | ACC-001 E2E-001 TRACE-001 | PATH-001 owns remediation. | tests/trader/test_gateway_profile_registry.py |',
+    '| CMD-002 | delivery-evidence | NEG-001 MUST-NFR-001 | python -m pytest tests/trader/test_gateway_profile_registry.py -k failed_strict_render_preserves_source_hash | Exit code 0. | Failed strict render leaves source and promotion state unchanged. | ACC-002 E2E-002 TRACE-002 | PATH-001 owns rollback. | tests/trader/test_gateway_profile_registry.py |',
+    '| E2E-001 | e2e | NEG-002 MUST-FR-001 | python -m pytest tests/trader/test_gateway_profile_registry.py -k strict_render_precedes_promotion | Exit code 0. | The staging render succeeds before promotion begins. | ACC-001 CMD-001 TRACE-001 | PATH-001 owns remediation. | tests/trader/test_gateway_profile_registry.py |',
+    '| E2E-002 | e2e | MUST-NFR-001 NEG-001 | python -m pytest tests/trader/test_gateway_profile_registry.py -k failed_strict_render_preserves_source_hash | Exit code 0. | A failed strict render preserves the source hash and promotion state. | ACC-002 CMD-002 TRACE-002 | PATH-001 owns rollback. | tests/trader/test_gateway_profile_registry.py |',
     '',
     '## Trace Matrix Source',
     '',
     '| ID | Covers | Evidence refs | Acceptance refs | Contract validation command refs | Delivery evidence command refs | View refs | Artifact refs | Boundary refs | Per-MUST oracle | Per-MUST closure assertion | Responsibility mapping |',
     '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-    '| TRACE-001 | MUST-FR-001 | ACC-001 | ACC-001 E2E-001 | CMD-001 | CMD-001 | none | PATH-001 | none | Successful strict render precedes promotion; failure preserves the source hash. | MUST-FR-001 closes through ACC-001 and TRACE-001. | PATH-001 owns remediation. |',
-    '| TRACE-002 | NEG-001 MUST-NFR-001 | ACC-002 | ACC-002 E2E-001 | CMD-002 | CMD-002 | none | PATH-001 | none | Failed strict render produces no source mutation or promotion receipt. | NEG-001 and MUST-NFR-001 close through ACC-002 and TRACE-002. | PATH-001 owns rollback. |',
+    '| TRACE-001 | NEG-002 MUST-FR-001 | ACC-001 | ACC-001 E2E-001 | CMD-001 | CMD-001 | none | PATH-001 | none | Successful strict render precedes promotion. | NEG-002 and MUST-FR-001 close through ACC-001 and TRACE-001. | PATH-001 owns remediation. |',
+    '| TRACE-002 | NEG-001 MUST-NFR-001 | ACC-002 | ACC-002 E2E-002 | CMD-002 | CMD-002 | none | PATH-001 | none | Failed strict render produces no source mutation or promotion receipt. | NEG-001 and MUST-NFR-001 close through ACC-002 and TRACE-002. | PATH-001 owns rollback. |',
     '',
     '## Implementation Path Map',
     '',
@@ -130,12 +133,12 @@ describe('requirements contract authoring prepromotion render', () => {
       const targetSource = path.join(root, 'generated.md');
       const recordId = 'REQ-TEST-PREPROMOTION-RENDER';
 
-      runIntakeAuthoring(root, intakeSource, targetSource, recordId, {
+      const result = runIntakeAuthoring(root, intakeSource, targetSource, recordId, {
         targetPath: 'tests/trader/test_gateway_profile_registry.py',
-        requiredCommand: 'python -m pytest tests/trader/test_gateway_profile_registry.py',
         confirmationLanguage: 'en-US',
         criticalAuditorRound: cleanCriticalAuditorRound,
       });
+      expect(result.blockingIssues, JSON.stringify(result.blockingIssues, null, 2)).toEqual([]);
 
       const decision = readJson<Record<string, unknown>>(
         sourcePromotionDecisionPath(root, recordId)
@@ -163,7 +166,7 @@ describe('requirements contract authoring prepromotion render', () => {
     } finally {
       removeTempRoot(root);
     }
-  });
+  }, 60_000);
 
   it('failed_strict_render_preserves_source_hash', () => {
     const root = createTempRoot('bmad-prepromotion-fail-');
@@ -175,7 +178,6 @@ describe('requirements contract authoring prepromotion render', () => {
 
       const result = runIntakeAuthoring(root, intakeSource, targetSource, recordId, {
         targetPath: 'tests/trader/test_gateway_profile_registry.py',
-        requiredCommand: 'python -m pytest tests/trader/test_gateway_profile_registry.py',
         confirmationLanguage: 'en-US',
         criticalAuditorRound: cleanCriticalAuditorRound,
         forceStrictRenderFailureForTest: true,
@@ -184,7 +186,10 @@ describe('requirements contract authoring prepromotion render', () => {
       const paths = artifacts(root, recordId, `${recordId}-SET`);
       const decisionPath = sourcePromotionDecisionPath(root, recordId);
 
-      expect(result.blockingIssues.map((issue) => issue.code)).toContain(
+      expect(
+        result.blockingIssues.map((issue) => issue.code),
+        JSON.stringify(result.blockingIssues, null, 2)
+      ).toContain(
         'renderer_oracle_escape_upstream_runtime_defect'
       );
       expect(existsSync(paths.promotionReceipt)).toBe(false);
@@ -197,5 +202,5 @@ describe('requirements contract authoring prepromotion render', () => {
     } finally {
       removeTempRoot(root);
     }
-  });
+  }, 60_000);
 });

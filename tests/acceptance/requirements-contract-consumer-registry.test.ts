@@ -275,6 +275,26 @@ describe('requirements contract consumer registry', () => {
     }
   });
 
+  it('rejects CRLF hash inputs before publishing the registry', () => {
+    const fixtureRoot = mkdtempSync(path.join(os.tmpdir(), 'requirements-consumer-registry-eol-'));
+    try {
+      writeFixtureFile(
+        fixtureRoot,
+        REQUIREMENTS_CONTRACT_CONSUMER_REGISTRY_OWNER_PATH,
+        'export const owner = true;\r\n'
+      );
+      for (const definition of REQUIREMENTS_CONTRACT_CONSUMER_DEFINITIONS) {
+        writeFixtureFile(fixtureRoot, declaredConsumerPath(definition), 'export {};\n');
+      }
+
+      expect(() => createRequirementsContractConsumerRegistry(fixtureRoot)).toThrow(
+        `requirements_contract_projection_hash_input_not_lf:${REQUIREMENTS_CONTRACT_CONSUMER_REGISTRY_OWNER_PATH}`
+      );
+    } finally {
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
   it('publishes one tracked schema-valid registry with deterministic discovery', () => {
     expect(existsSync(REGISTRY_PATH), 'consumer registry is missing').toBe(true);
     expect(existsSync(SCHEMA_PATH), 'consumer registry schema is missing').toBe(true);
