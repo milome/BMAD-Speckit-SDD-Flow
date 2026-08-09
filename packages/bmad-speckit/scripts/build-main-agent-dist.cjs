@@ -501,8 +501,11 @@ function rewriteGoalContractCompiledRuntime(text, relativePath) {
     throw new Error('goal-contract runtime mode markers missing');
   }
   const replacement = [
-    'const SOURCE_ROOT = PACKAGE_ROOT;',
-    'const PARTITION_ASSET_ROOT = PACKAGE_ROOT;',
+    "const SOURCE_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');",
+    'const PARTITION_ASSET_ROOT =',
+    '  [PACKAGE_ROOT, SOURCE_ROOT].find((candidate) =>',
+    "    fs.existsSync(path.join(candidate, '_bmad', 'shared', 'goal-contract'))",
+    '  ) || SOURCE_ROOT;',
     'function loadDistModule(relativePath) {',
     "    return require(path.join(PACKAGE_ROOT, 'dist', relativePath));",
     '}',
@@ -528,7 +531,14 @@ function rewritePackageRuntimeImports(text, relativePath) {
     return rewritten;
   }
   const repositoryRootExpression = "path.resolve(__dirname, '..', '..', '..', '..', '..')";
-  const packageRootExpression = "path.resolve(__dirname, '..', '..', '..')";
+  const packageRootExpression = [
+    '([',
+    "  path.resolve(__dirname, '..', '..', '..'),",
+    `  ${repositoryRootExpression},`,
+    '].find((candidate) =>',
+    "  fs.existsSync(path.join(candidate, '_bmad', 'shared', 'goal-contract'))",
+    `) || ${repositoryRootExpression})`,
+  ].join('\n');
   const occurrenceCount = rewritten.split(repositoryRootExpression).length - 1;
   if (occurrenceCount !== 1) {
     throw new Error(`execution projection asset root rewrite mismatch: ${occurrenceCount}`);

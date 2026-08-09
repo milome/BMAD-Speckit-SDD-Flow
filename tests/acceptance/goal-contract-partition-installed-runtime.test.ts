@@ -524,7 +524,7 @@ describe('goal-contract partition installed runtime', () => {
         name: 'judge-role-separation',
         source: writeJudgePartitionSource(root),
         sequenceMode: 'auto',
-        expectedTaskIds: ['J01-T01', 'J01-T02', 'J01-T03', 'J01-T01-A01'],
+        expectedTaskIds: ['J01-T01-A01', 'J01-T01-A02', 'J01-T02', 'J01-T03'],
       },
     ] as const;
     const expectedSourceHashes = selfHostingCases.map(
@@ -551,12 +551,13 @@ describe('goal-contract partition installed runtime', () => {
         );
         const manifest = JSON.parse(fs.readFileSync(selfHost.out, 'utf8')) as {
           partitions?: Array<{ primaryTaskIds?: string[] }>;
-          coverageObligations?: { atomicTaskIds?: string[] };
         };
-        const manifestTaskIds = new Set(manifest.coverageObligations?.atomicTaskIds ?? []);
-        for (const expectedTaskId of expectedTaskIds) {
-          expect(manifestTaskIds.has(expectedTaskId), `${name}:${expectedTaskId}`).toBe(true);
-        }
+        const manifestTaskIds = new Set(
+          manifest.partitions?.flatMap(({ primaryTaskIds }) => primaryTaskIds ?? []) ?? []
+        );
+        expect([...manifestTaskIds], name).toEqual(
+          expect.arrayContaining([...expectedTaskIds])
+        );
         if (name === 'judge-role-separation') {
           expect(
             manifest.partitions?.some((partition) =>

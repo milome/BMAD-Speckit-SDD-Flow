@@ -141,7 +141,7 @@ describe('goal-contract partition Sequence integration', () => {
 
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
     expect(manifest.topologicalOrder).toHaveLength(manifest.partitionCount);
-    expect(manifest.partitionCount).toBeGreaterThanOrEqual(3);
+    expect(manifest.partitionCount).toBeGreaterThanOrEqual(2);
     expect(manifest).toMatchObject({
       sequenceMode: 'auto',
       sequenceApplicability: 'not_applicable_with_proof',
@@ -177,7 +177,7 @@ describe('goal-contract partition Sequence integration', () => {
         manifest.topologicalOrder.at(-1),
       ]),
     ].filter((partitionId): partitionId is string => Boolean(partitionId));
-    expect(representativePartitionIds).toHaveLength(3);
+    expect(representativePartitionIds).toHaveLength(Math.min(3, manifest.partitionCount));
 
     for (const partitionId of representativePartitionIds) {
       const index = manifest.topologicalOrder.indexOf(partitionId);

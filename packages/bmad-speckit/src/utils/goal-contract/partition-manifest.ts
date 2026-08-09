@@ -64,9 +64,12 @@ function resolveAssetRoot({
   filename = __filename,
   dirname = __dirname,
 } = {}) {
-  return filename.endsWith('.ts')
+  const packageRoot = filename.endsWith('.ts')
     ? path.resolve(dirname, '..', '..', '..', '..', '..')
     : path.resolve(dirname, '..', '..', '..');
+  return [packageRoot, path.resolve(packageRoot, '..', '..')].find((candidate) =>
+    fs.existsSync(path.join(candidate, '_bmad', 'shared', 'goal-contract'))
+  ) ?? packageRoot;
 }
 
 const ASSET_ROOT = resolveAssetRoot();
