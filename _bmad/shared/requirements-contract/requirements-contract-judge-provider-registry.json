@@ -6,7 +6,7 @@
   },
   "sourceConfig": {
     "path": "_bmad/_config/governance-remediation.yaml",
-    "hash": "sha256:a13e2be1ff68152ac5ecae3567ad8320b1349d1d075abf36b096ed11380f5687"
+    "hash": "sha256:942a0b6bc748d43ad1b5a28997e85a62dc284b5bd4a938a2e36675ca49ff6738"
   },
   "activeProviderRef": "local-codex-judge",
   "providers": [

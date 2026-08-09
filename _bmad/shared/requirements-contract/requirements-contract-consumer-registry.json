@@ -4,7 +4,7 @@
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-consumer-registry.ts",
     "hash": "sha256:41520fc5e372004bb5b5ba2b53d3172de4fcd07f0286741a200ab836655018e0"
   },
-  "registryHash": "sha256:e777686057a9cd5214a230180711729f92463383094da33d61518bec49609253",
+  "registryHash": "sha256:4f84f9633ffff2129b5038aff83f79226be57961e893445303df15091f0a3c3f",
   "validationModes": [
     "draft",
     "confirmation-ready",
@@ -63,7 +63,7 @@
     {
       "consumerId": "direct-main-session-requirement-authoring",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
-      "pathHash": "sha256:554cfae59781b3119d320dd64e9b0fc8eb3770e0287d27d72d5488dc605193cb",
+      "pathHash": "sha256:1a1e320f80cf5dd3dbbfcaa34708a66a012bdd53ec71970a0c455bcff49a8fab",
       "inputRole": "authoring_request",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",

@@ -4,7 +4,7 @@
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-canonical-assets-manifest.ts",
     "hash": "sha256:564ca77133520f13327b9361e7ee034a42976669f5b1eb59b3aec52e414b5568"
   },
-  "manifestHash": "sha256:7292e65a8ab1ef11d2af95aabcfe29a386353fe8b1dd9b8f4cfe7f97cd3d6c35",
+  "manifestHash": "sha256:dccbcab12b6050418c9f59f623ee75d0e9775015c602a124e6ea6f695bfff313",
   "assets": [
     {
       "assetId": "semantic_ir_schema",
@@ -49,7 +49,7 @@
       "role": "projection_registry",
       "assetKind": "registry",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:888bb27f81a43d6de694a466ed8608189df9ff9056a66a6e029048241bf52eaa"
+      "sha256": "sha256:afdf2a02667da349178b7452f127858c8b8eeb625996f3e4c8d1346da3789caa"
     },
     {
       "assetId": "consumer_registry",
@@ -58,7 +58,7 @@
       "role": "consumer_registry",
       "assetKind": "registry",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:e87e660bfe610b6eb569c96539628e5666af5e849fa4cf3ddc1ec69209372560"
+      "sha256": "sha256:695c5d0590e7e27b9032b6d4976a166479e8c8e0c2c4b52a3782077429e0dced"
     },
     {
       "assetId": "discovery_envelope_template",
@@ -758,7 +758,7 @@
       "role": "judge_provider_registry_projection",
       "assetKind": "registry",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:41793bb50fa39415494d2e0df56942a8a2b5f2ff133087f15fa055ac11858bda"
+      "sha256": "sha256:f5205e01c2e58b552300b0a0ee20450a8d9bbc9f444bf784d051faee3805bb72"
     },
     {
       "assetId": "judge_credential_resolver",
