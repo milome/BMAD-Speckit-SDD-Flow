@@ -66,6 +66,9 @@ jobs:
       # classify must preserve a pristine checkout for catalog provenance.
       - run: npm ci --ignore-scripts
 
+      - name: Typecheck six-model diagnostics acceptance
+        run: npx tsc --noEmit --target ES2022 --lib ES2022 --module ES2022 --moduleResolution node --strict --esModuleInterop --skipLibCheck --resolveJsonModule tests/acceptance/ci-six-model-diagnostics.test.ts
+
       - name: Resolve governed profile and changed paths
         id: profile
         shell: bash
@@ -191,7 +194,13 @@ jobs:
       - name: Publish blocked-selection diagnostic summary
         if: steps.selection-gate.outputs.execution_allowed != 'true'
         shell: bash
-        run: cat .artifacts/test-portfolio/final/six-model-ci-diagnostics.md >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          report=.artifacts/test-portfolio/final/six-model-ci-diagnostics.md
+          if [ -f "$report" ]; then
+            cat "$report" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Six-model CI diagnostics were not produced." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - uses: actions/upload-artifact@v4
         with:

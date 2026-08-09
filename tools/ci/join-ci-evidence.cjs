@@ -265,8 +265,13 @@ function laneResultKey(value) {
 
 function validateSemanticIndexManifestBinding(manifest, semanticIndex) {
   const shardPlan = manifest?.plan?.shardPlan;
+  if (!isPlainObject(semanticIndex)) {
+    fail('CI_SEMANTIC_INDEX_MANIFEST_MISMATCH');
+  }
+  const { semanticIndexHash: _semanticIndexHash, ...semanticIndexBody } = semanticIndex;
+  const canonicalBodyHash = sha256Bytes(canonicalJsonBytes(semanticIndexBody));
   if (
-    !isPlainObject(semanticIndex) ||
+    semanticIndex.semanticIndexHash !== canonicalBodyHash ||
     semanticIndex.semanticIndexHash !== manifest?.plan?.semanticIndexHash ||
     semanticIndex.selectionHash !== shardPlan?.selectionHash ||
     semanticIndex.shardPlanHash !== shardPlan?.shardPlanHash ||
@@ -443,8 +448,14 @@ function finalizeCiEvidenceWithDiagnostics({
   expectedAuthorityHashes,
   ingestionFailureInputs = [],
   finalizationFailure = null,
+  statusSnapshotRef = null,
 }) {
-  const { finalizeRunManifest, writeRunManifest } = require('./write-ci-run-manifest.cjs');
+  const {
+    finalizeRunManifest,
+    validateRunManifest,
+    writeRunManifest,
+  } = require('./write-ci-run-manifest.cjs');
+  validateRunManifest(manifest);
   let semanticFailure = null;
   let diagnosticSemanticIndex = semanticIndex;
   try {
@@ -472,7 +483,7 @@ function finalizeCiEvidenceWithDiagnostics({
       logRef: null,
     });
   }
-  const diagnostics = buildSixModelCiDiagnostics({
+  let diagnostics = buildSixModelCiDiagnostics({
     semanticIndex: diagnosticSemanticIndex,
     laneResults: laneDiagnostics.trusted,
     laneResultRefs,
@@ -481,13 +492,41 @@ function finalizeCiEvidenceWithDiagnostics({
     expectedAttemptId,
     expectedAuthorityHashes,
   });
+  let effectiveFinalizationFailure = finalizationFailure;
+  if (
+    statusSnapshot !== undefined &&
+    statusSnapshot !== null &&
+    diagnostics.statusProjection?.reasonCodes?.includes('status_projection_invalid')
+  ) {
+    const issueCode = 'CI_STATUS_SNAPSHOT_ARTIFACT_INVALID';
+    infrastructureFailureInputs.push({
+      lane: 'infrastructure',
+      shardId: 'status-snapshot',
+      outcome: 'invalid_status_snapshot_artifact',
+      evidenceStatus: { issueCode: 'status_projection_invalid' },
+      logRef: statusSnapshotRef,
+    });
+    effectiveFinalizationFailure ||= {
+      code: issueCode,
+      details: { issueCode: 'status_projection_invalid' },
+    };
+    diagnostics = buildSixModelCiDiagnostics({
+      semanticIndex: diagnosticSemanticIndex,
+      laneResults: laneDiagnostics.trusted,
+      laneResultRefs,
+      infrastructureFailureInputs,
+      statusSnapshot,
+      expectedAttemptId,
+      expectedAuthorityHashes,
+    });
+  }
   const diagnosticsReceipts = writeSixModelCiDiagnostics({
     repoRoot,
     outputDir,
     report: diagnostics,
   });
-  const finalized = semanticFailure || finalizationFailure
-    ? failedManifest(manifest, semanticFailure || finalizationFailure)
+  const finalized = semanticFailure || effectiveFinalizationFailure
+    ? failedManifest(manifest, semanticFailure || effectiveFinalizationFailure)
     : finalizeRunManifest(manifest, { laneResults });
   const manifestReceipt = writeRunManifest({
     repoRoot,
@@ -611,8 +650,19 @@ function main(args = process.argv.slice(2), repoRoot = process.cwd()) {
         repoRoot,
         filePath: path.resolve(repoRoot, options['status-snapshot']),
       }).artifact;
-    } catch {
+    } catch (error) {
       statusSnapshot = undefined;
+      finalizationFailure ||= {
+        code: 'CI_STATUS_SNAPSHOT_ARTIFACT_INVALID',
+        details: { issueCode: error.code || error.message },
+      };
+      ingestionFailureInputs.push({
+        lane: 'infrastructure',
+        shardId: 'status-snapshot',
+        outcome: 'invalid_status_snapshot_artifact',
+        evidenceStatus: { issueCode: error.code || error.message },
+        logRef: options['status-snapshot'],
+      });
     }
   }
   const result = finalizeCiEvidenceWithDiagnostics({
@@ -634,6 +684,7 @@ function main(args = process.argv.slice(2), repoRoot = process.cwd()) {
       : undefined,
     ingestionFailureInputs,
     finalizationFailure,
+    statusSnapshotRef: options['status-snapshot'] || null,
   });
   process.stdout.write(
     `${JSON.stringify({

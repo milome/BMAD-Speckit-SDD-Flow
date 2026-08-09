@@ -55,6 +55,37 @@ function requireHash(value, code) {
   return hash;
 }
 
+function validateSemanticIndexHash(semanticIndex) {
+  if (!isPlainObject(semanticIndex)) fail('CI_MANIFEST_SEMANTIC_INDEX_HASH_INVALID');
+  const semanticIndexHash = requireHash(
+    semanticIndex.semanticIndexHash,
+    'CI_MANIFEST_SEMANTIC_INDEX_HASH_INVALID'
+  );
+  const { semanticIndexHash: _declaredHash, ...body } = semanticIndex;
+  if (semanticIndexHash !== sha256Bytes(canonicalJsonBytes(body))) {
+    fail('CI_MANIFEST_SEMANTIC_INDEX_HASH_MISMATCH');
+  }
+  return semanticIndexHash;
+}
+
+function writePlanningDiagnostics({
+  repoRoot = process.cwd(),
+  outputDir = '.artifacts/test-portfolio/final',
+  semanticIndex,
+}) {
+  const semanticIndexHash = validateSemanticIndexHash(semanticIndex);
+  const {
+    buildSixModelPlanningDiagnostics,
+    writeSixModelCiDiagnostics,
+  } = require('./build-six-model-ci-diagnostics.cjs');
+  const receipts = writeSixModelCiDiagnostics({
+    repoRoot,
+    outputDir,
+    report: buildSixModelPlanningDiagnostics({ semanticIndex }),
+  });
+  return { ...receipts, semanticIndexHash };
+}
+
 function requireDenseArray(value, code, { nonEmpty = false } = {}) {
   if (!Array.isArray(value) || (nonEmpty && value.length === 0)) fail(code);
   for (let index = 0; index < value.length; index += 1) {
@@ -466,8 +497,7 @@ function main(args = process.argv.slice(2)) {
     repoRoot,
     filePath: path.resolve(repoRoot, options['semantic-index']),
   }).artifact;
-  const { buildSixModelPlanningDiagnostics } = require('./build-six-model-ci-diagnostics.cjs');
-  buildSixModelPlanningDiagnostics({ semanticIndex });
+  const planningDiagnostics = writePlanningDiagnostics({ repoRoot, semanticIndex });
   const timingSummary = readCanonicalArtifact({
     repoRoot,
     filePath: path.resolve(repoRoot, options['timing-summary']),
@@ -487,7 +517,7 @@ function main(args = process.argv.slice(2)) {
       dirty: false,
     },
     catalogHash: catalogReceipt.sha256,
-    semanticIndexHash: semanticIndex.semanticIndexHash,
+    semanticIndexHash: planningDiagnostics.semanticIndexHash,
     packageDescriptorHash: descriptorReceipt.sha256,
     tarballSha256: descriptorReceipt.artifact.tarballSha256,
     selectionHash: selectionReceipt.sha256,
@@ -522,6 +552,8 @@ module.exports = {
   finalizeRunManifest,
   main,
   parseCliArgs,
+  validateSemanticIndexHash,
   validateRunManifest,
+  writePlanningDiagnostics,
   writeRunManifest,
 };

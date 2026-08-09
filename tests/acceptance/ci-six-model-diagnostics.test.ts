@@ -13,6 +13,28 @@ const {
   validateSixModelCiDiagnostics,
 } = require('../../tools/ci/build-six-model-ci-diagnostics.cjs');
 
+type EvidenceCompleteness = 'complete' | 'partial' | 'invalid' | 'missing';
+
+type LaneResult = {
+  lane: string;
+  shardId: string;
+  outcome: string;
+  executedIdentityKeys: string[];
+  failedIdentityKeys?: string[];
+  evidenceStatus?: {
+    junit: EvidenceCompleteness;
+    timing: EvidenceCompleteness;
+  };
+  junitPath: string;
+};
+
+type EffectiveStatus =
+  | 'not_established'
+  | 'blocked'
+  | 'stale'
+  | 'pass'
+  | 'awaiting_user_acceptance';
+
 function semanticIndex() {
   const tests = [
     {
@@ -110,7 +132,7 @@ function semanticIndex() {
   return { ...body, semanticIndexHash: sha256Bytes(canonicalJsonBytes(body)) };
 }
 
-function laneResults() {
+function laneResults(): LaneResult[] {
   return [
     {
       lane: 'core',
@@ -131,7 +153,7 @@ function laneResults() {
 }
 
 function statusSnapshot(
-  effectiveStatus = 'blocked',
+  effectiveStatus: EffectiveStatus = 'blocked',
   currentMentalModel = 'audit_review',
   attemptId = 'attempt-7'
 ) {
@@ -345,7 +367,7 @@ describe('six-model CI diagnostics', () => {
     expect(markdown).not.toContain('src/shared.ts');
   });
 
-  it.each([
+  it.each<[EffectiveStatus, string[]]>([
     ['not_established', ['applicability_or_not_applicable', 'state_entry']],
     ['blocked', ['authority_rejection', 'fail_closed']],
     ['stale', ['invalidation', 'reconfirmation', 'stale_evidence_rejection']],

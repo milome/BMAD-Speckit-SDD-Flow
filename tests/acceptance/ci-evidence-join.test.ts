@@ -89,6 +89,29 @@ function fixture() {
   return { manifest, laneResults };
 }
 
+function writeJoinCliArtifacts(repoRoot: string, input: ReturnType<typeof fixture>) {
+  writeCanonicalArtifact({
+    repoRoot,
+    outputDir: '.artifacts/test-portfolio',
+    fileName: 'ci-run-manifest.json',
+    artifact: input.manifest,
+  });
+  writeCanonicalArtifact({
+    repoRoot,
+    outputDir: '.artifacts/test-portfolio',
+    fileName: 'ci-shard-semantic-index.json',
+    artifact: semanticIndex(input.manifest),
+  });
+  input.laneResults.forEach((laneResult: any, index: number) => {
+    writeCanonicalArtifact({
+      repoRoot,
+      outputDir: '.artifacts/test-portfolio/lane-results',
+      fileName: `${index}.result.json`,
+      artifact: laneResult,
+    });
+  });
+}
+
 function expectedFailureFixture() {
   const expectedInput = structuredClone(input);
   const identityKey = 'vitest::tests/feature.test.ts';
@@ -296,6 +319,84 @@ describe('fail-closed CI Evidence Join', () => {
     }
   });
 
+  it('validates the manifest before the exported diagnostics helper dereferences it', () => {
+    expect(() =>
+      finalizeCiEvidenceWithDiagnostics({
+        manifest: {},
+        laneResults: [],
+        semanticIndex: {},
+      })
+    ).toThrow('CI_MANIFEST_INVALID');
+  });
+
+  it.each(['corrupt', 'invalid'])(
+    'fails closed when the CLI status snapshot is %s',
+    (mode) => {
+      const repoRoot = mkdtempSync(join(tmpdir(), `ci-evidence-status-${mode}-`));
+      try {
+        const input = fixture();
+        writeJoinCliArtifacts(repoRoot, input);
+        const statusPath = join(repoRoot, '.artifacts/test-portfolio/status.json');
+        if (mode === 'corrupt') {
+          writeFileSync(statusPath, '{broken', 'utf8');
+        } else {
+          writeCanonicalArtifact({
+            repoRoot,
+            outputDir: '.artifacts/test-portfolio',
+            fileName: 'status.json',
+            artifact: {},
+          });
+        }
+
+        expect(
+          joinMain(
+            [
+              '--manifest',
+              '.artifacts/test-portfolio/ci-run-manifest.json',
+              '--lane-results-dir',
+              '.artifacts/test-portfolio/lane-results',
+              '--semantic-index',
+              '.artifacts/test-portfolio/ci-shard-semantic-index.json',
+              '--status-snapshot',
+              '.artifacts/test-portfolio/status.json',
+              '--expected-attempt-id',
+              'attempt-1',
+              '--expected-source-document-hash',
+              `sha256:${'a'.repeat(64)}`,
+              '--expected-implementation-confirmation-hash',
+              `sha256:${'b'.repeat(64)}`,
+              '--expected-semantic-model-hash',
+              `sha256:${'c'.repeat(64)}`,
+            ],
+            repoRoot
+          )
+        ).toBe(1);
+
+        const report = JSON.parse(
+          readFileSync(
+            join(repoRoot, '.artifacts/test-portfolio/final/six-model-ci-diagnostics.json'),
+            'utf8'
+          )
+        );
+        expect(report.failures).toContainEqual(
+          expect.objectContaining({ outcome: 'invalid_status_snapshot_artifact' })
+        );
+        const finalManifest = JSON.parse(
+          readFileSync(
+            join(repoRoot, '.artifacts/test-portfolio/final/ci-run-manifest.json'),
+            'utf8'
+          )
+        );
+        expect(finalManifest).toMatchObject({
+          status: 'failed',
+          failure: { issueCode: 'CI_STATUS_SNAPSHOT_ARTIFACT_INVALID' },
+        });
+      } finally {
+        rmSync(repoRoot, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 });
+      }
+    }
+  );
+
   it('fails closed with infrastructure diagnostics when the semantic index is corrupt', () => {
     const repoRoot = mkdtempSync(join(tmpdir(), 'ci-evidence-corrupt-semantic-index-'));
     try {
@@ -441,10 +542,19 @@ describe('fail-closed CI Evidence Join', () => {
     const repoRoot = mkdtempSync(join(tmpdir(), 'ci-evidence-rehashed-semantic-body-'));
     try {
       const input = fixture();
-      const forgedIndex = semanticIndex(input.manifest);
-      forgedIndex.tests[0].changedPaths = ['src/forged-diagnostic-path.ts'];
-      const { semanticIndexHash: _oldHash, ...forgedBody } = forgedIndex;
-      forgedIndex.semanticIndexHash = sha256Bytes(canonicalJsonBytes(forgedBody));
+      const { semanticIndexHash: _trustedHash, ...trustedBody } = semanticIndex(input.manifest);
+      const forgedBody = {
+        ...trustedBody,
+        tests: trustedBody.tests.map((test: any, index: number) =>
+          index === 0
+            ? { ...test, changedPaths: ['src/forged-diagnostic-path.ts'] }
+            : test
+        ),
+      };
+      const forgedIndex = {
+        ...forgedBody,
+        semanticIndexHash: sha256Bytes(canonicalJsonBytes(forgedBody)),
+      };
 
       const result = finalizeCiEvidenceWithDiagnostics({
         repoRoot,
@@ -460,6 +570,34 @@ describe('fail-closed CI Evidence Join', () => {
       expect(result.diagnostics.failures).toContainEqual(
         expect.objectContaining({ identityKey: null, outcome: 'invalid_semantic_index' })
       );
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects a semantic index whose canonical body no longer matches its bound hash', () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), 'ci-evidence-semantic-body-hash-'));
+    try {
+      const input = fixture();
+      const trustedIndex = semanticIndex(input.manifest);
+      const forgedIndex = {
+        ...trustedIndex,
+        tests: trustedIndex.tests.map((test: any, index: number) =>
+          index === 0 ? { ...test, changedPaths: ['src/forged-with-stale-hash.ts'] } : test
+        ),
+      };
+
+      const result = finalizeCiEvidenceWithDiagnostics({
+        repoRoot,
+        manifest: input.manifest,
+        laneResults: input.laneResults,
+        semanticIndex: forgedIndex,
+      });
+
+      expect(result.finalized).toMatchObject({
+        status: 'failed',
+        failure: { issueCode: 'CI_SEMANTIC_INDEX_MANIFEST_MISMATCH' },
+      });
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
     }

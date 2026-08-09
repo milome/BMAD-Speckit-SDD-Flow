@@ -630,7 +630,12 @@ function runGovernedProfile({
     filePath: path.resolve(repoRoot, SELECTION_PATH),
   }).artifact;
   if (!selectionAllowsExecution(selection)) {
-    const diagnosticsReceipts = planningDiagnosticsWriter(repoRoot);
+    let diagnosticsReceipts = {};
+    try {
+      diagnosticsReceipts = planningDiagnosticsWriter(repoRoot) || {};
+    } catch {
+      diagnosticsReceipts = {};
+    }
     return {
       profile,
       commitSha: normalizedCommitSha,

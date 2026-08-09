@@ -428,8 +428,14 @@ function rewriteNativeStructuredOutputTranscript(input: {
   });
 }
 
-function createFixture() {
+function createFixture(
+  options: {
+    credentialRef?: unknown;
+    onRootCreated?: (root: string) => void;
+  } = {}
+) {
   const root = mkdtempSync(path.join(tmpdir(), 'critical-auditor-judge-adapter-'));
+  options.onRootCreated?.(root);
   const configRelativePath = path.join('_bmad', '_config', 'governance-remediation.yaml');
   const configPath = path.join(root, configRelativePath);
   mkdirSync(path.dirname(configPath), { recursive: true });
@@ -451,7 +457,9 @@ function createFixture() {
     transport: 'cli',
     adapterRef: 'ClaudeCodeCliJudgeAdapter',
     apiStyle: 'cli',
-    credentialRef: 'test-claude-credential',
+    credentialRef: Object.prototype.hasOwnProperty.call(options, 'credentialRef')
+      ? options.credentialRef
+      : 'test-claude-credential',
     model: null,
     endpoint: {
       command: 'claude',
@@ -484,10 +492,14 @@ function createFixture() {
   judgeRuntime.activeProviderRef = providerRef;
   judgeRuntime.providers = { [providerRef]: provider };
   writeFileSync(configPath, yaml.dump(config, { lineWidth: -1 }), 'utf8');
-  const credentialRef = String(provider.credentialRef);
-  if (!credentialRef) {
+  const credentialRefValue = provider.credentialRef;
+  if (
+    typeof credentialRefValue !== 'string' ||
+    credentialRefValue.trim().length === 0
+  ) {
     throw new Error('test_judge_runtime_credential_ref_missing');
   }
+  const credentialRef = credentialRefValue;
   const authentication = record(
     provider.authentication,
     'test_judge_runtime_authentication_missing'
@@ -1096,6 +1108,32 @@ function newValidGapJudgeFetch(options: { includeRepairActions: boolean }): type
 }
 
 describe('requirements contract Critical Auditor Judge adapter', () => {
+  it.each([undefined, null, '', '   '])(
+    'rejects a missing fixture credential reference before writing credentials: %s',
+    (credentialRef) => {
+      let fixtureRoot: string | undefined;
+      try {
+        expect(() =>
+          createFixture({
+            credentialRef,
+            onRootCreated: (root) => {
+              fixtureRoot = root;
+            },
+          })
+        ).toThrow('test_judge_runtime_credential_ref_missing');
+      } finally {
+        if (fixtureRoot) {
+          rmSync(fixtureRoot, {
+            recursive: true,
+            force: true,
+            maxRetries: 5,
+            retryDelay: 50,
+          });
+        }
+      }
+    }
+  );
+
   it('uses the current package-controlled adapter runtime when no argv is injected', () => {
     const resolveCommand = (
       orchestration as unknown as {

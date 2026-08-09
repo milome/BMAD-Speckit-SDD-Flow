@@ -72,12 +72,16 @@ function inspectCiWorkflow({ workflowSource }) {
       String(step?.with?.name || '').startsWith('ci-final-') &&
       String(step?.with?.path || '').includes('.artifacts/test-portfolio/final/')
   );
-  const tolerantEvidenceDownloads = evidenceJoinSteps.filter(
+  const tolerantDownloads = evidenceJoinSteps.filter(
     (step) =>
       String(step?.uses || '').startsWith('actions/download-artifact@') &&
-      step?.['continue-on-error'] === true &&
-      (String(step?.with?.name || '').startsWith('ci-plan-') ||
-        String(step?.with?.pattern || '') === 'ci-lane-*')
+      step?.['continue-on-error'] === true
+  );
+  const tolerantPlanDownloads = tolerantDownloads.filter((step) =>
+    String(step?.with?.name || '').startsWith('ci-plan-')
+  );
+  const tolerantLaneDownloads = tolerantDownloads.filter(
+    (step) => String(step?.with?.pattern || '') === 'ci-lane-*'
   );
   const blockedDiagnosticsSteps = jobSteps(jobs.classify).filter(
     (step) =>
@@ -118,7 +122,8 @@ function inspectCiWorkflow({ workflowSource }) {
     ),
     diagnosticsSummaryStepCount: diagnosticsSummarySteps.length,
     diagnosticsUploadCount: diagnosticsUploads.length,
-    tolerantEvidenceDownloadCount: tolerantEvidenceDownloads.length,
+    tolerantPlanDownloadCount: tolerantPlanDownloads.length,
+    tolerantLaneDownloadCount: tolerantLaneDownloads.length,
     blockedDiagnosticsStepCount: blockedDiagnosticsSteps.length,
     blockedDiagnosticsSummaryStepCount: blockedDiagnosticsSummarySteps.length,
     prFastPlanningTimeoutEnforced:
@@ -210,7 +215,10 @@ function verifyCiAuthorityHardCut({ ciSource, releaseSource, publishSource, pack
     fail('CI_BLOCKED_DIAGNOSTICS_REQUIRED');
   }
   if (inspection.diagnosticsUploadCount !== 1) fail('CI_DIAGNOSTICS_UPLOAD_REQUIRED');
-  if (inspection.tolerantEvidenceDownloadCount !== 2) {
+  if (
+    inspection.tolerantPlanDownloadCount !== 1 ||
+    inspection.tolerantLaneDownloadCount !== 1
+  ) {
     fail('CI_DIAGNOSTICS_INGESTION_PATH_REQUIRED');
   }
   if (inspection.prFastPlanningBudgetSeconds !== 90 || !inspection.prFastPlanningTimeoutEnforced) {
@@ -271,7 +279,8 @@ function main() {
       planningAuthorityStepCount: result.planningAuthorityStepCount,
       diagnosticsSummaryStepCount: result.diagnosticsSummaryStepCount,
       diagnosticsUploadCount: result.diagnosticsUploadCount,
-      tolerantEvidenceDownloadCount: result.tolerantEvidenceDownloadCount,
+      tolerantPlanDownloadCount: result.tolerantPlanDownloadCount,
+      tolerantLaneDownloadCount: result.tolerantLaneDownloadCount,
       blockedDiagnosticsStepCount: result.blockedDiagnosticsStepCount,
       blockedDiagnosticsSummaryStepCount: result.blockedDiagnosticsSummaryStepCount,
       prFastPlanningBudgetSeconds: result.prFastPlanningBudgetSeconds,
