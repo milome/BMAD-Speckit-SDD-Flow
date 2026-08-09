@@ -423,7 +423,7 @@ describe('source materialization before deep audit', () => {
       });
       expect(missingReceipt.blockingStage).toBe('critical_auditor_round_required');
       expect(readJson(promotionReceiptPath(root, recordId))).toMatchObject({
-        promotionStage: 'current-source-receipt-refresh',
+        promotionStage: 'authoring-draft',
       });
       expect(existsSync(requestPath(root, recordId, 1))).toBe(true);
 
@@ -469,7 +469,7 @@ describe('source materialization before deep audit', () => {
       });
       expect(result.blockingStage).toBe('critical_auditor_round_required');
       expect(readJson(promotionReceiptPath(root, recordId))).toMatchObject({
-        promotionStage: 'current-source-receipt-refresh',
+        promotionStage: 'authoring-draft',
       });
       expect(existsSync(sourceMaterializationReceiptPath(root, recordId))).toBe(true);
       expect(existsSync(requestPath(root, recordId, 1))).toBe(true);
