@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import yaml from 'js-yaml';
 
 import { describe, expect, it } from 'vitest';
 import {
@@ -62,6 +63,56 @@ function compactStableHash(value: unknown): string {
             .join(',')}}`
         : (JSON.stringify(input) ?? String(input));
   return `sha256:${createHash('sha256').update(stable(value), 'utf8').digest('hex')}`;
+}
+
+function materializeInjectedCodexJudgeConfig(projectRoot: string, attemptRoot: string): string {
+  const canonicalConfig = yaml.load(
+    fs.readFileSync(
+      path.join(projectRoot, '_bmad', '_config', 'governance-remediation.yaml'),
+      'utf8'
+    )
+  ) as Record<string, unknown>;
+  const judgeRuntime = canonicalConfig.judgeRuntime as Record<string, unknown>;
+  const providerRef = String(judgeRuntime.activeProviderRef);
+  const providers = judgeRuntime.providers as Record<string, Record<string, unknown>>;
+  const provider = providers[providerRef];
+  const authentication = provider.authentication as Record<string, unknown>;
+  const credentialRef = String(provider.credentialRef);
+  const configRoot = path.join(attemptRoot, 'judge-config');
+  const privateRoot = path.join(configRoot, 'private');
+  const configPath = path.join(configRoot, 'governance-remediation.yaml');
+  const credentialPath = path.join(privateRoot, 'judge-provider.credentials.yaml');
+  const relativePath = (value: string) => path.relative(projectRoot, value).replace(/\\/gu, '/');
+
+  fs.mkdirSync(privateRoot, { recursive: true });
+  judgeRuntime.credentialConfig = {
+    ...(judgeRuntime.credentialConfig as Record<string, unknown>),
+    path: relativePath(credentialPath),
+    allowedRoot: relativePath(privateRoot),
+  };
+  fs.writeFileSync(
+    configPath,
+    yaml.dump({ judgeRuntime }, { lineWidth: 120, noRefs: true }),
+    'utf8'
+  );
+  fs.writeFileSync(
+    credentialPath,
+    yaml.dump(
+      {
+        schemaVersion: 'requirements-contract-judge-credentials/v1',
+        credentialRevision: 1,
+        providers: {
+          [credentialRef]: {
+            authenticationType: String(authentication.type),
+            apiKey: 'test-only-injected-codex-transport',
+          },
+        },
+      },
+      { lineWidth: 120, noRefs: true }
+    ),
+    'utf8'
+  );
+  return relativePath(configPath);
 }
 
 function createStandaloneGoalCloseoutFixture() {
@@ -419,6 +470,7 @@ describe('Main Agent governed Goal explicit legacy baseline', () => {
     fs.writeFileSync(campaignReportPath, '{}\n');
     fs.writeFileSync(closureReceiptPath, `${JSON.stringify(closureReceipt, null, 2)}\n`);
     fs.writeFileSync(contextPath, `${JSON.stringify(context, null, 2)}\n`);
+    const judgeConfigPath = materializeInjectedCodexJudgeConfig(projectRoot, attemptRoot);
 
     let reviewerCalls = 0;
     let finalJudgeCalls = 0;
@@ -448,7 +500,7 @@ describe('Main Agent governed Goal explicit legacy baseline', () => {
         expectedContextHash: context.contextHash,
         closureReceiptPath,
         outputRoot,
-        judgeConfigPath: '_bmad/_config/governance-remediation.yaml',
+        judgeConfigPath,
         judgePrompt: { systemPrompt: 'Return only the structured final acceptance decision.' },
         invokeReviewer: async () => {
           reviewerCalls += 1;
