@@ -735,7 +735,9 @@ describe('test portfolio policy', () => {
             evidenceKind: 'direct',
             oracleAuthority: {
               independence: 'independent',
-              evidenceRefs: ['source:tests/core/state-machine.test.ts#assertion:line:42'],
+              evidenceRefs: [
+                'source:tests/core/state-machine.test.ts#test:rejects%20invalid%20state:case:1:assertion:1',
+              ],
             },
           },
         ],
@@ -752,9 +754,17 @@ describe('test portfolio policy', () => {
 
     const foreignTest = structuredClone(valid);
     foreignTest.semanticEvidenceBindings[0].bindings[0].oracleAuthority.evidenceRefs = [
-      'source:tests/core/other.test.ts#assertion:line:42',
+      'source:tests/core/other.test.ts#test:rejects%20invalid%20state:case:1:assertion:1',
     ];
     expect(() => validateTestPolicy(foreignTest)).toThrow(
+      'POLICY_SEMANTIC_ORACLE_EVIDENCE_OUTSIDE_TEST'
+    );
+
+    const lineBoundEvidence = structuredClone(valid);
+    lineBoundEvidence.semanticEvidenceBindings[0].bindings[0].oracleAuthority.evidenceRefs = [
+      'source:tests/core/state-machine.test.ts#assertion:line:42',
+    ];
+    expect(() => validateTestPolicy(lineBoundEvidence)).toThrow(
       'POLICY_SEMANTIC_ORACLE_EVIDENCE_OUTSIDE_TEST'
     );
   });

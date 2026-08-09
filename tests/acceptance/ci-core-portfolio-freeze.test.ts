@@ -925,7 +925,9 @@ describe('dynamic permanent core freeze', () => {
             evidenceKind: 'direct',
             oracleAuthority: {
               independence: 'independent',
-              evidenceRefs: ['source:tests/scoped-oracle.test.ts#assertion:line:10'],
+              evidenceRefs: [
+                'source:tests/scoped-oracle.test.ts#test:rejects%20invalid%20state:case:1:assertion:1',
+              ],
             },
           },
           {
@@ -943,7 +945,9 @@ describe('dynamic permanent core freeze', () => {
       behaviorOracleAuthority: {
         'trace:six-model/requirement-confirmation/state-entry': {
           oracleIndependence: 'independent',
-          evidenceRefs: ['source:tests/scoped-oracle.test.ts#assertion:line:10'],
+          evidenceRefs: [
+            'source:tests/scoped-oracle.test.ts#test:rejects%20invalid%20state:case:1:assertion:1',
+          ],
         },
       },
       classifications: {
@@ -1038,9 +1042,7 @@ describe('dynamic permanent core freeze', () => {
     const tests = [
       test('vitest::tests/state-machine.test.ts', ['six-model-state-machine']),
       test('vitest::tests/cli-startup.test.ts', ['cli-startup']),
-      ...Array.from(
-        { length: policyValue.budgets.executableTestCount - 1 },
-        (_value, index) =>
+      ...Array.from({ length: policyValue.budgets.executableTestCount - 1 }, (_value, index) =>
         test(`vitest::tests/non-core-${String(index).padStart(3, '0')}.test.ts`, [], {
           selectionRefs: [],
           behaviorEvidence: {},

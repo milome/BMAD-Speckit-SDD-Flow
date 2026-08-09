@@ -303,9 +303,9 @@
           "oracleAuthority": {
             "independence": "independent",
             "evidenceRefs": [
-              "source:tests/acceptance/main-agent-delivery-truth-gate.test.ts#assertion:line:140",
-              "source:tests/acceptance/main-agent-delivery-truth-gate.test.ts#assertion:line:141",
-              "source:tests/acceptance/main-agent-delivery-truth-gate.test.ts#assertion:line:142"
+              "source:tests/acceptance/main-agent-delivery-truth-gate.test.ts#test:allows%20completion%20language%20with%20real%20delivery%20evidence%20even%20without%20long-run%20soak:case:1:assertion:1",
+              "source:tests/acceptance/main-agent-delivery-truth-gate.test.ts#test:allows%20completion%20language%20with%20real%20delivery%20evidence%20even%20without%20long-run%20soak:case:1:assertion:2",
+              "source:tests/acceptance/main-agent-delivery-truth-gate.test.ts#test:allows%20completion%20language%20with%20real%20delivery%20evidence%20even%20without%20long-run%20soak:case:1:assertion:3"
             ]
           }
         },
@@ -315,7 +315,7 @@
           "oracleAuthority": {
             "independence": "independent",
             "evidenceRefs": [
-              "source:tests/acceptance/main-agent-delivery-truth-gate.test.ts#assertion:line:219"
+              "source:tests/acceptance/main-agent-delivery-truth-gate.test.ts#test:rejects%20mixed%20%25s%20artifacts:case:1:assertion:2"
             ]
           }
         }
@@ -331,7 +331,7 @@
           "oracleAuthority": {
             "independence": "independent",
             "evidenceRefs": [
-              "source:tests/acceptance/ai-tdd-contract-gate.test.ts#assertion:line:2261"
+              "source:tests/acceptance/ai-tdd-contract-gate.test.ts#test:blocks%20closeout%20for%20mock-only%2C%20exitCode-only%2C%20and%20stale%20attempt%20evidence:case:1:assertion:3"
             ]
           }
         }
@@ -371,7 +371,7 @@
           "oracleAuthority": {
             "independence": "independent",
             "evidenceRefs": [
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:391"
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O1%20requirement%20pass%20enters%20architecture%20through%20enter_architecture_confirmation:case:1:assertion:1"
             ]
           }
         },
@@ -381,8 +381,8 @@
           "oracleAuthority": {
             "independence": "independent",
             "evidenceRefs": [
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:419",
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:428"
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O2%20architecture%20open%20reconfirmation%20fails%20closed%20before%20the%20next%20model:case:1:assertion:1",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O2%20architecture%20open%20reconfirmation%20fails%20closed%20before%20the%20next%20model:case:1:assertion:2"
             ]
           }
         },
@@ -392,10 +392,10 @@
           "oracleAuthority": {
             "independence": "independent",
             "evidenceRefs": [
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:463",
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:464",
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:467",
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:471"
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O3%20architecture%20receipt%20from%20another%20attempt%20is%20detected%20as%20stale%20before%20readiness:case:1:assertion:1",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O3%20architecture%20receipt%20from%20another%20attempt%20is%20detected%20as%20stale%20before%20readiness:case:1:assertion:2",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O3%20architecture%20receipt%20from%20another%20attempt%20is%20detected%20as%20stale%20before%20readiness:case:1:assertion:5",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O3%20architecture%20receipt%20from%20another%20attempt%20is%20detected%20as%20stale%20before%20readiness:case:1:assertion:9"
             ]
           }
         },
@@ -405,9 +405,9 @@
           "oracleAuthority": {
             "independence": "independent",
             "evidenceRefs": [
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:516",
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:518",
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:519"
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O4-O7%20routes%20four%20applicable%20models%20through%20their%20production%20decisions:case:1:assertion:1",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O4-O7%20routes%20four%20applicable%20models%20through%20their%20production%20decisions:case:1:assertion:3",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O4-O7%20routes%20four%20applicable%20models%20through%20their%20production%20decisions:case:1:assertion:4"
             ]
           }
         },
@@ -417,9 +417,9 @@
           "oracleAuthority": {
             "independence": "independent",
             "evidenceRefs": [
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:516",
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:518",
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:519"
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O4-O7%20routes%20four%20applicable%20models%20through%20their%20production%20decisions:case:1:assertion:1",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O4-O7%20routes%20four%20applicable%20models%20through%20their%20production%20decisions:case:1:assertion:3",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O4-O7%20routes%20four%20applicable%20models%20through%20their%20production%20decisions:case:1:assertion:4"
             ]
           }
         },
@@ -429,9 +429,9 @@
           "oracleAuthority": {
             "independence": "independent",
             "evidenceRefs": [
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:516",
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:518",
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:519"
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O4-O7%20routes%20four%20applicable%20models%20through%20their%20production%20decisions:case:1:assertion:1",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O4-O7%20routes%20four%20applicable%20models%20through%20their%20production%20decisions:case:1:assertion:3",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O4-O7%20routes%20four%20applicable%20models%20through%20their%20production%20decisions:case:1:assertion:4"
             ]
           }
         },
@@ -441,9 +441,9 @@
           "oracleAuthority": {
             "independence": "independent",
             "evidenceRefs": [
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:516",
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:518",
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:519"
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O4-O7%20routes%20four%20applicable%20models%20through%20their%20production%20decisions:case:1:assertion:1",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O4-O7%20routes%20four%20applicable%20models%20through%20their%20production%20decisions:case:1:assertion:3",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O4-O7%20routes%20four%20applicable%20models%20through%20their%20production%20decisions:case:1:assertion:4"
             ]
           }
         },
@@ -453,8 +453,8 @@
           "oracleAuthority": {
             "independence": "independent",
             "evidenceRefs": [
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:540",
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:543"
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O8%20execution_closure%20reconfirmation%20blocks%20audit_review:case:1:assertion:1",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O8%20execution_closure%20reconfirmation%20blocks%20audit_review:case:1:assertion:4"
             ]
           }
         },
@@ -464,8 +464,8 @@
           "oracleAuthority": {
             "independence": "independent",
             "evidenceRefs": [
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:564",
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:567"
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O9%20audit_review%20reconfirmation%20blocks%20delivery_confirmation:case:1:assertion:1",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O9%20audit_review%20reconfirmation%20blocks%20delivery_confirmation:case:1:assertion:4"
             ]
           }
         },
@@ -475,8 +475,8 @@
           "oracleAuthority": {
             "independence": "independent",
             "evidenceRefs": [
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:588",
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:591"
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O10%20delivery_confirmation%20reconfirmation%20blocks%20controlled%20closeout:case:1:assertion:1",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O10%20delivery_confirmation%20reconfirmation%20blocks%20controlled%20closeout:case:1:assertion:4"
             ]
           }
         },
@@ -486,9 +486,9 @@
           "oracleAuthority": {
             "independence": "independent",
             "evidenceRefs": [
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:611",
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:617",
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:619"
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O11%20confirm-closeout-acceptance%20writes%20record_closed%20and%20its%20event%20evidence:case:1:assertion:2",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O11%20confirm-closeout-acceptance%20writes%20record_closed%20and%20its%20event%20evidence:case:1:assertion:4",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O11%20confirm-closeout-acceptance%20writes%20record_closed%20and%20its%20event%20evidence:case:1:assertion:6"
             ]
           }
         },
@@ -498,7 +498,7 @@
           "oracleAuthority": {
             "independence": "independent",
             "evidenceRefs": [
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:698"
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O12%20resolver-guided%20synthetic%20transitions%20reach%20controlled%20record_closed:case:1:assertion:2"
             ]
           }
         },
@@ -508,8 +508,8 @@
           "oracleAuthority": {
             "independence": "independent",
             "evidenceRefs": [
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:588",
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:591"
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O10%20delivery_confirmation%20reconfirmation%20blocks%20controlled%20closeout:case:1:assertion:1",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O10%20delivery_confirmation%20reconfirmation%20blocks%20controlled%20closeout:case:1:assertion:4"
             ]
           }
         },
@@ -519,7 +519,7 @@
           "oracleAuthority": {
             "independence": "independent",
             "evidenceRefs": [
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:698"
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O12%20resolver-guided%20synthetic%20transitions%20reach%20controlled%20record_closed:case:1:assertion:2"
             ]
           }
         },
@@ -529,8 +529,8 @@
           "oracleAuthority": {
             "independence": "independent",
             "evidenceRefs": [
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:367",
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:372"
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:%60keeps%20%24%7Bstage%7D%20registry%20state%20non-authoritative%60:case:1:assertion:3",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:%60keeps%20%24%7Bstage%7D%20registry%20state%20non-authoritative%60:case:1:assertion:4"
             ]
           }
         },
@@ -540,7 +540,7 @@
           "oracleAuthority": {
             "independence": "independent",
             "evidenceRefs": [
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:698"
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O12%20resolver-guided%20synthetic%20transitions%20reach%20controlled%20record_closed:case:1:assertion:2"
             ]
           }
         },
@@ -550,8 +550,8 @@
           "oracleAuthority": {
             "independence": "independent",
             "evidenceRefs": [
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:367",
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:372"
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:%60keeps%20%24%7Bstage%7D%20registry%20state%20non-authoritative%60:case:1:assertion:3",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:%60keeps%20%24%7Bstage%7D%20registry%20state%20non-authoritative%60:case:1:assertion:4"
             ]
           }
         },
@@ -561,7 +561,7 @@
           "oracleAuthority": {
             "independence": "independent",
             "evidenceRefs": [
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:698"
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O12%20resolver-guided%20synthetic%20transitions%20reach%20controlled%20record_closed:case:1:assertion:2"
             ]
           }
         },
@@ -571,7 +571,7 @@
           "oracleAuthority": {
             "independence": "independent",
             "evidenceRefs": [
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:698"
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O12%20resolver-guided%20synthetic%20transitions%20reach%20controlled%20record_closed:case:1:assertion:2"
             ]
           }
         },
@@ -581,10 +581,10 @@
           "oracleAuthority": {
             "independence": "independent",
             "evidenceRefs": [
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:650",
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:698",
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:705",
-              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#assertion:line:713"
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O12%20resolver-guided%20synthetic%20transitions%20reach%20controlled%20record_closed:case:1:assertion:1",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O12%20resolver-guided%20synthetic%20transitions%20reach%20controlled%20record_closed:case:1:assertion:2",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O12%20resolver-guided%20synthetic%20transitions%20reach%20controlled%20record_closed:case:1:assertion:3",
+              "source:tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts#test:O12%20resolver-guided%20synthetic%20transitions%20reach%20controlled%20record_closed:case:1:assertion:4"
             ]
           }
         }

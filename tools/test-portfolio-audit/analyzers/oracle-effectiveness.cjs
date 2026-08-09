@@ -271,7 +271,12 @@ function containsBareReturn(statement) {
 
 function testDeclaration(node) {
   if (!ts.isCallExpression(node)) return undefined;
-  const name = callName(node.expression);
+  const name =
+    ts.isCallExpression(node.expression) &&
+    ts.isPropertyAccessExpression(node.expression.expression) &&
+    node.expression.expression.name.text === 'each'
+      ? callName(node.expression.expression.expression)
+      : callName(node.expression);
   if (!['it', 'test'].includes(name)) return undefined;
   const title = node.arguments[0];
   const callback = node.arguments.find(
@@ -280,8 +285,77 @@ function testDeclaration(node) {
   );
   return {
     title: title && ts.isStringLiteralLike(title) ? title.text : '',
+    titleNode: title,
     callback,
   };
+}
+
+function collectStableAssertionRefs(sourceFile, testPath, nodeAssertBindings) {
+  const byNode = new Map();
+  const records = [];
+  const titleOccurrences = new Map();
+
+  function visit(node) {
+    const declaration = testDeclaration(node);
+    if (!declaration?.callback) {
+      ts.forEachChild(node, visit);
+      return;
+    }
+
+    const title =
+      declaration.title || declaration.titleNode?.getText(sourceFile).trim() || '<missing>';
+    const occurrence = (titleOccurrences.get(title) || 0) + 1;
+    titleOccurrences.set(title, occurrence);
+    let assertionIndex = 0;
+
+    function visitTestBody(current) {
+      if (current !== declaration.callback.body && testDeclaration(current)) return;
+      const assertion = matcherCall(current, nodeAssertBindings);
+      if (assertion) {
+        assertionIndex += 1;
+        const lineEvidenceRef = lineRef(sourceFile, testPath, assertion.node, 'assertion');
+        const stableEvidenceRef = `source:${testPath}#test:${encodeURIComponent(
+          title
+        )}:case:${occurrence}:assertion:${assertionIndex}`;
+        byNode.set(assertion.node, stableEvidenceRef);
+        records.push({ lineEvidenceRef, stableEvidenceRef });
+      }
+      ts.forEachChild(current, visitTestBody);
+    }
+
+    visitTestBody(declaration.callback.body);
+  }
+
+  visit(sourceFile);
+  return { byNode, records };
+}
+
+function assertionEvidenceRefMapForFile({ repoRoot, testPath }) {
+  const parsed = parseTestFile(repoRoot, testPath);
+  if (parsed.readError) throw parsed.readError;
+  return assertionEvidenceRefMapForSource({
+    testPath: parsed.normalizedPath,
+    sourceText: parsed.sourceText,
+  });
+}
+
+function assertionEvidenceRefMapForSource({ testPath, sourceText }) {
+  const normalizedPath = normalizePath(testPath);
+  const sourceFile = ts.createSourceFile(
+    normalizedPath,
+    sourceText,
+    ts.ScriptTarget.Latest,
+    true,
+    normalizedPath.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
+  );
+  if (sourceFile.parseDiagnostics.length > 0) {
+    throw new Error('ORACLE_TEST_PARSE_ERROR');
+  }
+  return collectStableAssertionRefs(
+    sourceFile,
+    normalizedPath,
+    collectNodeAssertBindings(sourceFile)
+  ).records;
 }
 
 function collectHiddenSkipRefs(callbackBody, sourceFile, testPath) {
@@ -312,6 +386,11 @@ function collectClaims(testTitles, declaredRoles = []) {
 function collectOracleFacts(sourceFile, testPath, declaredRoles) {
   const variables = collectVariables(sourceFile);
   const nodeAssertBindings = collectNodeAssertBindings(sourceFile);
+  const stableAssertionRefs = collectStableAssertionRefs(
+    sourceFile,
+    testPath,
+    nodeAssertBindings
+  ).byNode;
   const sourceVariables = new Set();
   const processVariables = new Set();
   const assertions = [];
@@ -340,6 +419,7 @@ function collectOracleFacts(sourceFile, testPath, declaredRoles) {
     if (assertion) {
       assertions.push(assertion);
       refs.push(lineRef(sourceFile, testPath, node, 'assertion'));
+      refs.push(stableAssertionRefs.get(assertion.node));
     }
     if (ts.isCallExpression(node) && PROCESS_CALLS.has(callName(node.expression))) {
       processRefs.push(lineRef(sourceFile, testPath, node, 'process-boundary'));
@@ -571,4 +651,6 @@ module.exports = {
   DIMENSION,
   analyze,
   analyzeTestFile,
+  assertionEvidenceRefMapForFile,
+  assertionEvidenceRefMapForSource,
 };

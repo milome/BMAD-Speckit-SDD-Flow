@@ -118,6 +118,29 @@ function isCanonicalNamespacedRef(value, namespace) {
   );
 }
 
+function isStableOracleEvidenceRef(value, testPath) {
+  if (typeof value !== 'string' || value !== value.trim()) return false;
+  const prefix = `source:${testPath}#test:`;
+  if (!value.startsWith(prefix)) return false;
+  const match = /^(.+):case:([1-9][0-9]*):assertion:([1-9][0-9]*)$/u.exec(
+    value.slice(prefix.length)
+  );
+  if (!match) return false;
+  try {
+    const title = decodeURIComponent(match[1]);
+    const caseIndex = Number(match[2]);
+    const assertionIndex = Number(match[3]);
+    return (
+      title.length > 0 &&
+      encodeURIComponent(title) === match[1] &&
+      Number.isSafeInteger(caseIndex) &&
+      Number.isSafeInteger(assertionIndex)
+    );
+  } catch {
+    return false;
+  }
+}
+
 function requireInteger(value, code, minimum = 0, maximum = Number.MAX_SAFE_INTEGER) {
   if (!Number.isSafeInteger(value) || value < minimum || value > maximum) fail(code);
   return value;
@@ -466,14 +489,8 @@ function validateSemanticEvidenceBindings(policy) {
           'POLICY_SEMANTIC_ORACLE_EVIDENCE_INVALID',
           { nonEmpty: true }
         );
-        const expectedPrefix = `source:${testPath}#assertion:line:`;
         for (const oracleEvidenceRef of oracleEvidenceRefs) {
-          const line = oracleEvidenceRef.slice(expectedPrefix.length);
-          if (
-            !oracleEvidenceRef.startsWith(expectedPrefix) ||
-            !/^[1-9][0-9]*$/u.test(line) ||
-            !isCanonicalNamespacedRef(oracleEvidenceRef, 'source')
-          ) {
+          if (!isStableOracleEvidenceRef(oracleEvidenceRef, testPath)) {
             fail('POLICY_SEMANTIC_ORACLE_EVIDENCE_OUTSIDE_TEST', {
               evidenceRef,
               identity,
@@ -895,6 +912,7 @@ module.exports = {
   expandCapabilityBehaviorBindings,
   expandSemanticObligations,
   isCanonicalNamespacedRef,
+  isStableOracleEvidenceRef,
   readTestPolicy,
   validateSemanticJourneys,
   validateTestPolicy,
