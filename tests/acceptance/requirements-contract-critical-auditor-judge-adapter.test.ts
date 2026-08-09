@@ -489,9 +489,6 @@ function createFixture(
       maxBudgetUsd: 5,
     },
   };
-  judgeRuntime.activeProviderRef = providerRef;
-  judgeRuntime.providers = { [providerRef]: provider };
-  writeFileSync(configPath, yaml.dump(config, { lineWidth: -1 }), 'utf8');
   const credentialRefValue = provider.credentialRef;
   if (
     typeof credentialRefValue !== 'string' ||
@@ -500,6 +497,9 @@ function createFixture(
     throw new Error('test_judge_runtime_credential_ref_missing');
   }
   const credentialRef = credentialRefValue;
+  judgeRuntime.activeProviderRef = providerRef;
+  judgeRuntime.providers = { [providerRef]: provider };
+  writeFileSync(configPath, yaml.dump(config, { lineWidth: -1 }), 'utf8');
   const authentication = record(
     provider.authentication,
     'test_judge_runtime_authentication_missing'
@@ -1108,7 +1108,7 @@ function newValidGapJudgeFetch(options: { includeRepairActions: boolean }): type
 }
 
 describe('requirements contract Critical Auditor Judge adapter', () => {
-  it.each([undefined, null, '', '   '])(
+  it.each([undefined, null, '', '   ', () => undefined])(
     'rejects a missing fixture credential reference before writing credentials: %s',
     (credentialRef) => {
       let fixtureRoot: string | undefined;
@@ -1123,6 +1123,17 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
         ).toThrow('test_judge_runtime_credential_ref_missing');
       } finally {
         if (fixtureRoot) {
+          expect(
+            existsSync(
+              path.join(
+                fixtureRoot,
+                '_bmad-output',
+                'config',
+                'private',
+                'judge-provider.credentials.yaml'
+              )
+            )
+          ).toBe(false);
           rmSync(fixtureRoot, {
             recursive: true,
             force: true,
