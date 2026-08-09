@@ -206,7 +206,7 @@ describe('strict command resolution preflight', () => {
     }
   );
 
-  it('fails closed when no consumer or package-owned skill can resolve a command-only placeholder', () => {
+  it('fails closed when a package-owned skill lacks the declared command entrypoint', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'strict-command-skill-dir-missing-'));
     const previousCwd = process.cwd();
     try {
@@ -227,11 +227,11 @@ describe('strict command resolution preflight', () => {
       kind: contract_validation
       command: node <skill-dir>/scripts/missing.ts
       packageScripts: []
-      entrypoints: []
+      entrypoints: ["<skill-dir>/scripts/missing.ts"]
       testGlobs: []
       mustResolve:
         packageScriptsExist: false
-        entrypointsExist: false
+        entrypointsExist: true
         testFilesExist: false
 `
       );
@@ -246,9 +246,13 @@ describe('strict command resolution preflight', () => {
       ]);
       expect(code).toBe(1);
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
-      expect(record.gateChecks.at(-1).blockingReasons).toContain(
-        'command_unresolved:CMD-MISSING-SKILL:command_placeholder_or_unsubstituted_token'
-      );
+      expect(
+        record.gateChecks
+          .at(-1)
+          .blockingReasons.some((reason: string) =>
+            reason.startsWith('command_unresolved:CMD-MISSING-SKILL:entrypoint_missing:')
+          )
+      ).toBe(true);
     } finally {
       process.chdir(previousCwd);
       rmSync(root, { recursive: true, force: true });

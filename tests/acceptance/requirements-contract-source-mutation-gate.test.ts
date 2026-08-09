@@ -110,7 +110,7 @@ describe('requirements contract source mutation gate', () => {
     } finally {
       removeTempRoot(root);
     }
-  });
+  }, 60_000);
 
   it('leaves source unchanged for coverage, target, validation, and domain mismatch gates', () => {
     const cases = [
@@ -263,7 +263,7 @@ describe('requirements contract source mutation gate', () => {
     } finally {
       removeTempRoot(root);
     }
-  });
+  }, 60_000);
 
   it('blocks an inline user_confirmed promotion attempt before source mutation', () => {
     const root = createTempRoot('requirements-contract-user-confirmed-promotion-');

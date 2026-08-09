@@ -13822,7 +13822,9 @@ function planProductionSemanticSourceRootCandidates(input: {
       `Registered Source Root inventory mismatch: ${JSON.stringify(inventoryValidation)}`
     );
   }
-  return roots;
+  return roots.map((root) =>
+    root.sourcePath === sourcePath ? { ...root, sourceContent: input.sourceText } : root
+  );
 }
 
 function buildPreConfirmationImplementationConfirmationDraft(input: {
@@ -16413,6 +16415,7 @@ function buildSourceMaterializationRequiredResult(input: {
 }
 
 const CURRENT_SOURCE_PROMOTION_REFRESHABLE_ISSUES = new Set([
+  'promotion_receipt_missing',
   'promotion_receipt_source_hash_stale',
   'promotion_receipt_confirmation_hash_stale',
   'promotion_receipt_manifest_draft_hash_stale',
@@ -24101,92 +24104,6 @@ function runCriticalAuditorReceiptLoop(input: {
   const issues: PreConfirmationDrilldownIssue[] = [];
   let latestReceiptHash: string | null = null;
   let consecutiveNoNewGapRounds = 0;
-  if (!input.roundProvider) {
-    const roundIndex = 1;
-    const gateDryRun = buildCriticalAuditorGateDryRunSummary({
-      root: input.root,
-      sourcePath: input.sourcePath,
-      paths: input.paths,
-      roundIndex,
-    });
-    const candidateRequest = buildCriticalAuditorRoundRequest({
-      root: input.root,
-      sourcePath: input.sourcePath,
-      recordId: input.recordId,
-      roundIndex,
-      transactionId: input.transaction.transactionId,
-      namespaceVersion: input.transaction.namespaceVersion,
-      sourceDocumentHash: input.sourceDocumentHash,
-      semanticModelHash: input.semanticModelHash,
-      implementationConfirmationHash: input.implementationConfirmationHash,
-      packetHash: input.packetHash,
-      projectionSetHash,
-      auditAttemptId,
-      independentProviderBinding: providerBinding.binding,
-      independentProviderBindingIssueCodes: providerBinding.issueCodes,
-      auditInputHash: input.auditInputHash,
-      mustRequirements: input.mustRefs.map((id, index) => ({
-        id,
-        text: input.sourceRequirementTexts[index] ?? id,
-        sourceLine: index + 1,
-      })),
-      packet: input.packet,
-      confirmation: sourceExtraction.confirmation,
-      previousReceipts: [],
-      gateDryRun,
-      createdAt: input.createdAt,
-    });
-    const requestPath = criticalAuditorRequestPath(input.transaction, roundIndex);
-    writeOrReuseCriticalAuditorRoundRequest({
-      requestPath,
-      candidate: candidateRequest,
-    });
-    const providerIssue = preConfirmationIssue(
-      'critical_auditor_provider_mode_required',
-      'A real Critical Auditor round provider is required; synthetic clean receipts are not allowed',
-      ['critical_auditor_receipt_loop'],
-      'critical_auditor'
-    );
-    const outcomeCommit = commitCriticalAuditorCheckpointOutcome({
-      root: input.root,
-      sourcePath: input.sourcePath,
-      paths: input.paths,
-      transaction: input.transaction,
-      recordId: input.recordId,
-      requirementSetId: input.requirementSetId,
-      implementationAttemptId: input.implementationAttemptId,
-      auditInputHash: input.auditInputHash,
-      sourceDocumentHash: input.sourceDocumentHash,
-      semanticModelHash: input.semanticModelHash,
-      implementationConfirmationHash: input.implementationConfirmationHash,
-      packetHash: input.packetHash,
-      projectionSetHash,
-      roundIndex,
-      requestPath,
-      bindingRounds,
-      blockingIssues: [providerIssue],
-      createdAt: input.createdAt,
-    });
-    return {
-      latestReceiptHash: null,
-      consecutiveNoNewGapRounds: 0,
-      receipts: [],
-      requestPath,
-      continuation: {
-        providerMode: 'main_session_inline',
-        transactionId: input.transaction.transactionId,
-        namespaceVersion: input.transaction.namespaceVersion,
-        roundIndex,
-        requestPath: toRootRelativePath(input.root, requestPath),
-        responsePath: toRootRelativePath(
-          input.root,
-          criticalAuditorResponsePath(input.transaction, roundIndex)
-        ),
-        nextRequiredAction: 'run_main_session_critical_auditor_round',
-      },
-      issues: [providerIssue, ...(outcomeCommit.ok ? [] : [outcomeCommit.issue])],
-    };
-  }
   let pendingRequestPath: string | null = null;
   let continuation: Record<string, unknown> | null = null;
   const provider = input.roundProvider;
@@ -25497,6 +25414,19 @@ function findCurrentCriticalAuditorResponsePath(authoringDir: string): string {
   return fs.existsSync(responsePath) ? responsePath : '';
 }
 
+function findLatestCriticalAuditorResponsePath(authoringDir: string): string {
+  if (!fs.existsSync(authoringDir)) return '';
+  const latest = fs
+    .readdirSync(authoringDir)
+    .map((fileName) => ({
+      fileName,
+      roundIndex: Number(/^critical-auditor-round-response-(\d+)\.json$/u.exec(fileName)?.[1] ?? 0),
+    }))
+    .filter((entry) => entry.roundIndex > 0)
+    .sort((left, right) => right.roundIndex - left.roundIndex)[0];
+  return latest ? path.join(authoringDir, latest.fileName) : '';
+}
+
 function archiveCriticalAuditorArtifacts(input: {
   authoringDir: string;
   stagingDir?: string;
@@ -26423,6 +26353,8 @@ function validateCriticalAuditorResponse(input: {
       independentProviderEvidence: isNoNewGapVerdict(verdict)
         ? (parsed.independentProviderEvidence as CriticalAuditorIndependentProviderEvidence)
         : undefined,
+      providerInvocationReceiptRef: recordObject(parsed.providerInvocationReceiptRef),
+      judgeAdapterHostExecution: recordObject(parsed.judgeAdapterHostExecution),
       rationale: normalizeText(parsed.rationale),
     },
     issues: [],
@@ -26784,9 +26716,6 @@ function resumePendingCriticalAuditorGapPromotion(input: {
     normalizeText(decision.targetRawHashBefore) || normalizeText(decision.sourceDocumentHashBefore);
   const rawHashAfter =
     normalizeText(decision.targetRawHashAfter) || normalizeText(decision.sourceDocumentHashAfter);
-  if (currentRawHash === rawHashAfter) {
-    return { status: 'none' };
-  }
 
   const artifacts = [
     input.paths.sourceMutationDecision,
@@ -26824,11 +26753,19 @@ function resumePendingCriticalAuditorGapPromotion(input: {
       ]
     );
   }
+  const semanticHashBefore = normalizeText(decision.semanticSourceHashBefore);
+  const semanticHashAfter = normalizeText(decision.semanticSourceHashAfter);
+  const currentMatchesBefore =
+    currentRawHash === rawHashBefore &&
+    semanticHashBefore === input.currentSourceDocumentHash;
+  const currentMatchesAfter =
+    currentRawHash === rawHashAfter &&
+    semanticHashAfter === input.currentSourceDocumentHash;
+  const repairDraftRawHash = sha256File(repairDraftPath);
   if (
-    currentRawHash !== rawHashBefore ||
-    sha256File(repairDraftPath) !== rawHashAfter ||
-    normalizeText(decision.semanticSourceHashBefore) !== input.currentSourceDocumentHash ||
-    normalizeText(decision.semanticSourceHashAfter) === input.currentSourceDocumentHash
+    rawHashBefore === rawHashAfter ||
+    (!currentMatchesBefore && !currentMatchesAfter) ||
+    (currentMatchesBefore && repairDraftRawHash !== rawHashAfter)
   ) {
     return blocked(
       'pending_source_gap_promotion_hash_binding_invalid',
@@ -26836,18 +26773,24 @@ function resumePendingCriticalAuditorGapPromotion(input: {
       [
         currentRawHash,
         rawHashBefore,
-        sha256File(repairDraftPath),
+        repairDraftRawHash,
         rawHashAfter,
         input.currentSourceDocumentHash,
-        normalizeText(decision.semanticSourceHashBefore),
-        normalizeText(decision.semanticSourceHashAfter),
+        semanticHashBefore,
+        semanticHashAfter,
       ]
     );
   }
-  const repairDraft = readMaterializedConfirmation(repairDraftPath);
+  const repairDraft = readMaterializedConfirmation(
+    currentMatchesAfter ? input.sourcePath : repairDraftPath
+  );
   if (
-    repairDraft.sourceDocumentHash !== normalizeText(decision.semanticSourceHashAfter) ||
-    repairDraft.implementationConfirmationHash === input.currentImplementationConfirmationHash
+    repairDraft.sourceDocumentHash !== semanticHashAfter ||
+    (currentMatchesAfter
+      ? repairDraft.implementationConfirmationHash !== input.currentImplementationConfirmationHash
+      : repairDraft.sourceDocumentHash === input.currentSourceDocumentHash &&
+        repairDraft.implementationConfirmationHash ===
+          input.currentImplementationConfirmationHash)
   ) {
     return blocked(
       'pending_source_gap_promotion_semantic_binding_invalid',
@@ -26855,10 +26798,13 @@ function resumePendingCriticalAuditorGapPromotion(input: {
       [
         repairDraft.sourceDocumentHash,
         repairDraft.implementationConfirmationHash,
-        normalizeText(decision.semanticSourceHashAfter),
+        semanticHashAfter,
         input.currentImplementationConfirmationHash,
       ]
     );
+  }
+  if (currentMatchesAfter) {
+    return { status: 'none' };
   }
   if (!input.responsePath || !fs.existsSync(input.responsePath)) {
     return blocked(
@@ -26900,6 +26846,16 @@ function resumePendingCriticalAuditorGapPromotion(input: {
   const requestGateDryRun = recordObject(request.gateDryRun);
   const requestGateDryRunHash =
     normalizeText(requestGateDryRun.gateDryRunHash) || normalizeText(requestGateDryRun.hash);
+  const normalizedResponseValidatedGaps = asRecordArray(response.validatedGaps).map((gap) => ({
+    ...gap,
+    repairActions: asRecordArray(gap.repairActions).map((action) => ({
+      ...action,
+      targetField: normalizeText(action.targetField).replace(
+        /^implementationConfirmation\./u,
+        ''
+      ),
+    })),
+  }));
   const auditBindingsMatch =
     receiptHashCandidates.has(receiptHash) &&
     normalizeText(response.verdict) === 'new_valid_gap' &&
@@ -26920,7 +26876,7 @@ function resumePendingCriticalAuditorGapPromotion(input: {
     normalizeText(response.packetHash) === normalizeText(request.packetHash) &&
     normalizeText(receipt.packetHash) === normalizeText(request.packetHash) &&
     sha256Json(asRecordArray(receipt.validatedGaps)) ===
-      sha256Json(asRecordArray(response.validatedGaps));
+      sha256Json(normalizedResponseValidatedGaps);
   if (!auditBindingsMatch) {
     return blocked(
       'pending_source_gap_promotion_audit_binding_invalid',
@@ -26973,7 +26929,10 @@ function resumePendingCriticalAuditorGapPromotion(input: {
   }
   artifacts.push(gapFix.receiptPath, input.paths.checkpointPersistenceEvidence);
   const materialized = gapFix.materialized;
-  if (materialized.sourceDocumentHash === input.currentSourceDocumentHash) {
+  if (
+    materialized.sourceDocumentHash === input.currentSourceDocumentHash &&
+    materialized.implementationConfirmationHash === input.currentImplementationConfirmationHash
+  ) {
     return blocked(
       'pending_source_gap_promotion_result_hash_mismatch',
       'Recovered validated-gap source promotion did not change the current semantic source hash.',
@@ -27284,6 +27243,41 @@ export function runMainAgentAuthoringRepair(
     });
   }
   const responsePath = findCurrentCriticalAuditorResponsePath(paths.authoringDir);
+  const pendingGapPromotion = resumePendingCriticalAuditorGapPromotion({
+    root,
+    sourcePath,
+    paths,
+    recordId: identity.recordId,
+    requirementSetId: identity.requirementSetId,
+    implementationAttemptId,
+    responsePath: responsePath || findLatestCriticalAuditorResponsePath(paths.authoringDir),
+    currentSourceDocumentHash: initialSourceDocumentHash,
+    currentImplementationConfirmationHash: initialImplementationConfirmationHash,
+  });
+  if (pendingGapPromotion.status === 'blocked') {
+    return buildAuthoringRepairResult({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      paths,
+      status: 'blocked',
+      blockingStage: 'source_gap_fix_materialization_required',
+      nextRequiredAction: 'resume_pending_source_gap_promotion',
+      sourceDocumentHash: initialSourceDocumentHash,
+      implementationConfirmationHash: initialImplementationConfirmationHash,
+      warnings: initialWarnings,
+      issues: [pendingGapPromotion.issue],
+      artifacts: pendingGapPromotion.artifacts,
+    });
+  }
+  if (pendingGapPromotion.status === 'resumed') {
+    const resumed = runMainAgentAuthoringRepair(root, options);
+    return {
+      ...resumed,
+      artifacts: uniqueNonEmpty([...pendingGapPromotion.artifacts, ...resumed.artifacts]),
+    };
+  }
   const initialMaterializationGate = verifySourceMaterializationBeforeAudit({
     root,
     sourcePath,
@@ -35868,6 +35862,7 @@ export interface MainAgentConfirmScopeResult {
   action:
     | 'confirm-scope'
     | 'confirm-closeout-acceptance'
+    | 'refresh-confirmation-projection'
     | 'repair-confirmation-bookkeeping'
     | 'route-confirmation-drift';
   delegatedEntry: string;
@@ -36477,6 +36472,68 @@ export function runMainAgentConfirmationBookkeepingRepair(
   };
 }
 
+function runMainAgentConfirmationProjectionRefresh(
+  root: string,
+  args: Record<string, string | undefined>
+): MainAgentConfirmScopeResult {
+  const entry = resolveSkillScript(root, 'ingest-confirmation-event.js');
+  const source = normalizeText(args.source);
+  const renderReport = normalizeText(args.renderReport);
+  const requirementRecord = normalizeText(args.requirementRecord);
+  const confirmationText = normalizeText(args.confirmationText);
+  if (!fs.existsSync(entry)) {
+    throw new Error(`controlled confirmation projection entry missing: ${entry}`);
+  }
+  if (!source || !renderReport || !requirementRecord || !confirmationText) {
+    throw new Error(
+      'confirmation projection refresh requires source, render report, requirement record, and confirmation text'
+    );
+  }
+
+  const delegatedArgs = [
+    '--source',
+    path.resolve(root, stripWrappingQuotes(source)),
+    '--render-report',
+    path.resolve(root, stripWrappingQuotes(renderReport)),
+    '--requirement-record',
+    path.resolve(root, stripWrappingQuotes(requirementRecord)),
+    '--confirmation-text',
+    confirmationText,
+    '--confirmed-by',
+    args.confirmedBy ?? 'main-agent-orchestration',
+    '--update-source',
+    'false',
+    '--json',
+  ];
+  pushOptionalArg(delegatedArgs, '--confirmed-at', args.confirmedAt, root);
+  pushOptionalArg(delegatedArgs, '--record-id', args.recordId, root);
+  pushOptionalArg(delegatedArgs, '--requirement-set-id', args.requirementSetId, root);
+  pushOptionalArg(delegatedArgs, '--event-log', args.eventLog, root, true);
+  pushOptionalArg(delegatedArgs, '--artifact-index', args.artifactIndex, root, true);
+
+  const step = spawnSync(process.execPath, [entry, ...delegatedArgs], {
+    cwd: root,
+    encoding: 'utf8',
+  });
+  let parsedStdout: unknown = undefined;
+  if (step.stdout.trim()) {
+    try {
+      parsedStdout = JSON.parse(step.stdout);
+    } catch {
+      parsedStdout = step.stdout.trim();
+    }
+  }
+  return {
+    ok: step.status === 0,
+    action: 'refresh-confirmation-projection',
+    delegatedEntry: path.relative(root, entry).replace(/\\/g, '/'),
+    exitCode: step.status ?? 2,
+    ...(parsedStdout !== undefined ? { stdout: parsedStdout } : {}),
+    ...(step.stderr.trim() ? { stderr: step.stderr.trim() } : {}),
+    mainAgentStageSummary: stageSummaryForCommandResult(root, args, parsedStdout),
+  };
+}
+
 function loadConfirmationDriftClassifier(root: string): {
   classifyConfirmationDrift: (input: Record<string, unknown>) => Record<string, unknown>;
 } {
@@ -36822,14 +36879,13 @@ export function runMainAgentConfirmationDriftRoute(
         classification,
       };
     }
-    const delegatedResult = runMainAgentConfirmScope(root, {
+    const delegatedResult = runMainAgentConfirmationProjectionRefresh(root, {
       ...args,
       renderReport: renderReportPath,
       confirmationText: confirmationTextFromRenderReport({
         ...renderReport,
         confirmationPageHash: priorProjectionHash,
       }),
-      updateSource: 'false',
     });
     return {
       ok: delegatedResult.ok,

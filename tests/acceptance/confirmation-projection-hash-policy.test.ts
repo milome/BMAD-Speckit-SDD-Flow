@@ -7,11 +7,13 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
 import { mainImplementationReadinessGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate';
 import { runMainAgentConfirmationDriftRoute } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
+import { resolvePackageOwnedBmadPath } from '../../packages/bmad-speckit/src/main-agent/runtime/package-bmad-root';
 import {
   extractRequirementsContractImplementationConfirmation,
   implementationConfirmationHashFor,
   sourceDocumentHashFor,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-implementation-confirmation-codec';
+import { writePassingSourcePrdLintReport } from '../helpers/source-prd-lint-fixture';
 
 const ROOT = process.cwd();
 const INGEST = path.join(
@@ -221,6 +223,26 @@ implementationConfirmation:
       canModifyWriterRegistry: false
       registryHash: "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
       architectureConfirmationHash: "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    - writerId: implementation-readiness-gate-writer
+      scriptPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate.ts"
+      scriptContentHash: "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      ownerModel: requirements_contract
+      allowedWriteApis: ["appendControlEvent", "atomicWriteRequirementRecord"]
+      allowedPaths:
+        - "_bmad-output/runtime/requirement-records/<requirement-set-id>/**"
+      allowedEventTypes:
+        - implementation_readiness_result_recorded
+      payloadContractRefs:
+        - implementation_readiness_result_recorded
+      writesControlFields:
+        - gateChecks
+        - runtimeStatus
+        - readinessBaselineMetadata
+      receiptPath: "_bmad-output/runtime/requirement-records/<requirement-set-id>/receipts/implementation-readiness-gate-writer/<receipt-id>.json"
+      beforeAfterHashRequired: true
+      canModifyWriterRegistry: false
+      registryHash: "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+      architectureConfirmationHash: "sha256:3333333333333333333333333333333333333333333333333333333333333333"
   openQuestions: []
   failurePaths:
     - id: FAIL-039
@@ -633,7 +655,7 @@ function runPrompt(source: string, requirementRecord: string): { stdout: string;
       [
         REQ_TRACE_PROMPT,
         '--entry',
-        'standalone_tasks',
+        'req_trace_direct',
         '--source-document',
         source,
         '--requirement-record',
@@ -833,6 +855,10 @@ describe('confirmation projection hash policy', () => {
         path.join(tempDir, 'tests', 'acceptance', 'confirmation-projection-hash-policy.test.ts')
       )
     ).toBe(true);
+    writePassingSourcePrdLintReport({
+      requirementRecordPath: recordPath(),
+      sourcePath: source,
+    });
     const previousCwd = process.cwd();
     let readiness = 1;
     try {
@@ -904,8 +930,15 @@ describe('confirmation projection hash policy', () => {
       .checks.find(
         (check: Record<string, unknown>) => check.id === 'implementation-readiness-stage-audit'
       );
-    expect(portablePath(String(stageAuditCheck.scriptPath))).toContain(
-      '.cursor/skills/requirements-contract-authoring/scripts/audit_implementation_readiness.js'
+    expect(portablePath(String(stageAuditCheck.scriptPath))).toBe(
+      portablePath(
+        resolvePackageOwnedBmadPath(
+          'skills',
+          'requirements-contract-authoring',
+          'scripts',
+          'audit_implementation_readiness.js'
+        )
+      )
     );
     const prompt = runPrompt(source, recordPath());
     expect(prompt.status).toBe(0);

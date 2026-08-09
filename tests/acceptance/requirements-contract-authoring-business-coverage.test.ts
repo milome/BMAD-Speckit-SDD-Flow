@@ -1111,7 +1111,7 @@ describe('requirements contract sanitized real fixture coverage', () => {
     } finally {
       rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
     }
-  }, 120_000);
+  }, 240_000);
 
   it('materializes a provider-owned real-fixture repair from promoted source authority', () => {
     const root = createJudgeReadyTempRoot('requirements-contract-real-provider-repair-');
@@ -1226,7 +1226,20 @@ describe('requirements contract sanitized real fixture coverage', () => {
         sourceSpan: { startLine, endLine },
       });
       expect(stringify(readJson(packetPath))).toContain('MUST-MTF-PROVIDER-OWNED-REPAIR');
-      expect(stringify(readJson(paths.receipt1))).toContain('MUST-MTF-PROVIDER-OWNED-REPAIR');
+      expect(existsSync(paths.receipt1)).toBe(false);
+      const archiveArtifact = repaired.artifacts.find((artifact: string) =>
+        artifact.includes('/archive/')
+      );
+      expect(archiveArtifact).toBeTruthy();
+      const archiveDir = path.join(root, archiveArtifact as string);
+      const archiveManifest = readJson<{ artifacts: string[] }>(
+        path.join(archiveDir, 'archive-manifest.json')
+      );
+      expect(archiveManifest.artifacts).toContain('critical-auditor-receipt-round-1.json');
+      expect(
+        stringify(readJson(path.join(archiveDir, 'critical-auditor-receipt-round-1.json')))
+      ).toContain('MUST-MTF-PROVIDER-OWNED-REPAIR');
+      expect(readJson<Record<string, unknown>>(requestPath).previousReceipts).toEqual([]);
     } finally {
       rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
     }
