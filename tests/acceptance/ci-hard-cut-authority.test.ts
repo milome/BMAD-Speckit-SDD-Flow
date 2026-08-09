@@ -66,6 +66,7 @@ function runProfileWithSelectionStatus(
   let timingSummaryExistsAtFreeze: boolean | null = null;
   let failureRecordsExistsAtCoverage: boolean | null = null;
   let coverageArgs: string[] | null = null;
+  let planningDiagnosticsWritten = false;
   let elapsedMs = 0;
   const spawn = (_file: string, args: string[]) => {
     const scriptName = args[0] === 'run' ? args[1] : args[0];
@@ -140,6 +141,13 @@ function runProfileWithSelectionStatus(
       now: () => elapsedMs,
       listTrackedChanges: () => [],
       restoreTrackedChanges: () => {},
+      planningDiagnosticsWriter: () => {
+        planningDiagnosticsWritten = true;
+        return {
+          json: { path: join(repoRoot, '.artifacts/test-portfolio/final/diagnostics.json') },
+          markdown: { path: join(repoRoot, '.artifacts/test-portfolio/final/diagnostics.md') },
+        };
+      },
     });
     return {
       calls,
@@ -149,12 +157,13 @@ function runProfileWithSelectionStatus(
       timingSummaryExistsAtFreeze,
       failureRecordsExistsAtCoverage,
       coverageArgs,
+      planningDiagnosticsWritten,
       timingSummary: existsSync(timingSummaryPath)
         ? JSON.parse(readFileSync(timingSummaryPath, 'utf8'))
         : null,
     };
   } finally {
-    rmSync(repoRoot, { recursive: true, force: true });
+    rmSync(repoRoot, { recursive: true, force: true, maxRetries: 3, retryDelay: 20 });
   }
 }
 
@@ -172,6 +181,26 @@ function sources() {
 }
 
 describe('CI authority hard cut', () => {
+  it('clears a stale semantic index before a governed run', () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), 'ci-semantic-index-reset-'));
+    try {
+      const { resetGeneratedEvidence } = require('../../tools/ci/run-governed-profile.cjs');
+      const receipt = writeCanonicalArtifact({
+        repoRoot,
+        outputDir: '.artifacts/test-portfolio',
+        fileName: 'ci-shard-semantic-index.json',
+        artifact: { stale: true },
+      });
+      expect(existsSync(receipt.path)).toBe(true);
+
+      resetGeneratedEvidence(repoRoot);
+
+      expect(existsSync(receipt.path)).toBe(false);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
   it('keeps the local test:ci compatibility path on the governed authorities', () => {
     const {
       buildGovernedProfileCommands,
@@ -199,6 +228,7 @@ describe('CI authority hard cut', () => {
       'ci:coverage-gap',
       'ci:select',
       'ci:shard-plan',
+      'ci:semantic-index',
       'ci:prepare-package',
       'ci:manifest',
       'ci:prepare-shard-runtime',
@@ -248,10 +278,29 @@ describe('CI authority hard cut', () => {
         'windows-x64-node22',
       ],
     });
+    expect(commands[5]).toEqual({
+      scriptName: 'ci:semantic-index',
+      directNodeScript: 'tools/ci/build-shard-semantic-index.cjs',
+      args: [
+        '--selection',
+        '.artifacts/test-portfolio/test-selection.json',
+        '--shard-plan',
+        '.artifacts/test-portfolio/ci-shard-plan.json',
+        '--coverage-report',
+        '.artifacts/test-portfolio/six-model-coverage-gap-report.json',
+        '--catalog',
+        '.artifacts/test-portfolio/test-catalog.json',
+        '--changed-paths',
+        '.artifacts/test-portfolio/changed-paths.json',
+      ],
+    });
     expect(commands[1].directNodeScript).toBe(commandTargetPath('governed-profile-freeze-core'));
     expect(commands[2].directNodeScript).toBe(commandTargetPath('governed-profile-coverage-gap'));
     expect(commandTargetPath('governed-profile-product-failure-records')).toBe(
       'tools/ci/build-product-failure-records.cjs'
+    );
+    expect(commandTargetPath('governed-profile-semantic-index')).toBe(
+      'tools/ci/build-shard-semantic-index.cjs'
     );
     expect(commandTargetPath('portfolio-maintenance-generate-deletion-candidates')).toBe(
       'tools/ci/generate-test-deletion-candidates.cjs'
@@ -632,9 +681,11 @@ describe('CI authority hard cut', () => {
     expect(execution.shardPlanExists).toBe(true);
     expect(execution.manifestExists).toBe(true);
     expect(execution.calls).toContain('ci:shard-plan');
+    expect(execution.calls).toContain('tools/ci/build-shard-semantic-index.cjs');
     expect(execution.calls).toContain('ci:manifest');
     expect(execution.calls).not.toContain('ci:run-shard');
     expect(execution.calls).not.toContain('ci:join');
+    expect(execution.planningDiagnosticsWritten).toBe(true);
   });
 
   it('invokes shards and join only when the selection is ready', () => {
@@ -646,6 +697,7 @@ describe('CI authority hard cut', () => {
     });
     expect(execution.calls.filter((scriptName) => scriptName === 'ci:run-shard')).toHaveLength(1);
     expect(execution.calls.filter((scriptName) => scriptName === 'ci:join')).toHaveLength(1);
+    expect(execution.planningDiagnosticsWritten).toBe(false);
   });
 
   it('restores tracked outputs after a successful shard', () => {
@@ -769,17 +821,19 @@ describe('CI authority hard cut', () => {
         'tools/ci/generate-six-model-coverage-gap-report.cjs': 1_100,
         'ci:select': 2_300,
         'ci:shard-plan': 2_500,
+        'tools/ci/build-shard-semantic-index.cjs': 700,
       },
     });
 
     expect(execution.result).toMatchObject({
-      planningDurationMs: 50_500,
+      planningDurationMs: 51_200,
       planningStageDurationsMs: {
         'ci:catalog': 41_000,
         'ci:freeze-core': 3_600,
         'ci:coverage-gap': 1_100,
         'ci:select': 2_300,
         'ci:shard-plan': 2_500,
+        'ci:semantic-index': 700,
       },
     });
     expect(execution.calls).not.toContain('ci:profile-policy');
@@ -955,11 +1009,18 @@ describe('CI authority hard cut', () => {
   });
 
   it('accepts the production workflow as one fail-closed authority', () => {
-    expect(verifyCiAuthorityHardCut(sources())).toMatchObject({
+    const source = sources();
+    expect(verifyCiAuthorityHardCut(source)).toMatchObject({
       catalogProducerCount: 1,
       selectionProducerCount: 1,
+      semanticIndexProducerCount: 1,
       packagePrepareAuthorityCount: 1,
       planningAuthorityStepCount: 1,
+      diagnosticsSummaryStepCount: 1,
+      diagnosticsUploadCount: 1,
+      tolerantEvidenceDownloadCount: 2,
+      blockedDiagnosticsStepCount: 1,
+      blockedDiagnosticsSummaryStepCount: 1,
       prFastPlanningBudgetSeconds: 90,
       classifyTimeoutMinutes: 5,
       serialAllTestsJobCount: 0,
@@ -967,6 +1028,17 @@ describe('CI authority hard cut', () => {
       modelInvocationCount: 0,
       independentPublishAuthorityCount: 0,
     });
+    expect(source.packageJson.scripts['ci:semantic-index']).toBe(
+      'node tools/ci/build-shard-semantic-index.cjs'
+    );
+    expect(source.packageJson.scripts['ci:diagnostics']).toBe(
+      'node tools/ci/build-six-model-ci-diagnostics.cjs'
+    );
+    expect(source.ciSource).toContain(
+      '--semantic-index .artifacts/test-portfolio/ci-shard-semantic-index.json'
+    );
+    expect(source.ciSource).toContain('$GITHUB_STEP_SUMMARY');
+    expect(source.ciSource).toContain('six-model-ci-diagnostics.md');
   });
 
   it('rejects old fallback, model execution, second pack, and matrix path authority', () => {
@@ -1037,6 +1109,25 @@ describe('CI authority hard cut', () => {
           ),
         },
         code: 'CI_CATALOG_AUTHORITY_COUNT',
+      },
+      {
+        label: 'semantic index producer removed',
+        source: {
+          ...base,
+          ciSource: base.ciSource.replace(
+            /^.*run_stage ci:semantic-index.*\n/mu,
+            ''
+          ),
+        },
+        code: 'CI_SEMANTIC_INDEX_AUTHORITY_COUNT',
+      },
+      {
+        label: 'diagnostics summary removed',
+        source: {
+          ...base,
+          ciSource: base.ciSource.replaceAll('$GITHUB_STEP_SUMMARY', '$REMOVED_SUMMARY'),
+        },
+        code: 'CI_DIAGNOSTICS_SUMMARY_REQUIRED',
       },
       {
         label: 'pr-fast planning timeout bypass',

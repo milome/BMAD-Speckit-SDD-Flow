@@ -809,6 +809,38 @@ describe('exact Vitest shard execution', () => {
     }
   });
 
+  it('retains resolved failed identities for a blocking shard failure', () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), 'ci-blocking-failure-shard-'));
+    const identityKey = 'vitest::tests/a.test.ts';
+    try {
+      const input = manifest('core', [identityKey]);
+      writeExecutableFixtures(repoRoot, [identityKey]);
+      const result = runCiShard({
+        repoRoot,
+        manifest: input,
+        lane: 'core',
+        shardId: 'core-01',
+        runCommand: (request: any) => {
+          writeTimingArtifact(request, [identityKey]);
+          writeFailedJunitArtifact(request, identityKey);
+          return { status: 17 };
+        },
+      });
+
+      expect(result).toMatchObject({
+        outcome: 'failed',
+        failedIdentityKeys: [identityKey],
+        exitCode: 17,
+        evidenceStatus: {
+          junit: 'complete',
+          timing: 'complete',
+        },
+      });
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
   it('keeps an expected-failure shard blocking when Node JUnit contains an unknown failure', () => {
     const repoRoot = mkdtempSync(join(tmpdir(), 'ci-expected-failure-unknown-node-'));
     const nodeIdentity = 'node::packages/bmad-speckit/tests/a.test.js';

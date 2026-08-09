@@ -23,6 +23,11 @@ const COMMAND_BINDINGS = Object.freeze(
       targetPath: 'tools/ci/build-product-failure-records.cjs',
     },
     {
+      commandId: 'governed-profile-semantic-index',
+      executionClass: 'governed_profile',
+      targetPath: 'tools/ci/build-shard-semantic-index.cjs',
+    },
+    {
       commandId: 'portfolio-maintenance-generate-deletion-candidates',
       executionClass: 'local_maintenance',
       targetPath: 'tools/ci/generate-test-deletion-candidates.cjs',
