@@ -25,7 +25,7 @@ const cliPath = join(process.cwd(), 'tools', 'test-portfolio-audit', 'run.cjs');
 const routeFixture = join(process.cwd(), 'tests', 'fixtures', 'test-portfolio-audit', 'routes');
 // Updated from remote CI whenever the LF-normalized Base route fixture intentionally changes.
 const BASE_ROUTE_AUDIT_SHA256 =
-  'sha256:364112b7a8d2ca18a6b7210557606765732d5af8f13c3f7752c4aff3012581ff';
+  'sha256:94f12805885ecc1fa8a5457fc3584c2e189addb861a2fceb32c662c7a9fc3eff';
 const BASE_ROUTE_SUMMARY_SHA256 =
   'sha256:ba386ade13632e5c7085f608f893baed29ee2ae1877d98c9cb98eac404dc84b3';
 

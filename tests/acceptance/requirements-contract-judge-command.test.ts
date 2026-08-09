@@ -146,6 +146,7 @@ function materializeCommandFixture(
   const systemPrompt = 'Return one JSON object.';
   const structuredOutputSchema = {
     type: 'object',
+    additionalProperties: false,
     required: ['decision'],
     properties: {
       decision: { enum: ['pass', 'block', 'inconclusive'] },
