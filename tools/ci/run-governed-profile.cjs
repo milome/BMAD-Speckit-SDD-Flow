@@ -12,6 +12,10 @@ const {
   writeCanonicalArtifact,
 } = require('./canonical-artifact.cjs');
 const { createBootstrapTimingSummary } = require('./summarize-test-timings.cjs');
+const {
+  buildSixModelPlanningDiagnostics,
+  writeSixModelCiDiagnostics,
+} = require('./build-six-model-ci-diagnostics.cjs');
 const { commandTargetPath } = require('./test-command-bindings.cjs');
 const {
   defaultListTrackedChanges,
@@ -37,6 +41,7 @@ const SELECTION_PATH = '.artifacts/test-portfolio/test-selection.json';
 const TIMING_SUMMARY_PATH = '.artifacts/test-portfolio/ci-test-timing-summary.json';
 const POLICY_PATH = 'repo-governance/ci/test-policy.json';
 const MANIFEST_PATH = '.artifacts/test-portfolio/ci-run-manifest.json';
+const SEMANTIC_INDEX_PATH = '.artifacts/test-portfolio/ci-shard-semantic-index.json';
 const DESCRIPTOR_PATH = '.artifacts/test-portfolio/package/canonical-package.json';
 const PR_FAST_PLANNING_BUDGET_MS = 90_000;
 const PLANNING_SCRIPT_NAMES = new Set([
@@ -45,6 +50,7 @@ const PLANNING_SCRIPT_NAMES = new Set([
   'ci:coverage-gap',
   'ci:select',
   'ci:shard-plan',
+  'ci:semantic-index',
 ]);
 const monotonicNow = () => performance.now();
 
@@ -209,6 +215,22 @@ function buildGovernedProfileCommands({
       '--environment-class',
       normalizedEnvironmentClass,
     ]),
+    command(
+      'ci:semantic-index',
+      [
+        '--selection',
+        SELECTION_PATH,
+        '--shard-plan',
+        '.artifacts/test-portfolio/ci-shard-plan.json',
+        '--coverage-report',
+        COVERAGE_REPORT_PATH,
+        '--catalog',
+        CATALOG_PATH,
+        '--changed-paths',
+        changedPathsPath,
+      ],
+      { directNodeScript: commandTargetPath('governed-profile-semantic-index') }
+    ),
     command('ci:prepare-package', ['--commit-sha', normalizedCommitSha]),
     command('ci:manifest', [
       '--catalog',
@@ -246,6 +268,8 @@ function buildGovernedProfileCommands({
       MANIFEST_PATH,
       '--lane-results-dir',
       '.artifacts/test-portfolio/lane-results',
+      '--semantic-index',
+      SEMANTIC_INDEX_PATH,
     ]),
   ];
 }
@@ -427,6 +451,7 @@ function resetGeneratedEvidence(repoRoot, protectedPaths = []) {
     '.artifacts/test-portfolio/dev-remediation-handoff.json',
     SELECTION_PATH,
     '.artifacts/test-portfolio/ci-shard-plan.json',
+    SEMANTIC_INDEX_PATH,
     MANIFEST_PATH,
     '.artifacts/test-portfolio/lane-results',
     '.artifacts/test-portfolio/final',
@@ -442,6 +467,17 @@ function resetGeneratedEvidence(repoRoot, protectedPaths = []) {
     }
     fs.rmSync(target, { recursive: true, force: true });
   }
+}
+
+function writeBlockedPlanningDiagnostics(repoRoot) {
+  const semanticIndex = readCanonicalArtifact({
+    repoRoot,
+    filePath: path.resolve(repoRoot, SEMANTIC_INDEX_PATH),
+  }).artifact;
+  return writeSixModelCiDiagnostics({
+    repoRoot,
+    report: buildSixModelPlanningDiagnostics({ semanticIndex }),
+  });
 }
 
 function resolveFailureRecordsPath(repoRoot, explicitPath) {
@@ -524,6 +560,7 @@ function runGovernedProfile({
   spawn,
   listTrackedChanges = defaultListTrackedChanges,
   restoreTrackedChanges = defaultRestoreTrackedChanges,
+  planningDiagnosticsWriter = writeBlockedPlanningDiagnostics,
 }) {
   const normalizedCommitSha = requireCommitSha(commitSha, 'CI_GOVERNED_PROFILE_COMMIT_INVALID');
   if (profile === 'pr-fast' && (!Number.isFinite(planningBudgetMs) || planningBudgetMs < 0)) {
@@ -591,6 +628,7 @@ function runGovernedProfile({
     filePath: path.resolve(repoRoot, SELECTION_PATH),
   }).artifact;
   if (!selectionAllowsExecution(selection)) {
+    const diagnosticsReceipts = planningDiagnosticsWriter(repoRoot);
     return {
       profile,
       commitSha: normalizedCommitSha,
@@ -602,6 +640,8 @@ function runGovernedProfile({
       coverageReportPath: COVERAGE_REPORT_PATH,
       shardPlanPath: '.artifacts/test-portfolio/ci-shard-plan.json',
       manifestPath: MANIFEST_PATH,
+      diagnosticsPath: diagnosticsReceipts.json?.path || null,
+      diagnosticsMarkdownPath: diagnosticsReceipts.markdown?.path || null,
       planningDurationMs,
       planningStageDurationsMs,
     };
@@ -672,10 +712,12 @@ module.exports = {
   main,
   normalizeChangedPaths,
   parseCliArgs,
+  resetGeneratedEvidence,
   resolveFailureRecordsPath,
   runtimeEnvironmentClass,
   runScript,
   runGovernedProfile,
   runShardWithTrackedCleanup,
   selectionAllowsExecution,
+  writeBlockedPlanningDiagnostics,
 };

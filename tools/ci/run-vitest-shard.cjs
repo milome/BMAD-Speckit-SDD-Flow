@@ -556,27 +556,23 @@ function runCiShard({
   let outcome = failedExecution ? 'failed' : 'passed';
   let failedIdentityKeys = [];
   const expectedFailureIdentityKeys = resolved.expectedFailureIdentityKeys || [];
-  if (
-    failedExecution &&
-    expectedFailureIdentityKeys.length > 0 &&
-    evidenceStatus.junit === 'complete' &&
-    evidenceStatus.timing === 'complete'
-  ) {
+  if (failedExecution && evidenceStatus.junit === 'complete') {
     const failureEvidence = failedIdentityEvidence({
       repoRoot,
       junitPaths,
       expectedIdentityKeys: identities,
     });
-    const expectedFailureIdentitySet = new Set(expectedFailureIdentityKeys);
-    if (
-      failureEvidence.unresolvedFailureCount === 0 &&
-      failureEvidence.failedIdentityKeys.length > 0 &&
-      failureEvidence.failedIdentityKeys.every((identityKey) =>
-        expectedFailureIdentitySet.has(identityKey)
-      )
-    ) {
-      outcome = 'expected_failed';
+    if (failureEvidence.unresolvedFailureCount === 0) {
       failedIdentityKeys = failureEvidence.failedIdentityKeys;
+      const expectedFailureIdentitySet = new Set(expectedFailureIdentityKeys);
+      if (
+        expectedFailureIdentityKeys.length > 0 &&
+        evidenceStatus.timing === 'complete' &&
+        failedIdentityKeys.length > 0 &&
+        failedIdentityKeys.every((identityKey) => expectedFailureIdentitySet.has(identityKey))
+      ) {
+        outcome = 'expected_failed';
+      }
     }
   }
   const { laneResult, receipt } = writeLaneResult({

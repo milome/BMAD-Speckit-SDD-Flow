@@ -50,6 +50,7 @@ function inspectCiWorkflow({ workflowSource }) {
     'ci:coverage-gap',
     'ci:select',
     'ci:shard-plan',
+    'ci:semantic-index',
   ];
   const planningSteps = jobSteps(jobs.classify).filter((step) => {
     const source = String(step?.run || '');
@@ -58,10 +59,46 @@ function inspectCiWorkflow({ workflowSource }) {
   const planningStep = planningSteps.length === 1 ? planningSteps[0] : null;
   const planningRun = String(planningStep?.run || '');
   const prFastPlanningBudgetSeconds = Number(planningStep?.env?.PR_FAST_PLANNING_BUDGET_SECONDS);
+  const evidenceJoinSteps = jobSteps(jobs['evidence-join']);
+  const diagnosticsSummarySteps = evidenceJoinSteps.filter(
+    (step) =>
+      step?.if === 'always()' &&
+      String(step?.run || '').includes('six-model-ci-diagnostics.md') &&
+      String(step?.run || '').includes('$GITHUB_STEP_SUMMARY')
+  );
+  const diagnosticsUploads = evidenceJoinSteps.filter(
+    (step) =>
+      String(step?.uses || '').startsWith('actions/upload-artifact@') &&
+      String(step?.with?.name || '').startsWith('ci-final-') &&
+      String(step?.with?.path || '').includes('.artifacts/test-portfolio/final/')
+  );
+  const tolerantEvidenceDownloads = evidenceJoinSteps.filter(
+    (step) =>
+      String(step?.uses || '').startsWith('actions/download-artifact@') &&
+      step?.['continue-on-error'] === true &&
+      (String(step?.with?.name || '').startsWith('ci-plan-') ||
+        String(step?.with?.pattern || '') === 'ci-lane-*')
+  );
+  const blockedDiagnosticsSteps = jobSteps(jobs.classify).filter(
+    (step) =>
+      step?.if === "steps.selection-gate.outputs.execution_allowed != 'true'" &&
+      String(step?.run || '').includes('npm run ci:diagnostics') &&
+      String(step?.run || '').includes('--mode planning')
+  );
+  const blockedDiagnosticsSummarySteps = jobSteps(jobs.classify).filter(
+    (step) =>
+      step?.if === "steps.selection-gate.outputs.execution_allowed != 'true'" &&
+      String(step?.run || '').includes('six-model-ci-diagnostics.md') &&
+      String(step?.run || '').includes('$GITHUB_STEP_SUMMARY')
+  );
   return {
     workflow,
     catalogProducerCount: countCommand(allRunText, /\bnpm\s+run\s+ci:catalog\b/gu),
     selectionProducerCount: countCommand(allRunText, /\bnpm\s+run\s+ci:select\b/gu),
+    semanticIndexProducerCount: countCommand(
+      allRunText,
+      /\bnpm\s+run\s+ci:semantic-index\b/gu
+    ),
     manifestProducerCount: countCommand(allRunText, /\bnpm\s+run\s+ci:manifest\b/gu),
     packagePrepareAuthorityCount: countCommand(allRunText, /\bnpm\s+run\s+ci:prepare-package\b/gu),
     serialAllTestsJobCount: countCommand(
@@ -73,6 +110,17 @@ function inspectCiWorkflow({ workflowSource }) {
     pullRequestProfilePinned: /pull_request\)\s+profile=pr-fast\s+;;/u.test(allRunText),
     planningAuthorityStepCount: planningSteps.length,
     prFastPlanningBudgetSeconds,
+    semanticIndexAfterShardPlan:
+      planningRun.indexOf('npm run ci:semantic-index') >
+      planningRun.indexOf('npm run ci:shard-plan'),
+    joinSemanticIndexBound: runText(jobs['evidence-join']).includes(
+      '--semantic-index .artifacts/test-portfolio/ci-shard-semantic-index.json'
+    ),
+    diagnosticsSummaryStepCount: diagnosticsSummarySteps.length,
+    diagnosticsUploadCount: diagnosticsUploads.length,
+    tolerantEvidenceDownloadCount: tolerantEvidenceDownloads.length,
+    blockedDiagnosticsStepCount: blockedDiagnosticsSteps.length,
+    blockedDiagnosticsSummaryStepCount: blockedDiagnosticsSummarySteps.length,
     prFastPlanningTimeoutEnforced:
       /timeout\s+--foreground\s+--signal=TERM\s+--kill-after=10s\s+\\?\s*"\$\{PR_FAST_PLANNING_BUDGET_SECONDS\}s"\s+bash\s+-c\s+'set -euo pipefail; run_planning'/u.test(
         planningRun
@@ -138,6 +186,7 @@ function verifyCiAuthorityHardCut({ ciSource, releaseSource, publishSource, pack
   for (const [field, code] of [
     ['catalogProducerCount', 'CI_CATALOG_AUTHORITY_COUNT'],
     ['selectionProducerCount', 'CI_SELECTION_AUTHORITY_COUNT'],
+    ['semanticIndexProducerCount', 'CI_SEMANTIC_INDEX_AUTHORITY_COUNT'],
     ['manifestProducerCount', 'CI_MANIFEST_AUTHORITY_COUNT'],
     ['packagePrepareAuthorityCount', 'CI_PACKAGE_AUTHORITY_COUNT'],
   ]) {
@@ -148,6 +197,21 @@ function verifyCiAuthorityHardCut({ ciSource, releaseSource, publishSource, pack
   if (!inspection.pullRequestProfilePinned) fail('CI_CONTRIBUTOR_PROFILE_DOWNGRADE');
   if (inspection.planningAuthorityStepCount !== 1) {
     fail('CI_PLANNING_AUTHORITY_COUNT');
+  }
+  if (!inspection.semanticIndexAfterShardPlan) fail('CI_SEMANTIC_INDEX_ORDER_INVALID');
+  if (!inspection.joinSemanticIndexBound) fail('CI_SEMANTIC_INDEX_JOIN_BINDING_REQUIRED');
+  if (inspection.diagnosticsSummaryStepCount !== 1) {
+    fail('CI_DIAGNOSTICS_SUMMARY_REQUIRED');
+  }
+  if (
+    inspection.blockedDiagnosticsStepCount !== 1 ||
+    inspection.blockedDiagnosticsSummaryStepCount !== 1
+  ) {
+    fail('CI_BLOCKED_DIAGNOSTICS_REQUIRED');
+  }
+  if (inspection.diagnosticsUploadCount !== 1) fail('CI_DIAGNOSTICS_UPLOAD_REQUIRED');
+  if (inspection.tolerantEvidenceDownloadCount !== 2) {
+    fail('CI_DIAGNOSTICS_INGESTION_PATH_REQUIRED');
   }
   if (inspection.prFastPlanningBudgetSeconds !== 90 || !inspection.prFastPlanningTimeoutEnforced) {
     fail('CI_PR_FAST_PLANNING_BUDGET_REQUIRED');
@@ -165,6 +229,8 @@ function verifyCiAuthorityHardCut({ ciSource, releaseSource, publishSource, pack
     'ci:catalog',
     'ci:select',
     'ci:shard-plan',
+    'ci:semantic-index',
+    'ci:diagnostics',
     'ci:manifest',
     'ci:run-shard',
     'ci:prepare-package',
@@ -200,8 +266,14 @@ function main() {
     `${JSON.stringify({
       catalogProducerCount: result.catalogProducerCount,
       selectionProducerCount: result.selectionProducerCount,
+      semanticIndexProducerCount: result.semanticIndexProducerCount,
       packagePrepareAuthorityCount: result.packagePrepareAuthorityCount,
       planningAuthorityStepCount: result.planningAuthorityStepCount,
+      diagnosticsSummaryStepCount: result.diagnosticsSummaryStepCount,
+      diagnosticsUploadCount: result.diagnosticsUploadCount,
+      tolerantEvidenceDownloadCount: result.tolerantEvidenceDownloadCount,
+      blockedDiagnosticsStepCount: result.blockedDiagnosticsStepCount,
+      blockedDiagnosticsSummaryStepCount: result.blockedDiagnosticsSummaryStepCount,
       prFastPlanningBudgetSeconds: result.prFastPlanningBudgetSeconds,
       classifyTimeoutMinutes: result.classifyTimeoutMinutes,
       serialAllTestsJobCount: result.serialAllTestsJobCount,
