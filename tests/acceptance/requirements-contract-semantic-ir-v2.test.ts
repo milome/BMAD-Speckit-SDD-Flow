@@ -13,6 +13,9 @@ import {
 import {
   sha256Stable,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
+import {
+  semanticModelHash,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-hash-domains';
 
 const HASH = `sha256:${'a'.repeat(64)}`;
 interface SemanticIrFixtureIdentity {
@@ -185,7 +188,7 @@ function validFixture(
   return {
     model: {
       ...preimage,
-      semanticModelHash: sha256Stable(preimage),
+      semanticModelHash: semanticModelHash(preimage),
     },
     refs,
   };
@@ -216,7 +219,7 @@ function withNodeBody(
     edge.edgeHash = sha256Stable(edgePreimage);
   }
   const { semanticModelHash: _semanticModelHash, ...preimage } = next;
-  next.semanticModelHash = sha256Stable(preimage);
+  next.semanticModelHash = semanticModelHash(preimage);
   return next;
 }
 
@@ -423,7 +426,7 @@ describe('requirement-contract-model/v2 inactive semantic boundary', () => {
     const { edgeHash: _edgeHash, ...edgePreimage } = unknownEndpoint.edges[refs.edgeId];
     unknownEndpoint.edges[refs.edgeId].edgeHash = sha256Stable(edgePreimage);
     const { semanticModelHash: _semanticModelHash, ...modelPreimage } = unknownEndpoint;
-    unknownEndpoint.semanticModelHash = sha256Stable(modelPreimage);
+    unknownEndpoint.semanticModelHash = semanticModelHash(modelPreimage);
 
     expect(
       [

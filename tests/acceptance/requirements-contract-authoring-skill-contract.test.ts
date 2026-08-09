@@ -540,16 +540,26 @@ describe('requirements-contract-authoring published contract', () => {
     }
   });
 
-  it('keeps skill resolution centralized on the package-owned _bmad surface', () => {
-    const resolverFiles = [
+  it('keeps skill resolution centralized with a package-owned fallback', () => {
+    const installedSkillResolverFiles = [
       'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts',
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/target-artifact-realization-gate.ts',
+    ];
+    const packageOwnedResolverFiles = [
       'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate.ts',
       'packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts',
       'packages/bmad-speckit/src/main-agent/source-authority/scripts/strict-command-resolution-preflight.ts',
-      'packages/bmad-speckit/src/main-agent/source-authority/scripts/target-artifact-realization-gate.ts',
     ];
 
-    for (const relativePath of resolverFiles) {
+    for (const relativePath of installedSkillResolverFiles) {
+      const content = fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
+      expect(content, `${relativePath} should use the installed skill resolver`).toContain(
+        'resolveInstalledSkillPath'
+      );
+      expect(content).not.toMatch(/['"]\.(?:codex|cursor|claude|agents)['"],\s*['"]skills['"]/u);
+    }
+
+    for (const relativePath of packageOwnedResolverFiles) {
       const content = fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
       expect(content, `${relativePath} should use the package-owned resolver`).toContain(
         'resolvePackageOwnedBmadPath'
@@ -570,6 +580,13 @@ describe('requirements-contract-authoring published contract', () => {
     expect(packageResolver).toContain("path.join(resolvePackageRoot(startDir), '_bmad')");
     expect(packageResolver).toContain("path.join(packageRoot, 'dist', 'main-agent')");
     expect(packageResolver).toContain("path.join(packageRoot, 'src', 'main-agent')");
+    expect(packageResolver).toContain("path.join(projectRoot, '_bmad', 'skills')");
+    expect(packageResolver).toContain("path.join(projectRoot, '.codex', 'skills')");
+    expect(packageResolver).toContain("path.join(projectRoot, '.cursor', 'skills')");
+    expect(packageResolver).toContain("path.join(projectRoot, '.claude', 'skills')");
+    expect(packageResolver).toContain(
+      "return resolvePackageOwnedBmadPath('skills', skillName, ...segments)"
+    );
   });
 
   it('requires the pre-confirmation atomic decomposition loop before any confirmable HTML', () => {

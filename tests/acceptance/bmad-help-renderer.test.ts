@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import {
   cleanupRequirementWorkspace,
   materializeRequirementFixture,
+  writeCompiledImplementPacket,
 } from '../helpers/requirement-fixture-runtime';
 
 const require = createRequire(import.meta.url);
@@ -229,11 +230,12 @@ describe('bmad-help and BMADS runtime boundary', () => {
         execution_closure: {
           model: 'execution_closure',
           status: 'not_established',
-          blockingReasons: ['execution_closure_not_established'],
+          blockingReasons: [],
         },
       },
     });
     try {
+      writeCompiledImplementPacket({ root: fixture.root, fixture });
       const output = buildBmadsOutput(fixture.root);
       const text = renderBmads(output);
 
@@ -291,7 +293,8 @@ describe('bmad-help and BMADS runtime boundary', () => {
   it('keeps layer_3 story creation behind epics planning and readiness instead of direct development', () => {
     const runtime = fs.readFileSync(path.resolve('_bmad', '_config', 'bmads-runtime.yaml'), 'utf8');
     const storyCreateBlock =
-      runtime.match(/ {6}- id: story_create[\s\S]*?(?=\n\n {2}- id: layer_4)/)?.[0] ?? '';
+      runtime.match(/ {6}- id: story_create[\s\S]*?(?=\r?\n\r?\n {2}- id: layer_4)/)?.[0] ??
+      '';
 
     expect(storyCreateBlock).toContain('bmad-bmm-create-epics-and-stories');
     expect(storyCreateBlock).toContain('bmad-bmm-check-implementation-readiness');

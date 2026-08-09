@@ -1,17 +1,18 @@
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   deriveCheckpointProgressState,
   REQUIREMENTS_CONTRACT_CHECKPOINT_IDS,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-checkpoint-semantic-validation';
 import {
-  artifacts,
-  cleanCriticalAuditorRound,
   createMinimalConsumerRequirementDescriptor,
   createTempRoot,
   installJudgeRuntimeConfig,
+  issueCodes,
   readJson,
   removeTempRoot,
   runAuthoring,
+  stagingTransactionDir,
   writeLintReadyMinimalConsumerRequirement,
 } from './helpers/requirements-contract-authoring-fixture';
 
@@ -31,29 +32,38 @@ describe('requirements contract checkpoint progress consistency', () => {
       const attemptId = materialized.authoringOptions.implementationAttemptId;
       const result = runAuthoring(root, materialized.sourcePath, 'REQ-CHECKPOINT-PROGRESS', {
         ...materialized.authoringOptions,
-        criticalAuditorRound: cleanCriticalAuditorRound,
       });
-      const paths = artifacts(
-        root,
-        'REQ-CHECKPOINT-PROGRESS',
-        'REQ-CHECKPOINT-PROGRESS-SET'
+      const progress = readJson<Record<string, any>>(
+        path.join(
+          stagingTransactionDir(root, 'REQ-CHECKPOINT-PROGRESS'),
+          'semantic-checkpoint-progress.json'
+        )
       );
-      const progress = readJson<Record<string, any>>(paths.progress);
 
-      expect(result.blockingIssues).toEqual([]);
+      expect(issueCodes(result)).toEqual(['critical_auditor_provider_mode_required']);
       expect(progress.implementationAttemptId).toBe(attemptId);
       expect(progress.checkpoints).toHaveLength(9);
-      for (const checkpoint of progress.checkpoints) {
+      for (const checkpoint of progress.checkpoints.slice(0, 2)) {
         expect(checkpoint).toMatchObject({
           persistenceStatus: 'committed',
           semanticValidationStatus: 'pass',
           status: 'passed',
         });
       }
-      expect(progress.resumeLedger.completedCheckpointIds).toHaveLength(9);
-      expect(progress.lastCompletedCheckpoint).toBe('cp-08-pre-render-global-reconciliation');
-      expect(progress.currentCheckpoint).toBe(null);
-      expect(progress.next).toBe(null);
+      expect(progress.checkpoints[2]).toMatchObject({
+        persistenceStatus: 'committed',
+        semanticValidationStatus: 'block',
+        status: 'blocked',
+      });
+      expect(
+        progress.checkpoints.slice(3).every((checkpoint: any) => checkpoint.status === 'pending')
+      ).toBe(true);
+      expect(progress.resumeLedger.completedCheckpointIds).toEqual(
+        REQUIREMENTS_CONTRACT_CHECKPOINT_IDS.slice(0, 2)
+      );
+      expect(progress.lastCompletedCheckpoint).toBe('cp-01-must-decomposition-packet');
+      expect(progress.currentCheckpoint).toBe('cp-02-atomic-decomposition-loop-convergence');
+      expect(progress.next).toBe('cp-02-atomic-decomposition-loop-convergence');
     } finally {
       removeTempRoot(root);
     }

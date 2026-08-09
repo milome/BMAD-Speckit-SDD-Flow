@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
@@ -116,6 +117,51 @@ function actionUniverseHash(actionIds: string[]): string {
     .digest('hex')}`;
 }
 
+function gitNullList(args: string[]): string[] {
+  return execFileSync('git', args, {
+    cwd: ROOT,
+    encoding: 'utf8',
+  })
+    .split('\0')
+    .filter(Boolean)
+    .map((entry) => entry.replace(/\\/gu, '/'));
+}
+
+function actionBindingRuntimeTextHashInputPaths(manifest: ActionBindingManifest): string[] {
+  return [
+    ...new Set(
+      manifest.actions.flatMap((action) =>
+        (action.runtimeRefs ?? []).flatMap((runtimeRef) => {
+          const packagePath = runtimeRef.packagePath.replace(/\\/gu, '/');
+          if (packagePath.startsWith('dist/')) return [];
+          return [
+            packagePath.startsWith('_bmad/') ? packagePath : `packages/bmad-speckit/${packagePath}`,
+          ];
+        })
+      )
+    ),
+  ].sort();
+}
+
+function actionBindingTrackedHashInputPaths(manifest: ActionBindingManifest): string[] {
+  const declaredPaths = [
+    ...new Set([
+      ...actionBindingRuntimeTextHashInputPaths(manifest),
+      ...manifest.actions.flatMap((action) => [
+        action.sourceHandlerRef.path,
+        ...action.inputSchemaRefs.map((ref) => ref.path),
+        ...action.outputSchemaRefs.map((ref) => ref.path),
+        ...action.behaviorTestRefs.map((ref) => ref.path),
+      ]),
+    ]),
+  ].sort();
+  const trackedPaths = gitNullList(['ls-files', '-z', '--', ...declaredPaths]).sort();
+  expect(trackedPaths, 'every declared action-binding raw-byte hash input must be tracked').toEqual(
+    declaredPaths
+  );
+  return declaredPaths;
+}
+
 function readManifest(): ActionBindingManifest | null {
   expect(existsSync(MANIFEST_PATH), 'canonical package runtime action manifest is missing').toBe(
     true
@@ -133,7 +179,9 @@ function expectRepositoryFileRef(ref: FileRef): void {
 
 function registeredRuntimeActionIds(): string[] {
   const cliSource = readFileSync(CLI_PATH, 'utf8');
-  const directActionIds = [...cliSource.matchAll(/\.command\('(?<actionId>requirements-contract-[a-z0-9-]+)'\)/gu)]
+  const directActionIds = [
+    ...cliSource.matchAll(/\.command\('(?<actionId>requirements-contract-[a-z0-9-]+)'\)/gu),
+  ]
     .map((match) => match.groups?.actionId ?? '')
     .filter(Boolean);
   if (
@@ -261,6 +309,36 @@ describe('requirements contract package runtime action binding', () => {
         ? 'pass'
         : 'block'
     );
+  });
+
+  it('pins tracked action-binding hash inputs to LF across clean Windows worktrees', () => {
+    const manifest = readManifest();
+    if (!manifest) return;
+
+    const trackedHashInputPaths = actionBindingTrackedHashInputPaths(manifest);
+    expect(trackedHashInputPaths.length).toBeGreaterThan(0);
+    expect(trackedHashInputPaths).toContain(
+      '_bmad/shared/requirements-contract/requirements-contract-judge-provider-registry.json'
+    );
+
+    const attributeOutput = gitNullList([
+      'check-attr',
+      '-z',
+      'eol',
+      '--',
+      ...trackedHashInputPaths,
+    ]);
+    const attributeValues = new Map<string, string>();
+    for (let index = 0; index + 2 < attributeOutput.length; index += 3) {
+      attributeValues.set(attributeOutput[index], attributeOutput[index + 2]);
+    }
+
+    for (const trackedHashInputPath of trackedHashInputPaths) {
+      expect(
+        attributeValues.get(trackedHashInputPath),
+        `${trackedHashInputPath} must use eol=lf because action-binding hashes bind raw bytes`
+      ).toBe('lf');
+    }
   });
 
   it('binds current Recovery and Judge runtime owners without legacy schema paths', () => {

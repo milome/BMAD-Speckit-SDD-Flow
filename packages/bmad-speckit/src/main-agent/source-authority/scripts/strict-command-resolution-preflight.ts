@@ -2,6 +2,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as yaml from 'js-yaml';
+import { resolvePackageOwnedBmadPath } from '../../runtime/package-bmad-root';
 import { appendControlEventAndReplay } from './requirement-record-control-store';
 
 type JsonObject = Record<string, unknown>;
@@ -171,30 +172,20 @@ function looksPlaceholder(command: string): boolean {
 }
 
 function resolveSkillDir(projectRoot: string, skillName: string): string {
-  const home = process.env.USERPROFILE || process.env.HOME || '';
-  const packageRoot = path.resolve(__dirname, '..');
-  const candidates = [
-    path.join(projectRoot, '.codex', 'skills', skillName),
-    path.join(projectRoot, '.cursor', 'skills', skillName),
-    path.join(projectRoot, '.claude', 'skills', skillName),
-    path.join(projectRoot, '_bmad', 'skills', skillName),
-    path.join(projectRoot, '.agents', 'skills', skillName),
-    path.join(packageRoot, '.codex', 'skills', skillName),
-    path.join(packageRoot, '.cursor', 'skills', skillName),
-    path.join(packageRoot, '.claude', 'skills', skillName),
-    path.join(packageRoot, '_bmad', 'skills', skillName),
-    ...(home
-      ? [
-          path.join(home, '.codex', 'skills', skillName),
-          path.join(home, '.cursor', 'skills', skillName),
-          path.join(home, '.claude', 'skills', skillName),
-          path.join(home, '.agents', 'skills', skillName),
-        ]
-      : []),
-  ];
-  return (
-    candidates.find((candidate) => fs.existsSync(path.join(candidate, 'SKILL.md'))) ?? candidates[0]
+  const consumerCandidates = ['.codex', '.cursor', '.claude', '_bmad', '.agents'].map(
+    (surface) => path.join(projectRoot, surface, 'skills', skillName)
   );
+  const consumerSkill = consumerCandidates.find((candidate) =>
+    fs.existsSync(path.join(candidate, 'SKILL.md'))
+  );
+  if (consumerSkill) return consumerSkill;
+  try {
+    const packageSkill = resolvePackageOwnedBmadPath('skills', skillName);
+    if (fs.existsSync(path.join(packageSkill, 'SKILL.md'))) return packageSkill;
+  } catch {}
+  return skillName === 'encoding-integrity-guardian'
+    ? '<encoding-integrity-guardian-dir>'
+    : '<skill-dir>';
 }
 
 function commandTemplateValues(input: {

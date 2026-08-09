@@ -3,6 +3,53 @@
   "$id": "campaign-task-report-binding.schema.json",
   "title": "Goal Campaign TaskReport Binding",
   "type": "object",
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": { "const": "goal-subcontract-campaign-task-report/v3" }
+        },
+        "required": ["schemaVersion"]
+      },
+      "then": {
+        "required": [
+          "closeoutAttemptId",
+          "compileReceiptHash",
+          "closeoutContextHash",
+          "finalValidationEvidenceSetHash",
+          "collectionVerificationSetHash",
+          "validationMaterializationHash",
+          "priorAttemptHash"
+        ]
+      }
+    }
+  ],
+  "dependentRequired": {
+    "repairAttemptId": [
+      "baseAttemptId",
+      "repairAuthorityReceiptHash",
+      "repairAuthorityArtifactHash",
+      "repairClosureSetHash",
+      "finalValidationHead",
+      "finalValidationReceiptHash",
+      "finalValidationArtifactHash",
+      "postChildCommitHashes",
+      "postChildCommitSetHash",
+      "postChildOwnedPaths",
+      "postChildOwnedPathSetHash"
+    ],
+    "baseAttemptId": ["repairAttemptId"],
+    "repairAuthorityReceiptHash": ["repairAttemptId"],
+    "repairAuthorityArtifactHash": ["repairAttemptId"],
+    "repairClosureSetHash": ["repairAttemptId"],
+    "finalValidationHead": ["repairAttemptId"],
+    "finalValidationReceiptHash": ["repairAttemptId"],
+    "finalValidationArtifactHash": ["repairAttemptId"],
+    "postChildCommitHashes": ["repairAttemptId"],
+    "postChildCommitSetHash": ["repairAttemptId"],
+    "postChildOwnedPaths": ["repairAttemptId"],
+    "postChildOwnedPathSetHash": ["repairAttemptId"]
+  },
   "required": [
     "schemaVersion",
     "status",
@@ -17,11 +64,88 @@
   ],
   "properties": {
     "schemaVersion": {
-      "const": "goal-subcontract-campaign-task-report/v2"
+      "enum": [
+        "goal-subcontract-campaign-task-report/v2",
+        "goal-subcontract-campaign-task-report/v3"
+      ]
     },
     "status": { "const": "done" },
     "packageId": { "type": "string", "minLength": 1 },
+    "closeoutAttemptId": { "type": "string", "minLength": 1 },
+    "compileReceiptHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "closeoutContextHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "finalValidationEvidenceSetHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "collectionVerificationSetHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "validationMaterializationHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "priorAttemptHash": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+      ]
+    },
     "packageManifestHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "baseAttemptId": { "type": "string", "minLength": 1 },
+    "repairAttemptId": { "type": "string", "minLength": 1 },
+    "repairAuthorityReceiptHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "repairAuthorityArtifactHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "repairClosureSetHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "finalValidationHead": {
+      "type": "string",
+      "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$"
+    },
+    "finalValidationReceiptHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "finalValidationArtifactHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "postChildCommitHashes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$"
+      }
+    },
+    "postChildCommitSetHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "postChildOwnedPaths": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "postChildOwnedPathSetHash": {
       "type": "string",
       "pattern": "^sha256:[a-f0-9]{64}$"
     },

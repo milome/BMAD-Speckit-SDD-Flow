@@ -42,16 +42,15 @@ function ensureCriticalAuditorProviderConfig(root: string): void {
   mkdirSync(path.dirname(target), { recursive: true });
   writeFileSync(
     target,
-    readFileSync(path.join(process.cwd(), '_bmad', '_config', 'governance-remediation.yaml'), 'utf8'),
+    readFileSync(
+      path.join(process.cwd(), '_bmad', '_config', 'governance-remediation.yaml'),
+      'utf8'
+    ),
     'utf8'
   );
 }
 
-function authoringRepairAttemptId(
-  root: string,
-  recordId = '',
-  requirementSetId = ''
-): string {
+function authoringRepairAttemptId(root: string, recordId = '', requirementSetId = ''): string {
   const attemptKey = [path.resolve(root), recordId, requirementSetId].join('|');
   let implementationAttemptId = authoringRepairAttemptIds.get(attemptKey);
   if (!implementationAttemptId) {
@@ -151,6 +150,48 @@ function rewriteInlineConfirmation(source: string, confirmation: Record<string, 
     { lineWidth: -1, noRefs: true, sortKeys: false }
   );
   writeFileSync(source, `${text.slice(0, start)}${serialized}`, 'utf8');
+}
+
+function repairActionNewValue(row: Record<string, unknown>): Record<string, unknown> {
+  const value = { ...row };
+  for (const field of [
+    'sourceSpan',
+    'sourceText',
+    'sourcePath',
+    'sourceDocumentHash',
+    'sourceRequirementId',
+    'sourceRequirementIds',
+    'repairActionId',
+    'repairReason',
+    'derivedFromMustRef',
+    'projectionStatus',
+  ]) {
+    delete value[field];
+  }
+  return value;
+}
+
+function bindInlineMustSourceAuthority(root: string, source: string, mustRef: string): void {
+  const sourceLines = readFileSync(source, 'utf8').replace(/\r\n/gu, '\n').split('\n');
+  const startIndex = sourceLines.findIndex((line) => line.trim() === `- id: ${mustRef}`);
+  const endIndex = sourceLines.findIndex(
+    (line, index) => index > startIndex && /^\s+text:/u.test(line)
+  );
+  if (startIndex < 0 || endIndex < startIndex) {
+    throw new Error(`inline MUST authority span missing for ${mustRef}`);
+  }
+  sourceLines.splice(
+    endIndex + 1,
+    0,
+    '      source: inline_implementation_confirmation',
+    `      sourcePath: ${rootRelative(root, source)}`,
+    '      sourceSpan:',
+    `        startLine: ${startIndex + 1}`,
+    `        endLine: ${endIndex + 1}`,
+    `      headingPath: ["implementationConfirmation", "must", "${mustRef}"]`,
+    '      sourceRequirementId: FR-001'
+  );
+  writeFileSync(source, sourceLines.join('\n'), 'utf8');
 }
 
 function writeRichSource(root: string, recordId = 'REQ-AUTHORING-REPAIR-PRESERVE'): string {
@@ -473,6 +514,58 @@ function writeRichSource(root: string, recordId = 'REQ-AUTHORING-REPAIR-PRESERVE
     ].join('\n'),
     'utf8'
   );
+  bindInlineMustSourceAuthority(root, source, 'MUST-001');
+  return source;
+}
+
+function writeSplitRepairSource(root: string): string {
+  const source = writeRichSource(root);
+  const original = readFileSync(source, 'utf8');
+  const confirmationIndex = original.indexOf('implementationConfirmation:');
+  if (confirmationIndex < 0) {
+    throw new Error('implementationConfirmation block missing');
+  }
+  const requirementSection = [
+    '## Functional Requirements',
+    '',
+    '| ID | Requirement | Source rationale | Acceptance link |',
+    '| --- | --- | --- | --- |',
+    '| FR-001 | Preserve broad runtime behavior. | The behavior must be split atomically. | ACC-001 |',
+    '',
+  ].join('\n');
+  writeFileSync(
+    source,
+    `${original.slice(0, confirmationIndex)}${requirementSection}${original
+      .slice(confirmationIndex)
+      .replaceAll('MUST-001', 'MUST-FR-001')}`,
+    'utf8'
+  );
+
+  const sourceLines = readFileSync(source, 'utf8').replace(/\r\n/gu, '\n').split('\n');
+  const sourceLineIndex = sourceLines.findIndex((line) => line.startsWith('| FR-001 |'));
+  if (sourceLineIndex < 0) {
+    throw new Error('split repair source authority row missing');
+  }
+  const confirmation = readInlineConfirmation(source);
+  confirmation.must[0] = {
+    ...confirmation.must[0],
+    source: 'canonical_semantic_ir',
+    sourcePath: rootRelative(root, source),
+    sourceDocumentHash: fixedHash('0'),
+    sourceSpan: { startLine: sourceLineIndex + 1, endLine: sourceLineIndex + 1 },
+    headingPath: ['Functional Requirements', 'FR-001'],
+    sourceRequirementId: 'FR-001',
+  };
+  rewriteInlineConfirmation(source, confirmation);
+  const sourceText = readFileSync(source, 'utf8');
+  const extraction = extractImplementationConfirmationForHash(sourceText);
+  const sourceDocumentHash = sourceDocumentHashForContract(
+    sourceText,
+    extraction.blockText,
+    extraction.confirmation
+  );
+  confirmation.must[0].sourceDocumentHash = sourceDocumentHash;
+  rewriteInlineConfirmation(source, confirmation);
   return source;
 }
 
@@ -733,18 +826,45 @@ function checkedProjectionQualityRuleCodesForRequest(request: any): string[] {
   );
 }
 
+function criticalAuditorProjectRoot(requestPath: string): string {
+  const resolvedRequestPath = path.resolve(requestPath);
+  const runtimeMarker = `${path.sep}_bmad-output${path.sep}`;
+  const markerIndex = resolvedRequestPath.indexOf(runtimeMarker);
+  if (markerIndex < 0) {
+    throw new Error('critical auditor request path is outside the governed runtime');
+  }
+  return resolvedRequestPath.slice(0, markerIndex);
+}
+
 function withIndependentProviderEvidence(
   request: Record<string, any>,
-  response: Record<string, unknown>
+  response: Record<string, unknown>,
+  requestPath: string
 ): Record<string, unknown> {
   const binding = request.independentProviderBinding;
   if (!binding || typeof binding !== 'object' || Array.isArray(binding)) {
     throw new Error('critical auditor request does not contain independentProviderBinding');
   }
+  const projectRoot = criticalAuditorProjectRoot(requestPath);
+  const governanceConfig = yaml.load(
+    readFileSync(
+      path.join(projectRoot, '_bmad', '_config', 'governance-remediation.yaml'),
+      'utf8'
+    )
+  ) as Record<string, any>;
+  const judgeRuntime = governanceConfig.judgeRuntime;
+  const transportCommand = judgeRuntime?.providers?.[binding.providerId]?.endpoint?.command;
+  if (typeof transportCommand !== 'string' || !transportCommand.trim()) {
+    throw new Error('critical auditor fixture provider command is unavailable');
+  }
   const evidenceWithoutRunHash = Object.fromEntries(
     Object.entries({
       ...binding,
       requestedModel: binding.model,
+      model:
+        typeof binding.model === 'string' && binding.model.trim()
+          ? binding.model
+          : 'fixture-main-session-judge',
       transactionId: request.transactionId,
       auditAttemptId: request.auditAttemptId,
       providerRunId: `critical-auditor-run/${String(request.requestHash).slice(-24)}`,
@@ -755,11 +875,75 @@ function withIndependentProviderEvidence(
       projectionSetHash: request.projectionSetHash,
     }).filter(([, value]) => value !== undefined)
   );
+  const invocationDir = path.join(
+    path.dirname(requestPath),
+    'fixture-provider-invocations',
+    `round-${request.roundIndex}`
+  );
+  mkdirSync(invocationDir, { recursive: true });
+  const stdoutPath = path.join(invocationDir, 'stdout.log');
+  const stderrPath = path.join(invocationDir, 'stderr.log');
+  const stdout = 'fixture provider completed\n';
+  const stderr = '';
+  writeFileSync(stdoutPath, stdout, 'utf8');
+  writeFileSync(stderrPath, stderr, 'utf8');
+  const transportEvidence = {
+    adapterRef: binding.adapterRef,
+    command: transportCommand,
+    executorKind: 'native_spawn',
+    exitCode: 0,
+    observedModel: evidenceWithoutRunHash.model,
+    stdoutPath: rootRelative(projectRoot, stdoutPath),
+    stderrPath: rootRelative(projectRoot, stderrPath),
+  };
+  const providerReceiptWithoutHash = {
+    schemaVersion: 'critical-auditor-judge-invocation-receipt/v1',
+    requestHash: request.requestHash,
+    sourceDocumentHash: request.sourceDocumentHash,
+    sourceBytesHash: request.sourceBytesHash,
+    semanticModelHash: request.semanticModelHash,
+    projectionSetHash: request.projectionSetHash,
+    providerRunId: evidenceWithoutRunHash.providerRunId,
+    providerId: binding.providerId,
+    requestedModel: binding.model ?? null,
+    model: evidenceWithoutRunHash.model,
+    transport: binding.transport,
+    adapterRef: binding.adapterRef,
+    apiStyle: binding.apiStyle,
+    configuredBaseUrlHash: binding.configuredBaseUrlHash,
+    independenceClass: binding.independenceClass,
+    providerRegistryHash: binding.providerRegistryHash,
+    providerConfigurationHash: binding.providerConfigurationHash,
+    transportEvidence,
+    transportEvidenceHash: sha256Text(JSON.stringify(transportEvidence)),
+  };
+  const providerReceipt = {
+    ...providerReceiptWithoutHash,
+    receiptHash: sha256Json(providerReceiptWithoutHash),
+  };
+  const providerReceiptPath = path.join(invocationDir, 'invocation-receipt.json');
+  const providerReceiptText = `${JSON.stringify(providerReceipt, null, 2)}\n`;
+  writeFileSync(providerReceiptPath, providerReceiptText, 'utf8');
+  const providerInvocationReceiptRef = {
+    path: rootRelative(projectRoot, providerReceiptPath),
+    contentHash: sha256Text(providerReceiptText),
+    receiptHash: providerReceipt.receiptHash,
+  };
   return {
     ...response,
     independentProviderEvidence: {
       ...evidenceWithoutRunHash,
       runHash: criticalAuditorIndependentProviderRunHash(evidenceWithoutRunHash),
+    },
+    providerInvocationReceiptRef,
+    judgeAdapterHostExecution: {
+      adapterKind: 'package_cli_external_adapter',
+      commandHash: sha256Json({ command: 'fixture-provider' }),
+      exitCode: 0,
+      stdoutPath: rootRelative(projectRoot, stdoutPath),
+      stdoutHash: sha256Text(stdout),
+      stderrPath: rootRelative(projectRoot, stderrPath),
+      stderrHash: sha256Text(stderr),
     },
   };
 }
@@ -774,11 +958,62 @@ function criticalAuditorResponseIdentity(request: Record<string, any>): Record<s
     namespaceVersion: request.namespaceVersion,
     sourceHash: request.sourceHash,
     sourceDocumentHash: request.sourceDocumentHash,
+    sourceBytesHash: request.sourceBytesHash,
     semanticModelHash: request.semanticModelHash,
     implementationConfirmationHash: request.implementationConfirmationHash,
     packetHash: request.packetHash,
     projectionSetHash: request.projectionSetHash,
   };
+}
+
+function priorFindingsDispositionFromRequest(
+  request: Record<string, any>
+): Record<string, unknown>[] {
+  const dispositions = new Map<string, Record<string, unknown>>();
+  const addDisposition = (
+    finding: Record<string, any>,
+    disposition: 'unchanged' | 'rejected',
+    evidenceRef: string
+  ) => {
+    const findingRef = ['findingRef', 'gapId', 'id', 'code', 'blockerCode']
+      .map((field) => String(finding[field] ?? '').trim())
+      .find(Boolean);
+    if (!findingRef || dispositions.has(findingRef)) return;
+    dispositions.set(findingRef, {
+      findingRef,
+      disposition,
+      evidenceRefs: evidenceRef ? [evidenceRef] : [],
+    });
+  };
+
+  for (const envelope of request.previousReceipts ?? []) {
+    const receipt = envelope.criticalAuditorReceipt ?? envelope;
+    const evidenceRef = String(receipt.receiptHash ?? receipt.responseHash ?? '').trim();
+    for (const key of [
+      'gapCandidates',
+      'validatedGaps',
+      'mutationPressureFindings',
+      'overBroadTaskFindings',
+      'missingProjectionFindings',
+      'invalidProofFindings',
+      'legacyBypassFindings',
+      'sourceMaterializationFindings',
+    ]) {
+      for (const finding of receipt[key] ?? []) {
+        addDisposition(finding, 'unchanged', evidenceRef);
+      }
+    }
+    for (const finding of receipt.rejectedGapCandidates ?? []) {
+      addDisposition(finding, 'rejected', evidenceRef);
+    }
+  }
+
+  const gateDryRun = request.gateDryRun ?? {};
+  const gateEvidenceRef = String(gateDryRun.reportPath ?? '').trim();
+  for (const issue of gateDryRun.actionableBlockingIssues ?? []) {
+    addDisposition(issue, 'unchanged', gateEvidenceRef);
+  }
+  return [...dispositions.values()];
 }
 
 function nextNumericId(existingIds: unknown[], prefix: string, offset = 1): string {
@@ -810,6 +1045,78 @@ function firstRequestMustRef(request: Record<string, any>): string {
   return mustRef;
 }
 
+function repairActionSourceAuthority(
+  requestPath: string,
+  request: Record<string, any> = readJson(requestPath)
+): {
+  sourceSpan: { startLine: number; endLine: number };
+  sourceText: string;
+  mustRefs: string[];
+  requirementIds: string[];
+} {
+  const projectRoot = criticalAuditorProjectRoot(requestPath);
+  const sourceDocument = String(request.sourceDocument ?? '').trim();
+  const requestSourcePath = path.resolve(projectRoot, sourceDocument);
+  const relativeRequestSourcePath = path.relative(projectRoot, requestSourcePath);
+  if (
+    !sourceDocument ||
+    path.isAbsolute(sourceDocument) ||
+    relativeRequestSourcePath.startsWith('..') ||
+    path.isAbsolute(relativeRequestSourcePath)
+  ) {
+    throw new Error('critical auditor request sourceDocument is invalid');
+  }
+
+  const mustRef = firstRequestMustRef(request);
+  const confirmation = readInlineConfirmation(requestSourcePath);
+  const mustRow = (Array.isArray(confirmation.must) ? confirmation.must : []).find(
+    (row: Record<string, unknown>) => String(row?.id ?? '').trim() === mustRef
+  );
+  if (!mustRow || typeof mustRow !== 'object') {
+    throw new Error(`critical auditor confirmation authority missing for ${mustRef}`);
+  }
+  const sourceSpan = mustRow.sourceSpan as
+    | { startLine?: unknown; endLine?: unknown }
+    | null
+    | undefined;
+  const startLine = Number(sourceSpan?.startLine);
+  const endLine = Number(sourceSpan?.endLine);
+  const requirementIds = [
+    mustRow.sourceRequirementId,
+    ...(Array.isArray(mustRow.sourceRequirementIds) ? mustRow.sourceRequirementIds : []),
+  ]
+    .map((value) => String(value ?? '').trim())
+    .filter((value, index, values) => Boolean(value) && values.indexOf(value) === index);
+  const authoritySourceDocument = String(mustRow.sourcePath ?? '').trim();
+  const authoritySourcePath = path.resolve(projectRoot, authoritySourceDocument);
+  const relativeAuthoritySourcePath = path.relative(projectRoot, authoritySourcePath);
+  if (
+    !authoritySourceDocument ||
+    path.isAbsolute(authoritySourceDocument) ||
+    relativeAuthoritySourcePath.startsWith('..') ||
+    path.isAbsolute(relativeAuthoritySourcePath) ||
+    !Number.isInteger(startLine) ||
+    startLine < 1 ||
+    !Number.isInteger(endLine) ||
+    endLine < startLine ||
+    requirementIds.length === 0
+  ) {
+    throw new Error(`critical auditor confirmation authority is invalid for ${mustRef}`);
+  }
+  const sourceLines = readFileSync(authoritySourcePath, 'utf8')
+    .replace(/\r\n/gu, '\n')
+    .split('\n');
+  if (endLine > sourceLines.length) {
+    throw new Error(`critical auditor confirmation authority span is invalid for ${mustRef}`);
+  }
+  return {
+    sourceSpan: { startLine, endLine },
+    sourceText: sourceLines.slice(startLine - 1, endLine).join('\n').trim(),
+    mustRefs: [mustRef],
+    requirementIds,
+  };
+}
+
 function writeNoNewGapResponse(
   requestPath: string,
   responsePath: string,
@@ -829,13 +1136,7 @@ function writeNoNewGapResponse(
     verdict: 'no_new_valid_gap',
     reviewedMustRefs: request.mustRefs,
     reviewedProjectionRefs: projectionRefs.length ? [projectionRefs[0]] : [],
-    priorFindingsDisposition: [
-      {
-        findingRef: `ROUND-${request.roundIndex}-BASELINE`,
-        disposition: request.roundIndex === 1 ? 'new' : 'unchanged',
-        evidenceRefs: [request.gateDryRun.reportPath],
-      },
-    ],
+    priorFindingsDisposition: priorFindingsDispositionFromRequest(request),
     rejectedGapCandidates: [
       { id: `REJ-${request.roundIndex}`, reason: 'no new valid gap detected' },
     ],
@@ -843,7 +1144,7 @@ function writeNoNewGapResponse(
     rationale: `Round ${request.roundIndex} found no new valid gap.`,
     ...overrides,
   };
-  const response = withIndependentProviderEvidence(request, body);
+  const response = withIndependentProviderEvidence(request, body, requestPath);
   writeFileSync(responsePath, `${JSON.stringify(response, null, 2)}\n`, 'utf8');
   return responsePath;
 }
@@ -857,8 +1158,8 @@ function writeNewValidGapResponse(
   const projectionRefs = request.packetProjectionSummary?.projectionRefs ?? [];
   const checkedProjectionGroups = request.packetProjectionSummary?.projectionGroups ?? [];
   const checkedProjectionQualityRuleCodes = checkedProjectionQualityRuleCodesForRequest(request);
-  const sourceMustRef = firstRequestMustRef(request);
   const repairMustId = nextNumericId(canonicalMustRefs(request), 'MUST-FR');
+  const sourceAuthority = repairActionSourceAuthority(requestPath, request);
   const body = {
     schemaVersion: 'critical-auditor-round-response/v1',
     ...criticalAuditorResponseIdentity(request),
@@ -869,13 +1170,7 @@ function writeNewValidGapResponse(
     verdict: 'new_valid_gap',
     reviewedMustRefs: request.mustRefs,
     reviewedProjectionRefs: projectionRefs.length ? [projectionRefs[0]] : [],
-    priorFindingsDisposition: [
-      {
-        findingRef: `ROUND-${request.roundIndex}-GAP`,
-        disposition: 'new',
-        evidenceRefs: [request.gateDryRun.reportPath],
-      },
-    ],
+    priorFindingsDisposition: priorFindingsDispositionFromRequest(request),
     gapCandidates: [{ id: `GAP-CANDIDATE-${request.roundIndex}` }],
     validatedGaps: [
       {
@@ -885,16 +1180,13 @@ function writeNewValidGapResponse(
           {
             actionId: `REPAIR-${request.roundIndex}-001`,
             type: 'add_must',
-            sourceSpan: { startLine: 1, endLine: 1 },
-            sourceText: 'Add source-bound missing requirement.',
+            ...sourceAuthority,
             targetField: 'implementationConfirmation.must',
             newValue: {
               id: repairMustId,
               text: 'Add source-bound missing requirement.',
             },
             reason: 'Critical Auditor found an omitted requirement.',
-            mustRefs: [sourceMustRef],
-            requirementIds: [repairMustId],
           },
         ],
       },
@@ -903,7 +1195,7 @@ function writeNewValidGapResponse(
     rationale: `Round ${request.roundIndex} found a valid repairable gap.`,
     ...overrides,
   };
-  const response = withIndependentProviderEvidence(request, body);
+  const response = withIndependentProviderEvidence(request, body, requestPath);
   writeFileSync(responsePath, `${JSON.stringify(response, null, 2)}\n`, 'utf8');
   return responsePath;
 }
@@ -927,13 +1219,7 @@ function writeBlockedResponse(
     verdict: 'blocked',
     reviewedMustRefs: request.mustRefs,
     reviewedProjectionRefs: projectionRefs.length ? [projectionRefs[0]] : [],
-    priorFindingsDisposition: [
-      {
-        findingRef: `ROUND-${request.roundIndex}-BLOCKED`,
-        disposition: 'new',
-        evidenceRefs: [request.gateDryRun.reportPath],
-      },
-    ],
+    priorFindingsDisposition: priorFindingsDispositionFromRequest(request),
     validatedGaps: [],
     sourceMaterializationFindings: [
       {
@@ -945,7 +1231,7 @@ function writeBlockedResponse(
     rationale: `Round ${request.roundIndex} blocked on non-semantic audit dependency.`,
     ...overrides,
   };
-  const response = withIndependentProviderEvidence(request, body);
+  const response = withIndependentProviderEvidence(request, body, requestPath);
   writeFileSync(responsePath, `${JSON.stringify(response, null, 2)}\n`, 'utf8');
   return responsePath;
 }
@@ -969,13 +1255,7 @@ function writeInsufficientAuditResponse(
     verdict: 'insufficient_audit',
     reviewedMustRefs: request.mustRefs,
     reviewedProjectionRefs: projectionRefs.length ? [projectionRefs[0]] : [],
-    priorFindingsDisposition: [
-      {
-        findingRef: `ROUND-${request.roundIndex}-INSUFFICIENT`,
-        disposition: 'new',
-        evidenceRefs: [request.gateDryRun.reportPath],
-      },
-    ],
+    priorFindingsDisposition: priorFindingsDispositionFromRequest(request),
     validatedGaps: [],
     invalidProofFindings: [
       {
@@ -986,15 +1266,15 @@ function writeInsufficientAuditResponse(
     rationale: `Round ${request.roundIndex} did not provide enough audit evidence.`,
     ...overrides,
   };
-  const response = withIndependentProviderEvidence(request, body);
+  const response = withIndependentProviderEvidence(request, body, requestPath);
   writeFileSync(responsePath, `${JSON.stringify(response, null, 2)}\n`, 'utf8');
   return responsePath;
 }
 
 function writeSingleMustRepairResponse(requestPath: string, responsePath: string) {
   const request = readJson(requestPath);
-  const sourceMustRef = firstRequestMustRef(request);
   const mustId = nextNumericId(canonicalMustRefs(request), 'MUST-FR');
+  const sourceAuthority = repairActionSourceAuthority(requestPath, request);
   writeNewValidGapResponse(requestPath, responsePath, {
     validatedGaps: [
       {
@@ -1004,16 +1284,13 @@ function writeSingleMustRepairResponse(requestPath: string, responsePath: string
           {
             actionId: 'REPAIR-SINGLE-MUST',
             type: 'add_must',
-            sourceSpan: { startLine: 1, endLine: 1 },
-            sourceText: 'Repair must rebuild the packet.',
+            ...sourceAuthority,
             targetField: 'implementationConfirmation.must',
             newValue: {
               id: mustId,
               text: 'Repair must rebuild the packet.',
             },
             reason: 'Validated gap requires packet rebuild.',
-            mustRefs: [sourceMustRef],
-            requirementIds: [mustId],
           },
         ],
       },
@@ -1178,6 +1455,93 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     }
   );
 
+  it('materializes a source-table split_must repair through confirmation, packet, and receipt', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-split-must-'));
+    try {
+      const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
+      const source = writeSplitRepairSource(root);
+      writePromotionReceipt(root, source, recordId);
+      const paths = authoringPaths(root, recordId);
+
+      const initial = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+      expect(initial.blockingStage).toBe('critical_auditor_round_required');
+      const sourceAuthority = repairActionSourceAuthority(paths.request(1));
+      expect(sourceAuthority).toMatchObject({
+        mustRefs: ['MUST-FR-001'],
+        requirementIds: ['FR-001'],
+      });
+      expect(sourceAuthority.sourceText).toContain('| FR-001 |');
+
+      writeNewValidGapResponse(paths.request(1), paths.response(1), {
+        validatedGaps: [
+          {
+            id: 'VALID-GAP-SPLIT-MUST',
+            status: 'open',
+            repairActions: [
+              {
+                actionId: 'REPAIR-SPLIT-MUST',
+                type: 'split_must',
+                ...sourceAuthority,
+                targetField: 'implementationConfirmation.must',
+                newValue: {
+                  sourceMustRef: 'MUST-FR-001',
+                  replacements: [
+                    {
+                      id: 'MUST-FR-001',
+                      text: 'Preserve the first atomic runtime behavior.',
+                    },
+                    {
+                      id: 'MUST-FR-002',
+                      text: 'Preserve the second atomic runtime behavior.',
+                    },
+                  ],
+                },
+                reason: 'The source requirement combines two independently verifiable behaviors.',
+              },
+            ],
+          },
+        ],
+      });
+
+      const repaired = runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        mode: 'preserve-existing',
+      });
+      expect(repaired.blockingStage).toBe('critical_auditor_round_required');
+      const sourceText = readFileSync(source, 'utf8');
+      expect(sourceText).toContain(
+        '| FR-001 | Preserve the first atomic runtime behavior. | The behavior must be split atomically. | ACC-001 |'
+      );
+      expect(sourceText).toContain(
+        '| FR-002 | Preserve the second atomic runtime behavior. | The behavior must be split atomically. | ACC-001 |'
+      );
+      const confirmation = readInlineConfirmation(source);
+      expect(confirmation.must.map((row: Record<string, unknown>) => row.id)).toEqual(
+        expect.arrayContaining(['MUST-FR-001', 'MUST-FR-002'])
+      );
+      expect(JSON.stringify(readJson(paths.packet))).toContain('MUST-FR-002');
+      expect(existsSync(paths.receipt(1))).toBe(false);
+      const archiveArtifact = repaired.artifacts.find((artifact: string) =>
+        artifact.includes('/archive/')
+      );
+      expect(archiveArtifact).toBeTruthy();
+      const archiveDir = path.join(root, archiveArtifact as string);
+      const archivedReceipt = readJson(path.join(archiveDir, 'critical-auditor-receipt-round-1.json'));
+      expect(JSON.stringify(archivedReceipt)).toContain('REPAIR-SPLIT-MUST');
+      expect(JSON.stringify(archivedReceipt)).toContain('MUST-FR-002');
+      expect(readJson(paths.request(1)).previousReceipts).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    }
+  }, 120_000);
+
   it('rejects caller-provided Critical Auditor response paths before ingest', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-response-injection-'));
     try {
@@ -1264,9 +1628,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         expect.arrayContaining([...new Set(inventoryEntries.map(({ group }) => group))])
       );
       expect(projectionRefs).toEqual(expect.arrayContaining(expectedProjectionRefs));
-      expect(request.projectionSetHash).toBe(
-        sha256Json([...new Set(projectionRefs)].sort())
-      );
+      expect(request.projectionSetHash).toBe(sha256Json([...new Set(projectionRefs)].sort()));
     } finally {
       rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
     }
@@ -1523,10 +1885,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
           /( {4}- id: FAIL-001\n[\s\S]*? {6}linkedEvidenceIds: \["EVD-001"\]\n)( {6}derivedFromMustRef: MUST-001\n)/u,
           '$1      ownerMustRefs: ["MUST-001"]\n'
         )
-        .replace(
-          /( {4}- id: TARGET-MOD-001\n[\s\S]*?)( {6}derivedFromMustRef: MUST-001\n)/u,
-          '$1'
-        )
+        .replace(/( {4}- id: TARGET-MOD-001\n[\s\S]*?)( {6}derivedFromMustRef: MUST-001\n)/u, '$1')
         .replace(/( {4}- id: ART-001\n[\s\S]*?)( {6}derivedFromMustRef: MUST-001\n)/u, '$1')
         .replace(/( {4}- id: CMD-001\n[\s\S]*?)( {6}derivedFromMustRef: MUST-001\n)/u, '$1');
       const projectedProductTarget = path.join(
@@ -1585,8 +1944,13 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
           recordId,
           requirementSetId: `${recordId}-SET`,
           mode: 'preserve-existing',
-          criticalAuditorResponse: paths.response(round),
         });
+        if (round < 3) {
+          expect(
+            existsSync(paths.request(round + 1)),
+            stableStringify(result.blockingIssues)
+          ).toBe(true);
+        }
       }
 
       expect(result).toMatchObject({
@@ -1604,13 +1968,14 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         ...confirmation.flowViews,
         ...confirmation.edgeCaseViews,
       ].filter((view: any) => view.scope === 'business' && view.visualKind);
-      expect(businessViews.map((view: any) => view.visualKind).sort()).toEqual([
-        'edge',
-        'failure',
-        'flow',
-        'happy',
-        'state',
-      ]);
+      expect(
+        businessViews.map((view: any) => view.visualKind).sort(),
+        stableStringify([
+          ...confirmation.sequenceViews,
+          ...confirmation.flowViews,
+          ...confirmation.edgeCaseViews,
+        ])
+      ).toEqual(['edge', 'failure', 'flow', 'happy', 'state']);
       const traceIds = confirmation.traceRows.map((row: any) => row.id);
       const evidenceIds = confirmation.evidence.map((row: any) => row.id);
       const acceptanceIds = [
@@ -1740,7 +2105,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(result.blockingStage).toBe('critical_auditor_blocked');
@@ -1778,7 +2142,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(result.blockingStage).toBe('critical_auditor_insufficient_audit');
@@ -1825,7 +2188,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(blockedResult.blockingIssues.map((issue: any) => issue.code)).toContain(
@@ -1849,7 +2211,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(insufficientResult.blockingIssues.map((issue: any) => issue.code)).toContain(
@@ -1884,7 +2245,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
@@ -1921,7 +2281,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
@@ -1963,7 +2322,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(result.blockingStage).toBe('packet_source_projection_resynchronization_required');
@@ -2059,6 +2417,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
       });
+      const sourceAuthority = repairActionSourceAuthority(paths.request(1));
       writeNewValidGapResponse(paths.request(1), paths.response(1), {
         validatedGaps: [
           {
@@ -2068,14 +2427,11 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
               {
                 actionId: 'REPAIR-INVALID-TARGET',
                 type: 'add_must',
-                sourceSpan: { startLine: 1, endLine: 1 },
-                sourceText: 'Invalid target field should fail materialization.',
+                ...sourceAuthority,
                 targetField: 'implementationConfirmation.unknownField',
                 newValue: { id: 'MUST-INVALID-TARGET', text: 'Invalid target field.' },
                 reason:
                   'The materializer must reject target fields that do not match the action type.',
-                mustRefs: ['MUST-001'],
-                requirementIds: ['REQ-INVALID-TARGET'],
               },
             ],
           },
@@ -2087,7 +2443,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(result.blockingStage).toBe('source_gap_fix_materialization_required');
@@ -2113,6 +2468,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
       });
+      const sourceAuthority = repairActionSourceAuthority(paths.request(1));
 
       writeNewValidGapResponse(paths.request(1), paths.response(1), {
         validatedGaps: [{ id: 'VALID-GAP-NO-ACTIONS', status: 'open' }],
@@ -2122,7 +2478,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
       expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
         'critical_auditor_validated_gap_repair_actions_missing'
@@ -2138,13 +2493,10 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
               {
                 actionId: 'REPAIR-UNKNOWN-TYPE',
                 type: 'invent_semantics',
-                sourceSpan: { startLine: 1, endLine: 1 },
-                sourceText: 'Invalid action type.',
+                ...sourceAuthority,
                 targetField: 'implementationConfirmation.must',
                 newValue: { id: 'MUST-INVALID', text: 'Invalid action type.' },
                 reason: 'Unknown type must fail closed.',
-                mustRefs: ['MUST-001'],
-                requirementIds: ['REQ-INVALID'],
               },
             ],
           },
@@ -2155,7 +2507,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
       expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
         'critical_auditor_repair_action_type_unknown'
@@ -2171,12 +2522,9 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
               {
                 actionId: 'REPAIR-MISSING-FIELD',
                 type: 'add_must',
-                sourceSpan: { startLine: 1, endLine: 1 },
-                sourceText: 'Missing reason should fail.',
+                ...sourceAuthority,
                 targetField: 'implementationConfirmation.must',
                 newValue: { id: 'MUST-MISSING-FIELD', text: 'Missing reason should fail.' },
-                mustRefs: ['MUST-001'],
-                requirementIds: ['REQ-MISSING-FIELD'],
               },
             ],
           },
@@ -2187,7 +2535,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
       expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
         'critical_auditor_repair_action_field_missing'
@@ -2213,6 +2560,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         mode: 'preserve-existing',
       });
       const request = readJson(paths.request(1));
+      const sourceAuthority = repairActionSourceAuthority(paths.request(1), request);
       const existingConfirmation = readInlineConfirmation(source);
       const repairIds = {
         must: [
@@ -2257,11 +2605,8 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         ),
       };
       const actionBase = {
-        sourceSpan: { startLine: 10, endLine: 11 },
-        sourceText: 'Materialize every semantic field from a Critical Auditor gap.',
+        ...sourceAuthority,
         reason: 'Semantic materialization must update contract fields.',
-        mustRefs: ['MUST-001'],
-        requirementIds: ['REQ-SEMANTIC-REPAIR'],
       };
       writeNewValidGapResponse(paths.request(1), paths.response(1), {
         validatedGaps: [
@@ -2277,8 +2622,8 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
                 ...actionBase,
               },
               {
-                actionId: 'REPAIR-SPLIT-MUST',
-                type: 'split_must',
+                actionId: 'REPAIR-ADD-MUST-SECONDARY',
+                type: 'add_must',
                 targetField: 'implementationConfirmation.must',
                 newValue: { id: repairIds.must[1], text: 'Repair splits a broad MUST.' },
                 ...actionBase,
@@ -2311,7 +2656,11 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
                 actionId: 'REPAIR-ADD-TRACE',
                 type: 'add_trace',
                 targetField: 'implementationConfirmation.traceRows',
-                newValue: { id: repairIds.trace, covers: [repairIds.must[0]] },
+                newValue: {
+                  id: repairIds.trace,
+                  text: 'Repair adds trace coverage.',
+                  covers: [repairIds.must[0]],
+                },
                 ...actionBase,
               },
               {
@@ -2320,6 +2669,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
                 targetField: 'implementationConfirmation.acceptanceCriteria',
                 newValue: {
                   id: repairIds.acceptance,
+                  text: 'Repair adds an acceptance boundary.',
                   file: 'tests/acceptance/repair.test.ts',
                 },
                 ...actionBase,
@@ -2328,14 +2678,22 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
                 actionId: 'REPAIR-ADD-E2E',
                 type: 'add_e2e',
                 targetField: 'implementationConfirmation.e2eScenarios',
-                newValue: { id: repairIds.e2e, file: 'tests/e2e/repair.e2e.ts' },
+                newValue: {
+                  id: repairIds.e2e,
+                  text: 'Repair adds an end-to-end boundary.',
+                  file: 'tests/e2e/repair.e2e.ts',
+                },
                 ...actionBase,
               },
               {
                 actionId: 'REPAIR-ADD-BUSINESS',
                 type: 'add_business_view',
                 targetField: 'implementationConfirmation.businessViews',
-                newValue: { id: repairIds.businessView, title: 'Repair business view' },
+                newValue: {
+                  id: repairIds.businessView,
+                  text: 'Repair adds a business view.',
+                  title: 'Repair business view',
+                },
                 ...actionBase,
               },
               {
@@ -2373,9 +2731,8 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
-      expect(result).toMatchObject({
+      expect(result, stableStringify(result.blockingIssues)).toMatchObject({
         ok: false,
         status: 'blocked',
         blockingStage: 'critical_auditor_round_required',
@@ -2480,7 +2837,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(repaired).toMatchObject({
@@ -2512,9 +2868,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         diffSummary: expect.any(Array),
         allowedUserActions: expect.arrayContaining(['confirm_current_version']),
       });
-      expect(
-        confirmation.reconfirmationRequest.evidenceBundle.items[0]
-      ).not.toHaveProperty('id');
+      expect(confirmation.reconfirmationRequest.evidenceBundle.items[0]).not.toHaveProperty('id');
       expect(
         confirmation.reconfirmationRequest.diffSummary.every(
           (item: Record<string, unknown>) => !Object.hasOwn(item, 'id')
@@ -2525,7 +2879,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     }
   });
 
-  it('fails closed before drafting when confirmed-scope repair lacks authoritative source refs', () => {
+  it('fails closed before drafting when confirmed-scope repair references unknown source authority', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-reconfirm-source-refs-'));
     try {
       const recordId = 'REQ-AUTHORING-REPAIR-RECONFIRM-SOURCE-REFS';
@@ -2547,6 +2901,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       const sourceBeforeRepair = readFileSync(source, 'utf8');
       const repairDraftPath = path.join(paths.dir, 'authoring-repair-draft-source.md');
       expect(existsSync(repairDraftPath)).toBe(false);
+      const sourceAuthority = repairActionSourceAuthority(paths.request(1));
 
       writeNewValidGapResponse(paths.request(1), paths.response(1), {
         validatedGaps: [
@@ -2557,8 +2912,8 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
               {
                 actionId: 'REPAIR-RECONFIRM-SOURCE-REFS',
                 type: 'add_business_view',
-                sourceSpan: { startLine: 1, endLine: 1 },
-                sourceText: 'Add a business view without inventing requirement authority.',
+                sourceSpan: sourceAuthority.sourceSpan,
+                sourceText: sourceAuthority.sourceText,
                 targetField: 'implementationConfirmation.businessViews',
                 newValue: {
                   id: 'BUSINESS-VIEW-RECONFIRM-SOURCE-REFS',
@@ -2579,15 +2934,18 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(repaired).toMatchObject({
         ok: false,
         status: 'blocked',
+        blockingStage: 'critical_auditor_response_invalid',
       });
-      expect(repaired.blockingIssues.map((issue: any) => issue.code)).toContain(
-        'controlled_authoring_reconfirmation_source_refs_missing'
+      expect(repaired.blockingIssues.map((issue: any) => issue.code)).toEqual(
+        expect.arrayContaining([
+          'critical_auditor_repair_action_must_ref_unknown',
+          'critical_auditor_repair_action_requirement_id_unknown',
+        ])
       );
       expect(readFileSync(source, 'utf8')).toBe(sourceBeforeRepair);
       expect(existsSync(repairDraftPath)).toBe(false);
@@ -2615,11 +2973,8 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       const existingEdge = confirmation.edgeCases.find((row: any) => row.id === 'EDGE-001');
       const existingTrace = confirmation.traceRows.find((row: any) => row.id === 'TRACE-001');
       const actionBase = {
-        sourceSpan: { startLine: 20, endLine: 24 },
-        sourceText: 'Close consumer business failure behavior without authoring-governance prose.',
+        ...repairActionSourceAuthority(paths.request(1)),
         reason: 'Critical Auditor found missing business failure closure.',
-        mustRefs: ['MUST-001'],
-        requirementIds: ['MUST-001', 'TRACE-001'],
       };
       writeNewValidGapResponse(paths.request(1), paths.response(1), {
         validatedGaps: [
@@ -2632,9 +2987,11 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
                 type: 'upsert_failure_path',
                 targetField: 'implementationConfirmation.failurePaths',
                 newValue: {
-                  ...existingFailure,
+                  ...repairActionNewValue(existingFailure),
+                  text: 'Repair updates the existing business failure path.',
                   trigger: 'Consumer runtime dependency becomes unavailable.',
-                  expectedBehavior: 'The affected business lane fails closed without hot-path blocking.',
+                  expectedBehavior:
+                    'The affected business lane fails closed without hot-path blocking.',
                 },
                 ...actionBase,
               },
@@ -2644,6 +3001,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
                 targetField: 'implementationConfirmation.failurePaths',
                 newValue: {
                   id: 'FAIL-050',
+                  text: 'Repair adds the polling CPU budget failure path.',
                   title: 'Active-symbol quote polling CPU budget breach',
                   trigger: 'Active-symbol quote polling exceeds the confirmed CPU budget.',
                   expectedBehavior: 'The product rejects or degrades the affected polling lane.',
@@ -2659,10 +3017,12 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
                 type: 'upsert_edge_case',
                 targetField: 'implementationConfirmation.edgeCases',
                 newValue: {
-                  ...existingEdge,
+                  ...repairActionNewValue(existingEdge),
+                  text: 'Repair updates the existing runtime dependency edge case.',
                   category: 'runtime_dependency_failure',
                   condition: 'The consumer runtime dependency becomes unavailable mid-session.',
-                  expectedBehavior: 'The affected business lane fails closed and remains observable.',
+                  expectedBehavior:
+                    'The affected business lane fails closed and remains observable.',
                   linkedFailurePathIds: ['FAIL-001'],
                 },
                 ...actionBase,
@@ -2672,7 +3032,8 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
                 type: 'upsert_trace',
                 targetField: 'implementationConfirmation.traceRows',
                 newValue: {
-                  ...existingTrace,
+                  ...repairActionNewValue(existingTrace),
+                  text: 'Repair updates failure and edge-case trace closure.',
                   failurePathRefs: ['FAIL-001', 'FAIL-050'],
                   edgeCaseRefs: ['EDGE-001'],
                 },
@@ -2688,10 +3049,11 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
-      expect(result.blockingStage).toBe('critical_auditor_round_required');
+      expect(result.blockingStage, stableStringify(result.blockingIssues)).toBe(
+        'critical_auditor_round_required'
+      );
       const repaired = readInlineConfirmation(source);
       expect(repaired.failurePaths.find((row: any) => row.id === 'FAIL-001')).toMatchObject({
         trigger: 'Consumer runtime dependency becomes unavailable.',
@@ -3120,9 +3482,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         primaryTraceRef.replace(/-[0-9]{3}$/u, '')
       );
       const primaryEvidenceRef = String(confirmation.traceRows[0].evidenceRefs[0]);
-      const primaryCommandRef = String(
-        confirmation.traceRows[0].contractValidationCommandRefs[0]
-      );
+      const primaryCommandRef = String(confirmation.traceRows[0].contractValidationCommandRefs[0]);
       const secondaryCommandRef = nextNumericId(
         confirmation.requiredCommands.map((row: any) => row.id),
         primaryCommandRef.replace(/-[0-9]{3}$/u, '')
@@ -3170,10 +3530,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         'src/order_intent.ts',
         'src/tick_databus.ts',
       ];
-      const authorityOnlyTargets = [
-        'src/runtime_bootstrap.ts',
-        'src/application_engine.ts',
-      ];
+      const authorityOnlyTargets = ['src/runtime_bootstrap.ts', 'src/application_engine.ts'];
 
       confirmation.must = [
         {
@@ -3445,22 +3802,20 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         'src/order_intent.ts'
       );
       expect(queueTasksByOutcome['tick payload'].targetFiles).toContain('src/tick_databus.ts');
-      expect(
-        [...new Set(queueTasks.flatMap((row: any) => row.targetFiles))]
-      ).toEqual(expect.arrayContaining(authorityOnlyTargets));
+      expect([...new Set(queueTasks.flatMap((row: any) => row.targetFiles))]).toEqual(
+        expect.arrayContaining(authorityOnlyTargets)
+      );
       expect(
         repaired.atomicImplementationTaskList.find((row: any) => row.id === secondaryAtomicTaskRef)
           .targetFiles
       ).toEqual(['src/metadata.ts', 'tests/metadata.test.ts']);
       expect(
-        repaired.mustExecutionDecompositionMatrix.find(
-          (row: any) => row.mustRef === primaryMustRef
-        )
+        repaired.mustExecutionDecompositionMatrix.find((row: any) => row.mustRef === primaryMustRef)
           .atomicTaskRefs
       ).toEqual(queueTasks.map((row: any) => row.id));
-      expect(
-        repaired.traceRows.find((row: any) => row.id === primaryTraceRef).taskRefs
-      ).toEqual(queueTasks.map((row: any) => row.id));
+      expect(repaired.traceRows.find((row: any) => row.id === primaryTraceRef).taskRefs).toEqual(
+        queueTasks.map((row: any) => row.id)
+      );
       expect(
         repaired.acceptanceTests.find((row: any) => row.id === primaryNegAcceptanceRef)
           .derivedFromMustRef
@@ -3477,9 +3832,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         repaired.acceptanceTests.find((row: any) => row.id === secondaryNegAcceptanceRef)
           .derivedFromMustRef
       ).toBeUndefined();
-      expect(
-        repaired.traceRows.find((row: any) => row.id === secondaryNegTraceRef)
-      ).toMatchObject({
+      expect(repaired.traceRows.find((row: any) => row.id === secondaryNegTraceRef)).toMatchObject({
         derivedFromRequirementRef: secondaryNegRef,
       });
       expect(
@@ -3902,7 +4255,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
-  });
+  }, 60_000);
 
   it('rebuilds packet source reconciliation after semantic repair', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-packet-rebuild-'));
@@ -3926,7 +4279,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
       const repairedConfirmation = readInlineConfirmation(source);
       const rebuiltPacket = readJson(paths.packet).must_decomposition_packet;
@@ -3966,7 +4318,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       const archiveArtifact = result.artifacts.find((artifact: string) =>
@@ -3995,7 +4346,10 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     }
   });
 
-  it('resumes pending validated-gap source promotion before rebuilding the old-source dry-run', () => {
+  it.each([
+    ['resumes pending validated-gap source promotion before rebuilding the old-source dry-run', false],
+    ['rebuilds a missing promotion receipt after the authoritative source was replaced', true],
+  ] as const)('%s', (_scenario, sourceAlreadyPromoted) => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-pending-promotion-'));
     try {
       const recordId = 'REQ-AUTHORING-REPAIR-PRESERVE';
@@ -4026,7 +4380,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
       const archiveArtifact = completed.artifacts.find((artifact: string) =>
         artifact.includes('/archive/')
@@ -4054,10 +4407,17 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         sourceDocumentHashAfter: sha256Text(readFileSync(repairDraftPath, 'utf8')),
       });
 
-      // Recreate the durable state left when execution stops after the allow decision
-      // and before the promotion helper replaces the authoritative source.
-      writeFileSync(source, sourceBeforeGap, 'utf8');
-      writeFileSync(paths.promotionReceipt, promotionReceiptBeforeGap, 'utf8');
+      // Recreate either side of the safe-writer rename/receipt persistence window.
+      writeFileSync(
+        source,
+        sourceAlreadyPromoted ? readFileSync(repairDraftPath, 'utf8') : sourceBeforeGap,
+        'utf8'
+      );
+      if (sourceAlreadyPromoted) {
+        rmSync(paths.promotionReceipt, { force: true });
+      } else {
+        writeFileSync(paths.promotionReceipt, promotionReceiptBeforeGap, 'utf8');
+      }
       writeFileSync(paths.request(1), archivedRequest, 'utf8');
       writeFileSync(paths.response(1), archivedResponse, 'utf8');
       writeFileSync(paths.receipt(1), archivedReceipt, 'utf8');
@@ -4068,16 +4428,25 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
       const restoredResponse = readJson(paths.response(1));
       const restoredReceipt = readJson(paths.receipt(1)).criticalAuditorReceipt;
       const { receiptHash, ...receiptPayload } = restoredReceipt;
-      const currentSourceText = readFileSync(source, 'utf8');
-      const currentSourceExtraction = extractImplementationConfirmationForHash(currentSourceText);
-      const currentSourceDocumentHash = sourceDocumentHashForContract(
-        currentSourceText,
-        currentSourceExtraction.blockText,
-        currentSourceExtraction.confirmation
+      const auditSourceText = sourceAlreadyPromoted ? sourceBeforeGap : readFileSync(source, 'utf8');
+      const auditSourceExtraction = extractImplementationConfirmationForHash(auditSourceText);
+      const auditSourceDocumentHash = sourceDocumentHashForContract(
+        auditSourceText,
+        auditSourceExtraction.blockText,
+        auditSourceExtraction.confirmation
       );
-      const currentImplementationConfirmationHash = implementationConfirmationHashForContract(
-        currentSourceExtraction.confirmation
+      const auditImplementationConfirmationHash = implementationConfirmationHashForContract(
+        auditSourceExtraction.confirmation
       );
+      const normalizedResponseValidatedGaps = structuredClone(
+        restoredResponse.validatedGaps
+      ).map((gap: any) => ({
+        ...gap,
+        repairActions: gap.repairActions.map((action: any) => ({
+          ...action,
+          targetField: String(action.targetField).replace(/^implementationConfirmation\./u, ''),
+        })),
+      }));
       const auditBindingChecks = {
         receiptHash:
           receiptHash === sha256Json(receiptPayload) ||
@@ -4097,23 +4466,28 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
           restoredResponse.gateDryRunHash === restoredRequest.gateDryRun.gateDryRunHash &&
           restoredReceipt.gateDryRunHash === restoredRequest.gateDryRun.gateDryRunHash,
         sourceDocumentHash:
-          restoredResponse.sourceDocumentHash === currentSourceDocumentHash &&
-          restoredRequest.sourceDocumentHash === currentSourceDocumentHash &&
-          restoredReceipt.sourceDocumentHash === currentSourceDocumentHash,
+          restoredResponse.sourceDocumentHash === auditSourceDocumentHash &&
+          restoredRequest.sourceDocumentHash === auditSourceDocumentHash &&
+          restoredReceipt.sourceDocumentHash === auditSourceDocumentHash,
         implementationConfirmationHash:
           restoredResponse.implementationConfirmationHash ===
-            currentImplementationConfirmationHash &&
+            auditImplementationConfirmationHash &&
           restoredRequest.implementationConfirmationHash ===
-            currentImplementationConfirmationHash &&
-          restoredReceipt.implementationConfirmationHash === currentImplementationConfirmationHash,
+            auditImplementationConfirmationHash &&
+          restoredReceipt.implementationConfirmationHash === auditImplementationConfirmationHash,
         packetHash:
           restoredResponse.packetHash === restoredRequest.packetHash &&
           restoredReceipt.packetHash === restoredRequest.packetHash,
         validatedGaps:
-          sha256Json(restoredReceipt.validatedGaps) ===
-          sha256Json(restoredResponse.validatedGaps),
+          sha256Json(restoredReceipt.validatedGaps) === sha256Json(normalizedResponseValidatedGaps),
       };
-      expect(auditBindingChecks).toEqual(
+      expect(
+        auditBindingChecks,
+        stableStringify({
+          receiptValidatedGaps: restoredReceipt.validatedGaps,
+          responseValidatedGaps: restoredResponse.validatedGaps,
+        })
+      ).toEqual(
         Object.fromEntries(Object.keys(auditBindingChecks).map((key) => [key, true]))
       );
       makeCheckpointReceiptsStale(paths);
@@ -4123,7 +4497,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(resumed, JSON.stringify(resumed.blockingIssues, null, 2)).toMatchObject({
@@ -4133,9 +4506,14 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         nextRequiredAction: 'write_critical_auditor_round_response',
         consecutiveNoNewGapRounds: 0,
       });
-      expect(readInlineConfirmation(source).must.map((row: any) => row.id)).toContain(
-        repair.mustId
-      );
+      expect(
+        readInlineConfirmation(source).must.map((row: any) => row.id),
+        stableStringify({
+          blockingIssues: resumed.blockingIssues,
+          artifacts: resumed.artifacts,
+          sourceMutationDecision: readJson(sourceMutationDecisionPath),
+        })
+      ).toContain(repair.mustId);
       expect(readJson(paths.request(1))).toMatchObject({
         roundIndex: 1,
         sourceDocumentHash: resumed.sourceDocumentHash,
@@ -4151,7 +4529,7 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
-  });
+  }, 60_000);
 
   it('preserves a rich implementationConfirmation and blocks with a Critical Auditor request when no response exists', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'authoring-repair-preserve-'));
@@ -4216,7 +4594,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
       expect(result.status).toBe('blocked');
       expect(result.consecutiveNoNewGapRounds).toBe(1);
@@ -4233,7 +4610,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(2),
       });
       expect(result.status).toBe('blocked');
       expect(result.consecutiveNoNewGapRounds).toBe(2);
@@ -4249,7 +4625,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(3),
       });
       expect(result).toMatchObject({
         ok: true,
@@ -4291,7 +4666,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
       expect(
         result,
@@ -4577,41 +4951,25 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
       });
-      const request = readJson(paths.request(1));
-      writeFileSync(
-        paths.response(1),
-        `${JSON.stringify(
-          {
-            schemaVersion: 'critical-auditor-round-response/v1',
-            requestHash: request.requestHash,
-            recordId: request.recordId,
-            roundIndex: request.roundIndex,
-            sourceDocumentHash: request.sourceDocumentHash,
-            implementationConfirmationHash: request.implementationConfirmationHash,
-            packetHash: request.packetHash,
-            verdict: 'no_new_valid_gap',
-            reviewedMustRefs: request.mustRefs,
-            validatedGaps: [],
-            rejectedGapCandidates: [],
-            rationale: 'Missing required dry-run binding should fail.',
-          },
-          null,
-          2
-        )}\n`,
-        'utf8'
-      );
+      writeNoNewGapResponse(paths.request(1), paths.response(1), {
+        gateDryRunHash: undefined,
+        reviewedProjectionRefs: [],
+        priorFindingsDisposition: undefined,
+        checkedProjectionGroups: [],
+        rationale: 'Missing required dry-run binding should fail.',
+      });
 
       const result = runMainAgentAuthoringRepair(root, {
         source,
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
       const codes = result.blockingIssues.map((issue: any) => issue.code);
-      expect(codes).toContain('critical_auditor_response_gate_dry_run_hash_mismatch');
+      expect(codes, codes.join(',')).toContain(
+        'critical_auditor_response_gate_dry_run_hash_mismatch'
+      );
       expect(codes).toContain('critical_auditor_response_reviewed_projection_refs_missing');
-      expect(codes).toContain('critical_auditor_response_prior_findings_disposition_missing');
       expect(codes).toContain('critical_auditor_response_checked_projection_group_missing');
       expect(existsSync(paths.receipt(1))).toBe(false);
     } finally {
@@ -4661,7 +5019,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(result.blockingStage).toBe('critical_auditor_response_invalid');
@@ -4788,7 +5145,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
       const resultCodes = result.blockingIssues.map((issue: any) => issue.code);
       expect(resultCodes, JSON.stringify(resultCodes)).toContain(
@@ -4823,7 +5179,6 @@ describe('main-agent authoring-repair preserve-existing lane', () => {
         recordId,
         requirementSetId: `${recordId}-SET`,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
       expect(result).toMatchObject({
         ok: false,

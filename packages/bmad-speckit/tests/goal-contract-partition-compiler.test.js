@@ -12,6 +12,7 @@ const {
   compileCompositeSourceAuthorityBundle,
 } = require('../src/utils/goal-contract/control-plane/composite-source-authority-bundle.ts');
 const {
+  compileMainAgentGoalAuthorityBundle,
   compileGoalContract,
   compileGoalContractPolicy,
   goalContractCompilerIdentity,
@@ -29,10 +30,16 @@ const {
   compileOrderedSourceSnapshotSet,
 } = require('../src/utils/goal-contract/control-plane/source-snapshot.ts');
 const {
+  validateGoalContractSchema,
+} = require('../src/utils/goal-contract/control-plane/schema-registry.ts');
+const {
   canonicalIdentifierList,
   compilePartitions,
+  compileTaskExecutionRoleAuthority,
   projectOwnerConsumerRecords,
   projectOwnedArtifactPaths,
+  resolveRepositoryRelativeChildContractPath,
+  validateExecutablePartitionReadiness,
   verifyPartitionPlan,
 } = require('../src/utils/goal-contract/control-plane/partition-compiler.ts');
 const {
@@ -264,6 +271,74 @@ function makeInput({ reverse = false } = {}) {
   return input;
 }
 
+function roleAwareSourceAuthority(lines) {
+  return compileOrderedSourceSnapshotSet({
+    sources: [
+      {
+        sourceKind: 'source_plan',
+        sourceArtifactId: 'role-aware-source',
+        sourceRole: 'primary_implementation_authority',
+        namespace: 'ROLE_AWARE',
+        sourceOrder: 0,
+        pathOrSegmentId: 'docs/plans/role-aware-source.md',
+        rawBytes: Buffer.from(`${lines.join('\n')}\n`, 'utf8'),
+      },
+    ],
+  });
+}
+
+function roleAwareGraph() {
+  const commandRecord = (id, literal, lineStart) => ({
+    id,
+    literal,
+    commandTextHash: sha256(Buffer.from(literal, 'utf8')),
+    workingDirectory: '.',
+    shell: 'host_shell',
+    runtime: 'node',
+    sourceBinding: {
+      sourcePlanPath: 'docs/plans/role-aware-source.md',
+      lineStart,
+      lineEnd: lineStart,
+      textHash: sha256(Buffer.from(literal, 'utf8')),
+      specSpanRefs: [],
+    },
+  });
+  return {
+    tasks: [
+      { id: 'PLAN-T01', title: 'Deliver runtime capability', sourceIds: ['SRC-1'] },
+      { id: 'PLAN-T02', title: 'Verify aggregate evidence', sourceIds: ['SRC-2'] },
+    ],
+    traceSlices: [
+      {
+        id: 'slice-PLAN-T01',
+        goalIds: ['PLAN-T01'],
+        sourceIds: ['SRC-1'],
+        acceptanceIds: ['AC-1'],
+        evidenceIds: ['EVD-1'],
+        allowedPaths: ['src/runtime.ts'],
+        directCommands: ['CMD-PLAN-T01-01'],
+      },
+      {
+        id: 'slice-PLAN-T02',
+        goalIds: ['PLAN-T02'],
+        sourceIds: ['SRC-2'],
+        acceptanceIds: ['AC-2'],
+        evidenceIds: ['EVD-2'],
+        directCommands: ['CMD-PLAN-T02-01'],
+      },
+    ],
+    commands: {
+      direct: [
+        commandRecord('CMD-PLAN-T01-01', 'node --test runtime.test.js', 7),
+        commandRecord('CMD-PLAN-T02-01', 'node --test aggregate.test.js', 14),
+      ],
+      impacted: [],
+      integration: [],
+      regression: [],
+    },
+  };
+}
+
 function expectedSubordinateIds(input) {
   return [...input.binding.requiredRequirementIds, ...input.binding.requiredTaskIds].sort();
 }
@@ -304,6 +379,75 @@ describe('pure PartitionCompiler', () => {
     ].map((match) => match[2]);
 
     assert.deepEqual(sourceOnlyRequires, []);
+  });
+
+  it('compiles and verifies deterministic machine-only Main Agent Goal authority', () => {
+    const partitionInput = makeInput();
+    const boundHash = (id) => hashControlPlaneValue({ id });
+    const implementationView = { tasks: [{ taskId: 'TASK-01' }] };
+    const acceptanceEvidenceView = {
+      acceptanceItems: [{ acceptanceId: 'AC-01' }],
+    };
+    const reconciledViews = {
+      reconciliationReceiptHash: boundHash('reconciliation'),
+    };
+    const mainAgentAuthorityBindings = {
+      currentDispatchPointerHash: boundHash('dispatch-pointer'),
+      transactionManifestHash: boundHash('transaction-manifest'),
+      requirementRecordId: 'REQ-001',
+      requirementRecordHash: boundHash('requirement-record'),
+      requirementRecordRevision: 1,
+      requirementRecordEventChainHead: boundHash('event-chain-head'),
+      activeBundleRevision: 1,
+      activeBundleHash: boundHash('active-bundle'),
+      semanticIRHash: boundHash('semantic-ir'),
+      semanticConservationManifestHash: boundHash('conservation'),
+      sourceAuthorityHash: boundHash('source-authority'),
+      sourceSnapshotHash: boundHash('source-snapshot'),
+      sourceRootToSpecSpanMappingHash: boundHash('source-root-mapping'),
+      modelPacketHash: boundHash('model-packet'),
+      modelPacketParityReceiptHash: boundHash('model-packet-parity'),
+      goalExecutionHash: boundHash('goal-execution'),
+    };
+    const request = {
+      profile: 'main_agent_compiled',
+      canonicalIntentBundle: partitionInput.canonicalIntentBundle,
+      mainAgentAuthorityBindings,
+      implementationView,
+      acceptanceEvidenceView,
+      reconciledViews,
+      compilerIdentity: goalContractCompilerIdentity(),
+    };
+
+    const first = compileMainAgentGoalAuthorityBundle(request);
+    const second = compileMainAgentGoalAuthorityBundle(request);
+    assert.deepEqual(first, second);
+    assert.equal(first.authorityProfile, 'main_agent_compiled');
+    assert.equal(first.goalProjectionHash, mainAgentAuthorityBindings.goalExecutionHash);
+    assert.equal(first.markdownHash, mainAgentAuthorityBindings.goalExecutionHash);
+    assert.equal(Object.hasOwn(first, 'markdown'), false);
+    assert.match(first.goalContractBundleHash, /^sha256:[0-9a-f]{64}$/u);
+
+    assert.doesNotThrow(() =>
+      compilePartitions({
+        ...partitionInput,
+        goalContractBundle: first,
+        subordinateCoverageReceipts:
+          first.subordinateSourceCoverageReceipts,
+      })
+    );
+    const tampered = structuredClone(first);
+    tampered.mainAgentProfileBindings.semanticIRHash = boundHash('tampered');
+    assert.throws(
+      () =>
+        compilePartitions({
+          ...partitionInput,
+          goalContractBundle: tampered,
+          subordinateCoverageReceipts:
+            first.subordinateSourceCoverageReceipts,
+        }),
+      (error) => error.failureClass === 'goal_contract_bundle_hash_mismatch'
+    );
   });
 
   it('compiles deterministic core-only PartitionPlan authority', () => {
@@ -636,6 +780,396 @@ describe('pure PartitionCompiler', () => {
         (error) =>
           error.failureClass === 'partition_authority_injection' &&
           error.forbiddenFields.includes(field)
+      );
+    }
+  });
+
+  it('projects explicit aggregate-only tasks into ordered aggregate validation authority', () => {
+    assert.equal(typeof compileTaskExecutionRoleAuthority, 'function');
+    const orderedSourceSnapshotSet = roleAwareSourceAuthority([
+      '# Role-aware source',
+      '### Task PLAN-T01: Deliver runtime capability [Dependencies: none]',
+      '**Execution Class:** `executable_child`',
+      '**Owned Production Paths:** the task\'s explicit Files section',
+      '**Files**',
+      '- Modify `src/runtime.ts`.',
+      '**Run**',
+      '- CMD-PLAN-T01-01: Run `node --test runtime.test.js`.',
+      '### Task PLAN-T02: Verify aggregate evidence [Dependencies: PLAN-T01]',
+      '**Execution Class:** `aggregate_only`',
+      '**Owned Production Paths:** `none`',
+      '**Aggregate Gate Phase:** `final_aggregate`',
+      '**Aggregate Validation Commands:** `CMD-PLAN-T02-01`',
+      '**Files**',
+      '- No production files.',
+    ]);
+
+    const authority = compileTaskExecutionRoleAuthority({
+      orderedSourceSnapshotSet,
+      reconciledGraph: roleAwareGraph(),
+    });
+
+    assert.equal(authority.mode, 'explicit');
+    assert.deepEqual(authority.executableTaskIds, ['PLAN-T01']);
+    assert.deepEqual(authority.aggregateTaskIds, ['PLAN-T02']);
+    assert.deepEqual(authority.aggregateValidation.taskOrder, ['PLAN-T02']);
+    assert.deepEqual(authority.aggregateValidation.commandOrder, ['CMD-PLAN-T02-01']);
+    assert.deepEqual(authority.aggregateValidation.tasks[0], {
+      taskId: 'PLAN-T02',
+      phase: 'final_aggregate',
+      dependencyTaskIds: ['PLAN-T01'],
+      commandIds: ['CMD-PLAN-T02-01'],
+      sourceObligationIds: ['SRC-2'],
+      acceptanceIds: ['AC-2'],
+      evidenceIds: ['EVD-2'],
+    });
+    assert.match(
+      authority.aggregateValidation.aggregateValidationHash,
+      /^sha256:[0-9a-f]{64}$/u
+    );
+  });
+
+  it('rejects aggregate-only ownership that conflicts with task file-scope authority', () => {
+    const orderedSourceSnapshotSet = roleAwareSourceAuthority([
+      '# Role-aware source',
+      '### Task PLAN-T01: Deliver runtime capability [Dependencies: none]',
+      '**Execution Class:** `executable_child`',
+      '**Owned Production Paths:** the task\'s explicit Files section',
+      '**Files**',
+      '- Modify `src/runtime.ts`.',
+      '### Task PLAN-T02: Verify aggregate evidence [Dependencies: PLAN-T01]',
+      '**Execution Class:** `aggregate_only`',
+      '**Owned Production Paths:** `none`',
+      '**Aggregate Gate Phase:** `final_aggregate`',
+      '**Aggregate Validation Commands:** `CMD-PLAN-T02-01`',
+      '**Files**',
+      '- Modify `src/aggregate.ts`.',
+    ]);
+    const reconciledGraph = roleAwareGraph();
+    reconciledGraph.traceSlices[1].allowedPaths = ['src/aggregate.ts'];
+
+    assert.throws(
+      () =>
+        compileTaskExecutionRoleAuthority({
+          orderedSourceSnapshotSet,
+          reconciledGraph,
+        }),
+      (error) =>
+        error.failureClass === 'partition_aggregate_ownership_invalid' &&
+        error.taskId === 'PLAN-T02'
+    );
+  });
+
+  it('does not accept caller-authored file-scope authority for aggregate classification', () => {
+    const orderedSourceSnapshotSet = roleAwareSourceAuthority([
+      '# Role-aware source',
+      '### Task PLAN-T01: Deliver runtime capability [Dependencies: none]',
+      '**Execution Class:** `executable_child`',
+      '**Owned Production Paths:** the task\'s explicit Files section',
+      '**Files**',
+      '- Modify `src/runtime.ts`.',
+      '### Task PLAN-T02: Verify aggregate evidence [Dependencies: PLAN-T01]',
+      '**Execution Class:** `aggregate_only`',
+      '**Owned Production Paths:** `none`',
+      '**Aggregate Gate Phase:** `final_aggregate`',
+      '**Aggregate Validation Commands:** `CMD-PLAN-T02-01`',
+      '**Files**',
+      '- Modify `src/aggregate.ts`.',
+    ]);
+    const reconciledGraph = roleAwareGraph();
+    reconciledGraph.traceSlices[1].allowedPaths = ['src/aggregate.ts'];
+
+    assert.throws(
+      () =>
+        compileTaskExecutionRoleAuthority({
+          orderedSourceSnapshotSet,
+          reconciledGraph,
+          taskFileScopeAuthority: {
+            records: [
+              {
+                taskId: 'PLAN-T02',
+                sourceBound: true,
+                cells: [
+                  {
+                    fieldName: 'Files',
+                    tokens: ['No production files'],
+                  },
+                ],
+                projectedPaths: [],
+              },
+            ],
+          },
+        }),
+      (error) =>
+        error.failureClass === 'partition_aggregate_ownership_invalid' &&
+        error.taskId === 'PLAN-T02'
+    );
+  });
+
+  it('rejects aggregate command declarations outside task-scoped typed command authority', () => {
+    const orderedSourceSnapshotSet = roleAwareSourceAuthority([
+      '# Role-aware source',
+      '### Task PLAN-T01: Deliver runtime capability [Dependencies: none]',
+      '**Execution Class:** `executable_child`',
+      '**Owned Production Paths:** the task\'s explicit Files section',
+      '**Files**',
+      '- Modify `src/runtime.ts`.',
+      '### Task PLAN-T02: Verify aggregate evidence [Dependencies: PLAN-T01]',
+      '**Execution Class:** `aggregate_only`',
+      '**Owned Production Paths:** `none`',
+      '**Aggregate Gate Phase:** `final_aggregate`',
+      '**Aggregate Validation Commands:** `CMD-PLAN-T02-99`',
+      '**Files**',
+      '- No production files.',
+    ]);
+
+    assert.throws(
+      () =>
+        compileTaskExecutionRoleAuthority({
+          orderedSourceSnapshotSet,
+          reconciledGraph: roleAwareGraph(),
+        }),
+      (error) =>
+        error.failureClass ===
+          'partition_aggregate_command_authority_invalid' &&
+        error.taskId === 'PLAN-T02'
+    );
+  });
+
+  it('rejects aggregate command order that differs from task-scoped typed authority', () => {
+    const orderedSourceSnapshotSet = roleAwareSourceAuthority([
+      '# Role-aware source',
+      '### Task PLAN-T01: Deliver runtime capability [Dependencies: none]',
+      '**Execution Class:** `executable_child`',
+      '**Owned Production Paths:** the task\'s explicit Files section',
+      '**Files**',
+      '- Modify `src/runtime.ts`.',
+      '### Task PLAN-T02: Verify aggregate evidence [Dependencies: PLAN-T01]',
+      '**Execution Class:** `aggregate_only`',
+      '**Owned Production Paths:** `none`',
+      '**Aggregate Gate Phase:** `final_aggregate`',
+      '**Aggregate Validation Commands:** `CMD-PLAN-T02-02`, `CMD-PLAN-T02-01`',
+      '**Files**',
+      '- No production files.',
+    ]);
+    const reconciledGraph = roleAwareGraph();
+    const secondCommand = structuredClone(
+      reconciledGraph.commands.direct[1]
+    );
+    secondCommand.id = 'CMD-PLAN-T02-02';
+    secondCommand.literal = 'node --test aggregate-extra.test.js';
+    secondCommand.commandTextHash = sha256(
+      Buffer.from(secondCommand.literal, 'utf8')
+    );
+    secondCommand.sourceBinding.textHash = secondCommand.commandTextHash;
+    reconciledGraph.commands.direct.push(secondCommand);
+    reconciledGraph.traceSlices[1].directCommands.push(
+      secondCommand.id
+    );
+
+    assert.throws(
+      () =>
+        compileTaskExecutionRoleAuthority({
+          orderedSourceSnapshotSet,
+          reconciledGraph,
+        }),
+      (error) =>
+        error.failureClass ===
+          'partition_aggregate_command_authority_invalid' &&
+        error.taskId === 'PLAN-T02'
+    );
+  });
+
+  it('rejects half-present task execution role authority in partition plans', () => {
+    const partitionPlan = structuredClone(
+      compilePartitions(makeInput()).partitionPlan
+    );
+    const aggregateValidationSemantic = {
+      taskOrder: ['PLAN-T02'],
+      commandOrder: ['CMD-PLAN-T02-01'],
+      tasks: [
+        {
+          taskId: 'PLAN-T02',
+          phase: 'final_aggregate',
+          dependencyTaskIds: ['PLAN-T01'],
+          commandIds: ['CMD-PLAN-T02-01'],
+          sourceObligationIds: ['SRC-2'],
+          acceptanceIds: ['AC-2'],
+          evidenceIds: ['EVD-2'],
+        },
+      ],
+    };
+    const aggregateValidation = {
+      ...aggregateValidationSemantic,
+      aggregateValidationHash: hashControlPlaneValue(
+        aggregateValidationSemantic
+      ),
+    };
+    for (const partial of [
+      {
+        taskExecutionRoleAuthorityHash: hashControlPlaneValue({
+          mode: 'explicit',
+        }),
+      },
+      { aggregateValidation },
+    ]) {
+      assert.throws(
+        () =>
+          validateGoalContractSchema(
+            'goal-contract-partition-plan.schema.json',
+            { ...partitionPlan, ...partial }
+          ),
+        (error) => error.failureClass === 'canonical_schema_invalid'
+      );
+    }
+  });
+
+  it('rejects missing and duplicate execution-class declarations in explicit mode', () => {
+    assert.equal(typeof compileTaskExecutionRoleAuthority, 'function');
+    const missing = roleAwareSourceAuthority([
+      '# Role-aware source',
+      '### Task PLAN-T01: Deliver runtime capability [Dependencies: none]',
+      '**Execution Class:** `executable_child`',
+      '**Files**',
+      '- Modify `src/runtime.ts`.',
+      '### Task PLAN-T02: Verify aggregate evidence [Dependencies: PLAN-T01]',
+      '**Files**',
+      '- No production files.',
+    ]);
+    assert.throws(
+      () =>
+        compileTaskExecutionRoleAuthority({
+          orderedSourceSnapshotSet: missing,
+          reconciledGraph: roleAwareGraph(),
+        }),
+      (error) =>
+        error.failureClass === 'partition_execution_class_missing' &&
+        error.taskId === 'PLAN-T02'
+    );
+
+    const duplicate = roleAwareSourceAuthority([
+      '# Role-aware source',
+      '### Task PLAN-T01: Deliver runtime capability [Dependencies: none]',
+      '**Execution Class:** `executable_child`',
+      '**Execution Class:** `aggregate_only`',
+      '**Files**',
+      '- Modify `src/runtime.ts`.',
+      '### Task PLAN-T02: Verify aggregate evidence [Dependencies: PLAN-T01]',
+      '**Execution Class:** `aggregate_only`',
+      '**Owned Production Paths:** `none`',
+      '**Aggregate Gate Phase:** `final_aggregate`',
+      '**Aggregate Validation Commands:** `CMD-PLAN-T02-01`',
+      '**Files**',
+      '- No production files.',
+    ]);
+    assert.throws(
+      () =>
+        compileTaskExecutionRoleAuthority({
+          orderedSourceSnapshotSet: duplicate,
+          reconciledGraph: roleAwareGraph(),
+        }),
+      (error) =>
+        error.failureClass === 'partition_execution_class_ambiguous' &&
+        error.taskId === 'PLAN-T01'
+    );
+  });
+
+  it('fails readiness for empty ownership, overlap, missing commands, unprovable closure, and aggregate leakage', () => {
+    assert.equal(typeof validateExecutablePartitionReadiness, 'function');
+    const partition = {
+      partitionId: 'partition-runtime',
+      primaryTaskIds: ['PLAN-T01'],
+      ownedArtifactPaths: ['src/runtime.ts'],
+      governedPaths: ['src/runtime.ts'],
+      commandIds: ['CMD-PLAN-T01-01'],
+      completionPredicateIds: ['AC-1'],
+    };
+    assert.deepEqual(
+      validateExecutablePartitionReadiness({
+        partitions: [partition],
+        executableTaskIds: ['PLAN-T01'],
+        aggregateTaskIds: ['PLAN-T02'],
+      }),
+      { decision: 'pass' }
+    );
+
+    for (const [field, value, failureClass] of [
+      ['ownedArtifactPaths', [], 'partition_readiness_empty_ownership'],
+      ['commandIds', [], 'partition_readiness_required_command_missing'],
+      ['completionPredicateIds', [], 'partition_readiness_atomic_commit_unprovable'],
+      ['primaryTaskIds', ['PLAN-T02'], 'partition_readiness_aggregate_task_leak'],
+    ]) {
+      assert.throws(
+        () =>
+          validateExecutablePartitionReadiness({
+            partitions: [{ ...partition, [field]: value }],
+            executableTaskIds: ['PLAN-T01'],
+            aggregateTaskIds: ['PLAN-T02'],
+          }),
+        (error) => error.failureClass === failureClass
+      );
+    }
+
+    assert.throws(
+      () =>
+        validateExecutablePartitionReadiness({
+          partitions: [
+            partition,
+            {
+              ...partition,
+              partitionId: 'partition-overlap',
+              primaryTaskIds: ['PLAN-T03'],
+            },
+          ],
+          executableTaskIds: ['PLAN-T01', 'PLAN-T03'],
+          aggregateTaskIds: ['PLAN-T02'],
+        }),
+      (error) =>
+        error.failureClass === 'partition_readiness_ownership_overlap' &&
+        error.path === 'src/runtime.ts'
+    );
+
+    assert.throws(
+      () =>
+        validateExecutablePartitionReadiness({
+          partitions: [
+            {
+              ...partition,
+              primaryTaskIds: ['PLAN-T01', 'PLAN-T03'],
+              ownedArtifactPaths: ['src/runtime.ts', 'src/other.ts'],
+            },
+          ],
+          executableTaskIds: ['PLAN-T01', 'PLAN-T03'],
+          aggregateTaskIds: ['PLAN-T02'],
+        }),
+      (error) =>
+        error.failureClass ===
+          'partition_readiness_task_boundary_invalid' &&
+        error.partitionId === 'partition-runtime'
+    );
+  });
+
+  it('resolves child contract paths only from the repository root', () => {
+    assert.equal(typeof resolveRepositoryRelativeChildContractPath, 'function');
+    const repositoryRoot = path.resolve(os.tmpdir(), 'partition-readiness-repository');
+    assert.equal(
+      resolveRepositoryRelativeChildContractPath({
+        repositoryRoot,
+        childContractPath: 'authority/children/p01-goal-execution-plan.md',
+      }),
+      'authority/children/p01-goal-execution-plan.md'
+    );
+    for (const childContractPath of [
+      '../escape.md',
+      path.resolve(repositoryRoot, 'absolute.md'),
+    ]) {
+      assert.throws(
+        () =>
+          resolveRepositoryRelativeChildContractPath({
+            repositoryRoot,
+            childContractPath,
+          }),
+        (error) => error.failureClass === 'partition_child_path_escape'
       );
     }
   });

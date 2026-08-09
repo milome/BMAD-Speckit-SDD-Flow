@@ -122,7 +122,9 @@ describe('requirements contract Grill protocol', () => {
       '_bmad/skills/requirements-contract-grill/SKILL.md',
       '.codex/skills/requirements-contract-grill/SKILL.md',
       'packages/bmad-speckit/_bmad/skills/requirements-contract-grill/SKILL.md',
-    ].map((relativePath) => readFileSync(path.join(ROOT, relativePath), 'utf8'));
+    ].map((relativePath) =>
+      readFileSync(path.join(ROOT, relativePath), 'utf8').replace(/\r\n?/gu, '\n')
+    );
 
     expect(new Set(surfaces).size).toBe(1);
     expect(surfaces[0]).toContain('requirements-contract-grill');

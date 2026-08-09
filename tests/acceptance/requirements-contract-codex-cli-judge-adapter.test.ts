@@ -1,5 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -46,7 +49,47 @@ const INVOCATION_RECEIPT_SCHEMA_PATH = path.resolve(
 const NORMALIZED_RESPONSE_SCHEMA_PATH = path.resolve(
   'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-normalized-judge-response.schema.json'
 );
+const REAL_GATEWAY_JSONL_FIXTURE_PATH = path.resolve(
+  'tests/fixtures/requirements-contract/codex-cli/gateway-managed-without-model.jsonl'
+);
 const ROOTS: string[] = [];
+
+const UNSUPPORTED_CODEX_SCHEMA_KEYWORDS = new Set([
+  'minItems',
+  'maxItems',
+  'uniqueItems',
+  'contains',
+  'unevaluatedItems',
+]);
+
+function codexSchemaViolations(value: unknown, nodePath = '$'): string[] {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
+  const node = value as JsonRecord;
+  const violations = Object.keys(node)
+    .filter((key) => UNSUPPORTED_CODEX_SCHEMA_KEYWORDS.has(key))
+    .map((key) => `${nodePath}.${key}`);
+  if (node.type === 'object') {
+    if (node.additionalProperties !== false) violations.push(`${nodePath}.additionalProperties`);
+    const properties = (node.properties ?? {}) as JsonRecord;
+    const required = Array.isArray(node.required) ? node.required.map(String).sort() : [];
+    if (JSON.stringify(required) !== JSON.stringify(Object.keys(properties).sort())) {
+      violations.push(`${nodePath}.required`);
+    }
+  }
+  for (const [name, child] of Object.entries((node.properties ?? {}) as JsonRecord)) {
+    violations.push(...codexSchemaViolations(child, `${nodePath}.properties.${name}`));
+  }
+  if (node.items) violations.push(...codexSchemaViolations(node.items, `${nodePath}.items`));
+  for (const [name, child] of Object.entries((node.$defs ?? {}) as JsonRecord)) {
+    violations.push(...codexSchemaViolations(child, `${nodePath}.$defs.${name}`));
+  }
+  return violations;
+}
+
+function codexCliAvailable(): boolean {
+  const locator = process.platform === 'win32' ? 'where.exe' : 'which';
+  return spawnSync(locator, ['codex'], { stdio: 'ignore', windowsHide: true }).status === 0;
+}
 
 function createRoot(): string {
   const root = mkdtempSync(path.join(tmpdir(), 'codex-cli-judge-adapter-'));
@@ -245,7 +288,7 @@ describe('Codex CLI Judge adapter', () => {
     expect(source).not.toContain('ClaudeCodeCliJudgeAdapter');
   });
 
-  it('executes through Codex transport, persists the common receipt, and fails closed without observed model evidence', async () => {
+  it('accepts a structured decision with real gateway JSONL when model identity is missing or changes', async () => {
     const loaded = await loadAdapter();
     if (!loaded) return;
     const createAdapter = loaded.createCodexCliJudgeAdapter as CodexAdapterFactory | undefined;
@@ -264,6 +307,13 @@ describe('Codex CLI Judge adapter', () => {
       evidenceRef: path.relative(root, evidencePath).replace(/\\/gu, '/'),
     };
     writeFileSync(requestPath, `${JSON.stringify(request)}\n`, 'utf8');
+    const realGatewayJsonl = readFileSync(REAL_GATEWAY_JSONL_FIXTURE_PATH, 'utf8');
+    const realGatewayEvents = realGatewayJsonl
+      .trim()
+      .split(/\r?\n/gu)
+      .map((line) => JSON.parse(line) as JsonRecord);
+    expect(realGatewayEvents).toHaveLength(3);
+    expect(realGatewayEvents.every((event) => !Object.hasOwn(event, 'model'))).toBe(true);
     let captured: CodexCommandInvocation | null = null;
     const adapter = createAdapter({
       readCredentialSecret: () => `secret-${randomUUID()}`,
@@ -282,13 +332,7 @@ describe('Codex CLI Judge adapter', () => {
         );
         return {
           exitCode: 0,
-          stdout: `${JSON.stringify({
-            type: 'thread.started',
-            thread_id: randomUUID(),
-          })}\n${JSON.stringify({
-            type: 'turn.completed',
-            usage: { input_tokens: 1, output_tokens: 1 },
-          })}\n`,
+          stdout: realGatewayJsonl,
           stderr: '',
         };
       },
@@ -296,27 +340,29 @@ describe('Codex CLI Judge adapter', () => {
     const selectedProvider = provider();
     const providerRef = `provider-${randomUUID()}`;
 
-    await expect(
-      adapter.judge({
+    const result = await adapter.judge({
+      providerRef,
+      provider: selectedProvider,
+      credential: {
         providerRef,
-        provider: selectedProvider,
-        credential: {
-          providerRef,
-          credentialRef: selectedProvider.credentialRef,
-          authenticationType: 'bearer',
-          credentialRevision: 1,
+        credentialRef: selectedProvider.credentialRef,
+        authenticationType: 'bearer',
+        credentialRevision: 1,
+      },
+      payload: {
+        systemPrompt: 'Audit the frozen evidence and return only the structured decision.',
+        request,
+        executionContext: {
+          projectRoot: root,
+          requestPath,
+          outputDir,
         },
-        payload: {
-          systemPrompt: 'Audit the frozen evidence and return only the structured decision.',
-          request,
-          executionContext: {
-            projectRoot: root,
-            requestPath,
-            outputDir,
-          },
-        },
-      })
-    ).rejects.toThrow('codex_cli_judge_model_observation_missing');
+      },
+    });
+    expect(result).toMatchObject({
+      decision: 'block',
+      returnedModel: 'gateway-managed:unobserved',
+    });
 
     const invocation = captured as CodexCommandInvocation | null;
     expect(invocation).not.toBeNull();
@@ -328,6 +374,13 @@ describe('Codex CLI Judge adapter', () => {
     expect(path.resolve(String(invocation?.env.CODEX_HOME))).toBe(
       path.resolve(outputDir, 'codex-home')
     );
+    const materializedSchema = JSON.parse(
+      readFileSync(path.join(outputDir, 'structured-output.schema.json'), 'utf8')
+    );
+    expect(codexSchemaViolations(materializedSchema)).toEqual([]);
+    const runtimeConfig = readFileSync(path.join(outputDir, 'codex-home', 'config.toml'), 'utf8');
+    expect(runtimeConfig).toContain('request_max_retries = 0');
+    expect(runtimeConfig).toContain('stream_max_retries = 0');
 
     const receiptPath = path.join(outputDir, 'cli-judge-execution-receipt.json');
     expect(existsSync(receiptPath)).toBe(true);
@@ -352,7 +405,260 @@ describe('Codex CLI Judge adapter', () => {
       decisionBearingModelEvidence: false,
       exitCode: 0,
     });
+    const invocationReceipt = JSON.parse(
+      readFileSync(path.join(outputDir, 'judge-invocation-receipt.json'), 'utf8')
+    ) as JsonRecord;
+    expect(invocationReceipt).toMatchObject({ outcome: 'decided', decision: 'block' });
+
+    const changedModelOutputDir = path.join(root, 'runtime', randomUUID());
+    const changedModelJsonl = `${realGatewayEvents
+      .map((event, index) =>
+        JSON.stringify({
+          ...event,
+          ...(event.type === 'thread.started'
+            ? { model: `gateway-route-${index}-a` }
+            : event.type === 'turn.completed'
+              ? { model: `gateway-route-${index}-b` }
+              : {}),
+        })
+      )
+      .join('\n')}\n`;
+    const changedModelAdapter = createAdapter({
+      readCredentialSecret: () => `secret-${randomUUID()}`,
+      executeCommand: async (invocation) => {
+        mkdirSync(path.dirname(invocation.outputPath), { recursive: true });
+        writeFileSync(
+          invocation.outputPath,
+          `${JSON.stringify({
+            decision: 'block',
+            findings: [],
+            challengeRequests: [],
+            evidenceRefs: [request.evidenceRef],
+          })}\n`,
+          'utf8'
+        );
+        return { exitCode: 0, stdout: changedModelJsonl, stderr: '' };
+      },
+    });
+    const changedModelResult = await changedModelAdapter.judge({
+      providerRef,
+      provider: selectedProvider,
+      credential: {
+        providerRef,
+        credentialRef: selectedProvider.credentialRef,
+        authenticationType: 'bearer',
+        credentialRevision: 1,
+      },
+      payload: {
+        systemPrompt: 'Audit the frozen evidence and return only the structured decision.',
+        request,
+        executionContext: {
+          projectRoot: root,
+          requestPath,
+          outputDir: changedModelOutputDir,
+        },
+      },
+    });
+    expect(changedModelResult).toMatchObject({
+      decision: 'block',
+      returnedModel: 'gateway-managed:unobserved',
+    });
+    expect(
+      JSON.parse(
+        readFileSync(path.join(changedModelOutputDir, 'cli-judge-execution-receipt.json'), 'utf8')
+      )
+    ).toMatchObject({
+      observedModel: null,
+      modelObservationSource: 'unavailable',
+      decisionBearingModelEvidence: false,
+    });
   });
+
+  it.each([
+    {
+      name: 'unsupported uniqueItems',
+      schema: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['evidenceRefs'],
+        properties: {
+          evidenceRefs: { type: 'array', uniqueItems: true, items: { type: 'string' } },
+        },
+      },
+      issue: 'uniqueItems',
+    },
+    {
+      name: 'open nested object',
+      schema: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['finding'],
+        properties: {
+          finding: {
+            type: 'object',
+            additionalProperties: true,
+            required: ['id'],
+            properties: { id: { type: 'string' } },
+          },
+        },
+      },
+      issue: 'additionalProperties',
+    },
+  ])('rejects $name before invoking the Codex transport', async ({ schema, issue }) => {
+    const loaded = await loadAdapter();
+    if (!loaded) return;
+    const createAdapter = loaded.createCodexCliJudgeAdapter as CodexAdapterFactory | undefined;
+    expect(createAdapter).toBeTypeOf('function');
+    if (!createAdapter) return;
+
+    const root = createRoot();
+    const requestPath = path.join(root, 'request.json');
+    const evidencePath = path.join(root, 'evidence.txt');
+    const outputDir = path.join(root, 'output');
+    writeFileSync(evidencePath, 'Independent local evidence.', 'utf8');
+    const request = { requestHash: `sha256:${'1'.repeat(64)}`, evidenceRef: 'evidence.txt' };
+    writeFileSync(requestPath, `${JSON.stringify(request)}\n`, 'utf8');
+    const selectedProvider = provider();
+    const providerRef = `provider-${randomUUID()}`;
+    let invocationCount = 0;
+    const adapter = createAdapter({
+      readCredentialSecret: () => `secret-${randomUUID()}`,
+      executeCommand: async () => {
+        invocationCount += 1;
+        throw new Error('unexpected_transport_invocation');
+      },
+    });
+
+    await expect(
+      adapter.judge({
+        providerRef,
+        provider: selectedProvider,
+        credential: {
+          providerRef,
+          credentialRef: selectedProvider.credentialRef,
+          authenticationType: 'bearer',
+          credentialRevision: 1,
+        },
+        payload: {
+          systemPrompt: 'Audit the frozen evidence.',
+          request,
+          structuredOutputSchema: schema,
+          executionContext: { projectRoot: root, requestPath, outputDir },
+        },
+      })
+    ).rejects.toThrow(`codex_cli_judge_output_schema_incompatible:${issue}`);
+    expect(invocationCount).toBe(0);
+  });
+
+  it.runIf(codexCliAvailable())(
+    'sends the production schema through a real Codex CLI to a local Responses server',
+    async () => {
+      const loaded = await loadAdapter();
+      if (!loaded) return;
+      const createAdapter = loaded.createCodexCliJudgeAdapter as CodexAdapterFactory | undefined;
+      expect(createAdapter).toBeTypeOf('function');
+      if (!createAdapter) return;
+
+      const requests: Array<{ url: string; authorization: string; body: JsonRecord }> = [];
+      const responseText = JSON.stringify({
+        decision: 'pass',
+        findings: [],
+        challengeRequests: [],
+        evidenceRefs: [],
+      });
+      const events = [
+        { type: 'response.created', response: { id: 'resp-local-judge' } },
+        {
+          type: 'response.output_item.done',
+          item: {
+            type: 'message',
+            role: 'assistant',
+            id: 'msg-local-judge',
+            content: [{ type: 'output_text', text: responseText }],
+          },
+        },
+        {
+          type: 'response.completed',
+          response: {
+            id: 'resp-local-judge',
+            usage: {
+              input_tokens: 1,
+              input_tokens_details: null,
+              output_tokens: 1,
+              output_tokens_details: null,
+              total_tokens: 2,
+            },
+          },
+        },
+      ];
+      const server = createServer(async (requestMessage, responseMessage) => {
+        let body = '';
+        for await (const chunk of requestMessage) body += chunk.toString('utf8');
+        requests.push({
+          url: requestMessage.url ?? '',
+          authorization: String(requestMessage.headers.authorization ?? ''),
+          body: JSON.parse(body) as JsonRecord,
+        });
+        responseMessage.writeHead(200, {
+          'content-type': 'text/event-stream',
+          connection: 'close',
+        });
+        responseMessage.end(
+          events.map((event) => `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`).join('')
+        );
+      });
+      await new Promise<void>((resolve, reject) => {
+        server.once('error', reject);
+        server.listen(0, '127.0.0.1', resolve);
+      });
+
+      const root = createRoot();
+      const requestPath = path.join(root, 'request.json');
+      const evidencePath = path.join(root, 'evidence.txt');
+      const outputDir = path.join(root, 'output');
+      writeFileSync(evidencePath, 'fixture-ready: true\n', 'utf8');
+      const request = { requestHash: `sha256:${'2'.repeat(64)}`, evidenceRef: 'evidence.txt' };
+      writeFileSync(requestPath, `${JSON.stringify(request)}\n`, 'utf8');
+      const selectedProvider = provider();
+      selectedProvider.endpoint = {
+        ...(selectedProvider.endpoint as JsonRecord),
+        baseUrl: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
+      };
+      const providerRef = `provider-${randomUUID()}`;
+
+      try {
+        const result = await createAdapter({
+          readCredentialSecret: () => 'local-mock-secret',
+        }).judge({
+          providerRef,
+          provider: selectedProvider,
+          credential: {
+            providerRef,
+            credentialRef: selectedProvider.credentialRef,
+            authenticationType: 'bearer',
+            credentialRevision: 1,
+          },
+          payload: {
+            systemPrompt: 'Return pass after inspecting the allowlisted evidence.',
+            request,
+            executionContext: { projectRoot: root, requestPath, outputDir },
+          },
+        });
+        expect(result).toMatchObject({ decision: 'pass' });
+        expect(requests).toHaveLength(1);
+        expect(requests[0]?.url).toBe('/responses');
+        expect(requests[0]?.authorization).toBe('Bearer local-mock-secret');
+        const text = requests[0]?.body.text as JsonRecord;
+        const format = text.format as JsonRecord;
+        expect(format).toMatchObject({ type: 'json_schema', strict: true });
+        expect(codexSchemaViolations(format.schema)).toEqual([]);
+      } finally {
+        server.closeAllConnections();
+        await new Promise<void>((resolve) => server.close(() => resolve()));
+      }
+    },
+    90_000
+  );
 
   it.skipIf(process.platform !== 'win32')(
     'resolves a Windows npm Codex shim to its JavaScript entry without shell execution',

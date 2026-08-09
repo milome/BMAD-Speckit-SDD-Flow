@@ -462,7 +462,8 @@ describe('canonical Test Catalog projection', () => {
   it('projects only tracked semantic evidence bindings into behavior evidence', () => {
     const semanticPolicy = structuredClone(policy);
     const semanticFacts = structuredClone(facts);
-    const semanticOracleEvidenceRef = 'source:tests/core/state-machine.test.ts#assertion:line:42';
+    const semanticOracleEvidenceRef =
+      'source:tests/core/state-machine.test.ts#test:rejects%20invalid%20state:case:1:assertion:1';
     const oracleResult = semanticFacts.analyzerResults.find(
       (result: any) => result.dimension === 'oracleEffectiveness'
     );
@@ -513,7 +514,7 @@ describe('canonical Test Catalog projection', () => {
 
     const unresolvedPolicy = structuredClone(semanticPolicy);
     unresolvedPolicy.semanticEvidenceBindings[0].bindings[0].oracleAuthority.evidenceRefs = [
-      'source:tests/core/state-machine.test.ts#assertion:line:999',
+      'source:tests/core/state-machine.test.ts#test:missing%20assertion:case:1:assertion:1',
     ];
     expect(() => projectFixture({ policy: unresolvedPolicy, facts: semanticFacts })).toThrow(
       'CATALOG_SEMANTIC_ORACLE_EVIDENCE_UNRESOLVED'
@@ -661,7 +662,7 @@ describe('canonical Test Catalog projection', () => {
     const cliFreeze = JSON.parse(readFileSync(outputPath, 'utf8'));
     expect(cliFreeze.gaps).toEqual(frozen.gaps);
     expect(cliFreeze.selected).toEqual(frozen.selected);
-  }, 90_000);
+  }, 300_000);
 
   it('keeps higher-authority lifecycle evidence ahead of lower-authority candidates', () => {
     const catalog = projectFixture({

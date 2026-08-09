@@ -8,6 +8,7 @@ const { collectAuditFacts } = require('../test-portfolio-audit/facts.cjs');
 const { compareText, fail, writeCanonicalArtifact } = require('./canonical-artifact.cjs');
 const {
   isCanonicalNamespacedRef,
+  isStableOracleEvidenceRef,
   readTestPolicy,
   STATES,
   validateTestPolicy,
@@ -902,7 +903,7 @@ function assertRequiredTestFields(test) {
       !Array.isArray(ownDataValue(authority, 'evidenceRefs')) ||
       ownDataValue(authority, 'evidenceRefs').length === 0 ||
       ownDataValue(authority, 'evidenceRefs').some(
-        (ref) => typeof ref !== 'string' || !isCanonicalNamespacedRef(ref, 'source')
+        (ref) => !isStableOracleEvidenceRef(ref, ownDataValue(test, 'testPath'))
       )
     ) {
       fail('CATALOG_BEHAVIOR_ORACLE_AUTHORITY_INVALID', {

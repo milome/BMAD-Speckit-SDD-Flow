@@ -95,6 +95,10 @@
     "childContractAuthority": {
       "enum": ["full", "core_only"]
     },
+    "taskExecutionRoleAuthorityHash": { "$ref": "#/$defs/hash" },
+    "aggregateValidation": {
+      "$ref": "#/$defs/aggregateValidation"
+    },
     "namespaceOwnership": {
       "type": "array",
       "minItems": 1,
@@ -170,6 +174,10 @@
     "driftHash": { "$ref": "#/$defs/hash" },
     "partitionPlanHash": { "$ref": "#/$defs/hash" }
   },
+  "dependentRequired": {
+    "taskExecutionRoleAuthorityHash": ["aggregateValidation"],
+    "aggregateValidation": ["taskExecutionRoleAuthorityHash"]
+  },
   "$defs": {
     "hash": {
       "type": "string",
@@ -232,6 +240,65 @@
         "breakdown": {
           "$ref": "#/$defs/closureMinuteBreakdown"
         }
+      }
+    },
+    "aggregateValidationTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "taskId",
+        "phase",
+        "dependencyTaskIds",
+        "commandIds",
+        "sourceObligationIds",
+        "acceptanceIds",
+        "evidenceIds"
+      ],
+      "properties": {
+        "taskId": { "$ref": "#/$defs/id" },
+        "phase": {
+          "enum": ["post_child_execution", "final_aggregate"]
+        },
+        "dependencyTaskIds": { "$ref": "#/$defs/idArray" },
+        "commandIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "sourceObligationIds": { "$ref": "#/$defs/idArray" },
+        "acceptanceIds": { "$ref": "#/$defs/idArray" },
+        "evidenceIds": { "$ref": "#/$defs/idArray" }
+      }
+    },
+    "aggregateValidation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "taskOrder",
+        "commandOrder",
+        "tasks",
+        "aggregateValidationHash"
+      ],
+      "properties": {
+        "taskOrder": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "commandOrder": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "tasks": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/aggregateValidationTask" }
+        },
+        "aggregateValidationHash": { "$ref": "#/$defs/hash" }
       }
     },
     "sourceBinding": {

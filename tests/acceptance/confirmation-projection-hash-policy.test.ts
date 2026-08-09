@@ -3,11 +3,17 @@ import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import yaml from 'js-yaml';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
 import { mainImplementationReadinessGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate';
 import { runMainAgentConfirmationDriftRoute } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
+import { resolvePackageOwnedBmadPath } from '../../packages/bmad-speckit/src/main-agent/runtime/package-bmad-root';
+import {
+  extractRequirementsContractImplementationConfirmation,
+  implementationConfirmationHashFor,
+  sourceDocumentHashFor,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-implementation-confirmation-codec';
+import { writePassingSourcePrdLintReport } from '../helpers/source-prd-lint-fixture';
 
 const ROOT = process.cwd();
 const INGEST = path.join(
@@ -33,16 +39,6 @@ const ARCH_HASH = 'sha256:555555555555555555555555555555555555555555555555555555
 
 let tempDir: string;
 
-const BOOKKEEPING_FIELDS = new Set([
-  'status',
-  'confirmedAt',
-  'confirmedBy',
-  'sourceDocumentHash',
-  'implementationConfirmationHash',
-  'reconfirmationRequest',
-  'confirmationRender',
-]);
-
 beforeEach(() => {
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'confirmation-projection-policy-'));
 });
@@ -55,58 +51,19 @@ function sha256(content: string): string {
   return `sha256:${crypto.createHash('sha256').update(content, 'utf8').digest('hex')}`;
 }
 
-function stableStringify(value: unknown): string {
-  if (value === null || typeof value !== 'object') return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map((item) => stableStringify(item)).join(',')}]`;
-  const record = value as Record<string, unknown>;
-  return `{${Object.keys(record)
-    .sort()
-    .map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`)
-    .join(',')}}`;
-}
-
-function semanticConfirmationForHash(
-  confirmation: Record<string, unknown>
-): Record<string, unknown> {
-  return Object.fromEntries(
-    Object.entries(confirmation).filter(([key]) => !BOOKKEEPING_FIELDS.has(key))
-  );
-}
-
-function extractConfirmation(sourceText: string): {
-  blockText: string;
-  confirmation: Record<string, unknown>;
-} {
-  const lines = sourceText.replace(/\r\n/gu, '\n').split('\n');
-  const start = lines.findIndex((line) => /^implementationConfirmation:\s*$/u.test(line));
-  if (start < 0) throw new Error('missing implementationConfirmation');
-  let end = lines.length;
-  for (let index = start + 1; index < lines.length; index += 1) {
-    const line = lines[index];
-    if (line.trim() === '') continue;
-    if (/^\S/u.test(line)) {
-      end = index;
-      break;
-    }
-  }
-  const blockText = lines.slice(start, end).join('\n');
-  const parsed = yaml.load(blockText) as { implementationConfirmation?: Record<string, unknown> };
-  if (!parsed?.implementationConfirmation) throw new Error('invalid implementationConfirmation');
-  return { blockText, confirmation: parsed.implementationConfirmation };
-}
-
 function currentHashes(sourcePath: string): {
   sourceDocumentHash: string;
   implementationConfirmationHash: string;
 } {
   const sourceText = fs.readFileSync(sourcePath, 'utf8');
-  const { blockText, confirmation } = extractConfirmation(sourceText);
-  const semantic = semanticConfirmationForHash(confirmation);
+  const extracted = extractRequirementsContractImplementationConfirmation(sourceText);
   return {
-    sourceDocumentHash: sha256(
-      sourceText.replace(blockText, `implementationConfirmation:${stableStringify(semantic)}`)
+    sourceDocumentHash: sourceDocumentHashFor(
+      sourceText,
+      extracted.blockText,
+      extracted.value
     ),
-    implementationConfirmationHash: sha256(stableStringify(semantic)),
+    implementationConfirmationHash: implementationConfirmationHashFor(extracted.value),
   };
 }
 
@@ -218,6 +175,74 @@ implementationConfirmation:
       oracle: "projection event writes projection ledger only"
       requiredCommandRefs: ["CMD-CONFIRMATION-PROJECTION-HASH-POLICY"]
       artifactRefs: ["CANONICAL-001"]
+  controlledIngestWriterRegistry:
+    - writerId: requirements-confirmation-ingest
+      scriptPath: "_bmad/skills/requirements-contract-authoring/scripts/ingest-confirmation-event.js"
+      scriptContentHash: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ownerModel: requirements_contract
+      allowedWriteApis: ["appendControlEvent", "atomicWriteRequirementRecord", "appendArtifactIndex"]
+      allowedPaths:
+        - "_bmad-output/runtime/requirement-records/<requirement-set-id>/**"
+      allowedEventTypes:
+        - confirmation_recorded
+        - artifact_index_recorded
+        - confirmation_projection_refreshed
+        - confirmation_bookkeeping_repaired
+        - reconfirmation_requested
+      payloadContractRefs:
+        - confirmation_recorded
+        - artifact_index_recorded
+        - confirmation_projection_refreshed
+        - confirmation_bookkeeping_repaired
+        - reconfirmation_requested
+      writesControlFields:
+        - confirmationHistory
+        - artifactIndex
+        - confirmationProjectionHistory
+        - reconfirmationRequest
+      receiptPath: "_bmad-output/runtime/requirement-records/<requirement-set-id>/receipts/requirements-confirmation-ingest/<receipt-id>.json"
+      beforeAfterHashRequired: true
+      canModifyWriterRegistry: false
+      registryHash: "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      architectureConfirmationHash: "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    - writerId: main-agent-reconfirmation-router
+      scriptPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/reconfirmation-runtime.ts"
+      scriptContentHash: "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      ownerModel: requirements_contract
+      allowedWriteApis: ["appendControlEvent", "atomicWriteRequirementRecord"]
+      allowedPaths:
+        - "_bmad-output/runtime/requirement-records/<requirement-set-id>/**"
+      allowedEventTypes:
+        - reconfirmation_requested
+      payloadContractRefs:
+        - reconfirmation_requested
+      writesControlFields:
+        - reconfirmationRequest
+      receiptPath: "_bmad-output/runtime/requirement-records/<requirement-set-id>/receipts/main-agent-reconfirmation-router/<receipt-id>.json"
+      beforeAfterHashRequired: true
+      canModifyWriterRegistry: false
+      registryHash: "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      architectureConfirmationHash: "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    - writerId: implementation-readiness-gate-writer
+      scriptPath: "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate.ts"
+      scriptContentHash: "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      ownerModel: requirements_contract
+      allowedWriteApis: ["appendControlEvent", "atomicWriteRequirementRecord"]
+      allowedPaths:
+        - "_bmad-output/runtime/requirement-records/<requirement-set-id>/**"
+      allowedEventTypes:
+        - implementation_readiness_result_recorded
+      payloadContractRefs:
+        - implementation_readiness_result_recorded
+      writesControlFields:
+        - gateChecks
+        - runtimeStatus
+        - readinessBaselineMetadata
+      receiptPath: "_bmad-output/runtime/requirement-records/<requirement-set-id>/receipts/implementation-readiness-gate-writer/<receipt-id>.json"
+      beforeAfterHashRequired: true
+      canModifyWriterRegistry: false
+      registryHash: "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+      architectureConfirmationHash: "sha256:3333333333333333333333333333333333333333333333333333333333333333"
   openQuestions: []
   failurePaths:
     - id: FAIL-039
@@ -627,7 +652,15 @@ function runPrompt(source: string, requirementRecord: string): { stdout: string;
   try {
     const stdout = execFileSync(
       'python',
-      [REQ_TRACE_PROMPT, '--source-document', source, '--requirement-record', requirementRecord],
+      [
+        REQ_TRACE_PROMPT,
+        '--entry',
+        'req_trace_direct',
+        '--source-document',
+        source,
+        '--requirement-record',
+        requirementRecord,
+      ],
       {
         cwd: ROOT,
         encoding: 'utf8',
@@ -822,6 +855,10 @@ describe('confirmation projection hash policy', () => {
         path.join(tempDir, 'tests', 'acceptance', 'confirmation-projection-hash-policy.test.ts')
       )
     ).toBe(true);
+    writePassingSourcePrdLintReport({
+      requirementRecordPath: recordPath(),
+      sourcePath: source,
+    });
     const previousCwd = process.cwd();
     let readiness = 1;
     try {
@@ -893,8 +930,15 @@ describe('confirmation projection hash policy', () => {
       .checks.find(
         (check: Record<string, unknown>) => check.id === 'implementation-readiness-stage-audit'
       );
-    expect(portablePath(String(stageAuditCheck.scriptPath))).toContain(
-      '.cursor/skills/requirements-contract-authoring/scripts/audit_implementation_readiness.js'
+    expect(portablePath(String(stageAuditCheck.scriptPath))).toBe(
+      portablePath(
+        resolvePackageOwnedBmadPath(
+          'skills',
+          'requirements-contract-authoring',
+          'scripts',
+          'audit_implementation_readiness.js'
+        )
+      )
     );
     const prompt = runPrompt(source, recordPath());
     expect(prompt.status).toBe(0);

@@ -14,6 +14,18 @@ export const REQUIREMENTS_CONTRACT_VALIDATION_MODES = [
 ] as const;
 
 const SCRIPT_ROOT = 'packages/bmad-speckit/src/main-agent/source-authority/scripts';
+const PRODUCTION_DISCOVERY_RULES = [
+  { root: 'scripts', fileNamePattern: '\\.(?:cjs|mjs|js|jsx|cts|mts|ts|tsx)$' },
+  { root: 'src', fileNamePattern: '\\.(?:cjs|mjs|js|jsx|cts|mts|ts|tsx)$' },
+  { root: 'bin', fileNamePattern: '\\.(?:cjs|mjs|js|jsx|cts|mts|ts|tsx)$' },
+  { root: '_bmad/shared', fileNamePattern: '\\.(?:cjs|mjs|js|jsx|cts|mts|ts|tsx)$' },
+  { root: 'packages', fileNamePattern: '\\.(?:cjs|mjs|js|jsx|cts|mts|ts|tsx)$' },
+  { root: '_bmad/codex', fileNamePattern: '\\.(?:cjs|mjs|js|jsx|cts|mts|ts|tsx)$' },
+  {
+    root: 'node_modules/bmad-speckit',
+    fileNamePattern: '\\.(?:cjs|mjs|js|jsx|cts|mts|ts|tsx)$',
+  },
+] as const;
 
 const NON_PRODUCTION_DIRECTORY_NAMES = new Set([
   '.git',
@@ -27,6 +39,28 @@ const NON_PRODUCTION_DIRECTORY_NAMES = new Set([
   'test',
   'test-results',
   'tests',
+]);
+
+const SEMANTIC_READER_PATTERNS = [
+  /\bimplementationConfirmation\b/u,
+  /\bcurrentTargetMap\b/u,
+  /\bRequirementContractModelV(?:1|2)\b/u,
+  /\brequirements-contract-read-facade\b/u,
+  /(?:logicalModel|semanticModel|requirementContract)\s*(?:\.\s*(?:semanticBodies|nodes|edges)|\[\s*['"](?:semanticBodies|nodes|edges)['"]\s*\])/u,
+  /(?:semantic-ir|trace-graph|target-bindings|task-graph|red-contracts|oracle-registry|acceptance-contracts|evidence-requirements|business-behavior-delta|implementation-impact-map)\.json/u,
+] as const;
+const GENERATED_HOST_RUNTIME_BUNDLE_PATH = 'generated-host-runtime-bundle';
+const PRODUCTION_RUNTIME_BUNDLE_MIRROR_PATHS = new Set([
+  'packages/runtime-emit/dist/emit-runtime-policy.cjs',
+  'packages/runtime-emit/dist/resolve-for-session.cjs',
+  'packages/bmad-speckit/dist/main-agent/source-authority/packages/runtime-emit/dist/emit-runtime-policy.cjs',
+  'packages/bmad-speckit/dist/main-agent/source-authority/packages/runtime-emit/dist/resolve-for-session.cjs',
+]);
+const PRODUCTION_EXACT_MIRROR_PATHS = new Map([
+  [
+    'scripts/run-confirmed-trace-slice.js',
+    'packages/bmad-speckit/src/main-agent/source-authority/scripts/run-confirmed-trace-slice.ts',
+  ],
 ]);
 
 type ValidationMode = (typeof REQUIREMENTS_CONTRACT_VALIDATION_MODES)[number];
@@ -618,6 +652,51 @@ const CONSUMER_DEFINITIONS: readonly ConsumerDefinition[] = [
   },
 ] as const;
 
+export const REQUIREMENTS_CONTRACT_PRODUCTION_SEMANTIC_SOURCE_PATHS = [
+  '_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js',
+  '_bmad/shared/contract-execution-manifest/hash-contract-execution-manifest.js',
+  '_bmad/shared/contract-execution-manifest/normalize-contract-execution-manifest.js',
+  '_bmad/skills/req-trace-matrix-prompt-generator/references/contract-execution-manifest/build-contract-execution-manifest.js',
+  '_bmad/skills/req-trace-matrix-prompt-generator/references/contract-execution-manifest/hash-contract-execution-manifest.js',
+  '_bmad/skills/req-trace-matrix-prompt-generator/references/contract-execution-manifest/normalize-contract-execution-manifest.js',
+  '_bmad/skills/requirements-contract-authoring/scripts/assess_contract_authoring_scale.js',
+  '_bmad/skills/requirements-contract-authoring/scripts/confirm-requirements-scope.js',
+  '_bmad/skills/requirements-contract-authoring/scripts/generate-draft-manifest.js',
+  '_bmad/skills/requirements-contract-authoring/scripts/normalize-draft-markdown.js',
+  '_bmad/skills/requirements-contract-authoring/scripts/pre_render_definition_drilldown_lib.js',
+  '_bmad/skills/requirements-contract-authoring/scripts/pre_render_must_decomposition_gate.js',
+  '_bmad/skills/requirements-contract-authoring/scripts/prepare-current-source-promotion.js',
+  '_bmad/skills/requirements-contract-authoring/scripts/projection_quality_gate.js',
+  '_bmad/skills/requirements-contract-authoring/scripts/render-requirements-confirmation-html.ts',
+  '_bmad/skills/requirements-contract-authoring/scripts/reverse_audit_contract.js',
+  '_bmad/skills/requirements-contract-authoring/scripts/run_semantic_checkpoints.js',
+  '_bmad/skills/requirements-contract-authoring/scripts/target_modification_path_coverage.js',
+  'packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-discovery-envelope-registry.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-safe-write-target-registry.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-source-prd-rules.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-entryflow-traceability-check.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-trace-status-policy-check.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/record-main-agent-inspect-readiness-closure.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-canonical-compiler-input.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-confirmation-projection-facade.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-direct-confirmation-read-bypass-audit.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-direct-parser-bypass-audit.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-hash-domains.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-implementation-confirmation-codec.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-implementation-confirmation-projector.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-audit-unit-projector.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-model-packet-parity.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-model.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-production-bypass-verifier.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-production-semantic-pipeline.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-real-consumer-adapter.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-source-root-registry.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/resolve-active-requirement.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/strict-command-resolution-preflight.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/trace-closure-matrix.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-requirements-contract-source-writes.ts',
+] as const;
+
 interface ConsumerDiscoveryRule {
   ruleId: string;
   root: string;
@@ -917,6 +996,107 @@ function discoverConsumerPaths(root: string, rules: readonly ConsumerDiscoveryRu
   return [...discovered].sort();
 }
 
+function isSemanticReaderSource(source: string): boolean {
+  return SEMANTIC_READER_PATTERNS.some((pattern) => pattern.test(source));
+}
+
+function canonicalDeclaredConsumerPath(
+  root: string,
+  relativePath: string,
+  declaredPaths: readonly string[]
+): string {
+  const normalizedPath = normalize(relativePath);
+  const installedPackagePrefix = 'node_modules/bmad-speckit/';
+  const packagePath = normalizedPath.startsWith(installedPackagePrefix)
+    ? `packages/bmad-speckit/${normalizedPath.slice(installedPackagePrefix.length)}`
+    : normalizedPath;
+  if (
+    PRODUCTION_RUNTIME_BUNDLE_MIRROR_PATHS.has(normalizedPath) ||
+    PRODUCTION_RUNTIME_BUNDLE_MIRROR_PATHS.has(packagePath)
+  ) {
+    return GENERATED_HOST_RUNTIME_BUNDLE_PATH;
+  }
+  const exactMirrorPath = PRODUCTION_EXACT_MIRROR_PATHS.get(normalizedPath);
+  if (exactMirrorPath && declaredPaths.includes(exactMirrorPath)) return exactMirrorPath;
+
+  const mappings: readonly [string, (remainder: string) => string][] = [
+    [
+      'packages/bmad-speckit/src/main-agent/source-authority/_bmad/',
+      (remainder) => `_bmad/${remainder}`,
+    ],
+    [
+      'packages/bmad-speckit/dist/main-agent/source-authority/_bmad/',
+      (remainder) => `_bmad/${remainder}`,
+    ],
+    ['packages/bmad-speckit/_bmad/', (remainder) => `_bmad/${remainder}`],
+    [
+      'packages/bmad-speckit/dist/main-agent/source-authority/',
+      (remainder) =>
+        sourceCanonicalPath(
+          root,
+          `packages/bmad-speckit/src/main-agent/source-authority/${remainder}`
+        ),
+    ],
+    [
+      'packages/bmad-speckit/dist/main-agent/actions/',
+      (remainder) =>
+        sourceCanonicalPath(root, `packages/bmad-speckit/src/main-agent/actions/${remainder}`),
+    ],
+    [
+      'packages/bmad-speckit/dist/main-agent/runtime/',
+      (remainder) =>
+        sourceCanonicalPath(root, `packages/bmad-speckit/src/main-agent/runtime/${remainder}`),
+    ],
+    [
+      'packages/bmad-speckit/dist/runtime/',
+      (remainder) => sourceCanonicalPath(root, `packages/bmad-speckit/src/runtime/${remainder}`),
+    ],
+  ];
+  for (const [prefix, map] of mappings) {
+    if (!packagePath.startsWith(prefix)) continue;
+    const candidate = normalize(map(packagePath.slice(prefix.length)));
+    if (declaredPaths.includes(candidate) || existsSync(path.resolve(root, candidate))) {
+      return candidate;
+    }
+  }
+
+  if (normalizedPath.startsWith(installedPackagePrefix)) {
+    if (
+      declaredPaths.includes(packagePath) ||
+      existsSync(path.resolve(root, sourceCanonicalPath(root, packagePath)))
+    ) {
+      return normalize(sourceCanonicalPath(root, packagePath));
+    }
+  }
+  return normalizedPath;
+}
+
+function discoverProductionConsumerPaths(
+  root: string,
+  declaredPaths: readonly string[]
+): string[] {
+  const discovered = new Set<string>();
+  for (const rule of PRODUCTION_DISCOVERY_RULES) {
+    const pattern = new RegExp(rule.fileNamePattern, 'u');
+    for (const filePath of filesBelow(path.resolve(root, rule.root))) {
+      const relativePath = normalize(path.relative(root, filePath));
+      if (
+        relativePath === REQUIREMENTS_CONTRACT_CONSUMER_REGISTRY_OWNER_PATH ||
+        /\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(relativePath) ||
+        !pattern.test(path.basename(filePath))
+      ) {
+        continue;
+      }
+      const source = readFileSync(filePath, 'utf8');
+      if (!isSemanticReaderSource(source)) continue;
+      const canonicalPath = canonicalDeclaredConsumerPath(root, relativePath, declaredPaths);
+      if (canonicalPath === REQUIREMENTS_CONTRACT_CONSUMER_REGISTRY_OWNER_PATH) continue;
+      discovered.add(canonicalPath);
+    }
+  }
+  return [...discovered].sort();
+}
+
 export class RequirementsContractConsumerScopeAmendmentError extends Error {
   readonly code = 'scope_amendment_required';
   readonly discoveredConsumerPaths: string[];
@@ -937,8 +1117,12 @@ function consumerPath(definition: ConsumerDefinition): string {
 }
 
 function fileHash(root: string, relativePath: string): string {
+  const bytes = readFileSync(path.resolve(root, relativePath));
+  if (bytes.includes(0x0d)) {
+    throw new Error(`requirements_contract_projection_hash_input_not_lf:${relativePath}`);
+  }
   return `sha256:${createHash('sha256')
-    .update(readFileSync(path.resolve(root, relativePath)))
+    .update(bytes)
     .digest('hex')}`;
 }
 
@@ -946,17 +1130,30 @@ export function createRequirementsContractConsumerRegistry(root = process.cwd())
   const declaredPaths = [
     ...new Set(CONSUMER_DEFINITIONS.map((definition) => consumerPath(definition))),
   ].sort();
-  const discoveryRules = createConsumerDiscoveryRules();
-  const discoveredPaths = discoverConsumerPaths(root, discoveryRules);
-  const missingConsumerPaths = discoveredPaths.filter(
-    (discoveredPath) => !declaredPaths.includes(discoveredPath)
+  const productionDeclaredPaths = [
+    ...new Set([
+      ...declaredPaths,
+      ...REQUIREMENTS_CONTRACT_PRODUCTION_SEMANTIC_SOURCE_PATHS,
+      ...REQUIREMENTS_CONTRACT_SIX_MODEL_CONSUMER_DEFINITIONS.map(
+        (definition) => definition.canonicalPath
+      ),
+    ]),
+  ].sort();
+  const productionDiscoveredPaths = discoverProductionConsumerPaths(root, [
+    REQUIREMENTS_CONTRACT_CONSUMER_REGISTRY_OWNER_PATH,
+    ...productionDeclaredPaths,
+  ]);
+  const missingConsumerPaths = productionDiscoveredPaths.filter(
+    (discoveredPath) => !productionDeclaredPaths.includes(discoveredPath)
   );
   if (missingConsumerPaths.length > 0) {
     throw new RequirementsContractConsumerScopeAmendmentError(
-      discoveredPaths,
+      productionDiscoveredPaths,
       missingConsumerPaths
     );
   }
+  const discoveryRules = createConsumerDiscoveryRules();
+  const discoveredPaths = discoverConsumerPaths(root, discoveryRules);
 
   const consumers = CONSUMER_DEFINITIONS.map((definition) => {
     const consumerFilePath = consumerPath(definition);

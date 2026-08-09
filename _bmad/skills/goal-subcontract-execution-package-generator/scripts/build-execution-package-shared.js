@@ -84,6 +84,64 @@ function verifySource(repositoryRoot, binding, failureClass) {
   return sourcePath;
 }
 
+function normalizeRecordBinding(binding) {
+  if (binding === undefined) {
+    return { status: 'absent', downstreamAction: 'main_agent_resolve_requirement_record' };
+  }
+  if (binding?.status === 'absent') {
+    const keys = Object.keys(binding).sort();
+    if (keys.join(',') !== 'downstreamAction,status') failure('invalid_record_binding');
+    if (binding.downstreamAction !== 'main_agent_resolve_requirement_record') {
+      failure('invalid_record_binding');
+    }
+    return binding;
+  }
+  const required = ['recordId', 'requirementSetId', 'recordPathHash'];
+  if (binding?.status !== 'present' || required.some((field) => !binding[field])) {
+    failure('invalid_record_binding');
+  }
+  if (!/^sha256:[a-f0-9]{64}$/u.test(binding.recordPathHash)) failure('invalid_record_binding');
+  return {
+    status: 'present',
+    recordId: binding.recordId,
+    requirementSetId: binding.requirementSetId,
+    recordPathHash: binding.recordPathHash,
+  };
+}
+
+function hasExactGoalFreezeDirectives(goalText) {
+  const effectiveText = goalText.replace(/<!--[\s\S]*?-->/gu, '');
+  const directives = { contractMode: [], rewritePolicy: [] };
+  let fence = null;
+  for (const line of effectiveText.split(/\r?\n/u)) {
+    const fenceMatch = /^ {0,3}(`{3,}|~{3,})/u.exec(line);
+    if (fence) {
+      const closingFenceMatch = /^ {0,3}(`{3,}|~{3,})[ \t]*$/u.exec(line);
+      if (
+        closingFenceMatch &&
+        closingFenceMatch[1][0] === fence.marker &&
+        closingFenceMatch[1].length >= fence.length
+      ) {
+        fence = null;
+      }
+      continue;
+    }
+    if (fenceMatch) {
+      fence = { marker: fenceMatch[1][0], length: fenceMatch[1].length };
+      continue;
+    }
+    if (/^ {0,3}>/u.test(line) || /^(?: {4}|\t)/u.test(line)) continue;
+    const match = /^(contractMode|rewritePolicy)\s*:\s*(.*?)\s*$/u.exec(line.trim());
+    if (match) directives[match[1]].push(match[2]);
+  }
+  return (
+    directives.contractMode.length === 1 &&
+    directives.contractMode[0] === 'frozen' &&
+    directives.rewritePolicy.length === 1 &&
+    directives.rewritePolicy[0] === 'forbidden'
+  );
+}
+
 function git(repositoryRoot, args, failureClass, input) {
   const result = spawnSync('git', ['-C', repositoryRoot, ...args], {
     encoding: 'utf8',
@@ -144,7 +202,9 @@ function writeAtomic(root, relativePath, content) {
 module.exports = {
   failure,
   git,
+  hasExactGoalFreezeDirectives,
   isInside,
+  normalizeRecordBinding,
   parseArgs,
   readJson,
   resolveExistingInside,

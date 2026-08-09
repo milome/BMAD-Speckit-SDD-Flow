@@ -976,10 +976,10 @@ function resolveAssetRoot({
   const packageRoot = filename.endsWith('.ts')
     ? path.resolve(dirname, '..', '..', '..', '..', '..')
     : path.resolve(dirname, '..', '..', '..');
-  if (
-    fs.existsSync(path.join(packageRoot, '_bmad', 'shared', 'goal-contract'))
-  ) {
-    return packageRoot;
+  for (const candidate of [packageRoot, path.resolve(packageRoot, '..', '..')]) {
+    if (fs.existsSync(path.join(candidate, '_bmad', 'shared', 'goal-contract'))) {
+      return candidate;
+    }
   }
   throw failure('partition_package_asset_root_missing', { packageRoot });
 }

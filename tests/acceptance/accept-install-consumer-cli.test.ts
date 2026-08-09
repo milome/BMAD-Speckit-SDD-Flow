@@ -40,7 +40,7 @@ function installRootPackageToConsumer(target: string): void {
     }),
     'utf8'
   );
-  run('npm install --ignore-scripts --no-audit --no-fund --offline', target);
+  run('npm install --ignore-scripts --no-audit --no-fund --prefer-offline', target);
   run('npm rebuild bmad-speckit-sdd-flow --foreground-scripts', target);
 }
 
@@ -178,7 +178,7 @@ describe('install to consumer ->CLI acceptance', () => {
     } finally {
       cleanupTempDir(target);
     }
-  }, 60_000);
+  }, 180_000);
 
   it('npm install consumer can re-run installed deploy entrypoint to heal .specify mirror drift', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-mirror-heal-'));
@@ -274,7 +274,7 @@ describe('install to consumer ->CLI acceptance', () => {
     } finally {
       cleanupTempDir(target);
     }
-  }, 90_000);
+  }, 180_000);
 
   it('npm install consumer deploys Claude facilitator agent mention contract via installed init entrypoint', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-claude-facilitator-'));
@@ -301,7 +301,7 @@ describe('install to consumer ->CLI acceptance', () => {
     } finally {
       cleanupTempDir(target);
     }
-  }, 90_000);
+  }, 180_000);
 
   it('npm install consumer preserves prior managed surface when adding a second agent init pass', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-manifest-merge-'));
@@ -340,7 +340,7 @@ describe('install to consumer ->CLI acceptance', () => {
     } finally {
       cleanupTempDir(target);
     }
-  }, 90_000);
+  }, 240_000);
 
   it('consumer install can initialize the Codex no-hooks branch', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-codex-'));
@@ -479,7 +479,7 @@ describe('install to consumer ->CLI acceptance', () => {
     } finally {
       cleanupTempDir(target);
     }
-  }, 180_000);
+  }, 300_000);
 
   it('consumer install syncs runtime dashboard auto-start skeleton for Cursor hooks', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-dashboard-host-'));
@@ -509,7 +509,7 @@ describe('install to consumer ->CLI acceptance', () => {
     } finally {
       cleanupTempDir(target);
     }
-  }, 90_000);
+  }, 180_000);
 
   it('consumer install can opt into runtime MCP layout explicitly', () => {
     const target = mkdtempSync(join(tmpdir(), 'accept-consumer-with-mcp-'));

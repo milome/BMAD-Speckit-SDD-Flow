@@ -936,7 +936,7 @@ describe('main-agent dist build', () => {
     );
   });
 
-  it('keeps the compiled goal-contract command on package dist modules', () => {
+  it('keeps the compiled goal-contract command on package dist modules and owned assets', () => {
     execFileSync(process.execPath, [BUILD_SCRIPT], {
       cwd: PACKAGE_ROOT,
       encoding: 'utf8',
@@ -947,7 +947,10 @@ describe('main-agent dist build', () => {
       'utf8'
     );
     assert.doesNotMatch(compiled, /sourceRepositoryMode/u);
-    assert.match(compiled, /const PARTITION_ASSET_ROOT = PACKAGE_ROOT;/u);
+    assert.match(compiled, /const SOURCE_ROOT = path\.resolve\(PACKAGE_ROOT, '\.\.', '\.\.'\);/u);
+    assert.match(compiled, /\[PACKAGE_ROOT, SOURCE_ROOT\]\.find/u);
+    assert.match(compiled, /'_bmad', 'shared', 'goal-contract'/u);
+    assert.doesNotMatch(compiled, /const PARTITION_ASSET_ROOT = SOURCE_ROOT;/u);
     assert.doesNotMatch(compiled, /`\$\{sourceBase\}\.ts`/u);
   });
 
@@ -1050,7 +1053,7 @@ describe('main-agent dist build', () => {
     }
   });
 
-  it('binds the compiled execution projection schema to package-root _bmad', () => {
+  it('binds the compiled execution projection schema to package-first _bmad assets', () => {
     execFileSync(process.execPath, [BUILD_SCRIPT], {
       cwd: PACKAGE_ROOT,
       encoding: 'utf8',
@@ -1062,10 +1065,12 @@ describe('main-agent dist build', () => {
     );
 
     assert.match(compiled, /path\.resolve\(__dirname,\s*'\.\.',\s*'\.\.',\s*'\.\.'\)/u);
-    assert.doesNotMatch(
+    assert.match(
       compiled,
       /path\.resolve\(__dirname,\s*'\.\.',\s*'\.\.',\s*'\.\.',\s*'\.\.',\s*'\.\.'\)/u
     );
+    assert.match(compiled, /\.find\(\(candidate\) =>/u);
+    assert.match(compiled, /'_bmad', 'shared', 'goal-contract'/u);
   });
 
   it('fails closed when source changes without rebuilding dist', () => {

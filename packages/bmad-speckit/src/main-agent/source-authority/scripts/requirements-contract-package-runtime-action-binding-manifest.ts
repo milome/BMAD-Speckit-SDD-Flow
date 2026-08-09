@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
 import type { PromptPublicationAuthority } from './requirements-contract-prompt-transaction-authority';
 import { fileHash, slash } from './requirements-contract-governed-write';
+import { sourceBytesHash } from './requirements-contract-hash-domains';
 
 type JsonRecord = Record<string, unknown>;
 type FileRef = { path: string; hash: string };
@@ -138,29 +139,21 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
     inputSchemas: [
       `${SCHEMA_ROOT}/requirements-contract-command-execution-producer-input.schema.json`,
     ],
-    outputSchemas: [
-      `${SCHEMA_ROOT}/requirements-contract-command-execution-receipt.schema.json`,
-    ],
-    behaviorTests: [
-      'tests/acceptance/requirements-contract-command-execution-producer.test.ts',
-    ],
+    outputSchemas: [`${SCHEMA_ROOT}/requirements-contract-command-execution-receipt.schema.json`],
+    behaviorTests: ['tests/acceptance/requirements-contract-command-execution-producer.test.ts'],
   },
   {
     actionId: 'requirements-contract-clean-materialization',
     sourcePath: `${SCRIPT_ROOT}/requirements-contract-clean-materialization.ts`,
     distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-clean-materialization.js`,
     gateSymbol: 'requirementsContractCleanMaterializationCommand',
-    inputSchemas: [
-      `${SCHEMA_ROOT}/requirements-contract-clean-materialization-input.schema.json`,
-    ],
+    inputSchemas: [`${SCHEMA_ROOT}/requirements-contract-clean-materialization-input.schema.json`],
     outputSchemas: [
       `${SCHEMA_ROOT}/requirements-contract-clean-materialization-receipt.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-command-execution-receipt.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-runtime-build-authority-receipt.schema.json`,
     ],
-    behaviorTests: [
-      'tests/acceptance/requirements-contract-clean-materialization.test.ts',
-    ],
+    behaviorTests: ['tests/acceptance/requirements-contract-clean-materialization.test.ts'],
     runtimeRefs: [
       {
         role: 'controlled-command-producer',
@@ -266,9 +259,7 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
       `${SCHEMA_ROOT}/requirements-contract-critical-auditor-judge-assessment.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-final-acceptance-judge-assessment.schema.json`,
     ],
-    behaviorTests: [
-      'tests/acceptance/requirements-contract-judge-command.test.ts',
-    ],
+    behaviorTests: ['tests/acceptance/requirements-contract-judge-command.test.ts'],
     runtimeRefs: [
       {
         role: 'legacy-critical-auditor-judge-adapter',
@@ -386,8 +377,7 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
         role: 'installed-generator',
         repositoryPath:
           'packages/bmad-speckit/_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js',
-        packagePath:
-          '_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js',
+        packagePath: '_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js',
       },
       {
         role: 'installed-stage-registry',
@@ -620,10 +610,31 @@ function repositoryFileRef(root: string, relativePath: string): FileRef {
   return { path: slash(relativePath), hash: fileHash(resolved) };
 }
 
+function runtimeFileHash(filePath: string, packagePath: string): string {
+  const bytes = fs.readFileSync(filePath);
+  if (
+    !packagePath.startsWith('bin/') ||
+    bytes.length < 3 ||
+    bytes[0] !== 0x23 ||
+    bytes[1] !== 0x21
+  ) {
+    return sourceBytesHash(bytes);
+  }
+  const lineFeedIndex = bytes.indexOf(0x0a);
+  if (lineFeedIndex <= 0 || bytes[lineFeedIndex - 1] !== 0x0d) {
+    return sourceBytesHash(bytes);
+  }
+  return sourceBytesHash(
+    Buffer.concat([bytes.subarray(0, lineFeedIndex - 1), bytes.subarray(lineFeedIndex)])
+  );
+}
+
 function registeredActionIds(root: string): string[] {
   const cliPath = path.join(root, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
   const cliSource = fs.readFileSync(cliPath, 'utf8');
-  const directActionIds = [...cliSource.matchAll(/\.command\('(?<actionId>requirements-contract-[a-z0-9-]+)'\)/gu)]
+  const directActionIds = [
+    ...cliSource.matchAll(/\.command\('(?<actionId>requirements-contract-[a-z0-9-]+)'\)/gu),
+  ]
     .map((match) => match.groups?.actionId ?? '')
     .filter(Boolean);
   if (
@@ -678,7 +689,10 @@ export function buildPackageRuntimeActionBindingManifest(root: string): JsonReco
       runtimeRefs: (spec.runtimeRefs ?? []).map((runtimeRef) => ({
         role: runtimeRef.role,
         packagePath: slash(runtimeRef.packagePath),
-        hash: repositoryFileRef(root, runtimeRef.repositoryPath).hash,
+        hash: runtimeFileHash(
+          path.resolve(root, runtimeRef.repositoryPath),
+          runtimeRef.packagePath
+        ),
       })),
       routingOnly: false,
     };
@@ -754,13 +768,18 @@ function samePath(left: string, right: string): boolean {
   return normalized(left) === normalized(right);
 }
 
-function assertRef(ref: JsonRecord, expectedPath: string, label: string) {
+function assertRef(
+  ref: JsonRecord,
+  expectedPath: string,
+  label: string,
+  hashForPath: (filePath: string) => string = fileHash
+) {
   const resolved = path.resolve(String(ref.path ?? ''));
   if (!samePath(resolved, expectedPath)) throw new Error(`${label}_path_mismatch`);
   if (!fs.existsSync(resolved) || !fs.statSync(resolved).isFile()) {
     throw new Error(`${label}_missing`);
   }
-  const hash = fileHash(resolved);
+  const hash = hashForPath(resolved);
   if (hash !== ref.hash) throw new Error(`${label}_hash_mismatch`);
   return { path: slash(resolved), hash };
 }
@@ -774,13 +793,15 @@ function installedRuntimeRef(
     ? binding.runtimeRefs.filter((entry: JsonRecord) => entry.role === role)
     : [];
   if (matches.length !== 1) throw new Error(`${role}_binding_not_unique`);
+  const packagePath = String(matches[0].packagePath ?? '');
   return assertRef(
     {
-      path: path.join(installedPackageRoot, String(matches[0].packagePath ?? '')),
+      path: path.join(installedPackageRoot, packagePath),
       hash: matches[0].hash,
     },
-    path.join(installedPackageRoot, String(matches[0].packagePath ?? '')),
-    role.replace(/-/gu, '_')
+    path.join(installedPackageRoot, packagePath),
+    role.replace(/-/gu, '_'),
+    (filePath) => runtimeFileHash(filePath, packagePath)
   );
 }
 

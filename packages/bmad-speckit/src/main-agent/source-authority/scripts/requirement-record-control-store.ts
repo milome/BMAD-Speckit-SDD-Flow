@@ -162,6 +162,24 @@ function removeDirectory(directory: string): void {
   });
 }
 
+function renameTransactionDirectory(source: string, target: string): void {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      fs.renameSync(source, target);
+      return;
+    } catch (error) {
+      lastError = error;
+      const code = error && typeof error === 'object' ? (error as NodeJS.ErrnoException).code : '';
+      if (!['EPERM', 'EBUSY', 'EACCES'].includes(code ?? '') || attempt === 4) {
+        throw error;
+      }
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25);
+    }
+  }
+  throw lastError;
+}
+
 interface PreparedArtifactIndexUpdate {
   targetPath: string;
   stagedRelativePath: string;
@@ -2651,7 +2669,7 @@ export function appendControlEventAndReplay(
         throw new Error('control_store_promotion_readback_failed');
       }
       reachBoundary('before_commit_boundary');
-      fs.renameSync(stagingDir, committedDir);
+      renameTransactionDirectory(stagingDir, committedDir);
       stagingDir = '';
       reachBoundary('after_transaction_promotion');
       writeJsonAtomic(path.join(controlRoot, 'current-commit.json'), {

@@ -10,7 +10,10 @@ import * as crypto from 'node:crypto';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mainDeliveryCloseoutGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate';
+import {
+  evaluateControlledGoalCloseoutGate,
+  mainDeliveryCloseoutGate,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate';
 import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
 import {
   implementationConfirmationHash,
@@ -3616,5 +3619,24 @@ describe('requirement-scoped delivery closeout gate', () => {
     } finally {
       cleanupTempRoot(root);
     }
+  });
+
+  it('rejects a controlled closeout whose EffectivePass is not current pass', () => {
+    expect(() =>
+      evaluateControlledGoalCloseoutGate({
+        closeoutAttemptId: 'controlled-closeout-001',
+        contextHash: HASH,
+        closureReceipt: {
+          status: 'campaign_closed',
+          closeoutAttemptId: 'controlled-closeout-001',
+          contextHash: HASH,
+          taskReportArtifactHash: HASH,
+          receiptHash: HASH,
+        },
+        taskReportArtifactHash: HASH,
+        judgeReviewCampaign: { decision: 'pass', aggregateHash: HASH },
+        effectivePassReceipt: { effectivePass: false, effectivePassReceiptHash: HASH },
+      })
+    ).toThrow('main_agent_goal_task_report_provenance_mismatch');
   });
 });

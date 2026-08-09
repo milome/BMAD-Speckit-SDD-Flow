@@ -165,6 +165,57 @@ function discoverPaths(registry: ConsumerRegistry): string[] {
 }
 
 describe('requirements contract consumer registry', () => {
+  it('folds explicitly inventoried production reader mirrors without granting consumer IDs', () => {
+    const fixtureRoot = mkdtempSync(path.join(os.tmpdir(), 'requirements-consumer-mirrors-'));
+    const canonicalReaderPath =
+      '_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js';
+    const semanticSource =
+      'export const readTargetMap = (confirmation) => confirmation.currentTargetMap;\n';
+
+    try {
+      writeFixtureFile(
+        fixtureRoot,
+        REQUIREMENTS_CONTRACT_CONSUMER_REGISTRY_OWNER_PATH,
+        'export const owner = true;\n'
+      );
+      for (const definition of REQUIREMENTS_CONTRACT_CONSUMER_DEFINITIONS) {
+        writeFixtureFile(fixtureRoot, declaredConsumerPath(definition), 'export {};\n');
+      }
+      for (const readerPath of [
+        canonicalReaderPath,
+        'packages/bmad-speckit/_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js',
+        'node_modules/bmad-speckit/_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js',
+        'packages/bmad-speckit/src/main-agent/source-authority/_bmad/shared/contract-execution-manifest/build-contract-execution-manifest.js',
+        'packages/runtime-emit/dist/emit-runtime-policy.cjs',
+      ]) {
+        writeFixtureFile(fixtureRoot, readerPath, semanticSource);
+      }
+
+      const registry = createRequirementsContractConsumerRegistry(fixtureRoot);
+
+      expect(registry.discovery.unregisteredConsumerCount).toBe(0);
+      expect(
+        registry.consumers.map((consumer) => ({
+          consumerId: consumer.consumerId,
+          path: consumer.path,
+          supportedModes: consumer.supportedModes,
+          readFacadeRef: consumer.readFacadeRef,
+          adapterRef: consumer.adapterRef,
+        }))
+      ).toEqual(
+        REQUIREMENTS_CONTRACT_CONSUMER_DEFINITIONS.map((definition) => ({
+          consumerId: definition.consumerId,
+          path: declaredConsumerPath(definition),
+          supportedModes: [...definition.supportedModes],
+          readFacadeRef: definition.readFacadeRef ?? 'requirements-contract-read-facade',
+          adapterRef: definition.adapterRef ?? 'requirements-contract-v2-read-adapter',
+        }))
+      );
+    } finally {
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
   it('discovers declared source consumers without treating package or installed mirrors as owners', () => {
     const fixtureRoot = mkdtempSync(path.join(os.tmpdir(), 'requirements-consumer-registry-'));
     try {
@@ -196,9 +247,14 @@ describe('requirements contract consumer registry', () => {
           'packages/bmad-speckit/dist/main-agent/source-authority/scripts',
           sourceFileName
         ),
-        path.posix.join('packages/bmad-speckit/_bmad/generated', sourceFileName),
-        path.posix.join('node_modules/bmad-speckit/src/generated', sourceFileName),
-        path.posix.join('node_modules/bmad-speckit/dist/generated', sourceFileName),
+        path.posix.join(
+          'node_modules/bmad-speckit/src/main-agent/source-authority/scripts',
+          path.posix.basename(sourceEntry)
+        ),
+        path.posix.join(
+          'node_modules/bmad-speckit/dist/main-agent/source-authority/scripts',
+          sourceFileName
+        ),
       ]) {
         writeFixtureFile(fixtureRoot, mirrorPath, sourceText);
       }
@@ -214,6 +270,26 @@ describe('requirements contract consumer registry', () => {
             entry.startsWith('node_modules/')
         )
       ).toEqual([]);
+    } finally {
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects CRLF hash inputs before publishing the registry', () => {
+    const fixtureRoot = mkdtempSync(path.join(os.tmpdir(), 'requirements-consumer-registry-eol-'));
+    try {
+      writeFixtureFile(
+        fixtureRoot,
+        REQUIREMENTS_CONTRACT_CONSUMER_REGISTRY_OWNER_PATH,
+        'export const owner = true;\r\n'
+      );
+      for (const definition of REQUIREMENTS_CONTRACT_CONSUMER_DEFINITIONS) {
+        writeFixtureFile(fixtureRoot, declaredConsumerPath(definition), 'export {};\n');
+      }
+
+      expect(() => createRequirementsContractConsumerRegistry(fixtureRoot)).toThrow(
+        `requirements_contract_projection_hash_input_not_lf:${REQUIREMENTS_CONTRACT_CONSUMER_REGISTRY_OWNER_PATH}`
+      );
     } finally {
       rmSync(fixtureRoot, { recursive: true, force: true });
     }

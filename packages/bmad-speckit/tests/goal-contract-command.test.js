@@ -715,6 +715,129 @@ describe('bmad-speckit goal-contract command', () => {
     assert.deepEqual(uniqueRefs('commandRefs'), ['CMD-J01-T01-01', 'CMD-J02-T01-01']);
   });
 
+  it('preserves task execution roles and readiness supersession in the frozen Goal', () => {
+    const root = tempRoot();
+    const source = path.join(root, 'role-aware-goal-source.md');
+    const out = path.join(root, 'role-aware-goal-execution-plan.md');
+    fs.writeFileSync(
+      source,
+      [
+        '# Role-aware Goal Source',
+        '',
+        '## Successor Partition Role Contract',
+        '',
+        '- Every task MUST declare exactly one `Execution Class`: `executable_child` or `aggregate_only`.',
+        '',
+        '## Controlled Readiness Amendment',
+        '',
+        'This section supersedes the execution authority of the old E04 PASS. Old E04 receipts MUST remain historical evidence and MUST NOT authorize partition, child execution, aggregate acceptance, controlled ingest, or delivery closeout.',
+        '',
+        '- A latest-hash E04 MUST bind the revised Source Plan, regenerated frozen Goal, current repository bytes, and the new governed readiness result.',
+        '',
+        '## Implementation Tasks',
+        '',
+        '### Task PLAN-T01: Deliver runtime capability',
+        '',
+        '**Execution Class:** `executable_child`',
+        '**Owned Production Paths:** the task\'s explicit Files section',
+        '',
+        '**Files**',
+        '',
+        '- Modify `src/runtime.ts`.',
+        '',
+        '- AC-PLAN-T01-01: Runtime capability is deterministic.',
+        '- EVD-PLAN-T01-01: Runtime capability receipt.',
+        '- CMD-PLAN-T01-01: Run `node --version`.',
+        '',
+        '### Task PLAN-T02: Verify aggregate evidence',
+        '',
+        '**Execution Class:** `aggregate_only`',
+        '**Owned Production Paths:** `none`',
+        '**Aggregate Gate Phase:** `final_aggregate`',
+        '**Aggregate Validation Commands:** `CMD-PLAN-T02-01`',
+        '',
+        '**Files**',
+        '',
+        '- No production files.',
+        '',
+        '- AC-PLAN-T02-01: Aggregate evidence is deterministic.',
+        '- EVD-PLAN-T02-01: Aggregate evidence receipt.',
+        '- CMD-PLAN-T02-01: Run `node --help`.',
+        '',
+      ].join('\n'),
+      'utf8'
+    );
+
+    const result = runSourceCommand(
+      standaloneGenerateArgs(['--source', source, '--out', out, '--json'])
+    );
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const payload = JSON.parse(result.stdout);
+    const goalText = fs.readFileSync(out, 'utf8');
+    const coverage = JSON.parse(fs.readFileSync(payload.coverageReceiptPath, 'utf8'));
+    const sourceTexts = coverage.sourceObligations.map(
+      (obligation) => obligation.exactText || obligation.text
+    );
+
+    for (const requiredSourceText of [
+      '**Execution Class:** `executable_child`',
+      '**Execution Class:** `aggregate_only`',
+      '**Owned Production Paths:** `none`',
+      '**Aggregate Gate Phase:** `final_aggregate`',
+      '**Aggregate Validation Commands:** `CMD-PLAN-T02-01`',
+    ]) {
+      assert.ok(sourceTexts.includes(requiredSourceText), requiredSourceText);
+    }
+    assert.ok(
+      sourceTexts.some(
+        (text) =>
+          /old E04 receipts MUST remain historical evidence/iu.test(text) &&
+          text.includes('MUST NOT authorize partition')
+      )
+    );
+    assert.ok(
+      sourceTexts.some(
+        (text) =>
+          text.includes('latest-hash E04 MUST bind') &&
+          text.includes('new governed readiness result')
+      )
+    );
+
+    const executableTask = goalText
+      .split('### PLAN-T01')[1]
+      .split('### PLAN-T02')[0];
+    assert.match(executableTask, /\*\*Execution Class:\*\* `executable_child`/u);
+    assert.match(
+      executableTask,
+      /\*\*Owned Production Paths:\*\* the task's explicit Files section/u
+    );
+
+    const aggregateTask = goalText
+      .split('### PLAN-T02')[1]
+      .split('<!-- \/goal-slot:implementationTasks -->')[0];
+    assert.match(aggregateTask, /\*\*Execution Class:\*\* `aggregate_only`/u);
+    assert.match(aggregateTask, /\*\*Owned Production Paths:\*\* `none`/u);
+    assert.match(aggregateTask, /\*\*Aggregate Gate Phase:\*\* `final_aggregate`/u);
+    assert.match(
+      aggregateTask,
+      /\*\*Aggregate Validation Commands:\*\* `CMD-PLAN-T02-01`/u
+    );
+    assert.match(aggregateTask, /MUST NOT enter the executable child manifest/u);
+    assert.match(aggregateTask, /MUST NOT create an atomic child commit/u);
+    assert.doesNotMatch(aggregateTask, /Implement the exact task semantics/u);
+
+    const authorityModel = goalText
+      .split('## Authority Model')[1]
+      .split('## Root Cause')[0];
+    assert.match(authorityModel, /old E04 receipts MUST remain historical evidence/iu);
+    assert.match(authorityModel, /MUST NOT authorize partition/u);
+
+    const stopConditions = goalText.split('## Stop Conditions')[1];
+    assert.match(stopConditions, /latest-hash E04 MUST bind/u);
+    assert.match(stopConditions, /new governed readiness result/u);
+  });
+
   it('keeps standalone compilation byte-identical and authority-derived', () => {
     const root = tempRoot();
     const source = writeSourcePlan(root);

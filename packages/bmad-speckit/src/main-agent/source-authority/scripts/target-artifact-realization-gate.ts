@@ -4,6 +4,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import yaml from 'js-yaml';
+import { resolveInstalledSkillPath } from '../../runtime/package-bmad-root';
 import { canonicalizeRequirementRecord } from './requirement-record-control-store';
 
 type TargetKind =
@@ -94,46 +95,22 @@ const CONFIRMATION_BOOKKEEPING_FIELDS = new Set([
   'confirmationRender',
 ]);
 
-function resolveSkillDir(skillName: string): string {
-  const root = process.cwd();
-  const home = process.env.USERPROFILE || process.env.HOME || '';
-  const packageRoot = path.resolve(__dirname, '..');
-  const candidates = [
-    path.join(root, '.codex', 'skills', skillName),
-    path.join(root, '.cursor', 'skills', skillName),
-    path.join(root, '.claude', 'skills', skillName),
-    path.join(root, '_bmad', 'skills', skillName),
-    path.join(root, '.agents', 'skills', skillName),
-    path.join(packageRoot, '.codex', 'skills', skillName),
-    path.join(packageRoot, '.cursor', 'skills', skillName),
-    path.join(packageRoot, '.claude', 'skills', skillName),
-    path.join(packageRoot, '_bmad', 'skills', skillName),
-    ...(home
-      ? [
-          path.join(home, '.codex', 'skills', skillName),
-          path.join(home, '.cursor', 'skills', skillName),
-          path.join(home, '.claude', 'skills', skillName),
-          path.join(home, '.agents', 'skills', skillName),
-        ]
-      : []),
-  ];
-  return (
-    candidates.find((candidate) => fs.existsSync(path.join(candidate, 'SKILL.md'))) ?? candidates[0]
-  );
+function resolveSkillDir(skillName: string, projectRoot = process.cwd()): string {
+  return resolveInstalledSkillPath(projectRoot, skillName);
 }
 
-function resolveSkillPlaceholders(value: string): string {
+function resolveSkillPlaceholders(value: string, projectRoot = process.cwd()): string {
   return value
     .split('<skill-dir>')
-    .join(normalizePath(resolveSkillDir('requirements-contract-authoring')))
+    .join(normalizePath(resolveSkillDir('requirements-contract-authoring', projectRoot)))
     .split('<encoding-integrity-guardian-dir>')
-    .join(normalizePath(resolveSkillDir('encoding-integrity-guardian')));
+    .join(normalizePath(resolveSkillDir('encoding-integrity-guardian', projectRoot)));
 }
 
-function resolveLogicalSkillRef(value: string): string {
+function resolveLogicalSkillRef(value: string, projectRoot = process.cwd()): string {
   const match = /^skill:\/\/([^/]+)\/(.+)$/u.exec(value);
   if (!match) return value;
-  return path.join(resolveSkillDir(match[1]), match[2]);
+  return path.join(resolveSkillDir(match[1], projectRoot), match[2]);
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
@@ -1683,9 +1660,9 @@ export function evaluateTargetArtifactRealization(input: {
   };
 }
 
-function extractCommandFileRefs(command: string): string[] {
+function extractCommandFileRefs(command: string, projectRoot: string): string[] {
   const refs = new Set<string>();
-  const normalized = resolveSkillPlaceholders(command).replace(/\r?\n/gu, ' ');
+  const normalized = resolveSkillPlaceholders(command, projectRoot).replace(/\r?\n/gu, ' ');
   const tokens = normalized.match(/"[^"]+"|'[^']+'|\S+/gu) ?? [];
   for (const token of tokens) {
     const ref = token.replace(/^['"]|['"]$/gu, '');
@@ -1699,24 +1676,32 @@ function extractCommandFileRefs(command: string): string[] {
   return [...refs];
 }
 
-function commandFileExists(ref: string): { absolutePath: string; exists: boolean } {
-  const resolved = resolveLogicalSkillRef(resolveSkillPlaceholders(ref));
-  const absolute = path.isAbsolute(resolved) ? resolved : path.resolve(resolved);
+function commandFileExists(
+  ref: string,
+  projectRoot: string
+): { absolutePath: string; exists: boolean } {
+  const resolved = resolveLogicalSkillRef(
+    resolveSkillPlaceholders(ref, projectRoot),
+    projectRoot
+  );
+  const absolute = path.isAbsolute(resolved) ? resolved : path.resolve(projectRoot, resolved);
   return { absolutePath: absolute, exists: fs.existsSync(absolute) };
 }
 
 export function evaluateRequiredCommandFileExistence(input: {
   sourcePath: string;
+  projectRoot?: string;
   evaluatedAt?: string;
   evaluatedBy?: string;
 }): JsonObject {
   const { confirmation, sourcePath } = readImplementationConfirmation(input.sourcePath);
+  const projectRoot = path.resolve(input.projectRoot ?? process.cwd());
   const issues: GateIssue[] = [];
   const checkedFiles: JsonObject[] = [];
   for (const command of objects(confirmation.requiredCommands)) {
     const commandId = text(command.id) || text(command.commandId) || '<missing-command-id>';
-    for (const ref of extractCommandFileRefs(text(command.command))) {
-      const { absolutePath, exists } = commandFileExists(ref);
+    for (const ref of extractCommandFileRefs(text(command.command), projectRoot)) {
+      const { absolutePath, exists } = commandFileExists(ref, projectRoot);
       checkedFiles.push({
         commandId,
         path: normalizePath(ref),

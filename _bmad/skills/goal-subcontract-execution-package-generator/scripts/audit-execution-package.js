@@ -13,11 +13,11 @@ const {
   createHandoffTemplate,
   createTaskReportTemplate,
   failure,
-  hasExactGoalFreezeDirectives,
   normalizeCollectionCommands,
   normalizeDisplayTitle,
   normalizeRecordBinding,
   parseArgs,
+  projectManifestChildPath,
   readJson,
   renderCampaignPrompt,
   renderChildPrompt,
@@ -26,6 +26,7 @@ const {
   sha256,
   stableJson,
   validateSchemaInstance,
+  verifyAuthorityProfile,
   verifyManifest,
   verifyRepositoryBaseline,
   verifySource,
@@ -105,9 +106,6 @@ function verifyPackageSourceBindings(manifest) {
   );
   const goalContract = sourceBinding(manifest.goalContract);
   const goalPath = verifySource(repositoryRoot, goalContract, 'goal_contract_hash_mismatch');
-  if (!hasExactGoalFreezeDirectives(fs.readFileSync(goalPath, 'utf8'))) {
-    failure('goal_contract_not_frozen');
-  }
   const partitionManifestBinding = sourceBinding(manifest.partitionManifest);
   const partitionManifestPath = verifySource(
     repositoryRoot,
@@ -134,7 +132,9 @@ function verifyPackageSourceBindings(manifest) {
     closureSchema,
     evidenceSchema,
     goalContract,
+    goalPath,
     partitionManifestBinding,
+    partitionManifestPath,
     repositoryRoot,
     sourcePartitionManifest,
   };
@@ -151,14 +151,19 @@ function verifyPackageBaseline(repositoryRoot, repositoryBaseline) {
   verifyRepositoryBaseline(repositoryRoot, repositoryBaseline);
 }
 
-function projectSourceChildren(repositoryRoot, sourcePartitionManifest) {
+function projectSourceChildren(repositoryRoot, partitionManifestPath, sourcePartitionManifest) {
   return sourcePartitionManifest.partitions.map((partition, index) => {
+    const projectedChildPath = projectManifestChildPath(
+      repositoryRoot,
+      partitionManifestPath,
+      partition.childContractPath
+    );
     const child = {
       partitionId: partition.partitionId,
       displayTitle: normalizeDisplayTitle(partition),
       ordinal: index + 1,
       contract: {
-        path: partition.childContractPath,
+        path: projectedChildPath,
         hash: partition.childContractHash,
       },
       predecessorPartitionIds: partition.dependencyPartitionIds,
@@ -171,6 +176,7 @@ function projectSourceChildren(repositoryRoot, sourcePartitionManifest) {
 }
 
 function createPackageId({
+  authorityProjection,
   children,
   closureSchema,
   collectionVerificationCommands,
@@ -184,6 +190,7 @@ function createPackageId({
   const seed = {
     repositoryRoot,
     repositoryBaseline,
+    ...authorityProjection,
     goalContract,
     partitionManifest: partitionManifestBinding,
     evidenceSchema,
@@ -206,10 +213,19 @@ function createProjectionContext(manifest, sourceBindings, children) {
   } = sourceBindings;
   const childByPartitionId = createChildIdentityMap(children);
   const requirementRecordBinding = normalizeRecordBinding(manifest.requirementRecordBinding);
+  const authority = verifyAuthorityProfile({
+    repositoryRoot,
+    input: manifest,
+    goalPath: sourceBindings.goalPath,
+    partitionManifest: sourcePartitionManifest,
+    requirementRecordBinding,
+  });
+  const authorityProjection = manifest.authorityProfile ? authority : {};
   const collectionVerificationCommands = normalizeCollectionCommands(
     manifest.collectionVerificationCommands
   );
   const packageId = createPackageId({
+    authorityProjection,
     children,
     closureSchema,
     collectionVerificationCommands,
@@ -228,6 +244,7 @@ function createProjectionContext(manifest, sourceBindings, children) {
     repositoryRoot
   );
   return {
+    authorityProjection,
     childByPartitionId,
     childPacketValidator,
     children,
@@ -356,6 +373,7 @@ function verifyPackageProjection(core, context, reconstruction) {
     packageId,
     repositoryRoot,
     repositoryBaseline,
+    ...context.authorityProjection,
     goalContract,
     partitionManifest: {
       ...partitionManifestBinding,
@@ -443,6 +461,7 @@ function auditExecutionPackage(packageRoot, expectedPackageManifestHash) {
   );
   const children = projectSourceChildren(
     sourceBindings.repositoryRoot,
+    sourceBindings.partitionManifestPath,
     sourceBindings.sourcePartitionManifest
   );
   const context = createProjectionContext(receipt.manifest, sourceBindings, children);

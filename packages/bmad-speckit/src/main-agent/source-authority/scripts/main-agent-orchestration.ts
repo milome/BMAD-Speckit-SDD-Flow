@@ -26,7 +26,12 @@ import {
 } from './orchestration-dispatch-contract';
 import { resolveExecutionDisciplineProfile } from './execution-discipline-profiles';
 import {
+  resolveInstalledSkillPath,
+  resolvePackageOwnedBmadPath,
+} from '../../runtime/package-bmad-root';
+import {
   buildExecutionStrategyOptions,
+  exactExecutionStrategySelectionPhrase,
   selectExecutionStrategy,
 } from './execution-strategy-selection';
 import {
@@ -57,12 +62,21 @@ import {
   type ReviewerLatestCloseoutRecord,
 } from './runtime-context-registry';
 import { runAdaptiveIntakeGovernanceGate } from './adaptive-intake-governance-gate';
-import { mainDeliveryCloseoutGate } from './main-agent-delivery-closeout-gate';
-import { applyLongRunPolicyToState } from './long-run-runtime-policy';
 import {
-  getReviewerConsumerByAuditStage,
-  isReviewerAuditEntryStage,
-} from './reviewer-registry';
+  evaluateControlledGoalCloseoutGate,
+  mainDeliveryCloseoutGate,
+} from './main-agent-delivery-closeout-gate';
+import {
+  materializeControlledCloseoutConfirmationPage,
+} from './controlled-closeout-confirmation-page';
+import { applyLongRunPolicyToState } from './long-run-runtime-policy';
+import { getReviewerConsumerByAuditStage, isReviewerAuditEntryStage } from './reviewer-registry';
+import {
+  createNativeReviewerTransport,
+  createNativeReviewerHostBridge,
+  type NativeReviewerDispatch,
+  type NativeReviewerTransport,
+} from './requirements-contract-native-reviewer-transport';
 import type {
   ImplementationEntryDecision,
   ImplementationEntryGate,
@@ -252,12 +266,33 @@ import {
   resolveCurrentDispatchPointer,
   type CurrentDispatchPointerExpectedIdentity,
 } from './requirements-contract-current-dispatch-pointer';
+import { resolveCampaignRuntimeBinding } from './campaign-runtime-binding';
 import {
+  createNativeGoalHostExecutor,
   runNativeGoalInvocation,
   type NativeGoalAttemptBundle,
   type NativeGoalControlledExecutor,
   type NativeGoalInvocationResult,
 } from '../../actions/native-goal-invoker';
+import {
+  executeJudgeReviewCampaign,
+  type FinalJudgeProducedResult,
+} from './requirements-contract-judge-review-campaign';
+import type { RequirementsContractJudgeReviewCampaignInputV2 } from './requirements-contract-judge-review-campaign-input';
+import { compileRequirementsContractJudgeReviewCampaignInput } from './requirements-contract-judge-review-campaign-input';
+import {
+  prepareRequirementsContractJudgeInvocation,
+  type RequirementsContractJudgeJsonRecord,
+} from './requirements-contract-judge-invocation';
+import type {
+  ClaudeCodeCliCommandInvocation,
+  ClaudeCodeCliCommandResult,
+} from './requirements-contract-claude-code-cli-judge-adapter';
+import type {
+  CodexCliCommandInvocation,
+  CodexCliCommandResult,
+} from './requirements-contract-codex-cli-judge-adapter';
+import { ingestMainAgentControlledCloseout } from './main-agent-governed-goal-integration';
 
 const requireCommonJs = createRequire(__filename);
 
@@ -447,7 +482,7 @@ export interface MainAgentDispatchInstruction {
 
 export interface MainAgentRunLoopResult {
   runId: string;
-  status: 'completed' | 'blocked';
+  status: 'completed' | 'awaiting_user_acceptance' | 'blocked';
   steps: Array<{
     step: string;
     status: 'pass' | 'skip' | 'fail';
@@ -455,8 +490,17 @@ export interface MainAgentRunLoopResult {
   }>;
   dispatchInstruction: MainAgentDispatchInstruction | null;
   taskReport: TaskReport | null;
+  closeoutAttemptId?: string;
+  taskReportCandidatePath?: string;
+  taskReportArtifactHash?: string;
+  controlledCloseoutIngested?: boolean;
+  controlledCloseout?: NativeGoalInvocationResult['controlledCloseout'];
   finalSurface: MainAgentOrchestrationSurface;
   mainAgentStageSummary: MainAgentStageSummary | null;
+}
+
+export function mainAgentRunLoopExitCode(status: MainAgentRunLoopResult['status']): number {
+  return status === 'completed' || status === 'awaiting_user_acceptance' ? 0 : 1;
 }
 
 export interface NativeGoalTaskReportImportResult {
@@ -1275,9 +1319,7 @@ function readAuditRepairContextFromState(
             path: normalizeText(ref.path),
             contentHash: normalizeText(ref.contentHash),
           }))
-          .filter(
-            (ref) => Boolean(ref.path) && /^sha256:[a-f0-9]{64}$/u.test(ref.contentHash)
-          )
+          .filter((ref) => Boolean(ref.path) && /^sha256:[a-f0-9]{64}$/u.test(ref.contentHash))
       : [];
     return {
       schemaVersion: 'audit-repair-context/v1',
@@ -1531,13 +1573,13 @@ function completedAuditRepairReturnsToReview(input: {
   });
   return Boolean(
     currentRef &&
-      auditRepairReceiptSupersedesPendingPacket({
-        projectRoot: input.projectRoot,
-        record: input.record,
-        packet,
-        currentRef,
-        completionReport,
-      })
+    auditRepairReceiptSupersedesPendingPacket({
+      projectRoot: input.projectRoot,
+      record: input.record,
+      packet,
+      currentRef,
+      completionReport,
+    })
   );
 }
 
@@ -1583,6 +1625,7 @@ function recordIdentityFromPath(
 
 function ensurePolicyDefaultExecutionStrategy(input: {
   compiledPromptRef: NonNullable<ExecutionPacket['compiledPromptRef']>;
+  campaignRuntimeBindingRef?: ExecutionPacket['campaignRuntimeBindingRef'];
 }): ExecutionPacket['executionStrategy'] {
   const optionsResult = buildExecutionStrategyOptions({
     compiledPromptRef: input.compiledPromptRef,
@@ -1595,6 +1638,24 @@ function ensurePolicyDefaultExecutionStrategy(input: {
     selectedBy: 'policy',
     policyDefaultAllowed: true,
   });
+  if (selection.strategyId === 'governed_skill_adapter' && !input.campaignRuntimeBindingRef) {
+    const direct = optionsResult.options.find(
+      (option) => option.strategyId === 'compiled_trace_direct'
+    );
+    if (!direct || direct.availability !== 'available') return null;
+    return selectExecutionStrategy({
+      optionsResult,
+      strategyId: 'compiled_trace_direct',
+      selectedBy: 'user',
+      exactPhrase: exactExecutionStrategySelectionPhrase({
+        strategyId: 'compiled_trace_direct',
+        strategyOptionsHash: optionsResult.strategyOptionsHash,
+        modelPacketHash: optionsResult.modelPacketHash,
+        sourceDocumentHash: optionsResult.sourceDocumentHash,
+        implementationConfirmationHash: optionsResult.implementationConfirmationHash,
+      }),
+    });
+  }
   return selection;
 }
 
@@ -1662,8 +1723,7 @@ function currentDispatchPointerExpectedIdentityFromRecord(
   const expected = {
     requirementSetId: normalizeText(record.requirementSetId),
     implementationAttemptId:
-      normalizeText(record.currentAttemptId) ||
-      normalizeText(record.implementationAttemptId),
+      normalizeText(record.currentAttemptId) || normalizeText(record.implementationAttemptId),
     transactionId: normalizeText(record.transactionId),
   };
   for (const field of ['requirementSetId', 'implementationAttemptId', 'transactionId'] as const) {
@@ -1701,8 +1761,7 @@ function nativeGoalAttemptBundleFromCurrentPointer(input: {
   }
   return {
     sourceDocumentHash: input.compiledPromptRef.sourceDocumentHash,
-    implementationConfirmationHash:
-      input.compiledPromptRef.implementationConfirmationHash,
+    implementationConfirmationHash: input.compiledPromptRef.implementationConfirmationHash,
     modelPacketHash: input.compiledPromptRef.modelPacketHash,
     auditReceiptHash: input.compiledPromptRef.auditReceiptHash,
     goalExecutionHash: input.compiledPromptRef.goalExecutionHash ?? '',
@@ -1710,6 +1769,26 @@ function nativeGoalAttemptBundleFromCurrentPointer(input: {
     transactionManifestHash: pointer.transactionManifestRef.hash,
     currentDispatchPointerPath: pointerPath,
     currentDispatchPointerHash: sha256File(pointerPath),
+  };
+}
+
+function currentCampaignRuntimeBindingRefFromDispatchPointer(input: {
+  projectRoot: string;
+  record: Record<string, unknown> | null;
+}): ExecutionPacket['campaignRuntimeBindingRef'] {
+  const pointerPath = canonicalCurrentDispatchPointerPath(input.projectRoot);
+  const { pointer } = resolveCurrentDispatchPointer({
+    authorityRoot: input.projectRoot,
+    pointerPath,
+    expected: currentDispatchPointerExpectedIdentityFromRecord(input.record),
+  });
+  const ref = pointer.campaignRuntimeBindingRef;
+  if (!ref) return null;
+  return {
+    path: ref.path,
+    hash: ref.hash,
+    readbackHash: ref.readbackHash,
+    readbackVerified: true,
   };
 }
 
@@ -1830,10 +1909,7 @@ function writeAuditExecutionProfile(input: {
   const modelPacketSemanticModelHash = normalizeText(
     modelPacketResult.modelPacket.semanticModelHash
   );
-  if (
-    modelPacketSemanticModelHash &&
-    modelPacketSemanticModelHash !== input.semanticModelHash
-  ) {
+  if (modelPacketSemanticModelHash && modelPacketSemanticModelHash !== input.semanticModelHash) {
     throw new Error('audit_execution_profile_semantic_model_hash_mismatch');
   }
   const projectionSetHash = criticalAuditorProjectionSetHash(modelPacketResult.modelPacket);
@@ -2001,10 +2077,7 @@ function hasCommittedAuditReadonlyAuditorInvocation(input: {
 }): boolean {
   const roundDir = path.dirname(input.requestPath);
   const statePath = auditReadonlyAuditorInvocationStatePath(roundDir);
-  const hostReceiptPath = path.join(
-    roundDir,
-    'readonly-auditor-host-invocation-receipt.json'
-  );
+  const hostReceiptPath = path.join(roundDir, 'readonly-auditor-host-invocation-receipt.json');
   const request = readJsonIfExists(input.requestPath);
   const response = readJsonIfExists(input.responsePath);
   const state = readJsonIfExists(statePath);
@@ -2018,8 +2091,7 @@ function hasCommittedAuditReadonlyAuditorInvocation(input: {
   const stateWithoutHash = { ...state };
   delete stateWithoutHash.stateHash;
   return (
-    normalizeText(state.schemaVersion) ===
-      'audit-readonly-auditor-invocation-state/v1' &&
+    normalizeText(state.schemaVersion) === 'audit-readonly-auditor-invocation-state/v1' &&
     normalizeText(state.status) === 'committed' &&
     normalizeText(state.requestHash) === normalizeText(request.requestHash) &&
     normalizeText(state.auditEpochId) === input.plan.auditEpochId &&
@@ -2028,8 +2100,7 @@ function hasCommittedAuditReadonlyAuditorInvocation(input: {
     normalizeText(state.invocationId) !== '' &&
     normalizeText(state.invocationId) === normalizeText(hostReceipt.invocationId) &&
     /^sha256:[a-f0-9]{64}$/u.test(normalizeText(state.invocationNonceHash)) &&
-    normalizeText(state.invocationNonceHash) ===
-      normalizeText(hostReceipt.invocationNonceHash) &&
+    normalizeText(state.invocationNonceHash) === normalizeText(hostReceipt.invocationNonceHash) &&
     normalizeText(response.producerInvocationId) === normalizeText(state.invocationId) &&
     normalizeText(hostReceipt.producerInvocationId) === normalizeText(state.invocationId) &&
     normalizeText(state.responseHash) === normalizeText(response.responseHash) &&
@@ -2048,8 +2119,6 @@ function hasCommittedAuditReadonlyAuditorInvocation(input: {
 }
 
 function resolveDefaultAuditReadonlyAuditorCommand(): string[] {
-  if (process.platform !== 'win32') return ['codex'];
-
   const pathEntries = (process.env.PATH ?? process.env.Path ?? '')
     .split(path.delimiter)
     .map((entry) => entry.trim())
@@ -2060,6 +2129,22 @@ function resolveDefaultAuditReadonlyAuditorCommand(): string[] {
     const normalizedEntry = resolvedEntry.toLowerCase();
     if (visited.has(normalizedEntry)) continue;
     visited.add(normalizedEntry);
+
+    if (process.platform !== 'win32') {
+      const executable = path.join(resolvedEntry, 'codex');
+      if (
+        !fs.existsSync(executable) ||
+        !fs.statSync(executable).isFile()
+      ) {
+        continue;
+      }
+      try {
+        fs.accessSync(executable, fs.constants.X_OK);
+        return [executable];
+      } catch {
+        continue;
+      }
+    }
 
     const nativeExecutable = path.join(resolvedEntry, 'codex.exe');
     if (fs.existsSync(nativeExecutable)) return [nativeExecutable];
@@ -2541,10 +2626,7 @@ function validatePersistedAuditControlledRoundProvenance(input: {
   const readonlyResponsePath = path.join(roundDir, 'readonly-auditor-response.json');
   const hostReceiptPath = path.join(roundDir, 'readonly-auditor-host-invocation-receipt.json');
   const runAuditorHostBindingPath = path.join(roundDir, 'run-auditor-host-binding.json');
-  const judgeAuthoritativeReportPath = path.join(
-    roundDir,
-    'judge-authoritative-audit-report.md'
-  );
+  const judgeAuthoritativeReportPath = path.join(roundDir, 'judge-authoritative-audit-report.md');
   for (const [role, artifactPath] of [
     ['judge_execution_receipt', judgeReceiptPath],
     ['readonly_auditor_request', readonlyRequestPath],
@@ -2554,9 +2636,7 @@ function validatePersistedAuditControlledRoundProvenance(input: {
     ['judge_authoritative_audit_report', judgeAuthoritativeReportPath],
   ] as const) {
     if (!fs.existsSync(artifactPath)) {
-      throw new Error(
-        `audit_controlled_executor_round_provenance_missing:${roundLabel}:${role}`
-      );
+      throw new Error(`audit_controlled_executor_round_provenance_missing:${roundLabel}:${role}`);
     }
   }
   const roundReceipt = readJsonIfExists(input.roundReceiptPath);
@@ -2585,9 +2665,7 @@ function validatePersistedAuditControlledRoundProvenance(input: {
   }
   const roundReceiptWithoutHash = { ...roundReceipt };
   delete roundReceiptWithoutHash.receiptHash;
-  if (
-    normalizeText(roundReceipt.receiptHash) !== sha256Json(roundReceiptWithoutHash)
-  ) {
+  if (normalizeText(roundReceipt.receiptHash) !== sha256Json(roundReceiptWithoutHash)) {
     throw new Error(`audit_controlled_executor_round_receipt_self_hash_invalid:${roundLabel}`);
   }
   const judgeReceiptWithoutHash = { ...judgeReceipt };
@@ -2607,9 +2685,7 @@ function validatePersistedAuditControlledRoundProvenance(input: {
     normalizeText(judgeReceipt.qualityRuleSetHash) !== input.plan.qualityRuleSetHash ||
     normalizeText(judgeReceipt.currentAttemptHash) !== input.plan.currentAttemptHash ||
     normalizeText(judgeReceipt.currentEvidenceHash) !== input.plan.currentEvidenceHash ||
-    !/^sha256:[a-f0-9]{64}$/u.test(
-      normalizeText(judgeReceipt.auditReviewScoringContractHash)
-    ) ||
+    !/^sha256:[a-f0-9]{64}$/u.test(normalizeText(judgeReceipt.auditReviewScoringContractHash)) ||
     Object.keys(recordObject(judgeReceipt.auditReviewScoring)).length === 0 ||
     normalizeText(judgeReceipt.receiptHash) !== sha256Json(judgeReceiptWithoutHash)
   ) {
@@ -2661,16 +2737,10 @@ function validatePersistedAuditControlledRoundProvenance(input: {
   ) {
     throw new Error(`audit_controlled_executor_provider_provenance_invalid:${roundLabel}`);
   }
-  const judgeProviderReceiptRef = recordObject(
-    judgeReceipt.providerInvocationReceiptRef
-  );
-  const roundProviderReceiptRef = recordObject(
-    roundReceipt.providerInvocationReceiptRef
-  );
+  const judgeProviderReceiptRef = recordObject(judgeReceipt.providerInvocationReceiptRef);
+  const roundProviderReceiptRef = recordObject(roundReceipt.providerInvocationReceiptRef);
   if (sha256Json(judgeProviderReceiptRef) !== sha256Json(roundProviderReceiptRef)) {
-    throw new Error(
-      `audit_controlled_executor_provider_receipt_ref_mismatch:${roundLabel}`
-    );
+    throw new Error(`audit_controlled_executor_provider_receipt_ref_mismatch:${roundLabel}`);
   }
   validateCriticalAuditorProviderInvocationReceipt({
     projectRoot: input.projectRoot,
@@ -2694,14 +2764,10 @@ function validatePersistedAuditControlledRoundProvenance(input: {
     roundProviderReceiptRef
   );
   if (sha256Json(judgeHostExecution) !== sha256Json(roundHostExecution)) {
-    throw new Error(
-      `audit_controlled_executor_judge_host_execution_mismatch:${roundLabel}`
-    );
+    throw new Error(`audit_controlled_executor_judge_host_execution_mismatch:${roundLabel}`);
   }
   const judgeReceiptRef = recordObject(roundReceipt.judgeExecutionReceiptRef);
-  const readonlyHostReceiptRef = recordObject(
-    roundReceipt.readonlyAuditorHostInvocationReceiptRef
-  );
+  const readonlyHostReceiptRef = recordObject(roundReceipt.readonlyAuditorHostInvocationReceiptRef);
   if (
     normalizeText(judgeReceiptRef.path) !==
       toRootRelativePath(input.projectRoot, judgeReceiptPath) ||
@@ -2747,9 +2813,7 @@ function validatePersistedAuditControlledRoundProvenance(input: {
     input.projectRoot,
     scoreWriterInvocationReceiptRef.path
   );
-  const scoreWriterInvocationReceipt = readJsonIfExists(
-    scoreWriterInvocationReceiptPath
-  );
+  const scoreWriterInvocationReceipt = readJsonIfExists(scoreWriterInvocationReceiptPath);
   if (!scoreWriterInvocationReceipt) {
     throw new Error(
       `audit_controlled_executor_score_writer_invocation_receipt_missing:${roundLabel}`
@@ -2769,18 +2833,12 @@ function validatePersistedAuditControlledRoundProvenance(input: {
     runAuditorHostBinding.runAuditorHostInvocationId
   );
   const runAuditorHostBindingHash = sha256Json(runAuditorHostBinding);
-  const scoreWriterStateWithoutHash = scoreWriterState
-    ? { ...scoreWriterState }
-    : null;
+  const scoreWriterStateWithoutHash = scoreWriterState ? { ...scoreWriterState } : null;
   if (scoreWriterStateWithoutHash) {
     delete scoreWriterStateWithoutHash.stateHash;
   }
-  const scoreWriterProducer = recordObject(
-    scoreWriterInvocationReceipt.producerIdentity
-  );
-  const boundScoreWriterReceiptRef = recordObject(
-    scoreReceipt.scoreWriterInvocationReceiptRef
-  );
+  const scoreWriterProducer = recordObject(scoreWriterInvocationReceipt.producerIdentity);
+  const boundScoreWriterReceiptRef = recordObject(scoreReceipt.scoreWriterInvocationReceiptRef);
   const hostScoreWriterReceiptRef = recordObject(
     runAuditorHostReceipt.scoreWriterInvocationReceiptRef
   );
@@ -2802,12 +2860,9 @@ function validatePersistedAuditControlledRoundProvenance(input: {
     normalizeText(runAuditorHostBinding.auditEpochId) !== input.plan.auditEpochId ||
     normalizeText(runAuditorHostBinding.auditTargetBundleHash) !==
       input.plan.auditTargetBundleHash ||
-    normalizeText(runAuditorHostBinding.sourceDocumentHash) !==
-      input.plan.sourceDocumentHash ||
-    normalizeText(runAuditorHostBinding.semanticModelHash) !==
-      input.plan.semanticModelHash ||
-    normalizeText(runAuditorHostBinding.projectionSetHash) !==
-      input.plan.projectionSetHash ||
+    normalizeText(runAuditorHostBinding.sourceDocumentHash) !== input.plan.sourceDocumentHash ||
+    normalizeText(runAuditorHostBinding.semanticModelHash) !== input.plan.semanticModelHash ||
+    normalizeText(runAuditorHostBinding.projectionSetHash) !== input.plan.projectionSetHash ||
     normalizeText(runAuditorHostBinding.readonlyAuditorRequestHash) !==
       normalizeText(readonlyRequest.requestHash) ||
     normalizeText(runAuditorHostBinding.readonlyAuditorResponseHash) !==
@@ -2820,8 +2875,7 @@ function validatePersistedAuditControlledRoundProvenance(input: {
     scoreWriterProducer.role !== 'score_writer' ||
     normalizeText(scoreWriterInvocationReceipt.runAuditorHostInvocationId) !==
       runAuditorHostInvocationId ||
-    normalizeText(scoreWriterInvocationReceipt.bindingHash) !==
-      runAuditorHostBindingHash ||
+    normalizeText(scoreWriterInvocationReceipt.bindingHash) !== runAuditorHostBindingHash ||
     normalizeText(scoreWriterInvocationReceipt.roundId) !== roundLabel ||
     !normalizeText(scoreWriterInvocationReceipt.invocationId) ||
     !normalizeText(scoreWriterInvocationReceipt.scoreRunId) ||
@@ -2830,8 +2884,7 @@ function validatePersistedAuditControlledRoundProvenance(input: {
     normalizeText(scoreWriterState.schemaVersion) !==
       'run-auditor-host-score-writer-invocation-state/v1' ||
     normalizeText(scoreWriterState.status) !== 'committed' ||
-    normalizeText(scoreWriterState.runAuditorHostInvocationId) !==
-      runAuditorHostInvocationId ||
+    normalizeText(scoreWriterState.runAuditorHostInvocationId) !== runAuditorHostInvocationId ||
     normalizeText(scoreWriterState.invocationId) !==
       normalizeText(scoreWriterInvocationReceipt.invocationId) ||
     normalizeText(scoreWriterState.bindingHash) !== runAuditorHostBindingHash ||
@@ -2844,26 +2897,17 @@ function validatePersistedAuditControlledRoundProvenance(input: {
       normalizeText(scoreWriterInvocationReceipt.receiptHash) ||
     normalizeText(scoreWriterState.receiptContentHash) !==
       scoreWriterInvocationReceiptRef.contentHash ||
-    normalizeText(scoreWriterState.stateHash) !==
-      sha256Json(scoreWriterStateWithoutHash) ||
-    normalizeText(scoreWriterInvocationReceipt.scoreRecordHash) !==
-      sha256File(scoreRecordPath) ||
-    sha256Json(boundScoreWriterReceiptRef) !==
-      sha256Json(scoreWriterInvocationReceiptRef) ||
-    sha256Json(hostScoreWriterReceiptRef) !==
-      sha256Json(scoreWriterInvocationReceiptRef)
+    normalizeText(scoreWriterState.stateHash) !== sha256Json(scoreWriterStateWithoutHash) ||
+    normalizeText(scoreWriterInvocationReceipt.scoreRecordHash) !== sha256File(scoreRecordPath) ||
+    sha256Json(boundScoreWriterReceiptRef) !== sha256Json(scoreWriterInvocationReceiptRef) ||
+    sha256Json(hostScoreWriterReceiptRef) !== sha256Json(scoreWriterInvocationReceiptRef)
   ) {
-    throw new Error(
-      `audit_controlled_executor_score_writer_provenance_invalid:${roundLabel}`
-    );
+    throw new Error(`audit_controlled_executor_score_writer_provenance_invalid:${roundLabel}`);
   }
-  const judgeAuditReviewScoringHash = sha256Json(
-    recordObject(judgeReceipt.auditReviewScoring)
-  );
+  const judgeAuditReviewScoringHash = sha256Json(recordObject(judgeReceipt.auditReviewScoring));
   if (
     normalizeText(scoreReceipt.schemaVersion) !== 'run-auditor-host-score-receipt/v1' ||
-    normalizeText(scoreReceipt.runAuditorHostInvocationId) !==
-      runAuditorHostInvocationId ||
+    normalizeText(scoreReceipt.runAuditorHostInvocationId) !== runAuditorHostInvocationId ||
     normalizeText(scoreReceipt.bindingHash) !== runAuditorHostBindingHash ||
     normalizeText(scoreReceipt.roundId) !== roundLabel ||
     normalizeText(scoreReceipt.scoreRunId) !==
@@ -2877,11 +2921,9 @@ function validatePersistedAuditControlledRoundProvenance(input: {
     normalizeText(scoreReceipt.auditReportHash) !== sha256File(judgeAuthoritativeReportPath) ||
     normalizeText(scoreReceipt.judgeAuditReviewScoringContractHash) !==
       normalizeText(judgeReceipt.auditReviewScoringContractHash) ||
-    normalizeText(scoreReceipt.judgeAuditReviewScoringHash) !==
-      judgeAuditReviewScoringHash ||
+    normalizeText(scoreReceipt.judgeAuditReviewScoringHash) !== judgeAuditReviewScoringHash ||
     normalizeText(scoreReceipt.receiptHash) !== sha256Json(scoreReceiptWithoutHash) ||
-    normalizeText(runAuditorHostReceipt.schemaVersion) !==
-      'run-auditor-host-closeout-receipt/v1' ||
+    normalizeText(runAuditorHostReceipt.schemaVersion) !== 'run-auditor-host-closeout-receipt/v1' ||
     normalizeText(runAuditorHostReceipt.runAuditorHostInvocationId) !==
       runAuditorHostInvocationId ||
     normalizeText(runAuditorHostReceipt.bindingHash) !== runAuditorHostBindingHash ||
@@ -2907,10 +2949,7 @@ function validatePersistedAuditControlledRoundProvenance(input: {
   ) {
     throw new Error(`audit_controlled_executor_auditor_host_receipt_invalid:${roundLabel}`);
   }
-  const projectRelativeRoundReceipt = toRootRelativePath(
-    input.projectRoot,
-    input.roundReceiptPath
-  );
+  const projectRelativeRoundReceipt = toRootRelativePath(input.projectRoot, input.roundReceiptPath);
   if (!projectRelativeRoundReceipt) {
     throw new Error(`audit_controlled_executor_round_receipt_path_invalid:${roundLabel}`);
   }
@@ -3101,7 +3140,10 @@ function readAuditReadonlyAuditorResponse(input: {
   const responseHash = normalizeText(response.responseHash);
   const responseWithoutHash = { ...response };
   delete responseWithoutHash.responseHash;
-  if (!/^sha256:[a-f0-9]{64}$/u.test(responseHash) || sha256Json(responseWithoutHash) !== responseHash) {
+  if (
+    !/^sha256:[a-f0-9]{64}$/u.test(responseHash) ||
+    sha256Json(responseWithoutHash) !== responseHash
+  ) {
     throw new Error('audit_readonly_auditor_response_hash_mismatch');
   }
   const perspectiveResults = recordObject(response.perspectiveResults);
@@ -3281,9 +3323,10 @@ function resolveAuditReviewScoringContract(input: {
   if (!fs.existsSync(scoringPolicyPath)) {
     throw new Error('audit_review_scoring_policy_missing');
   }
-  const policy = yaml.load(fs.readFileSync(scoringPolicyPath, 'utf8')) as
-    | Record<string, unknown>
-    | null;
+  const policy = yaml.load(fs.readFileSync(scoringPolicyPath, 'utf8')) as Record<
+    string,
+    unknown
+  > | null;
   const passThresholds = recordObject(policy?.passThresholds);
   const byStage = recordObject(passThresholds.byStage);
   const minimumPhaseScore = Number(
@@ -3428,9 +3471,7 @@ function writeAuditJudgeAuthoritativeReport(input: {
     `Overall Grade: ${input.scoring.overallGrade}`,
     '',
     '## Dimension Scores',
-    ...input.scoring.dimensionScores.map(
-      (row) => `- ${row.dimension}: ${row.score}/100`
-    ),
+    ...input.scoring.dimensionScores.map((row) => `- ${row.dimension}: ${row.score}/100`),
     '',
     '## Structured Drift Signal Block',
     '| Signal | Status | Evidence |',
@@ -3467,8 +3508,7 @@ function validateAuditHostScoreRecordAgainstJudge(input: {
   scoring: AuditReviewScoringAssessment;
 }): void {
   if (
-    normalizeText(input.scoreRecord.dimension_contract_id) !==
-      input.contract.dimensionContractId ||
+    normalizeText(input.scoreRecord.dimension_contract_id) !== input.contract.dimensionContractId ||
     normalizeText(input.scoreRecord.dimension_mode) !== input.contract.dimensionMode ||
     stableStringify(input.scoreRecord.expected_dimensions) !==
       stableStringify(input.contract.expectedDimensions) ||
@@ -3485,9 +3525,7 @@ function validateAuditHostScoreRecordAgainstJudge(input: {
   );
   if (
     scoreByDimension.size !== input.scoring.dimensionScores.length ||
-    input.scoring.dimensionScores.some(
-      (row) => scoreByDimension.get(row.dimension) !== row.score
-    )
+    input.scoring.dimensionScores.some((row) => scoreByDimension.get(row.dimension) !== row.score)
   ) {
     throw new Error('audit_run_auditor_host_dimension_score_judge_binding_mismatch');
   }
@@ -3727,8 +3765,7 @@ function executeAuditRunAuditorHost(input: {
     throw new Error('audit_run_auditor_host_artifact_missing');
   }
   if (
-    normalizeText(input.readonlyAuditorResponse.responseHash) !==
-    input.readonlyAuditorResponseHash
+    normalizeText(input.readonlyAuditorResponse.responseHash) !== input.readonlyAuditorResponseHash
   ) {
     throw new Error('audit_run_auditor_host_readonly_response_hash_mismatch');
   }
@@ -3761,9 +3798,7 @@ function executeAuditRunAuditorHost(input: {
     judgeAuditReviewScoringHash: sha256Json(input.auditReviewScoring),
   };
   const existingBinding = readJsonIfExists(bindingPath);
-  const runAuditorHostInvocationId = normalizeText(
-    existingBinding?.runAuditorHostInvocationId
-  );
+  const runAuditorHostInvocationId = normalizeText(existingBinding?.runAuditorHostInvocationId);
   const binding = existingBinding
     ? (() => {
         const existingBindingBase = { ...existingBinding };
@@ -3823,10 +3858,7 @@ function executeAuditRunAuditorHost(input: {
     );
   }
   const result = readJsonIfExists(resultPath);
-  if (
-    !result ||
-    normalizeText(result.status) !== 'PASS'
-  ) {
+  if (!result || normalizeText(result.status) !== 'PASS') {
     throw new Error('audit_run_auditor_host_result_status_mismatch');
   }
   const scoreRecord = recordObject(result.scoreRecord);
@@ -3889,9 +3921,7 @@ function materializeAuditControlledRound(input: {
     judgeRequest: judgeRequest.request,
     judgeRequestPath: judgeRequest.path,
   });
-  const providerRunId = normalizeText(
-    judgeResult.independentProviderEvidence?.providerRunId
-  );
+  const providerRunId = normalizeText(judgeResult.independentProviderEvidence?.providerRunId);
   if (!providerRunId) {
     throw new Error('audit_judge_provider_run_id_missing');
   }
@@ -4164,9 +4194,7 @@ function auditTargetBundleHashForCurrentProfile(input: {
     stageProfileId,
   });
   if (!validation.ok || !validation.stageProfile) {
-    throw new Error(
-      `audit_target_bundle_profile_invalid:${validation.blockingReasons.join(',')}`
-    );
+    throw new Error(`audit_target_bundle_profile_invalid:${validation.blockingReasons.join(',')}`);
   }
   const qualityRuleCodes = [...AUDIT_PROJECTION_QUALITY_RULE_CODES].sort();
   return sha256AuditTriadJson({
@@ -4293,9 +4321,7 @@ function auditRepairFreshAuthorityGate(input: {
     input.projectRoot,
     normalizeText(roundReceiptRef.path)
   );
-  const roundReceipt = roundReceiptPath
-    ? readJsonIfExists(roundReceiptPath)
-    : null;
+  const roundReceipt = roundReceiptPath ? readJsonIfExists(roundReceiptPath) : null;
   if (!roundReceipt) {
     return blocked('audit_repair_source_round_receipt_missing');
   }
@@ -4337,9 +4363,7 @@ function auditRepairFreshAuthorityGate(input: {
   ) {
     return blocked('audit_repair_feedback_evidence_missing');
   }
-  const currentProjectionSetHash = criticalAuditorProjectionSetHash(
-    modelPacketRead.modelPacket
-  );
+  const currentProjectionSetHash = criticalAuditorProjectionSetHash(modelPacketRead.modelPacket);
   const changedHashFields = (
     [
       [
@@ -4380,8 +4404,7 @@ function auditRepairFreshAuthorityGate(input: {
     projectRoot: input.projectRoot,
     sourceDocumentHash: currentCompiledPromptRef.sourceDocumentHash,
     semanticModelHash: currentSemanticModelHash,
-    implementationConfirmationHash:
-      currentCompiledPromptRef.implementationConfirmationHash,
+    implementationConfirmationHash: currentCompiledPromptRef.implementationConfirmationHash,
     projectionSetHash: currentProjectionSetHash,
     modelPacketHash: currentCompiledPromptRef.modelPacketHash,
     auditReceiptHash: currentCompiledPromptRef.auditReceiptHash,
@@ -4450,8 +4473,7 @@ function materializeAuditMainAgentRepairReceipt(input: {
     repairedProjectionSetHash: input.snapshot.currentProjectionSetHash,
     repairedModelPacketHash: input.snapshot.currentCompiledPromptRef.modelPacketHash,
     repairedAuditReceiptHash: input.snapshot.currentCompiledPromptRef.auditReceiptHash,
-    repairedGoalExecutionHash:
-      input.snapshot.currentCompiledPromptRef.goalExecutionHash ?? null,
+    repairedGoalExecutionHash: input.snapshot.currentCompiledPromptRef.goalExecutionHash ?? null,
     repairedAuditTargetBundleHash: input.snapshot.repairedAuditTargetBundleHash,
     changedHashFields: input.changedHashFields,
     executorTaskReportHash: sha256Json(input.taskReport),
@@ -4716,9 +4738,7 @@ function writeJsonCreateOnlyOrEqual(
 }
 
 function auditControlledFinalizationIntentPayload(
-  intent:
-    | AuditControlledFinalizationIntent
-    | Omit<AuditControlledFinalizationIntent, 'intentHash'>
+  intent: AuditControlledFinalizationIntent | Omit<AuditControlledFinalizationIntent, 'intentHash'>
 ): Omit<AuditControlledFinalizationIntent, 'intentHash'> {
   return {
     schemaVersion: 'audit-controlled-finalization-intent/v1',
@@ -4770,10 +4790,7 @@ function validateAuditControlledFinalizationIntent(input: {
     throw new Error('audit_controlled_executor_finalization_intent_content_hash_mismatch');
   }
   const planPath = resolveRootRelativePath(input.projectRoot, intent.planRef.path);
-  if (
-    !fs.existsSync(planPath) ||
-    sha256File(planPath) !== intent.planRef.contentHash
-  ) {
+  if (!fs.existsSync(planPath) || sha256File(planPath) !== intent.planRef.contentHash) {
     throw new Error('audit_controlled_executor_finalization_intent_plan_changed');
   }
   for (const [index, receiptRef] of intent.roundReceiptRefs.entries()) {
@@ -4783,9 +4800,7 @@ function validateAuditControlledFinalizationIntent(input: {
       !fs.existsSync(receiptPath) ||
       sha256File(receiptPath) !== receiptRef.contentHash
     ) {
-      throw new Error(
-        `audit_controlled_executor_finalization_intent_round_changed:${index + 1}`
-      );
+      throw new Error(`audit_controlled_executor_finalization_intent_round_changed:${index + 1}`);
     }
   }
   return intent;
@@ -4800,10 +4815,7 @@ function persistAuditControlledFinalizationPointer(input: {
 }): void {
   updateOrchestrationState(input.projectRoot, input.sessionId, (current) => {
     const existing = current.auditControlledFinalization;
-    if (
-      existing?.status === 'prepared' &&
-      existing.intentId !== input.intent.intentId
-    ) {
+    if (existing?.status === 'prepared' && existing.intentId !== input.intent.intentId) {
       throw new Error('audit_controlled_executor_finalization_intent_in_progress');
     }
     if (
@@ -4923,9 +4935,9 @@ function loadOrCreateAuditControlledFinalizationIntent(input: {
   return { intent, path: intentPath, contentHash };
 }
 
-function taskReportStateProjection(report: TaskReport): NonNullable<
-  OrchestrationState['lastTaskReport']
-> {
+function taskReportStateProjection(
+  report: TaskReport
+): NonNullable<OrchestrationState['lastTaskReport']> {
   return {
     packetId: report.packetId,
     status: report.status,
@@ -4946,10 +4958,8 @@ function auditControlledTaskReportAlreadyIngested(input: {
     throw new Error('audit_controlled_executor_orchestration_state_missing');
   }
   const expectedReport = taskReportStateProjection(input.taskReport);
-  const expectedPacketStatus =
-    input.taskReport.status === 'done' ? 'completed' : 'invalidated';
-  const reportMatches =
-    sha256Json(state.lastTaskReport ?? null) === sha256Json(expectedReport);
+  const expectedPacketStatus = input.taskReport.status === 'done' ? 'completed' : 'invalidated';
+  const reportMatches = sha256Json(state.lastTaskReport ?? null) === sha256Json(expectedReport);
   const packetMatches =
     state.pendingPacket?.packetId === input.taskReport.packetId &&
     state.pendingPacket.status === expectedPacketStatus;
@@ -4959,8 +4969,7 @@ function auditControlledTaskReportAlreadyIngested(input: {
   if (
     state.lastTaskReport?.packetId === input.taskReport.packetId ||
     (state.pendingPacket?.packetId === input.taskReport.packetId &&
-      (state.pendingPacket.status === 'completed' ||
-        state.pendingPacket.status === 'invalidated'))
+      (state.pendingPacket.status === 'completed' || state.pendingPacket.status === 'invalidated'))
   ) {
     throw new Error('audit_controlled_executor_partial_task_report_ingest');
   }
@@ -4988,8 +4997,7 @@ function markAuditControlledFinalizationCommitted(input: {
       pointer.status === 'committed' &&
       (pointer.finalizationReceiptPath !==
         toRootRelativePath(input.projectRoot, input.finalizationReceiptPath) ||
-        pointer.finalizationReceiptContentHash !==
-          input.finalizationReceiptContentHash)
+        pointer.finalizationReceiptContentHash !== input.finalizationReceiptContentHash)
     ) {
       throw new Error('audit_controlled_executor_finalization_pointer_conflict');
     }
@@ -5024,10 +5032,7 @@ function resumePreparedAuditControlledFinalization(input: {
     expectedIntentId: pointer.intentId,
     expectedContentHash: pointer.intentContentHash,
   });
-  if (
-    pointer.packetId !== intent.packetId ||
-    input.state?.sessionId !== intent.sessionId
-  ) {
+  if (pointer.packetId !== intent.packetId || input.state?.sessionId !== intent.sessionId) {
     throw new Error('audit_controlled_executor_finalization_pointer_identity_mismatch');
   }
   return {
@@ -5058,10 +5063,7 @@ function finalizeAuditControlledExecution(input: {
     ...input,
     auditDir: preparation.auditDir,
   });
-  preparation.gateArgs.push(
-    '--evaluated-at',
-    finalizationIntent.intent.preparedAt
-  );
+  preparation.gateArgs.push('--evaluated-at', finalizationIntent.intent.preparedAt);
   let gateCommitBundle: Readonly<AuditReviewGateCommitBundle> | null = null;
   const gateCode = mainAuditReviewGate(preparation.gateArgs, {
     writeOutput: () => undefined,
@@ -5083,9 +5085,7 @@ function finalizeAuditControlledExecution(input: {
   }
   const plan = bundle.plan.value;
   const report = bundle.report.value;
-  const implementationAttemptId = normalizeText(
-    bundle.runtimeStatus.value.implementationAttemptId
-  );
+  const implementationAttemptId = normalizeText(bundle.runtimeStatus.value.implementationAttemptId);
   if (!implementationAttemptId) {
     throw new Error('audit_controlled_executor_implementation_attempt_missing');
   }
@@ -5132,15 +5132,10 @@ function finalizeAuditControlledExecution(input: {
       sessionId: input.instruction.sessionId,
       taskReport,
     }) ??
-    ingestMainAgentTaskReport(
-      input.projectRoot,
-      input.instruction.sessionId,
-      taskReport,
-      {
-        currentStage: input.currentStage,
-        expectedRequirementRecordHash: bundle.control.afterRecordHash,
-      }
-    );
+    ingestMainAgentTaskReport(input.projectRoot, input.instruction.sessionId, taskReport, {
+      currentStage: input.currentStage,
+      expectedRequirementRecordHash: bundle.control.afterRecordHash,
+    });
   const finalizationTransactionId = `AUDIT-FINAL-${sha256Json({
     finalizationIntentId: finalizationIntent.intent.intentId,
     gateTransactionId: bundle.control.transactionId,
@@ -5204,10 +5199,7 @@ function finalizeAuditControlledExecution(input: {
       beforeRecordHash: bundle.control.beforeRecordHash,
       afterRecordHash: bundle.control.afterRecordHash,
       commitReceiptRef: {
-        path: toRootRelativePath(
-          input.projectRoot,
-          bundle.control.commitReceiptPath
-        ),
+        path: toRootRelativePath(input.projectRoot, bundle.control.commitReceiptPath),
         contentHash: bundle.control.commitReceiptContentHash,
       },
     },
@@ -5724,10 +5716,7 @@ function criticalAuditorExternalAdapterRoundResult(input: {
     }
   }
   const requestedModel = normalizeConfiguredModel(providerRun.requestedModel);
-  if (
-    !Object.hasOwn(providerRun, 'requestedModel') ||
-    requestedModel !== input.expected.model
-  ) {
+  if (!Object.hasOwn(providerRun, 'requestedModel') || requestedModel !== input.expected.model) {
     throw new Error('critical_auditor_requested_model_identity_mismatch');
   }
   const returnedModel = normalizeText(providerRun.model);
@@ -5865,9 +5854,7 @@ export function criticalAuditorJudgeInvocationOutputDir(input: {
   );
 }
 
-export function criticalAuditorProviderContractBlockedRoute(
-  issueCodes: string[]
-): {
+export function criticalAuditorProviderContractBlockedRoute(issueCodes: string[]): {
   attemptDomain: 'provider';
   providerAttemptState: 'provider_contract_blocked';
   repairAttemptState: 'repair_not_required';
@@ -5886,8 +5873,7 @@ export function criticalAuditorProviderContractBlockedRoute(
     providerAttemptState: 'provider_contract_blocked',
     repairAttemptState: 'repair_not_required',
     blockingStage: 'critical_auditor_judge_provider_contract_blocked',
-    nextRequiredAction:
-      'remediate_provider_contract_then_start_fresh_audit_transaction',
+    nextRequiredAction: 'remediate_provider_contract_then_start_fresh_audit_transaction',
   };
 }
 
@@ -5920,8 +5906,7 @@ export function resolveCriticalAuditorJudgeAdapterHostTimeoutMs(projectRoot: str
   ) {
     throw new Error('critical_auditor_judge_provider_timeout_invalid');
   }
-  const hostTimeoutMs =
-    providerTimeoutMs + CRITICAL_AUDITOR_JUDGE_ADAPTER_CLEANUP_GRACE_MS;
+  const hostTimeoutMs = providerTimeoutMs + CRITICAL_AUDITOR_JUDGE_ADAPTER_CLEANUP_GRACE_MS;
   if (!Number.isSafeInteger(hostTimeoutMs)) {
     throw new Error('critical_auditor_judge_host_timeout_invalid');
   }
@@ -5978,8 +5963,7 @@ export function executeCriticalAuditorJudgeAdapter(input: {
     Object.entries(process.env).filter(([key]) => !/^(?:BMAD_)?JUDGE_/iu.test(key))
   );
   const hostTimeoutMs = resolveCriticalAuditorJudgeAdapterHostTimeoutMs(input.projectRoot);
-  const preflightRecovery =
-    reconcileAbandonedRequirementsContractCriticalAuditorJudgeInvocation({
+  const preflightRecovery = reconcileAbandonedRequirementsContractCriticalAuditorJudgeInvocation({
     projectRoot: input.projectRoot,
     requestPath: input.requestPath,
     outputDir: input.outputDir,
@@ -5991,44 +5975,28 @@ export function executeCriticalAuditorJudgeAdapter(input: {
   if (preflightRecovery.decision === 'active') {
     throw new Error('critical_auditor_judge_invocation_lock_held');
   }
-  const semanticDisposition =
-    requirementsContractCriticalAuditorJudgeInvocationDisposition({
-      projectRoot: input.projectRoot,
-      requestPath: input.requestPath,
-      outputDir: input.outputDir,
-      round: input.roundIndex,
-    });
-  if (
-    normalizeText(semanticDisposition.decision) ===
-    'provider_contract_blocked'
-  ) {
+  const semanticDisposition = requirementsContractCriticalAuditorJudgeInvocationDisposition({
+    projectRoot: input.projectRoot,
+    requestPath: input.requestPath,
+    outputDir: input.outputDir,
+    round: input.roundIndex,
+  });
+  if (normalizeText(semanticDisposition.decision) === 'provider_contract_blocked') {
     throw new Error(
       `critical_auditor_judge_provider_contract_blocked:${normalizeText(
         semanticDisposition.semanticIssueFingerprint
       )}`
     );
   }
-  const committedStatePath = path.join(
-    input.outputDir,
-    'judge-provider-invocation-state.json'
-  );
+  const committedStatePath = path.join(input.outputDir, 'judge-provider-invocation-state.json');
   const committedResultPath = path.join(input.outputDir, 'judge-provider-result.json');
-  const committedReceiptPath = path.join(
-    input.outputDir,
-    'judge-provider-invocation-receipt.json'
-  );
-  const committedMarkerPath = path.join(
-    input.outputDir,
-    'judge-provider-invocation-commit.json'
-  );
+  const committedReceiptPath = path.join(input.outputDir, 'judge-provider-invocation-receipt.json');
+  const committedMarkerPath = path.join(input.outputDir, 'judge-provider-invocation-commit.json');
   if (
     normalizeText(semanticDisposition.decision) === 'clear' &&
-    [
-      committedStatePath,
-      committedResultPath,
-      committedReceiptPath,
-      committedMarkerPath,
-    ].every((filePath) => fs.existsSync(filePath))
+    [committedStatePath, committedResultPath, committedReceiptPath, committedMarkerPath].every(
+      (filePath) => fs.existsSync(filePath)
+    )
   ) {
     try {
       const committed = readCommittedRequirementsContractCriticalAuditorJudgeInvocation({
@@ -6102,15 +6070,14 @@ export function executeCriticalAuditorJudgeAdapter(input: {
     );
   }
   if (exitCode !== 0) {
-    const providerContractBlocked = /(?:^|\r?\n)(critical_auditor_judge_provider_contract_blocked:sha256:[a-f0-9]{64})(?:\r?\n|$)/u.exec(
-      stderr || stdout
-    )?.[1];
+    const providerContractBlocked =
+      /(?:^|\r?\n)(critical_auditor_judge_provider_contract_blocked:sha256:[a-f0-9]{64})(?:\r?\n|$)/u.exec(
+        stderr || stdout
+      )?.[1];
     if (providerContractBlocked) {
       throw new Error(providerContractBlocked);
     }
-    throw new Error(
-      `critical_auditor_external_adapter_failed:${exitCode}:${stderr || stdout}`
-    );
+    throw new Error(`critical_auditor_external_adapter_failed:${exitCode}:${stderr || stdout}`);
   }
   let parsed: unknown;
   try {
@@ -6118,14 +6085,13 @@ export function executeCriticalAuditorJudgeAdapter(input: {
   } catch {
     throw new Error('critical_auditor_external_adapter_result_json_invalid');
   }
-  const committed =
-    readCommittedRequirementsContractCriticalAuditorJudgeInvocation({
-      projectRoot: input.projectRoot,
-      requestPath: input.requestPath,
-      outputDir: input.outputDir,
-      round: input.roundIndex,
-      runtimeBinding: recoveryRuntimeBinding,
-    });
+  const committed = readCommittedRequirementsContractCriticalAuditorJudgeInvocation({
+    projectRoot: input.projectRoot,
+    requestPath: input.requestPath,
+    outputDir: input.outputDir,
+    round: input.roundIndex,
+    runtimeBinding: recoveryRuntimeBinding,
+  });
   if (sha256Json(parsed) !== sha256Json(committed.result)) {
     throw new Error('critical_auditor_external_adapter_stdout_commit_mismatch');
   }
@@ -6183,13 +6149,11 @@ export function validateCriticalAuditorProviderInvocationReceipt(input: {
   const receiptRequestedModel =
     receipt.requestedModel === null ? null : normalizeText(receipt.requestedModel);
   const observedModel =
-    normalizeText(transportEvidence.observedModel) ||
-    normalizeText(transportEvidence.initModel);
+    normalizeText(transportEvidence.observedModel) || normalizeText(transportEvidence.initModel);
   const receiptWithoutHash = { ...receipt };
   delete receiptWithoutHash.receiptHash;
   if (
-    normalizeText(receipt.schemaVersion) !==
-      'critical-auditor-judge-invocation-receipt/v1' ||
+    normalizeText(receipt.schemaVersion) !== 'critical-auditor-judge-invocation-receipt/v1' ||
     normalizeText(receiptRef.contentHash) !== sha256File(receiptPath) ||
     normalizeText(receiptRef.receiptHash) !== normalizeText(receipt.receiptHash) ||
     normalizeText(receipt.receiptHash) !== sha256Json(receiptWithoutHash) ||
@@ -6207,16 +6171,14 @@ export function validateCriticalAuditorProviderInvocationReceipt(input: {
     normalizeText(receipt.apiStyle) !== input.expectedProviderBinding.apiStyle ||
     normalizeText(receipt.configuredBaseUrlHash) !==
       input.expectedProviderBinding.configuredBaseUrlHash ||
-    normalizeText(receipt.independenceClass) !==
-      input.expectedProviderBinding.independenceClass ||
+    normalizeText(receipt.independenceClass) !== input.expectedProviderBinding.independenceClass ||
     normalizeText(receipt.providerRegistryHash) !==
       input.expectedProviderBinding.providerRegistryHash ||
     normalizeText(receipt.providerConfigurationHash) !==
       input.expectedProviderBinding.providerConfigurationHash ||
     normalizeText(receipt.transportEvidenceHash) !==
       sha256Text(JSON.stringify(transportEvidence)) ||
-    normalizeText(transportEvidence.adapterRef) !==
-      input.expectedProviderBinding.adapterRef ||
+    normalizeText(transportEvidence.adapterRef) !== input.expectedProviderBinding.adapterRef ||
     sha256Json(normalizeText(transportEvidence.command)) !==
       input.expectedProviderBinding.configuredBaseUrlHash ||
     normalizeText(transportEvidence.executorKind) !== 'native_spawn' ||
@@ -6247,8 +6209,7 @@ function validateCriticalAuditorJudgeHostExecution(
     const receipt = recordObject(JSON.parse(fs.readFileSync(receiptPath, 'utf8')));
     const transportEvidence = recordObject(receipt.transportEvidence);
     if (
-      normalizeText(execution.recoveryDecision) !==
-        'trusted_committed_provider_invocation' ||
+      normalizeText(execution.recoveryDecision) !== 'trusted_committed_provider_invocation' ||
       !/^sha256:[a-f0-9]{64}$/u.test(normalizeText(execution.commandHash)) ||
       normalizeText(execution.providerInvocationReceiptPath) !== receiptPathValue ||
       normalizeText(execution.providerInvocationReceiptContentHash) !==
@@ -6804,10 +6765,7 @@ function preConfirmationPaths(
     ),
     scaleRoutingDecision: path.join(authoringDir, 'scale-routing-decision.json'),
     checkpointPersistenceEvidence: path.join(authoringDir, 'checkpoint-persistence-evidence.json'),
-    criticalAuditorOutcome: path.join(
-      authoringDir,
-      'critical-auditor-checkpoint-outcome.json'
-    ),
+    criticalAuditorOutcome: path.join(authoringDir, 'critical-auditor-checkpoint-outcome.json'),
     checkpointReceiptPaths: Array.from({ length: 9 }, (_item, index) =>
       path.join(authoringDir, `checkpoint-receipt-cp-${String(index).padStart(2, '0')}.json`)
     ),
@@ -6865,16 +6823,9 @@ export function resolveCriticalAuditorExternalAdapterCommand(value: unknown): st
     );
     if (sourceRuntime) {
       const tsxPackageRoot = path.dirname(requireCommonJs.resolve('tsx/package.json'));
-      return [
-        process.execPath,
-        path.join(tsxPackageRoot, 'dist', 'cli.mjs'),
-        adapterPath,
-      ];
+      return [process.execPath, path.join(tsxPackageRoot, 'dist', 'cli.mjs'), adapterPath];
     }
-    return [
-      process.execPath,
-      adapterPath,
-    ];
+    return [process.execPath, adapterPath];
   }
   let parsed: unknown;
   try {
@@ -7095,10 +7046,7 @@ function transitionCriticalAuditorAuditSource(input: {
       };
     }
   );
-  if (
-    input.reason === 'post_audit_projection_materialized' &&
-    previousReceiptRefs.length === 0
-  ) {
+  if (input.reason === 'post_audit_projection_materialized' && previousReceiptRefs.length === 0) {
     throw new Error('critical_auditor_audit_source_transition_receipts_required');
   }
 
@@ -7123,8 +7071,16 @@ function transitionCriticalAuditorAuditSource(input: {
     commitHash: sha256Json(payload),
   };
   const existing = readJsonIfExists(input.previous.auditSourceTransition);
-  if (existing && sha256Json(existing) !== sha256Json(transition)) {
-    throw new Error('critical_auditor_audit_source_transition_conflict');
+  if (existing) {
+    const { commitHash: existingCommitHash, ...existingPayload } = existing;
+    const { committedAt: _existingCommittedAt, ...existingIdentity } = existingPayload;
+    const { committedAt: _nextCommittedAt, ...nextIdentity } = payload;
+    if (
+      normalizeText(existingCommitHash) !== sha256Json(existingPayload) ||
+      sha256Json(existingIdentity) !== sha256Json(nextIdentity)
+    ) {
+      throw new Error('critical_auditor_audit_source_transition_conflict');
+    }
   }
   if (!existing) {
     writeJsonUtf8(input.previous.auditSourceTransition, transition);
@@ -7165,8 +7121,7 @@ function resolveActiveCriticalAuditorStagingTransaction(input: {
           'critical-auditor-audit-source-transition/v1' ||
         normalizeText(auditSourceTransition.status) !== 'committed' ||
         !['initial_draft_materialized', 'post_audit_projection_materialized'].includes(reason) ||
-        normalizeText(auditSourceTransition.previousTransactionId) !==
-          transaction.transactionId ||
+        normalizeText(auditSourceTransition.previousTransactionId) !== transaction.transactionId ||
         normalizeText(auditSourceTransition.previousNamespaceVersion) !==
           transaction.namespaceVersion ||
         normalizeText(auditSourceTransition.sourceStartHash) !== input.sourceStartHash ||
@@ -7181,10 +7136,7 @@ function resolveActiveCriticalAuditorStagingTransaction(input: {
         throw new Error('critical_auditor_audit_source_transition_receipts_required');
       }
       for (const receiptRef of previousReceiptRefs) {
-        const receiptPath = resolveRootRelativePath(
-          input.root,
-          normalizeText(receiptRef.path)
-        );
+        const receiptPath = resolveRootRelativePath(input.root, normalizeText(receiptRef.path));
         if (
           !fs.existsSync(receiptPath) ||
           normalizeText(receiptRef.contentHash) !== sha256File(receiptPath)
@@ -7229,28 +7181,15 @@ function resolveActiveCriticalAuditorStagingTransaction(input: {
       throw new Error('critical_auditor_staging_repair_commit_invalid');
     }
     const requiredRefs = [
-      [
-        recordObject(commit.requestRef),
-        'critical_auditor_staging_repair_request_ref_invalid',
-      ],
-      [
-        recordObject(commit.responseRef),
-        'critical_auditor_staging_repair_response_ref_invalid',
-      ],
-      [
-        recordObject(commit.receiptRef),
-        'critical_auditor_staging_repair_receipt_ref_invalid',
-      ],
+      [recordObject(commit.requestRef), 'critical_auditor_staging_repair_request_ref_invalid'],
+      [recordObject(commit.responseRef), 'critical_auditor_staging_repair_response_ref_invalid'],
+      [recordObject(commit.receiptRef), 'critical_auditor_staging_repair_receipt_ref_invalid'],
       [
         recordObject(commit.providerInvocationReceiptRef),
         'critical_auditor_staging_repair_provider_receipt_ref_invalid',
       ],
       ...asRecordArray(commit.nextArtifactRefs).map(
-        (ref) =>
-          [
-            ref,
-            'critical_auditor_staging_repair_next_artifact_ref_invalid',
-          ] as const
+        (ref) => [ref, 'critical_auditor_staging_repair_next_artifact_ref_invalid'] as const
       ),
     ] as const;
     if (asRecordArray(commit.nextArtifactRefs).length === 0) {
@@ -7282,6 +7221,44 @@ function resolveActiveCriticalAuditorStagingTransaction(input: {
       throw new Error('critical_auditor_staging_repair_next_transaction_invalid');
     }
     transaction = next;
+  }
+  throw new Error('critical_auditor_staging_repair_chain_limit_exceeded');
+}
+
+function criticalAuditorStagingChainIncludesRepair(input: {
+  paths: PreConfirmationPaths;
+  recordId: string;
+  sourceStartHash: string;
+  activeTransactionId: string;
+}): boolean {
+  let transaction = createCriticalAuditorStagingTransaction({
+    paths: input.paths,
+    recordId: input.recordId,
+    sourceStartHash: input.sourceStartHash,
+  });
+  let includesRepair = false;
+  for (let depth = 0; depth < 12; depth += 1) {
+    if (transaction.transactionId === input.activeTransactionId) {
+      return includesRepair;
+    }
+    const transition = readJsonIfExists(transaction.auditSourceTransition);
+    const repairCommit = readJsonIfExists(transaction.repairCommit);
+    if (transition && repairCommit) {
+      throw new Error('critical_auditor_staging_transition_conflict');
+    }
+    const nextAuditSourceHash = normalizeText(
+      repairCommit?.nextAuditSourceHash ?? transition?.nextAuditSourceHash
+    );
+    if (!nextAuditSourceHash) {
+      throw new Error('critical_auditor_active_transaction_unreachable');
+    }
+    includesRepair ||= Boolean(repairCommit);
+    transaction = createCriticalAuditorStagingTransaction({
+      paths: input.paths,
+      recordId: input.recordId,
+      sourceStartHash: input.sourceStartHash,
+      auditSourceHash: nextAuditSourceHash,
+    });
   }
   throw new Error('critical_auditor_staging_repair_chain_limit_exceeded');
 }
@@ -7324,6 +7301,7 @@ function latestCommittedCriticalAuditorGapRound(input: {
         projectRoot: input.root,
         receipt,
         response,
+        requireJudgeInvocationProvenance: false,
         roundIndex,
         transaction: input.transaction,
         auditInputHash: normalizeText(request.auditInputHash),
@@ -7331,9 +7309,7 @@ function latestCommittedCriticalAuditorGapRound(input: {
         sourceDocumentHash: normalizeText(request.sourceDocumentHash),
         sourceBytesHash: normalizeText(request.sourceBytesHash),
         semanticModelHash: normalizeText(request.semanticModelHash),
-        implementationConfirmationHash: normalizeText(
-          request.implementationConfirmationHash
-        ),
+        implementationConfirmationHash: normalizeText(request.implementationConfirmationHash),
         packetHash: normalizeText(request.packetHash),
         projectionSetHash: normalizeText(request.projectionSetHash),
         requestHash: normalizeText(request.requestHash),
@@ -8487,8 +8463,11 @@ function extractInlineImplementationConfirmationBoundaryBlocks(input: {
   });
 }
 
-function resolveSourceMustRequirements(root: string, sourcePath: string): SourceMustRequirement[] {
-  const sourceText = fs.readFileSync(sourcePath, 'utf8');
+function resolveSourceMustRequirements(
+  root: string,
+  sourcePath: string,
+  sourceText: string
+): SourceMustRequirement[] {
   const explicit = extractExplicitSourceMustRequirements(sourceText);
   if (explicit.length > 0) {
     return explicit;
@@ -8707,7 +8686,7 @@ function sourceRequirementIdFromTableContext(
 ): string | null {
   return (
     canonicalSourceRequirementAlias(
-    tableContextRowValue(tableContext, ['ID', 'Requirement ID', 'Req ID', 'FR ID', 'NFR ID'])
+      tableContextRowValue(tableContext, ['ID', 'Requirement ID', 'Req ID', 'FR ID', 'NFR ID'])
     )?.sourceRequirementId ?? null
   );
 }
@@ -8747,7 +8726,9 @@ export interface SplitMustSourceMaterializationResult {
 }
 
 function canonicalSourceRequirementId(value: string): string | null {
-  const match = normalizeText(value).toUpperCase().match(/^(FR|NFR)-(\d{1,3})$/u);
+  const match = normalizeText(value)
+    .toUpperCase()
+    .match(/^(FR|NFR)-(\d{1,3})$/u);
   return match ? `${match[1]}-${match[2].padStart(3, '0')}` : null;
 }
 
@@ -8766,7 +8747,9 @@ function renderMarkdownTableRow(values: string[], rawText: string): string {
 }
 
 function splitMustSourceIdFromMustRef(sourceMustRef: string): string {
-  const match = normalizeText(sourceMustRef).toUpperCase().match(/^MUST-(FR|NFR)-(\d{1,3})$/u);
+  const match = normalizeText(sourceMustRef)
+    .toUpperCase()
+    .match(/^MUST-(FR|NFR)-(\d{1,3})$/u);
   if (!match) {
     throw new Error(
       `critical_auditor_split_must_source_identity_invalid:${normalizeText(sourceMustRef)}`
@@ -8786,10 +8769,7 @@ const SPLIT_MUST_SOURCE_OWNER_COLUMNS = new Set([
   'source must refs',
 ]);
 
-function splitMustSourceOwnerColumn(input: {
-  headingPath: string[];
-  column: string;
-}): boolean {
+function splitMustSourceOwnerColumn(input: { headingPath: string[]; column: string }): boolean {
   const label = normalizedHeadingLabel(input.column);
   return (
     SPLIT_MUST_SOURCE_OWNER_COLUMNS.has(label) ||
@@ -8928,9 +8908,7 @@ export function materializeSplitMustSourceRows(input: {
     throw new Error('critical_auditor_split_must_source_row_missing');
   }
   const idColumnIndex = sourceRowCandidate.table.columns.findIndex((column) =>
-    ['id', 'requirement id', 'req id', 'fr id', 'nfr id'].includes(
-      normalizedHeadingLabel(column)
-    )
+    ['id', 'requirement id', 'req id', 'fr id', 'nfr id'].includes(normalizedHeadingLabel(column))
   );
   const textColumnIndex = sourceRowCandidate.table.columns.findIndex((column) =>
     ['requirement', 'quality attribute', 'behavior'].includes(normalizedHeadingLabel(column))
@@ -9053,7 +9031,7 @@ function sourceProjectionOnlyHeadingSignal(headingPath: string[]): string | null
     /^(?:(?:authoritative|source|contract|requirement)\s+)*(?:authority\s+)?(?:provenance|lineage|references?|citations?|metadata)$/iu.test(
       localHeading
     ) ||
-    /^(?:source authority provenance|authority provenance|source lineage|来源|溯源|引用|出处)$/u.test(
+    /^(?:source authority provenance|authority provenance|source lineage|template authority|validation provenance|来源|溯源|引用|出处)$/u.test(
       localHeading
     )
   ) {
@@ -9420,7 +9398,9 @@ function extractTargetAuthorityFromSource(input: {
     );
     const paths = targetText
       ? extractDeclaredTargetPaths(targetText)
-      : extractPathLikeTokens(text).filter((candidatePath) => !validationCommandFileRefs.has(candidatePath));
+      : extractPathLikeTokens(text).filter(
+          (candidatePath) => !validationCommandFileRefs.has(candidatePath)
+        );
     const sourcePathId = normalizeText(
       tableContextRowValue(block.tableContext, ['ID'])
     ).toUpperCase();
@@ -9494,22 +9474,43 @@ function resolveTargetAuthority(input: {
   const seen = new Set<string>();
   const rejected: Array<Record<string, unknown>> = [];
   const candidateRecords = [...explicitRecords, ...input.sourceRecords];
-  const accepted = candidateRecords.filter((record) => {
+  const accepted: TargetAuthorityRecord[] = [];
+  const acceptedByPath = new Map<string, TargetAuthorityRecord>();
+  for (const record of candidateRecords) {
     const normalizedPath = record.path.replace(/\\/g, '/');
     if (seen.has(normalizedPath)) {
-      return false;
+      const existing = acceptedByPath.get(normalizedPath);
+      if (existing) {
+        existing.sourceMustRefs = uniqueNonEmpty([
+          ...(existing.sourceMustRefs ?? []),
+          ...(record.sourceMustRefs ?? []),
+        ]);
+        existing.sourceTraceRefs = uniqueNonEmpty([
+          ...(existing.sourceTraceRefs ?? []),
+          ...(record.sourceTraceRefs ?? []),
+        ]);
+        existing.sourceAcceptanceRefs = uniqueNonEmpty([
+          ...(existing.sourceAcceptanceRefs ?? []),
+          ...(record.sourceAcceptanceRefs ?? []),
+        ]);
+        existing.sourcePathId ||= record.sourcePathId;
+        existing.sourceOracle ||= record.sourceOracle;
+        existing.responsibilityMapping ||= record.responsibilityMapping;
+      }
+      continue;
     }
     seen.add(normalizedPath);
     if (pathEscapesProjectRoot(input.root, record.path)) {
       rejected.push({ ...record, reason: 'target_path_outside_project_root' });
-      return false;
+      continue;
     }
     if (/^(?:https?:|mailto:)/iu.test(record.path)) {
       rejected.push({ ...record, reason: 'url_target_path_not_allowed_for_source_mutation' });
-      return false;
+      continue;
     }
-    return true;
-  });
+    accepted.push(record);
+    acceptedByPath.set(normalizedPath, record);
+  }
   const issues =
     accepted.length === 0
       ? [
@@ -9771,6 +9772,33 @@ function buildValidationAuthority(input: {
     ...command,
     source: 'source_document',
   }));
+  sourceDerived.sort((left, right) =>
+    stableStringify({
+      command: left.command,
+      sourceCommandId: left.sourceCommandId ?? '',
+      sourceCommandType: left.sourceCommandType ?? '',
+      sourceMustRefs: [...(left.sourceMustRefs ?? [])].sort(),
+      sourceTraceRefs: [...(left.sourceTraceRefs ?? [])].sort(),
+      sourceAcceptanceRefs: [...(left.sourceAcceptanceRefs ?? [])].sort(),
+      sourcePathRefs: [...(left.sourcePathRefs ?? [])].sort(),
+      sourceOracle: left.sourceOracle ?? '',
+      responsibilityMapping: left.responsibilityMapping ?? '',
+      sourceTargetFiles: [...(left.sourceTargetFiles ?? [])].sort(),
+    }).localeCompare(
+      stableStringify({
+        command: right.command,
+        sourceCommandId: right.sourceCommandId ?? '',
+        sourceCommandType: right.sourceCommandType ?? '',
+        sourceMustRefs: [...(right.sourceMustRefs ?? [])].sort(),
+        sourceTraceRefs: [...(right.sourceTraceRefs ?? [])].sort(),
+        sourceAcceptanceRefs: [...(right.sourceAcceptanceRefs ?? [])].sort(),
+        sourcePathRefs: [...(right.sourcePathRefs ?? [])].sort(),
+        sourceOracle: right.sourceOracle ?? '',
+        responsibilityMapping: right.responsibilityMapping ?? '',
+        sourceTargetFiles: [...(right.sourceTargetFiles ?? [])].sort(),
+      })
+    )
+  );
   const rejected: Array<Record<string, unknown>> = [];
   const accepted: ValidationAuthorityRecord[] = [];
   const acceptedTargetRecords = [...input.targetRecords];
@@ -9939,13 +9967,15 @@ function analyzeRequirementsContractSourceAuthority(input: {
     sourceText: input.sourceText,
     blocks: structuredBlocks,
   });
-  const inlineMustRequirements = resolveSourceMustRequirements(input.root, input.sourcePath);
+  const inlineMustRequirements = resolveSourceMustRequirements(
+    input.root,
+    input.sourcePath,
+    input.sourceText
+  );
   const forbiddenLineBasedMustRequirements = inlineMustRequirements.filter((row) =>
     isForbiddenLineBasedMustId(row.id)
   );
-  const inlineConfirmation = extractImplementationConfirmationBlock(
-    input.sourceText
-  )?.confirmation;
+  const inlineConfirmation = extractImplementationConfirmationBlock(input.sourceText)?.confirmation;
   const inlineHasCurrentAuthoringProjection =
     Object.keys(recordObject(inlineConfirmation?.preConfirmationDrilldown)).length > 0;
   const sourceDeclaresStableRequirementIds =
@@ -9961,8 +9991,7 @@ function analyzeRequirementsContractSourceAuthority(input: {
           input.sourcePath,
           input.sourceText,
           {
-            requireSourceRequirementIds:
-              input.requireSourceRequirementIdsForControlledCandidates,
+            requireSourceRequirementIds: input.requireSourceRequirementIdsForControlledCandidates,
           }
         )
       : [];
@@ -10029,8 +10058,7 @@ export function inspectRequirementsContractSourceAuthority(input: {
     sourceText,
     explicitTargetPaths: uniqueNonEmpty(input.explicitTargetPaths ?? []),
     explicitRequiredCommands: uniqueNonEmpty(input.explicitRequiredCommands ?? []),
-    requireSourceRequirementIdsForControlledCandidates:
-      input.requireSourceRequirementIds === true,
+    requireSourceRequirementIdsForControlledCandidates: input.requireSourceRequirementIds === true,
   });
   return {
     controlledMustCandidates: analysis.controlledCandidates.map((row) => ({ ...row })),
@@ -10614,8 +10642,7 @@ function groundSourceMustRequirements(
         ? blocks.find(
             (block) =>
               projectedMustIdFromSourceRequirementId(sourceBlockRequirementId(block)) ===
-                requirement.id &&
-              headingPathAllowsMustProjection(block.headingPath)
+                requirement.id && headingPathAllowsMustProjection(block.headingPath)
           )
         : undefined) ??
       (requirement.sourceLine
@@ -11012,9 +11039,11 @@ function buildBusinessFailurePathRows(input: {
     });
     const ownerMustRefs = sourceRefsToMustRefs(
       uniqueNonEmpty([
-      ...sourceReferenceIds(sourceTableRowText(block)),
-      ...traceRefs,
-      ...linkedTestBlocks.flatMap((testBlock) => sourceReferenceIds(sourceTableRowText(testBlock))),
+        ...sourceReferenceIds(sourceTableRowText(block)),
+        ...traceRefs,
+        ...linkedTestBlocks.flatMap((testBlock) =>
+          sourceReferenceIds(sourceTableRowText(testBlock))
+        ),
       ]),
       input.mustRequirements
     );
@@ -13063,9 +13092,7 @@ function planSemanticSourceRootIdsForMustRequirements(
   const usedIds = new Set(plannedIds.filter((id): id is string => id !== null));
 
   const allocateCanonicalId = (projectedSourceRequirementId: string): string => {
-    const prefix = projectedSourceRequirementId.startsWith('MUST-NFR-')
-      ? 'MUST-NFR'
-      : 'MUST-FR';
+    const prefix = projectedSourceRequirementId.startsWith('MUST-NFR-') ? 'MUST-NFR' : 'MUST-FR';
     const usedOrdinals = [...usedIds]
       .map((id) => id.match(new RegExp(`^${prefix}-(\\d{3})$`, 'u'))?.[1])
       .filter((ordinal): ordinal is string => Boolean(ordinal))
@@ -13795,7 +13822,9 @@ function planProductionSemanticSourceRootCandidates(input: {
       `Registered Source Root inventory mismatch: ${JSON.stringify(inventoryValidation)}`
     );
   }
-  return roots;
+  return roots.map((root) =>
+    root.sourcePath === sourcePath ? { ...root, sourceContent: input.sourceText } : root
+  );
 }
 
 function buildPreConfirmationImplementationConfirmationDraft(input: {
@@ -13900,6 +13929,18 @@ function buildPreConfirmationImplementationConfirmationDraft(input: {
   const perMustTraceIds = perMustClosures.map((row) => row.traceId);
   const allEvidenceIds = perMustClosures.map((row) => row.evidenceId);
   const perMustAcceptanceIds = perMustClosures.flatMap((row) => [row.acceptanceId, row.e2eId]);
+  const perMustAssertionsForProjection = (
+    projectionKey: 'acceptanceId' | 'e2eId',
+    projectionId: string
+  ): Record<string, string> =>
+    Object.fromEntries(
+      perMustClosures
+        .filter((row) => row[projectionKey] === projectionId)
+        .map((row) => [
+          row.mustId,
+          row.sourceAuthority?.oracle || row.requirement.text,
+        ])
+    );
   const allFailureIds =
     sourceBusinessFailureRows.length > 0 ? sourceBusinessFailureRows.map((row) => row.id) : [];
   const allEdgeIds = perMustClosures.map((row) => row.edgeId);
@@ -13978,9 +14019,14 @@ function buildPreConfirmationImplementationConfirmationDraft(input: {
         edgeId: owner.edgeId,
         failurePathRefs:
           sourceFailureRefs.length > 0 ? sourceFailureRefs : owner.failureIds.slice(0, 1),
+        contractCommandRefs: sourceRefsFromTableField(sourceTraceBlock, [
+          'Contract validation command refs',
+        ]).filter((ref) => /^CMD-\d{1,3}$/u.test(ref)),
         deliveryCommandRefs: uniqueNonEmpty([
           ...stringsFrom(row.sourceCommandRefs),
-          ...sourceTraceRefs.filter((ref) => /^CMD-\d{1,3}$/u.test(ref)),
+          ...sourceRefsFromTableField(sourceTraceBlock, [
+            'Delivery evidence command refs',
+          ]).filter((ref) => /^CMD-\d{1,3}$/u.test(ref)),
         ]),
       },
     ];
@@ -14837,7 +14883,7 @@ function buildPreConfirmationImplementationConfirmationDraft(input: {
           sourceRequirementTexts: [row.text],
           taskRefs: [row.taskId],
           evidenceRefs: [row.evidenceId],
-          contractValidationCommandRefs: commandIds,
+          contractValidationCommandRefs: row.contractCommandRefs,
           deliveryEvidenceCommandRefs: row.deliveryCommandRefs,
           acceptanceRefs: [row.acceptanceId, row.sourceE2eId],
           failurePathRefs: row.failurePathRefs,
@@ -14869,6 +14915,7 @@ function buildPreConfirmationImplementationConfirmationDraft(input: {
         expectedPreImplementationState: 'expected_red',
         redProofPlan: `Before implementation, ${row.mustId} acceptance must fail without source-backed product behavior and packet-backed proof surfaces.`,
         oracle: row.sourceAuthority?.oracle || row.requirement.text,
+        perMustAssertions: perMustAssertionsForProjection('acceptanceId', row.acceptanceId),
         positiveControl: true,
         negativeControls: negativeRequirementIds,
         mockOnly: false,
@@ -14936,6 +14983,7 @@ function buildPreConfirmationImplementationConfirmationDraft(input: {
       expectedPreImplementationState: 'expected_red',
       redProofPlan: `Before implementation, ${row.mustId} E2E proof must be red and cannot be satisfied by renderer smoke output.`,
       oracle: row.sourceAuthority?.oracle || row.requirement.text,
+      perMustAssertions: perMustAssertionsForProjection('e2eId', row.e2eId),
       positiveControl: true,
       negativeControls: negativeRequirementIds,
       mockOnly: false,
@@ -15379,13 +15427,19 @@ function promoteImplementationConfirmationDraftWithReceipt(input: {
   };
 }
 
-function rollbackPromotedSourceAfterReadbackFailure(input: {
+export interface PromotionReadbackRollbackPaths {
+  promotionReceipt: string;
+  promotionReadbackRoundTripReport: string;
+  promotionReadbackRollbackReceipt: string;
+}
+
+export function rollbackPromotedSourceAfterReadbackFailure(input: {
   root: string;
   sourcePath: string;
   sourceExistedBeforePromotion: boolean;
   expectedOriginalHash: string;
   promotionReceipt: Record<string, unknown> | null;
-  paths: PreConfirmationPaths;
+  paths: PromotionReadbackRollbackPaths;
   reasonCode: string;
   createdAt: string;
 }): {
@@ -15508,6 +15562,29 @@ function rollbackPromotedSourceAfterReadbackFailure(input: {
     writeJsonUtf8(input.paths.promotionReadbackRollbackReceipt, receipt);
     return { ok: false, receipt };
   }
+}
+
+export function evaluateIntakeTargetPromotionRace(input: {
+  entryMode: 'existing_source' | 'intake_to_new_source';
+  targetSourceExistedBeforeAuthoring: boolean;
+  targetExistsBeforePromotion: boolean;
+}): {
+  code: 'target_created_before_promotion';
+  blockingStage: 'target_created_before_promotion';
+  nextRequiredAction: 'stop_target_created_before_promotion';
+} | null {
+  if (
+    input.entryMode === 'intake_to_new_source' &&
+    !input.targetSourceExistedBeforeAuthoring &&
+    input.targetExistsBeforePromotion
+  ) {
+    return {
+      code: 'target_created_before_promotion',
+      blockingStage: 'target_created_before_promotion',
+      nextRequiredAction: 'stop_target_created_before_promotion',
+    };
+  }
+  return null;
 }
 
 function normalizeImplementationConfirmationDraftForPromotion(input: {
@@ -16338,6 +16415,7 @@ function buildSourceMaterializationRequiredResult(input: {
 }
 
 const CURRENT_SOURCE_PROMOTION_REFRESHABLE_ISSUES = new Set([
+  'promotion_receipt_missing',
   'promotion_receipt_source_hash_stale',
   'promotion_receipt_confirmation_hash_stale',
   'promotion_receipt_manifest_draft_hash_stale',
@@ -17631,10 +17709,12 @@ function commitCriticalAuditorCheckpointOutcome(input: {
   bindingRounds: CriticalAuditorReceiptBindingRound[];
   blockingIssues: PreConfirmationDrilldownIssue[];
   createdAt: string;
-}): { ok: true; decision: 'pass' | 'block' } | {
-  ok: false;
-  issue: PreConfirmationDrilldownIssue;
-} {
+}):
+  | { ok: true; decision: 'pass' | 'block' }
+  | {
+      ok: false;
+      issue: PreConfirmationDrilldownIssue;
+    } {
   const convergence = evaluateCriticalAuditorReceiptBindingSequence(input.bindingRounds);
   const verdict = normalizeCriticalAuditorVerdict(
     recordObject(input.receipt?.convergenceDecision).verdict
@@ -19626,8 +19706,8 @@ function buildMustDecompositionPacket(input: {
           : record.explicit && record.coverageRole !== 'validation_only'
             ? mustRefs
             : totalMusts === 1
-            ? mustRefs
-            : [],
+              ? mustRefs
+              : [],
     };
   });
   targetPathRows.push(
@@ -19834,9 +19914,7 @@ function buildMustDecompositionPacket(input: {
         mustAcceptanceProjection: [
           ...acceptanceProjectionRefs.map((id) => ({
             id,
-            materializedTo: materialized(
-              `implementationConfirmation.acceptanceTests[${id}]`
-            ),
+            materializedTo: materialized(`implementationConfirmation.acceptanceTests[${id}]`),
           })),
           ...e2eProjectionRefs.map((id) => ({
             id,
@@ -22402,9 +22480,7 @@ function buildPreserveExistingMustDecompositionPacket(input: {
         ],
         mustExecutionDecompositionMatrix: matrixRows.map((row, rowIndex) => {
           const id = rowIdForRepair(row, String(rowIndex));
-          const taskRefs = asStringArray(row.atomicTaskRefs).filter((ref) =>
-            taskIdSet.has(ref)
-          );
+          const taskRefs = asStringArray(row.atomicTaskRefs).filter((ref) => taskIdSet.has(ref));
           return {
             ...row,
             id,
@@ -22414,11 +22490,7 @@ function buildPreserveExistingMustDecompositionPacket(input: {
               ? taskRefs.map(
                   (taskRef) => `implementationConfirmation.implementationTasks[${taskRef}]`
                 )
-              : [
-                  `implementationConfirmation.implementationTasks[${
-                    taskIds[0] || fallbackTaskId
-                  }]`,
-                ],
+              : [`implementationConfirmation.implementationTasks[${taskIds[0] || fallbackTaskId}]`],
             derivedFromMustRef: requirement.id,
             ...projectionBackRefForRepair(input.packetHash, requirement.id),
           };
@@ -22488,11 +22560,7 @@ function buildPreserveExistingMustDecompositionPacket(input: {
         }),
         mustCurrentTargetProjection: mustCurrentTargetRows.map((row, rowIndex) => {
           const id = rowIdForRepair(row, String(rowIndex));
-          return projection(
-            id,
-            'implementationConfirmation.currentTargetMap',
-            requirement.id
-          );
+          return projection(id, 'implementationConfirmation.currentTargetMap', requirement.id);
         }),
         mustAiTddManifestProjection: mustAiTddRows.map((row, rowIndex) =>
           projection(
@@ -23018,6 +23086,7 @@ function criticalAuditorReceiptMatchesCurrent(input: {
   projectRoot: string;
   receipt: Record<string, unknown> | null;
   response: Record<string, unknown> | null;
+  requireJudgeInvocationProvenance: boolean;
   roundIndex: number;
   transaction: CriticalAuditorStagingTransaction;
   auditInputHash: string;
@@ -23071,23 +23140,28 @@ function criticalAuditorReceiptMatchesCurrent(input: {
       recordObject(receipt.independentProviderEvidence).providerRunId
     );
     if (!providerRunId) return false;
-    validateCriticalAuditorProviderInvocationReceipt({
-      projectRoot: input.projectRoot,
-      receiptRef: receipt.providerInvocationReceiptRef,
-      requestHash: input.requestHash,
-      sourceDocumentHash: input.sourceDocumentHash,
-      sourceBytesHash: input.sourceBytesHash,
-      semanticModelHash: input.semanticModelHash,
-      projectionSetHash: input.projectionSetHash,
-      providerRunId,
-      expectedProviderBinding:
-        expectation as unknown as CriticalAuditorJudgeRuntimeBinding,
-    });
-    validateCriticalAuditorJudgeHostExecution(
-      input.projectRoot,
-      receipt.judgeAdapterHostExecution,
-      receipt.providerInvocationReceiptRef
-    );
+    const hasInvocationProvenance =
+      Object.keys(recordObject(receipt.providerInvocationReceiptRef)).length > 0 ||
+      Object.keys(recordObject(receipt.judgeAdapterHostExecution)).length > 0;
+    if (input.requireJudgeInvocationProvenance || hasInvocationProvenance) {
+      validateCriticalAuditorProviderInvocationReceipt({
+        projectRoot: input.projectRoot,
+        receiptRef: receipt.providerInvocationReceiptRef,
+        requestHash: input.requestHash,
+        sourceDocumentHash: input.sourceDocumentHash,
+        sourceBytesHash: input.sourceBytesHash,
+        semanticModelHash: input.semanticModelHash,
+        projectionSetHash: input.projectionSetHash,
+        providerRunId,
+        expectedProviderBinding:
+          expectation as unknown as CriticalAuditorJudgeRuntimeBinding,
+      });
+      validateCriticalAuditorJudgeHostExecution(
+        input.projectRoot,
+        receipt.judgeAdapterHostExecution,
+        receipt.providerInvocationReceiptRef
+      );
+    }
   } catch {
     return false;
   }
@@ -23164,7 +23238,10 @@ function publishCriticalAuditorTransactionEvidence(input: {
       )
     );
   }
-  publishFile(input.stagingPaths.criticalAuditorOutcome, input.publishedPaths.criticalAuditorOutcome);
+  publishFile(
+    input.stagingPaths.criticalAuditorOutcome,
+    input.publishedPaths.criticalAuditorOutcome
+  );
   return published;
 }
 
@@ -23257,11 +23334,7 @@ function validateCriticalAuditorRepairActions(input: {
     'derivedFromMustRef',
     'projectionStatus',
   ]);
-  const addIssue = (
-    code: string,
-    message: string,
-    refs: string[]
-  ): void => {
+  const addIssue = (code: string, message: string, refs: string[]): void => {
     issues.push(preConfirmationIssue(code, message, refs, 'critical_auditor'));
   };
   const normalizedGaps = input.gaps.map((gap, gapIndex) => {
@@ -23300,8 +23373,8 @@ function validateCriticalAuditorRepairActions(input: {
           value === null ||
           (typeof value === 'string' && !normalizeText(value)) ||
           (Array.isArray(value) && value.length === 0) ||
-            (field === 'sourceSpan' &&
-              (typeof value !== 'object' || value === null || Array.isArray(value)));
+          (field === 'sourceSpan' &&
+            (typeof value !== 'object' || value === null || Array.isArray(value)));
         if (missing) {
           addIssue(
             'critical_auditor_repair_action_field_missing',
@@ -23327,7 +23400,10 @@ function validateCriticalAuditorRepairActions(input: {
           [actionId, String(startLine), String(endLine)]
         );
       } else {
-        const actualSourceText = sourceLines.slice(startLine - 1, endLine).join('\n').trim();
+        const actualSourceText = sourceLines
+          .slice(startLine - 1, endLine)
+          .join('\n')
+          .trim();
         if (actualSourceText !== sourceText) {
           addIssue(
             'critical_auditor_repair_action_source_text_mismatch',
@@ -23401,9 +23477,7 @@ function validateCriticalAuditorRepairActions(input: {
             [actionId, sourceMustRef, ...replacementIds].filter(Boolean)
           );
         }
-        const conflictingId = replacementIds.find(
-          (id) => id !== sourceMustRef && mustIds.has(id)
-        );
+        const conflictingId = replacementIds.find((id) => id !== sourceMustRef && mustIds.has(id));
         if (conflictingId) {
           addIssue(
             'critical_auditor_repair_action_materialized_id_conflict',
@@ -23537,9 +23611,7 @@ function projectionIdentityIds(value: unknown): string[] {
   return [...ids].sort();
 }
 
-function projectionInventoryFromConfirmation(
-  confirmation: Record<string, unknown>
-): {
+function projectionInventoryFromConfirmation(confirmation: Record<string, unknown>): {
   projectionGroups: string[];
   projectionRefs: string[];
 } {
@@ -23662,10 +23734,7 @@ export function resolveAuditJudgeRequestAuthorityBinding(input: {
     throw new Error('audit_judge_model_packet_hash_mismatch');
   }
   const packet = readJsonIfExists(modelPacketPath);
-  if (
-    !packet ||
-    normalizeText(packet.schemaVersion) !== 'req-trace-ai-tdd-model-packet/v1'
-  ) {
+  if (!packet || normalizeText(packet.schemaVersion) !== 'req-trace-ai-tdd-model-packet/v1') {
     throw new Error('audit_judge_model_packet_schema_invalid');
   }
   const sourceDocument = normalizeText(packet.sourceDocument);
@@ -23693,20 +23762,14 @@ export function resolveAuditJudgeRequestAuthorityBinding(input: {
   const projectRealPath = fs.realpathSync(projectRoot);
   const sourceRealPath = fs.realpathSync(sourcePath);
   const relativeRealSourcePath = path.relative(projectRealPath, sourceRealPath);
-  if (
-    relativeRealSourcePath.startsWith('..') ||
-    path.isAbsolute(relativeRealSourcePath)
-  ) {
+  if (relativeRealSourcePath.startsWith('..') || path.isAbsolute(relativeRealSourcePath)) {
     throw new Error('audit_judge_source_document_realpath_escape');
   }
   const sourceText = fs.readFileSync(sourcePath, 'utf8');
   const extracted = extractRequirementsContractImplementationConfirmation(sourceText);
   if (
-    sourceDocumentHashForContract(
-      sourceText,
-      extracted.blockText,
-      extracted.value
-    ) !== input.sourceDocumentHash
+    sourceDocumentHashForContract(sourceText, extracted.blockText, extracted.value) !==
+    input.sourceDocumentHash
   ) {
     throw new Error('audit_judge_source_document_hash_mismatch');
   }
@@ -23721,9 +23784,7 @@ export function resolveAuditJudgeRequestAuthorityBinding(input: {
   ) {
     throw new Error('audit_judge_projection_inventory_missing');
   }
-  const derivedProjectionSetHash = projectionSetHashForContract(
-    projectionInventory.projectionRefs
-  );
+  const derivedProjectionSetHash = projectionSetHashForContract(projectionInventory.projectionRefs);
   if (derivedProjectionSetHash !== input.projectionSetHash) {
     throw new Error('audit_judge_projection_set_hash_mismatch');
   }
@@ -23760,9 +23821,7 @@ function criticalAuditorProjectionInventory(
   projectionGroups: string[];
   projectionRefs: string[];
 } {
-  if (
-    normalizeText(packet.schemaVersion) === 'req-trace-ai-tdd-model-packet/v1'
-  ) {
+  if (normalizeText(packet.schemaVersion) === 'req-trace-ai-tdd-model-packet/v1') {
     return compiledModelPacketProjectionInventory(packet);
   }
   const projectionGroups = new Set<string>(CRITICAL_AUDITOR_PROJECTION_GROUPS);
@@ -23842,10 +23901,7 @@ function criticalAuditorIndependentProviderExpectationFromRequest(
       );
     }
   }
-  if (
-    required.sourceBytesHash &&
-    !/^sha256:[a-f0-9]{64}$/u.test(required.sourceBytesHash)
-  ) {
+  if (required.sourceBytesHash && !/^sha256:[a-f0-9]{64}$/u.test(required.sourceBytesHash)) {
     issueCodes.push('critical_auditor_source_bytes_hash_invalid');
   }
   if (issueCodes.length > 0) {
@@ -24016,9 +24072,7 @@ function runCriticalAuditorReceiptLoop(input: {
     input.packet,
     sourceExtraction.confirmation
   );
-  const projectionSetHash = projectionSetHashForContract(
-    projectionInventory.projectionRefs
-  );
+  const projectionSetHash = projectionSetHashForContract(projectionInventory.projectionRefs);
   const auditAttemptId = criticalAuditorAuditAttemptId({
     transactionId: input.transaction.transactionId,
     auditInputHash: input.auditInputHash,
@@ -24050,95 +24104,8 @@ function runCriticalAuditorReceiptLoop(input: {
   const issues: PreConfirmationDrilldownIssue[] = [];
   let latestReceiptHash: string | null = null;
   let consecutiveNoNewGapRounds = 0;
-  if (!input.roundProvider) {
-    const roundIndex = 1;
-    const gateDryRun = buildCriticalAuditorGateDryRunSummary({
-      root: input.root,
-      sourcePath: input.sourcePath,
-      paths: input.paths,
-      roundIndex,
-    });
-    const candidateRequest = buildCriticalAuditorRoundRequest({
-      root: input.root,
-      sourcePath: input.sourcePath,
-      recordId: input.recordId,
-      roundIndex,
-      transactionId: input.transaction.transactionId,
-      namespaceVersion: input.transaction.namespaceVersion,
-      sourceDocumentHash: input.sourceDocumentHash,
-      semanticModelHash: input.semanticModelHash,
-      implementationConfirmationHash: input.implementationConfirmationHash,
-      packetHash: input.packetHash,
-      projectionSetHash,
-      auditAttemptId,
-      independentProviderBinding: providerBinding.binding,
-      independentProviderBindingIssueCodes: providerBinding.issueCodes,
-      auditInputHash: input.auditInputHash,
-      mustRequirements: input.mustRefs.map((id, index) => ({
-        id,
-        text: input.sourceRequirementTexts[index] ?? id,
-        sourceLine: index + 1,
-      })),
-      packet: input.packet,
-      confirmation: sourceExtraction.confirmation,
-      previousReceipts: [],
-      gateDryRun,
-      createdAt: input.createdAt,
-    });
-    const requestPath = criticalAuditorRequestPath(input.transaction, roundIndex);
-    writeOrReuseCriticalAuditorRoundRequest({
-      requestPath,
-      candidate: candidateRequest,
-    });
-    const providerIssue = preConfirmationIssue(
-      'critical_auditor_provider_mode_required',
-      'A real Critical Auditor round provider is required; synthetic clean receipts are not allowed',
-      ['critical_auditor_receipt_loop'],
-      'critical_auditor'
-    );
-    const outcomeCommit = commitCriticalAuditorCheckpointOutcome({
-      root: input.root,
-      sourcePath: input.sourcePath,
-      paths: input.paths,
-      transaction: input.transaction,
-      recordId: input.recordId,
-      requirementSetId: input.requirementSetId,
-      implementationAttemptId: input.implementationAttemptId,
-      auditInputHash: input.auditInputHash,
-      sourceDocumentHash: input.sourceDocumentHash,
-      semanticModelHash: input.semanticModelHash,
-      implementationConfirmationHash: input.implementationConfirmationHash,
-      packetHash: input.packetHash,
-      projectionSetHash,
-      roundIndex,
-      requestPath,
-      bindingRounds,
-      blockingIssues: [providerIssue],
-      createdAt: input.createdAt,
-    });
-    return {
-      latestReceiptHash: null,
-      consecutiveNoNewGapRounds: 0,
-      receipts: [],
-      requestPath,
-      continuation: {
-        providerMode: 'main_session_inline',
-        transactionId: input.transaction.transactionId,
-        namespaceVersion: input.transaction.namespaceVersion,
-        roundIndex,
-        requestPath: toRootRelativePath(input.root, requestPath),
-        responsePath: toRootRelativePath(
-          input.root,
-          criticalAuditorResponsePath(input.transaction, roundIndex)
-        ),
-        nextRequiredAction: 'run_main_session_critical_auditor_round',
-      },
-      issues: [
-        providerIssue,
-        ...(outcomeCommit.ok ? [] : [outcomeCommit.issue]),
-      ],
-    };
-  }
+  let pendingRequestPath: string | null = null;
+  let continuation: Record<string, unknown> | null = null;
   const provider = input.roundProvider;
   const maxRounds = input.maxRounds && input.maxRounds > 0 ? input.maxRounds : 12;
 
@@ -24240,6 +24207,7 @@ function runCriticalAuditorReceiptLoop(input: {
         projectRoot: input.root,
         receipt: existingReceipt,
         response: existingResponse,
+        requireJudgeInvocationProvenance: Boolean(provider),
         roundIndex,
         transaction: input.transaction,
         auditInputHash: input.auditInputHash,
@@ -24255,13 +24223,12 @@ function runCriticalAuditorReceiptLoop(input: {
       })
         ? existingReceipt
         : null;
-    const request =
-      reusablePublishedRequest
-        ? reusablePublishedRequest
-        : writeOrReuseCriticalAuditorRoundRequest({
-            requestPath,
-            candidate: candidateRequest,
-          });
+    const request = reusablePublishedRequest
+      ? reusablePublishedRequest
+      : writeOrReuseCriticalAuditorRoundRequest({
+          requestPath,
+          candidate: candidateRequest,
+        });
     const frozenGateDryRun =
       reusablePublishedRequest && existingFrozenGateDryRun
         ? existingFrozenGateDryRun
@@ -24290,6 +24257,7 @@ function runCriticalAuditorReceiptLoop(input: {
         projectRoot: input.root,
         receipt: existingReceipt,
         response: existingResponse,
+        requireJudgeInvocationProvenance: Boolean(provider),
         roundIndex,
         transaction: input.transaction,
         auditInputHash: input.auditInputHash,
@@ -24308,6 +24276,32 @@ function runCriticalAuditorReceiptLoop(input: {
     }
     let acceptedResponse = receipt ? existingResponse : null;
     if (!receipt) {
+      if (!provider && !existingResponse) {
+        const providerIssue = preConfirmationIssue(
+          'critical_auditor_provider_mode_required',
+          'A real Critical Auditor round provider is required; synthetic clean receipts are not allowed',
+          ['critical_auditor_receipt_loop'],
+          'critical_auditor'
+        );
+        issues.push(providerIssue);
+        const outcomeCommit = commitRoundOutcome({
+          blockingIssues: [providerIssue],
+        });
+        if (!outcomeCommit.ok) {
+          issues.push(outcomeCommit.issue);
+        }
+        pendingRequestPath = requestPath;
+        continuation = {
+          providerMode: 'main_session_inline',
+          transactionId: input.transaction.transactionId,
+          namespaceVersion: input.transaction.namespaceVersion,
+          roundIndex,
+          requestPath: toRootRelativePath(input.root, requestPath),
+          responsePath: toRootRelativePath(input.root, responsePath),
+          nextRequiredAction: 'run_main_session_critical_auditor_round',
+        };
+        break;
+      }
       if (!providerBinding.binding) {
         const bindingFailureIssues = providerBinding.issueCodes.map((code) =>
           preConfirmationIssue(
@@ -24336,51 +24330,55 @@ function runCriticalAuditorReceiptLoop(input: {
         projectionSetHash,
       };
       let auditResult: CriticalAuditorRoundResult;
-      try {
-        auditResult = provider({
-          roundIndex,
-          transactionId: input.transaction.transactionId,
-          namespaceVersion: input.transaction.namespaceVersion,
-          auditInputHash: input.auditInputHash,
-          recordId: input.recordId,
-          requirementSetId: input.requirementSetId,
-          implementationAttemptId: input.implementationAttemptId,
-          sourceDocumentHash: input.sourceDocumentHash,
-          sourceBytesHash: requestSourceBytesHash,
-          semanticModelHash: input.semanticModelHash,
-          implementationConfirmationHash: input.implementationConfirmationHash,
-          packetHash: input.packetHash,
-          projectionSetHash,
-          independentProviderExpectation,
-          roundPerspective,
-          gateDryRun: frozenGateDryRun,
-          packetProjectionSummary: {
-            projectionGroups: projectionInventory.projectionGroups,
-            projectionRefs: projectionInventory.projectionRefs,
-          },
-          mustRefs: input.mustRefs,
-          sourceRequirementTexts: input.sourceRequirementTexts,
-          mustPacketCount: input.mustPacketCount,
-          consecutiveNoNewGapRounds,
-          previousReceipts: receipts,
-        });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        const code = normalizeText(message.split(':')[0]) || 'critical_auditor_provider_failed';
-        const providerFailureIssue = preConfirmationIssue(
-          code,
-          message,
-          [`round-${roundIndex}`],
-          'critical_auditor'
-        );
-        issues.push(providerFailureIssue);
-        const outcomeCommit = commitRoundOutcome({
-          blockingIssues: [providerFailureIssue],
-        });
-        if (!outcomeCommit.ok) {
-          issues.push(outcomeCommit.issue);
+      if (!provider) {
+        auditResult = existingResponse as unknown as CriticalAuditorRoundResult;
+      } else {
+        try {
+          auditResult = provider({
+            roundIndex,
+            transactionId: input.transaction.transactionId,
+            namespaceVersion: input.transaction.namespaceVersion,
+            auditInputHash: input.auditInputHash,
+            recordId: input.recordId,
+            requirementSetId: input.requirementSetId,
+            implementationAttemptId: input.implementationAttemptId,
+            sourceDocumentHash: input.sourceDocumentHash,
+            sourceBytesHash: requestSourceBytesHash,
+            semanticModelHash: input.semanticModelHash,
+            implementationConfirmationHash: input.implementationConfirmationHash,
+            packetHash: input.packetHash,
+            projectionSetHash,
+            independentProviderExpectation,
+            roundPerspective,
+            gateDryRun: frozenGateDryRun,
+            packetProjectionSummary: {
+              projectionGroups: projectionInventory.projectionGroups,
+              projectionRefs: projectionInventory.projectionRefs,
+            },
+            mustRefs: input.mustRefs,
+            sourceRequirementTexts: input.sourceRequirementTexts,
+            mustPacketCount: input.mustPacketCount,
+            consecutiveNoNewGapRounds,
+            previousReceipts: receipts,
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          const code = normalizeText(message.split(':')[0]) || 'critical_auditor_provider_failed';
+          const providerFailureIssue = preConfirmationIssue(
+            code,
+            message,
+            [`round-${roundIndex}`],
+            'critical_auditor'
+          );
+          issues.push(providerFailureIssue);
+          const outcomeCommit = commitRoundOutcome({
+            blockingIssues: [providerFailureIssue],
+          });
+          if (!outcomeCommit.ok) {
+            issues.push(outcomeCommit.issue);
+          }
+          break;
         }
-        break;
       }
       const bindingIssues = validateCriticalAuditorRoundResultBinding({
         projectRoot: input.root,
@@ -24393,11 +24391,10 @@ function runCriticalAuditorReceiptLoop(input: {
         confirmation: sourceExtraction.confirmation,
         independentProviderExpectation,
         sourceBytesHash: requestSourceBytesHash,
+        requireJudgeInvocationProvenance: Boolean(provider),
       });
       if (bindingIssues.length > 0) {
-        const judgeAdapterHostExecution = recordObject(
-          auditResult.judgeAdapterHostExecution
-        );
+        const judgeAdapterHostExecution = recordObject(auditResult.judgeAdapterHostExecution);
         const productionJudgeAdapterResult = [
           'package_cli_external_adapter',
           'committed_provider_invocation_recovery',
@@ -24413,16 +24410,13 @@ function runCriticalAuditorReceiptLoop(input: {
           try {
             const rejectionDisposition =
               rejectCommittedRequirementsContractCriticalAuditorJudgeInvocation({
-              projectRoot: input.root,
-              request: requestPath,
-              outputDir,
-              round: roundIndex,
-              semanticIssueCodes: bindingIssues.map((issue) => issue.code),
-            });
-            if (
-              normalizeText(rejectionDisposition.decision) ===
-              'provider_contract_blocked'
-            ) {
+                projectRoot: input.root,
+                request: requestPath,
+                outputDir,
+                round: roundIndex,
+                semanticIssueCodes: bindingIssues.map((issue) => issue.code),
+              });
+            if (normalizeText(rejectionDisposition.decision) === 'provider_contract_blocked') {
               providerContractBlockedIssue = preConfirmationIssue(
                 'critical_auditor_judge_provider_contract_blocked',
                 `Judge provider contract repeated the same invalid semantic response (${normalizeText(
@@ -24489,11 +24483,11 @@ function runCriticalAuditorReceiptLoop(input: {
       const persistedResponseConflicts = () =>
         Boolean(
           persistedResponse &&
-            (!criticalAuditorResponseArtifactMatchesExpectation(
-              persistedResponse,
-              responseExpectation
-            ) ||
-              sha256Json(persistedResponse) !== sha256Json(canonicalResponse))
+          (!criticalAuditorResponseArtifactMatchesExpectation(
+            persistedResponse,
+            responseExpectation
+          ) ||
+            sha256Json(persistedResponse) !== sha256Json(canonicalResponse))
         );
       const staleReceiptRequestHash = normalizeText(existingReceipt?.requestHash);
       const staleReceiptGateDryRunHash = normalizeText(existingReceipt?.gateDryRunHash);
@@ -24506,6 +24500,7 @@ function runCriticalAuditorReceiptLoop(input: {
           projectRoot: input.root,
           receipt: existingReceipt,
           response: persistedResponse,
+          requireJudgeInvocationProvenance: Boolean(provider),
           roundIndex,
           transaction: input.transaction,
           auditInputHash: input.auditInputHash,
@@ -24533,8 +24528,27 @@ function runCriticalAuditorReceiptLoop(input: {
         persistedResponse = null;
       }
       if (
-        persistedResponseConflicts()
+        persistedResponse &&
+        normalizeText(persistedResponse.namespaceVersion) !==
+          responseExpectation.namespaceVersion
       ) {
+        const namespaceIssue = preConfirmationIssue(
+          'id_namespace_mismatch',
+          'Critical Auditor response namespaceVersion does not match the active namespace',
+          ['namespaceVersion'],
+          'critical_auditor'
+        );
+        issues.push(namespaceIssue);
+        const outcomeCommit = commitRoundOutcome({
+          includeResponse: true,
+          blockingIssues: [namespaceIssue],
+        });
+        if (!outcomeCommit.ok) {
+          issues.push(outcomeCommit.issue);
+        }
+        break;
+      }
+      if (persistedResponseConflicts()) {
         const responseConflictIssue = preConfirmationIssue(
           'critical_auditor_response_conflicts_with_provider_result',
           'A pre-existing Critical Auditor response differs from the canonical response produced by the current real provider invocation.',
@@ -24738,7 +24752,14 @@ function runCriticalAuditorReceiptLoop(input: {
     );
   }
 
-  return { latestReceiptHash, consecutiveNoNewGapRounds, receipts, issues };
+  return {
+    latestReceiptHash,
+    consecutiveNoNewGapRounds,
+    receipts,
+    requestPath: pendingRequestPath,
+    continuation,
+    issues,
+  };
 }
 
 function readCriticalAuditorReceipts(authoringDir: string): Record<string, unknown>[] {
@@ -24866,10 +24887,7 @@ function buildCriticalAuditorRoundRequest(input: {
   createdAt: string;
 }): Record<string, unknown> {
   const roundPerspective = criticalAuditorRoundPerspective(input.roundIndex);
-  const projectionInventory = criticalAuditorProjectionInventory(
-    input.packet,
-    input.confirmation
-  );
+  const projectionInventory = criticalAuditorProjectionInventory(input.packet, input.confirmation);
   const semanticModelHash = normalizeText(input.semanticModelHash);
   if (!semanticModelHash.startsWith('sha256:')) {
     throw new Error('critical_auditor_semantic_model_hash_missing');
@@ -24998,8 +25016,7 @@ function buildCriticalAuditorRoundRequest(input: {
       reviewedMustRefs: input.mustRequirements.map((requirement) => requirement.id),
       reviewedProjectionRefs: '<non-empty subset of packetProjectionSummary.projectionRefs>',
       priorFindingsDisposition:
-        input.previousReceipts.length > 0 ||
-        input.gateDryRun.actionableBlockingIssues.length > 0
+        input.previousReceipts.length > 0 || input.gateDryRun.actionableBlockingIssues.length > 0
           ? [
               {
                 findingRef: '<previous finding id or dry-run blocker code>',
@@ -25030,8 +25047,7 @@ function buildCriticalAuditorRoundRequest(input: {
           repairActions: [
             {
               actionId: '<unique repair action id>',
-              type:
-                'add_must | split_must | add_neg | add_out | add_evidence | add_trace | upsert_trace | upsert_failure_path | upsert_edge_case | add_acc | add_e2e | add_business_view | add_business_visual | replace_target_path | replace_validation_command',
+              type: 'add_must | split_must | add_neg | add_out | add_evidence | add_trace | upsert_trace | upsert_failure_path | upsert_edge_case | add_acc | add_e2e | add_business_view | add_business_visual | replace_target_path | replace_validation_command',
               sourceSpan: {
                 startLine: '<1-based source start line>',
                 endLine: '<1-based source end line>',
@@ -25263,11 +25279,13 @@ function pendingCriticalAuditorDraftText(input: {
   transaction: CriticalAuditorStagingTransaction;
   recordId: string;
   packetHash: string;
+  candidateDraftText: string;
 }): string | null {
   if (
     !fs.existsSync(input.transaction.draftSource) ||
     safeCurrentSourceDocumentHash(input.transaction.draftSource) !==
-      input.transaction.auditSourceHash
+      input.transaction.auditSourceHash ||
+    sha256File(input.transaction.draftSource) !== sha256Text(input.candidateDraftText)
   ) {
     return null;
   }
@@ -25292,7 +25310,13 @@ function pendingFinalCriticalAuditorDraftText(input: {
   recordId: string;
   packetHash: string;
 }): string | null {
-  const finalDraftSource = path.join(input.transaction.stagingDir, 'final-draft-source.md');
+  const explicitFinalDraftSource = path.join(
+    input.transaction.stagingDir,
+    'final-draft-source.md'
+  );
+  const finalDraftSource = fs.existsSync(explicitFinalDraftSource)
+    ? explicitFinalDraftSource
+    : input.transaction.draftSource;
   const request = readJsonIfExists(criticalAuditorRequestPath(input.transaction, 1));
   const kernel = recordObject(readJsonIfExists(input.transaction.semanticKernel)?.semanticKernel);
   const packet = recordObject(
@@ -25300,10 +25324,8 @@ function pendingFinalCriticalAuditorDraftText(input: {
   );
   if (
     !fs.existsSync(finalDraftSource) ||
-    !request ||
     Object.keys(kernel).length === 0 ||
-    Object.keys(packet).length === 0 ||
-    !criticalAuditorRoundRequestHashMatchesContent(request)
+    Object.keys(packet).length === 0
   ) {
     return null;
   }
@@ -25324,15 +25346,13 @@ function pendingFinalCriticalAuditorDraftText(input: {
   const semanticModelHash = normalizeText(kernel.semanticModelHash);
   const semanticKernelHash = normalizeText(kernel.kernelHash);
   if (
+    sourceDocumentHash !== input.transaction.auditSourceHash ||
     !semanticModelHash.startsWith('sha256:') ||
     !semanticKernelHash.startsWith('sha256:')
   ) {
     return null;
   }
-  const projectionSetHash = criticalAuditorProjectionSetHash(
-    packet,
-    extraction.confirmation
-  );
+  const projectionSetHash = criticalAuditorProjectionSetHash(packet, extraction.confirmation);
   const auditInputHash = sha256Json({
     sourceDocumentHash,
     semanticModelHash,
@@ -25347,7 +25367,9 @@ function pendingFinalCriticalAuditorDraftText(input: {
     Number(criticalAuditor.consecutiveNoNewGapRounds ?? 0) >= 3 &&
     normalizeText(criticalAuditor.convergenceVerdict) === 'bounded_no_new_gap';
   const requestMatchesFinalDraft =
-    normalizeText(request.schemaVersion) === 'critical-auditor-round-request/v1' &&
+    Boolean(request) &&
+    criticalAuditorRoundRequestHashMatchesContent(request) &&
+    normalizeText(request?.schemaVersion) === 'critical-auditor-round-request/v1' &&
     Number(request.roundIndex) === 1 &&
     normalizeText(request.recordId) === input.recordId &&
     normalizeText(request.transactionId) === input.transaction.transactionId &&
@@ -25381,6 +25403,28 @@ function findCriticalAuditorRequestPath(authoringDir: string, roundIndex: number
 function findNextCriticalAuditorRound(authoringDir: string): number {
   const receipts = readCriticalAuditorReceipts(authoringDir);
   return receipts.length + 1;
+}
+
+function findCurrentCriticalAuditorResponsePath(authoringDir: string): string {
+  const roundIndex = findNextCriticalAuditorRound(authoringDir);
+  const responsePath = path.join(
+    authoringDir,
+    `critical-auditor-round-response-${roundIndex}.json`
+  );
+  return fs.existsSync(responsePath) ? responsePath : '';
+}
+
+function findLatestCriticalAuditorResponsePath(authoringDir: string): string {
+  if (!fs.existsSync(authoringDir)) return '';
+  const latest = fs
+    .readdirSync(authoringDir)
+    .map((fileName) => ({
+      fileName,
+      roundIndex: Number(/^critical-auditor-round-response-(\d+)\.json$/u.exec(fileName)?.[1] ?? 0),
+    }))
+    .filter((entry) => entry.roundIndex > 0)
+    .sort((left, right) => right.roundIndex - left.roundIndex)[0];
+  return latest ? path.join(authoringDir, latest.fileName) : '';
 }
 
 function archiveCriticalAuditorArtifacts(input: {
@@ -25773,8 +25817,7 @@ function collectConsecutiveNoNewGapFromReceipts(input: {
         semanticModelHash: input.semanticModelHash,
         projectionSetHash: input.projectionSetHash,
         providerRunId,
-        expectedProviderBinding:
-          expectation as unknown as CriticalAuditorJudgeRuntimeBinding,
+        expectedProviderBinding: expectation as unknown as CriticalAuditorJudgeRuntimeBinding,
       });
       validateCriticalAuditorJudgeHostExecution(
         input.projectRoot,
@@ -26310,6 +26353,8 @@ function validateCriticalAuditorResponse(input: {
       independentProviderEvidence: isNoNewGapVerdict(verdict)
         ? (parsed.independentProviderEvidence as CriticalAuditorIndependentProviderEvidence)
         : undefined,
+      providerInvocationReceiptRef: recordObject(parsed.providerInvocationReceiptRef),
+      judgeAdapterHostExecution: recordObject(parsed.judgeAdapterHostExecution),
       rationale: normalizeText(parsed.rationale),
     },
     issues: [],
@@ -26327,6 +26372,7 @@ function validateCriticalAuditorRoundResultBinding(input: {
   confirmation: Record<string, unknown>;
   independentProviderExpectation: CriticalAuditorIndependentProviderExpectation;
   sourceBytesHash: string;
+  requireJudgeInvocationProvenance: boolean;
 }): PreConfirmationDrilldownIssue[] {
   const issues: PreConfirmationDrilldownIssue[] = [];
   const result = input.auditResult;
@@ -26344,7 +26390,7 @@ function validateCriticalAuditorRoundResultBinding(input: {
       )
     )
   );
-  if (providerValidation.ok) {
+  if (providerValidation.ok && input.requireJudgeInvocationProvenance) {
     try {
       const providerRunId = normalizeText(
         recordObject(result.independentProviderEvidence).providerRunId
@@ -26424,10 +26470,7 @@ function validateCriticalAuditorRoundResultBinding(input: {
       )
     );
   }
-  const projectionInventory = criticalAuditorProjectionInventory(
-    input.packet,
-    input.confirmation
-  );
+  const projectionInventory = criticalAuditorProjectionInventory(input.packet, input.confirmation);
   const allowedProjectionRefs = new Set(projectionInventory.projectionRefs);
   for (const ref of reviewedProjectionRefs) {
     if (!allowedProjectionRefs.has(ref)) {
@@ -26673,9 +26716,6 @@ function resumePendingCriticalAuditorGapPromotion(input: {
     normalizeText(decision.targetRawHashBefore) || normalizeText(decision.sourceDocumentHashBefore);
   const rawHashAfter =
     normalizeText(decision.targetRawHashAfter) || normalizeText(decision.sourceDocumentHashAfter);
-  if (currentRawHash === rawHashAfter) {
-    return { status: 'none' };
-  }
 
   const artifacts = [
     input.paths.sourceMutationDecision,
@@ -26713,11 +26753,19 @@ function resumePendingCriticalAuditorGapPromotion(input: {
       ]
     );
   }
+  const semanticHashBefore = normalizeText(decision.semanticSourceHashBefore);
+  const semanticHashAfter = normalizeText(decision.semanticSourceHashAfter);
+  const currentMatchesBefore =
+    currentRawHash === rawHashBefore &&
+    semanticHashBefore === input.currentSourceDocumentHash;
+  const currentMatchesAfter =
+    currentRawHash === rawHashAfter &&
+    semanticHashAfter === input.currentSourceDocumentHash;
+  const repairDraftRawHash = sha256File(repairDraftPath);
   if (
-    currentRawHash !== rawHashBefore ||
-    sha256File(repairDraftPath) !== rawHashAfter ||
-    normalizeText(decision.semanticSourceHashBefore) !== input.currentSourceDocumentHash ||
-    normalizeText(decision.semanticSourceHashAfter) === input.currentSourceDocumentHash
+    rawHashBefore === rawHashAfter ||
+    (!currentMatchesBefore && !currentMatchesAfter) ||
+    (currentMatchesBefore && repairDraftRawHash !== rawHashAfter)
   ) {
     return blocked(
       'pending_source_gap_promotion_hash_binding_invalid',
@@ -26725,18 +26773,24 @@ function resumePendingCriticalAuditorGapPromotion(input: {
       [
         currentRawHash,
         rawHashBefore,
-        sha256File(repairDraftPath),
+        repairDraftRawHash,
         rawHashAfter,
         input.currentSourceDocumentHash,
-        normalizeText(decision.semanticSourceHashBefore),
-        normalizeText(decision.semanticSourceHashAfter),
+        semanticHashBefore,
+        semanticHashAfter,
       ]
     );
   }
-  const repairDraft = readMaterializedConfirmation(repairDraftPath);
+  const repairDraft = readMaterializedConfirmation(
+    currentMatchesAfter ? input.sourcePath : repairDraftPath
+  );
   if (
-    repairDraft.sourceDocumentHash !== normalizeText(decision.semanticSourceHashAfter) ||
-    repairDraft.implementationConfirmationHash === input.currentImplementationConfirmationHash
+    repairDraft.sourceDocumentHash !== semanticHashAfter ||
+    (currentMatchesAfter
+      ? repairDraft.implementationConfirmationHash !== input.currentImplementationConfirmationHash
+      : repairDraft.sourceDocumentHash === input.currentSourceDocumentHash &&
+        repairDraft.implementationConfirmationHash ===
+          input.currentImplementationConfirmationHash)
   ) {
     return blocked(
       'pending_source_gap_promotion_semantic_binding_invalid',
@@ -26744,10 +26798,13 @@ function resumePendingCriticalAuditorGapPromotion(input: {
       [
         repairDraft.sourceDocumentHash,
         repairDraft.implementationConfirmationHash,
-        normalizeText(decision.semanticSourceHashAfter),
+        semanticHashAfter,
         input.currentImplementationConfirmationHash,
       ]
     );
+  }
+  if (currentMatchesAfter) {
+    return { status: 'none' };
   }
   if (!input.responsePath || !fs.existsSync(input.responsePath)) {
     return blocked(
@@ -26789,6 +26846,16 @@ function resumePendingCriticalAuditorGapPromotion(input: {
   const requestGateDryRun = recordObject(request.gateDryRun);
   const requestGateDryRunHash =
     normalizeText(requestGateDryRun.gateDryRunHash) || normalizeText(requestGateDryRun.hash);
+  const normalizedResponseValidatedGaps = asRecordArray(response.validatedGaps).map((gap) => ({
+    ...gap,
+    repairActions: asRecordArray(gap.repairActions).map((action) => ({
+      ...action,
+      targetField: normalizeText(action.targetField).replace(
+        /^implementationConfirmation\./u,
+        ''
+      ),
+    })),
+  }));
   const auditBindingsMatch =
     receiptHashCandidates.has(receiptHash) &&
     normalizeText(response.verdict) === 'new_valid_gap' &&
@@ -26809,7 +26876,7 @@ function resumePendingCriticalAuditorGapPromotion(input: {
     normalizeText(response.packetHash) === normalizeText(request.packetHash) &&
     normalizeText(receipt.packetHash) === normalizeText(request.packetHash) &&
     sha256Json(asRecordArray(receipt.validatedGaps)) ===
-      sha256Json(asRecordArray(response.validatedGaps));
+      sha256Json(normalizedResponseValidatedGaps);
   if (!auditBindingsMatch) {
     return blocked(
       'pending_source_gap_promotion_audit_binding_invalid',
@@ -26862,7 +26929,10 @@ function resumePendingCriticalAuditorGapPromotion(input: {
   }
   artifacts.push(gapFix.receiptPath, input.paths.checkpointPersistenceEvidence);
   const materialized = gapFix.materialized;
-  if (materialized.sourceDocumentHash === input.currentSourceDocumentHash) {
+  if (
+    materialized.sourceDocumentHash === input.currentSourceDocumentHash &&
+    materialized.implementationConfirmationHash === input.currentImplementationConfirmationHash
+  ) {
     return blocked(
       'pending_source_gap_promotion_result_hash_mismatch',
       'Recovered validated-gap source promotion did not change the current semantic source hash.',
@@ -27172,7 +27242,42 @@ export function runMainAgentAuthoringRepair(
       ],
     });
   }
-  const responsePath = '';
+  const responsePath = findCurrentCriticalAuditorResponsePath(paths.authoringDir);
+  const pendingGapPromotion = resumePendingCriticalAuditorGapPromotion({
+    root,
+    sourcePath,
+    paths,
+    recordId: identity.recordId,
+    requirementSetId: identity.requirementSetId,
+    implementationAttemptId,
+    responsePath: responsePath || findLatestCriticalAuditorResponsePath(paths.authoringDir),
+    currentSourceDocumentHash: initialSourceDocumentHash,
+    currentImplementationConfirmationHash: initialImplementationConfirmationHash,
+  });
+  if (pendingGapPromotion.status === 'blocked') {
+    return buildAuthoringRepairResult({
+      root,
+      sourcePath,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      paths,
+      status: 'blocked',
+      blockingStage: 'source_gap_fix_materialization_required',
+      nextRequiredAction: 'resume_pending_source_gap_promotion',
+      sourceDocumentHash: initialSourceDocumentHash,
+      implementationConfirmationHash: initialImplementationConfirmationHash,
+      warnings: initialWarnings,
+      issues: [pendingGapPromotion.issue],
+      artifacts: pendingGapPromotion.artifacts,
+    });
+  }
+  if (pendingGapPromotion.status === 'resumed') {
+    const resumed = runMainAgentAuthoringRepair(root, options);
+    return {
+      ...resumed,
+      artifacts: uniqueNonEmpty([...pendingGapPromotion.artifacts, ...resumed.artifacts]),
+    };
+  }
   const initialMaterializationGate = verifySourceMaterializationBeforeAudit({
     root,
     sourcePath,
@@ -27733,10 +27838,7 @@ export function runMainAgentAuthoringRepair(
       semanticModelHash,
       implementationConfirmationHash,
       packetHash,
-      projectionSetHash: criticalAuditorProjectionSetHash(
-        effectivePacket,
-        extraction.confirmation
-      ),
+      projectionSetHash: criticalAuditorProjectionSetHash(effectivePacket, extraction.confirmation),
       independentProviderExpectation: providerExpectation.expectation ?? undefined,
       createdAt,
       auditResult: validation.response,
@@ -28025,10 +28127,7 @@ export function runMainAgentAuthoringRepair(
     semanticModelHash,
     implementationConfirmationHash,
     packetHash,
-    projectionSetHash: criticalAuditorProjectionSetHash(
-      effectivePacket,
-      extraction.confirmation
-    ),
+    projectionSetHash: criticalAuditorProjectionSetHash(effectivePacket, extraction.confirmation),
   });
   const restartIssues = [...staleArtifactIssues, ...convergence.issues];
   if (restartIssues.length > 0) {
@@ -28055,10 +28154,7 @@ export function runMainAgentAuthoringRepair(
       semanticModelHash,
       implementationConfirmationHash,
       packetHash,
-      projectionSetHash: criticalAuditorProjectionSetHash(
-        effectivePacket,
-        extraction.confirmation
-      ),
+      projectionSetHash: criticalAuditorProjectionSetHash(effectivePacket, extraction.confirmation),
       auditInputHash,
       mustRequirements,
       packet: effectivePacket,
@@ -28106,10 +28202,7 @@ export function runMainAgentAuthoringRepair(
       semanticModelHash,
       implementationConfirmationHash,
       packetHash,
-      projectionSetHash: criticalAuditorProjectionSetHash(
-        effectivePacket,
-        extraction.confirmation
-      ),
+      projectionSetHash: criticalAuditorProjectionSetHash(effectivePacket, extraction.confirmation),
       auditInputHash,
       mustRequirements,
       packet: effectivePacket,
@@ -28383,60 +28476,21 @@ function writePreConfirmationRequirementRecord(input: {
 }
 
 function resolveSkillScript(root: string, relativeScript: string): string {
-  const home = process.env.USERPROFILE || process.env.HOME || '';
-  const packageRoot = path.resolve(__dirname, '..', '..', '..', '..');
-  const repoRoot = path.resolve(__dirname, '..', '..', '..', '..', '..', '..');
-  const candidates = [
-    path.join(root, '_bmad', 'skills', 'requirements-contract-authoring'),
-    path.join(root, '.codex', 'skills', 'requirements-contract-authoring'),
-    path.join(root, '.cursor', 'skills', 'requirements-contract-authoring'),
-    path.join(root, '.claude', 'skills', 'requirements-contract-authoring'),
-    path.join(root, '.agents', 'skills', 'requirements-contract-authoring'),
-    path.join(repoRoot, '_bmad', 'skills', 'requirements-contract-authoring'),
-    path.join(repoRoot, '.codex', 'skills', 'requirements-contract-authoring'),
-    path.join(repoRoot, '.cursor', 'skills', 'requirements-contract-authoring'),
-    path.join(repoRoot, '.claude', 'skills', 'requirements-contract-authoring'),
-    path.join(packageRoot, '_bmad', 'skills', 'requirements-contract-authoring'),
-    path.resolve(__dirname, '..', '_bmad', 'skills', 'requirements-contract-authoring'),
-    path.resolve(__dirname, '..', '.codex', 'skills', 'requirements-contract-authoring'),
-    path.resolve(__dirname, '..', '.cursor', 'skills', 'requirements-contract-authoring'),
-    path.resolve(__dirname, '..', '.claude', 'skills', 'requirements-contract-authoring'),
-    ...(home
-      ? [
-          path.join(home, '.codex', 'skills', 'requirements-contract-authoring'),
-          path.join(home, '.cursor', 'skills', 'requirements-contract-authoring'),
-          path.join(home, '.claude', 'skills', 'requirements-contract-authoring'),
-          path.join(home, '.agents', 'skills', 'requirements-contract-authoring'),
-        ]
-      : []),
-  ];
-  for (const skillDir of candidates) {
-    if (!fs.existsSync(path.join(skillDir, 'SKILL.md'))) continue;
-    const scriptPath = path.join(skillDir, 'scripts', relativeScript);
-    if (fs.existsSync(scriptPath)) return scriptPath;
-  }
-  return path.join(candidates[0], 'scripts', relativeScript);
+  return resolveInstalledSkillPath(
+    root,
+    'requirements-contract-authoring',
+    'scripts',
+    relativeScript
+  );
 }
 
 function resolveEncodingIntegrityScript(root: string): string {
-  const home = process.env.USERPROFILE || process.env.HOME || '';
-  const packageRoot = path.resolve(__dirname, '..', '..', '..', '..');
-  const repoRoot = path.resolve(__dirname, '..', '..', '..', '..', '..', '..');
-  const candidates = [
-    path.join(root, '_bmad', 'skills', 'encoding-integrity-guardian'),
-    path.join(root, '.codex', 'skills', 'encoding-integrity-guardian'),
-    path.join(root, '.cursor', 'skills', 'encoding-integrity-guardian'),
-    path.join(root, '.claude', 'skills', 'encoding-integrity-guardian'),
-    path.join(packageRoot, '_bmad', 'skills', 'encoding-integrity-guardian'),
-    path.join(repoRoot, '_bmad', 'skills', 'encoding-integrity-guardian'),
-    path.join(repoRoot, '.codex', 'skills', 'encoding-integrity-guardian'),
-    ...(home ? [path.join(home, '.codex', 'skills', 'encoding-integrity-guardian')] : []),
-  ];
-  for (const skillDir of candidates) {
-    const scriptPath = path.join(skillDir, 'scripts', 'check-encoding-integrity.js');
-    if (fs.existsSync(scriptPath)) return scriptPath;
-  }
-  return path.join(candidates[0], 'scripts', 'check-encoding-integrity.js');
+  return resolveInstalledSkillPath(
+    root,
+    'encoding-integrity-guardian',
+    'scripts',
+    'check-encoding-integrity.js'
+  );
 }
 
 function runNodeJson(
@@ -28449,7 +28503,12 @@ function runNodeJson(
   stderr: string;
   json: Record<string, unknown> | null;
 } {
-  const packageRoot = path.resolve(__dirname, '..');
+  let packageRoot = path.resolve(__dirname, '..', '..', '..', '..');
+  try {
+    packageRoot = path.dirname(resolvePackageOwnedBmadPath());
+  } catch {
+    // Source worktrees may not have materialized package assets before the dist build.
+  }
   const packageNodeModules = path.join(packageRoot, 'node_modules');
   const nodePath = [packageNodeModules, process.env.NODE_PATH].filter(Boolean).join(path.delimiter);
   const result = spawnSync(process.execPath, [scriptPath, ...args], {
@@ -29261,9 +29320,20 @@ function runSourcePrdSemanticRoundTrip(input: {
           `Source PRD round-trip changed semantic source provenance ${candidate.sourceRootId}`
         );
       }
+      const candidateSemantics = recordObject(candidate.semanticBody.semantics);
+      const baselineSemantics = recordObject(baselineRoot.semanticBody.semantics);
       semanticBody = {
         ...candidate.semanticBody,
         source: baselineSemanticSource,
+        ...(Object.keys(candidateSemantics).length > 0 &&
+        Object.keys(baselineSemantics).length > 0
+          ? {
+              semantics: {
+                ...candidateSemantics,
+                invariants: baselineSemantics.invariants,
+              },
+            }
+          : {}),
       };
     }
     return {
@@ -29342,9 +29412,7 @@ export function runMainAgentPreConfirmationDrilldown(
   if (Object.prototype.hasOwnProperty.call(options, 'criticalAuditorRound')) {
     throw new Error('critical_auditor_result_injection_forbidden');
   }
-  const requestedCriticalAuditorProviderMode = normalizeText(
-    options.criticalAuditorProviderMode
-  );
+  const requestedCriticalAuditorProviderMode = normalizeText(options.criticalAuditorProviderMode);
   if (
     ['response_file', 'codex_subagent_readonly', 'claude_subagent_readonly'].includes(
       requestedCriticalAuditorProviderMode
@@ -29380,6 +29448,7 @@ export function runMainAgentPreConfirmationDrilldown(
       ? resolveRootRelativePath(root, targetSourceArg)
       : resolveRootRelativePath(root, sourceArg);
   let semanticInputPath = intakePath ?? sourcePath;
+  const authoritySourcePath = semanticInputPath;
   if (!fs.existsSync(semanticInputPath)) {
     throw new Error(`source document not found: ${semanticInputPath}`);
   }
@@ -29453,9 +29522,7 @@ export function runMainAgentPreConfirmationDrilldown(
             'render-report',
           ]
         : ['semantic-kernel', 'must-decomposition-packet', 'render-report'],
-      nextRequiredAction: providerMissing
-        ? 'run_main_session_critical_auditor_round'
-        : undefined,
+      nextRequiredAction: providerMissing ? 'run_main_session_critical_auditor_round' : undefined,
     });
   }
   const localizationResponsePath = normalizeText(options.localizationResponseFile)
@@ -29486,6 +29553,7 @@ export function runMainAgentPreConfirmationDrilldown(
   }
 
   let sourceSnapshot = readCanonicalUtf8Source(semanticInputPath);
+  const authoritySourceSnapshot = sourceSnapshot;
   const originalSourceText = sourceSnapshot.sourceText;
   const sourceHashBefore = semanticSourceDocumentHashForText(originalSourceText);
   let stagingTransaction = resolveActiveCriticalAuditorStagingTransaction({
@@ -29494,25 +29562,43 @@ export function runMainAgentPreConfirmationDrilldown(
     recordId: identity.recordId,
     sourceStartHash: sourceHashBefore,
   });
+  const localizationTransaction = createCriticalAuditorStagingTransaction({
+    paths,
+    recordId: identity.recordId,
+    sourceStartHash: stagingTransaction.sourceStartHash,
+  });
   let stagingPaths = criticalAuditorStagingPaths(paths, stagingTransaction);
   if (stagingTransaction.auditSourceHash !== sourceHashBefore) {
-    semanticInputPath = stagingTransaction.draftSource;
-    sourceSnapshot = readCanonicalUtf8Source(semanticInputPath);
-    if (safeCurrentSourceDocumentHash(semanticInputPath) !== stagingTransaction.auditSourceHash) {
+    if (
+      !fs.existsSync(stagingTransaction.draftSource) ||
+      safeCurrentSourceDocumentHash(stagingTransaction.draftSource) !==
+        stagingTransaction.auditSourceHash
+    ) {
       throw new Error('critical_auditor_staging_repair_active_draft_hash_mismatch');
+    }
+    if (
+      criticalAuditorStagingChainIncludesRepair({
+        paths,
+        recordId: identity.recordId,
+        sourceStartHash: sourceHashBefore,
+        activeTransactionId: stagingTransaction.transactionId,
+      })
+    ) {
+      semanticInputPath = stagingTransaction.draftSource;
+      sourceSnapshot = readCanonicalUtf8Source(semanticInputPath);
     }
   }
   const sourceText = sourceSnapshot.sourceText;
   const sourcePrdInstanceLintRequired = shouldRunSourcePrdInstanceLint({
     explicit: options.entrySource,
     entryMode,
-    sourcePath: semanticInputPath,
+    sourcePath: authoritySourcePath,
     sourceText,
   });
   const detectedEntrySource = detectSourcePrdAuthoringEntrySource({
     explicit: options.entrySource,
     entryMode,
-    sourcePath: semanticInputPath,
+    sourcePath: authoritySourcePath,
     sourceText,
   });
   const entrySource = sourcePrdInstanceLintRequired ? detectedEntrySource : undefined;
@@ -29522,7 +29608,7 @@ export function runMainAgentPreConfirmationDrilldown(
       entryIntakeAuthority = materializeSessionEntryIntake({
         projectRoot: root,
         requirementSetId: identity.requirementSetId,
-        source: sourceSnapshot,
+        source: authoritySourceSnapshot,
         identity: {
           sessionId: normalizeText(options.sessionId),
           turnId: normalizeText(options.sessionTurnId),
@@ -29538,7 +29624,7 @@ export function runMainAgentPreConfirmationDrilldown(
         projectRoot: root,
         requirementSetId: identity.requirementSetId,
         entrySource: detectedEntrySource,
-        source: sourceSnapshot,
+        source: authoritySourceSnapshot,
         capturedAt: createdAt,
         intakeReceiptPath: paths.intakeReceipt,
       });
@@ -29638,7 +29724,7 @@ export function runMainAgentPreConfirmationDrilldown(
   const explicitRequiredCommands = normalizeStringList(options.requiredCommand);
   const sourceAuthorityAnalysis = analyzeRequirementsContractSourceAuthority({
     root,
-    sourcePath: semanticInputPath,
+    sourcePath: authoritySourcePath,
     sourceText,
     explicitTargetPaths,
     explicitRequiredCommands,
@@ -29666,7 +29752,7 @@ export function runMainAgentPreConfirmationDrilldown(
         requirementSetId: identity.requirementSetId,
         recordId: identity.recordId,
         entrySource: detectedEntrySource,
-        sourceDocumentHash: sourceSnapshot.sourceHash,
+        sourceDocumentHash: authoritySourceSnapshot.sourceHash,
         targetPaths: explicitTargetPaths,
         requiredCommands: explicitRequiredCommands,
         capturedAt: createdAt,
@@ -29698,7 +29784,7 @@ export function runMainAgentPreConfirmationDrilldown(
   writeAuthorityReports({
     paths,
     root,
-    sourcePath: semanticInputPath,
+    sourcePath: authoritySourcePath,
     sourceText,
     targetAuthority: { ...targetAuthority, accepted: projectionTargetAuthorityRecords },
     validationAuthority,
@@ -29713,7 +29799,7 @@ export function runMainAgentPreConfirmationDrilldown(
       productionSemanticSourceRootLineageWitnesses =
         planProductionSemanticSourceRootLineageWitnesses({
           root,
-          sourcePath: semanticInputPath,
+          sourcePath: authoritySourcePath,
           sourceText,
           packetHash,
           mustRequirements,
@@ -29754,7 +29840,7 @@ export function runMainAgentPreConfirmationDrilldown(
     try {
       productionSemanticSourceRootCandidates = planProductionSemanticSourceRootCandidates({
         root,
-        sourcePath: semanticInputPath,
+        sourcePath: authoritySourcePath,
         sourceText,
         packetHash,
         mustRequirements,
@@ -29843,7 +29929,7 @@ export function runMainAgentPreConfirmationDrilldown(
   }
   const projectionSanity = projectionDomainSanityCheck({
     root,
-    sourcePath: semanticInputPath,
+    sourcePath: authoritySourcePath,
     sourceText,
     targetRecords: projectionTargetAuthorityRecords,
     validationRecords: validationAuthority.accepted,
@@ -30200,7 +30286,7 @@ export function runMainAgentPreConfirmationDrilldown(
       language,
       createdAt,
       sourceDocumentHash: sourceHashBefore,
-      transaction: stagingTransaction,
+      transaction: localizationTransaction,
       responsePath: localizationResponsePath,
     });
     if (localization.request) {
@@ -30394,6 +30480,10 @@ export function runMainAgentPreConfirmationDrilldown(
     });
   }
 
+  const currentDraftText = materializeImplementationConfirmationText(
+    sourceText,
+    draftConfirmation
+  );
   const preRendererDraftText =
     pendingFinalCriticalAuditorDraftText({
       transaction: stagingTransaction,
@@ -30404,8 +30494,9 @@ export function runMainAgentPreConfirmationDrilldown(
       transaction: stagingTransaction,
       recordId: identity.recordId,
       packetHash,
+      candidateDraftText: currentDraftText,
     }) ??
-    materializeImplementationConfirmationText(sourceText, draftConfirmation);
+    currentDraftText;
   let materializedDraftText = preRendererDraftText;
   let productionSourcePrdRender: ReturnType<
     typeof renderProductionClassifiedRequirementSourcePrd
@@ -30507,6 +30598,10 @@ export function runMainAgentPreConfirmationDrilldown(
       });
     }
   }
+  const postAuditConfirmationBaseText =
+    entryMode === 'intake_to_new_source' && productionSourcePrdRender
+      ? materializedDraftText
+      : sourceText;
   const stagedDraftText = fs.existsSync(stagingTransaction.draftSource)
     ? fs.readFileSync(stagingTransaction.draftSource, 'utf8')
     : null;
@@ -31005,10 +31100,9 @@ export function runMainAgentPreConfirmationDrilldown(
     const providerMissing = criticalAuditorIssues.some(
       (issue) => issue.code === 'critical_auditor_provider_mode_required'
     );
-    const providerContractBlockedRoute =
-      criticalAuditorProviderContractBlockedRoute(
-        criticalAuditorIssues.map((issue) => issue.code)
-      );
+    const providerContractBlockedRoute = criticalAuditorProviderContractBlockedRoute(
+      criticalAuditorIssues.map((issue) => issue.code)
+    );
     const namespaceMismatch = criticalAuditorIssues.some(
       (issue) => issue.code === 'id_namespace_mismatch'
     );
@@ -31059,9 +31153,9 @@ export function runMainAgentPreConfirmationDrilldown(
         ? 'critical_auditor_provider_mode_required'
         : providerContractBlockedRoute
           ? providerContractBlockedRoute.blockingStage
-        : namespaceMismatch
-          ? 'id_namespace_mismatch'
-          : 'critical_auditor_convergence_required',
+          : namespaceMismatch
+            ? 'id_namespace_mismatch'
+            : 'critical_auditor_convergence_required',
       archiveDir: namespaceArchiveDir,
       root,
       createdAt,
@@ -31099,8 +31193,7 @@ export function runMainAgentPreConfirmationDrilldown(
         normalizeText(previewPostPacketScaleAssessment.routingDecision?.decision) || 'missing',
       nextRequiredAction: providerMissing
         ? 'run_main_session_critical_auditor_round'
-        : providerContractBlockedRoute?.nextRequiredAction ??
-          'repair_critical_auditor_gap',
+        : (providerContractBlockedRoute?.nextRequiredAction ?? 'repair_critical_auditor_gap'),
     });
     return buildPreConfirmationResult({
       root,
@@ -31115,7 +31208,7 @@ export function runMainAgentPreConfirmationDrilldown(
       criticalAuditorProviderMode,
       blockingStage: providerMissing
         ? 'critical_auditor_provider_mode_required'
-        : providerContractBlockedRoute?.blockingStage ?? null,
+        : (providerContractBlockedRoute?.blockingStage ?? null),
       sourceMutationPerformed: false,
       allowedArtifacts: providerMissing ? ['advisory', 'staging'] : undefined,
       forbiddenArtifacts: providerMissing
@@ -31169,7 +31262,7 @@ export function runMainAgentPreConfirmationDrilldown(
       language,
       createdAt,
       sourceDocumentHash: sourceHashBefore,
-      transaction: stagingTransaction,
+      transaction: localizationTransaction,
       responsePath: localizationResponsePath,
     });
     if (auditedLocalization.request) {
@@ -31230,7 +31323,10 @@ export function runMainAgentPreConfirmationDrilldown(
     }
     fs.writeFileSync(
       paths.draftSourcePreview,
-      materializeImplementationConfirmationText(sourceText, auditedConfirmation),
+      materializeImplementationConfirmationText(
+        postAuditConfirmationBaseText,
+        auditedConfirmation
+      ),
       'utf8'
     );
   }
@@ -31292,10 +31388,9 @@ export function runMainAgentPreConfirmationDrilldown(
       substate: 'blocked_by_render_gate',
       issues: [issue],
       sourceDocumentHash: sourceHashBefore,
-      implementationConfirmationHash:
-        implementationConfirmationHashForPreConfirmation(
-          canonicalDraftExtraction.confirmation
-        ),
+      implementationConfirmationHash: implementationConfirmationHashForPreConfirmation(
+        canonicalDraftExtraction.confirmation
+      ),
       stagingTransaction,
     });
   }
@@ -31340,14 +31435,15 @@ export function runMainAgentPreConfirmationDrilldown(
     });
     writeJsonUtf8(canonicalProjectionReceiptPath, canonicalProjection.projectionReceipt);
     let canonicalDraftSource = materializeImplementationConfirmationText(
-      sourceText,
+      postAuditConfirmationBaseText,
       canonicalProjection.confirmation
     );
-    const canonicalDraftExtractionForHash = extractImplementationConfirmationBlock(
-      canonicalDraftSource
-    );
+    const canonicalDraftExtractionForHash =
+      extractImplementationConfirmationBlock(canonicalDraftSource);
     if (!canonicalDraftExtractionForHash) {
-      throw new Error('canonical_confirmation_projection_output_missing_implementation_confirmation');
+      throw new Error(
+        'canonical_confirmation_projection_output_missing_implementation_confirmation'
+      );
     }
     const canonicalCurrentSourceDocumentHash = sourceDocumentHashForPreConfirmation(
       canonicalDraftSource,
@@ -31389,10 +31485,9 @@ export function runMainAgentPreConfirmationDrilldown(
       substate: 'blocked_by_render_gate',
       issues: [issue],
       sourceDocumentHash: sourceHashBefore,
-      implementationConfirmationHash:
-        implementationConfirmationHashForPreConfirmation(
-          canonicalDraftExtraction.confirmation
-        ),
+      implementationConfirmationHash: implementationConfirmationHashForPreConfirmation(
+        canonicalDraftExtraction.confirmation
+      ),
       stagingTransaction,
     });
   }
@@ -31436,6 +31531,21 @@ export function runMainAgentPreConfirmationDrilldown(
   );
   const auditedPreviewImplementationConfirmationHash =
     implementationConfirmationHashForPreConfirmation(auditedPreviewExtraction.confirmation);
+  // Semantic authority remains source-rooted, while materialization evidence binds
+  // the finalized audited draft bytes consumed by checkpoint validation.
+  writeControlledMustCandidateArtifacts({
+    root,
+    sourcePath: paths.draftSourcePreview,
+    paths,
+    recordId: identity.recordId,
+    requirementSetId: identity.requirementSetId,
+    createdAt,
+    sourceText: auditedPreviewText,
+    candidates: controlledCandidates,
+    mustRequirements,
+    draftConfirmation: auditedPreviewExtraction.confirmation,
+    decision: 'draft_materialization_allowed',
+  });
   // The post-audit preview intentionally replaces seed metadata with the current
   // Critical Auditor convergence summary. Continue with the audited hashes so
   // source-race and checkpoint gates remain the authoritative promotion blockers.
@@ -31633,11 +31743,16 @@ export function runMainAgentPreConfirmationDrilldown(
       criticalAuditorProviderContractBlockedRoute(
         finalAuditIssues.map((issue) => issue.code)
       );
+    const finalProviderMissing = finalAuditIssues.some(
+      (issue) => issue.code === 'critical_auditor_provider_mode_required'
+    );
+    const finalBlockingStage = finalProviderMissing
+      ? 'critical_auditor_provider_mode_required'
+      : providerContractBlockedRoute?.blockingStage ??
+        'critical_auditor_receipt_binding_invalid';
     writeSourcePromotionBlockDecision({
       transaction: stagingTransaction,
-      blockingStage:
-        providerContractBlockedRoute?.blockingStage ??
-        'critical_auditor_receipt_binding_invalid',
+      blockingStage: finalBlockingStage,
       root,
       createdAt,
     });
@@ -31666,18 +31781,23 @@ export function runMainAgentPreConfirmationDrilldown(
       recordId: identity.recordId,
       requirementSetId: identity.requirementSetId,
       paths,
-      substate: 'blocked_by_render_gate',
+      substate: finalProviderMissing ? 'critical_auditor_round_required' : 'blocked_by_render_gate',
       issues: finalAuditIssues,
       sourceDocumentHash: auditedPreviewSourceDocumentHash,
       implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
       criticalAuditorProviderMode,
-      blockingStage:
-        providerContractBlockedRoute?.blockingStage ??
-        'critical_auditor_receipt_binding_invalid',
+      blockingStage: finalBlockingStage,
       sourceMutationPerformed: false,
-      criticalAuditorContinuation: providerContractBlockedRoute,
+      allowedArtifacts: finalProviderMissing ? ['advisory', 'staging'] : undefined,
+      forbiddenArtifacts: finalProviderMissing
+        ? ['promotion-receipt', 'source-materialization-receipt', 'source mutation']
+        : undefined,
+      criticalAuditorContinuation:
+        providerContractBlockedRoute ?? finalCriticalAuditorLoop.continuation ?? null,
       stagingTransaction,
-      nextRequiredAction: providerContractBlockedRoute?.nextRequiredAction,
+      nextRequiredAction: finalProviderMissing
+        ? 'run_main_session_critical_auditor_round'
+        : providerContractBlockedRoute?.nextRequiredAction,
     });
   }
   try {
@@ -31728,7 +31848,7 @@ export function runMainAgentPreConfirmationDrilldown(
     const renderRoundTripReport = runSourcePrdSemanticRoundTrip({
       root,
       parsedSourcePath: sourcePath,
-      authoritySourcePath: semanticInputPath,
+      authoritySourcePath,
       sourceText: auditedPreviewText,
       reportPath: paths.renderRoundTripReport,
       recordId: identity.recordId,
@@ -31754,6 +31874,12 @@ export function runMainAgentPreConfirmationDrilldown(
         ]),
         'requirements_contract_render_roundtrip_gate'
       );
+      writeSourcePromotionBlockDecision({
+        transaction: stagingTransaction,
+        blockingStage: 'render_roundtrip_semantic_conservation_failed',
+        root,
+        createdAt,
+      });
       return buildPreConfirmationResult({
         root,
         sourcePath,
@@ -31781,6 +31907,12 @@ export function runMainAgentPreConfirmationDrilldown(
       ],
       'requirements_contract_render_roundtrip_gate'
     );
+    writeSourcePromotionBlockDecision({
+      transaction: stagingTransaction,
+      blockingStage: 'render_roundtrip_semantic_conservation_failed',
+      root,
+      createdAt,
+    });
     return buildPreConfirmationResult({
       root,
       sourcePath,
@@ -32097,13 +32229,14 @@ export function runMainAgentPreConfirmationDrilldown(
       stagingTransaction,
     });
   }
-  if (
-    entryMode === 'intake_to_new_source' &&
-    !targetSourceExistedBeforeAuthoring &&
-    fs.existsSync(sourcePath)
-  ) {
+  const intakeTargetPromotionRace = evaluateIntakeTargetPromotionRace({
+    entryMode,
+    targetSourceExistedBeforeAuthoring,
+    targetExistsBeforePromotion: fs.existsSync(sourcePath),
+  });
+  if (intakeTargetPromotionRace) {
     const issue = preConfirmationIssue(
-      'target_created_before_promotion',
+      intakeTargetPromotionRace.code,
       'Intake target source was created before authoring-draft promotion; source promotion is forbidden.',
       [toRootRelativePath(root, sourcePath)],
       'source_mutation_gate'
@@ -32111,7 +32244,7 @@ export function runMainAgentPreConfirmationDrilldown(
     writeSourcePromotionBlockDecision({
       transaction: stagingTransaction,
       currentSourceHash: safeCurrentSourceDocumentHash(sourcePath),
-      blockingStage: 'target_created_before_promotion',
+      blockingStage: intakeTargetPromotionRace.blockingStage,
       createdAt,
     });
     writeRequirementsAuthoringTransaction({
@@ -32128,7 +32261,7 @@ export function runMainAgentPreConfirmationDrilldown(
         : null,
       scaleRoutingDecision:
         normalizeText(previewPostPacketScaleAssessment.routingDecision?.decision) || null,
-      nextRequiredAction: 'stop_target_created_before_promotion',
+      nextRequiredAction: intakeTargetPromotionRace.nextRequiredAction,
     });
     return buildPreConfirmationResult({
       root,
@@ -32143,7 +32276,7 @@ export function runMainAgentPreConfirmationDrilldown(
       sourceDocumentHash: safeCurrentSourceDocumentHash(sourcePath),
       implementationConfirmationHash: auditedPreviewImplementationConfirmationHash,
       criticalAuditorProviderMode,
-      blockingStage: 'target_created_before_promotion',
+      blockingStage: intakeTargetPromotionRace.blockingStage,
       sourceMutationPerformed: false,
       stagingTransaction,
     });
@@ -32577,7 +32710,7 @@ export function runMainAgentPreConfirmationDrilldown(
       const promotionReadbackRoundTripReport = runSourcePrdSemanticRoundTrip({
         root,
         parsedSourcePath: sourcePath,
-        authoritySourcePath: semanticInputPath,
+        authoritySourcePath,
         sourceText: fs.readFileSync(sourcePath, 'utf8'),
         reportPath: paths.promotionReadbackRoundTripReport,
         recordId: identity.recordId,
@@ -33158,8 +33291,7 @@ function readinessDiagnostics(input: {
         repairAction: 'none',
         automaticRepairAvailable: false,
         nextCommand: null,
-        message:
-          'Controlled user closeout acceptance is terminal; no pending packet is expected.',
+        message: 'Controlled user closeout acceptance is terminal; no pending packet is expected.',
       })
     );
     if (activationStatus === 'audit_required' || metadataStatus !== 'current') {
@@ -33570,9 +33702,9 @@ function nativeGoalHandoffRequiresTaskReportImport(
   const importStatus = normalizeText(handoff?.importStatus);
   return Boolean(
     handoff &&
-      handoff.invoked === true &&
-      handoff.imported !== true &&
-      !['task_report_partial', 'task_report_blocked'].includes(importStatus)
+    handoff.invoked === true &&
+    handoff.imported !== true &&
+    !['task_report_partial', 'task_report_blocked'].includes(importStatus)
   );
 }
 
@@ -33593,8 +33725,7 @@ function deriveNextActionFromRequirementRecord(input: {
   const recordId = normalizeText(input.record?.recordId) || 'requirement-record';
   const currentMentalModel = normalizeText(input.record?.currentMentalModel);
   const currentModelResult = modelResultFor(input.record, currentMentalModel);
-  const nativeGoalAwaitingTaskReport =
-    nativeGoalHandoffRequiresTaskReportImport(input.record);
+  const nativeGoalAwaitingTaskReport = nativeGoalHandoffRequiresTaskReportImport(input.record);
   const architectureState =
     input.record?.architectureConfirmationState &&
     typeof input.record.architectureConfirmationState === 'object' &&
@@ -34130,19 +34261,18 @@ export function resolveMainAgentOrchestrationSurface(
     ? 'dispatch_review'
     : pendingAuditAfterVerifiedRepair
       ? 'dispatch_review'
-    : bridgeImplementDispatchFallback
-    ? 'dispatch_implement'
-    : bridgeCompletedRemediationReturnsToImplement
-      ? 'dispatch_implement'
-      : bridgePendingPacketRemainsAuthoritative
-        ? (scopedState.state?.nextAction ?? action.nextAction)
-        : action.nextAction;
-  const fallbackActionReady =
-    pendingAuditAfterVerifiedRepair
-      ? pendingPacketStatus === 'ready_for_main_agent'
-      : auditRepairCompletionReturnsToReview ||
-          bridgeImplementDispatchFallback ||
-          bridgeCompletedRemediationReturnsToImplement
+      : bridgeImplementDispatchFallback
+        ? 'dispatch_implement'
+        : bridgeCompletedRemediationReturnsToImplement
+          ? 'dispatch_implement'
+          : bridgePendingPacketRemainsAuthoritative
+            ? (scopedState.state?.nextAction ?? action.nextAction)
+            : action.nextAction;
+  const fallbackActionReady = pendingAuditAfterVerifiedRepair
+    ? pendingPacketStatus === 'ready_for_main_agent'
+    : auditRepairCompletionReturnsToReview ||
+        bridgeImplementDispatchFallback ||
+        bridgeCompletedRemediationReturnsToImplement
       ? true
       : bridgePendingPacketRemainsAuthoritative
         ? pendingPacketStatus === 'ready_for_main_agent'
@@ -34262,8 +34392,7 @@ function auditRepairReceiptSupersedesPendingPacket(input: {
     }))
     .find(
       (candidate) =>
-        normalizeText(candidate.receipt?.schemaVersion) ===
-        'audit-main-agent-repair-receipt/v1'
+        normalizeText(candidate.receipt?.schemaVersion) === 'audit-main-agent-repair-receipt/v1'
     );
   if (!receipt?.receipt) {
     return false;
@@ -34569,11 +34698,7 @@ function assertPendingPacketCurrentDispatchPointer(
     projectRoot,
     record,
   });
-  const mismatch = compiledPendingPacketBindingMismatch(
-    packet,
-    currentRef,
-    pointerBoundTaskType
-  );
+  const mismatch = compiledPendingPacketBindingMismatch(packet, currentRef, pointerBoundTaskType);
   if (mismatch) {
     if (
       pointerBoundTaskType === 'remediate' &&
@@ -34621,12 +34746,7 @@ export function completeMainAgentPendingPacket(
   packetId: string,
   completionReport?: TaskReport
 ): OrchestrationState {
-  assertPendingPacketCurrentDispatchPointer(
-    projectRoot,
-    sessionId,
-    packetId,
-    completionReport
-  );
+  assertPendingPacketCurrentDispatchPointer(projectRoot, sessionId, packetId, completionReport);
   return completePendingPacket(projectRoot, sessionId, packetId);
 }
 
@@ -34654,26 +34774,22 @@ export function ingestMainAgentTaskReport(
   if (!state) {
     throw new Error(`Main-agent ingestion failed: session not found (${sessionId})`);
   }
-  let boundRuntimeContext: ReturnType<typeof loadRuntimeContextForMainAgent> | null =
+  let boundRuntimeContext: ReturnType<typeof loadRuntimeContextForMainAgent> | null = null;
+  let boundRequirementRecord: ReturnType<typeof readRequirementRecordFromRuntimeContext> | null =
     null;
-  let boundRequirementRecord: ReturnType<
-    typeof readRequirementRecordFromRuntimeContext
-  > | null = null;
   if (options.expectedRequirementRecordHash) {
     boundRuntimeContext = loadRuntimeContextForMainAgent({
       projectRoot,
       flow: state.flow as RuntimeFlowId,
       stage: options.currentStage ?? state.currentPhase,
     });
-    const requirementRecord =
-      readRequirementRecordFromRuntimeContext(boundRuntimeContext);
+    const requirementRecord = readRequirementRecordFromRuntimeContext(boundRuntimeContext);
     if (!requirementRecord) {
       throw new Error('task_report_ingest_requirement_record_missing');
     }
     boundRequirementRecord = requirementRecord;
     if (
-      normalizeText(boundRequirementRecord.recordHash) !==
-      options.expectedRequirementRecordHash
+      normalizeText(boundRequirementRecord.recordHash) !== options.expectedRequirementRecordHash
     ) {
       throw new Error('task_report_ingest_requirement_record_hash_mismatch');
     }
@@ -34793,10 +34909,9 @@ export function ensureMainAgentDispatchPacket(
   const auditDispatchRequested =
     taskType === 'audit' ||
     (taskType === null && normalizeText(input.preferredPacketId).startsWith('audit-'));
-  const activeDispatchRecord =
-    input.projectRoot
-      ? readActiveRequirementRecordForDispatch(input.projectRoot, runtimeContext)
-      : null;
+  const activeDispatchRecord = input.projectRoot
+    ? readActiveRequirementRecordForDispatch(input.projectRoot, runtimeContext)
+    : null;
   const pointerBoundTaskType = pointerBoundTaskTypeFor(taskType, activeDispatchRecord);
   const currentCompiledPromptRef =
     (pointerBoundTaskType !== null || auditDispatchRequested) && input.projectRoot
@@ -34861,7 +34976,9 @@ export function ensureMainAgentDispatchPacket(
     normalizeText(currentSurface.closeout?.artifactPath),
     normalizeText(currentSurface.closeout?.reportPath),
     auditRepairContext?.feedbackDispatchRef.path ?? '',
-  ].filter((artifactPath, index, values) => Boolean(artifactPath) && values.indexOf(artifactPath) === index);
+  ].filter(
+    (artifactPath, index, values) => Boolean(artifactPath) && values.indexOf(artifactPath) === index
+  );
   const resolvedScope = resolveMappedAllowedWriteScope(
     input.projectRoot,
     runtimeContext,
@@ -34938,6 +35055,17 @@ export function ensureMainAgentDispatchPacket(
     (taskType === 'implement' || taskType === 'remediate') && dispatchCompiledPromptRef
       ? ensurePolicyDefaultExecutionStrategy({
           compiledPromptRef: dispatchCompiledPromptRef,
+          campaignRuntimeBindingRef: currentCampaignRuntimeBindingRefFromDispatchPointer({
+            projectRoot: input.projectRoot,
+            record: activeRecord,
+          }),
+        })
+      : null;
+  const campaignRuntimeBindingRef =
+    dispatchCompiledPromptRef && (taskType === 'implement' || taskType === 'remediate')
+      ? currentCampaignRuntimeBindingRefFromDispatchPointer({
+          projectRoot: input.projectRoot,
+          record: activeRecord,
         })
       : null;
   const sddArtifactManifestRef =
@@ -34990,6 +35118,7 @@ export function ensureMainAgentDispatchPacket(
           compiledPromptRef: dispatchCompiledPromptRef,
           executionDisciplineProfile,
           executionStrategy,
+          campaignRuntimeBindingRef,
           sddArtifactManifestRef,
           auditExecutionProfile: auditExecution?.profile ?? null,
           auditTriadExecutionPlanRef: auditExecution?.triadRef ?? null,
@@ -35146,10 +35275,9 @@ export function buildMainAgentDispatchInstruction(
     return null;
   }
   const runtimeContext = input.projectRoot ? loadRuntimeContextForMainAgent(input) : null;
-  const activeDispatchRecord =
-    input.projectRoot
-      ? readActiveRequirementRecordForDispatch(input.projectRoot, runtimeContext)
-      : null;
+  const activeDispatchRecord = input.projectRoot
+    ? readActiveRequirementRecordForDispatch(input.projectRoot, runtimeContext)
+    : null;
   const pointerBoundTaskType = pointerBoundTaskTypeFor(taskType, activeDispatchRecord);
   if (pointerBoundTaskType) {
     if (!input.projectRoot) {
@@ -35203,6 +35331,7 @@ const MAIN_AGENT_CLI_ACTIONS = new Set([
   'dispatch-plan',
   'import-native-goal-task-report',
   'run-loop',
+  'controlled-closeout',
   'claim',
   'dispatch',
   'complete',
@@ -35357,6 +35486,10 @@ function recordNativeGoalHandoff(input: {
   invoked?: boolean;
   imported?: boolean;
   importStatus?: string;
+  closeoutAttemptId?: string;
+  taskReportCandidatePath?: string;
+  taskReportArtifactHash?: string;
+  controlledCloseoutIngested?: boolean;
 }): Record<string, unknown> | null {
   if (!input.recordPath || !fs.existsSync(input.recordPath)) return null;
   if (!('taskType' in input.packet) || input.packet.taskType !== 'implement') return null;
@@ -35421,6 +35554,15 @@ function recordNativeGoalHandoff(input: {
     invoked: input.invoked === true || input.imported === true,
     imported: input.imported === true,
     importStatus: input.importStatus ?? (input.imported ? 'imported' : 'awaiting_task_report'),
+    ...(input.closeoutAttemptId ? { closeoutAttemptId: input.closeoutAttemptId } : {}),
+    ...(input.taskReportCandidatePath
+      ? { taskReportCandidatePath: input.taskReportCandidatePath }
+      : {}),
+    ...(input.taskReportArtifactHash
+      ? { taskReportArtifactHash: input.taskReportArtifactHash }
+      : {}),
+    ...(input.controlledCloseoutIngested === true ? { controlledCloseoutIngested: true } : {}),
+    ...(input.controlledCloseout ? { controlledCloseout: input.controlledCloseout } : {}),
   };
   const recordedAt = new Date().toISOString();
   appendControlEventAndReplay({
@@ -35563,6 +35705,11 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       appendArg('requiredCommand', argv[++index]);
     } else if (token === '--render-report' && argv[index + 1]) {
       out.renderReport = argv[++index];
+    } else if (
+      (token === '--controlled-closeout-request' || token === '--controlledCloseoutRequest') &&
+      argv[index + 1]
+    ) {
+      out.controlledCloseoutRequest = argv[++index];
     } else if ((token === '--report-path' || token === '--reportPath') && argv[index + 1]) {
       out.reportPath = argv[++index];
     } else if (token === '--confirmation-text' && argv[index + 1]) {
@@ -35633,6 +35780,14 @@ function parseArgs(argv: string[]): Record<string, string | undefined> {
       out.updateSource = argv[++index];
     } else if (token === '--action' && argv[index + 1]) {
       out.action = argv[++index];
+    } else if (token === '--source-context-path' && argv[index + 1]) {
+      out.sourceContextPath = argv[++index];
+    } else if (token === '--output-context-path' && argv[index + 1]) {
+      out.outputContextPath = argv[++index];
+    } else if (token === '--closeout-attempt-id' && argv[index + 1]) {
+      out.closeoutAttemptId = argv[++index];
+    } else if (token === '--allowed-write-path' && argv[index + 1]) {
+      out.allowedWritePath = argv[++index];
     } else if ((token === '--host' || token === '--hostKind') && argv[index + 1]) {
       out.host = argv[++index];
     } else if (token === '--sessionId' && argv[index + 1]) {
@@ -35707,6 +35862,7 @@ export interface MainAgentConfirmScopeResult {
   action:
     | 'confirm-scope'
     | 'confirm-closeout-acceptance'
+    | 'refresh-confirmation-projection'
     | 'repair-confirmation-bookkeeping'
     | 'route-confirmation-drift';
   delegatedEntry: string;
@@ -35837,6 +35993,209 @@ function directRequirementRecordPathForCommand(
   return null;
 }
 
+interface ControlledCloseoutConfirmationPreparation {
+  recordPath: string;
+  closeoutAttemptId: string;
+  candidatePath: string;
+  candidateBytesHash: string;
+  finalTaskReportPath: string;
+  completionReceiptPath: string;
+  provenanceHashes: Record<string, string>;
+}
+
+function prepareControlledCloseoutConfirmation(
+  root: string,
+  args: Record<string, string | undefined>
+): ControlledCloseoutConfirmationPreparation | null {
+  const recordPath = directRequirementRecordPathForCommand(root, args);
+  const record = recordPath ? readJsonIfExists(recordPath) : null;
+  const handoff = recordObject(record?.nativeGoalHandoff);
+  if (handoff.controlledCloseoutIngested !== true) return null;
+  const controlledCloseout = recordObject(handoff.controlledCloseout);
+  const closeoutAttemptId = normalizeText(handoff.closeoutAttemptId);
+  const currentAttemptId = normalizeText(recordObject(record?.closeout).currentAttemptId);
+  const candidatePath = normalizeText(handoff.taskReportCandidatePath);
+  const candidateBytesHash = normalizeText(handoff.taskReportArtifactHash);
+  const finalTaskReportPath = normalizeText(handoff.taskReportPath);
+  const completionReceiptPath =
+    normalizeText(handoff.completionReceiptPath) ||
+    (finalTaskReportPath ? `${finalTaskReportPath}.completion-receipt.json` : '');
+  const provenanceHashes = {
+    contextHash: normalizeText(controlledCloseout.contextHash),
+    compileReceiptHash: normalizeText(controlledCloseout.compileReceiptHash),
+    childClosureSetHash: normalizeText(controlledCloseout.childClosureSetHash),
+    campaignReportHash: normalizeText(controlledCloseout.campaignReportHash),
+    closureReceiptHash: normalizeText(controlledCloseout.closureReceiptHash),
+    judgeReviewCampaignHash: normalizeText(controlledCloseout.judgeReviewCampaignHash),
+    effectivePassReceiptHash: normalizeText(controlledCloseout.effectivePassReceiptHash),
+    deliveryCloseoutGateReceiptHash: normalizeText(
+      controlledCloseout.deliveryCloseoutGateReceiptHash
+    ),
+  };
+  if (
+    !recordPath ||
+    !closeoutAttemptId ||
+    currentAttemptId !== closeoutAttemptId ||
+    normalizeText(controlledCloseout.closeoutAttemptId) !== closeoutAttemptId ||
+    !candidatePath ||
+    !fs.existsSync(candidatePath) ||
+    !finalTaskReportPath ||
+    !completionReceiptPath ||
+    !/^sha256:[a-f0-9]{64}$/u.test(candidateBytesHash) ||
+    sha256File(candidatePath) !== candidateBytesHash ||
+    Object.values(provenanceHashes).some((value) => !/^sha256:[a-f0-9]{64}$/u.test(value)) ||
+    fs.existsSync(finalTaskReportPath) ||
+    fs.existsSync(completionReceiptPath)
+  ) {
+    throw new Error('main_agent_goal_task_report_provenance_mismatch');
+  }
+  return {
+    recordPath,
+    closeoutAttemptId,
+    candidatePath,
+    candidateBytesHash,
+    finalTaskReportPath,
+    completionReceiptPath,
+    provenanceHashes,
+  };
+}
+
+interface StandaloneControlledCloseoutConfirmationPreparation {
+  requestPath: string;
+  closeoutAttemptId: string;
+  candidatePath: string;
+  candidateBytesHash: string;
+  finalTaskReportPath: string;
+  completionReceiptPath: string;
+  provenanceHashes: Record<string, unknown>;
+}
+
+function controlledGoalCloseoutPath(root: string, value: unknown): string {
+  const configured = normalizeText(value);
+  if (!configured) throw new Error('main_agent_goal_task_report_provenance_mismatch');
+  const projectRoot = path.resolve(root);
+  const resolved = path.resolve(projectRoot, stripWrappingQuotes(configured));
+  if (resolved !== projectRoot && !resolved.startsWith(`${projectRoot}${path.sep}`)) {
+    throw new Error('campaign_closeout_path_escape');
+  }
+  return resolved;
+}
+
+function prepareStandaloneControlledCloseoutConfirmation(
+  root: string,
+  requestValue: unknown
+): StandaloneControlledCloseoutConfirmationPreparation {
+  const requestPath = controlledGoalCloseoutPath(root, requestValue);
+  const request = readJsonObjectFile(requestPath);
+  if (!request) throw new Error('main_agent_goal_task_report_provenance_mismatch');
+  const requestPayload = { ...request };
+  delete requestPayload.acceptanceRequestHash;
+  delete requestPayload.confirmationText;
+  delete requestPayload.rejectionConfirmationText;
+  const acceptanceRequestHash = normalizeText(request.acceptanceRequestHash);
+  const markerPath = controlledGoalCloseoutPath(root, request.markerPath);
+  const candidatePath = controlledGoalCloseoutPath(root, request.taskReportCandidatePath);
+  const finalTaskReportPath = controlledGoalCloseoutPath(root, request.finalTaskReportPath);
+  const completionReceiptPath = controlledGoalCloseoutPath(root, request.completionReceiptPath);
+  const marker = readJsonObjectFile(markerPath);
+  const producerReceipt = recordObject(marker?.producerReceipt);
+  const campaign = recordObject(marker?.judgeReviewCampaign);
+  const effectivePass = recordObject(marker?.effectivePassReceipt);
+  const deliveryGate = recordObject(marker?.deliveryGateReceipt);
+  const provenanceHashes = recordObject(request.provenanceHashes);
+  const closeoutAttemptId = normalizeText(request.closeoutAttemptId);
+  const candidateBytesHash = normalizeText(request.taskReportArtifactHash);
+  const requiredProvenance = {
+    contextHash: normalizeText(marker?.contextHash),
+    compileReceiptHash: normalizeText(producerReceipt.compileReceiptHash),
+    childClosureSetHash: normalizeText(producerReceipt.childClosureSetHash),
+    campaignReportHash: normalizeText(producerReceipt.campaignReportHash),
+    closureReceiptHash: normalizeText(producerReceipt.receiptHash),
+    judgeReviewCampaignHash: normalizeText(campaign.aggregateHash),
+    effectivePassReceiptHash: normalizeText(effectivePass.effectivePassReceiptHash),
+    deliveryCloseoutGateReceiptHash: normalizeText(deliveryGate.receiptHash),
+  };
+  const candidateRoot = path.dirname(candidatePath);
+  if (
+    request.schemaVersion !== 'main-agent-controlled-closeout-acceptance-request/v1' ||
+    request.status !== 'awaiting_user_acceptance' ||
+    marker?.status !== 'awaiting_user_acceptance' ||
+    controlledHash(controlledStableJson(requestPayload)) !== acceptanceRequestHash ||
+    !closeoutAttemptId ||
+    normalizeText(marker.closeoutAttemptId) !== closeoutAttemptId ||
+    normalizeText(producerReceipt.closeoutAttemptId) !== closeoutAttemptId ||
+    normalizeText(campaign.closeoutAttemptId) !== closeoutAttemptId ||
+    normalizeText(deliveryGate.closeoutAttemptId) !== closeoutAttemptId ||
+    producerReceipt.status !== 'campaign_closed' ||
+    effectivePass.effectivePass !== true ||
+    normalizeText(marker.contextHash) !== normalizeText(request.contextHash) ||
+    normalizeText(producerReceipt.contextHash) !== normalizeText(request.contextHash) ||
+    normalizeText(marker.candidateBytesHash) !== candidateBytesHash ||
+    normalizeText(producerReceipt.taskReportArtifactHash) !== candidateBytesHash ||
+    normalizeText(campaign.candidateBytesHash) !== candidateBytesHash ||
+    deliveryGate.status !== 'awaiting_user_acceptance' ||
+    Object.entries(requiredProvenance).some(
+      ([key, value]) =>
+        !/^sha256:[a-f0-9]{64}$/u.test(value) || normalizeText(provenanceHashes[key]) !== value
+    ) ||
+    !/^sha256:[a-f0-9]{64}$/u.test(candidateBytesHash) ||
+    !fs.existsSync(candidatePath) ||
+    sha256File(candidatePath) !== candidateBytesHash ||
+    path.dirname(finalTaskReportPath) !== candidateRoot ||
+    path.dirname(completionReceiptPath) !== candidateRoot ||
+    (fs.existsSync(finalTaskReportPath) && sha256File(finalTaskReportPath) !== candidateBytesHash)
+  ) {
+    throw new Error('main_agent_goal_task_report_provenance_mismatch');
+  }
+  return {
+    requestPath,
+    closeoutAttemptId,
+    candidatePath,
+    candidateBytesHash,
+    finalTaskReportPath,
+    completionReceiptPath,
+    provenanceHashes,
+  };
+}
+
+function recordControlledGoalCompletion(input: {
+  preparation: ControlledCloseoutConfirmationPreparation;
+  completionReceipt: Record<string, unknown>;
+  recordClosedReceipt: Record<string, unknown>;
+}): void {
+  const current = readJsonIfExists(input.preparation.recordPath);
+  if (
+    !current ||
+    normalizeText(recordObject(current.closeout).currentAttemptId) !==
+      input.preparation.closeoutAttemptId ||
+    normalizeText(recordObject(current.closeoutAcceptance).receiptHash) !==
+      normalizeText(input.recordClosedReceipt.receiptHash)
+  ) {
+    throw new Error('main_agent_goal_task_report_provenance_mismatch');
+  }
+  const next = {
+    ...current,
+    status: 'done',
+    controlledGoalCompletion: {
+      path: input.preparation.completionReceiptPath,
+      completionReceiptHash: input.completionReceipt.completionReceiptHash,
+      closeoutAttemptId: input.preparation.closeoutAttemptId,
+      taskReportPath: input.preparation.finalTaskReportPath,
+      taskReportArtifactHash: input.preparation.candidateBytesHash,
+      recordClosedReceiptHash: input.recordClosedReceipt.receiptHash,
+    },
+    lastEventType: 'native_goal_completion_recorded',
+    updatedAt: normalizeText(input.recordClosedReceipt.confirmedAt) || new Date().toISOString(),
+  };
+  const temporaryPath = `${input.preparation.recordPath}.${process.pid}.${crypto.randomUUID()}.tmp`;
+  try {
+    fs.writeFileSync(temporaryPath, `${JSON.stringify(next, null, 2)}\n`, 'utf8');
+    fs.renameSync(temporaryPath, input.preparation.recordPath);
+  } finally {
+    if (fs.existsSync(temporaryPath)) fs.rmSync(temporaryPath, { force: true });
+  }
+}
+
 export function runMainAgentConfirmCloseoutAcceptance(
   root: string,
   args: Record<string, string | undefined>
@@ -35844,6 +36203,80 @@ export function runMainAgentConfirmCloseoutAcceptance(
   const entry = resolveSkillScript(root, 'ingest-confirmation-event.js');
   if (!fs.existsSync(entry)) {
     throw new Error(`controlled closeout acceptance entry missing: ${entry}`);
+  }
+  const controlledCloseoutRequest = normalizeText(args.controlledCloseoutRequest);
+  if (controlledCloseoutRequest) {
+    if (!normalizeText(args.confirmationText) && !normalizeText(args.confirmationTextFile)) {
+      throw new Error(
+        'confirm-closeout-acceptance requires --confirmation-text <exact closeout confirmation> or --confirmation-text-file <file>'
+      );
+    }
+    const preparation = prepareStandaloneControlledCloseoutConfirmation(
+      root,
+      controlledCloseoutRequest
+    );
+    const delegatedArgs = [
+      '--action',
+      'confirm-closeout-acceptance',
+      '--controlled-closeout-request',
+      preparation.requestPath,
+      '--confirmed-by',
+      args.confirmedBy ?? 'main-agent-orchestration',
+      '--json',
+    ];
+    pushOptionalArg(delegatedArgs, '--confirmation-text', args.confirmationText, root);
+    pushOptionalArg(
+      delegatedArgs,
+      '--confirmation-text-file',
+      args.confirmationTextFile,
+      root,
+      true
+    );
+    pushOptionalArg(delegatedArgs, '--confirmed-at', args.confirmedAt, root);
+    const step = spawnSync(process.execPath, [entry, ...delegatedArgs], {
+      cwd: root,
+      encoding: 'utf8',
+    });
+    let parsedStdout: unknown = undefined;
+    if (step.stdout.trim()) {
+      try {
+        parsedStdout = JSON.parse(step.stdout);
+      } catch {
+        parsedStdout = step.stdout.trim();
+      }
+    }
+    if (step.status === 0) {
+      const delegatedOutput = recordObject(parsedStdout);
+      const recordClosedReceipt = recordObject(delegatedOutput.recordClosedReceipt);
+      if (recordClosedReceipt.status === 'user_accepted_closeout') {
+        const completionReceipt = persistAcceptedControlledTaskReport({
+          closeoutAttemptId: preparation.closeoutAttemptId,
+          latestCloseoutAttemptId: preparation.closeoutAttemptId,
+          candidatePath: preparation.candidatePath,
+          candidateBytesHash: preparation.candidateBytesHash,
+          finalTaskReportPath: preparation.finalTaskReportPath,
+          completionReceiptPath: preparation.completionReceiptPath,
+          recordClosedReceipt,
+          provenanceHashes: preparation.provenanceHashes,
+        });
+        parsedStdout = {
+          ...delegatedOutput,
+          status: 'done',
+          taskReportPath: preparation.finalTaskReportPath,
+          completionReceiptPath: preparation.completionReceiptPath,
+          completionReceipt,
+        };
+      }
+    }
+    return {
+      ok: step.status === 0,
+      action: 'confirm-closeout-acceptance',
+      delegatedEntry: path.relative(root, entry).replace(/\\/g, '/'),
+      exitCode: step.status ?? 2,
+      ...(parsedStdout !== undefined ? { stdout: parsedStdout } : {}),
+      ...(step.stderr.trim() ? { stderr: step.stderr.trim() } : {}),
+      mainAgentStageSummary: stageSummaryForCommandResult(root, args, parsedStdout),
+    };
   }
   const source = normalizeText(args.source);
   if (!source) {
@@ -35859,6 +36292,7 @@ export function runMainAgentConfirmCloseoutAcceptance(
       'confirm-closeout-acceptance requires --confirmation-text <exact closeout confirmation> or --confirmation-text-file <file>'
     );
   }
+  const controlledPreparation = prepareControlledCloseoutConfirmation(root, args);
 
   const delegatedArgs = [
     '--action',
@@ -35893,6 +36327,33 @@ export function runMainAgentConfirmCloseoutAcceptance(
       parsedStdout = JSON.parse(step.stdout);
     } catch {
       parsedStdout = step.stdout.trim();
+    }
+  }
+  if (step.status === 0 && controlledPreparation) {
+    const delegatedOutput = recordObject(parsedStdout);
+    const recordClosedReceipt = recordObject(delegatedOutput.recordClosedReceipt);
+    if (recordClosedReceipt.status === 'user_accepted_closeout') {
+      const completionReceipt = persistAcceptedControlledTaskReport({
+        closeoutAttemptId: controlledPreparation.closeoutAttemptId,
+        latestCloseoutAttemptId: controlledPreparation.closeoutAttemptId,
+        candidatePath: controlledPreparation.candidatePath,
+        candidateBytesHash: controlledPreparation.candidateBytesHash,
+        finalTaskReportPath: controlledPreparation.finalTaskReportPath,
+        completionReceiptPath: controlledPreparation.completionReceiptPath,
+        recordClosedReceipt,
+        provenanceHashes: controlledPreparation.provenanceHashes,
+      });
+      recordControlledGoalCompletion({
+        preparation: controlledPreparation,
+        completionReceipt,
+        recordClosedReceipt,
+      });
+      parsedStdout = {
+        ...delegatedOutput,
+        status: 'done',
+        completionReceiptPath: controlledPreparation.completionReceiptPath,
+        completionReceipt,
+      };
     }
   }
   return {
@@ -36003,6 +36464,68 @@ export function runMainAgentConfirmationBookkeepingRepair(
   return {
     ok: step.status === 0,
     action: 'repair-confirmation-bookkeeping',
+    delegatedEntry: path.relative(root, entry).replace(/\\/g, '/'),
+    exitCode: step.status ?? 2,
+    ...(parsedStdout !== undefined ? { stdout: parsedStdout } : {}),
+    ...(step.stderr.trim() ? { stderr: step.stderr.trim() } : {}),
+    mainAgentStageSummary: stageSummaryForCommandResult(root, args, parsedStdout),
+  };
+}
+
+function runMainAgentConfirmationProjectionRefresh(
+  root: string,
+  args: Record<string, string | undefined>
+): MainAgentConfirmScopeResult {
+  const entry = resolveSkillScript(root, 'ingest-confirmation-event.js');
+  const source = normalizeText(args.source);
+  const renderReport = normalizeText(args.renderReport);
+  const requirementRecord = normalizeText(args.requirementRecord);
+  const confirmationText = normalizeText(args.confirmationText);
+  if (!fs.existsSync(entry)) {
+    throw new Error(`controlled confirmation projection entry missing: ${entry}`);
+  }
+  if (!source || !renderReport || !requirementRecord || !confirmationText) {
+    throw new Error(
+      'confirmation projection refresh requires source, render report, requirement record, and confirmation text'
+    );
+  }
+
+  const delegatedArgs = [
+    '--source',
+    path.resolve(root, stripWrappingQuotes(source)),
+    '--render-report',
+    path.resolve(root, stripWrappingQuotes(renderReport)),
+    '--requirement-record',
+    path.resolve(root, stripWrappingQuotes(requirementRecord)),
+    '--confirmation-text',
+    confirmationText,
+    '--confirmed-by',
+    args.confirmedBy ?? 'main-agent-orchestration',
+    '--update-source',
+    'false',
+    '--json',
+  ];
+  pushOptionalArg(delegatedArgs, '--confirmed-at', args.confirmedAt, root);
+  pushOptionalArg(delegatedArgs, '--record-id', args.recordId, root);
+  pushOptionalArg(delegatedArgs, '--requirement-set-id', args.requirementSetId, root);
+  pushOptionalArg(delegatedArgs, '--event-log', args.eventLog, root, true);
+  pushOptionalArg(delegatedArgs, '--artifact-index', args.artifactIndex, root, true);
+
+  const step = spawnSync(process.execPath, [entry, ...delegatedArgs], {
+    cwd: root,
+    encoding: 'utf8',
+  });
+  let parsedStdout: unknown = undefined;
+  if (step.stdout.trim()) {
+    try {
+      parsedStdout = JSON.parse(step.stdout);
+    } catch {
+      parsedStdout = step.stdout.trim();
+    }
+  }
+  return {
+    ok: step.status === 0,
+    action: 'refresh-confirmation-projection',
     delegatedEntry: path.relative(root, entry).replace(/\\/g, '/'),
     exitCode: step.status ?? 2,
     ...(parsedStdout !== undefined ? { stdout: parsedStdout } : {}),
@@ -36258,6 +36781,7 @@ function confirmationTextFromRenderReport(report: Record<string, unknown>): stri
     throw new Error('route-confirmation-drift projection refresh requires render report hashes');
   }
   return [
+    '确认以上范围进入下一阶段',
     `sourceDocumentHash=${sourceDocumentHash}`,
     `implementationConfirmationHash=${implementationConfirmationHash}`,
     `confirmationPageHash=${confirmationPageHash}`,
@@ -36355,14 +36879,13 @@ export function runMainAgentConfirmationDriftRoute(
         classification,
       };
     }
-    const delegatedResult = runMainAgentConfirmScope(root, {
+    const delegatedResult = runMainAgentConfirmationProjectionRefresh(root, {
       ...args,
       renderReport: renderReportPath,
       confirmationText: confirmationTextFromRenderReport({
         ...renderReport,
         confirmationPageHash: priorProjectionHash,
       }),
-      updateSource: 'false',
     });
     return {
       ok: delegatedResult.ok,
@@ -39178,9 +39701,7 @@ export function runMainAgentAutomaticLoop(input: {
     try {
       const packet = auditInstructionPacket as ExecutionPacket;
       const planPath = packet.auditTriadExecutionPlanRef!.path;
-      const finalizeCurrentAuditEpoch = (
-        roundReceiptPaths: string[]
-      ): MainAgentRunLoopResult => {
+      const finalizeCurrentAuditEpoch = (roundReceiptPaths: string[]): MainAgentRunLoopResult => {
         if (!activeRecordPath) {
           throw new Error('audit_controlled_executor_requirement_record_missing');
         }
@@ -39370,14 +39891,9 @@ export function runMainAgentAutomaticLoop(input: {
       if (!compiledPromptRef) {
         throw new Error('native_goal_compiled_prompt_ref_missing');
       }
-      const modelPacketRead = readModelPacketForCompiledRef(
-        input.projectRoot,
-        compiledPromptRef
-      );
+      const modelPacketRead = readModelPacketForCompiledRef(input.projectRoot, compiledPromptRef);
       if (!modelPacketRead.modelPacket || modelPacketRead.issueCodes.length > 0) {
-        throw new Error(
-          `native_goal_model_packet_invalid:${modelPacketRead.issueCodes.join(',')}`
-        );
+        throw new Error(`native_goal_model_packet_invalid:${modelPacketRead.issueCodes.join(',')}`);
       }
       const nativeTaskReportPath =
         normalizeText(compiledPromptRef.taskReportPath) ||
@@ -39386,6 +39902,37 @@ export function runMainAgentAutomaticLoop(input: {
           instruction.sessionId,
           instruction.packetId
         );
+      const governedCampaign =
+        instruction.packet.executionStrategy?.strategyId === 'governed_skill_adapter'
+          ? (() => {
+              const pointerPath = canonicalCurrentDispatchPointerPath(input.projectRoot);
+              const pointerResolution = resolveCurrentDispatchPointer({
+                authorityRoot: input.projectRoot,
+                pointerPath,
+                expected: currentDispatchPointerExpectedIdentityFromRecord(activeRecord),
+              });
+              const binding = resolveCampaignRuntimeBinding({
+                pointerPath,
+                pointerHash: pointerResolution.pointerHash,
+                packetPath: instruction.packetPath,
+                packetHash: sha256File(instruction.packetPath),
+                pointer: pointerResolution.pointer,
+                packet: instruction.packet as unknown as Record<string, unknown>,
+              });
+              return {
+                children: binding.binding.children as Array<Record<string, unknown>>,
+                requirementRecordBinding: (modelPacketRead.modelPacket.requirementRecordBinding as
+                  | Record<string, unknown>
+                  | undefined) ?? { status: 'absent' },
+                packageRequestRef: binding.binding.packageRequestRef,
+                partitionManifestRef: binding.binding.partitionManifestRef,
+                dependencies: {
+                  ...binding.dependencies,
+                  persistTaskReport: () => undefined,
+                },
+              };
+            })()
+          : undefined;
       const nativeResult: NativeGoalInvocationResult = runNativeGoalInvocation({
         projectRoot: input.projectRoot,
         host: instruction.host,
@@ -39401,6 +39948,7 @@ export function runMainAgentAutomaticLoop(input: {
         attemptId: instruction.packetId,
         timeoutMs: Number(args.codexTimeoutMs) > 0 ? Number(args.codexTimeoutMs) : undefined,
         executor: input.nativeGoalExecutor,
+        governedCampaign,
       });
       const exactStatePath = path.join(
         orchestrationStateDirForRecordPath(input.projectRoot, activeRecordPath),
@@ -39421,23 +39969,51 @@ export function runMainAgentAutomaticLoop(input: {
         importStatus:
           nativeResult.status === 'awaiting_task_report'
             ? 'awaiting_task_report'
-            : nativeResult.status === 'executed'
-              ? 'native_goal_execution_completed'
-              : 'native_goal_execution_failed',
+            : nativeResult.status === 'awaiting_user_acceptance'
+              ? 'awaiting_user_acceptance'
+              : nativeResult.status === 'executed'
+                ? 'native_goal_execution_completed'
+                : 'native_goal_execution_failed',
+        closeoutAttemptId: nativeResult.closeoutAttemptId,
+        taskReportCandidatePath: nativeResult.taskReportCandidatePath,
+        taskReportArtifactHash: nativeResult.taskReportArtifactHash,
+        controlledCloseoutIngested: nativeResult.controlledCloseoutIngested,
+        controlledCloseout: nativeResult.controlledCloseout,
       });
       steps.push({
         step: 'native-goal-invocation',
         status:
           nativeResult.status === 'executed'
             ? 'pass'
-            : nativeResult.status === 'awaiting_task_report'
-              ? 'skip'
-              : 'fail',
+            : nativeResult.status === 'awaiting_user_acceptance'
+              ? 'pass'
+              : nativeResult.status === 'awaiting_task_report'
+                ? 'skip'
+                : 'fail',
         summary: `status=${nativeResult.status}, command=${nativeResult.command}, report=${path.relative(
           input.projectRoot,
           nativeResult.taskReportPath
         )}, errors=${nativeResult.validationErrors.join(',') || 'none'}`,
       });
+      if (nativeResult.status === 'awaiting_user_acceptance') {
+        const finalSurface = resolveMainAgentOrchestrationSurface({
+          ...surfaceInput,
+        });
+        return {
+          runId: `main-agent-run-loop-${Date.now()}`,
+          status: 'awaiting_user_acceptance',
+          steps,
+          dispatchInstruction: instruction,
+          taskReport: null,
+          closeoutAttemptId: nativeResult.closeoutAttemptId,
+          taskReportCandidatePath: nativeResult.taskReportCandidatePath,
+          taskReportArtifactHash: nativeResult.taskReportArtifactHash,
+          controlledCloseoutIngested: nativeResult.controlledCloseoutIngested,
+          controlledCloseout: nativeResult.controlledCloseout,
+          finalSurface,
+          mainAgentStageSummary: finalSurface.mainAgentStageSummary,
+        };
+      }
       if (nativeResult.status !== 'executed' || !nativeResult.taskReport) {
         const finalSurface = resolveMainAgentOrchestrationSurface({
           ...surfaceInput,
@@ -39765,6 +40341,7 @@ export async function runMainAgentAutomaticLoopAsync(input: {
   host?: OrchestrationHost;
   args?: Record<string, string | undefined>;
   executor?: MainAgentRunLoopExecutor;
+  nativeGoalExecutor?: NativeGoalControlledExecutor;
 }): Promise<MainAgentRunLoopResult> {
   assertMainAgentAuditControlInput(input);
   const args = input.args ?? {};
@@ -39793,7 +40370,7 @@ export async function runMainAgentAutomaticLoopAsync(input: {
   });
   const activeRecord = readRequirementRecordFromRuntimeContext(runtimeContext);
   const diagnostic = findReadinessBaselineActivationDiagnostic(initialSurface, activeRecord);
-  if (!diagnostic || input.executor) {
+  if (!diagnostic || input.executor || input.nativeGoalExecutor) {
     return runMainAgentAutomaticLoop(input);
   }
 
@@ -39893,6 +40470,36 @@ export function mainMainAgentOrchestration(argv: string[]): number {
   const args = parseArgs(argv);
   const root = pickRoot(args);
   const action = normalizeText(args.action) || 'inspect';
+
+  if (action === 'refresh-closeout-context') {
+    try {
+      const required = [
+        args.sourceContextPath,
+        args.outputContextPath,
+        args.closeoutAttemptId,
+        args.allowedWritePath,
+      ];
+      if (required.some((value) => !normalizeText(value))) {
+        throw new Error('campaign_closeout_context_mismatch');
+      }
+      const result = refreshMainAgentCloseoutContext({
+        projectRoot: root,
+        sourceContextPath: args.sourceContextPath!,
+        outputContextPath: args.outputContextPath!,
+        closeoutAttemptId: args.closeoutAttemptId!,
+        allowedWritePath: args.allowedWritePath!,
+      });
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    } catch (error) {
+      console.error(
+        `main-agent-orchestration refresh-closeout-context: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return 1;
+    }
+  }
 
   if (action === 'route-intake' || action === 'adaptive-intake') {
     const inputPath = normalizeText(args.input);
@@ -40181,9 +40788,13 @@ export function mainMainAgentOrchestration(argv: string[]): number {
                 return readTaskReportFromFile(reportPath, instruction.packetId);
               }
             : undefined,
+        nativeGoalExecutor:
+          host === 'codex' || host === 'claude-code-cli'
+            ? createNativeGoalHostExecutor()
+            : undefined,
       });
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-      return result.status === 'completed' ? 0 : 1;
+      return mainAgentRunLoopExitCode(result.status);
     }
     case 'claim': {
       const { sessionId } = resolveSessionAndPacketFromSurface(surface, args);
@@ -40223,6 +40834,20 @@ export async function mainMainAgentOrchestrationAsync(argv: string[]): Promise<n
   const args = parseArgs(argv);
   const root = pickRoot(args);
   const action = normalizeText(args.action) || 'inspect';
+  if (action === 'controlled-closeout') {
+    try {
+      const result = await runMainAgentControlledCloseoutCli(root, args);
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return result.status === 'awaiting_user_acceptance' ? 0 : 1;
+    } catch (error) {
+      console.error(
+        `main-agent-orchestration controlled-closeout: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return 1;
+    }
+  }
   if (action === 'run-loop') {
     const { flow, stage, noActiveRequirement } = resolveFlowAndStage(root, args);
     if (noActiveRequirement || !flow || !stage) {
@@ -40251,9 +40876,11 @@ export async function mainMainAgentOrchestrationAsync(argv: string[]): Promise<n
               return readTaskReportFromFile(reportPath, instruction.packetId);
             }
           : undefined,
+      nativeGoalExecutor:
+        host === 'codex' || host === 'claude-code-cli' ? createNativeGoalHostExecutor() : undefined,
     });
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return result.status === 'completed' ? 0 : 1;
+    return mainAgentRunLoopExitCode(result.status);
   }
   if (action !== 'controlled-readiness-audit') {
     return mainMainAgentOrchestration(argv);
@@ -40375,14 +41002,14 @@ export function buildMainAgentCanonicalJudgeRunDispatch(
   input: MainAgentCanonicalJudgeRunDispatchInput
 ): MainAgentCanonicalJudgeRunDispatch {
   rejectMainAgentJudgeAuthorityInjection(input);
-  if (
-    input.role !== 'requirements_critical_auditor' &&
-    input.role !== 'final_acceptance_judge'
-  ) {
+  if (input.role !== 'requirements_critical_auditor' && input.role !== 'final_acceptance_judge') {
     throw new Error('main_agent_judge_run_role_explicit_required');
   }
   const controlledDispatch = recordObject(input.controlledDispatchRef);
-  if (!normalizeText(controlledDispatch.packetId) || !normalizeText(controlledDispatch.packetKind)) {
+  if (
+    !normalizeText(controlledDispatch.packetId) ||
+    !normalizeText(controlledDispatch.packetKind)
+  ) {
     throw new Error('main_agent_judge_bridge_controlled_dispatch_invalid');
   }
   const argv = [
@@ -40479,7 +41106,10 @@ export function resolveMainAgentJudgeReviewCampaignBridge(
     throw new Error('main_agent_judge_bridge_campaign_output_invalid');
   }
   const controlledDispatch = recordObject(input.controlledDispatchRef);
-  if (!normalizeText(controlledDispatch.packetId) || !normalizeText(controlledDispatch.packetKind)) {
+  if (
+    !normalizeText(controlledDispatch.packetId) ||
+    !normalizeText(controlledDispatch.packetKind)
+  ) {
     throw new Error('main_agent_judge_bridge_controlled_dispatch_invalid');
   }
   const requirementsAuthorityTupleHash = requireMainAgentHash(
@@ -40514,4 +41144,1411 @@ export function resolveMainAgentJudgeReviewCampaignBridge(
     callerAuthorityInjection: false as const,
   };
   return { ...payload, bridgeHash: sha256Json(payload), decision: 'pass' as const };
+}
+
+function controlledStableJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(controlledStableJson).join(',')}]`;
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    return `{${Object.keys(record)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${controlledStableJson(record[key])}`)
+      .join(',')}}`;
+  }
+  return JSON.stringify(value) ?? String(value);
+}
+
+function controlledHash(value: string | Buffer): string {
+  return `sha256:${crypto.createHash('sha256').update(value).digest('hex')}`;
+}
+
+export function createJudgeStageStatusReceipt(input: {
+  closeoutAttemptId: string;
+  providerRef: string;
+  actorClass?: 'bounded_code_reviewer' | 'final_acceptance_judge';
+  logicalAttemptOrdinal: number;
+  maxAttempts: number;
+  sourceErrorCode: string;
+  resumeFrom: string | null;
+}) {
+  const actorClass = input.actorClass ?? 'final_acceptance_judge';
+  const sourceErrorCode = String(input.sourceErrorCode ?? '');
+  const executionStatus =
+    sourceErrorCode === 'PROVIDER_NOT_CONFIGURED'
+      ? 'awaiting_provider_configuration'
+      : /(?:401|403|AUTH)/iu.test(sourceErrorCode)
+        ? 'provider_auth_required'
+        : /(?:429|503|TIMEOUT|TEMPORAR)/iu.test(sourceErrorCode)
+          ? 'provider_temporarily_unavailable'
+          : 'provider_execution_error';
+  if (
+    !input.closeoutAttemptId ||
+    !input.providerRef ||
+    !Number.isInteger(input.logicalAttemptOrdinal) ||
+    input.logicalAttemptOrdinal < 1 ||
+    !Number.isInteger(input.maxAttempts) ||
+    input.maxAttempts < input.logicalAttemptOrdinal
+  ) {
+    throw new Error('main_agent_goal_task_report_provenance_mismatch');
+  }
+  const payload = {
+    schemaVersion: 'main-agent-goal-judge-stage-status-receipt/v1' as const,
+    closeoutAttemptId: input.closeoutAttemptId,
+    phase: actorClass === 'bounded_code_reviewer' ? ('reviewer' as const) : ('judge' as const),
+    actorClass,
+    executionStatus,
+    auditDecision: 'not_produced' as const,
+    providerRef: input.providerRef,
+    logicalAttemptOrdinal: input.logicalAttemptOrdinal,
+    maxAttempts: input.maxAttempts,
+    resumeFrom: input.resumeFrom,
+    sourceErrorCode,
+  };
+  return Object.freeze({
+    ...payload,
+    receiptHash: controlledHash(controlledStableJson(payload)),
+  });
+}
+
+function judgeProviderSourceErrorCode(error: unknown): string {
+  const source = recordObject(error);
+  const status = Number(source.statusCode ?? source.status);
+  if ([401, 403, 429, 503].includes(status)) return `HTTP_${status}`;
+  const code = normalizeText(source.sourceErrorCode ?? source.code).toUpperCase();
+  const message = `${code} ${error instanceof Error ? error.message : String(error)}`;
+  if (/PROVIDER[_ -]?NOT[_ -]?CONFIGURED|PROVIDER[_ -]?MISSING/iu.test(message)) {
+    return 'PROVIDER_NOT_CONFIGURED';
+  }
+  for (const httpStatus of [401, 403, 429, 503]) {
+    if (new RegExp(`(?:HTTP[_ -]?)?${httpStatus}`, 'u').test(message)) {
+      return `HTTP_${httpStatus}`;
+    }
+  }
+  if (/ETIMEDOUT|TIMEOUT|TIMED OUT|ABORTED/iu.test(message)) return 'PROVIDER_TIMEOUT';
+  if (/EMPTY[_ -]?RESPONSE/iu.test(message)) return 'EMPTY_RESPONSE';
+  if (/SCHEMA[_ -]?INVALID|INVALID[_ -]?SCHEMA/iu.test(message)) return 'SCHEMA_INVALID';
+  return 'PROVIDER_EXECUTION_ERROR';
+}
+
+export async function runMainAgentJudgeReviewCampaign(
+  input: {
+    campaignInput: RequirementsContractJudgeReviewCampaignInputV2;
+    finalAcceptanceState?: unknown;
+    closeoutAttemptId: string;
+    logicalAttemptOrdinal: number;
+    maxAttempts: number;
+    resumeFrom: string | null;
+    reusedFinalJudge?: {
+      result: FinalJudgeProducedResult;
+      receipt: Record<string, unknown>;
+    };
+  },
+  dependencies: Parameters<typeof executeJudgeReviewCampaign>[1]
+) {
+  const result = await executeJudgeReviewCampaign(
+    {
+      campaignInput: input.campaignInput,
+      ...(input.reusedFinalJudge ? { reusedFinalJudge: input.reusedFinalJudge } : {}),
+    },
+    {
+      ...dependencies,
+      invokeFinalJudge: async (judgeInput) => {
+        try {
+          return await dependencies.invokeFinalJudge(judgeInput);
+        } catch (error) {
+          return {
+            auditDecision: 'not_produced',
+            sourceErrorCode: judgeProviderSourceErrorCode(error),
+          };
+        }
+      },
+    }
+  );
+  if (result.status !== 'not_produced') return result;
+  const finalJudge = recordObject(result.finalJudge);
+  const notProducedActor =
+    result.notProducedActor === 'bounded_code_reviewer'
+      ? 'bounded_code_reviewer'
+      : 'final_acceptance_judge';
+  const stageStatusReceipt = createJudgeStageStatusReceipt({
+    closeoutAttemptId: input.closeoutAttemptId,
+    providerRef: input.campaignInput.providerRef,
+    actorClass: notProducedActor,
+    logicalAttemptOrdinal: input.logicalAttemptOrdinal,
+    maxAttempts: input.maxAttempts,
+    sourceErrorCode:
+      notProducedActor === 'bounded_code_reviewer'
+        ? judgeProviderSourceErrorCode(result.sourceError)
+        : normalizeText(finalJudge.sourceErrorCode) ||
+          judgeProviderSourceErrorCode(result.sourceError),
+    resumeFrom: input.resumeFrom,
+  });
+  return Object.freeze({
+    ...result,
+    effectivePassReceipt: null,
+    reviewerStageStatusReceipt:
+      notProducedActor === 'bounded_code_reviewer' ? stageStatusReceipt : null,
+    judgeStageStatusReceipt:
+      notProducedActor === 'final_acceptance_judge' ? stageStatusReceipt : null,
+  });
+}
+
+type MainAgentControlledCloseoutCampaignDependencies = Parameters<
+  typeof executeJudgeReviewCampaign
+>[1];
+
+export interface MainAgentControlledCloseoutInput {
+  projectRoot: string;
+  contextPath: string;
+  expectedContextHash: string;
+  closureReceiptPath: string;
+  outputRoot: string;
+  judgeConfigPath: string;
+  finalAcceptanceState?: unknown;
+  judgePrompt: {
+    systemPrompt: string;
+    structuredOutputSchema?: Record<string, unknown>;
+  };
+  /** Backward-compatible direct bridge; production callers should use nativeReviewerTransport. */
+  invokeReviewer?: MainAgentControlledCloseoutCampaignDependencies['invokeReviewer'];
+  nativeReviewerTransport?: NativeReviewerTransport;
+  nativeReviewerHost?: string;
+  nativeReviewerTimeoutMs?: number;
+  dispatchNativeReviewer?: NativeReviewerDispatch;
+  executeClaudeCodeCliCommand?: (
+    invocation: ClaudeCodeCliCommandInvocation
+  ) => Promise<ClaudeCodeCliCommandResult>;
+  executeCodexCliCommand?: (
+    invocation: CodexCliCommandInvocation
+  ) => Promise<CodexCliCommandResult>;
+  logicalAttemptOrdinal?: number;
+  resumeFrom?: string | null;
+  resumeFromOutputRoot?: string | null;
+}
+
+export interface MainAgentControlledCloseoutResult {
+  status: 'awaiting_user_acceptance' | 'not_produced' | 'blocked';
+  closeoutAttemptId: string;
+  contextHash: string;
+  candidateBytesHash: string;
+  producerReceipt: Record<string, unknown>;
+  judgeReviewCampaign: Record<string, unknown> | null;
+  effectivePassReceipt: Record<string, unknown> | null;
+  deliveryGateReceipt: Record<string, unknown> | null;
+  judgeStageStatusReceipt: Record<string, unknown> | null;
+  reviewerStageStatusReceipt?: Record<string, unknown> | null;
+  finalJudgeReused?: boolean;
+  receiptPaths: Record<string, string>;
+}
+
+export type MainAgentNativeHostCloseoutInput = Omit<
+  MainAgentControlledCloseoutInput,
+  'invokeReviewer' | 'nativeReviewerTransport' | 'dispatchNativeReviewer'
+> & {
+  nativeReviewerHost?: string;
+  nativeReviewerDispatch?: NativeReviewerDispatch;
+};
+
+/**
+ * Host-facing product entry for the controlled closeout chain.
+ * Native Reviewer routing is owned by the host bridge; Judge provider resolution remains in
+ * `runMainAgentControlledCloseout` and is therefore independent from the host selection.
+ */
+export function runMainAgentControlledCloseoutFromNativeHost(
+  input: MainAgentNativeHostCloseoutInput
+): Promise<MainAgentControlledCloseoutResult> {
+  const dispatch =
+    input.nativeReviewerDispatch ??
+    createNativeReviewerHostBridge({ timeoutMs: input.nativeReviewerTimeoutMs });
+  const nativeReviewerTransport = createNativeReviewerTransport({
+    projectRoot: input.projectRoot,
+    outputRoot: input.outputRoot,
+    host: input.nativeReviewerHost,
+    evidencePaths: [input.contextPath, input.closureReceiptPath],
+    timeoutMs: input.nativeReviewerTimeoutMs,
+    dispatch,
+  });
+  return runMainAgentControlledCloseout({
+    ...input,
+    invokeReviewer: undefined,
+    nativeReviewerTransport,
+    nativeReviewerHost: input.nativeReviewerHost,
+    dispatchNativeReviewer: undefined,
+  });
+}
+
+export interface MainAgentControlledCloseoutCliDependencies {
+  runCloseout?: (
+    input: MainAgentNativeHostCloseoutInput
+  ) => Promise<MainAgentControlledCloseoutResult>;
+}
+
+function controlledCloseoutDispatchPath(
+  projectRoot: string,
+  value: unknown,
+  failureClass: string
+): string {
+  const configured = normalizeText(value);
+  if (!configured) throw new Error(failureClass);
+  const resolved = path.resolve(projectRoot, stripWrappingQuotes(configured));
+  const root = path.resolve(projectRoot);
+  if (resolved !== root && !resolved.startsWith(`${root}${path.sep}`)) {
+    throw new Error('campaign_closeout_path_escape');
+  }
+  return resolved;
+}
+
+function readControlledCloseoutDispatchObject(
+  projectRoot: string,
+  value: unknown,
+  failureClass: string
+): Record<string, unknown> {
+  const sourcePath = controlledCloseoutDispatchPath(projectRoot, value, failureClass);
+  const parsed = readJsonObjectFile(sourcePath);
+  if (!parsed) throw new Error(failureClass);
+  return parsed;
+}
+
+export async function runMainAgentControlledCloseoutCli(
+  projectRoot: string,
+  args: Record<string, string | undefined>,
+  dependencies: MainAgentControlledCloseoutCliDependencies = {}
+): Promise<MainAgentControlledCloseoutResult> {
+  const dispatchPath = controlledCloseoutDispatchPath(
+    projectRoot,
+    args.input,
+    'main_agent_controlled_closeout_dispatch_missing'
+  );
+  const dispatch = readJsonObjectFile(dispatchPath);
+  if (dispatch?.schemaVersion !== 'main-agent-controlled-closeout-dispatch/v1') {
+    throw new Error('main_agent_controlled_closeout_dispatch_invalid');
+  }
+  const judgePromptPath = controlledCloseoutDispatchPath(
+    projectRoot,
+    dispatch.judgePromptPath,
+    'main_agent_judge_system_prompt_missing'
+  );
+  if (!fs.existsSync(judgePromptPath) || !fs.statSync(judgePromptPath).isFile()) {
+    throw new Error('main_agent_judge_system_prompt_missing');
+  }
+  const structuredOutputSchemaPath = normalizeText(dispatch.judgeStructuredOutputSchemaPath);
+  const structuredOutputSchema = structuredOutputSchemaPath
+    ? readControlledCloseoutDispatchObject(
+        projectRoot,
+        structuredOutputSchemaPath,
+        'main_agent_judge_structured_output_schema_invalid'
+      )
+    : undefined;
+  const runCloseout = dependencies.runCloseout ?? runMainAgentControlledCloseoutFromNativeHost;
+  const nativeReviewerTimeoutMs = Number(dispatch.nativeReviewerTimeoutMs);
+  if (
+    dispatch.nativeReviewerTimeoutMs !== undefined &&
+    (!Number.isInteger(nativeReviewerTimeoutMs) || nativeReviewerTimeoutMs < 1)
+  ) {
+    throw new Error('main_agent_native_reviewer_timeout_invalid');
+  }
+  return runCloseout({
+    projectRoot: path.resolve(projectRoot),
+    contextPath: normalizeText(dispatch.contextPath),
+    expectedContextHash: normalizeText(dispatch.expectedContextHash),
+    closureReceiptPath: normalizeText(dispatch.closureReceiptPath),
+    outputRoot: normalizeText(dispatch.outputRoot),
+    judgeConfigPath: normalizeText(dispatch.judgeConfigPath),
+    judgePrompt: {
+      systemPrompt: fs.readFileSync(judgePromptPath, 'utf8'),
+      ...(structuredOutputSchema ? { structuredOutputSchema } : {}),
+    },
+    nativeReviewerHost:
+      normalizeText(dispatch.nativeReviewerHost) || normalizeText(args.host) || 'codex',
+    ...(Number.isInteger(nativeReviewerTimeoutMs) ? { nativeReviewerTimeoutMs } : {}),
+    ...(Number.isInteger(Number(dispatch.logicalAttemptOrdinal))
+      ? { logicalAttemptOrdinal: Number(dispatch.logicalAttemptOrdinal) }
+      : {}),
+    ...(normalizeText(dispatch.resumeFrom)
+      ? { resumeFrom: normalizeText(dispatch.resumeFrom) }
+      : {}),
+    ...(normalizeText(dispatch.resumeFromOutputRoot)
+      ? { resumeFromOutputRoot: normalizeText(dispatch.resumeFromOutputRoot) }
+      : {}),
+  });
+}
+
+export interface MainAgentCloseoutContextRefreshInput {
+  projectRoot: string;
+  sourceContextPath: string;
+  outputContextPath: string;
+  closeoutAttemptId: string;
+  allowedWritePath: string;
+}
+
+export interface MainAgentCloseoutContextRefreshResult {
+  status: 'refreshed';
+  sourceContextPath: string;
+  contextPath: string;
+  closeoutAttemptId: string;
+  contextHash: string;
+  validationMaterialization: {
+    head: string;
+    tree: string;
+    algorithm: 'raw-tracked-v1';
+    hash: string;
+  };
+}
+
+function closeoutProducerSorted(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(closeoutProducerSorted);
+  if (!value || typeof value !== 'object') return value;
+  return Object.keys(value as Record<string, unknown>)
+    .sort()
+    .reduce<Record<string, unknown>>((result, key) => {
+      result[key] = closeoutProducerSorted((value as Record<string, unknown>)[key]);
+      return result;
+    }, {});
+}
+
+function closeoutProducerStableJson(value: unknown): string {
+  return `${JSON.stringify(closeoutProducerSorted(value), null, 2)}\n`;
+}
+
+function closeoutProducerHash(value: unknown): string {
+  return `sha256:${crypto
+    .createHash('sha256')
+    .update(closeoutProducerStableJson(value), 'utf8')
+    .digest('hex')}`;
+}
+
+export function refreshMainAgentCloseoutContext(
+  input: MainAgentCloseoutContextRefreshInput
+): MainAgentCloseoutContextRefreshResult {
+  const projectRoot = path.resolve(input.projectRoot);
+  const sourceContextPath = path.resolve(projectRoot, input.sourceContextPath);
+  const outputContextPath = path.resolve(projectRoot, input.outputContextPath);
+  const closeoutAttemptId = normalizeText(input.closeoutAttemptId);
+  const allowedWritePath = normalizeText(input.allowedWritePath);
+  if (!closeoutAttemptId || !allowedWritePath) {
+    throw new Error('campaign_closeout_context_mismatch');
+  }
+  const sourceContext = readMainAgentCloseoutJson(
+    sourceContextPath,
+    'campaign_closeout_context_mismatch'
+  );
+  const sourceContextHash = requireMainAgentCloseoutHash(
+    sourceContext.contextHash,
+    'campaign_closeout_context_mismatch'
+  );
+  const { contextHash: _sourceContextHash, ...sourceContextCore } = sourceContext;
+  if (closeoutProducerHash(sourceContextCore) !== sourceContextHash) {
+    throw new Error('campaign_closeout_context_mismatch');
+  }
+  const packageBinding = recordObject(sourceContext.package);
+  const manifestPath = resolveMainAgentCloseoutPath(
+    projectRoot,
+    packageBinding.manifestPath,
+    'campaign_closeout_path_escape'
+  );
+  const manifest = readMainAgentCloseoutJson(
+    manifestPath,
+    'campaign_closeout_compile_binding_mismatch'
+  );
+  const repositoryRoot = path.resolve(projectRoot, normalizeText(manifest.repositoryRoot));
+  if (!fs.existsSync(repositoryRoot) || !fs.statSync(repositoryRoot).isDirectory()) {
+    throw new Error('campaign_closeout_path_escape');
+  }
+  const producerPath = path.resolve(
+    projectRoot,
+    '_bmad/skills/goal-subcontract-execution-package-generator/scripts/close-completed-campaign.js'
+  );
+  let captureRawTrackedMaterialization: (root: string) => {
+    head: string;
+    tree: string;
+    hash: string;
+  };
+  try {
+    const producer = requireCommonJs(producerPath) as Record<string, unknown>;
+    if (typeof producer.captureRawTrackedMaterialization !== 'function') {
+      throw new Error('campaign_closeout_context_mismatch');
+    }
+    captureRawTrackedMaterialization =
+      producer.captureRawTrackedMaterialization as typeof captureRawTrackedMaterialization;
+  } catch (error) {
+    if (error instanceof Error && error.message === 'campaign_closeout_context_mismatch') {
+      throw error;
+    }
+    throw new Error('campaign_closeout_context_mismatch');
+  }
+  const materialization = captureRawTrackedMaterialization(repositoryRoot);
+  const compileReceipt = recordObject(sourceContext.compileReceipt);
+  const validationMaterialization = {
+    ...recordObject(sourceContext.validationMaterialization),
+    head: materialization.head,
+    tree: materialization.tree,
+    algorithm: 'raw-tracked-v1' as const,
+    hash: materialization.hash,
+  };
+  const refreshedCore = {
+    ...sourceContextCore,
+    closeoutAttemptId,
+    allowedWritePaths: [allowedWritePath],
+    allowedWritePathSetHash: closeoutProducerHash([allowedWritePath]),
+    compileReceipt: {
+      ...compileReceipt,
+      validationHead: materialization.head,
+      validationTree: materialization.tree,
+    },
+    validationMaterialization,
+  };
+  const refreshedContext = {
+    ...refreshedCore,
+    contextHash: closeoutProducerHash(refreshedCore),
+  };
+  writeJsonCreateOnlyOrEqual(
+    outputContextPath,
+    refreshedContext,
+    'campaign_closeout_target_exists'
+  );
+  return {
+    status: 'refreshed',
+    sourceContextPath,
+    contextPath: outputContextPath,
+    closeoutAttemptId,
+    contextHash: refreshedContext.contextHash,
+    validationMaterialization,
+  };
+}
+
+function resolveMainAgentCloseoutPath(root: string, value: unknown, code: string): string {
+  if (typeof value !== 'string' || value.trim().length === 0) throw new Error(code);
+  const resolved = path.resolve(root, value);
+  const relative = path.relative(root, resolved);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) throw new Error(code);
+  return resolved;
+}
+
+function requireMainAgentCloseoutHash(value: unknown, code: string): string {
+  const normalized = normalizeText(value);
+  if (!/^sha256:[a-f0-9]{64}$/u.test(normalized)) throw new Error(code);
+  return normalized;
+}
+
+function readMainAgentCloseoutJson(filePath: string, code: string): Record<string, unknown> {
+  try {
+    const value = JSON.parse(fs.readFileSync(filePath, 'utf8')) as unknown;
+    return recordObject(value);
+  } catch {
+    throw new Error(code);
+  }
+}
+
+function validateMainAgentCloseoutSource(input: {
+  projectRoot: string;
+  contextPath: string;
+  expectedContextHash: string;
+  closureReceiptPath: string;
+}) {
+  const context = readMainAgentCloseoutJson(
+    input.contextPath,
+    'campaign_closeout_context_mismatch'
+  );
+  const contextHash = requireMainAgentCloseoutHash(
+    context.contextHash,
+    'campaign_closeout_context_mismatch'
+  );
+  if (contextHash !== input.expectedContextHash) {
+    throw new Error('campaign_closeout_context_mismatch');
+  }
+  const { contextHash: _contextHash, ...contextCore } = context;
+  if (closeoutProducerHash(contextCore) !== contextHash) {
+    throw new Error('campaign_closeout_context_mismatch');
+  }
+  const closureReceipt = readMainAgentCloseoutJson(
+    input.closureReceiptPath,
+    'main_agent_goal_task_report_provenance_mismatch'
+  );
+  const closureReceiptHash = requireMainAgentCloseoutHash(
+    closureReceipt.receiptHash,
+    'main_agent_goal_task_report_provenance_mismatch'
+  );
+  const { receiptHash: _receiptHash, ...closureCore } = closureReceipt;
+  if (
+    closeoutProducerHash(closureCore) !== closureReceiptHash ||
+    closureReceipt.status !== 'campaign_closed' ||
+    closureReceipt.contextHash !== contextHash ||
+    closureReceipt.closeoutAttemptId !== context.closeoutAttemptId
+  ) {
+    throw new Error('main_agent_goal_task_report_provenance_mismatch');
+  }
+  const candidatePath = resolveMainAgentCloseoutPath(
+    path.dirname(input.closureReceiptPath),
+    closureReceipt.taskReportCandidatePath,
+    'main_agent_goal_task_report_provenance_mismatch'
+  );
+  if (
+    !fs.existsSync(candidatePath) ||
+    !fs.statSync(candidatePath).isFile() ||
+    sha256File(candidatePath) !== closureReceipt.taskReportArtifactHash
+  ) {
+    throw new Error('main_agent_goal_task_report_provenance_mismatch');
+  }
+  const campaignReportPath = resolveMainAgentCloseoutPath(
+    path.dirname(input.closureReceiptPath),
+    closureReceipt.campaignReportPath,
+    'main_agent_goal_task_report_provenance_mismatch'
+  );
+  if (!fs.existsSync(campaignReportPath) || !fs.statSync(campaignReportPath).isFile()) {
+    throw new Error('main_agent_goal_task_report_provenance_mismatch');
+  }
+  const packageBinding = recordObject(context.package);
+  const campaignBinding = recordObject(context.campaign);
+  const materialization = recordObject(context.validationMaterialization);
+  const campaignId = normalizeText(packageBinding.packageId);
+  const campaignLineageKey = requireMainAgentCloseoutHash(
+    campaignBinding.activationHash,
+    'campaign_closeout_context_mismatch'
+  );
+  const currentImplementationHash = requireMainAgentCloseoutHash(
+    materialization.hash,
+    'campaign_closeout_context_mismatch'
+  );
+  const currentEvidenceHash = controlledHash(
+    controlledStableJson({
+      childClosureSetHash: context.childClosureSetHash,
+      finalValidationEvidenceSetHash: context.finalValidationEvidenceSetHash,
+      collectionVerificationSetHash: context.collectionVerificationSetHash,
+    })
+  );
+  if (!campaignId) throw new Error('campaign_closeout_context_mismatch');
+  return {
+    context,
+    closureReceipt,
+    contextHash,
+    closureReceiptHash,
+    candidatePath,
+    candidateBytesHash: requireMainAgentCloseoutHash(
+      closureReceipt.taskReportArtifactHash,
+      'main_agent_goal_task_report_provenance_mismatch'
+    ),
+    campaignReportPath,
+    campaignId,
+    campaignLineageKey,
+    currentImplementationHash,
+    currentEvidenceHash,
+  };
+}
+
+function mapMainAgentNormalizedFinalJudgeResponse(response: RequirementsContractJudgeJsonRecord) {
+  const sourceLedgerHash = requireMainAgentCloseoutHash(
+    response.responseHash,
+    'judge_review_campaign_final_judge_response_invalid'
+  );
+  const findingIds = Array.isArray(response.findings)
+    ? response.findings
+        .map((finding) =>
+          finding && typeof finding === 'object' && !Array.isArray(finding)
+            ? normalizeText((finding as Record<string, unknown>).id)
+            : ''
+        )
+        .filter(Boolean)
+    : [];
+  if (response.decision === 'pass') {
+    return {
+      sourceLedgerHash,
+      auditDecision: 'pass' as const,
+      verdict: 'coverage_satisfied' as const,
+      findingIds,
+    };
+  }
+  if (response.decision === 'block') {
+    return {
+      sourceLedgerHash,
+      auditDecision: 'fail' as const,
+      verdict: 'findings_present' as const,
+      findingIds,
+    };
+  }
+  return {
+    sourceLedgerHash,
+    auditDecision: 'fail' as const,
+    verdict: 'blocked' as const,
+    findingIds,
+  };
+}
+
+function mainAgentCloseoutProviderErrorCode(error: unknown): string {
+  const source = recordObject(error);
+  const status = Number(source.statusCode ?? source.status);
+  if ([401, 403, 429, 503].includes(status)) return `HTTP_${status}`;
+  const code = normalizeText(source.sourceErrorCode ?? source.code).toUpperCase();
+  const message = `${code} ${error instanceof Error ? error.message : String(error)}`;
+  if (
+    /PROVIDER[_ -]?NOT[_ -]?CONFIGURED|PROVIDER[_ -]?MISSING|ACTIVE[_ -]?REF|ENOENT|CREDENTIAL[_ -]?MISSING|RUNTIME[_ -]?MISSING/iu.test(
+      message
+    )
+  ) {
+    return 'PROVIDER_NOT_CONFIGURED';
+  }
+  if (/NATIVE[_ -]?REVIEWER[_ -]?TRANSPORT[_ -]?NOT[_ -]?CONFIGURED/iu.test(message)) {
+    return 'NATIVE_REVIEWER_TRANSPORT_NOT_CONFIGURED';
+  }
+  if (/ETIMEDOUT|TIMEOUT|TIMED OUT|ABORTED/iu.test(message)) return 'PROVIDER_TIMEOUT';
+  if (/EMPTY[_ -]?RESPONSE/iu.test(message)) return 'EMPTY_RESPONSE';
+  if (/SCHEMA[_ -]?INVALID|INVALID[_ -]?SCHEMA|NORMALIZED_RESPONSE_INVALID/iu.test(message)) {
+    return 'SCHEMA_INVALID';
+  }
+  return code || 'PROVIDER_EXECUTION_ERROR';
+}
+
+function writeMainAgentControlledCloseoutReceipt(
+  targetPath: string,
+  payload: Record<string, unknown>
+): Record<string, unknown> {
+  writeJsonCreateOnlyOrEqual(
+    targetPath,
+    payload,
+    'main_agent_goal_task_report_provenance_mismatch'
+  );
+  return payload;
+}
+
+export function materializeMainAgentControlledCloseoutAcceptanceRequest(input: {
+  projectRoot: string;
+  markerPath: string;
+  candidatePath: string;
+  outputPath?: string;
+  finalTaskReportPath?: string;
+  completionReceiptPath?: string;
+  confirmationPagePath?: string;
+}) {
+  const projectRoot = path.resolve(input.projectRoot);
+  const markerPath = controlledGoalCloseoutPath(projectRoot, input.markerPath);
+  const candidatePath = controlledGoalCloseoutPath(projectRoot, input.candidatePath);
+  const outputPath = controlledGoalCloseoutPath(
+    projectRoot,
+    input.outputPath ?? path.join(path.dirname(markerPath), 'closeout-acceptance-request.json')
+  );
+  const finalTaskReportPath = controlledGoalCloseoutPath(
+    projectRoot,
+    input.finalTaskReportPath ?? path.join(path.dirname(candidatePath), 'task-report.json')
+  );
+  const completionReceiptPath = controlledGoalCloseoutPath(
+    projectRoot,
+    input.completionReceiptPath ??
+      path.join(path.dirname(candidatePath), 'task-report.completion-receipt.json')
+  );
+  const confirmationPagePath = controlledGoalCloseoutPath(
+    projectRoot,
+    input.confirmationPagePath ??
+      path.join(path.dirname(outputPath), 'confirmation', 'closeout-confirmation-current.html')
+  );
+  const marker = readJsonObjectFile(markerPath);
+  const producerReceipt = recordObject(marker?.producerReceipt);
+  const campaign = recordObject(marker?.judgeReviewCampaign);
+  const effectivePass = recordObject(marker?.effectivePassReceipt);
+  const deliveryGate = recordObject(marker?.deliveryGateReceipt);
+  const closeoutAttemptId = normalizeText(marker?.closeoutAttemptId);
+  const contextHash = normalizeText(marker?.contextHash);
+  const taskReportArtifactHash = normalizeText(marker?.candidateBytesHash);
+  const provenanceHashes = {
+    contextHash,
+    compileReceiptHash: normalizeText(producerReceipt.compileReceiptHash),
+    childClosureSetHash: normalizeText(producerReceipt.childClosureSetHash),
+    campaignReportHash: normalizeText(producerReceipt.campaignReportHash),
+    closureReceiptHash: normalizeText(producerReceipt.receiptHash),
+    judgeReviewCampaignHash: normalizeText(campaign.aggregateHash),
+    effectivePassReceiptHash: normalizeText(effectivePass.effectivePassReceiptHash),
+    deliveryCloseoutGateReceiptHash: normalizeText(deliveryGate.receiptHash),
+  };
+  const candidateRoot = path.dirname(candidatePath);
+  if (
+    marker?.status !== 'awaiting_user_acceptance' ||
+    !closeoutAttemptId ||
+    producerReceipt.status !== 'campaign_closed' ||
+    normalizeText(producerReceipt.closeoutAttemptId) !== closeoutAttemptId ||
+    normalizeText(campaign.closeoutAttemptId) !== closeoutAttemptId ||
+    normalizeText(deliveryGate.closeoutAttemptId) !== closeoutAttemptId ||
+    normalizeText(producerReceipt.contextHash) !== contextHash ||
+    normalizeText(producerReceipt.taskReportArtifactHash) !== taskReportArtifactHash ||
+    normalizeText(campaign.candidateBytesHash) !== taskReportArtifactHash ||
+    effectivePass.effectivePass !== true ||
+    deliveryGate.status !== 'awaiting_user_acceptance' ||
+    Object.values(provenanceHashes).some((value) => !/^sha256:[a-f0-9]{64}$/u.test(value)) ||
+    !/^sha256:[a-f0-9]{64}$/u.test(taskReportArtifactHash) ||
+    !fs.existsSync(candidatePath) ||
+    sha256File(candidatePath) !== taskReportArtifactHash ||
+    path.dirname(finalTaskReportPath) !== candidateRoot ||
+    path.dirname(completionReceiptPath) !== candidateRoot ||
+    fs.existsSync(finalTaskReportPath) ||
+    fs.existsSync(completionReceiptPath)
+  ) {
+    throw new Error('main_agent_goal_task_report_provenance_mismatch');
+  }
+  const requestPayload = {
+    schemaVersion: 'main-agent-controlled-closeout-acceptance-request/v1' as const,
+    status: 'awaiting_user_acceptance' as const,
+    closeoutAttemptId,
+    markerPath,
+    contextHash,
+    taskReportCandidatePath: candidatePath,
+    taskReportArtifactHash,
+    finalTaskReportPath,
+    completionReceiptPath,
+    provenanceHashes,
+  };
+  const acceptanceRequestHash = controlledHash(controlledStableJson(requestPayload));
+  const confirmationText = [
+    '确认当前 Goal closeout 并关闭记录',
+    `closeoutAttemptId=${closeoutAttemptId}`,
+    `acceptanceRequestHash=${acceptanceRequestHash}`,
+  ].join('\n');
+  const rejectionConfirmationText = [
+    '拒绝当前 Goal closeout 并保持阻塞',
+    `closeoutAttemptId=${closeoutAttemptId}`,
+    `acceptanceRequestHash=${acceptanceRequestHash}`,
+  ].join('\n');
+  const request = Object.freeze({
+    ...requestPayload,
+    acceptanceRequestHash,
+    confirmationText,
+    rejectionConfirmationText,
+  });
+  writeMainAgentControlledCloseoutReceipt(outputPath, request);
+  materializeControlledCloseoutConfirmationPage({
+    outputPath: confirmationPagePath,
+    closeoutAttemptId,
+    acceptanceRequestHash,
+    taskReportArtifactHash,
+    confirmationText,
+    rejectionConfirmationText,
+  });
+  return request;
+}
+
+function readReusableFinalJudgeResult(value: unknown): FinalJudgeProducedResult {
+  const result = recordObject(value);
+  const sourceLedgerHash = normalizeText(result.sourceLedgerHash);
+  const auditDecision = normalizeText(result.auditDecision);
+  const verdict = normalizeText(result.verdict);
+  const findingIds = Array.isArray(result.findingIds)
+    ? result.findingIds.map((item) => normalizeText(item)).filter(Boolean)
+    : [];
+  if (
+    !/^sha256:[a-f0-9]{64}$/u.test(sourceLedgerHash) ||
+    !['pass', 'fail'].includes(auditDecision) ||
+    !['coverage_satisfied', 'findings_present', 'insufficient_evidence', 'blocked'].includes(
+      verdict
+    )
+  ) {
+    throw new Error('main_agent_goal_task_report_provenance_mismatch');
+  }
+  return {
+    sourceLedgerHash,
+    auditDecision: auditDecision as 'pass' | 'fail',
+    verdict: verdict as FinalJudgeProducedResult['verdict'],
+    findingIds,
+  };
+}
+
+export async function runMainAgentControlledCloseout(
+  input: MainAgentControlledCloseoutInput
+): Promise<MainAgentControlledCloseoutResult> {
+  if (!normalizeText(input.judgePrompt?.systemPrompt)) {
+    throw new Error('main_agent_judge_system_prompt_missing');
+  }
+  const projectRoot = path.resolve(input.projectRoot);
+  const contextPath = resolveMainAgentCloseoutPath(
+    projectRoot,
+    input.contextPath,
+    'campaign_closeout_context_mismatch'
+  );
+  const closureReceiptPath = resolveMainAgentCloseoutPath(
+    projectRoot,
+    input.closureReceiptPath,
+    'main_agent_goal_task_report_provenance_mismatch'
+  );
+  const outputRoot = resolveMainAgentCloseoutPath(
+    projectRoot,
+    input.outputRoot,
+    'main_agent_goal_task_report_provenance_mismatch'
+  );
+  const source = validateMainAgentCloseoutSource({
+    projectRoot,
+    contextPath,
+    expectedContextHash: input.expectedContextHash,
+    closureReceiptPath,
+  });
+  const closeoutAttemptId = normalizeText(source.context.closeoutAttemptId);
+  const receiptPaths = {
+    input: path.join(outputRoot, 'judge-review-campaign-input.json'),
+    reviewer: path.join(outputRoot, 'reviewer-receipt.json'),
+    finalJudge: path.join(outputRoot, 'final-judge-receipt.json'),
+    aggregate: path.join(outputRoot, 'judge-review-campaign-aggregate.json'),
+    ingest: path.join(outputRoot, 'judge-review-campaign-ingest.json'),
+    effectivePass: path.join(outputRoot, 'final-acceptance-effective-pass-receipt.json'),
+    finalJudgeResult: path.join(outputRoot, 'final-judge-reuse-binding.json'),
+    reviewerStageStatus: path.join(outputRoot, 'reviewer-stage-status-receipt.json'),
+    stageStatus: path.join(outputRoot, 'judge-stage-status-receipt.json'),
+    deliveryGate: path.join(outputRoot, 'delivery-closeout-gate-receipt.json'),
+    acceptanceRequest: path.join(outputRoot, 'closeout-acceptance-request.json'),
+    confirmationPage: path.join(
+      outputRoot,
+      'confirmation',
+      'closeout-confirmation-current.html'
+    ),
+    marker: path.join(outputRoot, 'main-agent-controlled-closeout.json'),
+  };
+  if (!closeoutAttemptId) throw new Error('campaign_closeout_context_mismatch');
+  if (fs.existsSync(receiptPaths.marker)) {
+    const existing = readMainAgentCloseoutJson(
+      receiptPaths.marker,
+      'main_agent_goal_task_report_provenance_mismatch'
+    ) as MainAgentControlledCloseoutResult;
+    if (
+      existing.status === 'awaiting_user_acceptance' &&
+      existing.closeoutAttemptId === closeoutAttemptId &&
+      existing.contextHash === source.contextHash &&
+      existing.candidateBytesHash === source.candidateBytesHash
+    ) {
+      materializeMainAgentControlledCloseoutAcceptanceRequest({
+        projectRoot,
+        markerPath: receiptPaths.marker,
+        candidatePath: source.candidatePath,
+        outputPath: receiptPaths.acceptanceRequest,
+        confirmationPagePath: receiptPaths.confirmationPage,
+      });
+      return {
+        ...existing,
+        receiptPaths: {
+          ...existing.receiptPaths,
+          confirmationPage: receiptPaths.confirmationPage,
+        },
+      };
+    }
+    throw new Error('main_agent_judge_review_campaign_duplicate_attempt');
+  }
+  if (fs.existsSync(outputRoot)) {
+    throw new Error('main_agent_judge_review_campaign_duplicate_attempt');
+  }
+  let reusedFinalJudge:
+    | { result: FinalJudgeProducedResult; receipt: Record<string, unknown> }
+    | undefined;
+  if (input.resumeFromOutputRoot) {
+    const priorOutputRoot = resolveMainAgentCloseoutPath(
+      projectRoot,
+      input.resumeFromOutputRoot,
+      'main_agent_goal_task_report_provenance_mismatch'
+    );
+    const priorMarker = readMainAgentCloseoutJson(
+      path.join(priorOutputRoot, 'main-agent-controlled-closeout.json'),
+      'main_agent_goal_task_report_provenance_mismatch'
+    );
+    const reviewerStage = recordObject(priorMarker.reviewerStageStatusReceipt);
+    const binding = readMainAgentCloseoutJson(
+      path.join(priorOutputRoot, 'final-judge-reuse-binding.json'),
+      'main_agent_goal_task_report_provenance_mismatch'
+    );
+    if (
+      priorMarker.status !== 'not_produced' ||
+      normalizeText(priorMarker.closeoutAttemptId) !== closeoutAttemptId ||
+      normalizeText(priorMarker.contextHash) !== source.contextHash ||
+      normalizeText(priorMarker.candidateBytesHash) !== source.candidateBytesHash ||
+      reviewerStage.actorClass !== 'bounded_code_reviewer' ||
+      reviewerStage.auditDecision !== 'not_produced' ||
+      normalizeText(reviewerStage.receiptHash) !== normalizeText(input.resumeFrom) ||
+      binding.schemaVersion !== 'main-agent-final-judge-reuse-binding/v1' ||
+      normalizeText(binding.closeoutAttemptId) !== closeoutAttemptId
+    ) {
+      throw new Error('main_agent_goal_task_report_provenance_mismatch');
+    }
+    reusedFinalJudge = {
+      result: readReusableFinalJudgeResult(binding.result),
+      receipt: recordObject(binding.receipt),
+    };
+  } else if (input.resumeFrom) {
+    throw new Error('main_agent_goal_task_report_provenance_mismatch');
+  }
+  fs.mkdirSync(outputRoot, { recursive: false });
+
+  const configured = readGovernanceRemediationConfig(projectRoot, input.judgeConfigPath);
+  const configuredRuntime = configured.judgeRuntime;
+  const configuredProviderRef =
+    normalizeText(configuredRuntime?.activeProviderRef) || 'unconfigured-provider';
+  const maxAttempts = Math.max(
+    1,
+    Number(configuredRuntime?.providers?.[configuredProviderRef]?.requestPolicy.maximumAttempts) ||
+      1
+  );
+  const logicalAttemptOrdinal = input.logicalAttemptOrdinal ?? 1;
+  const resumeFrom = input.resumeFrom ?? null;
+  if (
+    !Number.isInteger(logicalAttemptOrdinal) ||
+    logicalAttemptOrdinal < 1 ||
+    logicalAttemptOrdinal > maxAttempts
+  ) {
+    throw new Error('main_agent_goal_task_report_provenance_mismatch');
+  }
+  let prepared: Awaited<ReturnType<typeof prepareRequirementsContractJudgeInvocation>>;
+  try {
+    prepared = await prepareRequirementsContractJudgeInvocation({
+      projectRoot,
+      config: input.judgeConfigPath,
+      executeClaudeCodeCliCommand: input.executeClaudeCodeCliCommand,
+      executeCodexCliCommand: input.executeCodexCliCommand,
+    });
+  } catch (error) {
+    const stage = createJudgeStageStatusReceipt({
+      closeoutAttemptId,
+      providerRef: configuredProviderRef,
+      logicalAttemptOrdinal,
+      maxAttempts,
+      sourceErrorCode: mainAgentCloseoutProviderErrorCode(error),
+      resumeFrom,
+    });
+    writeMainAgentControlledCloseoutReceipt(receiptPaths.stageStatus, stage);
+    const blocked: MainAgentControlledCloseoutResult = {
+      status: 'not_produced',
+      closeoutAttemptId,
+      contextHash: source.contextHash,
+      candidateBytesHash: source.candidateBytesHash,
+      producerReceipt: source.closureReceipt,
+      judgeReviewCampaign: null,
+      effectivePassReceipt: null,
+      deliveryGateReceipt: null,
+      judgeStageStatusReceipt: stage,
+      reviewerStageStatusReceipt: null,
+      finalJudgeReused: false,
+      receiptPaths,
+    };
+    writeMainAgentControlledCloseoutReceipt(receiptPaths.marker, blocked);
+    return blocked;
+  }
+
+  let invokeReviewer = input.invokeReviewer;
+  if (!invokeReviewer) {
+    try {
+      if (!input.nativeReviewerTransport && !input.dispatchNativeReviewer) {
+        throw new Error('native_reviewer_transport_not_configured');
+      }
+      const transport =
+        input.nativeReviewerTransport ??
+        createNativeReviewerTransport({
+          projectRoot,
+          outputRoot,
+          host: input.nativeReviewerHost,
+          timeoutMs: input.nativeReviewerTimeoutMs,
+          dispatch: input.dispatchNativeReviewer,
+        });
+      invokeReviewer = (intent) => transport.invoke({ intent });
+    } catch (error) {
+      const stage = createJudgeStageStatusReceipt({
+        closeoutAttemptId,
+        providerRef: prepared.providerRef,
+        actorClass: 'bounded_code_reviewer',
+        logicalAttemptOrdinal,
+        maxAttempts,
+        sourceErrorCode: mainAgentCloseoutProviderErrorCode(error),
+        resumeFrom,
+      });
+      writeMainAgentControlledCloseoutReceipt(receiptPaths.reviewerStageStatus, stage);
+      const blocked: MainAgentControlledCloseoutResult = {
+        status: 'not_produced',
+        closeoutAttemptId,
+        contextHash: source.contextHash,
+        candidateBytesHash: source.candidateBytesHash,
+        producerReceipt: source.closureReceipt,
+        judgeReviewCampaign: null,
+        effectivePassReceipt: null,
+        deliveryGateReceipt: null,
+        reviewerStageStatusReceipt: stage,
+        judgeStageStatusReceipt: null,
+        finalJudgeReused: false,
+        receiptPaths,
+      };
+      writeMainAgentControlledCloseoutReceipt(receiptPaths.marker, blocked);
+      return blocked;
+    }
+  }
+
+  const campaignInput = compileRequirementsContractJudgeReviewCampaignInput({
+    campaignId: source.campaignId,
+    campaignLineageKey: source.campaignLineageKey,
+    closureReceiptHash: source.closureReceiptHash,
+    candidateBytesHash: source.candidateBytesHash,
+    currentImplementationHash: source.currentImplementationHash,
+    currentEvidenceHash: source.currentEvidenceHash,
+    initialReviewAttemptKey: controlledHash(
+      controlledStableJson({ closeoutAttemptId, contextHash: source.contextHash })
+    ),
+    providerRef: prepared.providerRef,
+  });
+  writeMainAgentControlledCloseoutReceipt(
+    receiptPaths.input,
+    campaignInput as unknown as Record<string, unknown>
+  );
+  const requestPath = path.join(outputRoot, 'final-judge-request.json');
+  const finalJudgeOutputRoot = path.join(
+    outputRoot,
+    'judge',
+    'final-acceptance-judge',
+    `attempt-${logicalAttemptOrdinal}`
+  );
+  const request = {
+    schemaVersion: 'main-agent-controlled-closeout-judge-request/v1',
+    role: 'final_acceptance_judge',
+    judgeRole: 'final_acceptance_judge',
+    actorClass: 'final_acceptance_judge',
+    closeoutAttemptId,
+    campaignId: source.campaignId,
+    campaignLineageKey: source.campaignLineageKey,
+    contextHash: source.contextHash,
+    closureReceiptHash: source.closureReceiptHash,
+    candidateBytesHash: source.candidateBytesHash,
+    currentImplementationHash: source.currentImplementationHash,
+    currentEvidenceHash: source.currentEvidenceHash,
+    blindInput: {
+      campaignId: campaignInput.campaignId,
+      campaignLineageKey: campaignInput.campaignLineageKey,
+      closureReceiptHash: campaignInput.closureReceiptHash,
+      candidateBytesHash: campaignInput.candidateBytesHash,
+      currentImplementationHash: campaignInput.currentImplementationHash,
+      currentEvidenceHash: campaignInput.currentEvidenceHash,
+      initialReviewAttemptKey: campaignInput.initialReviewAttemptKey,
+    },
+    contextPath: path.relative(projectRoot, contextPath).replace(/\\/gu, '/'),
+    closureReceiptPath: path.relative(projectRoot, closureReceiptPath).replace(/\\/gu, '/'),
+    candidatePath: path.relative(projectRoot, source.candidatePath).replace(/\\/gu, '/'),
+    campaignReportPath: path.relative(projectRoot, source.campaignReportPath).replace(/\\/gu, '/'),
+    evidencePath: [
+      contextPath,
+      closureReceiptPath,
+      source.candidatePath,
+      source.campaignReportPath,
+    ].map((value) => path.relative(projectRoot, value).replace(/\\/gu, '/')),
+  };
+  writeMainAgentControlledCloseoutReceipt(requestPath, request);
+  const invokeFinalJudge = async (
+    intent: Parameters<MainAgentControlledCloseoutCampaignDependencies['invokeFinalJudge']>[0]
+  ) => {
+    const response = await prepared.invoke({
+      systemPrompt: input.judgePrompt.systemPrompt,
+      request: { ...request, intent },
+      executionContext: {
+        projectRoot,
+        requestPath: path.relative(projectRoot, requestPath).replace(/\\/gu, '/'),
+        outputDir: path.relative(projectRoot, finalJudgeOutputRoot).replace(/\\/gu, '/'),
+      },
+      ...(input.judgePrompt.structuredOutputSchema
+        ? { structuredOutputSchema: input.judgePrompt.structuredOutputSchema }
+        : {}),
+    });
+    return mapMainAgentNormalizedFinalJudgeResponse(response);
+  };
+  let campaignResult: Awaited<ReturnType<typeof runMainAgentJudgeReviewCampaign>>;
+  try {
+    campaignResult = await runMainAgentJudgeReviewCampaign(
+      {
+        campaignInput: campaignInput as RequirementsContractJudgeReviewCampaignInputV2,
+        closeoutAttemptId,
+        logicalAttemptOrdinal,
+        maxAttempts,
+        resumeFrom,
+        ...(reusedFinalJudge ? { reusedFinalJudge } : {}),
+      },
+      {
+        invokeReviewer: invokeReviewer!,
+        invokeFinalJudge,
+      }
+    );
+  } catch (error) {
+    const stage = createJudgeStageStatusReceipt({
+      closeoutAttemptId,
+      providerRef: prepared.providerRef,
+      logicalAttemptOrdinal,
+      maxAttempts,
+      sourceErrorCode: mainAgentCloseoutProviderErrorCode(error),
+      resumeFrom,
+    });
+    writeMainAgentControlledCloseoutReceipt(receiptPaths.stageStatus, stage);
+    const blocked: MainAgentControlledCloseoutResult = {
+      status: 'not_produced',
+      closeoutAttemptId,
+      contextHash: source.contextHash,
+      candidateBytesHash: source.candidateBytesHash,
+      producerReceipt: source.closureReceipt,
+      judgeReviewCampaign: null,
+      effectivePassReceipt: null,
+      deliveryGateReceipt: null,
+      judgeStageStatusReceipt: stage,
+      receiptPaths,
+    };
+    writeMainAgentControlledCloseoutReceipt(receiptPaths.marker, blocked);
+    return blocked;
+  }
+  if (campaignResult.status === 'not_produced') {
+    const reviewerStage = campaignResult.reviewerStageStatusReceipt ?? null;
+    const judgeStage = campaignResult.judgeStageStatusReceipt ?? null;
+    const stage =
+      reviewerStage ??
+      judgeStage ??
+      createJudgeStageStatusReceipt({
+        closeoutAttemptId,
+        providerRef: prepared.providerRef,
+        logicalAttemptOrdinal,
+        maxAttempts,
+        sourceErrorCode: 'PROVIDER_EXECUTION_ERROR',
+        resumeFrom,
+      });
+    writeMainAgentControlledCloseoutReceipt(
+      reviewerStage ? receiptPaths.reviewerStageStatus : receiptPaths.stageStatus,
+      stage
+    );
+    if (campaignResult.reviewerReceipt) {
+      writeMainAgentControlledCloseoutReceipt(
+        receiptPaths.reviewer,
+        campaignResult.reviewerReceipt as unknown as Record<string, unknown>
+      );
+    }
+    if (campaignResult.finalJudgeReceipt) {
+      const finalJudgeReceipt = campaignResult.finalJudgeReceipt as unknown as Record<
+        string,
+        unknown
+      >;
+      writeMainAgentControlledCloseoutReceipt(receiptPaths.finalJudge, finalJudgeReceipt);
+      const finalJudge = recordObject(campaignResult.finalJudge);
+      if (finalJudge.auditDecision !== 'not_produced') {
+        writeMainAgentControlledCloseoutReceipt(receiptPaths.finalJudgeResult, {
+          schemaVersion: 'main-agent-final-judge-reuse-binding/v1',
+          closeoutAttemptId,
+          result: finalJudge,
+          receipt: finalJudgeReceipt,
+        });
+      }
+    }
+    const blocked: MainAgentControlledCloseoutResult = {
+      status: 'not_produced',
+      closeoutAttemptId,
+      contextHash: source.contextHash,
+      candidateBytesHash: source.candidateBytesHash,
+      producerReceipt: source.closureReceipt,
+      judgeReviewCampaign: null,
+      effectivePassReceipt: null,
+      deliveryGateReceipt: null,
+      reviewerStageStatusReceipt: reviewerStage,
+      judgeStageStatusReceipt: judgeStage ?? (reviewerStage ? null : stage),
+      finalJudgeReused: campaignResult.finalJudgeReused,
+      receiptPaths,
+    };
+    writeMainAgentControlledCloseoutReceipt(receiptPaths.marker, blocked);
+    return blocked;
+  }
+  if (!campaignResult.aggregate) {
+    throw new Error('judge_review_campaign_controller_invalid');
+  }
+  const aggregate = campaignResult.aggregate as unknown as Record<string, unknown>;
+  const judgeReviewCampaign = { ...aggregate, closeoutAttemptId };
+  if (!campaignResult.effectivePassReceipt || campaignResult.status !== 'effective_pass_ready') {
+    if (campaignResult.reviewerReceipt) {
+      writeMainAgentControlledCloseoutReceipt(
+        receiptPaths.reviewer,
+        campaignResult.reviewerReceipt as unknown as Record<string, unknown>
+      );
+    }
+    if (campaignResult.finalJudgeReceipt) {
+      writeMainAgentControlledCloseoutReceipt(
+        receiptPaths.finalJudge,
+        campaignResult.finalJudgeReceipt as unknown as Record<string, unknown>
+      );
+    }
+    writeMainAgentControlledCloseoutReceipt(receiptPaths.aggregate, aggregate);
+    writeMainAgentControlledCloseoutReceipt(receiptPaths.ingest, judgeReviewCampaign);
+    const blocked: MainAgentControlledCloseoutResult = {
+      status: 'blocked',
+      closeoutAttemptId,
+      contextHash: source.contextHash,
+      candidateBytesHash: source.candidateBytesHash,
+      producerReceipt: source.closureReceipt,
+      judgeReviewCampaign,
+      effectivePassReceipt: null,
+      deliveryGateReceipt: null,
+      judgeStageStatusReceipt: null,
+      reviewerStageStatusReceipt: null,
+      finalJudgeReused: campaignResult.finalJudgeReused,
+      receiptPaths,
+    };
+    writeMainAgentControlledCloseoutReceipt(receiptPaths.marker, blocked);
+    return blocked;
+  }
+  const effectivePassReceipt = campaignResult.effectivePassReceipt as unknown as Record<
+    string,
+    unknown
+  >;
+  if (campaignResult.reviewerReceipt) {
+    writeMainAgentControlledCloseoutReceipt(
+      receiptPaths.reviewer,
+      campaignResult.reviewerReceipt as unknown as Record<string, unknown>
+    );
+  }
+  if (campaignResult.finalJudgeReceipt) {
+    writeMainAgentControlledCloseoutReceipt(
+      receiptPaths.finalJudge,
+      campaignResult.finalJudgeReceipt as unknown as Record<string, unknown>
+    );
+  }
+  writeMainAgentControlledCloseoutReceipt(receiptPaths.aggregate, aggregate);
+  writeMainAgentControlledCloseoutReceipt(receiptPaths.ingest, judgeReviewCampaign);
+  writeMainAgentControlledCloseoutReceipt(receiptPaths.effectivePass, effectivePassReceipt);
+  const ingested = ingestMainAgentControlledCloseout({
+    closeoutAttemptId,
+    contextHash: source.contextHash,
+    producerReceipt: source.closureReceipt,
+    judgeReviewCampaign,
+    candidateBytes: fs.readFileSync(source.candidatePath),
+    effectivePassReceipt,
+  });
+  const deliveryGate = evaluateControlledGoalCloseoutGate({
+    closeoutAttemptId,
+    contextHash: source.contextHash,
+    closureReceipt: source.closureReceipt,
+    taskReportArtifactHash: source.candidateBytesHash,
+    judgeReviewCampaign,
+    effectivePassReceipt,
+  });
+  const deliveryGateCore = {
+    schemaVersion: 'main-agent-controlled-delivery-closeout-gate/v1',
+    ...deliveryGate,
+    ingestedStatus: ingested.status,
+  };
+  const deliveryGateReceipt = {
+    ...deliveryGateCore,
+    receiptHash: controlledHash(controlledStableJson(deliveryGateCore)),
+  };
+  writeMainAgentControlledCloseoutReceipt(receiptPaths.deliveryGate, deliveryGateReceipt);
+  const completed: MainAgentControlledCloseoutResult = {
+    status: 'awaiting_user_acceptance',
+    closeoutAttemptId,
+    contextHash: source.contextHash,
+    candidateBytesHash: source.candidateBytesHash,
+    producerReceipt: source.closureReceipt,
+    judgeReviewCampaign,
+    effectivePassReceipt,
+    deliveryGateReceipt,
+    judgeStageStatusReceipt: null,
+    reviewerStageStatusReceipt: null,
+    finalJudgeReused: campaignResult.finalJudgeReused,
+    receiptPaths,
+  };
+  writeMainAgentControlledCloseoutReceipt(receiptPaths.marker, completed);
+  materializeMainAgentControlledCloseoutAcceptanceRequest({
+    projectRoot,
+    markerPath: receiptPaths.marker,
+    candidatePath: source.candidatePath,
+    outputPath: receiptPaths.acceptanceRequest,
+    confirmationPagePath: receiptPaths.confirmationPage,
+  });
+  return completed;
+}
+
+export async function resumeJudgeStage(
+  closeoutAttemptId: string,
+  expectedContextHash: string,
+  dependencies: {
+    loadContext: () => unknown | Promise<unknown>;
+    loadClosureReceipt: () => unknown | Promise<unknown>;
+    invokeFinalJudge: (input: {
+      closeoutAttemptId: string;
+      expectedContextHash: string;
+      context: Record<string, unknown>;
+      closureReceipt: Record<string, unknown>;
+    }) => unknown | Promise<unknown>;
+  }
+) {
+  const context = recordObject(await dependencies.loadContext());
+  const closureReceipt = recordObject(await dependencies.loadClosureReceipt());
+  if (
+    normalizeText(context.closeoutAttemptId) !== closeoutAttemptId ||
+    normalizeText(context.contextHash) !== expectedContextHash ||
+    closureReceipt.status !== 'campaign_closed' ||
+    normalizeText(closureReceipt.contextHash) !== expectedContextHash
+  ) {
+    throw new Error('main_agent_goal_task_report_provenance_mismatch');
+  }
+  return dependencies.invokeFinalJudge({
+    closeoutAttemptId,
+    expectedContextHash,
+    context,
+    closureReceipt,
+  });
+}
+
+export function persistAcceptedControlledTaskReport(input: {
+  closeoutAttemptId: string;
+  latestCloseoutAttemptId: string;
+  candidatePath: string;
+  candidateBytesHash: string;
+  finalTaskReportPath: string;
+  completionReceiptPath: string;
+  recordClosedReceipt: Record<string, unknown>;
+  provenanceHashes: Record<string, unknown>;
+}) {
+  const recordClosedReceiptHash = normalizeText(input.recordClosedReceipt.receiptHash);
+  const recordClosedPayload = { ...input.recordClosedReceipt };
+  delete recordClosedPayload.receiptHash;
+  const requiredProvenanceKeys = [
+    'contextHash',
+    'compileReceiptHash',
+    'childClosureSetHash',
+    'campaignReportHash',
+    'closureReceiptHash',
+    'judgeReviewCampaignHash',
+    'effectivePassReceiptHash',
+    'deliveryCloseoutGateReceiptHash',
+  ] as const;
+  if (
+    input.closeoutAttemptId !== input.latestCloseoutAttemptId ||
+    input.recordClosedReceipt.status !== 'user_accepted_closeout' ||
+    input.recordClosedReceipt.closeoutAttemptId !== input.closeoutAttemptId ||
+    !/^sha256:[a-f0-9]{64}$/u.test(recordClosedReceiptHash) ||
+    controlledHash(controlledStableJson(recordClosedPayload)) !== recordClosedReceiptHash ||
+    requiredProvenanceKeys.some(
+      (key) => !/^sha256:[a-f0-9]{64}$/u.test(normalizeText(input.provenanceHashes[key]))
+    )
+  ) {
+    throw new Error('main_agent_goal_task_report_provenance_mismatch');
+  }
+  const candidateBytes = fs.readFileSync(input.candidatePath);
+  if (controlledHash(candidateBytes) !== input.candidateBytesHash) {
+    throw new Error('main_agent_goal_task_report_provenance_mismatch');
+  }
+  if (fs.existsSync(input.finalTaskReportPath)) {
+    if (controlledHash(fs.readFileSync(input.finalTaskReportPath)) !== input.candidateBytesHash) {
+      throw new Error('main_agent_goal_task_report_provenance_mismatch');
+    }
+  } else {
+    fs.mkdirSync(path.dirname(input.finalTaskReportPath), { recursive: true });
+    const taskReportTemporaryPath = `${input.finalTaskReportPath}.${process.pid}.${crypto.randomUUID()}.tmp`;
+    try {
+      fs.writeFileSync(taskReportTemporaryPath, candidateBytes);
+      fs.renameSync(taskReportTemporaryPath, input.finalTaskReportPath);
+    } finally {
+      if (fs.existsSync(taskReportTemporaryPath))
+        fs.rmSync(taskReportTemporaryPath, { force: true });
+    }
+  }
+  const payload = {
+    schemaVersion: 'main-agent-goal-completion-receipt/v1' as const,
+    status: 'done' as const,
+    closeoutAttemptId: input.closeoutAttemptId,
+    taskReportPath: input.finalTaskReportPath,
+    taskReportArtifactHash: input.candidateBytesHash,
+    recordClosedReceiptHash,
+    ...input.provenanceHashes,
+  };
+  const completionReceipt = Object.freeze({
+    ...payload,
+    completionReceiptHash: controlledHash(controlledStableJson(payload)),
+  });
+  writeJsonCreateOnlyOrEqual(
+    input.completionReceiptPath,
+    completionReceipt,
+    'main_agent_goal_task_report_provenance_mismatch'
+  );
+  return completionReceipt;
 }

@@ -1,9 +1,43 @@
 # Shell scripts: force LF for WSL/Linux compatibility
 *.sh text eol=lf
+# Dependency lock hashes bind deterministic LF bytes.
+package-lock.json text eol=lf
 # TypeScript: deterministic formatting across Windows and Unix
 *.ts text eol=lf
+# Node executable entrypoints: match npm's installed shebang bytes
+packages/bmad-speckit/bin/*.js text eol=lf
+# Main-agent dist source and build authority hashes bind package text bytes.
+packages/bmad-speckit/src/** text eol=lf
+packages/bmad-speckit/scripts/** text eol=lf
+packages/bmad-speckit/bin/** text eol=lf
+# Requirements-contract schema hashes bind deterministic LF bytes.
+packages/bmad-speckit/src/main-agent/source-authority/schemas/** text eol=lf
 tests/fixtures/goal-contract-release-gate/*.md text eol=lf
 tests/fixtures/goal-contract-release-gate/*.json text eol=lf
 tests/acceptance/fixtures/requirements-contract/*.md text eol=lf
 tests/acceptance/fixtures/requirements-contract/*.json text eol=lf
-_bmad/shared/critical-auditor-profile/critical-auditor-profile.json text eol=lf
+# Package build authority hashes bind these repository _bmad assets as raw bytes.
+_bmad/_schemas/** text eol=lf
+_bmad/core/agents/code-reviewer/** text eol=lf
+_bmad/core/skills/bmad-party-mode/** text eol=lf
+_bmad/runtime/hooks/** text eol=lf
+_bmad/shared/contract-execution-manifest/** text eol=lf
+_bmad/shared/critical-auditor-profile/** text eol=lf
+_bmad/shared/goal-contract/** text eol=lf
+_bmad/skills/goal-execution-contract-generator/** text eol=lf
+_bmad/skills/requirements-contract-authoring/** text eol=lf
+# Req-trace frontmatter is parsed as raw bytes across canonical and generated surfaces.
+_bmad/skills/req-trace-matrix-prompt-generator/** text eol=lf
+.codex/skills/req-trace-matrix-prompt-generator/** text eol=lf
+.cursor/skills/req-trace-matrix-prompt-generator/** text eol=lf
+.claude/skills/req-trace-matrix-prompt-generator/** text eol=lf
+packages/bmad-speckit/_bmad/skills/req-trace-matrix-prompt-generator/** text eol=lf
+# Requirements-contract projection hashes bind raw bytes across all published surfaces.
+_bmad/shared/requirements-contract/** text eol=lf
+.claude/shared/requirements-contract/** text eol=lf
+.codex/shared/requirements-contract/** text eol=lf
+.cursor/shared/requirements-contract/** text eol=lf
+packages/bmad-speckit/_bmad/shared/requirements-contract/** text eol=lf
+# Projection registries bind the raw bytes of this governance input.
+_bmad/_config/governance-remediation.yaml text eol=lf
+packages/bmad-speckit/_bmad/_config/governance-remediation.yaml text eol=lf

@@ -135,6 +135,29 @@ describe('main-agent delivery evidence run', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'delivery-evidence-package-runtime-'));
     prepareProjectRoot(root);
     try {
+      const runId = 'package-runtime-release';
+      const storyKey = 'S-release-gate';
+      const evidenceBundleId = `${runId}:bundle`;
+      const proofPath = path.join(root, '_bmad-output', 'runtime', 'evidence', 'codex-proof.json');
+      fs.mkdirSync(path.dirname(proofPath), { recursive: true });
+      fs.writeFileSync(
+        proofPath,
+        `${JSON.stringify(
+          {
+            reportType: 'codex_run_scoped_quality_proof',
+            evidence_provenance: { runId, storyKey, evidenceBundleId },
+            codex: {
+              hostKind: 'codex',
+              mode: 'codex_exec',
+              taskReportStatus: 'done',
+              validationsRun: ['package-runtime-release-prerequisites'],
+            },
+          },
+          null,
+          2
+        )}\n`,
+        'utf8'
+      );
       expect(fs.existsSync(path.join(root, 'package.json'))).toBe(false);
       const run = spawnSync(
         process.execPath,
@@ -151,9 +174,22 @@ describe('main-agent delivery evidence run', () => {
           ),
           '--provider',
           'mock',
+          '--runId',
+          runId,
+          '--storyKey',
+          storyKey,
+          '--evidenceBundleId',
+          evidenceBundleId,
           '--skipSprintAudit',
         ],
-        { cwd: root, encoding: 'utf8' }
+        {
+          cwd: root,
+          encoding: 'utf8',
+          env: {
+            ...process.env,
+            MAIN_AGENT_RELEASE_GATE_CODEX_PROOF_PATH: proofPath,
+          },
+        }
       );
       expect(run.status).toBe(1);
 
@@ -164,7 +200,7 @@ describe('main-agent delivery evidence run', () => {
         'gates',
         'main-agent-release-gate-report.json'
       );
-      expect(fs.existsSync(releaseReportPath)).toBe(true);
+      expect(fs.existsSync(releaseReportPath), `${run.stdout}\n${run.stderr}`).toBe(true);
       const release = JSON.parse(fs.readFileSync(releaseReportPath, 'utf8')) as {
         checks: Array<{ id: string; passed: boolean; command?: string; stderr?: string }>;
       };

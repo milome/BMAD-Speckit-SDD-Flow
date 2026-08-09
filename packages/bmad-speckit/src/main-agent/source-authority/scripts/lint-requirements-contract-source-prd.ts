@@ -107,6 +107,12 @@ function cell(row: TableRow, column: string): string {
 }
 
 function idOf(row: TableRow): string {
+  if (row.section === 'Functional Requirements') {
+    return cell(row, 'ID') || cell(row, 'FR ID');
+  }
+  if (row.section === 'Non-Functional Requirements') {
+    return cell(row, 'ID') || cell(row, 'NFR ID');
+  }
   return cell(row, 'ID');
 }
 

@@ -2,9 +2,9 @@
   "schemaVersion": "requirements-contract-canonical-assets-manifest/v2",
   "owner": {
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-canonical-assets-manifest.ts",
-    "hash": "sha256:4e6d0843fdee9cfc47e7322e8c9e91bdcc696198ad02d2bf1f16652c9096dd8d"
+    "hash": "sha256:564ca77133520f13327b9361e7ee034a42976669f5b1eb59b3aec52e414b5568"
   },
-  "manifestHash": "sha256:1e0be8d4a8cfaf40fca8d41a410d81f9105027dbceaecccc54c981c3a0f6effd",
+  "manifestHash": "sha256:21b060388abcd55c9a42549326917d3620205216b9e097d9b8fec78dcafebfe3",
   "assets": [
     {
       "assetId": "semantic_ir_schema",
@@ -31,7 +31,7 @@
       "role": "validation_rule_registry",
       "assetKind": "registry",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:fa68aa9811b8f07b49be3ec627a0854dae5c6a567c95b81908b9898e92f70ef7"
+      "sha256": "sha256:2cadff625e2bb6a99807e9f11dec3b65965f51ad096090712ff9357fe873cfcf"
     },
     {
       "assetId": "validation_facade",
@@ -49,7 +49,7 @@
       "role": "projection_registry",
       "assetKind": "registry",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:329d1d6f50c09342780d16b0fc65c9f2c9753b85ea324fcaef10f70e24450df0"
+      "sha256": "sha256:2b07ed4943e418cbb82fa171955dc18ebc86c97c030cf50ff6b2601b64977212"
     },
     {
       "assetId": "consumer_registry",
@@ -58,7 +58,7 @@
       "role": "consumer_registry",
       "assetKind": "registry",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:aacee27ac0d5f73c561d9582f6585efdd4854007e66fee37b67997e77f1aac6b"
+      "sha256": "sha256:695c5d0590e7e27b9032b6d4976a166479e8c8e0c2c4b52a3782077429e0dced"
     },
     {
       "assetId": "discovery_envelope_template",
@@ -95,7 +95,7 @@
       "role": "source_prd_template",
       "assetKind": "template",
       "authorityClass": "implementation_semantic_authority",
-      "sha256": "sha256:94d4fab10bed569b98bdc91e3827b611c17dee507d81194d3652be40c797bea8"
+      "sha256": "sha256:605f5e06874723a07f195a9559ea8346b21384e4d4bbd42423dec07394bbd950"
     },
     {
       "assetId": "source_prd_renderer",
@@ -114,7 +114,7 @@
       "role": "implementation_confirmation_schema",
       "assetKind": "schema",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:9bdc348f5dbdcc78e931822dc8da899405ce87d28e2f166dbc52d230ac6278c2"
+      "sha256": "sha256:df9847f91caa9095a36756fc5da7138237a249b00b101146003ba71888a8cfb6"
     },
     {
       "assetId": "implementation_confirmation_projector",
@@ -143,7 +143,7 @@
       "role": "implementation_confirmation_codec",
       "assetKind": "codec",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:361775390951178b2fb39e1328e24309c4d10875fe40e30f1c2af8855a44a309"
+      "sha256": "sha256:5ac5eb89ad1f5e7009314b738f147f83d538e4cf3a7dcd349614ff95bc1ba0fb"
     },
     {
       "assetId": "implementation_confirmation_reference",
@@ -180,7 +180,7 @@
       "role": "confirmation_renderer",
       "assetKind": "renderer",
       "authorityClass": "none",
-      "sha256": "sha256:5a468a5130e9f9b4b347521f6a3ab632d98f4e787f66cb6c883b3d2d08f64faf"
+      "sha256": "sha256:5f668f91d28933dbef6294bf201c7dc3603467935aeda67ebda832c332d330f7"
     },
     {
       "assetId": "confirmation_renderer_specification",
@@ -189,7 +189,7 @@
       "role": "confirmation_renderer_specification",
       "assetKind": "reference",
       "authorityClass": "none",
-      "sha256": "sha256:995c56a7bd08686e3375cc47abb12f8f9c0d162b836ae169df5c358fb58a6d1f"
+      "sha256": "sha256:efa1119d69a6bbb3664b006bd8511fae3f60b5e939e942d98eab0d33bc822c71"
     },
     {
       "assetId": "goal_contract_template",
@@ -198,7 +198,7 @@
       "role": "goal_contract_template",
       "assetKind": "template",
       "authorityClass": "none",
-      "sha256": "sha256:431361c99ebb9e213c439b83a48d809c3bde5e7824705051cd57ca37cd773885"
+      "sha256": "sha256:0b2903baf933aa6f658ba7613ed314862624ca3c0db5d193b9effae977240d70"
     },
     {
       "assetId": "goal_contract_profile",
@@ -207,7 +207,7 @@
       "role": "goal_contract_profile",
       "assetKind": "profile",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:6c7ff29e6c1c52a4a943705e3579cf7aeb51bc437da77fe3bf13022e5ee63407"
+      "sha256": "sha256:a68d317cf38f1de70d888ca98daec553db86721bb44e5238b622da78aff1e5d6"
     },
     {
       "assetId": "goal_contract_renderer",
@@ -216,7 +216,7 @@
       "role": "goal_contract_renderer",
       "assetKind": "renderer",
       "authorityClass": "none",
-      "sha256": "sha256:09ec9e365b1f81fcb8fba7367b09bcfb84071b10ea71c114dd67ff091d785eb8"
+      "sha256": "sha256:dd5c71bf1490d273e02e4683497f6d4801eef15e5ebef96892a1573548533da7"
     },
     {
       "assetId": "goal_contract_partition_methodology_profile",
@@ -342,7 +342,7 @@
       "role": "goal_contract_partition_manifest_schema",
       "assetKind": "schema",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:e477962fb36f88905e942fe7ca89489d30860baed78d66e18312aaaef92995b1"
+      "sha256": "sha256:d34ef359c3ede2868062e710290248526b06f14b58977d50c45011553fd56ac8"
     },
     {
       "assetId": "goal_contract_partition_output_authority_schema",
@@ -423,7 +423,7 @@
       "role": "goal_contract_partition_plan_schema",
       "assetKind": "schema",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:b9d980595f35dc4b95dfad2a29bdeaecc6615ade0a0a32946298fca1e0225907"
+      "sha256": "sha256:3f874bb26cbafff0617cc67f2b2a562de38df560dde474ce1c34bccaa92cfe12"
     },
     {
       "assetId": "goal_contract_authority_supersession_receipt_schema",
@@ -495,7 +495,7 @@
       "role": "goal_contract_campaign_closure_receipt_schema",
       "assetKind": "schema",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:73fd202c13f2f3083e8b7cb43aceea82b7f711cd553d5f38483de09204695d2f"
+      "sha256": "sha256:4b1d3688255997c2759474dba845458cb1edd17d3d1584eece4e0235abf0e1ff"
     },
     {
       "assetId": "closeout_packet_schema",
@@ -758,7 +758,7 @@
       "role": "judge_provider_registry_projection",
       "assetKind": "registry",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:843d6e504727541a66f450867ebe00260da4c1c1ddf71af8e6a9a330a98e6658"
+      "sha256": "sha256:f5205e01c2e58b552300b0a0ee20450a8d9bbc9f444bf784d051faee3805bb72"
     },
     {
       "assetId": "judge_credential_resolver",
@@ -776,7 +776,7 @@
       "role": "judge_provider_registry",
       "assetKind": "registry",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:b88588bb76cb03559b1be77d7bc6788a61dce6331917686da5308ecad89193d6"
+      "sha256": "sha256:3472a2016bfdee3b80d362fb22c8fd36d337d28f3a77c77e32717f3a55fbce95"
     },
     {
       "assetId": "openai_compatible_judge_adapter",
@@ -803,7 +803,7 @@
       "role": "claude_code_cli_judge_adapter",
       "assetKind": "adapter",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:199e980f5d89bae069f90b4cdc3adb2a4c143dff0791221995c8d522500cdc2b"
+      "sha256": "sha256:180056f2abad444c00a22bf37ccc1b342b00e71f220a2c8fbf9e70a34999cb03"
     },
     {
       "assetId": "codex_cli_judge_adapter",
@@ -812,7 +812,7 @@
       "role": "codex_cli_judge_adapter",
       "assetKind": "adapter",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:2b7933acbe860d8cefea085d5720040cf83f66eb5c69fbd263b3f317bfbfc7ec"
+      "sha256": "sha256:8fcb02baef6df768fb38c92f97addc9e1b3ca959db52394a02c8f98b52ba741c"
     },
     {
       "assetId": "judge_provider_smoke",

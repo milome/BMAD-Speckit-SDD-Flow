@@ -96,6 +96,7 @@
       "additionalProperties": { "$ref": "#/$defs/hash" }
     },
     "packageRuntimeActionBindingManifestRef": { "$ref": "#/$defs/fileRef" },
+    "campaignRuntimeBindingRef": { "$ref": "#/$defs/readbackRef" },
     "transactionManifestRef": { "$ref": "#/$defs/readbackRef" },
     "modelPacketRef": { "$ref": "#/$defs/readbackRef" },
     "auditReceiptRef": { "$ref": "#/$defs/readbackRef" },

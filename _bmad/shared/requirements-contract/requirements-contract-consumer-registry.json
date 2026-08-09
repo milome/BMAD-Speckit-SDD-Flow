@@ -2,9 +2,9 @@
   "schemaVersion": "requirements-contract-consumer-registry/v2",
   "owner": {
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-consumer-registry.ts",
-    "hash": "sha256:1e465738a39afe6ce9ff0a3a99adadd2efcb1770b799c17bbd9e31ed2686109f"
+    "hash": "sha256:41520fc5e372004bb5b5ba2b53d3172de4fcd07f0286741a200ab836655018e0"
   },
-  "registryHash": "sha256:8d9f799ccfa249f3fb44eb718796af60c2e8f22f0f41404833a5ad5aedff031a",
+  "registryHash": "sha256:4f84f9633ffff2129b5038aff83f79226be57961e893445303df15091f0a3c3f",
   "validationModes": [
     "draft",
     "confirmation-ready",
@@ -63,7 +63,7 @@
     {
       "consumerId": "direct-main-session-requirement-authoring",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
-      "pathHash": "sha256:ac69c64decabed92eec08558153fc20ee020d6b5503670c33a726518bae0ed5b",
+      "pathHash": "sha256:1a1e320f80cf5dd3dbbfcaa34708a66a012bdd53ec71970a0c455bcff49a8fab",
       "inputRole": "authoring_request",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -251,7 +251,7 @@
     {
       "consumerId": "source-template-linter",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/lint-requirements-contract-source-template.ts",
-      "pathHash": "sha256:f8410ef9a6c5c7c696d91ca25015b4ea302e5d79582c9db2273d02c91b2b03cc",
+      "pathHash": "sha256:c6602991e5a8a37276db7d61ac13702c9bb4af9c1b4a7f7c70a19faf8db423a3",
       "inputRole": "source_prd_template",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -282,7 +282,7 @@
     {
       "consumerId": "source-instance-linter",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/lint-requirements-contract-source-prd.ts",
-      "pathHash": "sha256:ec203b72a2cd97d6a2a54c35df12839c28164f08ede8da615f1ba27e3e875981",
+      "pathHash": "sha256:63c64ca814f38cacb5985a96452c1e47653fa07a693dda7ff75657ed96063aac",
       "inputRole": "requirement_source_prd",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -403,7 +403,7 @@
     {
       "consumerId": "ai-tdd-contract-gate",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/ai-tdd-contract-gate.ts",
-      "pathHash": "sha256:ff255989b3f48a6220a3d1bdbe2e35d4282d4e8932a8bb03d8361ef0934a48fa",
+      "pathHash": "sha256:e83f5e78f163d9d4e0ee6a7b1d2527a94a4944ee6434db9c588a20dd45e1c2cb",
       "inputRole": "canonical_red_contracts",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -486,7 +486,7 @@
     {
       "consumerId": "main-agent-compiled-prompt-runner",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-compiled-prompt-runner.ts",
-      "pathHash": "sha256:529a1fc7d3d261e9cb1416e68632b5338e655f961e15258e0687b3ea22a19bba",
+      "pathHash": "sha256:d8a041edca37fe08babb822f66221ab366e9f8af2d828c03757603d5811db064",
       "inputRole": "canonical_prompt_transaction",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -505,7 +505,7 @@
     {
       "consumerId": "architecture-confirmation-artifact",
       "path": "_bmad/skills/requirements-contract-authoring/scripts/generate-architecture-confirmation-artifact.ts",
-      "pathHash": "sha256:97025ea51523b9ad884792cd412f5cb8d53df493b7993b66a1f3a292ab712538",
+      "pathHash": "sha256:6eb029832773a78bf64bf49929d8be6b6287b3d105abc3fb7630cc601eb31608",
       "inputRole": "canonical_architecture_interaction",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -610,7 +610,7 @@
     {
       "consumerId": "main-agent-delivery-closeout-gate",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate.ts",
-      "pathHash": "sha256:1851a90010bc57ea0467d6fc72f5e6315fc684fc32aa6cc5b689447f6ea02e83",
+      "pathHash": "sha256:708135ce4f977d6eb367b227d71aa5f55da94ddcc978a6f5bfcf9c84948e9f08",
       "inputRole": "canonical_delivery_closeout",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -641,7 +641,7 @@
     {
       "consumerId": "strict-closeout-proof-gate",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/strict-closeout-proof-gate.ts",
-      "pathHash": "sha256:e33a7667ed517f940a6075cd8b35c2fa56c20c9d26f1ccdc0475049e988a4719",
+      "pathHash": "sha256:64c9958a0919c529d26fd2a2143e00671d9d5652b6d318901ff4c9f688973bc3",
       "inputRole": "canonical_closeout_proof",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -887,7 +887,7 @@
     {
       "consumerId": "judge-provider-registry",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-provider-registry.ts",
-      "pathHash": "sha256:b88588bb76cb03559b1be77d7bc6788a61dce6331917686da5308ecad89193d6",
+      "pathHash": "sha256:3472a2016bfdee3b80d362fb22c8fd36d337d28f3a77c77e32717f3a55fbce95",
       "inputRole": "validated_judge_runtime",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -983,7 +983,7 @@
     {
       "consumerId": "claude-code-cli-judge-adapter",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-claude-code-cli-judge-adapter.ts",
-      "pathHash": "sha256:199e980f5d89bae069f90b4cdc3adb2a4c143dff0791221995c8d522500cdc2b",
+      "pathHash": "sha256:180056f2abad444c00a22bf37ccc1b342b00e71f220a2c8fbf9e70a34999cb03",
       "inputRole": "frozen_local_judge_evidence_snapshot",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -1015,7 +1015,7 @@
     {
       "consumerId": "codex-cli-judge-adapter",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-codex-cli-judge-adapter.ts",
-      "pathHash": "sha256:2b7933acbe860d8cefea085d5720040cf83f66eb5c69fbd263b3f317bfbfc7ec",
+      "pathHash": "sha256:8fcb02baef6df768fb38c92f97addc9e1b3ca959db52394a02c8f98b52ba741c",
       "inputRole": "frozen_local_judge_evidence_snapshot",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -1172,7 +1172,7 @@
     {
       "consumerId": "requirement-record-registration",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-control-store.ts",
-      "pathHash": "sha256:80ac79378344e0e92883b4a71171dcd55c93c32e33c54847f650fec5033bdea6",
+      "pathHash": "sha256:40c5d6650eb9797552c0dafcf80949b07d9b71609dcb4680260ba9dfff72bbfc",
       "inputRole": "validated_requirement_record",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -1235,7 +1235,7 @@
     {
       "consumerId": "prompt-transaction-publisher",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher.ts",
-      "pathHash": "sha256:bb620db6043998f276446649161a4b8dc628fe3bc93d3a9a0a73b603de36c3b0",
+      "pathHash": "sha256:491cc7087bcbdd26aff43112ac3c606b226d40bda33cbaa923b2956f3c4cb48e",
       "inputRole": "prompt_transaction",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -1305,7 +1305,7 @@
     {
       "consumerId": "target-artifact-realization-gate",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/target-artifact-realization-gate.ts",
-      "pathHash": "sha256:2a5cd12fea507ef08c3afbebafc178097c6786104b4e3f8f660ee69e6994a9f3",
+      "pathHash": "sha256:735591532a6b89ae85cead215ddb859769f468b1adce3dd9b9ab1e9c87814c89",
       "inputRole": "target_bindings",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -1324,7 +1324,7 @@
     {
       "consumerId": "subagent-surface-inventory",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-surface-inventory.ts",
-      "pathHash": "sha256:bd5010c2dd69442c574b1fc44af18152d8535487be73a72f6c07a8435a7c5e8e",
+      "pathHash": "sha256:c0e70b574cf3316c3c90d5e26f55714dae507516723b33ea4c7baded804b73a0",
       "inputRole": "runtime_surface_inventory",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",

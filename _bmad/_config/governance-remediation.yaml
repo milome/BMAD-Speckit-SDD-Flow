@@ -33,7 +33,7 @@ execution:
 judgeRuntime:
   schemaVersion: requirements-contract-judge-runtime/v1
   enabled: true
-  activeProviderRef: local-sonnet-judge
+  activeProviderRef: local-codex-judge
   selectionPolicy:
     mode: contract_locked
     runtimeFallbackAllowed: false
@@ -48,14 +48,14 @@ judgeRuntime:
     allowedRoot: _bmad-output/config/private
     environmentFallbackAllowed: false
   providers:
-    local-sonnet-judge:
+    local-codex-judge:
       enabled: true
       transport: cli
-      adapterRef: ClaudeCodeCliJudgeAdapter
+      adapterRef: CodexCliJudgeAdapter
       apiStyle: cli
       credentialRef: local-sonnet-judge
       endpoint:
-        command: claude
+        command: codex
         baseUrl: http://localhost:3010
         resolutionMode: path_search
         routingOwnership: transport_adapter

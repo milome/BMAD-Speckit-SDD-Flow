@@ -317,6 +317,31 @@ function verifyFinalManifest(
     partitionPolicyHash: manifest.partitionPolicyHash,
     partitionPlanHash: manifest.partitionPlanHash,
     partitionSetHash: manifest.partitionSetHash,
+    ...(manifest.aggregateValidation
+      ? {
+          taskExecutionRoleAuthorityHash:
+            manifest.taskExecutionRoleAuthorityHash,
+          aggregateValidation: manifest.aggregateValidation,
+        }
+      : {}),
+    ...(manifest.partitionImpactGraphHash
+      ? {
+          repositoryTreeHash: manifest.repositoryTreeHash,
+          partitionImpactPolicyHash:
+            manifest.partitionImpactPolicyHash,
+          partitionImpactAnalyzerIdentityHash:
+            manifest.partitionImpactAnalyzerIdentityHash,
+          partitionImpactGraphHash:
+            manifest.partitionImpactGraphHash,
+          partitionImpactGraphDocumentHash:
+            manifest.partitionImpactGraphDocumentHash,
+          partitionClosureFeasibilityReceiptHash:
+            manifest.partitionClosureFeasibilityReceiptHash,
+          partitionImpactDriftReceiptHash:
+            manifest.partitionImpactDriftReceiptHash,
+          driftHash: manifest.driftHash,
+        }
+      : {}),
     orderedChildContractHashes:
       manifest.orderedChildContractHashes,
   });
@@ -605,7 +630,6 @@ function activateGoalCampaign(request: unknown = {}) {
     intentAuthorityAttestationHash:
       intentEnvelope.authorityAttestationHash,
     goalContractHash: goalContract.goalContractHash,
-    compilerIdentityHash: goalContract.compilerIdentityHash,
   });
   const subordinateCoverageReceiptHashes = verifySubordinateCoverage(
     authorityBundle,
@@ -1125,6 +1149,17 @@ function verifyCommittedRepairPredecessor({
   return closure;
 }
 
+function hasValidPredecessorClosureSelfHash(
+  closure: unknown
+): boolean {
+  try {
+    return verifyReceiptSelfHash(closure);
+  } catch {
+    // Untrusted predecessor data must fail as stale, even if it cannot be canonicalized.
+    return false;
+  }
+}
+
 function issueSubcontractExecutionLease(request: unknown = {}) {
   if (!isRecord(request)) {
     throw failure('subcontract_execution_lease_request_invalid');
@@ -1155,7 +1190,6 @@ function issueSubcontractExecutionLease(request: unknown = {}) {
     sourceAuthorityBundleHash:
       activation.sourceAuthorityBundleHash,
     goalContractHash: activation.goalContractHash,
-    compilerIdentityHash: activation.compilerIdentityHash,
     partitionPlanHash: activation.partitionPlanHash,
     partitionManifestHash: activation.partitionManifestHash,
     partitionSetHash: activation.partitionSetHash,
@@ -1273,7 +1307,7 @@ function issueSubcontractExecutionLease(request: unknown = {}) {
         }
       }
       if (
-        !verifyReceiptSelfHash(closure) ||
+        !hasValidPredecessorClosureSelfHash(closure) ||
         closure.decision !== 'pass' ||
         closure.attemptId !== expectedClosureAttemptId ||
         closure.partitionManifestHash !== manifest.partitionManifestHash ||

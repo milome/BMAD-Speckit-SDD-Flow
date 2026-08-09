@@ -21,6 +21,8 @@ const {
 const {
   failure,
   git,
+  hasExactGoalFreezeDirectives,
+  normalizeRecordBinding,
   parseArgs,
   readJson,
   resolveExistingInside,
@@ -33,6 +35,65 @@ const {
 
 const SHA256_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 const GIT_OBJECT_PATTERN = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u;
+const AUTHORITY_PROFILES = new Set(['standalone_frozen', 'main_agent_compiled']);
+
+function resolveManifestChildCandidate(repositoryRoot, projectedPath) {
+  const resolvedPath = resolveExistingInside(
+    repositoryRoot,
+    projectedPath,
+    'source_path_escape'
+  );
+  if (!fs.existsSync(resolvedPath) || !fs.statSync(resolvedPath).isFile()) {
+    return null;
+  }
+  return { projectedPath, resolvedPath };
+}
+
+function projectManifestChildPath(repositoryRoot, partitionManifestPath, childContractPath) {
+  const manifestChildPath = String(childContractPath || '').replace(/\\/gu, '/');
+  if (
+    !manifestChildPath ||
+    path.posix.isAbsolute(manifestChildPath) ||
+    /^[A-Za-z]:\//u.test(manifestChildPath) ||
+    manifestChildPath.split('/').some((segment) => segment === '..') ||
+    path.posix.normalize(manifestChildPath) !== manifestChildPath
+  ) {
+    failure('partition_manifest_not_final', { childContractPath });
+  }
+  const manifestRelativePath = path
+    .relative(repositoryRoot, partitionManifestPath)
+    .replace(/\\/gu, '/');
+  const repositoryProjectedPath = path.posix.normalize(manifestChildPath);
+  const manifestProjectedPath = path.posix.normalize(
+    path.posix.join(path.posix.dirname(manifestRelativePath), manifestChildPath)
+  );
+  const repositoryCandidate = resolveManifestChildCandidate(
+    repositoryRoot,
+    repositoryProjectedPath
+  );
+  const manifestCandidate = resolveManifestChildCandidate(
+    repositoryRoot,
+    manifestProjectedPath
+  );
+  if (
+    repositoryCandidate &&
+    manifestCandidate &&
+    repositoryCandidate.resolvedPath !== manifestCandidate.resolvedPath
+  ) {
+    failure('partition_manifest_not_final', {
+      childContractPath,
+      reason: 'ambiguous_child_contract_path',
+    });
+  }
+  const selectedCandidate = repositoryCandidate ?? manifestCandidate;
+  if (!selectedCandidate) {
+    failure('partition_manifest_not_final', {
+      childContractPath,
+      reason: 'child_contract_path_not_found',
+    });
+  }
+  return selectedCandidate.projectedPath;
+}
 
 function captureRepositoryBaseline(repositoryRoot) {
   const headCommit = git(repositoryRoot, ['rev-parse', 'HEAD'], 'repository_baseline_missing');
@@ -156,65 +217,87 @@ function validateSchemaInstance(validator, value, failureClass, details = {}) {
   }
 }
 
-function normalizeRecordBinding(binding) {
-  if (binding === undefined) {
-    return { status: 'absent', downstreamAction: 'main_agent_resolve_requirement_record' };
-  }
-  if (binding?.status === 'absent') {
-    const keys = Object.keys(binding).sort();
-    if (keys.join(',') !== 'downstreamAction,status') failure('invalid_record_binding');
-    if (binding.downstreamAction !== 'main_agent_resolve_requirement_record') {
-      failure('invalid_record_binding');
-    }
-    return binding;
-  }
-  const required = ['recordId', 'requirementSetId', 'recordPathHash'];
-  if (binding?.status !== 'present' || required.some((field) => !binding[field])) {
-    failure('invalid_record_binding');
-  }
-  if (!/^sha256:[a-f0-9]{64}$/u.test(binding.recordPathHash)) failure('invalid_record_binding');
-  return {
-    status: 'present',
-    recordId: binding.recordId,
-    requirementSetId: binding.requirementSetId,
-    recordPathHash: binding.recordPathHash,
-  };
+function compileMainAgentCertificationValidator(repositoryRoot) {
+  const schemaPath = path.join(
+    __dirname,
+    '..',
+    '..',
+    '..',
+    'shared',
+    'goal-contract',
+    'goal-contract-partition-manifest.schema.json'
+  );
+  const schema = readJson(schemaPath, 'certification_schema_invalid');
+  return compileJsonSchema(
+    repositoryRoot,
+    {
+      $schema: schema.$schema,
+      $defs: schema.$defs,
+      $ref: '#/$defs/mainAgentGoalSourceAuthorityCertification',
+    },
+    'certification_schema_invalid',
+    { path: schemaPath }
+  );
 }
 
-function hasExactGoalFreezeDirectives(goalText) {
-  const effectiveText = goalText.replace(/<!--[\s\S]*?-->/gu, '');
-  const directives = {
-    contractMode: [],
-    rewritePolicy: [],
-  };
-  let fence = null;
-  for (const line of effectiveText.split(/\r?\n/u)) {
-    const fenceMatch = /^ {0,3}(`{3,}|~{3,})/u.exec(line);
-    if (fence) {
-      const closingFenceMatch = /^ {0,3}(`{3,}|~{3,})[ \t]*$/u.exec(line);
-      if (
-        closingFenceMatch &&
-        closingFenceMatch[1][0] === fence.marker &&
-        closingFenceMatch[1].length >= fence.length
-      ) {
-        fence = null;
-      }
-      continue;
+function verifyAuthorityProfile({
+  repositoryRoot,
+  input,
+  goalPath,
+  partitionManifest,
+  requirementRecordBinding,
+}) {
+  const authorityProfile = input.authorityProfile || 'standalone_frozen';
+  if (!AUTHORITY_PROFILES.has(authorityProfile)) failure('invalid_authority_profile');
+  if (authorityProfile === 'standalone_frozen') {
+    if (!hasExactGoalFreezeDirectives(fs.readFileSync(goalPath, 'utf8'))) {
+      failure('goal_contract_not_frozen');
     }
-    if (fenceMatch) {
-      fence = { marker: fenceMatch[1][0], length: fenceMatch[1].length };
-      continue;
-    }
-    if (/^ {0,3}>/u.test(line) || /^(?: {4}|\t)/u.test(line)) continue;
-    const match = /^(contractMode|rewritePolicy)\s*:\s*(.*?)\s*$/u.exec(line.trim());
-    if (match) directives[match[1]].push(match[2]);
+    return { authorityProfile };
   }
-  return (
-    directives.contractMode.length === 1 &&
-    directives.contractMode[0] === 'frozen' &&
-    directives.rewritePolicy.length === 1 &&
-    directives.rewritePolicy[0] === 'forbidden'
+  const sourceFields = [
+    'certification',
+    'goalContractBundle',
+    'partitionCoverageReceipt',
+    'currentDispatchPointer',
+    'transactionManifest',
+  ];
+  const bindings = Object.fromEntries(
+    sourceFields.map((field) => {
+      const binding = normalizeSourceBinding(input[field]);
+      verifySource(repositoryRoot, binding, `${field}_hash_mismatch`);
+      return [field, binding];
+    })
   );
+  const certificationPath = resolveExistingInside(
+    repositoryRoot,
+    bindings.certification.path,
+    'certification_path_escape'
+  );
+  const certification = readJson(certificationPath, 'certification_schema_invalid');
+  validateSchemaInstance(
+    compileMainAgentCertificationValidator(repositoryRoot),
+    certification,
+    'certification_schema_invalid'
+  );
+  const certificationCore = { ...certification };
+  delete certificationCore.certifiedAt;
+  delete certificationCore.certificationHash;
+  if (certification.certificationHash !== sha256(stableJson(certificationCore))) {
+    failure('certification_hash_mismatch');
+  }
+  if (
+    certification.goalContractBundleHash !== bindings.goalContractBundle.hash ||
+    certification.partitionManifestHash !== partitionManifest.partitionManifestHash ||
+    certification.partitionCoverageReceiptHash !== bindings.partitionCoverageReceipt.hash ||
+    certification.currentDispatchPointerHash !== bindings.currentDispatchPointer.hash ||
+    certification.transactionManifestHash !== bindings.transactionManifest.hash ||
+    certification.goalProjectionBinding?.goalProjectionHash !== input.goalContract.hash ||
+    stableJson(certification.requirementRecordBinding) !== stableJson(requirementRecordBinding)
+  ) {
+    failure('certification_authority_mismatch');
+  }
+  return { authorityProfile, ...bindings };
 }
 
 function normalizeSourceBinding(binding) {
@@ -364,8 +447,6 @@ function loadCompileInputs(requestPath) {
     request.goalContract,
     'goal_contract_hash_mismatch'
   );
-  const goalText = fs.readFileSync(goalPath, 'utf8');
-  if (!hasExactGoalFreezeDirectives(goalText)) failure('goal_contract_not_frozen');
   const manifestPath = verifySource(
     repositoryRoot,
     request.partitionManifest,
@@ -385,19 +466,24 @@ function loadCompileInputs(requestPath) {
     'closure_schema_hash_mismatch',
     'closure_schema_invalid'
   );
-  return { request, repositoryRoot, manifest };
+  return { request, repositoryRoot, goalPath, manifest, manifestPath };
 }
 
-function projectChildren({ request, repositoryRoot, manifest }) {
+function projectChildren({ request, repositoryRoot, manifest, manifestPath }) {
   if (!Array.isArray(request.children) || request.children.length !== manifest.partitions.length) {
     failure('child_membership_mismatch');
   }
   const partitionIds = manifest.partitions.map(({ partitionId }) => partitionId);
   return manifest.partitions.map((partition, index) => {
     const supplied = request.children[index];
+    const projectedChildPath = projectManifestChildPath(
+      repositoryRoot,
+      manifestPath,
+      partition.childContractPath
+    );
     if (
       supplied?.partitionId !== partition.partitionId ||
-      supplied.path !== partition.childContractPath ||
+      supplied.path !== projectedChildPath ||
       supplied.hash !== partition.childContractHash
     ) {
       failure('child_membership_mismatch', { partitionId: partition.partitionId });
@@ -415,7 +501,7 @@ function projectChildren({ request, repositoryRoot, manifest }) {
   });
 }
 
-function createPackageContext({ request, repositoryRoot, children }) {
+function createPackageContext({ request, repositoryRoot, children, goalPath, manifest }) {
   const collectionVerificationCommands = normalizeCollectionCommands(
     request.collectionVerificationCommands
   );
@@ -425,9 +511,17 @@ function createPackageContext({ request, repositoryRoot, children }) {
   const partitionManifest = normalizeSourceBinding(request.partitionManifest);
   const evidenceSchema = normalizeSourceBinding(request.evidenceSchema);
   const closureSchema = normalizeSourceBinding(request.closureSchema);
+  const authority = verifyAuthorityProfile({
+    repositoryRoot,
+    input: request,
+    goalPath,
+    partitionManifest: manifest,
+    requirementRecordBinding,
+  });
   const seed = {
     repositoryRoot,
     repositoryBaseline,
+    ...authority,
     goalContract,
     partitionManifest,
     evidenceSchema,
@@ -549,11 +643,24 @@ function emitCampaignArtifacts(context, emit) {
 }
 
 function createManifestCore(context, projectedChildren, artifacts) {
+  const authority = Object.fromEntries(
+    [
+      'authorityProfile',
+      'certification',
+      'goalContractBundle',
+      'partitionCoverageReceipt',
+      'currentDispatchPointer',
+      'transactionManifest',
+    ]
+      .filter((field) => context[field])
+      .map((field) => [field, context[field]])
+  );
   return {
     schemaVersion: 'goal-subcontract-execution-package/v2',
     packageId: context.packageId,
     repositoryRoot: context.repositoryRoot,
     repositoryBaseline: context.repositoryBaseline,
+    ...authority,
     goalContract: context.goalContract,
     partitionManifest: {
       ...context.partitionManifest,
@@ -576,6 +683,8 @@ function buildExecutionPackage({ requestPath, outputRoot }) {
       request: inputs.request,
       repositoryRoot: inputs.repositoryRoot,
       children,
+      goalPath: inputs.goalPath,
+      manifest: inputs.manifest,
     }),
     manifest: inputs.manifest,
   };
@@ -649,6 +758,7 @@ module.exports = {
   normalizeRecordBinding,
   parseArgs,
   projectChildIdentities,
+  projectManifestChildPath,
   readJson,
   renderCampaignPrompt,
   renderChildPrompt,
@@ -662,6 +772,7 @@ module.exports = {
   validateSchemaInstance,
   verifyRepositoryBaseline,
   verifyManifest,
+  verifyAuthorityProfile,
   verifySource,
   writeAtomic,
 };

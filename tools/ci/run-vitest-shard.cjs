@@ -150,6 +150,13 @@ function defaultRunCommand({ command, args, cwd, env }) {
   return { status: result.status ?? 1 };
 }
 
+function governedShardEnvironment(environment = {}) {
+  return {
+    ...environment,
+    BMAD_SPECKIT_PRESERVE_PACKED_RUNTIME: '1',
+  };
+}
+
 function mergeJunitArtifacts({ repoRoot, outputPath, junitPaths }) {
   const suites = [];
   let tests = 0;
@@ -478,7 +485,7 @@ function runCiShard({
         cwd: repoRoot,
         env: {
           ...process.env,
-          ...environment,
+          ...governedShardEnvironment(environment),
           CI_GOVERNED_SHARD: '1',
           CI_COMMIT_SHA: manifest.plan.repository.commitSha,
           CI_PLAN_HASH: manifest.planHash,
@@ -505,7 +512,7 @@ function runCiShard({
         cwd: path.join(repoRoot, 'packages', 'bmad-speckit'),
         env: {
           ...process.env,
-          ...environment,
+          ...governedShardEnvironment(environment),
           CI_COMMIT_SHA: manifest.plan.repository.commitSha,
           CI_PLAN_HASH: manifest.planHash,
           CI_NODE_PACKAGE_ROOT: path.join(repoRoot, 'packages', 'bmad-speckit'),
@@ -673,6 +680,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  governedShardEnvironment,
   main,
   parseCliArgs,
   mergeJunitArtifacts,

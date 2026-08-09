@@ -339,6 +339,19 @@ function stageValidRequirementRecordAuthority(root) {
   );
   fs.mkdirSync(path.dirname(runRoot), { recursive: true });
   fs.cpSync(payload.unitRoot, runRoot, { recursive: true });
+  for (const partition of payload.partitionManifest.partitions) {
+    const copiedChildPath = path.join(
+      runRoot,
+      partition.childContractPath
+    );
+    fs.mkdirSync(path.dirname(copiedChildPath), {
+      recursive: true,
+    });
+    fs.copyFileSync(
+      path.join(root, partition.childContractPath),
+      copiedChildPath
+    );
+  }
   return {
     fixture,
     standalone: payload,
@@ -1181,6 +1194,7 @@ describe('goal contract authority supersession', () => {
       stageValidRequirementRecordAuthority(root);
     const authority = {
       authorityMode: 'standalone_bootstrap',
+      repositoryRoot: root,
       sourceHash: standalone.sourceHash,
       generationKey: standalone.generationKey,
       unitRoot: standalone.unitRoot,

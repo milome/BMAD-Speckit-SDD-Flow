@@ -26,6 +26,7 @@ const BOOKKEEPING_FIELDS = new Set([
   'implementationConfirmationHash',
   'reconfirmationRequest',
   'confirmationRender',
+  'upstreamProofs',
 ]);
 
 const PROJECTION_HASH_BOOKKEEPING_FIELDS = new Set(['derivedFromPacketHash', 'projectionStatus']);

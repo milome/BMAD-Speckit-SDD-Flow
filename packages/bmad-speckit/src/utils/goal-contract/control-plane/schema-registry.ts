@@ -59,7 +59,7 @@ function candidatePackageRoots(explicitRoot?: string): string[] {
   for (let level = 0; level < levelsToPackageRoot; level += 1) {
     packageRoot = path.dirname(packageRoot);
   }
-  return [packageRoot];
+  return [packageRoot, path.resolve(packageRoot, '..', '..')];
 }
 
 function resolveGoalContractSchema(

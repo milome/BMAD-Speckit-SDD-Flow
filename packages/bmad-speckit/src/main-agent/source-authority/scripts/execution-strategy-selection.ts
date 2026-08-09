@@ -1,4 +1,6 @@
 import * as crypto from 'node:crypto';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import type {
   CompiledPromptRef,
   ExecutionStrategyAvailability,
@@ -10,6 +12,7 @@ import {
   appendControlEventAndReplay,
   type ControlCommitResult,
 } from './requirement-record-control-store';
+import { inspectCampaignRuntimeCertification } from './campaign-runtime-binding';
 
 export interface ExecutionStrategyOptionsResult {
   status: 'pass' | 'blocked';
@@ -17,6 +20,8 @@ export interface ExecutionStrategyOptionsResult {
   modelPacketHash: string;
   sourceDocumentHash: string;
   implementationConfirmationHash: string;
+  certificationHash: string | null;
+  policyDefaultStrategyId: ExecutionStrategyId | null;
   options: ExecutionStrategyOption[];
   blockingReasons: string[];
 }
@@ -69,6 +74,15 @@ export const EXECUTION_STRATEGY_SELECTION_WRITER_REGISTRY_ENTRY = {
 };
 
 const SHA256_PATTERN = /^sha256:[a-f0-9]{64}$/u;
+const CURRENT_POINTER_RELATIVE_PATH = path.join(
+  'docs',
+  'plans',
+  'evidence',
+  'loop-engineering-remediation',
+  'current-dispatch-pointer-receipt.json'
+);
+
+type JsonRecord = Record<string, unknown>;
 
 function stableStringify(value: unknown): string {
   if (value === null || typeof value !== 'object') return JSON.stringify(value);
@@ -88,6 +102,83 @@ function text(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function readJson(filePath: string): JsonRecord | null {
+  try {
+    const value = JSON.parse(fs.readFileSync(filePath, 'utf8')) as unknown;
+    return value !== null && typeof value === 'object' && !Array.isArray(value)
+      ? (value as JsonRecord)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function jsonRecord(value: unknown): JsonRecord {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? (value as JsonRecord)
+    : {};
+}
+
+function resolveCurrentPointer(modelPacketPath: string): {
+  projectRoot: string;
+  pointerPath: string;
+} | null {
+  if (!fs.existsSync(modelPacketPath) || !fs.statSync(modelPacketPath).isFile()) return null;
+  let current = path.dirname(fs.realpathSync(modelPacketPath));
+  for (let depth = 0; depth < 16; depth += 1) {
+    const pointerPath = path.join(current, CURRENT_POINTER_RELATIVE_PATH);
+    if (fs.existsSync(pointerPath) && fs.statSync(pointerPath).isFile()) {
+      return { projectRoot: current, pointerPath: fs.realpathSync(pointerPath) };
+    }
+    const parent = path.dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  return null;
+}
+
+function adapterCertification(input: {
+  ref: CompiledPromptRef;
+  projectRoot: string;
+  pointerPath: string;
+}): {
+  status: 'pass' | 'blocked' | 'preview';
+  certificationHash: string | null;
+  reasons: string[];
+} {
+  const pointer = readJson(input.pointerPath);
+  if (!pointer) {
+    return {
+      status: 'blocked',
+      certificationHash: null,
+      reasons: ['current_dispatch_pointer_invalid'],
+    };
+  }
+  if (!pointer.campaignRuntimeBindingRef) {
+    return { status: 'preview', certificationHash: null, reasons: [] };
+  }
+  const modelPacketRef = jsonRecord(pointer.modelPacketRef);
+  const transactionManifestRef = jsonRecord(pointer.transactionManifestRef);
+  if (
+    modelPacketRef.hash !== input.ref.modelPacketHash
+  ) {
+    return {
+      status: 'blocked',
+      certificationHash: null,
+      reasons: [
+        'adapter_certification_pointer_binding_stale',
+        `model=${modelPacketRef.hash === input.ref.modelPacketHash}`,
+      ],
+    };
+  }
+  return inspectCampaignRuntimeCertification({
+    pointerPath: input.pointerPath,
+    pointer,
+    modelPacketHash: input.ref.modelPacketHash,
+    transactionManifestHash: text(transactionManifestRef.hash),
+  });
+}
+
 function strategyOption(input: {
   strategyId: ExecutionStrategyId;
   availability: ExecutionStrategyAvailability;
@@ -95,6 +186,7 @@ function strategyOption(input: {
   modelPacketHash: string;
   sourceDocumentHash: string;
   implementationConfirmationHash: string;
+  certificationHash: string | null;
 }): ExecutionStrategyOption {
   const hashInput = {
     strategyId: input.strategyId,
@@ -103,6 +195,7 @@ function strategyOption(input: {
     modelPacketHash: input.modelPacketHash,
     sourceDocumentHash: input.sourceDocumentHash,
     implementationConfirmationHash: input.implementationConfirmationHash,
+    certificationHash: input.certificationHash,
   };
   return {
     strategyId: input.strategyId,
@@ -137,17 +230,34 @@ export function buildExecutionStrategyOptions(input: {
       modelPacketHash,
       sourceDocumentHash,
       implementationConfirmationHash,
+      certificationHash: null,
+      policyDefaultStrategyId: null,
       options: [],
       blockingReasons,
     };
   }
 
-  const common = { modelPacketHash, sourceDocumentHash, implementationConfirmationHash };
+  const pointerResolution = resolveCurrentPointer(ref!.modelPacketPath);
+  const readiness = pointerResolution
+    ? adapterCertification({
+        ref: ref!,
+        projectRoot: pointerResolution.projectRoot,
+        pointerPath: pointerResolution.pointerPath,
+      })
+    : { status: 'preview' as const, certificationHash: null, reasons: [] };
+  const governedAvailable = readiness.status === 'pass';
+  const directAvailable = readiness.status === 'preview' || governedAvailable;
+  const common = {
+    modelPacketHash,
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    certificationHash: readiness.certificationHash,
+  };
   const options: ExecutionStrategyOption[] = [
     strategyOption({
       strategyId: 'compiled_trace_direct',
-      availability: 'available',
-      blockingReasons: [],
+      availability: directAvailable ? 'available' : 'blocked_until_adapter_certification_gate',
+      blockingReasons: directAvailable ? [] : readiness.reasons,
       ...common,
     }),
     strategyOption({
@@ -158,8 +268,12 @@ export function buildExecutionStrategyOptions(input: {
     }),
     strategyOption({
       strategyId: 'governed_skill_adapter',
-      availability: 'blocked_until_adapter_certification_gate',
-      blockingReasons: ['blocked_until_adapter_certification_gate'],
+      availability: governedAvailable ? 'available' : 'blocked_until_adapter_certification_gate',
+      blockingReasons: governedAvailable
+        ? []
+        : readiness.status === 'preview'
+          ? ['blocked_until_adapter_certification_gate']
+          : readiness.reasons,
       ...common,
     }),
     strategyOption({
@@ -175,11 +289,18 @@ export function buildExecutionStrategyOptions(input: {
       modelPacketHash,
       sourceDocumentHash,
       implementationConfirmationHash,
+      certificationHash: readiness.certificationHash,
       options,
     }),
     modelPacketHash,
     sourceDocumentHash,
     implementationConfirmationHash,
+    certificationHash: readiness.certificationHash,
+    policyDefaultStrategyId: governedAvailable
+      ? 'governed_skill_adapter'
+      : readiness.status === 'preview'
+        ? 'compiled_trace_direct'
+        : null,
     options,
     blockingReasons: [],
   };
@@ -213,8 +334,11 @@ export function selectExecutionStrategy(input: {
       `strategy options are not available: ${input.optionsResult.blockingReasons.join(',')}`
     );
   }
-  const option = input.optionsResult.options.find((item) => item.strategyId === input.strategyId);
-  if (!option) throw new Error(`unknown execution strategy: ${input.strategyId}`);
+  const strategyId =
+    input.selectedBy === 'policy' ? input.optionsResult.policyDefaultStrategyId : input.strategyId;
+  if (!strategyId) throw new Error('policy default execution strategy is not available');
+  const option = input.optionsResult.options.find((item) => item.strategyId === strategyId);
+  if (!option) throw new Error(`unknown execution strategy: ${strategyId}`);
   if (option.availability !== 'available') {
     throw new Error(
       `execution strategy is not available: ${input.strategyId}:${option.availability}`

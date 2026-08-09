@@ -110,6 +110,28 @@ function normalizePath(value: string): string {
   return path.resolve(value).replace(/\\/gu, '/');
 }
 
+function projectChildContractPath(value: unknown): string {
+  if (typeof value !== 'string') {
+    throw failure('supervisor_readiness_projection_schema_invalid', {
+      field: 'childContractPath',
+    });
+  }
+  const segments = value.replace(/\\/gu, '/').split('/');
+  const childrenIndex = segments.lastIndexOf('children');
+  if (
+    childrenIndex < 0 ||
+    childrenIndex === segments.length - 1 ||
+    segments
+      .slice(childrenIndex + 1)
+      .some((segment) => ['', '.', '..'].includes(segment))
+  ) {
+    throw failure('supervisor_readiness_projection_schema_invalid', {
+      field: 'childContractPath',
+    });
+  }
+  return segments.slice(childrenIndex).join('/');
+}
+
 function sha256Bytes(value: Buffer | string): string {
   return `sha256:${createHash('sha256').update(value).digest('hex')}`;
 }
@@ -341,7 +363,11 @@ function standaloneAuthority(
   let validated;
   try {
     validated = validateImmutablePartitionAuthorityUnit({
-      authority: { unitRoot },
+      authority: {
+        unitRoot,
+        repositoryRoot,
+        repositoryRootRelativeChildren: true,
+      },
       expectedSourceHash: sourceHash,
       expectedGenerationKey: pointer.generationKey,
       expectedPartitionPlanHash: pointer.partitionPlanHash,
@@ -1056,7 +1082,9 @@ function buildProjection(authority: SchemaRecord) {
         rootGoalId: manifest.goalContractHash,
         partitionId,
         partitionManifestHash: manifest.partitionManifestHash,
-        childContractPath: partition.childContractPath,
+        childContractPath: projectChildContractPath(
+          partition.childContractPath
+        ),
         childContractHash: partition.childContractHash,
         dagOrder,
         childReleaseRef: releases.get(partitionId)?.ref,

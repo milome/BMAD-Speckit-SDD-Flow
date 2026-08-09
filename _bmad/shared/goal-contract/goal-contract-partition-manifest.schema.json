@@ -130,6 +130,12 @@
     "childContractAuthority": {
       "enum": ["full", "core_only"]
     },
+    "taskExecutionRoleAuthorityHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "aggregateValidation": {
+      "$ref": "#/$defs/aggregateValidation"
+    },
     "executionProjectionHash": {
       "$ref": "#/$defs/hash"
     },
@@ -258,6 +264,10 @@
       }
     }
   },
+  "dependentRequired": {
+    "taskExecutionRoleAuthorityHash": ["aggregateValidation"],
+    "aggregateValidation": ["taskExecutionRoleAuthorityHash"]
+  },
   "allOf": [
     {
       "if": {
@@ -340,6 +350,107 @@
       "type": "string",
       "pattern": "^sha256:[0-9a-f]{64}$"
     },
+    "nonEmptyAuthorityObject": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "mainAgentRequirementRecordBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "recordId",
+        "requirementSetId",
+        "recordPathHash"
+      ],
+      "properties": {
+        "status": {
+          "const": "present"
+        },
+        "recordId": {
+          "$ref": "#/$defs/id"
+        },
+        "requirementSetId": {
+          "$ref": "#/$defs/id"
+        },
+        "recordPathHash": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "mainAgentGoalSourceAuthorityCertification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "authorityProfile",
+        "sourceAuthorityCompilationReceipt",
+        "goalContractBundleHash",
+        "partitionManifestHash",
+        "partitionCoverageReceiptHash",
+        "currentDispatchPointerHash",
+        "transactionManifestHash",
+        "requirementRecordBinding",
+        "runtimeBundleBinding",
+        "semanticAuthorityBinding",
+        "modelPacketBinding",
+        "goalProjectionBinding",
+        "viewReconciliationBinding",
+        "certifiedAt",
+        "certificationHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "main-agent-goal-source-authority-certification/v1"
+        },
+        "authorityProfile": {
+          "const": "main_agent_compiled"
+        },
+        "sourceAuthorityCompilationReceipt": {
+          "$ref": "#/$defs/nonEmptyAuthorityObject"
+        },
+        "goalContractBundleHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "partitionManifestHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "partitionCoverageReceiptHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "currentDispatchPointerHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "transactionManifestHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "requirementRecordBinding": {
+          "$ref": "#/$defs/mainAgentRequirementRecordBinding"
+        },
+        "runtimeBundleBinding": {
+          "$ref": "#/$defs/nonEmptyAuthorityObject"
+        },
+        "semanticAuthorityBinding": {
+          "$ref": "#/$defs/nonEmptyAuthorityObject"
+        },
+        "modelPacketBinding": {
+          "$ref": "#/$defs/nonEmptyAuthorityObject"
+        },
+        "goalProjectionBinding": {
+          "$ref": "#/$defs/nonEmptyAuthorityObject"
+        },
+        "viewReconciliationBinding": {
+          "$ref": "#/$defs/nonEmptyAuthorityObject"
+        },
+        "certifiedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "certificationHash": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
     "hashArray": {
       "type": "array",
       "uniqueItems": true,
@@ -400,6 +511,88 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 240
+        }
+      }
+    },
+    "aggregateValidationTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "taskId",
+        "phase",
+        "dependencyTaskIds",
+        "commandIds",
+        "sourceObligationIds",
+        "acceptanceIds",
+        "evidenceIds"
+      ],
+      "properties": {
+        "taskId": {
+          "$ref": "#/$defs/id"
+        },
+        "phase": {
+          "enum": [
+            "post_child_execution",
+            "final_aggregate"
+          ]
+        },
+        "dependencyTaskIds": {
+          "$ref": "#/$defs/idArray"
+        },
+        "commandIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "sourceObligationIds": {
+          "$ref": "#/$defs/idArray"
+        },
+        "acceptanceIds": {
+          "$ref": "#/$defs/idArray"
+        },
+        "evidenceIds": {
+          "$ref": "#/$defs/idArray"
+        }
+      }
+    },
+    "aggregateValidation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "taskOrder",
+        "commandOrder",
+        "tasks",
+        "aggregateValidationHash"
+      ],
+      "properties": {
+        "taskOrder": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "commandOrder": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "tasks": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/aggregateValidationTask"
+          }
+        },
+        "aggregateValidationHash": {
+          "$ref": "#/$defs/hash"
         }
       }
     },

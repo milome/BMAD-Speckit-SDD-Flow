@@ -16,7 +16,7 @@ build/
 .pytest_cache/
 *.log
 coverage/
-/.artifacts/test-portfolio/
+/.artifacts/
 
 # IDE
 .idea/

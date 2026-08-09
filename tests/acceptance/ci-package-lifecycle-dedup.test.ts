@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -20,6 +20,7 @@ const {
   preparePackageArtifact,
 } = require('../../tools/ci/prepare-package-artifact.cjs');
 const { runConsumerPackageLane } = require('../../tools/ci/run-consumer-package-lane.cjs');
+const { governedShardEnvironment } = require('../../tools/ci/run-vitest-shard.cjs');
 
 function consumerManifest() {
   const input = structuredClone(fixture);
@@ -77,6 +78,64 @@ function consumerManifest() {
 }
 
 describe('one-build one-pack package lifecycle', () => {
+  it('marks governed shard subprocesses to preserve package runtime owners', () => {
+    expect(governedShardEnvironment({ EXISTING_VALUE: 'preserved' })).toEqual({
+      EXISTING_VALUE: 'preserved',
+      BMAD_SPECKIT_PRESERVE_PACKED_RUNTIME: '1',
+    });
+  });
+
+  it('preserves package runtime owners for governed shard pack cleanup', () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), 'governed-pack-cleanup-'));
+    const packageRoot = join(repoRoot, 'packages', 'bmad-speckit');
+    const packageBmadRoot = join(packageRoot, '_bmad');
+    const packageScopedRoot = join(packageRoot, 'node_modules', '@bmad-speckit');
+    const packSessionFile = join(packageRoot, 'node_modules', '.pack-session-count.json');
+    const packSessionLockDir = join(packageRoot, 'node_modules', '.pack-session.lock');
+
+    try {
+      mkdirSync(packageBmadRoot, { recursive: true });
+      mkdirSync(packageScopedRoot, { recursive: true });
+      mkdirSync(packSessionLockDir, { recursive: true });
+      writeFileSync(join(packageBmadRoot, 'owner.txt'), 'package runtime owner\n', 'utf8');
+      writeFileSync(join(packageScopedRoot, 'owner.txt'), 'bundled runtime owner\n', 'utf8');
+      writeFileSync(packSessionFile, `${JSON.stringify({ count: 1 })}\n`, 'utf8');
+
+      const result = spawnSync(
+        process.execPath,
+        [
+          join(
+            process.cwd(),
+            'packages',
+            'bmad-speckit',
+            'src',
+            'main-agent',
+            'source-authority',
+            'scripts',
+            'cleanup-packed-bmad.ts'
+          ),
+        ],
+        {
+          cwd: repoRoot,
+          encoding: 'utf8',
+          env: {
+            ...process.env,
+            BMAD_SPECKIT_PRESERVE_PACKED_RUNTIME: '1',
+            BMAD_SPECKIT_REPO_ROOT: repoRoot,
+          },
+        }
+      );
+
+      expect(result.status, result.stderr).toBe(0);
+      expect(existsSync(join(packageBmadRoot, 'owner.txt'))).toBe(true);
+      expect(existsSync(join(packageScopedRoot, 'owner.txt'))).toBe(true);
+      expect(existsSync(packSessionFile)).toBe(false);
+      expect(existsSync(packSessionLockDir)).toBe(false);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
   it('verifies an existing descriptor without requiring built release-gate runtime', () => {
     const repoRoot = process.cwd();
     const outputDir = join(
@@ -144,6 +203,7 @@ describe('one-build one-pack package lifecycle', () => {
       const prepared = preparePackageArtifact({
         repoRoot,
         commitSha: 'a'.repeat(40),
+        listTarEntries: () => ['package/package.json'],
         runCommand: (request: any) => {
           commands.push(request);
           if (request.kind === 'npm_pack') {

@@ -15,6 +15,9 @@ const {
   closeSubcontract,
 } = require('../src/utils/goal-contract/control-plane/subcontract-closure.ts');
 const {
+  closeGoalCampaign,
+} = require('../src/utils/goal-contract/control-plane/campaign-closure.ts');
+const {
   compileSubcontractEvidence,
   REQUIRED_EVIDENCE_CATEGORIES,
 } = require('../src/utils/goal-contract/control-plane/subcontract-evidence.ts');
@@ -125,6 +128,17 @@ function fixture() {
   const graphHash = hash('partition-impact-graph');
   const feasibilityHash = hash('partition-closure-feasibility');
   const driftHash = hash('partition-impact-drift');
+  const repositoryTreeHash = hash('repository-tree');
+  const partitionImpactPolicyHash = hash('partition-impact-policy');
+  const partitionImpactAnalyzerIdentityHash = hash(
+    'partition-impact-analyzer'
+  );
+  const partitionImpactGraphDocumentHash = hash(
+    'partition-impact-graph-document'
+  );
+  const partitionImpactDriftReceiptHash = hash(
+    'partition-impact-drift'
+  );
   const lifecycleAuthorityFields = {
     graphHash,
     feasibilityHash,
@@ -173,6 +187,14 @@ function fixture() {
     partitionPolicyHash,
     partitionPlanHash,
     partitionSetHash,
+    repositoryTreeHash,
+    partitionImpactPolicyHash,
+    partitionImpactAnalyzerIdentityHash,
+    partitionImpactGraphHash: graphHash,
+    partitionImpactGraphDocumentHash,
+    partitionClosureFeasibilityReceiptHash: feasibilityHash,
+    partitionImpactDriftReceiptHash,
+    driftHash,
     orderedChildContractHashes,
   });
   const manifest = {
@@ -188,8 +210,13 @@ function fixture() {
     partitionPlanHash,
     partitionManifestHash,
     partitionSetHash,
+    repositoryTreeHash,
+    partitionImpactPolicyHash,
+    partitionImpactAnalyzerIdentityHash,
     partitionImpactGraphHash: graphHash,
+    partitionImpactGraphDocumentHash,
     partitionClosureFeasibilityReceiptHash: feasibilityHash,
+    partitionImpactDriftReceiptHash,
     driftHash,
     partitionCount: partitions.length,
     topologicalOrder: partitions.map(({ partitionId: id }) => id),
@@ -403,7 +430,7 @@ describe('goal campaign repair lifecycle', () => {
     );
     const registryModule = require.cache[registryPath];
     const bindingModule = require.cache[bindingPath];
-    const registry = require(registryPath);
+    const registry = require('../src/utils/goal-contract/control-plane/schema-registry.ts');
     const calls = [];
     require.cache[registryPath].exports = {
       ...registry,
@@ -416,7 +443,7 @@ describe('goal campaign repair lifecycle', () => {
     try {
       const {
         verifyLifecycleAuthorityBinding,
-      } = require(bindingPath);
+      } = require('../src/utils/goal-contract/control-plane/lifecycle-authority-binding.ts');
       const partitionManifest = {
         partitionManifestHash: hash('manifest'),
         partitionImpactGraphHash: hash('graph'),
@@ -557,6 +584,25 @@ describe('goal campaign repair lifecycle', () => {
           attemptId: repairAttemptId,
           nodeAttemptId: 'node-repair-001',
           issuedAt: '2026-07-31T04:19:00.000Z',
+        }),
+      { failureClass: 'subcontract_predecessor_closure_stale' }
+    );
+    const malformedOwnerClosure = {
+      ...current.ownerClosure,
+      predecessorClosureReceiptHashes: [undefined],
+    };
+    assert.throws(
+      () =>
+        issueSubcontractExecutionLease({
+          receiptRoot: current.receiptRoot,
+          activationReceipt: current.baseActivation,
+          repairAuthorityReceipt: repair.receipt,
+          partitionManifest: current.manifest,
+          partitionId: current.repairId,
+          predecessorClosureReceipts: [malformedOwnerClosure],
+          attemptId: repairAttemptId,
+          nodeAttemptId: 'node-repair-001',
+          issuedAt: '2026-07-31T04:19:15.000Z',
         }),
       { failureClass: 'subcontract_predecessor_closure_stale' }
     );
@@ -1084,6 +1130,51 @@ describe('goal campaign repair lifecycle', () => {
     assert.match(
       dependentClosed.receiptPath.replace(/\\/gu, '/'),
       /\/repair\/closures\//u
+    );
+    const campaignClosed = closeGoalCampaign({
+      repositoryRoot: current.root,
+      receiptRoot: current.receiptRoot,
+      activationReceipt: current.baseActivation,
+      repairAuthorityReceipt: repair.receipt,
+      partitionManifest: current.manifest,
+      partitionManifestDocumentHash: sha256(
+        fs.readFileSync(
+          path.join(current.authorityRoot, 'partition-manifest.json')
+        )
+      ),
+      childClosureReceipts: [
+        current.ownerClosure,
+        closed.receipt,
+        dependentClosed.receipt,
+      ],
+      finalExecutionProjectionHash: hash(
+        'repair-final-execution-projection'
+      ),
+      closedAt: '2026-07-31T04:28:30.000Z',
+    });
+    assert.strictEqual(
+      campaignClosed.receipt.repairAuthorityReceiptHash,
+      repair.receipt.receiptHash
+    );
+    assert.strictEqual(
+      campaignClosed.receipt.baseAttemptId,
+      current.baseActivation.attemptId
+    );
+    assert.strictEqual(
+      campaignClosed.receipt.repairAttemptId,
+      repairAttemptId
+    );
+    assert.strictEqual(
+      campaignClosed.receipt.attemptId,
+      repairAttemptId
+    );
+    assert.deepStrictEqual(
+      campaignClosed.receipt.orderedChildClosureReceiptHashes,
+      [
+        current.ownerClosure.receiptHash,
+        closed.receipt.receiptHash,
+        dependentClosed.receipt.receiptHash,
+      ]
     );
     const crossOriginDependentLease = signed({
       ...dependentLeasePayload,

@@ -79,6 +79,22 @@ function record(root: string, reportArtifactRefs: Record<string, unknown>[] = []
     status: 'user_confirmed',
     sourceDocumentHash: SOURCE_HASH,
     implementationConfirmationHash: IMPLEMENTATION_HASH,
+    confirmationHistory: [
+      {
+        eventType: 'confirmation_recorded',
+        recordId: 'REQ-CLOSED-LOOP-DESIGN',
+        requirementSetId: 'REQ-CLOSED-LOOP-DESIGN',
+        confirmedAt: '2026-05-21T00:00:00.000Z',
+        confirmedBy: 'user',
+        sourcePath: 'docs/design/source.md',
+        sourceDocumentHash: SOURCE_HASH,
+        implementationConfirmationHash: IMPLEMENTATION_HASH,
+        confirmationPageHash: ARCHITECTURE_HASH,
+        confirmationText: 'confirmed',
+        renderReportPath: 'confirmation/render-report.json',
+        htmlPath: 'confirmation/confirmation.html',
+      },
+    ],
     architectureConfirmationState: {
       status: 'active',
       currentArchitectureConfirmationHash: ARCHITECTURE_HASH,

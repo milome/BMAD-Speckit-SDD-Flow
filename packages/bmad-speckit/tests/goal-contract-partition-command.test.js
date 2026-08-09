@@ -5,6 +5,8 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const Ajv2020 = require('ajv/dist/2020');
+const addFormats = require('ajv-formats');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const REPO_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
@@ -36,9 +38,12 @@ const {
 } = require('../src/utils/goal-contract/source-obligation-extractor.ts');
 const {
   goalContractAuthorityWriterBinding,
+  loadCanonicalPartitionAuthorityForRelease,
+  semanticPartitionManifestHash,
 } = require('../src/utils/goal-contract/control-plane/partition-output-paths.ts');
 const {
   hashControlPlaneValue,
+  stableControlPlaneStringify,
 } = require('../src/utils/goal-contract/control-plane/canonical-hash.ts');
 const {
   compileSourceCompositionPolicy,
@@ -47,13 +52,28 @@ const {
   compileOrderedSourceSnapshotSet,
 } = require('../src/utils/goal-contract/control-plane/source-snapshot.ts');
 const {
+  loadGoalContractSchema,
+  validateGoalContractSchema,
+} = require('../src/utils/goal-contract/control-plane/schema-registry.ts');
+const {
   compileTaskFileScopeAuthority,
   validateTaskFileScopeCells,
 } = require('../src/utils/goal-contract/control-plane/partition-compiler.ts');
 const {
+  buildPartitionPlanGlobalCoverageReceipt,
+  buildPartitionPlanSelectionReceipt,
+} = require('../src/utils/goal-contract/partition-selector.ts');
+const {
+  serializeValidatedPartitionReceipt,
+} = require('../src/utils/goal-contract/partition-receipts.ts');
+const {
   currentPartitionCompilerIdentityHash,
   partitionCompilerIdentityAssetPaths,
 } = require('../src/commands/goal-contract.ts');
+const {
+  kernelPlanPath,
+  primaryPath,
+} = require('./goal-contract-canonical-intent-fixture.js');
 
 function tempRoot() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'goal-contract-partition-cli-'));
@@ -133,6 +153,136 @@ function writeStructuredDependencySourcePlan(root) {
     sourcePath,
     tasks,
   };
+}
+
+function writeRoleAwareSourcePlan(root) {
+  const sourcePath = path.join(root, 'role-aware-source-plan.md');
+  fs.writeFileSync(
+    sourcePath,
+    [
+      '# Role-aware Partition Source Plan',
+      '',
+      '### Task PLAN-T01: Deliver runtime capability [Dependencies: none]',
+      '',
+      '**Execution Class:** `executable_child`',
+      '**Owned Production Paths:** the task\'s explicit Files section',
+      '',
+      '**Files**',
+      '',
+      '- Modify `src/runtime.ts`.',
+      '',
+      '**Run**',
+      '',
+      '- CMD-PLAN-T01-01: Run `node --version`.',
+      '',
+      'AC-PLAN-T01: MUST satisfy the runtime capability acceptance oracle.',
+      '',
+      'EVD-PLAN-T01: MUST bind PLAN-T01 to CMD-PLAN-T01-01.',
+      '',
+      '### Task PLAN-T02: Verify aggregate evidence [Dependencies: PLAN-T01]',
+      '',
+      '**Execution Class:** `aggregate_only`',
+      '**Owned Production Paths:** `none`',
+      '**Aggregate Gate Phase:** `final_aggregate`',
+      '**Aggregate Validation Commands:** `CMD-PLAN-T02-01`',
+      '',
+      '**Files**',
+      '',
+      '- No production files.',
+      '',
+      '**Run**',
+      '',
+      '- CMD-PLAN-T02-01: Run `node --help`.',
+      '',
+      'AC-PLAN-T02: MUST satisfy the aggregate evidence acceptance oracle.',
+      '',
+      'EVD-PLAN-T02: MUST bind PLAN-T02 to CMD-PLAN-T02-01.',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  return sourcePath;
+}
+
+function writeExecutableBoundarySourcePlan(
+  root,
+  { sharedOwnedPath = false } = {}
+) {
+  const sourcePath = path.join(
+    root,
+    'executable-boundary-source-plan.md'
+  );
+  const tasks = [
+    [
+      'PLAN-T01',
+      'Unsafe inputs fail before side effects',
+      'none',
+      'src/preflight.ts',
+    ],
+    [
+      'PLAN-T02',
+      'Source authority resolves one canonical identity',
+      'PLAN-T01',
+      sharedOwnedPath
+        ? 'src/preflight.ts'
+        : 'src/source-authority.ts',
+    ],
+    [
+      'PLAN-T03',
+      'Certified partitions preserve execution topology',
+      'PLAN-T02',
+      'src/partition-runtime.ts',
+    ],
+  ];
+  fs.writeFileSync(
+    sourcePath,
+    [
+      '# Executable Boundary Source Plan',
+      '',
+      ...tasks.flatMap(
+        ([taskId, title, dependency, ownedPath]) => [
+          `### Task ${taskId}: ${title} [Dependencies: ${dependency}]`,
+          '',
+          '**Execution Class:** `executable_child`',
+          '**Owned Production Paths:** the task\'s explicit Files section',
+          '',
+          '**Files**',
+          '',
+          `- Modify \`${ownedPath}\`.`,
+          '',
+          '**Run**',
+          '',
+          `- CMD-${taskId}-01: Run \`node --version\`.`,
+          '',
+          `AC-${taskId}: MUST satisfy the ${taskId} acceptance oracle.`,
+          '',
+          `EVD-${taskId}: MUST bind ${taskId} to CMD-${taskId}-01.`,
+          '',
+        ]
+      ),
+      '### Task PLAN-T04: Aggregate certified child evidence [Dependencies: PLAN-T03]',
+      '',
+      '**Execution Class:** `aggregate_only`',
+      '**Owned Production Paths:** `none`',
+      '**Aggregate Gate Phase:** `final_aggregate`',
+      '**Aggregate Validation Commands:** `CMD-PLAN-T04-01`',
+      '',
+      '**Files**',
+      '',
+      '- No production files.',
+      '',
+      '**Run**',
+      '',
+      '- CMD-PLAN-T04-01: Run `node --help`.',
+      '',
+      'AC-PLAN-T04: MUST satisfy the aggregate acceptance oracle.',
+      '',
+      'EVD-PLAN-T04: MUST bind PLAN-T04 to CMD-PLAN-T04-01.',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+  return { sourcePath, tasks };
 }
 
 function writeSharedDependencySourcePlan(root) {
@@ -608,6 +758,246 @@ function parsePayload(result) {
   assert.equal(result.signal, null, result.stderr || result.stdout);
   assert.notEqual(result.stdout.trim(), '', result.stderr);
   return JSON.parse(result.stdout);
+}
+
+function writeCanonicalJson(filePath, value) {
+  fs.writeFileSync(
+    filePath,
+    `${stableControlPlaneStringify(value)}\n`,
+    'utf8'
+  );
+}
+
+function writeValidatedReceipt(filePath, schemaId, value) {
+  fs.writeFileSync(
+    filePath,
+    serializeValidatedPartitionReceipt({
+      schemaId,
+      payload: value,
+    }),
+    'utf8'
+  );
+}
+
+function withReceiptHash(value) {
+  const semantic = structuredClone(value);
+  delete semantic.receiptHash;
+  return {
+    ...semantic,
+    receiptHash: hashControlPlaneValue(semantic),
+  };
+}
+
+function stageCanonicalReleaseFixture() {
+  const root = tempRoot();
+  const source = writeSourcePlan(root);
+  const frozen = writeFrozenSuccessorContract(root, source, {
+    slotWrappedFrontMatter: true,
+  });
+  const partitionResult = runSourceCommand(
+    [
+      'partition',
+      '--governed',
+      '--entry',
+      'standalone_goal_contract',
+      '--source',
+      source,
+      '--goal-contract',
+      frozen.goalContractPath,
+      '--sequence-mode',
+      'disabled',
+      '--json',
+    ],
+    { cwd: root }
+  );
+  assert.equal(
+    partitionResult.status,
+    0,
+    partitionResult.stderr || partitionResult.stdout
+  );
+  const payload = parsePayload(partitionResult);
+  const child = payload.partitionManifest.partitions[0];
+  return {
+    root,
+    source,
+    payload,
+    child,
+    childPath: path.resolve(root, child.childContractPath),
+  };
+}
+
+function rewriteFirstChildAsUnitRelative(fixture) {
+  const { payload, root } = fixture;
+  const manifest = JSON.parse(
+    fs.readFileSync(payload.partitionManifestPath, 'utf8')
+  );
+  const partition = manifest.partitions[0];
+  const partitionId = partition.partitionId;
+  const childPath = path.resolve(root, partition.childContractPath);
+  const unitRelativeChildPath = path
+    .relative(payload.unitRoot, childPath)
+    .replace(/\\/gu, '/');
+  const receiptRoot = path.join(payload.unitRoot, 'receipts', 'children');
+  const compilationPath = path.join(
+    receiptRoot,
+    `${partitionId}.compilation.json`
+  );
+  const coveragePath = path.join(
+    receiptRoot,
+    `${partitionId}.coverage.json`
+  );
+  const generationPath = path.join(
+    receiptRoot,
+    `${partitionId}.generation.json`
+  );
+  const membershipPath = path.join(
+    receiptRoot,
+    `${partitionId}.membership.json`
+  );
+  const renderEvidencePath = path.join(
+    payload.unitRoot,
+    'evidence',
+    'render-evidence.json'
+  );
+  const partitionPlan = JSON.parse(
+    fs.readFileSync(payload.partitionPlanPath, 'utf8')
+  );
+  const compilation = JSON.parse(
+    fs.readFileSync(compilationPath, 'utf8')
+  );
+  compilation.childContractPath = unitRelativeChildPath;
+  const nextCompilation = withReceiptHash(compilation);
+  writeCanonicalJson(compilationPath, nextCompilation);
+
+  partition.childContractPath = unitRelativeChildPath;
+  partition.childCompilationReceiptHash =
+    nextCompilation.receiptHash;
+  delete partition.childMembershipHash;
+  partition.childMembershipHash =
+    hashControlPlaneValue(partition);
+  manifest.partitionManifestHash =
+    semanticPartitionManifestHash(manifest);
+  const manifestBytes =
+    `${stableControlPlaneStringify(manifest)}\n`;
+  const manifestDocumentHash = hash(manifestBytes);
+  fs.writeFileSync(
+    payload.partitionManifestPath,
+    manifestBytes,
+    'utf8'
+  );
+
+  const globalCoveragePath = path.join(
+    payload.unitRoot,
+    manifest.globalCoverageReceiptPath
+  );
+  writeValidatedReceipt(
+    globalCoveragePath,
+    'goal-contract-partition-global-coverage-receipt/v1',
+    buildPartitionPlanGlobalCoverageReceipt({
+      partitionPlan,
+      candidateManifest: manifest,
+    })
+  );
+  const selectionPath = path.join(
+    payload.unitRoot,
+    partition.selectionReceiptPath
+  );
+  writeValidatedReceipt(
+    selectionPath,
+    'goal-contract-partition-selection-receipt/v1',
+    buildPartitionPlanSelectionReceipt({
+      partitionPlan,
+      partitionManifest: manifest,
+      partitionId,
+    })
+  );
+  const globalCoverageHash = hash(
+    fs.readFileSync(globalCoveragePath)
+  );
+  const selectionHash = hash(
+    fs.readFileSync(selectionPath)
+  );
+
+  const coverage = JSON.parse(
+    fs.readFileSync(coveragePath, 'utf8')
+  );
+  coverage.partitionManifestHash = manifestDocumentHash;
+  coverage.globalCoverageReceiptHash =
+    globalCoverageHash;
+  coverage.selectionReceiptHash = selectionHash;
+  writeValidatedReceipt(
+    coveragePath,
+    'goal-contract-partition-child-coverage-receipt/v1',
+    coverage
+  );
+  const coverageHash = hash(fs.readFileSync(coveragePath));
+
+  const generation = JSON.parse(
+    fs.readFileSync(generationPath, 'utf8')
+  );
+  generation.partitionManifestHash = manifestDocumentHash;
+  generation.globalCoverageReceiptHash =
+    globalCoverageHash;
+  generation.selectionReceiptHash = selectionHash;
+  generation.coverageReceiptHash = coverageHash;
+  writeValidatedReceipt(
+    generationPath,
+    'goal-contract-partition-child-generation-receipt/v1',
+    generation
+  );
+
+  const membership = JSON.parse(
+    fs.readFileSync(membershipPath, 'utf8')
+  );
+  membership.childContractPath = unitRelativeChildPath;
+  membership.childCompilationReceiptHash =
+    nextCompilation.receiptHash;
+  membership.partitionManifestHash =
+    manifest.partitionManifestHash;
+  writeCanonicalJson(
+    membershipPath,
+    withReceiptHash(membership)
+  );
+  const renderEvidence = JSON.parse(
+    fs.readFileSync(renderEvidencePath, 'utf8')
+  );
+  renderEvidence.partitionManifestHash =
+    manifest.partitionManifestHash;
+  renderEvidence.partitionManifestDocumentHash =
+    manifestDocumentHash;
+  writeCanonicalJson(renderEvidencePath, renderEvidence);
+
+  const pointer = JSON.parse(
+    fs.readFileSync(payload.activePointerPath, 'utf8')
+  );
+  pointer.partitionManifestHash =
+    manifest.partitionManifestHash;
+  pointer.partitionManifestDocumentHash =
+    manifestDocumentHash;
+  const changedReceiptPaths = new Map(
+    [
+      compilationPath,
+      globalCoveragePath,
+      selectionPath,
+      coveragePath,
+      generationPath,
+      membershipPath,
+      renderEvidencePath,
+    ].map((targetPath) => [
+      path
+        .relative(payload.unitRoot, targetPath)
+        .replace(/\\/gu, '/'),
+      hash(fs.readFileSync(targetPath)),
+    ])
+  );
+  pointer.requiredReceiptHashes =
+    pointer.requiredReceiptHashes.map((record) => ({
+      ...record,
+      hash: changedReceiptPaths.get(record.path) || record.hash,
+    }));
+  writeCanonicalJson(payload.activePointerPath, pointer);
+  fixture.child = partition;
+  fixture.childPath = childPath;
 }
 
 describe('bmad-speckit goal-contract partition command', () => {
@@ -1206,7 +1596,7 @@ describe('bmad-speckit goal-contract partition command', () => {
         feasibilityRecord.closureRelevantCommandIds
       );
       assert.equal(
-        fs.existsSync(path.join(payload.unitRoot, partition.childContractPath)),
+        fs.existsSync(path.join(root, partition.childContractPath)),
         true
       );
       assert.equal(
@@ -1304,6 +1694,375 @@ describe('bmad-speckit goal-contract partition command', () => {
     }
   });
 
+  it('releases a governed child from the canonical immutable generation without a supersession bundle', () => {
+    const root = tempRoot();
+    const source = writeSourcePlan(root);
+    const frozen = writeFrozenSuccessorContract(root, source, {
+      slotWrappedFrontMatter: true,
+    });
+    const partitionResult = runSourceCommand(
+      [
+        'partition',
+        '--governed',
+        '--entry',
+        'standalone_goal_contract',
+        '--source',
+        source,
+        '--goal-contract',
+        frozen.goalContractPath,
+        '--sequence-mode',
+        'disabled',
+        '--json',
+      ],
+      { cwd: root }
+    );
+
+    assert.equal(
+      partitionResult.status,
+      0,
+      partitionResult.stderr || partitionResult.stdout
+    );
+    const partitionPayload = parsePayload(partitionResult);
+    const child = partitionPayload.partitionManifest.partitions[0];
+    const childPath = [
+      path.resolve(root, child.childContractPath),
+      path.resolve(partitionPayload.unitRoot, child.childContractPath),
+    ].find((candidate) => fs.existsSync(candidate));
+    assert.ok(childPath, child.childContractPath);
+    assert.equal(
+      fs.existsSync(path.join(partitionPayload.unitRoot, 'bundle-manifest.json')),
+      false
+    );
+
+    const releaseResult = runSourceCommand(
+      [
+        'release-gate',
+        '--goal',
+        childPath,
+        '--source',
+        source,
+        '--partition-manifest',
+        partitionPayload.partitionManifestPath,
+        '--json',
+      ],
+      { cwd: root }
+    );
+
+    assert.equal(
+      releaseResult.status,
+      0,
+      releaseResult.stderr || releaseResult.stdout
+    );
+    const releasePayload = parsePayload(releaseResult);
+    assert.equal(releasePayload.ok, true);
+    assert.equal(releasePayload.decision, 'pass');
+    assert.deepEqual(releasePayload.blockingReasons, []);
+  });
+
+  it('rejects a self-consistent canonical manifest that uses a unit-relative child path', () => {
+    const fixture = stageCanonicalReleaseFixture();
+    rewriteFirstChildAsUnitRelative(fixture);
+
+    assert.throws(
+      () =>
+        loadCanonicalPartitionAuthorityForRelease({
+          repositoryRoot: fixture.root,
+          partitionManifestPath:
+            fixture.payload.partitionManifestPath,
+          goalPath: fixture.childPath,
+          expectedPartitionPlanHash:
+            fixture.payload.partitionPlanHash,
+        }),
+      (error) =>
+        error.failureClass ===
+        'canonical_partition_child_path_invalid'
+    );
+  });
+
+  it('anchors canonical release authority to the governed repository root', () => {
+    const fixture = stageCanonicalReleaseFixture();
+
+    assert.throws(
+      () =>
+        loadCanonicalPartitionAuthorityForRelease({
+          repositoryRoot: path.join(fixture.root, 'wrong-root'),
+          partitionManifestPath:
+            fixture.payload.partitionManifestPath,
+          goalPath: fixture.childPath,
+          expectedPartitionPlanHash:
+            fixture.payload.partitionPlanHash,
+        }),
+      (error) =>
+        error.failureClass ===
+        'canonical_partition_authority_root_invalid'
+    );
+  });
+
+  it('rejects an active pointer that changes during canonical release validation', () => {
+    const fixture = stageCanonicalReleaseFixture();
+    const activePointerPath = path.resolve(
+      fixture.payload.activePointerPath
+    );
+    const originalReadFileSync = fs.readFileSync;
+    let pointerReadCount = 0;
+    fs.readFileSync = (filePath, ...args) => {
+      const bytes = originalReadFileSync(filePath, ...args);
+      if (path.resolve(filePath) !== activePointerPath) {
+        return bytes;
+      }
+      pointerReadCount += 1;
+      if (pointerReadCount !== 2) return bytes;
+      return typeof bytes === 'string'
+        ? `${bytes}\n`
+        : Buffer.concat([bytes, Buffer.from('\n')]);
+    };
+    try {
+      assert.throws(
+        () =>
+          loadCanonicalPartitionAuthorityForRelease({
+            repositoryRoot: fixture.root,
+            partitionManifestPath:
+              fixture.payload.partitionManifestPath,
+            goalPath: fixture.childPath,
+            expectedPartitionPlanHash:
+              fixture.payload.partitionPlanHash,
+          }),
+        (error) =>
+          error.failureClass ===
+          'canonical_partition_active_pointer_changed'
+      );
+    } finally {
+      fs.readFileSync = originalReadFileSync;
+    }
+  });
+
+  it('rejects canonical authority artifacts reached through a junction', () => {
+    const fixture = stageCanonicalReleaseFixture();
+    const childrenPath = path.join(
+      fixture.payload.unitRoot,
+      'children'
+    );
+    const externalChildrenPath = path.join(
+      fixture.root,
+      'external-children'
+    );
+    fs.renameSync(childrenPath, externalChildrenPath);
+    fs.symlinkSync(
+      externalChildrenPath,
+      childrenPath,
+      'junction'
+    );
+
+    assert.throws(
+      () =>
+        loadCanonicalPartitionAuthorityForRelease({
+          repositoryRoot: fixture.root,
+          partitionManifestPath:
+            fixture.payload.partitionManifestPath,
+          goalPath: fixture.childPath,
+          expectedPartitionPlanHash:
+            fixture.payload.partitionPlanHash,
+        }),
+      (error) =>
+        error.failureClass ===
+        'canonical_partition_authority_symlink_rejected'
+    );
+  });
+
+  it('allows a repository-root junction without allowing authority-subtree redirects', () => {
+    const fixture = stageCanonicalReleaseFixture();
+    const aliasRoot = `${fixture.root}-alias`;
+    fs.symlinkSync(
+      fixture.root,
+      aliasRoot,
+      process.platform === 'win32' ? 'junction' : 'dir'
+    );
+    const manifestPath = path.join(
+      aliasRoot,
+      path.relative(
+        fixture.root,
+        fixture.payload.partitionManifestPath
+      )
+    );
+    const goalPath = path.join(
+      aliasRoot,
+      path.relative(fixture.root, fixture.childPath)
+    );
+
+    const authority =
+      loadCanonicalPartitionAuthorityForRelease({
+        repositoryRoot: aliasRoot,
+        partitionManifestPath: manifestPath,
+        goalPath,
+        expectedPartitionPlanHash:
+          fixture.payload.partitionPlanHash,
+      });
+
+    assert.equal(authority.authorityMode, 'canonical_governed');
+    assert.equal(
+      authority.partitionPlanHash,
+      fixture.payload.partitionPlanHash
+    );
+  });
+
+  it('routes every supersession-specific marker to fail-closed successor verification', () => {
+    const fixture = stageCanonicalReleaseFixture();
+    const unrelatedPath = path.join(
+      fixture.payload.unitRoot,
+      'unrelated-extra-file.json'
+    );
+    fs.writeFileSync(unrelatedPath, '{}\n', 'utf8');
+    const unrelatedResult = runSourceCommand(
+      [
+        'release-gate',
+        '--goal',
+        fixture.childPath,
+        '--source',
+        fixture.source,
+        '--partition-manifest',
+        fixture.payload.partitionManifestPath,
+        '--json',
+      ],
+      { cwd: fixture.root }
+    );
+    assert.equal(
+      unrelatedResult.status,
+      0,
+      unrelatedResult.stderr || unrelatedResult.stdout
+    );
+    fs.rmSync(unrelatedPath);
+
+    const markers = [
+      'receipts/source-grounded-coverage.receipt.json',
+      'receipts/legacy-comparison.diagnostic.json',
+      'receipts/equivalence.receipt.json',
+      'receipts/checkpoint-mappings.json',
+      'receipts/render-evidence.json',
+      'receipts/pending/partial.receipt.json',
+      'receipts/membership/partial.receipt.json',
+    ];
+    for (const relativePath of markers) {
+      const markerPath = path.join(
+        fixture.payload.unitRoot,
+        relativePath
+      );
+      fs.mkdirSync(path.dirname(markerPath), {
+        recursive: true,
+      });
+      fs.writeFileSync(markerPath, '{}\n', 'utf8');
+      const result = runSourceCommand(
+        [
+          'release-gate',
+          '--goal',
+          fixture.childPath,
+          '--source',
+          fixture.source,
+          '--partition-manifest',
+          fixture.payload.partitionManifestPath,
+          '--json',
+        ],
+        { cwd: fixture.root }
+      );
+      assert.equal(
+        result.status,
+        1,
+        `${relativePath}\n${result.stderr || result.stdout}`
+      );
+      fs.rmSync(markerPath);
+      for (const markerDirectory of [
+        'receipts/pending',
+        'receipts/membership',
+      ]) {
+        const directoryPath = path.join(
+          fixture.payload.unitRoot,
+          markerDirectory
+        );
+        if (
+          fs.existsSync(directoryPath) &&
+          fs.readdirSync(directoryPath).length === 0
+        ) {
+          fs.rmdirSync(directoryPath);
+        }
+      }
+    }
+  });
+
+  it('projects source task outcomes into functional child display titles', () => {
+    const root = tempRoot();
+    const { sourcePath } = writeStructuredDependencySourcePlan(root);
+    const frozen = writeFrozenSuccessorContract(root, sourcePath, {
+      slotWrappedFrontMatter: true,
+    });
+    const result = runSourceCommand(
+      [
+        'partition',
+        '--governed',
+        '--entry',
+        'standalone_goal_contract',
+        '--source',
+        sourcePath,
+        '--goal-contract',
+        frozen.goalContractPath,
+        '--sequence-mode',
+        'disabled',
+        '--json',
+      ],
+      { cwd: root }
+    );
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const payload = parsePayload(result);
+    const titles = payload.partitionManifest.partitions.map(
+      ({ displayTitle }) => displayTitle
+    );
+    const projectedTitles = titles.join('; ');
+
+    assert.match(projectedTitles, /Freeze source authority/u);
+    assert.match(projectedTitles, /Normalize source obligations/u);
+    assert.match(projectedTitles, /Finalize partition authority/u);
+    assert.ok(titles.every((title) => !/^Partition \d+(?::|$)/u.test(title)));
+  });
+
+  it('publishes standalone governed child paths relative to the repository root', () => {
+    const root = tempRoot();
+    const { sourcePath } = writeStructuredDependencySourcePlan(root);
+    const frozen = writeFrozenSuccessorContract(root, sourcePath, {
+      slotWrappedFrontMatter: true,
+    });
+    const result = runSourceCommand(
+      [
+        'partition',
+        '--governed',
+        '--entry',
+        'standalone_goal_contract',
+        '--source',
+        sourcePath,
+        '--goal-contract',
+        frozen.goalContractPath,
+        '--sequence-mode',
+        'disabled',
+        '--json',
+      ],
+      { cwd: root }
+    );
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const payload = parsePayload(result);
+    const unitRootPath = path.relative(root, payload.unitRoot).replace(/\\/gu, '/');
+
+    for (const partition of payload.partitionManifest.partitions) {
+      assert.match(
+        partition.childContractPath,
+        new RegExp(`^${unitRootPath.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}/children/`, 'u')
+      );
+      assert.equal(
+        fs.existsSync(path.join(root, partition.childContractPath)),
+        true,
+        partition.childContractPath
+      );
+    }
+  });
+
   it('preserves a frozen source-plan DAG and Files ownership in governed children', () => {
     const root = tempRoot();
     const { sourcePath, tasks } = writeStructuredDependencySourcePlan(root);
@@ -1370,6 +2129,246 @@ describe('bmad-speckit goal-contract partition command', () => {
     );
   });
 
+  it('excludes aggregate-only tasks from child membership and binds ordered aggregate validation', () => {
+    const root = tempRoot();
+    const sourcePath = writeRoleAwareSourcePlan(root);
+    const frozen = writeFrozenSuccessorContract(root, sourcePath, {
+      slotWrappedFrontMatter: true,
+    });
+    const result = runSourceCommand(
+      [
+        'partition',
+        '--governed',
+        '--entry',
+        'standalone_goal_contract',
+        '--source',
+        sourcePath,
+        '--goal-contract',
+        frozen.goalContractPath,
+        '--sequence-mode',
+        'disabled',
+        '--json',
+      ],
+      { cwd: root }
+    );
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const payload = parsePayload(result);
+    const manifest = payload.partitionManifest;
+    assert.deepEqual(
+      manifest.partitions.flatMap((partition) => partition.primaryTaskIds),
+      ['PLAN-T01']
+    );
+    assert.deepEqual(manifest.aggregateValidation.taskOrder, ['PLAN-T02']);
+    assert.deepEqual(manifest.aggregateValidation.commandOrder, ['CMD-PLAN-T02-01']);
+    assert.deepEqual(
+      manifest.aggregateValidation.tasks[0].dependencyTaskIds,
+      ['PLAN-T01']
+    );
+    assert.match(
+      manifest.aggregateValidation.aggregateValidationHash,
+      /^sha256:[0-9a-f]{64}$/u
+    );
+    assert.equal(
+      manifest.partitions.some((partition) =>
+        partition.primaryTaskIds.includes('PLAN-T02')
+      ),
+      false
+    );
+    for (const field of [
+      'taskExecutionRoleAuthorityHash',
+      'aggregateValidation',
+    ]) {
+      const partialManifest = structuredClone(manifest);
+      delete partialManifest[field];
+      assert.throws(
+        () =>
+          validateGoalContractSchema(
+            'goal-contract-partition-manifest.schema.json',
+            partialManifest
+          ),
+        (error) => error.failureClass === 'canonical_schema_invalid'
+      );
+    }
+  });
+
+  it('exposes one strict Main Agent source-authority certification schema', () => {
+    const manifestSchema = loadGoalContractSchema(
+      'goal-contract-partition-manifest.schema.json'
+    ).schema;
+    const ajv = new Ajv2020({ allErrors: true, strict: false });
+    addFormats(ajv);
+    const validateCertification = ajv.compile({
+      $schema: manifestSchema.$schema,
+      $defs: manifestSchema.$defs,
+      $ref: '#/$defs/mainAgentGoalSourceAuthorityCertification',
+    });
+    const certification = {
+      schemaVersion: 'main-agent-goal-source-authority-certification/v1',
+      authorityProfile: 'main_agent_compiled',
+      sourceAuthorityCompilationReceipt: {
+        sourceAuthorityHash: hash('source-authority'),
+        sourceSnapshotHash: hash('source-snapshot'),
+      },
+      goalContractBundleHash: hash('goal-contract-bundle'),
+      partitionManifestHash: hash('partition-manifest'),
+      partitionCoverageReceiptHash: hash('partition-coverage'),
+      currentDispatchPointerHash: hash('dispatch-pointer'),
+      transactionManifestHash: hash('transaction-manifest'),
+      requirementRecordBinding: {
+        status: 'present',
+        recordId: 'record-1',
+        requirementSetId: 'set-1',
+        recordPathHash: hash('record-path'),
+      },
+      runtimeBundleBinding: {
+        runtimeBundleHash: hash('runtime-bundle'),
+      },
+      semanticAuthorityBinding: {
+        canonicalIntentBundleHash: hash('canonical-intent-bundle'),
+      },
+      modelPacketBinding: {
+        modelPacketHash: hash('model-packet'),
+      },
+      goalProjectionBinding: {
+        goalProjectionHash: hash('goal-projection'),
+      },
+      viewReconciliationBinding: {
+        reconciledViewsHash: hash('reconciled-views'),
+      },
+      certifiedAt: '2026-08-05T00:00:00.000Z',
+      certificationHash: hash('certification'),
+    };
+
+    assert.equal(
+      validateCertification(certification),
+      true,
+      JSON.stringify(validateCertification.errors)
+    );
+    const missingField = structuredClone(certification);
+    delete missingField.partitionManifestHash;
+    assert.equal(validateCertification(missingField), false);
+    const unknownField = { ...certification, lifecycleStatus: 'closed' };
+    assert.equal(validateCertification(unknownField), false);
+  });
+
+  it('preserves explicit executable task boundaries, dependencies, commands, and functional titles', () => {
+    const root = tempRoot();
+    const { sourcePath, tasks } =
+      writeExecutableBoundarySourcePlan(root);
+    const frozen = writeFrozenSuccessorContract(root, sourcePath, {
+      slotWrappedFrontMatter: true,
+    });
+    const result = runSourceCommand(
+      [
+        'partition',
+        '--governed',
+        '--entry',
+        'standalone_goal_contract',
+        '--source',
+        sourcePath,
+        '--goal-contract',
+        frozen.goalContractPath,
+        '--sequence-mode',
+        'disabled',
+        '--json',
+      ],
+      { cwd: root }
+    );
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const payload = parsePayload(result);
+    const manifest = payload.partitionManifest;
+    assert.equal(manifest.partitionCount, tasks.length);
+    assert.equal(manifest.partitions.length, tasks.length);
+
+    const partitions = tasks.map(([taskId]) => {
+      const partition = manifest.partitions.find(
+        (candidate) =>
+          candidate.primaryTaskIds.length === 1 &&
+          candidate.primaryTaskIds[0] === taskId
+      );
+      assert.ok(partition, taskId);
+      return partition;
+    });
+    for (let index = 0; index < tasks.length; index += 1) {
+      const [taskId, title] = tasks[index];
+      const partition = partitions[index];
+      assert.equal(partition.displayTitle, title);
+      assert.deepEqual(
+        partition.commandIds,
+        [`CMD-${taskId}-01`]
+      );
+      assert.deepEqual(
+        partition.dependencyPartitionIds,
+        index === 0
+          ? []
+          : [partitions[index - 1].partitionId]
+      );
+    }
+    assert.deepEqual(
+      manifest.topologicalOrder,
+      partitions.map(({ partitionId }) => partitionId)
+    );
+  });
+
+  it('does not activate a standalone generation before explicit child readiness passes', () => {
+    const root = tempRoot();
+    const { sourcePath } = writeExecutableBoundarySourcePlan(root, {
+      sharedOwnedPath: true,
+    });
+    const frozen = writeFrozenSuccessorContract(root, sourcePath, {
+      slotWrappedFrontMatter: true,
+    });
+    const result = runSourceCommand(
+      [
+        'partition',
+        '--governed',
+        '--entry',
+        'standalone_goal_contract',
+        '--source',
+        sourcePath,
+        '--goal-contract',
+        frozen.goalContractPath,
+        '--sequence-mode',
+        'disabled',
+        '--json',
+      ],
+      { cwd: root }
+    );
+
+    assert.equal(result.status, 1, result.stderr || result.stdout);
+    const payload = parsePayload(result);
+    assert.equal(
+      payload.failureClass,
+      'partition_readiness_empty_ownership'
+    );
+    const forbiddenArtifacts = [];
+    const visit = (directory) => {
+      if (!fs.existsSync(directory)) return;
+      for (const entry of fs.readdirSync(directory, {
+        withFileTypes: true,
+      })) {
+        const target = path.join(directory, entry.name);
+        if (entry.isDirectory()) visit(target);
+        if (
+          entry.isFile() &&
+          (entry.name === 'active-generation.json' ||
+            entry.name === 'partition-manifest.json' ||
+            target
+              .replace(/\\/gu, '/')
+              .includes('/children/'))
+        ) {
+          forbiddenArtifacts.push(
+            path.relative(root, target).replace(/\\/gu, '/')
+          );
+        }
+      }
+    };
+    visit(path.join(root, '_bmad-output'));
+    assert.deepEqual(forbiddenArtifacts, []);
+  });
+
   it('keeps shared task paths governed by every declaring child while retaining one owner', () => {
     const root = tempRoot();
     const { sourcePath } = writeSharedDependencySourcePlan(root);
@@ -1427,7 +2426,7 @@ describe('bmad-speckit goal-contract partition command', () => {
 
     for (const partition of [ownerPartition, consumerPartition]) {
       const childBytes = fs.readFileSync(
-        path.join(payload.unitRoot, partition.childContractPath),
+        path.join(root, partition.childContractPath),
         'utf8'
       );
       const governedLine = childBytes
@@ -2042,12 +3041,7 @@ describe('bmad-speckit goal-contract partition command', () => {
 
   it('derives an inspect-only terminal task as final integration', () => {
     const root = tempRoot();
-    const source = path.join(
-      REPO_ROOT,
-      'docs',
-      'plans',
-      '2026-07-28-canonical-intent-control-plane-kernel-implementation-plan.md'
-    );
+    const source = kernelPlanPath;
     const out = path.join(root, 'partition-manifest.json');
 
     const result = runSourceCommand([
@@ -2622,12 +3616,7 @@ describe('bmad-speckit goal-contract partition command', () => {
 
   it('does not misclassify the real judge-role plan as Sequence-required', () => {
     const root = tempRoot();
-    const source = path.join(
-      REPO_ROOT,
-      'docs',
-      'plans',
-      '2026-07-25-judge-role-separation-implementation-task-list.md'
-    );
+    const source = primaryPath;
     const out = path.join(root, 'judge-role-manifest.json');
     const result = runSourceCommand([
       'partition',

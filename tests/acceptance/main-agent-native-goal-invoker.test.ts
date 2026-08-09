@@ -4,6 +4,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  createNativeGoalHostExecutor,
   runNativeGoalInvocation,
   type NativeGoalControlledExecutor,
 } from '../../packages/bmad-speckit/src/main-agent/actions/native-goal-invoker';
@@ -250,6 +251,53 @@ describe('main-agent host-native goal invoker', () => {
     }
   );
 
+  it.each(['codex', 'claude-code-cli'] as const)(
+    'uses one structured host bridge protocol for %s without model-specific wiring',
+    (host) => {
+      const hostKey = host === 'codex' ? 'CODEX' : 'CLAUDE';
+      const bridgeScript = [
+        "let input='';",
+        "process.stdin.on('data', chunk => input += chunk);",
+        "process.stdin.on('end', () => {",
+        'const request = JSON.parse(input);',
+        "process.stdout.write(JSON.stringify({ exitCode: 0, stdout: 'host-output', stderr: '', childInvocations: request.children }));",
+        '});',
+      ].join(' ');
+      const executor = createNativeGoalHostExecutor({
+        env: {
+          [`BMAD_NATIVE_GOAL_${hostKey}_BRIDGE_COMMAND`]: process.execPath,
+          [`BMAD_NATIVE_GOAL_${hostKey}_BRIDGE_ARGS_JSON`]: JSON.stringify([
+            '-e',
+            bridgeScript,
+          ]),
+        },
+      });
+      let authorized = 0;
+      const result = executor({
+        projectRoot: process.cwd(),
+        host,
+        commandText: '/goal controlled closeout',
+        goalExecutionPath: 'goal-execution.md',
+        goalExecutionHash: sha256Text('goal-execution'),
+        packetId: `packet-${host}`,
+        taskReportPath: 'task-report.json',
+        timeoutMs: 30_000,
+        children: [{ partitionId: 'child-1' }],
+        reportChildResult: () => {
+          authorized += 1;
+          return true;
+        },
+      });
+
+      expect(result).toMatchObject({
+        exitCode: 0,
+        stdout: 'host-output',
+        childInvocations: [{ partitionId: 'child-1' }],
+      });
+      expect(authorized).toBe(1);
+    }
+  );
+
   it('persists an explicit handoff without fabricating a TaskReport when no executor is available', () => {
     const fixture = createNativeGoalInvocationFixture('codex');
 
@@ -291,6 +339,132 @@ describe('main-agent host-native goal invoker', () => {
       exitCode: 1,
     });
     expect(receipt.goalCommandTextHash).toBe(sha256Text(fixture.commandText));
+  });
+
+  it('keeps a controlled closeout candidate pending until user acceptance', () => {
+    const fixture = createNativeGoalInvocationFixture('codex');
+    const candidatePath = path.join(fixture.projectRoot, 'closeout', 'task-report-candidate.json');
+    writeJson(candidatePath, {
+      schemaVersion: 'goal-subcontract-campaign-task-report/v3',
+      status: 'done',
+      closeoutAttemptId: fixture.attemptId,
+    });
+    const candidateHash = sha256File(candidatePath);
+    const contextHash = sha256Text(`${fixture.attemptId}:context`);
+    const campaignId = 'dynamic-controlled-goal-campaign';
+    const compileReceiptHash = sha256Text(`${fixture.attemptId}:compile`);
+    const childClosureSetHash = sha256Text(`${fixture.attemptId}:children`);
+    const campaignReportHash = sha256Text(`${fixture.attemptId}:campaign-report`);
+    const closureReceiptHash = sha256Text(`${fixture.attemptId}:closure`);
+    const judgeReviewCampaignHash = sha256Text(`${fixture.attemptId}:judge-campaign`);
+    const effectivePassReceiptHash = sha256Text(`${fixture.attemptId}:effective-pass`);
+    const deliveryCloseoutGateReceiptHash = sha256Text(`${fixture.attemptId}:delivery-closeout`);
+    const result = runNativeGoalInvocation({
+      projectRoot: fixture.projectRoot,
+      host: 'codex',
+      packet: fixture.packet,
+      compiledPromptRef: fixture.compiledPromptRef,
+      taskReportPath: fixture.taskReportPath,
+      recordId: fixture.recordId,
+      attemptId: fixture.attemptId,
+      attemptBundle: fixture.attemptBundle,
+      executor: (() => ({
+        exitCode: 0,
+        stdout: 'controlled closeout awaiting acceptance',
+        stderr: '',
+        closeoutStatus: 'awaiting_user_acceptance',
+        closeoutAttemptId: fixture.attemptId,
+        taskReportCandidatePath: candidatePath,
+        taskReportArtifactHash: candidateHash,
+        closeoutContextHash: contextHash,
+        producerReceipt: {
+          schemaVersion: 'goal-campaign-closure-receipt/v1',
+          status: 'campaign_closed',
+          closeoutAttemptId: fixture.attemptId,
+          contextHash,
+          compileReceiptHash,
+          childClosureSetHash,
+          campaignReportPath: 'campaign-report.json',
+          campaignReportHash,
+          taskReportCandidatePath: candidatePath,
+          taskReportArtifactHash: candidateHash,
+          receiptHash: closureReceiptHash,
+        },
+        judgeReviewCampaign: {
+          campaignId,
+          closeoutAttemptId: fixture.attemptId,
+          candidateBytesHash: candidateHash,
+          decision: 'pass',
+          aggregateHash: judgeReviewCampaignHash,
+        },
+        effectivePassReceipt: {
+          campaignId,
+          effectivePass: true,
+          effectivePassReceiptHash,
+        },
+        deliveryGateReceipt: {
+          status: 'awaiting_user_acceptance',
+          closeoutAttemptId: fixture.attemptId,
+          receiptHash: deliveryCloseoutGateReceiptHash,
+        },
+      })) as NativeGoalControlledExecutor,
+    });
+
+    expect(result.status).toBe('awaiting_user_acceptance');
+    expect(result.taskReport).toBeNull();
+    expect(fs.existsSync(fixture.taskReportPath)).toBe(false);
+    expect(result).toMatchObject({
+      closeoutAttemptId: fixture.attemptId,
+      taskReportCandidatePath: candidatePath,
+      taskReportArtifactHash: candidateHash,
+      controlledCloseoutIngested: true,
+      controlledCloseout: {
+        schemaVersion: 'main-agent-controlled-closeout-handoff/v1',
+        closeoutAttemptId: fixture.attemptId,
+        contextHash,
+        compileReceiptHash,
+        childClosureSetHash,
+        campaignReportHash,
+        closureReceiptHash,
+        judgeReviewCampaignHash,
+        effectivePassReceiptHash,
+        deliveryCloseoutGateReceiptHash,
+      },
+    });
+  });
+
+  it('rejects a candidate-only closeout without Judge and delivery receipts', () => {
+    const fixture = createNativeGoalInvocationFixture('codex');
+    const candidatePath = path.join(fixture.projectRoot, 'closeout', 'task-report-candidate.json');
+    writeJson(candidatePath, {
+      schemaVersion: 'goal-subcontract-campaign-task-report/v3',
+      status: 'done',
+      closeoutAttemptId: fixture.attemptId,
+    });
+
+    const result = runNativeGoalInvocation({
+      projectRoot: fixture.projectRoot,
+      host: 'codex',
+      packet: fixture.packet,
+      compiledPromptRef: fixture.compiledPromptRef,
+      taskReportPath: fixture.taskReportPath,
+      recordId: fixture.recordId,
+      attemptId: fixture.attemptId,
+      attemptBundle: fixture.attemptBundle,
+      executor: () => ({
+        exitCode: 0,
+        closeoutStatus: 'awaiting_user_acceptance',
+        closeoutAttemptId: fixture.attemptId,
+        taskReportCandidatePath: candidatePath,
+        taskReportArtifactHash: sha256File(candidatePath),
+      }),
+    });
+
+    expect(result).toMatchObject({
+      status: 'blocked',
+      validationErrors: ['main_agent_goal_task_report_provenance_mismatch'],
+      taskReport: null,
+    });
   });
 
   it('records a failed controlled execution without fabricating a TaskReport', () => {

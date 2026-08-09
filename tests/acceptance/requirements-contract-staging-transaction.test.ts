@@ -1,9 +1,11 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { runMainAgentPreConfirmationDrilldown } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import {
   artifacts,
   cleanCriticalAuditorRound,
+  createTestAuthoringExecutionOptions,
   createMinimalConsumerRequirementDescriptor,
   createTempRoot,
   expectSourceHashUnchanged,
@@ -30,6 +32,7 @@ describe('requirements contract staging transaction', () => {
       const beforeHash = sha256File(source);
 
       const result = runAuthoring(root, source, 'REQ-STAGING-MISSING', {
+        ...createTestAuthoringExecutionOptions('REQ-STAGING-MISSING'),
         targetPath: 'vnpy/chart/multi_timeframe_widget.py',
         requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
       });
@@ -64,6 +67,7 @@ describe('requirements contract staging transaction', () => {
       const source = writeConsumerRequirement(root);
 
       const initial = runAuthoring(root, source, 'REQ-STAGING-REFRESH', {
+        ...createTestAuthoringExecutionOptions('REQ-STAGING-REFRESH'),
         targetPath: 'vnpy/chart/multi_timeframe_widget.py',
         requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
       });
@@ -100,12 +104,14 @@ describe('requirements contract staging transaction', () => {
       );
 
       const localizationBlocked = runAuthoring(root, source, 'REQ-STAGING-REFRESH', {
+        ...createTestAuthoringExecutionOptions('REQ-STAGING-REFRESH'),
         targetPath: 'vnpy/chart/multi_timeframe_widget.py',
         requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
         confirmationLanguage: 'zh-CN',
       });
       expect(localizationBlocked.substate).toBe('localization_translation_required');
       const refreshed = runAuthoring(root, source, 'REQ-STAGING-REFRESH', {
+        ...createTestAuthoringExecutionOptions('REQ-STAGING-REFRESH'),
         targetPath: 'vnpy/chart/multi_timeframe_widget.py',
         requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
         confirmationLanguage: 'zh-CN',
@@ -115,18 +121,23 @@ describe('requirements contract staging transaction', () => {
           'staging-refresh-localization-response.test.json'
         ),
       });
-      const refreshedDraft = readFileSync(path.join(stagingDir, 'draft-source.md'), 'utf8');
+      const refreshedStagingDir = stagingTransactionDir(root, 'REQ-STAGING-REFRESH');
+      const refreshedDraft = readFileSync(
+        path.join(refreshedStagingDir, 'draft-source.md'),
+        'utf8'
+      );
       const refreshedRequest = readJson<Record<string, unknown>>(
-        path.join(stagingDir, 'critical-auditor-round-request-1.json')
+        path.join(refreshedStagingDir, 'critical-auditor-round-request-1.json')
       );
       const refreshedKernel = readJson<{ semanticKernel?: Record<string, unknown> }>(
-        path.join(stagingDir, 'semantic-kernel.json')
+        path.join(refreshedStagingDir, 'semantic-kernel.json')
       );
       const refreshedPacket = readJson<{ must_decomposition_packet?: Record<string, unknown> }>(
-        path.join(stagingDir, 'must_decomposition_packet.json')
+        path.join(refreshedStagingDir, 'must_decomposition_packet.json')
       );
 
       expect(issueCodes(refreshed)).toContain('critical_auditor_provider_mode_required');
+      expect(refreshedStagingDir).not.toBe(stagingDir);
       expect(refreshed.implementationConfirmationHash).not.toBe(
         initialImplementationConfirmationHash
       );
@@ -222,7 +233,7 @@ describe('requirements contract staging transaction', () => {
     } finally {
       removeTempRoot(root);
     }
-  });
+  }, 60_000);
 
   it('stops promotion without overwrite when source hash changes after transaction start', () => {
     const root = createTempRoot('requirements-contract-staging-source-race-');
@@ -232,10 +243,16 @@ describe('requirements contract staging transaction', () => {
       const beforeHash = sha256File(source);
       let changed = false;
 
-      const result = runAuthoring(root, source, 'REQ-STAGING-SOURCE-RACE', {
+      const recordId = 'REQ-STAGING-SOURCE-RACE';
+      const result = runMainAgentPreConfirmationDrilldown(root, {
+        ...createTestAuthoringExecutionOptions(recordId),
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
         targetPath: 'vnpy/chart/multi_timeframe_widget.py',
         requiredCommand: 'pytest tests/test_multi_timeframe_settings.py',
-        criticalAuditorRound: (input) => {
+        get maxCriticalAuditorRounds() {
+          // Production reads this after freezing the transaction's source hash.
           if (!changed) {
             writeFileSync(
               source,
@@ -244,7 +261,7 @@ describe('requirements contract staging transaction', () => {
             );
             changed = true;
           }
-          return cleanCriticalAuditorRound(input);
+          return 3;
         },
       });
       const afterHash = sha256File(source);

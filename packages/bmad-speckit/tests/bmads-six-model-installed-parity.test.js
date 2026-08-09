@@ -8,7 +8,6 @@ const { spawnSync } = require('node:child_process');
 const Ajv = require('ajv');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
-const REPO_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
 const PACKAGE_CLI = path.join(PACKAGE_ROOT, 'bin', 'bmad-speckit.js');
 const COMMAND = 'requirements-contract-six-model-projection-parity-verify';
 const PRODUCER_DIST = path.join(
@@ -101,6 +100,22 @@ const ZERO_COUNTS = {
   bridge: 0,
   panorama: 0,
 };
+
+function createFileSymlinkOrSkip(t, targetPath, linkPath) {
+  try {
+    fs.symlinkSync(targetPath, linkPath, 'file');
+    return true;
+  } catch (error) {
+    if (
+      process.platform === 'win32' &&
+      ['EPERM', 'EACCES'].includes(error.code)
+    ) {
+      t.skip('Windows host does not permit file symlink creation');
+      return false;
+    }
+    throw error;
+  }
+}
 const OBSERVATION_PRODUCER = 'requirements-contract-six-model-projection-parity-observation-producer';
 const OBSERVATION_ACTION = 'requirements-contract-six-model-projection-parity-observe';
 const CASE_PRODUCER = 'requirements-contract-six-model-projection-parity-case-runner';
@@ -126,6 +141,24 @@ const PARITY_CONTRACT_BINDING = {
 function writeJson(target, value) {
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+function createFileSymlinkOrSkip(testContext, target, linkPath) {
+  try {
+    fs.symlinkSync(target, linkPath, 'file');
+    return true;
+  } catch (error) {
+    if (
+      process.platform === 'win32' &&
+      error &&
+      typeof error === 'object' &&
+      (error.code === 'EPERM' || error.code === 'EACCES')
+    ) {
+      testContext.skip(`Windows file symlink capability unavailable: ${error.code}`);
+      return false;
+    }
+    throw error;
+  }
 }
 
 function relativeFileRef(root, target) {
@@ -1090,13 +1123,21 @@ describe('requirements-contract six-model installed parity package CLI', () => {
     }
   });
 
-  it('publishes governed BLOCK for a broken parity authority symlink', () => {
+  it('publishes governed BLOCK for a broken parity authority symlink', (t) => {
     const fixture = materializeEvidenceRoot();
     const out = path.join(fixture.root, 'authority-broken-link-report.json');
     const authorityPath = path.join(fixture.evidenceRoot, 'parity-authority.json');
-    fs.rmSync(authorityPath);
-    fs.symlinkSync(path.join(fixture.root, 'missing-authority.json'), authorityPath, 'file');
     try {
+      fs.rmSync(authorityPath);
+      if (
+        !createFileSymlinkOrSkip(
+          t,
+          path.join(fixture.root, 'missing-authority.json'),
+          authorityPath
+        )
+      ) {
+        return;
+      }
       const summary = parseBlockedSummary(
         runVerifier(PACKAGE_CLI, fixture.evidenceRoot, out)
       );
@@ -1133,17 +1174,21 @@ describe('requirements-contract six-model installed parity package CLI', () => {
     }
   });
 
-  it('publishes governed BLOCK for a broken canonical observation symlink', () => {
+  it('publishes governed BLOCK for a broken canonical observation symlink', (t) => {
     const fixture = materializeEvidenceRoot();
     const out = path.join(fixture.root, 'canonical-observation-broken-link-report.json');
     const sourceObservationPath = observationPath(fixture.evidenceRoot, 'source');
-    fs.rmSync(sourceObservationPath);
-    fs.symlinkSync(
-      path.join(fixture.root, 'missing-source-observation.json'),
-      sourceObservationPath,
-      'file'
-    );
     try {
+      fs.rmSync(sourceObservationPath);
+      if (
+        !createFileSymlinkOrSkip(
+          t,
+          path.join(fixture.root, 'missing-source-observation.json'),
+          sourceObservationPath
+        )
+      ) {
+        return;
+      }
       const summary = parseBlockedSummary(
         runVerifier(PACKAGE_CLI, fixture.evidenceRoot, out)
       );
@@ -1756,15 +1801,19 @@ describe('requirements-contract six-model installed parity package CLI', () => {
     }
   });
 
-  it('blocks a broken unknown observation symlink with a distinct reason', () => {
+  it('blocks a broken unknown observation symlink with a distinct reason', (t) => {
     const fixture = materializeEvidenceRoot();
     const out = path.join(fixture.root, 'unknown-surface-broken-symlink-report.json');
-    fs.symlinkSync(
-      path.join(fixture.root, 'missing-staging-observation.json'),
-      path.join(fixture.evidenceRoot, 'observations', 'staging.json'),
-      'file'
-    );
     try {
+      if (
+        !createFileSymlinkOrSkip(
+          t,
+          path.join(fixture.root, 'missing-staging-observation.json'),
+          path.join(fixture.evidenceRoot, 'observations', 'staging.json')
+        )
+      ) {
+        return;
+      }
       parseBlockedSummary(runVerifier(PACKAGE_CLI, fixture.evidenceRoot, out));
       const report = JSON.parse(fs.readFileSync(out, 'utf8'));
 
@@ -1807,15 +1856,19 @@ describe('requirements-contract six-model installed parity package CLI', () => {
     }
   });
 
-  it('blocks an unknown observation symlink that aliases a known surface', () => {
+  it('blocks an unknown observation symlink that aliases a known surface', (t) => {
     const fixture = materializeEvidenceRoot();
     const out = path.join(fixture.root, 'unknown-surface-symlink-report.json');
-    fs.symlinkSync(
-      observationPath(fixture.evidenceRoot, 'source'),
-      path.join(fixture.evidenceRoot, 'observations', 'staging.json'),
-      'file'
-    );
     try {
+      if (
+        !createFileSymlinkOrSkip(
+          t,
+          observationPath(fixture.evidenceRoot, 'source'),
+          path.join(fixture.evidenceRoot, 'observations', 'staging.json')
+        )
+      ) {
+        return;
+      }
       parseBlockedSummary(runVerifier(PACKAGE_CLI, fixture.evidenceRoot, out));
       const report = JSON.parse(fs.readFileSync(out, 'utf8'));
 
@@ -1831,7 +1884,7 @@ describe('requirements-contract six-model installed parity package CLI', () => {
     }
   });
 
-  it('blocks an unknown observation symlink whose target escapes the evidence root', () => {
+  it('blocks an unknown observation symlink whose target escapes the evidence root', (t) => {
     const fixture = materializeEvidenceRoot();
     const out = path.join(fixture.root, 'unknown-surface-external-symlink-report.json');
     const escapedObservation = path.join(fixture.root, 'escaped-staging-observation.json');
@@ -1842,12 +1895,16 @@ describe('requirements-contract six-model installed parity package CLI', () => {
       counts: ZERO_COUNTS,
       coverage: 1,
     });
-    fs.symlinkSync(
-      escapedObservation,
-      path.join(fixture.evidenceRoot, 'observations', 'staging.json'),
-      'file'
-    );
     try {
+      if (
+        !createFileSymlinkOrSkip(
+          t,
+          escapedObservation,
+          path.join(fixture.evidenceRoot, 'observations', 'staging.json')
+        )
+      ) {
+        return;
+      }
       parseBlockedSummary(runVerifier(PACKAGE_CLI, fixture.evidenceRoot, out));
       const report = JSON.parse(fs.readFileSync(out, 'utf8'));
 
@@ -1988,14 +2045,14 @@ describe('requirements-contract six-model installed parity package CLI', () => {
     }
   });
 
-  it('blocks a parity authority file symlink outside the evidence root', () => {
+  it('blocks a parity authority file symlink outside the evidence root', (t) => {
     const fixture = materializeEvidenceRoot();
     const out = path.join(fixture.root, 'authority-symlink-escape-report.json');
     const authorityPath = path.join(fixture.evidenceRoot, 'parity-authority.json');
     const escapedAuthorityPath = path.join(fixture.root, 'escaped-parity-authority.json');
-    fs.renameSync(authorityPath, escapedAuthorityPath);
-    fs.symlinkSync(escapedAuthorityPath, authorityPath, 'file');
     try {
+      fs.renameSync(authorityPath, escapedAuthorityPath);
+      if (!createFileSymlinkOrSkip(t, escapedAuthorityPath, authorityPath)) return;
       parseBlockedSummary(runVerifier(PACKAGE_CLI, fixture.evidenceRoot, out));
       const report = JSON.parse(fs.readFileSync(out, 'utf8'));
 

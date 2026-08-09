@@ -1,4 +1,12 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -488,7 +496,19 @@ describe('manifest driven required command runner contract', () => {
 
   it('treats forbidden rg scans as pass only when no forbidden pattern is found', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'manifest-runner-forbidden-rg-'));
+    const originalPath = process.env.PATH;
     try {
+      const shimDir = path.join(root, 'bin');
+      mkdirSync(shimDir);
+      const shimPath = path.join(shimDir, process.platform === 'win32' ? 'rg.ps1' : 'rg');
+      writeFileSync(
+        shimPath,
+        process.platform === 'win32' ? 'exit 1\n' : '#!/bin/sh\nexit 1\n',
+        'utf8'
+      );
+      if (process.platform !== 'win32') chmodSync(shimPath, 0o755);
+      process.env.PATH = [shimDir, originalPath].filter(Boolean).join(path.delimiter);
+
       const { sourcePath, recordPath } = fixture(root, 'valid');
       const cleanFile = path.join(root, 'clean-surface.ts');
       writeText(cleanFile, 'currentMentalModel: delivery_confirmation\n');
@@ -528,6 +548,8 @@ describe('manifest driven required command runner contract', () => {
         ])
       );
     } finally {
+      if (originalPath === undefined) delete process.env.PATH;
+      else process.env.PATH = originalPath;
       rmSync(root, { recursive: true, force: true });
     }
   });

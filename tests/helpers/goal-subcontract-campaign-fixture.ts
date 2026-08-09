@@ -42,6 +42,7 @@ type CampaignFixtureOptions = {
   worktreeOwnedDrift?: boolean;
   renameScopeEscape?: boolean;
   scopeEscape?: boolean;
+  canonicalPartitionIds?: boolean;
 };
 
 function createCampaignSubjects(
@@ -103,8 +104,8 @@ function writeChildAuditArtifacts(fixture: CampaignFixture, child: CampaignChild
   });
   const closurePath = writeJson(fixture.root, closureRelative, {
     partitionId: child.partitionId,
-    contractHash: child.hash,
-    status: 'closed',
+    childContractHash: child.hash,
+    decision: 'pass',
   });
   return {
     closureHash: hashFile(closurePath),
@@ -415,7 +416,9 @@ function writeCampaignArtifacts(
 }
 
 export function prepareCampaign(options: CampaignFixtureOptions = {}) {
-  const fixture = createFixture(options.requirementRecordBinding);
+  const fixture = createFixture(options.requirementRecordBinding, {
+    canonicalPartitionIds: options.canonicalPartitionIds,
+  });
   const compiled = runScript('build-execution-package.js', [
     '--request',
     fixture.requestPath,

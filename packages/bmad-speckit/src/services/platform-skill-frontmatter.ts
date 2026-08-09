@@ -12,14 +12,6 @@ const KNOWN_PLATFORM_SKILL_DESCRIPTIONS = Object.freeze({
     'Use when the user runs or asks about /speckit.constitution, /speckit.specify, /speckit.plan, /speckit.tasks, /speckit.implement, IMPLEMENTATION_GAPS, tasks.md, tasks-v*.md, or Speckit workflows needing requirement mapping, clarify/checklist/analyze, code-review audit closed loops, TDD red-green-refactor, QA_Agent rules, ralph-wiggum, architecture fidelity, no fake implementation, active regression testing, and validation gates.',
 });
 
-function isCodexSkillFile(filePath) {
-  const portablePath = String(filePath || '').replace(/\\/g, '/');
-  return (
-    path.basename(filePath) === 'SKILL.md' &&
-    (portablePath.includes('/.codex/skills/') || portablePath.startsWith('.codex/skills/'))
-  );
-}
-
 function isPlatformSkillFile(filePath) {
   const portablePath = String(filePath || '').replace(/\\/g, '/');
   return (
@@ -128,8 +120,10 @@ function normalizePlatformSkillFrontmatterContent(raw, skillName) {
 function normalizePlatformSkillFrontmatterFile(filePath) {
   if (!isPlatformSkillFile(filePath) || !fs.existsSync(filePath)) return false;
   const raw = fs.readFileSync(filePath, 'utf8');
-  const normalizedContent = normalizePlatformSkillFrontmatterContent(raw, path.basename(path.dirname(filePath)));
-  const normalized = isCodexSkillFile(filePath) ? normalizedContent.replace(/\r\n/gu, '\n') : normalizedContent;
+  const normalized = normalizePlatformSkillFrontmatterContent(
+    raw,
+    path.basename(path.dirname(filePath))
+  );
   if (normalized === raw) return false;
   fs.writeFileSync(filePath, normalized, 'utf8');
   return true;

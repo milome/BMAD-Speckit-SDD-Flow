@@ -13,6 +13,7 @@ const {
 } = require('./schema-registry.ts');
 const {
   preflightRequirementRecordPartitionAuthoritySupersession,
+  resolveGoalContractSourceIdentity,
   validateImmutablePartitionAuthorityUnit,
 } = require(
   `./partition-output-paths${__filename.endsWith('.ts') ? '.ts' : ''}`
@@ -2272,6 +2273,14 @@ function loadAuthoritySupersessionForRelease({
   goalPath,
   expectedPartitionPlanHash,
 }) {
+  const canonicalGeneration =
+    loadCanonicalStandaloneGenerationForRelease({
+      authorityRoot,
+      partitionManifestPath,
+      goalPath,
+      expectedPartitionPlanHash,
+    });
+  if (canonicalGeneration) return canonicalGeneration;
   const verified = verifyAuthoritySupersessionReceipt({
     authorityRoot,
   });
@@ -2424,6 +2433,188 @@ function loadAuthoritySupersessionForRelease({
   });
 }
 
+function loadCanonicalStandaloneGenerationForRelease({
+  authorityRoot,
+  partitionManifestPath,
+  goalPath,
+  expectedPartitionPlanHash,
+}) {
+  const root = path.resolve(authorityRoot || '');
+  if (fs.existsSync(path.join(root, 'bundle-manifest.json'))) {
+    return null;
+  }
+  const generationsRoot = path.dirname(root);
+  if (path.basename(generationsRoot) !== 'generations') {
+    return null;
+  }
+  const activePointerPath = path.join(
+    path.dirname(generationsRoot),
+    'active-generation.json'
+  );
+  if (
+    !fs.existsSync(activePointerPath) ||
+    !fs.statSync(activePointerPath).isFile()
+  ) {
+    return null;
+  }
+  const pointer = readJson(
+    activePointerPath,
+    'partition_active_pointer_invalid'
+  );
+  validateGoalContractSchema(OUTPUT_AUTHORITY_SCHEMA, pointer);
+  const expectedManifestPath = path.resolve(
+    pointer.partitionManifestPath || ''
+  );
+  if (
+    pointer.authorityMode !== 'standalone_bootstrap' ||
+    path.resolve(pointer.generationRoot || '') !== root ||
+    path.resolve(partitionManifestPath || '') !==
+      expectedManifestPath ||
+    path.resolve(pointer.partitionPlanPath || '') !==
+      path.join(root, 'partition-plan.json') ||
+    expectedManifestPath !==
+      path.join(root, 'partition-manifest.json')
+  ) {
+    throw failure('partition_active_pointer_stale');
+  }
+  const sourceIdentity = resolveGoalContractSourceIdentity({
+    profile: 'standalone_frozen',
+    nativeGoalHandoff: {
+      masterImplementationPlanHash: pointer.sourceHash,
+    },
+  });
+  const authoritySourceRoot = path.dirname(generationsRoot);
+  const repositoryRoot = path.resolve(
+    authoritySourceRoot,
+    '..',
+    '..',
+    '..',
+    '..'
+  );
+  const expectedAuthoritySourceRoot = path.join(
+    repositoryRoot,
+    '_bmad-output',
+    'runtime',
+    'goal-contract-partition-bootstrap',
+    sourceIdentity.sourceIdentityHash.slice('sha256:'.length)
+  );
+  if (path.resolve(expectedAuthoritySourceRoot) !== authoritySourceRoot) {
+    throw failure('partition_active_pointer_stale');
+  }
+  const authority = {
+    authorityMode: pointer.authorityMode,
+    repositoryRoot,
+    sourceHash: sourceIdentity.sourceIdentityHash,
+    generationKey: pointer.generationKey,
+    unitRoot: root,
+    activePointerPath,
+    partitionPlanPath: pointer.partitionPlanPath,
+    partitionManifestPath: pointer.partitionManifestPath,
+  };
+  const validated = validateImmutablePartitionAuthorityUnit({
+    authority,
+    expectedSourceHash: sourceIdentity.sourceIdentityHash,
+    expectedGenerationKey: pointer.generationKey,
+    expectedPartitionPlanHash: pointer.partitionPlanHash,
+    expectedPartitionManifestHash: pointer.partitionManifestHash,
+    expectedPartitionManifestDocumentHash:
+      pointer.partitionManifestDocumentHash,
+  });
+  if (
+    expectedPartitionPlanHash &&
+    expectedPartitionPlanHash !== validated.partitionPlanHash
+  ) {
+    throw failure('successor_release_authority_binding_mismatch');
+  }
+  const partitionPlan = readJson(
+    pointer.partitionPlanPath,
+    'partition_generation_incomplete'
+  );
+  const manifest = validated.manifest;
+  const resolvedGoalPath = path.resolve(goalPath || '');
+  const child = (manifest.partitions || []).find((partition) => {
+    const validatedChild = validated.childContractHashes.find(
+      (entry) => entry.hash === partition.childContractHash
+    );
+    return (
+      validatedChild &&
+      path.resolve(root, validatedChild.path) === resolvedGoalPath
+    );
+  });
+  if (
+    !child ||
+    !fs.existsSync(resolvedGoalPath) ||
+    sha256File(resolvedGoalPath) !== child.childContractHash
+  ) {
+    throw failure('successor_child_membership_invalid', {
+      goalPath: resolvedGoalPath,
+    });
+  }
+  const childGeneration = readJson(
+    path.join(
+      root,
+      'receipts',
+      'children',
+      `${child.partitionId}.generation.json`
+    ),
+    'partition_child_generation_receipt_invalid'
+  );
+  validateGoalContractSchema(
+    'goal-contract-partition-child-generation-receipt.schema.json',
+    childGeneration
+  );
+  return Object.freeze({
+    authorityMode: 'standalone_bootstrap',
+    authorityRoot: root.replace(/\\/gu, '/'),
+    activePointerPath: activePointerPath.replace(/\\/gu, '/'),
+    sourceIdentity,
+    artifactHashes: Object.freeze({
+      ...Object.fromEntries(
+        validated.childContractHashes.map((entry) => [
+          entry.path,
+          entry.hash,
+        ])
+      ),
+      ...Object.fromEntries(
+        validated.requiredReceiptHashes.map((entry) => [
+          entry.path,
+          entry.hash,
+        ])
+      ),
+    }),
+    partitionPlan,
+    partitionPlanHash: validated.partitionPlanHash,
+    methodology: Object.freeze({
+      methodologyProfileHash:
+        partitionPlan.methodologyProfileHash,
+      methodologyProfileArtifactHash:
+        childGeneration.methodologyProfileArtifactHash,
+    }),
+    optimizerPolicyBinding: Object.freeze({
+      partitionPolicyHash: partitionPlan.partitionPolicyHash,
+      partitionPolicyArtifactHash:
+        childGeneration.partitionPolicyArtifactHash,
+    }),
+    projection: Object.freeze({
+      executionProjectionHash: manifest.executionProjectionHash,
+      taskDagHash: manifest.taskDagHash,
+      sequenceConstraintBinding: Object.freeze({
+        sequenceMode: manifest.sequenceMode,
+        applicabilityDecision:
+          manifest.sequenceApplicability,
+        sequenceCoverage: manifest.sequenceCoverage,
+        sequenceClosureStatus: manifest.sequenceClosureStatus,
+        childContractAuthority:
+          manifest.childContractAuthority,
+      }),
+    }),
+    compiled: Object.freeze({
+      manifest,
+      partitionManifestHash: manifest.partitionManifestHash,
+    }),
+  });
+}
+
 function promoteAuthoritySupersessionAttempt({ staged }) {
   if (!staged || typeof staged.finalRoot !== 'string') {
     throw failure('authority_supersession_promotion_request_invalid');
@@ -2467,24 +2658,85 @@ function requirePartitionAuthorityHash(value, field) {
   return value;
 }
 
-function requirementRecordGoalSourceHash(record) {
+function requirementRecordGoalSourceIdentity(
+  record,
+  sourceIdentityProfile = 'standalone_frozen'
+) {
   const handoff = record?.nativeGoalHandoff;
-  const sourceHash =
-    handoff?.masterImplementationPlanHash ||
-    handoff?.goalContractSourceIdentity?.masterImplementationPlanHash;
-  if (typeof sourceHash !== 'string') {
-    throw failure('partition_authority_source_identity_missing');
+  try {
+    return resolveGoalContractSourceIdentity({
+      profile: sourceIdentityProfile,
+      nativeGoalHandoff: handoff,
+    });
+  } catch (error) {
+    if (error?.failureClass === 'goal_contract_source_identity_missing') {
+      throw failure('partition_authority_source_identity_missing');
+    }
+    throw error;
   }
-  return requirePartitionAuthorityHash(
-    sourceHash,
-    'nativeGoalHandoff.masterImplementationPlanHash'
-  );
+}
+
+function requirementRecordEventChainProjection(payload) {
+  return hashControlPlaneValue({
+    requirementSetId: payload.requirementSetId,
+    sourceHash: payload.sourceHash,
+    partitionRunId: payload.partitionRunId,
+    partitionManifestHash: payload.partitionManifestHash,
+    partitionManifestDocumentHash:
+      payload.partitionManifestDocumentHash,
+  });
+}
+
+function bindCompiledSourceIdentityProjection({
+  payload,
+  declaredProjection,
+  sourceIdentity,
+  sourceIdentityProfile,
+}) {
+  if (sourceIdentityProfile !== 'main_agent_compiled') {
+    return declaredProjection;
+  }
+  const expectedProjection =
+    requirementRecordEventChainProjection(payload);
+  if (declaredProjection !== expectedProjection) {
+    throw failure('partition_authority_source_identity_mismatch', {
+      field: 'eventChainProjection',
+      expectedSourceHash: expectedProjection,
+      actualSourceHash: declaredProjection,
+    });
+  }
+  return hashControlPlaneValue({
+    eventChainProjection: declaredProjection,
+    sourceIdentityResolutionHash: sourceIdentity.resolutionHash,
+  });
+}
+
+function assertCompiledSourceIdentityProjection({
+  payload,
+  sourceIdentity,
+  sourceIdentityProfile,
+}) {
+  if (sourceIdentityProfile !== 'main_agent_compiled') return;
+  const expected = hashControlPlaneValue({
+    eventChainProjection:
+      requirementRecordEventChainProjection(payload),
+    sourceIdentityResolutionHash: sourceIdentity.resolutionHash,
+  });
+  if (payload.eventChainProjection !== expected) {
+    throw failure('partition_authority_source_identity_mismatch', {
+      field: 'eventChainProjection',
+      expectedSourceHash: expected,
+      actualSourceHash: payload.eventChainProjection,
+    });
+  }
 }
 
 function prepareRequirementRecordPartitionAuthoritySupersession(input) {
   if (!input?.record || typeof input.record !== 'object') {
     throw failure('partition_authority_record_invalid');
   }
+  const sourceIdentityProfile =
+    input.sourceIdentityProfile ?? 'standalone_frozen';
   const requirementSetId = input.record.requirementSetId;
   if (
     typeof requirementSetId !== 'string' ||
@@ -2492,7 +2744,11 @@ function prepareRequirementRecordPartitionAuthoritySupersession(input) {
   ) {
     throw failure('partition_authority_requirement_set_invalid');
   }
-  const boundSourceHash = requirementRecordGoalSourceHash(input.record);
+  const boundSourceIdentity = requirementRecordGoalSourceIdentity(
+    input.record,
+    sourceIdentityProfile
+  );
+  const boundSourceHash = boundSourceIdentity.sourceIdentityHash;
   const sourceHash = requirePartitionAuthorityHash(
     input.sourceHash,
     'sourceHash'
@@ -2516,7 +2772,7 @@ function prepareRequirementRecordPartitionAuthoritySupersession(input) {
   ) {
     throw failure('partition_authority_root_invalid');
   }
-  const payload = Object.freeze({
+  const payloadFields = {
     schemaVersion: 'goal-contract-partition-authority-supersession/v1',
     requirementSetId,
     sourceHash,
@@ -2538,17 +2794,38 @@ function prepareRequirementRecordPartitionAuthoritySupersession(input) {
       input.partitionSetHash,
       'partitionSetHash'
     ),
-    eventChainProjection: requirePartitionAuthorityHash(
+  };
+  const declaredEventChainProjection =
+    requirePartitionAuthorityHash(
       input.eventChainProjection,
       'eventChainProjection'
-    ),
+    );
+  const payload = Object.freeze({
+    ...payloadFields,
+    eventChainProjection: bindCompiledSourceIdentityProjection({
+      payload: payloadFields,
+      declaredProjection: declaredEventChainProjection,
+      sourceIdentity: boundSourceIdentity,
+      sourceIdentityProfile,
+    }),
   });
   return Object.freeze({
     writerId: 'goal-contract-authority-supersession',
     eventType: 'goal_contract_partition_authority_superseded',
     payload,
     reduce(record) {
-      const currentSourceHash = requirementRecordGoalSourceHash(record);
+      const currentSourceIdentity =
+        requirementRecordGoalSourceIdentity(
+          record,
+          sourceIdentityProfile
+        );
+      const currentSourceHash =
+        currentSourceIdentity.sourceIdentityHash;
+      assertCompiledSourceIdentityProjection({
+        payload,
+        sourceIdentity: currentSourceIdentity,
+        sourceIdentityProfile,
+      });
       if (currentSourceHash !== payload.sourceHash) {
         throw failure('partition_authority_source_identity_mismatch', {
           expectedSourceHash: currentSourceHash,
@@ -2567,8 +2844,15 @@ function prepareRequirementRecordPartitionAuthoritySupersession(input) {
   });
 }
 
-function projectRequirementRecordPartitionAuthority(record) {
-  const sourceHash = requirementRecordGoalSourceHash(record);
+function projectRequirementRecordPartitionAuthority(
+  record,
+  sourceIdentityProfile = 'standalone_frozen'
+) {
+  const sourceIdentity = requirementRecordGoalSourceIdentity(
+    record,
+    sourceIdentityProfile
+  );
+  const sourceHash = sourceIdentity.sourceIdentityHash;
   const payload = record?.nativeGoalHandoff?.goalContractPartitionAuthority;
   if (!payload || typeof payload !== 'object') {
     throw failure('partition_authority_projection_missing');
@@ -2590,6 +2874,11 @@ function projectRequirementRecordPartitionAuthority(record) {
   ]) {
     requirePartitionAuthorityHash(payload[field], field);
   }
+  assertCompiledSourceIdentityProjection({
+    payload,
+    sourceIdentity,
+    sourceIdentityProfile,
+  });
   return Object.freeze({ ...payload });
 }
 
@@ -2646,8 +2935,15 @@ function writePartitionAuthorityProjectionFile(
   }
 }
 
-function requirementRecordPartitionPointer(record, recordPath) {
-  const authority = projectRequirementRecordPartitionAuthority(record);
+function requirementRecordPartitionPointer(
+  record,
+  recordPath,
+  sourceIdentityProfile = 'standalone_frozen'
+) {
+  const authority = projectRequirementRecordPartitionAuthority(
+    record,
+    sourceIdentityProfile
+  );
   const recordHash = record.recordHash;
   const eventChainHead = record.eventChainHead;
   if (
@@ -2679,8 +2975,14 @@ function requirementRecordPartitionPointer(record, recordPath) {
   return Object.freeze(projected);
 }
 
-function pointerProjectionPaths(record) {
-  const authority = projectRequirementRecordPartitionAuthority(record);
+function pointerProjectionPaths(
+  record,
+  sourceIdentityProfile = 'standalone_frozen'
+) {
+  const authority = projectRequirementRecordPartitionAuthority(
+    record,
+    sourceIdentityProfile
+  );
   return Object.freeze({
     activePointerPath: path.join(
       authority.authorityRoot,
@@ -2695,10 +2997,15 @@ function pointerProjectionPaths(record) {
 
 function writeRequirementRecordPartitionAuthorityProjection(
   record,
-  recordPath
+  recordPath,
+  sourceIdentityProfile = 'standalone_frozen'
 ) {
-  const pointer = requirementRecordPartitionPointer(record, recordPath);
-  const paths = pointerProjectionPaths(record);
+  const pointer = requirementRecordPartitionPointer(
+    record,
+    recordPath,
+    sourceIdentityProfile
+  );
+  const paths = pointerProjectionPaths(record, sourceIdentityProfile);
   writePartitionAuthorityProjectionFile(
     paths.activePointerPath,
     canonicalText(pointer)
@@ -2715,9 +3022,10 @@ function writeRequirementRecordPartitionAuthorityProjection(
 
 function markRequirementRecordPartitionAuthorityProjectionBlocked(
   record,
-  details
+  details,
+  sourceIdentityProfile = 'standalone_frozen'
 ) {
-  const paths = pointerProjectionPaths(record);
+  const paths = pointerProjectionPaths(record, sourceIdentityProfile);
   const marker = {
     schemaVersion: 'goal-contract-partition-pointer-projection-blocked/v1',
     recordPath: normalizePath(
@@ -2746,6 +3054,8 @@ function commitRequirementRecordPartitionAuthoritySupersession(input) {
   }
   const record = readJson(recordPath, 'partition_authority_record_invalid');
   const repositoryRoot = path.resolve(input.repositoryRoot || '');
+  const sourceIdentityProfile =
+    input.sourceIdentityProfile ?? 'standalone_frozen';
   const requirementSetId = record.requirementSetId;
   const expectedRecordPath = path.join(
     repositoryRoot,
@@ -2784,6 +3094,7 @@ function commitRequirementRecordPartitionAuthoritySupersession(input) {
     recordPath,
     requirementSetId,
     sourceHash: input.sourceHash,
+    sourceIdentityProfile,
   });
   const validatedAuthority =
     validateImmutablePartitionAuthorityUnit({
@@ -2808,6 +3119,7 @@ function commitRequirementRecordPartitionAuthoritySupersession(input) {
   const prepared = prepareRequirementRecordPartitionAuthoritySupersession({
     record,
     ...input,
+    sourceIdentityProfile,
     partitionPlanHash: validatedAuthority.partitionPlanHash,
     partitionManifestHash:
       validatedAuthority.partitionManifestHash,
@@ -2849,10 +3161,12 @@ function commitRequirementRecordPartitionAuthoritySupersession(input) {
       ? input.writeProjection({
           record: committedRecord,
           committed,
+          sourceIdentityProfile,
         })
       : writeRequirementRecordPartitionAuthorityProjection(
           committedRecord,
-          recordPath
+          recordPath,
+          sourceIdentityProfile
         );
     return Object.freeze({ ...committed, pointer });
   } catch (error) {
@@ -2860,7 +3174,8 @@ function commitRequirementRecordPartitionAuthoritySupersession(input) {
       committedRecord,
       {
         failureClass: String(error?.message || 'projection_failed'),
-      }
+      },
+      sourceIdentityProfile
     );
     throw failure('partition_authority_pointer_projection_pending', {
       recordPath: normalizePath(recordPath),
@@ -2874,11 +3189,13 @@ function commitRequirementRecordPartitionAuthoritySupersession(input) {
 
 function readRequirementRecordPartitionAuthorityProjection(input) {
   const recordPath = path.resolve(input?.recordPath || '');
+  const sourceIdentityProfile =
+    input?.sourceIdentityProfile ?? 'standalone_frozen';
   const record = readJson(
     recordPath,
     'partition_authority_record_invalid'
   );
-  const paths = pointerProjectionPaths(record);
+  const paths = pointerProjectionPaths(record, sourceIdentityProfile);
   if (fs.existsSync(paths.blockedMarkerPath)) {
     throw failure('partition_authority_pointer_projection_blocked', {
       blockedMarkerPath: normalizePath(paths.blockedMarkerPath),
@@ -2889,7 +3206,11 @@ function readRequirementRecordPartitionAuthorityProjection(input) {
     'partition_authority_pointer_missing'
   );
   validateGoalContractSchema(OUTPUT_AUTHORITY_SCHEMA, pointer);
-  const expected = requirementRecordPartitionPointer(record, recordPath);
+  const expected = requirementRecordPartitionPointer(
+    record,
+    recordPath,
+    sourceIdentityProfile
+  );
   if (stableControlPlaneStringify(pointer) !== stableControlPlaneStringify(expected)) {
     throw failure('partition_authority_pointer_stale');
   }
@@ -2901,13 +3222,16 @@ function readRequirementRecordPartitionAuthorityProjection(input) {
 
 function recoverRequirementRecordPartitionAuthorityProjection(input) {
   const recordPath = path.resolve(input?.recordPath || '');
+  const sourceIdentityProfile =
+    input?.sourceIdentityProfile ?? 'standalone_frozen';
   const record = readJson(
     recordPath,
     'partition_authority_record_invalid'
   );
   const pointer = writeRequirementRecordPartitionAuthorityProjection(
     record,
-    recordPath
+    recordPath,
+    sourceIdentityProfile
   );
   return Object.freeze({
     ...pointer,

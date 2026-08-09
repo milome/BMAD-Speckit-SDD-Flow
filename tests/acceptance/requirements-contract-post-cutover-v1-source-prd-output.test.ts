@@ -6,8 +6,8 @@ import { describe, expect, it } from 'vitest';
 const GOLDEN_SOURCE_PRD = path.resolve(
   'packages/bmad-speckit/src/main-agent/source-authority/tests/fixtures/source-prd/golden-source-prd.md'
 );
-const MAIN_AGENT_ORCHESTRATION = path.resolve(
-  'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts'
+const PRODUCTION_PRD_RENDER_SEAM = path.resolve(
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prd-render-write-seam.ts'
 );
 
 function sourceAuthoritySections(): string {
@@ -48,17 +48,11 @@ function renderInput(projectRoot: string) {
 
 describe('post-cutover V1 Source PRD output', () => {
   it('routes production Source PRD rendering through the project-root selector seam', () => {
-    const orchestrationSource = readFileSync(MAIN_AGENT_ORCHESTRATION, 'utf8');
+    const seamSource = readFileSync(PRODUCTION_PRD_RENDER_SEAM, 'utf8');
 
-    expect(orchestrationSource.includes('renderProductionCanonicalRequirementSourcePrd')).toBe(
-      true
-    );
-    expect(
-      /renderProductionCanonicalRequirementSourcePrd\(\{[\s\S]*?projectRoot:\s*root,/u.test(
-        orchestrationSource
-      )
-    ).toBe(true);
-    expect(/\brenderCanonicalRequirementSourcePrd\(\{/u.test(orchestrationSource)).toBe(false);
+    expect(seamSource.includes('renderProductionCanonicalRequirementSourcePrd')).toBe(true);
+    expect(seamSource.includes('readProductionOutputPolicyBinding(projectRoot)')).toBe(true);
+    expect(seamSource.includes('renderProductionClassifiedRequirementSourcePrd')).toBe(true);
   });
 
   it('loads the live V2 selector before the production renderer can emit legacy layout', async () => {
@@ -80,13 +74,12 @@ describe('post-cutover V1 Source PRD output', () => {
     );
 
     try {
-      const seam = await import(
-        '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prd-render-write-seam'
-      );
+      const seam =
+        await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prd-render-write-seam');
       expect(seam.renderProductionCanonicalRequirementSourcePrd).toBeTypeOf('function');
-      expect(() =>
-        seam.renderProductionCanonicalRequirementSourcePrd(renderInput(root))
-      ).toThrow(/V2 activation.*currentTargetMap|currentTargetMap.*V2 activation/iu);
+      expect(() => seam.renderProductionCanonicalRequirementSourcePrd(renderInput(root))).toThrow(
+        /V2 activation.*currentTargetMap|currentTargetMap.*V2 activation/iu
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -109,12 +102,11 @@ describe('post-cutover V1 Source PRD output', () => {
     );
 
     try {
-      const seam = await import(
-        '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prd-render-write-seam'
+      const seam =
+        await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prd-render-write-seam');
+      expect(() => seam.renderProductionCanonicalRequirementSourcePrd(renderInput(root))).toThrow(
+        /production output selector is invalid/iu
       );
-      expect(() =>
-        seam.renderProductionCanonicalRequirementSourcePrd(renderInput(root))
-      ).toThrow(/production output selector is invalid/iu);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

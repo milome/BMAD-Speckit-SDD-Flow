@@ -4,8 +4,23 @@ const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const {
+  hashControlPlaneValue,
+} = require('../src/utils/goal-contract/control-plane/canonical-hash.ts');
+const {
+  compileSourceCompositionPolicy,
+} = require('../src/utils/goal-contract/control-plane/source-composition-policy.ts');
+const {
+  resolveGoalContractSourceIdentity,
+} = require('../src/utils/goal-contract/control-plane/partition-output-paths.ts');
+const {
+  loadAuthoritySupersessionForRelease,
+  prepareRequirementRecordPartitionAuthoritySupersession,
+  projectRequirementRecordPartitionAuthority,
+} = require('../src/utils/goal-contract/control-plane/authority-supersession.ts');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
+const REPO_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
 const SOURCE_COMMAND = path.join(PACKAGE_ROOT, 'src', 'commands', 'goal-contract.ts');
 const PUBLIC_BIN = path.join(PACKAGE_ROOT, 'bin', 'bmad-speckit.js');
 const BUILD_LOCK = path.join(PACKAGE_ROOT, 'node_modules', '.pack-session.lock');
@@ -150,7 +165,193 @@ function runLane(kind, source, root, sequenceMode = 'auto') {
   };
 }
 
+function standaloneSourceCompositionPolicyHash(sourcePlanHash) {
+  const requiredSubordinateBindings = [];
+  const authoritySourceId = `standalone-source-authority:${sourcePlanHash}`;
+  return compileSourceCompositionPolicy({
+    authorityRecord: {
+      authorityKind: 'deterministic_source_authority_adapter',
+      authoritySourceId,
+      declaredMode: 'single_source',
+      requiredSubordinateBindings,
+      declaredRequiredBindingsHash: hashControlPlaneValue(
+        requiredSubordinateBindings
+      ),
+      authorityEvidenceHash: hashControlPlaneValue({
+        authoritySourceId,
+        mode: 'single_source',
+        requiredSubordinateBindings,
+      }),
+    },
+  }).sourceCompositionPolicyHash;
+}
+
+function writeFrozenStandaloneContract(root, sourcePlanPath) {
+  const sourcePlanHash = hash(fs.readFileSync(sourcePlanPath));
+  const goalContractPath = path.join(root, 'frozen-goal-contract.md');
+  const coverageReceiptPath = path.join(root, 'coverage.json');
+  const generationReceiptPath = path.join(root, 'generation.json');
+  const contract = [
+    '# Goal Execution Contract',
+    '',
+    '<!-- goal-slot:frontMatter required dynamic=frontMatter -->',
+    '---',
+    'goalContractVersion: goal-execution-contract/v1',
+    'contractMode: frozen',
+    'rewritePolicy: forbidden',
+    `sourcePlanPath: ${sourcePlanPath.replace(/\\/gu, '/')}`,
+    `sourcePlanHash: ${sourcePlanHash}`,
+    `coverageReceiptPath: ${coverageReceiptPath.replace(/\\/gu, '/')}`,
+    `generationReceiptPath: ${generationReceiptPath.replace(/\\/gu, '/')}`,
+    '---',
+    '<!-- /goal-slot:frontMatter -->',
+    '',
+    '# Frozen Goal Contract',
+    '',
+  ].join('\n');
+  fs.writeFileSync(goalContractPath, contract, 'utf8');
+  const goalContractDocumentHash = hash(fs.readFileSync(goalContractPath));
+  fs.writeFileSync(
+    coverageReceiptPath,
+    `${JSON.stringify(
+      {
+        schemaVersion: 'goal-contract-source-coverage-receipt/v1',
+        decision: 'pass',
+        sourcePlanPath: sourcePlanPath.replace(/\\/gu, '/'),
+        sourcePlanHash,
+        goalContractDocumentHash,
+        unmappedSourceObligations: [],
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
+  fs.writeFileSync(
+    generationReceiptPath,
+    `${JSON.stringify(
+      {
+        schemaVersion: 'goal-contract-generation-receipt/v1',
+        sourcePlanPath: sourcePlanPath.replace(/\\/gu, '/'),
+        sourcePlanHash,
+        goalContractDocumentHash,
+        sourceCompositionPolicyHash:
+          standaloneSourceCompositionPolicyHash(sourcePlanHash),
+        compilationReceipt: {
+          profileBytesHash: hash(
+            fs.readFileSync(
+              path.join(
+                REPO_ROOT,
+                '_bmad',
+                'shared',
+                'goal-contract',
+                'goal-contract-profile.json'
+              )
+            )
+          ),
+          templateBytesHash: hash(
+            fs.readFileSync(
+              path.join(
+                REPO_ROOT,
+                '_bmad',
+                'shared',
+                'goal-contract',
+                'goal-execution-contract-template.md'
+              )
+            )
+          ),
+        },
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
+  return goalContractPath;
+}
+
+function runCanonicalSourceAuthority(source, root) {
+  const goalContract = writeFrozenStandaloneContract(
+    path.dirname(source),
+    source
+  );
+  const result = spawnSync(
+    process.execPath,
+    [
+      '-e',
+      SOURCE_RUNNER,
+      SOURCE_COMMAND,
+      'partition',
+      '--governed',
+      '--entry',
+      'standalone_goal_contract',
+      '--source',
+      source,
+      '--goal-contract',
+      goalContract,
+      '--sequence-mode',
+      'disabled',
+      '--json',
+    ],
+    {
+      cwd: path.dirname(source),
+      encoding: 'utf8',
+      maxBuffer: 20 * 1024 * 1024,
+    }
+  );
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  return JSON.parse(result.stdout);
+}
+
+const hash = (label) =>
+  `sha256:${require('node:crypto').createHash('sha256').update(label).digest('hex')}`;
+
 describe('goal-contract partition source/dist runtime parity', () => {
+  it('loads a canonical standalone generation through immutable active-generation proof', () => {
+    const caseRoot = path.join(ROOT, 'canonical-release-compatibility');
+    fs.mkdirSync(caseRoot, { recursive: true });
+    const source = path.join(caseRoot, 'source.md');
+    fs.writeFileSync(source, CORPUS[0][1], 'utf8');
+    const generated = runCanonicalSourceAuthority(
+      source,
+      path.join(caseRoot, 'generation')
+    );
+    assert.equal(
+      typeof generated.activePointerPath,
+      'string',
+      JSON.stringify(Object.keys(generated).sort())
+    );
+    const activeGeneration = JSON.parse(
+      fs.readFileSync(generated.activePointerPath, 'utf8')
+    );
+    const partitionManifest = JSON.parse(
+      fs.readFileSync(activeGeneration.partitionManifestPath, 'utf8')
+    );
+    const firstPartition = partitionManifest.partitions[0];
+    const authorityRoot = activeGeneration.generationRoot;
+    assert.match(
+      firstPartition.childContractPath.replace(/\\/gu, '/'),
+      /^_bmad-output\/runtime\/goal-contract-partition-bootstrap\//u
+    );
+
+    const loaded = loadAuthoritySupersessionForRelease({
+      authorityRoot,
+      partitionManifestPath: activeGeneration.partitionManifestPath,
+      goalPath: path.resolve(path.dirname(source), firstPartition.childContractPath),
+      expectedPartitionPlanHash: activeGeneration.partitionPlanHash,
+    });
+
+    assert.equal(loaded.authorityMode, 'standalone_bootstrap');
+    assert.equal(
+      loaded.partitionPlanHash,
+      activeGeneration.partitionPlanHash
+    );
+    assert.equal(
+      loaded.compiled.manifest.partitionManifestHash,
+      generated.partitionManifestHash
+    );
+  });
+
   for (const [name, text] of CORPUS) {
     it(`matches ${name} corpus semantics`, () => {
       const caseRoot = path.join(ROOT, name);
@@ -214,5 +415,159 @@ describe('goal-contract partition source/dist runtime parity', () => {
     assert.equal(runs.disabled.sequenceCoverage, 'excluded');
     assert.equal(runs.disabled.sequenceClosureStatus, 'not_requested');
     assert.equal(runs.disabled.childContractAuthority, 'core_only');
+  });
+
+  it('resolves standalone source identity without changing its authority hash', () => {
+    const sourceHash = `sha256:${'1'.repeat(64)}`;
+    const handoff = {
+      masterImplementationPlanHash: sourceHash,
+    };
+
+    const first = resolveGoalContractSourceIdentity({
+      profile: 'standalone_frozen',
+      nativeGoalHandoff: handoff,
+    });
+    const second = resolveGoalContractSourceIdentity({
+      profile: 'standalone_frozen',
+      nativeGoalHandoff: handoff,
+    });
+
+    assert.deepEqual(second, first);
+    assert.equal(first.profile, 'standalone_frozen');
+    assert.equal(first.sourceIdentityHash, sourceHash);
+    assert.equal(first.sourceIdentityField, 'masterImplementationPlanHash');
+    assert.deepEqual(first.bindingHashes, {
+      masterImplementationPlanHash: sourceHash,
+    });
+    assert.match(first.resolutionHash, /^sha256:[0-9a-f]{64}$/u);
+  });
+
+  it('binds every compiled Main Agent source identity hash', () => {
+    const handoff = {
+      sourceDocumentHash: `sha256:${'2'.repeat(64)}`,
+      goalExecutionHash: `sha256:${'3'.repeat(64)}`,
+      modelPacketHash: `sha256:${'4'.repeat(64)}`,
+      currentDispatchPointerHash: `sha256:${'5'.repeat(64)}`,
+      transactionManifestHash: `sha256:${'6'.repeat(64)}`,
+    };
+
+    const resolution = resolveGoalContractSourceIdentity({
+      profile: 'main_agent_compiled',
+      nativeGoalHandoff: handoff,
+    });
+
+    assert.equal(resolution.profile, 'main_agent_compiled');
+    assert.equal(resolution.sourceIdentityHash, handoff.sourceDocumentHash);
+    assert.equal(resolution.sourceIdentityField, 'sourceDocumentHash');
+    assert.deepEqual(resolution.bindingHashes, handoff);
+    assert.match(resolution.resolutionHash, /^sha256:[0-9a-f]{64}$/u);
+  });
+
+  it('preserves the compiled Main Agent identity through supersession reduction and projection', () => {
+    const sourceHash = `sha256:${'2'.repeat(64)}`;
+    const record = {
+      requirementSetId: 'REQ-RUNTIME-PARITY',
+      nativeGoalHandoff: {
+        sourceDocumentHash: sourceHash,
+        goalExecutionHash: `sha256:${'3'.repeat(64)}`,
+        modelPacketHash: `sha256:${'4'.repeat(64)}`,
+        currentDispatchPointerHash: `sha256:${'5'.repeat(64)}`,
+        transactionManifestHash: `sha256:${'6'.repeat(64)}`,
+      },
+    };
+    const prepared = prepareRequirementRecordPartitionAuthoritySupersession({
+      record,
+      sourceIdentityProfile: 'main_agent_compiled',
+      sourceHash,
+      partitionRunId: `partition-run-${'a'.repeat(64)}`,
+      authorityRoot:
+        '_bmad-output/runtime/requirement-records/REQ-RUNTIME-PARITY/goal-contract',
+      partitionPlanHash: `sha256:${'b'.repeat(64)}`,
+      partitionManifestHash: `sha256:${'c'.repeat(64)}`,
+      partitionManifestDocumentHash: `sha256:${'d'.repeat(64)}`,
+      partitionSetHash: `sha256:${'e'.repeat(64)}`,
+      eventChainProjection: hashControlPlaneValue({
+        requirementSetId: record.requirementSetId,
+        sourceHash,
+        partitionRunId: `partition-run-${'a'.repeat(64)}`,
+        partitionManifestHash: `sha256:${'c'.repeat(64)}`,
+        partitionManifestDocumentHash: `sha256:${'d'.repeat(64)}`,
+      }),
+    });
+
+    const reduced = prepared.reduce(record);
+    const projected = projectRequirementRecordPartitionAuthority(
+      reduced,
+      'main_agent_compiled'
+    );
+
+    assert.equal(projected.sourceHash, sourceHash);
+    assert.equal(
+      projected.partitionRunId,
+      `partition-run-${'a'.repeat(64)}`
+    );
+
+    const drifted = structuredClone(reduced);
+    drifted.nativeGoalHandoff.goalExecutionHash =
+      `sha256:${'9'.repeat(64)}`;
+    assert.throws(
+      () =>
+        projectRequirementRecordPartitionAuthority(
+          drifted,
+          'main_agent_compiled'
+        ),
+      (error) =>
+        error &&
+        error.failureClass ===
+          'partition_authority_source_identity_mismatch'
+    );
+  });
+
+  it('fails closed for missing or mixed source identity profile bindings', () => {
+    const standaloneHash = `sha256:${'7'.repeat(64)}`;
+    assert.throws(
+      () =>
+        resolveGoalContractSourceIdentity({
+          profile: 'main_agent_compiled',
+          nativeGoalHandoff: {
+            masterImplementationPlanHash: standaloneHash,
+          },
+        }),
+      (error) =>
+        error &&
+        error.failureClass === 'goal_contract_source_identity_profile_mismatch'
+    );
+    assert.throws(
+      () =>
+        resolveGoalContractSourceIdentity({
+          profile: 'standalone_frozen',
+          nativeGoalHandoff: {
+            masterImplementationPlanHash: standaloneHash,
+            sourceDocumentHash: `sha256:${'8'.repeat(64)}`,
+          },
+        }),
+      (error) =>
+        error &&
+        error.failureClass === 'goal_contract_source_identity_profile_mismatch'
+    );
+    assert.throws(
+      () =>
+        resolveGoalContractSourceIdentity({
+          profile: 'main_agent_compiled',
+          nativeGoalHandoff: {
+            sourceDocumentHash: `sha256:${'2'.repeat(64)}`,
+            goalExecutionHash: `sha256:${'3'.repeat(64)}`,
+            modelPacketHash: `sha256:${'4'.repeat(64)}`,
+            currentDispatchPointerHash: `sha256:${'5'.repeat(64)}`,
+            transactionManifestHash: `sha256:${'6'.repeat(64)}`,
+            goalContractSourceIdentity: {
+              masterImplementationPlanHash: standaloneHash,
+            },
+          },
+        }),
+      (error) =>
+        error &&
+        error.failureClass === 'goal_contract_source_identity_profile_mismatch'
+    );
   });
 });

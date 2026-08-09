@@ -10,6 +10,10 @@ import {
   runMainAgentAutomaticLoop,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import { mainImplementationReadinessGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate';
+import {
+  implementationConfirmationHashFor,
+  sourceDocumentHashFor,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-implementation-confirmation-codec';
 import type { ResolvedRuntimeContext } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/resolve-active-requirement';
 import {
   defaultRuntimeContextFile,
@@ -20,51 +24,10 @@ import {
   buildImplementationEntryIndexKey,
   writeRuntimeContextRegistry,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/runtime-context-registry';
+import { writePassingSourcePrdLintReport } from '../helpers/source-prd-lint-fixture';
 
 function sha256Text(value: string): string {
   return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
-}
-
-const CONFIRMATION_BOOKKEEPING_FIELDS = new Set([
-  'status',
-  'confirmedAt',
-  'confirmedBy',
-  'sourceDocumentHash',
-  'implementationConfirmationHash',
-  'reconfirmationRequest',
-  'confirmationRender',
-]);
-
-function stableStringify(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
-  if (!value || typeof value !== 'object') return JSON.stringify(value);
-  return `{${Object.keys(value as Record<string, unknown>)
-    .sort()
-    .map(
-      (key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`
-    )
-    .join(',')}}`;
-}
-
-function semanticConfirmationForHash(
-  confirmation: Record<string, unknown>
-): Record<string, unknown> {
-  return Object.fromEntries(
-    Object.entries(confirmation).filter(([key]) => !CONFIRMATION_BOOKKEEPING_FIELDS.has(key))
-  );
-}
-
-function implementationConfirmationHashFor(confirmation: Record<string, unknown>): string {
-  return sha256Text(stableStringify(semanticConfirmationForHash(confirmation)));
-}
-
-function sourceDocumentHashFor(
-  sourceText: string,
-  blockText: string,
-  confirmation: Record<string, unknown>
-): string {
-  const normalizedBlock = `implementationConfirmation:${stableStringify(semanticConfirmationForHash(confirmation))}`;
-  return sha256Text(sourceText.replace(blockText, normalizedBlock));
 }
 
 function writeJson(file: string, value: unknown): void {
@@ -609,6 +572,7 @@ function makeSourceFixture(
     sourcePath,
     sourceDocumentHash,
     implementationConfirmationHash,
+    semanticModelHash: sourceDocumentHash,
     confirmationPageHash,
     confirmationHistory: [
       {
@@ -632,6 +596,10 @@ function makeSourceFixture(
     contractChecks: [],
     artifactIndex: [],
     extensionRefs: [],
+  });
+  writePassingSourcePrdLintReport({
+    requirementRecordPath: recordPath,
+    sourcePath,
   });
   writeJson(path.join(root, '_bmad-output', 'runtime', 'requirement-records', 'index.json'), {
     schemaVersion: 'requirement-record-index/v1',
@@ -817,9 +785,23 @@ describe('main-agent readiness auto remediation lane', () => {
           readinessReportPath: reportPath,
         },
       });
+      const gatedRecord = JSON.parse(fs.readFileSync(recordPath, 'utf8')) as Record<string, any>;
+      const routingDiagnostic = JSON.stringify(
+        {
+          steps: result.steps,
+          implementationReadiness: gatedRecord.sixModelResults?.implementation_readiness,
+          latestGateCheck: gatedRecord.gateChecks?.at(-1),
+          finalNextAction: result.finalSurface.mainAgentNextAction,
+          finalLatestGate: result.finalSurface.latestGate,
+        },
+        null,
+        2
+      );
 
       expect(result.status, JSON.stringify(result.taskReport, null, 2)).toBe('blocked');
-      expect(result.steps.map((step) => step.step)).toContain('readiness-auto-remediation');
+      expect(result.steps.map((step) => step.step), routingDiagnostic).toContain(
+        'readiness-auto-remediation'
+      );
       expect(fs.existsSync(testPath)).toBe(false);
       expect(result.taskReport?.validationsRun).toEqual(['readiness-blocker-classifier']);
       expect(result.taskReport?.evidence).toEqual(
@@ -843,7 +825,7 @@ describe('main-agent readiness auto remediation lane', () => {
         ])
       );
 
-      const record = JSON.parse(fs.readFileSync(recordPath, 'utf8')) as Record<string, unknown>;
+      const record = gatedRecord as Record<string, unknown>;
       expect(record.aiTddContractGate).toBeUndefined();
       expect(record.contractChecks).toEqual([]);
       expect(record.gateChecks).toEqual(

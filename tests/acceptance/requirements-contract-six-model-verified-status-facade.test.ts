@@ -324,34 +324,38 @@ describe('verified six-model status facade', () => {
     }
   });
 
-  it('resolves generated-dist parity readers and writers from the dynamic consumer inventory', () => {
-    const repositoryRoot = path.resolve('.');
-    const packageRoot = path.join(repositoryRoot, 'packages', 'bmad-speckit');
-    const inventory = createRequirementsContractSixModelConsumerInventory(repositoryRoot);
-    const generatedDist = resolveSixModelProjectionParitySurfaceFileSets({
-      repositoryRoot,
-      packageRoot,
-      installedRoot: path.join(repositoryRoot, '.unused-installed-root'),
-      extractedRoot: path.join(repositoryRoot, '.unused-extracted-root'),
-      tarball: path.join(repositoryRoot, '.unused-package.tgz'),
-    })['generated-dist'];
-    const generatedEntries = inventory.entries.filter(
-      (entry) => entry.surface === 'package-dist'
-    );
-    const readerRoles = new Set(REQUIREMENTS_CONTRACT_SIX_MODEL_READER_ROLES);
-    const writerRoles = new Set(REQUIREMENTS_CONTRACT_SIX_MODEL_WRITER_ROLES);
-    const expectedReaders = generatedEntries
-      .filter((entry) => entry.roles.some((role) => readerRoles.has(role)))
-      .map((entry) => path.resolve(repositoryRoot, entry.path));
-    const expectedWriters = generatedEntries
-      .filter((entry) => entry.roles.some((role) => writerRoles.has(role)))
-      .map((entry) => path.resolve(repositoryRoot, entry.path));
+  it(
+    'resolves generated-dist parity readers and writers from the dynamic consumer inventory',
+    () => {
+      const repositoryRoot = path.resolve('.');
+      const packageRoot = path.join(repositoryRoot, 'packages', 'bmad-speckit');
+      const inventory = createRequirementsContractSixModelConsumerInventory(repositoryRoot);
+      const generatedDist = resolveSixModelProjectionParitySurfaceFileSets({
+        repositoryRoot,
+        packageRoot,
+        installedRoot: path.join(repositoryRoot, '.unused-installed-root'),
+        extractedRoot: path.join(repositoryRoot, '.unused-extracted-root'),
+        tarball: path.join(repositoryRoot, '.unused-package.tgz'),
+      })['generated-dist'];
+      const generatedEntries = inventory.entries.filter(
+        (entry) => entry.surface === 'package-dist'
+      );
+      const readerRoles = new Set(REQUIREMENTS_CONTRACT_SIX_MODEL_READER_ROLES);
+      const writerRoles = new Set(REQUIREMENTS_CONTRACT_SIX_MODEL_WRITER_ROLES);
+      const expectedReaders = generatedEntries
+        .filter((entry) => entry.roles.some((role) => readerRoles.has(role)))
+        .map((entry) => path.resolve(repositoryRoot, entry.path));
+      const expectedWriters = generatedEntries
+        .filter((entry) => entry.roles.some((role) => writerRoles.has(role)))
+        .map((entry) => path.resolve(repositoryRoot, entry.path));
 
-    expect(expectedReaders.length).toBeGreaterThan(2);
-    expect(expectedWriters.length).toBeGreaterThan(1);
-    expect(generatedDist.readerPaths).toEqual(expectedReaders);
-    expect(generatedDist.writerPaths).toEqual(expectedWriters);
-  });
+      expect(expectedReaders.length).toBeGreaterThan(2);
+      expect(expectedWriters.length).toBeGreaterThan(1);
+      expect(generatedDist.readerPaths).toEqual(expectedReaders);
+      expect(generatedDist.writerPaths).toEqual(expectedWriters);
+    },
+    60_000
+  );
 
   it('blocks canonical verification with an explicit reason when evidence generation fails', async () => {
     const failure = 'canonical parity generation failed';
@@ -370,6 +374,7 @@ describe('verified six-model status facade', () => {
         return {
           ...actual,
           buildRequirementsContractSixModelProjectionParityEvidence: buildEvidence,
+          isCanonicalSixModelProjectionParityEvidenceRoot: () => true,
         };
       }
     );

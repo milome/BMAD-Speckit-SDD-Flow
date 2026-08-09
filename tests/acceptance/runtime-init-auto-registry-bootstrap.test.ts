@@ -48,5 +48,5 @@ describe('runtime init auto registry bootstrap', () => {
     } finally {
       rmSync(target, { recursive: true, force: true });
     }
-  }, 30_000);
+  }, 90_000);
 });

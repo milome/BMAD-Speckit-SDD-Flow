@@ -96,6 +96,73 @@ function validInput(overrides = {}) {
 }
 
 describe('requirements contract parent goal blind review', () => {
+  it('compiles v2 actor authority without requiring model identity or diversity receipts', () => {
+    const v2BlindInput = {
+      campaignId: 'goal-campaign-v2',
+      campaignLineageKey: hash('lineage-v2'),
+      closureReceiptHash: hash('closure-v2'),
+      candidateBytesHash: hash('candidate-v2'),
+      currentImplementationHash: hash('implementation-v2'),
+      currentEvidenceHash: hash('evidence-v2'),
+      initialReviewAttemptKey: hash('attempt-v2'),
+    };
+    const actorBindingHash = sha256Stable({
+      reviewerActorClass: 'bounded_code_reviewer',
+      finalJudgeActorClass: 'final_acceptance_judge',
+      providerRef: 'gateway-managed-judge',
+    });
+    const makeIntent = (actorClass: 'bounded_code_reviewer' | 'final_acceptance_judge') => {
+      const payload = {
+        actorClass,
+        dispatchMode: 'parallel',
+        invocationMode: 'native',
+        dispatchGroupId: 'blind-wave-v2',
+        preparedBeforeDispatch: true,
+        blindInput: v2BlindInput,
+      };
+      return {
+        ...payload,
+        blindInputHash: sha256Stable(v2BlindInput),
+        invocationIntentHash: sha256Stable(payload),
+      };
+    };
+    const intents = [makeIntent('bounded_code_reviewer'), makeIntent('final_acceptance_judge')];
+    const receipts = intents.map((actorIntent) => {
+      const payload = {
+        actorClass: actorIntent.actorClass,
+        dispatchGroupId: actorIntent.dispatchGroupId,
+        invocationMode: 'native',
+        startedAfterBothIntentsPrepared: true,
+        blindInputHash: actorIntent.blindInputHash,
+        invocationIntentHash: actorIntent.invocationIntentHash,
+        sourceLedgerHash: hash(`${actorIntent.actorClass}:v2-ledger`),
+        terminalOutcome: 'clean',
+        findingIds: [],
+      };
+      return { ...payload, actorReceiptHash: sha256Stable(payload) };
+    });
+    const aggregate = compileRequirementsContractParentGoalBlindReviewAggregate({
+      campaignInput: {
+        schemaVersion: 'requirements-contract-judge-review-campaign-input/v2',
+        ...v2BlindInput,
+        actorBindingHash,
+        reviewerActorClass: 'bounded_code_reviewer',
+        finalJudgeActorClass: 'final_acceptance_judge',
+        providerRef: 'gateway-managed-judge',
+        inputHash: hash('campaign-input-v2'),
+      },
+      preparedIntents: intents,
+      actorReceipts: receipts,
+    } as any);
+
+    expect(aggregate).toMatchObject({
+      schemaVersion: 'requirements-contract-parent-goal-blind-review-aggregate/v2',
+      actorBindingHash,
+      invocationCountReceipt: { reviewerCalls: 1, finalJudgeCalls: 1 },
+    });
+    expect(aggregate).not.toHaveProperty('modelDiversityReceiptHash');
+  });
+
   it('compiles deterministic blind aggregate from exactly one reviewer and one final judge call', () => {
     const aggregate = compileRequirementsContractParentGoalBlindReviewAggregate(validInput());
     const reversed = compileRequirementsContractParentGoalBlindReviewAggregate({

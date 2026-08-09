@@ -54,10 +54,13 @@ export function git(root: string, args: string[]): string {
   return result.stdout.trim();
 }
 
-function createChildren(root: string): FixtureChild[] {
+function createChildren(root: string, canonicalPartitionIds = false): FixtureChild[] {
+  const partitionIds = canonicalPartitionIds
+    ? [`partition-${'1'.repeat(64)}`, `partition-${'2'.repeat(64)}`]
+    : ['AUTH-01', 'AUTH-02'];
   const childSpecs = [
-    ['AUTH-01', 'Refresh expired access tokens', 'src/auth/refresh.ts'],
-    ['AUTH-02', 'Revoke rotated refresh tokens', 'src/auth/revoke.ts'],
+    [partitionIds[0], 'Refresh expired access tokens', 'src/auth/refresh.ts'],
+    [partitionIds[1], 'Revoke rotated refresh tokens', 'src/auth/revoke.ts'],
   ] as const;
   return childSpecs.map(([partitionId, title, ownedPath], index) => {
     const relativePath = `contracts/${partitionId}.md`;
@@ -78,14 +81,44 @@ function createSchemas(root: string): SchemaBindings {
     additionalProperties: false,
   });
   const closureSchemaPath = writeJson(root, 'schemas/closure.json', {
-    type: 'object',
-    required: ['partitionId', 'contractHash', 'status'],
-    properties: {
-      partitionId: { type: 'string', minLength: 1 },
-      contractHash: { type: 'string', pattern: '^sha256:[a-f0-9]{64}$' },
-      status: { const: 'closed' },
-    },
-    additionalProperties: false,
+    oneOf: [
+      {
+        type: 'object',
+        required: ['partitionId', 'childContractHash', 'decision'],
+        properties: {
+          partitionId: { type: 'string', minLength: 1 },
+          childContractHash: { type: 'string', pattern: '^sha256:[a-f0-9]{64}$' },
+          decision: { const: 'pass' },
+        },
+        additionalProperties: false,
+      },
+      {
+        type: 'object',
+        required: [
+          'schemaVersion',
+          'attemptId',
+          'partitionId',
+          'childContractHash',
+          'predecessorClosureReceiptHashes',
+          'decision',
+          'receiptHash',
+        ],
+        properties: {
+          schemaVersion: { const: 'goal-contract-subcontract-closure-receipt/v1' },
+          attemptId: { type: 'string', minLength: 1 },
+          partitionId: { type: 'string', minLength: 1 },
+          childContractHash: { type: 'string', pattern: '^sha256:[a-f0-9]{64}$' },
+          predecessorClosureReceiptHashes: {
+            type: 'array',
+            uniqueItems: true,
+            items: { type: 'string', pattern: '^sha256:[a-f0-9]{64}$' },
+          },
+          decision: { const: 'pass' },
+          receiptHash: { type: 'string', pattern: '^sha256:[a-f0-9]{64}$' },
+        },
+        additionalProperties: false,
+      },
+    ],
   });
   return { evidenceSchemaPath, closureSchemaPath };
 }
@@ -161,7 +194,10 @@ function initializeRepository(root: string): void {
   git(root, ['config', 'user.name', 'Fixture']);
 }
 
-export function createFixture(requirementRecordBinding?: object) {
+export function createFixture(
+  requirementRecordBinding?: object,
+  options: { canonicalPartitionIds?: boolean } = {}
+) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'goal-subcontract-package-'));
   roots.push(root);
   initializeRepository(root);
@@ -170,7 +206,7 @@ export function createFixture(requirementRecordBinding?: object) {
     'goal.md',
     '# Frozen Goal\n\ncontractMode: frozen\nrewritePolicy: forbidden\n'
   );
-  const children = createChildren(root);
+  const children = createChildren(root, options.canonicalPartitionIds);
   const unownedPath = 'src/shared/unowned.ts';
   write(root, unownedPath, "export const source = 'unowned';\n");
   const schemas = createSchemas(root);

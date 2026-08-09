@@ -252,6 +252,7 @@ function extractSnapshotObligations(snapshot) {
     snapshot: extractorSnapshot,
   });
   return extracted.sourceObligations.map((obligation) => ({
+    sourceRootId: obligation.id,
     declaredSourceId: obligation.declaredId ? obligation.id : null,
     sourceArtifactId: snapshot.sourceArtifactId,
     sourceSnapshotHash: snapshot.sourceSnapshotHash,
@@ -265,6 +266,90 @@ function extractSnapshotObligations(snapshot) {
     endByteExclusive: obligation.endByteExclusive,
     dependencyRefs: [...obligation.dependencyRefs].sort(),
   }));
+}
+
+function compileVerifiedObligationBases(request, snapshotSet) {
+  if (request.verifiedObligationBases === undefined) {
+    return snapshotSet.sourceSnapshots.flatMap(extractSnapshotObligations);
+  }
+  if (!Array.isArray(request.verifiedObligationBases)) {
+    throw failure('verified_obligation_bases_invalid');
+  }
+  const extractedBases = snapshotSet.sourceSnapshots.flatMap(extractSnapshotObligations);
+  if (request.verifiedObligationBases.length !== extractedBases.length) {
+    throw failure('verified_obligation_base_authority_mismatch', {
+      expectedCount: extractedBases.length,
+      actualCount: request.verifiedObligationBases.length,
+    });
+  }
+  const snapshotsByArtifact = new Map(
+    snapshotSet.sourceSnapshots.map((snapshot) => [snapshot.sourceArtifactId, snapshot])
+  );
+  return request.verifiedObligationBases.map((base, index) => {
+    if (
+      !isRecord(base) ||
+      typeof base.sourceRootId !== 'string' ||
+      base.sourceRootId.length === 0 ||
+      typeof base.sourceArtifactId !== 'string' ||
+      typeof base.sourceSnapshotHash !== 'string' ||
+      typeof base.sourceRole !== 'string' ||
+      typeof base.namespace !== 'string' ||
+      typeof base.sourceOrder !== 'number' ||
+      typeof base.kind !== 'string' ||
+      typeof base.exactText !== 'string' ||
+      (base.declaredSourceId !== null && typeof base.declaredSourceId !== 'string') ||
+      !Array.isArray(base.headingPath) ||
+      base.headingPath.some((value) => typeof value !== 'string') ||
+      typeof base.startByte !== 'number' ||
+      typeof base.endByteExclusive !== 'number' ||
+      !Array.isArray(base.dependencyRefs) ||
+      base.dependencyRefs.some((value) => typeof value !== 'string')
+    ) {
+      throw failure('verified_obligation_base_invalid', {
+        index,
+      });
+    }
+    const snapshot = snapshotsByArtifact.get(base.sourceArtifactId);
+    if (
+      !snapshot ||
+      snapshot.sourceSnapshotHash !== base.sourceSnapshotHash ||
+      snapshot.sourceRole !== base.sourceRole ||
+      snapshot.namespace !== base.namespace ||
+      snapshot.sourceOrder !== base.sourceOrder
+    ) {
+      throw failure('verified_obligation_base_authority_mismatch', {
+        index,
+        sourceArtifactId: base.sourceArtifactId,
+      });
+    }
+    if (base.startByte < 0 || base.endByteExclusive <= base.startByte) {
+      throw failure('verified_obligation_base_span_invalid', {
+        index,
+      });
+    }
+    const verifiedBase = {
+      sourceRootId: base.sourceRootId,
+      declaredSourceId: base.declaredSourceId,
+      sourceArtifactId: base.sourceArtifactId,
+      sourceSnapshotHash: base.sourceSnapshotHash,
+      sourceRole: base.sourceRole,
+      namespace: base.namespace,
+      sourceOrder: base.sourceOrder,
+      kind: base.kind,
+      exactText: base.exactText,
+      headingPath: [...base.headingPath],
+      startByte: base.startByte,
+      endByteExclusive: base.endByteExclusive,
+      dependencyRefs: [...base.dependencyRefs].sort(),
+    };
+    if (hashControlPlaneValue(verifiedBase) !== hashControlPlaneValue(extractedBases[index])) {
+      throw failure('verified_obligation_base_authority_mismatch', {
+        index,
+        sourceArtifactId: base.sourceArtifactId,
+      });
+    }
+    return extractedBases[index];
+  });
 }
 
 function verifyAuthorityInputs(policy, snapshotSet, bundle) {
@@ -706,7 +791,7 @@ function compileCanonicalIntent(request: unknown = {}) {
     throw failure('authority_state_mismatch');
   }
 
-  const bases = snapshotSet.sourceSnapshots.flatMap(extractSnapshotObligations);
+  const bases = compileVerifiedObligationBases(request, snapshotSet);
   const subordinateDescriptors = new Map(
     sourceAuthorityBundle.subordinateSources.map((descriptor) => [
       descriptor.sourceArtifactId,

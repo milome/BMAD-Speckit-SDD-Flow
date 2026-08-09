@@ -938,6 +938,62 @@ describe('oracle effectiveness analyzer', () => {
     });
   });
 
+  it('emits stable assertion evidence refs alongside diagnostic line refs', async () => {
+    const oracle = loadOracleEffectiveness();
+    const finding = await oracle.analyzeTestFile({
+      repoRoot: ORACLE_FIXTURE,
+      testPath: 'negative-fixture.test.ts',
+    });
+
+    expect(finding.evidenceRefs).toEqual(
+      expect.arrayContaining([
+        'source:negative-fixture.test.ts#test:rejects%20the%20negative%20fixture:case:1:assertion:1',
+        expect.stringMatching('source:negative-fixture.test.ts#assertion:line:'),
+      ])
+    );
+  });
+
+  it('emits stable assertion evidence refs for parameterized tests', () => {
+    const oracle = loadOracleEffectiveness();
+    const refs = oracle.assertionEvidenceRefMapForSource({
+      testPath: 'parameterized.test.ts',
+      sourceText: `
+        import { expect, it } from 'vitest';
+        it.each([['first'], ['second']])('validates %s', (value) => {
+          expect(value).toBeDefined();
+        });
+      `,
+    });
+
+    expect(refs).toEqual([
+      expect.objectContaining({
+        stableEvidenceRef: 'source:parameterized.test.ts#test:validates%20%25s:case:1:assertion:1',
+      }),
+    ]);
+  });
+
+  it('uses the title expression as the identity for dynamic test titles', () => {
+    const oracle = loadOracleEffectiveness();
+    const refs = oracle.assertionEvidenceRefMapForSource({
+      testPath: 'dynamic-title.test.ts',
+      sourceText: `
+        import { expect, it } from 'vitest';
+        for (const value of ['first', 'second']) {
+          it(\`validates \${value}\`, () => {
+            expect(value).toBeDefined();
+          });
+        }
+      `,
+    });
+
+    expect(refs).toEqual([
+      expect.objectContaining({
+        stableEvidenceRef:
+          'source:dynamic-title.test.ts#test:%60validates%20%24%7Bvalue%7D%60:case:1:assertion:1',
+      }),
+    ]);
+  });
+
   it('rejects exit-code-only behavior claims', async () => {
     const oracle = loadOracleEffectiveness();
     const finding = await oracle.analyzeTestFile({
@@ -1070,6 +1126,8 @@ describe('parallel safety analyzer', () => {
     ['fixed-port.test.ts', 'PARALLEL_FIXED_PORT'],
     ['root-pack.test.ts', 'PARALLEL_ROOT_BUILD_OR_PACK'],
     ['root-build-script.test.ts', 'PARALLEL_ROOT_BUILD_OR_PACK'],
+    ['root-build-wrapper.test.ts', 'PARALLEL_ROOT_BUILD_OR_PACK'],
+    ['root-pack-wrapper.test.ts', 'PARALLEL_ROOT_BUILD_OR_PACK'],
   ])('marks %s unsafe with exact issue code', async (testPath, issueCode) => {
     const parallelSafety = loadParallelSafety();
     const result = await parallelSafety.analyzeTestFile({

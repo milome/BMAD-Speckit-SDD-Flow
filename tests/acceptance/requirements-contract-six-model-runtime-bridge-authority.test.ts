@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -109,6 +110,10 @@ function withOpenReconfirmation(
 function writeJson(filePath: string, value: unknown): void {
   mkdirSync(path.dirname(filePath), { recursive: true });
   writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+function hashBytes(value: Buffer): string {
+  return `sha256:${createHash('sha256').update(value).digest('hex')}`;
 }
 
 function prepareAwaitingCloseout(
@@ -237,13 +242,16 @@ function prepareAwaitingCloseout(
 function confirmFixtureCloseout(
   fixture: RequirementFixture,
   record: RuntimeRecord,
-  confirmedAt = '2026-06-01T00:01:00.000Z'
+  confirmedAt = '2026-06-01T00:01:00.000Z',
+  confirmationTextTransform?: (value: string) => string
 ) {
   const prepared = prepareAwaitingCloseout(fixture, record);
   const result = runMainAgentConfirmCloseoutAcceptance(fixture.root, {
     source: fixture.sourcePath,
     renderReport: prepared.reportPath,
-    confirmationText: prepared.confirmationText,
+    confirmationText: confirmationTextTransform
+      ? confirmationTextTransform(prepared.confirmationText)
+      : prepared.confirmationText,
     confirmedBy: 'six-model-runtime-bridge-authority-test',
     confirmedAt,
     recordId: fixture.recordId,
@@ -624,6 +632,131 @@ describe('requirements contract six-model runtime bridge authority', () => {
             allowedDispatchTaskType: 'closeout',
             transitionMode: 'auto_after_controlled_ingest',
           });
+        }
+      );
+    });
+
+    it('O11b controlled Goal acceptance persists exact TaskReport bytes and a completion receipt', () => {
+      withRequirementFixture(
+        {
+          currentMentalModel: 'delivery_confirmation',
+          sixModelResults: ALL_MODEL_PASSES,
+        },
+        (fixture, record) => {
+          const candidatePath = path.join(fixture.root, 'closeout', 'task-report-candidate.json');
+          const finalTaskReportPath = path.join(fixture.root, 'closeout', 'task-report.json');
+          const completionReceiptPath = path.join(
+            fixture.root,
+            'closeout',
+            'completion-receipt.json'
+          );
+          const candidateBytes = Buffer.from('{"z":1,"a":2}\n', 'utf8');
+          mkdirSync(path.dirname(candidatePath), { recursive: true });
+          writeFileSync(candidatePath, candidateBytes);
+          const controlledRecord = {
+            ...record,
+            nativeGoalHandoff: {
+              schemaVersion: 'native-goal-handoff/v1',
+              controlledCloseoutIngested: true,
+              closeoutAttemptId: fixture.runId,
+              taskReportCandidatePath: candidatePath,
+              taskReportArtifactHash: hashBytes(candidateBytes),
+              taskReportPath: finalTaskReportPath,
+              completionReceiptPath,
+              controlledCloseout: {
+                schemaVersion: 'main-agent-controlled-closeout-handoff/v1',
+                closeoutAttemptId: fixture.runId,
+                contextHash: `sha256:${'1'.repeat(64)}`,
+                compileReceiptHash: `sha256:${'2'.repeat(64)}`,
+                childClosureSetHash: `sha256:${'3'.repeat(64)}`,
+                campaignReportHash: `sha256:${'4'.repeat(64)}`,
+                closureReceiptHash: `sha256:${'5'.repeat(64)}`,
+                judgeReviewCampaignHash: `sha256:${'6'.repeat(64)}`,
+                effectivePassReceiptHash: `sha256:${'7'.repeat(64)}`,
+                deliveryCloseoutGateReceiptHash: `sha256:${'8'.repeat(64)}`,
+              },
+            },
+          };
+
+          const closeout = confirmFixtureCloseout(fixture, controlledRecord);
+          const completion = JSON.parse(readFileSync(completionReceiptPath, 'utf8'));
+
+          expect(closeout.result.ok).toBe(true);
+          expect(readFileSync(finalTaskReportPath)).toEqual(candidateBytes);
+          expect(completion).toMatchObject({
+            schemaVersion: 'main-agent-goal-completion-receipt/v1',
+            status: 'done',
+            closeoutAttemptId: fixture.runId,
+            taskReportArtifactHash: hashBytes(candidateBytes),
+          });
+          expect(closeout.record).toMatchObject({
+            status: 'done',
+            lastEventType: 'native_goal_completion_recorded',
+            controlledGoalCompletion: {
+              path: completionReceiptPath,
+              completionReceiptHash: completion.completionReceiptHash,
+            },
+          });
+        }
+      );
+    });
+
+    it('O11c controlled Goal rejection writes no final TaskReport or completion receipt', () => {
+      withRequirementFixture(
+        {
+          currentMentalModel: 'delivery_confirmation',
+          sixModelResults: ALL_MODEL_PASSES,
+        },
+        (fixture, record) => {
+          const candidatePath = path.join(fixture.root, 'reject-closeout', 'candidate.json');
+          const finalTaskReportPath = path.join(fixture.root, 'reject-closeout', 'task-report.json');
+          const completionReceiptPath = path.join(
+            fixture.root,
+            'reject-closeout',
+            'completion-receipt.json'
+          );
+          const candidateBytes = Buffer.from('{"status":"done"}\n', 'utf8');
+          mkdirSync(path.dirname(candidatePath), { recursive: true });
+          writeFileSync(candidatePath, candidateBytes);
+          const controlledRecord = {
+            ...record,
+            nativeGoalHandoff: {
+              controlledCloseoutIngested: true,
+              closeoutAttemptId: fixture.runId,
+              taskReportCandidatePath: candidatePath,
+              taskReportArtifactHash: hashBytes(candidateBytes),
+              taskReportPath: finalTaskReportPath,
+              completionReceiptPath,
+              controlledCloseout: {
+                closeoutAttemptId: fixture.runId,
+                contextHash: `sha256:${'1'.repeat(64)}`,
+                compileReceiptHash: `sha256:${'2'.repeat(64)}`,
+                childClosureSetHash: `sha256:${'3'.repeat(64)}`,
+                campaignReportHash: `sha256:${'4'.repeat(64)}`,
+                closureReceiptHash: `sha256:${'5'.repeat(64)}`,
+                judgeReviewCampaignHash: `sha256:${'6'.repeat(64)}`,
+                effectivePassReceiptHash: `sha256:${'7'.repeat(64)}`,
+                deliveryCloseoutGateReceiptHash: `sha256:${'8'.repeat(64)}`,
+              },
+            },
+          };
+
+          const closeout = confirmFixtureCloseout(
+            fixture,
+            controlledRecord,
+            '2026-06-01T00:02:00.000Z',
+            (value) =>
+              value.replace('确认最终验收并关闭需求', '拒绝最终验收并保持需求阻塞')
+          );
+
+          expect(closeout.result.ok).toBe(true);
+          expect(closeout.record.closeoutAcceptance).toMatchObject({
+            status: 'user_rejected_closeout',
+            closeoutAttemptId: fixture.runId,
+          });
+          expect(readFileSync(candidatePath)).toEqual(candidateBytes);
+          expect(() => readFileSync(finalTaskReportPath)).toThrow();
+          expect(() => readFileSync(completionReceiptPath)).toThrow();
         }
       );
     });

@@ -185,6 +185,45 @@ function isSha256(value: string): boolean {
   return /^sha256:[a-f0-9]{64}$/u.test(value);
 }
 
+export function evaluateControlledGoalCloseoutGate(input: JsonObject) {
+  const closeoutAttemptId = text(input.closeoutAttemptId);
+  const contextHash = text(input.contextHash);
+  const taskReportArtifactHash = text(input.taskReportArtifactHash);
+  const closure = input.closureReceipt as JsonObject | undefined;
+  const campaign = input.judgeReviewCampaign as JsonObject | undefined;
+  const effectivePass = input.effectivePassReceipt as JsonObject | undefined;
+  if (
+    !closeoutAttemptId ||
+    !isSha256(contextHash) ||
+    !isSha256(taskReportArtifactHash) ||
+    !closure ||
+    closure.status !== 'campaign_closed' ||
+    closure.closeoutAttemptId !== closeoutAttemptId ||
+    closure.contextHash !== contextHash ||
+    closure.taskReportArtifactHash !== taskReportArtifactHash ||
+    !isSha256(text(closure.receiptHash)) ||
+    !campaign ||
+    campaign.decision !== 'pass' ||
+    (campaign.closeoutAttemptId !== undefined &&
+      campaign.closeoutAttemptId !== closeoutAttemptId) ||
+    !isSha256(text(campaign.aggregateHash)) ||
+    !effectivePass ||
+    effectivePass.effectivePass !== true ||
+    !isSha256(text(effectivePass.effectivePassReceiptHash))
+  ) {
+    throw new Error('main_agent_goal_task_report_provenance_mismatch');
+  }
+  return Object.freeze({
+    status: 'awaiting_user_acceptance' as const,
+    closeoutAttemptId,
+    contextHash,
+    taskReportArtifactHash,
+    closureReceiptHash: text(closure.receiptHash),
+    judgeReviewCampaignHash: text(campaign.aggregateHash),
+    effectivePassReceiptHash: text(effectivePass.effectivePassReceiptHash),
+  });
+}
+
 function nested(value: unknown): JsonObject {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonObject) : {};
 }

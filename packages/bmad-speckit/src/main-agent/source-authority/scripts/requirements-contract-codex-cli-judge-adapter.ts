@@ -100,7 +100,7 @@ const DEFAULT_STRUCTURED_OUTPUT_SCHEMA = {
       type: 'array',
       items: {
         type: 'object',
-        additionalProperties: true,
+        additionalProperties: false,
         required: ['schemaVersion', 'verdict'],
         properties: {
           schemaVersion: {
@@ -116,11 +116,18 @@ const DEFAULT_STRUCTURED_OUTPUT_SCHEMA = {
     },
     challengeRequests: {
       type: 'array',
-      items: { type: 'object' },
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['code', 'request'],
+        properties: {
+          code: { type: 'string', minLength: 1 },
+          request: { type: 'string', minLength: 1 },
+        },
+      },
     },
     evidenceRefs: {
       type: 'array',
-      uniqueItems: true,
       items: { type: 'string', minLength: 1 },
     },
   },
@@ -267,6 +274,69 @@ function normalizeCodexOutputSchema(value: unknown): unknown {
     if (inferred) normalized.type = inferred;
   }
   return normalized;
+}
+
+const UNSUPPORTED_CODEX_SCHEMA_KEYWORDS = new Set([
+  'allOf',
+  'contains',
+  'dependentRequired',
+  'dependentSchemas',
+  'if',
+  'maxItems',
+  'minItems',
+  'not',
+  'patternProperties',
+  'then',
+  'unevaluatedItems',
+  'uniqueItems',
+]);
+
+function incompatibleCodexOutputSchema(issue: string, nodePath: string): never {
+  throw new Error(`codex_cli_judge_output_schema_incompatible:${issue}:${nodePath}`);
+}
+
+function assertCodexOutputSchemaCompatible(value: unknown): void {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    incompatibleCodexOutputSchema('root', '$');
+  }
+  const visit = (nodeValue: unknown, nodePath: string): void => {
+    if (!nodeValue || typeof nodeValue !== 'object' || Array.isArray(nodeValue)) return;
+    const node = nodeValue as JsonRecord;
+    for (const keyword of Object.keys(node)) {
+      if (UNSUPPORTED_CODEX_SCHEMA_KEYWORDS.has(keyword)) {
+        incompatibleCodexOutputSchema(keyword, nodePath);
+      }
+    }
+    if (node.type === 'object') {
+      if (node.additionalProperties !== false) {
+        incompatibleCodexOutputSchema('additionalProperties', nodePath);
+      }
+      const properties = record(
+        node.properties ?? {},
+        'codex_cli_judge_output_schema_incompatible:properties'
+      );
+      const required = Array.isArray(node.required) ? node.required.map(String) : [];
+      if (
+        new Set(required).size !== required.length ||
+        JSON.stringify([...required].sort()) !== JSON.stringify(Object.keys(properties).sort())
+      ) {
+        incompatibleCodexOutputSchema('required', nodePath);
+      }
+      for (const [name, child] of Object.entries(properties)) {
+        visit(child, `${nodePath}.properties.${name}`);
+      }
+    }
+    if (node.items !== undefined) visit(node.items, `${nodePath}.items`);
+    for (const [name, child] of Object.entries((node.$defs ?? {}) as JsonRecord)) {
+      visit(child, `${nodePath}.$defs.${name}`);
+    }
+    for (const [index, child] of (Array.isArray(node.anyOf) ? node.anyOf : []).entries()) {
+      visit(child, `${nodePath}.anyOf[${index}]`);
+    }
+  };
+  const root = value as JsonRecord;
+  if (root.type !== 'object') incompatibleCodexOutputSchema('root_type', '$');
+  visit(root, '$');
 }
 
 function pathLikeKey(key: string): boolean {
@@ -487,6 +557,8 @@ function credentialBinding(input: {
     `env_key = ${tomlString(credentialEnvironmentVariable)}`,
     `wire_api = ${tomlString('responses')}`,
     'requires_openai_auth = false',
+    'request_max_retries = 0',
+    'stream_max_retries = 0',
     '',
   ].join('\n');
   const configPath = path.join(runtimeHomePath, 'config.toml');
@@ -718,7 +790,9 @@ function commandLaunchEvidence(
   };
 }
 
-function executeCommand(invocation: CodexCliCommandInvocation): Promise<CodexCliCommandResult> {
+export function executeCodexCliCommand(
+  invocation: CodexCliCommandInvocation
+): Promise<CodexCliCommandResult> {
   return new Promise((resolve, reject) => {
     let child: ChildProcessWithoutNullStreams;
     let launch: CodexCliLaunch;
@@ -844,8 +918,7 @@ function observedModel(events: JsonRecord[]): string | null {
       }
     }
   }
-  if (models.size > 1) throw new Error('codex_cli_judge_model_observation_conflict');
-  return [...models][0] ?? null;
+  return models.size === 1 ? [...models][0] : null;
 }
 
 function structuredDecision(value: unknown): {
@@ -902,7 +975,7 @@ function validateExecutionReceipt(receipt: JsonRecord): void {
 }
 
 export function createCodexCliJudgeAdapter(dependencies: CodexCliJudgeAdapterDependencies = {}) {
-  const run = dependencies.executeCommand ?? executeCommand;
+  const run = dependencies.executeCommand ?? executeCodexCliCommand;
   const readCredentialSecret =
     dependencies.readCredentialSecret ?? readRequirementsContractJudgeCredentialSecret;
   const executorKind: CodexCliExecutorKind = dependencies.executeCommand
@@ -919,6 +992,10 @@ export function createCodexCliJudgeAdapter(dependencies: CodexCliJudgeAdapterDep
         'codex_cli_judge_system_prompt_missing'
       );
       const request = record(payload.request, 'codex_cli_judge_request_invalid');
+      const structuredOutputSchema = normalizeCodexOutputSchema(
+        payload.structuredOutputSchema ?? DEFAULT_STRUCTURED_OUTPUT_SCHEMA
+      );
+      assertCodexOutputSchemaCompatible(structuredOutputSchema);
       const context = executionContext(payload);
       const root = path.resolve(context.projectRoot);
       const outputDir = resolveWithin(
@@ -938,9 +1015,6 @@ export function createCodexCliJudgeAdapter(dependencies: CodexCliJudgeAdapterDep
         outputDir,
         readCredentialSecret,
       });
-      const structuredOutputSchema = normalizeCodexOutputSchema(
-        payload.structuredOutputSchema ?? DEFAULT_STRUCTURED_OUTPUT_SCHEMA
-      );
       const outputSchemaPath = path.join(outputDir, 'structured-output.schema.json');
       const outputPath = path.join(outputDir, 'structured-output.json');
       const stdoutPath = path.join(outputDir, 'codex-cli-stdout.jsonl');
@@ -1046,33 +1120,13 @@ export function createCodexCliJudgeAdapter(dependencies: CodexCliJudgeAdapterDep
       writeJsonAtomic(path.join(outputDir, 'cli-judge-execution-receipt.json'), receipt);
       const completedAt = new Date().toISOString();
       const transportEvidenceHash = sha256(stableStringify(receipt));
-      if (!returnedModel) {
-        writeInvocationReceipt({
-          outputDir,
-          startedAt,
-          completedAt,
-          providerRef,
-          transport: String(provider.transport),
-          providerRequestId: requestId,
-          outcome: 'unknown',
-          decision: 'inconclusive',
-          unknownOutcomeReason: 'codex_cli_judge_model_observation_missing',
-          normalizedResponseHash: sha256(
-            stableStringify({
-              decision: 'inconclusive',
-              reason: 'codex_cli_judge_model_observation_missing',
-            })
-          ),
-          transportEvidenceHash,
-        });
-        throw new Error('codex_cli_judge_model_observation_missing');
-      }
+      const normalizedReturnedModel = returnedModel ?? 'gateway-managed:unobserved';
       const normalized = {
         schemaVersion: 'requirements-contract-normalized-judge-response/v1',
         providerRef,
         transport: provider.transport,
         configuredModel,
-        returnedModel,
+        returnedModel: normalizedReturnedModel,
         ...normalizedDecision,
         providerRequestId: requestId,
         requestHash: sha256(prompt),

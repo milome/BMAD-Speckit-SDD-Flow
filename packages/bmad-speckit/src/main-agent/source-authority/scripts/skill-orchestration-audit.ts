@@ -91,6 +91,7 @@ const RESUME_CONTROL_PATTERNS = [
   /before calling the audit subagent/iu,
   /整段传入/iu,
   /return to the main Agent/iu,
+  /return findings to the main Agent/iu,
   /resume/iu,
 ];
 

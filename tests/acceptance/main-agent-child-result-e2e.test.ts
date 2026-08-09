@@ -1,6 +1,3 @@
-import { mkdtempSync, rmSync } from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   buildMainAgentDispatchInstruction,
@@ -10,41 +7,47 @@ import {
   markMainAgentPacketDispatched,
   resolveMainAgentOrchestrationSurface,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
-import {
-  buildPassImplementationEntryGate,
-  buildSixModelResultsForImplementationReady,
-  writeMinimalRegistryAndProjectContext,
-} from '../helpers/runtime-registry-fixture';
-import { writeFakeReqTraceSkill } from '../helpers/requirement-fixture-runtime';
+import { publishImplementationPromptFixture } from './helpers/prompt-transaction-implementation-publication-fixture';
 
 describe('main-agent child result E2E', () => {
-  it('ingests a completed child task report and advances the main flow to review', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-child-result-'));
-    try {
-      writeMinimalRegistryAndProjectContext(root, {
+  it('ingests a completed child task report and advances the main flow to review', async () => {
+    const { fixture } = await publishImplementationPromptFixture({
+      goalMode: 'direct_prompt',
+      configureRecord: (record, publicationFixture) => ({
+        ...record,
+        transactionId: publicationFixture.identity.transactionId,
         flow: 'story',
         stage: 'implement',
+        entryFlow: 'story',
         sourceMode: 'full_bmad',
         storyId: '15.4',
         runId: 'run-15-4',
-        implementationEntryGate: buildPassImplementationEntryGate({
-          flow: 'story',
-        }),
-        confirmedSource: true,
-        currentMentalModel: 'implementation_readiness',
-        sixModelResults: buildSixModelResultsForImplementationReady(),
-      });
-      writeFakeReqTraceSkill(root);
-
-      ensureMainAgentDispatchPacket({
+      }),
+    });
+    const root = fixture.root;
+    const recordId = fixture.authority.recordId;
+    const requirementSetId = fixture.identity.requirementSetId;
+    const implementationAttemptId = fixture.identity.implementationAttemptId;
+    try {
+      const hydrated = ensureMainAgentDispatchPacket({
         projectRoot: root,
         flow: 'story',
         stage: 'implement',
+        recordId,
+        requirementSetId,
+        host: 'cursor',
+        preferredPacketId: implementationAttemptId,
       });
+      expect(hydrated.pendingPacketStatus).toBe('ready_for_main_agent');
       const dispatch = buildMainAgentDispatchInstruction({
         projectRoot: root,
         flow: 'story',
         stage: 'implement',
+        recordId,
+        requirementSetId,
+        host: 'cursor',
+        preferredPacketId: implementationAttemptId,
+        hydratePacket: true,
       });
       claimMainAgentPendingPacket(root, dispatch!.sessionId);
       markMainAgentPacketDispatched(root, dispatch!.sessionId, dispatch!.packetId);
@@ -70,10 +73,12 @@ describe('main-agent child result E2E', () => {
         projectRoot: root,
         flow: 'story',
         stage: 'implement',
+        recordId,
+        requirementSetId,
       });
       expect(surface.mainAgentNextAction).toBe('run_execution_closure_gate');
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      fixture.cleanup();
     }
   });
 });

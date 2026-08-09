@@ -218,6 +218,7 @@ const ORCHESTRATION_ACTIONS = new Set([
   'step',
   'dispatch-plan',
   'run-loop',
+  'controlled-closeout',
   'claim',
   'dispatch',
   'complete',

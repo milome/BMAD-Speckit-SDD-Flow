@@ -221,6 +221,12 @@ function assertPointerReferences(
     ...(pointer.goalExecutionRef
       ? ([['goalExecutionRef', pointer.goalExecutionRef]] as Array<[string, JsonRecord]>)
       : []),
+    ...(pointer.campaignRuntimeBindingRef
+      ? ([['campaignRuntimeBindingRef', pointer.campaignRuntimeBindingRef]] as Array<[
+          string,
+          JsonRecord
+        ]>)
+      : []),
     ...(pointer.supersededPointerRef
       ? ([['supersededPointerRef', pointer.supersededPointerRef]] as Array<[string, JsonRecord]>)
       : []),
@@ -241,6 +247,7 @@ function assertPointerReferences(
             'humanPromptRef',
             'capabilityObservationRef',
             'goalExecutionRef',
+            'campaignRuntimeBindingRef',
           ].includes(label)
       )
     );

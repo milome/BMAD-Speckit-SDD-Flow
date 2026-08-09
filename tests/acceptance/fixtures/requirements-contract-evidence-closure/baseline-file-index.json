@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "requirements-contract-g00-baseline-file-index/v1",
+  "capturedAt": "2026-08-04T00:00:00.000Z",
+  "hashDomains": {
+    "pathSet": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "fileIndex": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "repositoryIdentity": {
+    "gitHeadSha": "0000000000000000000000000000000000000000",
+    "branch": "fixture",
+    "repositoryRootHash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "contractPath": "tests/acceptance/fixtures/requirements-contract-evidence-closure/frozen-universe-contract.md",
+    "contractHash": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "gitStatusPorcelainV2Hash": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "dependencyLockHashes": [
+      {
+        "path": "package-lock.json",
+        "sha256": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+      }
+    ],
+    "nodeVersion": "v22.0.0",
+    "platform": "fixture",
+    "architecture": "x64"
+  },
+  "summary": {
+    "entryCount": 2,
+    "trackedCount": 1,
+    "untrackedCount": 1,
+    "trackedCleanCount": 0,
+    "trackedDirtyCount": 1,
+    "preExistingDirtyCount": 2,
+    "missingTrackedCount": 0,
+    "pathSetHash": "sha256:ed65922779704c3220314fb72164689e857acfa473f1d646dd528d587a26b687",
+    "fileIndexHash": "sha256:96bd8dee598240e5eb41cfc87274dab6555992afa37ff9c3006f156c0e060d94",
+    "preExistingDirtyPathHashesHash": "sha256:1f7057951b3f76153bdd43d63a8221ef7d090b036dc65e2c152dbd55e86fbaa4",
+    "baselineSnapshotHash": "sha256:d8aed3e49e4cca4ddeeac089d377e03a8d9d3ce9064e928ed8c98788c1d2cc56"
+  },
+  "preExistingDirtyPaths": [
+    {
+      "path": "tests/acceptance/fixtures/requirements-contract-evidence-closure/frozen-universe-contract.md",
+      "dirtyClass": "tracked_dirty",
+      "pathRole": "source",
+      "exists": true,
+      "bytes": 512,
+      "sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "path": "tests/acceptance/fixtures/requirements-contract-evidence-closure/artifact-field-contract.md",
+      "dirtyClass": "untracked",
+      "pathRole": "fixture",
+      "exists": true,
+      "bytes": 6409,
+      "sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  ],
+  "entries": [
+    {
+      "path": "tests/acceptance/fixtures/requirements-contract-evidence-closure/frozen-universe-contract.md",
+      "pathRole": "source",
+      "tracked": true,
+      "dirtyClass": "tracked_dirty",
+      "exists": true,
+      "fileType": "markdown",
+      "bytes": 512,
+      "sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "path": "tests/acceptance/fixtures/requirements-contract-evidence-closure/artifact-field-contract.md",
+      "pathRole": "fixture",
+      "tracked": false,
+      "dirtyClass": "untracked",
+      "exists": true,
+      "fileType": "markdown",
+      "bytes": 6409,
+      "sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  ]
+}

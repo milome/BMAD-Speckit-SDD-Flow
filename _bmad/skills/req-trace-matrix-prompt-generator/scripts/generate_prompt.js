@@ -318,6 +318,27 @@ function sha256(content) {
   return `sha256:${crypto.createHash('sha256').update(content, 'utf8').digest('hex')}`;
 }
 
+function normalizeTextForHash(value) {
+  const text = String(value);
+  const withoutBom = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+  return withoutBom.replace(/\r\n?/gu, '\n').normalize('NFC');
+}
+
+function normalizeCanonicalObjectValue(value) {
+  if (typeof value === 'string') return normalizeTextForHash(value);
+  if (Array.isArray(value)) return value.map(normalizeCanonicalObjectValue);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(
+    Object.entries(value)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, child]) => [key, normalizeCanonicalObjectValue(child)])
+  );
+}
+
+function canonicalObjectHash(value) {
+  return sha256(JSON.stringify(normalizeCanonicalObjectValue(value)));
+}
+
 function compilerIdentity() {
   return {
     path: path.resolve(__filename).replace(/\\/gu, '/'),
@@ -466,11 +487,30 @@ function sourceDocumentHashFor(sourceText, blockText, confirmation) {
   const normalizedBlock = `implementationConfirmation:${stableStringify(
     semanticConfirmationForHash(confirmation)
   )}`;
-  return sha256(sourceText.replace(blockText, normalizedBlock));
+  const normalizedSource = normalizeTextForHash(sourceText);
+  const normalizedOriginalBlock = normalizeTextForHash(blockText);
+  const blockStart = normalizedSource.indexOf(normalizedOriginalBlock);
+  if (blockStart < 0) {
+    throw new BlockedInput(
+      'BLOCK: SOURCE_DOCUMENT_HASH_INVALID',
+      'implementationConfirmation block is missing from the normalized source document.'
+    );
+  }
+  if (normalizedSource.indexOf(normalizedOriginalBlock, blockStart + 1) >= 0) {
+    throw new BlockedInput(
+      'BLOCK: SOURCE_DOCUMENT_HASH_INVALID',
+      'implementationConfirmation block is ambiguous in the normalized source document.'
+    );
+  }
+  return sha256(
+    `${normalizedSource.slice(0, blockStart)}${normalizedBlock}${normalizedSource.slice(
+      blockStart + normalizedOriginalBlock.length
+    )}`
+  );
 }
 
 function implementationConfirmationHashFor(confirmation) {
-  return sha256(stableStringify(semanticConfirmationForHash(confirmation)));
+  return canonicalObjectHash(semanticConfirmationForHash(confirmation));
 }
 
 function legacyProjectionInclusiveHashesFor(sourceText, blockText, confirmation) {
@@ -505,7 +545,7 @@ function extractConfirmationBlock(text) {
 }
 
 function parseConfirmation(blockText) {
-  const parsed = yaml.load(blockText);
+  const parsed = yaml.load(blockText, { schema: yaml.JSON_SCHEMA });
   if (!parsed || typeof parsed !== 'object') {
     return { implementationConfirmation: {} };
   }

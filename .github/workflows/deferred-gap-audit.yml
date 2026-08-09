@@ -21,7 +21,7 @@ jobs:
         run: npm ci
 
       - name: Run deferred gap audit
-        run: npx bmad-speckit deferred-gap-audit --output _bmad-output/deferred-gap-audit.md --fail-on-alert
+        run: node packages/bmad-speckit/bin/bmad-speckit.js deferred-gap-audit --output _bmad-output/deferred-gap-audit.md --fail-on-alert
 
       - name: Upload deferred gap audit artifact
         if: always()

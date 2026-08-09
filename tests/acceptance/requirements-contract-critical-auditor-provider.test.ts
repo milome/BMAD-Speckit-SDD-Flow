@@ -14,6 +14,7 @@ import {
   artifacts,
   buildValidResponseFromRequest,
   createMinimalConsumerRequirementDescriptor,
+  createTestAuthoringExecutionOptions,
   createTempRoot,
   expectSourceHashUnchanged,
   issueCodes,
@@ -37,12 +38,12 @@ function createAuthoringConsumerFixture(root: string, recordId: string) {
     ),
     'utf8'
   );
-  const materialization = writeMinimalConsumerRequirement(
+  const { sourcePath, authoringOptions } = writeMinimalConsumerRequirement(
     root,
     `docs/requirements/${recordId.toLowerCase()}.md`,
     createMinimalConsumerRequirementDescriptor(recordId)
   );
-  return materialization;
+  return { sourcePath, authoringOptions };
 }
 
 function sha256Json(value: unknown): string {
@@ -51,6 +52,7 @@ function sha256Json(value: unknown): string {
 
 function canonicalSha256Json(value: unknown): string {
   const stable = (item: unknown): string => {
+    if (item === undefined) return 'undefined';
     if (item === null || typeof item !== 'object') return JSON.stringify(item);
     if (Array.isArray(item)) return `[${item.map(stable).join(',')}]`;
     return `{${Object.keys(item as Record<string, unknown>)
@@ -117,7 +119,11 @@ function createRequestForResponseFile(root: string, recordId: string) {
   const materialization = createAuthoringConsumerFixture(root, recordId);
   const source = materialization.sourcePath;
   const beforeHash = sha256File(source);
-  const first = runAuthoring(root, source, recordId, materialization.authoringOptions);
+  const authoringOptions = {
+    ...createTestAuthoringExecutionOptions(recordId),
+    ...materialization.authoringOptions,
+  };
+  const first = runAuthoring(root, source, recordId, authoringOptions);
   const requestPath = roundArtifact(root, recordId, 'request', 1);
   if (!existsSync(requestPath)) {
     throw new Error(
@@ -132,7 +138,7 @@ function createRequestForResponseFile(root: string, recordId: string) {
     source,
     beforeHash,
     first,
-    authoringOptions: materialization.authoringOptions,
+    authoringOptions,
     requestPath,
     request: readJson<Record<string, unknown>>(requestPath),
     packet: stagingMustDecompositionPacket(root, recordId),
@@ -392,6 +398,56 @@ describe('requirements contract Critical Auditor provider modes', () => {
             entry.name.startsWith('critical-auditor-receipt-round-')
           )
       ).toBe(true);
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
+  it('resumes main-session Critical Auditor responses at the next round', () => {
+    const root = createTempRoot('requirements-contract-critical-auditor-main-session-');
+    try {
+      const recordId = 'REQ-CRITICAL-AUDITOR-MAIN-SESSION';
+      const fixture = createRequestForResponseFile(root, recordId);
+      expect(fixture.first.criticalAuditorContinuation).toMatchObject({
+        providerMode: 'main_session_inline',
+        roundIndex: 1,
+        nextRequiredAction: 'run_main_session_critical_auditor_round',
+      });
+      const artifactPaths = artifacts(root, recordId, `${recordId}-SET`);
+      const firstManifest = readJson<Record<string, unknown>>(
+        artifactPaths.semanticConservationManifest
+      );
+
+      const responsePath = roundArtifact(root, recordId, 'response', 1);
+      writeFileSync(
+        responsePath,
+        `${JSON.stringify(
+          buildValidResponseFromRequest(fixture.request, fixture.packet),
+          null,
+          2
+        )}\n`,
+        'utf8'
+      );
+
+      const resumed = runAuthoring(root, fixture.source, recordId, fixture.authoringOptions);
+      const resumedRequest = readJson<Record<string, unknown>>(
+        roundArtifact(root, recordId, 'request', 1)
+      );
+      const resumedManifest = readJson<Record<string, unknown>>(
+        artifactPaths.semanticConservationManifest
+      );
+      expect(existsSync(roundArtifact(root, recordId, 'receipt', 1))).toBe(true);
+      expect(existsSync(responsePath)).toBe(true);
+      expect(resumedRequest.semanticModelHash).toBe(fixture.request.semanticModelHash);
+      expect(resumedRequest.auditInputHash).toBe(fixture.request.auditInputHash);
+      expect(canonicalSha256Json(resumedManifest)).toBe(canonicalSha256Json(firstManifest));
+      expect(resumed.criticalAuditorContinuation).toMatchObject({
+        providerMode: 'main_session_inline',
+        roundIndex: 2,
+        nextRequiredAction: 'run_main_session_critical_auditor_round',
+      });
+      expect(issueCodes(resumed)).toContain('critical_auditor_provider_mode_required');
+      expectSourceHashUnchanged(fixture.source, fixture.beforeHash);
     } finally {
       removeTempRoot(root);
     }
@@ -1059,11 +1115,12 @@ describe('requirements contract Critical Auditor provider modes', () => {
     }
   });
 
-  it('preserves separate host logs across failed production adapter attempts', () => {
+  it('rejects repeated legacy production adapter attempts before writing host logs', () => {
     const root = createTempRoot('requirements-contract-external-adapter-host-retry-');
     try {
       const recordId = `REQ-${randomUUID().replaceAll('-', '').toUpperCase()}`;
       const fixture = createRequestForResponseFile(root, recordId);
+      const beforeHash = sha256File(fixture.source);
       const configPath = path.join(root, '_bmad', '_config', 'governance-remediation.yaml');
       const config = yaml.load(readFileSync(configPath, 'utf8')) as {
         judgeRuntime?: {
@@ -1131,14 +1188,16 @@ describe('requirements contract Critical Auditor provider modes', () => {
 
       const first = invoke();
       expect(issueCodes(first), JSON.stringify(first, null, 2)).toContain(
-        'critical_auditor_external_adapter_failed'
+        'main_agent_judge_legacy_direct_adapter_forbidden'
       );
+      expect(issueCodes(first)).not.toContain('critical_auditor_external_adapter_failed');
       expect(JSON.stringify(first)).not.toContain('critical_auditor_judge_host_log_changed');
 
       const second = invoke();
       expect(issueCodes(second), JSON.stringify(second, null, 2)).toContain(
-        'critical_auditor_external_adapter_failed'
+        'main_agent_judge_legacy_direct_adapter_forbidden'
       );
+      expect(issueCodes(second)).not.toContain('critical_auditor_external_adapter_failed');
       expect(JSON.stringify(second)).not.toContain('critical_auditor_judge_host_log_changed');
 
       const firstStagingDir = path.resolve(
@@ -1157,14 +1216,8 @@ describe('requirements contract Critical Auditor provider modes', () => {
         requestHash: String(currentRequest.requestHash ?? ''),
       });
       const hostAttemptsDir = path.join(outputDir, 'judge-adapter-host-attempts');
-      const attemptDirs = readdirSync(hostAttemptsDir, { withFileTypes: true }).filter((entry) =>
-        entry.isDirectory()
-      );
-      expect(attemptDirs).toHaveLength(2);
-      for (const attemptDir of attemptDirs) {
-        expect(existsSync(path.join(hostAttemptsDir, attemptDir.name, 'stdout.log'))).toBe(true);
-        expect(existsSync(path.join(hostAttemptsDir, attemptDir.name, 'stderr.log'))).toBe(true);
-      }
+      expect(existsSync(hostAttemptsDir)).toBe(false);
+      expectSourceHashUnchanged(fixture.source, beforeHash);
     } finally {
       removeTempRoot(root);
     }

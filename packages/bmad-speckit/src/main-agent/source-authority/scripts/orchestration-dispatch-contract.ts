@@ -267,6 +267,12 @@ export interface ExecutionPacket {
   auditExecutionProfile?: AuditExecutionProfile | null;
   auditTriadExecutionPlanRef?: AuditTriadExecutionPlanRef | null;
   auditRepairContext?: AuditRepairContext | null;
+  campaignRuntimeBindingRef?: {
+    path: string;
+    hash: string;
+    readbackHash: string;
+    readbackVerified: true;
+  } | null;
 }
 
 export interface ResumePacket {

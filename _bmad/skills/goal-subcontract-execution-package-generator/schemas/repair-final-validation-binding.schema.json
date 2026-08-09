@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "repair-final-validation-binding.schema.json",
+  "title": "Goal Campaign Repair Final Validation Binding",
+  "type": "object",
+  "required": [
+    "schemaVersion", "repairAttemptId", "repairAuthorityReceiptHash",
+    "repairClosureSetHash", "boundHead", "boundTree",
+    "unreachableChildCommitHashes", "parentDiscontinuities",
+    "ownedPathBindings", "ownedPathSetHash", "postChildCommitHashes",
+    "postChildCommitSetHash", "validationResults", "repositoryState",
+    "decision", "receiptHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "goal-subcontract-repair-final-validation/v1" },
+    "repairAttemptId": { "type": "string", "minLength": 1 },
+    "repairAuthorityReceiptHash": { "$ref": "#/$defs/sha256" },
+    "repairClosureSetHash": { "$ref": "#/$defs/sha256" },
+    "boundHead": { "$ref": "#/$defs/gitHash" },
+    "boundTree": { "$ref": "#/$defs/gitHash" },
+    "unreachableChildCommitHashes": {
+      "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/gitHash" }
+    },
+    "parentDiscontinuities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["partitionId", "commitHash", "expectedParentHash", "actualParentHash"],
+        "properties": {
+          "partitionId": { "type": "string", "minLength": 1 },
+          "commitHash": { "$ref": "#/$defs/gitHash" },
+          "expectedParentHash": { "$ref": "#/$defs/gitHash" },
+          "actualParentHash": { "$ref": "#/$defs/gitHash" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "ownedPathBindings": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "required": ["path", "blobHash"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "blobHash": { "$ref": "#/$defs/gitHash" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "ownedPathSetHash": { "$ref": "#/$defs/sha256" },
+    "postChildCommitHashes": {
+      "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/gitHash" }
+    },
+    "postChildCommitSetHash": { "$ref": "#/$defs/sha256" },
+    "validationResults": {
+      "type": "array", "minItems": 2,
+      "items": {
+        "type": "object", "required": ["id", "evidenceSchemaVersion", "status", "evidence"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "evidenceSchemaVersion": { "type": "string", "minLength": 1 },
+          "status": { "const": "pass" },
+          "evidence": { "$ref": "#/$defs/fileBinding" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "repositoryState": {
+      "type": "object", "required": ["head", "stagedCount"],
+      "properties": {
+        "head": { "$ref": "#/$defs/gitHash" },
+        "stagedCount": { "const": 0 }
+      },
+      "additionalProperties": false
+    },
+    "decision": { "const": "pass" },
+    "receiptHash": { "$ref": "#/$defs/sha256" }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "gitHash": { "type": "string", "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$" },
+    "fileBinding": {
+      "type": "object", "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/sha256" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -25,7 +25,7 @@ const cliPath = join(process.cwd(), 'tools', 'test-portfolio-audit', 'run.cjs');
 const routeFixture = join(process.cwd(), 'tests', 'fixtures', 'test-portfolio-audit', 'routes');
 // Updated from remote CI whenever the LF-normalized Base route fixture intentionally changes.
 const BASE_ROUTE_AUDIT_SHA256 =
-  'sha256:364112b7a8d2ca18a6b7210557606765732d5af8f13c3f7752c4aff3012581ff';
+  'sha256:94f12805885ecc1fa8a5457fc3584c2e189addb861a2fceb32c662c7a9fc3eff';
 const BASE_ROUTE_SUMMARY_SHA256 =
   'sha256:ba386ade13632e5c7085f608f893baed29ee2ae1877d98c9cb98eac404dc84b3';
 
@@ -76,11 +76,15 @@ function createBaseVectorRouteFixture(): string {
   return fixture;
 }
 
-function runCli(args: string[]) {
+function runCli(args: string[], env: NodeJS.ProcessEnv = {}) {
   return spawnSync(process.execPath, [cliPath, ...args], {
     cwd: process.cwd(),
     encoding: 'utf8',
     windowsHide: true,
+    env: {
+      ...process.env,
+      ...env,
+    },
   });
 }
 
@@ -396,7 +400,9 @@ describe('test portfolio audit CLI orchestration', () => {
       '--probe-limit',
       '0',
       '--json',
-    ]);
+    ], {
+      GIT_CEILING_DIRECTORIES: resolve(repoRoot, '..'),
+    });
 
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
     expect({
@@ -580,7 +586,7 @@ describe('test portfolio audit CLI orchestration', () => {
     ]);
   }, 30_000);
 
-  it('keeps canonical artifact bytes stable across filesystem, package, path, and timing permutations', () => {
+  it('keeps canonical artifact bytes independent of filesystem, package, path, and runtime timing', () => {
     const roots = [createDeterminismFixture(false), createDeterminismFixture(true)];
     const runs = roots.map((repoRoot, index) => {
       const outputDir = join(repoRoot, '.artifacts', 'ci');
@@ -603,24 +609,14 @@ describe('test portfolio audit CLI orchestration', () => {
     });
 
     expect(runs[1].artifactBytes.equals(runs[0].artifactBytes)).toBe(true);
-    expect(
-      runs.map(({ receipt }) => ({
-        staticAnalysisDurationMs: receipt.staticAnalysisDurationMs,
-        probeDurationMs: receipt.probeDurationMs,
-        totalDurationMs: receipt.totalDurationMs,
-      }))
-    ).not.toEqual([
-      {
-        staticAnalysisDurationMs: runs[0].receipt.staticAnalysisDurationMs,
-        probeDurationMs: runs[0].receipt.probeDurationMs,
-        totalDurationMs: runs[0].receipt.totalDurationMs,
-      },
-      {
-        staticAnalysisDurationMs: runs[0].receipt.staticAnalysisDurationMs,
-        probeDurationMs: runs[0].receipt.probeDurationMs,
-        totalDurationMs: runs[0].receipt.totalDurationMs,
-      },
-    ]);
+    for (const { receipt } of runs) {
+      expect(Number.isFinite(receipt.staticAnalysisDurationMs)).toBe(true);
+      expect(Number.isFinite(receipt.probeDurationMs)).toBe(true);
+      expect(Number.isFinite(receipt.totalDurationMs)).toBe(true);
+      expect(receipt.staticAnalysisDurationMs).toBeGreaterThanOrEqual(0);
+      expect(receipt.probeDurationMs).toBeGreaterThanOrEqual(0);
+      expect(receipt.totalDurationMs).toBeGreaterThanOrEqual(0);
+    }
   }, 60_000);
 });
 

@@ -16,6 +16,9 @@ const path = require('node:path');
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 const yaml = require('js-yaml');
+const {
+  packFromHermeticStaging,
+} = require('./helpers/hermetic-npm-pack.js');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const REPO_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
@@ -186,6 +189,9 @@ function writeInstalledProbe(consumerRoot, installedRoot) {
       "const fs = require('node:fs');",
       "const Module = require('node:module');",
       `const moduleMap = ${JSON.stringify(moduleMap)};`,
+      `const installedRequire = Module.createRequire(${JSON.stringify(
+        path.join(installedRoot, 'package.json')
+      )});`,
       'const forbidden = /(?:^|[\\\\/])src[\\\\/]|\\.tsx?$|\\btsx\\b|\\bts-node\\b|main-agent-orchestration\\.ts/i;',
       'const sourceFallbacks = [];',
       'const originalLoad = Module._load;',
@@ -220,7 +226,7 @@ function writeInstalledProbe(consumerRoot, installedRoot) {
       '    for (const method of ["probe", "judge", "buildRequest"]) pickFunction(adapter, [method]);',
       '  }',
       '  const credential = await resolveCredential({ cwd, config: "judge-runtime.yaml" });',
-      '  const config = require("js-yaml").load(fs.readFileSync("judge-runtime.yaml", "utf8"));',
+      '  const config = installedRequire("js-yaml").load(fs.readFileSync("judge-runtime.yaml", "utf8"));',
       '  const runtime = config.judgeRuntime;',
       '  const registry = await createRegistry({ judgeRuntime: runtime, runtime });',
       '  const selection = await resolveProvider({',
@@ -278,9 +284,12 @@ describe('Judge runtime installed parity', () => {
 
       try {
         const pack = expectSuccess(
-          run(npmCommand, ['pack', '--ignore-scripts', '--json', '--pack-destination', packRoot], {
-            cwd: PACKAGE_ROOT,
-            timeout: 180_000,
+          packFromHermeticStaging({
+            packageRoot: PACKAGE_ROOT,
+            packDestination: packRoot,
+            runNpm: (args, options) => run(npmCommand, args, options),
+            npmOptions: { timeout: 180_000 },
+            runLifecycle: false,
           }),
           'npm pack failed'
         );
