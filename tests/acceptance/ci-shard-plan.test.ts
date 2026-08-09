@@ -227,6 +227,7 @@ describe('deterministic timing-driven shard plan', () => {
     const manifest = createRunManifestPlan({
       repository: { commitSha: 'a'.repeat(40), dirty: false },
       catalogHash: `sha256:${'1'.repeat(64)}`,
+      semanticIndexHash: `sha256:${'2'.repeat(64)}`,
       packageDescriptorHash: `sha256:${'3'.repeat(64)}`,
       tarballSha256: `sha256:${'4'.repeat(64)}`,
       selectionHash: plan.selectionHash,
@@ -703,6 +704,7 @@ describe('deterministic timing-driven shard plan', () => {
     const manifest = createRunManifestPlan({
       repository: { commitSha: 'a'.repeat(40), dirty: false },
       catalogHash: `sha256:${'1'.repeat(64)}`,
+      semanticIndexHash: `sha256:${'2'.repeat(64)}`,
       packageDescriptorHash: `sha256:${'3'.repeat(64)}`,
       tarballSha256: `sha256:${'4'.repeat(64)}`,
       selectionHash: shardPlan.selectionHash,
@@ -746,6 +748,7 @@ describe('deterministic timing-driven shard plan', () => {
     const manifest = createRunManifestPlan({
       repository: { commitSha: 'a'.repeat(40), dirty: false },
       catalogHash: `sha256:${'1'.repeat(64)}`,
+      semanticIndexHash: `sha256:${'2'.repeat(64)}`,
       packageDescriptorHash: `sha256:${'3'.repeat(64)}`,
       tarballSha256: `sha256:${'4'.repeat(64)}`,
       selectionHash: shardPlan.selectionHash,

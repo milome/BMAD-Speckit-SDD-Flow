@@ -241,6 +241,8 @@ function buildGovernedProfileCommands({
       '.artifacts/test-portfolio/ci-shard-plan.json',
       '--timing-summary',
       TIMING_SUMMARY_PATH,
+      '--semantic-index',
+      SEMANTIC_INDEX_PATH,
       '--package-descriptor',
       DESCRIPTOR_PATH,
       '--commit-sha',

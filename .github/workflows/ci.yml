@@ -176,7 +176,7 @@ jobs:
 
       - name: Freeze the planned Run Manifest
         id: manifest
-        run: npm run ci:manifest -- --catalog .artifacts/test-portfolio/test-catalog.json --selection .artifacts/test-portfolio/test-selection.json --shard-plan .artifacts/test-portfolio/ci-shard-plan.json --timing-summary .artifacts/test-portfolio/ci-test-timing-summary.json --package-descriptor .artifacts/test-portfolio/package/canonical-package.json --commit-sha "$GITHUB_SHA"
+        run: npm run ci:manifest -- --catalog .artifacts/test-portfolio/test-catalog.json --selection .artifacts/test-portfolio/test-selection.json --shard-plan .artifacts/test-portfolio/ci-shard-plan.json --timing-summary .artifacts/test-portfolio/ci-test-timing-summary.json --semantic-index .artifacts/test-portfolio/ci-shard-semantic-index.json --package-descriptor .artifacts/test-portfolio/package/canonical-package.json --commit-sha "$GITHUB_SHA"
 
       - name: Gate shard execution on selection readiness
         id: selection-gate

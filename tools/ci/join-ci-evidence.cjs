@@ -267,6 +267,7 @@ function validateSemanticIndexManifestBinding(manifest, semanticIndex) {
   const shardPlan = manifest?.plan?.shardPlan;
   if (
     !isPlainObject(semanticIndex) ||
+    semanticIndex.semanticIndexHash !== manifest?.plan?.semanticIndexHash ||
     semanticIndex.selectionHash !== shardPlan?.selectionHash ||
     semanticIndex.shardPlanHash !== shardPlan?.shardPlanHash ||
     (shardPlan?.selection?.coverageReportHash !== undefined &&
@@ -526,10 +527,12 @@ function main(args = process.argv.slice(2), repoRoot = process.cwd()) {
   const { readCanonicalArtifact } = require('./canonical-artifact.cjs');
   let manifest;
   try {
-    manifest = readCanonicalArtifact({
+    const manifestArtifact = readCanonicalArtifact({
       repoRoot,
       filePath: path.resolve(repoRoot, options.manifest),
     }).artifact;
+    const { validateRunManifest } = require('./write-ci-run-manifest.cjs');
+    manifest = validateRunManifest(manifestArtifact);
   } catch (error) {
     const report = buildInfrastructureOnlyDiagnostics({
       outcome: 'invalid_manifest_artifact',

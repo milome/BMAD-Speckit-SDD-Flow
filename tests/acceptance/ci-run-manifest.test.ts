@@ -188,6 +188,7 @@ describe('single CI Run Manifest', () => {
       { lane: 'feature', shardId: 'feature-01' },
     ]);
     expect(manifest.plan.shardPlan).toEqual(input.shardPlan);
+    expect(manifest.plan.semanticIndexHash).toBe(input.semanticIndexHash);
     expect(manifest.plan.timingSnapshotHash).toBe(input.timingSummary.timingSnapshotHash);
     expect(manifest.plan.policyHash).toBe(input.policyHash);
     expect(manifest.plan).not.toHaveProperty('timingSummary');

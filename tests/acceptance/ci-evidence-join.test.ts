@@ -70,7 +70,12 @@ function semanticIndex(manifest: any) {
 }
 
 function fixture() {
-  const manifest = createRunManifestPlan(input);
+  const provisionalManifest = createRunManifestPlan(input);
+  const index = semanticIndex(provisionalManifest);
+  const manifest = createRunManifestPlan({
+    ...input,
+    semanticIndexHash: index.semanticIndexHash,
+  });
   const laneResults = manifest.plan.shardPlan.shards.map((shard: any) => ({
     lane: shard.lane,
     shardId: shard.shardId,
@@ -108,7 +113,12 @@ function expectedFailureFixture() {
     policyHash: sha256Bytes(canonicalJsonBytes(expectedInput.policy)),
     shardPlan,
   });
-  const manifest = createRunManifestPlan(expectedInput);
+  const provisionalManifest = createRunManifestPlan(expectedInput);
+  const index = semanticIndex(provisionalManifest);
+  const manifest = createRunManifestPlan({
+    ...expectedInput,
+    semanticIndexHash: index.semanticIndexHash,
+  });
   const laneResults = manifest.plan.shardPlan.shards.map((shard: any) => ({
     lane: shard.lane,
     shardId: shard.shardId,
@@ -234,6 +244,43 @@ describe('fail-closed CI Evidence Join', () => {
           '--semantic-index',
           '.artifacts/test-portfolio/ci-shard-semantic-index.json',
         ], repoRoot)
+      ).toBe(1);
+      const report = JSON.parse(
+        readFileSync(
+          join(repoRoot, '.artifacts/test-portfolio/final/six-model-ci-diagnostics.json'),
+          'utf8'
+        )
+      );
+      expect(report.failures).toContainEqual(
+        expect.objectContaining({ outcome: 'invalid_manifest_artifact' })
+      );
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('writes infrastructure-only diagnostics when the manifest is canonical but invalid', () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), 'ci-evidence-invalid-manifest-'));
+    try {
+      writeCanonicalArtifact({
+        repoRoot,
+        outputDir: '.artifacts/test-portfolio',
+        fileName: 'ci-run-manifest.json',
+        artifact: {},
+      });
+
+      expect(
+        joinMain(
+          [
+            '--manifest',
+            '.artifacts/test-portfolio/ci-run-manifest.json',
+            '--lane-results-dir',
+            '.artifacts/test-portfolio/lane-results',
+            '--semantic-index',
+            '.artifacts/test-portfolio/ci-shard-semantic-index.json',
+          ],
+          repoRoot
+        )
       ).toBe(1);
       const report = JSON.parse(
         readFileSync(
@@ -385,6 +432,34 @@ describe('fail-closed CI Evidence Join', () => {
           )
         )
       ).not.toContainEqual(expect.objectContaining({ outcome: 'passed' }));
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed when semantic diagnostics are rewritten and self-rehashed', () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), 'ci-evidence-rehashed-semantic-body-'));
+    try {
+      const input = fixture();
+      const forgedIndex = semanticIndex(input.manifest);
+      forgedIndex.tests[0].changedPaths = ['src/forged-diagnostic-path.ts'];
+      const { semanticIndexHash: _oldHash, ...forgedBody } = forgedIndex;
+      forgedIndex.semanticIndexHash = sha256Bytes(canonicalJsonBytes(forgedBody));
+
+      const result = finalizeCiEvidenceWithDiagnostics({
+        repoRoot,
+        manifest: input.manifest,
+        laneResults: input.laneResults,
+        semanticIndex: forgedIndex,
+      });
+
+      expect(result.finalized).toMatchObject({
+        status: 'failed',
+        failure: { issueCode: 'CI_SEMANTIC_INDEX_MANIFEST_MISMATCH' },
+      });
+      expect(result.diagnostics.failures).toContainEqual(
+        expect.objectContaining({ identityKey: null, outcome: 'invalid_semantic_index' })
+      );
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
     }

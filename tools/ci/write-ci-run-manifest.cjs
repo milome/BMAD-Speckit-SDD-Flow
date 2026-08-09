@@ -166,6 +166,10 @@ function normalizePlanBase(input) {
       dirty: input.repository.dirty,
     },
     catalogHash: requireHash(input.catalogHash, 'CI_MANIFEST_CATALOG_HASH_INVALID'),
+    semanticIndexHash: requireHash(
+      input.semanticIndexHash,
+      'CI_MANIFEST_SEMANTIC_INDEX_HASH_INVALID'
+    ),
     packageDescriptorHash: requireHash(
       input.packageDescriptorHash,
       'CI_MANIFEST_PACKAGE_DESCRIPTOR_HASH_INVALID'
@@ -378,6 +382,7 @@ function parseCliArgs(args) {
         '--shard-plan',
         '--timing-summary',
         '--policy',
+        '--semantic-index',
         '--package-descriptor',
         '--commit-sha',
         '--output-dir',
@@ -394,6 +399,7 @@ function parseCliArgs(args) {
     'selection',
     'shard-plan',
     'timing-summary',
+    'semantic-index',
     'package-descriptor',
   ]) {
     if (!options[required]) fail('CI_MANIFEST_CLI_ARGS_INVALID', { required });
@@ -456,6 +462,12 @@ function main(args = process.argv.slice(2)) {
     repoRoot,
     filePath: path.resolve(repoRoot, options['shard-plan']),
   }).artifact;
+  const semanticIndex = readCanonicalArtifact({
+    repoRoot,
+    filePath: path.resolve(repoRoot, options['semantic-index']),
+  }).artifact;
+  const { buildSixModelPlanningDiagnostics } = require('./build-six-model-ci-diagnostics.cjs');
+  buildSixModelPlanningDiagnostics({ semanticIndex });
   const timingSummary = readCanonicalArtifact({
     repoRoot,
     filePath: path.resolve(repoRoot, options['timing-summary']),
@@ -475,6 +487,7 @@ function main(args = process.argv.slice(2)) {
       dirty: false,
     },
     catalogHash: catalogReceipt.sha256,
+    semanticIndexHash: semanticIndex.semanticIndexHash,
     packageDescriptorHash: descriptorReceipt.sha256,
     tarballSha256: descriptorReceipt.artifact.tarballSha256,
     selectionHash: selectionReceipt.sha256,
