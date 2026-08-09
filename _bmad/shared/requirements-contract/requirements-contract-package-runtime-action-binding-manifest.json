@@ -739,7 +739,7 @@
         {
           "role": "legacy-critical-auditor-judge-adapter",
           "packagePath": "dist/main-agent/source-authority/scripts/requirements-contract-critical-auditor-judge-adapter.js",
-          "hash": "sha256:cb60a30fd9b3478dea92f8e1f69648b302ab3acb20d686573a528c0d68fb4529"
+          "hash": "sha256:82d47c16122cf6263b373f0ed8c61a5715c01b0a4c53d3c4f1a06bee71c1a8d5"
         },
         {
           "role": "judge-credential-resolver",
