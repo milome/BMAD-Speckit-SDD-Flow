@@ -976,7 +976,11 @@ function resolveAssetRoot({
   const packageRoot = filename.endsWith('.ts')
     ? path.resolve(dirname, '..', '..', '..', '..', '..')
     : path.resolve(dirname, '..', '..', '..');
-  for (const candidate of [packageRoot, path.resolve(packageRoot, '..', '..')]) {
+  const candidates = [packageRoot];
+  if (path.basename(path.dirname(packageRoot)) === 'packages') {
+    candidates.push(path.resolve(packageRoot, '..', '..'));
+  }
+  for (const candidate of candidates) {
     if (fs.existsSync(path.join(candidate, '_bmad', 'shared', 'goal-contract'))) {
       return candidate;
     }

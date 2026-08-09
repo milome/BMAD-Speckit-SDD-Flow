@@ -448,6 +448,10 @@ function createFixture() {
   const providerRef = String(judgeRuntime.activeProviderRef);
   const providers = record(judgeRuntime.providers, 'test_judge_runtime_providers_missing');
   const provider = record(providers[providerRef], 'test_judge_runtime_provider_missing');
+  const credentialRef = String(provider.credentialRef);
+  if (!credentialRef) {
+    throw new Error('test_judge_runtime_credential_ref_missing');
+  }
   const authentication = record(
     provider.authentication,
     'test_judge_runtime_authentication_missing'
@@ -470,7 +474,7 @@ function createFixture() {
       `schemaVersion: ${String(credentialConfig.schemaVersion)}`,
       'credentialRevision: 1',
       'providers:',
-      `  ${providerRef}:`,
+      `  ${credentialRef}:`,
       `    authenticationType: ${authenticationType}`,
       `    apiKey: test-placeholder-${randomUUID()}`,
       '',

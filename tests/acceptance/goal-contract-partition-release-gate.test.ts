@@ -72,7 +72,7 @@ function prepare() {
   const partition = manifestObject.partitions.find(
     (candidate: { partitionId: string }) => candidate.partitionId === partitionId
   );
-  const child = join(governedPayload.unitRoot, partition.childContractPath);
+  const child = join(ROOT, partition.childContractPath);
   return {
     root,
     source,
