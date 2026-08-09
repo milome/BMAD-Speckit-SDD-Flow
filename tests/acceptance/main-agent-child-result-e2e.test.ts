@@ -12,6 +12,7 @@ import { publishImplementationPromptFixture } from './helpers/prompt-transaction
 describe('main-agent child result E2E', () => {
   it('ingests a completed child task report and advances the main flow to review', async () => {
     const { fixture } = await publishImplementationPromptFixture({
+      goalMode: 'direct_prompt',
       configureRecord: (record, publicationFixture) => ({
         ...record,
         transactionId: publicationFixture.identity.transactionId,

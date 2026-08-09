@@ -8,16 +8,10 @@ const {
   STALE_BOOKKEEPING_REPAIR_REQUIRED,
   classifyConfirmationDrift,
 } = require('./confirmation_drift_classifier');
-
-const BOOKKEEPING_FIELDS = new Set([
-  'status',
-  'confirmedAt',
-  'confirmedBy',
-  'sourceDocumentHash',
-  'implementationConfirmationHash',
-  'reconfirmationRequest',
-  'confirmationRender',
-]);
+const {
+  implementationConfirmationHashFor,
+  sourceDocumentHashFor,
+} = require('./pre_render_definition_drilldown_lib');
 
 function parseArgs(argv) {
   const args = {};
@@ -139,88 +133,6 @@ function writeExclusiveJson(filePath, value) {
   } finally {
     if (fs.existsSync(temporaryPath)) fs.rmSync(temporaryPath, { force: true });
   }
-}
-
-const PROJECTION_HASH_BOOKKEEPING_FIELDS = new Set([
-  'derivedFromPacketHash',
-  'projectionStatus',
-]);
-
-function stripProjectionHashBookkeeping(value) {
-  if (Array.isArray(value)) {
-    return value.map((item) => stripProjectionHashBookkeeping(item));
-  }
-  if (!value || typeof value !== 'object') {
-    return value;
-  }
-  return Object.fromEntries(
-    Object.entries(value)
-      .filter(([key]) => !PROJECTION_HASH_BOOKKEEPING_FIELDS.has(key))
-      .map(([key, child]) => [key, stripProjectionHashBookkeeping(child)])
-  );
-}
-
-function semanticConfirmationForHash(confirmation) {
-  const semantic = {};
-  for (const [key, value] of Object.entries(confirmation ?? {})) {
-    if (!BOOKKEEPING_FIELDS.has(key)) {
-      semantic[key] = stripProjectionHashBookkeeping(value);
-    }
-  }
-  normalizePreConfirmationDrilldownForHash(semantic);
-  return semantic;
-}
-
-function normalizePreConfirmationDrilldownForHash(semantic) {
-  if (
-    !semantic.preConfirmationDrilldown ||
-    typeof semantic.preConfirmationDrilldown !== 'object' ||
-    Array.isArray(semantic.preConfirmationDrilldown)
-  ) {
-    return;
-  }
-  const drilldown = { ...semantic.preConfirmationDrilldown };
-  if (
-    drilldown.semanticKernelRef &&
-    typeof drilldown.semanticKernelRef === 'object' &&
-    !Array.isArray(drilldown.semanticKernelRef)
-  ) {
-    const semanticKernelRef = { ...drilldown.semanticKernelRef };
-    delete semanticKernelRef.hash;
-    drilldown.semanticKernelRef = semanticKernelRef;
-  }
-  if (
-    drilldown.mustDecompositionPacketRef &&
-    typeof drilldown.mustDecompositionPacketRef === 'object' &&
-    !Array.isArray(drilldown.mustDecompositionPacketRef)
-  ) {
-    const mustDecompositionPacketRef = { ...drilldown.mustDecompositionPacketRef };
-    delete mustDecompositionPacketRef.hash;
-    drilldown.mustDecompositionPacketRef = mustDecompositionPacketRef;
-  }
-  if (
-    drilldown.criticalAuditor &&
-    typeof drilldown.criticalAuditor === 'object' &&
-    !Array.isArray(drilldown.criticalAuditor)
-  ) {
-    const criticalAuditor = { ...drilldown.criticalAuditor };
-    delete criticalAuditor.consecutiveNoNewGapRounds;
-    delete criticalAuditor.latestReceiptHash;
-    delete criticalAuditor.convergenceVerdict;
-    drilldown.criticalAuditor = criticalAuditor;
-  }
-  semantic.preConfirmationDrilldown = drilldown;
-}
-
-function sourceDocumentHashFor(sourceText, blockText, confirmation) {
-  const normalizedBlock = `implementationConfirmation:${stableStringify(
-    semanticConfirmationForHash(confirmation)
-  )}`;
-  return sha256(sourceText.replace(blockText, normalizedBlock));
-}
-
-function implementationConfirmationHashFor(confirmation) {
-  return sha256(stableStringify(semanticConfirmationForHash(confirmation)));
 }
 
 function normalizePathForReport(value) {

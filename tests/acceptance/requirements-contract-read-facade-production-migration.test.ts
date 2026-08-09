@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { requirementsContractTraceEdgeTypeRegistryHash } from '../../packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-trace-edge-type-registry';
+import { semanticModelHash as semanticModelHashForContract } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-hash-domains';
 import {
   readRequirementsContractForRequirementRecord,
   type RequirementsContractLogicalReadInput,
@@ -128,7 +129,7 @@ function writeCanonicalV2Fixture(root: string): {
     },
     edges: {},
   };
-  const semanticModelHash = sha256Stable(semanticPreimage);
+  const semanticModelHash = semanticModelHashForContract(semanticPreimage);
   const tracePreimage = {
     schemaVersion: 'requirements-contract-trace-graph/v1',
     requirementSetId,

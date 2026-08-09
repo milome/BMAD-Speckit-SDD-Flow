@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -12,20 +11,11 @@ const {
 } = require('../contract-command-selector-preflight.cjs');
 
 const ROOT = process.cwd();
-const COMMAND_AUTHORITY_PATH = path.resolve(
-  'tests/fixtures/requirements-contract-command-selector-authority.json'
-);
-const SUCCESSOR_AUTHORITY_PATH =
-  'docs/plans/2026-07-18-loop-engineering-evidence-closure-remediation-amend13-goal-execution-plan.md';
-const SUCCESSOR_AUTHORITY_SHA256 =
-  '38d6301646351efb04dff330ac05b3bf5daa667ef31f1630f0b68031cddda90a';
-const ARCHITECTURE_WAVE_ROW_PATTERN =
-  /^\| CMD-(?:0[1-9]|1[0-9]|20|2[6-9]|30|31|33|36) \|/u;
+const COMMAND_AUTHORITY_RELATIVE_PATH =
+  'tests/fixtures/requirements-contract-command-selector-authority.json';
+const COMMAND_AUTHORITY_PATH = path.resolve(COMMAND_AUTHORITY_RELATIVE_PATH);
 
 type CommandSelectorAuthority = {
-  sourceContractPath: string;
-  sourceContractSha256: string;
-  sourceCommandRowsSha256: string;
   commandCount: number;
   selectorCount: number;
   commands: Array<{
@@ -184,28 +174,18 @@ describe('requirements contract command selector preflight', () => {
     );
   });
 
-  it('binds selector authority metadata to the frozen AMEND-13 successor bytes and rows', () => {
+  it('keeps the tracked JSON fixture as the only selector authority', () => {
     const authority = readCommandAuthority();
-    const successorText = readFileSync(path.join(ROOT, SUCCESSOR_AUTHORITY_PATH), 'utf8');
-    const commandRows = successorText
-      .split(/\r?\n/u)
-      .filter((line) => ARCHITECTURE_WAVE_ROW_PATTERN.test(line));
 
-    expect(authority.sourceContractPath).toBe(SUCCESSOR_AUTHORITY_PATH);
-    expect(authority.sourceContractSha256).toBe(`sha256:${SUCCESSOR_AUTHORITY_SHA256}`);
-    expect(createHash('sha256').update(successorText, 'utf8').digest('hex')).toBe(
-      SUCCESSOR_AUTHORITY_SHA256
-    );
-    expect(commandRows).toHaveLength(authority.commandCount);
-    expect(authority.sourceCommandRowsSha256).toBe(
-      `sha256:${createHash('sha256').update(commandRows.join('\n'), 'utf8').digest('hex')}`
-    );
+    expect(authority).not.toHaveProperty('sourceContractPath');
+    expect(authority).not.toHaveProperty('sourceContractSha256');
+    expect(authority).not.toHaveProperty('sourceCommandRowsSha256');
   });
 
-  it('matches every fixture selector to the frozen AMEND-13 successor inventory', () => {
-    const fixture = architectureWaveSelectorInventory(ROOT);
-    const successor = architectureWaveSelectorInventory(ROOT, {
-      contractPath: SUCCESSOR_AUTHORITY_PATH,
+  it('loads the same selector inventory from the default and explicit tracked authority', () => {
+    const defaultInventory = architectureWaveSelectorInventory(ROOT);
+    const explicitInventory = architectureWaveSelectorInventory(ROOT, {
+      contractPath: COMMAND_AUTHORITY_RELATIVE_PATH,
     });
     const selectorShape = (command: {
       commandId: string;
@@ -217,16 +197,16 @@ describe('requirements contract command selector preflight', () => {
       commandSelectors: command.commandSelectors,
     });
 
-    expect(fixture.commands.map(selectorShape)).toEqual(successor.commands.map(selectorShape));
+    expect(defaultInventory.commands.map(selectorShape)).toEqual(
+      explicitInventory.commands.map(selectorShape)
+    );
   });
 
-  it('resolves every frozen AMEND-13 successor selector to a repository file', () => {
-    const successor = architectureWaveSelectorInventory(ROOT, {
-      contractPath: SUCCESSOR_AUTHORITY_PATH,
-    });
+  it('resolves every frozen tracked selector to a repository file', () => {
+    const inventory = architectureWaveSelectorInventory(ROOT);
     const missingSelectors = [
       ...new Set(
-        successor.commands.flatMap((command: { allSelectors: string[] }) => command.allSelectors)
+        inventory.commands.flatMap((command: { allSelectors: string[] }) => command.allSelectors)
       ),
     ].filter((selector) => !existsSync(path.join(ROOT, selector)));
 

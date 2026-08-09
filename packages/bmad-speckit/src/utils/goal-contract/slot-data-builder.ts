@@ -327,6 +327,95 @@ function typedTaskRefs(registries, taskId, field) {
   ];
 }
 
+function taskMetadataValue(registries, taskId, fieldName) {
+  const escapedFieldName = escapeRegExp(fieldName);
+  const pattern = new RegExp(
+    `^\\*{0,2}${escapedFieldName}\\s*[:：]\\*{0,2}\\s*(.+?)\\s*$`,
+    'iu'
+  );
+  const values = [
+    ...new Set(
+      registries.sourceObligations
+        .filter((obligation) => (obligation.goalTaskRefs || []).includes(taskId))
+        .map((obligation) =>
+          pattern.exec(String(obligation.exactText || obligation.text || '').trim())?.[1]?.trim()
+        )
+        .filter(Boolean)
+    ),
+  ];
+  if (values.length > 1) {
+    const error = new Error('source_task_execution_role_ambiguous') as GoalContractBuilderError;
+    error.failureClass = 'source_task_execution_role_ambiguous';
+    throw error;
+  }
+  return values[0] || null;
+}
+
+function parseMetadataIdentifiers(value) {
+  return [
+    ...new Set(
+      [...String(value || '').matchAll(/`([^`\r\n]+)`/gu)].map((match) => match[1])
+    ),
+  ];
+}
+
+function typedTaskExecutionRole(registries, taskId, commandRefs) {
+  const executionClassValue = taskMetadataValue(registries, taskId, 'Execution Class');
+  if (!executionClassValue) return null;
+  const executionClass = parseMetadataIdentifiers(executionClassValue)[0] || executionClassValue;
+  const ownedProductionPaths = taskMetadataValue(
+    registries,
+    taskId,
+    'Owned Production Paths'
+  );
+  const aggregateGatePhaseValue = taskMetadataValue(
+    registries,
+    taskId,
+    'Aggregate Gate Phase'
+  );
+  const aggregateGatePhase =
+    parseMetadataIdentifiers(aggregateGatePhaseValue)[0] || aggregateGatePhaseValue;
+  const aggregateValidationCommandsValue = taskMetadataValue(
+    registries,
+    taskId,
+    'Aggregate Validation Commands'
+  );
+  const aggregateValidationCommands = parseMetadataIdentifiers(
+    aggregateValidationCommandsValue
+  );
+
+  if (!['executable_child', 'aggregate_only'].includes(executionClass)) {
+    const error = new Error('source_task_execution_role_invalid') as GoalContractBuilderError;
+    error.failureClass = 'source_task_execution_role_invalid';
+    throw error;
+  }
+  if (
+    executionClass === 'executable_child' &&
+    (!ownedProductionPaths || ownedProductionPaths === '`none`' || commandRefs.length === 0)
+  ) {
+    const error = new Error('source_executable_task_contract_invalid') as GoalContractBuilderError;
+    error.failureClass = 'source_executable_task_contract_invalid';
+    throw error;
+  }
+  if (
+    executionClass === 'aggregate_only' &&
+    (ownedProductionPaths !== '`none`' ||
+      !['post_child_execution', 'final_aggregate'].includes(aggregateGatePhase) ||
+      aggregateValidationCommands.length === 0 ||
+      aggregateValidationCommands.some((commandId) => !commandRefs.includes(commandId)))
+  ) {
+    const error = new Error('source_aggregate_task_contract_invalid') as GoalContractBuilderError;
+    error.failureClass = 'source_aggregate_task_contract_invalid';
+    throw error;
+  }
+  return {
+    executionClass,
+    ownedProductionPaths,
+    aggregateGatePhase,
+    aggregateValidationCommandsValue,
+  };
+}
+
 function buildTypedImplementationTasks(registries) {
   return registries.tasks
     .map((taskId, index) => {
@@ -334,9 +423,47 @@ function buildTypedImplementationTasks(registries) {
       const acceptanceRefs = typedTaskRefs(registries, taskId, 'acceptanceRefs');
       const commandRefs = typedTaskRefs(registries, taskId, 'commandRefs');
       const evidenceRefs = typedTaskRefs(registries, taskId, 'evidenceRefs');
+      const executionRole = typedTaskExecutionRole(registries, taskId, commandRefs);
+      if (executionRole?.executionClass === 'aggregate_only') {
+        return [
+          `### ${taskId} ${declaredRecordDescription(task, taskId, 'Task')}`,
+          '',
+          `**Execution Class:** \`${executionRole.executionClass}\``,
+          `**Owned Production Paths:** ${executionRole.ownedProductionPaths}`,
+          `**Aggregate Gate Phase:** \`${executionRole.aggregateGatePhase}\``,
+          `**Aggregate Validation Commands:** ${executionRole.aggregateValidationCommandsValue}`,
+          '',
+          `**Purpose:** Evaluate the source-declared aggregate gate \`${taskId}\` only after all executable children are closed.`,
+          '',
+          '**Files:**',
+          '- No production files.',
+          '',
+          '**Steps:**',
+          `- Execute only the aggregate validation commands bound to \`${taskId}\` and its Source Coverage Matrix rows.`,
+          '- This task MUST NOT enter the executable child manifest.',
+          '- This task MUST NOT create an atomic child commit.',
+          `- Resolve the task declaration through SpecSpan refs \`${(task.specSpanRefs || []).join(', ')}\`.`,
+          '',
+          '**Validation:**',
+          `- Required commands: \`${commandRefs.join(', ')}\`.`,
+          '',
+          '**Acceptance:**',
+          `- Acceptance: \`${acceptanceRefs.join(', ')}\`.`,
+          `- Evidence: \`${evidenceRefs.join(', ')}\`.`,
+          '',
+          `<!-- source-order:${index + 1} -->`,
+        ].join('\n');
+      }
       return [
         `### ${taskId} ${declaredRecordDescription(task, taskId, 'Task')}`,
         '',
+        ...(executionRole
+          ? [
+              `**Execution Class:** \`${executionRole.executionClass}\``,
+              `**Owned Production Paths:** ${executionRole.ownedProductionPaths}`,
+              '',
+            ]
+          : []),
         `**Purpose:** Execute the source-declared task \`${taskId}\` without splitting its task-owned obligations into synthetic tasks.`,
         '',
         '**Files:**',
@@ -541,6 +668,24 @@ function buildExpectedEvidenceFreezeSlot(registry) {
   ].join('\n');
 }
 
+function authoritySupersessionTexts(registries) {
+  return [
+    ...new Set(
+      registries.sourceObligations
+        .filter((obligation) =>
+          /\bE04\b/iu.test(String(obligation.exactText || obligation.text || ''))
+        )
+        .filter((obligation) =>
+          /supersed|historical evidence|latest-hash|执行效力|历史证据|不得继续作为|不得继续授权/iu.test(
+            String(obligation.exactText || obligation.text || '')
+          )
+        )
+        .map((obligation) => String(obligation.exactText || obligation.text || '').trim())
+        .filter(Boolean)
+    ),
+  ];
+}
+
 function buildSlotData({
   source,
   profile,
@@ -583,6 +728,7 @@ function buildSlotData({
   const firstAcceptanceId = registries.acceptance.at(0);
   const lastAcceptanceId = registries.acceptance.at(-1);
   const typedProjection = registries.projectionMode === 'typed';
+  const supersessionTexts = authoritySupersessionTexts(registries);
   const projectionSlots = evidenceGraph ? buildProjectionSlotData(evidenceGraph) : null;
   const slotData = {
     frontMatter: frontMatter({
@@ -611,6 +757,7 @@ function buildSlotData({
       '- `model_packet.json is the machine-readable execution authority` only for the two four-artifact compilation entries.',
       '- `goal_execution.md is not execution authority`; this generated contract is the frozen execution source for this goal.',
       '- `/goal completion is not closeout proof`; completion requires command evidence and receipt evidence.',
+      ...supersessionTexts.map((text) => `- Readiness supersession authority: ${text}`),
     ].join('\n'),
     rootCause: [
       'The source plan requires source-plan-faithful goal execution generation with deterministic coverage proof.',
@@ -673,6 +820,10 @@ function buildSlotData({
         '- STOP001: If source hash differs from the front matter source hash, stop with `contract_amendment_required:source_plan_hash_mismatch`.',
         '- STOP002: If any source obligation is unmapped, stop with `source_coverage_unmapped`.',
         '- STOP003: If coverage receipt is missing, stop with `coverage_receipt_missing`.',
+        ...supersessionTexts.map(
+          (text, index) =>
+            `- STOP-E04-${String(index + 1).padStart(2, '0')}: Stop with \`superseded_readiness_authority_rejected\` unless this latest-hash readiness condition is satisfied: ${text}`
+        ),
       ].join('\n'),
   };
   return {

@@ -95,11 +95,11 @@ export const exploitCorpusPath = path.join(
 
 export const baselineFileIndexPath = path.join(
   repositoryRoot,
-  'docs',
-  'plans',
-  'evidence',
-  'loop-engineering-remediation',
-  'G00-baseline-file-index.json'
+  'tests',
+  'acceptance',
+  'fixtures',
+  'requirements-contract-evidence-closure',
+  'baseline-file-index.json'
 );
 
 function readJson<T>(filePath: string): T {

@@ -26,6 +26,19 @@ export interface RuntimeBuildAuthorityReceipt {
   decision: 'pass';
 }
 
+const RUNTIME_BUILD_AUTHORITY_CORE_KEYS = [
+  'schemaVersion',
+  'hashDomainRegistry',
+  'sourceInputManifestHash',
+  'buildScriptHash',
+  'dependencyLockHash',
+  'runtimeAssetManifestHash',
+  'distRuntimeHash',
+  'packageRuntimeHash',
+  'distBuildHash',
+  'decision',
+] as const;
+
 function readJson(filePath: string): JsonRecord {
   const parsed: unknown = JSON.parse(fs.readFileSync(filePath, 'utf8'));
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
@@ -36,11 +49,15 @@ function readJson(filePath: string): JsonRecord {
 
 function sourceInputManifestHash(packageRoot: string, manifest: JsonRecord): string {
   const entries = Array.isArray(manifest.entries) ? manifest.entries : [];
-  const sources = [...new Set(entries.flatMap((entry) => {
-    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return [];
-    const source = String((entry as JsonRecord).source ?? '');
-    return source ? [source] : [];
-  }))]
+  const sources = [
+    ...new Set(
+      entries.flatMap((entry) => {
+        if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return [];
+        const source = String((entry as JsonRecord).source ?? '');
+        return source ? [source] : [];
+      })
+    ),
+  ]
     .map((relativePath) => {
       const absolutePath = path.resolve(packageRoot, relativePath);
       if (!fs.existsSync(absolutePath) || !fs.statSync(absolutePath).isFile()) {
@@ -83,6 +100,14 @@ export function createRuntimeBuildAuthorityReceipt(input: {
   };
 }
 
+function runtimeBuildAuthorityCoreProjection(value: unknown): JsonRecord | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+  const record = value as JsonRecord;
+  return Object.fromEntries(RUNTIME_BUILD_AUTHORITY_CORE_KEYS.map((key) => [key, record[key]]));
+}
+
 export function assertRuntimeBuildAuthorityCurrent(input: {
   receipt: unknown;
   packageRoot: string;
@@ -91,11 +116,12 @@ export function assertRuntimeBuildAuthorityCurrent(input: {
   dependencyLockPath: string;
 }): RuntimeBuildAuthorityReceipt {
   const expected = createRuntimeBuildAuthorityReceipt(input);
+  const actualCore = runtimeBuildAuthorityCoreProjection(input.receipt);
+  const expectedCore = runtimeBuildAuthorityCoreProjection(expected);
   if (
-    !input.receipt ||
-    typeof input.receipt !== 'object' ||
-    Array.isArray(input.receipt) ||
-    canonicalObjectHash(input.receipt) !== canonicalObjectHash(expected)
+    !actualCore ||
+    !expectedCore ||
+    canonicalObjectHash(actualCore) !== canonicalObjectHash(expectedCore)
   ) {
     throw new Error('runtime_build_authority_receipt_stale');
   }

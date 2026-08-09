@@ -58,11 +58,13 @@ type ActionBindingManifest = {
 };
 
 const ROOT = process.cwd();
-const CONTRACT_PATH = path.join(
+const MATRIX_FIXTURE_PATH = path.join(
   ROOT,
-  'docs',
-  'plans',
-  '2026-07-18-loop-engineering-evidence-closure-remediation-amend13-goal-execution-plan.md'
+  'tests',
+  'acceptance',
+  'fixtures',
+  'requirements-contract-recovery',
+  'recovery-finalization-exact-parity-matrix.md'
 );
 const INTERNAL_PACKAGE_ROOT = path.join(ROOT, 'packages', 'bmad-speckit');
 const ACTION_MANIFEST_PATH = path.join(
@@ -229,7 +231,11 @@ function splitMarkdownRow(line: string): string[] {
 }
 
 function readMatrix(): MatrixRow[] {
-  const contract = readFileSync(CONTRACT_PATH, 'utf8');
+  expect(
+    existsSync(MATRIX_FIXTURE_PATH),
+    'recovery finalization exact parity matrix fixture is missing'
+  ).toBe(true);
+  const contract = readFileSync(MATRIX_FIXTURE_PATH, 'utf8');
   const headingMatch = contract.match(/^### [A-Z]+-\d+ exact parity matrix$/mu);
   const heading = headingMatch?.[0] ?? '';
   const start = headingMatch?.index ?? -1;
@@ -240,21 +246,19 @@ function readMatrix(): MatrixRow[] {
   const tableLines = section.split(/\r?\n/u).filter((line) => line.startsWith('|'));
   const dataLines = tableLines.slice(2);
 
-  return dataLines
-    .map((line) => {
-      const cells = splitMarkdownRow(line);
-      expect(cells, `invalid exact parity matrix row: ${line}`).toHaveLength(7);
-      return {
-        owner: cells[0]!,
-        sourceOwner: cells[1]!,
-        generatedDist: cells[2]!,
-        packedPackage: cells[3]!,
-        rootHost: cells[4]!,
-        installedConsumer: cells[5]!,
-        producerVerification: cells[6]!,
-      };
-    })
-    .filter((row) => RECOVERY_MATRIX_OWNERS.has(row.owner));
+  return dataLines.map((line) => {
+    const cells = splitMarkdownRow(line);
+    expect(cells, `invalid exact parity matrix row: ${line}`).toHaveLength(7);
+    return {
+      owner: cells[0]!,
+      sourceOwner: cells[1]!,
+      generatedDist: cells[2]!,
+      packedPackage: cells[3]!,
+      rootHost: cells[4]!,
+      installedConsumer: cells[5]!,
+      producerVerification: cells[6]!,
+    };
+  });
 }
 
 function codePaths(cell: string): string[] {

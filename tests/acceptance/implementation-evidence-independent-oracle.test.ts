@@ -159,6 +159,7 @@ function createFixture(): {
   const sourceDocumentHash = sha256(`${suffix}:source`);
   const implementationConfirmationHash = sha256(`${suffix}:confirmation`);
   const architectureConfirmationHash = sha256(`${suffix}:architecture`);
+  const sourcePath = `docs/requirements/${recordId}.md`;
   const semanticModelHash = sha256(`${suffix}:semantic-model`);
   const packetHash = sha256(`${suffix}:model-packet`);
   const command = 'npx vitest run tests/acceptance/implementation-evidence-independent-oracle.test.ts';
@@ -241,8 +242,25 @@ function createFixture(): {
     status: 'user_confirmed',
     transactionId,
     currentAttemptId: implementationAttemptId,
+    sourcePath,
     sourceDocumentHash,
     implementationConfirmationHash,
+    confirmationHistory: [
+      {
+        eventType: 'confirmation_recorded',
+        recordId,
+        requirementSetId: recordId,
+        confirmedAt: '2026-07-18T00:00:00.000Z',
+        confirmedBy: 'implementation-evidence-independent-oracle.test',
+        sourcePath,
+        sourceDocumentHash,
+        implementationConfirmationHash,
+        confirmationPageHash: sha256(`${suffix}:confirmation-page`),
+        confirmationText: 'confirmed',
+        renderReportPath: 'confirmation/confirmation-render-report.json',
+        htmlPath: 'confirmation/confirmation.html',
+      },
+    ],
     semanticModelHash,
     packetHash,
     architectureConfirmationState: {

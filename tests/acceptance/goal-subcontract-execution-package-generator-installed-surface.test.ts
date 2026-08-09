@@ -12,13 +12,15 @@ import {
 
 const require = createRequire(import.meta.url);
 const { publish } = require('../../packages/bmad-speckit/src/services/skill-publisher');
-const roots: string[] = [];
+let roots: readonly string[] = [];
 const requiredFiles = [
   'SKILL.md',
   'agents/openai.yaml',
   'references/execution-package-contract.md',
   'references/task-report-and-handoff.md',
   'scripts/build-execution-package.js',
+  'scripts/build-execution-package-projections.js',
+  'scripts/build-execution-package-shared.js',
   'scripts/audit-execution-package.js',
   'scripts/audit-completed-campaign.js',
   'schemas/execution-package-manifest.schema.json',
@@ -32,15 +34,21 @@ const requiredFiles = [
   'assets/commit-message-template.txt',
 ];
 
+function readNormalizedText(filePath: string): string {
+  return fs.readFileSync(filePath, 'utf8').replace(/\r\n/gu, '\n');
+}
+
 afterEach(() => {
+  const rootsToClean = roots;
+  roots = [];
   cleanupFixtures();
-  for (const root of roots.splice(0)) fs.rmSync(root, { recursive: true, force: true });
+  for (const root of rootsToClean) fs.rmSync(root, { recursive: true, force: true });
 });
 
 describe('goal subcontract execution package installed surface', () => {
   it('publishes every resource and runs from the installed Codex skill', () => {
     const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'goal-subcontract-install-'));
-    roots.push(projectRoot);
+    roots = [...roots, projectRoot];
     const sourceRoot = path.join(
       projectRoot,
       '_bmad',
@@ -61,7 +69,19 @@ describe('goal subcontract execution package installed surface', () => {
       'goal-subcontract-execution-package-generator'
     );
     for (const relativePath of requiredFiles) {
-      expect(fs.existsSync(path.join(installedRoot, relativePath))).toBe(true);
+      const installedPath = path.join(installedRoot, relativePath);
+      const canonicalPath = path.join(SKILL_ROOT, relativePath);
+      expect(fs.existsSync(installedPath), `missing installed resource: ${relativePath}`).toBe(
+        true
+      );
+      expect(
+        fs.statSync(installedPath).isFile(),
+        `installed resource is not a file: ${relativePath}`
+      ).toBe(true);
+      expect(
+        readNormalizedText(installedPath),
+        `installed resource differs from canonical source: ${relativePath}`
+      ).toBe(readNormalizedText(canonicalPath));
     }
 
     const fixture = createFixture();
@@ -78,6 +98,7 @@ describe('goal subcontract execution package installed surface', () => {
       {
         encoding: 'utf8',
         maxBuffer: 4 * 1024 * 1024,
+        timeout: 60_000,
         windowsHide: true,
       }
     );

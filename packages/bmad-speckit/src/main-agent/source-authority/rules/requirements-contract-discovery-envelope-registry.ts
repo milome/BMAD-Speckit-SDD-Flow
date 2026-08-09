@@ -19,7 +19,6 @@ export const REQUIREMENTS_CONTRACT_DISCOVERY_ENVELOPE_REGISTRY = {
     'packages/bmad-speckit/_bmad/core/tasks/bmad-create-prd/templates/prd-template.md',
     'packages/bmad-speckit/_bmad/bmm/workflows/2-plan-workflows/create-prd/templates/prd-template.md',
     'packages/bmad-speckit/_bmad/bmm/workflows/2-plan-workflows/bmad-create-prd/templates/prd-template.md',
-    'packages/bmad-speckit/.cursor/skills/bmad-create-prd/templates/prd-template.md',
   ],
   manifestBindings: [
     {

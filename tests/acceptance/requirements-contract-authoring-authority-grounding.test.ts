@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import { compileRequirementContractModel } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-compiler';
 import {
   artifacts,
-  cleanCriticalAuditorRound,
   createMinimalConsumerRequirementDescriptor,
   createSourceAuthorityProjectionDescriptor,
   createTempRoot,
@@ -606,7 +605,6 @@ describe('requirements contract authoring authority grounding', () => {
 
       const result = runAuthoring(root, source, 'REQ-ACCEPTANCE-FILE-AUTHORITY', {
         ...authoringOptions,
-        criticalAuditorRound: cleanCriticalAuditorRound,
       });
       const paths = artifacts(
         root,
@@ -623,7 +621,7 @@ describe('requirements contract authoring authority grounding', () => {
         sourceToIrDuplicateRootCount: conservation.sourceToIrDuplicateRootCount,
       };
       expect(conservationDecision).toEqual({
-        issueCodes: [],
+        issueCodes: ['critical_auditor_provider_mode_required'],
         sourceToIrMissingRootCount: 0,
         sourceToIrExtraRootCount: 0,
         sourceToIrPayloadMismatchCount: 0,
@@ -658,9 +656,8 @@ describe('requirements contract authoring authority grounding', () => {
 
       const result = runAuthoring(root, source, 'REQ-NEGATIVE-CLOSURE-AUTHORITY', {
         ...authoringOptions,
-        criticalAuditorRound: cleanCriticalAuditorRound,
       });
-      expect(issueCodes(result)).toEqual([]);
+      expect(issueCodes(result)).toEqual(['critical_auditor_provider_mode_required']);
       const confirmation = readJson<{ implementationConfirmation: Record<string, unknown> }>(
         artifacts(root, 'REQ-NEGATIVE-CLOSURE-AUTHORITY', 'REQ-NEGATIVE-CLOSURE-AUTHORITY-SET')
           .draftImplementationConfirmation
@@ -793,7 +790,6 @@ describe('requirements contract authoring authority grounding', () => {
       const recordId = 'REQ-PER-MUST-PRODUCT-PROJECTION';
       runAuthoring(root, source, recordId, {
         ...createTestAuthoringExecutionOptions(recordId),
-        criticalAuditorRound: cleanCriticalAuditorRound,
         confirmationLanguage: 'en-US',
       });
       const paths = artifacts(
@@ -876,15 +872,15 @@ describe('requirements contract authoring authority grounding', () => {
       );
       expect(
         packet1.authorClaims.every(
-          (claim: any) => claim.criticDisposition === 'accepted_no_new_valid_gap'
+          (claim: any) => claim.criticDisposition === 'pending_critical_auditor_response'
         ),
-        'MUST-FR-001 packet claims must reflect three clean critical-auditor rounds'
+        'MUST-FR-001 packet claims must remain pending until the independent Critical Auditor responds'
       ).toBe(true);
       expect(
         packet.authorClaims.every(
-          (claim: any) => claim.criticDisposition === 'accepted_no_new_valid_gap'
+          (claim: any) => claim.criticDisposition === 'pending_critical_auditor_response'
         ),
-        'packet-level author claims must reflect three clean critical-auditor rounds'
+        'packet-level author claims must not synthesize Critical Auditor completion'
       ).toBe(true);
       expect(trace1.targetModificationPathRefs).toContain(target1.id);
       expect(trace2.targetModificationPathRefs).toContain(target2.id);
@@ -968,7 +964,6 @@ describe('requirements contract authoring authority grounding', () => {
       const recordId = 'REQ-DIRECTORY-COMMAND-TARGETS';
       runAuthoring(root, source, recordId, {
         ...createTestAuthoringExecutionOptions(recordId),
-        criticalAuditorRound: cleanCriticalAuditorRound,
         confirmationLanguage: 'en-US',
       });
       const paths = artifacts(

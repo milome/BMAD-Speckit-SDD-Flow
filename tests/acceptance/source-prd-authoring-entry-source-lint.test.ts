@@ -3,8 +3,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-  runMainAgentPreConfirmationDrilldown,
-} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
+  cleanCriticalAuditorRound,
+  createTestAuthoringExecutionOptions,
+  runPreConfirmationWithGovernedCriticalAuditorFixture,
+} from './helpers/requirements-contract-authoring-fixture';
 
 const goldenFixturePath = path.join(
   process.cwd(),
@@ -72,45 +74,6 @@ function writeSessionRequirements(root: string): string {
   return source;
 }
 
-function cleanCriticalAuditorRound(input: any) {
-  return {
-    verdict: 'no_new_valid_gap',
-    transactionId: input.transactionId,
-    namespaceVersion: input.namespaceVersion,
-    requestHash: input.requestHash,
-    sourceHash: input.sourceHash,
-    packetHash: input.packetHash,
-    gapCandidates: [],
-    validatedGaps: [],
-    rejectedGapCandidates: [],
-    mutationPressureFindings: [],
-    overBroadTaskFindings: [],
-    missingProjectionFindings: [],
-    invalidProofFindings: [],
-    legacyBypassFindings: [],
-    sourceMaterializationFindings: [],
-    reviewedMustRefs: input.mustRefs,
-    reviewedProjectionRefs: input.mustRefs,
-    gateDryRunHash: input.gateDryRunHash,
-    reconciliationIssueCount: 0,
-    checkedProjectionGroups: [
-      'must',
-      'notDone',
-      'mustNot',
-      'evidence',
-      'traceRows',
-      'acceptanceTests',
-      'requiredCommands',
-      'targetModificationPaths',
-      'currentTargetMap',
-      'businessViews',
-    ],
-    checkedProjectionQualityRuleCodes:
-      input.gateDryRun?.projectionQualityGate?.requiredRuleCodes ?? [],
-    rationale: 'No new valid source PRD lint gaps.',
-  };
-}
-
 describe('source PRD authoring entry-source lint gate', () => {
   it.each([
     ['bmad_prd', 'bmad-output.md'],
@@ -121,14 +84,14 @@ describe('source PRD authoring entry-source lint gate', () => {
       const source = writeSourcePrdFixture(root, name);
       const recordId = `REQ-SOURCE-PRD-${entrySource.toUpperCase().replace(/_/gu, '-')}`;
 
-      const result = runMainAgentPreConfirmationDrilldown(root, {
+      const result = runPreConfirmationWithGovernedCriticalAuditorFixture(root, recordId, {
+        ...createTestAuthoringExecutionOptions(recordId),
         source,
         entrySource,
         recordId,
         requirementSetId: `${recordId}-SET`,
         targetPath: 'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts',
         requiredCommand: 'npx vitest run tests/acceptance/source-prd-authoring-entry-source-lint.test.ts',
-        criticalAuditorRound: cleanCriticalAuditorRound,
       });
 
       const dir = authoringDir(root, recordId);
@@ -162,6 +125,14 @@ describe('source PRD authoring entry-source lint gate', () => {
       });
       expect(transaction.sourcePrdEntrySource).toBe(entrySource);
       expect(existsSync(path.join(dir, 'staging'))).toBe(true);
+      expect(result).toMatchObject({
+        blockingStage: 'critical_auditor_provider_mode_required',
+        criticalAuditorContinuation: {
+          providerMode: 'main_session_inline',
+          roundIndex: 1,
+          nextRequiredAction: 'run_main_session_critical_auditor_round',
+        },
+      });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -174,7 +145,7 @@ describe('source PRD authoring entry-source lint gate', () => {
       const target = path.join(root, 'docs', 'requirements', 'session-source-prd.md');
       const recordId = 'REQ-SOURCE-PRD-SESSION-REQUIREMENTS';
 
-      const result = runMainAgentPreConfirmationDrilldown(root, {
+      const result = runPreConfirmationWithGovernedCriticalAuditorFixture(root, recordId, {
         intakeSource: intake,
         targetSource: target,
         entrySource: 'session_requirements',
@@ -239,7 +210,7 @@ describe('source PRD authoring entry-source lint gate', () => {
       const source = writeSessionRequirements(root);
       const recordId = 'REQ-SOURCE-PRD-EXISTING-SOURCE';
 
-      const result = runMainAgentPreConfirmationDrilldown(root, {
+      const result = runPreConfirmationWithGovernedCriticalAuditorFixture(root, recordId, {
         source,
         entrySource: 'session_requirements',
         recordId,

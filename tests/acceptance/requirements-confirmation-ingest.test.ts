@@ -1,15 +1,17 @@
 import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
+import { createRequire } from 'node:module';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { createRequire } from 'node:module';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { compileRequirementsEffectivePassReceipt } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-requirements-effective-pass-gate';
 import {
   extractRequirementsContractImplementationConfirmation,
+  implementationConfirmationHashFor,
   implementationConfirmationHashFor as packageImplementationConfirmationHashFor,
+  sourceDocumentHashFor,
   sourceDocumentHashFor as packageSourceDocumentHashFor,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-implementation-confirmation-codec';
+import { materializeRequirementsEffectivePassFixture } from '../helpers/requirements-effective-pass-fixture';
 
 const ROOT = process.cwd();
 const RENDERER = path.join(
@@ -53,7 +55,7 @@ const GOAL_CONTRACT_PROFILE = path.join(
   'goal-contract-profile.json'
 );
 const requireForRenderer = createRequire(import.meta.url);
-const { extractImplementationConfirmation } = requireForRenderer(
+const { extractImplementationConfirmation: extractRendererImplementationConfirmation } = requireForRenderer(
   path.join(
     ROOT,
     '_bmad',
@@ -84,8 +86,32 @@ function writeMockMermaidBundle(): string {
   return file;
 }
 
+function effectivePassFixture() {
+  return materializeRequirementsEffectivePassFixture({
+    root: tempDir,
+    recordId: 'REQ-CONFIRM-INGEST',
+  });
+}
+
+function withEffectivePassReceipt(args: string[]): string[] {
+  return [
+    ...args,
+    '--requirements-effective-pass-receipt',
+    effectivePassFixture().receiptPath,
+  ];
+}
+
+function extractImplementationConfirmation(sourceText: string) {
+  const extracted = extractRequirementsContractImplementationConfirmation(sourceText);
+  return {
+    ...extracted,
+    confirmation: extracted.value,
+  };
+}
+
 function writeSource(): string {
   const file = path.join(tempDir, 'prd.md');
+  const effectivePass = effectivePassFixture();
   fs.writeFileSync(
     file,
     `# PRD
@@ -125,6 +151,27 @@ implementationConfirmation:
     aiTddContractGate:
       applies: true
       reasonCode: "confirmation ingest fixture must expose AI-TDD manifest projection"
+  preConfirmationDrilldown:
+    semanticKernelRef:
+      path: "${path.join(tempDir, 'semantic-kernel.json').replace(/\\/gu, '/')}"
+      hash: ${fixedHash('b')}
+    mustDecompositionPacketRef:
+      path: "${path.join(tempDir, 'must_decomposition_packet.json').replace(/\\/gu, '/')}"
+      hash: ${fixedHash('a')}
+      status: synchronized
+    criticalAuditor:
+      minimumRounds: 3
+      consecutiveNoNewGapRounds: 3
+      latestReceiptHash: ${effectivePass.receipt.receiptHash}
+      convergenceVerdict: bounded_no_new_gap
+    packetSourceReconciliation:
+      reportPath: "${path
+        .join(tempDir, 'must_packet_source_reconciliation_report.json')
+        .replace(/\\/gu, '/')}"
+      verdict: pass
+    preRenderGateReportPath: "${path
+      .join(tempDir, 'pre-render-must-decomposition-gate-report.json')
+      .replace(/\\/gu, '/')}"
   governanceEventTypeRegistryPolicy:
     controlFieldVocabulary: ["artifactIndex", "confirmationHistory"]
     payloadKindContracts:
@@ -487,7 +534,12 @@ stateDiagram-v2
 }
 
 function runNode(script: string, args: string[]) {
-  return spawnSync(process.execPath, [script, ...args], {
+  const effectiveArgs =
+    [INGEST, CONFIRM_SCOPE, BMAD_SPECKIT_CLI].includes(script) &&
+    !args.includes('--requirements-effective-pass-receipt')
+      ? withEffectivePassReceipt(args)
+      : args;
+  return spawnSync(process.execPath, [script, ...effectiveArgs], {
     cwd: ROOT,
     encoding: 'utf8',
   });
@@ -502,78 +554,6 @@ function runPython(script: string, args: string[]) {
 
 function fixedHash(char: string): string {
   return `sha256:${char.repeat(64)}`;
-}
-
-function requirementsEffectivePassReceiptPath(): string {
-  return path.join(tempDir, 'requirements-effective-pass.receipt.json');
-}
-
-function writeRequirementsEffectivePassFixture() {
-  const coverageUnitRefs = ['coverage/fixture'];
-  const receipt = compileRequirementsEffectivePassReceipt({
-    request: {
-      actorClass: 'requirements_critical_auditor_judge',
-      judgeRole: 'requirements_critical_auditor',
-      requestHash: fixedHash('1'),
-      attemptKeyHash: fixedHash('2'),
-      scopeManifestHash: fixedHash('3'),
-      promptTemplateHash: fixedHash('4'),
-      assessmentSchemaHash: fixedHash('5'),
-      providerAuthority: {
-        providerRef: 'provider/fixture',
-        providerRegistryHash: fixedHash('6'),
-        providerConfigurationHash: fixedHash('7'),
-        credentialRevision: 1,
-      },
-    },
-    assessment: {
-      schemaVersion: 'critical-auditor-judge-assessment/v1',
-      actorClass: 'requirements_critical_auditor_judge',
-      judgeRole: 'requirements_critical_auditor',
-      verdict: 'no_new_valid_gap',
-      validatedGaps: [],
-    },
-    frozenScope: { coverageUnitRefs },
-    coverage: {
-      observedCoverageUnitRefs: [...coverageUnitRefs],
-      unassessedScopeRefs: [],
-      blockingConditionRefs: [],
-    },
-    evidence: {
-      evidenceManifestHash: fixedHash('8'),
-      providerInvocationReceiptHash: fixedHash('9'),
-      missingEvidenceRefs: [],
-    },
-    priorFindings: {
-      ledgerEntryHash: fixedHash('a'),
-      requiredPriorFindingRefs: [],
-      currentDispositionRefs: [],
-      unresolvedPriorFindingRefs: [],
-    },
-    veto: {
-      requirementsVetoRefs: [],
-      passedVetoRefs: [],
-    },
-    currentAuthority: {
-      attemptKeyHash: fixedHash('2'),
-      scopeManifestHash: fixedHash('3'),
-      evidenceManifestHash: fixedHash('8'),
-      providerInvocationReceiptHash: fixedHash('9'),
-      promptTemplateHash: fixedHash('4'),
-      assessmentSchemaHash: fixedHash('5'),
-      providerConfigurationHash: fixedHash('7'),
-    },
-    identity: {
-      replayDetected: false,
-      duplicateIdentityDetected: false,
-    },
-  });
-  fs.writeFileSync(
-    requirementsEffectivePassReceiptPath(),
-    `${JSON.stringify(receipt, null, 2)}\n`,
-    'utf8'
-  );
-  return receipt;
 }
 
 function directReqTraceEntry(): string {
@@ -613,7 +593,7 @@ function writeValidDrilldownGateReport(source: string): string {
         criticalAuditor: {
           minimumRounds: 3,
           consecutiveNoNewGapRounds: 3,
-          latestReceiptHash: fixedHash('c'),
+          latestReceiptHash: effectivePassFixture().receipt.receiptHash,
           convergenceVerdict: 'bounded_no_new_gap',
         },
         packetSourceReconciliation: {
@@ -659,23 +639,7 @@ function render(source: string) {
 }
 
 function renderForPackageConfirmation(source: string) {
-  const effectivePassReceipt = writeRequirementsEffectivePassFixture();
-  const initialSourceText = fs.readFileSync(source, 'utf8');
-  const insertionMarker = '  requiredViewPacks:';
-  expect(initialSourceText).toContain(insertionMarker);
-  fs.writeFileSync(
-    source,
-    initialSourceText.replace(
-      insertionMarker,
-      [
-        '  preConfirmationDrilldown:',
-        '    criticalAuditor:',
-        `      latestReceiptHash: ${effectivePassReceipt.receiptHash}`,
-        insertionMarker,
-      ].join('\n')
-    ),
-    'utf8'
-  );
+  effectivePassFixture();
   const rendered = render(source);
   const sourceText = fs.readFileSync(source, 'utf8');
   const extracted = extractRequirementsContractImplementationConfirmation(sourceText);
@@ -789,7 +753,7 @@ ${largePadding}${sourceText.slice(firstViewIndex)}`,
     ]);
 
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
-    const updated = extractImplementationConfirmation(fs.readFileSync(source, 'utf8'));
+    const updated = extractRendererImplementationConfirmation(fs.readFileSync(source, 'utf8'));
     expect(updated.confirmation.status).toBe('user_confirmed');
     expect(updated.confirmation.largeSourcePadding).toHaveLength(130_000);
   });
@@ -808,7 +772,7 @@ ${largePadding}${sourceText.slice(firstViewIndex)}`,
       '--render-report',
       reportPath,
       '--requirements-effective-pass-receipt',
-      requirementsEffectivePassReceiptPath(),
+      effectivePassFixture().receiptPath,
       '--confirmation-text-file',
       confirmationTextFile,
       '--confirmed-by',
@@ -886,7 +850,7 @@ ${largePadding}${sourceText.slice(firstViewIndex)}`,
       '--render-report',
       reportPath,
       '--requirements-effective-pass-receipt',
-      requirementsEffectivePassReceiptPath(),
+      effectivePassFixture().receiptPath,
       '--confirmation-text-file',
       confirmationTextFile,
       '--confirmed-by',
@@ -976,33 +940,15 @@ ${largePadding}${sourceText.slice(firstViewIndex)}`,
 
   it('ignores pre-confirmation drilldown bookkeeping when confirming rendered hashes', () => {
     const source = writeSource();
+    const { reportPath, report } = render(source);
     const original = fs.readFileSync(source, 'utf8');
     fs.writeFileSync(
       source,
-      original.replace(
-        '  governanceEventTypeRegistryPolicy:',
-        `  preConfirmationDrilldown:
-    semanticKernelRef:
-      path: authoring/semantic-kernel.json
-      hash: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    mustDecompositionPacketRef:
-      path: authoring/must_decomposition_packet.json
-      hash: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
-      status: synchronized
-    criticalAuditor:
-      minimumRounds: 3
-      consecutiveNoNewGapRounds: 3
-      latestReceiptHash: sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      convergenceVerdict: bounded_no_new_gap
-    packetSourceReconciliation:
-      reportPath: authoring/must_packet_source_reconciliation_report.json
-      verdict: pass
-    preRenderGateReportPath: authoring/pre-render-must-decomposition-gate-report.json
-  governanceEventTypeRegistryPolicy:`
-      ),
+      original
+        .replace(`hash: ${fixedHash('b')}`, `hash: ${fixedHash('d')}`)
+        .replace(`hash: ${fixedHash('a')}`, `hash: ${fixedHash('e')}`),
       'utf8'
     );
-    const { reportPath, report } = render(source);
     const result = runNode(CONFIRM_SCOPE, [
       '--source',
       source,
@@ -1050,7 +996,7 @@ ${largePadding}${sourceText.slice(firstViewIndex)}`,
       tempDir,
       '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json'
     );
-    const ingest = runNode(INGEST, [
+    const ingest = runNode(CONFIRM_SCOPE, [
       '--source',
       source,
       '--render-report',
@@ -1061,13 +1007,28 @@ ${largePadding}${sourceText.slice(firstViewIndex)}`,
       'test-user',
       '--record-id',
       'REQ-CONFIRM-INGEST',
+      '--requirement-set-id',
+      'REQSET-CONFIRM-INGEST',
       '--requirement-record',
       recordPath,
+      '--runtime-root',
+      path.join(tempDir, '_bmad-output/runtime/requirement-records'),
       '--confirmed-at',
       '2026-05-18T06:00:00.000Z',
       '--json',
     ]);
     expect(ingest.status).toBe(0);
+
+    const confirmedSourceText = fs.readFileSync(source, 'utf8');
+    const confirmedSource = extractImplementationConfirmation(confirmedSourceText);
+    const confirmedImplementationHash = implementationConfirmationHashFor(
+      confirmedSource.confirmation
+    );
+    const confirmedRecord = JSON.parse(fs.readFileSync(recordPath, 'utf8'));
+    expect(confirmedRecord.implementationConfirmationHash).toBe(confirmedImplementationHash);
+    expect(confirmedRecord.confirmationHistory.at(-1)?.implementationConfirmationHash).toBe(
+      confirmedImplementationHash
+    );
 
     const allowedPrompt = runPython(REQ_TRACE_PROMPT, [
       '--entry',

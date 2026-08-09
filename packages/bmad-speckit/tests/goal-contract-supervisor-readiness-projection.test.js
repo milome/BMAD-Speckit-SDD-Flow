@@ -955,22 +955,23 @@ function cloneRequirementRecordFixture() {
   };
 }
 
-function replaceFileWithSymlink(filePath) {
+function replaceFileWithSymlink(testContext, filePath) {
   const targetPath = `${filePath}.canonical`;
   fs.renameSync(filePath, targetPath);
   try {
     fs.symlinkSync(targetPath, filePath, 'file');
+    return true;
   } catch (error) {
     if (
       process.platform === 'win32' &&
       ['EPERM', 'EACCES'].includes(error.code)
     ) {
       fs.renameSync(targetPath, filePath);
+      testContext.skip(`Windows file symlink capability unavailable: ${error.code}`);
       return false;
     }
     throw error;
   }
-  return true;
 }
 
 function snapshotAuthorityFiles(root) {
@@ -1344,10 +1345,7 @@ describe('goal contract supervisor readiness projection', () => {
 
   it('rejects a standalone active-generation symlink as canonical authority', (t) => {
     const fixture = cloneStandaloneFixture();
-    if (!replaceFileWithSymlink(fixture.activePointerPath)) {
-      t.skip('Windows host does not permit file symlink creation');
-      return;
-    }
+    if (!replaceFileWithSymlink(t, fixture.activePointerPath)) return;
 
     assert.throws(
       () =>
@@ -1363,10 +1361,7 @@ describe('goal contract supervisor readiness projection', () => {
 
   it('rejects a RequirementRecord active-partition-run symlink as canonical authority', (t) => {
     const fixture = cloneRequirementRecordFixture();
-    if (!replaceFileWithSymlink(fixture.activePointerPath)) {
-      t.skip('Windows host does not permit file symlink creation');
-      return;
-    }
+    if (!replaceFileWithSymlink(t, fixture.activePointerPath)) return;
 
     assert.throws(
       () =>

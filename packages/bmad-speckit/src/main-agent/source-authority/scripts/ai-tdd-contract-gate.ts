@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { resolvePackageOwnedBmadPath } from '../../runtime/package-bmad-root';
 import {
   deriveTargetArtifactChecklist,
   evaluateCanonicalEventRegistryGate,
@@ -392,31 +393,7 @@ function requirementCoverageRefs(values: string[]): string[] {
 }
 
 function resolveSkillDir(skillName: string): string {
-  const root = process.cwd();
-  const home = process.env.USERPROFILE || process.env.HOME || '';
-  const packageRoot = path.resolve(__dirname, '..');
-  const candidates = [
-    path.join(root, '.codex', 'skills', skillName),
-    path.join(root, '.cursor', 'skills', skillName),
-    path.join(root, '.claude', 'skills', skillName),
-    path.join(root, '_bmad', 'skills', skillName),
-    path.join(root, '.agents', 'skills', skillName),
-    path.join(packageRoot, '.codex', 'skills', skillName),
-    path.join(packageRoot, '.cursor', 'skills', skillName),
-    path.join(packageRoot, '.claude', 'skills', skillName),
-    path.join(packageRoot, '_bmad', 'skills', skillName),
-    ...(home
-      ? [
-          path.join(home, '.codex', 'skills', skillName),
-          path.join(home, '.cursor', 'skills', skillName),
-          path.join(home, '.claude', 'skills', skillName),
-          path.join(home, '.agents', 'skills', skillName),
-        ]
-      : []),
-  ];
-  return (
-    candidates.find((candidate) => fs.existsSync(path.join(candidate, 'SKILL.md'))) ?? candidates[0]
-  );
+  return resolvePackageOwnedBmadPath('skills', skillName);
 }
 
 function resolveSkillPlaceholders(value: string): string {

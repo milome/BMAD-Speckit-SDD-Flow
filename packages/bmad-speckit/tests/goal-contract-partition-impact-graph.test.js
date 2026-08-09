@@ -31,6 +31,24 @@ function write(root, relativePath, contents) {
   fs.writeFileSync(target, contents, 'utf8');
 }
 
+function createFileSymlinkOrSkip(testContext, target, linkPath) {
+  try {
+    fs.symlinkSync(target, linkPath, 'file');
+    return true;
+  } catch (error) {
+    if (
+      process.platform === 'win32' &&
+      error &&
+      typeof error === 'object' &&
+      (error.code === 'EPERM' || error.code === 'EACCES')
+    ) {
+      testContext.skip(`Windows file symlink capability unavailable: ${error.code}`);
+      return false;
+    }
+    throw error;
+  }
+}
+
 function command(commandId, literal) {
   return {
     id: commandId,
@@ -228,18 +246,7 @@ describe('goal-contract partition impact graph', () => {
     const linkPath = path.join(input.repositoryRoot, 'src', 'base.ts');
     fs.unlinkSync(linkPath);
     write(input.repositoryRoot, 'src/base-target.ts', 'export const value = 1;\n');
-    try {
-      fs.symlinkSync('base-target.ts', linkPath, 'file');
-    } catch (error) {
-      if (
-        process.platform === 'win32' &&
-        ['EPERM', 'EACCES'].includes(error.code)
-      ) {
-        t.skip('Windows host does not permit file symlink creation');
-        return;
-      }
-      throw error;
-    }
+    if (!createFileSymlinkOrSkip(t, 'base-target.ts', linkPath)) return;
 
     assert.throws(
       () => compilePartitionImpactGraph(input),

@@ -21,6 +21,7 @@ describe('main-agent drift surface E2E', () => {
         stage: 'post_audit',
         storyId: '15.3',
         runId: 'run-15-3',
+        confirmedSource: true,
       });
       writeRuntimeContext(
         root,

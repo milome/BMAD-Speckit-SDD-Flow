@@ -84,6 +84,7 @@ export interface MinimalRegistryOpts {
   storyId?: string;
   storySlug?: string;
   runId?: string;
+  transactionId?: string;
   artifactRoot?: string;
   artifactPath?: string;
   sourceMode?: 'full_bmad' | 'seeded_solutioning' | 'standalone_story';
@@ -411,6 +412,7 @@ export function writeMinimalRequirementRecordContext(
     storyId: opts.storyId,
     storySlug: opts.storySlug,
     ...(runId ? { runId } : {}),
+    ...(opts.transactionId ? { transactionId: opts.transactionId } : {}),
     architectureConfirmationState: {
       status: 'active',
       currentArchitectureConfirmationRunId: `arch-${runId}`,

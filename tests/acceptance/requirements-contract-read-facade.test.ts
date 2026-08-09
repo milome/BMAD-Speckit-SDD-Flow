@@ -12,6 +12,7 @@ import path from 'node:path';
 import { expect, it } from 'vitest';
 import { readRequirementsContract } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-read-facade';
 import { requirementsContractTraceEdgeTypeRegistryHash } from '../../packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-trace-edge-type-registry';
+import { semanticModelHash } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-hash-domains';
 import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 
 const readFacadePath = path.resolve(
@@ -109,7 +110,7 @@ function validLogicalModel(input: {
   };
   return {
     ...preimage,
-    semanticModelHash: sha256Stable(preimage),
+    semanticModelHash: semanticModelHash(preimage),
   };
 }
 

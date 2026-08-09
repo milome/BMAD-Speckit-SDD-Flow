@@ -1,8 +1,21 @@
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
 import { describe, expect, it } from 'vitest';
+import {
+  createRequirementsContractCanonicalAssetsManifest,
+  REQUIREMENTS_CONTRACT_CANONICAL_ASSETS,
+  REQUIREMENTS_CONTRACT_CANONICAL_ASSETS_MANIFEST_OWNER_PATH,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-canonical-assets-manifest';
 import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 
 interface CanonicalAssetsManifest {
@@ -461,6 +474,29 @@ function fileHash(filePath: string): string {
 }
 
 describe('requirements contract canonical assets manifest', () => {
+  it('rejects CRLF hash inputs before publishing the manifest', () => {
+    const fixtureRoot = mkdtempSync(path.join(os.tmpdir(), 'requirements-canonical-assets-eol-'));
+    const targetPath = REQUIREMENTS_CONTRACT_CANONICAL_ASSETS[0].path;
+    try {
+      const relativePaths = new Set([
+        REQUIREMENTS_CONTRACT_CANONICAL_ASSETS_MANIFEST_OWNER_PATH,
+        ...REQUIREMENTS_CONTRACT_CANONICAL_ASSETS.map((asset) => asset.path),
+      ]);
+      for (const relativePath of relativePaths) {
+        const filePath = path.resolve(fixtureRoot, relativePath);
+        mkdirSync(path.dirname(filePath), { recursive: true });
+        writeFileSync(filePath, 'fixture\n', 'utf8');
+      }
+      writeFileSync(path.resolve(fixtureRoot, targetPath), 'fixture\r\n', 'utf8');
+
+      expect(() => createRequirementsContractCanonicalAssetsManifest(fixtureRoot)).toThrow(
+        `requirements_contract_projection_hash_input_not_lf:${targetPath}`
+      );
+    } finally {
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
   it('publishes one tracked schema-valid manifest without evidence-path authority', () => {
     expect(existsSync(MANIFEST_PATH), 'canonical assets manifest is missing').toBe(true);
     expect(existsSync(SCHEMA_PATH), 'canonical assets schema is missing').toBe(true);

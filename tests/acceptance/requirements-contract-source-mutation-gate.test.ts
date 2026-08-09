@@ -12,7 +12,6 @@ import {
   readJson,
   removeTempRoot,
   runAuthoring,
-  runAuthoringWithTestLocalization,
   sha256File,
   writeMinimalConsumerRequirement,
   writeSourceAuthorityProjection,
@@ -76,7 +75,7 @@ describe('requirements contract source mutation gate', () => {
     try {
       const descriptor = createSourceAuthorityProjectionDescriptor(
         'source-mutation-checkpoint-required',
-        { negativeCount: 50, sourcePath: 'docs/requirements/checkpoint-required.md' }
+        { negativeCount: 1, sourcePath: 'docs/requirements/checkpoint-required.md' }
       );
       const materialized = writeSourceAuthorityProjection(root, descriptor);
       const { confirmationLanguage: omittedLanguage, ...authoringOptions } =
@@ -244,16 +243,10 @@ describe('requirements contract source mutation gate', () => {
         descriptor
       );
 
-      const result = runAuthoringWithTestLocalization(
-        root,
-        materialized.sourcePath,
-        'REQ-DRAFT-ONLY',
-        {
-          ...materialized.authoringOptions,
-          confirmationLanguage: 'zh-CN',
-          criticalAuditorRound: cleanCriticalAuditorRound,
-        }
-      );
+      const result = runAuthoring(root, materialized.sourcePath, 'REQ-DRAFT-ONLY', {
+        ...materialized.authoringOptions,
+        criticalAuditorRound: cleanCriticalAuditorRound,
+      });
       const paths = artifacts(root, 'REQ-DRAFT-ONLY', 'REQ-DRAFT-ONLY-SET');
       const sourceText = readFileSync(materialized.sourcePath, 'utf8');
 

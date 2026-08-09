@@ -6,7 +6,6 @@ import {
   mkdtempSync,
   readFileSync,
   realpathSync,
-  renameSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
@@ -151,9 +150,6 @@ function installPackedCli(): {
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as ActionBindingManifest;
   const schema = JSON.parse(readFileSync(schemaPath, 'utf8')) as RecoveryAuthoritySchema;
   const sourceRoot = path.join(installedPackageRoot, 'src');
-  const disabledSourceRoot = path.join(root, 'disabled-installed-source');
-  expect(existsSync(sourceRoot)).toBe(true);
-  renameSync(sourceRoot, disabledSourceRoot);
   expect(existsSync(sourceRoot)).toBe(false);
 
   return {

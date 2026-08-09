@@ -7,6 +7,7 @@ import { refreshCurrentSourceCheckpointPersistence } from '../../packages/bmad-s
 import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 import {
   artifacts,
+  cleanCriticalAuditorRound,
   createMinimalConsumerRequirementDescriptor,
   createTempRoot,
   installJudgeRuntimeConfig,
@@ -70,7 +71,7 @@ describe('requirements contract checkpoint main lane', () => {
       try {
         result = runAuthoring(root, source, 'REQ-CHECKPOINT-MAIN', {
           ...materialized.authoringOptions,
-          criticalAuditorProviderMode: 'external_adapter',
+          criticalAuditorRound: cleanCriticalAuditorRound,
         });
       } finally {
         process.stderr.write = originalStderrWrite;

@@ -2273,6 +2273,14 @@ function loadAuthoritySupersessionForRelease({
   goalPath,
   expectedPartitionPlanHash,
 }) {
+  const canonicalGeneration =
+    loadCanonicalStandaloneGenerationForRelease({
+      authorityRoot,
+      partitionManifestPath,
+      goalPath,
+      expectedPartitionPlanHash,
+    });
+  if (canonicalGeneration) return canonicalGeneration;
   const verified = verifyAuthoritySupersessionReceipt({
     authorityRoot,
   });
@@ -2421,6 +2429,188 @@ function loadAuthoritySupersessionForRelease({
     compiled: Object.freeze({
       manifest,
       partitionManifestHash: manifestDocumentHash,
+    }),
+  });
+}
+
+function loadCanonicalStandaloneGenerationForRelease({
+  authorityRoot,
+  partitionManifestPath,
+  goalPath,
+  expectedPartitionPlanHash,
+}) {
+  const root = path.resolve(authorityRoot || '');
+  if (fs.existsSync(path.join(root, 'bundle-manifest.json'))) {
+    return null;
+  }
+  const generationsRoot = path.dirname(root);
+  if (path.basename(generationsRoot) !== 'generations') {
+    return null;
+  }
+  const activePointerPath = path.join(
+    path.dirname(generationsRoot),
+    'active-generation.json'
+  );
+  if (
+    !fs.existsSync(activePointerPath) ||
+    !fs.statSync(activePointerPath).isFile()
+  ) {
+    return null;
+  }
+  const pointer = readJson(
+    activePointerPath,
+    'partition_active_pointer_invalid'
+  );
+  validateGoalContractSchema(OUTPUT_AUTHORITY_SCHEMA, pointer);
+  const expectedManifestPath = path.resolve(
+    pointer.partitionManifestPath || ''
+  );
+  if (
+    pointer.authorityMode !== 'standalone_bootstrap' ||
+    path.resolve(pointer.generationRoot || '') !== root ||
+    path.resolve(partitionManifestPath || '') !==
+      expectedManifestPath ||
+    path.resolve(pointer.partitionPlanPath || '') !==
+      path.join(root, 'partition-plan.json') ||
+    expectedManifestPath !==
+      path.join(root, 'partition-manifest.json')
+  ) {
+    throw failure('partition_active_pointer_stale');
+  }
+  const sourceIdentity = resolveGoalContractSourceIdentity({
+    profile: 'standalone_frozen',
+    nativeGoalHandoff: {
+      masterImplementationPlanHash: pointer.sourceHash,
+    },
+  });
+  const authoritySourceRoot = path.dirname(generationsRoot);
+  const repositoryRoot = path.resolve(
+    authoritySourceRoot,
+    '..',
+    '..',
+    '..',
+    '..'
+  );
+  const expectedAuthoritySourceRoot = path.join(
+    repositoryRoot,
+    '_bmad-output',
+    'runtime',
+    'goal-contract-partition-bootstrap',
+    sourceIdentity.sourceIdentityHash.slice('sha256:'.length)
+  );
+  if (path.resolve(expectedAuthoritySourceRoot) !== authoritySourceRoot) {
+    throw failure('partition_active_pointer_stale');
+  }
+  const authority = {
+    authorityMode: pointer.authorityMode,
+    repositoryRoot,
+    sourceHash: sourceIdentity.sourceIdentityHash,
+    generationKey: pointer.generationKey,
+    unitRoot: root,
+    activePointerPath,
+    partitionPlanPath: pointer.partitionPlanPath,
+    partitionManifestPath: pointer.partitionManifestPath,
+  };
+  const validated = validateImmutablePartitionAuthorityUnit({
+    authority,
+    expectedSourceHash: sourceIdentity.sourceIdentityHash,
+    expectedGenerationKey: pointer.generationKey,
+    expectedPartitionPlanHash: pointer.partitionPlanHash,
+    expectedPartitionManifestHash: pointer.partitionManifestHash,
+    expectedPartitionManifestDocumentHash:
+      pointer.partitionManifestDocumentHash,
+  });
+  if (
+    expectedPartitionPlanHash &&
+    expectedPartitionPlanHash !== validated.partitionPlanHash
+  ) {
+    throw failure('successor_release_authority_binding_mismatch');
+  }
+  const partitionPlan = readJson(
+    pointer.partitionPlanPath,
+    'partition_generation_incomplete'
+  );
+  const manifest = validated.manifest;
+  const resolvedGoalPath = path.resolve(goalPath || '');
+  const child = (manifest.partitions || []).find((partition) => {
+    const validatedChild = validated.childContractHashes.find(
+      (entry) => entry.hash === partition.childContractHash
+    );
+    return (
+      validatedChild &&
+      path.resolve(root, validatedChild.path) === resolvedGoalPath
+    );
+  });
+  if (
+    !child ||
+    !fs.existsSync(resolvedGoalPath) ||
+    sha256File(resolvedGoalPath) !== child.childContractHash
+  ) {
+    throw failure('successor_child_membership_invalid', {
+      goalPath: resolvedGoalPath,
+    });
+  }
+  const childGeneration = readJson(
+    path.join(
+      root,
+      'receipts',
+      'children',
+      `${child.partitionId}.generation.json`
+    ),
+    'partition_child_generation_receipt_invalid'
+  );
+  validateGoalContractSchema(
+    'goal-contract-partition-child-generation-receipt.schema.json',
+    childGeneration
+  );
+  return Object.freeze({
+    authorityMode: 'standalone_bootstrap',
+    authorityRoot: root.replace(/\\/gu, '/'),
+    activePointerPath: activePointerPath.replace(/\\/gu, '/'),
+    sourceIdentity,
+    artifactHashes: Object.freeze({
+      ...Object.fromEntries(
+        validated.childContractHashes.map((entry) => [
+          entry.path,
+          entry.hash,
+        ])
+      ),
+      ...Object.fromEntries(
+        validated.requiredReceiptHashes.map((entry) => [
+          entry.path,
+          entry.hash,
+        ])
+      ),
+    }),
+    partitionPlan,
+    partitionPlanHash: validated.partitionPlanHash,
+    methodology: Object.freeze({
+      methodologyProfileHash:
+        partitionPlan.methodologyProfileHash,
+      methodologyProfileArtifactHash:
+        childGeneration.methodologyProfileArtifactHash,
+    }),
+    optimizerPolicyBinding: Object.freeze({
+      partitionPolicyHash: partitionPlan.partitionPolicyHash,
+      partitionPolicyArtifactHash:
+        childGeneration.partitionPolicyArtifactHash,
+    }),
+    projection: Object.freeze({
+      executionProjectionHash: manifest.executionProjectionHash,
+      taskDagHash: manifest.taskDagHash,
+      sequenceConstraintBinding: Object.freeze({
+        sequenceMode: manifest.sequenceMode,
+        applicabilityDecision:
+          manifest.sequenceApplicability,
+        sequenceCoverage: manifest.sequenceCoverage,
+        sequenceClosureStatus: manifest.sequenceClosureStatus,
+        childContractAuthority:
+          manifest.childContractAuthority,
+      }),
+    }),
+    compiled: Object.freeze({
+      manifest,
+      partitionManifestHash: manifest.partitionManifestHash,
     }),
   });
 }

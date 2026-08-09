@@ -4,6 +4,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { writePackageRuntimeQualityGateReport } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-release-gate';
 
 const ROOT = process.cwd();
 
@@ -551,7 +552,7 @@ describe('main-agent release gate contract', () => {
     }
   });
 
-  it('produces a same-run Codex proof when using the default quality producer', () => {
+  it('consumes an explicit same-run Codex proof with the default quality producer', () => {
     const reportDir = fs.mkdtempSync(path.join(os.tmpdir(), 'release-gate-codex-proof-'));
     try {
       const runId = 'run-release-quality-proof-pass';
@@ -559,7 +560,26 @@ describe('main-agent release gate contract', () => {
       const evidenceBundleId = 'bundle-pass';
       const reportPath = path.join(reportDir, 'report.json');
       const ledgerPath = path.join(reportDir, 'ledger.json');
+      const proofPath = path.join(reportDir, 'codex-proof.json');
       const evidence = writeReleaseGateEvidence(reportDir, { runId, storyKey, evidenceBundleId });
+      fs.writeFileSync(
+        proofPath,
+        JSON.stringify(
+          {
+            reportType: 'codex_run_scoped_quality_proof',
+            evidence_provenance: { runId, storyKey, evidenceBundleId },
+            codex: {
+              hostKind: 'codex',
+              mode: 'codex_exec',
+              taskReportStatus: 'done',
+              validationsRun: ['release-quality-proof-main-session'],
+            },
+          },
+          null,
+          2
+        ),
+        'utf8'
+      );
       fs.writeFileSync(
         ledgerPath,
         JSON.stringify(
@@ -586,6 +606,7 @@ describe('main-agent release gate contract', () => {
       const run = runReleaseGate(
         {
           MAIN_AGENT_RELEASE_GATE_CODEX_PROOF_MODE: '',
+          MAIN_AGENT_RELEASE_GATE_CODEX_PROOF_PATH: proofPath,
           MAIN_AGENT_RELEASE_GATE_E2E_COMMAND: `${process.execPath} -e "process.exit(0)"`,
           MAIN_AGENT_RELEASE_GATE_REPORT_PATH: reportPath,
         },
@@ -613,19 +634,16 @@ describe('main-agent release gate contract', () => {
       );
 
       expect(run.exitCode).toBe(0);
-      const proofPath = path.join(
-        process.cwd(),
-        '_bmad-output',
-        'runtime',
-        'gates',
-        'codex-quality-proof',
-        `${runId}.proof.json`
+      const report = JSON.parse(fs.readFileSync(reportPath, 'utf8')) as {
+        checks: Array<{ id: string; passed: boolean }>;
+      };
+      expect(report.checks.find((check) => check.id === 'quality-gate-artifact')?.passed).toBe(
+        true
       );
       const proof = JSON.parse(fs.readFileSync(proofPath, 'utf8')) as {
         evidence_provenance?: { runId?: string; storyKey?: string; evidenceBundleId?: string };
         codex?: {
           mode?: string;
-          proofMode?: string;
           taskReportStatus?: string;
           validationsRun?: string[];
         };
@@ -633,11 +651,10 @@ describe('main-agent release gate contract', () => {
       expect(proof.evidence_provenance).toMatchObject({ runId, storyKey, evidenceBundleId });
       expect(proof.codex).toMatchObject({
         mode: 'codex_exec',
-        proofMode: 'deterministic_release_shim',
         taskReportStatus: 'done',
       });
       expect(proof.codex?.validationsRun).toContain(
-        'release-quality-proof-deterministic-codex-exec-shim'
+        'release-quality-proof-main-session'
       );
     } finally {
       fs.rmSync(reportDir, { recursive: true, force: true });
@@ -695,6 +712,141 @@ describe('main-agent release gate contract', () => {
       fs.rmSync(reportDir, { recursive: true, force: true });
     }
   });
+
+  it('accepts a same-run valid Codex proof in package runtime', () => {
+    const reportDir = fs.mkdtempSync(path.join(os.tmpdir(), 'release-package-quality-valid-'));
+    try {
+      const proofPath = path.join(reportDir, 'codex-proof.json');
+      fs.writeFileSync(
+        proofPath,
+        JSON.stringify(
+          {
+            reportType: 'codex_run_scoped_quality_proof',
+            evidence_provenance: {
+              runId: 'run-package',
+              storyKey: 'S-package',
+              evidenceBundleId: 'bundle-package',
+            },
+            codex: {
+              hostKind: 'codex',
+              mode: 'codex_exec',
+              taskReportStatus: 'done',
+              validationsRun: ['package-runtime-validation'],
+            },
+          },
+          null,
+          2
+        ),
+        'utf8'
+      );
+      const qualityGatePath = path.join(reportDir, 'quality-gate.json');
+
+      writePackageRuntimeQualityGateReport({
+        root: reportDir,
+        qualityGatePath,
+        provenance: {
+          runId: 'run-package',
+          storyKey: 'S-package',
+          evidenceBundleId: 'bundle-package',
+        },
+        codexProofPath: proofPath,
+      });
+
+      const report = JSON.parse(fs.readFileSync(qualityGatePath, 'utf8')) as {
+        critical_failures: number;
+        checks: Array<{ id: string; passed: boolean; summary: string }>;
+      };
+      expect(report.critical_failures).toBe(0);
+      expect(report.checks.find((check) => check.id === 'codex-run-scoped-proof')).toEqual({
+        id: 'codex-run-scoped-proof',
+        passed: true,
+        summary: 'proof=codex-proof.json',
+      });
+    } finally {
+      fs.rmSync(reportDir, { recursive: true, force: true });
+    }
+  });
+
+  it.each([
+    ['missing proof', null, null, 'current main session did not provide'],
+    [
+      'wrong report type',
+      'main_agent_quality_gate',
+      ['package-runtime-validation'],
+      'reportType=main_agent_quality_gate',
+    ],
+    [
+      'empty validations',
+      'codex_run_scoped_quality_proof',
+      [],
+      'validationsRun=missing_or_invalid',
+    ],
+    [
+      'stale provenance',
+      'codex_run_scoped_quality_proof',
+      ['package-runtime-validation'],
+      'runId=old-run',
+    ],
+  ])(
+    'fails closed in package runtime for %s',
+    (caseName, reportType, validationsRun, expectedSummary) => {
+      const reportDir = fs.mkdtempSync(path.join(os.tmpdir(), 'release-package-quality-'));
+      try {
+        const proofPath =
+          reportType === null ? null : path.join(reportDir, 'codex-proof.json');
+        if (proofPath) {
+          fs.writeFileSync(
+            proofPath,
+            JSON.stringify(
+              {
+                reportType,
+                evidence_provenance: {
+                  runId: caseName === 'stale provenance' ? 'old-run' : 'run-package',
+                  storyKey: 'S-package',
+                  evidenceBundleId: 'bundle-package',
+                },
+                codex: {
+                  hostKind: 'codex',
+                  mode: 'codex_exec',
+                  taskReportStatus: 'done',
+                  validationsRun,
+                },
+              },
+              null,
+              2
+            ),
+            'utf8'
+          );
+        }
+        const qualityGatePath = path.join(reportDir, 'quality-gate.json');
+
+        writePackageRuntimeQualityGateReport({
+          root: reportDir,
+          qualityGatePath,
+          provenance: {
+            runId: 'run-package',
+            storyKey: 'S-package',
+            evidenceBundleId: 'bundle-package',
+          },
+          codexProofPath: proofPath,
+        });
+
+        const report = JSON.parse(fs.readFileSync(qualityGatePath, 'utf8')) as {
+          critical_failures: number;
+          checks: Array<{ id: string; passed: boolean; summary: string }>;
+        };
+        expect(report.critical_failures).toBe(1);
+        expect(report.checks.find((check) => check.id === 'codex-run-scoped-proof')).toMatchObject(
+          {
+            passed: false,
+            summary: expect.stringContaining(expectedSummary),
+          }
+        );
+      } finally {
+        fs.rmSync(reportDir, { recursive: true, force: true });
+      }
+    }
+  );
 
   it('appends same-run provenance to package CLI host-matrix commands', () => {
     const reportDir = fs.mkdtempSync(path.join(os.tmpdir(), 'release-gate-cli-provenance-'));

@@ -66,6 +66,9 @@ describe('goal contract command portability gate', () => {
       'utf8'
     );
 
-    expect(buildScript).toContain("'_bmad/shared/goal-contract'");
+    expect(buildScript).toContain(
+      "'skills/goal-execution-contract-generator/scripts/check-contract-command-portability.js'"
+    );
+    expect(buildScript).toContain('ensurePackageBmadOwner();');
   });
 });

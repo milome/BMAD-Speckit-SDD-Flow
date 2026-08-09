@@ -572,11 +572,6 @@
       "observedAt": "2026-08-02T10:55:16.000Z"
     },
     {
-      "testPath": "tests/acceptance/requirements-contract-subagent-readonly-provider.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
       "testPath": "tests/acceptance/requirements-contract-validation-facade.test.ts",
       "reasonCode": "KNOWN_REQUIREMENT_SOURCE_AUTHORITY_GAP",
       "observedAt": "2026-08-01T20:25:00.000Z"

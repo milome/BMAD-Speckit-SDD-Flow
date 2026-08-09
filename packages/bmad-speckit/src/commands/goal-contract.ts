@@ -162,6 +162,46 @@ function sha256FileBytes(filePath) {
   return `sha256:${createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')}`;
 }
 
+const FUNCTIONAL_TITLE_REWRITES = new Map([
+  [
+    'execute the certified campaign',
+    'Certified campaign produces closed child results',
+  ],
+  ['close every bypass path', 'Every bypass path fails closed'],
+  [
+    'execute the complete deterministic matrix',
+    'Deterministic matrix verifies complete campaign evidence',
+  ],
+]);
+
+function normalizeFunctionalTaskTitle(value) {
+  const title = String(value || '')
+    .replace(/\s+\[Dependencies:[^\]]*\]\s*$/iu, '')
+    .replace(/^(?:RED|GREEN|REFACTOR|Verification)\s*-\s*/iu, '')
+    .trim();
+  return FUNCTIONAL_TITLE_REWRITES.get(title.toLowerCase()) || title;
+}
+
+function projectPartitionDisplayTitles(sourceText, partitions) {
+  const titleByTaskId = new Map();
+  const headingPattern =
+    /^###\s+(?:Task\s+)?([A-Za-z][A-Za-z0-9-]*\d+)\s*:\s*(.+)$/gmu;
+  for (const match of String(sourceText || '').matchAll(headingPattern)) {
+    const title = normalizeFunctionalTaskTitle(match[2]);
+    if (title) titleByTaskId.set(match[1], title);
+  }
+  return Object.fromEntries(
+    (partitions || []).flatMap((partition) => {
+      const titles = (partition.primaryTaskIds || [])
+        .map((taskId) => titleByTaskId.get(taskId))
+        .filter(Boolean);
+      return titles.length > 0
+        ? [[partition.partitionId, [...new Set(titles)].join('; ')]]
+        : [];
+    })
+  );
+}
+
 function compileStandaloneGoalContract({
   source,
   sourceText,
@@ -2543,6 +2583,10 @@ async function compilePartitionAuthority(
     const partitionSourceObligationGraph = canonicalSourceAuthority
       ? canonicalSourceAuthority.canonicalIntentBundle.sourceObligationGraph
       : extracted.sourceObligationGraph;
+    const displayTitles = projectPartitionDisplayTitles(
+      rawBytes.toString('utf8'),
+      partitionBundle.partitionPlan.partitions
+    );
     Object.assign(boundaryContext, {
       sourceCompositionMode: partitionBundle.partitionPlan.sourceCompositionMode,
       sourceCompositionPolicyHash: partitionBundle.partitionPlan.sourceCompositionPolicyHash,
@@ -2578,6 +2622,7 @@ async function compilePartitionAuthority(
       acceptanceEvidenceViewReceipt: derivation.acceptanceEvidence.receipt,
       componentGraph: partitionBundle.componentGraph,
       optimization: partitionBundle.optimization,
+      displayTitles,
     });
   } catch (error) {
     Object.assign(error, boundaryContext, {
@@ -2600,6 +2645,12 @@ async function compilePartitionAuthority(
     partitionPlan: partitionBundle.partitionPlan,
     partitionPlanBytes: partitionBundle.partitionPlanBytes,
     partitionPlanHash: partitionBundle.partitionPlanHash,
+    displayTitles: Object.fromEntries(
+      compiled.manifest.partitions.map((partition) => [
+        partition.partitionId,
+        partition.displayTitle,
+      ])
+    ),
     projectionAuthority: partitionBundle.projectionAuthority,
     reconciledGraphAuthority: partitionBundle.reconciledGraphAuthority,
     compiled,
@@ -2944,6 +2995,9 @@ function createPartitionChildRenderer({
           unitGenerationReceiptPath
         )
       : unitGenerationReceiptPath;
+    const renderedAuthorityPath = childContractPath;
+    const coverageAuthorityPath = coverageReceiptPath;
+    const generationAuthorityPath = generationReceiptPath;
     const { slotData, registries, coverageAudit, implementationProofAudit } =
       buildPartitionSlotData({
         source: {
@@ -2955,14 +3009,14 @@ function createPartitionChildRenderer({
         profile: assets.profile,
         selectedScope,
         receiptPaths: {
-          outPath: childContractPath,
+          outPath: renderedAuthorityPath,
           coverageReceiptPath: path.posix.relative(
-            path.posix.dirname(childContractPath),
-            coverageReceiptPath
+            path.posix.dirname(renderedAuthorityPath),
+            coverageAuthorityPath
           ),
           generationReceiptPath: path.posix.relative(
-            path.posix.dirname(childContractPath),
-            generationReceiptPath
+            path.posix.dirname(renderedAuthorityPath),
+            generationAuthorityPath
           ),
         },
         bindings: {
@@ -3025,7 +3079,7 @@ function createPartitionChildRenderer({
       rendered.document.replace(`\n${embeddedFrontMatter}\n`, '\n');
     const commandPortabilityAudit = auditCommandPortability({
       content: childContractBytes,
-      targetPath: childContractPath,
+      targetPath: renderedAuthorityPath,
       shell: 'pwsh',
     });
     const issues = rendererIssues(rendered.audit);
@@ -3709,17 +3763,15 @@ async function governedPartition(args) {
       repositoryRelativeUnitRoot,
     }),
   });
-  output =
-    output ||
-    resolveCanonicalPartitionOutputPaths({
-      repositoryRoot: process.cwd(),
-      ...generationInput,
-      requirementSetId: requirementRecord.requirementSetId,
-      partitionRunId: projection.partitionManifest.partitionRunId,
-      ...(authorityRootOverride
-        ? { authorityRootOverride }
-        : {}),
-    });
+  output ??= resolveCanonicalPartitionOutputPaths({
+    repositoryRoot: process.cwd(),
+    ...generationInput,
+    requirementSetId: requirementRecord.requirementSetId,
+    partitionRunId: projection.partitionManifest.partitionRunId,
+    ...(authorityRootOverride
+      ? { authorityRootOverride }
+      : {}),
+  });
   const globalCoverage = buildPartitionPlanGlobalCoverageReceipt({
     partitionPlan: authority.partitionPlan,
     candidateManifest: projection.partitionManifest,
@@ -4380,6 +4432,7 @@ module.exports = {
   goalContractCommand,
   partition,
   partitionCompilerIdentityAssetPaths,
+  projectPartitionDisplayTitles,
   selectCommandStructuredBindings,
   supersedeAuthority,
 };

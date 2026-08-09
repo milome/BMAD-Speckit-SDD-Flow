@@ -62,7 +62,7 @@ function listPackageFiles(packageRoot) {
   return files.sort();
 }
 
-function auditExecutionPackage(packageRoot, expectedPackageManifestHash) {
+function readPackageReceipt(packageRoot, expectedPackageManifestHash) {
   if (!expectedPackageManifestHash) failure('expected_package_manifest_hash_missing');
   if (!/^sha256:[a-f0-9]{64}$/u.test(expectedPackageManifestHash)) {
     failure('expected_package_manifest_hash_invalid');
@@ -96,6 +96,10 @@ function auditExecutionPackage(packageRoot, expectedPackageManifestHash) {
   if (manifest.packageManifestHash !== expectedManifestHash) {
     failure('package_manifest_hash_mismatch', { expectedManifestHash });
   }
+  return { core, manifest, resolvedRoot };
+}
+
+function verifyPackageSourceBindings(manifest) {
   const repositoryRoot = resolveCanonicalRepositoryRoot(
     manifest.repositoryRoot,
     'invalid_package_manifest'
@@ -124,20 +128,34 @@ function auditExecutionPackage(packageRoot, expectedPackageManifestHash) {
     'closure_schema_hash_mismatch',
     'closure_schema_invalid'
   );
-  if (sourcePartitionManifest.partitions.length !== manifest.children.length) {
-    failure('child_identity_source_mismatch');
-  }
+  return {
+    closureSchema,
+    evidenceSchema,
+    goalContract,
+    goalPath,
+    partitionManifestBinding,
+    partitionManifestPath,
+    repositoryRoot,
+    sourcePartitionManifest,
+  };
+}
+
+function verifyPackageBaseline(repositoryRoot, repositoryBaseline) {
   if (
-    !manifest.repositoryBaseline ||
-    !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u.test(manifest.repositoryBaseline.headCommit || '') ||
-    !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u.test(manifest.repositoryBaseline.treeHash || '')
+    !repositoryBaseline ||
+    !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u.test(repositoryBaseline.headCommit || '') ||
+    !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u.test(repositoryBaseline.treeHash || '')
   ) {
     failure('invalid_package_manifest');
   }
-  verifyRepositoryBaseline(repositoryRoot, manifest.repositoryBaseline);
-  const children = sourcePartitionManifest.partitions.map((partition, index) => {
+  verifyRepositoryBaseline(repositoryRoot, repositoryBaseline);
+}
+
+function projectSourceChildren(repositoryRoot, partitionManifestPath, sourcePartitionManifest) {
+  return sourcePartitionManifest.partitions.map((partition, index) => {
     const projectedChildPath = projectManifestChildPath(
       repositoryRoot,
+      partitionManifestPath,
       partition.childContractPath
     );
     const child = {
@@ -155,22 +173,23 @@ function auditExecutionPackage(packageRoot, expectedPackageManifestHash) {
     verifySource(repositoryRoot, child.contract, 'child_contract_hash_mismatch');
     return child;
   });
-  const childByPartitionId = createChildIdentityMap(children);
-  const requirementRecordBinding = normalizeRecordBinding(manifest.requirementRecordBinding);
-  const authority = verifyAuthorityProfile({
-    repositoryRoot,
-    input: manifest,
-    goalPath,
-    partitionManifest: sourcePartitionManifest,
-    requirementRecordBinding,
-  });
-  const authorityProjection = manifest.authorityProfile ? authority : {};
-  const collectionVerificationCommands = normalizeCollectionCommands(
-    manifest.collectionVerificationCommands
-  );
+}
+
+function createPackageId({
+  authorityProjection,
+  children,
+  closureSchema,
+  collectionVerificationCommands,
+  evidenceSchema,
+  goalContract,
+  partitionManifestBinding,
+  repositoryBaseline,
+  repositoryRoot,
+  requirementRecordBinding,
+}) {
   const seed = {
     repositoryRoot,
-    repositoryBaseline: manifest.repositoryBaseline,
+    repositoryBaseline,
     ...authorityProjection,
     goalContract,
     partitionManifest: partitionManifestBinding,
@@ -180,7 +199,43 @@ function auditExecutionPackage(packageRoot, expectedPackageManifestHash) {
     children,
     collectionVerificationCommands,
   };
-  const packageId = `goal-subcontract-package-${sha256(stableJson(seed)).slice(7, 23)}`;
+  return `goal-subcontract-package-${sha256(stableJson(seed)).slice(7, 23)}`;
+}
+
+function createProjectionContext(manifest, sourceBindings, children) {
+  const {
+    closureSchema,
+    evidenceSchema,
+    goalContract,
+    partitionManifestBinding,
+    repositoryRoot,
+    sourcePartitionManifest,
+  } = sourceBindings;
+  const childByPartitionId = createChildIdentityMap(children);
+  const requirementRecordBinding = normalizeRecordBinding(manifest.requirementRecordBinding);
+  const authority = verifyAuthorityProfile({
+    repositoryRoot,
+    input: manifest,
+    goalPath: sourceBindings.goalPath,
+    partitionManifest: sourcePartitionManifest,
+    requirementRecordBinding,
+  });
+  const authorityProjection = manifest.authorityProfile ? authority : {};
+  const collectionVerificationCommands = normalizeCollectionCommands(
+    manifest.collectionVerificationCommands
+  );
+  const packageId = createPackageId({
+    authorityProjection,
+    children,
+    closureSchema,
+    collectionVerificationCommands,
+    evidenceSchema,
+    goalContract,
+    partitionManifestBinding,
+    repositoryBaseline: manifest.repositoryBaseline,
+    repositoryRoot,
+    requirementRecordBinding,
+  });
   const commitPolicy = createCommitPolicy();
   const executionPolicy = createExecutionPolicy();
   const childPacketValidator = compileBundledSchema(
@@ -188,13 +243,38 @@ function auditExecutionPackage(packageRoot, expectedPackageManifestHash) {
     'invalid_child_packet',
     repositoryRoot
   );
-  const expectedArtifacts = [];
-  const expectedContentByPath = new Map();
-  const expectArtifact = (kind, artifactPath, content) => {
-    expectedArtifacts.push({ kind, path: artifactPath, hash: sha256(content) });
-    expectedContentByPath.set(artifactPath, content);
+  return {
+    authorityProjection,
+    childByPartitionId,
+    childPacketValidator,
+    children,
+    closureSchema,
+    collectionVerificationCommands,
+    commitPolicy,
+    evidenceSchema,
+    executionPolicy,
+    goalContract,
+    packageId,
+    partitionManifestBinding,
+    repositoryBaseline: manifest.repositoryBaseline,
+    repositoryRoot,
+    requirementRecordBinding,
+    sourcePartitionManifest,
   };
-  const projectedChildren = children.map((child) => {
+}
+
+function reconstructChildArtifacts(context, expectArtifact) {
+  const {
+    childByPartitionId,
+    childPacketValidator,
+    children,
+    closureSchema,
+    commitPolicy,
+    evidenceSchema,
+    executionPolicy,
+    packageId,
+  } = context;
+  return children.map((child) => {
     const prefix = `${String(child.ordinal).padStart(2, '0')}-${child.partitionId}`;
     const packetPath = `children/${prefix}.packet.json`;
     const promptPath = `children/${prefix}.prompt.md`;
@@ -227,6 +307,17 @@ function auditExecutionPackage(packageRoot, expectedPackageManifestHash) {
       promptHash: sha256(promptContent),
     };
   });
+}
+
+function reconstructCampaignArtifacts(context, expectArtifact) {
+  const {
+    children,
+    collectionVerificationCommands,
+    goalContract,
+    packageId,
+    partitionManifestBinding,
+    requirementRecordBinding,
+  } = context;
   expectArtifact(
     'campaign-prompt',
     'campaign-prompt.md',
@@ -250,12 +341,39 @@ function auditExecutionPackage(packageRoot, expectedPackageManifestHash) {
       })
     )
   );
+}
+
+function reconstructExpectedArtifacts(context) {
+  const expectedArtifacts = [];
+  const expectedContentByPath = new Map();
+  const expectArtifact = (kind, artifactPath, content) => {
+    expectedArtifacts.push({ kind, path: artifactPath, hash: sha256(content) });
+    expectedContentByPath.set(artifactPath, content);
+  };
+  const projectedChildren = reconstructChildArtifacts(context, expectArtifact);
+  reconstructCampaignArtifacts(context, expectArtifact);
+  return { expectedArtifacts, expectedContentByPath, projectedChildren };
+}
+
+function verifyPackageProjection(core, context, reconstruction) {
+  const {
+    closureSchema,
+    collectionVerificationCommands,
+    evidenceSchema,
+    goalContract,
+    packageId,
+    partitionManifestBinding,
+    repositoryBaseline,
+    repositoryRoot,
+    requirementRecordBinding,
+    sourcePartitionManifest,
+  } = context;
   const expectedCore = {
     schemaVersion: 'goal-subcontract-execution-package/v2',
     packageId,
     repositoryRoot,
-    repositoryBaseline: manifest.repositoryBaseline,
-    ...authorityProjection,
+    repositoryBaseline,
+    ...context.authorityProjection,
     goalContract,
     partitionManifest: {
       ...partitionManifestBinding,
@@ -264,13 +382,47 @@ function auditExecutionPackage(packageRoot, expectedPackageManifestHash) {
     evidenceSchema,
     closureSchema,
     requirementRecordBinding,
-    children: projectedChildren,
-    artifacts: expectedArtifacts,
+    children: reconstruction.projectedChildren,
+    artifacts: reconstruction.expectedArtifacts,
     collectionVerificationCommands,
   };
   if (stableJson(core) !== stableJson(expectedCore)) {
     failure('package_projection_mismatch');
   }
+}
+
+function verifyPackageArtifact(
+  resolvedRoot,
+  artifact,
+  expectedContentByPath,
+  childPacketValidator
+) {
+  const artifactPath = resolveExistingInside(
+    resolvedRoot,
+    artifact.path,
+    'package_artifact_path_escape'
+  );
+  if (!fs.existsSync(artifactPath) || !fs.statSync(artifactPath).isFile()) {
+    failure('package_artifact_missing', { path: artifact.path });
+  }
+  const actualContent = fs.readFileSync(artifactPath);
+  const actualHash = sha256(actualContent);
+  if (actualHash !== artifact.hash) {
+    failure('package_artifact_hash_mismatch', { path: artifact.path, actualHash });
+  }
+  if (artifact.kind === 'child-packet') {
+    const actualPacket = readJson(artifactPath, 'invalid_child_packet');
+    validateSchemaInstance(childPacketValidator, actualPacket, 'invalid_child_packet', {
+      path: artifact.path,
+    });
+  }
+  if (actualContent.toString('utf8') !== expectedContentByPath.get(artifact.path)) {
+    failure('human_readable_identity_projection_mismatch', { path: artifact.path });
+  }
+}
+
+function verifyPackageInventory(resolvedRoot, reconstruction, childPacketValidator) {
+  const { expectedArtifacts, expectedContentByPath } = reconstruction;
   const expectedFiles = new Set([
     'package-manifest.json',
     ...expectedArtifacts.map(({ path: artifactPath }) => artifactPath),
@@ -285,30 +437,42 @@ function auditExecutionPackage(packageRoot, expectedPackageManifestHash) {
     failure('package_artifact_missing', { path: missingFile });
   }
   for (const artifact of expectedArtifacts) {
-    const artifactPath = resolveExistingInside(
+    verifyPackageArtifact(
       resolvedRoot,
-      artifact.path,
-      'package_artifact_path_escape'
+      artifact,
+      expectedContentByPath,
+      childPacketValidator
     );
-    if (!fs.existsSync(artifactPath) || !fs.statSync(artifactPath).isFile()) {
-      failure('package_artifact_missing', { path: artifact.path });
-    }
-    const actualContent = fs.readFileSync(artifactPath);
-    const actualHash = sha256(actualContent);
-    if (actualHash !== artifact.hash) {
-      failure('package_artifact_hash_mismatch', { path: artifact.path, actualHash });
-    }
-    if (artifact.kind === 'child-packet') {
-      const actualPacket = readJson(artifactPath, 'invalid_child_packet');
-      validateSchemaInstance(childPacketValidator, actualPacket, 'invalid_child_packet', {
-        path: artifact.path,
-      });
-    }
-    if (actualContent.toString('utf8') !== expectedContentByPath.get(artifact.path)) {
-      failure('human_readable_identity_projection_mismatch', { path: artifact.path });
-    }
   }
-  return manifest;
+}
+
+function auditExecutionPackage(packageRoot, expectedPackageManifestHash) {
+  const receipt = readPackageReceipt(packageRoot, expectedPackageManifestHash);
+  const sourceBindings = verifyPackageSourceBindings(receipt.manifest);
+  if (
+    sourceBindings.sourcePartitionManifest.partitions.length !==
+    receipt.manifest.children.length
+  ) {
+    failure('child_identity_source_mismatch');
+  }
+  verifyPackageBaseline(
+    sourceBindings.repositoryRoot,
+    receipt.manifest.repositoryBaseline
+  );
+  const children = projectSourceChildren(
+    sourceBindings.repositoryRoot,
+    sourceBindings.partitionManifestPath,
+    sourceBindings.sourcePartitionManifest
+  );
+  const context = createProjectionContext(receipt.manifest, sourceBindings, children);
+  const reconstruction = reconstructExpectedArtifacts(context);
+  verifyPackageProjection(receipt.core, context, reconstruction);
+  verifyPackageInventory(
+    receipt.resolvedRoot,
+    reconstruction,
+    context.childPacketValidator
+  );
+  return receipt.manifest;
 }
 
 function main(argv = process.argv.slice(2)) {

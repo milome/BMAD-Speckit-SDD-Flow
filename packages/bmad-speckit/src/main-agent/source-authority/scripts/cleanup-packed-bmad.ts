@@ -58,12 +58,14 @@ if (currentCount === 1) {
   writePackSessionCount(0);
 }
 
-if (fs.existsSync(packedBmad)) {
-  rmWithRetry(packedBmad);
-}
+if (process.env.BMAD_SPECKIT_PRESERVE_PACKED_RUNTIME !== '1') {
+  if (fs.existsSync(packedBmad)) {
+    rmWithRetry(packedBmad);
+  }
 
-if (fs.existsSync(packedScoped)) {
-  rmWithRetry(packedScoped);
+  if (fs.existsSync(packedScoped)) {
+    rmWithRetry(packedScoped);
+  }
 }
 
 rmWithRetry(packSessionLockDir);

@@ -143,6 +143,24 @@ function writeJson(target, value) {
   fs.writeFileSync(target, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 }
 
+function createFileSymlinkOrSkip(testContext, target, linkPath) {
+  try {
+    fs.symlinkSync(target, linkPath, 'file');
+    return true;
+  } catch (error) {
+    if (
+      process.platform === 'win32' &&
+      error &&
+      typeof error === 'object' &&
+      (error.code === 'EPERM' || error.code === 'EACCES')
+    ) {
+      testContext.skip(`Windows file symlink capability unavailable: ${error.code}`);
+      return false;
+    }
+    throw error;
+  }
+}
+
 function relativeFileRef(root, target) {
   const bytes = fs.readFileSync(target);
   const hash = sha256(bytes);
@@ -1109,8 +1127,8 @@ describe('requirements-contract six-model installed parity package CLI', () => {
     const fixture = materializeEvidenceRoot();
     const out = path.join(fixture.root, 'authority-broken-link-report.json');
     const authorityPath = path.join(fixture.evidenceRoot, 'parity-authority.json');
-    fs.rmSync(authorityPath);
     try {
+      fs.rmSync(authorityPath);
       if (
         !createFileSymlinkOrSkip(
           t,
@@ -1160,8 +1178,8 @@ describe('requirements-contract six-model installed parity package CLI', () => {
     const fixture = materializeEvidenceRoot();
     const out = path.join(fixture.root, 'canonical-observation-broken-link-report.json');
     const sourceObservationPath = observationPath(fixture.evidenceRoot, 'source');
-    fs.rmSync(sourceObservationPath);
     try {
+      fs.rmSync(sourceObservationPath);
       if (
         !createFileSymlinkOrSkip(
           t,
@@ -2032,11 +2050,9 @@ describe('requirements-contract six-model installed parity package CLI', () => {
     const out = path.join(fixture.root, 'authority-symlink-escape-report.json');
     const authorityPath = path.join(fixture.evidenceRoot, 'parity-authority.json');
     const escapedAuthorityPath = path.join(fixture.root, 'escaped-parity-authority.json');
-    fs.renameSync(authorityPath, escapedAuthorityPath);
     try {
-      if (!createFileSymlinkOrSkip(t, escapedAuthorityPath, authorityPath)) {
-        return;
-      }
+      fs.renameSync(authorityPath, escapedAuthorityPath);
+      if (!createFileSymlinkOrSkip(t, escapedAuthorityPath, authorityPath)) return;
       parseBlockedSummary(runVerifier(PACKAGE_CLI, fixture.evidenceRoot, out));
       const report = JSON.parse(fs.readFileSync(out, 'utf8'));
 

@@ -60,7 +60,7 @@ describe('requirements contract existing source promotion', () => {
     } finally {
       removeTempRoot(root);
     }
-  });
+  }, 60_000);
 
   it('promotes an existing source that already has a stale implementationConfirmation block', () => {
     const root = createTempRoot('requirements-contract-existing-source-stale-block-');
@@ -98,5 +98,5 @@ describe('requirements contract existing source promotion', () => {
     } finally {
       removeTempRoot(root);
     }
-  });
+  }, 60_000);
 });

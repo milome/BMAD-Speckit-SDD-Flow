@@ -12,20 +12,14 @@ import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { mainImplementationReadinessGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate';
 import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
+import {
+  implementationConfirmationHashFor,
+  sourceDocumentHashFor,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-implementation-confirmation-codec';
 import { implementationReadinessGateAction } from '../../packages/bmad-speckit/src/main-agent/actions/implementation-readiness-gate';
 import { writePassingSourcePrdLintReport } from '../helpers/source-prd-lint-fixture';
 
 const ARCH_HASH = 'sha256:4444444444444444444444444444444444444444444444444444444444444444';
-
-const CONFIRMATION_BOOKKEEPING_FIELDS = new Set([
-  'status',
-  'confirmedAt',
-  'confirmedBy',
-  'sourceDocumentHash',
-  'implementationConfirmationHash',
-  'reconfirmationRequest',
-  'confirmationRender',
-]);
 
 function sha256Text(value: string): string {
   return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
@@ -40,27 +34,6 @@ function stableStringify(value: unknown): string {
       (key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`
     )
     .join(',')}}`;
-}
-
-function semanticConfirmationForHash(
-  confirmation: Record<string, unknown>
-): Record<string, unknown> {
-  return Object.fromEntries(
-    Object.entries(confirmation).filter(([key]) => !CONFIRMATION_BOOKKEEPING_FIELDS.has(key))
-  );
-}
-
-function implementationConfirmationHash(confirmation: Record<string, unknown>): string {
-  return sha256Text(stableStringify(semanticConfirmationForHash(confirmation)));
-}
-
-function sourceDocumentHashFor(
-  sourceText: string,
-  blockText: string,
-  confirmation: Record<string, unknown>
-): string {
-  const normalizedBlock = `implementationConfirmation:${stableStringify(semanticConfirmationForHash(confirmation))}`;
-  return sha256Text(sourceText.replace(blockText, normalizedBlock));
 }
 
 function writeRecord(root: string, record: Record<string, unknown>): string {
@@ -373,7 +346,7 @@ function writeReadinessFixture(
       confirmationPhrase: '',
     },
   };
-  const implementationHash = implementationConfirmationHash(confirmation);
+  const implementationHash = implementationConfirmationHashFor(confirmation);
   confirmation.implementationConfirmationHash = implementationHash;
   const finalBlock = `implementationConfirmation:\n${JSON.stringify(confirmation, null, 2)
     .split('\n')

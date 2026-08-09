@@ -194,11 +194,10 @@ describe('requirements contract production activate command', () => {
     }
   });
 
-  it('restores the registry preimage when nested command drift blocks compare-and-swap', async () => {
+  it('preserves an external registry update when nested command drift blocks compare-and-swap', async () => {
     const value = fixture();
     try {
       const registryPath = path.join(value.root, value.registryPath);
-      const preimage = readFileSync(registryPath, 'utf8');
       const commandOptions = options(value);
       passControlledCommands((index) => {
         if (index === 0) write(value.root, value.registryPath, 'registry-drift');
@@ -212,7 +211,7 @@ describe('requirements contract production activate command', () => {
         compareAndSwap: { decision: 'blocked' },
         restoration: { registryRestored: true, decision: 'pass' },
       });
-      expect(readFileSync(registryPath, 'utf8')).toBe(preimage);
+      expect(readFileSync(registryPath, 'utf8')).toBe('registry-drift');
       expect(existsSync(path.join(value.root, receipt.selectedReceiptPath))).toBe(true);
       expect(existsSync(path.join(value.root, commandOptions.successReceipt))).toBe(false);
     } finally {

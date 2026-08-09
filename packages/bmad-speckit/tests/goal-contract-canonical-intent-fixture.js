@@ -9,11 +9,11 @@ const subordinatePath = path.resolve(
 );
 const primaryPath = path.resolve(
   __dirname,
-  'fixtures/2026-07-25-judge-role-separation-implementation-task-list.md'
+  'fixtures/judge-role-separation-implementation-task-list.md'
 );
 const kernelPlanPath = path.resolve(
   __dirname,
-  'fixtures/2026-07-28-canonical-intent-control-plane-kernel-implementation-plan.md'
+  'fixtures/canonical-intent-control-plane-kernel-implementation-plan.md'
 );
 
 function parseAuthorityDocuments(sourceText) {

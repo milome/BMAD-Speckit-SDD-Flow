@@ -152,11 +152,15 @@ function resolveAuthorityBoundPath(authorityRoot, value) {
   return resolved;
 }
 
-function pinnedArtifactHash(authority, targetPath) {
+function usesAuthorityRootArtifacts(authority) {
+  return ['canonical_governed', 'successor_pinned', 'standalone_bootstrap'].includes(
+    authority?.authorityMode
+  );
+}
+
+function authorityArtifactHash(authority, targetPath) {
   if (
-    !['canonical_governed', 'successor_pinned'].includes(
-      authority?.authorityMode
-    ) ||
+    !usesAuthorityRootArtifacts(authority) ||
     typeof targetPath !== 'string'
   ) {
     return null;
@@ -1040,10 +1044,7 @@ function evaluatePartitionRelease(input) {
   const currentAnalysisAuthorityHash = planBound
     ? authority?.partitionPlanHash || currentAnalysisReceiptHash
     : currentAnalysisReceiptHash;
-  const pinnedAuthority =
-    ['canonical_governed', 'successor_pinned'].includes(
-      authority?.authorityMode
-    );
+  const authorityRootBound = usesAuthorityRootArtifacts(authority);
 
   compareField({
     actual: binding.masterSourceHash,
@@ -1173,7 +1174,7 @@ function evaluatePartitionRelease(input) {
   componentDecisions.feasibility =
     feasibilityRelease.componentDecision;
 
-  const selectionPath = pinnedAuthority
+  const selectionPath = authorityRootBound
     ? resolveAuthorityBoundPath(
         authority.authorityRoot,
         partition?.selectionReceiptPath
@@ -1187,7 +1188,7 @@ function evaluatePartitionRelease(input) {
       ? inferReceiptsDir({
           explicitReceiptsDir:
             input.receiptsDir ||
-            (pinnedAuthority
+            (authorityRootBound
               ? authority.authorityRoot
               : null),
           selectionReceiptPath: selectionPath,
@@ -1195,7 +1196,7 @@ function evaluatePartitionRelease(input) {
           manifestPath,
         })
       : null;
-  const globalCoveragePath = pinnedAuthority
+  const globalCoveragePath = authorityRootBound
     ? resolveAuthorityBoundPath(
         authority.authorityRoot,
         currentManifest?.globalCoverageReceiptPath
@@ -1265,7 +1266,7 @@ function evaluatePartitionRelease(input) {
   let expectedSelection = null;
   if (authority && currentManifest && partition) {
     try {
-      if (pinnedAuthority) {
+      if (authorityRootBound) {
         expectedGlobalCoverage =
           buildPartitionPlanGlobalCoverageReceipt({
             partitionPlan: authority.partitionPlan,
@@ -1300,8 +1301,8 @@ function evaluatePartitionRelease(input) {
       stableStringify(expectedGlobalCoverage) ||
     globalCoverage.decision !== 'pass' ||
     globalCoverageHash !==
-      (pinnedAuthority
-        ? pinnedArtifactHash(
+      (authorityRootBound
+        ? authorityArtifactHash(
             authority,
             globalCoveragePath
           )
@@ -1318,8 +1319,8 @@ function evaluatePartitionRelease(input) {
       !expectedSelection ||
       stableStringify(selection) !== stableStringify(expectedSelection) ||
       selectionHash !==
-        (pinnedAuthority
-          ? pinnedArtifactHash(authority, selectionPath)
+        (authorityRootBound
+          ? authorityArtifactHash(authority, selectionPath)
           : binding.selectionReceiptHash)
     ) {
       blockingReasons.push('partition_selection_not_current');

@@ -5,17 +5,22 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const {
+  hashControlPlaneValue,
+} = require('../src/utils/goal-contract/control-plane/canonical-hash.ts');
+const {
+  compileSourceCompositionPolicy,
+} = require('../src/utils/goal-contract/control-plane/source-composition-policy.ts');
+const {
   resolveGoalContractSourceIdentity,
 } = require('../src/utils/goal-contract/control-plane/partition-output-paths.ts');
 const {
+  loadAuthoritySupersessionForRelease,
   prepareRequirementRecordPartitionAuthoritySupersession,
   projectRequirementRecordPartitionAuthority,
 } = require('../src/utils/goal-contract/control-plane/authority-supersession.ts');
-const {
-  hashControlPlaneValue,
-} = require('../src/utils/goal-contract/control-plane/canonical-hash.ts');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
+const REPO_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
 const SOURCE_COMMAND = path.join(PACKAGE_ROOT, 'src', 'commands', 'goal-contract.ts');
 const PUBLIC_BIN = path.join(PACKAGE_ROOT, 'bin', 'bmad-speckit.js');
 const BUILD_LOCK = path.join(PACKAGE_ROOT, 'node_modules', '.pack-session.lock');
@@ -160,7 +165,193 @@ function runLane(kind, source, root, sequenceMode = 'auto') {
   };
 }
 
+function standaloneSourceCompositionPolicyHash(sourcePlanHash) {
+  const requiredSubordinateBindings = [];
+  const authoritySourceId = `standalone-source-authority:${sourcePlanHash}`;
+  return compileSourceCompositionPolicy({
+    authorityRecord: {
+      authorityKind: 'deterministic_source_authority_adapter',
+      authoritySourceId,
+      declaredMode: 'single_source',
+      requiredSubordinateBindings,
+      declaredRequiredBindingsHash: hashControlPlaneValue(
+        requiredSubordinateBindings
+      ),
+      authorityEvidenceHash: hashControlPlaneValue({
+        authoritySourceId,
+        mode: 'single_source',
+        requiredSubordinateBindings,
+      }),
+    },
+  }).sourceCompositionPolicyHash;
+}
+
+function writeFrozenStandaloneContract(root, sourcePlanPath) {
+  const sourcePlanHash = hash(fs.readFileSync(sourcePlanPath));
+  const goalContractPath = path.join(root, 'frozen-goal-contract.md');
+  const coverageReceiptPath = path.join(root, 'coverage.json');
+  const generationReceiptPath = path.join(root, 'generation.json');
+  const contract = [
+    '# Goal Execution Contract',
+    '',
+    '<!-- goal-slot:frontMatter required dynamic=frontMatter -->',
+    '---',
+    'goalContractVersion: goal-execution-contract/v1',
+    'contractMode: frozen',
+    'rewritePolicy: forbidden',
+    `sourcePlanPath: ${sourcePlanPath.replace(/\\/gu, '/')}`,
+    `sourcePlanHash: ${sourcePlanHash}`,
+    `coverageReceiptPath: ${coverageReceiptPath.replace(/\\/gu, '/')}`,
+    `generationReceiptPath: ${generationReceiptPath.replace(/\\/gu, '/')}`,
+    '---',
+    '<!-- /goal-slot:frontMatter -->',
+    '',
+    '# Frozen Goal Contract',
+    '',
+  ].join('\n');
+  fs.writeFileSync(goalContractPath, contract, 'utf8');
+  const goalContractDocumentHash = hash(fs.readFileSync(goalContractPath));
+  fs.writeFileSync(
+    coverageReceiptPath,
+    `${JSON.stringify(
+      {
+        schemaVersion: 'goal-contract-source-coverage-receipt/v1',
+        decision: 'pass',
+        sourcePlanPath: sourcePlanPath.replace(/\\/gu, '/'),
+        sourcePlanHash,
+        goalContractDocumentHash,
+        unmappedSourceObligations: [],
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
+  fs.writeFileSync(
+    generationReceiptPath,
+    `${JSON.stringify(
+      {
+        schemaVersion: 'goal-contract-generation-receipt/v1',
+        sourcePlanPath: sourcePlanPath.replace(/\\/gu, '/'),
+        sourcePlanHash,
+        goalContractDocumentHash,
+        sourceCompositionPolicyHash:
+          standaloneSourceCompositionPolicyHash(sourcePlanHash),
+        compilationReceipt: {
+          profileBytesHash: hash(
+            fs.readFileSync(
+              path.join(
+                REPO_ROOT,
+                '_bmad',
+                'shared',
+                'goal-contract',
+                'goal-contract-profile.json'
+              )
+            )
+          ),
+          templateBytesHash: hash(
+            fs.readFileSync(
+              path.join(
+                REPO_ROOT,
+                '_bmad',
+                'shared',
+                'goal-contract',
+                'goal-execution-contract-template.md'
+              )
+            )
+          ),
+        },
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
+  return goalContractPath;
+}
+
+function runCanonicalSourceAuthority(source, root) {
+  const goalContract = writeFrozenStandaloneContract(
+    path.dirname(source),
+    source
+  );
+  const result = spawnSync(
+    process.execPath,
+    [
+      '-e',
+      SOURCE_RUNNER,
+      SOURCE_COMMAND,
+      'partition',
+      '--governed',
+      '--entry',
+      'standalone_goal_contract',
+      '--source',
+      source,
+      '--goal-contract',
+      goalContract,
+      '--sequence-mode',
+      'disabled',
+      '--json',
+    ],
+    {
+      cwd: path.dirname(source),
+      encoding: 'utf8',
+      maxBuffer: 20 * 1024 * 1024,
+    }
+  );
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  return JSON.parse(result.stdout);
+}
+
+const hash = (label) =>
+  `sha256:${require('node:crypto').createHash('sha256').update(label).digest('hex')}`;
+
 describe('goal-contract partition source/dist runtime parity', () => {
+  it('loads a canonical standalone generation through immutable active-generation proof', () => {
+    const caseRoot = path.join(ROOT, 'canonical-release-compatibility');
+    fs.mkdirSync(caseRoot, { recursive: true });
+    const source = path.join(caseRoot, 'source.md');
+    fs.writeFileSync(source, CORPUS[0][1], 'utf8');
+    const generated = runCanonicalSourceAuthority(
+      source,
+      path.join(caseRoot, 'generation')
+    );
+    assert.equal(
+      typeof generated.activePointerPath,
+      'string',
+      JSON.stringify(Object.keys(generated).sort())
+    );
+    const activeGeneration = JSON.parse(
+      fs.readFileSync(generated.activePointerPath, 'utf8')
+    );
+    const partitionManifest = JSON.parse(
+      fs.readFileSync(activeGeneration.partitionManifestPath, 'utf8')
+    );
+    const firstPartition = partitionManifest.partitions[0];
+    const authorityRoot = activeGeneration.generationRoot;
+    assert.match(
+      firstPartition.childContractPath.replace(/\\/gu, '/'),
+      /^_bmad-output\/runtime\/goal-contract-partition-bootstrap\//u
+    );
+
+    const loaded = loadAuthoritySupersessionForRelease({
+      authorityRoot,
+      partitionManifestPath: activeGeneration.partitionManifestPath,
+      goalPath: path.resolve(path.dirname(source), firstPartition.childContractPath),
+      expectedPartitionPlanHash: activeGeneration.partitionPlanHash,
+    });
+
+    assert.equal(loaded.authorityMode, 'standalone_bootstrap');
+    assert.equal(
+      loaded.partitionPlanHash,
+      activeGeneration.partitionPlanHash
+    );
+    assert.equal(
+      loaded.compiled.manifest.partitionManifestHash,
+      generated.partitionManifestHash
+    );
+  });
+
   for (const [name, text] of CORPUS) {
     it(`matches ${name} corpus semantics`, () => {
       const caseRoot = path.join(ROOT, name);

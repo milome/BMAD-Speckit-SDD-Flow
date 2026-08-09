@@ -2,7 +2,7 @@
   "schemaVersion": "requirements-contract-project-profile-manifest/v1",
   "owner": {
     "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-project-profile.ts",
-    "hash": "sha256:5fda5d3d64ad5d044c43d1f32699284920add498331a8dad6e381b998a4c11e4"
+    "hash": "sha256:b62dec8d75d3c1917d24074a315b342286ee1ff02d6adcc5fe126061e6682669"
   },
   "projectKinds": [
     "consumer_product",
@@ -16,7 +16,7 @@
   ],
   "diagramPolicyRegistry": {
     "path": "_bmad/shared/requirements-contract/requirements-contract-diagram-policy-registry.json",
-    "hash": "sha256:36f1948c95aca6c1d445742da7ab395ac566eb5038e597f68e16368f2f2e92eb"
+    "hash": "sha256:30380614ae1b9410fafc4b404e046365137c70f3afafccb110560b9dbef1d715"
   },
   "components": [
     {
@@ -87,7 +87,7 @@
     {
       "role": "deployment_delta",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-deployment-delta.ts",
-      "hash": "sha256:f604c10e20d51dcbfc1e0b976481046e9f0e5b6c0977ae90bdc3d3a2d31b54df"
+      "hash": "sha256:8660630b29553dfb10e149e8dfe8e935826b413c708b9fb4422a66a45c727fbc"
     },
     {
       "role": "observed_sequence_producer",

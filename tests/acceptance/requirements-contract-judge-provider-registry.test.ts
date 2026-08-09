@@ -492,7 +492,7 @@ describe('requirements contract Judge provider registry', () => {
     expect((selection.adapter as JsonRecord).judge).toBeTypeOf('function');
   });
 
-  it('rejects routing the Codex command through ClaudeCodeCliJudgeAdapter', async () => {
+  it('binds a configured command through ClaudeCodeCliJudgeAdapter', async () => {
     const loaded = await loadRegistryModule();
     if (!loaded) return;
     const createRegistry = exportedFunction<RegistryFactory>(
@@ -508,12 +508,24 @@ describe('requirements contract Judge provider registry', () => {
       command: 'codex',
     });
 
-    expect(() =>
-      createRegistry({
-        judgeRuntime: configured,
-        runtime: configured,
-      })
-    ).toThrow('judge_provider_adapter_command_mismatch');
+    const registry = createRegistry({
+      judgeRuntime: configured,
+      runtime: configured,
+    }) as JsonRecord;
+    const providers = registry.providers as Record<string, JsonRecord>;
+
+    expect(providers[providerRef]).toMatchObject({
+      providerRef,
+      adapterRef: 'ClaudeCodeCliJudgeAdapter',
+      provider: {
+        transport: 'cli',
+        adapterRef: 'ClaudeCodeCliJudgeAdapter',
+        endpoint: {
+          command: 'codex',
+        },
+      },
+    });
+    expect((providers[providerRef].adapter as JsonRecord).judge).toBeTypeOf('function');
   });
 
   it('rejects CLI selection overrides instead of manufacturing a Provider choice', async () => {

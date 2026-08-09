@@ -2078,6 +2078,7 @@ module.exports = {
   goalContractAuthorityWriterBinding,
   loadCanonicalPartitionAuthorityForRelease,
   preflightRequirementRecordPartitionAuthoritySupersession,
+  resolveGoalContractSourceIdentity,
   resolveCanonicalPartitionOutputPaths,
   resolveRawPartitionOutputPaths,
   semanticPartitionManifestHash,

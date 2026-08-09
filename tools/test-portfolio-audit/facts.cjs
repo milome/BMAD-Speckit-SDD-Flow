@@ -81,6 +81,41 @@ function normalizeFilesystemCandidates(repoRoot, candidates) {
   );
 }
 
+function readTrackedRepositoryPaths(repoRoot) {
+  const result = childProcess.spawnSync('git', ['ls-files', '-z', '--'], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    windowsHide: true,
+  });
+  if (result.error || result.status !== 0) return null;
+  return new Set(
+    result.stdout
+      .split('\0')
+      .filter(Boolean)
+      .map((filePath) => normalizeRepoPath(repoRoot, filePath))
+  );
+}
+
+function isTrackedRepositoryPath(repoRoot, trackedPaths, filePath) {
+  return trackedPaths === null || trackedPaths.has(normalizeRepoPath(repoRoot, filePath));
+}
+
+function retainTrackedRunnerTests(repoRoot, trackedPaths, result) {
+  if (trackedPaths === null) return result;
+  return {
+    ...result,
+    tests: result.tests.filter((test) =>
+      isTrackedRepositoryPath(repoRoot, trackedPaths, test.testPath)
+    ),
+    explicitExclusions: (result.explicitExclusions || []).filter((testPath) =>
+      isTrackedRepositoryPath(repoRoot, trackedPaths, testPath)
+    ),
+    configuredCandidateRefs: (result.configuredCandidateRefs || []).filter((reference) =>
+      isTrackedRepositoryPath(repoRoot, trackedPaths, reference.testPath)
+    ),
+  };
+}
+
 function isFixtureAssetPath(testPath) {
   return String(testPath).replace(/\\/g, '/').replace(/^\.\//u, '').startsWith(FIXTURE_ASSET_ROOT);
 }
@@ -832,15 +867,16 @@ async function collectAuditFacts(options) {
   const startedAt = performance.now();
   const timings = options.timings || {};
   const repository = readRepositoryIdentity(options.repoRoot);
+  const trackedPaths = readTrackedRepositoryPaths(options.repoRoot);
   const discoveryRun = discoverConfiguredTests({ repoRoot: options.repoRoot });
   const filesystemCandidates = normalizeFilesystemCandidates(
     options.repoRoot,
     scanFilesystemCandidates({ repoRoot: options.repoRoot })
-  );
+  ).filter((testPath) => isTrackedRepositoryPath(options.repoRoot, trackedPaths, testPath));
   const runnerResults = expandRunnerExclusions(
     discoveryRun.runnerResults.map(excludeFixtureAssets),
     filesystemCandidates
-  );
+  ).map((result) => retainTrackedRunnerTests(options.repoRoot, trackedPaths, result));
   const preliminaryInventory = buildCanonicalInventory(runnerResults, { routes: [] });
   const routeGraph = discoveryRun.failed
     ? { routes: [], invocations: [], issues: [], failed: true }
@@ -850,7 +886,9 @@ async function collectAuditFacts(options) {
     ...extractConfiguredCandidateRefs(routeGraph).filter((reference) =>
       fs.existsSync(path.resolve(options.repoRoot, reference.testPath))
     ),
-  ];
+  ].filter((reference) =>
+    isTrackedRepositoryPath(options.repoRoot, trackedPaths, reference.testPath)
+  );
   const discovery = attachDiscoveryCounts(
     reconcileDiscovery({
       runnerResults,

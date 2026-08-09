@@ -1,4 +1,5 @@
 import Ajv2020 from 'ajv/dist/2020.js';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
@@ -66,6 +67,68 @@ function readArtifacts(artifactsPath: string) {
 
 function writeArtifacts(artifactsPath: string, artifacts: unknown): void {
   fs.writeFileSync(artifactsPath, `${JSON.stringify(artifacts, null, 2)}\n`, 'utf8');
+}
+
+type CampaignFixtureOptions = NonNullable<Parameters<typeof prepareCampaign>[0]>;
+
+function expectAuditResultFailure(
+  result: ReturnType<typeof audit>,
+  expectedFailureClass: string
+): void {
+  expect(result.status).not.toBe(0);
+  expect(JSON.parse(result.stdout).failureClass).toBe(expectedFailureClass);
+}
+
+function expectAuditFailure(
+  options: CampaignFixtureOptions,
+  expectedFailureClass: string
+): ReturnType<typeof prepareCampaign> {
+  const fixture = prepareCampaign(options);
+  const result = audit(
+    fixture.packageA,
+    fixture.artifactsPath,
+    fixture.finalOut,
+    fixture.packageManifestHash
+  );
+  expectAuditResultFailure(result, expectedFailureClass);
+  return fixture;
+}
+
+function auditWithManifest(manifest: object) {
+  const executionAuditPath = path.join(SKILL_ROOT, 'scripts', 'audit-execution-package.js');
+  const campaignAuditPath = path.join(SKILL_ROOT, 'scripts', 'audit-completed-campaign.js');
+  const harness = `
+    const executionAuditPath = process.argv[1];
+    const campaignAuditPath = process.argv[2];
+    const executionAudit = require(executionAuditPath);
+    executionAudit.auditExecutionPackage = () => JSON.parse(process.argv[3]);
+    delete require.cache[require.resolve(campaignAuditPath)];
+    const { auditCompletedCampaign } = require(campaignAuditPath);
+    try {
+      auditCompletedCampaign({
+        packageRoot: 'unused',
+        expectedPackageManifestHash: 'sha256:${'a'.repeat(64)}',
+        artifactsPath: 'unused',
+        outputRoot: 'unused',
+      });
+      process.stdout.write(JSON.stringify({ ok: true }));
+    } catch (error) {
+      process.stdout.write(JSON.stringify({
+        ok: false,
+        failureClass: error.failureClass || 'completed_campaign_audit_failed',
+      }));
+      process.exitCode = 1;
+    }
+  `;
+  return spawnSync(
+    process.execPath,
+    ['-e', harness, executionAuditPath, campaignAuditPath, JSON.stringify(manifest)],
+    {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      windowsHide: true,
+    }
+  );
 }
 
 function signedReceipt(core: Record<string, unknown>) {
@@ -366,6 +429,26 @@ function prepareRepairAuditScenario() {
 }
 
 describe('goal subcontract completed campaign audit', () => {
+  it('rejects an empty manifest child set before auditing repository state', () => {
+    expectAuditResultFailure(auditWithManifest({ children: [] }), 'child_result_set_incomplete');
+  });
+
+  it('accepts functional commit subjects containing oauth-2 and utf-8 tokens', () => {
+    const fixture = prepareCampaign({ technicalTokenSubject: true });
+    const result = audit(
+      fixture.packageA,
+      fixture.artifactsPath,
+      fixture.finalOut,
+      fixture.packageManifestHash
+    );
+
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+  });
+
+  it('rejects commit subjects containing another declared partition ID', () => {
+    expectAuditFailure({ crossPartitionSubject: true }, 'commit_subject_not_functional');
+  });
+
   it('does not expose scope fuse calculations from the package compiler', () => {
     expect(buildExecutionPackageModule).not.toHaveProperty('computeScopeBudget');
     expect(buildExecutionPackageModule).not.toHaveProperty('evaluateScopeBudgetCounts');

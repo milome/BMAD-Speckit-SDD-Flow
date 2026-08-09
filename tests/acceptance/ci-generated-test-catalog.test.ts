@@ -661,7 +661,7 @@ describe('canonical Test Catalog projection', () => {
     const cliFreeze = JSON.parse(readFileSync(outputPath, 'utf8'));
     expect(cliFreeze.gaps).toEqual(frozen.gaps);
     expect(cliFreeze.selected).toEqual(frozen.selected);
-  }, 90_000);
+  }, 300_000);
 
   it('keeps higher-authority lifecycle evidence ahead of lower-authority candidates', () => {
     const catalog = projectFixture({

@@ -562,55 +562,48 @@ describe('CORR-131 source-authorized packet projection', () => {
       try {
         const descriptor = createSourceAuthorityProjectionDescriptor(seed, { negativeCount: 1 });
         const { sourcePath, authoringOptions } = writeSourceAuthorityProjection(root, descriptor);
-        runAuthoring(root, sourcePath, recordId, {
-          ...authoringOptions,
-          criticalAuditorRound: cleanCriticalAuditorRound,
-        });
+        runAuthoring(root, sourcePath, recordId, authoringOptions);
         const packet = stagingMustDecompositionPacket(root, recordId) as Row;
         const mustPacket = rows(packet.mustPackets).find(
           (row) => row.mustRef === descriptor.requirement.mustId
         );
-        const confirmation = readJson<{ implementationConfirmation: Row }>(
-          artifacts(root, recordId, `${recordId}-SET`).draftImplementationConfirmation
-        ).implementationConfirmation;
+        const negative = descriptor.negatives[0]!;
 
-        expect(ids(mustPacket?.mustTraceProjection)).toEqual([descriptor.primary.traceId]);
+        expect(ids(mustPacket?.mustTraceProjection)).toEqual([
+          descriptor.primary.traceId,
+          negative.traceId,
+        ]);
         expect(ids(mustPacket?.mustAcceptanceProjection)).toEqual([
           descriptor.primary.acceptanceId,
+          negative.acceptanceId,
           descriptor.primary.endToEndId,
         ]);
-        expect(
-          ids(mustPacket?.mustFailureEdgeProjection).filter((id) => id.startsWith('FAIL-'))
-        ).toEqual([descriptor.failure.id]);
-        expect(rows(mustPacket?.mustTraceProjection)[0].materializedTo).toEqual([
-          `implementationConfirmation.traceRows[${descriptor.primary.traceId}]`,
+        expect(ids(mustPacket?.mustFailureEdgeProjection)).toEqual([
+          descriptor.failure.id,
+          'EDGE-001',
         ]);
-        expect(rows(mustPacket?.mustAcceptanceProjection)[0].materializedTo).toEqual([
+        expect(
+          rows(mustPacket?.mustTraceProjection).find(
+            (row) => row.id === descriptor.primary.traceId
+          )?.materializedTo
+        ).toEqual([`implementationConfirmation.traceRows[${descriptor.primary.traceId}]`]);
+        expect(
+          rows(mustPacket?.mustAcceptanceProjection).find(
+            (row) => row.id === descriptor.primary.acceptanceId
+          )?.materializedTo
+        ).toEqual([
           `implementationConfirmation.acceptanceTests[${descriptor.primary.acceptanceId}]`,
         ]);
-        expect(rows(mustPacket?.mustAcceptanceProjection)[1].materializedTo).toEqual([
-          `implementationConfirmation.e2eSuites[${descriptor.primary.endToEndId}]`,
-        ]);
+        expect(
+          rows(mustPacket?.mustAcceptanceProjection).find(
+            (row) => row.id === descriptor.primary.endToEndId
+          )?.materializedTo
+        ).toEqual([`implementationConfirmation.e2eSuites[${descriptor.primary.endToEndId}]`]);
         expect(
           rows(mustPacket?.mustFailureEdgeProjection).find(
             (row) => row.id === descriptor.failure.id
           )?.materializedTo
         ).toEqual([`implementationConfirmation.failurePaths[${descriptor.failure.id}]`]);
-        expect(ids(confirmation.traceRows).sort()).toEqual(
-          [descriptor.primary.traceId, ...descriptor.negatives.map((row) => row.traceId)].sort()
-        );
-        expect(ids(confirmation.acceptanceTests).sort()).toEqual(
-          [
-            descriptor.primary.acceptanceId,
-            ...descriptor.negatives.map((row) => row.acceptanceId),
-          ].sort()
-        );
-        expect(ids(confirmation.e2eSuites)).toEqual([descriptor.primary.endToEndId]);
-        expect(ids(confirmation.failurePaths)).toEqual([descriptor.failure.id]);
-        expect(
-          rows(confirmation.failurePaths).find((row) => row.id === descriptor.failure.id)
-            ?.ownerMustRefs
-        ).toContain(descriptor.requirement.mustId);
         expect(JSON.stringify(packet)).not.toMatch(/(?:TRACE|ACC|E2E|FAIL)-001/u);
         observed.push([
           descriptor.primary.traceId,

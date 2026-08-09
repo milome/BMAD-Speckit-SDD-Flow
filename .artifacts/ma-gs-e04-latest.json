@@ -1,8 +1,38 @@
 {
-  "schemaVersion": "goal-contract-e04-latest-pointer/v1",
-  "auditEpochId": "MA-GS-E04-20260804T070655Z-03",
-  "aggregateReceiptPath": ".artifacts/ma-gs-e04-20260804T070655Z-03-aggregate-audit-receipt.json",
-  "targetHash": "sha256:a3f7a7caca975f6a60a26d561a9e73fae33134c45567c1791ced79a304eb4f29",
-  "sourceHash": "sha256:91d0e8023655f65980379748194a8ce7173e759a110382516207ba6426ef807c",
-  "decision": "pass"
+  "schemaVersion": "ma-gs-e04-latest/v1",
+  "decision": "pass",
+  "auditEpochId": "ma-gs-e04-86dd8710-epoch-01",
+  "repositoryIdentity": "D:/Dev/BMAD-Speckit-SDD-Flow@c2ed33526e85cf5ac2012bc1e56227e2fa065a9f",
+  "sourcePlanPath": "docs/plans/2026-08-04-main-agent-goal-subcontract-controlled-integration-successor.md",
+  "sourcePlanHash": "e7213eceab47a9bf41a5ad6d5a2883ac053fe0abfee72c25213d1644e0314fe1",
+  "goalPath": "docs/plans/2026-08-04-main-agent-goal-subcontract-controlled-integration-successor-execution-ready-v2-goal-execution-plan.md",
+  "goalContractHash": "ae8e11dc63e9acf8fe137bdd865998988a1ee72b9160e44900b7ba2f294144ef",
+  "goalDocumentHash": "86dd871007eea4cc1ec101dc5f2b7b6032db2726f857e3b878a0f5be262214c8",
+  "perspectiveReceipts": [
+    {
+      "perspective": "goal_semantics_boundaries",
+      "path": ".artifacts/ma-gs-e04-audit-86dd8710/goal-semantics-boundaries.json",
+      "sha256": "e0b0b79c33a300315956339480a1eaecae15bb76a978f543f29b4d720f2c425e",
+      "verdict": "pass"
+    },
+    {
+      "perspective": "execution_determinism_acceptance",
+      "path": ".artifacts/ma-gs-e04-audit-86dd8710/execution-determinism-acceptance.json",
+      "sha256": "ab72c35449d32f536ffcbfd80d428b57c97269654b94239f8d0ba2c156a603c8",
+      "verdict": "pass"
+    },
+    {
+      "perspective": "change_paths_project_practice",
+      "path": ".artifacts/ma-gs-e04-audit-86dd8710/change-paths-project-practice.json",
+      "sha256": "9d3c4d692683ab2c300273845ea86f54db88df2bcc6ddc1b0db7a2ba3f4d643b",
+      "verdict": "pass"
+    }
+  ],
+  "aggregateReceiptPath": ".artifacts/ma-gs-e04-audit-86dd8710/aggregate-receipt.json",
+  "aggregateReceiptHash": "2049b676a98456972835f5ba079c589ec518c264c4173092e379722c12420766",
+  "coverageReceiptPath": "docs/plans/.2026-08-04-main-agent-goal-subcontract-controlled-integration-successor-execution-ready-v2-goal-execution-plan.coverage.json",
+  "coverageReceiptHash": "3b20d6094852484ddc00a423ecbd82ab8729f1741831afb4ab7b770d561101ee",
+  "generationReceiptPath": "docs/plans/.2026-08-04-main-agent-goal-subcontract-controlled-integration-successor-execution-ready-v2-goal-execution-plan.generation.json",
+  "generationReceiptHash": "c7b0e35b813b7977ba905d76b3b70fc018bd6538234d068d7f4c14b63744c661",
+  "createdAt": "2026-08-04T20:21:30Z"
 }

@@ -16,6 +16,10 @@ const {
 const NPM_PACK_JSON_CAPTURE_MAX_BYTES = 32 * 1024 * 1024;
 const TAR_ENTRY_LIST_CAPTURE_MAX_BYTES = 32 * 1024 * 1024;
 const PACKAGE_WORKSPACE_PREFIX = 'bmad-ci-package-';
+const MATERIALIZE_COMMAND = Object.freeze({
+  command: 'npm',
+  args: ['ci', '--offline', '--ignore-scripts'],
+});
 const BUILD_COMMAND = Object.freeze({ command: 'npm', args: ['run', 'prepack'] });
 const PACK_COMMAND = Object.freeze({
   command: 'npm',
@@ -68,7 +72,12 @@ function commandHash(command, args) {
 }
 
 function expectedBuildCommandHash() {
-  return commandHash(BUILD_COMMAND.command, BUILD_COMMAND.args);
+  return sha256Bytes(
+    canonicalJsonBytes({
+      materialize: MATERIALIZE_COMMAND,
+      build: BUILD_COMMAND,
+    })
+  );
 }
 
 function expectedPackCommandHash() {
@@ -117,6 +126,59 @@ function gitOutput(repoRoot, args, code) {
 function pathInside(parent, candidate) {
   const relative = path.relative(path.resolve(parent), path.resolve(candidate));
   return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..');
+}
+
+function canonicalExistingPath(targetPath) {
+  try {
+    const resolved = fs.realpathSync(targetPath);
+    return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
+  } catch {
+    return null;
+  }
+}
+
+function gitResolvedPath(cwd, args) {
+  const result = spawnSync('git', ['rev-parse', ...args], {
+    cwd,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  });
+  if (result.error || result.status !== 0) return null;
+  const output = String(result.stdout || '').trim();
+  return output === '' ? null : path.resolve(cwd, output);
+}
+
+function sameRepositoryWorktreeRoot(repoRoot, candidate) {
+  const sourceWorktreeRoot = gitResolvedPath(candidate, ['--show-toplevel']);
+  const repoCommonDir = gitResolvedPath(repoRoot, ['--git-common-dir']);
+  const sourceCommonDir = sourceWorktreeRoot
+    ? gitResolvedPath(sourceWorktreeRoot, ['--git-common-dir'])
+    : null;
+  return sourceWorktreeRoot &&
+    repoCommonDir &&
+    sourceCommonDir &&
+    canonicalExistingPath(repoCommonDir) === canonicalExistingPath(sourceCommonDir)
+    ? sourceWorktreeRoot
+    : null;
+}
+
+function stagedWorktreeDependency({ repoRoot, stagingRoot, resolvedSource }) {
+  if (pathInside(repoRoot, resolvedSource)) {
+    const stagedSource = path.resolve(
+      stagingRoot,
+      path.relative(path.resolve(repoRoot), resolvedSource)
+    );
+    return fs.existsSync(stagedSource) ? stagedSource : null;
+  }
+
+  const sourceWorktreeRoot = sameRepositoryWorktreeRoot(repoRoot, resolvedSource);
+  if (!sourceWorktreeRoot) return null;
+
+  const relativeSource = path.relative(sourceWorktreeRoot, resolvedSource);
+  const stagedSource = path.resolve(stagingRoot, relativeSource);
+  return pathInside(stagingRoot, stagedSource) && fs.existsSync(stagedSource)
+    ? stagedSource
+    : null;
 }
 
 function dependencyLinkType(targetPath) {
@@ -205,22 +267,36 @@ function materializeDependencyEntry({ sourcePath, targetPath, activeDirectories 
   }
 }
 
-function projectDependencyEntry({ sourcePath, targetPath, sourceWorkspaceRoot, stagingRoot }) {
+function projectDependencyEntry({
+  sourcePath,
+  targetPath,
+  repoRoot,
+  sourceWorkspaceRoot,
+  stagingRoot,
+}) {
   const sourceStat = fs.lstatSync(sourcePath);
   if (sourceStat.isSymbolicLink()) {
     const resolvedSource = fs.realpathSync(sourcePath);
-    const resolvedTarget = pathInside(sourceWorkspaceRoot, resolvedSource)
-      ? path.resolve(
-          stagingRoot,
-          path.relative(path.resolve(sourceWorkspaceRoot), resolvedSource)
-        )
-      : resolvedSource;
+    const workspaceTarget = pathInside(sourceWorkspaceRoot, resolvedSource)
+      ? path.resolve(stagingRoot, path.relative(sourceWorkspaceRoot, resolvedSource))
+      : null;
+    const resolvedTarget =
+      (workspaceTarget && fs.existsSync(workspaceTarget) ? workspaceTarget : null) ??
+      stagedWorktreeDependency({
+        repoRoot,
+        stagingRoot,
+        resolvedSource,
+      }) ?? resolvedSource;
     if (!fs.existsSync(resolvedTarget)) {
       fail('CANONICAL_PACKAGE_WORKSPACE_DEPENDENCY_MISSING', {
         dependencyPath: sourcePath,
       });
     }
-    if (process.platform === 'win32' && !pathInside(stagingRoot, resolvedTarget)) {
+    if (
+      process.platform === 'win32' &&
+      !pathInside(stagingRoot, resolvedTarget) &&
+      !sameRepositoryWorktreeRoot(repoRoot, resolvedSource)
+    ) {
       materializeDependencyEntry({ sourcePath: resolvedSource, targetPath });
       return;
     }
@@ -236,9 +312,11 @@ function projectDependencyEntry({ sourcePath, targetPath, sourceWorkspaceRoot, s
       materializeDependencyEntry({ sourcePath, targetPath });
       return;
     }
-    const linkType = dependencyLinkType(sourcePath);
-    const linkTarget = dependencyLinkTarget(targetPath, sourcePath);
-    fs.symlinkSync(linkTarget, targetPath, linkType);
+    fs.symlinkSync(
+      dependencyLinkTarget(targetPath, sourcePath),
+      targetPath,
+      dependencyLinkType(sourcePath)
+    );
     return;
   }
   if (process.platform === 'win32') {
@@ -265,6 +343,7 @@ function projectNodeModules({ repoRoot, stagingRoot }) {
         projectDependencyEntry({
           sourcePath: path.join(sourcePath, scopedEntry.name),
           targetPath: path.join(targetPath, scopedEntry.name),
+          repoRoot,
           sourceWorkspaceRoot,
           stagingRoot,
         });
@@ -274,6 +353,7 @@ function projectNodeModules({ repoRoot, stagingRoot }) {
     projectDependencyEntry({
       sourcePath,
       targetPath,
+      repoRoot,
       sourceWorkspaceRoot,
       stagingRoot,
     });
@@ -488,6 +568,18 @@ function preparePackageArtifact({
   let cleanupError;
   let workspaceCleanupError;
   try {
+    const materialized = runCommand({
+      kind: 'materialize',
+      ...MATERIALIZE_COMMAND,
+      cwd: packageWorkspaceRoot,
+      env: { ...process.env, CI_COMMIT_SHA: normalizedCommitSha },
+    });
+    if (materialized?.status !== 0) {
+      fail('CANONICAL_PACKAGE_MATERIALIZATION_FAILED', {
+        status: materialized?.status ?? null,
+      });
+    }
+
     const build = runCommand({
       kind: 'build',
       ...buildCommand,

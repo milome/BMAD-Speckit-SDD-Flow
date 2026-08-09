@@ -52,6 +52,26 @@ export function resolvePackageOwnedBmadPath(
   return path.join(resolvePackageBmadRoot(), ...segments);
 }
 
+export function resolveInstalledSkillPath(
+  projectRoot: string,
+  skillName: string,
+  ...segments: string[]
+): string {
+  const skillRoots = [
+    path.join(projectRoot, '_bmad', 'skills'),
+    path.join(projectRoot, '.codex', 'skills'),
+    path.join(projectRoot, '.cursor', 'skills'),
+    path.join(projectRoot, '.claude', 'skills'),
+  ];
+  for (const skillRoot of skillRoots) {
+    const skillDir = path.join(skillRoot, skillName);
+    if (fs.existsSync(skillDir) && fs.statSync(skillDir).isDirectory()) {
+      return path.join(skillDir, ...segments);
+    }
+  }
+  return resolvePackageOwnedBmadPath('skills', skillName, ...segments);
+}
+
 export function resolvePackageMainAgentModulePath(...segments: string[]): string {
   const packageRoot = resolvePackageRoot();
   const runtimeRoots = [

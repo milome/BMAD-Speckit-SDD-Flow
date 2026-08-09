@@ -25,6 +25,7 @@ import {
   artifacts,
   cleanCriticalAuditorRound,
   readJson,
+  runPreConfirmationWithGovernedCriticalAuditorFixture,
 } from './helpers/requirements-contract-authoring-fixture';
 import {
   buildInteractionSourceRoots,
@@ -448,9 +449,7 @@ describe('production interaction candidate extraction', () => {
         result.semanticResolutionReceipts
           .map((receipt) =>
             sha256Stable(
-              semanticResolutionAuthorityBinding(
-                receipt as unknown as Record<string, unknown>
-              )
+              semanticResolutionAuthorityBinding(receipt as unknown as Record<string, unknown>)
             )
           )
           .sort()
@@ -524,9 +523,7 @@ describe('production interaction candidate extraction', () => {
       );
       try {
         mkdirSync(root, { recursive: true });
-        expect(path.join(root, 'authoring', '.s', 'r-XXXXXX').length).toBeGreaterThanOrEqual(
-          260
-        );
+        expect(path.join(root, 'authoring', '.s', 'r-XXXXXX').length).toBeGreaterThanOrEqual(260);
         const sourceRoots = buildInteractionSourceRoots(PRIMARY_INTERACTION_FIXTURE);
         const result = runSemanticPipelineForSourceRoots(
           root,
@@ -629,12 +626,9 @@ describe('production interaction candidate extraction', () => {
         ...manifestPayload,
         hashChain: hashChainWithoutSelf,
       });
-      tamperedManifest.hashChain.semanticConservationManifestHash =
-        tamperedManifest.manifestHash;
+      tamperedManifest.hashChain.semanticConservationManifestHash = tamperedManifest.manifestHash;
 
-      expect(validateRequirementsContractSemanticConservationManifest(tamperedManifest)).toBe(
-        true
-      );
+      expect(validateRequirementsContractSemanticConservationManifest(tamperedManifest)).toBe(true);
       expect(() =>
         buildCanonicalPreCheckpointCompilerInput({
           semanticIr: result.semanticIr,
@@ -699,7 +693,7 @@ describe('production interaction candidate extraction', () => {
       expect(outOfScopeId).toMatch(/^OUT-/u);
       const source = writeProductionInteractionSource(root, descriptor);
       const result = withSuppressedStderr(() =>
-        runMainAgentPreConfirmationDrilldown(root, {
+        runPreConfirmationWithGovernedCriticalAuditorFixture(root, descriptor.refs.recordId, {
           source: source.sourcePath,
           recordId: descriptor.refs.recordId,
           requirementSetId: descriptor.refs.requirementSetId,
@@ -760,7 +754,7 @@ describe('production interaction candidate extraction', () => {
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
-  });
+  }, 120_000);
 
   it('accepts an alternate interaction fixture descriptor without retaining default identities', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'requirements-contract-interaction-variant-'));

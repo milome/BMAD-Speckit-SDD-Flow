@@ -9,6 +9,9 @@ const require = createRequire(import.meta.url);
 const { runMainAgentAuthoringRepair } = require('../../packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js') as {
   runMainAgentAuthoringRepair: (root: string, options: Record<string, unknown>) => any;
 };
+const { criticalAuditorIndependentProviderRunHash } = require('../../packages/bmad-speckit/dist/main-agent/source-authority/scripts/requirements-contract-critical-auditor-independence.js') as {
+  criticalAuditorIndependentProviderRunHash: (value: Record<string, unknown>) => string;
+};
 
 function sha256Text(value: string): string {
   return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
@@ -16,6 +19,47 @@ function sha256Text(value: string): string {
 
 function readJson(file: string): any {
   return JSON.parse(readFileSync(file, 'utf8'));
+}
+
+function ensureCriticalAuditorProviderConfig(root: string): void {
+  const target = path.join(root, '_bmad', '_config', 'governance-remediation.yaml');
+  mkdirSync(path.dirname(target), { recursive: true });
+  writeFileSync(
+    target,
+    readFileSync(path.join(process.cwd(), '_bmad', '_config', 'governance-remediation.yaml'), 'utf8'),
+    'utf8'
+  );
+}
+
+function withIndependentProviderEvidence(
+  request: Record<string, any>,
+  response: Record<string, unknown>
+): Record<string, unknown> {
+  const binding = request.independentProviderBinding;
+  if (!binding || typeof binding !== 'object' || Array.isArray(binding)) {
+    throw new Error('critical auditor request does not contain independentProviderBinding');
+  }
+  const evidenceWithoutRunHash = Object.fromEntries(
+    Object.entries({
+      ...binding,
+      requestedModel: binding.model,
+      transactionId: request.transactionId,
+      auditAttemptId: request.auditAttemptId,
+      providerRunId: `critical-auditor-run/${String(request.requestHash).slice(-24)}`,
+      requestHash: request.requestHash,
+      responseHash: sha256Text(JSON.stringify(response)),
+      sourceDocumentHash: request.sourceDocumentHash,
+      semanticModelHash: request.semanticModelHash,
+      projectionSetHash: request.projectionSetHash,
+    }).filter(([, value]) => value !== undefined)
+  );
+  return {
+    ...response,
+    independentProviderEvidence: {
+      ...evidenceWithoutRunHash,
+      runHash: criticalAuditorIndependentProviderRunHash(evidenceWithoutRunHash),
+    },
+  };
 }
 
 function authoringPaths(root: string, recordId: string) {
@@ -44,10 +88,31 @@ function writeSource(root: string, recordId: string): string {
     '      text: "Preserve existing source while authoring repair handles Critical Auditor verdicts."',
     '      evidenceRefs: ["EVD-001"]',
     '      coveredByTraceRows: ["TRACE-001"]',
+    '  notDone:',
+    '    - id: NEG-001',
+    '      text: "Do not treat a blocked Critical Auditor repair as a completed source change."',
+    '      evidenceRefs: ["EVD-001"]',
+    '      whyItBlocksCompletion: "A blocked repair must preserve the existing source contract."',
+    '      negativeAssertionRequired: true',
+    '      coveredByFailurePath: ["FAIL-001"]',
+    '  mustNot:',
+    '    - id: OUT-001',
+    '      text: "Do not claim implementation readiness from a blocked authoring repair."',
+    '      scopeBoundary: authoring_only',
+    '      userApprovalRequiredIfChanged: true',
     '  evidence:',
     '    - id: EVD-001',
     '      text: "Dist runtime must write audit receipts without mutating source for blockers."',
     '      requiredCommandRefs: ["CMD-001"]',
+    '  failurePaths:',
+    '    - id: FAIL-001',
+    '      title: "Critical Auditor repair is blocked"',
+    '      trigger: "The provider response is insufficient or semantically invalid."',
+    '      expectedBehavior: "Preserve the existing source and emit governed repair evidence."',
+    '      forbiddenBehavior: "Do not fabricate a completed implementation contract."',
+    '      blocksCompletionWhenViolated: true',
+    '      linkedNegIds: ["NEG-001"]',
+    '      linkedEvidenceIds: ["EVD-001"]',
     '  traceRows:',
     '    - id: TRACE-001',
     '      covers: ["MUST-001"]',
@@ -157,9 +222,16 @@ function writeResponse(
     requestHash: request.requestHash,
     recordId: request.recordId,
     roundIndex: request.roundIndex,
+    transactionId: request.transactionId,
+    auditAttemptId: request.auditAttemptId,
+    namespaceVersion: request.namespaceVersion,
+    sourceHash: request.sourceHash,
     sourceDocumentHash: request.sourceDocumentHash,
+    sourceBytesHash: request.sourceBytesHash,
+    semanticModelHash: request.semanticModelHash,
     implementationConfirmationHash: request.implementationConfirmationHash,
     packetHash: request.packetHash,
+    projectionSetHash: request.projectionSetHash,
     gateDryRunHash: request.gateDryRun.gateDryRunHash,
     reconciliationIssueCount: request.gateDryRun.reconciliation.issueCount,
     checkedProjectionGroups,
@@ -197,21 +269,25 @@ function writeResponse(
             ],
           }
         : {};
-  writeFileSync(
-    responsePath,
-    `${JSON.stringify({ ...base, ...verdictFields, ...overrides }, null, 2)}\n`,
-    'utf8'
-  );
+  const response = withIndependentProviderEvidence(request, {
+    ...base,
+    ...verdictFields,
+    ...overrides,
+  });
+  writeFileSync(responsePath, `${JSON.stringify(response, null, 2)}\n`, 'utf8');
 }
 
 function prepareRequest(root: string, recordId: string) {
+  ensureCriticalAuditorProviderConfig(root);
   const source = writeSource(root, recordId);
   writePromotionReceipt(root, source, recordId);
   const paths = authoringPaths(root, recordId);
+  const implementationAttemptId = `${recordId}-ATTEMPT-1`;
   const firstResult = runMainAgentAuthoringRepair(root, {
     source,
     recordId,
     requirementSetId: `${recordId}-SET`,
+    implementationAttemptId,
     mode: 'preserve-existing',
   });
   expect(
@@ -225,7 +301,7 @@ function prepareRequest(root: string, recordId: string) {
   ).toBe(true);
   const currentSourceText = readFileSync(source, 'utf8');
   expect(currentSourceText).toContain('implementationConfirmation:');
-  return { source, currentSourceHash: sha256Text(currentSourceText), paths };
+  return { source, currentSourceHash: sha256Text(currentSourceText), paths, implementationAttemptId };
 }
 
 function expectReceiptBinding(paths: ReturnType<typeof authoringPaths>, verdict: string): void {
@@ -247,21 +323,37 @@ function expectReceiptBinding(paths: ReturnType<typeof authoringPaths>, verdict:
 
 describe('compiled dist authoring-repair verdict branching', () => {
   it('routes blocked without semantic gap materialization in package dist runtime', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'dist-authoring-repair-blocked-'));
+      const root = mkdtempSync(path.join(os.tmpdir(), 'dist-authoring-repair-blocked-'));
     try {
       const recordId = 'REQ-DIST-AUTHORING-REPAIR-BLOCKED';
-      const { source, currentSourceHash, paths } = prepareRequest(root, recordId);
+      const { source, currentSourceHash, paths, implementationAttemptId } = prepareRequest(
+        root,
+        recordId
+      );
       writeResponse(paths.request(1), paths.response(1), 'blocked');
 
       const result = runMainAgentAuthoringRepair(root, {
         source,
         recordId,
         requirementSetId: `${recordId}-SET`,
+        implementationAttemptId,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
-      expect(result.blockingStage).toBe('critical_auditor_blocked');
+      expect(
+        result.blockingStage,
+        JSON.stringify(
+          {
+            blockingStage: result.blockingStage,
+            nextRequiredAction: result.nextRequiredAction,
+            blockingIssues: result.blockingIssues?.map((issue: any) => issue.code),
+            artifacts: result.artifacts,
+            authoringFiles: existsSync(paths.dir) ? require('node:fs').readdirSync(paths.dir) : [],
+          },
+          null,
+          2
+        )
+      ).toBe('critical_auditor_blocked');
       expect(result.nextRequiredAction).toBe('resolve_critical_auditor_blocker');
       expect(existsSync(paths.receipt(1))).toBe(true);
       expectReceiptBinding(paths, 'blocked');
@@ -278,15 +370,18 @@ describe('compiled dist authoring-repair verdict branching', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'dist-authoring-repair-insufficient-'));
     try {
       const recordId = 'REQ-DIST-AUTHORING-REPAIR-INSUFFICIENT';
-      const { source, currentSourceHash, paths } = prepareRequest(root, recordId);
+      const { source, currentSourceHash, paths, implementationAttemptId } = prepareRequest(
+        root,
+        recordId
+      );
       writeResponse(paths.request(1), paths.response(1), 'insufficient_audit');
 
       const result = runMainAgentAuthoringRepair(root, {
         source,
         recordId,
         requirementSetId: `${recordId}-SET`,
+        implementationAttemptId,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(result.blockingStage).toBe('critical_auditor_insufficient_audit');
@@ -306,7 +401,10 @@ describe('compiled dist authoring-repair verdict branching', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'dist-authoring-repair-new-gap-'));
     try {
       const recordId = 'REQ-DIST-AUTHORING-REPAIR-NEW-GAP';
-      const { source, currentSourceHash, paths } = prepareRequest(root, recordId);
+      const { source, currentSourceHash, paths, implementationAttemptId } = prepareRequest(
+        root,
+        recordId
+      );
       writeResponse(paths.request(1), paths.response(1), 'new_valid_gap', {
         validatedGaps: [{ id: 'VALID-GAP-NO-ACTIONS', status: 'open' }],
       });
@@ -315,8 +413,8 @@ describe('compiled dist authoring-repair verdict branching', () => {
         source,
         recordId,
         requirementSetId: `${recordId}-SET`,
+        implementationAttemptId,
         mode: 'preserve-existing',
-        criticalAuditorResponse: paths.response(1),
       });
 
       expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(

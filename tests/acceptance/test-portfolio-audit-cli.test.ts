@@ -76,11 +76,15 @@ function createBaseVectorRouteFixture(): string {
   return fixture;
 }
 
-function runCli(args: string[]) {
+function runCli(args: string[], env: NodeJS.ProcessEnv = {}) {
   return spawnSync(process.execPath, [cliPath, ...args], {
     cwd: process.cwd(),
     encoding: 'utf8',
     windowsHide: true,
+    env: {
+      ...process.env,
+      ...env,
+    },
   });
 }
 
@@ -396,7 +400,9 @@ describe('test portfolio audit CLI orchestration', () => {
       '--probe-limit',
       '0',
       '--json',
-    ]);
+    ], {
+      GIT_CEILING_DIRECTORIES: resolve(repoRoot, '..'),
+    });
 
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
     expect({
@@ -580,7 +586,7 @@ describe('test portfolio audit CLI orchestration', () => {
     ]);
   }, 30_000);
 
-  it('keeps canonical artifact bytes stable across filesystem, package, path, and timing permutations', () => {
+  it('keeps canonical artifact bytes independent of filesystem, package, path, and runtime timing', () => {
     const roots = [createDeterminismFixture(false), createDeterminismFixture(true)];
     const runs = roots.map((repoRoot, index) => {
       const outputDir = join(repoRoot, '.artifacts', 'ci');
@@ -603,24 +609,14 @@ describe('test portfolio audit CLI orchestration', () => {
     });
 
     expect(runs[1].artifactBytes.equals(runs[0].artifactBytes)).toBe(true);
-    expect(
-      runs.map(({ receipt }) => ({
-        staticAnalysisDurationMs: receipt.staticAnalysisDurationMs,
-        probeDurationMs: receipt.probeDurationMs,
-        totalDurationMs: receipt.totalDurationMs,
-      }))
-    ).not.toEqual([
-      {
-        staticAnalysisDurationMs: runs[0].receipt.staticAnalysisDurationMs,
-        probeDurationMs: runs[0].receipt.probeDurationMs,
-        totalDurationMs: runs[0].receipt.totalDurationMs,
-      },
-      {
-        staticAnalysisDurationMs: runs[0].receipt.staticAnalysisDurationMs,
-        probeDurationMs: runs[0].receipt.probeDurationMs,
-        totalDurationMs: runs[0].receipt.totalDurationMs,
-      },
-    ]);
+    for (const { receipt } of runs) {
+      expect(Number.isFinite(receipt.staticAnalysisDurationMs)).toBe(true);
+      expect(Number.isFinite(receipt.probeDurationMs)).toBe(true);
+      expect(Number.isFinite(receipt.totalDurationMs)).toBe(true);
+      expect(receipt.staticAnalysisDurationMs).toBeGreaterThanOrEqual(0);
+      expect(receipt.probeDurationMs).toBeGreaterThanOrEqual(0);
+      expect(receipt.totalDurationMs).toBeGreaterThanOrEqual(0);
+    }
   }, 60_000);
 });
 

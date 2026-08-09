@@ -12,6 +12,7 @@ import {
   validateTaskReportLegacyBoundary,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/subagent-evidence-envelope';
 import type { ExecutionPacket, TaskReport } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-dispatch-contract';
+import { createRequirementsContractNormalizedTraceGraph } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-normalized-trace-graph';
 
 const SOURCE_HASH = 'sha256:043bd30ee5975f75196fa688964f7373a087eeca2464cd04cf725ecc8bc0e570';
 const IMPLEMENTATION_HASH =
@@ -23,6 +24,9 @@ const IMPLEMENTATION_ATTEMPT_ID = 'IMP-subagent-envelope-test';
 function sha256(content: string): string {
   return `sha256:${crypto.createHash('sha256').update(content, 'utf8').digest('hex')}`;
 }
+
+const SEMANTIC_MODEL_HASH = sha256('subagent-envelope-semantic-model');
+const PACKET_HASH = sha256('subagent-envelope-model-packet');
 
 function globalContractTraceabilityPolicy() {
   return {
@@ -110,6 +114,7 @@ function artifactRef(
 }
 
 function writeFixture(root: string, options: { executionVerified?: boolean } = {}) {
+  const requirementIds = ['MUST-044', 'MUST-046', 'NEG-034', 'NEG-035', 'OUT-027', 'EVD-045'];
   const base = path.join(
     root,
     '_bmad-output',
@@ -119,6 +124,12 @@ function writeFixture(root: string, options: { executionVerified?: boolean } = {
   );
   const evidenceDir = path.join(base, 'evidence', 'TRACE-035', 'fixture');
   mkdirSync(evidenceDir, { recursive: true });
+  const lockContent = `${JSON.stringify({ lockfileVersion: 3, packages: {} }, null, 2)}\n`;
+  const lockPath = path.join(root, 'package-lock.json');
+  writeFileSync(lockPath, lockContent, 'utf8');
+  const commandOutputContent = 'subagent evidence envelope acceptance passed\n';
+  const commandOutputPath = path.join(evidenceDir, 'command-output.txt');
+  writeFileSync(commandOutputPath, commandOutputContent, 'utf8');
   const evidenceArtifactPath = path.join(evidenceDir, 'subagent-proof.json');
   const evidenceArtifactContent = `${JSON.stringify({ assertion: 'subagent evidence envelope accepted' }, null, 2)}\n`;
   writeFileSync(evidenceArtifactPath, evidenceArtifactContent, 'utf8');
@@ -152,7 +163,7 @@ function writeFixture(root: string, options: { executionVerified?: boolean } = {
       id: 'subagent-evidence-envelope.test',
     },
     requirementSetId: 'REQ-CLOSED-LOOP-DESIGN',
-    requirementRefs: ['MUST-044', 'MUST-046', 'NEG-034', 'NEG-035', 'OUT-027', 'EVD-045'],
+    requirementRefs: requirementIds,
     transactionId: TRANSACTION_ID,
     implementationAttemptId: IMPLEMENTATION_ATTEMPT_ID,
     publishedAt: '2026-05-21T00:00:04.000Z',
@@ -185,8 +196,12 @@ function writeFixture(root: string, options: { executionVerified?: boolean } = {
         recordId: 'REQ-CLOSED-LOOP-DESIGN',
         requirementSetId: 'REQ-CLOSED-LOOP-DESIGN',
         status: 'user_confirmed',
+        transactionId: TRANSACTION_ID,
+        currentAttemptId: IMPLEMENTATION_ATTEMPT_ID,
         sourceDocumentHash: SOURCE_HASH,
         implementationConfirmationHash: IMPLEMENTATION_HASH,
+        semanticModelHash: SEMANTIC_MODEL_HASH,
+        packetHash: PACKET_HASH,
         confirmationHistory: [
           {
             eventType: 'confirmation_recorded',
@@ -244,18 +259,84 @@ function writeFixture(root: string, options: { executionVerified?: boolean } = {
   const evidenceRef = artifactRef(
     evidenceArtifactPath,
     evidenceArtifactHash,
-    ['MUST-044', 'MUST-046', 'NEG-034', 'NEG-035', 'OUT-027', 'EVD-045'],
+    requirementIds,
     evidenceArtifactSchemaPath,
     evidenceArtifactReadbackReceiptPath
   );
+  const oracleIdFor = (requirementId: string) => `ORACLE-${requirementId}`;
+  const normalizedTraceGraph = createRequirementsContractNormalizedTraceGraph({
+    requirementSetId: 'REQ-CLOSED-LOOP-DESIGN',
+    sourceAuthorityHash: SOURCE_HASH,
+    semanticModelHash: SEMANTIC_MODEL_HASH,
+    semanticConservationManifestHash: sha256('subagent-envelope-semantic-conservation'),
+    nodes: requirementIds.flatMap((requirementId) => {
+      const oracleId = oracleIdFor(requirementId);
+      return [
+        {
+          id: requirementId,
+          nodeType: 'requirement' as const,
+          bodyHash: sha256(`${requirementId}:body`),
+          sourceRootRef: `REQ-CLOSED-LOOP-DESIGN:${requirementId}`,
+          sourceRootPayloadHash: sha256(`${requirementId}:source-root`),
+          authorityClass: 'source_authorized' as const,
+        },
+        {
+          id: oracleId,
+          nodeType: 'oracle' as const,
+          bodyHash: sha256(`${oracleId}:body`),
+          sourceRootRef: `REQ-CLOSED-LOOP-DESIGN:${oracleId}`,
+          sourceRootPayloadHash: sha256(`${oracleId}:source-root`),
+          authorityClass: 'independent_oracle' as const,
+        },
+      ];
+    }),
+    edges: requirementIds.map((requirementId) => {
+      const oracleId = oracleIdFor(requirementId);
+      return {
+        edgeId: `EDGE-${requirementId}`,
+        edgeType: 'verified_by' as const,
+        fromRef: requirementId,
+        toRef: oracleId,
+        sourceRef: 'REQ-CLOSED-LOOP-DESIGN:TRACE-035',
+        sourceHash: sha256(`${requirementId}:${oracleId}:edge`),
+        proofRefs: [evidenceArtifactPath],
+        applicability: 'applicable' as const,
+      };
+    }),
+  });
+  const command = 'npx vitest run tests/acceptance/subagent-evidence-envelope.test.ts';
+  const runtimeVersions = { node: process.version };
+  const environment = {
+    platform: process.platform,
+    architecture: process.arch,
+  };
   const commandRun = {
     commandId: 'CMD-SUBAGENT-EVIDENCE-ENVELOPE-ACCEPTANCE',
-    command: 'npx vitest run tests/acceptance/subagent-evidence-envelope.test.ts',
+    command,
+    normalizedCommand: command,
+    cwd: root,
+    executorIdentity: {
+      class: 'controlled_detached_executor',
+      id: 'subagent-evidence-envelope.test',
+    },
+    runtimeVersions,
+    dependencyLockHashes: [{ path: 'package-lock.json', hash: sha256(lockContent) }],
+    environment,
+    environmentFingerprint: sha256Object({ environment, runtimeVersions }),
+    environmentCompatibilityDecision: 'pass',
+    transactionId: TRANSACTION_ID,
+    implementationAttemptId: IMPLEMENTATION_ATTEMPT_ID,
+    sourceDocumentHash: SOURCE_HASH,
+    semanticModelHash: SEMANTIC_MODEL_HASH,
+    packetHash: PACKET_HASH,
     runId: 'run-trace-035',
     exitCode: 0,
     startedAt: '2026-05-21T00:00:00.000Z',
     completedAt: '2026-05-21T00:00:05.000Z',
     outputSummary: 'subagent evidence envelope acceptance passed',
+    outputPath: commandOutputPath,
+    outputHash: sha256(commandOutputContent),
+    coveredRequirementIds: requirementIds,
     artifactRefs: [evidenceRef],
     closeoutAttemptId: 'closeout-trace-035',
   };
@@ -296,6 +377,8 @@ function writeFixture(root: string, options: { executionVerified?: boolean } = {
     closeoutAttemptId: 'closeout-trace-035',
     transactionId: TRANSACTION_ID,
     implementationAttemptId: IMPLEMENTATION_ATTEMPT_ID,
+    semanticModelHash: SEMANTIC_MODEL_HASH,
+    packetHash: PACKET_HASH,
     status: 'done',
     sourceDocumentHash: SOURCE_HASH,
     implementationConfirmationHash: IMPLEMENTATION_HASH,
@@ -312,6 +395,22 @@ function writeFixture(root: string, options: { executionVerified?: boolean } = {
     },
     diffSummary: 'Add subagent evidence envelope schema, validator, and controlled ingest parser.',
     commandRuns: [commandRun],
+    normalizedTraceGraph,
+    independentOracleResults: requirementIds.map((requirementId) => ({
+      requirementId,
+      oracleId: oracleIdFor(requirementId),
+      decision: 'pass',
+      transactionId: TRANSACTION_ID,
+      implementationAttemptId: IMPLEMENTATION_ATTEMPT_ID,
+      sourceDocumentHash: SOURCE_HASH,
+      semanticModelHash: SEMANTIC_MODEL_HASH,
+      packetHash: PACKET_HASH,
+      graphHash: normalizedTraceGraph.graphHash,
+      commandId: commandRun.commandId,
+      outputHash: commandRun.outputHash,
+      evidenceRefs: ['EVD-045'],
+      observedAt: '2026-05-21T00:00:05.000Z',
+    })),
     artifactRefs: [evidenceRef],
     subagentEvidenceEnvelope: envelope,
     deliveryEvidence: {

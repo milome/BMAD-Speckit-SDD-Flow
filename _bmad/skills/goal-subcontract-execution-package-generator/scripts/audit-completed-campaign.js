@@ -114,12 +114,31 @@ function countRawTrailerOccurrences(body, field) {
   return [...body.matchAll(pattern)].length;
 }
 
-function verifyFunctionalMessage({ repositoryRoot, subject, body, child, result }) {
+function containsExactToken(text, token) {
+  const escapedToken = token.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+  return new RegExp(`(?:^|[^A-Za-z0-9])${escapedToken}(?=$|[^A-Za-z0-9])`, 'u').test(text);
+}
+
+function verifyFunctionalMessage({
+  repositoryRoot,
+  subject,
+  body,
+  child,
+  result,
+  declaredPartitionIds,
+}) {
   const match =
     /^(feat|fix|refactor|test|docs|chore|perf|build|ci)\(([a-z0-9][a-z0-9-]*)\):\s+(.+)$/u.exec(
       subject
     );
-  if (!match || isNonFunctionalText(match[3], child)) {
+  if (
+    !match ||
+    isNonFunctionalText(match[3], child) ||
+    declaredPartitionIds.some(
+      (partitionId) =>
+        partitionId !== child.partitionId && containsExactToken(match[3], partitionId)
+    )
+  ) {
     failure('commit_subject_not_functional', { partitionId: child.partitionId, subject });
   }
   const trailers = parseTrailers(repositoryRoot, subject, body);
@@ -325,6 +344,9 @@ function prepareCompletedCampaignAuditContext(
     packageRoot,
     expectedPackageManifestHash
   );
+  if (!Array.isArray(manifest.children) || manifest.children.length === 0) {
+    failure('child_result_set_incomplete');
+  }
   const repositoryRoot = path.resolve(manifest.repositoryRoot || '');
   return {
     manifest,
@@ -533,6 +555,7 @@ function auditCompletedChild({
     body: actualBody,
     child,
     result,
+    declaredPartitionIds: manifest.children.map(({ partitionId }) => partitionId),
   });
   const childSummary = {
     partitionId: child.partitionId,

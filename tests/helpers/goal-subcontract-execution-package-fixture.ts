@@ -13,6 +13,19 @@ export const SKILL_ROOT = path.join(
 );
 const roots: string[] = [];
 
+type FixtureChild = {
+  partitionId: string;
+  title: string;
+  ownedPath: string;
+  path: string;
+  hash: string;
+};
+
+type SchemaBindings = {
+  evidenceSchemaPath: string;
+  closureSchemaPath: string;
+};
+
 export function sha256(bytes: string | Buffer): string {
   return `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
 }
@@ -41,36 +54,23 @@ export function git(root: string, args: string[]): string {
   return result.stdout.trim();
 }
 
-export function createFixture(
-  requirementRecordBinding?: object,
-  options: { canonicalPartitionIds?: boolean } = {}
-) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'goal-subcontract-package-'));
-  roots.push(root);
-  git(root, ['init', '--quiet']);
-  git(root, ['config', 'user.email', 'fixture@example.test']);
-  git(root, ['config', 'user.name', 'Fixture']);
-
-  const goalPath = write(
-    root,
-    'goal.md',
-    '# Frozen Goal\n\ncontractMode: frozen\nrewritePolicy: forbidden\n'
-  );
-  const partitionIds = options.canonicalPartitionIds
+function createChildren(root: string, canonicalPartitionIds = false): FixtureChild[] {
+  const partitionIds = canonicalPartitionIds
     ? [`partition-${'1'.repeat(64)}`, `partition-${'2'.repeat(64)}`]
     : ['AUTH-01', 'AUTH-02'];
   const childSpecs = [
     [partitionIds[0], 'Refresh expired access tokens', 'src/auth/refresh.ts'],
     [partitionIds[1], 'Revoke rotated refresh tokens', 'src/auth/revoke.ts'],
   ] as const;
-  const children = childSpecs.map(([partitionId, title, ownedPath], index) => {
+  return childSpecs.map(([partitionId, title, ownedPath], index) => {
     const relativePath = `contracts/${partitionId}.md`;
     const childPath = write(root, relativePath, `# ${title}\n`);
     write(root, ownedPath, `export const version = ${index};\n`);
     return { partitionId, title, ownedPath, path: relativePath, hash: hashFile(childPath) };
   });
-  const unownedPath = 'src/shared/unowned.ts';
-  write(root, unownedPath, "export const source = 'unowned';\n");
+}
+
+function createSchemas(root: string): SchemaBindings {
   const evidenceSchemaPath = writeJson(root, 'schemas/evidence.json', {
     type: 'object',
     required: ['decision'],
@@ -120,7 +120,11 @@ export function createFixture(
       },
     ],
   });
-  const manifest = {
+  return { evidenceSchemaPath, closureSchemaPath };
+}
+
+export function buildPartitionManifest(children: FixtureChild[]) {
+  return {
     schemaVersion: 'goal-contract-partition-manifest/v2',
     manifestAuthorityMode: 'final_child_membership',
     partitionManifestHash: `sha256:${'1'.repeat(64)}`,
@@ -143,8 +147,26 @@ export function createFixture(
       scopeEscapeObligationIds: [],
     },
   };
-  const manifestPath = writeJson(root, 'partition-manifest.json', manifest);
-  const request = {
+}
+
+export function buildCompileRequest({
+  root,
+  goalPath,
+  manifestPath,
+  children,
+  evidenceSchemaPath,
+  closureSchemaPath,
+  requirementRecordBinding,
+}: {
+  root: string;
+  goalPath: string;
+  manifestPath: string;
+  children: FixtureChild[];
+  evidenceSchemaPath: string;
+  closureSchemaPath: string;
+  requirementRecordBinding?: object;
+}) {
+  return {
     schemaVersion: 'goal-subcontract-execution-package-request/v1',
     repositoryRoot: root,
     goalContract: { path: 'goal.md', hash: hashFile(goalPath) },
@@ -164,6 +186,39 @@ export function createFixture(
     ],
     ...(requirementRecordBinding ? { requirementRecordBinding } : {}),
   };
+}
+
+function initializeRepository(root: string): void {
+  git(root, ['init', '--quiet']);
+  git(root, ['config', 'user.email', 'fixture@example.test']);
+  git(root, ['config', 'user.name', 'Fixture']);
+}
+
+export function createFixture(
+  requirementRecordBinding?: object,
+  options: { canonicalPartitionIds?: boolean } = {}
+) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'goal-subcontract-package-'));
+  roots.push(root);
+  initializeRepository(root);
+  const goalPath = write(
+    root,
+    'goal.md',
+    '# Frozen Goal\n\ncontractMode: frozen\nrewritePolicy: forbidden\n'
+  );
+  const children = createChildren(root, options.canonicalPartitionIds);
+  const unownedPath = 'src/shared/unowned.ts';
+  write(root, unownedPath, "export const source = 'unowned';\n");
+  const schemas = createSchemas(root);
+  const manifestPath = writeJson(root, 'partition-manifest.json', buildPartitionManifest(children));
+  const request = buildCompileRequest({
+    root,
+    goalPath,
+    manifestPath,
+    children,
+    ...schemas,
+    requirementRecordBinding,
+  });
   const requestPath = writeJson(root, 'request.json', request);
   git(root, ['add', '.']);
   git(root, ['commit', '--quiet', '-m', 'test(fixture): create campaign baseline']);
@@ -177,10 +232,15 @@ export function createFixture(
   };
 }
 
-export function runScript(scriptName: string, args: string[]) {
+export function runScript(
+  scriptName: string,
+  args: string[],
+  options: { env?: NodeJS.ProcessEnv } = {}
+) {
   return spawnSync(process.execPath, [path.join(SKILL_ROOT, 'scripts', scriptName), ...args], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
+    env: options.env,
     maxBuffer: 4 * 1024 * 1024,
     windowsHide: true,
   });
