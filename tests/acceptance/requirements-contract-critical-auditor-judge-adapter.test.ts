@@ -445,9 +445,45 @@ function createFixture() {
     judgeRuntime.credentialConfig,
     'test_judge_credential_config_missing'
   );
-  const providerRef = String(judgeRuntime.activeProviderRef);
-  const providers = record(judgeRuntime.providers, 'test_judge_runtime_providers_missing');
-  const provider = record(providers[providerRef], 'test_judge_runtime_provider_missing');
+  const providerRef = 'test-claude-judge';
+  const provider: JsonRecord = {
+    enabled: true,
+    transport: 'cli',
+    adapterRef: 'ClaudeCodeCliJudgeAdapter',
+    apiStyle: 'cli',
+    credentialRef: 'test-claude-credential',
+    model: null,
+    endpoint: {
+      command: 'claude',
+      baseUrl: 'http://127.0.0.1:9',
+      resolutionMode: 'path_search',
+      routingOwnership: 'transport_adapter',
+      upstreamVersioning: 'gateway_managed',
+      explicitOperationPath: null,
+    },
+    authentication: {
+      type: 'bearer',
+      sensitivity: 'secret',
+      arbitraryNonEmptyValueAllowed: false,
+    },
+    auditPolicy: {
+      independenceClass: 'different_provider_different_model',
+      blindReview: true,
+      allowPassAuthority: false,
+      toolsAllowed: true,
+      allowedTools: ['Read'],
+      implementationWritesAllowed: false,
+    },
+    requestPolicy: {
+      timeoutMs: 1_000,
+      maximumAttempts: 1,
+      structuredResponseRequired: true,
+      maxBudgetUsd: 5,
+    },
+  };
+  judgeRuntime.activeProviderRef = providerRef;
+  judgeRuntime.providers = { [providerRef]: provider };
+  writeFileSync(configPath, yaml.dump(config, { lineWidth: -1 }), 'utf8');
   const credentialRef = String(provider.credentialRef);
   if (!credentialRef) {
     throw new Error('test_judge_runtime_credential_ref_missing');
@@ -642,6 +678,55 @@ function optionalArgument(args: string[], name: string): string | null {
   return value || null;
 }
 
+const UNSUPPORTED_CODEX_SCHEMA_KEYWORDS = new Set([
+  'allOf',
+  'contains',
+  'dependentRequired',
+  'dependentSchemas',
+  'if',
+  'maxContains',
+  'maxItems',
+  'minContains',
+  'minItems',
+  'not',
+  'oneOf',
+  'patternProperties',
+  'then',
+  'unevaluatedItems',
+  'uniqueItems',
+]);
+
+function codexSchemaViolations(value: unknown, nodePath = '$'): string[] {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
+  const node = value as JsonRecord;
+  const violations = Object.keys(node)
+    .filter((key) => UNSUPPORTED_CODEX_SCHEMA_KEYWORDS.has(key))
+    .map((key) => `${nodePath}.${key}`);
+  if (node.type === 'object') {
+    const properties = record(node.properties ?? {}, 'test_codex_schema_properties_missing');
+    const required = Array.isArray(node.required) ? node.required.map(String).sort() : [];
+    if (node.additionalProperties !== false) {
+      violations.push(`${nodePath}.additionalProperties`);
+    }
+    if (JSON.stringify(required) !== JSON.stringify(Object.keys(properties).sort())) {
+      violations.push(`${nodePath}.required`);
+    }
+  }
+  for (const [name, child] of Object.entries((node.properties ?? {}) as JsonRecord)) {
+    violations.push(...codexSchemaViolations(child, `${nodePath}.properties.${name}`));
+  }
+  if (node.items !== undefined) {
+    violations.push(...codexSchemaViolations(node.items, `${nodePath}.items`));
+  }
+  for (const [name, child] of Object.entries((node.$defs ?? {}) as JsonRecord)) {
+    violations.push(...codexSchemaViolations(child, `${nodePath}.$defs.${name}`));
+  }
+  for (const [index, child] of (Array.isArray(node.anyOf) ? node.anyOf : []).entries()) {
+    violations.push(...codexSchemaViolations(child, `${nodePath}.anyOf[${index}]`));
+  }
+  return violations;
+}
+
 function commandExecutorFromFetch(
   fetchImpl: typeof fetch,
   onInvocation?: (invocation: ClaudeCodeCliCommandInvocation) => void
@@ -737,6 +822,10 @@ function semanticAssessmentFromRequest(request: JsonRecord): JsonRecord {
   );
   const qualityGate = record(request.projectionQualityGate, 'test_projection_quality_gate_missing');
   const gateDryRun = record(request.gateDryRun, 'test_gate_dry_run_missing');
+  const priorFindingsRequired =
+    (Array.isArray(request.previousReceipts) && request.previousReceipts.length > 0) ||
+    (Array.isArray(gateDryRun.actionableBlockingIssues) &&
+      gateDryRun.actionableBlockingIssues.length > 0);
   const providerBinding = record(
     request.independentProviderBinding,
     'test_independent_provider_binding_missing'
@@ -776,13 +865,15 @@ function semanticAssessmentFromRequest(request: JsonRecord): JsonRecord {
     reviewedProjectionRefs: projectionSummary.projectionRefs,
     checkedProjectionGroups: projectionSummary.projectionGroups,
     checkedProjectionQualityRuleCodes: qualityGate.requiredRuleCodes,
-    priorFindingsDisposition: [
-      {
-        findingRef: `round/${String(request.roundIndex)}/baseline`,
-        disposition: 'new',
-        evidenceRefs: [String(gateDryRun.reportPath)],
-      },
-    ],
+    priorFindingsDisposition: priorFindingsRequired
+      ? [
+          {
+            findingRef: `round/${String(request.roundIndex)}/baseline`,
+            disposition: 'new',
+            evidenceRefs: [String(gateDryRun.reportPath)],
+          },
+        ]
+      : [],
     falsePositiveProofs: [],
     rationale: `Judge reviewed request ${String(request.requestHash)}.`,
   };
@@ -1107,6 +1198,13 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
       if (!command) return;
       const assessment = semanticAssessmentFromRequest(fixture.request);
       const gateDryRun = record(fixture.request.gateDryRun, 'test_gate_dry_run_missing');
+      const mutationPressureFinding = {
+        code: 'mutation_pressure_detected',
+        evidenceRef: String(gateDryRun.reportPath),
+      };
+      assessment.mutationPressureFindings = [
+        { __authorityJson: JSON.stringify(mutationPressureFinding) },
+      ];
 
       const result = await command({
         projectRoot: fixture.root,
@@ -1115,6 +1213,33 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
         round: Number(fixture.request.roundIndex),
         outputDir,
         executeCodexCliCommand: async (invocation) => {
+          const schemaPath = path.resolve(
+            invocation.cwd,
+            requiredArgument(invocation.args, '--output-schema')
+          );
+          const transportSchema = record(
+            JSON.parse(readFileSync(schemaPath, 'utf8')),
+            'test_codex_transport_schema_missing'
+          );
+          expect(codexSchemaViolations(transportSchema)).toEqual([]);
+          const definitions = record(
+            transportSchema.$defs,
+            'test_codex_transport_schema_definitions_missing'
+          );
+          const objectArray = record(
+            definitions.objectArray,
+            'test_codex_transport_object_array_missing'
+          );
+          expect(record(objectArray.items, 'test_codex_transport_object_item_missing')).toMatchObject(
+            {
+              type: 'object',
+              additionalProperties: false,
+              required: ['__authorityJson'],
+              properties: {
+                __authorityJson: { type: 'string' },
+              },
+            }
+          );
           mkdirSync(path.dirname(invocation.outputPath), { recursive: true });
           writeFileSync(
             invocation.outputPath,
@@ -1147,10 +1272,12 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
         adapterRef: 'CodexCliJudgeAdapter',
         model: returnedModel,
       });
-      expect(record(result.response, 'test_response_missing')).toMatchObject({
+      const response = record(result.response, 'test_response_missing');
+      expect(response).toMatchObject({
         verdict: 'insufficient_audit',
         requestHash: fixture.request.requestHash,
       });
+      expect(response.mutationPressureFindings).toEqual([mutationPressureFinding]);
       const receipt = record(
         JSON.parse(
           readFileSync(
@@ -1167,6 +1294,148 @@ describe('requirements contract Critical Auditor Judge adapter', () => {
         modelObservationSource: 'cli_event',
         decisionBearingModelEvidence: true,
       });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    }
+  });
+
+  it('preserves a valid Codex new-gap repair action through the transport projection', async () => {
+    const fixture = createFixture();
+    const outputDir = path.join('runtime', `codex-judge-${randomUUID()}`);
+    const returnedModel = `observed-model-${randomUUID()}`;
+    try {
+      configureFixtureForCodex(fixture);
+      const actionModule = (await import(/* @vite-ignore */ pathToFileURL(ACTION_SOURCE).href)) as {
+        requirementsContractCriticalAuditorJudgeAdapterCommand?: RawJudgeAdapterCommand;
+      };
+      const command = actionModule.requirementsContractCriticalAuditorJudgeAdapterCommand;
+      expect(command).toBeTypeOf('function');
+      if (!command) return;
+      const assessment = semanticAssessmentFromRequest(fixture.request);
+      const mustRef = String((fixture.request.mustRefs as unknown[])[0]);
+      const validatedGap = {
+        id: `gap/${randomUUID()}`,
+        status: 'validated',
+        repairActions: [
+          {
+            actionId: `repair/${randomUUID()}`,
+            type: 'split_must',
+            sourceSpan: { startLine: 1, endLine: 1 },
+            sourceText: 'Split the combined behavior into independently observable requirements.',
+            targetField: 'implementationConfirmation.must',
+            newValue: {
+              sourceMustRef: mustRef,
+              replacements: [
+                { id: mustRef, text: 'The first behavior is independently observable.' },
+                {
+                  id: `must/${randomUUID()}`,
+                  text: 'The second behavior is independently observable.',
+                },
+              ],
+            },
+            reason: 'Each behavior requires its own acceptance boundary.',
+            mustRefs: [mustRef],
+            requirementIds: [`requirement/${randomUUID()}`],
+          },
+        ],
+      };
+      assessment.verdict = 'new_valid_gap';
+      assessment.validatedGaps = [{ __authorityJson: JSON.stringify(validatedGap) }];
+
+      const result = await command({
+        projectRoot: fixture.root,
+        config: fixture.configRelativePath,
+        request: fixture.requestRelativePath,
+        round: Number(fixture.request.roundIndex),
+        outputDir,
+        executeCodexCliCommand: async (invocation) => {
+          mkdirSync(path.dirname(invocation.outputPath), { recursive: true });
+          writeFileSync(
+            invocation.outputPath,
+            `${JSON.stringify({
+              decision: 'block',
+              findings: [assessment],
+              challengeRequests: [],
+              evidenceRefs: [],
+            })}\n`,
+            'utf8'
+          );
+          const requestId = randomUUID();
+          return {
+            exitCode: 0,
+            stdout: `${JSON.stringify({
+              type: 'thread.started',
+              thread_id: requestId,
+              model: returnedModel,
+            })}\n${JSON.stringify({
+              type: 'turn.completed',
+              model: returnedModel,
+              usage: { input_tokens: 1, output_tokens: 1 },
+            })}\n`,
+            stderr: '',
+          };
+        },
+      });
+
+      const response = record(result.response, 'test_response_missing');
+      expect(response.verdict).toBe('new_valid_gap');
+      expect(response.validatedGaps).toEqual([validatedGap]);
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    }
+  });
+
+  it('revalidates projected Codex output against the full authority schema', async () => {
+    const fixture = createFixture();
+    const outputDir = path.join('runtime', `codex-judge-${randomUUID()}`);
+    const returnedModel = `observed-model-${randomUUID()}`;
+    try {
+      configureFixtureForCodex(fixture);
+      const actionModule = (await import(/* @vite-ignore */ pathToFileURL(ACTION_SOURCE).href)) as {
+        requirementsContractCriticalAuditorJudgeAdapterCommand?: RawJudgeAdapterCommand;
+      };
+      const command = actionModule.requirementsContractCriticalAuditorJudgeAdapterCommand;
+      expect(command).toBeTypeOf('function');
+      if (!command) return;
+      const assessment = semanticAssessmentFromRequest(fixture.request);
+      const gateDryRun = record(fixture.request.gateDryRun, 'test_gate_dry_run_missing');
+
+      await expect(
+        command({
+          projectRoot: fixture.root,
+          config: fixture.configRelativePath,
+          request: fixture.requestRelativePath,
+          round: Number(fixture.request.roundIndex),
+          outputDir,
+          executeCodexCliCommand: async (invocation) => {
+            mkdirSync(path.dirname(invocation.outputPath), { recursive: true });
+            writeFileSync(
+              invocation.outputPath,
+              `${JSON.stringify({
+                decision: 'inconclusive',
+                findings: [assessment, { schemaVersion: 'non-authority-finding/v1' }],
+                challengeRequests: [],
+                evidenceRefs: [String(gateDryRun.reportPath)],
+              })}\n`,
+              'utf8'
+            );
+            const requestId = randomUUID();
+            return {
+              exitCode: 0,
+              stdout: `${JSON.stringify({
+                type: 'thread.started',
+                thread_id: requestId,
+                model: returnedModel,
+              })}\n${JSON.stringify({
+                type: 'turn.completed',
+                model: returnedModel,
+                usage: { input_tokens: 1, output_tokens: 1 },
+              })}\n`,
+              stderr: '',
+            };
+          },
+        })
+      ).rejects.toThrow('critical_auditor_judge_transport_output_invalid');
     } finally {
       rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
     }
