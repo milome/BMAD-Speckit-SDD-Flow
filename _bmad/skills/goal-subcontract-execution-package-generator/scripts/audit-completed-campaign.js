@@ -1079,6 +1079,7 @@ function auditCompletedCampaign({
   expectedFinalValidationArtifactHash,
   expectedValidationCommandIds,
   beforePublish,
+  closeoutContext,
 }) {
   const context = prepareCompletedCampaignAuditContext(
     packageRoot,
@@ -1092,6 +1093,27 @@ function auditCompletedCampaign({
     artifacts.packageManifestHash !== manifest.packageManifestHash
   ) {
     failure('campaign_package_binding_mismatch');
+  }
+  const controlledCloseout = Boolean(closeoutContext);
+  const controlledRepairPartitionIds = new Set();
+  if (controlledCloseout) {
+    const { value: repairAuthority } = readBoundJsonOnce({
+      repositoryRoot,
+      binding: {
+        path: path.isAbsolute(closeoutContext.repairAuthority.receiptPath)
+          ? path.relative(
+              repositoryRoot,
+              closeoutContext.repairAuthority.receiptPath
+            )
+          : closeoutContext.repairAuthority.receiptPath,
+        hash: closeoutContext.repairAuthority.artifactHash,
+      },
+      hashFailureClass: 'campaign_closeout_evidence_mismatch',
+      jsonFailureClass: 'campaign_closeout_evidence_mismatch',
+    });
+    for (const partitionId of repairAuthority.invalidatedPartitionIds || []) {
+      controlledRepairPartitionIds.add(partitionId);
+    }
   }
   if (
     !Array.isArray(artifacts.childResults) ||
@@ -1143,10 +1165,15 @@ function auditCompletedCampaign({
       expectedParent,
       priorCommitHashes: commits,
       lineageMode:
-        repairProvenance && index >= repairProvenance.firstInvalidatedIndex
+        controlledRepairPartitionIds.has(child.partitionId) ||
+        (repairProvenance && index >= repairProvenance.firstInvalidatedIndex)
           ? 'repair_closure_authority'
           : 'strict_lineage',
-      repositoryHead: repairProvenance ? auditSnapshot.head : 'HEAD',
+      repositoryHead: controlledCloseout
+        ? closeoutContext.validationMaterialization.head
+        : repairProvenance
+          ? auditSnapshot.head
+          : 'HEAD',
     });
     commits.push(childAudit.commitHash);
     closures.push(childAudit.closureBinding);
@@ -1155,8 +1182,14 @@ function auditCompletedCampaign({
   }
   const ownedPaths = [...new Set(manifest.children.flatMap((child) => child.ownedArtifactPaths))];
   const finalChildCommit = commits.at(-1);
-  const historyHead = repairProvenance ? auditSnapshot.head : 'HEAD';
-  const historyBaseline = repairProvenance
+  const historyHead = controlledCloseout
+    ? closeoutContext.validationMaterialization.head
+    : repairProvenance
+      ? auditSnapshot.head
+      : 'HEAD';
+  const historyBaseline = controlledCloseout
+    ? historyHead
+    : repairProvenance
     ? git(
         repositoryRoot,
         ['merge-base', finalChildCommit, historyHead],
@@ -1194,9 +1227,10 @@ function auditCompletedCampaign({
     'child_owned_path_drift'
   );
   if (
-    (!repairProvenance &&
+    (!controlledCloseout &&
+      !repairProvenance &&
       (committedOwnedPathHistory || committedOwnedPathDiff)) ||
-    pendingOwnedPathDrift
+    (!controlledCloseout && pendingOwnedPathDrift)
   ) {
     failure('child_owned_path_drift', {
       committedPaths: committedOwnedPathHistory.split(/\r?\n/u).filter(Boolean),
@@ -1204,10 +1238,14 @@ function auditCompletedCampaign({
       pendingChanges: pendingOwnedPathDrift.split(/\r?\n/u).filter(Boolean),
     });
   }
-  const postChildCommitHashes = repairProvenance
+  const postChildCommitHashes = controlledCloseout
+    ? []
+    : repairProvenance
     ? repairProvenance.postChildCommitHashes
     : [];
-  const postChildOwnedPaths = repairProvenance
+  const postChildOwnedPaths = controlledCloseout
+    ? []
+    : repairProvenance
     ? [...new Set(committedOwnedPathHistory.split(/\r?\n/u).filter(Boolean))].sort()
     : [];
   if (
@@ -1282,8 +1320,24 @@ function auditCompletedCampaign({
   };
   const campaignReportHash = sha256(stableJson(campaignCore));
   const campaignReport = { ...campaignCore, campaignReportHash };
+  const closeoutFields = closeoutContext
+    ? {
+        closeoutAttemptId: closeoutContext.closeoutAttemptId,
+        compileReceiptHash: closeoutContext.compileReceipt.documentHash,
+        closeoutContextHash: closeoutContext.contextHash,
+        finalValidationEvidenceSetHash:
+          closeoutContext.finalValidationEvidenceSetHash,
+        collectionVerificationSetHash:
+          closeoutContext.collectionVerificationSetHash,
+        validationMaterializationHash:
+          closeoutContext.validationMaterialization.hash,
+        priorAttemptHash: closeoutContext.priorAttemptHash,
+      }
+    : {};
   const taskReport = {
-    schemaVersion: 'goal-subcontract-campaign-task-report/v2',
+    schemaVersion: closeoutContext
+      ? 'goal-subcontract-campaign-task-report/v3'
+      : 'goal-subcontract-campaign-task-report/v2',
     status: 'done',
     packageId: manifest.packageId,
     packageManifestHash: manifest.packageManifestHash,
@@ -1292,6 +1346,7 @@ function auditCompletedCampaign({
     commitSetHash,
     childSummaries,
     ...repairFields,
+    ...closeoutFields,
     aggregateAuditDecision: 'pass',
     requirementRecordBinding: manifest.requirementRecordBinding,
   };

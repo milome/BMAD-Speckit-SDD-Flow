@@ -142,6 +142,19 @@ function verifyPathRef(ref: unknown, expectedPath: string, label: string): void 
   }
 }
 
+function manifestChildPath(
+  packageRequest: JsonRecord,
+  manifestChild: JsonRecord
+): string | null {
+  if (typeof manifestChild.childContractPath !== 'string') return null;
+  if (path.isAbsolute(manifestChild.childContractPath)) {
+    return path.resolve(manifestChild.childContractPath);
+  }
+  return typeof packageRequest.repositoryRoot === 'string'
+    ? path.resolve(packageRequest.repositoryRoot, manifestChild.childContractPath)
+    : null;
+}
+
 function verifyCertification(
   certification: JsonRecord,
   input: {
@@ -327,6 +340,12 @@ export function resolveCampaignRuntimeBinding(input: {
   if (!Array.isArray(binding.children) || binding.children.length === 0) {
     throw new Error('campaign_runtime_binding_children_missing');
   }
+  if (
+    binding.children.length !== packageRequest.children.length ||
+    binding.children.length !== partitionManifest.partitions.length
+  ) {
+    throw new Error('campaign_runtime_binding_child_set_mismatch');
+  }
   for (const [index, child] of binding.children.entries()) {
     if (!isRecord(child) || typeof child.partitionId !== 'string') {
       throw new Error('campaign_runtime_binding_children_invalid');
@@ -343,7 +362,9 @@ export function resolveCampaignRuntimeBinding(input: {
       requestChild.partitionId !== child.partitionId ||
       !samePath(requestChild.path, childFile.path) ||
       requestChild.hash !== child.hash ||
-      manifestChild.partitionId !== child.partitionId
+      manifestChild.partitionId !== child.partitionId ||
+      manifestChild.childContractHash !== child.hash ||
+      !samePath(manifestChildPath(packageRequest, manifestChild), childFile.path)
     ) {
       throw new Error(`campaign_runtime_binding_child_membership_mismatch:${index}`);
     }

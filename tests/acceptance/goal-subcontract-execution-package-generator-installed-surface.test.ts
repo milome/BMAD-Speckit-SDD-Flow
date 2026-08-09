@@ -26,6 +26,9 @@ const requiredFiles = [
   'schemas/campaign-task-report-binding.schema.json',
   'schemas/campaign-repair-authority-receipt.schema.json',
   'schemas/repair-final-validation-binding.schema.json',
+  'scripts/close-completed-campaign.js',
+  'schemas/campaign-closeout-context.schema.json',
+  'schemas/goal-campaign-closure-receipt.schema.json',
   'assets/commit-message-template.txt',
 ];
 

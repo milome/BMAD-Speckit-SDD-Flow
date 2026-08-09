@@ -126,6 +126,21 @@ function projectControlledIngestWriterRegistry(
   };
 }
 
+function writeExclusiveJson(filePath, value) {
+  if (fs.existsSync(filePath)) throw new Error('closeout_confirmation_already_recorded');
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  const temporaryPath = `${filePath}.${process.pid}.${crypto.randomUUID()}.tmp`;
+  try {
+    fs.writeFileSync(temporaryPath, `${JSON.stringify(value, null, 2)}\n`, {
+      encoding: 'utf8',
+      flag: 'wx',
+    });
+    fs.renameSync(temporaryPath, filePath);
+  } finally {
+    if (fs.existsSync(temporaryPath)) fs.rmSync(temporaryPath, { force: true });
+  }
+}
+
 const PROJECTION_HASH_BOOKKEEPING_FIELDS = new Set([
   'derivedFromPacketHash',
   'projectionStatus',
@@ -348,7 +363,11 @@ function parseCloseoutConfirmationText(text) {
   const attemptMatch = String(text ?? '').match(/closeoutAttemptId=([^\s]+)/i);
   if (!attemptMatch) throw new Error('closeout confirmation text missing closeoutAttemptId');
   values.closeoutAttemptId = attemptMatch[1].trim();
-  if (!String(text ?? '').includes('确认最终验收并关闭需求')) {
+  if (String(text ?? '').includes('确认最终验收并关闭需求')) {
+    values.decision = 'accept';
+  } else if (String(text ?? '').includes('拒绝最终验收并保持需求阻塞')) {
+    values.decision = 'reject';
+  } else {
     throw new Error('closeout confirmation text missing closeout acceptance phrase');
   }
   return values;
@@ -362,6 +381,18 @@ function validateArgs(args) {
     return;
   }
   if (args.action === 'confirm-closeout-acceptance') {
+    if (args.controlledCloseoutRequest) {
+      const required = ['controlledCloseoutRequest', 'confirmedBy'];
+      const missing = required.filter((key) => !args[key]);
+      if (missing.length) throw new Error(`missing required args: ${missing.join(', ')}`);
+      if (!args.confirmationText && !args.confirmationTextFile) {
+        throw new Error('missing required args: confirmationText or confirmationTextFile');
+      }
+      if (args.confirmationText && args.confirmationTextFile) {
+        throw new Error('provide only one of confirmationText or confirmationTextFile');
+      }
+      return;
+    }
     const required = ['source', 'renderReport', 'confirmedBy'];
     const missing = required.filter((key) => !args[key]);
     if (missing.length) throw new Error(`missing required args: ${missing.join(', ')}`);
@@ -389,6 +420,103 @@ function confirmationTextFromArgs(args) {
     return fs.readFileSync(path.resolve(args.confirmationTextFile), 'utf8');
   }
   return String(args.confirmationText ?? '');
+}
+
+function confirmControlledGoalCloseout(args) {
+  const requestPath = path.resolve(args.controlledCloseoutRequest);
+  const request = readJson(requestPath);
+  const confirmationText = confirmationTextFromArgs(args).trim();
+  const expectedConfirmationTexts = [request.confirmationText, request.rejectionConfirmationText]
+    .map((value) => String(value ?? '').trim())
+    .filter(Boolean);
+  const requestPayload = { ...request };
+  delete requestPayload.acceptanceRequestHash;
+  delete requestPayload.confirmationText;
+  delete requestPayload.rejectionConfirmationText;
+  const observedRequestHash = sha256(stableStringify(requestPayload));
+  const expectedRequestHash = String(request.acceptanceRequestHash ?? '');
+  const hashFields = [
+    request.contextHash,
+    request.taskReportArtifactHash,
+    request?.provenanceHashes?.contextHash,
+    request?.provenanceHashes?.compileReceiptHash,
+    request?.provenanceHashes?.childClosureSetHash,
+    request?.provenanceHashes?.campaignReportHash,
+    request?.provenanceHashes?.closureReceiptHash,
+    request?.provenanceHashes?.judgeReviewCampaignHash,
+    request?.provenanceHashes?.effectivePassReceiptHash,
+    request?.provenanceHashes?.deliveryCloseoutGateReceiptHash,
+  ];
+  const validHash = (value) => /^sha256:[a-f0-9]{64}$/u.test(String(value ?? ''));
+  const mismatches = [];
+  if (request.schemaVersion !== 'main-agent-controlled-closeout-acceptance-request/v1') {
+    mismatches.push('controlled_closeout_acceptance_request_schema_invalid');
+  }
+  if (request.status !== 'awaiting_user_acceptance') {
+    mismatches.push('controlled_closeout_not_awaiting_user_acceptance');
+  }
+  if (!expectedRequestHash || observedRequestHash !== expectedRequestHash) {
+    mismatches.push('controlled_closeout_acceptance_request_hash_mismatch');
+  }
+  if (!confirmationText || !expectedConfirmationTexts.includes(confirmationText)) {
+    mismatches.push('controlled_closeout_confirmation_text_mismatch');
+  }
+  if (!request.closeoutAttemptId || hashFields.some((value) => !validHash(value))) {
+    mismatches.push('controlled_closeout_acceptance_request_provenance_invalid');
+  }
+  const accepted = confirmationText.includes('确认当前 Goal closeout 并关闭记录');
+  const rejected = confirmationText.includes('拒绝当前 Goal closeout 并保持阻塞');
+  if (accepted === rejected) mismatches.push('controlled_closeout_acceptance_intent_invalid');
+  if (mismatches.length) {
+    console.error(JSON.stringify({ ok: false, mismatches }, null, 2));
+    return 3;
+  }
+
+  const receiptPath = path.join(
+    path.dirname(requestPath),
+    accepted ? 'user-closeout-acceptance-receipt.json' : 'user-closeout-rejection-receipt.json'
+  );
+  const commonReceiptFields = {
+    schemaVersion: 'main-agent-goal-record-closed-receipt/v1',
+    status: accepted ? 'user_accepted_closeout' : 'user_rejected_closeout',
+    eventType: accepted ? 'record_closed' : 'closeout_acceptance_rejected',
+    closeoutAttemptId: request.closeoutAttemptId,
+    confirmedBy: args.confirmedBy,
+    acceptanceRequestHash: expectedRequestHash,
+    contextHash: request.contextHash,
+    taskReportArtifactHash: request.taskReportArtifactHash,
+    effectivePassReceiptHash: request.provenanceHashes.effectivePassReceiptHash,
+    deliveryCloseoutGateReceiptHash:
+      request.provenanceHashes.deliveryCloseoutGateReceiptHash,
+  };
+  let receipt;
+  if (fs.existsSync(receiptPath)) {
+    const existing = readJson(receiptPath);
+    const existingPayload = { ...existing };
+    delete existingPayload.receiptHash;
+    const existingMatches =
+      Object.entries(commonReceiptFields).every(([key, value]) => existing[key] === value) &&
+      existing.receiptHash === sha256(stableStringify(existingPayload));
+    if (!existingMatches) throw new Error('closeout_confirmation_already_recorded');
+    receipt = existing;
+  } else {
+    const payload = {
+      ...commonReceiptFields,
+      confirmedAt: args.confirmedAt ?? new Date().toISOString(),
+    };
+    receipt = { ...payload, receiptHash: sha256(stableStringify(payload)) };
+    writeExclusiveJson(receiptPath, receipt);
+  }
+  const result = {
+    ok: true,
+    status: accepted ? 'record_closed' : 'blocked',
+    acceptanceReceiptPath: normalizePathForReport(receiptPath),
+    acceptanceReceipt: receipt,
+    ...(accepted ? { recordClosedReceipt: receipt } : {}),
+  };
+  if (args.json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  else console.log(`${receipt.eventType}=${request.closeoutAttemptId}`);
+  return 0;
 }
 
 function replaceImplementationConfirmationBlock(extracted, replacementLines) {
@@ -710,6 +838,121 @@ function confirmCloseoutAcceptance(args) {
 
   const confirmedAt = args.confirmedAt ?? new Date().toISOString();
   const beforeHash = fs.existsSync(recordPath) ? sha256(fs.readFileSync(recordPath, 'utf8')) : null;
+  if (provided.decision === 'reject') {
+    const event = {
+      eventType: 'closeout_acceptance_rejected',
+      recordId,
+      requirementSetId,
+      confirmedAt,
+      confirmedBy: args.confirmedBy,
+      sourcePath: normalizePathForReport(sourcePath),
+      sourceDocumentHash,
+      implementationConfirmationHash,
+      closeoutAttemptId: provided.closeoutAttemptId,
+      closeoutConfirmationPageHash: provided.closeoutConfirmationPageHash,
+      deliveryCloseoutReportHash: provided.deliveryCloseoutReportHash,
+      confirmationText,
+      renderReportPath: normalizePathForReport(reportPath),
+      machineCloseoutEventType: 'user_rejected_closeout',
+    };
+    const nextRecord = {
+      ...existingRecord,
+      recordId: existingRecord.recordId ?? recordId,
+      requirementSetId: existingRecord.requirementSetId ?? requirementSetId,
+      status: 'blocked',
+      currentMentalModel: 'delivery_confirmation',
+      currentStage: 'delivery_confirmation',
+      closeout: {
+        ...(existingRecord.closeout &&
+        typeof existingRecord.closeout === 'object' &&
+        !Array.isArray(existingRecord.closeout)
+          ? existingRecord.closeout
+          : {}),
+        currentAttemptId: provided.closeoutAttemptId,
+        acceptanceRequest: {
+          ...(existingRecord.closeout?.acceptanceRequest &&
+          typeof existingRecord.closeout.acceptanceRequest === 'object'
+            ? existingRecord.closeout.acceptanceRequest
+            : {}),
+          status: 'user_rejected_closeout',
+          rejectedAt: confirmedAt,
+          rejectedBy: args.confirmedBy,
+        },
+        updatedAt: confirmedAt,
+      },
+      closeoutAcceptance: {
+        status: 'user_rejected_closeout',
+        confirmedAt,
+        confirmedBy: args.confirmedBy,
+        closeoutAttemptId: provided.closeoutAttemptId,
+        closeoutConfirmationPageHash: provided.closeoutConfirmationPageHash,
+        deliveryCloseoutReportHash: provided.deliveryCloseoutReportHash,
+        renderReportPath: normalizePathForReport(reportPath),
+      },
+      closeoutAcceptanceHistory: [
+        ...(Array.isArray(existingRecord.closeoutAcceptanceHistory)
+          ? existingRecord.closeoutAcceptanceHistory
+          : []),
+        event,
+      ],
+      lastEventType: 'closeout_acceptance_rejected',
+      lastAppliedEventId: `closeout_acceptance_rejected:${provided.closeoutAttemptId}`,
+      updatedAt: confirmedAt,
+    };
+    const afterHash = sha256(JSON.stringify(nextRecord));
+    event.beforeRecordHash = beforeHash;
+    event.afterRecordHash = afterHash;
+    fs.mkdirSync(path.dirname(recordPath), { recursive: true });
+    fs.writeFileSync(recordPath, `${JSON.stringify(nextRecord, null, 2)}\n`, 'utf8');
+    const eventLogPath = path.resolve(
+      args.eventLog ??
+        path.join(process.cwd(), '_bmad-output', 'runtime', 'requirement-records', 'mentor-events.jsonl')
+    );
+    appendJsonl(eventLogPath, event);
+    const artifactIndexPath = path.resolve(
+      args.artifactIndex ??
+        path.join(process.cwd(), '_bmad-output', 'runtime', 'requirement-records', 'artifact-index.jsonl')
+    );
+    appendJsonl(artifactIndexPath, {
+      artifactType: 'requirement_record',
+      sourceOfTruthRole: 'control',
+      recordId,
+      requirementSetId,
+      path: normalizePathForReport(recordPath),
+      eventType: event.eventType,
+      contentHash: afterHash,
+    });
+    const result = {
+      ok: true,
+      event,
+      requirementRecordPath: normalizePathForReport(recordPath),
+      eventLogPath: normalizePathForReport(eventLogPath),
+      artifactIndexPath: normalizePathForReport(artifactIndexPath),
+      sourceUpdated: false,
+    };
+    if (args.json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    else console.log(`closeout_acceptance_rejected=${recordId}`);
+    return 0;
+  }
+  const recordClosedReceiptPayload = {
+    schemaVersion: 'requirements-contract-record-closed-receipt/v1',
+    status: 'user_accepted_closeout',
+    eventType: 'record_closed',
+    recordId,
+    requirementSetId,
+    confirmedAt,
+    confirmedBy: args.confirmedBy,
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    closeoutAttemptId: provided.closeoutAttemptId,
+    closeoutConfirmationPageHash: provided.closeoutConfirmationPageHash,
+    deliveryCloseoutReportHash: provided.deliveryCloseoutReportHash,
+    renderReportPath: normalizePathForReport(reportPath),
+  };
+  const recordClosedReceipt = {
+    ...recordClosedReceiptPayload,
+    receiptHash: sha256(stableStringify(recordClosedReceiptPayload)),
+  };
   const event = {
     eventType: 'closeout_acceptance_confirmed',
     recordId,
@@ -726,6 +969,7 @@ function confirmCloseoutAcceptance(args) {
     renderReportPath: normalizePathForReport(reportPath),
     htmlPath: normalizePathForReport(report.artifactRef?.path ?? report.closeoutProjectionIdentity?.renderedPath ?? ''),
     machineCloseoutEventType: 'record_closed',
+    recordClosedReceiptHash: recordClosedReceipt.receiptHash,
   };
   const nextRecord = {
     ...existingRecord,
@@ -772,15 +1016,7 @@ function confirmCloseoutAcceptance(args) {
       },
       updatedAt: confirmedAt,
     },
-    closeoutAcceptance: {
-      status: 'user_accepted_closeout',
-      confirmedAt,
-      confirmedBy: args.confirmedBy,
-      closeoutAttemptId: provided.closeoutAttemptId,
-      closeoutConfirmationPageHash: provided.closeoutConfirmationPageHash,
-      deliveryCloseoutReportHash: provided.deliveryCloseoutReportHash,
-      renderReportPath: normalizePathForReport(reportPath),
-    },
+    closeoutAcceptance: recordClosedReceipt,
     closeoutAcceptanceHistory: [
       ...(Array.isArray(existingRecord.closeoutAcceptanceHistory) ? existingRecord.closeoutAcceptanceHistory : []),
       event,
@@ -814,6 +1050,7 @@ function confirmCloseoutAcceptance(args) {
   const result = {
     ok: true,
     event,
+    recordClosedReceipt,
     requirementRecordPath: normalizePathForReport(recordPath),
     eventLogPath: normalizePathForReport(eventLogPath),
     artifactIndexPath: normalizePathForReport(artifactIndexPath),
@@ -1129,6 +1366,9 @@ function main(argv) {
     return repairBookkeeping(args);
   }
   if (args.action === 'confirm-closeout-acceptance') {
+    if (args.controlledCloseoutRequest) {
+      return confirmControlledGoalCloseout(args);
+    }
     return confirmCloseoutAcceptance(args);
   }
 

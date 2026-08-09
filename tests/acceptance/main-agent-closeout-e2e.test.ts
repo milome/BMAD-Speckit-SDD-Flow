@@ -70,7 +70,12 @@ describe('main-agent closeout E2E', () => {
       expect(surface.mainAgentNextAction).toBe('run_closeout');
       expect(surface.mainAgentReady).toBe(true);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      rmSync(root, {
+        recursive: true,
+        force: true,
+        maxRetries: 5,
+        retryDelay: 100,
+      });
     }
   });
 });

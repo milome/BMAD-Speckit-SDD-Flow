@@ -3,6 +3,27 @@
   "$id": "campaign-task-report-binding.schema.json",
   "title": "Goal Campaign TaskReport Binding",
   "type": "object",
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": { "const": "goal-subcontract-campaign-task-report/v3" }
+        },
+        "required": ["schemaVersion"]
+      },
+      "then": {
+        "required": [
+          "closeoutAttemptId",
+          "compileReceiptHash",
+          "closeoutContextHash",
+          "finalValidationEvidenceSetHash",
+          "collectionVerificationSetHash",
+          "validationMaterializationHash",
+          "priorAttemptHash"
+        ]
+      }
+    }
+  ],
   "dependentRequired": {
     "repairAttemptId": [
       "baseAttemptId",
@@ -43,10 +64,40 @@
   ],
   "properties": {
     "schemaVersion": {
-      "const": "goal-subcontract-campaign-task-report/v2"
+      "enum": [
+        "goal-subcontract-campaign-task-report/v2",
+        "goal-subcontract-campaign-task-report/v3"
+      ]
     },
     "status": { "const": "done" },
     "packageId": { "type": "string", "minLength": 1 },
+    "closeoutAttemptId": { "type": "string", "minLength": 1 },
+    "compileReceiptHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "closeoutContextHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "finalValidationEvidenceSetHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "collectionVerificationSetHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "validationMaterializationHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "priorAttemptHash": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+      ]
+    },
     "packageManifestHash": {
       "type": "string",
       "pattern": "^sha256:[a-f0-9]{64}$"

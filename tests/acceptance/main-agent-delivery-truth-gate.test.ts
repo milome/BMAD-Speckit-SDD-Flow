@@ -70,10 +70,7 @@ function passingReleaseGate(binding: ReturnType<typeof deliveryBinding>) {
   };
 }
 
-function hostMatrix(
-  journeyMode: 'mock' | 'real',
-  binding: ReturnType<typeof deliveryBinding>
-) {
+function hostMatrix(journeyMode: 'mock' | 'real', binding: ReturnType<typeof deliveryBinding>) {
   return {
     journeyMode,
     journeyE2EPassed: true,
@@ -140,6 +137,7 @@ describe('main-agent delivery truth gate', () => {
     expect(report.completionAllowed).toBe(true);
     expect(report.deliveryStatus).toBe('complete');
     expect(report.completionLanguage).toBe('complete_allowed');
+    expect(report.receiptHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
   });
 
   it('allows delivery confirmation before post-confirmation PR topology evidence exists', () => {

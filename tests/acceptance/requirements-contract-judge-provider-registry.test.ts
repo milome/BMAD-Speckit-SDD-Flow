@@ -233,7 +233,7 @@ describe('requirements contract Judge provider registry', () => {
       providers: [
         {
           providerRef: activeProviderRef,
-          adapterRef: 'ClaudeCodeCliJudgeAdapter',
+          adapterRef: configuredProvider.adapterRef,
           provider: {
             transport: configuredProvider.transport,
             apiStyle: configuredProvider.apiStyle,

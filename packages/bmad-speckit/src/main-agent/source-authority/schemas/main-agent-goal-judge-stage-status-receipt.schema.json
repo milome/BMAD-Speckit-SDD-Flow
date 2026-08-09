@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "main-agent-goal-judge-stage-status-receipt.schema.json",
+  "title": "Main Agent Goal Judge Stage Status Receipt",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "closeoutAttemptId",
+    "phase",
+    "actorClass",
+    "executionStatus",
+    "auditDecision",
+    "providerRef",
+    "logicalAttemptOrdinal",
+    "maxAttempts",
+    "resumeFrom",
+    "sourceErrorCode",
+    "receiptHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "main-agent-goal-judge-stage-status-receipt/v1" },
+    "closeoutAttemptId": { "type": "string", "minLength": 1 },
+    "phase": { "enum": ["reviewer", "judge"] },
+    "actorClass": { "enum": ["bounded_code_reviewer", "final_acceptance_judge"] },
+    "executionStatus": {
+      "enum": [
+        "awaiting_provider_configuration",
+        "provider_auth_required",
+        "provider_temporarily_unavailable",
+        "provider_execution_error",
+        "completed"
+      ]
+    },
+    "auditDecision": { "enum": ["not_produced", "pass", "fail"] },
+    "providerRef": { "type": "string", "minLength": 1 },
+    "logicalAttemptOrdinal": { "type": "integer", "minimum": 1 },
+    "maxAttempts": { "type": "integer", "minimum": 1 },
+    "resumeFrom": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/sha256" }] },
+    "sourceErrorCode": { "type": "string" },
+    "receiptHash": { "$ref": "#/$defs/sha256" }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+  },
+  "additionalProperties": false
+}

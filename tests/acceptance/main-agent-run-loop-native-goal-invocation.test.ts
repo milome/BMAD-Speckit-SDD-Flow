@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildNativeGoalImportReturnMetadata,
   ensureMainAgentDispatchPacket,
+  mainAgentRunLoopExitCode,
   runMainAgentAutomaticLoop,
   type NativeGoalControlledExecutor,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
@@ -24,10 +25,16 @@ function hashFile(filePath: string): string {
   return `sha256:${createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')}`;
 }
 
+function hashText(value: string): string {
+  return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
+}
+
 function attachCampaignRuntimeBinding(input: {
   fixture: Awaited<ReturnType<typeof publishImplementationPromptFixture>>['fixture'];
   pointer: Record<string, unknown>;
   packetId: string;
+  bindingChildCount?: number;
+  firstManifestChildHash?: string;
 }): Record<string, unknown> {
   const root = input.fixture.root;
   const runtimeDir = path.join(root, '_bmad-output', 'runtime', 'campaign-binding');
@@ -38,6 +45,7 @@ function attachCampaignRuntimeBinding(input: {
     path.join(runtimeDir, 'child-2.md'),
   ];
   const dependencyPath = path.join(runtimeDir, 'campaign-dependencies.cjs');
+  const aggregateAuditMarkerPath = path.join(runtimeDir, 'aggregate-audit.marker');
   const certificationPath = path.join(runtimeDir, 'certification.json');
   const bindingPath = path.join(runtimeDir, 'binding.json');
   const packetPath = packetArtifactPath(
@@ -54,7 +62,10 @@ function attachCampaignRuntimeBinding(input: {
     partitions: childPaths.map((childPath, index) => ({
       partitionId: `child-${index + 1}`,
       childContractPath: childPath,
-      childContractHash: hashFile(childPath),
+      childContractHash:
+        index === 0 && input.firstManifestChildHash
+          ? input.firstManifestChildHash
+          : hashFile(childPath),
     })),
   });
   writeJson(packageRequestPath, {
@@ -72,14 +83,16 @@ function attachCampaignRuntimeBinding(input: {
   fs.writeFileSync(
     dependencyPath,
     [
+      `const fs = require('node:fs');`,
       `const PACKAGE_HASH = 'sha256:${'1'.repeat(64)}';`,
       `const CAMPAIGN_HASH = 'sha256:${'2'.repeat(64)}';`,
       `const COMMIT_HASH = 'sha256:${'3'.repeat(64)}';`,
+      `const AGGREGATE_AUDIT_MARKER = ${JSON.stringify(aggregateAuditMarkerPath)};`,
       'module.exports = {',
       '  compileExecutionPackage() { return { packageManifestHash: PACKAGE_HASH, packageManifestPath: "package/package-manifest.json", campaignPromptPath: "package/campaign-prompt.md", campaignPromptHash: "sha256:4444444444444444444444444444444444444444444444444444444444444444", packageCompileReceiptPath: "package/compile-receipt.json", packageCompileReceiptHash: "sha256:5555555555555555555555555555555555555555555555555555555555555555" }; },',
       '  auditExecutionPackage() { return { status: "pass", packageManifestHash: PACKAGE_HASH }; },',
       '  auditCompletedChild({ child }) { return { status: "closed", partitionId: child.partitionId, commitHash: COMMIT_HASH, filesChanged: [], validationsRun: ["campaign-child"], evidence: ["campaign-child-proof"] }; },',
-      '  auditCompletedCampaign() { return { status: "done", packageManifestHash: PACKAGE_HASH, campaignReportHash: CAMPAIGN_HASH }; },',
+      '  auditCompletedCampaign() { fs.appendFileSync(AGGREGATE_AUDIT_MARKER, "audit\\n", "utf8"); return { status: "done", packageManifestHash: PACKAGE_HASH, campaignReportHash: CAMPAIGN_HASH }; },',
       '};',
       '',
     ].join('\n'),
@@ -111,11 +124,13 @@ function attachCampaignRuntimeBinding(input: {
     certificationRef: { path: certificationPath, hash: hashFile(certificationPath) },
     packageRequestRef,
     partitionManifestRef,
-    children: childPaths.map((childPath, index) => ({
-      partitionId: `child-${index + 1}`,
-      path: childPath,
-      hash: hashFile(childPath),
-    })),
+    children: childPaths
+      .slice(0, input.bindingChildCount ?? childPaths.length)
+      .map((childPath, index) => ({
+        partitionId: `child-${index + 1}`,
+        path: childPath,
+        hash: hashFile(childPath),
+      })),
     runtimeDependencies: Object.fromEntries(
       [
         'compileExecutionPackage',
@@ -139,7 +154,7 @@ function attachCampaignRuntimeBinding(input: {
     },
   };
   writeGovernedJson(input.fixture.options.currentDispatchPointer, currentPointer);
-  return currentPointer;
+  return { currentPointer, aggregateAuditMarkerPath };
 }
 
 function receiptPath(root: string, recordId: string, attemptId: string): string {
@@ -168,6 +183,12 @@ function orchestrationStatePath(fixture: {
 }
 
 describe('main-agent run-loop native goal invocation routing', () => {
+  it('treats awaiting user acceptance as a successful CLI handoff', () => {
+    expect(mainAgentRunLoopExitCode('completed')).toBe(0);
+    expect(mainAgentRunLoopExitCode('awaiting_user_acceptance')).toBe(0);
+    expect(mainAgentRunLoopExitCode('blocked')).toBe(1);
+  });
+
   it.each([
     { host: 'codex' as const },
     { host: 'claude' as const },
@@ -431,11 +452,134 @@ describe('main-agent run-loop native goal invocation routing', () => {
     }
   });
 
+  it('propagates a controlled closeout candidate without importing a final TaskReport', async () => {
+    const { fixture, pointer } = await publishImplementationPromptFixture();
+    const closeoutAttemptId = 'closeout-attempt-dynamic';
+    const candidatePath = path.join(
+      fixture.root,
+      '_bmad-output',
+      'runtime',
+      'controlled-closeout',
+      closeoutAttemptId,
+      'task-report-candidate.json'
+    );
+    try {
+      writeJson(candidatePath, {
+        packetId: 'candidate-packet-bound-at-runtime',
+        status: 'done',
+        filesChanged: [],
+        validationsRun: ['manifest-defined-validation'],
+        evidence: ['context-bound-campaign-evidence'],
+        downstreamContext: ['await controlled user acceptance'],
+      });
+      const candidateHash = hashFile(candidatePath);
+      const contextHash = hashText(`${closeoutAttemptId}:context`);
+      const campaignId = 'partitioned-standalone-goal-campaign';
+      const compileReceiptHash = hashText(`${closeoutAttemptId}:compile`);
+      const childClosureSetHash = hashText(`${closeoutAttemptId}:children`);
+      const campaignReportHash = hashText(`${closeoutAttemptId}:campaign-report`);
+      const producerReceipt = {
+        schemaVersion: 'goal-campaign-closure-receipt/v1',
+        status: 'campaign_closed',
+        closeoutAttemptId,
+        contextHash,
+        compileReceiptHash,
+        childClosureSetHash,
+        campaignReportPath: 'campaign-report.json',
+        campaignReportHash,
+        taskReportCandidatePath: candidatePath,
+        taskReportArtifactHash: candidateHash,
+        receiptHash: hashText(`${closeoutAttemptId}:closure`),
+      };
+      const judgeReviewCampaign = {
+        schemaVersion: 'requirements-contract-parent-goal-blind-review-aggregate/v2',
+        campaignId,
+        closeoutAttemptId,
+        candidateBytesHash: candidateHash,
+        decision: 'pass',
+        aggregateHash: hashText(`${closeoutAttemptId}:judge-campaign`),
+      };
+      const effectivePassReceipt = {
+        campaignId,
+        effectivePass: true,
+        effectivePassReceiptHash: hashText(`${closeoutAttemptId}:effective-pass`),
+      };
+      const deliveryGateReceipt = {
+        status: 'awaiting_user_acceptance',
+        closeoutAttemptId,
+        receiptHash: hashText(`${closeoutAttemptId}:delivery-closeout`),
+      };
+      const taskReportBefore = fs.existsSync(fixture.options.taskReportPath)
+        ? fs.readFileSync(fixture.options.taskReportPath)
+        : null;
+      const executor: NativeGoalControlledExecutor = () => {
+        executeRequiredCommandsForPublishedFixture({ fixture, pointer });
+        return {
+          exitCode: 0,
+          stdout: 'controlled closeout awaiting acceptance',
+          stderr: '',
+          closeoutStatus: 'awaiting_user_acceptance',
+          closeoutAttemptId,
+          taskReportCandidatePath: candidatePath,
+          taskReportArtifactHash: candidateHash,
+          closeoutContextHash: contextHash,
+          producerReceipt,
+          judgeReviewCampaign,
+          effectivePassReceipt,
+          deliveryGateReceipt,
+        };
+      };
+
+      const result = runMainAgentAutomaticLoop({
+        projectRoot: fixture.root,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
+        flow: 'standalone_tasks',
+        stage: 'implement',
+        host: 'codex',
+        nativeGoalExecutor: executor,
+      });
+
+      expect(result).toMatchObject({
+        status: 'awaiting_user_acceptance',
+        taskReport: null,
+        closeoutAttemptId,
+        taskReportCandidatePath: candidatePath,
+        taskReportArtifactHash: candidateHash,
+        controlledCloseoutIngested: true,
+      });
+      expect(result.steps.some((step) => step.step === 'native-goal-task-report.ingest')).toBe(
+        false
+      );
+      const taskReportAfter = fs.existsSync(fixture.options.taskReportPath)
+        ? fs.readFileSync(fixture.options.taskReportPath)
+        : null;
+      expect(taskReportAfter).toEqual(taskReportBefore);
+      const record = JSON.parse(fs.readFileSync(fixture.paths.recordPath, 'utf8'));
+      expect(record.nativeGoalHandoff).toMatchObject({
+        importStatus: 'awaiting_user_acceptance',
+        imported: false,
+        closeoutAttemptId,
+        taskReportCandidatePath: candidatePath,
+        taskReportArtifactHash: candidateHash,
+        controlledCloseout: {
+          contextHash,
+          compileReceiptHash,
+          childClosureSetHash,
+          campaignReportHash,
+        },
+      });
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
   it('resolves a certified campaign binding from the current pointer and authorizes children serially', async () => {
     const { fixture, pointer } = await publishImplementationPromptFixture();
     const packetId = 'campaign-runtime-packet';
     try {
-      const currentPointer = attachCampaignRuntimeBinding({ fixture, pointer, packetId });
+      const { currentPointer } = attachCampaignRuntimeBinding({ fixture, pointer, packetId });
       ensureMainAgentDispatchPacket({
         projectRoot: fixture.root,
         recordId: fixture.authority.recordId,
@@ -485,6 +629,243 @@ describe('main-agent run-loop native goal invocation routing', () => {
       ]);
       expect(result.status).toBe('completed');
       expect(result.taskReport).toMatchObject({ packetId, status: 'done' });
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('rejects a runtime binding that omits a manifest-declared Goal child', async () => {
+    const { fixture, pointer } = await publishImplementationPromptFixture();
+    const packetId = 'campaign-runtime-incomplete-child-set';
+    let executorCalled = false;
+    try {
+      attachCampaignRuntimeBinding({
+        fixture,
+        pointer,
+        packetId,
+        bindingChildCount: 1,
+      });
+      ensureMainAgentDispatchPacket({
+        projectRoot: fixture.root,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
+        flow: 'story',
+        stage: 'implement',
+        host: 'codex',
+        preferredPacketId: packetId,
+      });
+
+      const result = runMainAgentAutomaticLoop({
+        projectRoot: fixture.root,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
+        flow: 'story',
+        stage: 'implement',
+        host: 'codex',
+        nativeGoalExecutor: () => {
+          executorCalled = true;
+          return { exitCode: 0 };
+        },
+      });
+
+      expect(result.status).toBe('blocked');
+      expect(executorCalled).toBe(false);
+      expect(result.steps.at(-1)).toMatchObject({
+        step: 'native-goal-invocation',
+        status: 'fail',
+        summary: 'campaign_runtime_binding_child_set_mismatch',
+      });
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('rejects a runtime binding whose child bytes disagree with the partition manifest', async () => {
+    const { fixture, pointer } = await publishImplementationPromptFixture();
+    const packetId = 'campaign-runtime-manifest-child-drift';
+    let executorCalled = false;
+    try {
+      attachCampaignRuntimeBinding({
+        fixture,
+        pointer,
+        packetId,
+        firstManifestChildHash: hashText('different child contract bytes'),
+      });
+      ensureMainAgentDispatchPacket({
+        projectRoot: fixture.root,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
+        flow: 'bugfix',
+        stage: 'implement',
+        host: 'codex',
+        preferredPacketId: packetId,
+      });
+
+      const result = runMainAgentAutomaticLoop({
+        projectRoot: fixture.root,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
+        flow: 'bugfix',
+        stage: 'implement',
+        host: 'codex',
+        nativeGoalExecutor: () => {
+          executorCalled = true;
+          return { exitCode: 0 };
+        },
+      });
+
+      expect(result.status).toBe('blocked');
+      expect(executorCalled).toBe(false);
+      expect(result.steps.at(-1)).toMatchObject({
+        step: 'native-goal-invocation',
+        status: 'fail',
+        summary: 'campaign_runtime_binding_child_membership_mismatch:0',
+      });
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('closes a partitioned root Goal campaign independently of the legacy workflow name', async () => {
+    const { fixture, pointer } = await publishImplementationPromptFixture();
+    const packetId = 'partitioned-standalone-goal-packet';
+    const closeoutAttemptId = 'partitioned-standalone-goal-closeout';
+    try {
+      const { currentPointer, aggregateAuditMarkerPath } = attachCampaignRuntimeBinding({
+        fixture,
+        pointer,
+        packetId,
+      });
+      ensureMainAgentDispatchPacket({
+        projectRoot: fixture.root,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
+        flow: 'story',
+        stage: 'implement',
+        host: 'codex',
+        preferredPacketId: packetId,
+      });
+      const candidatePath = path.join(
+        fixture.root,
+        '_bmad-output',
+        'runtime',
+        'controlled-closeout',
+        closeoutAttemptId,
+        'task-report-candidate.json'
+      );
+      writeJson(candidatePath, {
+        packetId,
+        status: 'done',
+        filesChanged: [],
+        validationsRun: ['package-manifest-defined-validation'],
+        evidence: ['ordered child closure receipts'],
+        downstreamContext: ['await controlled user acceptance'],
+      });
+      const candidateHash = hashFile(candidatePath);
+      const contextHash = hashText(`${closeoutAttemptId}:context`);
+      const campaignId = 'partitioned-standalone-goal-campaign';
+      const compileReceiptHash = hashText(`${closeoutAttemptId}:compile`);
+      const childClosureSetHash = hashText(`${closeoutAttemptId}:children`);
+      const campaignReportHash = hashText(`${closeoutAttemptId}:campaign-report`);
+      const producerReceipt = {
+        schemaVersion: 'goal-campaign-closure-receipt/v1',
+        status: 'campaign_closed',
+        closeoutAttemptId,
+        contextHash,
+        compileReceiptHash,
+        childClosureSetHash,
+        campaignReportPath: 'campaign-report.json',
+        campaignReportHash,
+        taskReportCandidatePath: candidatePath,
+        taskReportArtifactHash: candidateHash,
+        receiptHash: hashText(`${closeoutAttemptId}:closure`),
+      };
+      const judgeReviewCampaign = {
+        schemaVersion: 'requirements-contract-parent-goal-blind-review-aggregate/v2',
+        campaignId,
+        closeoutAttemptId,
+        candidateBytesHash: candidateHash,
+        decision: 'pass',
+        aggregateHash: hashText(`${closeoutAttemptId}:judge-campaign`),
+      };
+      const effectivePassReceipt = {
+        campaignId,
+        effectivePass: true,
+        effectivePassReceiptHash: hashText(`${closeoutAttemptId}:effective-pass`),
+      };
+      const deliveryGateReceipt = {
+        status: 'awaiting_user_acceptance',
+        closeoutAttemptId,
+        receiptHash: hashText(`${closeoutAttemptId}:delivery-closeout`),
+      };
+      const taskReportBefore = fs.existsSync(fixture.options.taskReportPath)
+        ? fs.readFileSync(fixture.options.taskReportPath)
+        : null;
+      const executor: NativeGoalControlledExecutor = (request) => {
+        executeRequiredCommandsForPublishedFixture({ fixture, pointer: currentPointer });
+        const childInvocations: Array<Record<string, unknown>> = [];
+        for (const child of request.children ?? []) {
+          childInvocations.push(child);
+          if (!(request.reportChildResult?.(child) ?? false)) break;
+        }
+        return {
+          exitCode: 0,
+          childInvocations,
+          closeoutStatus: 'awaiting_user_acceptance',
+          closeoutAttemptId,
+          taskReportCandidatePath: candidatePath,
+          taskReportArtifactHash: candidateHash,
+          closeoutContextHash: contextHash,
+          producerReceipt,
+          judgeReviewCampaign,
+          effectivePassReceipt,
+          deliveryGateReceipt,
+        };
+      };
+
+      const result = runMainAgentAutomaticLoop({
+        projectRoot: fixture.root,
+        recordId: fixture.authority.recordId,
+        requirementSetId: fixture.identity.requirementSetId,
+        runId: fixture.identity.implementationAttemptId,
+        flow: 'story',
+        stage: 'implement',
+        host: 'codex',
+        nativeGoalExecutor: executor,
+      });
+
+      expect(result).toMatchObject({
+        status: 'awaiting_user_acceptance',
+        taskReport: null,
+        closeoutAttemptId,
+        taskReportCandidatePath: candidatePath,
+        taskReportArtifactHash: candidateHash,
+        controlledCloseoutIngested: true,
+      });
+      expect(fs.existsSync(aggregateAuditMarkerPath)).toBe(false);
+      const record = JSON.parse(fs.readFileSync(fixture.paths.recordPath, 'utf8'));
+      expect(record.nativeGoalHandoff).toMatchObject({
+        controlledCloseoutIngested: true,
+        closeoutAttemptId,
+        taskReportCandidatePath: candidatePath,
+        taskReportArtifactHash: candidateHash,
+        controlledCloseout: {
+          schemaVersion: 'main-agent-controlled-closeout-handoff/v1',
+          contextHash,
+          compileReceiptHash,
+          childClosureSetHash,
+          campaignReportHash,
+        },
+      });
+      const taskReportAfter = fs.existsSync(fixture.options.taskReportPath)
+        ? fs.readFileSync(fixture.options.taskReportPath)
+        : null;
+      expect(taskReportAfter).toEqual(taskReportBefore);
     } finally {
       fixture.cleanup();
     }

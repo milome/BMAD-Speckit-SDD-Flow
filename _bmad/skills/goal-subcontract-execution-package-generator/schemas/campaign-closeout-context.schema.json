@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "campaign-closeout-context.schema.json",
+  "title": "Goal Campaign Closeout Context",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "closeoutAttemptId",
+    "priorAttemptHash",
+    "sourcePlanHash",
+    "package",
+    "compileReceipt",
+    "campaign",
+    "repairAuthority",
+    "childClosures",
+    "childClosureSetHash",
+    "finalValidationEvidence",
+    "finalValidationEvidenceSetHash",
+    "collectionEvidence",
+    "collectionVerificationSetHash",
+    "validationMaterialization",
+    "allowedWritePaths",
+    "allowedWritePathSetHash",
+    "contextHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "campaign-closeout-context/v1" },
+    "closeoutAttemptId": { "type": "string", "minLength": 1 },
+    "priorAttemptHash": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/sha256" }] },
+    "sourcePlanHash": { "$ref": "#/$defs/sha256" },
+    "package": {
+      "type": "object",
+      "required": ["root", "packageId", "manifestPath", "manifestSelfHash", "manifestArtifactHash"],
+      "properties": {
+        "root": { "type": "string", "minLength": 1 },
+        "packageId": { "type": "string", "minLength": 1 },
+        "manifestPath": { "type": "string", "minLength": 1 },
+        "manifestSelfHash": { "$ref": "#/$defs/sha256" },
+        "manifestArtifactHash": { "$ref": "#/$defs/sha256" }
+      },
+      "additionalProperties": false
+    },
+    "compileReceipt": {
+      "type": "object",
+      "required": ["path", "documentHash", "commandId", "packageId", "manifestHash", "validationHead", "validationTree", "attemptId"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "documentHash": { "$ref": "#/$defs/sha256" },
+        "commandId": { "type": "string", "minLength": 1 },
+        "packageId": { "type": "string", "minLength": 1 },
+        "manifestHash": { "$ref": "#/$defs/sha256" },
+        "validationHead": { "$ref": "#/$defs/gitHash" },
+        "validationTree": { "$ref": "#/$defs/gitHash" },
+        "attemptId": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "campaign": {
+      "type": "object",
+      "required": ["activationHash", "activePointerPath", "activePointerDocumentHash"],
+      "properties": {
+        "activationHash": { "$ref": "#/$defs/sha256" },
+        "activePointerPath": { "type": "string", "minLength": 1 },
+        "activePointerDocumentHash": { "$ref": "#/$defs/sha256" }
+      },
+      "additionalProperties": false
+    },
+    "repairAuthority": {
+      "type": "object",
+      "required": ["attemptId", "receiptPath", "receiptHash", "artifactHash"],
+      "properties": {
+        "attemptId": { "type": "string", "minLength": 1 },
+        "receiptPath": { "type": "string", "minLength": 1 },
+        "receiptHash": { "$ref": "#/$defs/sha256" },
+        "artifactHash": { "$ref": "#/$defs/sha256" }
+      },
+      "additionalProperties": false
+    },
+    "childClosures": { "type": "array", "minItems": 1, "items": { "type": "object" } },
+    "childClosureSetHash": { "$ref": "#/$defs/sha256" },
+    "finalValidationEvidence": { "type": "array", "items": { "$ref": "#/$defs/evidenceBinding" } },
+    "finalValidationEvidenceSetHash": { "$ref": "#/$defs/sha256" },
+    "collectionEvidence": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/evidenceBinding" } },
+    "collectionVerificationSetHash": { "$ref": "#/$defs/sha256" },
+    "validationMaterialization": {
+      "type": "object",
+      "required": ["head", "tree", "algorithm", "hash"],
+      "properties": {
+        "head": { "$ref": "#/$defs/gitHash" },
+        "tree": { "$ref": "#/$defs/gitHash" },
+        "algorithm": { "const": "raw-tracked-v1" },
+        "hash": { "$ref": "#/$defs/sha256" }
+      },
+      "additionalProperties": false
+    },
+    "allowedWritePaths": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "allowedWritePathSetHash": { "$ref": "#/$defs/sha256" },
+    "contextHash": { "$ref": "#/$defs/sha256" }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "gitHash": { "type": "string", "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$" },
+    "evidenceBinding": {
+      "type": "object",
+      "required": ["commandId", "commandDefinitionHash", "immutablePath", "documentByteHash", "schemaVersion"],
+      "properties": {
+        "commandId": { "type": "string", "minLength": 1 },
+        "commandDefinitionHash": { "$ref": "#/$defs/sha256" },
+        "immutablePath": { "type": "string", "minLength": 1 },
+        "documentByteHash": { "$ref": "#/$defs/sha256" },
+        "schemaVersion": { "type": "string", "minLength": 1 },
+        "status": { "const": "pass" },
+        "decision": { "const": "pass" },
+        "sourceAttempt": { "type": "string", "minLength": 1 },
+        "sourceHead": { "$ref": "#/$defs/gitHash" },
+        "provenance": { "enum": ["fresh", "reused", "reused_no_run", "carry_forward"] },
+        "provenanceReceiptPath": { "type": "string", "minLength": 1 },
+        "provenanceReceiptHash": { "$ref": "#/$defs/sha256" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

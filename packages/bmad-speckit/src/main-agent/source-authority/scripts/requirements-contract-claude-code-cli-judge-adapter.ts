@@ -801,7 +801,7 @@ function terminateProcessTree(child: ChildProcessWithoutNullStreams): void {
   }
 }
 
-function executeCommand(
+export function executeClaudeCodeCliCommand(
   invocation: ClaudeCodeCliCommandInvocation
 ): Promise<ClaudeCodeCliCommandResult> {
   if (process.platform === 'win32' && invocation.cwd.length >= 260) {
@@ -1066,7 +1066,7 @@ function validateExecutionReceipt(receipt: JsonRecord): void {
 export function createClaudeCodeCliJudgeAdapter(
   dependencies: ClaudeCodeCliJudgeAdapterDependencies = {}
 ) {
-  const run = dependencies.executeCommand ?? executeCommand;
+  const run = dependencies.executeCommand ?? executeClaudeCodeCliCommand;
   const executorKind = dependencies.executeCommand ? 'injected_test_transport' : 'native_spawn';
   return {
     judge: async (input: AdapterInput): Promise<JsonRecord> => {

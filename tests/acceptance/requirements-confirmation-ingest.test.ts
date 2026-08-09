@@ -4,6 +4,12 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { createRequire } from 'node:module';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { compileRequirementsEffectivePassReceipt } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-requirements-effective-pass-gate';
+import {
+  extractRequirementsContractImplementationConfirmation,
+  implementationConfirmationHashFor as packageImplementationConfirmationHashFor,
+  sourceDocumentHashFor as packageSourceDocumentHashFor,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-implementation-confirmation-codec';
 
 const ROOT = process.cwd();
 const RENDERER = path.join(
@@ -47,11 +53,7 @@ const GOAL_CONTRACT_PROFILE = path.join(
   'goal-contract-profile.json'
 );
 const requireForRenderer = createRequire(import.meta.url);
-const {
-  extractImplementationConfirmation,
-  sourceDocumentHashFor,
-  implementationConfirmationHashFor,
-} = requireForRenderer(
+const { extractImplementationConfirmation } = requireForRenderer(
   path.join(
     ROOT,
     '_bmad',
@@ -502,6 +504,78 @@ function fixedHash(char: string): string {
   return `sha256:${char.repeat(64)}`;
 }
 
+function requirementsEffectivePassReceiptPath(): string {
+  return path.join(tempDir, 'requirements-effective-pass.receipt.json');
+}
+
+function writeRequirementsEffectivePassFixture() {
+  const coverageUnitRefs = ['coverage/fixture'];
+  const receipt = compileRequirementsEffectivePassReceipt({
+    request: {
+      actorClass: 'requirements_critical_auditor_judge',
+      judgeRole: 'requirements_critical_auditor',
+      requestHash: fixedHash('1'),
+      attemptKeyHash: fixedHash('2'),
+      scopeManifestHash: fixedHash('3'),
+      promptTemplateHash: fixedHash('4'),
+      assessmentSchemaHash: fixedHash('5'),
+      providerAuthority: {
+        providerRef: 'provider/fixture',
+        providerRegistryHash: fixedHash('6'),
+        providerConfigurationHash: fixedHash('7'),
+        credentialRevision: 1,
+      },
+    },
+    assessment: {
+      schemaVersion: 'critical-auditor-judge-assessment/v1',
+      actorClass: 'requirements_critical_auditor_judge',
+      judgeRole: 'requirements_critical_auditor',
+      verdict: 'no_new_valid_gap',
+      validatedGaps: [],
+    },
+    frozenScope: { coverageUnitRefs },
+    coverage: {
+      observedCoverageUnitRefs: [...coverageUnitRefs],
+      unassessedScopeRefs: [],
+      blockingConditionRefs: [],
+    },
+    evidence: {
+      evidenceManifestHash: fixedHash('8'),
+      providerInvocationReceiptHash: fixedHash('9'),
+      missingEvidenceRefs: [],
+    },
+    priorFindings: {
+      ledgerEntryHash: fixedHash('a'),
+      requiredPriorFindingRefs: [],
+      currentDispositionRefs: [],
+      unresolvedPriorFindingRefs: [],
+    },
+    veto: {
+      requirementsVetoRefs: [],
+      passedVetoRefs: [],
+    },
+    currentAuthority: {
+      attemptKeyHash: fixedHash('2'),
+      scopeManifestHash: fixedHash('3'),
+      evidenceManifestHash: fixedHash('8'),
+      providerInvocationReceiptHash: fixedHash('9'),
+      promptTemplateHash: fixedHash('4'),
+      assessmentSchemaHash: fixedHash('5'),
+      providerConfigurationHash: fixedHash('7'),
+    },
+    identity: {
+      replayDetected: false,
+      duplicateIdentityDetected: false,
+    },
+  });
+  fs.writeFileSync(
+    requirementsEffectivePassReceiptPath(),
+    `${JSON.stringify(receipt, null, 2)}\n`,
+    'utf8'
+  );
+  return receipt;
+}
+
 function directReqTraceEntry(): string {
   const profile = JSON.parse(fs.readFileSync(GOAL_CONTRACT_PROFILE, 'utf8')) as {
     entryProfiles?: Record<string, Record<string, unknown>>;
@@ -519,14 +593,6 @@ function directReqTraceEntry(): string {
 }
 
 function writeValidDrilldownGateReport(source: string): string {
-  const text = fs.readFileSync(source, 'utf8');
-  const extracted = extractImplementationConfirmation(text);
-  const sourceDocumentHash = sourceDocumentHashFor(
-    text,
-    extracted.blockText,
-    extracted.confirmation
-  );
-  const implementationConfirmationHash = implementationConfirmationHashFor(extracted.confirmation);
   const reportPath = path.join(tempDir, 'pre-render-must-decomposition-gate-report.json');
   fs.writeFileSync(
     reportPath,
@@ -535,8 +601,6 @@ function writeValidDrilldownGateReport(source: string): string {
         schemaVersion: 'pre-render-must-decomposition-gate-report/v1',
         verdict: 'PASS',
         confirmability: 'confirmable',
-        sourceDocumentHash,
-        implementationConfirmationHash,
         semanticKernelRef: {
           path: path.join(tempDir, 'semantic-kernel.json'),
           hash: fixedHash('b'),
@@ -592,6 +656,48 @@ function render(source: string) {
   expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
   const reportPath = path.join(path.dirname(out), 'confirmation-render-report.json');
   return { out, reportPath, report: JSON.parse(fs.readFileSync(reportPath, 'utf8')) };
+}
+
+function renderForPackageConfirmation(source: string) {
+  const effectivePassReceipt = writeRequirementsEffectivePassFixture();
+  const initialSourceText = fs.readFileSync(source, 'utf8');
+  const insertionMarker = '  requiredViewPacks:';
+  expect(initialSourceText).toContain(insertionMarker);
+  fs.writeFileSync(
+    source,
+    initialSourceText.replace(
+      insertionMarker,
+      [
+        '  preConfirmationDrilldown:',
+        '    criticalAuditor:',
+        `      latestReceiptHash: ${effectivePassReceipt.receiptHash}`,
+        insertionMarker,
+      ].join('\n')
+    ),
+    'utf8'
+  );
+  const rendered = render(source);
+  const sourceText = fs.readFileSync(source, 'utf8');
+  const extracted = extractRequirementsContractImplementationConfirmation(sourceText);
+  const sourceDocumentHash = packageSourceDocumentHashFor(
+    sourceText,
+    extracted.blockText,
+    extracted.value
+  );
+  const implementationConfirmationHash = packageImplementationConfirmationHashFor(extracted.value);
+  const report = {
+    ...rendered.report,
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    confirmInstruction: [
+      '确认以上范围进入下一阶段',
+      `sourceDocumentHash=${sourceDocumentHash}`,
+      `implementationConfirmationHash=${implementationConfirmationHash}`,
+      `confirmationPageHash=${rendered.report.confirmationPageHash}`,
+    ].join('\n'),
+  };
+  fs.writeFileSync(rendered.reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+  return { ...rendered, report };
 }
 
 function writeCloseoutRenderReport(input: {
@@ -653,34 +759,7 @@ ${largePadding}${sourceText.slice(firstViewIndex)}`,
       'utf8'
     );
 
-    const currentSourceText = fs.readFileSync(source, 'utf8');
-    const extracted = extractImplementationConfirmation(currentSourceText);
-    const sourceDocumentHash = sourceDocumentHashFor(
-      currentSourceText,
-      extracted.blockText,
-      extracted.confirmation
-    );
-    const implementationConfirmationHash = implementationConfirmationHashFor(
-      extracted.confirmation
-    );
-    const confirmationPageHash = fixedHash('f');
-    const reportPath = path.join(tempDir, 'confirmation-render-report.json');
-    const report = {
-      confirmability: 'confirmable',
-      recordId: 'REQ-CONFIRM-INGEST',
-      requirementSetId: 'REQSET-CONFIRM-INGEST',
-      sourceDocumentHash,
-      implementationConfirmationHash,
-      confirmationPageHash,
-      artifactRef: { path: path.join(tempDir, 'confirmation.html') },
-      confirmInstruction: [
-        '确认以上范围进入下一阶段',
-        `sourceDocumentHash=${sourceDocumentHash}`,
-        `implementationConfirmationHash=${implementationConfirmationHash}`,
-        `confirmationPageHash=${confirmationPageHash}`,
-      ].join('\n'),
-    };
-    fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    const { reportPath, report } = render(source);
     const confirmationTextFile = path.join(tempDir, 'confirmation.txt');
     fs.writeFileSync(confirmationTextFile, report.confirmInstruction, 'utf8');
     const recordPath = path.join(tempDir, 'requirement-record.json');
@@ -717,7 +796,7 @@ ${largePadding}${sourceText.slice(firstViewIndex)}`,
 
   it('uses the high-level orchestration entry to create requirement-record without manual ingest assembly', () => {
     const source = writeSource();
-    const { reportPath, report } = render(source);
+    const { reportPath, report } = renderForPackageConfirmation(source);
     const confirmationTextFile = path.join(tempDir, 'confirmation.txt');
     fs.writeFileSync(confirmationTextFile, report.confirmInstruction, 'utf8');
     const result = runNode(path.join(ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js'), [
@@ -728,6 +807,8 @@ ${largePadding}${sourceText.slice(firstViewIndex)}`,
       source,
       '--render-report',
       reportPath,
+      '--requirements-effective-pass-receipt',
+      requirementsEffectivePassReceiptPath(),
       '--confirmation-text-file',
       confirmationTextFile,
       '--confirmed-by',
@@ -793,7 +874,7 @@ ${largePadding}${sourceText.slice(firstViewIndex)}`,
 
   it('uses the highest-level package confirm-scope entry without requiring the main-agent alias', () => {
     const source = writeSource();
-    const { reportPath, report } = render(source);
+    const { reportPath, report } = renderForPackageConfirmation(source);
     const confirmationTextFile = path.join(tempDir, 'confirmation.txt');
     fs.writeFileSync(confirmationTextFile, report.confirmInstruction, 'utf8');
     const result = runNode(path.join(ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js'), [
@@ -804,6 +885,8 @@ ${largePadding}${sourceText.slice(firstViewIndex)}`,
       source,
       '--render-report',
       reportPath,
+      '--requirements-effective-pass-receipt',
+      requirementsEffectivePassReceiptPath(),
       '--confirmation-text-file',
       confirmationTextFile,
       '--confirmed-by',
@@ -1378,11 +1461,14 @@ ${largePadding}${sourceText.slice(firstViewIndex)}`,
     expect(output.ok).toBe(true);
     const record = JSON.parse(fs.readFileSync(recordPath, 'utf8'));
     expect(record.closeoutAcceptance).toMatchObject({
+      schemaVersion: 'requirements-contract-record-closed-receipt/v1',
       status: 'user_accepted_closeout',
       closeoutAttemptId: 'attempt-closeout-001',
       closeoutConfirmationPageHash: closeoutReport.report.closeoutConfirmationPageHash,
       deliveryCloseoutReportHash: closeoutReport.report.deliveryCloseoutReportHash,
     });
+    expect(record.closeoutAcceptance.receiptHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
+    expect(output.stdout.recordClosedReceipt).toEqual(record.closeoutAcceptance);
     expect(record.closeoutAcceptanceHistory.at(-1)).toMatchObject({
       eventType: 'closeout_acceptance_confirmed',
       confirmedBy: 'test-user',
@@ -1475,5 +1561,83 @@ ${largePadding}${sourceText.slice(firstViewIndex)}`,
     expect(result.stderr).toContain('delivery_closeout_report_hash_mismatch');
     const record = JSON.parse(fs.readFileSync(recordPath, 'utf8'));
     expect(record.closeoutAcceptance).toBeUndefined();
+  });
+
+  it('records an explicit user reject without writing record_closed or a final TaskReport', () => {
+    const source = writeSource();
+    const recordPath = path.join(
+      tempDir,
+      '_bmad-output/runtime/requirement-records/REQ-CONFIRM-INGEST/requirement-record.json'
+    );
+    fs.mkdirSync(path.dirname(recordPath), { recursive: true });
+    const { report } = render(source);
+    const closeoutReport = writeCloseoutRenderReport({
+      report,
+      recordPath,
+      attemptId: 'attempt-closeout-reject-001',
+    });
+    fs.writeFileSync(
+      recordPath,
+      JSON.stringify(
+        {
+          recordId: 'REQ-CONFIRM-INGEST',
+          requirementSetId: 'REQSET-CONFIRM-INGEST',
+          status: 'awaiting_user_acceptance',
+          currentMentalModel: 'delivery_confirmation',
+          currentStage: 'delivery_confirmation',
+          sourceDocumentHash: report.sourceDocumentHash,
+          implementationConfirmationHash: report.implementationConfirmationHash,
+          lastEventType: 'delivery_confirmation_user_acceptance_requested',
+          closeout: {
+            currentAttemptId: 'attempt-closeout-reject-001',
+            decision: 'pass',
+            acceptanceRequest: {
+              status: 'awaiting_user_acceptance',
+              closeoutAttemptId: 'attempt-closeout-reject-001',
+              closeoutConfirmationPageHash: closeoutReport.report.closeoutConfirmationPageHash,
+              deliveryCloseoutReportHash: closeoutReport.report.deliveryCloseoutReportHash,
+            },
+            attempts: [{ closeoutAttemptId: 'attempt-closeout-reject-001', decision: 'pass' }],
+          },
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+    const rejectText = [
+      '拒绝最终验收并保持需求阻塞',
+      `sourceDocumentHash=${report.sourceDocumentHash}`,
+      `implementationConfirmationHash=${report.implementationConfirmationHash}`,
+      'closeoutAttemptId=attempt-closeout-reject-001',
+      `closeoutConfirmationPageHash=${closeoutReport.report.closeoutConfirmationPageHash}`,
+      `deliveryCloseoutReportHash=${closeoutReport.report.deliveryCloseoutReportHash}`,
+    ].join('\n');
+    const result = runNode(INGEST, [
+      '--action',
+      'confirm-closeout-acceptance',
+      '--source',
+      source,
+      '--render-report',
+      closeoutReport.reportPath,
+      '--confirmation-text',
+      rejectText,
+      '--confirmed-by',
+      'test-user',
+      '--record-id',
+      'REQ-CONFIRM-INGEST',
+      '--requirement-record',
+      recordPath,
+      '--json',
+    ]);
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    const record = JSON.parse(fs.readFileSync(recordPath, 'utf8'));
+    expect(record.status).toBe('blocked');
+    expect(record.closeoutAcceptance).toMatchObject({
+      status: 'user_rejected_closeout',
+      closeoutAttemptId: 'attempt-closeout-reject-001',
+    });
+    expect(record.lastEventType).not.toBe('record_closed');
   });
 });

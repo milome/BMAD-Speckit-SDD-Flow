@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { validatePrTopologyForReleaseGate, type PrTopology } from './parallel-mission-control';
@@ -88,6 +89,7 @@ export interface DeliveryTruthGateReport {
   evidencePaths: Record<string, string | null>;
   evidenceBinding: DeliveryArtifactBinding | null;
   checks: Array<{ id: string; passed: boolean; summary: string }>;
+  receiptHash: string;
 }
 
 function parseArgs(argv: string[]): Record<string, string | undefined> {
@@ -321,9 +323,7 @@ function checkEvidenceProvenance(input: {
   ] as const satisfies readonly (keyof DeliveryArtifactBinding)[];
   const missingBindings = bindingKeys.filter((key) => !nonEmptyString(first[key]));
   const mismatches = present.filter(
-    ([, value]) =>
-      value == null ||
-      bindingKeys.some((key) => value[key] !== first[key])
+    ([, value]) => value == null || bindingKeys.some((key) => value[key] !== first[key])
   );
   const releaseIntent = input.releaseGate?.completion_intent;
   const releaseIntentMismatch =
@@ -347,17 +347,15 @@ function checkEvidenceProvenance(input: {
     sprintAudit.token !== first.completionToken ||
     sprintAudit.attemptId !== first.attemptId ||
     sprintAudit.expiresAt !== first.expiresAt;
-  const expiryValid = Number.isFinite(Date.parse(first.expiresAt)) &&
-    Date.parse(first.expiresAt) > Date.now();
+  const expiryValid =
+    Number.isFinite(Date.parse(first.expiresAt)) && Date.parse(first.expiresAt) > Date.now();
   const mismatchLabels = [
     ...mismatches.map(([id]) => id),
     ...(releaseIntentMismatch ? ['releaseGate.completion_intent'] : []),
     ...(sprintAuditMismatch ? ['sprintAudit.binding'] : []),
     ...(!expiryValid ? ['expiry'] : []),
   ];
-  const passed =
-    missingBindings.length === 0 &&
-    mismatchLabels.length === 0;
+  const passed = missingBindings.length === 0 && mismatchLabels.length === 0;
   return {
     passed,
     summary: passed
@@ -419,7 +417,7 @@ export function evaluateDeliveryTruthGate(input: {
     : missingEvidence.length > 0
       ? 'blocked'
       : 'partial';
-  return {
+  const report = {
     reportType: 'main_agent_delivery_truth_gate',
     generatedAt: new Date().toISOString(),
     completionAllowed,
@@ -434,6 +432,12 @@ export function evaluateDeliveryTruthGate(input: {
     evidencePaths: input.evidencePaths ?? {},
     evidenceBinding: provenanceCheck.binding,
     checks,
+  };
+  return {
+    ...report,
+    receiptHash: `sha256:${createHash('sha256')
+      .update(JSON.stringify(report), 'utf8')
+      .digest('hex')}`,
   };
 }
 

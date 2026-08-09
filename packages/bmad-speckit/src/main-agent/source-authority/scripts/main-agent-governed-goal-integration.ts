@@ -37,12 +37,131 @@ function hashControlPlaneValue(value: unknown): string {
     .digest('hex')}`;
 }
 
+function hashStableJson(value: unknown): string {
+  return `sha256:${createHash('sha256')
+    .update(`${JSON.stringify(canonicalize(value), null, 2)}\n`, 'utf8')
+    .digest('hex')}`;
+}
+
 function isRecord(value: unknown): value is UnknownRecord {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
 function isSha256Hash(value: unknown): value is string {
   return typeof value === 'string' && /^sha256:[0-9a-f]{64}$/u.test(value);
+}
+
+export function materializeCollectionEvidenceFromManifest(input: UnknownRecord) {
+  const packageManifest = isRecord(input.packageManifest) ? input.packageManifest : {};
+  const commands = Array.isArray(packageManifest.collectionVerificationCommands)
+    ? packageManifest.collectionVerificationCommands
+    : [];
+  const { packageManifestHash: declaredManifestHash, ...manifestCore } = packageManifest;
+  const evidenceByCommandId = isRecord(input.evidenceByCommandId)
+    ? input.evidenceByCommandId
+    : {};
+  if (
+    !isSha256Hash(input.selectedManifestHash) ||
+    declaredManifestHash !== input.selectedManifestHash ||
+    hashStableJson(manifestCore) !== declaredManifestHash
+  ) {
+    throw failure('campaign_closeout_compile_binding_mismatch');
+  }
+  if (
+    commands.length === 0 ||
+    !commands.every(isRecord) ||
+    new Set(commands.map((command) => command.id)).size !== commands.length ||
+    commands.some((command) =>
+      typeof command.id !== 'string' ||
+      command.id.trim() === '' ||
+      typeof command.command !== 'string' ||
+      command.command.trim() === ''
+    ) ||
+    Object.keys(evidenceByCommandId).length !== commands.length
+  ) {
+    throw failure('campaign_closeout_evidence_mismatch');
+  }
+  return commands.map((command) => {
+    const commandId = command.id;
+    const evidence = typeof commandId === 'string' ? evidenceByCommandId[commandId] : undefined;
+    if (
+      typeof commandId !== 'string' ||
+      !isRecord(evidence) ||
+      evidence.decision !== 'pass' ||
+      !isSha256Hash(evidence.documentByteHash) ||
+      typeof evidence.immutablePath !== 'string' ||
+      typeof evidence.schemaVersion !== 'string' ||
+      typeof evidence.sourceAttempt !== 'string' ||
+      !['fresh', 'reused', 'reused_no_run', 'carry_forward'].includes(
+        String(evidence.provenance)
+      )
+    ) {
+      throw failure('campaign_closeout_evidence_mismatch', { commandId });
+    }
+    return Object.freeze({
+      commandId,
+      commandDefinitionHash: hashStableJson(command),
+      immutablePath: evidence.immutablePath,
+      documentByteHash: evidence.documentByteHash,
+      schemaVersion: evidence.schemaVersion,
+      decision: 'pass' as const,
+      sourceAttempt: evidence.sourceAttempt,
+      provenance: evidence.provenance,
+    });
+  });
+}
+
+export function ingestMainAgentControlledCloseout(input: UnknownRecord) {
+  if (!isRecord(input)) {
+    throw failure('main_agent_goal_task_report_provenance_mismatch');
+  }
+  const producerReceipt = input.producerReceipt;
+  const effectivePassReceipt = input.effectivePassReceipt;
+  const judgeReviewCampaign = input.judgeReviewCampaign;
+  const closeoutAttemptId = input.closeoutAttemptId;
+  const contextHash = input.contextHash;
+  const candidateBytes = input.candidateBytes;
+  if (
+    typeof closeoutAttemptId !== 'string' ||
+    !isSha256Hash(contextHash) ||
+    !isRecord(producerReceipt) ||
+    producerReceipt.status !== 'campaign_closed' ||
+    producerReceipt.closeoutAttemptId !== closeoutAttemptId ||
+    producerReceipt.contextHash !== contextHash ||
+    !isRecord(judgeReviewCampaign) ||
+    judgeReviewCampaign.decision !== 'pass' ||
+    judgeReviewCampaign.closeoutAttemptId !== closeoutAttemptId ||
+    !isSha256Hash(judgeReviewCampaign.aggregateHash) ||
+    !isRecord(effectivePassReceipt) ||
+    effectivePassReceipt.effectivePass !== true ||
+    (effectivePassReceipt.closeoutAttemptId !== undefined &&
+      effectivePassReceipt.closeoutAttemptId !== closeoutAttemptId) ||
+    !(candidateBytes instanceof Uint8Array)
+  ) {
+    throw failure('main_agent_goal_task_report_provenance_mismatch');
+  }
+  const candidateBytesHash = `sha256:${createHash('sha256')
+    .update(candidateBytes)
+    .digest('hex')}`;
+  if (producerReceipt.taskReportArtifactHash !== candidateBytesHash) {
+    throw failure('main_agent_goal_task_report_provenance_mismatch');
+  }
+  if (
+    judgeReviewCampaign.candidateBytesHash !== candidateBytesHash ||
+    (typeof judgeReviewCampaign.campaignId === 'string' &&
+      typeof effectivePassReceipt.campaignId === 'string' &&
+      judgeReviewCampaign.campaignId !== effectivePassReceipt.campaignId)
+  ) {
+    throw failure('main_agent_goal_task_report_provenance_mismatch');
+  }
+  return Object.freeze({
+    status: 'awaiting_user_acceptance' as const,
+    closeoutAttemptId,
+    candidateBytesHash,
+    producerReceiptHash: producerReceipt.receiptHash,
+    judgeReviewCampaignHash: judgeReviewCampaign.aggregateHash,
+    effectivePassReceiptHash: effectivePassReceipt.effectivePassReceiptHash,
+  });
 }
 
 function requireHash(value: unknown, field: string): string {
@@ -732,6 +851,30 @@ export function runMainAgentGoalSubcontractCampaign(input: UnknownRecord) {
     });
     resolved.persistTaskReport(taskReport);
     return Object.freeze({ ...blockedResult, taskReport });
+  }
+
+  if (isRecord(invocationValue.controlledCloseout)) {
+    const controlledCloseout = invocationValue.controlledCloseout;
+    if (
+      controlledCloseout.status !== 'awaiting_user_acceptance' ||
+      typeof controlledCloseout.closeoutAttemptId !== 'string' ||
+      controlledCloseout.closeoutAttemptId.length === 0 ||
+      typeof controlledCloseout.taskReportCandidatePath !== 'string' ||
+      controlledCloseout.taskReportCandidatePath.length === 0 ||
+      !isSha256Hash(controlledCloseout.taskReportArtifactHash)
+    ) {
+      throw failure('main_agent_goal_task_report_provenance_mismatch');
+    }
+    return Object.freeze({
+      status: 'awaiting_user_acceptance' as const,
+      children,
+      childResults,
+      packageResult,
+      packageAudit,
+      packageManifestHash: packageResult.packageManifestHash,
+      requirementRecordBinding,
+      controlledCloseout: Object.freeze({ ...controlledCloseout }),
+    });
   }
 
   const aggregateAuditValue = resolved.auditCompletedCampaign({

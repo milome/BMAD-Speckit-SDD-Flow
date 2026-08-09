@@ -95,6 +95,28 @@ export interface RequirementsContractBlindReviewAggregateReceipt {
   aggregateHash: string;
 }
 
+export interface RequirementsContractBlindReviewAggregateReceiptV2 {
+  schemaVersion: 'requirements-contract-parent-goal-blind-review-aggregate/v2';
+  campaignId: string;
+  campaignLineageKey: string;
+  closureReceiptHash: string;
+  candidateBytesHash: string;
+  currentImplementationHash: string;
+  currentEvidenceHash: string;
+  initialReviewAttemptKey: string;
+  actorBindingHash: string;
+  actorReceipts: JsonRecord[];
+  blindnessProof: {
+    identicalBlindInputHash: string;
+    preparedIntentHashes: string[];
+    peerLeakageDetected: false;
+  };
+  invocationCountReceipt: RequirementsContractBlindReviewInvocationCountReceipt;
+  sourceLedgerHashes: string[];
+  decision: 'pass';
+  aggregateHash: string;
+}
+
 export class RequirementsContractParentGoalBlindReviewError extends Error {
   readonly code: string;
 
@@ -332,8 +354,14 @@ function requireActorReceipt(
 
 export function compileRequirementsContractParentGoalBlindReviewAggregate(
   input: unknown
-): RequirementsContractBlindReviewAggregateReceipt {
+): RequirementsContractBlindReviewAggregateReceipt | RequirementsContractBlindReviewAggregateReceiptV2 {
   if (!isRecord(input)) fail('blind_review_aggregate_input_invalid');
+  if (
+    isRecord(input.campaignInput) &&
+    input.campaignInput.schemaVersion === 'requirements-contract-judge-review-campaign-input/v2'
+  ) {
+    return compileV2Aggregate(input);
+  }
   const campaignInput = requireCampaignInput(input.campaignInput);
   const rawIntents = Array.isArray(input.preparedIntents) ? input.preparedIntents : [];
   const preparedIntents = rawIntents.map((candidate) => requireIntent(candidate, campaignInput));
@@ -386,6 +414,185 @@ export function compileRequirementsContractParentGoalBlindReviewAggregate(
       frozenEvidenceHash: blindInput.frozenEvidenceHash,
       governedPathSetHash: blindInput.governedPathSetHash,
       preparedIntentHashes,
+      peerLeakageDetected: false as const,
+    },
+    invocationCountReceipt: {
+      reviewerCalls: 1 as const,
+      finalJudgeCalls: 1 as const,
+      semanticInvocationCount: 2 as const,
+    },
+    sourceLedgerHashes: uniqueSorted(sortedReceipts.map((receipt) => receipt.sourceLedgerHash)),
+    decision: 'pass' as const,
+  };
+  return { ...payload, aggregateHash: stableHash(payload) };
+}
+
+function compileV2Aggregate(input: JsonRecord): RequirementsContractBlindReviewAggregateReceiptV2 {
+  const campaignInput = input.campaignInput as JsonRecord;
+  const actorBindingPayload = {
+    reviewerActorClass: requireText(
+      campaignInput,
+      'reviewerActorClass',
+      'blind_review_campaign_input_invalid'
+    ),
+    finalJudgeActorClass: requireText(
+      campaignInput,
+      'finalJudgeActorClass',
+      'blind_review_campaign_input_invalid'
+    ),
+    providerRef: requireText(campaignInput, 'providerRef', 'blind_review_campaign_input_invalid'),
+  };
+  if (
+    actorBindingPayload.reviewerActorClass !== 'bounded_code_reviewer' ||
+    actorBindingPayload.finalJudgeActorClass !== 'final_acceptance_judge' ||
+    requireHash(campaignInput, 'actorBindingHash', 'blind_review_campaign_input_invalid') !==
+      stableHash(actorBindingPayload)
+  ) {
+    fail('blind_review_campaign_input_invalid');
+  }
+  const blindInput = {
+    campaignId: requireText(campaignInput, 'campaignId', 'blind_review_campaign_input_invalid'),
+    campaignLineageKey: requireHash(
+      campaignInput,
+      'campaignLineageKey',
+      'blind_review_campaign_input_invalid'
+    ),
+    closureReceiptHash: requireHash(
+      campaignInput,
+      'closureReceiptHash',
+      'blind_review_campaign_input_invalid'
+    ),
+    candidateBytesHash: requireHash(
+      campaignInput,
+      'candidateBytesHash',
+      'blind_review_campaign_input_invalid'
+    ),
+    currentImplementationHash: requireHash(
+      campaignInput,
+      'currentImplementationHash',
+      'blind_review_campaign_input_invalid'
+    ),
+    currentEvidenceHash: requireHash(
+      campaignInput,
+      'currentEvidenceHash',
+      'blind_review_campaign_input_invalid'
+    ),
+    initialReviewAttemptKey: requireHash(
+      campaignInput,
+      'initialReviewAttemptKey',
+      'blind_review_campaign_input_invalid'
+    ),
+  };
+  const rawIntents = Array.isArray(input.preparedIntents) ? input.preparedIntents : [];
+  const intents = rawIntents.map((candidate) => {
+    if (!isRecord(candidate)) fail('blind_review_intent_invalid');
+    rejectPeerLeakage(candidate);
+    const actorClass = requireActorClass(candidate.actorClass);
+    if (
+      candidate.dispatchMode !== 'parallel' ||
+      candidate.invocationMode !== 'native' ||
+      candidate.preparedBeforeDispatch !== true ||
+      !isRecord(candidate.blindInput)
+    ) {
+      fail('blind_review_intent_invalid');
+    }
+    for (const [field, expected] of Object.entries(blindInput)) {
+      if (candidate.blindInput[field] !== expected) fail('blind_review_scope_mismatch');
+    }
+    const blindInputHash = requireHash(
+      candidate,
+      'blindInputHash',
+      'blind_review_intent_hash_mismatch'
+    );
+    if (blindInputHash !== stableHash(blindInput)) fail('blind_review_intent_hash_mismatch');
+    const payload = {
+      actorClass,
+      dispatchMode: 'parallel' as const,
+      invocationMode: 'native' as const,
+      dispatchGroupId: requireText(candidate, 'dispatchGroupId', 'blind_review_intent_invalid'),
+      preparedBeforeDispatch: true as const,
+      blindInput,
+    };
+    const invocationIntentHash = requireHash(
+      candidate,
+      'invocationIntentHash',
+      'blind_review_intent_hash_mismatch'
+    );
+    if (invocationIntentHash !== stableHash(payload)) fail('blind_review_intent_hash_mismatch');
+    return { ...payload, blindInputHash, invocationIntentHash };
+  });
+  requireOnePerActor(intents);
+  const intentByActor = new Map(intents.map((intent) => [intent.actorClass, intent]));
+  const rawReceipts = Array.isArray(input.actorReceipts) ? input.actorReceipts : [];
+  const receipts = rawReceipts.map((candidate) => {
+    if (!isRecord(candidate)) fail('blind_review_actor_receipt_invalid');
+    const actorClass = requireActorClass(candidate.actorClass);
+    const intent = intentByActor.get(actorClass);
+    if (
+      !intent ||
+      candidate.invocationMode !== 'native' ||
+      candidate.startedAfterBothIntentsPrepared !== true
+    ) {
+      fail('blind_review_actor_receipt_invalid');
+    }
+    const payload = {
+      actorClass,
+      dispatchGroupId: requireText(
+        candidate,
+        'dispatchGroupId',
+        'blind_review_actor_receipt_invalid'
+      ),
+      invocationMode: 'native' as const,
+      startedAfterBothIntentsPrepared: true as const,
+      blindInputHash: requireHash(
+        candidate,
+        'blindInputHash',
+        'blind_review_actor_receipt_invalid'
+      ),
+      invocationIntentHash: requireHash(
+        candidate,
+        'invocationIntentHash',
+        'blind_review_actor_receipt_invalid'
+      ),
+      sourceLedgerHash: requireHash(
+        candidate,
+        'sourceLedgerHash',
+        'blind_review_actor_receipt_invalid'
+      ),
+      terminalOutcome: requireTerminalOutcome(candidate.terminalOutcome),
+      findingIds: uniqueSorted(strings(candidate.findingIds)),
+    };
+    if (
+      payload.dispatchGroupId !== intent.dispatchGroupId ||
+      payload.blindInputHash !== intent.blindInputHash ||
+      payload.invocationIntentHash !== intent.invocationIntentHash
+    ) {
+      fail('blind_review_actor_receipt_invalid');
+    }
+    const actorReceiptHash = requireHash(
+      candidate,
+      'actorReceiptHash',
+      'blind_review_actor_receipt_hash_mismatch'
+    );
+    if (actorReceiptHash !== stableHash(payload)) fail('blind_review_actor_receipt_hash_mismatch');
+    return { ...payload, actorReceiptHash };
+  });
+  requireOnePerActor(receipts);
+  const sortedReceipts = [...receipts].sort(
+    (left, right) => actorSortValue(left.actorClass) - actorSortValue(right.actorClass)
+  );
+  const payload = {
+    schemaVersion: 'requirements-contract-parent-goal-blind-review-aggregate/v2' as const,
+    ...blindInput,
+    actorBindingHash: requireHash(
+      campaignInput,
+      'actorBindingHash',
+      'blind_review_campaign_input_invalid'
+    ),
+    actorReceipts: sortedReceipts,
+    blindnessProof: {
+      identicalBlindInputHash: stableHash(blindInput),
+      preparedIntentHashes: uniqueSorted(intents.map((intent) => intent.invocationIntentHash)),
       peerLeakageDetected: false as const,
     },
     invocationCountReceipt: {

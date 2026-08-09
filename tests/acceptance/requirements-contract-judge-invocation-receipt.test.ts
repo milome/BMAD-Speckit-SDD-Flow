@@ -177,7 +177,7 @@ describe('Judge invocation receipt', () => {
     ).toBe(false);
   });
 
-  it('persists an unknown-outcome receipt before failing closed without model evidence', async () => {
+  it('persists a decided receipt for gateway-managed output without model evidence', async () => {
     const createAdapter = await loadCodexAdapter();
     const root = createRoot();
     const outputDir = path.join(root, 'runtime', randomUUID());
@@ -221,27 +221,29 @@ describe('Judge invocation receipt', () => {
       },
     });
 
-    await expect(
-      adapter.judge({
+    const response = await adapter.judge({
+      providerRef,
+      provider: selectedProvider,
+      credential: {
         providerRef,
-        provider: selectedProvider,
-        credential: {
-          providerRef,
-          credentialRef: selectedProvider.credentialRef,
-          authenticationType: 'bearer',
-          credentialRevision: 1,
+        credentialRef: selectedProvider.credentialRef,
+        authenticationType: 'bearer',
+        credentialRevision: 1,
+      },
+      payload: {
+        systemPrompt: 'Audit the frozen evidence and return only the structured decision.',
+        request,
+        executionContext: {
+          projectRoot: root,
+          requestPath,
+          outputDir,
         },
-        payload: {
-          systemPrompt: 'Audit the frozen evidence and return only the structured decision.',
-          request,
-          executionContext: {
-            projectRoot: root,
-            requestPath,
-            outputDir,
-          },
-        },
-      })
-    ).rejects.toThrow('codex_cli_judge_model_observation_missing');
+      },
+    });
+    expect(response).toMatchObject({
+      decision: 'block',
+      returnedModel: 'gateway-managed:unobserved',
+    });
 
     const receiptPath = path.join(outputDir, 'judge-invocation-receipt.json');
     expect(existsSync(receiptPath)).toBe(true);
@@ -251,9 +253,9 @@ describe('Judge invocation receipt', () => {
       providerRef,
       transport: 'cli',
       adapterRef: 'CodexCliJudgeAdapter',
-      outcome: 'unknown',
-      decision: 'inconclusive',
-      unknownOutcomeReason: 'codex_cli_judge_model_observation_missing',
+      outcome: 'decided',
+      decision: 'block',
+      unknownOutcomeReason: null,
       automaticSemanticRetry: false,
       maximumAttempts: 1,
       attemptOrdinal: 1,
