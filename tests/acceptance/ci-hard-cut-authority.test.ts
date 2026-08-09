@@ -1039,6 +1039,8 @@ describe('CI authority hard cut', () => {
     );
     expect(source.ciSource).toContain('$GITHUB_STEP_SUMMARY');
     expect(source.ciSource).toContain('six-model-ci-diagnostics.md');
+    expect(source.ciSource).toContain('canonicalJsonBytes(rows)');
+    expect(source.ciSource).toContain('canonicalJsonBytes([])');
   });
 
   it('rejects old fallback, model execution, second pack, and matrix path authority', () => {

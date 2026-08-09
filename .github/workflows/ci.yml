@@ -106,9 +106,9 @@ jobs:
           esac
           if [ -n "$base" ]; then
             git diff --name-only "$base" "$GITHUB_SHA" |
-              node -e "const fs=require('fs');const rows=fs.readFileSync(0,'utf8').split(/\r?\n/u).filter(Boolean).sort();fs.writeFileSync('.artifacts/test-portfolio/changed-paths.json',JSON.stringify(rows));"
+              node -e "const fs=require('fs');const {canonicalJsonBytes}=require('./tools/test-portfolio-audit/canonical.cjs');const rows=fs.readFileSync(0,'utf8').split(/\r?\n/u).filter(Boolean).sort();fs.writeFileSync('.artifacts/test-portfolio/changed-paths.json',canonicalJsonBytes(rows));"
           else
-            node -e "require('fs').writeFileSync('.artifacts/test-portfolio/changed-paths.json','[]');"
+            node -e "const fs=require('fs');const {canonicalJsonBytes}=require('./tools/test-portfolio-audit/canonical.cjs');fs.writeFileSync('.artifacts/test-portfolio/changed-paths.json',canonicalJsonBytes([]));"
           fi
           echo "base_sha=$base" >> "$GITHUB_OUTPUT"
           echo "profile=$profile" >> "$GITHUB_OUTPUT"
