@@ -722,7 +722,7 @@
       "behaviorTestRefs": [
         {
           "path": "tests/acceptance/requirements-contract-judge-command.test.ts",
-          "hash": "sha256:bfc80fe9d1f4452c45b0054d5e42fa730c1544e6c1f04acacac3324b28ab0570"
+          "hash": "sha256:1e9ca2a4a4ac6fe5b396fee70513e2e9277ad09decd717a3bcd4f0b26cda1465"
         }
       ],
       "packageDistRef": {
