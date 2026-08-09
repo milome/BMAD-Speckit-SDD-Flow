@@ -1,8 +1,0 @@
-{
-  "ok": false,
-  "schemaVersion": "goal-contract-generation-receipt/v1",
-  "failureClass": "partition_impact_coverage_incomplete",
-  "message": "partition_impact_coverage_incomplete",
-  "sourcePath": "packages/bmad-speckit/tests/goal-contract-campaign-repair-lifecycle.test.js",
-  "line": 406
-}

@@ -1,6 +1,0 @@
-{
-  "ok": false,
-  "schemaVersion": "goal-contract-generation-receipt/v1",
-  "failureClass": "partition_immutable_bytes_conflict",
-  "message": "partition_immutable_bytes_conflict"
-}

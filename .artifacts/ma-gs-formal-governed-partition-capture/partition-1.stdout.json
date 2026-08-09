@@ -1,8 +1,0 @@
-{
-  "ok": false,
-  "schemaVersion": "goal-contract-generation-receipt/v1",
-  "failureClass": "partition_impact_scan_limit_exceeded",
-  "message": "partition_impact_scan_limit_exceeded",
-  "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
-  "limit": "maxBytesPerFile"
-}
