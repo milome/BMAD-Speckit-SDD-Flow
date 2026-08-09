@@ -6,20 +6,20 @@
   },
   "sourceConfig": {
     "path": "_bmad/_config/governance-remediation.yaml",
-    "hash": "sha256:493028eb1221c8e86ba625dc486d58ab7157d9d1330710d14cfe2fe1c82ad147"
+    "hash": "sha256:a13e2be1ff68152ac5ecae3567ad8320b1349d1d075abf36b096ed11380f5687"
   },
-  "activeProviderRef": "local-sonnet-judge",
+  "activeProviderRef": "local-codex-judge",
   "providers": [
     {
-      "providerRef": "local-sonnet-judge",
+      "providerRef": "local-codex-judge",
       "provider": {
         "enabled": true,
         "transport": "cli",
-        "adapterRef": "ClaudeCodeCliJudgeAdapter",
+        "adapterRef": "CodexCliJudgeAdapter",
         "apiStyle": "cli",
         "credentialRef": "local-sonnet-judge",
         "endpoint": {
-          "command": "claude",
+          "command": "codex",
           "baseUrl": "http://localhost:3010",
           "resolutionMode": "path_search",
           "routingOwnership": "transport_adapter",
@@ -48,8 +48,8 @@
           "maxBudgetUsd": 5
         }
       },
-      "adapterRef": "ClaudeCodeCliJudgeAdapter"
+      "adapterRef": "CodexCliJudgeAdapter"
     }
   ],
-  "registryHash": "sha256:4e4fa986eb0d107344e806b1d353da8e2590dc2b56932a233e87a686d1278890"
+  "registryHash": "sha256:9227b284d27d405edc71d94fb27c4e5d47b22571aa3473fa979158e3ea5de867"
 }
