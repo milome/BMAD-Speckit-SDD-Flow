@@ -183,27 +183,21 @@ describe('release evidence parity', () => {
     });
   });
 
-  it('builds workspace dependencies before compiling the main-agent dist', () => {
+  it('keeps the checkout pristine until governed release-full package preparation', () => {
     const releaseWorkflow = load(
       readFileSync('.github/workflows/release.yml', 'utf8')
     ) as any;
-    const rootPackage = JSON.parse(readFileSync('package.json', 'utf8'));
     const steps = releaseWorkflow.jobs.release.steps;
-    const buildIndex = steps.findIndex((step: any) => step.name === 'Build release runtime');
     const releaseFullIndex = steps.findIndex((step: any) =>
       String(step.run || '').includes('npm run ci:release-full')
     );
+    const preReleaseFullCommands = steps
+      .slice(0, releaseFullIndex)
+      .map((step: any) => String(step.run || ''))
+      .join('\n');
 
-    expect(buildIndex).toBeGreaterThanOrEqual(0);
-    expect(releaseFullIndex).toBeGreaterThan(buildIndex);
-    expect(steps[buildIndex]?.run).toBe('npm run build');
-    expect(rootPackage.scripts.build.split(' && ')).toEqual([
-      'npm run build:scoring',
-      'npm run build:runtime-context',
-      'npm run build:runtime-emit',
-      'npm run build:ralph-method',
-      'npm run build:main-agent-dist',
-    ]);
+    expect(releaseFullIndex).toBeGreaterThanOrEqual(0);
+    expect(preReleaseFullCommands).not.toContain('npm run build');
   });
 
   it('rejects release parity that compares one evidence file with itself', () => {

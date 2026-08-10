@@ -95,9 +95,6 @@ jobs:
           name: ci-final-${{ inputs.commit_sha }}
           path: .artifacts/qualifying/final
 
-      - name: Build release runtime
-        run: npm run build
-
       - name: Run fresh release-full
         run: npm run ci:release-full -- --commit-sha "$CI_COMMIT_SHA" --changed-paths .artifacts/qualifying/plan/changed-paths.json
 
