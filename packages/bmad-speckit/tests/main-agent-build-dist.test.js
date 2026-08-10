@@ -401,11 +401,19 @@ describe('main-agent dist build', () => {
       false,
       'release job must not rerun full-suite shards serially'
     );
-    assert.equal(
-      releaseRuns.some((command) => /(^|\s)npm\s+run\s+build(?:\s|$)/u.test(command)),
-      false,
-      'release workflow must leave package preparation to the governed detached worktree'
+    const descriptorIndex = releaseRuns.findIndex((command) =>
+      command.includes('prepublish-check.js --verify-descriptor')
     );
+    const buildIndex = releaseRuns.findIndex((command) => command === 'npm run build');
+    const gatesIndex = workflow.jobs.release.steps.findIndex((step) =>
+      String(step.name || '').includes('protected release gates')
+    );
+    assert.ok(descriptorIndex >= 0, 'release workflow must verify package reproducibility');
+    assert.ok(
+      buildIndex > descriptorIndex,
+      'release runtime build must follow package verification'
+    );
+    assert.ok(buildIndex < gatesIndex, 'release runtime build must precede protected gates');
   });
 
   it('fails closed when package source JavaScript is not explicitly allowlisted', () => {
