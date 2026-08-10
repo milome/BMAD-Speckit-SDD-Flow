@@ -85,9 +85,9 @@ jobs:
         with:
           node-version: '22.22.1'
           cache: npm
-          registry-url: https://registry.npmjs.org
 
-      - run: npm install --global npm@11.6.2
+      - name: Install release-only npm CLI for Trusted Publishing
+        run: npm install --global npm@11.6.2
 
       - run: git config core.filemode false
 

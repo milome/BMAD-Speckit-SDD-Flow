@@ -331,15 +331,23 @@ describe('release evidence parity', () => {
     const releaseWorkflow = load(readFileSync('.github/workflows/release.yml', 'utf8')) as any;
     const publishWorkflow = load(readFileSync('.github/workflows/publish-npm.yml', 'utf8')) as any;
     const triggers = releaseWorkflow.on || releaseWorkflow.true;
+    const setupNodeStep = releaseWorkflow.jobs.release.steps.find(
+      (step: any) => step.uses === 'actions/setup-node@v4'
+    );
     const releaseCommands = releaseWorkflow.jobs.release.steps
       .map((step: any) => String(step.run || ''))
       .join('\n');
+    const authenticationSurface = JSON.stringify({ releaseWorkflow, publishWorkflow });
 
     expect(releaseCommands).toContain('npm install --global npm@11.6.2');
+    expect(setupNodeStep.with['node-version']).toBe('22.22.1');
+    expect(setupNodeStep.with).not.toHaveProperty('registry-url');
     expect(releaseWorkflow.jobs.release.env).not.toHaveProperty('NODE_AUTH_TOKEN');
     expect(triggers.workflow_call.secrets).toBeUndefined();
     expect(publishWorkflow.jobs.publish.secrets).toBeUndefined();
     expect(publishWorkflow.permissions['id-token']).toBe('write');
+    expect(authenticationSurface).not.toMatch(/NPM_TOKEN|NODE_AUTH_TOKEN|npm_token/iu);
+    expect(authenticationSurface).not.toContain('"secrets":"inherit"');
   });
 
   it('installs without lifecycle side effects before canonical package preparation', () => {
