@@ -77,7 +77,7 @@ jobs:
 
       - run: npm install --global npm@10.9.4
 
-      - run: npm ci
+      - run: npm ci --ignore-scripts
 
       - name: Download exact qualifying PR plan
         uses: actions/download-artifact@v4

@@ -183,11 +183,14 @@ describe('release evidence parity', () => {
     });
   });
 
-  it('keeps the checkout pristine until governed release-full package preparation', () => {
+  it('installs without lifecycle side effects before governed package preparation', () => {
     const releaseWorkflow = load(
       readFileSync('.github/workflows/release.yml', 'utf8')
     ) as any;
     const steps = releaseWorkflow.jobs.release.steps;
+    const installIndex = steps.findIndex(
+      (step: any) => String(step.run || '') === 'npm ci --ignore-scripts'
+    );
     const releaseFullIndex = steps.findIndex((step: any) =>
       String(step.run || '').includes('npm run ci:release-full')
     );
@@ -196,7 +199,9 @@ describe('release evidence parity', () => {
       .map((step: any) => String(step.run || ''))
       .join('\n');
 
+    expect(installIndex).toBeGreaterThanOrEqual(0);
     expect(releaseFullIndex).toBeGreaterThanOrEqual(0);
+    expect(releaseFullIndex).toBeGreaterThan(installIndex);
     expect(preReleaseFullCommands).not.toContain('npm run build');
   });
 
