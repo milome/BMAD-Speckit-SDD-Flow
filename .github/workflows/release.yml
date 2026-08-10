@@ -53,10 +53,6 @@ on:
         required: false
         default: true
         type: boolean
-    secrets:
-      npm_token:
-        required: false
-
 permissions:
   actions: read
   contents: write
@@ -79,7 +75,6 @@ jobs:
       NPM_REGISTRY: https://registry.npmjs.org
       NPM_TAG: ${{ inputs.npm_tag }}
       DRY_RUN: ${{ inputs.dry_run }}
-      NODE_AUTH_TOKEN: ${{ secrets.npm_token }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -92,7 +87,7 @@ jobs:
           cache: npm
           registry-url: https://registry.npmjs.org
 
-      - run: npm install --global npm@10.9.4
+      - run: npm install --global npm@11.6.2
 
       - run: git config core.filemode false
 
@@ -208,7 +203,7 @@ jobs:
             exit 1
           fi
 
-      - name: Publish the qualifying canonical tarball
+      - name: Publish the qualifying canonical tarball via npm trusted publishing
         shell: bash
         run: |
           tarball=$(node -p "require('./.artifacts/test-portfolio/package/canonical-package.json').tarballPath")
