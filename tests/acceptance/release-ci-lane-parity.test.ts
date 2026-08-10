@@ -188,6 +188,9 @@ describe('release evidence parity', () => {
       readFileSync('.github/workflows/release.yml', 'utf8')
     ) as any;
     const steps = releaseWorkflow.jobs.release.steps;
+    const filemodeIndex = steps.findIndex(
+      (step: any) => String(step.run || '') === 'git config core.filemode false'
+    );
     const installIndex = steps.findIndex(
       (step: any) => String(step.run || '') === 'npm ci --ignore-scripts'
     );
@@ -199,8 +202,10 @@ describe('release evidence parity', () => {
       .map((step: any) => String(step.run || ''))
       .join('\n');
 
+    expect(filemodeIndex).toBeGreaterThanOrEqual(0);
     expect(installIndex).toBeGreaterThanOrEqual(0);
     expect(releaseFullIndex).toBeGreaterThanOrEqual(0);
+    expect(filemodeIndex).toBeLessThan(installIndex);
     expect(releaseFullIndex).toBeGreaterThan(installIndex);
     expect(preReleaseFullCommands).not.toContain('npm run build');
   });
