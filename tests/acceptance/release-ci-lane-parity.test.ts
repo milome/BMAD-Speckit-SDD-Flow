@@ -188,11 +188,15 @@ describe('release evidence parity', () => {
       readFileSync('.github/workflows/release.yml', 'utf8')
     ) as any;
     const rootPackage = JSON.parse(readFileSync('package.json', 'utf8'));
-    const buildStep = releaseWorkflow.jobs.release.steps.find(
-      (step: any) => step.name === 'Build release runtime'
+    const steps = releaseWorkflow.jobs.release.steps;
+    const buildIndex = steps.findIndex((step: any) => step.name === 'Build release runtime');
+    const releaseFullIndex = steps.findIndex((step: any) =>
+      String(step.run || '').includes('npm run ci:release-full')
     );
 
-    expect(buildStep?.run).toBe('npm run build');
+    expect(buildIndex).toBeGreaterThanOrEqual(0);
+    expect(releaseFullIndex).toBeGreaterThan(buildIndex);
+    expect(steps[buildIndex]?.run).toBe('npm run build');
     expect(rootPackage.scripts.build.split(' && ')).toEqual([
       'npm run build:scoring',
       'npm run build:runtime-context',

@@ -386,10 +386,10 @@ describe('main-agent dist build', () => {
 
   it('builds main-agent dist before release CI-equivalent tests', () => {
     const workflow = fs.readFileSync(RELEASE_WORKFLOW, 'utf8');
-    const buildIndex = workflow.indexOf('npm run build:main-agent-dist');
+    const buildIndex = workflow.indexOf('run: npm run build');
     const testIndex = workflow.indexOf('npm run ci:release-full');
 
-    assert.notEqual(buildIndex, -1, 'release workflow must build main-agent dist');
+    assert.notEqual(buildIndex, -1, 'release workflow must build the complete release runtime');
     assert.notEqual(testIndex, -1, 'release workflow must run governed release-full tests');
     assert.ok(
       buildIndex < testIndex,
