@@ -183,6 +183,17 @@ describe('release evidence parity', () => {
     });
   });
 
+  it('builds workspace dependencies before compiling the main-agent dist', () => {
+    const releaseWorkflow = load(
+      readFileSync('.github/workflows/release.yml', 'utf8')
+    ) as any;
+    const buildStep = releaseWorkflow.jobs.release.steps.find(
+      (step: any) => step.name === 'Build release runtime'
+    );
+
+    expect(buildStep?.run).toBe('npm run build');
+  });
+
   it('rejects release parity that compares one evidence file with itself', () => {
     const releaseSource = readFileSync('.github/workflows/release.yml', 'utf8');
     const publishSource = readFileSync('.github/workflows/publish-npm.yml', 'utf8');
