@@ -33,9 +33,42 @@ function catalogEvidence(testIdentities: string[]) {
   };
 }
 
+function packageEvidence(overrides: Record<string, unknown> = {}) {
+  return {
+    commitSha: evidence().commitSha,
+    packageDescriptorHash: evidence().packageDescriptorHash,
+    tarballSha256: evidence().tarballSha256,
+    ...overrides,
+  };
+}
+
 describe('release evidence parity', () => {
-  it('requires exact immutable evidence and release coverage that contains PR selection', () => {
-    const release = evidence({
+  it.each(['nightly-full', 'release-full'])(
+    'accepts exact immutable %s evidence that contains PR selection',
+    (profile) => {
+      const fullSuite = evidence({
+        profile,
+        requiredLaneIdentities: ['core/core-01', 'feature/feature-01', 'feature/feature-02'],
+        selectedTestIdentities: [
+          'vitest::tests/core.test.ts',
+          'vitest::tests/feature.test.ts',
+          'vitest::tests/release.test.ts',
+        ],
+      });
+      const catalog = catalogEvidence(fullSuite.selectedTestIdentities as string[]);
+
+      expect(
+        verifyReleaseEvidenceParity(evidence(), fullSuite, catalog, packageEvidence())
+      ).toMatchObject({
+        qualifyingSelectedCount: 2,
+        fullSuiteProfile: profile,
+        fullSuiteSelectedCount: 3,
+      });
+    }
+  );
+
+  it('requires exact PR, full-suite, and regenerated package parity', () => {
+    const fullSuite = evidence({
       profile: 'release-full',
       requiredLaneIdentities: ['core/core-01', 'feature/feature-01', 'feature/feature-02'],
       selectedTestIdentities: [
@@ -44,12 +77,7 @@ describe('release evidence parity', () => {
         'vitest::tests/release.test.ts',
       ],
     });
-    const catalog = catalogEvidence(release.selectedTestIdentities as string[]);
-
-    expect(verifyReleaseEvidenceParity(evidence(), release, catalog)).toMatchObject({
-      qualifyingSelectedCount: 2,
-      releaseSelectedCount: 3,
-    });
+    const catalog = catalogEvidence(fullSuite.selectedTestIdentities as string[]);
 
     for (const [field, value] of [
       ['commitSha', 'b'.repeat(40)],
@@ -59,8 +87,28 @@ describe('release evidence parity', () => {
       ['tarballSha256', `sha256:${'8'.repeat(64)}`],
     ] as const) {
       expect(() =>
-        verifyReleaseEvidenceParity(evidence(), { ...release, [field]: value }, catalog)
+        verifyReleaseEvidenceParity(
+          evidence(),
+          { ...fullSuite, [field]: value },
+          catalog,
+          packageEvidence()
+        )
       ).toThrow('RELEASE_EVIDENCE_PARITY_MISMATCH');
+    }
+
+    for (const [field, value] of [
+      ['commitSha', 'b'.repeat(40)],
+      ['packageDescriptorHash', `sha256:${'7'.repeat(64)}`],
+      ['tarballSha256', `sha256:${'8'.repeat(64)}`],
+    ] as const) {
+      expect(() =>
+        verifyReleaseEvidenceParity(
+          evidence(),
+          fullSuite,
+          catalog,
+          packageEvidence({ [field]: value })
+        )
+      ).toThrow('RELEASE_PACKAGE_EVIDENCE_PARITY_MISMATCH');
     }
   });
 
@@ -71,9 +119,9 @@ describe('release evidence parity', () => {
     });
     const catalog = catalogEvidence(release.selectedTestIdentities as string[]);
 
-    expect(() => verifyReleaseEvidenceParity(evidence(), release, catalog)).toThrow(
-      'RELEASE_EVIDENCE_PR_NOT_CONTAINED'
-    );
+    expect(() =>
+      verifyReleaseEvidenceParity(evidence(), release, catalog, packageEvidence())
+    ).toThrow('RELEASE_EVIDENCE_PR_NOT_CONTAINED');
     expect(() =>
       verifyReleaseEvidenceParity(
         evidence({ selectedTestIdentities: ['vitest::tests/core.test.ts'] }),
@@ -82,9 +130,21 @@ describe('release evidence parity', () => {
           'vitest::tests/core.test.ts',
           'vitest::tests/feature.test.ts',
           'vitest::tests/release.test.ts',
-        ])
+        ]),
+        packageEvidence()
       )
     ).toThrow('RELEASE_EVIDENCE_CATALOG_MISMATCH');
+  });
+
+  it('rejects a partial profile as full-suite evidence', () => {
+    expect(() =>
+      verifyReleaseEvidenceParity(
+        evidence(),
+        evidence(),
+        catalogEvidence(evidence().selectedTestIdentities as string[]),
+        packageEvidence()
+      )
+    ).toThrow('RELEASE_VERIFICATION_PROFILE_INVALID');
   });
 
   it('rejects an incomplete release run manifest before reading catalog evidence', () => {
@@ -107,10 +167,12 @@ describe('release evidence parity', () => {
         main([
           '--pr-evidence',
           prEvidencePath,
-          '--release-evidence',
+          '--full-suite-evidence',
           releaseEvidencePath,
           '--catalog',
           join(root, 'missing-catalog.json'),
+          '--package-descriptor',
+          join(root, 'missing-package.json'),
         ])
       ).toThrow('RELEASE_VERIFICATION_EVIDENCE_INCOMPLETE');
     } finally {
@@ -125,10 +187,12 @@ describe('release evidence parity', () => {
     const args = [
       '--pr-evidence',
       prEvidencePath,
-      '--release-evidence',
+      '--full-suite-evidence',
       releaseEvidencePath,
       '--catalog',
       join(root, 'missing-catalog.json'),
+      '--package-descriptor',
+      join(root, 'missing-package.json'),
     ];
     try {
       writeFileSync(prEvidencePath, JSON.stringify(evidence()), 'utf8');
@@ -154,23 +218,57 @@ describe('release evidence parity', () => {
     });
     const releaseWorkflow = load(releaseSource) as any;
     const triggers = releaseWorkflow.on || releaseWorkflow.true;
+    const fallback = releaseWorkflow.jobs['release-full-fallback'];
+    const releaseSteps = releaseWorkflow.jobs.release.steps;
+    const reuseDownloads = releaseSteps.filter((step: any) =>
+      String(step.name || '').startsWith('Reuse exact full-suite')
+    );
+    const fallbackDownloads = releaseSteps.filter((step: any) =>
+      String(step.name || '').startsWith('Download matrix fallback')
+    );
+    const provenanceChecks = releaseSteps.filter(
+      (step: any) => step.uses === 'actions/github-script@v7'
+    );
 
     expect(result.independentPublishAuthorityCount).toBe(0);
     expect(result.independentPackAuthorityCount).toBe(0);
     expect(result.runtimeMismatchCount).toBe(0);
     expect(result.evidencePathDistinct).toBe(true);
+    expect(result.releaseFullFallbackCount).toBe(1);
+    expect(result.releaseCancellationGuardCount).toBe(1);
+    expect(result.fullSuiteRunProvenanceCheckCount).toBe(1);
+    expect(result.serialReleaseFullRunCount).toBe(0);
+    expect(result.packagePreparationRunCount).toBe(1);
     expect(Object.keys(triggers).sort()).toEqual(['workflow_call', 'workflow_dispatch']);
     expect(
       releaseWorkflow.jobs.release.steps.map((step: any) => String(step.run || '')).join('\n')
     ).toContain('npm install --global npm@10.9.4');
-    expect(
-      releaseWorkflow.jobs.release.steps.map((step: any) => String(step.run || '')).join('\n')
-    ).toContain(
-      'npm run ci:release-full -- --commit-sha "$CI_COMMIT_SHA" --changed-paths .artifacts/qualifying/plan/changed-paths.json'
+    expect(fallback.if).toBe("${{ inputs.full_suite_run_id == '' }}");
+    expect(fallback.uses).toBe('./.github/workflows/ci.yml');
+    expect(fallback.with).toMatchObject({
+      requested_profile: 'release-full',
+      commit_sha: '${{ inputs.commit_sha }}',
+    });
+    expect(releaseWorkflow.jobs.release.if).toContain('!cancelled()');
+    expect(releaseWorkflow.jobs.release.if).not.toContain('always()');
+    expect(provenanceChecks).toHaveLength(1);
+    expect(provenanceChecks[0].with.script).toContain("run.conclusion !== 'success'");
+    expect(provenanceChecks[0].with.script).toContain('run.head_sha');
+    expect(provenanceChecks[0].with.script).toContain(
+      "workflow.path !== '.github/workflows/ci.yml'"
     );
+    expect(reuseDownloads).toHaveLength(2);
+    expect(
+      reuseDownloads.every((step: any) => step.with['run-id'] === '${{ inputs.full_suite_run_id }}')
+    ).toBe(true);
+    expect(fallbackDownloads).toHaveLength(2);
+    expect(fallbackDownloads.every((step: any) => step.with['run-id'] === undefined)).toBe(true);
+    expect(
+      releaseSteps.some((step: any) => String(step.name || '').includes('qualifying PR plan'))
+    ).toBe(false);
     expect(
       releaseWorkflow.jobs.release.steps.map((step: any) => String(step.run || '')).join('\n')
-    ).toContain('--catalog .artifacts/test-portfolio/test-catalog.json');
+    ).toContain('--catalog .artifacts/test-portfolio/full-suite/plan/test-catalog.json');
   });
 
   it('grants the reusable publish caller the permissions required by release authority', () => {
@@ -181,12 +279,13 @@ describe('release evidence parity', () => {
       contents: 'write',
       'id-token': 'write',
     });
+    expect(publishWorkflow.jobs.publish.with.full_suite_run_id).toBe(
+      '${{ inputs.full_suite_run_id }}'
+    );
   });
 
-  it('installs without lifecycle side effects before governed package preparation', () => {
-    const releaseWorkflow = load(
-      readFileSync('.github/workflows/release.yml', 'utf8')
-    ) as any;
+  it('installs without lifecycle side effects before canonical package preparation', () => {
+    const releaseWorkflow = load(readFileSync('.github/workflows/release.yml', 'utf8')) as any;
     const steps = releaseWorkflow.jobs.release.steps;
     const filemodeIndex = steps.findIndex(
       (step: any) => String(step.run || '') === 'git config core.filemode false'
@@ -194,28 +293,31 @@ describe('release evidence parity', () => {
     const installIndex = steps.findIndex(
       (step: any) => String(step.run || '') === 'npm ci --ignore-scripts'
     );
-    const releaseFullIndex = steps.findIndex((step: any) =>
-      String(step.run || '').includes('npm run ci:release-full')
+    const packagePreparationIndex = steps.findIndex((step: any) =>
+      String(step.run || '').includes('npm run ci:prepare-package')
     );
-    const preReleaseFullCommands = steps
-      .slice(0, releaseFullIndex)
+    const prePackageCommands = steps
+      .slice(0, packagePreparationIndex)
       .map((step: any) => String(step.run || ''))
       .join('\n');
 
     expect(filemodeIndex).toBeGreaterThanOrEqual(0);
     expect(installIndex).toBeGreaterThanOrEqual(0);
-    expect(releaseFullIndex).toBeGreaterThanOrEqual(0);
+    expect(packagePreparationIndex).toBeGreaterThanOrEqual(0);
     expect(filemodeIndex).toBeLessThan(installIndex);
-    expect(releaseFullIndex).toBeGreaterThan(installIndex);
-    expect(preReleaseFullCommands).not.toContain('npm run build');
+    expect(packagePreparationIndex).toBeGreaterThan(installIndex);
+    expect(prePackageCommands).not.toContain('npm run build');
+    expect(steps.map((step: any) => String(step.run || '')).join('\n')).not.toContain(
+      'npm run ci:release-full'
+    );
   });
 
   it('rejects release parity that compares one evidence file with itself', () => {
     const releaseSource = readFileSync('.github/workflows/release.yml', 'utf8');
     const publishSource = readFileSync('.github/workflows/publish-npm.yml', 'utf8');
     const selfComparison = releaseSource.replace(
-      /--release-evidence\s+\S+/u,
-      '--release-evidence .artifacts/qualifying/final/ci-run-manifest.json'
+      /--full-suite-evidence\s+\S+/u,
+      '--full-suite-evidence .artifacts/qualifying/final/ci-run-manifest.json'
     );
 
     expect(() =>
@@ -226,17 +328,40 @@ describe('release evidence parity', () => {
     ).toThrow('RELEASE_EVIDENCE_SELF_COMPARISON');
   });
 
-  it('rejects release authority that does not produce fresh release-full evidence', () => {
+  it('rejects release authority without a reusable matrix fallback', () => {
     const releaseSource = readFileSync('.github/workflows/release.yml', 'utf8');
     const publishSource = readFileSync('.github/workflows/publish-npm.yml', 'utf8');
-    const withoutReleaseVerification = releaseSource.replace(
-      /^\s+- name: Run fresh release-full[\s\S]*?^\s+- name: Verify exact evidence/mu,
-      '      - name: Verify exact evidence'
+    const withoutReleaseFallback = releaseSource.replace(
+      /^(?:[ ]{2})release-full-fallback:[\s\S]*?^(?:[ ]{2})release:/mu,
+      '  release:'
     );
 
     expect(() =>
       verifyReleaseWorkflowAuthority({
-        releaseSource: withoutReleaseVerification,
+        releaseSource: withoutReleaseFallback,
+        publishSource,
+      })
+    ).toThrow('RELEASE_VERIFICATION_RUN_REQUIRED');
+  });
+
+  it('rejects release authority without cancellation and run provenance guards', () => {
+    const releaseSource = readFileSync('.github/workflows/release.yml', 'utf8');
+    const publishSource = readFileSync('.github/workflows/publish-npm.yml', 'utf8');
+    const unsafeCancellation = releaseSource.replace('!cancelled()', 'always()');
+    const withoutProvenance = releaseSource.replace(
+      'uses: actions/github-script@v7',
+      'uses: actions/github-script@v6'
+    );
+
+    expect(() =>
+      verifyReleaseWorkflowAuthority({
+        releaseSource: unsafeCancellation,
+        publishSource,
+      })
+    ).toThrow('RELEASE_VERIFICATION_RUN_REQUIRED');
+    expect(() =>
+      verifyReleaseWorkflowAuthority({
+        releaseSource: withoutProvenance,
         publishSource,
       })
     ).toThrow('RELEASE_VERIFICATION_RUN_REQUIRED');

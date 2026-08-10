@@ -5,6 +5,7 @@ const { createHash } = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { load } = require('js-yaml');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const REPO_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
@@ -384,15 +385,25 @@ describe('main-agent dist build', () => {
     );
   });
 
-  it('delegates release package preparation to governed release-full', () => {
-    const workflow = fs.readFileSync(RELEASE_WORKFLOW, 'utf8');
-    const buildIndex = workflow.indexOf('run: npm run build');
-    const testIndex = workflow.indexOf('npm run ci:release-full');
+  it('separates matrix full-suite evidence from governed package preparation', () => {
+    const workflow = load(fs.readFileSync(RELEASE_WORKFLOW, 'utf8'));
+    const fallback = workflow.jobs['release-full-fallback'];
+    const releaseRuns = workflow.jobs.release.steps.map((step) => String(step.run || ''));
 
-    assert.notEqual(testIndex, -1, 'release workflow must run governed release-full tests');
+    assert.equal(fallback.uses, './.github/workflows/ci.yml');
+    assert.equal(fallback.with.requested_profile, 'release-full');
+    assert.ok(
+      releaseRuns.some((command) => command.includes('npm run ci:prepare-package')),
+      'release workflow must prepare the canonical package in a governed detached worktree'
+    );
     assert.equal(
-      buildIndex,
-      -1,
+      releaseRuns.some((command) => command.includes('npm run ci:release-full')),
+      false,
+      'release job must not rerun full-suite shards serially'
+    );
+    assert.equal(
+      releaseRuns.some((command) => /(^|\s)npm\s+run\s+build(?:\s|$)/u.test(command)),
+      false,
       'release workflow must leave package preparation to the governed detached worktree'
     );
   });

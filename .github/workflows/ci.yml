@@ -24,6 +24,10 @@ on:
         description: Required base commit for impact-sensitive profiles
         required: false
         type: string
+      commit_sha:
+        description: Exact commit to test; defaults to the event commit
+        required: false
+        type: string
   workflow_call:
     inputs:
       requested_profile:
@@ -31,6 +35,10 @@ on:
         default: pr-fast
         type: string
       base_sha:
+        required: false
+        default: ''
+        type: string
+      commit_sha:
         required: false
         default: ''
         type: string
@@ -49,9 +57,11 @@ jobs:
     outputs:
       matrix: ${{ steps.manifest.outputs.matrix }}
       execution_allowed: ${{ steps.selection-gate.outputs.execution_allowed }}
+      commit_sha: ${{ steps.target.outputs.commit_sha }}
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.commit_sha || github.sha }}
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
@@ -66,6 +76,24 @@ jobs:
       # classify must preserve a pristine checkout for catalog provenance.
       - run: npm ci --ignore-scripts
 
+      - name: Resolve exact CI target
+        id: target
+        shell: bash
+        env:
+          INPUT_COMMIT_SHA: ${{ inputs.commit_sha }}
+        run: |
+          target="${INPUT_COMMIT_SHA:-$GITHUB_SHA}"
+          if [[ ! "$target" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::CI_COMMIT_SHA_INVALID:$target"
+            exit 1
+          fi
+          actual=$(git rev-parse HEAD)
+          if [ "$actual" != "$target" ]; then
+            echo "::error::CI_COMMIT_SHA_MISMATCH:expected=$target actual=$actual"
+            exit 1
+          fi
+          echo "commit_sha=$target" >> "$GITHUB_OUTPUT"
+
       - name: Typecheck six-model diagnostics acceptance
         run: npx tsc --noEmit --target ES2022 --lib ES2022 --module ES2022 --moduleResolution node --strict --esModuleInterop --skipLibCheck --resolveJsonModule tests/acceptance/ci-six-model-diagnostics.test.ts
 
@@ -76,6 +104,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           INPUT_PROFILE: ${{ inputs.requested_profile }}
           INPUT_BASE_SHA: ${{ inputs.base_sha }}
+          TARGET_SHA: ${{ steps.target.outputs.commit_sha }}
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}
         run: |
@@ -108,7 +137,7 @@ jobs:
               ;;
           esac
           if [ -n "$base" ]; then
-            git diff --name-only "$base" "$GITHUB_SHA" |
+            git diff --name-only "$base" "$TARGET_SHA" |
               node -e "const fs=require('fs');const {canonicalJsonBytes}=require('./tools/test-portfolio-audit/canonical.cjs');const rows=fs.readFileSync(0,'utf8').split(/\r?\n/u).filter(Boolean).sort();fs.writeFileSync('.artifacts/test-portfolio/changed-paths.json',canonicalJsonBytes(rows));"
           else
             node -e "const fs=require('fs');const {canonicalJsonBytes}=require('./tools/test-portfolio-audit/canonical.cjs');fs.writeFileSync('.artifacts/test-portfolio/changed-paths.json',canonicalJsonBytes([]));"
@@ -117,13 +146,14 @@ jobs:
           echo "profile=$profile" >> "$GITHUB_OUTPUT"
 
       - name: Prepare the canonical package once
-        run: npm run ci:prepare-package -- --commit-sha "$GITHUB_SHA"
+        run: npm run ci:prepare-package -- --commit-sha "${{ steps.target.outputs.commit_sha }}"
 
       - name: Generate the governed test plan within budget
         id: planning
         shell: bash
         env:
           BASE_SHA: ${{ steps.profile.outputs.base_sha }}
+          COMMIT_SHA: ${{ steps.target.outputs.commit_sha }}
           PROFILE: ${{ steps.profile.outputs.profile }}
           PR_FAST_PLANNING_BUDGET_SECONDS: '90'
         run: |
@@ -144,7 +174,7 @@ jobs:
             run_stage ci:catalog npm run ci:catalog -- --changed-paths .artifacts/test-portfolio/changed-paths.json
             run_stage ci:profile-policy npm run ci:profile-policy -- --catalog .artifacts/test-portfolio/test-catalog.json --output .artifacts/test-portfolio/test-profile-policy.json
             run_stage ci:timing-bootstrap npm run ci:timing-bootstrap
-            run_stage ci:freeze-core npm run ci:freeze-core -- --catalog .artifacts/test-portfolio/test-catalog.json --facts .artifacts/test-portfolio/test-catalog-facts.json --timing-summary .artifacts/test-portfolio/ci-test-timing-summary.json --commit-sha "$GITHUB_SHA" --environment-class linux-x64-node22 --output .artifacts/test-portfolio/core-freeze.json
+            run_stage ci:freeze-core npm run ci:freeze-core -- --catalog .artifacts/test-portfolio/test-catalog.json --facts .artifacts/test-portfolio/test-catalog-facts.json --timing-summary .artifacts/test-portfolio/ci-test-timing-summary.json --commit-sha "$COMMIT_SHA" --environment-class linux-x64-node22 --output .artifacts/test-portfolio/core-freeze.json
             run_stage ci:coverage-gap npm run ci:coverage-gap -- --catalog .artifacts/test-portfolio/test-catalog.json --core-freeze .artifacts/test-portfolio/core-freeze.json
             local -a selection_args=(
               --catalog .artifacts/test-portfolio/test-catalog.json
@@ -157,7 +187,7 @@ jobs:
               selection_args+=(
                 --facts .artifacts/test-portfolio/test-catalog-facts.json
                 --base-sha "$BASE_SHA"
-                --commit-sha "$GITHUB_SHA"
+                --commit-sha "$COMMIT_SHA"
               )
             else
               selection_args+=(
@@ -165,7 +195,7 @@ jobs:
               )
             fi
             run_stage ci:select npm run ci:select -- "${selection_args[@]}"
-            run_stage ci:shard-plan npm run ci:shard-plan -- --selection .artifacts/test-portfolio/test-selection.json --commit-sha "$GITHUB_SHA" --environment-class linux-x64-node22
+            run_stage ci:shard-plan npm run ci:shard-plan -- --selection .artifacts/test-portfolio/test-selection.json --commit-sha "$COMMIT_SHA" --environment-class linux-x64-node22
             run_stage ci:semantic-index npm run ci:semantic-index -- --selection .artifacts/test-portfolio/test-selection.json --shard-plan .artifacts/test-portfolio/ci-shard-plan.json --coverage-report .artifacts/test-portfolio/six-model-coverage-gap-report.json --catalog .artifacts/test-portfolio/test-catalog.json --changed-paths .artifacts/test-portfolio/changed-paths.json
           }
 
@@ -179,7 +209,7 @@ jobs:
 
       - name: Freeze the planned Run Manifest
         id: manifest
-        run: npm run ci:manifest -- --catalog .artifacts/test-portfolio/test-catalog.json --selection .artifacts/test-portfolio/test-selection.json --shard-plan .artifacts/test-portfolio/ci-shard-plan.json --timing-summary .artifacts/test-portfolio/ci-test-timing-summary.json --semantic-index .artifacts/test-portfolio/ci-shard-semantic-index.json --package-descriptor .artifacts/test-portfolio/package/canonical-package.json --commit-sha "$GITHUB_SHA"
+        run: npm run ci:manifest -- --catalog .artifacts/test-portfolio/test-catalog.json --selection .artifacts/test-portfolio/test-selection.json --shard-plan .artifacts/test-portfolio/ci-shard-plan.json --timing-summary .artifacts/test-portfolio/ci-test-timing-summary.json --semantic-index .artifacts/test-portfolio/ci-shard-semantic-index.json --package-descriptor .artifacts/test-portfolio/package/canonical-package.json --commit-sha "${{ steps.target.outputs.commit_sha }}"
 
       - name: Gate shard execution on selection readiness
         id: selection-gate
@@ -204,7 +234,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ci-plan-${{ github.sha }}
+          name: ci-plan-${{ steps.target.outputs.commit_sha }}
           path: .artifacts/test-portfolio/
           if-no-files-found: error
           retention-days: 7
@@ -219,6 +249,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ needs.classify.outputs.commit_sha }}
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
@@ -234,7 +265,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: ci-plan-${{ github.sha }}
+          name: ci-plan-${{ needs.classify.outputs.commit_sha }}
           path: .artifacts/test-portfolio
 
       - name: Prepare generated shard runtime
@@ -258,6 +289,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.classify.outputs.commit_sha }}
 
       - uses: actions/setup-node@v4
         with:
@@ -270,7 +303,7 @@ jobs:
       - uses: actions/download-artifact@v4
         continue-on-error: true
         with:
-          name: ci-plan-${{ github.sha }}
+          name: ci-plan-${{ needs.classify.outputs.commit_sha }}
           path: .artifacts/test-portfolio
 
       - uses: actions/download-artifact@v4
@@ -298,7 +331,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ci-final-${{ github.sha }}
+          name: ci-final-${{ needs.classify.outputs.commit_sha }}
           path: .artifacts/test-portfolio/final/
           if-no-files-found: error
           retention-days: 30
