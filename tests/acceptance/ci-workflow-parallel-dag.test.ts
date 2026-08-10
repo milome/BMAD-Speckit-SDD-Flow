@@ -51,6 +51,7 @@ function runManualProfileStep(inputProfile: string) {
         EVENT_NAME: 'workflow_dispatch',
         GITHUB_OUTPUT: outputPath,
         GITHUB_SHA: 'a'.repeat(40),
+        TARGET_SHA: 'a'.repeat(40),
         INPUT_BASE_SHA: '',
         INPUT_PROFILE: inputProfile,
         MERGE_GROUP_BASE_SHA: '',
@@ -81,6 +82,9 @@ describe('governed CI workflow DAG', () => {
     );
     expect(workflow.jobs['classify'].outputs.execution_allowed).toBe(
       '${{ steps.selection-gate.outputs.execution_allowed }}'
+    );
+    expect(workflow.jobs['classify'].outputs.commit_sha).toBe(
+      '${{ steps.target.outputs.commit_sha }}'
     );
     expect(workflow.jobs['execute-shard'].if).toBe(
       "needs.classify.outputs.execution_allowed == 'true'"
@@ -174,7 +178,7 @@ describe('governed CI workflow DAG', () => {
     expect(planningStep.run).toContain('if [ -n "$BASE_SHA" ]');
     expect(planningStep.run).toContain('--facts .artifacts/test-portfolio/test-catalog-facts.json');
     expect(planningStep.run).toContain('--base-sha "$BASE_SHA"');
-    expect(planningStep.run).toContain('--commit-sha "$GITHUB_SHA"');
+    expect(planningStep.run).toContain('--commit-sha "$COMMIT_SHA"');
     expect(planningStep.run).toContain(
       '--changed-paths .artifacts/test-portfolio/changed-paths.json'
     );
@@ -187,6 +191,38 @@ describe('governed CI workflow DAG', () => {
 
     expect(dispatchInputs.requested_profile.default).toBe('nightly-full');
     expect(dispatchInputs.base_sha).toMatchObject({ required: false, type: 'string' });
+    expect(dispatchInputs.commit_sha).toMatchObject({ required: false, type: 'string' });
+  });
+
+  it('binds reusable execution and artifacts to the exact requested commit', () => {
+    const workflow = readWorkflow();
+    const classify = workflow.jobs.classify;
+    const execute = workflow.jobs['execute-shard'];
+    const join = workflow.jobs['evidence-join'];
+    const classifyCheckout = classify.steps.find(
+      (step: any) => step.uses === 'actions/checkout@v4'
+    );
+    const executeCheckout = execute.steps.find((step: any) => step.uses === 'actions/checkout@v4');
+    const joinCheckout = join.steps.find((step: any) => step.uses === 'actions/checkout@v4');
+    const planUpload = classify.steps.find(
+      (step: any) => step.uses === 'actions/upload-artifact@v4'
+    );
+    const planDownload = execute.steps.find(
+      (step: any) => step.uses === 'actions/download-artifact@v4'
+    );
+    const finalUpload = join.steps.find((step: any) => step.uses === 'actions/upload-artifact@v4');
+
+    expect(workflow.on.workflow_call.inputs.commit_sha).toMatchObject({
+      required: false,
+      default: '',
+      type: 'string',
+    });
+    expect(classifyCheckout.with.ref).toBe('${{ inputs.commit_sha || github.sha }}');
+    expect(executeCheckout.with.ref).toBe('${{ needs.classify.outputs.commit_sha }}');
+    expect(joinCheckout.with.ref).toBe('${{ needs.classify.outputs.commit_sha }}');
+    expect(planUpload.with.name).toBe('ci-plan-${{ steps.target.outputs.commit_sha }}');
+    expect(planDownload.with.name).toBe('ci-plan-${{ needs.classify.outputs.commit_sha }}');
+    expect(finalUpload.with.name).toBe('ci-final-${{ needs.classify.outputs.commit_sha }}');
   });
 
   it.each(['pr-fast', 'pr-full', 'nightly-deep', 'release-verify'])(

@@ -11,6 +11,10 @@ on:
         description: Exact qualifying commit SHA
         required: true
         type: string
+      full_suite_run_id:
+        description: Optional successful same-SHA nightly-full or release-full run ID
+        required: false
+        type: string
       npm_tag:
         description: npm dist-tag
         required: true
@@ -33,6 +37,7 @@ jobs:
     with:
       qualifying_run_id: ${{ inputs.qualifying_run_id }}
       commit_sha: ${{ inputs.commit_sha }}
+      full_suite_run_id: ${{ inputs.full_suite_run_id }}
       npm_tag: ${{ inputs.npm_tag }}
       dry_run: ${{ inputs.dry_run }}
     secrets:

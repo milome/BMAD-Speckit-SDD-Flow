@@ -5,6 +5,7 @@ const { createHash } = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { load } = require('js-yaml');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const REPO_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
@@ -384,17 +385,35 @@ describe('main-agent dist build', () => {
     );
   });
 
-  it('builds main-agent dist before release CI-equivalent tests', () => {
-    const workflow = fs.readFileSync(RELEASE_WORKFLOW, 'utf8');
-    const buildIndex = workflow.indexOf('npm run build:main-agent-dist');
-    const testIndex = workflow.indexOf('npm run ci:release-full');
+  it('separates matrix full-suite evidence from governed package preparation', () => {
+    const workflow = load(fs.readFileSync(RELEASE_WORKFLOW, 'utf8'));
+    const fallback = workflow.jobs['release-full-fallback'];
+    const releaseRuns = workflow.jobs.release.steps.map((step) => String(step.run || ''));
 
-    assert.notEqual(buildIndex, -1, 'release workflow must build main-agent dist');
-    assert.notEqual(testIndex, -1, 'release workflow must run governed release-full tests');
+    assert.equal(fallback.uses, './.github/workflows/ci.yml');
+    assert.equal(fallback.with.requested_profile, 'release-full');
     assert.ok(
-      buildIndex < testIndex,
-      'release workflow must build main-agent dist before tests invoke package CLI'
+      releaseRuns.some((command) => command.includes('npm run ci:prepare-package')),
+      'release workflow must prepare the canonical package in a governed detached worktree'
     );
+    assert.equal(
+      releaseRuns.some((command) => command.includes('npm run ci:release-full')),
+      false,
+      'release job must not rerun full-suite shards serially'
+    );
+    const descriptorIndex = releaseRuns.findIndex((command) =>
+      command.includes('prepublish-check.js --verify-descriptor')
+    );
+    const buildIndex = releaseRuns.findIndex((command) => command === 'npm run build');
+    const gatesIndex = workflow.jobs.release.steps.findIndex((step) =>
+      String(step.name || '').includes('protected release gates')
+    );
+    assert.ok(descriptorIndex >= 0, 'release workflow must verify package reproducibility');
+    assert.ok(
+      buildIndex > descriptorIndex,
+      'release runtime build must follow package verification'
+    );
+    assert.ok(buildIndex < gatesIndex, 'release runtime build must precede protected gates');
   });
 
   it('fails closed when package source JavaScript is not explicitly allowlisted', () => {
