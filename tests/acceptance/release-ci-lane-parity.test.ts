@@ -187,11 +187,19 @@ describe('release evidence parity', () => {
     const releaseWorkflow = load(
       readFileSync('.github/workflows/release.yml', 'utf8')
     ) as any;
+    const rootPackage = JSON.parse(readFileSync('package.json', 'utf8'));
     const buildStep = releaseWorkflow.jobs.release.steps.find(
       (step: any) => step.name === 'Build release runtime'
     );
 
     expect(buildStep?.run).toBe('npm run build');
+    expect(rootPackage.scripts.build.split(' && ')).toEqual([
+      'npm run build:scoring',
+      'npm run build:runtime-context',
+      'npm run build:runtime-emit',
+      'npm run build:ralph-method',
+      'npm run build:main-agent-dist',
+    ]);
   });
 
   it('rejects release parity that compares one evidence file with itself', () => {
