@@ -7,6 +7,7 @@ import { load } from 'js-yaml';
 
 const require = createRequire(import.meta.url);
 const {
+  catalogTestIdentities,
   main,
   verifyReleaseEvidenceParity,
   verifyReleaseWorkflowAuthority,
@@ -43,6 +44,20 @@ function packageEvidence(overrides: Record<string, unknown> = {}) {
 }
 
 describe('release evidence parity', () => {
+  it('uses executable identities when projecting catalog evidence', () => {
+    expect(
+      catalogTestIdentities({
+        tests: [
+          { identityKey: 'root-vitest#test-a', executableIdentity: 'vitest::test-a' },
+          { identityKey: 'root-vitest#test-b', executableIdentity: 'vitest::test-b' },
+        ],
+      })
+    ).toEqual(['vitest::test-a', 'vitest::test-b']);
+    expect(() => catalogTestIdentities({ tests: [{ identityKey: 'root-vitest#test-a' }] })).toThrow(
+      'RELEASE_CATALOG_EVIDENCE_INVALID'
+    );
+  });
+
   it.each(['nightly-full', 'release-full'])(
     'accepts exact immutable %s evidence that contains PR selection',
     (profile) => {
@@ -67,6 +82,38 @@ describe('release evidence parity', () => {
     }
   );
 
+  it('accepts event-context catalog drift when full-suite catalog is internally consistent', () => {
+    const fullSuite = evidence({
+      profile: 'nightly-full',
+      catalogHash: `sha256:${'5'.repeat(64)}`,
+      requiredLaneIdentities: ['core/core-01', 'feature/feature-01', 'feature/feature-02'],
+      selectedTestIdentities: [
+        'vitest::tests/core.test.ts',
+        'vitest::tests/feature.test.ts',
+        'vitest::tests/release.test.ts',
+      ],
+    });
+    const catalog = {
+      ...catalogEvidence(fullSuite.selectedTestIdentities as string[]),
+      catalogHash: fullSuite.catalogHash,
+    };
+
+    expect(
+      verifyReleaseEvidenceParity(evidence(), fullSuite, catalog, packageEvidence())
+    ).toMatchObject({
+      catalogHash: fullSuite.catalogHash,
+      fullSuiteProfile: 'nightly-full',
+    });
+    expect(() =>
+      verifyReleaseEvidenceParity(
+        evidence(),
+        fullSuite,
+        { ...catalog, catalogHash: `sha256:${'6'.repeat(64)}` },
+        packageEvidence()
+      )
+    ).toThrow('RELEASE_CATALOG_EVIDENCE_PARITY_MISMATCH');
+  });
+
   it('requires exact PR, full-suite, and regenerated package parity', () => {
     const fullSuite = evidence({
       profile: 'release-full',
@@ -81,7 +128,6 @@ describe('release evidence parity', () => {
 
     for (const [field, value] of [
       ['commitSha', 'b'.repeat(40)],
-      ['catalogHash', `sha256:${'5'.repeat(64)}`],
       ['policyHash', `sha256:${'6'.repeat(64)}`],
       ['packageDescriptorHash', `sha256:${'7'.repeat(64)}`],
       ['tarballSha256', `sha256:${'8'.repeat(64)}`],

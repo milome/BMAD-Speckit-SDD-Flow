@@ -90,6 +90,16 @@ function normalizeCatalogEvidence(value) {
   };
 }
 
+function catalogTestIdentities(value) {
+  if (!value || typeof value !== 'object' || !Array.isArray(value.tests)) {
+    fail('RELEASE_CATALOG_EVIDENCE_INVALID');
+  }
+  return canonicalStringArray(
+    value.tests.map((test) => test?.executableIdentity),
+    'RELEASE_CATALOG_EVIDENCE_INVALID'
+  );
+}
+
 function normalizePackageEvidence(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     fail('RELEASE_PACKAGE_EVIDENCE_INVALID');
@@ -116,12 +126,13 @@ function verifyReleaseEvidenceParity(
   const catalog = normalizeCatalogEvidence(catalogEvidence);
   const preparedPackage = normalizePackageEvidence(packageEvidence);
   for (const field of PARITY_FIELDS) {
+    if (field === 'catalogHash') continue;
     if (actual[field] !== expected[field]) {
       fail('RELEASE_EVIDENCE_PARITY_MISMATCH', { field });
     }
   }
-  if (catalog.catalogHash !== expected.catalogHash) {
-    fail('RELEASE_EVIDENCE_PARITY_MISMATCH', { field: 'catalogHash' });
+  if (catalog.catalogHash !== actual.catalogHash) {
+    fail('RELEASE_CATALOG_EVIDENCE_PARITY_MISMATCH', { field: 'catalogHash' });
   }
   if (expected.profile !== 'pr-fast') {
     fail('RELEASE_QUALIFYING_PROFILE_INVALID');
@@ -152,7 +163,12 @@ function verifyReleaseEvidenceParity(
     }
   }
   return {
-    ...Object.fromEntries(PARITY_FIELDS.map((field) => [field, expected[field]])),
+    ...Object.fromEntries(
+      PARITY_FIELDS.map((field) => [
+        field,
+        field === 'catalogHash' ? actual[field] : expected[field],
+      ])
+    ),
     qualifyingProfile: expected.profile,
     qualifyingSelectedCount: expected.selectedTestIdentities.length,
     fullSuiteProfile: actual.profile,
@@ -362,7 +378,7 @@ function main(args = process.argv.slice(2)) {
     fullSuiteEvidence,
     {
       catalogHash: catalogReceipt.sha256,
-      testIdentities: catalogReceipt.artifact.tests.map((test) => test.identityKey),
+      testIdentities: catalogTestIdentities(catalogReceipt.artifact),
     },
     {
       commitSha: packageReceipt.artifact.commitSha,
@@ -379,6 +395,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  catalogTestIdentities,
   evidenceFromRunManifest,
   main,
   verifyReleaseEvidenceParity,
