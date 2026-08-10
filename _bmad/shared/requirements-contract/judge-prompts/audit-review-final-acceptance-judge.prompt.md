@@ -4,7 +4,7 @@ templateId: audit-review-final-acceptance-judge.prompt
 templateVersion: 1.0.0
 judgeRole: final_acceptance_judge
 actorClass: final_acceptance_judge
-promptTemplateHash: sha256:1562e95ad025a9f5096aa8e405ca179370bcb55558c7d325c9f767bdaf5c92ee
+promptTemplateHash: sha256:e1c2ab9ca6587ec7364fc234b4ba0a0fd592476df53e876976d36e098957f20b
 ---
 # Audit Review Final Acceptance Judge Prompt
 

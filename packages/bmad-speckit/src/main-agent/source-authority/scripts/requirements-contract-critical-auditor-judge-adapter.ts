@@ -169,6 +169,78 @@ function cloneJson<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+const OMITTED_CODEX_TRANSPORT_SCHEMA_KEYWORDS = new Set([
+  'allOf',
+  'contains',
+  'dependentRequired',
+  'dependentSchemas',
+  'if',
+  'maxContains',
+  'maxItems',
+  'maxProperties',
+  'minContains',
+  'minItems',
+  'minProperties',
+  'not',
+  'patternProperties',
+  'then',
+  'unevaluatedItems',
+  'uniqueItems',
+]);
+const CODEX_AUTHORITY_JSON_FIELD = '__authorityJson';
+
+function codexTransportOutputSchema(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(codexTransportOutputSchema);
+  if (!value || typeof value !== 'object') return value;
+  const projected: JsonRecord = {};
+  for (const [key, child] of Object.entries(value as JsonRecord)) {
+    if (OMITTED_CODEX_TRANSPORT_SCHEMA_KEYWORDS.has(key)) continue;
+    const projectedKey = key === 'oneOf' ? 'anyOf' : key;
+    projected[projectedKey] = codexTransportOutputSchema(child);
+  }
+  if (projected.type === 'object') {
+    const properties = record(
+      projected.properties ?? {},
+      'critical_auditor_judge_codex_transport_schema_invalid'
+    );
+    if (Object.keys(properties).length === 0) {
+      projected.properties = {
+        [CODEX_AUTHORITY_JSON_FIELD]: {
+          type: 'string',
+          minLength: 2,
+          description: 'JSON-encoded object; decoded and validated against the authority schema.',
+        },
+      };
+      projected.additionalProperties = false;
+      projected.required = [CODEX_AUTHORITY_JSON_FIELD];
+      return projected;
+    }
+    projected.additionalProperties = false;
+    projected.required = Object.keys(properties);
+  }
+  return projected;
+}
+
+function decodeCodexAuthorityObjects(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(decodeCodexAuthorityObjects);
+  if (!value || typeof value !== 'object') return value;
+  const source = value as JsonRecord;
+  const keys = Object.keys(source);
+  if (keys.length === 1 && keys[0] === CODEX_AUTHORITY_JSON_FIELD) {
+    try {
+      return record(
+        JSON.parse(text(source[CODEX_AUTHORITY_JSON_FIELD])),
+        'critical_auditor_judge_codex_transport_object_invalid'
+      );
+    } catch {
+      throw new Error('critical_auditor_judge_codex_transport_object_invalid');
+    }
+  }
+  return Object.fromEntries(
+    Object.entries(source).map(([key, child]) => [key, decodeCodexAuthorityObjects(child)])
+  );
+}
+
 function criticalAuditorTransportOutputSchema(request: JsonRecord): JsonRecord {
   const assessmentSchema = readJsonObject(
     path.resolve(
@@ -511,9 +583,13 @@ function schema(name: string): JsonRecord {
   ) as JsonRecord;
 }
 
-function validateSchema(value: unknown, schemaName: string, code: string): void {
-  const validate = new Ajv2020({ allErrors: true, strict: false }).compile(schema(schemaName));
+function validateSchemaValue(value: unknown, schemaValue: JsonRecord, code: string): void {
+  const validate = new Ajv2020({ allErrors: true, strict: false }).compile(schemaValue);
   if (!validate(value)) throw new Error(`${code}:${JSON.stringify(validate.errors ?? [])}`);
+}
+
+function validateSchema(value: unknown, schemaName: string, code: string): void {
+  validateSchemaValue(value, schema(schemaName), code);
 }
 
 function containsCredentialMaterial(value: unknown, seen = new Set<object>()): boolean {
@@ -807,6 +883,13 @@ function codexCliTransportEvidence(
     runtimeBinding.credentialEnvironmentVariable;
   if (text(evidence.executorKind) !== expectedExecutorKind) {
     throw new Error('critical_auditor_judge_cli_executor_kind_mismatch');
+  }
+  if (
+    !text(evidence.observedModel) ||
+    text(evidence.modelObservationSource) === 'unavailable' ||
+    evidence.decisionBearingModelEvidence !== true
+  ) {
+    throw new Error('codex_cli_judge_model_observation_missing');
   }
   assertCodexCliLaunchProvenance(evidence, expectedArgv, expectedExecutorKind);
   if (
@@ -3026,9 +3109,28 @@ function adapterResultFrom(input: {
   request: JsonRecord;
   runtimeBinding: JsonRecord;
   normalized: JsonRecord;
+  authorityStructuredOutputSchema: JsonRecord;
   round: number;
 }): JsonRecord {
-  const assessment = judgeAssessment(input.normalized);
+  const codexTransport = text(input.runtimeBinding.adapterRef) === 'CodexCliJudgeAdapter';
+  const normalizedForAuthority =
+    codexTransport
+      ? record(
+          {
+            ...input.normalized,
+            findings: decodeCodexAuthorityObjects(input.normalized.findings),
+          },
+          'critical_auditor_judge_codex_transport_object_invalid'
+        )
+      : input.normalized;
+  if (codexTransport) {
+    validateSchemaValue(
+      decisionProjection(normalizedForAuthority, 'critical_auditor_judge_transport_output_invalid'),
+      input.authorityStructuredOutputSchema,
+      'critical_auditor_judge_transport_output_invalid'
+    );
+  }
+  const assessment = judgeAssessment(normalizedForAuthority);
   assertAssessmentAuthorityBindings(input.request, assessment);
   const result = {
     schemaVersion: 'critical-auditor-external-adapter-result/v1',
@@ -3362,6 +3464,7 @@ function readCommittedJudgeInvocation(input: {
     request: input.request,
     runtimeBinding: input.runtimeBinding,
     normalized,
+    authorityStructuredOutputSchema: criticalAuditorTransportOutputSchema(input.request),
     round: input.round,
   });
   const result = record(
@@ -3861,7 +3964,14 @@ export async function requirementsContractCriticalAuditorJudgeAdapterCommand(
   );
   assertRequestIdentity(request, round);
   assertRequestBinding(request, runtimeBinding);
-  const structuredOutputSchema = criticalAuditorTransportOutputSchema(request);
+  const authorityStructuredOutputSchema = criticalAuditorTransportOutputSchema(request);
+  const structuredOutputSchema =
+    text(runtimeBinding.adapterRef) === 'CodexCliJudgeAdapter'
+      ? record(
+          codexTransportOutputSchema(authorityStructuredOutputSchema),
+          'critical_auditor_judge_codex_transport_schema_invalid'
+        )
+      : authorityStructuredOutputSchema;
   const expectedArgv = expectedCliArgv(judgeRuntime, runtimeBinding, request);
   const paths = judgeInvocationPaths({
     root,
@@ -4049,6 +4159,7 @@ export async function requirementsContractCriticalAuditorJudgeAdapterCommand(
         request,
         runtimeBinding,
         normalized,
+        authorityStructuredOutputSchema,
         round,
       });
       assertJudgeInvocationLockOwnership({

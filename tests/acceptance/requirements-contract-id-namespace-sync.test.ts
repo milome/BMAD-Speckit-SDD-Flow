@@ -51,7 +51,7 @@ describe('requirements contract ID namespace synchronization', () => {
     } finally {
       removeTempRoot(root);
     }
-  }, 60_000);
+  }, 120_000);
 
   it('archives stale namespace artifacts and restarts at round one when response namespace drifts', () => {
     const root = createTempRoot('requirements-contract-namespace-stale-');

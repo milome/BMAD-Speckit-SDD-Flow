@@ -4,7 +4,7 @@
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-consumer-registry.ts",
     "hash": "sha256:41520fc5e372004bb5b5ba2b53d3172de4fcd07f0286741a200ab836655018e0"
   },
-  "registryHash": "sha256:4f84f9633ffff2129b5038aff83f79226be57961e893445303df15091f0a3c3f",
+  "registryHash": "sha256:acd55d3e9aec61caa2c0f21abec800ee547b6955711989ea4b0dd8c0c3ada531",
   "validationModes": [
     "draft",
     "confirmation-ready",
@@ -535,7 +535,7 @@
     {
       "consumerId": "critical-auditor-judge-adapter",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-critical-auditor-judge-adapter.ts",
-      "pathHash": "sha256:090f6087d368b886cd1294af98355ffd4d5b8a6379e5e2a49807d6cefae051db",
+      "pathHash": "sha256:f20f51cbbd8700e2cea9bf020864fac72befeec593c3a3f8ccb096b331f3d321",
       "inputRole": "critical_auditor_round_request",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",

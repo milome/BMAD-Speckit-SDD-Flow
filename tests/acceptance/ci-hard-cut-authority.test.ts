@@ -1,177 +1,35 @@
-import { execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
-import { basename, dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { runProfileWithSelectionStatus } from './ci-hard-cut-governed-profile.fixture';
+import { registerWorkflowAuthorityTests } from './ci-hard-cut-workflow-authority';
 
 const require = createRequire(import.meta.url);
-const { verifyCiAuthorityHardCut } = require('../../tools/ci/verify-ci-authority-hard-cut.cjs');
 const { writeCanonicalArtifact } = require('../../tools/ci/canonical-artifact.cjs');
 
-function runProfileWithSelectionStatus(
-  selectionStatus: 'ready' | 'blocked',
-  {
-    seedTimingSummary = true,
-    seedDefaultFailureRecords = false,
-    failureRecordsPath,
-    planningBudgetMs,
-    profile = 'pr-fast',
-    stageDurationsMs = {},
-  }: {
-    seedTimingSummary?: boolean;
-    seedDefaultFailureRecords?: boolean;
-    failureRecordsPath?: string;
-    planningBudgetMs?: number;
-    profile?: 'pr-fast' | 'nightly-full';
-    stageDurationsMs?: Record<string, number>;
-  } = {}
-) {
-  const repoRoot = mkdtempSync(join(tmpdir(), 'ci-governed-profile-'));
-  execFileSync('git', ['init', '--quiet'], { cwd: repoRoot });
-  const calls: string[] = [];
-  const manifestMatrix = [{ lane: 'core', shardId: 'core-01' }];
-  const timingSummaryPath = join(repoRoot, '.artifacts/test-portfolio/ci-test-timing-summary.json');
-  const timingSummary = {
-    schemaVersion: 'ci-test-timing-summary/v1',
-    commitSha: 'a'.repeat(40),
-    environmentClass: 'windows-x64-node22',
-    testTimings: [],
-  };
-  if (seedTimingSummary) {
-    writeCanonicalArtifact({
-      repoRoot,
-      outputDir: '.artifacts/test-portfolio',
-      fileName: 'ci-test-timing-summary.json',
-      artifact: timingSummary,
-    });
-  }
-  const defaultFailureRecordsPath = '.artifacts/test-portfolio/product-failure-records.json';
-  if (seedDefaultFailureRecords) {
-    writeCanonicalArtifact({
-      repoRoot,
-      outputDir: '.artifacts/test-portfolio',
-      fileName: 'product-failure-records.json',
-      artifact: { schemaVersion: 'product-failure-records/v1', stale: true },
-    });
-  }
-  if (failureRecordsPath) {
-    writeCanonicalArtifact({
-      repoRoot,
-      outputDir: dirname(join(repoRoot, failureRecordsPath)),
-      fileName: basename(failureRecordsPath),
-      artifact: { schemaVersion: 'product-failure-records/v1', explicit: true },
-    });
-  }
-  let timingSummaryExistsAtFreeze: boolean | null = null;
-  let failureRecordsExistsAtCoverage: boolean | null = null;
-  let coverageArgs: string[] | null = null;
-  let elapsedMs = 0;
-  const spawn = (_file: string, args: string[]) => {
-    const scriptName = args[0] === 'run' ? args[1] : args[0];
-    calls.push(scriptName);
-    elapsedMs += stageDurationsMs[scriptName] || 0;
-    if (scriptName === 'tools/ci/freeze-core-portfolio.cjs') {
-      timingSummaryExistsAtFreeze = existsSync(timingSummaryPath);
-    }
-    if (scriptName === 'tools/ci/generate-six-model-coverage-gap-report.cjs') {
-      coverageArgs = args.slice(1);
-      failureRecordsExistsAtCoverage = existsSync(
-        join(repoRoot, failureRecordsPath || defaultFailureRecordsPath)
-      );
-    }
-    if (scriptName === 'ci:select') {
-      writeCanonicalArtifact({
-        repoRoot,
-        outputDir: '.artifacts/test-portfolio',
-        fileName: 'test-selection.json',
-        artifact: {
-          schemaVersion: 'test-selection/v1',
-          coverageReportHash: `sha256:${'c'.repeat(64)}`,
-          selectionStatus,
-          blockingGapCount: selectionStatus === 'blocked' ? 1 : 0,
-          uncoveredObligationIds:
-            selectionStatus === 'blocked'
-              ? ['requirement_confirmation/stale_evidence_rejection']
-              : [],
-          requestedProfile: profile,
-          profile,
-          expansionLevel: 'trace_capability',
-          escalationReasonCodes: [],
-          selected: [],
-          gates: {
-            selectionOmissionCount: 0,
-            selectionDuplicateCount: 0,
-            unresolvedImpactBindingCount: 0,
-          },
-        },
-      });
-    }
-    if (scriptName === 'ci:shard-plan') {
-      writeCanonicalArtifact({
-        repoRoot,
-        outputDir: '.artifacts/test-portfolio',
-        fileName: 'ci-shard-plan.json',
-        artifact: { schemaVersion: 'ci-shard-plan/v1', shards: manifestMatrix },
-      });
-    }
-    if (scriptName === 'ci:manifest') {
-      writeCanonicalArtifact({
-        repoRoot,
-        outputDir: '.artifacts/test-portfolio',
-        fileName: 'ci-run-manifest.json',
-        artifact: { matrix: manifestMatrix },
-      });
-    }
-    return { status: 0 };
-  };
-
-  try {
-    const { runGovernedProfile } = require('../../tools/ci/run-governed-profile.cjs');
-    const result = runGovernedProfile({
-      repoRoot,
-      profile,
-      baseSha: 'b'.repeat(40),
-      commitSha: 'a'.repeat(40),
-      changedPaths: [],
-      failureRecordsPath,
-      planningBudgetMs,
-      spawn,
-      now: () => elapsedMs,
-      listTrackedChanges: () => [],
-      restoreTrackedChanges: () => {},
-    });
-    return {
-      calls,
-      result,
-      shardPlanExists: existsSync(join(repoRoot, '.artifacts/test-portfolio/ci-shard-plan.json')),
-      manifestExists: existsSync(join(repoRoot, '.artifacts/test-portfolio/ci-run-manifest.json')),
-      timingSummaryExistsAtFreeze,
-      failureRecordsExistsAtCoverage,
-      coverageArgs,
-      timingSummary: existsSync(timingSummaryPath)
-        ? JSON.parse(readFileSync(timingSummaryPath, 'utf8'))
-        : null,
-    };
-  } finally {
-    rmSync(repoRoot, { recursive: true, force: true });
-  }
-}
-
-function readWorkflowSource(filePath: string) {
-  return readFileSync(filePath, 'utf8').replace(/\r\n?/gu, '\n');
-}
-
-function sources() {
-  return {
-    ciSource: readWorkflowSource('.github/workflows/ci.yml'),
-    releaseSource: readWorkflowSource('.github/workflows/release.yml'),
-    publishSource: readWorkflowSource('.github/workflows/publish-npm.yml'),
-    packageJson: JSON.parse(readFileSync('package.json', 'utf8')),
-  };
-}
-
 describe('CI authority hard cut', () => {
+  it('clears a stale semantic index before a governed run', () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), 'ci-semantic-index-reset-'));
+    try {
+      const { resetGeneratedEvidence } = require('../../tools/ci/run-governed-profile.cjs');
+      const receipt = writeCanonicalArtifact({
+        repoRoot,
+        outputDir: '.artifacts/test-portfolio',
+        fileName: 'ci-shard-semantic-index.json',
+        artifact: { stale: true },
+      });
+      expect(existsSync(receipt.path)).toBe(true);
+
+      resetGeneratedEvidence(repoRoot);
+
+      expect(existsSync(receipt.path)).toBe(false);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
   it('keeps the local test:ci compatibility path on the governed authorities', () => {
     const {
       buildGovernedProfileCommands,
@@ -199,6 +57,7 @@ describe('CI authority hard cut', () => {
       'ci:coverage-gap',
       'ci:select',
       'ci:shard-plan',
+      'ci:semantic-index',
       'ci:prepare-package',
       'ci:manifest',
       'ci:prepare-shard-runtime',
@@ -248,10 +107,29 @@ describe('CI authority hard cut', () => {
         'windows-x64-node22',
       ],
     });
+    expect(commands[5]).toEqual({
+      scriptName: 'ci:semantic-index',
+      directNodeScript: 'tools/ci/build-shard-semantic-index.cjs',
+      args: [
+        '--selection',
+        '.artifacts/test-portfolio/test-selection.json',
+        '--shard-plan',
+        '.artifacts/test-portfolio/ci-shard-plan.json',
+        '--coverage-report',
+        '.artifacts/test-portfolio/six-model-coverage-gap-report.json',
+        '--catalog',
+        '.artifacts/test-portfolio/test-catalog.json',
+        '--changed-paths',
+        '.artifacts/test-portfolio/changed-paths.json',
+      ],
+    });
     expect(commands[1].directNodeScript).toBe(commandTargetPath('governed-profile-freeze-core'));
     expect(commands[2].directNodeScript).toBe(commandTargetPath('governed-profile-coverage-gap'));
     expect(commandTargetPath('governed-profile-product-failure-records')).toBe(
       'tools/ci/build-product-failure-records.cjs'
+    );
+    expect(commandTargetPath('governed-profile-semantic-index')).toBe(
+      'tools/ci/build-shard-semantic-index.cjs'
     );
     expect(commandTargetPath('portfolio-maintenance-generate-deletion-candidates')).toBe(
       'tools/ci/generate-test-deletion-candidates.cjs'
@@ -632,9 +510,27 @@ describe('CI authority hard cut', () => {
     expect(execution.shardPlanExists).toBe(true);
     expect(execution.manifestExists).toBe(true);
     expect(execution.calls).toContain('ci:shard-plan');
+    expect(execution.calls).toContain('tools/ci/build-shard-semantic-index.cjs');
     expect(execution.calls).toContain('ci:manifest');
     expect(execution.calls).not.toContain('ci:run-shard');
     expect(execution.calls).not.toContain('ci:join');
+    expect(execution.planningDiagnosticsWritten).toBe(true);
+  });
+
+  it('preserves blocked planning evidence when diagnostics generation fails', () => {
+    const execution = runProfileWithSelectionStatus('blocked', {
+      planningDiagnosticsError: new Error('diagnostics unavailable'),
+    });
+
+    expect(execution.result).toMatchObject({
+      executionStatus: 'blocked',
+      blockingGapCount: 1,
+      shardCount: 1,
+      selectionPath: '.artifacts/test-portfolio/test-selection.json',
+      manifestPath: '.artifacts/test-portfolio/ci-run-manifest.json',
+      diagnosticsPath: null,
+      diagnosticsMarkdownPath: null,
+    });
   });
 
   it('invokes shards and join only when the selection is ready', () => {
@@ -646,6 +542,7 @@ describe('CI authority hard cut', () => {
     });
     expect(execution.calls.filter((scriptName) => scriptName === 'ci:run-shard')).toHaveLength(1);
     expect(execution.calls.filter((scriptName) => scriptName === 'ci:join')).toHaveLength(1);
+    expect(execution.planningDiagnosticsWritten).toBe(false);
   });
 
   it('restores tracked outputs after a successful shard', () => {
@@ -769,17 +666,19 @@ describe('CI authority hard cut', () => {
         'tools/ci/generate-six-model-coverage-gap-report.cjs': 1_100,
         'ci:select': 2_300,
         'ci:shard-plan': 2_500,
+        'tools/ci/build-shard-semantic-index.cjs': 700,
       },
     });
 
     expect(execution.result).toMatchObject({
-      planningDurationMs: 50_500,
+      planningDurationMs: 51_200,
       planningStageDurationsMs: {
         'ci:catalog': 41_000,
         'ci:freeze-core': 3_600,
         'ci:coverage-gap': 1_100,
         'ci:select': 2_300,
         'ci:shard-plan': 2_500,
+        'ci:semantic-index': 700,
       },
     });
     expect(execution.calls).not.toContain('ci:profile-policy');
@@ -889,202 +788,5 @@ describe('CI authority hard cut', () => {
     );
   });
 
-  it('omits absent failure evidence and lets an explicit path override the default', () => {
-    const withoutFailureRecords = runProfileWithSelectionStatus('blocked');
-    const explicitFailureRecords =
-      '.artifacts/test-portfolio/explicit-product-failure-records.json';
-    const withOverride = runProfileWithSelectionStatus('blocked', {
-      seedDefaultFailureRecords: true,
-      failureRecordsPath: explicitFailureRecords,
-    });
-    const { parseCliArgs } = require('../../tools/ci/run-governed-profile.cjs');
-
-    expect(withoutFailureRecords.coverageArgs).not.toContain('--failure-records');
-    expect(withOverride.coverageArgs).toEqual(
-      expect.arrayContaining(['--failure-records', explicitFailureRecords])
-    );
-    expect(
-      parseCliArgs(['--profile', 'pr-fast', '--failure-records', explicitFailureRecords])
-    ).toMatchObject({
-      profile: 'pr-fast',
-      'failure-records': explicitFailureRecords,
-    });
-  });
-
-  it('exposes one fail-closed CLI for every production authority module', () => {
-    for (const modulePath of [
-      '../../tools/ci/generate-test-catalog.cjs',
-      '../../tools/ci/freeze-core-portfolio.cjs',
-      '../../tools/ci/generate-six-model-coverage-gap-report.cjs',
-      '../../tools/ci/build-product-failure-records.cjs',
-      '../../tools/ci/select-ci-tests.cjs',
-      '../../tools/ci/build-shard-plan.cjs',
-      '../../tools/ci/write-ci-run-manifest.cjs',
-      '../../tools/ci/join-ci-evidence.cjs',
-    ]) {
-      expect(require(modulePath).main, modulePath).toBeTypeOf('function');
-    }
-  });
-
-  it('binds product failure evidence to the formal producer CLI without temp authority', () => {
-    const {
-      parseCliArgs: parseProductFailureArgs,
-    } = require('../../tools/ci/build-product-failure-records.cjs');
-    const source = readWorkflowSource('tools/ci/build-product-failure-records.cjs');
-
-    expect(
-      parseProductFailureArgs([
-        '--test-report',
-        '.artifacts/test-portfolio/vitest-report.json',
-        '--catalog',
-        '.artifacts/test-portfolio/test-catalog.json',
-        '--run-receipt',
-        '.artifacts/test-portfolio/run-receipt.json',
-        '--selection',
-        '.artifacts/test-portfolio/test-selection.json',
-      ])
-    ).toMatchObject({
-      testReport: '.artifacts/test-portfolio/vitest-report.json',
-      catalog: '.artifacts/test-portfolio/test-catalog.json',
-      runReceipt: '.artifacts/test-portfolio/run-receipt.json',
-      selections: ['.artifacts/test-portfolio/test-selection.json'],
-      output: '.artifacts/test-portfolio/product-failure-records.json',
-    });
-    expect(source).toContain("schemaVersion: 'product-failure-records/v1'");
-    expect(source).not.toContain('.codex-tmp');
-  });
-
-  it('accepts the production workflow as one fail-closed authority', () => {
-    expect(verifyCiAuthorityHardCut(sources())).toMatchObject({
-      catalogProducerCount: 1,
-      selectionProducerCount: 1,
-      packagePrepareAuthorityCount: 1,
-      planningAuthorityStepCount: 1,
-      prFastPlanningBudgetSeconds: 90,
-      classifyTimeoutMinutes: 5,
-      serialAllTestsJobCount: 0,
-      oldSelectionFallbackCount: 0,
-      modelInvocationCount: 0,
-      independentPublishAuthorityCount: 0,
-    });
-  });
-
-  it('rejects old fallback, model execution, second pack, and matrix path authority', () => {
-    const base = sources();
-    const mutations = [
-      {
-        label: 'production test:ci fallback',
-        source: {
-          ...base,
-          ciSource: base.ciSource.replace(
-            '      - name: Prepare the canonical package once',
-            '      - run: npm run test:ci\n\n      - name: Prepare the canonical package once'
-          ),
-        },
-        code: 'CI_OLD_SELECTION_FALLBACK',
-      },
-      {
-        label: 'model credential',
-        source: {
-          ...base,
-          ciSource: base.ciSource.replace(
-            '      - name: Prepare the canonical package once',
-            '      - run: echo "$OPENAI_API_KEY"\n\n      - name: Prepare the canonical package once'
-          ),
-        },
-        code: 'CI_MODEL_INVOCATION_FORBIDDEN',
-      },
-      {
-        label: 'second package authority',
-        source: {
-          ...base,
-          releaseSource: base.releaseSource.replace(
-            '      - run: npm ci',
-            '      - run: npm ci\n\n      - run: npm pack'
-          ),
-        },
-        code: 'CI_SECOND_PACKAGE_AUTHORITY',
-      },
-      {
-        label: 'matrix path authority',
-        source: {
-          ...base,
-          ciSource: base.ciSource.replace(
-            '${{ fromJSON(needs.classify.outputs.matrix) }}',
-            '${{ fromJSON(needs.classify.outputs.testPath) }}'
-          ),
-        },
-        code: 'CI_MATRIX_TEST_PATH_FORBIDDEN',
-      },
-      {
-        label: 'contributor profile downgrade',
-        source: {
-          ...base,
-          ciSource: base.ciSource.replace(
-            'pull_request)\n              profile=pr-fast',
-            'pull_request)\n              profile="${INPUT_PROFILE:-pr-fast}"'
-          ),
-        },
-        code: 'CI_CONTRIBUTOR_PROFILE_DOWNGRADE',
-      },
-      {
-        label: 'second Catalog producer',
-        source: {
-          ...base,
-          ciSource: base.ciSource.replace(
-            'npm run ci:catalog --',
-            'npm run ci:catalog --\n          npm run ci:catalog --'
-          ),
-        },
-        code: 'CI_CATALOG_AUTHORITY_COUNT',
-      },
-      {
-        label: 'pr-fast planning timeout bypass',
-        source: {
-          ...base,
-          ciSource: base.ciSource.replace(
-            'timeout --foreground --signal=TERM --kill-after=10s',
-            'bash'
-          ),
-        },
-        code: 'CI_PR_FAST_PLANNING_BUDGET_REQUIRED',
-      },
-      {
-        label: 'classify timeout removed',
-        source: {
-          ...base,
-          ciSource: base.ciSource.replace('    timeout-minutes: 5\n', ''),
-        },
-        code: 'CI_CLASSIFY_TIMEOUT_INVALID',
-      },
-      {
-        label: 'skipped required lane',
-        source: {
-          ...base,
-          ciSource: base.ciSource.replace(
-            '  evidence-join:\n    if: always()',
-            "  evidence-join:\n    if: ${{ needs.execute-shard.result == 'success' }}"
-          ),
-        },
-        code: 'CI_EVIDENCE_JOIN_NOT_ALWAYS',
-      },
-      {
-        label: 'release parity bypass',
-        source: {
-          ...base,
-          releaseSource: base.releaseSource.replace(
-            'npm run ci:verify-release-parity',
-            'echo parity-bypassed'
-          ),
-        },
-        code: 'RELEASE_EVIDENCE_PARITY_REQUIRED',
-      },
-    ];
-
-    for (const mutation of mutations) {
-      expect(() => verifyCiAuthorityHardCut(mutation.source), mutation.label).toThrow(
-        mutation.code
-      );
-    }
-  });
+  registerWorkflowAuthorityTests();
 });

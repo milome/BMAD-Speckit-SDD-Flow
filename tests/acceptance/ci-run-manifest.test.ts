@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
@@ -13,7 +13,9 @@ const {
 const {
   createRunManifestPlan,
   finalizeRunManifest,
+  validateSemanticIndexHash,
   validateRunManifest,
+  writePlanningDiagnostics,
   writeRunManifest,
 } = require('../../tools/ci/write-ci-run-manifest.cjs');
 const { buildShardPlan } = require('../../tools/ci/build-shard-plan.cjs');
@@ -93,6 +95,25 @@ function timingGovernedInput() {
     expectedEnvironmentClass: environmentClass,
   });
   return governedInput;
+}
+
+function semanticIndex() {
+  const body = {
+    schemaVersion: 'ci-shard-semantic-index/v1',
+    selectionHash: input.selectionHash,
+    shardPlanHash: input.shardPlan.shardPlanHash,
+    coverageReportHash: input.shardPlan.selection.coverageReportHash,
+    catalogHash: input.catalogHash,
+    changedPathsHash: `sha256:${'5'.repeat(64)}`,
+    uncoveredObligationRefs: [],
+    obligationBindings: [],
+    tests: [],
+    shards: [],
+  };
+  return {
+    ...body,
+    semanticIndexHash: sha256Bytes(canonicalJsonBytes(body)),
+  };
 }
 
 const input = timingGovernedInput();
@@ -188,6 +209,7 @@ describe('single CI Run Manifest', () => {
       { lane: 'feature', shardId: 'feature-01' },
     ]);
     expect(manifest.plan.shardPlan).toEqual(input.shardPlan);
+    expect(manifest.plan.semanticIndexHash).toBe(input.semanticIndexHash);
     expect(manifest.plan.timingSnapshotHash).toBe(input.timingSummary.timingSnapshotHash);
     expect(manifest.plan.policyHash).toBe(input.policyHash);
     expect(manifest.plan).not.toHaveProperty('timingSummary');
@@ -466,6 +488,32 @@ describe('single CI Run Manifest', () => {
     forged.policy.timing.maxShardsPerLane = 3;
 
     expectIssueCode(() => createRunManifestPlan(forged), 'CI_MANIFEST_POLICY_HASH_MISMATCH');
+  });
+
+  it('rejects a semantic index whose declared hash is detached from its canonical body', () => {
+    const forged = semanticIndex();
+    forged.changedPathsHash = `sha256:${'6'.repeat(64)}`;
+
+    expectIssueCode(
+      () => validateSemanticIndexHash(forged),
+      'CI_MANIFEST_SEMANTIC_INDEX_HASH_MISMATCH'
+    );
+  });
+
+  it('persists planning diagnostics before manifest execution continues', () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), 'ci-run-manifest-diagnostics-'));
+    temporaryRoots.push(repoRoot);
+
+    const receipts = writePlanningDiagnostics({ repoRoot, semanticIndex: semanticIndex() });
+
+    expect(receipts.json.path).toBe(
+      join(repoRoot, '.artifacts/test-portfolio/final/six-model-ci-diagnostics.json')
+    );
+    expect(receipts.markdown.path).toBe(
+      join(repoRoot, '.artifacts/test-portfolio/final/six-model-ci-diagnostics.md')
+    );
+    expect(existsSync(receipts.json.path)).toBe(true);
+    expect(existsSync(receipts.markdown.path)).toBe(true);
   });
 
   it('writes one canonical governed manifest artifact', () => {

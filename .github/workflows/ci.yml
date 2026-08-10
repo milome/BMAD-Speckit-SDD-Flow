@@ -66,6 +66,9 @@ jobs:
       # classify must preserve a pristine checkout for catalog provenance.
       - run: npm ci --ignore-scripts
 
+      - name: Typecheck six-model diagnostics acceptance
+        run: npx tsc --noEmit --target ES2022 --lib ES2022 --module ES2022 --moduleResolution node --strict --esModuleInterop --skipLibCheck --resolveJsonModule tests/acceptance/ci-six-model-diagnostics.test.ts
+
       - name: Resolve governed profile and changed paths
         id: profile
         shell: bash
@@ -106,9 +109,9 @@ jobs:
           esac
           if [ -n "$base" ]; then
             git diff --name-only "$base" "$GITHUB_SHA" |
-              node -e "const fs=require('fs');const rows=fs.readFileSync(0,'utf8').split(/\r?\n/u).filter(Boolean).sort();fs.writeFileSync('.artifacts/test-portfolio/changed-paths.json',JSON.stringify(rows));"
+              node -e "const fs=require('fs');const {canonicalJsonBytes}=require('./tools/test-portfolio-audit/canonical.cjs');const rows=fs.readFileSync(0,'utf8').split(/\r?\n/u).filter(Boolean).sort();fs.writeFileSync('.artifacts/test-portfolio/changed-paths.json',canonicalJsonBytes(rows));"
           else
-            node -e "require('fs').writeFileSync('.artifacts/test-portfolio/changed-paths.json','[]');"
+            node -e "const fs=require('fs');const {canonicalJsonBytes}=require('./tools/test-portfolio-audit/canonical.cjs');fs.writeFileSync('.artifacts/test-portfolio/changed-paths.json',canonicalJsonBytes([]));"
           fi
           echo "base_sha=$base" >> "$GITHUB_OUTPUT"
           echo "profile=$profile" >> "$GITHUB_OUTPUT"
@@ -163,6 +166,7 @@ jobs:
             fi
             run_stage ci:select npm run ci:select -- "${selection_args[@]}"
             run_stage ci:shard-plan npm run ci:shard-plan -- --selection .artifacts/test-portfolio/test-selection.json --commit-sha "$GITHUB_SHA" --environment-class linux-x64-node22
+            run_stage ci:semantic-index npm run ci:semantic-index -- --selection .artifacts/test-portfolio/test-selection.json --shard-plan .artifacts/test-portfolio/ci-shard-plan.json --coverage-report .artifacts/test-portfolio/six-model-coverage-gap-report.json --catalog .artifacts/test-portfolio/test-catalog.json --changed-paths .artifacts/test-portfolio/changed-paths.json
           }
 
           export -f run_stage run_planning
@@ -175,7 +179,28 @@ jobs:
 
       - name: Freeze the planned Run Manifest
         id: manifest
-        run: npm run ci:manifest -- --catalog .artifacts/test-portfolio/test-catalog.json --selection .artifacts/test-portfolio/test-selection.json --shard-plan .artifacts/test-portfolio/ci-shard-plan.json --timing-summary .artifacts/test-portfolio/ci-test-timing-summary.json --package-descriptor .artifacts/test-portfolio/package/canonical-package.json --commit-sha "$GITHUB_SHA"
+        run: npm run ci:manifest -- --catalog .artifacts/test-portfolio/test-catalog.json --selection .artifacts/test-portfolio/test-selection.json --shard-plan .artifacts/test-portfolio/ci-shard-plan.json --timing-summary .artifacts/test-portfolio/ci-test-timing-summary.json --semantic-index .artifacts/test-portfolio/ci-shard-semantic-index.json --package-descriptor .artifacts/test-portfolio/package/canonical-package.json --commit-sha "$GITHUB_SHA"
+
+      - name: Gate shard execution on selection readiness
+        id: selection-gate
+        shell: bash
+        run: |
+          node -e "const fs=require('fs');const selection=JSON.parse(fs.readFileSync('.artifacts/test-portfolio/test-selection.json','utf8'));if(!['ready','blocked'].includes(selection.selectionStatus))throw new Error('CI_SELECTION_STATUS_INVALID');fs.appendFileSync(process.env.GITHUB_OUTPUT,'execution_allowed='+(selection.selectionStatus === 'ready')+'\n');"
+
+      - name: Build blocked-selection diagnostics
+        if: steps.selection-gate.outputs.execution_allowed != 'true'
+        run: npm run ci:diagnostics -- --semantic-index .artifacts/test-portfolio/ci-shard-semantic-index.json --mode planning
+
+      - name: Publish blocked-selection diagnostic summary
+        if: steps.selection-gate.outputs.execution_allowed != 'true'
+        shell: bash
+        run: |
+          report=.artifacts/test-portfolio/final/six-model-ci-diagnostics.md
+          if [ -f "$report" ]; then
+            cat "$report" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Six-model CI diagnostics were not produced." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
@@ -183,12 +208,6 @@ jobs:
           path: .artifacts/test-portfolio/
           if-no-files-found: error
           retention-days: 7
-
-      - name: Gate shard execution on selection readiness
-        id: selection-gate
-        shell: bash
-        run: |
-          node -e "const fs=require('fs');const selection=JSON.parse(fs.readFileSync('.artifacts/test-portfolio/test-selection.json','utf8'));if(!['ready','blocked'].includes(selection.selectionStatus))throw new Error('CI_SELECTION_STATUS_INVALID');fs.appendFileSync(process.env.GITHUB_OUTPUT,'execution_allowed='+(selection.selectionStatus === 'ready')+'\n');"
 
   execute-shard:
     needs: classify
@@ -249,25 +268,38 @@ jobs:
       - run: npm ci --ignore-scripts
 
       - uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: ci-plan-${{ github.sha }}
           path: .artifacts/test-portfolio
 
       - uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           pattern: ci-lane-*
           path: .artifacts/test-portfolio/lane-results
           merge-multiple: true
 
       - name: Join all required evidence
-        run: npm run ci:join -- --manifest .artifacts/test-portfolio/ci-run-manifest.json --lane-results-dir .artifacts/test-portfolio/lane-results
+        run: npm run ci:join -- --manifest .artifacts/test-portfolio/ci-run-manifest.json --lane-results-dir .artifacts/test-portfolio/lane-results --semantic-index .artifacts/test-portfolio/ci-shard-semantic-index.json
+
+      - name: Publish six-model diagnostic summary
+        if: always()
+        shell: bash
+        run: |
+          report=.artifacts/test-portfolio/final/six-model-ci-diagnostics.md
+          if [ -f "$report" ]; then
+            cat "$report" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Six-model CI diagnostics were not produced." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Upload final Run Manifest
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ci-final-${{ github.sha }}
-          path: .artifacts/test-portfolio/final/ci-run-manifest.json
+          path: .artifacts/test-portfolio/final/
           if-no-files-found: error
           retention-days: 30
 

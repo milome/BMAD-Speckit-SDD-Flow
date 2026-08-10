@@ -24,7 +24,6 @@ import {
   createRequirementsContractIntentLineageLedger,
   validateRequirementsContractIntentLineageLedger,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-intent-lineage';
-import { createRegisteredSourceAuthoritySnapshot } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-source-root-registry';
 
 const PROJECT_ROOT = process.cwd();
 const PACKAGE_CLI = path.join(PROJECT_ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
@@ -651,11 +650,8 @@ describe('requirement entry-source production migration', () => {
         const sourcePath = path.join(inputDir, 'session-requirement.md');
         const targetPath = path.join(root, 'requirements', 'source-prd.md');
         const canonicalSourcePath = path.relative(root, sourcePath).replace(/\\/g, '/');
-        const expectedSourceHash = createRegisteredSourceAuthoritySnapshot({
-          sourcePath: canonicalSourcePath,
-          sourceText: fixture.sessionRequirement,
-        }).sourceHash;
         writeFileSync(sourcePath, fixture.sessionRequirement, 'utf8');
+        const expectedSourceHash = fileHash(sourcePath);
 
         const result = runProductionEntry(root, sourcePath, targetPath, fixture.sessionAuthority);
         const modelPath = path.join(

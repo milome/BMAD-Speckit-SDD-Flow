@@ -504,18 +504,18 @@ describe('S127 Critical Auditor independence', () => {
     expect(config.provider.id).toBe('openai-governance');
     expect(bindingResult.issueCodes).toEqual([]);
     expect(bindingResult.binding).toMatchObject({
-      providerId: 'local-sonnet-judge',
+      providerId: 'local-codex-judge',
       model: null,
       transport: 'cli',
-      adapterRef: 'ClaudeCodeCliJudgeAdapter',
+      adapterRef: 'CodexCliJudgeAdapter',
       apiStyle: 'cli',
     });
     expect(expectationResult.issueCodes).toEqual([]);
     expect(expectationResult.expectation).toMatchObject({
-      providerId: 'local-sonnet-judge',
+      providerId: 'local-codex-judge',
       model: null,
       transport: 'cli',
-      adapterRef: 'ClaudeCodeCliJudgeAdapter',
+      adapterRef: 'CodexCliJudgeAdapter',
       apiStyle: 'cli',
     });
   });
