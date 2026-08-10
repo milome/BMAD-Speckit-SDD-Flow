@@ -358,6 +358,26 @@ describe('release evidence parity', () => {
     );
   });
 
+  it('builds release gate runtime only after package reproducibility is verified', () => {
+    const releaseWorkflow = load(readFileSync('.github/workflows/release.yml', 'utf8')) as any;
+    const steps = releaseWorkflow.jobs.release.steps;
+    const packagePreparationIndex = steps.findIndex((step: any) =>
+      String(step.run || '').includes('npm run ci:prepare-package')
+    );
+    const descriptorVerificationIndex = steps.findIndex((step: any) =>
+      String(step.run || '').includes('prepublish-check.js --verify-descriptor')
+    );
+    const buildIndex = steps.findIndex((step: any) => String(step.run || '') === 'npm run build');
+    const releaseGatesIndex = steps.findIndex((step: any) =>
+      String(step.name || '').includes('protected release gates')
+    );
+
+    expect(buildIndex).toBeGreaterThan(descriptorVerificationIndex);
+    expect(buildIndex).toBeGreaterThan(packagePreparationIndex);
+    expect(buildIndex).toBeLessThan(releaseGatesIndex);
+    expect(steps.filter((step: any) => String(step.run || '') === 'npm run build')).toHaveLength(1);
+  });
+
   it('rejects release parity that compares one evidence file with itself', () => {
     const releaseSource = readFileSync('.github/workflows/release.yml', 'utf8');
     const publishSource = readFileSync('.github/workflows/publish-npm.yml', 'utf8');

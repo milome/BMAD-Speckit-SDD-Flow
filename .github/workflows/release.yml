@@ -186,6 +186,9 @@ jobs:
       - name: Verify existing canonical descriptor and tarball
         run: node scripts/prepublish-check.js --verify-descriptor .artifacts/test-portfolio/package/canonical-package.json
 
+      - name: Build release gate runtime
+        run: npm run build
+
       - name: Verify encoding and protected release gates
         run: |
           npm run check:encoding
