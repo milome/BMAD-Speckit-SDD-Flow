@@ -35,6 +35,20 @@ import type {
   RequirementsConfirmationRenderInput,
 } from './requirements-contract-confirmation-render-input';
 import { sha256Stable } from './requirements-contract-semantic-resolver';
+import {
+  createRequirementsContractLintReport,
+  validateRequirementsContractLintReport,
+  type RequirementsContractLintReport,
+} from './requirements-contract-lint-report';
+
+export const REQUIREMENTS_CONTRACT_VALIDATION_FACADE_ID =
+  'requirements-contract-validation-facade/v3';
+
+export {
+  createRequirementsContractLintReport,
+  validateRequirementsContractLintReport,
+};
+export type { RequirementsContractLintReport };
 
 export type RequirementsContractValidationMode =
   | 'draft'

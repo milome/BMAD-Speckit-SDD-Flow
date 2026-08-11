@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "requirements-contract-authoring-checkpoint-manifest.schema.json",
+  "type": "object", "additionalProperties": false,
+  "required": ["schemaVersion", "authoringRequestId", "authoringAttemptId", "checkpointId", "checkpointOrdinal", "stage", "status", "inputManifestHash", "previousCheckpointManifestRef", "latestValidPredecessorCheckpoint", "compilerIdentity", "artifactEntries", "decisionReceiptRefs", "baseAuthorityRef", "checkpointManifestHash"],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-authoring-checkpoint-manifest/v1" },
+    "authoringRequestId": { "$ref": "#/$defs/id" }, "authoringAttemptId": { "$ref": "#/$defs/id" },
+    "checkpointId": { "$ref": "#/$defs/id" }, "checkpointOrdinal": { "type": "integer", "minimum": 0 },
+    "stage": { "enum": ["cp00", "cp01", "cp02", "cp03", "cp04", "cp05", "cp06", "cp07", "cp08"] }, "status": { "enum": ["pending", "passed", "blocked"] },
+    "inputManifestHash": { "$ref": "#/$defs/hash" },
+    "previousCheckpointManifestRef": { "oneOf": [{ "$ref": "#/$defs/checkpointRef" }, { "type": "null" }] },
+    "latestValidPredecessorCheckpoint": { "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
+    "compilerIdentity": { "$ref": "#/$defs/id" }, "artifactEntries": { "type": "array", "items": { "$ref": "#/$defs/artifact" } },
+    "decisionReceiptRefs": { "type": "array", "items": { "$ref": "#/$defs/decisionRef" } },
+    "baseAuthorityRef": { "oneOf": [{ "type": "object" }, { "type": "null" }] },
+    "checkpointManifestHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "id": { "type": "string", "minLength": 1 }, "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "path": { "type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+$" },
+    "artifactRole": { "enum": ["semantic_kernel", "decision_graph", "must_decomposition_packet", "id_registry", "semantic_ir", "semantic_ir_freeze_receipt", "source_binding", "source_binding_freeze_receipt", "resolved_evidence_index", "lint_report", "confirmation_projection", "per_must_bundle", "trace_matrix", "acceptance_contracts", "failure_matrix", "edge_matrix", "diagram_set", "projection_reconciliation_report", "authority_resolution_report", "renderability_probe_report", "judge_audit_packet", "judge_audit_packet_coverage", "remediation_plan", "remediation_delta", "effective_pass_receipt", "final_markdown", "confirmation_html", "confirmation_summary", "promotion_receipt"] },
+    "artifact": {
+      "type": "object", "additionalProperties": false, "required": ["role", "schemaVersion", "artifactId", "recordRelativePath", "artifactHash"],
+      "properties": { "role": { "$ref": "#/$defs/artifactRole" }, "schemaVersion": { "$ref": "#/$defs/id" }, "artifactId": { "$ref": "#/$defs/id" }, "recordRelativePath": { "$ref": "#/$defs/path" }, "artifactHash": { "$ref": "#/$defs/hash" } }
+    },
+    "checkpointRef": {
+      "type": "object", "additionalProperties": false, "required": ["checkpointId", "checkpointOrdinal", "path", "hash"],
+      "properties": { "checkpointId": { "$ref": "#/$defs/id" }, "checkpointOrdinal": { "type": "integer", "minimum": 0 }, "path": { "$ref": "#/$defs/path" }, "hash": { "$ref": "#/$defs/hash" } }
+    },
+    "decisionRef": {
+      "type": "object", "additionalProperties": false, "required": ["decisionReceiptId", "path", "hash"],
+      "properties": { "decisionReceiptId": { "$ref": "#/$defs/id" }, "path": { "$ref": "#/$defs/path" }, "hash": { "$ref": "#/$defs/hash" } }
+    }
+  }
+}

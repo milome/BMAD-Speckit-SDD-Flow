@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "requirements-contract-lint-report.schema.json",
+  "type": "object", "additionalProperties": false,
+  "required": ["schemaVersion", "lintStage", "profileId", "inputAuthorityRefs", "inputIdentity", "ruleSetHash", "validatorIdentity", "validatorVersion", "validatorHash", "checkedArtifactIds", "checkedRequirementIds", "issueCodes", "earliestAffectedStage", "latestValidPredecessorCheckpoint", "decision", "reportHash"],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-lint-report/v1" },
+    "lintStage": { "$ref": "#/$defs/stage" }, "profileId": { "$ref": "#/$defs/id" },
+    "inputAuthorityRefs": { "type": "array", "items": { "$ref": "#/$defs/artifactRef" } },
+    "inputIdentity": { "type": "object" }, "ruleSetHash": { "$ref": "#/$defs/hash" },
+    "validatorIdentity": { "$ref": "#/$defs/id" }, "validatorVersion": { "$ref": "#/$defs/id" }, "validatorHash": { "$ref": "#/$defs/hash" },
+    "checkedArtifactIds": { "$ref": "#/$defs/refs" }, "checkedRequirementIds": { "$ref": "#/$defs/refs" }, "issueCodes": { "$ref": "#/$defs/refs" },
+    "earliestAffectedStage": { "oneOf": [{ "$ref": "#/$defs/stage" }, { "type": "null" }] },
+    "latestValidPredecessorCheckpoint": { "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
+    "decision": { "enum": ["pass", "block", "not_applicable"] }, "reportHash": { "$ref": "#/$defs/hash" }
+  },
+  "allOf": [
+    { "if": { "properties": { "lintStage": { "const": "intake" } } }, "then": { "properties": { "profileId": { "const": "requirements-intake/v1" }, "inputIdentity": { "$ref": "#/$defs/intakeIdentity" } } } },
+    { "if": { "properties": { "lintStage": { "const": "cp00" } } }, "then": { "properties": { "profileId": { "const": "requirements-semantic/v1" }, "inputIdentity": { "$ref": "#/$defs/cp00Identity" } } } },
+    { "if": { "properties": { "lintStage": { "enum": ["cp01", "cp02", "cp03"] } } }, "then": { "properties": { "profileId": { "const": "requirements-semantic/v1" }, "inputIdentity": { "$ref": "#/$defs/preFreezeIdentity" } } } },
+    { "if": { "properties": { "lintStage": { "const": "cp04" } } }, "then": { "properties": { "profileId": { "const": "requirements-semantic/v1" }, "inputIdentity": { "$ref": "#/$defs/frozenIdentity" } } } },
+    { "if": { "properties": { "lintStage": { "enum": ["cp05", "cp06", "cp07", "cp08"] } } }, "then": { "properties": { "profileId": { "const": "requirements-projection/v1" }, "inputIdentity": { "$ref": "#/$defs/frozenIdentity" } } } },
+    { "if": { "properties": { "lintStage": { "const": "publication_ready" } } }, "then": { "properties": { "profileId": { "const": "requirements-publication-ready/v1" }, "inputIdentity": { "$ref": "#/$defs/publicationIdentity" } } } },
+    { "if": { "properties": { "lintStage": { "const": "dispatch_ready" } } }, "then": { "properties": { "profileId": { "const": "requirements-dispatch-ready/v1" }, "inputIdentity": { "$ref": "#/$defs/dispatchIdentity" } } } },
+    { "if": { "properties": { "lintStage": { "const": "final_render" } } }, "then": { "properties": { "profileId": { "const": "requirements-final-render/v1" }, "inputIdentity": { "$ref": "#/$defs/finalRenderIdentity" } } } }
+  ],
+  "$defs": {
+    "id": { "type": "string", "minLength": 1 }, "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "nullableHash": { "oneOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }] },
+    "refs": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/id" } },
+    "stage": { "enum": ["intake", "cp00", "cp01", "cp02", "cp03", "cp04", "cp05", "cp06", "cp07", "cp08", "publication_ready", "dispatch_ready", "final_render"] },
+    "artifactRef": { "type": "object", "additionalProperties": false, "required": ["artifactId", "path", "hash"], "properties": { "artifactId": { "$ref": "#/$defs/id" }, "path": { "$ref": "#/$defs/id" }, "hash": { "$ref": "#/$defs/hash" } } },
+    "intakeIdentity": { "type": "object", "additionalProperties": false, "required": ["authoringRequestId", "sourceSnapshotSetHash", "sourceAuthorityManifestHash", "scopeSemanticHash", "sourceBindingHash"], "properties": { "authoringRequestId": { "$ref": "#/$defs/id" }, "sourceSnapshotSetHash": { "$ref": "#/$defs/hash" }, "sourceAuthorityManifestHash": { "$ref": "#/$defs/hash" }, "scopeSemanticHash": { "type": "null" }, "sourceBindingHash": { "type": "null" } } },
+    "cp00Identity": { "type": "object", "additionalProperties": false, "required": ["authoringRequestId", "authoringAttemptId", "semanticKernelHash", "decisionGraphHash", "scopeSemanticHash", "sourceBindingHash"], "properties": { "authoringRequestId": { "$ref": "#/$defs/id" }, "authoringAttemptId": { "$ref": "#/$defs/id" }, "semanticKernelHash": { "$ref": "#/$defs/hash" }, "decisionGraphHash": { "$ref": "#/$defs/hash" }, "scopeSemanticHash": { "type": "null" }, "sourceBindingHash": { "type": "null" } } },
+    "preFreezeIdentity": { "type": "object", "additionalProperties": false, "required": ["authoringRequestId", "authoringAttemptId", "attemptManifestHash", "scopeSemanticHash", "sourceBindingHash"], "properties": { "authoringRequestId": { "$ref": "#/$defs/id" }, "authoringAttemptId": { "$ref": "#/$defs/id" }, "attemptManifestHash": { "$ref": "#/$defs/hash" }, "scopeSemanticHash": { "type": "null" }, "sourceBindingHash": { "type": "null" } } },
+    "frozenIdentity": { "type": "object", "additionalProperties": false, "required": ["authoringRequestId", "authoringAttemptId", "attemptManifestHash", "scopeSemanticHash", "sourceBindingHash"], "properties": { "authoringRequestId": { "$ref": "#/$defs/id" }, "authoringAttemptId": { "$ref": "#/$defs/id" }, "attemptManifestHash": { "$ref": "#/$defs/hash" }, "scopeSemanticHash": { "$ref": "#/$defs/hash" }, "sourceBindingHash": { "$ref": "#/$defs/hash" } } },
+    "publicationIdentity": { "type": "object", "additionalProperties": false, "required": ["authoringRequestId", "authoringAttemptId", "attemptManifestHash", "scopeSemanticHash", "sourceBindingHash", "auditPacketHash", "renderabilityProbeHash"], "properties": { "authoringRequestId": { "$ref": "#/$defs/id" }, "authoringAttemptId": { "$ref": "#/$defs/id" }, "attemptManifestHash": { "$ref": "#/$defs/hash" }, "scopeSemanticHash": { "$ref": "#/$defs/hash" }, "sourceBindingHash": { "$ref": "#/$defs/hash" }, "auditPacketHash": { "$ref": "#/$defs/hash" }, "renderabilityProbeHash": { "$ref": "#/$defs/hash" } } },
+    "dispatchIdentity": { "type": "object", "additionalProperties": false, "required": ["authoringRequestId", "activeAuthorityHash", "buildManifestHash", "providerSelectionHash", "judgeRequestHash", "scopeSemanticHash", "sourceBindingHash"], "properties": { "authoringRequestId": { "$ref": "#/$defs/id" }, "activeAuthorityHash": { "$ref": "#/$defs/hash" }, "buildManifestHash": { "$ref": "#/$defs/hash" }, "providerSelectionHash": { "$ref": "#/$defs/hash" }, "judgeRequestHash": { "$ref": "#/$defs/hash" }, "scopeSemanticHash": { "$ref": "#/$defs/hash" }, "sourceBindingHash": { "$ref": "#/$defs/hash" } } },
+    "finalRenderIdentity": { "type": "object", "additionalProperties": false, "required": ["authoringRequestId", "activeAuthorityHash", "buildManifestHash", "effectivePassHash", "renderProjectionHash", "scopeSemanticHash", "sourceBindingHash"], "properties": { "authoringRequestId": { "$ref": "#/$defs/id" }, "activeAuthorityHash": { "$ref": "#/$defs/hash" }, "buildManifestHash": { "$ref": "#/$defs/hash" }, "effectivePassHash": { "$ref": "#/$defs/hash" }, "renderProjectionHash": { "$ref": "#/$defs/hash" }, "scopeSemanticHash": { "$ref": "#/$defs/hash" }, "sourceBindingHash": { "$ref": "#/$defs/hash" } } }
+  }
+}

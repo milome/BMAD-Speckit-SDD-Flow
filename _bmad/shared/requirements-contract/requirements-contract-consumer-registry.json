@@ -2,9 +2,9 @@
   "schemaVersion": "requirements-contract-consumer-registry/v2",
   "owner": {
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-consumer-registry.ts",
-    "hash": "sha256:41520fc5e372004bb5b5ba2b53d3172de4fcd07f0286741a200ab836655018e0"
+    "hash": "sha256:cc575b6bfaba870f8c4e2c07ac294e3c78da85de82e328c11e304caaebba2255"
   },
-  "registryHash": "sha256:acd55d3e9aec61caa2c0f21abec800ee547b6955711989ea4b0dd8c0c3ada531",
+  "registryHash": "sha256:c014cc63ba8bb434a60169f3be0134270b3d2f12444fe495816a5d794b538029",
   "validationModes": [
     "draft",
     "confirmation-ready",
@@ -251,7 +251,7 @@
     {
       "consumerId": "source-template-linter",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/lint-requirements-contract-source-template.ts",
-      "pathHash": "sha256:c6602991e5a8a37276db7d61ac13702c9bb4af9c1b4a7f7c70a19faf8db423a3",
+      "pathHash": "sha256:5d14cf8df9148a9fb98aee3fa6924bfb2744117512916d778d8abc4ff05ac414",
       "inputRole": "source_prd_template",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -282,7 +282,7 @@
     {
       "consumerId": "source-instance-linter",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/lint-requirements-contract-source-prd.ts",
-      "pathHash": "sha256:63c64ca814f38cacb5985a96452c1e47653fa07a693dda7ff75657ed96063aac",
+      "pathHash": "sha256:7d6904b8da8b76795c4d952ed2086a6b6d067480239b2110f29eebb9fdc7f923",
       "inputRole": "requirement_source_prd",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -313,7 +313,7 @@
     {
       "consumerId": "validation-facade",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-validation-facade.ts",
-      "pathHash": "sha256:2b2fb2f513afa97bb7a459ff5890725382fc4edaa26d41bb3176b8b7039656a1",
+      "pathHash": "sha256:565c80fa9ba60a3a08f12f05565df3f1a089845623c1c472697e994138a61225",
       "inputRole": "logical_requirement_model",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",

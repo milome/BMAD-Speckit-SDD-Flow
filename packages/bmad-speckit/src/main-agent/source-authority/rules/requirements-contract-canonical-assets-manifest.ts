@@ -2,6 +2,10 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { sha256Stable } from '../scripts/requirements-contract-semantic-resolver';
+import { REQUIREMENTS_CONTRACT_VALIDATION_FACADE_ID } from '../scripts/requirements-contract-validation-facade';
+
+export const REQUIREMENTS_CONTRACT_CANONICAL_ASSETS_VALIDATION_FACADE =
+  REQUIREMENTS_CONTRACT_VALIDATION_FACADE_ID;
 
 export const REQUIREMENTS_CONTRACT_CANONICAL_ASSETS_MANIFEST_OWNER_PATH =
   'packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-canonical-assets-manifest.ts';

@@ -403,6 +403,9 @@ export function lintRequirementsContractSourceTemplate(input: Partial<Args> = {}
   };
 }
 
+export const REQUIREMENTS_CONTRACT_SOURCE_TEMPLATE_LINT_AUTHORITY =
+  'template_projection_syntax_only' as const;
+
 function main(): number {
   const args = parseArgs(process.argv.slice(2));
   const result = lintRequirementsContractSourceTemplate(args);

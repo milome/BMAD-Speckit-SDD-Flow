@@ -129,6 +129,18 @@
         "requireValidAuthority": { "const": true },
         "requireCompleteRenderCoverage": { "const": true }
       }
+    },
+    "lintStage": {
+      "enum": ["intake", "cp00", "cp01", "cp02", "cp03", "cp04", "cp05", "cp06", "cp07", "cp08", "publication_ready", "dispatch_ready", "final_render"]
+    },
+    "stagedRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["severity", "recoveryBoundary"],
+      "properties": {
+        "severity": { "const": "blocking" },
+        "recoveryBoundary": { "type": "string", "minLength": 1 }
+      }
     }
   }
 }

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "requirements-contract-source-span-registry.schema.json",
+  "type": "object", "additionalProperties": false, "required": ["schemaVersion", "spans", "registryHash"],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-source-span-registry/v1" },
+    "spans": { "type": "array", "items": { "$ref": "#/$defs/span" } },
+    "registryHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "span": {
+      "type": "object", "additionalProperties": false,
+      "required": ["sourceSpanId", "sourceArtifactId", "sourceSnapshotHash", "startByte", "endByteExclusive", "startLine", "startColumn", "endLine", "endColumn", "exactTextHash", "normalizedTextHash", "structuralAnchor"],
+      "properties": {
+        "sourceSpanId": { "type": "string", "pattern": "^SOURCE-SPAN-[A-F0-9]{16,64}$" }, "sourceArtifactId": { "type": "string", "minLength": 1 },
+        "sourceSnapshotHash": { "$ref": "#/$defs/hash" }, "startByte": { "type": "integer", "minimum": 0 }, "endByteExclusive": { "type": "integer", "minimum": 1 },
+        "startLine": { "type": "integer", "minimum": 1 }, "startColumn": { "type": "integer", "minimum": 1 }, "endLine": { "type": "integer", "minimum": 1 }, "endColumn": { "type": "integer", "minimum": 1 },
+        "exactTextHash": { "$ref": "#/$defs/hash" }, "normalizedTextHash": { "$ref": "#/$defs/hash" }, "structuralAnchor": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

@@ -254,110 +254,6 @@ function validateIdGraph(sourcePath: string, rowsBySection: Map<string, TableRow
   return known;
 }
 
-function validateClosure(sourcePath: string, rowsBySection: Map<string, TableRow[]>, issues: LintIssue[]): void {
-  const requirementRows = [
-    ...(rowsBySection.get('Functional Requirements') ?? []),
-    ...(rowsBySection.get('Non-Functional Requirements') ?? []),
-  ];
-  for (const row of requirementRows) {
-    const id = idOf(row);
-    for (const required of ['Per-MUST oracle', 'Assertion source', 'Responsibility mapping']) {
-      if (isPlaceholder(cell(row, required))) {
-        addIssue(issues, 'per_must_closure_missing', sourcePath, `${id} missing ${required}`);
-      }
-    }
-    const assertion = `${cell(row, 'Acceptance link')} ${cell(row, 'Assertion source')}`;
-    if (!/\bACC-[0-9]{3}\b/u.test(assertion) || !/\bCMD-[0-9]{3}\b/u.test(assertion) || !/\bTRACE-[0-9]{3}\b/u.test(assertion)) {
-      addIssue(issues, 'per_must_closure_missing', sourcePath, `${id} missing ACC/CMD/TRACE closure refs`);
-    }
-    if (!/\bPATH-[0-9]{3}\b|no-code proof/iu.test(cell(row, 'Responsibility mapping'))) {
-      addIssue(issues, 'target_path_or_no_code_missing', sourcePath, `${id} missing PATH or no-code proof`);
-    }
-  }
-}
-
-function validateTrace(sourcePath: string, rowsBySection: Map<string, TableRow[]>, known: Set<string>, issues: LintIssue[]): void {
-  const traceRows = rowsBySection.get('Trace Matrix Source') ?? [];
-  const mustIds = [...known].filter((id) => /^MUST-(?:FR|NFR)-[0-9]{3}$/u.test(id));
-  const covered = new Set<string>();
-  for (const row of traceRows) {
-    const covers = refsIn(cell(row, 'Covers'));
-    if (covers.some((ref) => /^OUT-/u.test(ref))) {
-      addIssue(issues, 'out_of_scope_trace_cover_forbidden', sourcePath, `${idOf(row)} covers OUT refs`);
-    }
-    if (mustIds.length > 1 && mustIds.every((id) => covers.includes(id))) {
-      addIssue(issues, 'trace_covers_all_must_forbidden', sourcePath, `${idOf(row)} covers all MUST rows`);
-    }
-    for (const ref of covers) covered.add(ref);
-    for (const required of ['Acceptance refs', 'Per-MUST oracle', 'Per-MUST closure assertion', 'Responsibility mapping']) {
-      if (isPlaceholder(cell(row, required))) {
-        addIssue(issues, 'trace_closure_missing', sourcePath, `${idOf(row)} missing ${required}`);
-      }
-    }
-  }
-  for (const mustId of mustIds) {
-    if (!covered.has(mustId)) addIssue(issues, 'trace_closure_missing', sourcePath, `${mustId} is not covered by TRACE`);
-  }
-}
-
-function validateNegativeScopeAndPaths(sourcePath: string, rowsBySection: Map<string, TableRow[]>, issues: LintIssue[]): void {
-  const negativeRows = rowsBySection.get('Negative Requirements And Not Done Conditions') ?? [];
-  if (negativeRows.length === 0) addIssue(issues, 'negative_requirement_missing', sourcePath, 'At least one NEG row is required.');
-  for (const row of negativeRows) {
-    if (!/\bFAIL-[0-9]{3}\b/u.test(cell(row, 'Failure refs')) || !/\b(?:ACC|E2E|CMD)-[0-9]{3}\b/u.test(cell(row, 'Evidence refs'))) {
-      addIssue(issues, 'negative_requirement_incomplete', sourcePath, `${idOf(row)} missing failure or evidence refs`);
-    }
-  }
-  const pathRows = rowsBySection.get('Implementation Path Map') ?? [];
-  for (const row of pathRows) {
-    const repoPath = cell(row, 'Repository path').replace(/`/gu, '');
-    if (!repoPath || /^[A-Za-z]:[\\/]/u.test(repoPath) || repoPath.startsWith('/') || repoPath.includes('..')) {
-      addIssue(issues, 'target_path_invalid', sourcePath, `${idOf(row)} repository path must be repo-relative`);
-    }
-    if (isPlaceholder(cell(row, 'Required change')) || isPlaceholder(cell(row, 'Per-MUST oracle'))) {
-      addIssue(issues, 'target_path_incomplete', sourcePath, `${idOf(row)} missing change or oracle`);
-    }
-  }
-}
-
-function validateCurrentTarget(
-  sourcePath: string,
-  rowsBySection: Map<string, TableRow[]>,
-  issues: LintIssue[]
-): void {
-  const currentRows = rowsBySection.get('Source Current State') ?? [];
-  const targetRows = rowsBySection.get('Source Target State') ?? [];
-  const ctmRows = rowsBySection.get('Current Target Map') ?? [];
-  if (currentRows.length === 0 || targetRows.length === 0 || ctmRows.length === 0) {
-    addIssue(issues, 'current_target_map_missing', sourcePath, 'Current, target, and CTM rows are required.');
-  }
-  for (const row of ctmRows) {
-    if (!/\bCUR-[0-9]{3}\b/u.test(cell(row, 'Current refs')) || !/\bTGT-[0-9]{3}\b/u.test(cell(row, 'Target refs'))) {
-      addIssue(issues, 'current_target_map_missing', sourcePath, `${idOf(row)} missing CUR/TGT refs`);
-    }
-  }
-}
-
-function validateRendererReadiness(markdown: string, sourcePath: string, issues: LintIssue[]): void {
-  const required = [
-    'Happy-path sequence view',
-    'Failure-path sequence view',
-    'State and flow view',
-    'Edge-case view',
-    'Business and governance boundary view',
-    'Artifact automation plan',
-    'Current-vs-target map',
-  ];
-  for (const fragment of required) {
-    if (!markdown.includes(fragment)) {
-      addIssue(issues, 'renderer_readiness_missing', sourcePath, `Missing renderer readiness seed: ${fragment}`);
-    }
-  }
-  if (!markdown.includes('aiTddContractExecutionManifestProjection')) {
-    addIssue(issues, 'ai_tdd_manifest_seed_missing', sourcePath, 'Missing AI-TDD manifest projection seed.');
-  }
-}
-
 export function lintRequirementsContractSourcePrd(input: Partial<Args> = {}): LintResult {
   const args: Args = {
     source: path.resolve(input.source ?? DEFAULT_SOURCE),
@@ -387,13 +283,104 @@ export function lintRequirementsContractSourcePrd(input: Partial<Args> = {}): Li
   validateMetadata(markdown, args.source, issues);
   validateTemplateFragments(markdown, args.source, args.allowInlineConfirmation, issues);
   const rowsBySection = validateTables(parsed.document, args.source, issues);
-  const known = validateIdGraph(args.source, rowsBySection, issues);
-  validateClosure(args.source, rowsBySection, issues);
-  validateTrace(args.source, rowsBySection, known, issues);
-  validateNegativeScopeAndPaths(args.source, rowsBySection, issues);
-  validateCurrentTarget(args.source, rowsBySection, issues);
-  validateRendererReadiness(markdown, args.source, issues);
+  validateIdGraph(args.source, rowsBySection, issues);
   return result(args, issues, rowsBySection);
+}
+
+export interface RequirementsContractIrProjectionExpectation {
+  semanticNodeId: string;
+  text: string;
+  logicalAuthorityRefs: string[];
+}
+
+type ProjectionBlock = RequirementsContractSourceDocument['blocks'][number];
+
+function canonicalProjectionText(value: string): string {
+  return value.normalize('NFC').replace(/\s+/gu, ' ').trim();
+}
+
+function projectionBlockOwnerId(block: ProjectionBlock): string | null {
+  if (block.table) {
+    for (const column of ['ID', 'FR ID', 'NFR ID', 'Semantic Node ID']) {
+      const value = block.table.cells[column]?.trim();
+      if (value) return value;
+    }
+    return null;
+  }
+  return refsIn(block.text)[0] ?? null;
+}
+
+function projectionBlockHasText(block: ProjectionBlock, expectedText: string): boolean {
+  const expected = canonicalProjectionText(expectedText);
+  return expected.length > 0 && canonicalProjectionText(block.text).includes(expected);
+}
+
+function projectionBlockHasExactToken(block: ProjectionBlock, token: string): boolean {
+  const escaped = token.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+  return new RegExp(`(^|[^A-Za-z0-9_.:/-])${escaped}(?=$|[^A-Za-z0-9_.:/-])`, 'u')
+    .test(block.text);
+}
+
+export function verifyRequirementsContractSourcePrdProjection(input: {
+  source: string;
+  frozenScopeSemanticHash: string;
+  expectedNodes: RequirementsContractIrProjectionExpectation[];
+}) {
+  const sourcePath = path.resolve(input.source);
+  const issues: LintIssue[] = [];
+  if (!/^sha256:[a-f0-9]{64}$/u.test(input.frozenScopeSemanticHash)) {
+    addIssue(issues, 'projection_scope_semantic_hash_invalid', sourcePath, 'Frozen IR identity is required.');
+    return { ok: false, authority: 'frozen_semantic_ir' as const, issues };
+  }
+  if (!fs.existsSync(sourcePath)) {
+    addIssue(issues, 'projection_source_missing', sourcePath, 'Projected Markdown is missing.');
+    return { ok: false, authority: 'frozen_semantic_ir' as const, issues };
+  }
+  const markdown = readText(sourcePath);
+  const parsed = parseRequirementsContractSourceText(markdown, { sourcePath });
+  for (const issue of parsed.issues) {
+    addIssue(issues, issue.code, `${sourcePath}:${issue.startLine}`, issue.message);
+  }
+  if (!parsed.ok) {
+    return { ok: false, authority: 'frozen_semantic_ir' as const, issues };
+  }
+  const blocks = parsed.document.blocks;
+  for (const expected of input.expectedNodes) {
+    if (expected.logicalAuthorityRefs.length === 0) {
+      addIssue(issues, 'projection_expected_authority_ref_missing', sourcePath, expected.semanticNodeId);
+      continue;
+    }
+    const owners = blocks.filter(
+      (block) => projectionBlockOwnerId(block) === expected.semanticNodeId
+    );
+    if (owners.length === 0) {
+      addIssue(issues, 'projection_semantic_node_missing', sourcePath, expected.semanticNodeId);
+      continue;
+    }
+    if (owners.length > 1) {
+      addIssue(issues, 'projection_semantic_node_duplicate', sourcePath, expected.semanticNodeId);
+      continue;
+    }
+    const owner = owners[0];
+    if (!projectionBlockHasText(owner, expected.text)) {
+      addIssue(issues, 'projection_semantic_text_drift', sourcePath, expected.semanticNodeId);
+    }
+    if (expected.logicalAuthorityRefs.some(
+      (authorityRef) => !projectionBlockHasExactToken(owner, authorityRef)
+    )) {
+      addIssue(issues, 'projection_logical_authority_ref_drift', sourcePath, expected.semanticNodeId);
+    }
+    if (blocks.filter((block) => projectionBlockHasText(block, expected.text)).length > 1) {
+      addIssue(issues, 'projection_semantic_text_duplicate', sourcePath, expected.semanticNodeId);
+    }
+  }
+  return {
+    ok: issues.length === 0,
+    authority: 'frozen_semantic_ir' as const,
+    frozenScopeSemanticHash: input.frozenScopeSemanticHash,
+    checkedSemanticNodeIds: input.expectedNodes.map((node) => node.semanticNodeId).sort(),
+    issues,
+  };
 }
 
 function result(args: Args, issues: LintIssue[], rowsBySection: Map<string, TableRow[]>): LintResult {

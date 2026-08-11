@@ -11,6 +11,57 @@ export const REQUIREMENTS_CONTRACT_LINT_PROFILES = [
   'draft',
   'confirmation-ready',
 ] as const;
+
+export const REQUIREMENTS_CONTRACT_LINT_STAGES = [
+  'intake', 'cp00', 'cp01', 'cp02', 'cp03', 'cp04', 'cp05', 'cp06', 'cp07',
+  'cp08', 'publication_ready', 'dispatch_ready', 'final_render',
+] as const;
+export type RequirementsContractLintStage =
+  (typeof REQUIREMENTS_CONTRACT_LINT_STAGES)[number];
+
+export const REQUIREMENTS_CONTRACT_STAGED_LINT_RULES = {
+  input_identity_matches_stage: {
+    severity: 'blocking',
+    recoveryBoundary: 'latest_valid_predecessor_checkpoint',
+  },
+  checked_object_coverage_complete: {
+    severity: 'blocking',
+    recoveryBoundary: 'earliest_affected_stage',
+  },
+  semantic_authority_not_from_projection: {
+    severity: 'blocking',
+    recoveryBoundary: 'semantic_checkpoint',
+  },
+  source_binding_authority_class_closed: {
+    severity: 'blocking',
+    recoveryBoundary: 'binding_checkpoint',
+  },
+} as const;
+
+export const REQUIREMENTS_CONTRACT_STAGED_LINT_PROFILES = {
+  'requirements-intake/v1': { stages: ['intake'] },
+  'requirements-semantic/v1': { stages: ['cp00', 'cp01', 'cp02', 'cp03', 'cp04'] },
+  'requirements-projection/v1': { stages: ['cp05', 'cp06', 'cp07', 'cp08'] },
+  'requirements-publication-ready/v1': { stages: ['publication_ready'] },
+  'requirements-dispatch-ready/v1': { stages: ['dispatch_ready'] },
+  'requirements-final-render/v1': { stages: ['final_render'] },
+} as const;
+
+export const REQUIREMENTS_CONTRACT_STAGED_LINT_REGISTRY_HASH = sha256Stable({
+  stages: REQUIREMENTS_CONTRACT_LINT_STAGES,
+  rules: REQUIREMENTS_CONTRACT_STAGED_LINT_RULES,
+  profiles: REQUIREMENTS_CONTRACT_STAGED_LINT_PROFILES,
+});
+
+export function isRequirementsContractLintProfileApplicable(
+  profileId: string,
+  lintStage: RequirementsContractLintStage
+): boolean {
+  const profile = REQUIREMENTS_CONTRACT_STAGED_LINT_PROFILES[
+    profileId as keyof typeof REQUIREMENTS_CONTRACT_STAGED_LINT_PROFILES
+  ];
+  return Boolean(profile?.stages.includes(lintStage as never));
+}
 export type RequirementsContractLintProfile =
   (typeof REQUIREMENTS_CONTRACT_LINT_PROFILES)[number];
 export const REQUIREMENTS_CONTRACT_LINT_PROFILE_CORE_RULE_REFS = [

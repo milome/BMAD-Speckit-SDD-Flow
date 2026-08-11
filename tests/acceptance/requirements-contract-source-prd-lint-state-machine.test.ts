@@ -1,7 +1,9 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { verifyRequirementsContractSourcePrdProjection } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/lint-requirements-contract-source-prd';
 
 const TRANSITIONS = [
   'confirmation-ready',
@@ -26,6 +28,39 @@ const CONSUMER_FILES = [
 
 const SOURCE_PATH = 'docs/requirements/current-source-prd.md';
 const SOURCE_HASH = `sha256:${createHash('sha256').update('current source', 'utf8').digest('hex')}`;
+const FROZEN_SCOPE_HASH = `sha256:${'a'.repeat(64)}`;
+
+function projectedSource(rows: string[]): string {
+  return [
+    '# Projected Requirements',
+    '',
+    '## Functional Requirements',
+    '',
+    '| ID | Requirement | Logical authority refs |',
+    '| --- | --- | --- |',
+    ...rows,
+    '',
+  ].join('\n');
+}
+
+function verifyProjection(rows: string[]) {
+  const directory = mkdtempSync(path.join(tmpdir(), 'requirements-projection-'));
+  const source = path.join(directory, 'projection.md');
+  writeFileSync(source, projectedSource(rows), 'utf8');
+  try {
+    return verifyRequirementsContractSourcePrdProjection({
+      source,
+      frozenScopeSemanticHash: FROZEN_SCOPE_HASH,
+      expectedNodes: [{
+        semanticNodeId: 'FR-001',
+        text: 'Refund batches atomically',
+        logicalAuthorityRefs: ['ACC-001'],
+      }],
+    });
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+}
 
 function passingLintReport() {
   return {
@@ -138,5 +173,46 @@ describe('requirements contract Source PRD lint state machine', () => {
         'validateSourcePrdLintTransition'
       );
     }
+  });
+
+  it('verifies an IR projection against the AST block that owns its semantic ID', () => {
+    expect(verifyProjection([
+      '| FR-001 | Refund batches atomically | ACC-001 |',
+    ])).toMatchObject({
+      ok: true,
+      authority: 'frozen_semantic_ir',
+      checkedSemanticNodeIds: ['FR-001'],
+      issues: [],
+    });
+  });
+
+  it('rejects text and logical refs copied into a different semantic node block', () => {
+    const result = verifyProjection([
+      '| FR-001 | Different behavior | ACC-002 |',
+      '| FR-002 | Refund batches atomically | ACC-001 |',
+    ]);
+    expect(result.ok).toBe(false);
+    expect(result.issues.map(({ code }) => code)).toEqual(expect.arrayContaining([
+      'projection_semantic_text_drift',
+      'projection_logical_authority_ref_drift',
+    ]));
+  });
+
+  it('rejects duplicated semantic text outside the ID-owned block', () => {
+    const result = verifyProjection([
+      '| FR-001 | Refund batches atomically | ACC-001 |',
+      '| FR-002 | Refund batches atomically | ACC-002 |',
+    ]);
+    expect(result.ok).toBe(false);
+    expect(result.issues.map(({ code }) => code)).toContain('projection_semantic_text_duplicate');
+  });
+
+  it('rejects a semantic ID owned by more than one AST block', () => {
+    const result = verifyProjection([
+      '| FR-001 | Refund batches atomically | ACC-001 |',
+      '| FR-001 | Refund batches atomically | ACC-001 |',
+    ]);
+    expect(result.ok).toBe(false);
+    expect(result.issues.map(({ code }) => code)).toContain('projection_semantic_node_duplicate');
   });
 });

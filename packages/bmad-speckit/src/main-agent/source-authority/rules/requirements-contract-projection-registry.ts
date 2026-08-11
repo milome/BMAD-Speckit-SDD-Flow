@@ -8,6 +8,10 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 import { sha256Stable } from '../scripts/requirements-contract-semantic-resolver';
+import { REQUIREMENTS_CONTRACT_VALIDATION_FACADE_ID } from '../scripts/requirements-contract-validation-facade';
+
+export const REQUIREMENTS_CONTRACT_PROJECTION_VALIDATION_FACADE =
+  REQUIREMENTS_CONTRACT_VALIDATION_FACADE_ID;
 
 export const REQUIREMENTS_CONTRACT_PROJECTION_REGISTRY_OWNER_PATH =
   'packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-projection-registry.ts';

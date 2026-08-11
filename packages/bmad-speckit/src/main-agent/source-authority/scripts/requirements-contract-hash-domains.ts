@@ -35,7 +35,7 @@ function normalize(value: unknown): unknown {
   );
 }
 
-function canonicalJson(value: unknown): string {
+export function canonicalRequirementsJson(value: unknown): string {
   return `${JSON.stringify(normalize(value))}\n`;
 }
 
@@ -61,7 +61,103 @@ function withoutKeys(
 }
 
 function hashDomain(domain: string, payload: unknown): string {
-  return sha256(`${domain}\n${canonicalJson(payload)}`);
+  return sha256(`${domain}\n${canonicalRequirementsJson(payload)}`);
+}
+
+export const REQUIREMENTS_AUTHORING_HASH_DOMAINS = {
+  scopeSemanticHash: 'scopeSemanticHash/v2',
+  sourceBindingHash: 'sourceBindingHash/v1',
+  semanticRevisionId: 'semanticRevisionId/v1',
+  bindingRevisionId: 'bindingRevisionId/v1',
+  artifactBytesHash: 'artifactBytesHash/v1',
+  judgeRequestHash: 'judgeRequestHash/v2',
+  remediationPlanHash: 'requirements-remediation-plan/v1',
+  remediationDeltaHash: 'requirements-remediation-delta/v1',
+  checkpointManifestHash: 'requirements-contract-authoring-checkpoint-manifest/v1',
+  buildManifestHash: 'requirements-contract-build-manifest/v1',
+  lintReportHash: 'requirements-contract-lint-report/v1',
+} as const;
+
+const HASH_EXCLUDED_PROVENANCE_KEYS = new Set([
+  'createdAt',
+  'timestamp',
+  'transportAttempt',
+  'transportAttemptId',
+  'providerProse',
+  'secret',
+  'secretValue',
+]);
+
+function withoutHashExcludedProvenance(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(withoutHashExcludedProvenance);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => !HASH_EXCLUDED_PROVENANCE_KEYS.has(key))
+      .map(([key, child]) => [key, withoutHashExcludedProvenance(child)])
+  );
+}
+
+export function requirementsContractDomainHash(domain: string, payload: unknown): string {
+  return hashDomain(domain, payload);
+}
+
+export function scopeSemanticHash(payload: unknown): string {
+  return hashDomain(REQUIREMENTS_AUTHORING_HASH_DOMAINS.scopeSemanticHash, payload);
+}
+
+export function sourceBindingHash(payload: unknown): string {
+  return hashDomain(REQUIREMENTS_AUTHORING_HASH_DOMAINS.sourceBindingHash, payload);
+}
+
+function identityFromHash(prefix: string, domain: string, payload: unknown): string {
+  return `${prefix}-${hashDomain(domain, payload).slice('sha256:'.length).toUpperCase()}`;
+}
+
+export function semanticRevisionId(input: {
+  recordId: string;
+  parentSemanticRevisionId: string | null;
+  scopeSemanticHash: string;
+  compilerVersion: string;
+}): string {
+  return identityFromHash(
+    'SEMREV',
+    REQUIREMENTS_AUTHORING_HASH_DOMAINS.semanticRevisionId,
+    input
+  );
+}
+
+export function bindingRevisionId(input: {
+  recordId: string;
+  semanticRevisionId: string;
+  parentBindingRevisionId: string | null;
+  sourceBindingHash: string;
+}): string {
+  return identityFromHash(
+    'BINDREV',
+    REQUIREMENTS_AUTHORING_HASH_DOMAINS.bindingRevisionId,
+    input
+  );
+}
+
+export function artifactBytesHash(input: {
+  role: string;
+  mediaType: string;
+  bytes: Buffer | string;
+}): string {
+  const prefix = Buffer.from(
+    `${REQUIREMENTS_AUTHORING_HASH_DOMAINS.artifactBytesHash}\n${input.role}\n${input.mediaType}\n`,
+    'utf8'
+  );
+  const bytes = Buffer.isBuffer(input.bytes) ? input.bytes : Buffer.from(input.bytes, 'utf8');
+  return `sha256:${createHash('sha256').update(prefix).update(bytes).digest('hex')}`;
+}
+
+export function judgeRequestHash(payloadWithoutSelfHash: unknown): string {
+  return hashDomain(
+    REQUIREMENTS_AUTHORING_HASH_DOMAINS.judgeRequestHash,
+    withoutHashExcludedProvenance(payloadWithoutSelfHash)
+  );
 }
 
 export function requirementsContractHashDomainRegistry() {

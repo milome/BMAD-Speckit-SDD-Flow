@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "requirements-contract-remediation-delta.schema.json",
+  "type": "object", "additionalProperties": false,
+  "required": ["schemaVersion", "remediationPlanHash", "remediatesRequestHash", "remediationAggregateHash", "executedRepairStepRefs", "deferredRepairStepRefs", "authorityBasisRefs", "findingDispositionRefs", "affectedIds", "earliestAffectedStage", "latestValidPredecessorCheckpoint", "beforeState", "afterState", "changedArtifactRoles", "compilerIdentity", "remediationDeltaHash"],
+  "properties": {
+    "schemaVersion": { "const": "requirements-remediation-delta/v1" }, "remediationPlanHash": { "$ref": "#/$defs/hash" }, "remediatesRequestHash": { "$ref": "#/$defs/hash" }, "remediationAggregateHash": { "$ref": "#/$defs/hash" },
+    "executedRepairStepRefs": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/stepRef" } }, "deferredRepairStepRefs": { "type": "array", "items": { "$ref": "#/$defs/stepRef" } },
+    "authorityBasisRefs": { "$ref": "#/$defs/refs" }, "findingDispositionRefs": { "$ref": "#/$defs/refs" }, "affectedIds": { "$ref": "#/$defs/refs" },
+    "earliestAffectedStage": { "$ref": "#/$defs/id" }, "latestValidPredecessorCheckpoint": { "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
+    "beforeState": { "$ref": "#/$defs/state" }, "afterState": { "$ref": "#/$defs/state" }, "changedArtifactRoles": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/id" } },
+    "compilerIdentity": { "$ref": "#/$defs/id" }, "remediationDeltaHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "id": { "type": "string", "minLength": 1 }, "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }, "refs": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/id" } },
+    "state": { "type": "object", "minProperties": 1, "additionalProperties": { "$ref": "#/$defs/hash" } },
+    "stepRef": { "type": "object", "additionalProperties": false, "required": ["stepId", "stepHash", "finalDisposition"], "properties": { "stepId": { "$ref": "#/$defs/id" }, "stepHash": { "$ref": "#/$defs/hash" }, "finalDisposition": { "$ref": "#/$defs/id" } } }
+  }
+}

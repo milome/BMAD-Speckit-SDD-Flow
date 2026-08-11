@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "requirements-contract-spec-span-registry.schema.json",
+  "type": "object", "additionalProperties": false, "required": ["schemaVersion", "spans", "registryHash"],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-spec-span-registry/v1" },
+    "spans": { "type": "array", "items": { "$ref": "#/$defs/span" } }, "registryHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }, "refs": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "span": {
+      "type": "object", "additionalProperties": false,
+      "required": ["specSpanId", "authorityClass", "normalizedClaimHash", "boundSemanticNodeIds", "boundObligationIds", "evidenceClaimRefs", "decisionReceiptRefs", "derivationReceiptRefs"],
+      "properties": {
+        "specSpanId": { "type": "string", "pattern": "^SPEC-SPAN-[A-F0-9]{16,64}$" }, "authorityClass": { "enum": ["source_grounded", "human_confirmed", "derived"] },
+        "normalizedClaimHash": { "$ref": "#/$defs/hash" }, "boundSemanticNodeIds": { "$ref": "#/$defs/refs" }, "boundObligationIds": { "$ref": "#/$defs/refs" },
+        "evidenceClaimRefs": { "$ref": "#/$defs/refs" }, "decisionReceiptRefs": { "$ref": "#/$defs/refs" }, "derivationReceiptRefs": { "$ref": "#/$defs/refs" }
+      }
+    }
+  }
+}

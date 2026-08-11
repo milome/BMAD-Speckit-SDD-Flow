@@ -2,6 +2,10 @@ import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { sha256Stable } from '../scripts/requirements-contract-semantic-resolver';
+import { REQUIREMENTS_CONTRACT_VALIDATION_FACADE_ID } from '../scripts/requirements-contract-validation-facade';
+
+export const REQUIREMENTS_CONTRACT_CONSUMER_VALIDATION_FACADE =
+  REQUIREMENTS_CONTRACT_VALIDATION_FACADE_ID;
 
 export const REQUIREMENTS_CONTRACT_CONSUMER_REGISTRY_OWNER_PATH =
   'packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-consumer-registry.ts';
@@ -677,6 +681,8 @@ export const REQUIREMENTS_CONTRACT_PRODUCTION_SEMANTIC_SOURCE_PATHS = [
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-entryflow-traceability-check.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-trace-status-policy-check.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/record-main-agent-inspect-readiness-closure.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-authoring-manifest.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-authority-publication-committer.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-canonical-compiler-input.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-confirmation-projection-facade.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-direct-confirmation-read-bypass-audit.ts',
