@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-decision-receipt.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "decisionReceiptId",
+    "authoringRequestId",
+    "grillSessionId",
+    "questionId",
+    "questionVersion",
+    "affectedFieldIds",
+    "authorityPremiseHashes",
+    "answerValue",
+    "answerSchemaHash",
+    "affectedNodeIds",
+    "userInputProvenance",
+    "receiptHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-decision-receipt/v1" },
+    "decisionReceiptId": { "$ref": "#/$defs/nonEmpty" },
+    "authoringRequestId": { "$ref": "#/$defs/nonEmpty" },
+    "grillSessionId": { "$ref": "#/$defs/nonEmpty" },
+    "questionId": { "$ref": "#/$defs/nonEmpty" },
+    "questionVersion": { "$ref": "#/$defs/nonEmpty" },
+    "affectedFieldIds": { "$ref": "#/$defs/nonEmptySet" },
+    "authorityPremiseHashes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/hash" }
+    },
+    "answerValue": {},
+    "answerSchemaHash": { "$ref": "#/$defs/hash" },
+    "affectedNodeIds": { "$ref": "#/$defs/nonEmptySet" },
+    "userInputProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authorityOrigin"],
+      "properties": { "authorityOrigin": { "$ref": "#/$defs/nonEmpty" } }
+    },
+    "receiptHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "nonEmpty": { "type": "string", "minLength": 1 },
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "nonEmptySet": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/nonEmpty" }
+    }
+  }
+}

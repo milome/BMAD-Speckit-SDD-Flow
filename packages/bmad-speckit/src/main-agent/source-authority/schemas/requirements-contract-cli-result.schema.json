@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-cli-result.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "status",
+    "issueCode",
+    "authoringRequestId",
+    "authoringAttemptId",
+    "grillSessionId",
+    "resumable",
+    "nextAction",
+    "decisionReceiptRefs",
+    "frontier",
+    "forbiddenArtifacts",
+    "resultHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-cli-result/v1" },
+    "status": {
+      "enum": [
+        "business_decision_required",
+        "technical_planning_pending",
+        "audit_pending",
+        "authoring_blocked",
+        "final_render_pending",
+        "user_confirmable"
+      ]
+    },
+    "issueCode": {
+      "enum": [
+        "requirements_business_decision_required",
+        "requirements_technical_planning_pending",
+        "requirements_audit_pending",
+        "requirements_authoring_blocked",
+        "requirements_final_render_pending",
+        "requirements_user_confirmable"
+      ]
+    },
+    "authoringRequestId": { "type": "string", "minLength": 1 },
+    "authoringAttemptId": { "type": ["string", "null"] },
+    "grillSessionId": { "type": ["string", "null"] },
+    "resumable": { "type": "boolean" },
+    "nextAction": { "type": ["string", "null"] },
+    "decisionReceiptRefs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ref" }
+    },
+    "frontier": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "forbiddenArtifacts": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "resultHash": { "$ref": "#/$defs/hash" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "business_decision_required" } } },
+      "then": { "properties": { "issueCode": { "const": "requirements_business_decision_required" }, "resumable": { "const": true } } }
+    },
+    {
+      "if": { "properties": { "status": { "const": "technical_planning_pending" } } },
+      "then": { "properties": { "issueCode": { "const": "requirements_technical_planning_pending" }, "resumable": { "const": true } } }
+    }
+  ],
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

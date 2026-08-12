@@ -9,6 +9,15 @@ import type {
   RequirementContractRequirement,
   RequirementContractTargetInput,
 } from './requirements-contract-model';
+import {
+  validateRequirementsContractCp02AtomicClosure,
+  type RequirementsContractAtomicMust,
+} from './requirements-contract-cp00-cp04';
+import { sha256Stable } from './requirements-contract-semantic-resolver';
+import {
+  validateRequirementsTechnicalPlanningCapabilityResult,
+  type RequirementsTechnicalPlanningCapabilityResult,
+} from './requirements-contract-technical-planning-capability';
 
 type CompilerIssue = RequirementContractModel['invariantClosure']['issues'][number];
 
@@ -19,6 +28,101 @@ export interface RequirementContractCompilerInputAuthority {
   sourceAuthorityHash: string;
   sourceRootSetHash: string;
   compilerInputHash: string;
+}
+
+export interface RequirementsContractCp02CompilerInput {
+  authoringRequestId: string;
+  authoringAttemptId: string;
+  atoms: RequirementsContractAtomicMust[];
+  decisions: Array<{
+    decisionId: string;
+    affectedAtomIds: string[];
+    authorityPremiseHashes: string[];
+  }>;
+  technicalPlanning: RequirementsTechnicalPlanningCapabilityResult;
+}
+
+export interface RequirementsContractCp02CompilerResult {
+  schemaVersion: 'requirements-contract-cp02-candidate/v1';
+  authoringRequestId: string;
+  authoringAttemptId: string;
+  status: 'closed' | 'blocked' | 'technical_planning_pending';
+  issueCodes: string[];
+  atoms: RequirementsContractAtomicMust[];
+  decisions: RequirementsContractCp02CompilerInput['decisions'];
+  technicalPlanningTriggerIdentity: string;
+  executionRegistryHash: string | null;
+  candidateHash: string;
+}
+
+function canonicalCp02Atoms(atoms: RequirementsContractAtomicMust[]): RequirementsContractAtomicMust[] {
+  return atoms
+    .map((atom) => ({
+      ...atom,
+      dependencies: [...atom.dependencies].sort(),
+      originBindings: [...atom.originBindings].sort(
+        (left, right) => left.sourceRootId.localeCompare(right.sourceRootId) ||
+          left.sourceSpanRef.localeCompare(right.sourceSpanRef)
+      ),
+      authorityRefs: [...atom.authorityRefs].sort(),
+      spanRefs: [...atom.spanRefs].sort(),
+      executionConstraintRefs: [...atom.executionConstraintRefs].sort(),
+    }))
+    .sort((left, right) => left.atomId.localeCompare(right.atomId));
+}
+
+function canonicalCp02Decisions(
+  decisions: RequirementsContractCp02CompilerInput['decisions']
+): RequirementsContractCp02CompilerInput['decisions'] {
+  return decisions
+    .map((decision) => ({
+      ...decision,
+      affectedAtomIds: [...decision.affectedAtomIds].sort(),
+      authorityPremiseHashes: [...decision.authorityPremiseHashes].sort(),
+    }))
+    .sort((left, right) => left.decisionId.localeCompare(right.decisionId));
+}
+
+export function compileRequirementsContractCp02Candidate(
+  input: RequirementsContractCp02CompilerInput
+): RequirementsContractCp02CompilerResult {
+  if (
+    !validateRequirementsTechnicalPlanningCapabilityResult(input.technicalPlanning) ||
+    input.technicalPlanning.checkpointId !== 'cp02' ||
+    input.technicalPlanning.authoringRequestId !== input.authoringRequestId ||
+    input.technicalPlanning.authoringAttemptId !== input.authoringAttemptId
+  ) {
+    throw new Error('requirements_cp02_technical_planning_binding_invalid');
+  }
+  const atoms = canonicalCp02Atoms(input.atoms);
+  const decisions = canonicalCp02Decisions(input.decisions);
+  const executionRegistry = input.technicalPlanning.executionRegistry;
+  const closure = executionRegistry
+    ? validateRequirementsContractCp02AtomicClosure({ atoms, decisions, executionRegistry })
+    : { decision: 'block' as const, issueCodes: ['requirements_technical_planning_pending'] };
+  const status = input.technicalPlanning.status === 'technical_planning_pending'
+    ? 'technical_planning_pending' as const
+    : closure.decision === 'pass'
+      ? 'closed' as const
+      : 'blocked' as const;
+  const payload = {
+    schemaVersion: 'requirements-contract-cp02-candidate/v1' as const,
+    authoringRequestId: input.authoringRequestId,
+    authoringAttemptId: input.authoringAttemptId,
+    status,
+    issueCodes: closure.issueCodes,
+    atoms,
+    decisions,
+    technicalPlanningTriggerIdentity: input.technicalPlanning.triggerIdentity,
+    executionRegistryHash: executionRegistry?.registryHash ?? null,
+  };
+  return {
+    ...payload,
+    candidateHash: sha256Stable({
+      domain: 'requirements-contract-cp02-candidate/v1',
+      payload,
+    }),
+  };
 }
 
 function hasSourceBinding(row: RequirementContractRequirement): boolean {

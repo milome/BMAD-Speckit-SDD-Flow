@@ -11547,6 +11547,29 @@ function assignedValidationAuthorityCommandIds(records: ValidationAuthorityRecor
   });
 }
 
+function typedValidationExecutionAuthority(records: ValidationAuthorityRecord[]): {
+  commandIds: string[];
+  executionRegistry: {
+    entries: Array<{ kind: 'CMD'; id: string; value: string }>;
+  };
+  executionConstraintRefsBySourceRootId: Record<string, string[]>;
+} {
+  const commandIds = assignedValidationAuthorityCommandIds(records);
+  return {
+    commandIds,
+    executionRegistry: {
+      entries: records.map((record, index) => ({
+        kind: 'CMD',
+        id: commandIds[index],
+        value: record.command,
+      })),
+    },
+    executionConstraintRefsBySourceRootId: Object.fromEntries(
+      records.map((record, index) => [record.id, [`CMD:${commandIds[index]}`]])
+    ),
+  };
+}
+
 const CONFIRMATION_LOCALIZATION_FIELD_GROUPS = [
   { arrayKey: 'must', fields: ['text'] },
   { arrayKey: 'notDone', fields: ['text', 'whyItBlocksCompletion'] },
@@ -16801,10 +16824,10 @@ const AUTHORING_REPAIR_CHECKPOINTS: AuthoringCheckpointDefinition[] = [
     artifacts: ({ paths }) => [paths.mustDecompositionPacket],
   },
   {
-    id: 'cp-02-atomic-decomposition-loop-convergence',
-    name: 'atomic decomposition loop convergence',
+    id: 'cp-02-deterministic-atomic-closure',
+    name: 'deterministic atomic closure',
     index: 2,
-    artifacts: ({ paths }) => [paths.criticalAuditorOutcome],
+    artifacts: ({ paths }) => [paths.mustDecompositionPacket],
   },
   {
     id: 'cp-03-packet-to-source-materialization',
@@ -16857,18 +16880,6 @@ const AUTHORING_REPAIR_CHECKPOINTS: AuthoringCheckpointDefinition[] = [
 const AUTHORING_REPAIR_CHECKPOINT_IDS = AUTHORING_REPAIR_CHECKPOINTS.map(
   (checkpoint) => checkpoint.id
 );
-const PRE_AUDITOR_CHECKPOINT_IDS = AUTHORING_REPAIR_CHECKPOINT_IDS.slice(0, 2);
-const CRITICAL_AUDITOR_DEFERRED_CHECKPOINT =
-  AUTHORING_REPAIR_CHECKPOINTS[PRE_AUDITOR_CHECKPOINT_IDS.length];
-const CRITICAL_AUDITOR_DEFERRED_CHECKPOINT_BLOCKER_CODES = new Set([
-  'critical_auditor_receipt_missing',
-  'critical_auditor_receipt_input_hash_stale',
-  'critical_auditor_less_than_three_no_new_gap_rounds',
-  'critical_auditor_validated_gap_unresolved',
-  'critical_auditor_receipts_required_before_checkpoint',
-  'critical_auditor_checkpoint_outcome_required',
-  'author_claim_lacks_critic_disposition',
-]);
 
 function runCheckpointSemanticValidator(input: {
   root: string;
@@ -17167,41 +17178,6 @@ function isCurrentCheckpointReceipt(input: CurrentCheckpointReceiptInput): boole
   );
 }
 
-function isCurrentDeferredCriticalAuditorCheckpointReceipt(
-  input: CurrentCheckpointReceiptInput
-): input is CurrentCheckpointReceiptInput & {
-  receipt: RequirementsContractCheckpointSemanticValidationReceipt;
-} {
-  const expectedRefs = checkpointArtifactRefs({
-    root: input.root,
-    draftSourcePath: input.draftSourcePath,
-    paths: input.paths,
-    checkpoint: input.checkpoint,
-  });
-  return (
-    input.checkpoint.id === CRITICAL_AUDITOR_DEFERRED_CHECKPOINT.id &&
-    checkpointReceiptIdentityAndValidatedInputsMatch(input) &&
-    expectedRefs.length > 0 &&
-    expectedRefs.every((ref) => ref.hash === 'missing') &&
-    input.receipt.persistenceStatus === 'committed' &&
-    input.receipt.semanticValidationStatus === 'block' &&
-    input.receipt.decision === 'block' &&
-    input.receipt.blockers.length > 0 &&
-    input.receipt.blockers.every((blocker) =>
-      CRITICAL_AUDITOR_DEFERRED_CHECKPOINT_BLOCKER_CODES.has(normalizeText(blocker.code))
-    )
-  );
-}
-
-function removeCheckpointReceiptsAfter(paths: PreConfirmationPaths, checkpointIndex: number): void {
-  for (const checkpoint of AUTHORING_REPAIR_CHECKPOINTS.slice(checkpointIndex + 1)) {
-    const receiptPath = checkpointReceiptPath(paths, checkpoint);
-    if (fs.existsSync(receiptPath)) {
-      fs.rmSync(receiptPath, { force: true });
-    }
-  }
-}
-
 function checkpointProgressFromReceipts(input: {
   root: string;
   draftSourcePath: string;
@@ -17237,9 +17213,7 @@ function checkpointProgressFromReceipts(input: {
         paths: input.paths,
       };
       const validReceipt = validateCheckpointSemanticValidationReceipt(receipt) ? receipt : null;
-      const bindingCurrent =
-        checkpointReceiptMatchesCurrentBinding(bindingInput) ||
-        isCurrentDeferredCriticalAuditorCheckpointReceipt(bindingInput);
+      const bindingCurrent = checkpointReceiptMatchesCurrentBinding(bindingInput);
       return {
         id: checkpoint.id,
         name: checkpoint.name,
@@ -17408,7 +17382,6 @@ function runAuthoringCheckpoint(input: {
   semanticBinding: SemanticCheckpointBinding;
   createdAt: string;
   forceRefresh?: boolean;
-  allowDeferredCriticalAuditorBlockers?: boolean;
 }):
   | { ok: true; receipt: RequirementsContractCheckpointSemanticValidationReceipt }
   | { ok: false; issue: PreConfirmationDrilldownIssue } {
@@ -17484,17 +17457,7 @@ function runAuthoringCheckpoint(input: {
     checkpoint: input.checkpoint,
   });
   const blockers = [...semanticValidation.blockers];
-  const deferredCriticalAuditorOutcome =
-    input.allowDeferredCriticalAuditorBlockers === true &&
-    input.checkpoint.id === CRITICAL_AUDITOR_DEFERRED_CHECKPOINT.id &&
-    missingArtifacts.length === 1 &&
-    missingArtifacts[0]?.path ===
-      toRootRelativePath(input.root, input.paths.criticalAuditorOutcome) &&
-    blockers.length > 0 &&
-    blockers.every((blocker) =>
-      CRITICAL_AUDITOR_DEFERRED_CHECKPOINT_BLOCKER_CODES.has(normalizeText(blocker.code))
-    );
-  if (missingArtifacts.length > 0 && !deferredCriticalAuditorOutcome) {
+  if (missingArtifacts.length > 0) {
     blockers.push({
       code: 'checkpoint_artifact_missing',
       message: `Checkpoint ${input.checkpoint.id} is missing required artifacts before receipt.`,
@@ -17531,8 +17494,7 @@ function runAuthoringCheckpoint(input: {
     implementationConfirmationHash: input.implementationConfirmationHash,
     semanticModelHash: input.semanticBinding.semanticModelHash,
     semanticConservationManifestHash: input.semanticBinding.semanticConservationManifestHash,
-    persistenceStatus:
-      missingArtifacts.length === 0 || deferredCriticalAuditorOutcome ? 'committed' : 'failed',
+    persistenceStatus: missingArtifacts.length === 0 ? 'committed' : 'failed',
     semanticValidationStatus: decision === 'pass' ? 'pass' : 'block',
     validatedInputs: [...validatedInputByPath.values()],
     blockers,
@@ -17574,7 +17536,7 @@ function runCp01MustDecompositionPacket(
   return runAuthoringCheckpoint({ ...input, checkpoint: AUTHORING_REPAIR_CHECKPOINTS[1] });
 }
 
-function runCp02AtomicDecompositionLoopConvergence(
+function runCp02DeterministicAtomicClosure(
   input: Omit<Parameters<typeof runAuthoringCheckpoint>[0], 'checkpoint'>
 ) {
   return runAuthoringCheckpoint({ ...input, checkpoint: AUTHORING_REPAIR_CHECKPOINTS[2] });
@@ -17674,8 +17636,8 @@ function runCriticalAuditorPreflightCheckpoints(input: {
   if (!cp00.ok) return cp00;
   const cp01 = runCp01MustDecompositionPacket(checkpointInput);
   if (!cp01.ok) return cp01;
-  removeCheckpointReceiptsAfter(input.paths, 1);
-  writeCheckpointProgressFromReceipts(checkpointInput);
+  const cp02 = runCp02DeterministicAtomicClosure(checkpointInput);
+  if (!cp02.ok) return cp02;
   return { ok: true };
 }
 
@@ -17687,7 +17649,7 @@ function criticalAuditorFileRef(root: string, filePath: string | null | undefine
   };
 }
 
-function commitCriticalAuditorCheckpointOutcome(input: {
+function recordCriticalAuditorOutcome(input: {
   root: string;
   sourcePath: string;
   paths: PreConfirmationPaths;
@@ -17771,60 +17733,6 @@ function commitCriticalAuditorCheckpointOutcome(input: {
     ...outcomePayload,
     outcomeHash: sha256Json(outcomePayload),
   });
-  const semanticBinding = semanticCheckpointBindingFromPaths(input.paths);
-  if (!semanticBinding) {
-    return {
-      ok: false,
-      issue: preConfirmationIssue(
-        'critical_auditor_checkpoint_semantic_binding_missing',
-        'cp-02 outcome cannot be committed without current transaction-local semantic hashes.',
-        [toRootRelativePath(input.root, input.paths.semanticConservationManifest)],
-        'critical_auditor_checkpoint'
-      ),
-    };
-  }
-  const checkpoint = runCp02AtomicDecompositionLoopConvergence({
-    root: input.root,
-    draftSourcePath: input.sourcePath,
-    paths: input.paths,
-    recordId: input.recordId,
-    requirementSetId: input.requirementSetId,
-    implementationAttemptId: input.implementationAttemptId,
-    routeDecision: 'critical_auditor_outcome',
-    sourceDocumentHash: input.sourceDocumentHash,
-    implementationConfirmationHash: input.implementationConfirmationHash,
-    semanticBinding,
-    createdAt: input.createdAt,
-    forceRefresh: true,
-  });
-  const checkpointReceipt = readJsonIfExists(
-    checkpointReceiptPath(input.paths, AUTHORING_REPAIR_CHECKPOINTS[2])
-  );
-  const checkpointDecision = normalizeText(checkpointReceipt?.decision);
-  const checkpointPersistence = normalizeText(checkpointReceipt?.persistenceStatus);
-  const checkpointMatches =
-    checkpointPersistence === 'committed' &&
-    checkpointDecision === decision &&
-    (decision === 'pass' ? checkpoint.ok : !checkpoint.ok);
-  if (!checkpointMatches) {
-    return {
-      ok: false,
-      issue: preConfirmationIssue(
-        'critical_auditor_checkpoint_outcome_commit_mismatch',
-        'cp-02 receipt does not match the mechanically derived Critical Auditor outcome.',
-        [
-          toRootRelativePath(input.root, input.paths.criticalAuditorOutcome),
-          toRootRelativePath(
-            input.root,
-            checkpointReceiptPath(input.paths, AUTHORING_REPAIR_CHECKPOINTS[2])
-          ),
-          decision,
-          checkpointDecision,
-        ],
-        'critical_auditor_checkpoint'
-      ),
-    };
-  }
   return { ok: true, decision };
 }
 
@@ -17875,12 +17783,11 @@ function runAuthoringCheckpointExecution(input: {
   semanticBinding: SemanticCheckpointBinding;
   createdAt: string;
   forceRefresh?: boolean;
-  allowDeferredCriticalAuditorBlockers?: boolean;
 }): { ok: true } | { ok: false; issues: PreConfirmationDrilldownIssue[] } {
   const runners = [
     runCp00SemanticKernel,
     runCp01MustDecompositionPacket,
-    runCp02AtomicDecompositionLoopConvergence,
+    runCp02DeterministicAtomicClosure,
     runCp03PacketToSourceMaterialization,
     runCp04IdFreeze,
     runCp05ImplementationConfirmationCore,
@@ -17897,32 +17804,9 @@ function runAuthoringCheckpointExecution(input: {
       `[requirements-contract-authoring] checkpoint resume progress=${toRootRelativePath(input.root, input.paths.progress)} completed=${resumeStartIndex} next=${nextCheckpoint}\n`
     );
   }
-  for (const [offset, runner] of runners.slice(resumeStartIndex).entries()) {
-    const checkpointIndex = resumeStartIndex + offset;
-    const checkpoint = AUTHORING_REPAIR_CHECKPOINTS[checkpointIndex];
+  for (const runner of runners.slice(resumeStartIndex)) {
     const result = runner(input);
     if (!result.ok) {
-      const receipt = readJsonIfExists(checkpointReceiptPath(input.paths, checkpoint));
-      if (
-        input.allowDeferredCriticalAuditorBlockers === true &&
-        isCurrentDeferredCriticalAuditorCheckpointReceipt({
-          root: input.root,
-          receipt,
-          checkpoint,
-          recordId: input.recordId,
-          requirementSetId: input.requirementSetId,
-          implementationAttemptId: input.implementationAttemptId,
-          sourceDocumentHash: input.sourceDocumentHash,
-          implementationConfirmationHash: input.implementationConfirmationHash,
-          semanticBinding: input.semanticBinding,
-          draftSourcePath: input.draftSourcePath,
-          paths: input.paths,
-        })
-      ) {
-        removeCheckpointReceiptsAfter(input.paths, checkpointIndex);
-        writeCheckpointProgressFromReceipts(input);
-        return { ok: true };
-      }
       writeCheckpointProgressFromReceipts(input);
       return { ok: false, issues: [result.issue] };
     }
@@ -17943,7 +17827,6 @@ function buildCheckpointPersistenceEvidenceFromReceipts(input: {
   implementationConfirmationHash: string;
   semanticBinding: SemanticCheckpointBinding;
   createdAt: string;
-  allowDeferredCriticalAuditorBlockers?: boolean;
 }): Record<string, unknown> {
   const routeDecisionHash = normalizeText(input.routeDecision?.routeDecisionHash);
   const progress = checkpointProgressFromReceipts({
@@ -17973,47 +17856,11 @@ function buildCheckpointPersistenceEvidenceFromReceipts(input: {
   const preRenderMustGate = readJsonIfExists(input.paths.preRenderMustGate);
   const preRenderGlobalConsistency = readJsonIfExists(input.paths.preRenderGlobalConsistency);
   const reconciliationReport = readJsonIfExists(input.paths.reconciliationReport);
-  const mustGateIssues = asRecordArray(preRenderMustGate?.blockingIssues);
-  const globalGateIssues = asRecordArray(preRenderGlobalConsistency?.issues);
-  const checkpointIssues = checkpointReceiptRefs.flatMap((checkpoint) => {
-    const receiptPath = resolveRootRelativePath(input.root, checkpoint.path);
-    return asRecordArray(readJsonIfExists(receiptPath)?.blockers);
-  });
   const mustGateVerdict = normalizeText(preRenderMustGate?.verdict).toLowerCase();
   const globalGateVerdict = normalizeText(preRenderGlobalConsistency?.verdict).toLowerCase();
   const reconciliationVerdict = normalizeText(reconciliationReport?.verdict).toLowerCase();
-  const deferredCriticalAuditorBlockers = input.allowDeferredCriticalAuditorBlockers
-    ? Array.from(
-        new Map(
-          [...mustGateIssues, ...globalGateIssues, ...checkpointIssues]
-            .filter((issue) =>
-              CRITICAL_AUDITOR_DEFERRED_CHECKPOINT_BLOCKER_CODES.has(normalizeText(issue.code))
-            )
-            .map((issue) => [
-              `${normalizeText(issue.code)}\n${asStringArray(issue.refs).join('\n')}`,
-              issue,
-            ])
-        ).values()
-      )
-    : [];
-  const nonDeferredMustGateIssues = mustGateIssues.filter(
-    (issue) =>
-      !input.allowDeferredCriticalAuditorBlockers ||
-      !CRITICAL_AUDITOR_DEFERRED_CHECKPOINT_BLOCKER_CODES.has(normalizeText(issue.code))
-  );
-  const nonDeferredGlobalGateIssues = globalGateIssues.filter(
-    (issue) =>
-      !input.allowDeferredCriticalAuditorBlockers ||
-      !CRITICAL_AUDITOR_DEFERRED_CHECKPOINT_BLOCKER_CODES.has(normalizeText(issue.code))
-  );
-  const mustGateStructurallyPassed =
-    mustGateVerdict === 'pass' ||
-    (mustGateVerdict === 'fail' &&
-      nonDeferredMustGateIssues.length === 0 &&
-      reconciliationVerdict === 'pass');
-  const globalGateStructurallyPassed =
-    globalGateVerdict === 'pass' ||
-    (globalGateVerdict === 'fail' && nonDeferredGlobalGateIssues.length === 0);
+  const mustGateStructurallyPassed = mustGateVerdict === 'pass';
+  const globalGateStructurallyPassed = globalGateVerdict === 'pass';
   const structuralGateSatisfied = mustGateStructurallyPassed && globalGateStructurallyPassed;
   const checkpointPersistenceSatisfiedCandidate =
     AUTHORING_REPAIR_CHECKPOINT_IDS.every((id) => completedCheckpointIds.includes(id)) &&
@@ -18052,15 +17899,8 @@ function buildCheckpointPersistenceEvidenceFromReceipts(input: {
         ? sha256File(input.paths.reconciliationReport)
         : null,
       preRenderGatePolicy: {
-        mode: input.allowDeferredCriticalAuditorBlockers
-          ? 'source_gap_fix_materialization'
-          : 'final_pre_render',
+        mode: 'final_pre_render',
         structuralGateSatisfied,
-        auditorConvergenceDeferredToNextRound: deferredCriticalAuditorBlockers.length > 0,
-        deferredCriticalAuditorBlockers: deferredCriticalAuditorBlockers.map((issue) => ({
-          code: normalizeText(issue.code),
-          refs: asStringArray(issue.refs),
-        })),
       },
     },
     completedAt: input.createdAt,
@@ -18194,7 +18034,6 @@ function prepareAuthoringRepairCheckpointPersistenceEvidence(input: {
     semanticBinding,
     createdAt: input.createdAt,
     forceRefresh: input.forceRefresh,
-    allowDeferredCriticalAuditorBlockers: true,
   });
   if (!checkpointRun.ok) {
     return { ok: false, issue: checkpointRun.issues[0] };
@@ -18211,7 +18050,6 @@ function prepareAuthoringRepairCheckpointPersistenceEvidence(input: {
     implementationConfirmationHash: input.implementationConfirmationHash,
     semanticBinding,
     createdAt: input.createdAt,
-    allowDeferredCriticalAuditorBlockers: true,
   });
   writeJsonUtf8(input.paths.checkpointPersistenceEvidence, evidence);
   const validationIssues = validateCheckpointPersistenceEvidence({
@@ -18225,7 +18063,6 @@ function prepareAuthoringRepairCheckpointPersistenceEvidence(input: {
     implementationAttemptId,
     sourceDocumentHash: input.sourceDocumentHash,
     implementationConfirmationHash: input.implementationConfirmationHash,
-    allowDeferredCriticalAuditorBlockers: true,
   });
   if (validationIssues.length > 0) {
     return { ok: false, issue: validationIssues[0] };
@@ -19532,6 +19369,9 @@ function buildMustDecompositionPacket(input: {
   structuredBlocks?: StructuredSourceBlock[];
   targetAuthorityRecords?: TargetAuthorityRecord[];
   validationAuthorityRecords?: ValidationAuthorityRecord[];
+  semanticConservationManifest?:
+    | ProductionSemanticPipelineResult['semanticConservationManifest']
+    | null;
   confirmation: Record<string, unknown>;
   consecutiveNoNewGapRounds?: number;
 }): Record<string, unknown> {
@@ -19607,6 +19447,9 @@ function buildMustDecompositionPacket(input: {
   }
   const targetAuthorityRecords = input.targetAuthorityRecords ?? [];
   const validationAuthorityRecords = input.validationAuthorityRecords ?? [];
+  const validationExecutionAuthority = typedValidationExecutionAuthority(
+    validationAuthorityRecords
+  );
   const sourceProjectionAuthority = buildSourceMustProjectionAuthority({
     blocks: input.structuredBlocks ?? [],
     mustRequirements: input.mustRequirements,
@@ -19617,8 +19460,20 @@ function buildMustDecompositionPacket(input: {
       .flatMap((authority) => authority.targetFiles)
       .map((targetPath) => targetPath.replace(/\\/g, '/'))
   );
-  const commandIds = assignedValidationAuthorityCommandIds(validationAuthorityRecords);
+  const commandIds = validationExecutionAuthority.commandIds;
   const commandIdSet = new Set(commandIds);
+  const validationRecordByCommandId = new Map(
+    commandIds.map((commandId, index) => [commandId, validationAuthorityRecords[index]])
+  );
+  const semanticSourceRootById = new Map(
+    (input.semanticConservationManifest?.sourceRoots ?? []).map((sourceRoot) => [
+      sourceRoot.sourceRootId,
+      sourceRoot,
+    ])
+  );
+  const semanticMustSourceRootIds = planSemanticSourceRootIdsForMustRequirements(
+    input.mustRequirements
+  );
   const negativeAcceptanceOwnersByRef = new Map<string, string[]>();
   for (const [mustRef, acceptanceRefs] of negativeAcceptanceRefsByMust) {
     for (const acceptanceRef of acceptanceRefs) {
@@ -19756,6 +19611,7 @@ function buildMustDecompositionPacket(input: {
       materializedAfterStatus: 'synchronized',
       controlledIngestRequiredBeforeMentalModelProgression: true,
     },
+    executionRegistry: validationExecutionAuthority.executionRegistry,
     consecutiveNoNewValidGapRounds: input.consecutiveNoNewGapRounds ?? 0,
     mustRefs,
     sourceRequirementTexts: mustTexts,
@@ -19790,8 +19646,34 @@ function buildMustDecompositionPacket(input: {
       const oracle = sourceAuthority?.oracle || requirement.text;
       const atomicUnits = fullyDecomposedAtomicBehaviorOracleUnits(requirement.text, oracle);
       const taskIds = atomicTaskIdsForMust(index, totalMusts, atomicUnits.length);
+      const taskCommandIds = commandIdsForMust(requirement.id);
+      const taskExecutionConstraintRefs = taskCommandIds.map((commandId) =>
+        `CMD:${commandId}`
+      );
+      const authoritySourceRootIds = uniqueNonEmpty([
+        semanticMustSourceRootIds[index],
+        ...taskCommandIds.map(
+          (commandId) => validationRecordByCommandId.get(commandId)?.id ?? ''
+        ),
+      ]).filter((sourceRootId) => semanticSourceRootById.has(sourceRootId));
+      const originBindings = authoritySourceRootIds.flatMap((sourceRootId) =>
+        (semanticSourceRootById.get(sourceRootId)?.sourceSpanRefs ?? []).map(
+          (sourceSpanRef) => ({ sourceRootId, sourceSpanRef })
+        )
+      );
+      const spanRefs = uniqueNonEmpty(
+        originBindings.map((binding) => binding.sourceSpanRef)
+      );
       const taskRows = atomicUnits.map((unit, unitIndex) => ({
         id: taskIds[unitIndex],
+        action: unit,
+        oracle: unit,
+        dependencies: [],
+        coverageSeed: unit,
+        originBindings,
+        authorityRefs: authoritySourceRootIds,
+        spanRefs,
+        executionConstraintRefs: taskExecutionConstraintRefs,
         targetFiles: targetFilesForAtomicUnit(
           unit,
           productTargetFiles.length > 0
@@ -21975,18 +21857,6 @@ function rowIdForRepair(row: Record<string, unknown>, fallback: string): string 
   );
 }
 
-function selectExistingRowIds(
-  confirmation: Record<string, unknown>,
-  keys: string[],
-  fallbackIds: string[]
-): string[] {
-  const ids = keys
-    .flatMap((key) => sourceRowsForRepairProjection(confirmation, key))
-    .map((row, index) => rowIdForRepair(row, String(index)))
-    .filter(Boolean);
-  return ids.length > 0 ? ids : fallbackIds;
-}
-
 function repairProjectionMustRefsFromValue(value: unknown, depth = 0): string[] {
   if (depth > 4 || value === null || value === undefined) return [];
   if (typeof value === 'string') {
@@ -24160,7 +24030,7 @@ function runCriticalAuditorReceiptLoop(input: {
       includeResponse?: boolean;
       blockingIssues: PreConfirmationDrilldownIssue[];
     }) =>
-      commitCriticalAuditorCheckpointOutcome({
+      recordCriticalAuditorOutcome({
         root: input.root,
         sourcePath: input.sourcePath,
         paths: input.paths,
@@ -28736,7 +28606,6 @@ function validateCheckpointPersistenceEvidence(input: {
   implementationAttemptId: string;
   sourceDocumentHash: string;
   implementationConfirmationHash: string;
-  allowDeferredCriticalAuditorBlockers?: boolean;
 }): PreConfirmationDrilldownIssue[] {
   const evidence = readJsonIfExists(input.evidencePath);
   const issues: PreConfirmationDrilldownIssue[] = [];
@@ -28802,19 +28671,7 @@ function validateCheckpointPersistenceEvidence(input: {
   ) {
     addIssue('semantic checkpoint binding mismatch');
   }
-  const preRenderGatePolicy = recordObject(ref?.preRenderGatePolicy);
-  const deferredCriticalAuditorBlockers = asRecordArray(
-    preRenderGatePolicy.deferredCriticalAuditorBlockers
-  );
-  const deferredCriticalAuditorOnly =
-    input.allowDeferredCriticalAuditorBlockers === true &&
-    normalizeText(preRenderGatePolicy.mode) === 'source_gap_fix_materialization' &&
-    preRenderGatePolicy.auditorConvergenceDeferredToNextRound === true &&
-    deferredCriticalAuditorBlockers.length > 0 &&
-    deferredCriticalAuditorBlockers.every((blocker) =>
-      CRITICAL_AUDITOR_DEFERRED_CHECKPOINT_BLOCKER_CODES.has(normalizeText(blocker.code))
-    );
-  if (evidence.checkpointPersistenceSatisfiedCandidate !== true && !deferredCriticalAuditorOnly) {
+  if (evidence.checkpointPersistenceSatisfiedCandidate !== true) {
     addIssue('checkpointPersistenceSatisfiedCandidate is not true');
   }
   if (!ref) {
@@ -28834,9 +28691,7 @@ function validateCheckpointPersistenceEvidence(input: {
     addIssue('checkpointReceiptRefs must contain one receipt ref per checkpoint');
   }
   const completedIds = asStringArray(ref.completedCheckpointIds);
-  const expectedCompletedIds = deferredCriticalAuditorOnly
-    ? PRE_AUDITOR_CHECKPOINT_IDS
-    : AUTHORING_REPAIR_CHECKPOINT_IDS;
+  const expectedCompletedIds = AUTHORING_REPAIR_CHECKPOINT_IDS;
   if (
     completedIds.length !== expectedCompletedIds.length ||
     expectedCompletedIds.some((checkpointId, index) => completedIds[index] !== checkpointId)
@@ -28852,23 +28707,6 @@ function validateCheckpointPersistenceEvidence(input: {
     }
     if (normalizeText(refRow.path) !== toRootRelativePath(input.root, receiptPath)) {
       addIssue(`checkpoint receipt path mismatch ${checkpoint.id}`);
-    }
-    if (
-      deferredCriticalAuditorOnly &&
-      checkpoint.index > CRITICAL_AUDITOR_DEFERRED_CHECKPOINT.index
-    ) {
-      if (fs.existsSync(receiptPath)) {
-        addIssue(`deferred checkpoint descendant receipt must be absent ${checkpoint.id}`);
-      }
-      if (
-        normalizeText(refRow.hash) ||
-        normalizeText(refRow.status) !== 'pending' ||
-        normalizeText(refRow.persistenceStatus) !== 'pending' ||
-        normalizeText(refRow.semanticValidationStatus) !== 'pending'
-      ) {
-        addIssue(`deferred checkpoint descendant ref must remain pending ${checkpoint.id}`);
-      }
-      continue;
     }
     if (!fs.existsSync(receiptPath)) {
       addIssue(`checkpoint receipt file missing ${checkpoint.id}`);
@@ -28891,19 +28729,6 @@ function validateCheckpointPersistenceEvidence(input: {
       draftSourcePath: input.sourcePath,
       paths: input.paths,
     };
-    if (deferredCriticalAuditorOnly && checkpoint.id === CRITICAL_AUDITOR_DEFERRED_CHECKPOINT.id) {
-      if (!isCurrentDeferredCriticalAuditorCheckpointReceipt(currentReceiptInput)) {
-        addIssue(`checkpoint receipt is not a current deferred Auditor block ${checkpoint.id}`);
-      }
-      if (
-        normalizeText(refRow.status) !== 'blocked' ||
-        normalizeText(refRow.persistenceStatus) !== 'committed' ||
-        normalizeText(refRow.semanticValidationStatus) !== 'block'
-      ) {
-        addIssue(`checkpoint receipt ref is not a deferred Auditor block ${checkpoint.id}`);
-      }
-      continue;
-    }
     if (!isCurrentCheckpointReceipt(currentReceiptInput)) {
       addIssue(`checkpoint receipt stale or invalid ${checkpoint.id}`);
     }
@@ -29878,6 +29703,9 @@ export function runMainAgentPreConfirmationDrilldown(
         sourceMutationPerformed: false,
       });
     }
+    const productionExecutionAuthority = typedValidationExecutionAuthority(
+      validationAuthority.accepted
+    );
     try {
       productionSemanticPipeline = runRequirementsContractProductionSemanticPipeline({
         projectRoot: root,
@@ -29888,6 +29716,9 @@ export function runMainAgentPreConfirmationDrilldown(
         intentLineageLedgerPath: paths.intentLineageLedger,
         intentLineageLedger: recordObject(intentLineageLedger),
         sourceRootCandidates: productionSemanticSourceRootCandidates,
+        executionRegistry: productionExecutionAuthority.executionRegistry,
+        executionConstraintRefsBySourceRootId:
+          productionExecutionAuthority.executionConstraintRefsBySourceRootId,
         ...(invocationEntryAuthority
           ? {
               invocationAuthorityReceiptPath: paths.invocationAuthorityReceipt,
@@ -30826,6 +30657,8 @@ export function runMainAgentPreConfirmationDrilldown(
       structuredBlocks,
       targetAuthorityRecords: projectionTargetAuthorityRecords,
       validationAuthorityRecords: validationAuthority.accepted,
+      semanticConservationManifest:
+        productionSemanticPipeline?.semanticConservationManifest ?? null,
       confirmation: previewExtraction.confirmation,
       consecutiveNoNewGapRounds: 0,
     });
@@ -31626,6 +31459,8 @@ export function runMainAgentPreConfirmationDrilldown(
           structuredBlocks,
           targetAuthorityRecords: projectionTargetAuthorityRecords,
           validationAuthorityRecords: validationAuthority.accepted,
+          semanticConservationManifest:
+            productionSemanticPipeline?.semanticConservationManifest ?? null,
           confirmation: auditedPreviewExtraction.confirmation,
           consecutiveNoNewGapRounds: criticalAuditorLoop.consecutiveNoNewGapRounds,
         });
@@ -40603,9 +40438,7 @@ export function mainMainAgentOrchestration(argv: string[]): number {
 
   if (
     action === 'pre-confirmation-drilldown' ||
-    action === 'pre_confirmation_drilldown' ||
-    action === 'author-confirmation-ready-source' ||
-    action === 'author_confirmation_ready_source'
+    action === 'pre_confirmation_drilldown'
   ) {
     try {
       const result = runMainAgentPreConfirmationDrilldown(root, {
@@ -40638,13 +40471,8 @@ export function mainMainAgentOrchestration(argv: string[]): number {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
       return result.ok ? 0 : 1;
     } catch (error) {
-      const actionLabel =
-        action === 'author-confirmation-ready-source' ||
-        action === 'author_confirmation_ready_source'
-          ? 'author-confirmation-ready-source'
-          : 'pre-confirmation-drilldown';
       console.error(
-        `main-agent-orchestration ${actionLabel}: ${
+        `main-agent-orchestration pre-confirmation-drilldown: ${
           error instanceof Error ? error.message : String(error)
         }`
       );
@@ -41353,6 +41181,10 @@ export type MainAgentNativeHostCloseoutInput = Omit<
  * Host-facing product entry for the controlled closeout chain.
  * Native Reviewer routing is owned by the host bridge; Judge provider resolution remains in
  * `runMainAgentControlledCloseout` and is therefore independent from the host selection.
+ * @param {MainAgentNativeHostCloseoutInput} input Controlled closeout input with optional native
+ * Reviewer host routing.
+ * @returns {Promise<MainAgentControlledCloseoutResult>} The controlled closeout result after native
+ * Reviewer transport completes.
  */
 export function runMainAgentControlledCloseoutFromNativeHost(
   input: MainAgentNativeHostCloseoutInput

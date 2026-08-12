@@ -204,7 +204,7 @@
     "semanticNode": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["order", "nodeId", "nodeHash", "authorityClass", "authorityBearing"],
+      "required": ["order", "nodeId", "nodeHash", "authorityClass", "authorityBearing", "executionConstraintRefs"],
       "properties": {
         "order": {
           "type": "integer",
@@ -221,6 +221,14 @@
         },
         "authorityBearing": {
           "const": true
+        },
+        "executionConstraintRefs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^(PATH|CMD|ART|CTM|EVDREQ|STOP):[^:\\s]+$"
+          }
         }
       }
     },

@@ -10,7 +10,26 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 import { writeJsonAtomic } from './requirement-record-control-store';
+import {
+  atomicNoClobberPublish,
+  type AtomicNoClobberPhase,
+} from './requirements-contract-atomic-no-clobber-publisher';
+import {
+  createRequirementsContractCheckpointManifest,
+  validateRequirementsContractCheckpointManifest,
+  type RequirementsCheckpointManifestRef,
+  type RequirementsContractCheckpointManifest,
+} from './requirements-contract-authoring-manifest';
+import {
+  publishActiveAuthoringAttemptPointer,
+  type ActiveAuthoringAttemptPointer,
+} from './requirements-contract-active-authoring-attempt-pointer';
 import { createSameVolumeBoundedTempDirectory } from './requirements-contract-same-volume-bounded-temp';
+import {
+  compileRequirementsContractCp02Candidate,
+  type RequirementsContractCp02CompilerInput,
+  type RequirementsContractCp02CompilerResult,
+} from './requirements-contract-compiler';
 import {
   resolveInteractionCandidates,
   type InteractionResolutionCandidate,
@@ -23,14 +42,21 @@ import {
 } from './requirements-contract-semantic-conservation-manifest';
 import {
   applySemanticFieldValue,
+  createRequirementsContractCoreArtifactFreeze,
   resolveSemanticField,
   sha256Stable,
   sha256Text,
   validateSemanticResolutionReceipt,
+  type RequirementsContractCoreArtifactFreeze,
   type SemanticResolutionReceipt,
   type TrustedSourceExtraction,
   type TrustedSourceSnapshot,
 } from './requirements-contract-semantic-resolver';
+import {
+  verifyExecutionConstraintConservation,
+  verifyRequirementsContractCoreArtifactReadback,
+  type ConservationExecutionRegistryEntry,
+} from './requirements-contract-semantic-conservation-verifier';
 import { semanticModelHash as semanticModelHashForContract } from './requirements-contract-hash-domains';
 import {
   requirementsContractInvocationAuthorityBindingHash,
@@ -38,6 +64,11 @@ import {
   validateRequirementsContractInvocationAuthorityReceipt,
 } from './requirements-contract-invocation-authority-receipt';
 import { SOURCE_ROOT_CLASS_REGISTRY_HASH } from './requirements-contract-source-root-class-registry';
+import {
+  preflightRequirementsContractSourceBindingRefresh,
+  type RequirementsContractSourceBindingRefreshPreflight,
+  type RequirementsContractSourceBindingRefreshPreflightInput,
+} from './requirements-contract-source-binding-refresh';
 import { validateRequirementsContractIntakeReceipt } from './requirements-contract-intake-receipt';
 import { validateRequirementsContractFileIntakeReceipt } from './requirements-contract-file-intake-receipt';
 import { validateRequirementsContractIntentLineageLedger } from './requirements-contract-intent-lineage';
@@ -74,6 +105,324 @@ export interface ProductionSemanticSourceRoot {
 export interface ProductionSemanticSourceRootCandidate
   extends Omit<ProductionSemanticSourceRoot, 'authorityClass'> {
   proposedAuthorityClass: string;
+}
+
+export function prepareRequirementsContractCp02PipelineStage(
+  input: RequirementsContractCp02CompilerInput
+): RequirementsContractCp02CompilerResult {
+  return compileRequirementsContractCp02Candidate(input);
+}
+
+export function prepareRequirementsContractSourceBindingRefreshPipelineStage(
+  input: RequirementsContractSourceBindingRefreshPreflightInput
+): RequirementsContractSourceBindingRefreshPreflight {
+  return preflightRequirementsContractSourceBindingRefresh(input);
+}
+
+export interface RequirementsContractCp04FreezeStageResult {
+  status: 'ready_to_publish';
+  semanticIdentity: {
+    scopeSemanticHash: string;
+    semanticRevisionId: string;
+  };
+  bindingIdentity: {
+    sourceBindingHash: string;
+    bindingRevisionId: string;
+  };
+  semanticIr: Record<string, unknown>;
+  sourceBinding: Record<string, unknown>;
+  resolvedEvidenceIndex: Record<string, unknown>;
+  freezes: {
+    semanticIr: RequirementsContractCoreArtifactFreeze;
+    sourceBinding: RequirementsContractCoreArtifactFreeze;
+    resolvedEvidenceIndex: RequirementsContractCoreArtifactFreeze;
+  };
+  readback: {
+    semanticIr: true;
+    sourceBinding: true;
+    resolvedEvidenceIndex: true;
+  };
+}
+
+function revisionId(prefix: 'semantic' | 'binding', hash: string): string {
+  return `${prefix}-revision-${hash.slice('sha256:'.length, 'sha256:'.length + 24)}`;
+}
+
+export function prepareRequirementsContractCp04FreezeStage(input: {
+  semanticIr: Record<string, unknown>;
+  sourceBinding: Record<string, unknown>;
+  resolvedEvidenceIndex: Record<string, unknown>;
+}): RequirementsContractCp04FreezeStageResult {
+  const scopeSemanticHash = sha256Stable({
+    domain: 'requirements-contract-scope-semantic-hash/v1',
+    semanticIr: input.semanticIr,
+  });
+  const semanticIdentity = {
+    scopeSemanticHash,
+    semanticRevisionId: revisionId('semantic', scopeSemanticHash),
+  };
+  const semanticIr = { ...input.semanticIr, ...semanticIdentity };
+  const semanticIrFreeze = createRequirementsContractCoreArtifactFreeze({
+    stage: 'cp04',
+    artifactRole: 'semantic-ir',
+    artifact: semanticIr,
+  });
+  if (!verifyRequirementsContractCoreArtifactReadback({
+    freeze: semanticIrFreeze,
+    artifact: semanticIr,
+  })) {
+    throw new Error('requirements_cp04_semantic_ir_readback_mismatch');
+  }
+  const sourceBindingPreimage = { ...input.sourceBinding, ...semanticIdentity };
+  const sourceBindingHash = sha256Stable({
+    domain: 'requirements-contract-source-binding-hash/v1',
+    sourceBinding: sourceBindingPreimage,
+  });
+  const bindingIdentity = {
+    sourceBindingHash,
+    bindingRevisionId: revisionId('binding', sourceBindingHash),
+  };
+  const sourceBinding = { ...sourceBindingPreimage, ...bindingIdentity };
+  const sourceBindingFreeze = createRequirementsContractCoreArtifactFreeze({
+    stage: 'cp04',
+    artifactRole: 'source-binding',
+    artifact: sourceBinding,
+  });
+  if (!verifyRequirementsContractCoreArtifactReadback({
+    freeze: sourceBindingFreeze,
+    artifact: sourceBinding,
+  })) {
+    throw new Error('requirements_cp04_source_binding_readback_mismatch');
+  }
+  const resolvedEvidenceIndex = {
+    ...input.resolvedEvidenceIndex,
+    ...semanticIdentity,
+    ...bindingIdentity,
+  };
+  const resolvedEvidenceIndexFreeze = createRequirementsContractCoreArtifactFreeze({
+    stage: 'cp04',
+    artifactRole: 'resolved-evidence-index',
+    artifact: resolvedEvidenceIndex,
+  });
+  if (!verifyRequirementsContractCoreArtifactReadback({
+    freeze: resolvedEvidenceIndexFreeze,
+    artifact: resolvedEvidenceIndex,
+  })) {
+    throw new Error('requirements_cp04_resolved_evidence_index_readback_mismatch');
+  }
+  return {
+    status: 'ready_to_publish',
+    semanticIdentity,
+    bindingIdentity,
+    semanticIr,
+    sourceBinding,
+    resolvedEvidenceIndex,
+    freezes: {
+      semanticIr: semanticIrFreeze,
+      sourceBinding: sourceBindingFreeze,
+      resolvedEvidenceIndex: resolvedEvidenceIndexFreeze,
+    },
+    readback: {
+      semanticIr: true,
+      sourceBinding: true,
+      resolvedEvidenceIndex: true,
+    },
+  };
+}
+
+export function publishRequirementsContractCp04FreezeStage(input: {
+  recordRootPath: string;
+  stage: RequirementsContractCp04FreezeStageResult;
+  authoringRequestId: string;
+  authoringAttemptId: string;
+  inputManifestHash: string;
+  previousCheckpointManifestRef: RequirementsCheckpointManifestRef;
+  compilerIdentity: string;
+  decisionReceiptRefs: RequirementsContractCheckpointManifest['decisionReceiptRefs'];
+  baseAuthorityRef: Record<string, unknown> | null;
+  expectedCurrentPointerHash: string | null;
+  compareAndSwapAttemptPointer: Parameters<
+    typeof publishActiveAuthoringAttemptPointer
+  >[0]['compareAndSwap'];
+  onArtifactPhase?: (
+    role: 'semantic-ir' | 'source-binding' | 'resolved-evidence-index',
+    phase: AtomicNoClobberPhase
+  ) => void;
+}) {
+  const recordRootPath = path.resolve(input.recordRootPath);
+  const semanticRevisionId = input.stage.semanticIdentity.semanticRevisionId;
+  const bindingRevisionId = input.stage.bindingIdentity.bindingRevisionId;
+  const safeIdentity = /^[A-Za-z0-9][A-Za-z0-9._-]*$/u;
+  if (
+    !safeIdentity.test(semanticRevisionId) ||
+    !safeIdentity.test(bindingRevisionId) ||
+    !safeIdentity.test(input.authoringAttemptId)
+  ) {
+    throw new Error('requirements_cp04_publication_identity_invalid');
+  }
+  const relativePaths = {
+    semanticIr: `authoring/semantic-revisions/${semanticRevisionId}/semantic-ir.json`,
+    sourceBinding: `authoring/source-bindings/${bindingRevisionId}/source-binding.json`,
+    resolvedEvidenceIndex:
+      `authoring/source-bindings/${bindingRevisionId}/resolved-evidence-index.json`,
+    checkpointManifest:
+      `authoring/staging/${input.authoringAttemptId}/manifests/4-cp04.json`,
+  };
+  const paths = Object.fromEntries(
+    Object.entries(relativePaths).map(([key, value]) => [
+      key,
+      path.join(recordRootPath, ...value.split('/')),
+    ])
+  ) as Record<keyof typeof relativePaths, string>;
+  const publishArtifact = (
+    role: 'semantic-ir' | 'source-binding' | 'resolved-evidence-index',
+    targetPath: string,
+    artifact: Record<string, unknown>,
+    freeze: RequirementsContractCoreArtifactFreeze
+  ) => atomicNoClobberPublish({
+    targetPath,
+    value: artifact,
+    role,
+    mediaType: 'application/json',
+    onPhase: input.onArtifactPhase
+      ? (phase) => input.onArtifactPhase?.(role, phase)
+      : undefined,
+    validateReadback(value) {
+      if (
+        !value ||
+        typeof value !== 'object' ||
+        Array.isArray(value) ||
+        !verifyRequirementsContractCoreArtifactReadback({
+          freeze,
+          artifact: value as Record<string, unknown>,
+        })
+      ) {
+        throw new Error(`requirements_cp04_${role.replace(/-/gu, '_')}_readback_mismatch`);
+      }
+    },
+  });
+  const publications = {
+    semanticIr: publishArtifact(
+      'semantic-ir', paths.semanticIr, input.stage.semanticIr, input.stage.freezes.semanticIr
+    ),
+    sourceBinding: publishArtifact(
+      'source-binding',
+      paths.sourceBinding,
+      input.stage.sourceBinding,
+      input.stage.freezes.sourceBinding
+    ),
+    resolvedEvidenceIndex: publishArtifact(
+      'resolved-evidence-index',
+      paths.resolvedEvidenceIndex,
+      input.stage.resolvedEvidenceIndex,
+      input.stage.freezes.resolvedEvidenceIndex
+    ),
+  };
+  const artifactEntries = [
+    {
+      role: 'semantic_ir' as const,
+      schemaVersion: String(input.stage.semanticIr.schemaVersion ?? 'requirements-contract-semantic-ir/v1'),
+      artifactId: semanticRevisionId,
+      recordRelativePath: relativePaths.semanticIr,
+      artifactHash: input.stage.freezes.semanticIr.artifactHash,
+    },
+    {
+      role: 'source_binding' as const,
+      schemaVersion: String(input.stage.sourceBinding.schemaVersion ?? 'requirements-contract-source-binding/v1'),
+      artifactId: bindingRevisionId,
+      recordRelativePath: relativePaths.sourceBinding,
+      artifactHash: input.stage.freezes.sourceBinding.artifactHash,
+    },
+    {
+      role: 'resolved_evidence_index' as const,
+      schemaVersion: String(
+        input.stage.resolvedEvidenceIndex.schemaVersion ??
+          'requirements-contract-resolved-evidence-index/v1'
+      ),
+      artifactId: `resolved-evidence-index-${bindingRevisionId}`,
+      recordRelativePath: relativePaths.resolvedEvidenceIndex,
+      artifactHash: input.stage.freezes.resolvedEvidenceIndex.artifactHash,
+    },
+  ];
+  const checkpointManifest = createRequirementsContractCheckpointManifest({
+    authoringRequestId: input.authoringRequestId,
+    authoringAttemptId: input.authoringAttemptId,
+    checkpointId: 'cp04',
+    checkpointOrdinal: 4,
+    stage: 'cp04',
+    status: 'passed',
+    inputManifestHash: input.inputManifestHash,
+    previousCheckpointManifestRef: input.previousCheckpointManifestRef,
+    latestValidPredecessorCheckpoint: input.previousCheckpointManifestRef.checkpointId,
+    compilerIdentity: input.compilerIdentity,
+    artifactEntries,
+    decisionReceiptRefs: input.decisionReceiptRefs,
+    baseAuthorityRef: input.baseAuthorityRef,
+  });
+  const checkpointManifestPublication = atomicNoClobberPublish({
+    targetPath: paths.checkpointManifest,
+    value: checkpointManifest,
+    role: 'requirements_contract_checkpoint_manifest',
+    mediaType: 'application/json',
+    validateReadback(value) {
+      const validation = validateRequirementsContractCheckpointManifest(value);
+      if (validation.decision === 'block') throw new Error(validation.issueCodes[0]);
+    },
+  });
+  const readbackArtifact = (
+    targetPath: string,
+    freeze: RequirementsContractCoreArtifactFreeze
+  ) => {
+    const artifact = JSON.parse(readFileSync(targetPath, 'utf8')) as Record<string, unknown>;
+    if (!verifyRequirementsContractCoreArtifactReadback({ freeze, artifact })) {
+      throw new Error('requirements_cp04_filesystem_readback_mismatch');
+    }
+    return true as const;
+  };
+  const checkpointManifestReadback = JSON.parse(
+    readFileSync(paths.checkpointManifest, 'utf8')
+  );
+  const checkpointManifestValidation = validateRequirementsContractCheckpointManifest(
+    checkpointManifestReadback
+  );
+  if (checkpointManifestValidation.decision === 'block') {
+    throw new Error(checkpointManifestValidation.issueCodes[0]);
+  }
+  const pointer: ActiveAuthoringAttemptPointer = {
+    schemaVersion: 'ActiveAuthoringAttemptPointer/v1',
+    authoringAttemptId: input.authoringAttemptId,
+    attemptManifestPath: relativePaths.checkpointManifest,
+    attemptManifestHash: checkpointManifest.checkpointManifestHash,
+    latestValidPredecessorCheckpoint: checkpointManifest.latestValidPredecessorCheckpoint,
+    inputManifestHash: input.inputManifestHash,
+  };
+  const attemptPointer = publishActiveAuthoringAttemptPointer({
+    pointer,
+    expectedCurrentPointerHash: input.expectedCurrentPointerHash,
+    readAttemptManifest(recordRelativePath) {
+      if (recordRelativePath !== relativePaths.checkpointManifest) {
+        throw new Error('requirements_cp04_checkpoint_manifest_path_mismatch');
+      }
+      return JSON.parse(readFileSync(paths.checkpointManifest, 'utf8'));
+    },
+    compareAndSwap: input.compareAndSwapAttemptPointer,
+  });
+  return {
+    status: 'published' as const,
+    paths,
+    publications: { ...publications, checkpointManifest: checkpointManifestPublication },
+    checkpointManifest,
+    attemptPointer,
+    readback: {
+      semanticIr: readbackArtifact(paths.semanticIr, input.stage.freezes.semanticIr),
+      sourceBinding: readbackArtifact(paths.sourceBinding, input.stage.freezes.sourceBinding),
+      resolvedEvidenceIndex: readbackArtifact(
+        paths.resolvedEvidenceIndex,
+        input.stage.freezes.resolvedEvidenceIndex
+      ),
+      checkpointManifest: true as const,
+    },
+  };
 }
 
 export interface ProductionSemanticPipelineResult {
@@ -1067,6 +1416,10 @@ export function runRequirementsContractProductionSemanticPipeline(input: {
   interactionResolutionPath: string;
   semanticConservationManifestPath: string;
   interactionCandidates?: InteractionResolutionCandidate[];
+  executionRegistry?: {
+    entries: ConservationExecutionRegistryEntry[];
+  };
+  executionConstraintRefsBySourceRootId?: Record<string, string[]>;
 }): ProductionSemanticPipelineResult {
   const lifecycleValidationReportPath = path.join(
     path.dirname(input.semanticConservationManifestPath),
@@ -1275,7 +1628,19 @@ export function runRequirementsContractProductionSemanticPipeline(input: {
       nodeHash: semanticIr.nodes[root.sourceRootId].bodyHash,
       authorityClass: root.authorityClass,
       authorityBearing: true as const,
+      executionConstraintRefs: [
+        ...(input.executionConstraintRefsBySourceRootId?.[root.sourceRootId] ?? []),
+      ],
     }));
+    const executionConservation = verifyExecutionConstraintConservation({
+      semanticNodes,
+      executionRegistry: input.executionRegistry ?? { entries: [] },
+    });
+    if (executionConservation.decision === 'block') {
+      throw new Error(
+        `Execution constraint conservation blocked: ${executionConservation.issueCodes.join(', ')}`
+      );
+    }
     const manifest = createRequirementsContractSemanticConservationManifest({
       requirementSetId: input.requirementSetId,
       intakeReceiptPath: path

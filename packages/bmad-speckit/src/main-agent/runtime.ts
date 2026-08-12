@@ -63,6 +63,9 @@ const { requirementRecordSchemaEvolutionAction } = require('./actions/requiremen
 const {
   requirementsContractSourceIntakeAction,
 } = require('./actions/requirements-contract-source-intake');
+const {
+  submitRequirementsGrillResponseAction,
+} = require('./actions/submit-requirements-grill-response');
 const { resolveActiveRequirementAction } = require('./actions/resolve-active-requirement');
 const {
   runRequiredCommandsFromAiTddManifestAction,
@@ -73,7 +76,11 @@ const { scoringGatesCheckAction } = require('./actions/scoring-gates-check');
 const { skillOrchestrationAuditAction } = require('./actions/skill-orchestration-audit');
 const { sixModelRuntimeDecisionAction } = require('./actions/six-model-runtime-decision');
 const { soakRunnerAction } = require('./actions/soak-runner');
-const { emitPackageOrchestration } = require('./actions/source-authority-orchestration');
+const {
+  emitPackageOrchestration,
+  authorConfirmationReadySourceAction,
+  resumeAuthorConfirmationReadySourceAction,
+} = require('./actions/source-authority-orchestration');
 const { renderAuditBlockCliAction } = require('./actions/render-audit-block-cli');
 const { strictCloseoutProofGateAction } = require('./actions/strict-closeout-proof-gate');
 const { targetArtifactRealizationGateAction } = require('./actions/target-artifact-realization-gate');
@@ -114,6 +121,9 @@ const PACKAGE_RUNTIME_READY_ACTIONS = {
   'requirement-record-live-schema-gate': requirementRecordLiveSchemaGateAction,
   'requirement-record-schema-evolution': requirementRecordSchemaEvolutionAction,
   'requirements-contract-source-intake': requirementsContractSourceIntakeAction,
+  'submit-requirements-grill-response': submitRequirementsGrillResponseAction,
+  'author-confirmation-ready-source': authorConfirmationReadySourceAction,
+  'resume-author-confirmation-ready-source': resumeAuthorConfirmationReadySourceAction,
   'resolve-active-requirement': resolveActiveRequirementAction,
   'run-required-commands-from-ai-tdd-manifest': runRequiredCommandsFromAiTddManifestAction,
   'runtime-scoring-data-path': runtimeScoringDataPathAction,
@@ -424,6 +434,7 @@ async function runMainAgentRuntime(context) {
   if (
     context.legacyOrchestration &&
     ORCHESTRATION_ACTIONS.has(context.action) &&
+    context.action !== 'author-confirmation-ready-source' &&
     context.action !== 'inspect' &&
     context.action !== 'confirm-scope'
   ) {

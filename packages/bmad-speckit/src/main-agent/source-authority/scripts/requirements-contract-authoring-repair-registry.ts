@@ -541,6 +541,112 @@ export function writeRepairRegistryUnclassifiedIssueReceipt(input: {
   return receiptPath;
 }
 
+export type RequirementAuthoringResumeTrigger =
+  | 'frozen_ir_reentry'
+  | 'decision_projection_gap'
+  | 'compiler_decision_loss'
+  | 'technical_planning_pending'
+  | 'projection_drift'
+  | 'semantic_revision_stale'
+  | 'citation_binding_stale';
+
+export interface RequirementAuthoringResumeClassification {
+  schemaVersion: 'requirements-authoring-repair-resume-classification/v1';
+  trigger: RequirementAuthoringResumeTrigger;
+  earliestAffectedStage: 'cp00' | 'cp01' | 'cp02' | 'cp05' | 'binding_refresh';
+  latestValidPredecessorCheckpoint: 'cp00' | 'cp01' | 'cp04' | null;
+  resumeAction:
+    | 'resume_projection_from_frozen_ir'
+    | 'recompile_from_existing_decision_receipt'
+    | 'resume_after_technical_capability_change'
+    | 'rebuild_projection_from_frozen_ir'
+    | 'compile_semantic_successor'
+    | 'refresh_binding_and_citations_only';
+  reopenGrill: boolean;
+  rerunJudge: boolean;
+  preserveFrozenSemanticRevision: boolean;
+  preserveDecisionReceipts: boolean;
+}
+
+const resumeClassifications = {
+  frozen_ir_reentry: {
+    earliestAffectedStage: 'cp05',
+    latestValidPredecessorCheckpoint: 'cp04',
+    resumeAction: 'resume_projection_from_frozen_ir',
+    reopenGrill: false,
+    rerunJudge: false,
+    preserveFrozenSemanticRevision: true,
+    preserveDecisionReceipts: true,
+  },
+  decision_projection_gap: {
+    earliestAffectedStage: 'cp01',
+    latestValidPredecessorCheckpoint: 'cp00',
+    resumeAction: 'recompile_from_existing_decision_receipt',
+    reopenGrill: false,
+    rerunJudge: true,
+    preserveFrozenSemanticRevision: false,
+    preserveDecisionReceipts: true,
+  },
+  compiler_decision_loss: {
+    earliestAffectedStage: 'cp01',
+    latestValidPredecessorCheckpoint: 'cp00',
+    resumeAction: 'recompile_from_existing_decision_receipt',
+    reopenGrill: false,
+    rerunJudge: true,
+    preserveFrozenSemanticRevision: false,
+    preserveDecisionReceipts: true,
+  },
+  technical_planning_pending: {
+    earliestAffectedStage: 'cp02',
+    latestValidPredecessorCheckpoint: 'cp01',
+    resumeAction: 'resume_after_technical_capability_change',
+    reopenGrill: false,
+    rerunJudge: false,
+    preserveFrozenSemanticRevision: false,
+    preserveDecisionReceipts: true,
+  },
+  projection_drift: {
+    earliestAffectedStage: 'cp05',
+    latestValidPredecessorCheckpoint: 'cp04',
+    resumeAction: 'rebuild_projection_from_frozen_ir',
+    reopenGrill: false,
+    rerunJudge: true,
+    preserveFrozenSemanticRevision: true,
+    preserveDecisionReceipts: true,
+  },
+  semantic_revision_stale: {
+    earliestAffectedStage: 'cp00',
+    latestValidPredecessorCheckpoint: null,
+    resumeAction: 'compile_semantic_successor',
+    reopenGrill: false,
+    rerunJudge: true,
+    preserveFrozenSemanticRevision: false,
+    preserveDecisionReceipts: true,
+  },
+  citation_binding_stale: {
+    earliestAffectedStage: 'binding_refresh',
+    latestValidPredecessorCheckpoint: 'cp04',
+    resumeAction: 'refresh_binding_and_citations_only',
+    reopenGrill: false,
+    rerunJudge: false,
+    preserveFrozenSemanticRevision: true,
+    preserveDecisionReceipts: true,
+  },
+} as const satisfies Record<
+  RequirementAuthoringResumeTrigger,
+  Omit<RequirementAuthoringResumeClassification, 'schemaVersion' | 'trigger'>
+>;
+
+export function classifyRequirementAuthoringResume(
+  trigger: RequirementAuthoringResumeTrigger
+): RequirementAuthoringResumeClassification {
+  return {
+    schemaVersion: 'requirements-authoring-repair-resume-classification/v1',
+    trigger,
+    ...resumeClassifications[trigger],
+  };
+}
+
 export type RequirementAuditorSemanticRepairAction =
   | 'add_must'
   | 'add_neg'

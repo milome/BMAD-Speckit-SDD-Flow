@@ -5,6 +5,7 @@ import {
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-conservation-manifest';
 import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 import { SOURCE_ROOT_CLASS_REGISTRY_HASH } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-source-root-class-registry';
+import { verifyExecutionConstraintConservation } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-conservation-verifier';
 
 function fixture() {
   const payloadHash = sha256Stable({ must: 'preserve payment idempotency' });
@@ -22,6 +23,7 @@ function fixture() {
     nodeHash: payloadHash,
     authorityClass: sourceRoot.authorityClass,
     authorityBearing: true as const,
+    executionConstraintRefs: ['CMD:targeted-conservation-test'],
   };
   const hash = (value: string) => sha256Stable(value);
   return {
@@ -59,6 +61,39 @@ function fixture() {
 }
 
 describe('requirements contract semantic conservation manifest', () => {
+  it('fails closed when semantic execution refs are absent from the typed registry', () => {
+    const { semanticNode } = fixture();
+    const executionRegistry = {
+      entries: [{
+        kind: 'CMD' as const,
+        id: 'targeted-conservation-test',
+        value: 'npm test -- requirements-contract-semantic-conservation-manifest.test.ts',
+      }],
+    };
+    expect(verifyExecutionConstraintConservation({
+      semanticNodes: [semanticNode],
+      executionRegistry,
+    })).toEqual({ decision: 'pass', issueCodes: [] });
+    expect(verifyExecutionConstraintConservation({
+      semanticNodes: [{ ...semanticNode, executionConstraintRefs: ['CMD:missing'] }],
+      executionRegistry,
+    })).toEqual({
+      decision: 'block',
+      issueCodes: [
+        'requirements_execution_constraint_unknown',
+        'requirements_execution_registry_entry_unreferenced',
+      ],
+    });
+  });
+
+  it('accepts a semantic model with no execution constraints', () => {
+    const { semanticNode } = fixture();
+    expect(verifyExecutionConstraintConservation({
+      semanticNodes: [{ ...semanticNode, executionConstraintRefs: [] }],
+      executionRegistry: { entries: [] },
+    })).toEqual({ decision: 'pass', issueCodes: [] });
+  });
+
   it('builds a hash-bound exact source-root to authority-node bijection', () => {
     const { input } = fixture();
     const manifest = createRequirementsContractSemanticConservationManifest(input);

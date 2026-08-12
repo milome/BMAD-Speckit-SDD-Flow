@@ -3,7 +3,11 @@ import {
   type InteractionDecisionReceipt,
 } from './requirements-contract-interaction-resolver';
 import {
+  createRequirementsGrillQuestionGraph,
+  type RequirementsGrillQuestionGraph,
+  type RequirementsGrillQuestionGraphNode,
   type RequirementsGrillQuestionPacket,
+  validateRequirementsGrillQuestionGraph,
   validateRequirementsGrillQuestionPacket,
 } from './requirements-contract-grill-model';
 import {
@@ -11,6 +15,11 @@ import {
   isCanonicalJsonValue,
   sha256Stable,
 } from './requirements-contract-semantic-resolver';
+import path from 'node:path';
+import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs';
+import {
+  atomicNoClobberPublish,
+} from './requirements-contract-atomic-no-clobber-publisher';
 
 export type RequirementsGrillResponseDecision =
   | 'select_option'
@@ -87,6 +96,441 @@ const ARTIFACT_ORDER = [
   'packet',
   'evidence',
 ] as const;
+
+export interface RequirementsContractDecisionReceipt {
+  schemaVersion: 'requirements-contract-decision-receipt/v1';
+  decisionReceiptId: string;
+  authoringRequestId: string;
+  grillSessionId: string;
+  questionId: string;
+  questionVersion: string;
+  affectedFieldIds: string[];
+  authorityPremiseHashes: string[];
+  answerValue: unknown;
+  answerSchemaHash: string;
+  affectedNodeIds: string[];
+  userInputProvenance: { authorityOrigin: string };
+  receiptHash: string;
+}
+
+export interface CreateRequirementsContractDecisionReceiptInput {
+  authoringRequestId: string;
+  grillSessionId: string;
+  questionId: string;
+  questionVersion: string;
+  affectedFieldIds: string[];
+  authorityPremiseHashes: string[];
+  answerValue: unknown;
+  answerSchemaHash: string;
+  affectedNodeIds: string[];
+  userInputProvenance: { authorityOrigin: string };
+}
+
+export interface RequirementsGrillSessionSnapshotQuestion
+  extends RequirementsGrillQuestionGraphNode {
+  question: string;
+  answerSchema: unknown;
+  answerSchemaHash: string;
+  userInputProvenance: { authorityOrigin: string };
+}
+
+export interface RequirementsGrillSessionSnapshot {
+  schemaVersion: 'requirements-grill-session-snapshot/v1';
+  authoringRequestId: string;
+  authoringAttemptId: string;
+  grillSessionId: string;
+  confirmationLanguage: string;
+  intakeSource: string;
+  targetSource: string;
+  authoritySourceListHash: string;
+  questions: RequirementsGrillSessionSnapshotQuestion[];
+  questionGraph: RequirementsGrillQuestionGraph;
+  readyQuestionIds: string[];
+}
+
+export interface RequirementsGrillSessionResolution {
+  session: RequirementsGrillSessionSnapshot;
+  questionGraph: RequirementsGrillQuestionGraph;
+  questionById: Map<string, RequirementsGrillSessionSnapshotQuestion>;
+  receiptByQuestionId: Map<string, RequirementsContractDecisionReceipt>;
+  decisionReceiptRefs: Array<{ path: string; hash: string }>;
+}
+
+export function assertRequirementsGrillSessionPathConfinement(input: {
+  recordRoot: string;
+  targetPath: string;
+  pathEscapeCode?: string;
+}): void {
+  const recordRoot = path.resolve(input.recordRoot);
+  const sessionsRoot = path.resolve(recordRoot, 'authoring', 'decisions', 'sessions');
+  const targetPath = path.resolve(input.targetPath);
+  const relative = path.relative(sessionsRoot, targetPath);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    throw new Error(input.pathEscapeCode ?? 'requirements_grill_session_path_escape');
+  }
+  const components = path.relative(recordRoot, targetPath).split(path.sep).filter(Boolean);
+  let current = recordRoot;
+  if (existsSync(current) && lstatSync(current).isSymbolicLink()) {
+    throw new Error('requirements_grill_session_path_reparse_forbidden');
+  }
+  for (const component of components) {
+    current = path.join(current, component);
+    if (!existsSync(current)) break;
+    if (lstatSync(current).isSymbolicLink()) {
+      throw new Error('requirements_grill_session_path_reparse_forbidden');
+    }
+  }
+}
+
+function sortedUniqueNormalized(values: unknown, issueCode: string): string[] {
+  if (!Array.isArray(values) || values.some((value) => !nonEmpty(value))) {
+    throw new Error(issueCode);
+  }
+  return [...new Set(values.map((value) => String(value).normalize('NFC')))].sort(
+    (left, right) => Buffer.from(left, 'utf8').compare(Buffer.from(right, 'utf8'))
+  );
+}
+
+function decisionReceiptPayload(
+  input: CreateRequirementsContractDecisionReceiptInput
+): Omit<RequirementsContractDecisionReceipt, 'decisionReceiptId' | 'receiptHash'> {
+  if (
+    !nonEmpty(input.authoringRequestId) ||
+    !nonEmpty(input.grillSessionId) ||
+    !nonEmpty(input.questionId) ||
+    !nonEmpty(input.questionVersion) ||
+    !SHA256.test(input.answerSchemaHash) ||
+    !isCanonicalJsonValue(input.answerValue) ||
+    !input.userInputProvenance ||
+    Object.keys(input.userInputProvenance).join('|') !== 'authorityOrigin' ||
+    !nonEmpty(input.userInputProvenance.authorityOrigin)
+  ) {
+    throw new Error('requirements_decision_receipt_input_invalid');
+  }
+  const affectedFieldIds = sortedUniqueNormalized(
+    input.affectedFieldIds,
+    'requirements_decision_receipt_affected_fields_invalid'
+  );
+  const authorityPremiseHashes = sortedUniqueNormalized(
+    input.authorityPremiseHashes,
+    'requirements_decision_receipt_premises_invalid'
+  );
+  const affectedNodeIds = sortedUniqueNormalized(
+    input.affectedNodeIds,
+    'requirements_decision_receipt_affected_nodes_invalid'
+  );
+  if (
+    affectedFieldIds.length === 0 ||
+    authorityPremiseHashes.length === 0 ||
+    affectedNodeIds.length === 0 ||
+    authorityPremiseHashes.some((hash) => !SHA256.test(hash))
+  ) {
+    throw new Error('requirements_decision_receipt_authority_invalid');
+  }
+  return {
+    schemaVersion: 'requirements-contract-decision-receipt/v1',
+    authoringRequestId: input.authoringRequestId.normalize('NFC'),
+    grillSessionId: input.grillSessionId.normalize('NFC'),
+    questionId: input.questionId.normalize('NFC'),
+    questionVersion: input.questionVersion.normalize('NFC'),
+    affectedFieldIds,
+    authorityPremiseHashes,
+    answerValue: clone(input.answerValue),
+    answerSchemaHash: input.answerSchemaHash,
+    affectedNodeIds,
+    userInputProvenance: {
+      authorityOrigin: input.userInputProvenance.authorityOrigin.normalize('NFC'),
+    },
+  };
+}
+
+export function createRequirementsContractDecisionReceipt(
+  input: CreateRequirementsContractDecisionReceiptInput
+): RequirementsContractDecisionReceipt {
+  const payload = decisionReceiptPayload(input);
+  const decisionReceiptId = `DECISION-${sha256Stable({
+    domain: 'requirements-contract-decision-receipt-id/v1',
+    authoringRequestId: payload.authoringRequestId,
+    grillSessionId: payload.grillSessionId,
+    questionId: payload.questionId,
+    questionVersion: payload.questionVersion,
+    affectedFieldIds: payload.affectedFieldIds,
+    authorityPremiseHashes: payload.authorityPremiseHashes,
+  }).slice('sha256:'.length).toUpperCase()}`;
+  const withoutHash = { ...payload, decisionReceiptId };
+  return {
+    ...withoutHash,
+    receiptHash: sha256Stable({
+      domain: 'requirements-contract-decision-receipt-hash/v1',
+      payload: withoutHash,
+    }),
+  };
+}
+
+export function validateRequirementsContractDecisionReceipt(
+  value: unknown
+): value is RequirementsContractDecisionReceipt {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const receipt = value as RequirementsContractDecisionReceipt;
+  const permitted = [
+    'schemaVersion',
+    'decisionReceiptId',
+    'authoringRequestId',
+    'grillSessionId',
+    'questionId',
+    'questionVersion',
+    'affectedFieldIds',
+    'authorityPremiseHashes',
+    'answerValue',
+    'answerSchemaHash',
+    'affectedNodeIds',
+    'userInputProvenance',
+    'receiptHash',
+  ];
+  if (Object.keys(receipt).sort().join('|') !== permitted.sort().join('|')) return false;
+  try {
+    const recreated = createRequirementsContractDecisionReceipt(receipt);
+    return sha256Stable(recreated) === sha256Stable(receipt);
+  } catch {
+    return false;
+  }
+}
+
+export function publishRequirementsContractDecisionReceipt(input: {
+  recordRoot: string;
+  receipt: RequirementsContractDecisionReceipt;
+}) {
+  if (!validateRequirementsContractDecisionReceipt(input.receipt)) {
+    throw new Error('requirements_decision_receipt_invalid');
+  }
+  const targetPath = path.resolve(
+    input.recordRoot,
+    'authoring',
+    'decisions',
+    'sessions',
+    input.receipt.grillSessionId,
+    'receipts',
+    `${input.receipt.decisionReceiptId}.json`
+  );
+  const confinedRoot = path.resolve(input.recordRoot, 'authoring', 'decisions', 'sessions');
+  const relative = path.relative(confinedRoot, targetPath);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    throw new Error('requirements_decision_receipt_path_escape');
+  }
+  assertRequirementsGrillSessionPathConfinement({
+    recordRoot: input.recordRoot,
+    targetPath,
+    pathEscapeCode: 'requirements_decision_receipt_path_escape',
+  });
+  try {
+    const publication = atomicNoClobberPublish({
+      targetPath,
+      value: input.receipt,
+      role: 'requirements_decision_receipt',
+      validateReadback(value) {
+        if (!validateRequirementsContractDecisionReceipt(value)) {
+          throw new Error('requirements_decision_receipt_readback_invalid');
+        }
+      },
+    });
+    return {
+      status: publication.disposition === 'reused'
+        ? 'grill_answers_reused' as const
+        : 'grill_answers_published' as const,
+      receiptPath: path.relative(input.recordRoot, targetPath).replace(/\\/gu, '/'),
+      receiptHash: input.receipt.receiptHash,
+      publication,
+    };
+  } catch (error) {
+    if ((error as Error).message === 'atomic_no_clobber_conflict') {
+      throw new Error('grill_answer_conflict');
+    }
+    throw error;
+  }
+}
+
+function validateRequirementsGrillSessionSnapshot(
+  value: unknown,
+  authoringRequestId: string,
+  grillSessionId: string
+): RequirementsGrillSessionSnapshot {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('requirements_grill_session_identity_mismatch');
+  }
+  const session = value as RequirementsGrillSessionSnapshot;
+  if (
+    session.schemaVersion !== 'requirements-grill-session-snapshot/v1' ||
+    session.authoringRequestId !== authoringRequestId ||
+    session.grillSessionId !== grillSessionId ||
+    !nonEmpty(session.authoringAttemptId) ||
+    !nonEmpty(session.confirmationLanguage) ||
+    !nonEmpty(session.intakeSource) ||
+    !nonEmpty(session.targetSource) ||
+    !SHA256.test(session.authoritySourceListHash) ||
+    !Array.isArray(session.questions) ||
+    !Array.isArray(session.readyQuestionIds) ||
+    !validateRequirementsGrillQuestionGraph(session.questionGraph)
+  ) {
+    throw new Error('requirements_grill_session_identity_mismatch');
+  }
+  const questionById = new Map(session.questions.map((question) => [question.questionId, question]));
+  if (questionById.size !== session.questions.length) {
+    throw new Error('requirements_grill_question_id_duplicate');
+  }
+  for (const question of session.questions) {
+    if (
+      !nonEmpty(question.question) ||
+      !SHA256.test(question.answerSchemaHash) ||
+      !isCanonicalJsonValue(question.answerSchema) ||
+      !question.userInputProvenance ||
+      Object.keys(question.userInputProvenance).join('|') !== 'authorityOrigin' ||
+      !nonEmpty(question.userInputProvenance.authorityOrigin)
+    ) {
+      throw new Error('requirements_grill_question_invalid');
+    }
+  }
+  const canonicalGraph = createRequirementsGrillQuestionGraph({
+    authoringRequestId,
+    grillSessionId,
+    questions: session.questions.map((question) => ({
+      questionId: question.questionId,
+      questionVersion: question.questionVersion,
+      dependencies: question.dependencies,
+      affectedFieldIds: question.affectedFieldIds,
+      authorityPremiseHashes: question.authorityPremiseHashes,
+      affectedNodeIds: question.affectedNodeIds,
+    })),
+    resolvedQuestionIds: [],
+  });
+  if (
+    sha256Stable(canonicalGraph) !== sha256Stable(session.questionGraph) ||
+    JSON.stringify(session.readyQuestionIds) !== JSON.stringify(canonicalGraph.readyFrontier)
+  ) {
+    throw new Error('requirements_grill_session_graph_mismatch');
+  }
+  return session;
+}
+
+export function resolveRequirementsGrillSessionSnapshot(input: {
+  recordRoot: string;
+  authoringRequestId: string;
+  grillSessionId: string;
+  session: unknown;
+}): RequirementsGrillSessionResolution {
+  const session = validateRequirementsGrillSessionSnapshot(
+    input.session,
+    input.authoringRequestId,
+    input.grillSessionId
+  );
+  const questionById = new Map(session.questions.map((question) => [question.questionId, question]));
+  const receiptByQuestionId = new Map<string, RequirementsContractDecisionReceipt>();
+  const decisionReceiptRefs: Array<{ path: string; hash: string }> = [];
+  const receiptDir = path.resolve(
+    input.recordRoot,
+    'authoring',
+    'decisions',
+    'sessions',
+    input.grillSessionId,
+    'receipts'
+  );
+  assertRequirementsGrillSessionPathConfinement({
+    recordRoot: input.recordRoot,
+    targetPath: receiptDir,
+  });
+  if (existsSync(receiptDir)) {
+    const entries = readdirSync(receiptDir, { withFileTypes: true })
+      .sort((left, right) => Buffer.from(left.name, 'utf8').compare(Buffer.from(right.name, 'utf8')));
+    for (const entry of entries) {
+      if (!entry.isFile() || !entry.name.endsWith('.json')) {
+        throw new Error('requirements_grill_receipt_path_invalid');
+      }
+      const receiptPath = path.join(receiptDir, entry.name);
+      const receipt = JSON.parse(readFileSync(receiptPath, 'utf8')) as unknown;
+      if (!validateRequirementsContractDecisionReceipt(receipt)) {
+        throw new Error('requirements_decision_receipt_invalid');
+      }
+      if (
+        receipt.authoringRequestId !== input.authoringRequestId ||
+        receipt.grillSessionId !== input.grillSessionId
+      ) {
+        throw new Error('requirements_grill_receipt_identity_mismatch');
+      }
+      const question = questionById.get(receipt.questionId);
+      if (!question) throw new Error('requirements_grill_receipt_question_unknown');
+      if (shouldReopenRequirementsGrillQuestion({ question, receipt })) continue;
+      if (receiptByQuestionId.has(receipt.questionId)) {
+        throw new Error('requirements_grill_receipt_question_duplicate');
+      }
+      receiptByQuestionId.set(receipt.questionId, receipt);
+      decisionReceiptRefs.push({
+        path: path.relative(input.recordRoot, receiptPath).replace(/\\/gu, '/'),
+        hash: receipt.receiptHash,
+      });
+    }
+  }
+  const questionGraph = createRequirementsGrillQuestionGraph({
+    authoringRequestId: input.authoringRequestId,
+    grillSessionId: input.grillSessionId,
+    questions: session.questionGraph.questions,
+    resolvedQuestionIds: [...receiptByQuestionId.keys()],
+  });
+  return {
+    session,
+    questionGraph,
+    questionById,
+    receiptByQuestionId,
+    decisionReceiptRefs,
+  };
+}
+
+export function computeRequirementsGrillReadyFrontier(input: {
+  questions: Array<{ questionId: string; questionVersion: string; dependencies: string[] }>;
+  resolvedQuestionIds: string[];
+}): string[] {
+  const byId = new Map(input.questions.map((question) => [question.questionId, question]));
+  if (byId.size !== input.questions.length) throw new Error('requirements_grill_question_id_duplicate');
+  const resolved = new Set(input.resolvedQuestionIds);
+  for (const question of input.questions) {
+    if (!nonEmpty(question.questionId) || !nonEmpty(question.questionVersion)) {
+      throw new Error('requirements_grill_question_identity_invalid');
+    }
+    if (!Array.isArray(question.dependencies) || question.dependencies.some((id) => !byId.has(id))) {
+      throw new Error('requirements_grill_dependency_unknown');
+    }
+  }
+  return input.questions
+    .filter((question) =>
+      !resolved.has(question.questionId) &&
+      question.dependencies.every((dependency) => resolved.has(dependency))
+    )
+    .map((question) => question.questionId)
+    .sort((left, right) => Buffer.from(left, 'utf8').compare(Buffer.from(right, 'utf8')));
+}
+
+export function shouldReopenRequirementsGrillQuestion(input: {
+  question: {
+    questionId: string;
+    questionVersion: string;
+    affectedFieldIds: string[];
+    authorityPremiseHashes: string[];
+  };
+  receipt: {
+    questionId: string;
+    questionVersion: string;
+    affectedFieldIds: string[];
+    authorityPremiseHashes: string[];
+  };
+}): boolean {
+  const canonical = (value: string[]) => sortedUniqueNormalized(value, 'requirements_grill_identity_invalid');
+  return (
+    input.question.questionId !== input.receipt.questionId ||
+    input.question.questionVersion !== input.receipt.questionVersion ||
+    JSON.stringify(canonical(input.question.affectedFieldIds)) !==
+      JSON.stringify(canonical(input.receipt.affectedFieldIds)) ||
+    JSON.stringify(canonical(input.question.authorityPremiseHashes)) !==
+      JSON.stringify(canonical(input.receipt.authorityPremiseHashes))
+  );
+}
 
 function nonEmpty(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;

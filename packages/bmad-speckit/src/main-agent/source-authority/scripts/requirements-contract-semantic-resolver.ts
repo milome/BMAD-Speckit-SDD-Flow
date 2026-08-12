@@ -3,16 +3,27 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
 import yaml from 'js-yaml';
+import {
+  requirementsContractCoreCheckpointProfile,
+  requirementsContractCoreProfileAllowsArtifact,
+  type RequirementsContractCoreArtifactRole,
+  type RequirementsContractCoreCheckpointStage,
+} from './requirements-contract-cp00-cp04';
 
 export type ResolutionAuthorityClass =
   | 'source_extracted'
+  | 'human_confirmed'
   | 'rule_derived'
   | 'repository_derived'
   | 'policy_inherited'
   | 'model_hypothesis'
   | 'business_decision_required';
 
-export type ResolutionAuthorityState = 'source_grounded' | 'derived' | 'unresolved';
+export type ResolutionAuthorityState =
+  | 'source_grounded'
+  | 'human_confirmed'
+  | 'derived'
+  | 'unresolved';
 
 export interface SourceResolutionPremise {
   kind: 'source';
@@ -40,10 +51,18 @@ export interface PolicyResolutionPremise {
   policyValueHash: string;
 }
 
+export interface DecisionReceiptResolutionPremise {
+  kind: 'decision_receipt';
+  decisionReceiptRef: string;
+  decisionReceiptId: string;
+  decisionReceiptHash: string;
+}
+
 export type SemanticResolutionPremise =
   | SourceResolutionPremise
   | RepositoryResolutionPremise
-  | PolicyResolutionPremise;
+  | PolicyResolutionPremise
+  | DecisionReceiptResolutionPremise;
 
 export interface PolicyPredicate {
   factPath: string;
@@ -153,6 +172,16 @@ export interface TrustedResolverInvocationContext {
   sourceModelBefore: unknown;
 }
 
+export interface TrustedDecisionReceiptAuthority {
+  role: 'requirements_decision_receipt';
+  receiptSchemaVersion: 'requirements-contract-decision-receipt/v1';
+  decisionReceiptPath: string;
+  decisionReceiptId: string;
+  decisionReceiptHash: string;
+  affectedFieldIds: string[];
+  answerValueHash: string;
+}
+
 export type SemanticAuthorityProof =
   | {
       kind: 'source_extraction';
@@ -183,6 +212,13 @@ export type SemanticAuthorityProof =
       authorityId: string;
       approvalReceiptHash: string;
       factObservationReceiptHash: string;
+    }
+  | {
+      kind: 'decision_receipt';
+      role: 'requirements_decision_receipt';
+      decisionReceiptRef: string;
+      decisionReceiptId: string;
+      decisionReceiptHash: string;
     };
 
 export interface SemanticResolutionCandidate {
@@ -225,7 +261,7 @@ export interface SemanticResolutionReceipt {
 export type SemanticResolutionResult =
   | {
       status: 'authorized';
-      authorityState: 'source_grounded' | 'derived';
+      authorityState: Exclude<ResolutionAuthorityState, 'unresolved'>;
       blocking: false;
       resolvedValue: unknown;
       reasonCode: null;
@@ -248,6 +284,7 @@ export interface SemanticResolverOptions {
   trustedRepositoryEvidence?: Readonly<Record<string, TrustedRepositoryEvidence>>;
   trustedPolicyCatalogAuthority?: TrustedPolicyCatalogAuthority;
   trustedPolicyFacts?: TrustedPolicyFacts;
+  trustedDecisionReceipts?: Readonly<Record<string, TrustedDecisionReceiptAuthority>>;
   trustedInvocationContext?: TrustedResolverInvocationContext;
 }
 
@@ -256,6 +293,7 @@ const CATALOG_SCHEMA = 'requirements-contract-policy-catalog.schema.json';
 const RECEIPT_SCHEMA = 'requirements-contract-semantic-resolution-receipt.schema.json';
 const RESOLUTION_AUTHORITY_CLASSES = new Set<ResolutionAuthorityClass>([
   'source_extracted',
+  'human_confirmed',
   'rule_derived',
   'repository_derived',
   'policy_inherited',
@@ -340,6 +378,71 @@ export function sha256Stable(value: unknown): string {
 
 export function sha256Text(value: string): string {
   return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
+}
+
+export interface RequirementsContractCoreArtifactFreeze {
+  schemaVersion: 'requirements-contract-core-artifact-freeze/v1';
+  checkpointId: string;
+  profileId: string;
+  artifactRole: RequirementsContractCoreArtifactRole;
+  artifactHash: string;
+  freezeHash: string;
+}
+
+const FORBIDDEN_CORE_LIFECYCLE_FIELDS = new Set([
+  'auditor',
+  'criticalauditor',
+  'judge',
+  'roundoutcome',
+  'consecutivenonewgaprounds',
+  'provider',
+  'rendertimestamp',
+  'pagestate',
+  'confirmationstate',
+]);
+
+function containsForbiddenCoreLifecycleField(value: unknown): boolean {
+  if (Array.isArray(value)) return value.some(containsForbiddenCoreLifecycleField);
+  if (!value || typeof value !== 'object') return false;
+  return Object.entries(value as Record<string, unknown>).some(([key, nested]) =>
+    FORBIDDEN_CORE_LIFECYCLE_FIELDS.has(key.replace(/[^a-z0-9]/giu, '').toLowerCase()) ||
+    containsForbiddenCoreLifecycleField(nested)
+  );
+}
+
+export function createRequirementsContractCoreArtifactFreeze(input: {
+  stage: RequirementsContractCoreCheckpointStage;
+  artifactRole: RequirementsContractCoreArtifactRole;
+  artifact: unknown;
+}): RequirementsContractCoreArtifactFreeze {
+  const profile = requirementsContractCoreCheckpointProfile(input.stage);
+  if (!requirementsContractCoreProfileAllowsArtifact(input.stage, input.artifactRole)) {
+    throw new Error('requirements_core_artifact_role_not_allowed');
+  }
+  if (!isCanonicalJsonValue(input.artifact) || containsForbiddenCoreLifecycleField(input.artifact)) {
+    throw new Error('requirements_core_artifact_payload_invalid');
+  }
+  const artifactHash = sha256Stable({
+    domain: 'requirements-contract-core-artifact/v1',
+    checkpointId: profile.checkpointId,
+    profileId: profile.profileId,
+    artifactRole: input.artifactRole,
+    artifact: input.artifact,
+  });
+  const payload = {
+    schemaVersion: 'requirements-contract-core-artifact-freeze/v1' as const,
+    checkpointId: profile.checkpointId,
+    profileId: profile.profileId,
+    artifactRole: input.artifactRole,
+    artifactHash,
+  };
+  return {
+    ...payload,
+    freezeHash: sha256Stable({
+      domain: 'requirements-contract-core-artifact-freeze/v1',
+      payload,
+    }),
+  };
 }
 
 const FORBIDDEN_MODEL_PATH_SEGMENTS = new Set(['__proto__', 'prototype', 'constructor']);
@@ -617,8 +720,32 @@ function isPolicyPremise(value: unknown): value is PolicyResolutionPremise {
   );
 }
 
+function isDecisionReceiptPremise(
+  value: unknown
+): value is DecisionReceiptResolutionPremise {
+  return (
+    isRecord(value) &&
+    hasExactKeys(value, [
+      'kind',
+      'decisionReceiptRef',
+      'decisionReceiptId',
+      'decisionReceiptHash',
+    ]) &&
+    value.kind === 'decision_receipt' &&
+    isNonEmptyString(value.decisionReceiptRef) &&
+    isNonEmptyString(value.decisionReceiptId) &&
+    isNonEmptyString(value.decisionReceiptHash) &&
+    SHA256.test(value.decisionReceiptHash)
+  );
+}
+
 export function isResolutionPremise(value: unknown): value is SemanticResolutionPremise {
-  return isSourcePremise(value) || isRepositoryPremise(value) || isPolicyPremise(value);
+  return (
+    isSourcePremise(value) ||
+    isRepositoryPremise(value) ||
+    isPolicyPremise(value) ||
+    isDecisionReceiptPremise(value)
+  );
 }
 
 export function isPolicyApplicabilityInput(value: unknown): value is PolicyApplicabilityInput {
@@ -939,6 +1066,61 @@ function trustedRepositoryAuthorityProof(
   };
 }
 
+function trustedDecisionReceiptAuthorityProof(
+  candidate: SemanticResolutionCandidate,
+  premise: DecisionReceiptResolutionPremise,
+  options: SemanticResolverOptions
+): SemanticAuthorityProof | null {
+  if (!isRecord(options.trustedDecisionReceipts)) return null;
+  const authority = options.trustedDecisionReceipts[premise.decisionReceiptRef];
+  if (
+    !isRecord(authority) ||
+    !hasExactKeys(authority, [
+      'role',
+      'receiptSchemaVersion',
+      'decisionReceiptPath',
+      'decisionReceiptId',
+      'decisionReceiptHash',
+      'affectedFieldIds',
+      'answerValueHash',
+    ]) ||
+    authority.role !== 'requirements_decision_receipt' ||
+    authority.receiptSchemaVersion !== 'requirements-contract-decision-receipt/v1' ||
+    !isNonEmptyString(authority.decisionReceiptPath) ||
+    !isNonEmptyString(authority.decisionReceiptId) ||
+    !isNonEmptyString(authority.decisionReceiptHash) ||
+    !isStringArray(authority.affectedFieldIds) ||
+    authority.affectedFieldIds.length === 0 ||
+    new Set(authority.affectedFieldIds).size !== authority.affectedFieldIds.length ||
+    !isNonEmptyString(authority.answerValueHash) ||
+    !SHA256.test(authority.decisionReceiptHash) ||
+    !SHA256.test(authority.answerValueHash)
+  ) {
+    return null;
+  }
+  const normalizedRef = premise.decisionReceiptRef.replace(/\\/gu, '/');
+  if (
+    normalizedRef !== premise.decisionReceiptRef ||
+    path.posix.isAbsolute(normalizedRef) ||
+    path.posix.normalize(normalizedRef) !== normalizedRef ||
+    normalizedRef.startsWith('../') ||
+    authority.decisionReceiptPath !== premise.decisionReceiptRef ||
+    authority.decisionReceiptId !== premise.decisionReceiptId ||
+    authority.decisionReceiptHash !== premise.decisionReceiptHash ||
+    !authority.affectedFieldIds.includes(candidate.fieldRef) ||
+    authority.answerValueHash !== sha256Stable(candidate.value)
+  ) {
+    return null;
+  }
+  return {
+    kind: 'decision_receipt',
+    role: 'requirements_decision_receipt',
+    decisionReceiptRef: premise.decisionReceiptRef,
+    decisionReceiptId: premise.decisionReceiptId,
+    decisionReceiptHash: premise.decisionReceiptHash,
+  };
+}
+
 function receiptAuthorityClassIsConsistent(receipt: Record<string, unknown>): boolean {
   if (!Array.isArray(receipt.premises) || !isRecord(receipt.authorityProof)) return false;
   const premises = receipt.premises;
@@ -948,6 +1130,18 @@ function receiptAuthorityClassIsConsistent(receipt: Record<string, unknown>): bo
         premises.length === 1 &&
         isSourcePremise(premises[0]) &&
         receipt.authorityProof.kind === 'source_extraction' &&
+        receipt.derivationRule === null &&
+        receipt.applicabilityProof === null
+      );
+    case 'human_confirmed':
+      return (
+        premises.length === 1 &&
+        isDecisionReceiptPremise(premises[0]) &&
+        receipt.authorityProof.kind === 'decision_receipt' &&
+        receipt.authorityProof.role === 'requirements_decision_receipt' &&
+        receipt.authorityProof.decisionReceiptRef === premises[0].decisionReceiptRef &&
+        receipt.authorityProof.decisionReceiptId === premises[0].decisionReceiptId &&
+        receipt.authorityProof.decisionReceiptHash === premises[0].decisionReceiptHash &&
         receipt.derivationRule === null &&
         receipt.applicabilityProof === null
       );
@@ -1148,6 +1342,32 @@ export function resolveSemanticField(
         'source_grounded',
         sources,
         extractionProof,
+        null
+      );
+    }
+
+    if (candidate.resolutionAuthorityClass === 'human_confirmed') {
+      if (
+        candidate.premises.length !== 1 ||
+        !isDecisionReceiptPremise(candidate.premises[0]) ||
+        candidate.derivationRule !== null ||
+        candidate.applicabilityProof !== null
+      ) {
+        return unresolved('decision_receipt_proof_incomplete');
+      }
+      const decisionReceiptProof = trustedDecisionReceiptAuthorityProof(
+        candidate,
+        candidate.premises[0],
+        options
+      );
+      if (!decisionReceiptProof) return unresolved('trusted_decision_receipt_mismatch');
+      return authorize(
+        candidate,
+        invocationContext,
+        sourceModelAfter,
+        'human_confirmed',
+        candidate.premises,
+        decisionReceiptProof,
         null
       );
     }

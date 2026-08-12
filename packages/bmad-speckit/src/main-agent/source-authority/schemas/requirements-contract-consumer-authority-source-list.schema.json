@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-consumer-authority-source-list.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "intakeSource", "intakeSourceHash", "entries", "sourceListHash"],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-consumer-authority-source-list/v1" },
+    "intakeSource": { "type": "string", "minLength": 1 },
+    "intakeSourceHash": { "$ref": "#/$defs/hash" },
+    "entries": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/entry" }
+    },
+    "sourceListHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "rootClass", "proposedAuthorityClass", "bodySchemaVersion", "bodyHash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "rootClass": { "type": "string", "minLength": 1 },
+        "proposedAuthorityClass": { "type": "string", "minLength": 1 },
+        "bodySchemaVersion": { "type": "string", "minLength": 1 },
+        "bodyHash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}
