@@ -1,6 +1,5 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import Ajv2020 from 'ajv/dist/2020.js';
 import type {
   ClaudeCodeCliCommandInvocation,
   ClaudeCodeCliCommandResult,
@@ -11,18 +10,25 @@ import type {
 } from './requirements-contract-codex-cli-judge-adapter';
 import {
   prepareRequirementsContractJudgeInvocation,
+  invokePreparedRequirementsContractJudgeRequest,
+  type PreparedRequirementsContractJudgeInvocation,
   type RequirementsContractJudgeJsonRecord,
 } from './requirements-contract-judge-invocation';
-import { assertRequirementsContractJudgeInvocationReadiness } from './requirements-contract-judge-invocation-readiness-gate';
-import {
-  REQUIREMENTS_CONTRACT_JUDGE_ROLES,
-  type RequirementsContractJudgeRole,
-} from './requirements-contract-judge-role';
+import type { RequirementsContractJudgeRole } from './requirements-contract-judge-role';
+import { verifyRequirementsContractJudgeRequest } from './requirements-contract-judge-request-identity';
 import { canonicalJson, sha256, writeGovernedJson } from './requirements-contract-governed-write';
-import { sha256Stable } from './requirements-contract-semantic-resolver';
 
 type JsonRecord = Record<string, unknown>;
-type JudgeDecision = 'pass' | 'block' | 'inconclusive';
+type JudgeVerdict = 'pass' | 'fail';
+
+export async function requirementsContractJudgeRunFrozenRequest(input: {
+  prepared: PreparedRequirementsContractJudgeInvocation;
+  request: RequirementsContractJudgeJsonRecord;
+  providerSelection: RequirementsContractJudgeJsonRecord;
+  executionContext?: RequirementsContractJudgeJsonRecord;
+}) {
+  return invokePreparedRequirementsContractJudgeRequest(input);
+}
 
 export interface RequirementsContractJudgeRunCommandOptions {
   projectRoot: string;
@@ -92,10 +98,10 @@ function text(value: unknown, code: string): string {
 
 function judgeRole(value: unknown, missingCode: string): RequirementsContractJudgeRole {
   const role = text(value, missingCode);
-  if (!REQUIREMENTS_CONTRACT_JUDGE_ROLES.includes(role as RequirementsContractJudgeRole)) {
+  if (role !== 'requirements_critical_auditor') {
     throw new Error('requirements_contract_judge_command_role_pin_mismatch');
   }
-  return role as RequirementsContractJudgeRole;
+  return 'requirements_critical_auditor';
 }
 
 function rejectObjectOverrides(input: JsonRecord): void {
@@ -146,59 +152,16 @@ function readJson(filePath: string): JsonRecord {
   return JSON.parse(fs.readFileSync(filePath, 'utf8')) as JsonRecord;
 }
 
-let cachedAttemptKeyValidator: ReturnType<Ajv2020['compile']> | null = null;
-
-function attemptKeyValidator() {
-  if (cachedAttemptKeyValidator) return cachedAttemptKeyValidator;
-  const schemaPath = path.resolve(
-    __dirname,
-    '..',
-    'schemas',
-    'requirements-contract-judge-attempt-key.schema.json'
-  );
-  cachedAttemptKeyValidator = new Ajv2020({ allErrors: true, strict: false }).compile(
-    JSON.parse(fs.readFileSync(schemaPath, 'utf8')) as object
-  );
-  return cachedAttemptKeyValidator;
+function processExitCode(verdict: JudgeVerdict): number {
+  return verdict === 'pass' ? 0 : 1;
 }
 
-function validateAttemptKey(value: unknown): JsonRecord {
-  const attemptKey = record(value, 'requirements_contract_judge_command_attempt_key_missing');
-  const validate = attemptKeyValidator();
-  if (!validate(attemptKey)) {
-    throw new Error(
-      `requirements_contract_judge_command_attempt_key_schema_invalid:${JSON.stringify(
-        validate.errors ?? []
-      )}`
-    );
-  }
-  return attemptKey;
-}
-
-function requestAuthorityEnvelope(requestEnvelope: JsonRecord): JsonRecord {
-  const { readinessReceipt: _readinessReceipt, requestHash: _requestHash, ...authority } =
-    requestEnvelope;
-  return authority;
-}
-
-function requireEqual(
-  actual: unknown,
-  expected: unknown,
-  code: string
-): void {
-  if (actual !== expected) throw new Error(code);
-}
-
-function processExitCode(decision: JudgeDecision): number {
-  return decision === 'pass' ? 0 : 1;
-}
-
-function normalizedDecision(value: unknown): JudgeDecision {
+function normalizedVerdict(value: unknown): JudgeVerdict {
   const response = record(value, 'requirements_contract_judge_command_response_invalid');
-  if (!['pass', 'block', 'inconclusive'].includes(String(response.decision))) {
+  if (!['pass', 'fail'].includes(String(response.verdict))) {
     throw new Error('requirements_contract_judge_command_response_invalid');
   }
-  return response.decision as JudgeDecision;
+  return response.verdict as JudgeVerdict;
 }
 
 function adapterRefForTransport(transport: unknown, adapterRef: unknown): string {
@@ -267,89 +230,11 @@ export async function requirementsContractJudgeRunCommand(
     path.resolve(root, options.outputDir, 'judge-run-result.json'),
     'requirements_contract_judge_command_output_path_escape'
   );
-  const requestEnvelope = readJson(requestPath);
+  const request = verifyRequirementsContractJudgeRequest(readJson(requestPath));
   const requestRole = judgeRole(
-    requestEnvelope.role,
-    'requirements_contract_judge_command_request_role_missing'
-  );
-  const expectedRole = judgeRole(
     options.role,
     'requirements_contract_judge_command_role_missing'
   );
-  if (requestRole !== expectedRole) {
-    throw new Error('requirements_contract_judge_command_role_pin_mismatch');
-  }
-  const attemptKey = validateAttemptKey(requestEnvelope.attemptKey);
-  const readinessReceipt = record(
-    requestEnvelope.readinessReceipt,
-    'requirements_contract_judge_command_readiness_missing'
-  );
-  if (attemptKey.attemptId !== options.attemptId || attemptKey.judgeRole !== requestRole) {
-    throw new Error('requirements_contract_judge_command_attempt_key_mismatch');
-  }
-  requireEqual(
-    requestEnvelope.sourceAuthorityHash,
-    attemptKey.sourceAuthorityHash,
-    'requirements_contract_judge_command_source_authority_mismatch'
-  );
-  requireEqual(
-    requestEnvelope.sourceDocumentHash,
-    readinessReceipt.sourceDocumentHash,
-    'requirements_contract_judge_command_source_document_mismatch'
-  );
-  requireEqual(
-    requestEnvelope.semanticModelHash,
-    readinessReceipt.semanticModelHash,
-    'requirements_contract_judge_command_semantic_model_mismatch'
-  );
-  requireEqual(
-    requestEnvelope.projectionSetHash,
-    readinessReceipt.projectionSetHash,
-    'requirements_contract_judge_command_projection_set_mismatch'
-  );
-  requireEqual(
-    requestEnvelope.scopeManifestHash,
-    attemptKey.scopeManifestHash,
-    'requirements_contract_judge_command_scope_mismatch'
-  );
-  requireEqual(
-    requestEnvelope.scopeManifestHash,
-    readinessReceipt.scopeHash,
-    'requirements_contract_judge_command_scope_mismatch'
-  );
-  const systemPrompt = text(
-    requestEnvelope.systemPrompt,
-    'requirements_contract_judge_command_system_prompt_missing'
-  );
-  requireEqual(
-    sha256(systemPrompt),
-    attemptKey.promptTemplateHash,
-    'requirements_contract_judge_command_prompt_hash_mismatch'
-  );
-  const structuredOutputSchema = requestEnvelope.structuredOutputSchema
-    ? record(
-        requestEnvelope.structuredOutputSchema,
-        'requirements_contract_judge_command_schema_invalid'
-      )
-    : null;
-  if (structuredOutputSchema) {
-    requireEqual(
-      sha256(canonicalJson(structuredOutputSchema)),
-      attemptKey.assessmentSchemaHash,
-      'requirements_contract_judge_command_schema_hash_mismatch'
-    );
-  }
-  assertRequirementsContractJudgeInvocationReadiness({
-    readinessReceipt,
-    scope: {
-      requestHash: requestEnvelope.requestHash,
-      sourceDocumentHash: requestEnvelope.sourceDocumentHash,
-      semanticModelHash: requestEnvelope.semanticModelHash,
-      projectionSetHash: requestEnvelope.projectionSetHash,
-      scopeHash: requestEnvelope.scopeManifestHash ?? requestEnvelope.scopeHash,
-    },
-    providerInvocationCount: 0,
-  });
   const prepared = await prepareRequirementsContractJudgeInvocation({
     projectRoot: root,
     config: options.config,
@@ -357,29 +242,10 @@ export async function requirementsContractJudgeRunCommand(
     executeCodexCliCommand: options.executeCodexCliCommand,
   });
   const provider = prepared.provider as JsonRecord;
-  requireEqual(
-    attemptKey.providerRegistryHash,
-    prepared.providerRegistryHash,
-    'requirements_contract_judge_command_provider_registry_hash_mismatch'
-  );
-  requireEqual(
-    readinessReceipt.providerRegistryHash,
-    prepared.providerRegistryHash,
-    'requirements_contract_judge_command_provider_registry_hash_mismatch'
-  );
-  requireEqual(
-    attemptKey.providerConfigurationHash,
-    sha256Stable(provider),
-    'requirements_contract_judge_command_provider_configuration_hash_mismatch'
-  );
-  requireEqual(
-    requestEnvelope.requestHash,
-    sha256(canonicalJson(requestAuthorityEnvelope(requestEnvelope))),
-    'requirements_contract_judge_command_request_hash_mismatch'
-  );
-  const payload = {
-    systemPrompt,
-    request: requestEnvelope,
+  const response = await requirementsContractJudgeRunFrozenRequest({
+    prepared,
+    request,
+    providerSelection: request.providerSelection,
     executionContext: {
       projectRoot: root,
       requestPath,
@@ -388,17 +254,11 @@ export async function requirementsContractJudgeRunCommand(
       role: requestRole,
       attemptId: options.attemptId,
     },
-    ...(structuredOutputSchema
-      ? {
-          structuredOutputSchema,
-        }
-      : {}),
-  };
-  const response = (await prepared.invoke(payload)) as RequirementsContractJudgeJsonRecord;
-  const decision = normalizedDecision(response);
-  const exitCode = processExitCode(decision);
+  });
+  const verdict = normalizedVerdict(response);
+  const exitCode = processExitCode(verdict);
   const result = {
-    schemaVersion: 'requirements-contract-judge-command-result/v1',
+    schemaVersion: 'requirements-contract-judge-command-result/v2',
     command: 'bmad-speckit judge run',
     role: requestRole,
     attemptId: options.attemptId,
@@ -408,13 +268,12 @@ export async function requirementsContractJudgeRunCommand(
     providerRegistryHash: prepared.providerRegistryHash,
     credentialProviderRef: prepared.credentialProviderRef,
     credentialRevision: prepared.credentialRevision,
-    requestHash: requestEnvelope.requestHash,
+    judgeRequestHash: request.judgeRequestHash,
     responseHash: sha256(canonicalJson(response)),
-    jsonDecision: decision,
+    verdict,
     processExitCode: exitCode,
     processStatusParity:
-      (decision === 'pass' && exitCode === 0) || (decision !== 'pass' && exitCode === 1),
-    decision,
+      (verdict === 'pass' && exitCode === 0) || (verdict === 'fail' && exitCode === 1),
   };
   const outputPath = path.resolve(root, options.outputDir, 'judge-run-result.json');
   writeGovernedJson(outputPath, result);

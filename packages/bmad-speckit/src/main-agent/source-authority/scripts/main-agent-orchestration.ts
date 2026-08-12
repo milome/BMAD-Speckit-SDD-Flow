@@ -110,17 +110,6 @@ type CriticalAuditorProviderBindingExpectation = Pick<
   | 'providerRegistryHash'
   | 'providerConfigurationHash'
 >;
-import {
-  readCommittedRequirementsContractCriticalAuditorJudgeInvocation,
-  reconcileAbandonedRequirementsContractCriticalAuditorJudgeInvocation,
-  rejectCommittedRequirementsContractCriticalAuditorJudgeInvocation,
-  requirementsContractCriticalAuditorJudgeInvocationDisposition,
-  type CommittedCriticalAuditorJudgeInvocation,
-} from './requirements-contract-critical-auditor-judge-adapter';
-import {
-  resolveRequirementsContractJudgeCredentialEnvironmentVariable,
-  resolveRequirementsContractJudgeCredentialMetadata,
-} from './requirements-contract-judge-credential-resolver';
 import type { ResolvedRuntimeContext } from './resolve-active-requirement';
 import { isNoActiveRequirementError } from './resolve-active-requirement';
 import { runControlledReadinessAuditBridge } from './controlled-readiness-audit-bridge';
@@ -275,11 +264,17 @@ import {
   type NativeGoalInvocationResult,
 } from '../../actions/native-goal-invoker';
 import {
-  executeJudgeReviewCampaign,
-  type FinalJudgeProducedResult,
-} from './requirements-contract-judge-review-campaign';
-import type { RequirementsContractJudgeReviewCampaignInputV2 } from './requirements-contract-judge-review-campaign-input';
-import { compileRequirementsContractJudgeReviewCampaignInput } from './requirements-contract-judge-review-campaign-input';
+  executeMainAgentExecutionFinalJudgeCampaign,
+  type MainAgentExecutionFinalJudgeProducedResult,
+} from './main-agent-execution-final-judge-campaign';
+import {
+  compileMainAgentExecutionFinalJudgeCampaignInput,
+  type MainAgentExecutionFinalJudgeCampaignInput,
+} from './main-agent-execution-final-judge-campaign-input';
+import {
+  confirmMainAgentControlledCloseout,
+  confirmMainAgentRecordBackedCloseout,
+} from './main-agent-controlled-closeout-confirmation';
 import {
   prepareRequirementsContractJudgeInvocation,
   type RequirementsContractJudgeJsonRecord,
@@ -5764,93 +5759,6 @@ function criticalAuditorExternalAdapterRoundResult(input: {
   };
 }
 
-function writeOrVerifyCriticalAuditorHostLog(filePath: string, content: string): void {
-  if (fs.existsSync(filePath)) {
-    if (fs.readFileSync(filePath, 'utf8') !== content) {
-      throw new Error('critical_auditor_judge_host_log_changed');
-    }
-    return;
-  }
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  const temporaryPath = `${filePath}.${process.pid}.${crypto.randomUUID()}.tmp`;
-  fs.writeFileSync(temporaryPath, content, 'utf8');
-  fs.renameSync(temporaryPath, filePath);
-}
-
-function criticalAuditorProviderInvocationReceiptRef(input: {
-  projectRoot: string;
-  committed: CommittedCriticalAuditorJudgeInvocation;
-}): {
-  path: string;
-  contentHash: string;
-  receiptHash: string;
-} {
-  const receiptHash = normalizeText(input.committed.receipt.receiptHash);
-  if (!/^sha256:[a-f0-9]{64}$/u.test(receiptHash)) {
-    throw new Error('critical_auditor_judge_invocation_receipt_hash_invalid');
-  }
-  return {
-    path: toRootRelativePath(input.projectRoot, input.committed.receiptPath),
-    contentHash: sha256File(input.committed.receiptPath),
-    receiptHash,
-  };
-}
-
-function criticalAuditorCommittedJudgeRecoveryExecution(input: {
-  projectRoot: string;
-  command: string;
-  commandArgs: string[];
-  committed: CommittedCriticalAuditorJudgeInvocation;
-}): Record<string, unknown> {
-  const transportEvidence = recordObject(input.committed.receipt.transportEvidence);
-  const stdoutPath = resolveRootRelativePath(
-    input.projectRoot,
-    normalizeText(transportEvidence.stdoutPath)
-  );
-  const stderrPath = resolveRootRelativePath(
-    input.projectRoot,
-    normalizeText(transportEvidence.stderrPath)
-  );
-  const providerInvocationReceiptRef = criticalAuditorProviderInvocationReceiptRef(input);
-  return {
-    adapterKind: 'committed_provider_invocation_recovery',
-    recoveryDecision: 'trusted_committed_provider_invocation',
-    commandHash: sha256Json({ command: input.command, args: input.commandArgs }),
-    providerInvocationReceiptPath: providerInvocationReceiptRef.path,
-    providerInvocationReceiptContentHash: providerInvocationReceiptRef.contentHash,
-    providerInvocationReceiptHash: providerInvocationReceiptRef.receiptHash,
-    transportEvidenceHash: normalizeText(input.committed.receipt.transportEvidenceHash),
-    stdoutPath: toRootRelativePath(input.projectRoot, stdoutPath),
-    stdoutHash: normalizeText(transportEvidence.stdoutHash),
-    stderrPath: toRootRelativePath(input.projectRoot, stderrPath),
-    stderrHash: normalizeText(transportEvidence.stderrHash),
-  };
-}
-
-const CRITICAL_AUDITOR_JUDGE_ADAPTER_CLEANUP_GRACE_MS = 30_000;
-const CRITICAL_AUDITOR_JUDGE_ABANDONED_LOCK_GRACE_MS = 5_000;
-const CRITICAL_AUDITOR_JUDGE_INVOCATIONS_DIR = 'j';
-
-export function criticalAuditorJudgeInvocationOutputDir(input: {
-  stagingDir: string;
-  roundIndex: number;
-  requestHash: string;
-}): string {
-  if (!Number.isSafeInteger(input.roundIndex) || input.roundIndex <= 0) {
-    throw new Error('critical_auditor_judge_round_index_invalid');
-  }
-  const requestDigest = /^sha256:([a-f0-9]{64})$/u.exec(input.requestHash)?.[1];
-  if (!requestDigest) {
-    throw new Error('critical_auditor_judge_request_hash_invalid');
-  }
-  return path.join(
-    input.stagingDir,
-    CRITICAL_AUDITOR_JUDGE_INVOCATIONS_DIR,
-    String(input.roundIndex),
-    `request-${requestDigest.slice(0, 24)}`
-  );
-}
-
 export function criticalAuditorProviderContractBlockedRoute(issueCodes: string[]): {
   attemptDomain: 'provider';
   providerAttemptState: 'provider_contract_blocked';
@@ -5890,27 +5798,7 @@ export function resolveAuditReadonlyAuditorHostTimeoutMs(projectRoot: string): n
   return timeoutMs;
 }
 
-export function resolveCriticalAuditorJudgeAdapterHostTimeoutMs(projectRoot: string): number {
-  const judgeRuntime = readGovernanceRemediationConfig(projectRoot).judgeRuntime;
-  const providerRef = normalizeText(judgeRuntime?.activeProviderRef);
-  const provider = providerRef ? judgeRuntime?.providers?.[providerRef] : undefined;
-  const providerTimeoutMs = Number(provider?.requestPolicy?.timeoutMs);
-  if (
-    judgeRuntime?.enabled !== true ||
-    provider?.enabled !== true ||
-    !Number.isSafeInteger(providerTimeoutMs) ||
-    providerTimeoutMs <= 0
-  ) {
-    throw new Error('critical_auditor_judge_provider_timeout_invalid');
-  }
-  const hostTimeoutMs = providerTimeoutMs + CRITICAL_AUDITOR_JUDGE_ADAPTER_CLEANUP_GRACE_MS;
-  if (!Number.isSafeInteger(hostTimeoutMs)) {
-    throw new Error('critical_auditor_judge_host_timeout_invalid');
-  }
-  return hostTimeoutMs;
-}
-
-export function executeCriticalAuditorJudgeAdapter(input: {
+export function executeCriticalAuditorJudgeAdapter(_input: {
   projectRoot: string;
   requestPath: string;
   outputDir: string;
@@ -5919,199 +5807,6 @@ export function executeCriticalAuditorJudgeAdapter(input: {
   processExecutor?: typeof spawnSync;
 }): CriticalAuditorRoundResult {
   throw new Error('main_agent_judge_legacy_direct_adapter_forbidden');
-  const [command, ...baseArgs] = resolveCriticalAuditorExternalAdapterCommand(undefined);
-  const credentialMetadata = resolveRequirementsContractJudgeCredentialMetadata({
-    cwd: input.projectRoot,
-    config: path.join('_bmad', '_config', 'governance-remediation.yaml'),
-  });
-  if (
-    normalizeText(credentialMetadata.providerRef) !== normalizeText(input.expected.providerId) ||
-    !Number.isInteger(Number(credentialMetadata.credentialRevision)) ||
-    Number(credentialMetadata.credentialRevision) < 1
-  ) {
-    throw new Error('critical_auditor_judge_credential_metadata_invalid');
-  }
-  const authenticationType = normalizeText(credentialMetadata.authenticationType);
-  const credentialEnvironmentVariable =
-    resolveRequirementsContractJudgeCredentialEnvironmentVariable({
-      adapterRef: input.expected.adapterRef,
-      authenticationType,
-    });
-  const recoveryRuntimeBinding = {
-    ...(input.expected as unknown as Record<string, unknown>),
-    credentialRevision: Number(credentialMetadata.credentialRevision),
-    credentialEnvironmentVariable,
-  };
-  const commandArgs = [
-    ...baseArgs,
-    '--project-root',
-    input.projectRoot,
-    '--config',
-    path.join('_bmad', '_config', 'governance-remediation.yaml'),
-    '--request',
-    input.requestPath,
-    '--round',
-    String(input.roundIndex),
-    '--output-dir',
-    input.outputDir,
-    '--json',
-  ];
-  const environment = Object.fromEntries(
-    Object.entries(process.env).filter(([key]) => !/^(?:BMAD_)?JUDGE_/iu.test(key))
-  );
-  const hostTimeoutMs = resolveCriticalAuditorJudgeAdapterHostTimeoutMs(input.projectRoot);
-  const preflightRecovery = reconcileAbandonedRequirementsContractCriticalAuditorJudgeInvocation({
-    projectRoot: input.projectRoot,
-    requestPath: input.requestPath,
-    outputDir: input.outputDir,
-    round: input.roundIndex,
-    runtimeBinding: recoveryRuntimeBinding,
-    staleAfterMs: hostTimeoutMs + CRITICAL_AUDITOR_JUDGE_ABANDONED_LOCK_GRACE_MS,
-    failureCode: 'critical_auditor_judge_host_timeout',
-  });
-  if (preflightRecovery.decision === 'active') {
-    throw new Error('critical_auditor_judge_invocation_lock_held');
-  }
-  const semanticDisposition = requirementsContractCriticalAuditorJudgeInvocationDisposition({
-    projectRoot: input.projectRoot,
-    requestPath: input.requestPath,
-    outputDir: input.outputDir,
-    round: input.roundIndex,
-  });
-  if (normalizeText(semanticDisposition.decision) === 'provider_contract_blocked') {
-    throw new Error(
-      `critical_auditor_judge_provider_contract_blocked:${normalizeText(
-        semanticDisposition.semanticIssueFingerprint
-      )}`
-    );
-  }
-  const committedStatePath = path.join(input.outputDir, 'judge-provider-invocation-state.json');
-  const committedResultPath = path.join(input.outputDir, 'judge-provider-result.json');
-  const committedReceiptPath = path.join(input.outputDir, 'judge-provider-invocation-receipt.json');
-  const committedMarkerPath = path.join(input.outputDir, 'judge-provider-invocation-commit.json');
-  if (
-    normalizeText(semanticDisposition.decision) === 'clear' &&
-    [committedStatePath, committedResultPath, committedReceiptPath, committedMarkerPath].every(
-      (filePath) => fs.existsSync(filePath)
-    )
-  ) {
-    try {
-      const committed = readCommittedRequirementsContractCriticalAuditorJudgeInvocation({
-        projectRoot: input.projectRoot,
-        requestPath: input.requestPath,
-        outputDir: input.outputDir,
-        round: input.roundIndex,
-        runtimeBinding: recoveryRuntimeBinding,
-      });
-      return {
-        ...criticalAuditorExternalAdapterRoundResult({
-          result: committed.result,
-          expected: input.expected,
-        }),
-        providerInvocationReceiptRef: criticalAuditorProviderInvocationReceiptRef({
-          projectRoot: input.projectRoot,
-          committed,
-        }),
-        judgeAdapterHostExecution: criticalAuditorCommittedJudgeRecoveryExecution({
-          projectRoot: input.projectRoot,
-          command,
-          commandArgs,
-          committed,
-        }),
-      };
-    } catch (error: unknown) {
-      const failure = error as { message?: unknown };
-      const message = typeof failure.message === 'string' ? failure.message : '';
-      if (message !== 'critical_auditor_judge_invocation_state_not_committed') {
-        throw error;
-      }
-    }
-  }
-  const processExecutor = input.processExecutor ?? spawnSync;
-  const execution = processExecutor(command, commandArgs, {
-    cwd: input.projectRoot,
-    encoding: 'utf8',
-    env: environment,
-    shell: false,
-    timeout: hostTimeoutMs,
-    maxBuffer: 5 * 1024 * 1024,
-    windowsHide: true,
-  });
-  const stdout = execution.stdout ?? '';
-  const stderr = execution.stderr ?? '';
-  const hostAttemptDir = path.join(
-    input.outputDir,
-    'judge-adapter-host-attempts',
-    crypto.randomUUID()
-  );
-  const stdoutPath = path.join(hostAttemptDir, 'stdout.log');
-  const stderrPath = path.join(hostAttemptDir, 'stderr.log');
-  writeOrVerifyCriticalAuditorHostLog(stdoutPath, stdout);
-  writeOrVerifyCriticalAuditorHostLog(stderrPath, stderr);
-  const exitCode =
-    typeof execution.status === 'number' ? execution.status : execution.error ? -1 : 0;
-  if (execution.error) {
-    if ((execution.error as NodeJS.ErrnoException).code === 'ETIMEDOUT') {
-      reconcileAbandonedRequirementsContractCriticalAuditorJudgeInvocation({
-        projectRoot: input.projectRoot,
-        requestPath: input.requestPath,
-        outputDir: input.outputDir,
-        round: input.roundIndex,
-        runtimeBinding: input.expected as unknown as Record<string, unknown>,
-        staleAfterMs: 0,
-        failureCode: 'critical_auditor_judge_host_timeout',
-      });
-    }
-    throw new Error(
-      `critical_auditor_external_adapter_failed:${execution.error?.message ?? 'unknown'}`
-    );
-  }
-  if (exitCode !== 0) {
-    const providerContractBlocked =
-      /(?:^|\r?\n)(critical_auditor_judge_provider_contract_blocked:sha256:[a-f0-9]{64})(?:\r?\n|$)/u.exec(
-        stderr || stdout
-      )?.[1];
-    if (providerContractBlocked) {
-      throw new Error(providerContractBlocked);
-    }
-    throw new Error(`critical_auditor_external_adapter_failed:${exitCode}:${stderr || stdout}`);
-  }
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(stdout.trim());
-  } catch {
-    throw new Error('critical_auditor_external_adapter_result_json_invalid');
-  }
-  const committed = readCommittedRequirementsContractCriticalAuditorJudgeInvocation({
-    projectRoot: input.projectRoot,
-    requestPath: input.requestPath,
-    outputDir: input.outputDir,
-    round: input.roundIndex,
-    runtimeBinding: recoveryRuntimeBinding,
-  });
-  if (sha256Json(parsed) !== sha256Json(committed.result)) {
-    throw new Error('critical_auditor_external_adapter_stdout_commit_mismatch');
-  }
-  const providerInvocationReceiptRef = criticalAuditorProviderInvocationReceiptRef({
-    projectRoot: input.projectRoot,
-    committed,
-  });
-  return {
-    ...criticalAuditorExternalAdapterRoundResult({
-      result: committed.result,
-      expected: input.expected,
-    }),
-    providerInvocationReceiptRef,
-    judgeAdapterHostExecution: {
-      adapterKind: 'package_cli_external_adapter',
-      commandHash: sha256Json({ command, args: commandArgs }),
-      exitCode,
-      stdoutPath: toRootRelativePath(input.projectRoot, stdoutPath),
-      stdoutHash: sha256Text(stdout),
-      stderrPath: toRootRelativePath(input.projectRoot, stderrPath),
-      stderrHash: sha256Text(stderr),
-    },
-  };
 }
 
 export function validateCriticalAuditorProviderInvocationReceipt(input: {
@@ -21972,6 +21667,19 @@ function buildPreserveExistingMustDecompositionPacket(input: {
   const rel = (filePath: string) => toRootRelativePath(input.root, filePath);
   const mustRefs = input.mustRequirements.map((requirement) => requirement.id);
   const mustTexts = input.mustRequirements.map((requirement) => requirement.text);
+  const executionRegistryEntries = sourceRowsForRepairProjection(
+    input.confirmation,
+    'requiredCommands'
+  )
+    .map((row) => ({
+      kind: 'CMD',
+      id: rowIdForRepair(row, ''),
+      value: normalizeText(row.command),
+    }))
+    .filter((entry) => entry.id && entry.value);
+  const executionConstraintRefs = executionRegistryEntries.map(
+    (entry) => `${entry.kind}:${entry.id}`
+  );
   const existingTaskRows = sourceRowsForRepairProjection(
     input.confirmation,
     'atomicImplementationTaskList'
@@ -22031,6 +21739,7 @@ function buildPreserveExistingMustDecompositionPacket(input: {
       materializedAfterStatus: 'synchronized',
       controlledIngestRequiredBeforeMentalModelProgression: true,
     },
+    executionRegistry: { entries: executionRegistryEntries },
     consecutiveNoNewValidGapRounds: input.consecutiveNoNewGapRounds,
     mustRefs,
     sourceRequirementTexts: mustTexts,
@@ -22356,9 +22065,30 @@ function buildPreserveExistingMustDecompositionPacket(input: {
         }),
         mustAtomicTasks: taskRows.map((row, taskIndex) => {
           const id = taskIds[taskIndex];
+          const sourceSpanRef = `source:${requirement.sourcePath ?? rel(input.sourcePath)}:${
+            requirement.sourceSpan?.startLine ?? requirement.sourceLine ?? 1
+          }-${requirement.sourceSpan?.endLine ?? requirement.sourceLine ?? 1}`;
           return {
             ...row,
             id,
+            action: normalizeText(row.action) || normalizeText(row.text) || requirement.text,
+            oracle:
+              normalizeText(row.oracle) ||
+              normalizeText(row.redProofPlan) ||
+              requirement.text,
+            dependencies: asStringArray(row.dependencies),
+            originBindings: [
+              {
+                sourceRootId: requirement.id,
+                sourceSpanRef,
+              },
+            ],
+            authorityRefs: uniqueStrings([
+              requirement.id,
+              ...executionRegistryEntries.map((entry) => entry.id),
+            ]),
+            spanRefs: [sourceSpanRef],
+            executionConstraintRefs,
             targetFiles: asStringArray(row.targetFiles),
             redProofPlan:
               normalizeText(row.redProofPlan) ||
@@ -35859,7 +35589,9 @@ function prepareControlledCloseoutConfirmation(
     childClosureSetHash: normalizeText(controlledCloseout.childClosureSetHash),
     campaignReportHash: normalizeText(controlledCloseout.campaignReportHash),
     closureReceiptHash: normalizeText(controlledCloseout.closureReceiptHash),
-    judgeReviewCampaignHash: normalizeText(controlledCloseout.judgeReviewCampaignHash),
+    executionFinalJudgeCampaignHash: normalizeText(
+      controlledCloseout.executionFinalJudgeCampaignHash
+    ),
     effectivePassReceiptHash: normalizeText(controlledCloseout.effectivePassReceiptHash),
     deliveryCloseoutGateReceiptHash: normalizeText(
       controlledCloseout.deliveryCloseoutGateReceiptHash
@@ -35932,7 +35664,7 @@ function prepareStandaloneControlledCloseoutConfirmation(
   const completionReceiptPath = controlledGoalCloseoutPath(root, request.completionReceiptPath);
   const marker = readJsonObjectFile(markerPath);
   const producerReceipt = recordObject(marker?.producerReceipt);
-  const campaign = recordObject(marker?.judgeReviewCampaign);
+  const campaign = recordObject(marker?.executionFinalJudgeCampaign);
   const effectivePass = recordObject(marker?.effectivePassReceipt);
   const deliveryGate = recordObject(marker?.deliveryGateReceipt);
   const provenanceHashes = recordObject(request.provenanceHashes);
@@ -35944,7 +35676,7 @@ function prepareStandaloneControlledCloseoutConfirmation(
     childClosureSetHash: normalizeText(producerReceipt.childClosureSetHash),
     campaignReportHash: normalizeText(producerReceipt.campaignReportHash),
     closureReceiptHash: normalizeText(producerReceipt.receiptHash),
-    judgeReviewCampaignHash: normalizeText(campaign.aggregateHash),
+    executionFinalJudgeCampaignHash: normalizeText(campaign.aggregateHash),
     effectivePassReceiptHash: normalizeText(effectivePass.effectivePassReceiptHash),
     deliveryCloseoutGateReceiptHash: normalizeText(deliveryGate.receiptHash),
   };
@@ -36033,10 +35765,6 @@ export function runMainAgentConfirmCloseoutAcceptance(
   root: string,
   args: Record<string, string | undefined>
 ): MainAgentConfirmScopeResult {
-  const entry = resolveSkillScript(root, 'ingest-confirmation-event.js');
-  if (!fs.existsSync(entry)) {
-    throw new Error(`controlled closeout acceptance entry missing: ${entry}`);
-  }
   const controlledCloseoutRequest = normalizeText(args.controlledCloseoutRequest);
   if (controlledCloseoutRequest) {
     if (!normalizeText(args.confirmationText) && !normalizeText(args.confirmationTextFile)) {
@@ -36048,38 +35776,20 @@ export function runMainAgentConfirmCloseoutAcceptance(
       root,
       controlledCloseoutRequest
     );
-    const delegatedArgs = [
-      '--action',
-      'confirm-closeout-acceptance',
-      '--controlled-closeout-request',
-      preparation.requestPath,
-      '--confirmed-by',
-      args.confirmedBy ?? 'main-agent-orchestration',
-      '--json',
-    ];
-    pushOptionalArg(delegatedArgs, '--confirmation-text', args.confirmationText, root);
-    pushOptionalArg(
-      delegatedArgs,
-      '--confirmation-text-file',
-      args.confirmationTextFile,
-      root,
-      true
-    );
-    pushOptionalArg(delegatedArgs, '--confirmed-at', args.confirmedAt, root);
-    const step = spawnSync(process.execPath, [entry, ...delegatedArgs], {
-      cwd: root,
-      encoding: 'utf8',
+    const confirmationTextFile = normalizeText(args.confirmationTextFile);
+    const confirmationText = confirmationTextFile
+      ? fs.readFileSync(controlledGoalCloseoutPath(root, confirmationTextFile), 'utf8')
+      : normalizeText(args.confirmationText);
+    const confirmation = confirmMainAgentControlledCloseout({
+      projectRoot: root,
+      requestPath: preparation.requestPath,
+      confirmationText,
+      confirmedBy: args.confirmedBy ?? 'main-agent-orchestration',
+      ...(normalizeText(args.confirmedAt) ? { confirmedAt: normalizeText(args.confirmedAt) } : {}),
     });
-    let parsedStdout: unknown = undefined;
-    if (step.stdout.trim()) {
-      try {
-        parsedStdout = JSON.parse(step.stdout);
-      } catch {
-        parsedStdout = step.stdout.trim();
-      }
-    }
-    if (step.status === 0) {
-      const delegatedOutput = recordObject(parsedStdout);
+    let parsedStdout: unknown = confirmation;
+    if (confirmation.ok) {
+      const delegatedOutput = recordObject(confirmation);
       const recordClosedReceipt = recordObject(delegatedOutput.recordClosedReceipt);
       if (recordClosedReceipt.status === 'user_accepted_closeout') {
         const completionReceipt = persistAcceptedControlledTaskReport({
@@ -36102,12 +35812,11 @@ export function runMainAgentConfirmCloseoutAcceptance(
       }
     }
     return {
-      ok: step.status === 0,
+      ok: confirmation.ok,
       action: 'confirm-closeout-acceptance',
-      delegatedEntry: path.relative(root, entry).replace(/\\/g, '/'),
-      exitCode: step.status ?? 2,
-      ...(parsedStdout !== undefined ? { stdout: parsedStdout } : {}),
-      ...(step.stderr.trim() ? { stderr: step.stderr.trim() } : {}),
+      delegatedEntry: 'main-agent-controlled-closeout-confirmation',
+      exitCode: confirmation.exitCode,
+      stdout: parsedStdout,
       mainAgentStageSummary: stageSummaryForCommandResult(root, args, parsedStdout),
     };
   }
@@ -36126,44 +35835,34 @@ export function runMainAgentConfirmCloseoutAcceptance(
     );
   }
   const controlledPreparation = prepareControlledCloseoutConfirmation(root, args);
-
-  const delegatedArgs = [
-    '--action',
-    'confirm-closeout-acceptance',
-    '--source',
-    path.resolve(root, stripWrappingQuotes(source)),
-    '--json',
-  ];
-  pushOptionalArg(delegatedArgs, '--render-report', args.renderReport, root, true);
-  pushOptionalArg(delegatedArgs, '--confirmation-text', args.confirmationText, root);
-  pushOptionalArg(delegatedArgs, '--confirmation-text-file', args.confirmationTextFile, root, true);
-  pushOptionalArg(
-    delegatedArgs,
-    '--confirmed-by',
-    args.confirmedBy ?? 'main-agent-orchestration',
-    root
-  );
-  pushOptionalArg(delegatedArgs, '--confirmed-at', args.confirmedAt, root);
-  pushOptionalArg(delegatedArgs, '--record-id', args.recordId, root);
-  pushOptionalArg(delegatedArgs, '--requirement-set-id', args.requirementSetId, root);
-  pushOptionalArg(delegatedArgs, '--requirement-record', args.requirementRecord, root, true);
-  pushOptionalArg(delegatedArgs, '--event-log', args.eventLog, root, true);
-  pushOptionalArg(delegatedArgs, '--artifact-index', args.artifactIndex, root, true);
-
-  const step = spawnSync(process.execPath, [entry, ...delegatedArgs], {
-    cwd: root,
-    encoding: 'utf8',
+  const confirmationTextFile = normalizeText(args.confirmationTextFile);
+  const confirmationText = confirmationTextFile
+    ? fs.readFileSync(path.resolve(root, stripWrappingQuotes(confirmationTextFile)), 'utf8')
+    : normalizeText(args.confirmationText);
+  const confirmation = confirmMainAgentRecordBackedCloseout({
+    projectRoot: root,
+    sourcePath: path.resolve(root, stripWrappingQuotes(source)),
+    renderReportPath: path.resolve(root, stripWrappingQuotes(normalizeText(args.renderReport))),
+    confirmationText,
+    confirmedBy: args.confirmedBy ?? 'main-agent-orchestration',
+    ...(normalizeText(args.confirmedAt) ? { confirmedAt: normalizeText(args.confirmedAt) } : {}),
+    ...(normalizeText(args.recordId) ? { recordId: normalizeText(args.recordId) } : {}),
+    ...(normalizeText(args.requirementSetId)
+      ? { requirementSetId: normalizeText(args.requirementSetId) }
+      : {}),
+    ...(normalizeText(args.requirementRecord)
+      ? { requirementRecordPath: path.resolve(root, stripWrappingQuotes(normalizeText(args.requirementRecord))) }
+      : {}),
+    ...(normalizeText(args.eventLog)
+      ? { eventLogPath: path.resolve(root, stripWrappingQuotes(normalizeText(args.eventLog))) }
+      : {}),
+    ...(normalizeText(args.artifactIndex)
+      ? { artifactIndexPath: path.resolve(root, stripWrappingQuotes(normalizeText(args.artifactIndex))) }
+      : {}),
   });
-  let parsedStdout: unknown = undefined;
-  if (step.stdout.trim()) {
-    try {
-      parsedStdout = JSON.parse(step.stdout);
-    } catch {
-      parsedStdout = step.stdout.trim();
-    }
-  }
-  if (step.status === 0 && controlledPreparation) {
-    const delegatedOutput = recordObject(parsedStdout);
+  let parsedStdout: unknown = confirmation;
+  if (confirmation.ok && controlledPreparation) {
+    const delegatedOutput = recordObject(confirmation);
     const recordClosedReceipt = recordObject(delegatedOutput.recordClosedReceipt);
     if (recordClosedReceipt.status === 'user_accepted_closeout') {
       const completionReceipt = persistAcceptedControlledTaskReport({
@@ -36190,12 +35889,11 @@ export function runMainAgentConfirmCloseoutAcceptance(
     }
   }
   return {
-    ok: step.status === 0,
+    ok: confirmation.ok,
     action: 'confirm-closeout-acceptance',
-    delegatedEntry: path.relative(root, entry).replace(/\\/g, '/'),
-    exitCode: step.status ?? 2,
-    ...(parsedStdout !== undefined ? { stdout: parsedStdout } : {}),
-    ...(step.stderr.trim() ? { stderr: step.stderr.trim() } : {}),
+    delegatedEntry: 'main-agent-controlled-closeout-confirmation',
+    exitCode: confirmation.exitCode,
+    stdout: parsedStdout,
     mainAgentStageSummary: stageSummaryForCommandResult(root, args, parsedStdout),
   };
 }
@@ -40434,6 +40132,50 @@ export function mainMainAgentOrchestration(argv: string[]): number {
     }
   }
 
+  if (
+    action === 'author-confirmation-ready-source' ||
+    action === 'author_confirmation_ready_source'
+  ) {
+    try {
+      const result = runMainAgentPreConfirmationDrilldown(root, {
+        source: args.source,
+        intakeSource: args.intakeSource,
+        targetSource: args.targetSource,
+        entrySource: args.entrySource,
+        recordId: args.recordId,
+        requirementSetId: args.requirementSetId,
+        implementationAttemptId: args.implementationAttemptId,
+        sessionId: args.sessionId,
+        sessionTurnId: args.sessionTurnId,
+        sessionMessageId: args.sessionMessageId,
+        sessionActorIdentityClass: args.sessionActorIdentityClass,
+        sessionBranch: args.sessionBranch,
+        sessionCapturedAt: args.sessionCapturedAt,
+        confirmationLanguage: args.confirmationLanguage,
+        localizationResponseFile: args.localizationResponseFile,
+        mode: args.mode,
+        skipDrilldownArtifacts: args.skipDrilldownArtifacts === 'true',
+        targetPath: args.targetPath,
+        requiredCommand: args.requiredCommand,
+        criticalAuditorProviderMode: args.criticalAuditorProviderMode,
+        criticalAuditorResponseFile: args.criticalAuditorResponseFile,
+        criticalAuditorResponseDir: args.criticalAuditorResponseDir,
+        criticalAuditorExternalAdapterCommand: args.criticalAuditorExternalAdapterCommand,
+        checkpointPersistenceEvidencePath: args.checkpointPersistenceEvidencePath,
+        noAutoRepair: args.noAutoRepair === 'true',
+      });
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return result.ok ? 0 : 1;
+    } catch (error) {
+      console.error(
+        `main-agent-orchestration author-confirmation-ready-source: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return 1;
+    }
+  }
+
   if (action === 'pre-confirmation-drilldown' || action === 'pre_confirmation_drilldown') {
     try {
       const result = runMainAgentPreConfirmationDrilldown(root, {
@@ -40733,22 +40475,7 @@ if (require.main === module && isDirectMainAgentOrchestrationCli()) {
   });
 }
 
-export interface MainAgentJudgeReviewCampaignBridgeInput {
-  roleInput: unknown;
-  confirmedRequirementsAuthority: unknown;
-  judgeReviewCampaign: unknown;
-  controlledDispatchRef: unknown;
-  callerVerdict?: unknown;
-  callerFindings?: unknown;
-  callerScope?: unknown;
-  callerEffectivePass?: unknown;
-  callerCloseoutAuthority?: unknown;
-  directAdapterDispatch?: unknown;
-}
-
-export type MainAgentCanonicalJudgeRunRole =
-  | 'requirements_critical_auditor'
-  | 'final_acceptance_judge';
+export type MainAgentCanonicalJudgeRunRole = 'requirements_critical_auditor';
 
 export interface MainAgentCanonicalJudgeRunDispatchInput {
   projectRoot: string;
@@ -40780,23 +40507,6 @@ export interface MainAgentCanonicalJudgeRunDispatch {
   decision: 'pass';
 }
 
-export interface MainAgentJudgeReviewCampaignBridge {
-  schemaVersion: 'main-agent-judge-review-campaign-bridge/v1';
-  roleInput: 'requirements_judge';
-  requirementsAuthorityTupleHash: string;
-  requirementsEffectivePassReceiptHash: string;
-  judgeReviewCampaignOutputHash: string;
-  cleanSemanticInvocationCount: 2;
-  remediatedSemanticInvocationCount: 3;
-  reviewerInvocationCount: 1;
-  controlledDispatchHash: string;
-  roleInference: false;
-  directAdapterDispatch: false;
-  callerAuthorityInjection: false;
-  bridgeHash: string;
-  decision: 'pass';
-}
-
 function rejectMainAgentJudgeAuthorityInjection(input: {
   callerVerdict?: unknown;
   callerFindings?: unknown;
@@ -40825,7 +40535,7 @@ export function buildMainAgentCanonicalJudgeRunDispatch(
   input: MainAgentCanonicalJudgeRunDispatchInput
 ): MainAgentCanonicalJudgeRunDispatch {
   rejectMainAgentJudgeAuthorityInjection(input);
-  if (input.role !== 'requirements_critical_auditor' && input.role !== 'final_acceptance_judge') {
+  if (input.role !== 'requirements_critical_auditor') {
     throw new Error('main_agent_judge_run_role_explicit_required');
   }
   const controlledDispatch = recordObject(input.controlledDispatchRef);
@@ -40869,104 +40579,6 @@ export function buildMainAgentCanonicalJudgeRunDispatch(
     callerAuthorityInjection: false as const,
   };
   return { ...payload, dispatchHash: sha256Json(payload), decision: 'pass' as const };
-}
-
-function rejectMainAgentJudgeBridgeAuthorityInjection(
-  input: MainAgentJudgeReviewCampaignBridgeInput
-): void {
-  for (const key of [
-    'callerVerdict',
-    'callerFindings',
-    'callerScope',
-    'callerEffectivePass',
-    'callerCloseoutAuthority',
-  ] as const) {
-    if (input[key] !== undefined) {
-      throw new Error('main_agent_judge_bridge_caller_authority_injection');
-    }
-  }
-  if (input.directAdapterDispatch === true) {
-    throw new Error('main_agent_judge_bridge_direct_adapter_forbidden');
-  }
-}
-
-function requireMainAgentHash(value: unknown, code: string): string {
-  const normalized = normalizeText(value);
-  if (!/^sha256:[a-f0-9]{64}$/u.test(normalized)) {
-    throw new Error(code);
-  }
-  return normalized;
-}
-
-export function resolveMainAgentJudgeReviewCampaignBridge(
-  input: MainAgentJudgeReviewCampaignBridgeInput
-): MainAgentJudgeReviewCampaignBridge {
-  rejectMainAgentJudgeBridgeAuthorityInjection(input);
-  if (input.roleInput !== 'requirements_judge') {
-    throw new Error('main_agent_judge_bridge_role_explicit_required');
-  }
-  const confirmedRequirementsAuthority = recordObject(input.confirmedRequirementsAuthority);
-  const judgeReviewCampaign = recordObject(input.judgeReviewCampaign);
-  const effectivePassRef = recordObject(
-    confirmedRequirementsAuthority.RequirementsEffectivePassReceiptRef
-  );
-  if (
-    confirmedRequirementsAuthority.schemaVersion !==
-      'requirements-contract-confirmed-authority-projection/v1' ||
-    effectivePassRef.schemaVersion !== 'requirements-effective-pass-receipt/v1' ||
-    effectivePassRef.decision !== 'pass'
-  ) {
-    throw new Error('main_agent_judge_bridge_requirements_authority_invalid');
-  }
-  if (
-    judgeReviewCampaign.schemaVersion !==
-      'requirements-contract-judge-review-campaign-j06-output/v1' ||
-    judgeReviewCampaign.cleanSemanticInvocationCount !== 2 ||
-    judgeReviewCampaign.remediatedSemanticInvocationCount !== 3 ||
-    judgeReviewCampaign.reviewerInvocationCount !== 1 ||
-    judgeReviewCampaign.secondReviewerPath !== false
-  ) {
-    throw new Error('main_agent_judge_bridge_campaign_output_invalid');
-  }
-  const controlledDispatch = recordObject(input.controlledDispatchRef);
-  if (
-    !normalizeText(controlledDispatch.packetId) ||
-    !normalizeText(controlledDispatch.packetKind)
-  ) {
-    throw new Error('main_agent_judge_bridge_controlled_dispatch_invalid');
-  }
-  const requirementsAuthorityTupleHash = requireMainAgentHash(
-    confirmedRequirementsAuthority.authorityTupleHash,
-    'main_agent_judge_bridge_requirements_authority_invalid'
-  );
-  const requirementsEffectivePassReceiptHash = requireMainAgentHash(
-    effectivePassRef.receiptHash,
-    'main_agent_judge_bridge_requirements_authority_invalid'
-  );
-  const judgeReviewCampaignOutputHash = requireMainAgentHash(
-    judgeReviewCampaign.outputHash,
-    'main_agent_judge_bridge_campaign_output_invalid'
-  );
-  const controlledDispatchHash = sha256Json({
-    packetId: normalizeText(controlledDispatch.packetId),
-    packetKind: normalizeText(controlledDispatch.packetKind),
-    route: controlledDispatch.route ?? null,
-  });
-  const payload = {
-    schemaVersion: 'main-agent-judge-review-campaign-bridge/v1' as const,
-    roleInput: 'requirements_judge' as const,
-    requirementsAuthorityTupleHash,
-    requirementsEffectivePassReceiptHash,
-    judgeReviewCampaignOutputHash,
-    cleanSemanticInvocationCount: 2 as const,
-    remediatedSemanticInvocationCount: 3 as const,
-    reviewerInvocationCount: 1 as const,
-    controlledDispatchHash,
-    roleInference: false as const,
-    directAdapterDispatch: false as const,
-    callerAuthorityInjection: false as const,
-  };
-  return { ...payload, bridgeHash: sha256Json(payload), decision: 'pass' as const };
 }
 
 function controlledStableJson(value: unknown): string {
@@ -41053,22 +40665,22 @@ function judgeProviderSourceErrorCode(error: unknown): string {
   return 'PROVIDER_EXECUTION_ERROR';
 }
 
-export async function runMainAgentJudgeReviewCampaign(
+export async function runMainAgentExecutionFinalJudgeCampaign(
   input: {
-    campaignInput: RequirementsContractJudgeReviewCampaignInputV2;
+    campaignInput: MainAgentExecutionFinalJudgeCampaignInput;
     finalAcceptanceState?: unknown;
     closeoutAttemptId: string;
     logicalAttemptOrdinal: number;
     maxAttempts: number;
     resumeFrom: string | null;
     reusedFinalJudge?: {
-      result: FinalJudgeProducedResult;
+      result: MainAgentExecutionFinalJudgeProducedResult;
       receipt: Record<string, unknown>;
     };
   },
-  dependencies: Parameters<typeof executeJudgeReviewCampaign>[1]
+  dependencies: Parameters<typeof executeMainAgentExecutionFinalJudgeCampaign>[1]
 ) {
-  const result = await executeJudgeReviewCampaign(
+  const result = await executeMainAgentExecutionFinalJudgeCampaign(
     {
       campaignInput: input.campaignInput,
       ...(input.reusedFinalJudge ? { reusedFinalJudge: input.reusedFinalJudge } : {}),
@@ -41117,7 +40729,7 @@ export async function runMainAgentJudgeReviewCampaign(
 }
 
 type MainAgentControlledCloseoutCampaignDependencies = Parameters<
-  typeof executeJudgeReviewCampaign
+  typeof executeMainAgentExecutionFinalJudgeCampaign
 >[1];
 
 export interface MainAgentControlledCloseoutInput {
@@ -41155,7 +40767,7 @@ export interface MainAgentControlledCloseoutResult {
   contextHash: string;
   candidateBytesHash: string;
   producerReceipt: Record<string, unknown>;
-  judgeReviewCampaign: Record<string, unknown> | null;
+  executionFinalJudgeCampaign: Record<string, unknown> | null;
   effectivePassReceipt: Record<string, unknown> | null;
   deliveryGateReceipt: Record<string, unknown> | null;
   judgeStageStatusReceipt: Record<string, unknown> | null;
@@ -41668,7 +41280,7 @@ export function materializeMainAgentControlledCloseoutAcceptanceRequest(input: {
   );
   const marker = readJsonObjectFile(markerPath);
   const producerReceipt = recordObject(marker?.producerReceipt);
-  const campaign = recordObject(marker?.judgeReviewCampaign);
+  const campaign = recordObject(marker?.executionFinalJudgeCampaign);
   const effectivePass = recordObject(marker?.effectivePassReceipt);
   const deliveryGate = recordObject(marker?.deliveryGateReceipt);
   const closeoutAttemptId = normalizeText(marker?.closeoutAttemptId);
@@ -41680,7 +41292,7 @@ export function materializeMainAgentControlledCloseoutAcceptanceRequest(input: {
     childClosureSetHash: normalizeText(producerReceipt.childClosureSetHash),
     campaignReportHash: normalizeText(producerReceipt.campaignReportHash),
     closureReceiptHash: normalizeText(producerReceipt.receiptHash),
-    judgeReviewCampaignHash: normalizeText(campaign.aggregateHash),
+    executionFinalJudgeCampaignHash: normalizeText(campaign.aggregateHash),
     effectivePassReceiptHash: normalizeText(effectivePass.effectivePassReceiptHash),
     deliveryCloseoutGateReceiptHash: normalizeText(deliveryGate.receiptHash),
   };
@@ -41749,7 +41361,7 @@ export function materializeMainAgentControlledCloseoutAcceptanceRequest(input: {
   return request;
 }
 
-function readReusableFinalJudgeResult(value: unknown): FinalJudgeProducedResult {
+function readReusableFinalJudgeResult(value: unknown): MainAgentExecutionFinalJudgeProducedResult {
   const result = recordObject(value);
   const sourceLedgerHash = normalizeText(result.sourceLedgerHash);
   const auditDecision = normalizeText(result.auditDecision);
@@ -41769,7 +41381,7 @@ function readReusableFinalJudgeResult(value: unknown): FinalJudgeProducedResult 
   return {
     sourceLedgerHash,
     auditDecision: auditDecision as 'pass' | 'fail',
-    verdict: verdict as FinalJudgeProducedResult['verdict'],
+    verdict: verdict as MainAgentExecutionFinalJudgeProducedResult['verdict'],
     findingIds,
   };
 }
@@ -41804,12 +41416,12 @@ export async function runMainAgentControlledCloseout(
   });
   const closeoutAttemptId = normalizeText(source.context.closeoutAttemptId);
   const receiptPaths = {
-    input: path.join(outputRoot, 'judge-review-campaign-input.json'),
+    input: path.join(outputRoot, 'execution-final-judge-campaign-input.json'),
     reviewer: path.join(outputRoot, 'reviewer-receipt.json'),
     finalJudge: path.join(outputRoot, 'final-judge-receipt.json'),
-    aggregate: path.join(outputRoot, 'judge-review-campaign-aggregate.json'),
-    ingest: path.join(outputRoot, 'judge-review-campaign-ingest.json'),
-    effectivePass: path.join(outputRoot, 'final-acceptance-effective-pass-receipt.json'),
+    aggregate: path.join(outputRoot, 'execution-final-judge-campaign-aggregate.json'),
+    ingest: path.join(outputRoot, 'execution-final-judge-campaign-ingest.json'),
+    effectivePass: path.join(outputRoot, 'execution-final-judge-effective-pass-receipt.json'),
     finalJudgeResult: path.join(outputRoot, 'final-judge-reuse-binding.json'),
     reviewerStageStatus: path.join(outputRoot, 'reviewer-stage-status-receipt.json'),
     stageStatus: path.join(outputRoot, 'judge-stage-status-receipt.json'),
@@ -41845,13 +41457,13 @@ export async function runMainAgentControlledCloseout(
         },
       };
     }
-    throw new Error('main_agent_judge_review_campaign_duplicate_attempt');
+    throw new Error('main_agent_execution_final_judge_campaign_duplicate_attempt');
   }
   if (fs.existsSync(outputRoot)) {
-    throw new Error('main_agent_judge_review_campaign_duplicate_attempt');
+    throw new Error('main_agent_execution_final_judge_campaign_duplicate_attempt');
   }
   let reusedFinalJudge:
-    | { result: FinalJudgeProducedResult; receipt: Record<string, unknown> }
+    | { result: MainAgentExecutionFinalJudgeProducedResult; receipt: Record<string, unknown> }
     | undefined;
   if (input.resumeFromOutputRoot) {
     const priorOutputRoot = resolveMainAgentCloseoutPath(
@@ -41932,7 +41544,7 @@ export async function runMainAgentControlledCloseout(
       contextHash: source.contextHash,
       candidateBytesHash: source.candidateBytesHash,
       producerReceipt: source.closureReceipt,
-      judgeReviewCampaign: null,
+      executionFinalJudgeCampaign: null,
       effectivePassReceipt: null,
       deliveryGateReceipt: null,
       judgeStageStatusReceipt: stage,
@@ -41977,7 +41589,7 @@ export async function runMainAgentControlledCloseout(
         contextHash: source.contextHash,
         candidateBytesHash: source.candidateBytesHash,
         producerReceipt: source.closureReceipt,
-        judgeReviewCampaign: null,
+        executionFinalJudgeCampaign: null,
         effectivePassReceipt: null,
         deliveryGateReceipt: null,
         reviewerStageStatusReceipt: stage,
@@ -41990,7 +41602,7 @@ export async function runMainAgentControlledCloseout(
     }
   }
 
-  const campaignInput = compileRequirementsContractJudgeReviewCampaignInput({
+  const campaignInput = compileMainAgentExecutionFinalJudgeCampaignInput({
     campaignId: source.campaignId,
     campaignLineageKey: source.campaignLineageKey,
     closureReceiptHash: source.closureReceiptHash,
@@ -42064,11 +41676,11 @@ export async function runMainAgentControlledCloseout(
     });
     return mapMainAgentNormalizedFinalJudgeResponse(response);
   };
-  let campaignResult: Awaited<ReturnType<typeof runMainAgentJudgeReviewCampaign>>;
+  let campaignResult: Awaited<ReturnType<typeof runMainAgentExecutionFinalJudgeCampaign>>;
   try {
-    campaignResult = await runMainAgentJudgeReviewCampaign(
+    campaignResult = await runMainAgentExecutionFinalJudgeCampaign(
       {
-        campaignInput: campaignInput as RequirementsContractJudgeReviewCampaignInputV2,
+        campaignInput,
         closeoutAttemptId,
         logicalAttemptOrdinal,
         maxAttempts,
@@ -42096,7 +41708,7 @@ export async function runMainAgentControlledCloseout(
       contextHash: source.contextHash,
       candidateBytesHash: source.candidateBytesHash,
       producerReceipt: source.closureReceipt,
-      judgeReviewCampaign: null,
+      executionFinalJudgeCampaign: null,
       effectivePassReceipt: null,
       deliveryGateReceipt: null,
       judgeStageStatusReceipt: stage,
@@ -42151,7 +41763,7 @@ export async function runMainAgentControlledCloseout(
       contextHash: source.contextHash,
       candidateBytesHash: source.candidateBytesHash,
       producerReceipt: source.closureReceipt,
-      judgeReviewCampaign: null,
+      executionFinalJudgeCampaign: null,
       effectivePassReceipt: null,
       deliveryGateReceipt: null,
       reviewerStageStatusReceipt: reviewerStage,
@@ -42163,10 +41775,10 @@ export async function runMainAgentControlledCloseout(
     return blocked;
   }
   if (!campaignResult.aggregate) {
-    throw new Error('judge_review_campaign_controller_invalid');
+    throw new Error('main_agent_execution_final_judge_campaign_invalid');
   }
   const aggregate = campaignResult.aggregate as unknown as Record<string, unknown>;
-  const judgeReviewCampaign = { ...aggregate, closeoutAttemptId };
+  const executionFinalJudgeCampaign = { ...aggregate, closeoutAttemptId };
   if (!campaignResult.effectivePassReceipt || campaignResult.status !== 'effective_pass_ready') {
     if (campaignResult.reviewerReceipt) {
       writeMainAgentControlledCloseoutReceipt(
@@ -42181,14 +41793,14 @@ export async function runMainAgentControlledCloseout(
       );
     }
     writeMainAgentControlledCloseoutReceipt(receiptPaths.aggregate, aggregate);
-    writeMainAgentControlledCloseoutReceipt(receiptPaths.ingest, judgeReviewCampaign);
+    writeMainAgentControlledCloseoutReceipt(receiptPaths.ingest, executionFinalJudgeCampaign);
     const blocked: MainAgentControlledCloseoutResult = {
       status: 'blocked',
       closeoutAttemptId,
       contextHash: source.contextHash,
       candidateBytesHash: source.candidateBytesHash,
       producerReceipt: source.closureReceipt,
-      judgeReviewCampaign,
+      executionFinalJudgeCampaign,
       effectivePassReceipt: null,
       deliveryGateReceipt: null,
       judgeStageStatusReceipt: null,
@@ -42216,13 +41828,13 @@ export async function runMainAgentControlledCloseout(
     );
   }
   writeMainAgentControlledCloseoutReceipt(receiptPaths.aggregate, aggregate);
-  writeMainAgentControlledCloseoutReceipt(receiptPaths.ingest, judgeReviewCampaign);
+  writeMainAgentControlledCloseoutReceipt(receiptPaths.ingest, executionFinalJudgeCampaign);
   writeMainAgentControlledCloseoutReceipt(receiptPaths.effectivePass, effectivePassReceipt);
   const ingested = ingestMainAgentControlledCloseout({
     closeoutAttemptId,
     contextHash: source.contextHash,
     producerReceipt: source.closureReceipt,
-    judgeReviewCampaign,
+    executionFinalJudgeCampaign,
     candidateBytes: fs.readFileSync(source.candidatePath),
     effectivePassReceipt,
   });
@@ -42231,7 +41843,7 @@ export async function runMainAgentControlledCloseout(
     contextHash: source.contextHash,
     closureReceipt: source.closureReceipt,
     taskReportArtifactHash: source.candidateBytesHash,
-    judgeReviewCampaign,
+    executionFinalJudgeCampaign,
     effectivePassReceipt,
   });
   const deliveryGateCore = {
@@ -42250,7 +41862,7 @@ export async function runMainAgentControlledCloseout(
     contextHash: source.contextHash,
     candidateBytesHash: source.candidateBytesHash,
     producerReceipt: source.closureReceipt,
-    judgeReviewCampaign,
+    executionFinalJudgeCampaign,
     effectivePassReceipt,
     deliveryGateReceipt,
     judgeStageStatusReceipt: null,
@@ -42320,7 +41932,7 @@ export function persistAcceptedControlledTaskReport(input: {
     'childClosureSetHash',
     'campaignReportHash',
     'closureReceiptHash',
-    'judgeReviewCampaignHash',
+    'executionFinalJudgeCampaignHash',
     'effectivePassReceiptHash',
     'deliveryCloseoutGateReceiptHash',
   ] as const;

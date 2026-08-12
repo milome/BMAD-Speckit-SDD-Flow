@@ -574,7 +574,7 @@ async function runMainAgentRuntime(context) {
   const packageRuntimeReadyAction =
     PACKAGE_RUNTIME_READY_ACTIONS[context.action] || loadWave312PackageRuntimeAction(context.action);
   if (packageRuntimeReadyAction) {
-    const data = packageRuntimeReadyAction(context);
+    const data = await packageRuntimeReadyAction(context);
     return emitResponse(
       context,
       envelope(

@@ -1,97 +1,49 @@
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-  DEFAULT_REQUIREMENTS_CONVERGENCE_POLICY,
-  evaluateRequirementsJudgeConvergence,
-  recordRequirementsJudgeSemanticAttempt,
-} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-convergence';
-import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
+  applyRequirementsContractJudgeLifecycleEvent,
+  createRequirementsContractJudgeActiveRequest,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-lifecycle';
 
-const h = (label: string) => sha256Stable({ label });
+const HASH = (digit: string) => `sha256:${digit.repeat(64)}`;
 
-describe('requirements judge convergence', () => {
-  it('permits one semantic call per unchanged snapshot and blocks the fourth attempt', () => {
-    let state = {
-      attemptKeyHash: h('attempt'),
-      currentAuthorityHash: h('authority'),
-      semanticAttemptCount: 0,
-      semanticAttemptReceipts: [] as unknown[],
-      rejectedFingerprints: [] as string[],
-      noProgressCount: 0,
-      disabledReason: null as string | null,
-    };
+describe('requirements contract one-shot lifecycle hard cut', () => {
+  it('does not retain the legacy convergence implementation', () => {
+    expect(
+      existsSync(
+        path.resolve(
+          'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-convergence.ts'
+        )
+      )
+    ).toBe(false);
+  });
 
-    state = recordRequirementsJudgeSemanticAttempt(state, {
-      attemptKeyHash: h('attempt'),
-      authoritySnapshotHash: h('authority'),
-      providerInvocationReceiptHash: h('provider-1'),
-      resultFingerprint: h('fingerprint-1'),
+  it('accepts at most one evaluation for each judgeRequestHash', () => {
+    const requestHash = HASH('1');
+    const current = createRequirementsContractJudgeActiveRequest({
+      version: 1,
+      previousVersion: null,
+      semanticRevisionId: 'SEM-001',
+      auditPolicyHash: HASH('2'),
+      providerSelectionHash: HASH('3'),
+      judgeRequestHash: requestHash,
+      requestPath: `quality/requests/${requestHash.replace(':', '-')}/judge-request.json`,
     });
-    state = recordRequirementsJudgeSemanticAttempt(state, {
-      attemptKeyHash: h('attempt'),
-      authoritySnapshotHash: h('authority-2'),
-      providerInvocationReceiptHash: h('provider-2'),
-      resultFingerprint: h('fingerprint-2'),
-    });
-    state = recordRequirementsJudgeSemanticAttempt(state, {
-      attemptKeyHash: h('attempt'),
-      authoritySnapshotHash: h('authority-3'),
-      providerInvocationReceiptHash: h('provider-3'),
-      resultFingerprint: h('fingerprint-3'),
+    const evaluated = applyRequirementsContractJudgeLifecycleEvent(current, {
+      type: 'response_accepted',
+      attemptOrdinal: 1,
+      attemptPath: `quality/requests/${requestHash.replace(':', '-')}/dispatch-attempts/1.json`,
+      responsePath: `quality/requests/${requestHash.replace(':', '-')}/judge-response.json`,
+      responseHash: HASH('4'),
+      verdict: 'pass',
     });
 
-    expect(state.semanticAttemptCount).toBe(
-      DEFAULT_REQUIREMENTS_CONVERGENCE_POLICY.maxSemanticAttempts
-    );
+    expect(evaluated).toMatchObject({ status: 'audited_pass', acceptedEvaluation: true });
     expect(() =>
-      recordRequirementsJudgeSemanticAttempt(state, {
-        attemptKeyHash: h('attempt'),
-        authoritySnapshotHash: h('authority-4'),
-        providerInvocationReceiptHash: h('provider-4'),
-        resultFingerprint: h('fingerprint-4'),
+      applyRequirementsContractJudgeLifecycleEvent(evaluated, {
+        type: 'dispatch_scheduled',
       })
-    ).toThrow('requirements_judge_semantic_attempt_budget_exhausted');
-  });
-
-  it('blocks repeated gap without authority delta and repeated rejected fingerprint without proof', () => {
-    const repeatedGap = evaluateRequirementsJudgeConvergence({
-      previousAuthorityHash: h('authority'),
-      currentAuthorityHash: h('authority'),
-      previousGapFingerprint: h('gap'),
-      currentGapFingerprint: h('gap'),
-      claimedRepairChangedAuthority: false,
-      rejectedFingerprint: h('gap'),
-      rejectedFingerprintProofHash: null,
-      noProgressCount: 1,
-      elapsedNoProgressMs: 1,
-      policy: DEFAULT_REQUIREMENTS_CONVERGENCE_POLICY,
-    });
-
-    expect(repeatedGap.decision).toBe('block');
-    expect(repeatedGap.issueCodes).toEqual(
-      expect.arrayContaining([
-        'repeated_gap_without_authority_delta',
-        'repeated_rejected_fingerprint_without_proof',
-      ])
-    );
-  });
-
-  it('blocks claimed repair without changed authority and two no-progress attempts', () => {
-    const result = evaluateRequirementsJudgeConvergence({
-      previousAuthorityHash: h('authority'),
-      currentAuthorityHash: h('authority'),
-      previousGapFingerprint: h('gap-old'),
-      currentGapFingerprint: h('gap-new'),
-      claimedRepairChangedAuthority: true,
-      rejectedFingerprint: null,
-      rejectedFingerprintProofHash: null,
-      noProgressCount: 2,
-      elapsedNoProgressMs: 1,
-      policy: DEFAULT_REQUIREMENTS_CONVERGENCE_POLICY,
-    });
-
-    expect(result.decision).toBe('block');
-    expect(result.issueCodes).toEqual(
-      expect.arrayContaining(['claimed_repair_without_authority_delta', 'two_no_progress_attempts'])
-    );
+    ).toThrow('requirements_contract_judge_request_already_evaluated');
   });
 });

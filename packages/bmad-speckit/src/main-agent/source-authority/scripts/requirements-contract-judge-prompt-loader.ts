@@ -4,9 +4,7 @@ import * as path from 'node:path';
 
 type JsonRecord = Record<string, unknown>;
 
-export type RequirementsContractJudgeRole =
-  | 'requirements_critical_auditor'
-  | 'final_acceptance_judge';
+export type RequirementsContractJudgeRole = 'requirements_critical_auditor';
 
 interface PromptDefinition {
   judgeRole: RequirementsContractJudgeRole;
@@ -39,17 +37,8 @@ const PROMPT_DEFINITIONS: PromptDefinition[] = [
     actorClass: 'requirements_critical_auditor_judge',
     promptPath:
       '_bmad/shared/requirements-contract/judge-prompts/requirements-contract-critical-auditor.prompt.md',
-    schemaName: 'requirements-contract-critical-auditor-judge-request.schema.json',
+    schemaName: 'requirements-contract-judge-response.schema.json',
     templateId: 'requirements-contract-critical-auditor-judge.prompt',
-    templateVersion: '1.0.0',
-  },
-  {
-    judgeRole: 'final_acceptance_judge',
-    actorClass: 'final_acceptance_judge',
-    promptPath:
-      '_bmad/shared/requirements-contract/judge-prompts/audit-review-final-acceptance-judge.prompt.md',
-    schemaName: 'requirements-contract-final-acceptance-judge-request.schema.json',
-    templateId: 'audit-review-final-acceptance-judge.prompt',
     templateVersion: '1.0.0',
   },
 ];
@@ -112,6 +101,16 @@ function resolvePackageFile(packageRoot: string, relativePath: string, code: str
   const realRoot = fs.realpathSync(packageRoot);
   const realPath = fs.realpathSync(resolved);
   if (!isWithin(realRoot, realPath)) throw new Error(code);
+  return resolved;
+}
+
+function resolveProjectFile(projectRoot: string, relativePath: string, code: string): string {
+  const root = path.resolve(projectRoot);
+  const resolved = path.resolve(root, relativePath);
+  if (!isWithin(root, resolved) || !fs.existsSync(resolved) || !fs.statSync(resolved).isFile()) {
+    throw new Error(code);
+  }
+  if (!isWithin(fs.realpathSync(root), fs.realpathSync(resolved))) throw new Error(code);
   return resolved;
 }
 
@@ -222,6 +221,7 @@ export function loadRequirementsContractJudgePromptAsset(input: LoaderInput) {
     throw new Error('judge_prompt_loader_stale_hash');
   }
   const schemaContent = fs.readFileSync(schemaPath);
+  const structuredOutputSchema = JSON.parse(schemaContent.toString('utf8')) as JsonRecord;
   const schemaHash = sha256(schemaContent);
   const expectedPromptHash = expectedHash(input.expectedPromptHash);
   const expectedSchemaHash = expectedHash(input.expectedSchemaHash);
@@ -242,6 +242,8 @@ export function loadRequirementsContractJudgePromptAsset(input: LoaderInput) {
       hash: promptHash,
       bytes: Buffer.byteLength(promptContent, 'utf8'),
     },
+    systemPrompt: body,
+    structuredOutputSchema,
     schema: {
       path: slash(path.relative(packageRoot, schemaPath)),
       hash: schemaHash,
@@ -263,4 +265,39 @@ export function loadRequirementsContractJudgePromptAssets(input: { packageRoot?:
       judgeRole: definition.judgeRole,
     })
   );
+}
+
+export function loadConfiguredRequirementsContractJudgePrompt(input: {
+  projectRoot: string;
+  promptConfig: unknown;
+}) {
+  const config = input.promptConfig as JsonRecord | null;
+  if (!config || typeof config !== 'object' || Array.isArray(config)) {
+    throw new Error('requirements_contract_judge_prompt_config_missing');
+  }
+  if (
+    typeof config.systemPromptPath !== 'string' ||
+    !Number.isSafeInteger(config.outputTokenReserve) ||
+    Number(config.outputTokenReserve) < 1
+  ) {
+    throw new Error('requirements_contract_judge_prompt_config_invalid');
+  }
+  const promptPath = resolveProjectFile(
+    input.projectRoot,
+    config.systemPromptPath,
+    'requirements_contract_judge_prompt_path_escape'
+  );
+  const systemPrompt = fs.readFileSync(promptPath, 'utf8');
+  if (!systemPrompt.trim()) throw new Error('requirements_contract_judge_prompt_empty');
+  const structuredOutputSchema = JSON.parse(
+    fs.readFileSync(
+      path.resolve(__dirname, '..', 'schemas', 'requirements-contract-judge-response.schema.json'),
+      'utf8'
+    )
+  ) as JsonRecord;
+  return {
+    systemPrompt,
+    structuredOutputSchema,
+    outputTokenReserve: Number(config.outputTokenReserve),
+  };
 }

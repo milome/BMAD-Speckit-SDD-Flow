@@ -59,7 +59,7 @@ function resultHash(payload) {
   return sha256Stable({ domain: 'requirements-contract-cli-result/v1', payload });
 }
 
-function submitRequirementsGrillResponseAction(context) {
+async function submitRequirementsGrillResponseAction(context) {
   const requestId = String(context.args.requestId || '').trim();
   const grillSessionId = String(context.args.grillSessionId || '').trim();
   if (!SAFE_ID.test(requestId) || !SAFE_ID.test(grillSessionId)) {
@@ -165,7 +165,7 @@ function submitRequirementsGrillResponseAction(context) {
       };
       result = { ...payload, resultHash: resultHash(payload), exitCode: 0, errors: [] };
     } else {
-      result = continueAuthoringFromContext(context, continuation.session, {
+      result = await continueAuthoringFromContext(context, continuation.session, {
         grillSessionId,
         decisionReceiptRefs: continuation.decisionReceiptRefs,
       });

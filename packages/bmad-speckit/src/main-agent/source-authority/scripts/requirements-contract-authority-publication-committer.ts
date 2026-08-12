@@ -158,15 +158,19 @@ export function commitRequirementsContractAuthorityPublication(input: {
   if (path.resolve(input.buildManifestTargetPath) !== expectedBuildManifestTargetPath) {
     throw new Error('requirements_authority_build_manifest_target_mismatch');
   }
+  const manifestBindingAuthority = input.route === 'binding_refresh'
+    ? input.current
+    : input.next;
   if (
     input.buildManifest.authoringAttemptId !== input.next.activeAuthoringAttemptId ||
     input.buildManifest.buildManifestHash !== input.next.activeBuildManifestHash ||
     input.buildManifest.semanticAuthorityRef.semanticRevisionId !== input.next.activeSemanticRevisionId ||
     input.buildManifest.semanticAuthorityRef.path !== input.next.activeSemanticIrPath ||
     input.buildManifest.semanticAuthorityRef.hash !== input.next.activeScopeSemanticHash ||
-    input.buildManifest.bindingAuthorityRef.bindingRevisionId !== input.next.activeBindingRevisionId ||
-    input.buildManifest.bindingAuthorityRef.path !== input.next.activeSourceBindingPath ||
-    input.buildManifest.bindingAuthorityRef.hash !== input.next.activeSourceBindingHash
+    !manifestBindingAuthority ||
+    input.buildManifest.bindingAuthorityRef.bindingRevisionId !== manifestBindingAuthority.activeBindingRevisionId ||
+    input.buildManifest.bindingAuthorityRef.path !== manifestBindingAuthority.activeSourceBindingPath ||
+    input.buildManifest.bindingAuthorityRef.hash !== manifestBindingAuthority.activeSourceBindingHash
   ) throw new Error('requirements_authority_build_manifest_identity_mismatch');
   const semantic = readJsonArtifact(
     resolveConfinedRecordPath(input.recordRootPath, input.next.activeSemanticIrPath),

@@ -20,6 +20,7 @@ import {
   sha256Stable,
 } from './requirements-contract-semantic-resolver';
 import { verifyRequirementsContractCoreArtifactReadback } from './requirements-contract-semantic-conservation-verifier';
+import { validateRequirementsContractSourceBindingCapsule } from './requirements-contract-source-binding-capsule';
 
 export interface RequirementsContractSourceBindingRefreshPreflightInput {
   semanticRevisionId: string;
@@ -126,6 +127,11 @@ export function publishRequirementsContractSourceBindingRefresh(input: {
   compilerIdentity: string;
   decisionReceiptRefs: RequirementsContractCheckpointManifest['decisionReceiptRefs'];
   baseAuthorityRef: Record<string, unknown> | null;
+  currentAuthority?: {
+    semanticIrPath: string;
+    sourceBindingPath: string;
+  };
+  preserveCurrentAttemptPointer?: boolean;
   compareAndSwapAttemptPointer: Parameters<
     typeof publishActiveAuthoringAttemptPointer
   >[0]['compareAndSwap'];
@@ -165,18 +171,18 @@ export function publishRequirementsContractSourceBindingRefresh(input: {
   ) {
     throw new Error('requirements_source_binding_refresh_current_manifest_mismatch');
   }
-  const semanticEntry = currentManifest.artifactEntries.find((entry) => entry.role === 'semantic_ir');
-  const bindingEntry = currentManifest.artifactEntries.find((entry) => entry.role === 'source_binding');
-  if (!semanticEntry || !bindingEntry) {
+  const manifestSemanticEntry = currentManifest.artifactEntries.find((entry) => entry.role === 'semantic_ir');
+  const manifestBindingEntry = currentManifest.artifactEntries.find((entry) => entry.role === 'source_binding');
+  if ((!manifestSemanticEntry || !manifestBindingEntry) && !input.currentAuthority) {
     throw new Error('requirements_source_binding_refresh_current_authority_missing');
   }
   const semanticIrPath = resolveRecordRelativePath(
     input.recordRootPath,
-    semanticEntry.recordRelativePath
+    manifestSemanticEntry?.recordRelativePath ?? input.currentAuthority!.semanticIrPath
   );
   const currentBindingPath = resolveRecordRelativePath(
     input.recordRootPath,
-    bindingEntry.recordRelativePath
+    manifestBindingEntry?.recordRelativePath ?? input.currentAuthority!.sourceBindingPath
   );
   const semanticIr = readJsonRecord(
     semanticIrPath,
@@ -199,6 +205,13 @@ export function publishRequirementsContractSourceBindingRefresh(input: {
     artifactRole: 'semantic-ir',
     artifact: semanticIr,
   });
+  const semanticEntry = manifestSemanticEntry ?? {
+    role: 'semantic_ir',
+    schemaVersion: String(semanticIr.schemaVersion ?? 'requirements-contract-semantic-ir/v1'),
+    artifactId: String(semanticIr.semanticRevisionId ?? ''),
+    recordRelativePath: input.currentAuthority!.semanticIrPath,
+    artifactHash: semanticFreeze.artifactHash,
+  };
   if (semanticFreeze.artifactHash !== semanticEntry.artifactHash) {
     throw new Error('requirements_source_binding_refresh_semantic_manifest_mismatch');
   }
@@ -206,21 +219,29 @@ export function publishRequirementsContractSourceBindingRefresh(input: {
     scopeSemanticHash: input.preflight.scopeSemanticHash,
     semanticRevisionId: input.preflight.semanticRevisionId,
   };
+  const canonicalBindingValidation = validateRequirementsContractSourceBindingCapsule(input.sourceBinding);
   const sourceBindingPreimage = { ...input.sourceBinding, ...semanticIdentity };
-  const sourceBindingHash = sha256Stable({
-    domain: 'requirements-contract-source-binding-hash/v1',
-    sourceBinding: sourceBindingPreimage,
-  });
-  const bindingIdentity = {
-    sourceBindingHash,
-    bindingRevisionId: bindingRevisionId(sourceBindingHash),
-  };
-  const sourceBinding = { ...sourceBindingPreimage, ...bindingIdentity };
-  const resolvedEvidenceIndex = {
-    ...input.resolvedEvidenceIndex,
-    ...semanticIdentity,
-    ...bindingIdentity,
-  };
+  const sourceBindingHash = canonicalBindingValidation.decision === 'pass'
+    ? String(input.sourceBinding.sourceBindingHash)
+    : sha256Stable({
+        domain: 'requirements-contract-source-binding-hash/v1',
+        sourceBinding: sourceBindingPreimage,
+      });
+  const bindingIdentity = canonicalBindingValidation.decision === 'pass'
+    ? {
+        sourceBindingHash,
+        bindingRevisionId: String(input.sourceBinding.bindingRevisionId),
+      }
+    : {
+        sourceBindingHash,
+        bindingRevisionId: bindingRevisionId(sourceBindingHash),
+      };
+  const sourceBinding = canonicalBindingValidation.decision === 'pass'
+    ? input.sourceBinding
+    : { ...sourceBindingPreimage, ...bindingIdentity };
+  const resolvedEvidenceIndex = canonicalBindingValidation.decision === 'pass'
+    ? input.resolvedEvidenceIndex
+    : { ...input.resolvedEvidenceIndex, ...semanticIdentity, ...bindingIdentity };
   const sourceBindingFreeze = createRequirementsContractCoreArtifactFreeze({
     stage: 'cp04', artifactRole: 'source-binding', artifact: sourceBinding,
   });
@@ -306,11 +327,19 @@ export function publishRequirementsContractSourceBindingRefresh(input: {
     toBindingRevisionId: bindingIdentity.bindingRevisionId,
     fromSourceBindingHash: String(currentBinding.sourceBindingHash ?? ''),
     toSourceBindingHash: bindingIdentity.sourceBindingHash,
-    fromSnapshotSetHash: String(currentBinding.snapshotSetHash ?? ''),
-    toSnapshotSetHash: String(sourceBinding.snapshotSetHash ?? ''),
+    fromSnapshotSetHash: String(
+      currentBinding.snapshotSetHash ?? sha256Stable(currentBinding.sourceArtifacts)
+    ),
+    toSnapshotSetHash: String(
+      sourceBinding.snapshotSetHash ?? sha256Stable(sourceBinding.sourceArtifacts)
+    ),
     fromSourceSpanRegistryHash: String(currentBinding.sourceSpanRegistryHash ?? ''),
     toSourceSpanRegistryHash: String(sourceBinding.sourceSpanRegistryHash ?? ''),
-    evidenceClaimRegistryHash: String(sourceBinding.evidenceClaimRegistryHash ?? ''),
+    evidenceClaimRegistryHash: String(
+      sourceBinding.evidenceClaimRegistryHash ??
+      sourceBinding.evidenceClaimBindingRegistryHash ??
+      sha256Stable(sourceBinding.evidenceClaimBindings)
+    ),
   });
   const refreshReceiptPublication = atomicNoClobberPublish({
     targetPath: paths.refreshReceipt,
@@ -325,7 +354,9 @@ export function publishRequirementsContractSourceBindingRefresh(input: {
       ) throw new Error('requirements_source_binding_refresh_receipt_readback_mismatch');
     },
   });
-  const checkpointManifest = createRequirementsContractCheckpointManifest({
+  const checkpointManifest = input.preserveCurrentAttemptPointer
+    ? currentManifest
+    : createRequirementsContractCheckpointManifest({
     authoringRequestId: input.authoringRequestId,
     authoringAttemptId: input.authoringAttemptId,
     checkpointId: 'cp04', checkpointOrdinal: 4, stage: 'cp04', status: 'passed',
@@ -354,8 +385,10 @@ export function publishRequirementsContractSourceBindingRefresh(input: {
     ],
     decisionReceiptRefs: input.decisionReceiptRefs,
     baseAuthorityRef: input.baseAuthorityRef,
-  });
-  const checkpointManifestPublication = atomicNoClobberPublish({
+    });
+  const checkpointManifestPublication = input.preserveCurrentAttemptPointer
+    ? null
+    : atomicNoClobberPublish({
     targetPath: paths.checkpointManifest,
     value: checkpointManifest,
     role: 'requirements_contract_checkpoint_manifest',
@@ -365,15 +398,22 @@ export function publishRequirementsContractSourceBindingRefresh(input: {
       if (validation.decision === 'block') throw new Error(validation.issueCodes[0]);
     },
   });
-  const pointer: ActiveAuthoringAttemptPointer = {
+  const pointer: ActiveAuthoringAttemptPointer = input.preserveCurrentAttemptPointer
+    ? input.currentAttemptPointer
+    : {
     schemaVersion: 'ActiveAuthoringAttemptPointer/v1',
     authoringAttemptId: input.authoringAttemptId,
     attemptManifestPath: relativePaths.checkpointManifest,
     attemptManifestHash: checkpointManifest.checkpointManifestHash,
     latestValidPredecessorCheckpoint: checkpointManifest.latestValidPredecessorCheckpoint,
     inputManifestHash: input.inputManifestHash,
-  };
-  const attemptPointer = publishActiveAuthoringAttemptPointer({
+    };
+  const attemptPointer = input.preserveCurrentAttemptPointer
+    ? {
+        pointer,
+        pointerHash: input.expectedCurrentPointerHash,
+      }
+    : publishActiveAuthoringAttemptPointer({
     pointer,
     expectedCurrentPointerHash: input.expectedCurrentPointerHash,
     readAttemptManifest(recordRelativePath) {
@@ -386,7 +426,7 @@ export function publishRequirementsContractSourceBindingRefresh(input: {
       );
     },
     compareAndSwap: input.compareAndSwapAttemptPointer,
-  });
+    });
   return {
     status: 'published' as const,
     semanticIdentity,
@@ -405,7 +445,7 @@ export function publishRequirementsContractSourceBindingRefresh(input: {
       sourceBinding: true as const,
       resolvedEvidenceIndex: true as const,
       refreshReceipt: true as const,
-      checkpointManifest: true as const,
+      checkpointManifest: input.preserveCurrentAttemptPointer ? false as const : true as const,
     },
   };
 }

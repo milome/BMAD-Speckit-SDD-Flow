@@ -117,7 +117,7 @@ export function ingestMainAgentControlledCloseout(input: UnknownRecord) {
   }
   const producerReceipt = input.producerReceipt;
   const effectivePassReceipt = input.effectivePassReceipt;
-  const judgeReviewCampaign = input.judgeReviewCampaign;
+  const executionFinalJudgeCampaign = input.executionFinalJudgeCampaign;
   const closeoutAttemptId = input.closeoutAttemptId;
   const contextHash = input.contextHash;
   const candidateBytes = input.candidateBytes;
@@ -128,10 +128,10 @@ export function ingestMainAgentControlledCloseout(input: UnknownRecord) {
     producerReceipt.status !== 'campaign_closed' ||
     producerReceipt.closeoutAttemptId !== closeoutAttemptId ||
     producerReceipt.contextHash !== contextHash ||
-    !isRecord(judgeReviewCampaign) ||
-    judgeReviewCampaign.decision !== 'pass' ||
-    judgeReviewCampaign.closeoutAttemptId !== closeoutAttemptId ||
-    !isSha256Hash(judgeReviewCampaign.aggregateHash) ||
+    !isRecord(executionFinalJudgeCampaign) ||
+    executionFinalJudgeCampaign.decision !== 'pass' ||
+    executionFinalJudgeCampaign.closeoutAttemptId !== closeoutAttemptId ||
+    !isSha256Hash(executionFinalJudgeCampaign.aggregateHash) ||
     !isRecord(effectivePassReceipt) ||
     effectivePassReceipt.effectivePass !== true ||
     (effectivePassReceipt.closeoutAttemptId !== undefined &&
@@ -147,10 +147,10 @@ export function ingestMainAgentControlledCloseout(input: UnknownRecord) {
     throw failure('main_agent_goal_task_report_provenance_mismatch');
   }
   if (
-    judgeReviewCampaign.candidateBytesHash !== candidateBytesHash ||
-    (typeof judgeReviewCampaign.campaignId === 'string' &&
+    executionFinalJudgeCampaign.candidateBytesHash !== candidateBytesHash ||
+    (typeof executionFinalJudgeCampaign.campaignId === 'string' &&
       typeof effectivePassReceipt.campaignId === 'string' &&
-      judgeReviewCampaign.campaignId !== effectivePassReceipt.campaignId)
+      executionFinalJudgeCampaign.campaignId !== effectivePassReceipt.campaignId)
   ) {
     throw failure('main_agent_goal_task_report_provenance_mismatch');
   }
@@ -159,7 +159,7 @@ export function ingestMainAgentControlledCloseout(input: UnknownRecord) {
     closeoutAttemptId,
     candidateBytesHash,
     producerReceiptHash: producerReceipt.receiptHash,
-    judgeReviewCampaignHash: judgeReviewCampaign.aggregateHash,
+    executionFinalJudgeCampaignHash: executionFinalJudgeCampaign.aggregateHash,
     effectivePassReceiptHash: effectivePassReceipt.effectivePassReceiptHash,
   });
 }

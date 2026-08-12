@@ -15,6 +15,15 @@
     "schemaVersion": { "const": "requirements-contract-judge-runtime/v1" },
     "enabled": { "const": true },
     "activeProviderRef": { "type": "string", "minLength": 1 },
+    "promptConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["systemPromptPath", "outputTokenReserve"],
+      "properties": {
+        "systemPromptPath": { "type": "string", "minLength": 1 },
+        "outputTokenReserve": { "type": "integer", "minimum": 1 }
+      }
+    },
     "selectionPolicy": {
       "type": "object",
       "additionalProperties": false,
@@ -141,8 +150,11 @@
           "required": ["timeoutMs", "maximumAttempts", "structuredResponseRequired"],
           "properties": {
             "timeoutMs": { "type": "integer", "minimum": 1 },
-            "maximumAttempts": { "const": 1 },
+            "maximumAttempts": { "type": "integer", "minimum": 1 },
             "structuredResponseRequired": { "const": true },
+            "transportByteLimit": { "type": "integer", "minimum": 1 },
+            "contextWindowTokens": { "type": "integer", "minimum": 1 },
+            "maximumOutputTokens": { "type": "integer", "minimum": 1 },
             "maxBudgetUsd": { "type": "number", "exclusiveMinimum": 0 }
           }
         }

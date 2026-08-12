@@ -1071,9 +1071,20 @@ export function createCodexCliJudgeAdapter(dependencies: CodexCliJudgeAdapterDep
       );
       const requestId = providerRequestId(events);
       const returnedModel = observedModel(events);
-      const normalizedDecision = structuredDecision(
-        JSON.parse(fs.readFileSync(outputPath, 'utf8'))
+      const structuredOutput = record(
+        JSON.parse(fs.readFileSync(outputPath, 'utf8')),
+        'codex_cli_judge_structured_output_invalid'
       );
+      const frozenResponse =
+        structuredOutput.schemaVersion === 'requirements-contract-judge-response/v2'
+          ? structuredOutput
+          : null;
+      const normalizedDecision = frozenResponse ? null : structuredDecision(structuredOutput);
+      const receiptDecision = frozenResponse
+        ? frozenResponse.verdict === 'pass'
+          ? 'pass'
+          : 'block'
+        : normalizedDecision!.decision;
       const launchEvidence = commandLaunchEvidence(execution, executorKind);
       const receipt = {
         schemaVersion: 'requirements-contract-cli-judge-execution-receipt/v1',
@@ -1121,13 +1132,13 @@ export function createCodexCliJudgeAdapter(dependencies: CodexCliJudgeAdapterDep
       const completedAt = new Date().toISOString();
       const transportEvidenceHash = sha256(stableStringify(receipt));
       const normalizedReturnedModel = returnedModel ?? 'gateway-managed:unobserved';
-      const normalized = {
+      const normalized = frozenResponse ?? {
         schemaVersion: 'requirements-contract-normalized-judge-response/v1',
         providerRef,
         transport: provider.transport,
         configuredModel,
         returnedModel: normalizedReturnedModel,
-        ...normalizedDecision,
+        ...normalizedDecision!,
         providerRequestId: requestId,
         requestHash: sha256(prompt),
         responseHash: sha256(fs.readFileSync(outputPath)),
@@ -1141,7 +1152,7 @@ export function createCodexCliJudgeAdapter(dependencies: CodexCliJudgeAdapterDep
         transport: String(provider.transport),
         providerRequestId: requestId,
         outcome: 'decided',
-        decision: normalizedDecision.decision,
+        decision: receiptDecision,
         unknownOutcomeReason: null,
         normalizedResponseHash: sha256(stableStringify(normalized)),
         transportEvidenceHash,

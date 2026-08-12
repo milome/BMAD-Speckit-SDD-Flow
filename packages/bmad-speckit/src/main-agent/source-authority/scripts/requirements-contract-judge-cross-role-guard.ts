@@ -5,19 +5,13 @@ import {
   RequirementsContractAuthorityError,
   type RequirementsContractAuthorityCounters,
 } from './requirements-contract-audit-actor-class';
-import { resolveRequirementsContractJudgeAuthority } from './requirements-contract-judge-role';
+import { verifyRequirementsContractJudgeRequest } from './requirements-contract-judge-request-identity';
 
 type RecordValue = Record<string, unknown>;
-type JudgePair = {
-  actorClass: 'requirements_critical_auditor_judge' | 'final_acceptance_judge';
-  judgeRole: 'requirements_critical_auditor' | 'final_acceptance_judge';
-};
-type Boundary = JudgePair & {
+type Boundary = {
   schema: string;
   code: string;
   forbiddenSuffixes: readonly string[];
-  forbiddenVerdicts?: ReadonlySet<string>;
-  assessment?: boolean;
 };
 
 const validators = new Map<string, ValidateFunction>();
@@ -32,16 +26,6 @@ const REQUIREMENTS_FORBIDDEN = [
   'finalizationauthority',
   'effectivepass',
 ] as const;
-const FINAL_FORBIDDEN = [
-  'gaproundverdict',
-  'repairactions',
-  'sourcemutationinstructions',
-  'confirmationconvergence',
-  'requirementspromotiondecision',
-  'promotiondecision',
-] as const;
-const REQUIREMENTS_VERDICTS = new Set(['no_new_valid_gap', 'no_new_confirmation_blocking_gap']);
-
 function fail(code: string): never {
   throw new RequirementsContractAuthorityError(code);
 }
@@ -65,9 +49,6 @@ function rejectCrossRole(value: unknown, boundary: Boundary): void {
     if (boundary.forbiddenSuffixes.some((suffix) => normalized.endsWith(suffix))) {
       fail(boundary.code);
     }
-    if (boundary.forbiddenVerdicts?.has(String(child)) && normalized.endsWith('verdict')) {
-      fail(boundary.code);
-    }
     rejectCrossRole(child, boundary);
   }
 }
@@ -82,72 +63,47 @@ function schemaValidator(schema: string): ValidateFunction {
   return validate;
 }
 
-function validateBoundary(
+function validateRequestBoundary(
   value: unknown,
-  counters: RequirementsContractAuthorityCounters,
+  _counters: RequirementsContractAuthorityCounters,
   boundary: Boundary
 ): RecordValue {
   if (!isRecord(value)) fail(boundary.code);
   rejectCrossRole(value, boundary);
-  const authority = resolveRequirementsContractJudgeAuthority(value, counters);
-  if (
-    authority.actorClass !== boundary.actorClass ||
-    authority.judgeRole !== boundary.judgeRole ||
-    !schemaValidator(boundary.schema)(value)
-  ) {
-    fail(boundary.code);
+  try {
+    return verifyRequirementsContractJudgeRequest(value);
+  } catch {
+    return fail(boundary.code);
   }
-  if (
-    boundary.assessment &&
-    (!isRecord(value.ledgerAuthority) ||
-      value.sourceLedgerHash !== value.ledgerAuthority.ledgerHash)
-  ) {
-    fail(boundary.code);
-  }
+}
+
+function validateResponseBoundary(
+  value: unknown,
+  _counters: RequirementsContractAuthorityCounters,
+  boundary: Boundary
+): RecordValue {
+  if (!isRecord(value)) fail(boundary.code);
+  rejectCrossRole(value, boundary);
+  if (!schemaValidator(boundary.schema)(value)) fail(boundary.code);
   return value;
 }
 
 const requirementsRequest: Boundary = {
-  actorClass: 'requirements_critical_auditor_judge',
-  judgeRole: 'requirements_critical_auditor',
-  schema: 'requirements-contract-critical-auditor-judge-request.schema.json',
+  schema: 'requirements-contract-judge-request.schema.json',
   code: 'requirements_judge_request_cross_role_field_forbidden',
   forbiddenSuffixes: REQUIREMENTS_FORBIDDEN,
 };
-const requirementsAssessment: Boundary = {
-  ...requirementsRequest,
-  schema: 'requirements-contract-critical-auditor-judge-assessment.schema.json',
-  code: 'requirements_judge_assessment_cross_role_field_forbidden',
-  assessment: true,
-};
-const finalRequest: Boundary = {
-  actorClass: 'final_acceptance_judge',
-  judgeRole: 'final_acceptance_judge',
-  schema: 'requirements-contract-final-acceptance-judge-request.schema.json',
-  code: 'final_acceptance_judge_request_cross_role_field_forbidden',
-  forbiddenSuffixes: FINAL_FORBIDDEN,
-  forbiddenVerdicts: REQUIREMENTS_VERDICTS,
-};
-const finalAssessment: Boundary = {
-  ...finalRequest,
-  schema: 'requirements-contract-final-acceptance-judge-assessment.schema.json',
-  code: 'final_acceptance_judge_assessment_cross_role_field_forbidden',
-  assessment: true,
+const requirementsResponse: Boundary = {
+  schema: 'requirements-contract-judge-response.schema.json',
+  code: 'requirements_judge_response_cross_role_field_forbidden',
+  forbiddenSuffixes: REQUIREMENTS_FORBIDDEN,
 };
 
 export const validateRequirementsJudgeRequest = (
   value: unknown,
   counters: RequirementsContractAuthorityCounters
-) => validateBoundary(value, counters, requirementsRequest);
-export const validateRequirementsJudgeAssessment = (
+) => validateRequestBoundary(value, counters, requirementsRequest);
+export const validateRequirementsJudgeResponse = (
   value: unknown,
   counters: RequirementsContractAuthorityCounters
-) => validateBoundary(value, counters, requirementsAssessment);
-export const validateFinalAcceptanceJudgeRequest = (
-  value: unknown,
-  counters: RequirementsContractAuthorityCounters
-) => validateBoundary(value, counters, finalRequest);
-export const validateFinalAcceptanceJudgeAssessment = (
-  value: unknown,
-  counters: RequirementsContractAuthorityCounters
-) => validateBoundary(value, counters, finalAssessment);
+) => validateResponseBoundary(value, counters, requirementsResponse);

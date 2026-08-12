@@ -19,9 +19,9 @@ import {
   runMainAgentControlledCloseout,
   runMainAgentControlledCloseoutCli,
   runMainAgentControlledCloseoutFromNativeHost,
-  runMainAgentJudgeReviewCampaign,
+  runMainAgentExecutionFinalJudgeCampaign,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
-import { compileRequirementsContractJudgeReviewCampaignInput } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-review-campaign-input';
+import { compileMainAgentExecutionFinalJudgeCampaignInput } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-execution-final-judge-campaign-input';
 
 const HASH = `sha256:${'1'.repeat(64)}`;
 const OTHER_HASH = `sha256:${'2'.repeat(64)}`;
@@ -147,7 +147,7 @@ function createStandaloneGoalCloseoutFixture() {
           taskReportCandidatePath: candidatePath,
           taskReportArtifactHash: candidateBytesHash,
         },
-        judgeReviewCampaign: {
+        executionFinalJudgeCampaign: {
           closeoutAttemptId,
           candidateBytesHash,
           aggregateHash: HASH,
@@ -519,10 +519,13 @@ describe('Main Agent governed Goal explicit legacy baseline', () => {
       expect(observedPrompt).toContain('Return only the structured final acceptance decision.');
       expect(observedPrompt).toContain('"judgeRole":"final_acceptance_judge"');
       expect(observedPrompt).toContain('"actorClass":"final_acceptance_judge"');
-      expect(fs.existsSync(path.join(outputRoot, 'judge-review-campaign-input.json'))).toBe(true);
-      expect(fs.existsSync(path.join(outputRoot, 'judge-review-campaign-aggregate.json'))).toBe(
-        true
-      );
+      expect(
+        fs.existsSync(path.join(outputRoot, 'execution-final-judge-campaign-input.json'))
+      ).toBe(true);
+      expect(
+        fs.existsSync(path.join(outputRoot, 'execution-final-judge-campaign-aggregate.json'))
+      ).toBe(true);
+      expect(fs.existsSync(path.join(outputRoot, 'judge-review-campaign-input.json'))).toBe(false);
       expect(result.effectivePassReceipt?.effectivePass).toBe(true);
 
       const repeated = await runMainAgentControlledCloseout(input);
@@ -718,7 +721,7 @@ describe('Main Agent governed Goal explicit legacy baseline', () => {
               contextHash: HASH,
               candidateBytesHash: HASH,
               producerReceipt: {},
-              judgeReviewCampaign: {},
+              executionFinalJudgeCampaign: {},
               effectivePassReceipt: {},
               deliveryGateReceipt: {},
               judgeStageStatusReceipt: null,
@@ -778,7 +781,7 @@ describe('Main Agent governed Goal explicit legacy baseline', () => {
               contextHash: HASH,
               candidateBytesHash: HASH,
               producerReceipt: {},
-              judgeReviewCampaign: {},
+              executionFinalJudgeCampaign: {},
               effectivePassReceipt: {},
               deliveryGateReceipt: {},
               judgeStageStatusReceipt: null,
@@ -815,7 +818,7 @@ describe('Main Agent governed Goal explicit legacy baseline', () => {
         receiptHash: HASH,
       },
       candidateBytes,
-      judgeReviewCampaign: {
+      executionFinalJudgeCampaign: {
         campaignId: 'dynamic-goal-campaign',
         closeoutAttemptId: 'closeout-attempt-001',
         candidateBytesHash,
@@ -823,7 +826,7 @@ describe('Main Agent governed Goal explicit legacy baseline', () => {
         aggregateHash: HASH,
       },
       effectivePassReceipt: {
-        schemaVersion: 'final-acceptance-effective-pass-receipt/v1',
+        schemaVersion: 'main-agent-execution-final-judge-effective-pass-receipt/v1',
         campaignId: 'dynamic-goal-campaign',
         effectivePass: true,
         closeoutAttemptId: 'closeout-attempt-001',
@@ -917,7 +920,7 @@ describe('Main Agent governed Goal explicit legacy baseline', () => {
   });
 
   it('turns a campaign-owned unavailable Final Judge into a resumable Main Agent stage receipt', async () => {
-    const campaignInput = compileRequirementsContractJudgeReviewCampaignInput({
+    const campaignInput = compileMainAgentExecutionFinalJudgeCampaignInput({
       campaignId: 'standalone-goal-dynamic-campaign',
       campaignLineageKey: stableHash({ kind: 'standalone-lineage' }),
       closureReceiptHash: stableHash({ kind: 'closure' }),
@@ -930,7 +933,7 @@ describe('Main Agent governed Goal explicit legacy baseline', () => {
     let reviewerCalls = 0;
     let finalJudgeCalls = 0;
 
-    const result = await runMainAgentJudgeReviewCampaign(
+    const result = await runMainAgentExecutionFinalJudgeCampaign(
       {
         campaignInput,
         finalAcceptanceState: {},
@@ -1011,7 +1014,7 @@ describe('Main Agent governed Goal explicit legacy baseline', () => {
       ],
     ] as const;
     for (const [providerError, sourceErrorCode, executionStatus] of failureCases) {
-      const campaignInput = compileRequirementsContractJudgeReviewCampaignInput({
+      const campaignInput = compileMainAgentExecutionFinalJudgeCampaignInput({
         campaignId: `provider-error-${sourceErrorCode}`,
         campaignLineageKey: stableHash({ sourceErrorCode, kind: 'lineage' }),
         closureReceiptHash: stableHash({ sourceErrorCode, kind: 'closure' }),
@@ -1021,7 +1024,7 @@ describe('Main Agent governed Goal explicit legacy baseline', () => {
         initialReviewAttemptKey: stableHash({ sourceErrorCode, kind: 'attempt' }),
         providerRef: 'gateway-managed-judge',
       });
-      const result = await runMainAgentJudgeReviewCampaign(
+      const result = await runMainAgentExecutionFinalJudgeCampaign(
         {
           campaignInput,
           finalAcceptanceState: {},
@@ -1191,7 +1194,7 @@ describe('Main Agent governed Goal explicit legacy baseline', () => {
         childClosureSetHash: HASH,
         campaignReportHash: HASH,
         closureReceiptHash: HASH,
-        judgeReviewCampaignHash: HASH,
+        executionFinalJudgeCampaignHash: HASH,
         effectivePassReceiptHash: HASH,
         deliveryCloseoutGateReceiptHash: HASH,
       };
@@ -1264,7 +1267,7 @@ describe('Main Agent governed Goal explicit legacy baseline', () => {
               taskReportCandidatePath: candidatePath,
               taskReportArtifactHash: candidateBytesHash,
             },
-            judgeReviewCampaign: {
+            executionFinalJudgeCampaign: {
               closeoutAttemptId,
               candidateBytesHash,
               aggregateHash: HASH,
@@ -1313,6 +1316,7 @@ describe('Main Agent governed Goal explicit legacy baseline', () => {
       });
 
       expect(result.ok).toBe(true);
+      expect(result.delegatedEntry).toBe('main-agent-controlled-closeout-confirmation');
       expect((result.stdout as Record<string, unknown>).status).toBe('done');
       expect(fs.readFileSync(finalTaskReportPath)).toEqual(candidateBytes);
       expect(JSON.parse(fs.readFileSync(completionReceiptPath, 'utf8'))).toMatchObject({
@@ -1328,6 +1332,19 @@ describe('Main Agent governed Goal explicit legacy baseline', () => {
       expect(resumed.ok).toBe(true);
       expect((resumed.stdout as Record<string, unknown>).status).toBe('done');
       expect(fs.readFileSync(finalTaskReportPath)).toEqual(candidateBytes);
+      const requirementsIngest = fs.readFileSync(
+        path.join(
+          process.cwd(),
+          '_bmad',
+          'skills',
+          'requirements-contract-authoring',
+          'scripts',
+          'ingest-confirmation-event.js'
+        ),
+        'utf8'
+      );
+      expect(requirementsIngest).not.toContain('controlledCloseoutRequest');
+      expect(requirementsIngest).not.toContain('executionFinalJudgeCampaignHash');
     } finally {
       fs.rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 });
     }

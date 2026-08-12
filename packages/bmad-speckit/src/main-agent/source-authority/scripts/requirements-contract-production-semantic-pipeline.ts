@@ -21,6 +21,7 @@ import {
   type RequirementsContractCheckpointManifest,
 } from './requirements-contract-authoring-manifest';
 import {
+  activeAuthoringAttemptPointerHash,
   publishActiveAuthoringAttemptPointer,
   type ActiveAuthoringAttemptPointer,
 } from './requirements-contract-active-authoring-attempt-pointer';
@@ -64,6 +65,8 @@ import {
   validateRequirementsContractInvocationAuthorityReceipt,
 } from './requirements-contract-invocation-authority-receipt';
 import { SOURCE_ROOT_CLASS_REGISTRY_HASH } from './requirements-contract-source-root-class-registry';
+import { validateRequirementsContractSemanticIr } from './requirements-contract-semantic-ir';
+import { validateRequirementsContractSourceBindingCapsule } from './requirements-contract-source-binding-capsule';
 import {
   preflightRequirementsContractSourceBindingRefresh,
   type RequirementsContractSourceBindingRefreshPreflight,
@@ -153,15 +156,23 @@ export function prepareRequirementsContractCp04FreezeStage(input: {
   sourceBinding: Record<string, unknown>;
   resolvedEvidenceIndex: Record<string, unknown>;
 }): RequirementsContractCp04FreezeStageResult {
-  const scopeSemanticHash = sha256Stable({
-    domain: 'requirements-contract-scope-semantic-hash/v1',
-    semanticIr: input.semanticIr,
-  });
+  const semanticValidation = validateRequirementsContractSemanticIr(input.semanticIr);
+  const canonicalSemanticIr = semanticValidation.decision === 'pass';
+  const scopeSemanticHash = canonicalSemanticIr
+    ? String(input.semanticIr.scopeSemanticHash)
+    : sha256Stable({
+        domain: 'requirements-contract-scope-semantic-hash/v1',
+        semanticIr: input.semanticIr,
+      });
   const semanticIdentity = {
     scopeSemanticHash,
-    semanticRevisionId: revisionId('semantic', scopeSemanticHash),
+    semanticRevisionId: canonicalSemanticIr
+      ? String(input.semanticIr.semanticRevisionId)
+      : revisionId('semantic', scopeSemanticHash),
   };
-  const semanticIr = { ...input.semanticIr, ...semanticIdentity };
+  const semanticIr = canonicalSemanticIr
+    ? input.semanticIr
+    : { ...input.semanticIr, ...semanticIdentity };
   const semanticIrFreeze = createRequirementsContractCoreArtifactFreeze({
     stage: 'cp04',
     artifactRole: 'semantic-ir',
@@ -173,16 +184,26 @@ export function prepareRequirementsContractCp04FreezeStage(input: {
   })) {
     throw new Error('requirements_cp04_semantic_ir_readback_mismatch');
   }
-  const sourceBindingPreimage = { ...input.sourceBinding, ...semanticIdentity };
-  const sourceBindingHash = sha256Stable({
-    domain: 'requirements-contract-source-binding-hash/v1',
-    sourceBinding: sourceBindingPreimage,
-  });
+  const bindingValidation = validateRequirementsContractSourceBindingCapsule(input.sourceBinding);
+  const canonicalSourceBinding = bindingValidation.decision === 'pass';
+  const sourceBindingPreimage = canonicalSourceBinding
+    ? input.sourceBinding
+    : { ...input.sourceBinding, ...semanticIdentity };
+  const sourceBindingHash = canonicalSourceBinding
+    ? String(input.sourceBinding.sourceBindingHash)
+    : sha256Stable({
+        domain: 'requirements-contract-source-binding-hash/v1',
+        sourceBinding: sourceBindingPreimage,
+      });
   const bindingIdentity = {
     sourceBindingHash,
-    bindingRevisionId: revisionId('binding', sourceBindingHash),
+    bindingRevisionId: canonicalSourceBinding
+      ? String(input.sourceBinding.bindingRevisionId)
+      : revisionId('binding', sourceBindingHash),
   };
-  const sourceBinding = { ...sourceBindingPreimage, ...bindingIdentity };
+  const sourceBinding = canonicalSourceBinding
+    ? input.sourceBinding
+    : { ...sourceBindingPreimage, ...bindingIdentity };
   const sourceBindingFreeze = createRequirementsContractCoreArtifactFreeze({
     stage: 'cp04',
     artifactRole: 'source-binding',
@@ -244,6 +265,7 @@ export function publishRequirementsContractCp04FreezeStage(input: {
   compareAndSwapAttemptPointer: Parameters<
     typeof publishActiveAuthoringAttemptPointer
   >[0]['compareAndSwap'];
+  deferAttemptPointerActivation?: boolean;
   onArtifactPhase?: (
     role: 'semantic-ir' | 'source-binding' | 'resolved-evidence-index',
     phase: AtomicNoClobberPhase
@@ -396,17 +418,24 @@ export function publishRequirementsContractCp04FreezeStage(input: {
     latestValidPredecessorCheckpoint: checkpointManifest.latestValidPredecessorCheckpoint,
     inputManifestHash: input.inputManifestHash,
   };
-  const attemptPointer = publishActiveAuthoringAttemptPointer({
-    pointer,
-    expectedCurrentPointerHash: input.expectedCurrentPointerHash,
-    readAttemptManifest(recordRelativePath) {
-      if (recordRelativePath !== relativePaths.checkpointManifest) {
-        throw new Error('requirements_cp04_checkpoint_manifest_path_mismatch');
+  const attemptPointer = input.deferAttemptPointerActivation
+    ? {
+        pointer,
+        pointerHash: activeAuthoringAttemptPointerHash(pointer),
+        readbackVerified: true as const,
+        deferred: true as const,
       }
-      return JSON.parse(readFileSync(paths.checkpointManifest, 'utf8'));
-    },
-    compareAndSwap: input.compareAndSwapAttemptPointer,
-  });
+    : publishActiveAuthoringAttemptPointer({
+        pointer,
+        expectedCurrentPointerHash: input.expectedCurrentPointerHash,
+        readAttemptManifest(recordRelativePath) {
+          if (recordRelativePath !== relativePaths.checkpointManifest) {
+            throw new Error('requirements_cp04_checkpoint_manifest_path_mismatch');
+          }
+          return JSON.parse(readFileSync(paths.checkpointManifest, 'utf8'));
+        },
+        compareAndSwap: input.compareAndSwapAttemptPointer,
+      });
   return {
     status: 'published' as const,
     paths,

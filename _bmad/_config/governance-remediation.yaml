@@ -34,6 +34,9 @@ judgeRuntime:
   schemaVersion: requirements-contract-judge-runtime/v1
   enabled: true
   activeProviderRef: local-codex-judge
+  promptConfig:
+    systemPromptPath: _bmad/shared/requirements-contract/judge-prompts/requirements-contract-critical-auditor.prompt.md
+    outputTokenReserve: 4096
   selectionPolicy:
     mode: contract_locked
     runtimeFallbackAllowed: false

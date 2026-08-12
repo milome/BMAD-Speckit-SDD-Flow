@@ -24,7 +24,6 @@ import {
   writeMainAgentRunLoopTaskReport,
   buildMainAgentCanonicalJudgeRunDispatch,
   executeCriticalAuditorJudgeAdapter,
-  resolveMainAgentJudgeReviewCampaignBridge,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import { runUnifiedIngressAsync } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-unified-ingress';
 import { mainImplementationReadinessGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate';
@@ -63,7 +62,6 @@ import {
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-implementation-confirmation-codec';
 import { prepareAuditDispatchRuntime } from './helpers/prompt-transaction-audit-dispatch-fixture';
 import type { ConfirmedRequirementsAuthorityProjection } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-confirmed-authority-projection';
-import type { RequirementsContractJudgeReviewCampaignJ06Output } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-review-campaign';
 import { compiledPromptRunnerFor } from './helpers/prompt-transaction-compiled-runner-fixture';
 import {
   materializePromptPublicationFixture,
@@ -125,12 +123,13 @@ function normalizeFixtureJudgeRuntimePolicy(root: string): void {
   const activeProviderRef = String(judgeRuntime.activeProviderRef ?? '');
   const providers = judgeRuntime.providers as Record<string, any>;
   const provider = providers[activeProviderRef] as Record<string, any>;
-  provider.requestPolicy = provider.requestPolicy ?? judgeRuntime.requestPolicy ?? {
-    timeoutMs: 1_800_000,
-    maximumAttempts: 1,
-    structuredResponseRequired: true,
-    maxBudgetUsd: 5,
-  };
+  provider.requestPolicy = provider.requestPolicy ??
+    judgeRuntime.requestPolicy ?? {
+      timeoutMs: 1_800_000,
+      maximumAttempts: 1,
+      structuredResponseRequired: true,
+      maxBudgetUsd: 5,
+    };
   delete judgeRuntime.requestPolicy;
   delete judgeRuntime.requirementsConvergence;
   writeFileSync(configPath, `${yaml.dump(config, { lineWidth: -1 })}\n`, 'utf8');
@@ -635,66 +634,59 @@ function writeConfirmedReadinessRecord(root: string): string {
 }
 
 describe('main-agent orchestration consumer', () => {
-  it('dispatches both Judge roles through the canonical judge run command', () => {
+  it('dispatches the Requirements Critical Auditor through the canonical judge run command', () => {
     const requestPath = 'requests/judge-request.json';
     const outputDir = 'out/judge-run';
-    const attempts = [
-      {
-        role: 'requirements_critical_auditor' as const,
-        attemptId: 'requirements-attempt-001',
+    const dispatch = buildMainAgentCanonicalJudgeRunDispatch({
+      projectRoot: 'repo',
+      config: '_bmad/_config/governance-remediation.yaml',
+      request: requestPath,
+      role: 'requirements_critical_auditor',
+      attemptId: 'requirements-attempt-001',
+      outputDir,
+      controlledDispatchRef: {
+        packetId: 'packet-requirements-critical-auditor',
+        packetKind: 'execution',
       },
-      {
-        role: 'final_acceptance_judge' as const,
-        attemptId: 'final-attempt-001',
-      },
-    ];
+    });
 
-    const dispatches = attempts.map((attempt) =>
+    expect(dispatch).toMatchObject({
+      schemaVersion: 'main-agent-canonical-judge-run-dispatch/v1',
+      command: 'bmad-speckit judge run',
+      role: 'requirements_critical_auditor',
+      roleInference: false,
+      directAdapterDispatch: false,
+      callerAuthorityInjection: false,
+      decision: 'pass',
+    });
+    expect(dispatch.argv).toEqual([
+      'judge',
+      'run',
+      '--project-root',
+      'repo',
+      '--config',
+      '_bmad/_config/governance-remediation.yaml',
+      '--request',
+      requestPath,
+      '--role',
+      'requirements_critical_auditor',
+      '--attempt-id',
+      'requirements-attempt-001',
+      '--output-dir',
+      outputDir,
+      '--json',
+    ]);
+    expect(() =>
       buildMainAgentCanonicalJudgeRunDispatch({
         projectRoot: 'repo',
         config: '_bmad/_config/governance-remediation.yaml',
         request: requestPath,
-        role: attempt.role,
-        attemptId: attempt.attemptId,
+        role: 'final_acceptance_judge' as never,
+        attemptId: 'final-attempt-001',
         outputDir,
-        controlledDispatchRef: {
-          packetId: `packet-${attempt.role}`,
-          packetKind: 'execution',
-        },
+        controlledDispatchRef: { packetId: 'packet-final', packetKind: 'execution' },
       })
-    );
-
-    expect(dispatches.map((dispatch) => dispatch.role)).toEqual([
-      'requirements_critical_auditor',
-      'final_acceptance_judge',
-    ]);
-    for (const dispatch of dispatches) {
-      expect(dispatch).toMatchObject({
-        schemaVersion: 'main-agent-canonical-judge-run-dispatch/v1',
-        command: 'bmad-speckit judge run',
-        roleInference: false,
-        directAdapterDispatch: false,
-        callerAuthorityInjection: false,
-        decision: 'pass',
-      });
-      expect(dispatch.argv).toEqual([
-        'judge',
-        'run',
-        '--project-root',
-        'repo',
-        '--config',
-        '_bmad/_config/governance-remediation.yaml',
-        '--request',
-        requestPath,
-        '--role',
-        dispatch.role,
-        '--attempt-id',
-        dispatch.attemptId,
-        '--output-dir',
-        outputDir,
-        '--json',
-      ]);
-    }
+    ).toThrow('main_agent_judge_run_role_explicit_required');
   });
 
   it('fails closed instead of dispatching the legacy Critical Auditor adapter helper', () => {
@@ -710,9 +702,11 @@ describe('main-agent orchestration consumer', () => {
           transport: 'cli',
           adapterRef: 'CodexCliJudgeAdapter',
           apiStyle: 'cli',
-          configuredBaseUrlHash: 'sha256:0000000000000000000000000000000000000000000000000000000000000000',
+          configuredBaseUrlHash:
+            'sha256:0000000000000000000000000000000000000000000000000000000000000000',
           independenceClass: 'different_provider_different_model',
-          providerRegistryHash: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+          providerRegistryHash:
+            'sha256:1111111111111111111111111111111111111111111111111111111111111111',
           providerConfigurationHash:
             'sha256:2222222222222222222222222222222222222222222222222222222222222222',
           transactionId: 'transaction-1',
@@ -727,176 +721,6 @@ describe('main-agent orchestration consumer', () => {
         },
       })
     ).toThrow('main_agent_judge_legacy_direct_adapter_forbidden');
-  });
-
-  it('bridges typed J03 and J05 Judge outputs without caller authority injection', () => {
-    const hash = (label: string) => sha256Text(label);
-    const requirementsAuthority = {
-      schemaVersion: 'requirements-contract-confirmed-authority-projection/v1',
-      requirementRecordId: 'REQ-001',
-      sourceSnapshotHash: hash('source'),
-      implementationConfirmationSemanticHash: hash('implementation-confirmation'),
-      controlledConfirmationEventHash: hash('confirmation-event'),
-      confirmedAuthorityIdentity: {
-        path: 'docs/requirements/source.md',
-        semanticHash: hash('identity-semantic'),
-        contentHash: hash('identity-content'),
-      },
-      RequirementsEffectivePassReceiptRef: {
-        path: 'receipts/requirements-effective-pass.json',
-        schemaVersion: 'requirements-effective-pass-receipt/v1',
-        receiptHash: hash('requirements-effective-pass'),
-        actorClass: 'requirements_critical_auditor_judge',
-        judgeRole: 'requirements_critical_auditor',
-        decision: 'pass',
-      },
-      writerId: 'requirements-confirmation-ingest',
-      controlReceiptHash: hash('control-receipt'),
-      authorityTupleHash: hash('authority-tuple'),
-      projectionHash: hash('projection'),
-    } satisfies ConfirmedRequirementsAuthorityProjection;
-    const judgeReviewCampaign = {
-      schemaVersion: 'requirements-contract-judge-review-campaign-j06-output/v1',
-      campaignId: 'goal-campaign-001',
-      campaignLineageKey: hash('lineage'),
-      initialReviewAttemptKey: hash('attempt'),
-      campaignInputHash: hash('campaign-input'),
-      controllerHash: hash('controller'),
-      cleanTrace: {
-        schemaVersion: 'requirements-contract-judge-review-campaign-j06-trace-output/v1',
-        campaignId: 'goal-campaign-001',
-        campaignLineageKey: hash('lineage'),
-        initialReviewAttemptKey: hash('attempt'),
-        mode: 'clean',
-        semanticInvocationCount: 2,
-        reviewerInvocationCount: 1,
-        finalJudgeInvocationCount: 1,
-        completeReceiptSet: true,
-        traceHash: hash('clean-trace'),
-        outputHash: hash('clean-output'),
-      },
-      remediatedTrace: {
-        schemaVersion: 'requirements-contract-judge-review-campaign-j06-trace-output/v1',
-        campaignId: 'goal-campaign-001',
-        campaignLineageKey: hash('lineage'),
-        initialReviewAttemptKey: hash('attempt'),
-        mode: 'remediated',
-        semanticInvocationCount: 3,
-        reviewerInvocationCount: 1,
-        finalJudgeInvocationCount: 2,
-        completeReceiptSet: true,
-        traceHash: hash('remediated-trace'),
-        outputHash: hash('remediated-output'),
-      },
-      cleanSemanticInvocationCount: 2,
-      remediatedSemanticInvocationCount: 3,
-      reviewerInvocationCount: 1,
-      secondReviewerPath: false,
-      outputHash: hash('j06-output'),
-    } satisfies RequirementsContractJudgeReviewCampaignJ06Output;
-
-    const bridge = resolveMainAgentJudgeReviewCampaignBridge({
-      roleInput: 'requirements_judge',
-      confirmedRequirementsAuthority: requirementsAuthority,
-      judgeReviewCampaign,
-      controlledDispatchRef: {
-        packetId: 'packet-001',
-        packetKind: 'execution',
-        route: 'implementation-worker',
-      },
-    });
-
-    expect(bridge.requirementsAuthorityTupleHash).toBe(requirementsAuthority.authorityTupleHash);
-    expect(bridge.judgeReviewCampaignOutputHash).toBe(judgeReviewCampaign.outputHash);
-    expect(bridge.directAdapterDispatch).toBe(false);
-    expect(bridge.roleInference).toBe(false);
-    expect(bridge.callerAuthorityInjection).toBe(false);
-    expect(bridge.decision).toBe('pass');
-  });
-
-  it('rejects caller verdicts, findings, scope, EffectivePass, and direct adapter dispatch', () => {
-    const hash = (label: string) => sha256Text(label);
-    const valid = {
-      roleInput: 'requirements_judge',
-      confirmedRequirementsAuthority: {
-        schemaVersion: 'requirements-contract-confirmed-authority-projection/v1',
-        requirementRecordId: 'REQ-001',
-        sourceSnapshotHash: hash('source'),
-        implementationConfirmationSemanticHash: hash('implementation-confirmation'),
-        controlledConfirmationEventHash: hash('confirmation-event'),
-        confirmedAuthorityIdentity: {
-          path: 'docs/requirements/source.md',
-          semanticHash: hash('identity-semantic'),
-          contentHash: hash('identity-content'),
-        },
-        RequirementsEffectivePassReceiptRef: {
-          path: 'receipts/requirements-effective-pass.json',
-          schemaVersion: 'requirements-effective-pass-receipt/v1',
-          receiptHash: hash('requirements-effective-pass'),
-          actorClass: 'requirements_critical_auditor_judge',
-          judgeRole: 'requirements_critical_auditor',
-          decision: 'pass',
-        },
-        writerId: 'requirements-confirmation-ingest',
-        controlReceiptHash: hash('control-receipt'),
-        authorityTupleHash: hash('authority-tuple'),
-        projectionHash: hash('projection'),
-      },
-      judgeReviewCampaign: {
-        schemaVersion: 'requirements-contract-judge-review-campaign-j06-output/v1',
-        campaignId: 'goal-campaign-001',
-        campaignLineageKey: hash('lineage'),
-        initialReviewAttemptKey: hash('attempt'),
-        campaignInputHash: hash('campaign-input'),
-        controllerHash: hash('controller'),
-        cleanTrace: {
-          schemaVersion: 'requirements-contract-judge-review-campaign-j06-trace-output/v1',
-          campaignId: 'goal-campaign-001',
-          campaignLineageKey: hash('lineage'),
-          initialReviewAttemptKey: hash('attempt'),
-          mode: 'clean',
-          semanticInvocationCount: 2,
-          reviewerInvocationCount: 1,
-          finalJudgeInvocationCount: 1,
-          completeReceiptSet: true,
-          traceHash: hash('clean-trace'),
-          outputHash: hash('clean-output'),
-        },
-        remediatedTrace: {
-          schemaVersion: 'requirements-contract-judge-review-campaign-j06-trace-output/v1',
-          campaignId: 'goal-campaign-001',
-          campaignLineageKey: hash('lineage'),
-          initialReviewAttemptKey: hash('attempt'),
-          mode: 'remediated',
-          semanticInvocationCount: 3,
-          reviewerInvocationCount: 1,
-          finalJudgeInvocationCount: 2,
-          completeReceiptSet: true,
-          traceHash: hash('remediated-trace'),
-          outputHash: hash('remediated-output'),
-        },
-        cleanSemanticInvocationCount: 2,
-        remediatedSemanticInvocationCount: 3,
-        reviewerInvocationCount: 1,
-        secondReviewerPath: false,
-        outputHash: hash('j06-output'),
-      },
-      controlledDispatchRef: {
-        packetId: 'packet-001',
-        packetKind: 'execution',
-        route: 'implementation-worker',
-      },
-    };
-
-    expect(() =>
-      resolveMainAgentJudgeReviewCampaignBridge({ ...valid, callerVerdict: 'pass' })
-    ).toThrow('main_agent_judge_bridge_caller_authority_injection');
-    expect(() =>
-      resolveMainAgentJudgeReviewCampaignBridge({ ...valid, directAdapterDispatch: true })
-    ).toThrow('main_agent_judge_bridge_direct_adapter_forbidden');
-    expect(() =>
-      resolveMainAgentJudgeReviewCampaignBridge({ ...valid, roleInput: null })
-    ).toThrow('main_agent_judge_bridge_role_explicit_required');
   });
 
   it('keeps audit finalization bound to the gate-owned commit snapshot', () => {
@@ -922,7 +746,10 @@ describe('main-agent orchestration consumer', () => {
     expect(finalizerSource).toContain('markAuditControlledFinalizationCommitted');
 
     const runLoopStart = source.indexOf('export function runMainAgentAutomaticLoop(');
-    const dispatchStart = source.indexOf('const instruction = buildMainAgentDispatchInstruction(', runLoopStart);
+    const dispatchStart = source.indexOf(
+      'const instruction = buildMainAgentDispatchInstruction(',
+      runLoopStart
+    );
     expect(runLoopStart).toBeGreaterThanOrEqual(0);
     expect(dispatchStart).toBeGreaterThan(runLoopStart);
     const preDispatchSource = source.slice(runLoopStart, dispatchStart);
@@ -990,10 +817,7 @@ describe('main-agent orchestration consumer', () => {
     expect(projectRootRead).toBe(false);
   });
 
-  it.each([
-    'auditJudgeAdapterCommand',
-    'auditReadonlyAuditorAdapterCommand',
-  ] as const)(
+  it.each(['auditJudgeAdapterCommand', 'auditReadonlyAuditorAdapterCommand'] as const)(
     'rejects production audit process command override %s before runtime inspection',
     (argumentName) => {
       const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-audit-command-override-'));
@@ -1043,9 +867,7 @@ describe('main-agent orchestration consumer', () => {
         'contract_authoring_required',
       ]);
       expect(stageSummary.nextAction).toBe('contract_authoring_required');
-      expect(stageSummary.nextAction).not.toBe(
-        'run_implementation_readiness_gate'
-      );
+      expect(stageSummary.nextAction).not.toBe('run_implementation_readiness_gate');
       expect(surface.diagnostics[0]).toMatchObject({
         category: 'active_requirement',
         repairAction: 'contract_authoring_required',
@@ -1278,9 +1100,7 @@ describe('main-agent orchestration consumer', () => {
       ).not.toBeNull();
       expect(result.dispatchInstruction!.nextAction).toBe('dispatch_implement');
       expect(result.taskReport?.status).toBe('blocked');
-      expect(result.taskReport?.driftFlags).toContain(
-        'required-command-receipt-validation-failed'
-      );
+      expect(result.taskReport?.driftFlags).toContain('required-command-receipt-validation-failed');
       expect(result.finalSurface.mainAgentNextAction).not.toBe('dispatch_review');
       expect(result.finalSurface.diagnostics.map((item) => item.category)).not.toContain(
         'repairable_readiness_audit_required'
@@ -2099,10 +1919,7 @@ describe('main-agent orchestration consumer', () => {
         roundIndex: 1,
       });
       const roundDir = path.dirname(requestPath);
-      const hostReceiptPath = path.join(
-        roundDir,
-        'readonly-auditor-host-invocation-receipt.json'
-      );
+      const hostReceiptPath = path.join(roundDir, 'readonly-auditor-host-invocation-receipt.json');
       expect(existsSync(hostReceiptPath)).toBe(true);
       expect(JSON.parse(readFileSync(hostReceiptPath, 'utf8'))).toMatchObject({
         schemaVersion: 'audit-readonly-auditor-host-invocation-receipt/v1',
@@ -2194,10 +2011,7 @@ describe('main-agent orchestration consumer', () => {
           'round-1'
         );
         const hostReceipt = JSON.parse(
-          readFileSync(
-            path.join(roundDir, 'readonly-auditor-host-invocation-receipt.json'),
-            'utf8'
-          )
+          readFileSync(path.join(roundDir, 'readonly-auditor-host-invocation-receipt.json'), 'utf8')
         );
         expect(hostReceipt).toMatchObject({
           schemaVersion: 'audit-readonly-auditor-host-invocation-receipt/v1',
@@ -2206,9 +2020,9 @@ describe('main-agent orchestration consumer', () => {
           responseProduced: false,
           failureCode: 'audit_readonly_auditor_adapter_failed',
         });
-        expect(
-          readFileSync(path.join(roundDir, 'readonly-auditor-host.stderr.log'), 'utf8')
-        ).toBe('readonly-auditor-js-entry-reached');
+        expect(readFileSync(path.join(roundDir, 'readonly-auditor-host.stderr.log'), 'utf8')).toBe(
+          'readonly-auditor-js-entry-reached'
+        );
         expect(existsSync(path.join(roundDir, 'readonly-auditor-response.json'))).toBe(false);
         expect(existsSync(path.join(roundDir, 'judge-request.json'))).toBe(false);
       } finally {
@@ -2316,8 +2130,9 @@ describe('main-agent orchestration consumer', () => {
             }
           }
           inspectSchema(record.items, `${nodePath}.items`);
-          for (const [index, variant] of (
-            Array.isArray(record.anyOf) ? record.anyOf : []
+          for (const [index, variant] of (Array.isArray(record.anyOf)
+            ? record.anyOf
+            : []
           ).entries()) {
             inspectSchema(variant, `${nodePath}.anyOf[${index}]`);
           }
@@ -2707,8 +2522,7 @@ describe('main-agent orchestration consumer', () => {
         stage: 'implement',
         host: 'codex' as const,
         args: {
-          auditReadonlyAuditorAdapterCommand:
-            auditAdapters.readonlyAuditorAdapterCommand,
+          auditReadonlyAuditorAdapterCommand: auditAdapters.readonlyAuditorAdapterCommand,
           auditJudgeAdapterCommand: auditAdapters.judgeAdapterCommand,
         },
       };
@@ -2743,15 +2557,15 @@ describe('main-agent orchestration consumer', () => {
         })
       );
       expect(result.finalSurface.mainAgentNextAction).toBe('dispatch_remediation');
-      expect(readOrchestrationState(fixture.root, result.dispatchInstruction!.sessionId)).toMatchObject(
-        {
-          nextAction: 'dispatch_remediation',
-          lastTaskReport: {
-            packetId: result.dispatchInstruction?.packetId,
-            status: 'blocked',
-          },
-        }
-      );
+      expect(
+        readOrchestrationState(fixture.root, result.dispatchInstruction!.sessionId)
+      ).toMatchObject({
+        nextAction: 'dispatch_remediation',
+        lastTaskReport: {
+          packetId: result.dispatchInstruction?.packetId,
+          status: 'blocked',
+        },
+      });
       expect(feedback).toMatchObject({
         schemaVersion: 'audit-repair-feedback-dispatch/v1',
         recordId: plan.recordId,
@@ -2774,7 +2588,14 @@ describe('main-agent orchestration consumer', () => {
         dispatchHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
       });
       expect(
-        existsSync(path.join(path.dirname(planRef.path), 'rounds', 'round-2', 'readonly-auditor-request.json'))
+        existsSync(
+          path.join(
+            path.dirname(planRef.path),
+            'rounds',
+            'round-2',
+            'readonly-auditor-request.json'
+          )
+        )
       ).toBe(false);
       expect(existsSync(path.join(roundDir, 'main-agent-repair-receipt.json'))).toBe(false);
 
@@ -2951,9 +2772,7 @@ describe('main-agent orchestration consumer', () => {
       const nextAuditPacket = JSON.parse(
         readFileSync(nextAuditInstruction!.packetPath, 'utf8')
       ) as ExecutionPacket;
-      expect(
-        readOrchestrationState(fixture.root, nextAuditInstruction!.sessionId)
-      ).toMatchObject({
+      expect(readOrchestrationState(fixture.root, nextAuditInstruction!.sessionId)).toMatchObject({
         nextAction: 'dispatch_review',
         pendingPacket: {
           packetId: nextAuditInstruction?.packetId,
@@ -3011,17 +2830,15 @@ describe('main-agent orchestration consumer', () => {
       const postRepairLoopInput = {
         ...loopInput,
         args: {
-          auditReadonlyAuditorAdapterCommand:
-            postRepairAdapters.readonlyAuditorAdapterCommand,
+          auditReadonlyAuditorAdapterCommand: postRepairAdapters.readonlyAuditorAdapterCommand,
           auditJudgeAdapterCommand: postRepairAdapters.judgeAdapterCommand,
         },
       };
       const nextAuditStart = runMainAgentAutomaticLoop(postRepairLoopInput);
       expect(nextAuditStart.status).toBe('blocked');
-      expect(
-        existsSync(nextAuditRequestPath),
-        JSON.stringify(nextAuditStart.steps, null, 2)
-      ).toBe(true);
+      expect(existsSync(nextAuditRequestPath), JSON.stringify(nextAuditStart.steps, null, 2)).toBe(
+        true
+      );
       expect(JSON.parse(readFileSync(nextAuditRequestPath, 'utf8'))).toMatchObject({
         auditEpochId: nextAuditPacket.auditExecutionProfile?.auditEpochId,
         priorRepairReceiptRefs: [
@@ -3033,11 +2850,11 @@ describe('main-agent orchestration consumer', () => {
       });
 
       const nextAuditPlanRef = nextAuditPacket.auditTriadExecutionPlanRef!;
-      const nextAuditPlan = JSON.parse(
-        readFileSync(nextAuditPlanRef.path, 'utf8')
-      ) as Record<string, any>;
-      const requiredPostRepairRounds =
-        nextAuditPlan.roundPolicy.consecutiveNoGapRoundsRequired;
+      const nextAuditPlan = JSON.parse(readFileSync(nextAuditPlanRef.path, 'utf8')) as Record<
+        string,
+        any
+      >;
+      const requiredPostRepairRounds = nextAuditPlan.roundPolicy.consecutiveNoGapRoundsRequired;
       expect(
         existsSync(
           path.join(
@@ -3049,11 +2866,7 @@ describe('main-agent orchestration consumer', () => {
         )
       ).toBe(requiredPostRepairRounds > 1);
       let postRepairLoop = nextAuditStart;
-      for (
-        let roundIndex = 2;
-        roundIndex <= requiredPostRepairRounds;
-        roundIndex += 1
-      ) {
+      for (let roundIndex = 2; roundIndex <= requiredPostRepairRounds; roundIndex += 1) {
         postRepairLoop = runMainAgentAutomaticLoop(postRepairLoopInput);
         if (roundIndex < requiredPostRepairRounds) {
           expect(
@@ -3080,10 +2893,7 @@ describe('main-agent orchestration consumer', () => {
         }
       }
 
-      const postRepairJudgeRuns = readFileSync(
-        postRepairAdapters.judgeInvocationLogPath,
-        'utf8'
-      )
+      const postRepairJudgeRuns = readFileSync(postRepairAdapters.judgeInvocationLogPath, 'utf8')
         .trim()
         .split(/\r?\n/u)
         .filter(Boolean)
@@ -3196,8 +3006,7 @@ describe('main-agent orchestration consumer', () => {
         stage: 'implement',
         host: 'codex' as const,
         args: {
-          auditReadonlyAuditorAdapterCommand:
-            auditAdapters.readonlyAuditorAdapterCommand,
+          auditReadonlyAuditorAdapterCommand: auditAdapters.readonlyAuditorAdapterCommand,
           auditJudgeAdapterCommand: auditAdapters.judgeAdapterCommand,
         },
       };
@@ -3257,9 +3066,9 @@ describe('main-agent orchestration consumer', () => {
           status: 'pass',
         })
       );
-      expect(
-        existsSync(path.join(path.dirname(planRef.path), 'audit-review-report.json'))
-      ).toBe(true);
+      expect(existsSync(path.join(path.dirname(planRef.path), 'audit-review-report.json'))).toBe(
+        true
+      );
       expect(
         existsSync(
           path.join(
@@ -3780,8 +3589,7 @@ describe('main-agent orchestration consumer', () => {
                 status: 'user_accepted_closeout',
                 closeoutAttemptId,
                 htmlPath: 'confirmation/closeout-confirmation-current.html',
-                renderReportPath:
-                  'confirmation/closeout-confirmation-current.render-report.json',
+                renderReportPath: 'confirmation/closeout-confirmation-current.render-report.json',
                 closeoutConfirmationPageHash,
                 deliveryCloseoutReportHash,
                 acceptedAt,
@@ -3803,8 +3611,7 @@ describe('main-agent orchestration consumer', () => {
               closeoutAttemptId,
               closeoutConfirmationPageHash,
               deliveryCloseoutReportHash,
-              renderReportPath:
-                'confirmation/closeout-confirmation-current.render-report.json',
+              renderReportPath: 'confirmation/closeout-confirmation-current.render-report.json',
             },
             closeoutAcceptanceHistory: [
               {
@@ -3818,8 +3625,7 @@ describe('main-agent orchestration consumer', () => {
                 closeoutAttemptId,
                 closeoutConfirmationPageHash,
                 deliveryCloseoutReportHash,
-                renderReportPath:
-                  'confirmation/closeout-confirmation-current.render-report.json',
+                renderReportPath: 'confirmation/closeout-confirmation-current.render-report.json',
                 htmlPath: 'confirmation/closeout-confirmation-current.html',
                 machineCloseoutEventType: 'record_closed',
                 beforeRecordHash: `sha256:${'a'.repeat(64)}`,

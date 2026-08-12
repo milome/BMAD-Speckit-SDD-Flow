@@ -386,7 +386,14 @@ describe('requirements contract package runtime action binding', () => {
       'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-command.ts'
     );
     expect(judgeRun.semanticGate.sourceSymbol).toBe('requirementsContractJudgeRunCommand');
-    expect(judgeRun.inputSchemaRefs.map((ref) => ref.path)).toEqual(
+    const judgeRunInputSchemaPaths = judgeRun.inputSchemaRefs.map((ref) => ref.path);
+    expect(judgeRunInputSchemaPaths).toEqual([
+      'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-request.schema.json',
+      'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-selection-receipt.schema.json',
+      'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-runtime.schema.json',
+      'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-credentials.schema.json',
+    ]);
+    expect(judgeRunInputSchemaPaths).not.toEqual(
       expect.arrayContaining([
         'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-critical-auditor-judge-request.schema.json',
         'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-final-acceptance-judge-request.schema.json',
@@ -394,15 +401,15 @@ describe('requirements contract package runtime action binding', () => {
         'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-invocation-readiness-receipt.schema.json',
       ])
     );
-    expect(judgeRun.outputSchemaRefs.map((ref) => ref.path)).toContain(
-      'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-cli-judge-execution-receipt.schema.json'
-    );
-    expect(judgeRun.outputSchemaRefs.map((ref) => ref.path)).toContain(
-      'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-invocation-receipt.schema.json'
-    );
+    expect(judgeRun.outputSchemaRefs.map((ref) => ref.path)).toEqual([
+      'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-response.schema.json',
+    ]);
     expect(judgeRun.runtimeRefs).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ role: 'legacy-critical-auditor-judge-adapter' }),
+        expect.objectContaining({ role: 'judge-credential-resolver' }),
+        expect.objectContaining({ role: 'judge-provider-registry' }),
+        expect.objectContaining({ role: 'openai-compatible-judge-adapter' }),
+        expect.objectContaining({ role: 'anthropic-compatible-judge-adapter' }),
         expect.objectContaining({ role: 'claude-code-cli-judge-adapter' }),
         expect.objectContaining({ role: 'codex-cli-judge-adapter' }),
       ])

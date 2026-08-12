@@ -247,6 +247,14 @@ async function judge(input: AdapterInput): Promise<unknown> {
   } catch {
     throw new Error('judge_adapter_response_schema_invalid');
   }
+  if (
+    decoded &&
+    typeof decoded === 'object' &&
+    !Array.isArray(decoded) &&
+    (decoded as JsonRecord).schemaVersion === 'requirements-contract-judge-response/v2'
+  ) {
+    return decoded;
+  }
   const normalized = structuredDecision(decoded);
   const providerRef = input.providerRef ?? provider.providerRef;
   if (typeof providerRef !== 'string' || providerRef.length === 0) {

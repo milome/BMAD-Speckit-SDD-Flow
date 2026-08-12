@@ -287,23 +287,22 @@ describe('requirements contract source binding refresh', () => {
       const firstPointer = readJson<ActiveAuthoringAttemptPointer>(pointerPath);
       const firstManifestPath = path.join(recordRoot, ...firstPointer.attemptManifestPath.split('/'));
       const firstManifest = readJson<Record<string, any>>(firstManifestPath);
-      const firstSemanticEntry = firstManifest.artifactEntries.find(
-        (entry: Record<string, unknown>) => entry.role === 'semantic_ir'
-      );
-      const firstBindingEntry = firstManifest.artifactEntries.find(
-        (entry: Record<string, unknown>) => entry.role === 'source_binding'
+      expect(firstManifest.checkpointId).toBe('cp08');
+      const requirementRecord = readJson<Record<string, any>>(
+        path.join(recordRoot, 'record', 'requirement-record.json')
       );
       const firstSemanticPath = path.join(
         recordRoot,
-        ...String(firstSemanticEntry.recordRelativePath).split('/')
+        ...String(requirementRecord.activeAuthority.activeSemanticIrPath).split('/')
       );
       const firstBindingPath = path.join(
         recordRoot,
-        ...String(firstBindingEntry.recordRelativePath).split('/')
+        ...String(requirementRecord.activeAuthority.activeSourceBindingPath).split('/')
       );
       const firstSemanticBytes = readFileSync(firstSemanticPath);
       const firstBindingBytes = readFileSync(firstBindingPath);
       const firstManifestBytes = readFileSync(firstManifestPath);
+      const firstAuthority = requirementRecord.activeAuthority as Record<string, string>;
 
       writeFileSync(authorityPath, `${JSON.stringify(authority, null, 2)}\n`, 'utf8');
       const resume = runAction('resume-author-confirmation-ready-source', [
@@ -319,39 +318,39 @@ describe('requirements contract source binding refresh', () => {
       });
       expect(resumeEnvelope.data.authoringAttemptId).not.toBe(firstAttemptId);
       const refreshedPointer = readJson<ActiveAuthoringAttemptPointer>(pointerPath);
-      expect(refreshedPointer.authoringAttemptId).toBe(resumeEnvelope.data.authoringAttemptId);
-      const refreshedManifestPath = path.join(
-        recordRoot,
-        ...refreshedPointer.attemptManifestPath.split('/')
+      expect(refreshedPointer).toEqual(firstPointer);
+      const refreshedRecord = readJson<Record<string, any>>(
+        path.join(recordRoot, 'record', 'requirement-record.json')
       );
-      const refreshedManifest = readJson<Record<string, any>>(refreshedManifestPath);
-      const refreshedSemanticEntry = refreshedManifest.artifactEntries.find(
-        (entry: Record<string, unknown>) => entry.role === 'semantic_ir'
-      );
-      const refreshedBindingEntry = refreshedManifest.artifactEntries.find(
-        (entry: Record<string, unknown>) => entry.role === 'source_binding'
-      );
-      const refreshedIndexEntry = refreshedManifest.artifactEntries.find(
-        (entry: Record<string, unknown>) => entry.role === 'resolved_evidence_index'
-      );
+      const refreshedAuthority = refreshedRecord.activeAuthority as Record<string, string>;
       const refreshedBindingPath = path.join(
         recordRoot,
-        ...String(refreshedBindingEntry.recordRelativePath).split('/')
+        ...String(refreshedAuthority.activeSourceBindingPath).split('/')
       );
       const refreshedBindingDir = path.dirname(refreshedBindingPath);
-      expect(refreshedSemanticEntry.recordRelativePath).toBe(firstSemanticEntry.recordRelativePath);
+      expect(refreshedAuthority).toMatchObject({
+        activeSemanticRevisionId: firstAuthority.activeSemanticRevisionId,
+        activeSemanticIrPath: firstAuthority.activeSemanticIrPath,
+        activeScopeSemanticHash: firstAuthority.activeScopeSemanticHash,
+        activeAuthoringAttemptId: firstAuthority.activeAuthoringAttemptId,
+        activeBuildManifestPath: firstAuthority.activeBuildManifestPath,
+        activeBuildManifestHash: firstAuthority.activeBuildManifestHash,
+      });
+      expect(refreshedAuthority.activeBindingRevisionId)
+        .not.toBe(firstAuthority.activeBindingRevisionId);
+      expect(refreshedAuthority.activeSourceBindingPath)
+        .not.toBe(firstAuthority.activeSourceBindingPath);
+      expect(refreshedAuthority.activeSourceBindingHash)
+        .not.toBe(firstAuthority.activeSourceBindingHash);
       expect(readFileSync(firstSemanticPath)).toEqual(firstSemanticBytes);
-      expect(refreshedBindingEntry.recordRelativePath).not.toBe(firstBindingEntry.recordRelativePath);
-      expect(refreshedIndexEntry.recordRelativePath).toContain(
-        String(refreshedBindingEntry.artifactId)
-      );
       expect(existsSync(path.join(
         refreshedBindingDir,
         'source-binding-refresh-receipt.json'
       ))).toBe(true);
       expect(readFileSync(firstBindingPath)).toEqual(firstBindingBytes);
       expect(readFileSync(firstManifestPath)).toEqual(firstManifestBytes);
-      expect(refreshedManifestPath).not.toBe(firstManifestPath);
+      expect(refreshedPointer.attemptManifestPath).toBe(firstPointer.attemptManifestPath);
+      expect(refreshedPointer.attemptManifestHash).toBe(firstPointer.attemptManifestHash);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

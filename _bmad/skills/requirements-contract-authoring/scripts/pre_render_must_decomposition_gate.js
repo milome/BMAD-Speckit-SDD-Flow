@@ -468,7 +468,9 @@ function validatePrepublicationAttempt(input) {
     return prepublicationFailureReport({ sourcePath, recordRoot, pointerPath, blockingIssues });
   }
   const sourceBefore = fs.readFileSync(sourcePath);
-  const pointerRead = readJsonSafe(pointerPath);
+  const pointerRead = input.attemptPointer
+    ? { ok: true, value: input.attemptPointer }
+    : readJsonSafe(pointerPath);
   if (!pointerRead.ok) {
     blockingIssues.push(
       prepublicationIssue(

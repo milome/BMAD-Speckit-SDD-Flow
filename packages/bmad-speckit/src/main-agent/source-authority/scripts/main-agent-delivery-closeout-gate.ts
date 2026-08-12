@@ -190,7 +190,7 @@ export function evaluateControlledGoalCloseoutGate(input: JsonObject) {
   const contextHash = text(input.contextHash);
   const taskReportArtifactHash = text(input.taskReportArtifactHash);
   const closure = input.closureReceipt as JsonObject | undefined;
-  const campaign = input.judgeReviewCampaign as JsonObject | undefined;
+  const campaign = input.executionFinalJudgeCampaign as JsonObject | undefined;
   const effectivePass = input.effectivePassReceipt as JsonObject | undefined;
   if (
     !closeoutAttemptId ||
@@ -219,7 +219,7 @@ export function evaluateControlledGoalCloseoutGate(input: JsonObject) {
     contextHash,
     taskReportArtifactHash,
     closureReceiptHash: text(closure.receiptHash),
-    judgeReviewCampaignHash: text(campaign.aggregateHash),
+    executionFinalJudgeCampaignHash: text(campaign.aggregateHash),
     effectivePassReceiptHash: text(effectivePass.effectivePassReceiptHash),
   });
 }

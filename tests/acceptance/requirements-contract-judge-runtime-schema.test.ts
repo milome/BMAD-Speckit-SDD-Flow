@@ -257,6 +257,12 @@ describe.runIf(Object.values(schemaFiles).every((name) => existsSync(path.join(s
       };
 
       expect(validate(base), JSON.stringify(validate.errors)).toBe(true);
+      const retryEnabled = structuredClone(base);
+      retryEnabled.providers[providerRef].requestPolicy.maximumAttempts = 2;
+      expect(validate(retryEnabled), JSON.stringify(validate.errors)).toBe(true);
+      const retryDisabled = structuredClone(base);
+      retryDisabled.providers[providerRef].requestPolicy.maximumAttempts = 0;
+      expect(validate(retryDisabled)).toBe(false);
       const explicitNull = structuredClone(base);
       explicitNull.providers[providerRef].model = null;
       expect(validate(explicitNull), JSON.stringify(validate.errors)).toBe(true);

@@ -102,7 +102,18 @@ function publicationReadyFixture() {
     mandatoryDimensionIds: [...REQUIREMENTS_CONTRACT_PREPUBLICATION_DIMENSIONS],
     lineageNodes: [lineageNode],
     authorityResolutions: [authorityResolution],
+    artifactPayloadGroups: applicableArtifactIds.map((artifactId) => ({
+      artifactIds: [artifactId],
+      payload: { artifactId, semanticRevisionId: semanticIr.semanticRevisionId },
+    })),
   };
+  const auditPacket = {
+    schemaVersion: 'requirements-contract-judge-audit-packet/v1',
+    semanticRevisionId: semanticIr.semanticRevisionId,
+    scopeSemanticHash: semanticIr.scopeSemanticHash,
+    body: packetBody,
+  };
+  const serializedBytes = Buffer.byteLength(JSON.stringify(auditPacket), 'utf8');
   return {
     activeAuthoringAttemptPointer: {
       schemaVersion: 'ActiveAuthoringAttemptPointer/v1',
@@ -146,9 +157,8 @@ function publicationReadyFixture() {
       providerInvocationCount: 0,
       committerInvocationCount: 0,
       renderedRequirementIds: ['MUST-001'],
-      auditPacketSerializedBytes: 2048,
     },
-    auditPacket: { body: packetBody },
+    auditPacket,
     coverageManifest: {
       requirementIds: packetBody.requirementIds,
       artifactIds: packetBody.artifactIds,
@@ -159,7 +169,7 @@ function publicationReadyFixture() {
     mandatoryDimensionRegistry: {
       dimensionIds: [...REQUIREMENTS_CONTRACT_PREPUBLICATION_DIMENSIONS],
     },
-    payloadObservation: { serializedBytes: 2048 },
+    payloadObservation: { serializedBytes },
     finalBuildManifestInputs: ['cp08-snapshot', 'audit-packet'],
   };
 }
@@ -219,14 +229,17 @@ describe('checkpoint-specific projection lint', () => {
         validateRequirementsContractPublicationReady({ ...base, [forbidden]: {} }).issueCodes
       ).toContain(`requirements_publication_ready_task4_field_forbidden:${forbidden}`);
     }
+    const largePacket = structuredClone(base.auditPacket);
+    largePacket.body.artifactPayloadGroups[0].payload = {
+      body: '批量退款审批'.repeat(400_000),
+    };
+    const largePacketBytes = Buffer.byteLength(JSON.stringify(largePacket), 'utf8');
+    expect(largePacketBytes).toBeGreaterThan(2 * 1024 * 1024);
     expect(
       validateRequirementsContractPublicationReady({
         ...base,
-        payloadObservation: { serializedBytes: 32 * 1024 * 1024 },
-        renderabilityProbeReport: {
-          ...base.renderabilityProbeReport,
-          auditPacketSerializedBytes: 32 * 1024 * 1024,
-        },
+        auditPacket: largePacket,
+        payloadObservation: { serializedBytes: largePacketBytes },
       })
     ).toMatchObject({ decision: 'pass', providerInvocationCount: 0, committerInvocationCount: 0 });
   });

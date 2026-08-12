@@ -462,13 +462,6 @@ const CONSUMER_DEFINITIONS: readonly ConsumerDefinition[] = [
     supportedModes: ['confirmation-ready'],
   },
   {
-    consumerId: 'critical-auditor-judge-adapter',
-    fileName: 'requirements-contract-critical-auditor-judge-adapter.ts',
-    inputRole: 'critical_auditor_round_request',
-    supportedModes: ['confirmation-ready', 'execution', 'closeout'],
-    validatorRef: 'requirements-contract-critical-auditor-external-adapter-result.schema.json',
-  },
-  {
     consumerId: 'requirements-contract-reverse-audit',
     fileName: 'requirements-contract-reverse-audit.ts',
     inputRole: 'canonical_reverse_audit',
@@ -675,6 +668,7 @@ export const REQUIREMENTS_CONTRACT_PRODUCTION_SEMANTIC_SOURCE_PATHS = [
   '_bmad/skills/requirements-contract-authoring/scripts/reverse_audit_contract.js',
   '_bmad/skills/requirements-contract-authoring/scripts/run_semantic_checkpoints.js',
   '_bmad/skills/requirements-contract-authoring/scripts/target_modification_path_coverage.js',
+  'packages/bmad-speckit/src/main-agent/actions/source-authority-orchestration.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-discovery-envelope-registry.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-safe-write-target-registry.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-source-prd-rules.ts',

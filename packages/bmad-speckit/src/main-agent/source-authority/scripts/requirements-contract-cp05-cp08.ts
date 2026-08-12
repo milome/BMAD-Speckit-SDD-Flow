@@ -9,6 +9,7 @@ import {
 } from './requirements-contract-semantic-ir';
 import { resolveEvidenceClaimAuthority } from './requirements-contract-span-registry';
 import {
+  activeAuthoringAttemptPointerHash,
   validateActiveAuthoringAttemptPointer,
   type ActiveAuthoringAttemptPointer,
 } from './requirements-contract-active-authoring-attempt-pointer';
@@ -21,6 +22,11 @@ import {
 } from './requirements-contract-authoring-manifest';
 import { createRequirementsContractLintReport } from './requirements-contract-lint-report';
 import { sha256Stable, sha256Text } from './requirements-contract-semantic-resolver';
+import {
+  buildRequirementsContractJudgeAuditPacket,
+  validateRequirementsContractJudgeAuditPacketCoverage,
+} from './requirements-contract-judge-audit-packet';
+import { canonicalJson } from './requirements-contract-governed-write';
 
 const runtimeRequire = createRequire(__filename);
 
@@ -151,7 +157,6 @@ const RENDERABILITY_PROBE_REPORT_KEYS = new Set([
   'providerInvocationCount',
   'committerInvocationCount',
   'renderedRequirementIds',
-  'auditPacketSerializedBytes',
 ]);
 const PAYLOAD_OBSERVATION_KEYS = new Set(['serializedBytes']);
 
@@ -263,6 +268,11 @@ export function validateRequirementsContractPublicationReady(value: unknown) {
   if (Object.keys(packetBody).length === 0) {
     issueCodes.push('judge_audit_packet_coverage_gap');
   }
+  const packetPayloadCoverage = validateRequirementsContractJudgeAuditPacketCoverage({
+    packet,
+    expectedArtifactIds: [...REQUIREMENTS_CONTRACT_PREPUBLICATION_ARTIFACT_IDS],
+  });
+  issueCodes.push(...packetPayloadCoverage.issueCodes);
   const coverage = input.coverageManifest as Record<string, unknown> | undefined;
   if (
     coverage?.allApplicableArtifactsIncluded !== true ||
@@ -408,9 +418,7 @@ export function validateRequirementsContractPublicationReady(value: unknown) {
       Object.keys(renderabilityProbeReport).some(
         (key) => !RENDERABILITY_PROBE_REPORT_KEYS.has(key)
       ) ||
-      !exactStringSet(renderedRequirementIds, frozenRequirementIds) ||
-      !Number.isSafeInteger(renderabilityProbeReport.auditPacketSerializedBytes) ||
-      Number(renderabilityProbeReport.auditPacketSerializedBytes) < 0
+      !exactStringSet(renderedRequirementIds, frozenRequirementIds)
     ) {
       issueCodes.push('requirements_publication_ready_renderability_probe_report_invalid');
     }
@@ -438,7 +446,7 @@ export function validateRequirementsContractPublicationReady(value: unknown) {
     Object.keys(payloadObservation ?? {}).some((key) => !PAYLOAD_OBSERVATION_KEYS.has(key)) ||
     Number(payloadObservation?.serializedBytes) < 0 ||
     Number(payloadObservation?.serializedBytes) !==
-      Number(renderabilityProbeReport.auditPacketSerializedBytes)
+      Buffer.byteLength(canonicalJson(input.auditPacket), 'utf8')
   ) {
     issueCodes.push('requirements_publication_ready_payload_observation_invalid');
   }
@@ -713,6 +721,7 @@ export function publishRequirementsContractCp05Cp08Stages(input: {
   previousCheckpointManifestRef: RequirementsCheckpointManifestRef;
   expectedCurrentPointerHash: string;
   compareAndSwapAttemptPointer: AttemptPointerCas;
+  deferAttemptPointerActivation?: boolean;
   semanticIr: RequirementsContractSemanticIr;
   sourceBinding: Record<string, unknown>;
   resolvedEvidenceIndex: {
@@ -827,22 +836,6 @@ export function publishRequirementsContractCp05Cp08Stages(input: {
     decision: 'pass',
     resolutions: reconciliation.authorityResolutions,
   };
-  const auditPacketBody = {
-    semanticRevisionId: input.semanticIr.semanticRevisionId,
-    scopeSemanticHash: input.semanticIr.scopeSemanticHash,
-    requirementIds,
-    artifactIds: [...REQUIREMENTS_CONTRACT_PREPUBLICATION_ARTIFACT_IDS],
-    mandatoryDimensionIds: [...REQUIREMENTS_CONTRACT_PREPUBLICATION_DIMENSIONS],
-    lineageNodes,
-    authorityResolutions: reconciliation.authorityResolutions,
-  };
-  const auditPacket = {
-    schemaVersion: 'requirements-contract-judge-audit-packet/v1',
-    semanticRevisionId: input.semanticIr.semanticRevisionId,
-    scopeSemanticHash: input.semanticIr.scopeSemanticHash,
-    body: auditPacketBody,
-  };
-  const serializedBytes = Buffer.byteLength(JSON.stringify(auditPacket), 'utf8');
   const renderabilityProbeReport = {
     schemaVersion: 'requirements-contract-renderability-probe-report/v1',
     semanticRevisionId: input.semanticIr.semanticRevisionId,
@@ -852,8 +845,29 @@ export function publishRequirementsContractCp05Cp08Stages(input: {
     providerInvocationCount: 0,
     committerInvocationCount: 0,
     renderedRequirementIds: requirementIds,
-    auditPacketSerializedBytes: serializedBytes,
   };
+  const auditPacketBuild = buildRequirementsContractJudgeAuditPacket({
+    semanticRevisionId: input.semanticIr.semanticRevisionId,
+    scopeSemanticHash: input.semanticIr.scopeSemanticHash,
+    requirementIds,
+    mandatoryDimensionIds: [...REQUIREMENTS_CONTRACT_PREPUBLICATION_DIMENSIONS],
+    lineageNodes,
+    authorityResolutions: reconciliation.authorityResolutions,
+    artifacts: [
+      { artifactId: 'confirmation-projection', payload: cp05Projection },
+      { artifactId: 'final-markdown', payload: markdown },
+      { artifactId: 'execution-manifest', payload: cp06Execution.executionManifest },
+      { artifactId: 'per-must-bundle', payload: perMustBundle },
+      { artifactId: 'trace-matrix', payload: traceMatrix },
+      { artifactId: 'diagram-set', payload: diagramSet },
+      { artifactId: 'projection-reconciliation-report', payload: reconciliationReport },
+      { artifactId: 'authority-resolution-report', payload: authorityResolutionReport },
+      { artifactId: 'renderability-probe-report', payload: renderabilityProbeReport },
+    ],
+  });
+  const auditPacket = auditPacketBuild.packet;
+  const auditPacketBody = auditPacket.body;
+  const serializedBytes = auditPacketBuild.serializedBytes;
   const coverageManifest = {
     schemaVersion: 'requirements-contract-judge-audit-packet-coverage/v1',
     semanticRevisionId: input.semanticIr.semanticRevisionId,
@@ -1142,12 +1156,26 @@ export function publishRequirementsContractCp05Cp08Stages(input: {
     role: 'lint_report',
   });
   if (publicationReady.decision === 'block') throw new Error(publicationReady.issueCodes[0]);
-  const attemptPointer = publishActiveAuthoringAttemptPointer({
-    pointer,
-    expectedCurrentPointerHash: input.expectedCurrentPointerHash,
-    readAttemptManifest: () => terminalManifest,
-    compareAndSwap: input.compareAndSwapAttemptPointer,
+  const canonicalAuditPacketPath =
+    `authoring/staging/${input.authoringAttemptId}/judge-audit-packet.json`;
+  atomicNoClobberPublish({
+    targetPath: path.join(input.recordRoot, ...canonicalAuditPacketPath.split('/')),
+    value: auditPacket,
+    role: 'judge_audit_packet',
   });
+  const attemptPointer = input.deferAttemptPointerActivation
+    ? {
+        pointer,
+        pointerHash: activeAuthoringAttemptPointerHash(pointer),
+        readbackVerified: true as const,
+        deferred: true as const,
+      }
+    : publishActiveAuthoringAttemptPointer({
+        pointer,
+        expectedCurrentPointerHash: input.expectedCurrentPointerHash,
+        readAttemptManifest: () => terminalManifest,
+        compareAndSwap: input.compareAndSwapAttemptPointer,
+      });
   const gateModule = runtimeRequire(
     resolvePackageOwnedBmadPath(
       'skills',
@@ -1171,6 +1199,7 @@ export function publishRequirementsContractCp05Cp08Stages(input: {
       'final-source.md'
     ),
     recordRoot: input.recordRoot,
+    attemptPointer: input.deferAttemptPointerActivation ? pointer : undefined,
   });
   if (prepublication.exitCode !== 0) {
     throw new Error(prepublication.report.failedChecks[0] || 'requirements_prepublication_blocked');
@@ -1182,6 +1211,24 @@ export function publishRequirementsContractCp05Cp08Stages(input: {
     attemptPointer,
     publicationReady,
     prepublication,
+    canonicalAuditPacketRef: {
+      artifactId: 'judge-audit-packet',
+      path: canonicalAuditPacketPath,
+      hash: sha256Stable(auditPacket),
+    },
+    projectionReportRefs: terminalManifest.artifactEntries
+      .filter((entry) =>
+        [
+          'projection_reconciliation_report',
+          'authority_resolution_report',
+          'renderability_probe_report',
+        ].includes(entry.role)
+      )
+      .map((entry) => ({
+        artifactId: entry.artifactId,
+        path: entry.recordRelativePath,
+        hash: entry.artifactHash,
+      })),
     providerInvocationCount: 0 as const,
     committerInvocationCount: 0 as const,
   };

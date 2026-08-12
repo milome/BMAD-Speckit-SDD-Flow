@@ -3,34 +3,33 @@
   "$id": "requirements-contract-judge-response.schema.json",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "schemaVersion",
-    "phase",
-    "phaseAuditAttemptId",
-    "requestHash",
-    "responseHash",
-    "decision",
-    "findings",
-    "challengeRequests",
-    "allowPassAuthority",
-    "writeSequence"
-  ],
+  "required": ["schemaVersion", "judgeRequestHash", "verdict", "findings", "advisoryObservations", "checkedDimensionIds", "dimensionResults", "reviewedArtifactRefs", "reviewedMustRefs", "insufficientAuditReasons"],
   "properties": {
-    "schemaVersion": { "const": "requirements-contract-judge-response/v1" },
-    "phase": { "enum": ["pre-candidate", "final"] },
-    "phaseAuditAttemptId": { "type": "string", "minLength": 1 },
-    "requestHash": { "$ref": "#/$defs/hash" },
-    "responseHash": { "$ref": "#/$defs/hash" },
-    "decision": { "enum": ["pass", "block", "inconclusive"] },
-    "findings": { "type": "array", "items": { "type": "object" } },
-    "challengeRequests": { "type": "array", "items": { "type": "object" } },
-    "allowPassAuthority": { "const": false },
-    "writeSequence": { "enum": [1, 3] }
+    "schemaVersion": { "const": "requirements-contract-judge-response/v2" },
+    "judgeRequestHash": { "$ref": "#/$defs/hash" },
+    "verdict": { "enum": ["pass", "fail"] },
+    "findings": { "type": "array", "items": { "$ref": "#/$defs/finding" } },
+    "advisoryObservations": { "type": "array", "items": { "type": "object" } },
+    "checkedDimensionIds": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "dimensionResults": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["dimensionId", "decision", "findingRefs"], "properties": { "dimensionId": { "type": "string", "minLength": 1 }, "decision": { "enum": ["pass", "fail", "insufficient"] }, "findingRefs": { "type": "array", "items": { "type": "string", "minLength": 1 } } } } },
+    "reviewedArtifactRefs": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "reviewedMustRefs": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "insufficientAuditReasons": { "type": "array", "items": { "type": "string", "minLength": 1 } }
   },
   "$defs": {
-    "hash": {
-      "type": "string",
-      "pattern": "^sha256:[a-f0-9]{64}$"
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["findingId", "severity", "summary", "affectedMustRefs", "affectedArtifactRefs", "logicalEvidenceRefs"],
+      "properties": {
+        "findingId": { "type": "string", "minLength": 1 },
+        "severity": { "enum": ["Blocker", "Major", "Minor"] },
+        "summary": { "type": "string", "minLength": 1 },
+        "affectedMustRefs": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "affectedArtifactRefs": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "logicalEvidenceRefs": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+      }
     }
   }
 }
