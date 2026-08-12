@@ -5,15 +5,36 @@ import {
 } from './requirements-contract-hash-domains';
 
 export const REQUIREMENTS_CONTRACT_AUTHORING_ARTIFACT_ROLES = [
-  'semantic_kernel', 'decision_graph', 'must_decomposition_packet', 'id_registry',
-  'semantic_ir', 'semantic_ir_freeze_receipt', 'source_binding',
-  'source_binding_freeze_receipt', 'resolved_evidence_index', 'lint_report',
-  'confirmation_projection', 'per_must_bundle', 'trace_matrix',
-  'acceptance_contracts', 'failure_matrix', 'edge_matrix', 'diagram_set',
-  'projection_reconciliation_report', 'authority_resolution_report',
-  'renderability_probe_report', 'judge_audit_packet', 'judge_audit_packet_coverage',
-  'remediation_plan', 'remediation_delta', 'effective_pass_receipt',
-  'final_markdown', 'confirmation_html', 'confirmation_summary', 'promotion_receipt',
+  'semantic_kernel',
+  'decision_graph',
+  'must_decomposition_packet',
+  'id_registry',
+  'semantic_ir',
+  'semantic_ir_freeze_receipt',
+  'source_binding',
+  'source_binding_freeze_receipt',
+  'resolved_evidence_index',
+  'lint_report',
+  'confirmation_projection',
+  'per_must_bundle',
+  'trace_matrix',
+  'execution_manifest',
+  'acceptance_contracts',
+  'failure_matrix',
+  'edge_matrix',
+  'diagram_set',
+  'projection_reconciliation_report',
+  'authority_resolution_report',
+  'renderability_probe_report',
+  'judge_audit_packet',
+  'judge_audit_packet_coverage',
+  'remediation_plan',
+  'remediation_delta',
+  'effective_pass_receipt',
+  'final_markdown',
+  'confirmation_html',
+  'confirmation_summary',
+  'promotion_receipt',
 ] as const;
 
 export type RequirementsAuthoringArtifactRole =
@@ -73,22 +94,46 @@ const CLOSED_CHECKPOINT_IDS = new Set(
 );
 const CLOSED_CHECKPOINT_STATUSES = new Set(['pending', 'passed', 'blocked']);
 const CHECKPOINT_KEYS = new Set([
-  'schemaVersion', 'authoringRequestId', 'authoringAttemptId', 'checkpointId',
-  'checkpointOrdinal', 'stage', 'status', 'inputManifestHash',
-  'previousCheckpointManifestRef', 'latestValidPredecessorCheckpoint',
-  'compilerIdentity', 'artifactEntries', 'decisionReceiptRefs', 'baseAuthorityRef',
+  'schemaVersion',
+  'authoringRequestId',
+  'authoringAttemptId',
+  'checkpointId',
+  'checkpointOrdinal',
+  'stage',
+  'status',
+  'inputManifestHash',
+  'previousCheckpointManifestRef',
+  'latestValidPredecessorCheckpoint',
+  'compilerIdentity',
+  'artifactEntries',
+  'decisionReceiptRefs',
+  'baseAuthorityRef',
   'checkpointManifestHash',
 ]);
 const BUILD_KEYS = new Set([
-  'schemaVersion', 'authoringRequestId', 'authoringAttemptId', 'inputManifestHash',
-  'terminalCheckpointManifestRef', 'semanticAuthorityRef', 'bindingAuthorityRef',
-  'artifactEntries', 'decisionReceiptRefs', 'auditPacketRef', 'projectionReportRefs',
+  'schemaVersion',
+  'authoringRequestId',
+  'authoringAttemptId',
+  'inputManifestHash',
+  'terminalCheckpointManifestRef',
+  'semanticAuthorityRef',
+  'bindingAuthorityRef',
+  'artifactEntries',
+  'decisionReceiptRefs',
+  'auditPacketRef',
+  'projectionReportRefs',
   'buildManifestHash',
 ]);
 
 function canonicalPath(value: string): boolean {
-  return Boolean(value) && !value.includes('\\') && !path.posix.isAbsolute(value) &&
-    path.posix.normalize(value) === value && value !== '..' && !value.startsWith('../');
+  return (
+    Boolean(value) &&
+    !value.includes('\\') &&
+    !path.posix.isAbsolute(value) &&
+    path.posix.normalize(value) === value &&
+    value !== '..' &&
+    !value.startsWith('../')
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -104,7 +149,13 @@ function nonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0;
 }
 
-const ARTIFACT_KEYS = new Set(['role', 'schemaVersion', 'artifactId', 'recordRelativePath', 'artifactHash']);
+const ARTIFACT_KEYS = new Set([
+  'role',
+  'schemaVersion',
+  'artifactId',
+  'recordRelativePath',
+  'artifactHash',
+]);
 const DECISION_REF_KEYS = new Set(['decisionReceiptId', 'path', 'hash']);
 const CHECKPOINT_REF_KEYS = new Set(['checkpointId', 'checkpointOrdinal', 'path', 'hash']);
 const AUTHORITY_REF_KEYS = new Set(['semanticRevisionId', 'path', 'hash']);
@@ -118,14 +169,23 @@ function refIssues(
   code: string
 ): string[] {
   if (!isRecord(value) || !hasExactKeys(value, keys)) return [code];
-  if (!nonEmptyString(value[identityKey]) || !canonicalPath(String(value.path)) || !SHA256.test(String(value.hash))) {
+  if (
+    !nonEmptyString(value[identityKey]) ||
+    !canonicalPath(String(value.path)) ||
+    !SHA256.test(String(value.hash))
+  ) {
     return [code];
   }
   return [];
 }
 
 function decisionRefIssues(value: unknown): string[] {
-  return refIssues(value, DECISION_REF_KEYS, 'decisionReceiptId', 'authoring_manifest_decision_ref_invalid');
+  return refIssues(
+    value,
+    DECISION_REF_KEYS,
+    'decisionReceiptId',
+    'authoring_manifest_decision_ref_invalid'
+  );
 }
 
 function normalizeArtifacts(entries: RequirementsAuthoringArtifactEntry[]) {
@@ -137,8 +197,11 @@ function normalizeArtifacts(entries: RequirementsAuthoringArtifactEntry[]) {
       recordRelativePath: entry.recordRelativePath,
       artifactHash: entry.artifactHash,
     }))
-    .sort((left, right) => left.role.localeCompare(right.role) ||
-      left.recordRelativePath.localeCompare(right.recordRelativePath));
+    .sort(
+      (left, right) =>
+        left.role.localeCompare(right.role) ||
+        left.recordRelativePath.localeCompare(right.recordRelativePath)
+    );
 }
 
 function normalizeRefs<T extends { path: string; hash: string }>(refs: T[]): T[] {
@@ -174,13 +237,16 @@ function artifactIssues(entries: RequirementsAuthoringArtifactEntry[]): string[]
     if (!nonEmptyString(entry.schemaVersion) || !nonEmptyString(entry.artifactId)) {
       issues.push('authoring_manifest_artifact_identity_invalid');
     }
-    if (!canonicalPath(entry.recordRelativePath)) issues.push('authoring_manifest_artifact_path_invalid');
+    if (!canonicalPath(entry.recordRelativePath))
+      issues.push('authoring_manifest_artifact_path_invalid');
     if (!SHA256.test(entry.artifactHash)) issues.push('authoring_manifest_artifact_hash_invalid');
     const identity = `${entry.role}\n${entry.recordRelativePath}`;
     if (identities.has(identity)) issues.push('authoring_manifest_artifact_duplicate');
     identities.add(identity);
   }
-  if (canonicalRequirementsJson(entries) !== canonicalRequirementsJson(normalizeArtifacts(entries))) {
+  if (
+    canonicalRequirementsJson(entries) !== canonicalRequirementsJson(normalizeArtifacts(entries))
+  ) {
     issues.push('authoring_manifest_artifact_order_invalid');
   }
   return issues;
@@ -198,7 +264,8 @@ export function createRequirementsContractCheckpointManifest(
   const manifest = {
     ...payload,
     checkpointManifestHash: requirementsContractDomainHash(
-      'requirements-contract-authoring-checkpoint-manifest/v1', payload
+      'requirements-contract-authoring-checkpoint-manifest/v1',
+      payload
     ),
   };
   const validation = validateRequirementsContractCheckpointManifest(manifest);
@@ -212,54 +279,85 @@ export function validateRequirementsContractCheckpointManifest(value: unknown) {
     return { decision: 'block' as const, issueCodes: ['authoring_checkpoint_manifest_invalid'] };
   }
   const manifest = value as RequirementsContractCheckpointManifest & Record<string, unknown>;
-  if (Object.keys(manifest).some((key) => !CHECKPOINT_KEYS.has(key))) issueCodes.push('authoring_checkpoint_manifest_unknown_field');
+  if (Object.keys(manifest).some((key) => !CHECKPOINT_KEYS.has(key)))
+    issueCodes.push('authoring_checkpoint_manifest_unknown_field');
   if ([...CHECKPOINT_KEYS].some((key) => !Object.hasOwn(manifest, key))) {
     issueCodes.push('authoring_checkpoint_manifest_required_field_missing');
   }
-  if (manifest.schemaVersion !== 'requirements-contract-authoring-checkpoint-manifest/v1') issueCodes.push('authoring_checkpoint_manifest_schema_version_invalid');
-  if (![manifest.authoringRequestId, manifest.authoringAttemptId, manifest.checkpointId, manifest.compilerIdentity].every(nonEmptyString)) {
+  if (manifest.schemaVersion !== 'requirements-contract-authoring-checkpoint-manifest/v1')
+    issueCodes.push('authoring_checkpoint_manifest_schema_version_invalid');
+  if (
+    ![
+      manifest.authoringRequestId,
+      manifest.authoringAttemptId,
+      manifest.checkpointId,
+      manifest.compilerIdentity,
+    ].every(nonEmptyString)
+  ) {
     issueCodes.push('authoring_checkpoint_identity_invalid');
   }
-  if (!Number.isSafeInteger(manifest.checkpointOrdinal) || manifest.checkpointOrdinal < 0) issueCodes.push('authoring_checkpoint_ordinal_invalid');
-  if (!CLOSED_CHECKPOINT_IDS.has(String(manifest.stage)) || manifest.stage !== manifest.checkpointId) {
+  if (!Number.isSafeInteger(manifest.checkpointOrdinal) || manifest.checkpointOrdinal < 0)
+    issueCodes.push('authoring_checkpoint_ordinal_invalid');
+  if (
+    !CLOSED_CHECKPOINT_IDS.has(String(manifest.stage)) ||
+    manifest.stage !== manifest.checkpointId
+  ) {
     issueCodes.push('authoring_checkpoint_stage_invalid');
   }
-  if (!CLOSED_CHECKPOINT_STATUSES.has(String(manifest.status))) issueCodes.push('authoring_checkpoint_status_invalid');
-  if (!SHA256.test(String(manifest.inputManifestHash))) issueCodes.push('authoring_checkpoint_input_hash_invalid');
+  if (!CLOSED_CHECKPOINT_STATUSES.has(String(manifest.status)))
+    issueCodes.push('authoring_checkpoint_status_invalid');
+  if (!SHA256.test(String(manifest.inputManifestHash)))
+    issueCodes.push('authoring_checkpoint_input_hash_invalid');
   const expectedCheckpointId = Number.isSafeInteger(manifest.checkpointOrdinal)
     ? `cp${String(manifest.checkpointOrdinal).padStart(2, '0')}`
     : null;
-  if (expectedCheckpointId !== manifest.checkpointId) issueCodes.push('authoring_checkpoint_id_ordinal_mismatch');
-  if (manifest.checkpointOrdinal === 0 &&
-      (manifest.previousCheckpointManifestRef !== null || manifest.latestValidPredecessorCheckpoint !== null)) {
+  if (expectedCheckpointId !== manifest.checkpointId)
+    issueCodes.push('authoring_checkpoint_id_ordinal_mismatch');
+  if (
+    manifest.checkpointOrdinal === 0 &&
+    (manifest.previousCheckpointManifestRef !== null ||
+      manifest.latestValidPredecessorCheckpoint !== null)
+  ) {
     issueCodes.push('authoring_checkpoint_previous_lineage_invalid');
   }
   if (manifest.checkpointOrdinal > 0) {
     const previous = manifest.previousCheckpointManifestRef;
-    if (refIssues(previous, CHECKPOINT_REF_KEYS, 'checkpointId', 'authoring_checkpoint_previous_lineage_invalid').length > 0) {
+    if (
+      refIssues(
+        previous,
+        CHECKPOINT_REF_KEYS,
+        'checkpointId',
+        'authoring_checkpoint_previous_lineage_invalid'
+      ).length > 0
+    ) {
       issueCodes.push('authoring_checkpoint_previous_lineage_invalid');
     } else if (previous) {
       if (previous.checkpointOrdinal !== manifest.checkpointOrdinal - 1) {
         issueCodes.push('authoring_checkpoint_previous_ordinal_invalid');
       }
       const expectedPreviousPath = `authoring/staging/${manifest.authoringAttemptId}/manifests/${previous.checkpointOrdinal}-${previous.checkpointId}.json`;
-      if (previous.path !== expectedPreviousPath) issueCodes.push('authoring_checkpoint_previous_path_identity_mismatch');
+      if (previous.path !== expectedPreviousPath)
+        issueCodes.push('authoring_checkpoint_previous_path_identity_mismatch');
       if (manifest.latestValidPredecessorCheckpoint !== previous.checkpointId) {
         issueCodes.push('authoring_checkpoint_latest_predecessor_mismatch');
       }
     }
   }
-  if (!Array.isArray(manifest.artifactEntries)) issueCodes.push('authoring_checkpoint_artifacts_invalid');
+  if (!Array.isArray(manifest.artifactEntries))
+    issueCodes.push('authoring_checkpoint_artifacts_invalid');
   else issueCodes.push(...artifactIssues(manifest.artifactEntries));
-  if (!Array.isArray(manifest.decisionReceiptRefs)) issueCodes.push('authoring_checkpoint_decision_refs_invalid');
+  if (!Array.isArray(manifest.decisionReceiptRefs))
+    issueCodes.push('authoring_checkpoint_decision_refs_invalid');
   else {
     for (const ref of manifest.decisionReceiptRefs) issueCodes.push(...decisionRefIssues(ref));
-    issueCodes.push(...setLikeRefIssues(
-      manifest.decisionReceiptRefs,
-      'decisionReceiptId',
-      'authoring_manifest_decision_ref_order_invalid',
-      'authoring_manifest_decision_ref_duplicate'
-    ));
+    issueCodes.push(
+      ...setLikeRefIssues(
+        manifest.decisionReceiptRefs,
+        'decisionReceiptId',
+        'authoring_manifest_decision_ref_order_invalid',
+        'authoring_manifest_decision_ref_duplicate'
+      )
+    );
   }
   if (manifest.baseAuthorityRef !== null && !isRecord(manifest.baseAuthorityRef)) {
     issueCodes.push('authoring_checkpoint_base_authority_invalid');
@@ -267,11 +365,17 @@ export function validateRequirementsContractCheckpointManifest(value: unknown) {
   const { checkpointManifestHash, ...payload } = manifest;
   if (
     !SHA256.test(String(checkpointManifestHash)) ||
-    checkpointManifestHash !== requirementsContractDomainHash(
-      'requirements-contract-authoring-checkpoint-manifest/v1', payload
-    )
-  ) issueCodes.push('authoring_checkpoint_manifest_hash_mismatch');
-  return { decision: issueCodes.length ? 'block' as const : 'pass' as const, issueCodes: [...new Set(issueCodes)].sort() };
+    checkpointManifestHash !==
+      requirementsContractDomainHash(
+        'requirements-contract-authoring-checkpoint-manifest/v1',
+        payload
+      )
+  )
+    issueCodes.push('authoring_checkpoint_manifest_hash_mismatch');
+  return {
+    decision: issueCodes.length ? ('block' as const) : ('pass' as const),
+    issueCodes: [...new Set(issueCodes)].sort(),
+  };
 }
 
 export function createRequirementsContractBuildManifest(
@@ -287,7 +391,8 @@ export function createRequirementsContractBuildManifest(
   const manifest = {
     ...payload,
     buildManifestHash: requirementsContractDomainHash(
-      'requirements-contract-build-manifest/v1', payload
+      'requirements-contract-build-manifest/v1',
+      payload
     ),
   };
   const validation = validateRequirementsContractBuildManifest(manifest);
@@ -301,68 +406,124 @@ export function validateRequirementsContractBuildManifest(value: unknown) {
     return { decision: 'block' as const, issueCodes: ['authoring_build_manifest_invalid'] };
   }
   const manifest = value as RequirementsContractBuildManifest & Record<string, unknown>;
-  if (Object.keys(manifest).some((key) => !BUILD_KEYS.has(key))) issueCodes.push('authoring_build_manifest_unknown_field');
+  if (Object.keys(manifest).some((key) => !BUILD_KEYS.has(key)))
+    issueCodes.push('authoring_build_manifest_unknown_field');
   if ([...BUILD_KEYS].some((key) => !Object.hasOwn(manifest, key))) {
     issueCodes.push('authoring_build_manifest_required_field_missing');
   }
-  if (manifest.schemaVersion !== 'requirements-contract-build-manifest/v1') issueCodes.push('authoring_build_manifest_schema_version_invalid');
+  if (manifest.schemaVersion !== 'requirements-contract-build-manifest/v1')
+    issueCodes.push('authoring_build_manifest_schema_version_invalid');
   if (![manifest.authoringRequestId, manifest.authoringAttemptId].every(nonEmptyString)) {
     issueCodes.push('authoring_build_manifest_identity_invalid');
   }
-  if (!SHA256.test(String(manifest.inputManifestHash))) issueCodes.push('authoring_build_manifest_input_hash_invalid');
-  if (!Array.isArray(manifest.artifactEntries)) issueCodes.push('authoring_build_manifest_artifacts_invalid');
+  if (!SHA256.test(String(manifest.inputManifestHash)))
+    issueCodes.push('authoring_build_manifest_input_hash_invalid');
+  if (!Array.isArray(manifest.artifactEntries))
+    issueCodes.push('authoring_build_manifest_artifacts_invalid');
   else issueCodes.push(...artifactIssues(manifest.artifactEntries));
-  if (!Array.isArray(manifest.decisionReceiptRefs)) issueCodes.push('authoring_build_manifest_decision_refs_invalid');
+  if (!Array.isArray(manifest.decisionReceiptRefs))
+    issueCodes.push('authoring_build_manifest_decision_refs_invalid');
   else {
     for (const ref of manifest.decisionReceiptRefs) issueCodes.push(...decisionRefIssues(ref));
-    issueCodes.push(...setLikeRefIssues(
-      manifest.decisionReceiptRefs,
-      'decisionReceiptId',
-      'authoring_manifest_decision_ref_order_invalid',
-      'authoring_manifest_decision_ref_duplicate'
-    ));
+    issueCodes.push(
+      ...setLikeRefIssues(
+        manifest.decisionReceiptRefs,
+        'decisionReceiptId',
+        'authoring_manifest_decision_ref_order_invalid',
+        'authoring_manifest_decision_ref_duplicate'
+      )
+    );
   }
-  issueCodes.push(...refIssues(manifest.terminalCheckpointManifestRef, CHECKPOINT_REF_KEYS, 'checkpointId', 'authoring_build_terminal_checkpoint_ref_invalid'));
-  issueCodes.push(...refIssues(manifest.semanticAuthorityRef, AUTHORITY_REF_KEYS, 'semanticRevisionId', 'authoring_build_semantic_ref_invalid'));
-  issueCodes.push(...refIssues(manifest.bindingAuthorityRef, BINDING_REF_KEYS, 'bindingRevisionId', 'authoring_build_binding_ref_invalid'));
-  issueCodes.push(...refIssues(manifest.auditPacketRef, ARTIFACT_REF_KEYS, 'artifactId', 'authoring_build_audit_packet_ref_invalid'));
-  if (!Array.isArray(manifest.projectionReportRefs)) issueCodes.push('authoring_build_projection_refs_invalid');
+  issueCodes.push(
+    ...refIssues(
+      manifest.terminalCheckpointManifestRef,
+      CHECKPOINT_REF_KEYS,
+      'checkpointId',
+      'authoring_build_terminal_checkpoint_ref_invalid'
+    )
+  );
+  issueCodes.push(
+    ...refIssues(
+      manifest.semanticAuthorityRef,
+      AUTHORITY_REF_KEYS,
+      'semanticRevisionId',
+      'authoring_build_semantic_ref_invalid'
+    )
+  );
+  issueCodes.push(
+    ...refIssues(
+      manifest.bindingAuthorityRef,
+      BINDING_REF_KEYS,
+      'bindingRevisionId',
+      'authoring_build_binding_ref_invalid'
+    )
+  );
+  issueCodes.push(
+    ...refIssues(
+      manifest.auditPacketRef,
+      ARTIFACT_REF_KEYS,
+      'artifactId',
+      'authoring_build_audit_packet_ref_invalid'
+    )
+  );
+  if (!Array.isArray(manifest.projectionReportRefs))
+    issueCodes.push('authoring_build_projection_refs_invalid');
   else {
     for (const ref of manifest.projectionReportRefs) {
-      issueCodes.push(...refIssues(ref, ARTIFACT_REF_KEYS, 'artifactId', 'authoring_build_projection_ref_invalid'));
+      issueCodes.push(
+        ...refIssues(ref, ARTIFACT_REF_KEYS, 'artifactId', 'authoring_build_projection_ref_invalid')
+      );
     }
-    issueCodes.push(...setLikeRefIssues(
-      manifest.projectionReportRefs,
-      'artifactId',
-      'authoring_build_projection_ref_order_invalid',
-      'authoring_build_projection_ref_duplicate'
-    ));
+    issueCodes.push(
+      ...setLikeRefIssues(
+        manifest.projectionReportRefs,
+        'artifactId',
+        'authoring_build_projection_ref_order_invalid',
+        'authoring_build_projection_ref_duplicate'
+      )
+    );
   }
   if (isRecord(manifest.terminalCheckpointManifestRef)) {
     const terminal = manifest.terminalCheckpointManifestRef;
     const expected = `authoring/staging/${manifest.authoringAttemptId}/manifests/${terminal.checkpointOrdinal}-${terminal.checkpointId}.json`;
-    if (terminal.checkpointId !== 'cp08' || terminal.checkpointOrdinal !== 8 || terminal.path !== expected) {
+    if (
+      terminal.checkpointId !== 'cp08' ||
+      terminal.checkpointOrdinal !== 8 ||
+      terminal.path !== expected
+    ) {
       issueCodes.push('authoring_build_terminal_checkpoint_identity_mismatch');
     }
   }
-  if (isRecord(manifest.semanticAuthorityRef) &&
-      manifest.semanticAuthorityRef.path !== `authoring/semantic-revisions/${manifest.semanticAuthorityRef.semanticRevisionId}/semantic-ir.json`) {
+  if (
+    isRecord(manifest.semanticAuthorityRef) &&
+    manifest.semanticAuthorityRef.path !==
+      `authoring/semantic-revisions/${manifest.semanticAuthorityRef.semanticRevisionId}/semantic-ir.json`
+  ) {
     issueCodes.push('authoring_build_semantic_path_identity_mismatch');
   }
-  if (isRecord(manifest.bindingAuthorityRef) &&
-      manifest.bindingAuthorityRef.path !== `authoring/source-bindings/${manifest.bindingAuthorityRef.bindingRevisionId}/source-binding.json`) {
+  if (
+    isRecord(manifest.bindingAuthorityRef) &&
+    manifest.bindingAuthorityRef.path !==
+      `authoring/source-bindings/${manifest.bindingAuthorityRef.bindingRevisionId}/source-binding.json`
+  ) {
     issueCodes.push('authoring_build_binding_path_identity_mismatch');
   }
-  if (isRecord(manifest.auditPacketRef) &&
-      manifest.auditPacketRef.path !== `authoring/staging/${manifest.authoringAttemptId}/judge-audit-packet.json`) {
+  if (
+    isRecord(manifest.auditPacketRef) &&
+    manifest.auditPacketRef.path !==
+      `authoring/staging/${manifest.authoringAttemptId}/judge-audit-packet.json`
+  ) {
     issueCodes.push('authoring_build_audit_packet_path_identity_mismatch');
   }
   const { buildManifestHash, ...payload } = manifest;
   if (
     !SHA256.test(String(buildManifestHash)) ||
-    buildManifestHash !== requirementsContractDomainHash(
-      'requirements-contract-build-manifest/v1', payload
-    )
-  ) issueCodes.push('authoring_build_manifest_hash_mismatch');
-  return { decision: issueCodes.length ? 'block' as const : 'pass' as const, issueCodes: [...new Set(issueCodes)].sort() };
+    buildManifestHash !==
+      requirementsContractDomainHash('requirements-contract-build-manifest/v1', payload)
+  )
+    issueCodes.push('authoring_build_manifest_hash_mismatch');
+  return {
+    decision: issueCodes.length ? ('block' as const) : ('pass' as const),
+    issueCodes: [...new Set(issueCodes)].sort(),
+  };
 }

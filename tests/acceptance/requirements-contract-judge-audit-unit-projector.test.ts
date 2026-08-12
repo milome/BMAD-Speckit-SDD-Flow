@@ -74,6 +74,15 @@ describe('requirements contract Judge Audit Unit projector', () => {
       ])
     );
     expect(standaloneUnit?.traceRowRefs).not.toContain(JUDGE_AUDIT_FIXTURE_IDS.mustTrace);
+    expect(mustUnit).toMatchObject({
+      factRefs: ['FACT-CHECKOUT-001', 'FACT-CHECKOUT-NEG-001'],
+      mustRefs: [JUDGE_AUDIT_FIXTURE_IDS.mustRoot],
+      atomRefs: ['ATOM-CHECKOUT-001', 'ATOM-CHECKOUT-NEG-001'],
+      originSpecSpanRefs: ['SPEC-SPAN-MUST-001', 'SPEC-SPAN-NEG-001'],
+      evidenceClaimRefs: ['CLAIM-MUST-001', 'CLAIM-NEG-001'],
+    });
+    expect(mustUnit).not.toHaveProperty('sourceSpanRefs');
+    expect(JSON.stringify(result.units)).not.toContain('SOURCE-SPAN-');
     expect(result.unitToRoot.flatMap((edge) => edge.rootRefs).sort()).toEqual(
       result.rootToUnit.map((edge) => edge.rootRef).sort()
     );

@@ -437,6 +437,11 @@
         "edgeId",
         "edgeType",
         "requirementRef",
+        "factRefs",
+        "mustRefs",
+        "atomRefs",
+        "originSpecSpanRefs",
+        "evidenceClaimRefs",
         "fromRef",
         "toRef",
         "applicability",
@@ -461,6 +466,21 @@
         },
         "requirementRef": {
           "$ref": "#/$defs/referenceId"
+        },
+        "factRefs": {
+          "$ref": "#/$defs/referenceArray"
+        },
+        "mustRefs": {
+          "$ref": "#/$defs/referenceArray"
+        },
+        "atomRefs": {
+          "$ref": "#/$defs/referenceArray"
+        },
+        "originSpecSpanRefs": {
+          "$ref": "#/$defs/referenceArray"
+        },
+        "evidenceClaimRefs": {
+          "$ref": "#/$defs/referenceArray"
         },
         "fromRef": {
           "$ref": "#/$defs/typedReference"

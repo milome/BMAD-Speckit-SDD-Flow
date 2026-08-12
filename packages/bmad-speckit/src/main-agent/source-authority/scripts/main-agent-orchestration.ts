@@ -66,9 +66,7 @@ import {
   evaluateControlledGoalCloseoutGate,
   mainDeliveryCloseoutGate,
 } from './main-agent-delivery-closeout-gate';
-import {
-  materializeControlledCloseoutConfirmationPage,
-} from './controlled-closeout-confirmation-page';
+import { materializeControlledCloseoutConfirmationPage } from './controlled-closeout-confirmation-page';
 import { applyLongRunPolicyToState } from './long-run-runtime-policy';
 import { getReviewerConsumerByAuditStage, isReviewerAuditEntryStage } from './reviewer-registry';
 import {
@@ -134,7 +132,9 @@ import {
 import {
   expectedSetsFromConfirmation,
   projectProductionImplementationConfirmation,
+  selectRequirementsContractFrozenConfirmationSemantics,
 } from './requirements-contract-confirmation-projection-facade';
+import { createRequirementsContractCoreArtifactFreeze } from './requirements-contract-semantic-resolver';
 import {
   classifyRequirementAuthoringIssue,
   writeRepairRegistryUnclassifiedIssueReceipt,
@@ -2132,10 +2132,7 @@ function resolveDefaultAuditReadonlyAuditorCommand(): string[] {
 
     if (process.platform !== 'win32') {
       const executable = path.join(resolvedEntry, 'codex');
-      if (
-        !fs.existsSync(executable) ||
-        !fs.statSync(executable).isFile()
-      ) {
+      if (!fs.existsSync(executable) || !fs.statSync(executable).isFile()) {
         continue;
       }
       try {
@@ -13959,10 +13956,7 @@ function buildPreConfirmationImplementationConfirmationDraft(input: {
     Object.fromEntries(
       perMustClosures
         .filter((row) => row[projectionKey] === projectionId)
-        .map((row) => [
-          row.mustId,
-          row.sourceAuthority?.oracle || row.requirement.text,
-        ])
+        .map((row) => [row.mustId, row.sourceAuthority?.oracle || row.requirement.text])
     );
   const allFailureIds =
     sourceBusinessFailureRows.length > 0 ? sourceBusinessFailureRows.map((row) => row.id) : [];
@@ -14047,9 +14041,9 @@ function buildPreConfirmationImplementationConfirmationDraft(input: {
         ]).filter((ref) => /^CMD-\d{1,3}$/u.test(ref)),
         deliveryCommandRefs: uniqueNonEmpty([
           ...stringsFrom(row.sourceCommandRefs),
-          ...sourceRefsFromTableField(sourceTraceBlock, [
-            'Delivery evidence command refs',
-          ]).filter((ref) => /^CMD-\d{1,3}$/u.test(ref)),
+          ...sourceRefsFromTableField(sourceTraceBlock, ['Delivery evidence command refs']).filter(
+            (ref) => /^CMD-\d{1,3}$/u.test(ref)
+          ),
         ]),
       },
     ];
@@ -19647,23 +19641,18 @@ function buildMustDecompositionPacket(input: {
       const atomicUnits = fullyDecomposedAtomicBehaviorOracleUnits(requirement.text, oracle);
       const taskIds = atomicTaskIdsForMust(index, totalMusts, atomicUnits.length);
       const taskCommandIds = commandIdsForMust(requirement.id);
-      const taskExecutionConstraintRefs = taskCommandIds.map((commandId) =>
-        `CMD:${commandId}`
-      );
+      const taskExecutionConstraintRefs = taskCommandIds.map((commandId) => `CMD:${commandId}`);
       const authoritySourceRootIds = uniqueNonEmpty([
         semanticMustSourceRootIds[index],
-        ...taskCommandIds.map(
-          (commandId) => validationRecordByCommandId.get(commandId)?.id ?? ''
-        ),
+        ...taskCommandIds.map((commandId) => validationRecordByCommandId.get(commandId)?.id ?? ''),
       ]).filter((sourceRootId) => semanticSourceRootById.has(sourceRootId));
       const originBindings = authoritySourceRootIds.flatMap((sourceRootId) =>
-        (semanticSourceRootById.get(sourceRootId)?.sourceSpanRefs ?? []).map(
-          (sourceSpanRef) => ({ sourceRootId, sourceSpanRef })
-        )
+        (semanticSourceRootById.get(sourceRootId)?.sourceSpanRefs ?? []).map((sourceSpanRef) => ({
+          sourceRootId,
+          sourceSpanRef,
+        }))
       );
-      const spanRefs = uniqueNonEmpty(
-        originBindings.map((binding) => binding.sourceSpanRef)
-      );
+      const spanRefs = uniqueNonEmpty(originBindings.map((binding) => binding.sourceSpanRef));
       const taskRows = atomicUnits.map((unit, unitIndex) => ({
         id: taskIds[unitIndex],
         action: unit,
@@ -23023,8 +23012,7 @@ function criticalAuditorReceiptMatchesCurrent(input: {
         semanticModelHash: input.semanticModelHash,
         projectionSetHash: input.projectionSetHash,
         providerRunId,
-        expectedProviderBinding:
-          expectation as unknown as CriticalAuditorJudgeRuntimeBinding,
+        expectedProviderBinding: expectation as unknown as CriticalAuditorJudgeRuntimeBinding,
       });
       validateCriticalAuditorJudgeHostExecution(
         input.projectRoot,
@@ -24399,8 +24387,7 @@ function runCriticalAuditorReceiptLoop(input: {
       }
       if (
         persistedResponse &&
-        normalizeText(persistedResponse.namespaceVersion) !==
-          responseExpectation.namespaceVersion
+        normalizeText(persistedResponse.namespaceVersion) !== responseExpectation.namespaceVersion
       ) {
         const namespaceIssue = preConfirmationIssue(
           'id_namespace_mismatch',
@@ -25180,10 +25167,7 @@ function pendingFinalCriticalAuditorDraftText(input: {
   recordId: string;
   packetHash: string;
 }): string | null {
-  const explicitFinalDraftSource = path.join(
-    input.transaction.stagingDir,
-    'final-draft-source.md'
-  );
+  const explicitFinalDraftSource = path.join(input.transaction.stagingDir, 'final-draft-source.md');
   const finalDraftSource = fs.existsSync(explicitFinalDraftSource)
     ? explicitFinalDraftSource
     : input.transaction.draftSource;
@@ -26626,11 +26610,9 @@ function resumePendingCriticalAuditorGapPromotion(input: {
   const semanticHashBefore = normalizeText(decision.semanticSourceHashBefore);
   const semanticHashAfter = normalizeText(decision.semanticSourceHashAfter);
   const currentMatchesBefore =
-    currentRawHash === rawHashBefore &&
-    semanticHashBefore === input.currentSourceDocumentHash;
+    currentRawHash === rawHashBefore && semanticHashBefore === input.currentSourceDocumentHash;
   const currentMatchesAfter =
-    currentRawHash === rawHashAfter &&
-    semanticHashAfter === input.currentSourceDocumentHash;
+    currentRawHash === rawHashAfter && semanticHashAfter === input.currentSourceDocumentHash;
   const repairDraftRawHash = sha256File(repairDraftPath);
   if (
     rawHashBefore === rawHashAfter ||
@@ -26659,8 +26641,7 @@ function resumePendingCriticalAuditorGapPromotion(input: {
     (currentMatchesAfter
       ? repairDraft.implementationConfirmationHash !== input.currentImplementationConfirmationHash
       : repairDraft.sourceDocumentHash === input.currentSourceDocumentHash &&
-        repairDraft.implementationConfirmationHash ===
-          input.currentImplementationConfirmationHash)
+        repairDraft.implementationConfirmationHash === input.currentImplementationConfirmationHash)
   ) {
     return blocked(
       'pending_source_gap_promotion_semantic_binding_invalid',
@@ -26720,10 +26701,7 @@ function resumePendingCriticalAuditorGapPromotion(input: {
     ...gap,
     repairActions: asRecordArray(gap.repairActions).map((action) => ({
       ...action,
-      targetField: normalizeText(action.targetField).replace(
-        /^implementationConfirmation\./u,
-        ''
-      ),
+      targetField: normalizeText(action.targetField).replace(/^implementationConfirmation\./u, ''),
     })),
   }));
   const auditBindingsMatch =
@@ -29150,8 +29128,7 @@ function runSourcePrdSemanticRoundTrip(input: {
       semanticBody = {
         ...candidate.semanticBody,
         source: baselineSemanticSource,
-        ...(Object.keys(candidateSemantics).length > 0 &&
-        Object.keys(baselineSemantics).length > 0
+        ...(Object.keys(candidateSemantics).length > 0 && Object.keys(baselineSemantics).length > 0
           ? {
               semantics: {
                 ...candidateSemantics,
@@ -30311,10 +30288,7 @@ export function runMainAgentPreConfirmationDrilldown(
     });
   }
 
-  const currentDraftText = materializeImplementationConfirmationText(
-    sourceText,
-    draftConfirmation
-  );
+  const currentDraftText = materializeImplementationConfirmationText(sourceText, draftConfirmation);
   const preRendererDraftText =
     pendingFinalCriticalAuditorDraftText({
       transaction: stagingTransaction,
@@ -31156,10 +31130,7 @@ export function runMainAgentPreConfirmationDrilldown(
     }
     fs.writeFileSync(
       paths.draftSourcePreview,
-      materializeImplementationConfirmationText(
-        postAuditConfirmationBaseText,
-        auditedConfirmation
-      ),
+      materializeImplementationConfirmationText(postAuditConfirmationBaseText, auditedConfirmation),
       'utf8'
     );
   }
@@ -31265,6 +31236,35 @@ export function runMainAgentPreConfirmationDrilldown(
       expectedSets: expectedSetsFromConfirmation(canonicalDraftExtraction.confirmation),
       conservationReceiptRefs: semanticReceiptRefs,
       auditReceiptRefs,
+      frozenProjectionContext: (() => {
+        const frozenSemanticIr = {
+          schemaVersion: 'requirements-contract-semantic-ir/v1',
+          semanticRevisionId: productionSemanticPipeline.semanticIr.semanticModelHash,
+          scopeSemanticHash: productionSemanticPipeline.semanticIr.semanticModelHash,
+          semanticPayload: {
+            semantics: {
+              implementationConfirmation:
+                selectRequirementsContractFrozenConfirmationSemantics(draftConfirmation),
+            },
+          },
+        };
+        const semanticIrFreeze = createRequirementsContractCoreArtifactFreeze({
+          stage: 'cp04',
+          artifactRole: 'semantic-ir',
+          artifact: frozenSemanticIr,
+        });
+        return {
+          checkpointId: 'cp04' as const,
+          checkpointStatus: 'passed' as const,
+          semanticIdentity: {
+            scopeSemanticHash: productionSemanticPipeline.semanticIr.semanticModelHash,
+            semanticRevisionId: frozenSemanticIr.semanticRevisionId,
+          },
+          frozenSemanticIr,
+          semanticIrFreeze,
+          readbackVerified: true as const,
+        };
+      })(),
     });
     writeJsonUtf8(canonicalProjectionReceiptPath, canonicalProjection.projectionReceipt);
     let canonicalDraftSource = materializeImplementationConfirmationText(
@@ -31574,17 +31574,15 @@ export function runMainAgentPreConfirmationDrilldown(
               'critical_auditor'
             ),
           ];
-    const providerContractBlockedRoute =
-      criticalAuditorProviderContractBlockedRoute(
-        finalAuditIssues.map((issue) => issue.code)
-      );
+    const providerContractBlockedRoute = criticalAuditorProviderContractBlockedRoute(
+      finalAuditIssues.map((issue) => issue.code)
+    );
     const finalProviderMissing = finalAuditIssues.some(
       (issue) => issue.code === 'critical_auditor_provider_mode_required'
     );
     const finalBlockingStage = finalProviderMissing
       ? 'critical_auditor_provider_mode_required'
-      : providerContractBlockedRoute?.blockingStage ??
-        'critical_auditor_receipt_binding_invalid';
+      : (providerContractBlockedRoute?.blockingStage ?? 'critical_auditor_receipt_binding_invalid');
     writeSourcePromotionBlockDecision({
       transaction: stagingTransaction,
       blockingStage: finalBlockingStage,
@@ -40436,10 +40434,7 @@ export function mainMainAgentOrchestration(argv: string[]): number {
     }
   }
 
-  if (
-    action === 'pre-confirmation-drilldown' ||
-    action === 'pre_confirmation_drilldown'
-  ) {
+  if (action === 'pre-confirmation-drilldown' || action === 'pre_confirmation_drilldown') {
     try {
       const result = runMainAgentPreConfirmationDrilldown(root, {
         source: args.source,
@@ -41820,11 +41815,7 @@ export async function runMainAgentControlledCloseout(
     stageStatus: path.join(outputRoot, 'judge-stage-status-receipt.json'),
     deliveryGate: path.join(outputRoot, 'delivery-closeout-gate-receipt.json'),
     acceptanceRequest: path.join(outputRoot, 'closeout-acceptance-request.json'),
-    confirmationPage: path.join(
-      outputRoot,
-      'confirmation',
-      'closeout-confirmation-current.html'
-    ),
+    confirmationPage: path.join(outputRoot, 'confirmation', 'closeout-confirmation-current.html'),
     marker: path.join(outputRoot, 'main-agent-controlled-closeout.json'),
   };
   if (!closeoutAttemptId) throw new Error('campaign_closeout_context_mismatch');

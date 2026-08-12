@@ -227,10 +227,25 @@
     "atomicRow": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["traceId", "requirementRef", "proofRefs", "dimensions"],
+      "required": [
+        "traceId",
+        "requirementRef",
+        "factRefs",
+        "mustRefs",
+        "atomRefs",
+        "originSpecSpanRefs",
+        "evidenceClaimRefs",
+        "proofRefs",
+        "dimensions"
+      ],
       "properties": {
         "traceId": { "$ref": "#/$defs/nonEmptyString" },
         "requirementRef": { "$ref": "#/$defs/nonEmptyString" },
+        "factRefs": { "$ref": "#/$defs/refArray" },
+        "mustRefs": { "$ref": "#/$defs/refArray" },
+        "atomRefs": { "$ref": "#/$defs/refArray" },
+        "originSpecSpanRefs": { "$ref": "#/$defs/refArray" },
+        "evidenceClaimRefs": { "$ref": "#/$defs/refArray" },
         "proofRefs": { "$ref": "#/$defs/refArray" },
         "dimensions": { "$ref": "#/$defs/dimensions" }
       }

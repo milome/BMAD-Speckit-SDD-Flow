@@ -123,6 +123,11 @@ export function compactTraceFixture() {
         edgeId: 'EDGE-001',
         edgeType: 'requirement_to_scenario',
         requirementRef: 'MUST-FR-001',
+        factRefs: ['FACT-001'],
+        mustRefs: ['MUST-FR-001'],
+        atomRefs: ['ATOM-001'],
+        originSpecSpanRefs: ['SPEC-SPAN-001'],
+        evidenceClaimRefs: ['CLAIM-001'],
         fromRef: { id: 'MUST-FR-001', type: 'requirement', hash: HASH_A },
         toRef: { id: 'SCN-CHECKOUT-001', type: 'scenario', hash: HASH_B },
         applicability: {
@@ -141,7 +146,7 @@ export function compactTraceFixture() {
           oracle: notApplicable(),
           command: notApplicable(),
           acceptance: bound('ACCEPTANCE-001'),
-          evidenceRequirement: notApplicable(),
+          evidenceRequirement: bound('EVDREQ-001'),
         },
         pathJoin: {
           state: 'joined',

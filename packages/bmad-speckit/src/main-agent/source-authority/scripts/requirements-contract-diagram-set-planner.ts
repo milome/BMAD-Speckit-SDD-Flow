@@ -15,10 +15,6 @@ const {
 
 type Diagram = RequirementsContractDiagramSet['diagrams'][number];
 
-function scenarioStem(scenarioId: string): string {
-  return scenarioId.replace(/^SCN-/u, '').replace(/-[0-9]{3}$/u, '');
-}
-
 function messageRef(scenarioId: string, stepId: string): string {
   return `${scenarioId}#${stepId}`;
 }
@@ -60,10 +56,7 @@ export function requirementsContractDiagramProjectionHash(input: {
   return sha256Stable(input);
 }
 
-function diagram(
-  sequenceContractHash: string,
-  input: Omit<Diagram, 'projectionHash'>
-): Diagram {
+function diagram(sequenceContractHash: string, input: Omit<Diagram, 'projectionHash'>): Diagram {
   return {
     ...input,
     projectionHash: requirementsContractDiagramProjectionHash({
@@ -76,6 +69,11 @@ function diagram(
 export function planRequirementsContractDiagramSet(input: {
   sequenceContract: RequirementsContractSequenceContract;
   scenarioId: string;
+  frozenDiagramIdentity: {
+    diagramSetId: string;
+    rootDiagramRef: string;
+    diagramRefs: string[];
+  };
 }): RequirementsContractDiagramSet {
   const contractValidation = validateSequenceContract(input.sequenceContract);
   if (!contractValidation.ok) {
@@ -85,7 +83,6 @@ export function planRequirementsContractDiagramSet(input: {
     (candidate) => candidate.id === input.scenarioId
   );
   if (!scenario) throw new Error(`unknown Sequence Scenario: ${input.scenarioId}`);
-  const stem = scenarioStem(scenario.id);
   const chunks = chunksForScenario(scenario);
   const requiresDecomposition =
     scenario.participants.length > MAX_PARTICIPANTS ||
@@ -96,8 +93,22 @@ export function planRequirementsContractDiagramSet(input: {
   let transitionEdges: RequirementsContractDiagramSet['transitionEdges'] = [];
   let blockingChildRefs: string[] = [];
 
+  const frozenIdentity = input.frozenDiagramIdentity;
+  const expectedDiagramCount = requiresDecomposition ? chunks.length + 1 : 1;
+  if (
+    !frozenIdentity ||
+    !frozenIdentity.diagramSetId?.trim() ||
+    !frozenIdentity.rootDiagramRef?.trim() ||
+    !Array.isArray(frozenIdentity.diagramRefs) ||
+    frozenIdentity.diagramRefs.length !== expectedDiagramCount ||
+    new Set(frozenIdentity.diagramRefs).size !== frozenIdentity.diagramRefs.length ||
+    frozenIdentity.diagramRefs[0] !== frozenIdentity.rootDiagramRef
+  ) {
+    throw new Error('requirements_cp07_frozen_diagram_identities_required');
+  }
+
   if (!requiresDecomposition) {
-    rootDiagramRef = `DGM-${stem}-PRIMARY-001`;
+    rootDiagramRef = frozenIdentity.rootDiagramRef;
     diagrams = [
       diagram(input.sequenceContract.sequenceContractHash, {
         diagramRef: rootDiagramRef,
@@ -108,10 +119,8 @@ export function planRequirementsContractDiagramSet(input: {
       }),
     ];
   } else {
-    rootDiagramRef = `DGM-${stem}-OVERVIEW-001`;
-    blockingChildRefs = chunks.map(
-      (_, index) => `DGM-${stem}-DRILLDOWN-${String(index + 1).padStart(3, '0')}`
-    );
+    rootDiagramRef = frozenIdentity.rootDiagramRef;
+    blockingChildRefs = frozenIdentity.diagramRefs.slice(1);
     diagrams = [
       diagram(input.sequenceContract.sequenceContractHash, {
         diagramRef: rootDiagramRef,
@@ -138,7 +147,7 @@ export function planRequirementsContractDiagramSet(input: {
 
   const diagramSet: RequirementsContractDiagramSet = {
     schemaVersion: 'requirements-contract-diagram-set/v1',
-    diagramSetId: `DSET-${stem}-001`,
+    diagramSetId: frozenIdentity.diagramSetId,
     rootDiagramRef,
     diagrams,
     transitionEdges,

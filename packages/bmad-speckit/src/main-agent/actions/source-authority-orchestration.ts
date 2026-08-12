@@ -16,6 +16,12 @@ const {
   publishRequirementsContractCp04FreezeStage,
 } = require('../source-authority/scripts/requirements-contract-production-semantic-pipeline');
 const {
+  createRequirementsContractSemanticIr,
+} = require('../source-authority/scripts/requirements-contract-semantic-ir');
+const {
+  publishRequirementsContractCp05Cp08Stages,
+} = require('../source-authority/scripts/requirements-contract-cp05-cp08');
+const {
   ACTIVE_AUTHORING_ATTEMPT_POINTER_PATH,
   activeAuthoringAttemptPointerHash,
   publishActiveAuthoringAttemptPointer,
@@ -23,9 +29,7 @@ const {
 const {
   createRequirementsContractCheckpointManifest,
 } = require('../source-authority/scripts/requirements-contract-authoring-manifest');
-const {
-  writeJsonAtomic,
-} = require('../source-authority/scripts/requirement-record-control-store');
+const { writeJsonAtomic } = require('../source-authority/scripts/requirement-record-control-store');
 const {
   createRequirementsGrillQuestionGraph,
 } = require('../source-authority/scripts/requirements-contract-grill-model');
@@ -105,7 +109,9 @@ async function emitPackageOrchestration(context) {
 const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9._-]*$/u;
 
 function stableId(prefix, payload) {
-  return `${prefix}-${sha256Stable(payload).slice('sha256:'.length, 'sha256:'.length + 24).toUpperCase()}`;
+  return `${prefix}-${sha256Stable(payload)
+    .slice('sha256:'.length, 'sha256:'.length + 24)
+    .toUpperCase()}`;
 }
 
 function confinedPath(cwd, value, issueCode) {
@@ -120,7 +126,13 @@ function authoringRecordRoot(cwd, requestId) {
 }
 
 function authoringContextPath(recordRoot, authoringAttemptId) {
-  return path.join(recordRoot, 'authoring', 'staging', authoringAttemptId, 'authoring-context.json');
+  return path.join(
+    recordRoot,
+    'authoring',
+    'staging',
+    authoringAttemptId,
+    'authoring-context.json'
+  );
 }
 
 function publishAuthoringContext(recordRoot, value) {
@@ -142,9 +154,10 @@ function fileAttemptPointerCas(recordRoot) {
     if (currentHash === pointerHash) return true;
     if (currentHash !== expectedHash) return false;
     writeJsonAtomic(absolute, pointer);
-    return activeAuthoringAttemptPointerHash(
-      JSON.parse(fs.readFileSync(absolute, 'utf8'))
-    ) === pointerHash;
+    return (
+      activeAuthoringAttemptPointerHash(JSON.parse(fs.readFileSync(absolute, 'utf8'))) ===
+      pointerHash
+    );
   };
 }
 
@@ -155,20 +168,26 @@ function sourceBindingPayload(scan) {
   return {
     schemaVersion: 'requirements-contract-source-binding/v1',
     authoritySourceListHash: scan.sourceList.sourceListHash,
-    snapshotSetHash: sha256Stable(scan.sourceRootCandidates.map((candidate) => ({
-      sourceRootId: candidate.sourceRootId,
-      sourcePath: candidate.sourcePath,
-      sourceContent: candidate.sourceContent,
-    }))),
-    sourceSpanRegistryHash: sha256Stable(scan.sourceRootCandidates.map((candidate) => ({
-      sourceRootId: candidate.sourceRootId,
-      sourcePath: candidate.sourcePath,
-      sourceSpan: candidate.sourceSpan,
-    }))),
-    evidenceClaimRegistryHash: sha256Stable(atomCandidates.map((candidate) => ({
-      sourceRootId: candidate.sourceRootId,
-      oracle: candidate.semanticBody.oracle,
-    }))),
+    snapshotSetHash: sha256Stable(
+      scan.sourceRootCandidates.map((candidate) => ({
+        sourceRootId: candidate.sourceRootId,
+        sourcePath: candidate.sourcePath,
+        sourceContent: candidate.sourceContent,
+      }))
+    ),
+    sourceSpanRegistryHash: sha256Stable(
+      scan.sourceRootCandidates.map((candidate) => ({
+        sourceRootId: candidate.sourceRootId,
+        sourcePath: candidate.sourcePath,
+        sourceSpan: candidate.sourceSpan,
+      }))
+    ),
+    evidenceClaimRegistryHash: sha256Stable(
+      atomCandidates.map((candidate) => ({
+        sourceRootId: candidate.sourceRootId,
+        oracle: candidate.semanticBody.oracle,
+      }))
+    ),
   };
 }
 
@@ -186,8 +205,7 @@ function atomicMustsFromScan(scan) {
     )
     .map((candidate) => {
       const body = candidate.semanticBody;
-      const sourceSpanRef =
-        `${candidate.sourceRootId}:${candidate.sourceSpan.startLine}-${candidate.sourceSpan.endLine}`;
+      const sourceSpanRef = `${candidate.sourceRootId}:${candidate.sourceSpan.startLine}-${candidate.sourceSpan.endLine}`;
       return {
         atomId: `${candidate.sourceRootId}-A1`,
         action: String(body.text || '').normalize('NFC'),
@@ -206,13 +224,127 @@ function atomicMustsFromScan(scan) {
     });
 }
 
-function publishAttemptCoreSnapshots(input) {
-  const stagingRoot = path.join(
-    input.recordRoot,
-    'authoring',
-    'staging',
-    input.authoringAttemptId
+function canonicalSemanticIrFromClosure(input) {
+  const requirements = input.scan.sourceRootCandidates
+    .filter((candidate) =>
+      ['functional_requirement', 'non_functional_requirement'].includes(candidate.rootClass)
+    )
+    .map((candidate) => ({
+      id: candidate.sourceRootId,
+      text: String(candidate.semanticBody.text || '').normalize('NFC'),
+      oracle: String(candidate.semanticBody.oracle || '').normalize('NFC'),
+    }));
+  const requirementByAtomId = new Map(
+    input.cp02Candidate.atoms.map((atom) => [atom.atomId, atom.authorityRefs[0]])
   );
+  const constraints = input.capability.executionRegistry.entries.map((entry) => {
+    const constraintId = `${entry.kind}-${entry.id}`;
+    const applicableAtoms = input.cp02Candidate.atoms.filter((atom) =>
+      atom.executionConstraintRefs.includes(`${entry.kind}:${entry.id}`)
+    );
+    return {
+      constraintId,
+      kind: entry.kind,
+      canonicalValue: entry.value,
+      applicableMustRefs: [
+        ...new Set(
+          applicableAtoms.map((atom) => requirementByAtomId.get(atom.atomId)).filter(Boolean)
+        ),
+      ].sort(),
+      applicableAtomRefs: applicableAtoms.map((atom) => atom.atomId).sort(),
+      premiseRefs: applicableAtoms.flatMap((atom) => atom.authorityRefs).sort(),
+      derivationReceiptRefs: [],
+      disposition: 'proven',
+    };
+  });
+  const constraintIdByLegacyRef = new Map(
+    input.capability.executionRegistry.entries.map((entry) => [
+      `${entry.kind}:${entry.id}`,
+      `${entry.kind}-${entry.id}`,
+    ])
+  );
+  const atoms = input.cp02Candidate.atoms.map((atom) => ({
+    id: atom.atomId,
+    action: atom.action,
+    oracle: atom.oracle,
+    requirementRef: requirementByAtomId.get(atom.atomId),
+    dependencies: atom.dependencies,
+    authorityRefs: atom.authorityRefs,
+    executionConstraintRefs: atom.executionConstraintRefs
+      .map((ref) => constraintIdByLegacyRef.get(ref))
+      .filter(Boolean)
+      .sort(),
+  }));
+  const evidenceClaims = requirements.map((requirement) => ({
+    evidenceClaimId: `EVIDENCE-CLAIM-${requirement.id}`,
+    authorityClass: 'source_grounded',
+    normalizedClaimHash: sha256Stable({
+      text: requirement.text,
+      oracle: requirement.oracle,
+    }),
+    sourceEvidenceRequired: true,
+    decisionReceiptRefs: [],
+    premiseRefs: [],
+    derivationReceiptRefs: [],
+  }));
+  const specSpanRegistry = requirements.map((requirement) => ({
+    authorityClass: 'source_grounded',
+    normalizedClaimHash: sha256Stable({
+      text: requirement.text,
+      oracle: requirement.oracle,
+    }),
+    boundSemanticNodeIds: [
+      requirement.id,
+      ...atoms.filter((atom) => atom.requirementRef === requirement.id).map((atom) => atom.id),
+    ],
+    boundObligationIds: [requirement.id],
+    evidenceClaimRefs: [`EVIDENCE-CLAIM-${requirement.id}`],
+    decisionReceiptRefs: [],
+    derivationReceiptRefs: [],
+  }));
+  return createRequirementsContractSemanticIr({
+    recordId: input.authoringRequestId,
+    requestId: input.authoringRequestId,
+    parentSemanticRevisionId: null,
+    compilerVersion: 'requirements-contract-cp02-compiler/v1',
+    semantics: { requirements, atoms },
+    evidenceClaims,
+    specSpanRegistry,
+    executionConstraints: constraints,
+    semanticProvenance: Object.fromEntries(
+      requirements.map((requirement) => [requirement.id, requirement.id])
+    ),
+  });
+}
+
+function resolvedEvidenceIndexForClosure(input) {
+  const candidates = new Map(
+    input.scan.sourceRootCandidates.map((candidate) => [candidate.sourceRootId, candidate])
+  );
+  return {
+    schemaVersion: 'requirements-contract-resolved-evidence-index/v1',
+    semanticRevisionId: input.semanticIr.semanticRevisionId,
+    resolutions: input.semanticIr.semanticPayload.evidenceClaims.map((claim) => {
+      const requirementId = claim.evidenceClaimId.replace(/^EVIDENCE-CLAIM-/u, '');
+      const candidate = candidates.get(requirementId);
+      return {
+        evidenceClaimId: claim.evidenceClaimId,
+        authorityClass: claim.authorityClass,
+        sourceSpanRefs: candidate
+          ? [
+              `${candidate.sourceRootId}:${candidate.sourceSpan.startLine}-${candidate.sourceSpan.endLine}`,
+            ]
+          : [],
+        decisionReceiptRefs: claim.decisionReceiptRefs,
+        premiseRefs: claim.premiseRefs,
+        derivationReceiptRefs: claim.derivationReceiptRefs,
+      };
+    }),
+  };
+}
+
+function publishAttemptCoreSnapshots(input) {
+  const stagingRoot = path.join(input.recordRoot, 'authoring', 'staging', input.authoringAttemptId);
   const artifacts = {
     semanticKernel: {
       schemaVersion: 'requirements-contract-semantic-kernel/v1',
@@ -242,11 +374,13 @@ function publishAttemptCoreSnapshots(input) {
       schemaVersion: 'requirements-contract-id-registry/v1',
       authoringRequestId: input.authoringRequestId,
       authoringAttemptId: input.authoringAttemptId,
-      sourceRootIds: input.scan.sourceRootCandidates.map((candidate) => candidate.sourceRootId).sort(),
+      sourceRootIds: input.scan.sourceRootCandidates
+        .map((candidate) => candidate.sourceRootId)
+        .sort(),
       atomIds: input.cp02Candidate.atoms.map((atom) => atom.atomId).sort(),
-      executionConstraintRefs: [...new Set(input.cp02Candidate.atoms.flatMap(
-        (atom) => atom.executionConstraintRefs
-      ))].sort(),
+      executionConstraintRefs: [
+        ...new Set(input.cp02Candidate.atoms.flatMap((atom) => atom.executionConstraintRefs)),
+      ].sort(),
     },
   };
   const artifactDefinitions = [
@@ -281,8 +415,7 @@ function publishAttemptCoreSnapshots(input) {
       role: definition.role,
       schemaVersion: value.schemaVersion,
       artifactId: definition.artifactId,
-      recordRelativePath:
-        `authoring/staging/${input.authoringAttemptId}/${definition.fileName}`,
+      recordRelativePath: `authoring/staging/${input.authoringAttemptId}/${definition.fileName}`,
       artifactHash: sha256Stable(value),
     };
   });
@@ -430,9 +563,6 @@ function continueAuthoringFromContext(context, authoringContext, options = {}) {
     value: capability,
     role: 'requirements_technical_planning_capability',
   });
-  const atomCandidates = scan.sourceRootCandidates.filter((candidate) =>
-    ['functional_requirement', 'non_functional_requirement'].includes(candidate.rootClass)
-  );
   const cp02Candidate = prepareRequirementsContractCp02PipelineStage({
     authoringRequestId: requestId,
     authoringAttemptId,
@@ -471,30 +601,26 @@ function continueAuthoringFromContext(context, authoringContext, options = {}) {
   if (cp02Candidate.status !== 'closed') {
     throw new Error(cp02Candidate.issueCodes[0] || 'requirements_cp02_closure_failed');
   }
-  const cp04Stage = prepareRequirementsContractCp04FreezeStage({
-    semanticIr: {
-      schemaVersion: 'requirements-contract-semantic-ir/v1',
-      authoringRequestId: requestId,
-      authoringAttemptId,
-      cp02CandidateHash: cp02Candidate.candidateHash,
-      atoms: cp02Candidate.atoms,
-      decisions: cp02Candidate.decisions,
-    },
-    sourceBinding: sourceBindingPayload(scan),
-    resolvedEvidenceIndex: {
-      schemaVersion: 'requirements-contract-resolved-evidence-index/v1',
-      claimRefs: atomCandidates.map((candidate) => candidate.sourceRootId).sort(),
-      decisionReceiptRefs,
-    },
+  const semanticIr = canonicalSemanticIrFromClosure({
+    authoringRequestId: requestId,
+    scan,
+    cp02Candidate,
+    capability,
   });
-  const pointerPath = path.join(
-    recordRoot,
-    ...ACTIVE_AUTHORING_ATTEMPT_POINTER_PATH.split('/')
-  );
+  const resolvedEvidenceIndex = resolvedEvidenceIndexForClosure({
+    scan,
+    semanticIr,
+  });
+  const cp04Stage = prepareRequirementsContractCp04FreezeStage({
+    semanticIr,
+    sourceBinding: sourceBindingPayload(scan),
+    resolvedEvidenceIndex,
+  });
+  const pointerPath = path.join(recordRoot, ...ACTIVE_AUTHORING_ATTEMPT_POINTER_PATH.split('/'));
   const expectedCurrentPointerHash = fs.existsSync(pointerPath)
     ? activeAuthoringAttemptPointerHash(JSON.parse(fs.readFileSync(pointerPath, 'utf8')))
     : null;
-  publishRequirementsContractCp04FreezeStage({
+  const cp04Publication = publishRequirementsContractCp04FreezeStage({
     recordRootPath: recordRoot,
     stage: cp04Stage,
     authoringRequestId: requestId,
@@ -506,6 +632,25 @@ function continueAuthoringFromContext(context, authoringContext, options = {}) {
     baseAuthorityRef: null,
     expectedCurrentPointerHash,
     compareAndSwapAttemptPointer: fileAttemptPointerCas(recordRoot),
+  });
+  publishRequirementsContractCp05Cp08Stages({
+    recordRoot,
+    sourcePath: intakeSource,
+    authoringRequestId: requestId,
+    authoringAttemptId,
+    inputManifestHash: scan.sourceList.sourceListHash,
+    previousCheckpointManifestRef: {
+      checkpointId: 'cp04',
+      checkpointOrdinal: 4,
+      path: `authoring/staging/${authoringAttemptId}/manifests/4-cp04.json`,
+      hash: cp04Publication.checkpointManifest.checkpointManifestHash,
+    },
+    expectedCurrentPointerHash: cp04Publication.attemptPointer.pointerHash,
+    compareAndSwapAttemptPointer: fileAttemptPointerCas(recordRoot),
+    semanticIr: cp04Stage.semanticIr,
+    sourceBinding: cp04Stage.sourceBinding,
+    resolvedEvidenceIndex: cp04Stage.resolvedEvidenceIndex,
+    decisionReceiptRefs,
   });
   return cliContinuationResult({
     status: 'audit_pending',
@@ -535,10 +680,12 @@ function authorConfirmationReadySourceAction(context) {
     return {
       status: 'authoring_blocked',
       exitCode: 2,
-      errors: [{
-        code: 'requirements_authoring_argument_forbidden',
-        message: `Unsupported authoring arguments: ${forbidden.sort().join(',')}`,
-      }],
+      errors: [
+        {
+          code: 'requirements_authoring_argument_forbidden',
+          message: `Unsupported authoring arguments: ${forbidden.sort().join(',')}`,
+        },
+      ],
     };
   }
   try {
@@ -561,13 +708,16 @@ function authorConfirmationReadySourceAction(context) {
       authoritySources,
     });
     if (scan.conflicts.length > 0) throw new Error('requirements_authority_conflict');
-    const requestId = String(context.args.requestId || '').trim() || stableId('REQ', {
-      intakeSource: path.relative(context.cwd, intakeSource).replace(/\\/gu, '/'),
-      intakeSourceHash: scan.sourceList.intakeSourceHash,
-      targetSource: path.relative(context.cwd, targetSource).replace(/\\/gu, '/'),
-    });
+    const requestId =
+      String(context.args.requestId || '').trim() ||
+      stableId('REQ', {
+        intakeSource: path.relative(context.cwd, intakeSource).replace(/\\/gu, '/'),
+        intakeSourceHash: scan.sourceList.intakeSourceHash,
+        targetSource: path.relative(context.cwd, targetSource).replace(/\\/gu, '/'),
+      });
     if (!SAFE_ID.test(requestId)) throw new Error('requirements_authoring_request_id_invalid');
-    const authoringAttemptId = String(context.args.authoringAttemptId || '').trim() ||
+    const authoringAttemptId =
+      String(context.args.authoringAttemptId || '').trim() ||
       stableId('ATTEMPT', { requestId, sourceListHash: scan.sourceList.sourceListHash });
     const unresolved = scan.sourceRootCandidates
       .filter((candidate) => candidate.rootClass === 'unresolved_decision')
@@ -589,7 +739,8 @@ function authorConfirmationReadySourceAction(context) {
       authoritySourceListHash: scan.sourceList.sourceListHash,
     });
     if (unresolved.length > 0) {
-      const grillSessionId = String(context.args.grillSessionId || '').trim() ||
+      const grillSessionId =
+        String(context.args.grillSessionId || '').trim() ||
         stableId('GRILL', {
           requestId,
           authoringAttemptId,
@@ -601,9 +752,10 @@ function authorConfirmationReadySourceAction(context) {
       if (!SAFE_ID.test(grillSessionId)) throw new Error('requirements_grill_session_id_invalid');
       const questions = unresolved.map((candidate) => {
         const body = candidate.semanticBody;
-        const answerSchema = body.answerSchema && typeof body.answerSchema === 'object'
-          ? body.answerSchema
-          : { type: ['string', 'number', 'boolean', 'object', 'array'] };
+        const answerSchema =
+          body.answerSchema && typeof body.answerSchema === 'object'
+            ? body.answerSchema
+            : { type: ['string', 'number', 'boolean', 'object', 'array'] };
         return {
           questionId: candidate.sourceRootId,
           questionVersion: String(body.questionVersion || 'v1'),
@@ -614,11 +766,13 @@ function authorConfirmationReadySourceAction(context) {
           affectedFieldIds: Array.isArray(body.affectedFieldIds)
             ? [...new Set(body.affectedFieldIds.map(String))].sort()
             : [candidate.sourceRootId],
-          authorityPremiseHashes: [sha256Stable({
-            sourcePath: candidate.sourcePath,
-            sourceRootId: candidate.sourceRootId,
-            semanticBody: candidate.semanticBody,
-          })],
+          authorityPremiseHashes: [
+            sha256Stable({
+              sourcePath: candidate.sourcePath,
+              sourceRootId: candidate.sourceRootId,
+              semanticBody: candidate.semanticBody,
+            }),
+          ],
           answerSchema,
           answerSchemaHash: sha256Stable(answerSchema),
           affectedNodeIds: Array.isArray(body.affectedNodeIds)
@@ -712,10 +866,12 @@ function resumeAuthorConfirmationReadySourceAction(context) {
     return {
       status: 'authoring_blocked',
       exitCode: 2,
-      errors: [{
-        code: 'requirements_authoring_argument_forbidden',
-        message: `Unsupported resume arguments: ${forbidden.sort().join(',')}`,
-      }],
+      errors: [
+        {
+          code: 'requirements_authoring_argument_forbidden',
+          message: `Unsupported resume arguments: ${forbidden.sort().join(',')}`,
+        },
+      ],
     };
   }
   const requestId = String(context.args.requestId || '').trim();
@@ -730,10 +886,12 @@ function resumeAuthorConfirmationReadySourceAction(context) {
     return {
       status: 'authoring_blocked',
       exitCode: 2,
-      errors: [{
-        code: 'requirements_authoring_resume_identity_invalid',
-        message: 'requestId and exactly one resume identity must be explicit safe identities.',
-      }],
+      errors: [
+        {
+          code: 'requirements_authoring_resume_identity_invalid',
+          message: 'requestId and exactly one resume identity must be explicit safe identities.',
+        },
+      ],
     };
   }
   try {
@@ -745,10 +903,9 @@ function resumeAuthorConfirmationReadySourceAction(context) {
       requestId
     );
     if (authoringAttemptId) {
-      const currentContext = JSON.parse(fs.readFileSync(
-        authoringContextPath(recordRoot, authoringAttemptId),
-        'utf8'
-      ));
+      const currentContext = JSON.parse(
+        fs.readFileSync(authoringContextPath(recordRoot, authoringAttemptId), 'utf8')
+      );
       if (
         currentContext.schemaVersion !== 'requirements-authoring-continuation-context/v1' ||
         currentContext.authoringRequestId !== requestId ||
@@ -774,10 +931,12 @@ function resumeAuthorConfirmationReadySourceAction(context) {
         );
         if (fs.existsSync(pointerPath)) {
           const currentPointer = JSON.parse(fs.readFileSync(pointerPath, 'utf8'));
-          const currentManifest = JSON.parse(fs.readFileSync(
-            path.join(recordRoot, ...currentPointer.attemptManifestPath.split('/')),
-            'utf8'
-          ));
+          const currentManifest = JSON.parse(
+            fs.readFileSync(
+              path.join(recordRoot, ...currentPointer.attemptManifestPath.split('/')),
+              'utf8'
+            )
+          );
           if (currentManifest.inputManifestHash !== scan.sourceList.sourceListHash) {
             throw new Error('requirements_source_binding_refresh_authority_mismatch');
           }
@@ -791,14 +950,18 @@ function resumeAuthorConfirmationReadySourceAction(context) {
             if (!currentBindingEntry || !currentSemanticEntry) {
               throw new Error('requirements_source_binding_refresh_current_authority_missing');
             }
-            const currentBinding = JSON.parse(fs.readFileSync(
-              path.join(recordRoot, ...currentBindingEntry.recordRelativePath.split('/')),
-              'utf8'
-            ));
-            const semanticIr = JSON.parse(fs.readFileSync(
-              path.join(recordRoot, ...currentSemanticEntry.recordRelativePath.split('/')),
-              'utf8'
-            ));
+            const currentBinding = JSON.parse(
+              fs.readFileSync(
+                path.join(recordRoot, ...currentBindingEntry.recordRelativePath.split('/')),
+                'utf8'
+              )
+            );
+            const semanticIr = JSON.parse(
+              fs.readFileSync(
+                path.join(recordRoot, ...currentSemanticEntry.recordRelativePath.split('/')),
+                'utf8'
+              )
+            );
             const nextSourceBinding = sourceBindingPayload(scan);
             const beforeLocatorHash = sourceBindingLocatorHash(currentBinding);
             const afterLocatorHash = sourceBindingLocatorHash(nextSourceBinding);
@@ -846,10 +1009,11 @@ function resumeAuthorConfirmationReadySourceAction(context) {
               resolvedEvidenceIndex: {
                 schemaVersion: 'requirements-contract-resolved-evidence-index/v1',
                 claimRefs: scan.sourceRootCandidates
-                  .filter((candidate) => [
-                    'functional_requirement',
-                    'non_functional_requirement',
-                  ].includes(candidate.rootClass))
+                  .filter((candidate) =>
+                    ['functional_requirement', 'non_functional_requirement'].includes(
+                      candidate.rootClass
+                    )
+                  )
                   .map((candidate) => candidate.sourceRootId)
                   .sort(),
                 decisionReceiptRefs: currentManifest.decisionReceiptRefs,

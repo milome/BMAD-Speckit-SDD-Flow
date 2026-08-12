@@ -4,7 +4,7 @@
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-canonical-assets-manifest.ts",
     "hash": "sha256:38180ba994f60c7be8c295f0a229bff8da9778b189c52976d410a653a6163496"
   },
-  "manifestHash": "sha256:22b0c365018b678a2b5d284c0bddabd8204a6c93a1048dcca1ee110fc4049514",
+  "manifestHash": "sha256:9f826ff458902e16f59bf5e22c217fb9b7a585efe3544569d9092286d304b210",
   "assets": [
     {
       "assetId": "semantic_ir_schema",
@@ -58,7 +58,7 @@
       "role": "consumer_registry",
       "assetKind": "registry",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:b18229a40796c050cd7bf3a08534f6adb81bdb7bb857142d5667616d823c22b0"
+      "sha256": "sha256:8d8f7ea2b6ab089c0d80ee55fc5246ce7b3c82b5b396193bb5ee869c94cad184"
     },
     {
       "assetId": "discovery_envelope_template",
@@ -171,7 +171,7 @@
       "assetKind": "projector",
       "authorityClass": "none",
       "symbolRef": "createRequirementsConfirmationRenderInput",
-      "sha256": "sha256:b5bb188b810f2d6ab05b19db5325b0a5e563d43959b11e5001bb1631536bae94"
+      "sha256": "sha256:6a237125a79949c1917875d1a758b4951ea6742131401947a4f98562e26ec89b"
     },
     {
       "assetId": "confirmation_renderer",
@@ -659,7 +659,7 @@
       "role": "judge_audit_unit_projection_input_schema",
       "assetKind": "schema",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:ab8b9b5ba9456e01f5e2c61dd9ec1544587955e327107da08f5881ddb77d3c56"
+      "sha256": "sha256:67e491c4deabe5b430e9ff7f9f3e949a7dd3c8b382476eeb4690c05cbb84db55"
     },
     {
       "assetId": "judge_audit_unit_set_schema",
@@ -668,7 +668,7 @@
       "role": "judge_audit_unit_set_schema",
       "assetKind": "schema",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:55ad4b393a0b9cafb13f26fbcc62fed492dc7ba7db037ce2f05636407b960328"
+      "sha256": "sha256:896b640f4f0c032c3c21a63781c83d0da289e5e81b2a5f48181764832900d98d"
     },
     {
       "assetId": "critical_auditor_judge_adapter_input_schema",
@@ -839,7 +839,7 @@
       "role": "judge_audit_unit_projector",
       "assetKind": "producer",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:0e4b49e8b7bdc99aefe7c38b2c8c41287542015f721b20b5e3807b6ffe7811dd"
+      "sha256": "sha256:30d0a99e8bac6b3e4bb054f44387b7648bb2ba2d2b58d1842bc4157bf1805bba"
     },
     {
       "assetId": "judge_runtime_bindings_resolver",

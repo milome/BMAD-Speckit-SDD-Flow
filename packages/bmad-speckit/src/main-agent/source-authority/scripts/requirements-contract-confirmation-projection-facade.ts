@@ -9,14 +9,13 @@ import {
   projectRequirementsContractImplementationConfirmation,
   REQUIRED_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS,
 } from './requirements-contract-implementation-confirmation-projector';
-import {
-  validateRequirementsContractImplementationConfirmation,
-} from './requirements-contract-implementation-confirmation-validator';
+import { validateRequirementsContractImplementationConfirmation } from './requirements-contract-implementation-confirmation-validator';
 import {
   sha256Stable,
   sha256Text,
   stableStringify,
 } from './requirements-contract-semantic-resolver';
+import { verifyRequirementsContractCoreArtifactReadback } from './requirements-contract-semantic-conservation-verifier';
 
 const HASH_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 const IDENTITY_FIELDS = new Set([
@@ -46,10 +45,11 @@ const CANONICAL_FIELDS = new Set<string>([
   ...REQUIRED_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS,
   ...CONDITIONAL_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS,
 ]);
-const CONFIRMATION_SCHEMA = require('../schemas/requirements-contract-implementation-confirmation.schema.json') as Record<
-  string,
-  unknown
->;
+const CONFIRMATION_SCHEMA =
+  require('../schemas/requirements-contract-implementation-confirmation.schema.json') as Record<
+    string,
+    unknown
+  >;
 const ROW_ARRAY_FIELDS = new Set([
   'must',
   'notDone',
@@ -72,6 +72,34 @@ const ROW_ARRAY_FIELDS = new Set([
   'implementationTasks',
 ]);
 const MERGEABLE_TEXT_FIELDS = new Set(['oracle', 'text', 'assertion', 'expectedBehavior']);
+const FROZEN_CONFIRMATION_SEMANTIC_FIELDS = new Set<string>([
+  'contractAuthoringRequired',
+  'applicability',
+  'must',
+  'notDone',
+  'mustNot',
+  'evidence',
+  'openQuestions',
+  'failurePaths',
+  'edgeCases',
+  'acceptanceTests',
+  'e2eSuites',
+  'traceRows',
+  'sequenceViews',
+  'flowViews',
+  'edgeCaseViews',
+  'boundaryViews',
+  'targetModificationPaths',
+  'requirementBoundary',
+  'artifactAutomationPlan',
+  'requiredCommands',
+  'suggestedCommands',
+  'requiredContractChecks',
+  'implementationTasks',
+  'closeoutReadinessPreview',
+  ...CONDITIONAL_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS,
+]);
+const LOCALIZED_VIEW_FIELDS = /(?:Zh|localized)$/u;
 
 export type ExpectedSets = {
   requirements: string[];
@@ -101,6 +129,17 @@ export interface ProductionImplementationConfirmationProjectionInput {
   expectedSets: ExpectedSets;
   conservationReceiptRefs: string[];
   auditReceiptRefs: string[];
+  frozenProjectionContext: {
+    checkpointId: 'cp04';
+    checkpointStatus: 'passed';
+    semanticIdentity: {
+      scopeSemanticHash: string;
+      semanticRevisionId: string;
+    };
+    frozenSemanticIr: Record<string, unknown>;
+    semanticIrFreeze: Record<string, unknown>;
+    readbackVerified: true;
+  };
 }
 
 export interface ProductionImplementationConfirmationProjectionResult {
@@ -164,6 +203,34 @@ function assertAttemptBindings(
   ) {
     throw new Error('confirmation_projection_attempt_bindings_invalid');
   }
+}
+
+function assertFrozenProjectionContext(
+  input: ProductionImplementationConfirmationProjectionInput
+): string {
+  const context = input.frozenProjectionContext;
+  if (
+    !context ||
+    context.checkpointId !== 'cp04' ||
+    context.checkpointStatus !== 'passed' ||
+    context.readbackVerified !== true
+  ) {
+    throw new Error('requirements_projection_cp04_frozen_ir_required');
+  }
+  if (
+    !text(context.semanticIdentity.semanticRevisionId) ||
+    !HASH_PATTERN.test(context.semanticIdentity.scopeSemanticHash) ||
+    context.semanticIdentity.scopeSemanticHash !== input.semanticModelHash ||
+    context.frozenSemanticIr.scopeSemanticHash !== context.semanticIdentity.scopeSemanticHash ||
+    context.frozenSemanticIr.semanticRevisionId !== context.semanticIdentity.semanticRevisionId ||
+    !verifyRequirementsContractCoreArtifactReadback({
+      freeze: context.semanticIrFreeze,
+      artifact: context.frozenSemanticIr,
+    })
+  ) {
+    throw new Error('requirements_projection_cp04_frozen_ir_identity_invalid');
+  }
+  return stableStringify(context.frozenSemanticIr);
 }
 
 function decisionReceiptReference(receipt: Record<string, unknown>): string {
@@ -353,8 +420,7 @@ function normalizeStagingConfirmation(
       : [];
     normalized.aiTddContractExecutionManifestProjection = {
       schemaVersion:
-        text(aiTddProjection.schemaVersion) ||
-        'ai-tdd-contract-execution-manifest-projection/v1',
+        text(aiTddProjection.schemaVersion) || 'ai-tdd-contract-execution-manifest-projection/v1',
       applies: true,
       requiredSections: stringArray(aiTddProjection.requiredSections),
       atomicImplementationTaskLineage: tasks.map((task) => ({
@@ -366,14 +432,16 @@ function normalizeStagingConfirmation(
         failurePathRef: text(failure.id),
         negRefs: stringArray(failure.linkedNegIds),
         acceptanceRefs: acceptanceTests
-          .filter((acceptance) => stringArray(acceptance.covers).some((id) =>
-            stringArray(failure.linkedNegIds).includes(id)
-          ))
+          .filter((acceptance) =>
+            stringArray(acceptance.covers).some((id) =>
+              stringArray(failure.linkedNegIds).includes(id)
+            )
+          )
           .map((acceptance) => text(acceptance.id)),
         viewRefs: sequenceViews
-          .filter((view) => stringArray(view.covers).some((id) =>
-            stringArray(failure.linkedNegIds).includes(id)
-          ))
+          .filter((view) =>
+            stringArray(view.covers).some((id) => stringArray(failure.linkedNegIds).includes(id))
+          )
           .map((view) => text(view.id)),
       })),
       commandTargets: commands.map((command) => ({
@@ -441,6 +509,12 @@ function normalizeStagingConfirmation(
   return normalized;
 }
 
+export function normalizeRequirementsContractStagingConfirmation(
+  confirmation: ImplementationConfirmation
+): ImplementationConfirmation {
+  return normalizeStagingConfirmation(confirmation);
+}
+
 function uniqueStrings(value: string[]): string[] {
   return [...new Set(value)];
 }
@@ -467,14 +541,10 @@ function schemaAccepts(
 ): boolean {
   const resolved = schema.$ref ? schemaRef(root, String(schema.$ref)) : schema;
   if (Array.isArray(resolved.oneOf)) {
-    return resolved.oneOf.some((candidate) =>
-      schemaAccepts(value, recordObject(candidate), root)
-    );
+    return resolved.oneOf.some((candidate) => schemaAccepts(value, recordObject(candidate), root));
   }
   if (Array.isArray(resolved.anyOf)) {
-    return resolved.anyOf.some((candidate) =>
-      schemaAccepts(value, recordObject(candidate), root)
-    );
+    return resolved.anyOf.some((candidate) => schemaAccepts(value, recordObject(candidate), root));
   }
   if (Object.prototype.hasOwnProperty.call(resolved, 'const')) {
     return stableStringify(value) === stableStringify(resolved.const);
@@ -482,7 +552,8 @@ function schemaAccepts(
   if (Array.isArray(resolved.enum) && !resolved.enum.includes(value)) return false;
   const type = resolved.type;
   if (type === 'null') return value === null;
-  if (type === 'object') return value !== null && typeof value === 'object' && !Array.isArray(value);
+  if (type === 'object')
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
   if (type === 'array') return Array.isArray(value);
   if (type === 'string') return typeof value === 'string';
   if (type === 'boolean') return typeof value === 'boolean';
@@ -537,10 +608,7 @@ function projectValueBySchema(
     const projected = items
       ? value.map((entry) => projectValueBySchema(entry, items, root))
       : value;
-    if (
-      schema.uniqueItems === true &&
-      projected.every((entry) => typeof entry === 'string')
-    ) {
+    if (schema.uniqueItems === true && projected.every((entry) => typeof entry === 'string')) {
       return [...new Set(projected)];
     }
     return projected;
@@ -553,9 +621,7 @@ function projectValueBySchema(
 
 function canonicalTargetChangeType(value: unknown): string {
   const normalized = text(value).toLowerCase().replace(/-/gu, '_');
-  if (
-    ['code', 'test', 'schema', 'reference', 'configuration'].includes(normalized)
-  ) {
+  if (['code', 'test', 'schema', 'reference', 'configuration'].includes(normalized)) {
     return normalized;
   }
   if (['modify', 'add', 'create', 'delete', 'remove', 'update', 'replace'].includes(normalized)) {
@@ -564,7 +630,9 @@ function canonicalTargetChangeType(value: unknown): string {
   if (['validate', 'validation', 'validation_only'].includes(normalized)) {
     return 'test';
   }
-  if (['generated', 'output', 'generated_output', 'runtime', 'runtime_output'].includes(normalized)) {
+  if (
+    ['generated', 'output', 'generated_output', 'runtime', 'runtime_output'].includes(normalized)
+  ) {
     return 'reference';
   }
   return text(value);
@@ -584,6 +652,94 @@ function projectConfirmationToCanonicalSchema(
     });
   }
   return recordObject(projectValueBySchema(normalized, CONFIRMATION_SCHEMA, CONFIRMATION_SCHEMA));
+}
+
+function frozenImplementationConfirmation(
+  context: ProductionImplementationConfirmationProjectionInput['frozenProjectionContext']
+): ImplementationConfirmation {
+  const semanticPayload = recordObject(context.frozenSemanticIr.semanticPayload);
+  const semantics = recordObject(semanticPayload.semantics);
+  const frozen = recordObject(semantics.implementationConfirmation);
+  if (Object.keys(frozen).length === 0) {
+    throw new Error('requirements_projection_frozen_confirmation_semantics_missing');
+  }
+  for (const fieldRef of Object.keys(frozen)) {
+    if (!FROZEN_CONFIRMATION_SEMANTIC_FIELDS.has(fieldRef)) {
+      throw new Error(`requirements_projection_frozen_confirmation_field_invalid:${fieldRef}`);
+    }
+  }
+  return normalizeStagingConfirmation(frozen);
+}
+
+export function selectRequirementsContractFrozenConfirmationSemantics(
+  confirmation: ImplementationConfirmation
+): ImplementationConfirmation {
+  const normalized = normalizeStagingConfirmation(confirmation);
+  return Object.fromEntries(
+    [...FROZEN_CONFIRMATION_SEMANTIC_FIELDS]
+      .filter((fieldRef) => Object.prototype.hasOwnProperty.call(normalized, fieldRef))
+      .map((fieldRef) => [fieldRef, structuredClone(normalized[fieldRef])])
+  );
+}
+
+function assertMutableRowIdsAreFrozen(
+  mutableConfirmation: ImplementationConfirmation,
+  frozenConfirmation: ImplementationConfirmation
+): void {
+  for (const fieldRef of ROW_ARRAY_FIELDS) {
+    const mutableRows = Array.isArray(mutableConfirmation[fieldRef])
+      ? (mutableConfirmation[fieldRef] as unknown[]).map(recordObject)
+      : [];
+    if (mutableRows.length === 0) continue;
+    const frozenIds = new Set(
+      (Array.isArray(frozenConfirmation[fieldRef])
+        ? (frozenConfirmation[fieldRef] as unknown[]).map(recordObject)
+        : []
+      )
+        .map((row) => text(row.id))
+        .filter(Boolean)
+    );
+    for (const row of mutableRows) {
+      const id = text(row.id);
+      if (id && !frozenIds.has(id)) {
+        throw new Error(`requirements_projection_unknown_semantic_id:${id}`);
+      }
+    }
+  }
+}
+
+function mergeLocalizedRowViews(frozenValue: unknown, mutableValue: unknown): unknown {
+  if (!Array.isArray(frozenValue) || !Array.isArray(mutableValue)) return frozenValue;
+  const mutableById = new Map(
+    mutableValue
+      .map(recordObject)
+      .filter((row) => text(row.id))
+      .map((row) => [text(row.id), row])
+  );
+  return frozenValue.map((value) => {
+    const frozenRow = recordObject(value);
+    const mutableRow = mutableById.get(text(frozenRow.id));
+    if (!mutableRow) return frozenRow;
+    const localizedFields = Object.fromEntries(
+      Object.entries(mutableRow).filter(([fieldRef]) => LOCALIZED_VIEW_FIELDS.test(fieldRef))
+    );
+    return { ...frozenRow, ...localizedFields };
+  });
+}
+
+function bindConfirmationToFrozenSemantics(input: {
+  mutableConfirmation: ImplementationConfirmation;
+  frozenConfirmation: ImplementationConfirmation;
+}): ImplementationConfirmation {
+  assertMutableRowIdsAreFrozen(input.mutableConfirmation, input.frozenConfirmation);
+  const bound = structuredClone(input.mutableConfirmation);
+  for (const fieldRef of FROZEN_CONFIRMATION_SEMANTIC_FIELDS) delete bound[fieldRef];
+  for (const [fieldRef, frozenValue] of Object.entries(input.frozenConfirmation)) {
+    bound[fieldRef] = ROW_ARRAY_FIELDS.has(fieldRef)
+      ? mergeLocalizedRowViews(frozenValue, input.mutableConfirmation[fieldRef])
+      : structuredClone(frozenValue);
+  }
+  return bound;
 }
 
 function semanticFields(confirmation: ImplementationConfirmation): {
@@ -611,8 +767,8 @@ function semanticFields(confirmation: ImplementationConfirmation): {
     if (fieldRef === 'functionalResumeFailureCaseRegistry') {
       return (
         domain.applies === true ||
-        recordObject(applicability.runtimeRecovery)
-          .requiresFunctionalResumeFailureCaseRegistry === true
+        recordObject(applicability.runtimeRecovery).requiresFunctionalResumeFailureCaseRegistry ===
+          true
       );
     }
     return domain.applies === true;
@@ -685,25 +841,20 @@ function buildProjectionContext(
 export function projectProductionImplementationConfirmation(
   input: ProductionImplementationConfirmationProjectionInput
 ): ProductionImplementationConfirmationProjectionResult {
+  const frozenSemanticIrBefore = assertFrozenProjectionContext(input);
   assertHash(input.source.sourceDocumentHash, 'source_document_hash');
   assertHash(input.semanticModelHash, 'semantic_model_hash');
   if (!text(input.source.recordId) || !text(input.source.requirementSetId)) {
     throw new Error('confirmation_projection_source_identity_invalid');
   }
   assertAttemptBindings(input.attemptBindings);
-  if (
-    !nonEmptyStrings(input.conservationReceiptRefs) ||
-    !nonEmptyStrings(input.auditReceiptRefs)
-  ) {
+  if (!nonEmptyStrings(input.conservationReceiptRefs) || !nonEmptyStrings(input.auditReceiptRefs)) {
     throw new Error('confirmation_projection_receipt_bindings_invalid');
   }
 
   const decisionReceipts = normalizeDecisionReceipts(input.decisionReceipts);
   const receiptRefs = new Set(decisionReceipts.map((receipt) => receipt.receiptId));
-  for (const receiptRef of [
-    ...input.conservationReceiptRefs,
-    ...input.auditReceiptRefs,
-  ]) {
+  for (const receiptRef of [...input.conservationReceiptRefs, ...input.auditReceiptRefs]) {
     if (!receiptRefs.has(receiptRef)) {
       throw new Error(`confirmation_projection_receipt_not_found:${receiptRef}`);
     }
@@ -711,9 +862,18 @@ export function projectProductionImplementationConfirmation(
 
   const normalizedConfirmation = normalizeStagingConfirmation(input.confirmation);
   const stagingProjection = semanticFields(normalizedConfirmation);
-  const canonicalConfirmation = projectConfirmationToCanonicalSchema(normalizedConfirmation);
+  const canonicalConfirmation = projectConfirmationToCanonicalSchema(
+    bindConfirmationToFrozenSemantics({
+      mutableConfirmation: normalizedConfirmation,
+      frozenConfirmation: frozenImplementationConfirmation(input.frozenProjectionContext),
+    })
+  );
   const semanticProjection = semanticFields(canonicalConfirmation);
   const fields = semanticProjection.fields;
+  const omittedInapplicableFields = uniqueStrings([
+    ...stagingProjection.omittedInapplicableFields,
+    ...semanticProjection.omittedInapplicableFields,
+  ]).sort();
   const primaryReceiptRef = decisionReceipts[0].receiptId;
   const context = buildProjectionContext(input);
   const projected = projectRequirementsContractImplementationConfirmation({
@@ -726,18 +886,13 @@ export function projectProductionImplementationConfirmation(
     provenance: fields.map(({ fieldRef }) => ({
       fieldRef,
       authorityClass: 'rule_derived',
-      provenanceRefs: [
-        `canonical-semantic-ir:${input.semanticModelHash}:${fieldRef}`,
-      ],
+      provenanceRefs: [`canonical-semantic-ir:${input.semanticModelHash}:${fieldRef}`],
       decisionReceiptRef: primaryReceiptRef,
     })),
     decisionReceipts,
     context,
   });
-  const validation = validateRequirementsContractImplementationConfirmation(
-    projected,
-    context
-  );
+  const validation = validateRequirementsContractImplementationConfirmation(projected, context);
   if (validation.promotionDecision !== 'pass') {
     throw new Error(
       `confirmation_projection_validation_blocked:${[
@@ -747,13 +902,14 @@ export function projectProductionImplementationConfirmation(
     );
   }
 
-  const serializedConfirmation =
-    serializeRequirementsContractImplementationConfirmation(projected);
-  const roundTrip = extractRequirementsContractImplementationConfirmation(
-    serializedConfirmation
-  ).value;
+  const serializedConfirmation = serializeRequirementsContractImplementationConfirmation(projected);
+  const roundTrip =
+    extractRequirementsContractImplementationConfirmation(serializedConfirmation).value;
   if (stableStringify(roundTrip) !== stableStringify(projected)) {
     throw new Error('confirmation_projection_codec_round_trip_failed');
+  }
+  if (stableStringify(input.frozenProjectionContext.frozenSemanticIr) !== frozenSemanticIrBefore) {
+    throw new Error('requirements_projection_semantic_ir_mutation_forbidden');
   }
 
   const receiptPreimage = {
@@ -776,11 +932,11 @@ export function projectProductionImplementationConfirmation(
         fieldRef,
         value: input.confirmation[fieldRef],
       })),
-      omittedInapplicableFields: semanticProjection.omittedInapplicableFields,
+      omittedInapplicableFields,
     }),
     attemptBindings: input.attemptBindings,
     stagingOnlyFields: stagingProjection.stagingOnlyFields,
-    omittedInapplicableFields: semanticProjection.omittedInapplicableFields,
+    omittedInapplicableFields,
   };
   return {
     confirmation: projected,

@@ -562,7 +562,7 @@ function autoRepairDeterministicGateArtifacts(args, manifest, targetPath) {
 const REQUIRED_CHECKPOINT_IDS = [
   "cp-00-semantic-kernel",
   "cp-01-must-decomposition-packet",
-  "cp-02-atomic-decomposition-loop-convergence",
+  "cp-02-deterministic-atomic-closure",
   "cp-03-packet-to-source-materialization",
   "cp-04-id-freeze",
   "cp-05-implementation-confirmation-core",

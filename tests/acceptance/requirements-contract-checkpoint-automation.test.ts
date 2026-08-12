@@ -681,8 +681,18 @@ function writeValidMustGateArtifactsForSource(source: string, authoringDir: stri
     semanticKernelHash: kernelHash,
     packetHash,
     status: 'synchronized',
+    executionRegistry: {
+      entries: mustRows.map((must: any, index: number) => ({
+        kind: 'command',
+        id: `CMD-ATOM-${String(index + 1).padStart(3, '0')}`,
+        value:
+          'npx vitest run tests/acceptance/requirements-contract-checkpoint-automation.test.ts',
+      })),
+    },
     mustPackets: mustRows.map((must: any, index: number) => {
       const taskId = `TASK-${String(index + 1).padStart(3, '0')}`;
+      const sourceSpanRef = `SPEC-SPAN-${String(index + 1).padStart(3, '0')}`;
+      const executionConstraintRef = `command:CMD-ATOM-${String(index + 1).padStart(3, '0')}`;
       return {
         mustRef: must.id,
         mustIntent: must.text,
@@ -705,6 +715,13 @@ function writeValidMustGateArtifactsForSource(source: string, authoringDir: stri
         mustAtomicTasks: [
           {
             id: taskId,
+            action: must.text,
+            oracle: `${must.id} deterministic acceptance oracle`,
+            dependencies: [],
+            originBindings: [{ sourceRootId: must.id, sourceSpanRef }],
+            authorityRefs: [`AUTHORITY-${must.id}`],
+            spanRefs: [sourceSpanRef],
+            executionConstraintRefs: [executionConstraintRef],
             targetFiles: ['tests/acceptance/requirements-contract-checkpoint-automation.test.ts'],
             redProofPlan: `${must.id} red proof`,
             materializedTo: [`implementationConfirmation.atomicImplementationTaskList[${taskId}]`],
@@ -766,9 +783,7 @@ function writeValidMustGateArtifactsForSource(source: string, authoringDir: stri
       {
         mustRef: mustRows[0]?.id ?? 'MUST-001',
         materializedTo: [
-          ...(confirmation.currentTargetMap
-            ? ['implementationConfirmation.currentTargetMap']
-            : []),
+          ...(confirmation.currentTargetMap ? ['implementationConfirmation.currentTargetMap'] : []),
           ...(confirmation.aiTddContractExecutionManifestProjection
             ? ['implementationConfirmation.aiTddContractExecutionManifestProjection']
             : []),
@@ -874,10 +889,7 @@ function writeValidMustGateArtifactsForSource(source: string, authoringDir: stri
   const sourceBytesHash = fileHash(source);
   const createdAt = '2026-05-25T00:00:00.000Z';
   const candidateArtifactPath = path.join(authoringDir, 'controlled-must-candidates.json');
-  const draftConfirmationPath = path.join(
-    authoringDir,
-    'draft-implementation-confirmation.json'
-  );
+  const draftConfirmationPath = path.join(authoringDir, 'draft-implementation-confirmation.json');
   fs.writeFileSync(
     path.join(authoringDir, 'critical-auditor-checkpoint-outcome.json'),
     JSON.stringify(
@@ -1799,7 +1811,7 @@ describe('requirements contract checkpoint automation', () => {
   const SEMANTIC_CHECKPOINT_IDS = [
     'cp-00-semantic-kernel',
     'cp-01-must-decomposition-packet',
-    'cp-02-atomic-decomposition-loop-convergence',
+    'cp-02-deterministic-atomic-closure',
     'cp-03-packet-to-source-materialization',
     'cp-04-id-freeze',
     'cp-05-implementation-confirmation-core',
@@ -2301,7 +2313,11 @@ describe('requirements contract checkpoint automation', () => {
     const progress = path.join(tempDir, 'progress.json');
     writeValidMustGateArtifactsForSource(source, authoringDirForGlobalGateRecord(tempDir));
 
-    const plan = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'plan'], tempDir);
+    const plan = runNode(
+      CHECKPOINTS,
+      ['--source', source, '--progress', progress, '--mode', 'plan'],
+      tempDir
+    );
     expect(plan.result.status, `${plan.result.stdout}\n${plan.result.stderr}`).toBe(0);
     expect(() => JSON.parse(plan.result.stdout)).not.toThrow();
     expect(plan.result.stderr).toContain('[需求契约]');
@@ -2331,7 +2347,11 @@ describe('requirements contract checkpoint automation', () => {
     expect(run.result.stderr).toContain('下一安全动作：');
     expect(run.result.stderr).toContain('机器信息：');
 
-    const status = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'status'], tempDir);
+    const status = runNode(
+      CHECKPOINTS,
+      ['--source', source, '--progress', progress, '--mode', 'status'],
+      tempDir
+    );
     expect(status.result.status, `${status.result.stdout}\n${status.result.stderr}`).toBe(0);
     expect(() => JSON.parse(status.result.stdout)).not.toThrow();
     expect(status.result.stderr).toContain('[需求契约]');
@@ -2339,7 +2359,11 @@ describe('requirements contract checkpoint automation', () => {
     expect(status.result.stderr).toContain('下一安全动作：');
     expect(status.result.stderr).toContain('机器信息：');
 
-    const resume = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'resume'], tempDir);
+    const resume = runNode(
+      CHECKPOINTS,
+      ['--source', source, '--progress', progress, '--mode', 'resume'],
+      tempDir
+    );
     expect(resume.result.status, `${resume.result.stdout}\n${resume.result.stderr}`).toBe(0);
     expect(() => JSON.parse(resume.result.stdout)).not.toThrow();
     expect(resume.result.stderr).toContain('[需求契约]');
@@ -2395,7 +2419,11 @@ describe('requirements contract checkpoint automation', () => {
       'utf8'
     );
 
-    const blocked = runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'run'], tempDir);
+    const blocked = runNode(
+      CHECKPOINTS,
+      ['--source', source, '--progress', progress, '--mode', 'run'],
+      tempDir
+    );
     expect(blocked.result.status).toBe(1);
     expect(blocked.json.code).toBe('checkpoint_source_edit_missing');
     expect(blocked.result.stderr).toContain('当前源文档还没有写入本 checkpoint 需要保存的内容');
@@ -2405,7 +2433,17 @@ describe('requirements contract checkpoint automation', () => {
 
     const quiet = spawnSync(
       process.execPath,
-      [CHECKPOINTS, '--source', source, '--progress', progress, '--mode', 'run', '--json', '--quiet'],
+      [
+        CHECKPOINTS,
+        '--source',
+        source,
+        '--progress',
+        progress,
+        '--mode',
+        'run',
+        '--json',
+        '--quiet',
+      ],
       {
         cwd: tempDir,
         encoding: 'utf8',
@@ -2555,7 +2593,7 @@ describe('requirements contract checkpoint automation', () => {
     expect(result.status).toBe(0);
     expect(json.status).toBe('ready');
     expect(json.recoveredFrom).toBe('backup');
-    expect(json.nextCheckpoint).toBe('cp-02-atomic-decomposition-loop-convergence');
+    expect(json.nextCheckpoint).toBe('cp-02-deterministic-atomic-closure');
     expect(json.semanticDrilldown.nextAction).toBe('run_packet_source_reconciliation');
   });
 
@@ -2590,7 +2628,7 @@ describe('requirements contract checkpoint automation', () => {
     expect(result.status).toBe(0);
     expect(json.status).toBe('ready');
     expect(json.recoveredFrom).toBe('git_checkpoint');
-    expect(json.nextCheckpoint).toBe('cp-02-atomic-decomposition-loop-convergence');
+    expect(json.nextCheckpoint).toBe('cp-02-deterministic-atomic-closure');
   });
 
   it('continues run from recovered progress using current evidence instead of replaying completed checkpoints', () => {
@@ -2918,7 +2956,11 @@ describe('requirements contract checkpoint automation', () => {
       ),
       'utf8'
     );
-    runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'pre-render-gate'], tempDir);
+    runNode(
+      CHECKPOINTS,
+      ['--source', source, '--progress', progress, '--mode', 'pre-render-gate'],
+      tempDir
+    );
     const beforeCommitCount = spawnSync('git', ['rev-list', '--count', 'HEAD'], {
       cwd: tempDir,
       encoding: 'utf8',
@@ -2990,7 +3032,11 @@ describe('requirements contract checkpoint automation', () => {
       ),
       'utf8'
     );
-    runNode(CHECKPOINTS, ['--source', source, '--progress', progress, '--mode', 'pre-render-gate'], tempDir);
+    runNode(
+      CHECKPOINTS,
+      ['--source', source, '--progress', progress, '--mode', 'pre-render-gate'],
+      tempDir
+    );
     const beforeCommitCount = spawnSync('git', ['rev-list', '--count', 'HEAD'], {
       cwd: tempDir,
       encoding: 'utf8',
@@ -3109,7 +3155,9 @@ describe('requirements contract checkpoint automation', () => {
     expect(json.verdict).toBe('FAIL');
     expect(failedChecks).toContain('global_projection_per_must_acceptance_not_independent');
     expect(failedChecks).toContain('global_projection_shared_evidence_without_per_must_oracle');
-    expect(failedChecks).toContain('global_required_command_all_cover_all_without_per_must_assertions');
+    expect(failedChecks).toContain(
+      'global_required_command_all_cover_all_without_per_must_assertions'
+    );
     expect(failedChecks).toContain('global_target_modification_path_all_cover_all');
     expect(failedChecks).toContain('global_current_target_map_not_product_specific');
     expect(failedChecks).toContain('global_business_visual_generic_or_compressed');
