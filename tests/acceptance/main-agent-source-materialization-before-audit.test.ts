@@ -405,7 +405,7 @@ describe('source materialization before deep audit', () => {
     }
   });
 
-  it('refreshes a missing promotion receipt but blocks when inline confirmation is missing', () => {
+  it('blocks when the promotion receipt refresh fails or inline confirmation is missing', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'source-materialization-guard-'));
     try {
       const recordId = 'REQ-SOURCE-MAT-GUARD';
@@ -424,9 +424,7 @@ describe('source materialization before deep audit', () => {
       expect(missingReceipt.blockingStage).toBe(
         'current_source_promotion_refresh_failed_before_audit'
       );
-      expect(readJson(promotionReceiptPath(root, recordId))).toMatchObject({
-        promotionStage: 'authoring-draft',
-      });
+      expect(existsSync(promotionReceiptPath(root, recordId))).toBe(false);
       expect(existsSync(requestPath(root, recordId, 1))).toBe(false);
 
       const noInlineSource = writeSourceWithoutConfirmation(root);
@@ -468,9 +466,7 @@ describe('source materialization before deep audit', () => {
         blockingStage: 'current_source_promotion_refresh_failed_before_audit',
       });
       expect(result.blockingStage).toBe('current_source_promotion_refresh_failed_before_audit');
-      expect(readJson(promotionReceiptPath(root, recordId))).toMatchObject({
-        promotionStage: 'authoring-draft',
-      });
+      expect(existsSync(promotionReceiptPath(root, recordId))).toBe(false);
       expect(existsSync(sourceMaterializationReceiptPath(root, recordId))).toBe(true);
       expect(existsSync(requestPath(root, recordId, 1))).toBe(false);
     } finally {

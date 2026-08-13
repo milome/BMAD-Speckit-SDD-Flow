@@ -183,6 +183,8 @@ function runProductionEntry(
       targetPath,
       '--request-id',
       sessionAuthority.requirementSetId,
+      '--confirmation-language',
+      'en-US',
       '--json',
     ],
     {
