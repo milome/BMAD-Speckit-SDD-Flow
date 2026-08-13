@@ -103,7 +103,7 @@ function boundRequest(root: string, extra: JsonRecord = {}): JsonRecord {
     writeFileSync(sourcePath, `${randomUUID()}\n`, 'utf8');
   }
   return {
-    requestHash: hash('request'),
+    judgeRequestHash: hash('request'),
     sourceDocumentHash: hash('source-document'),
     semanticModelHash: hash('semantic-model'),
     projectionSetHash: hash('projection-set'),

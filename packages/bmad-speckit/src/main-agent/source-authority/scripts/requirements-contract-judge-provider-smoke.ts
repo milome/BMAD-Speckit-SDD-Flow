@@ -8,7 +8,10 @@ import {
   resolveRequirementsContractJudgeProvider,
 } from './requirements-contract-judge-provider-registry';
 import { resolveRequirementsContractJudgeRuntimeBindings } from './requirements-contract-judge-runtime-bindings';
-import { createRequirementsContractJudgeSelectionReceipt } from './requirements-contract-judge-selection';
+import {
+  createRequirementsContractJudgeSelectionReceipt,
+  resolveRequirementsContractJudgeAdapterRef,
+} from './requirements-contract-judge-selection';
 import { fileHash, sha256, slash, writeGovernedJson } from './requirements-contract-governed-write';
 
 type JsonRecord = Record<string, ReturnType<typeof JSON.parse>>;
@@ -193,14 +196,7 @@ export async function requirementsContractJudgeProviderSmokeCommand(
   const capabilityPath = resolveWithin(root, options.capabilityReceipt);
   validate(capability, 'requirements-contract-judge-capability-receipt.schema.json');
   createOnlyWrite(capabilityPath, capability);
-  const adapterRef =
-    provider.transport === 'openai-compatible'
-      ? 'OpenAICompatibleJudgeAdapter'
-      : provider.transport === 'anthropic-compatible'
-        ? 'AnthropicCompatibleJudgeAdapter'
-        : provider.transport === 'claude-code-cli'
-          ? 'ClaudeCodeCliJudgeAdapter'
-          : 'CodexCliJudgeAdapter';
+  const adapterRef = resolveRequirementsContractJudgeAdapterRef(provider);
   const selectionReceipt = createRequirementsContractJudgeSelectionReceipt({
     providerRef: providerSelection.providerRef,
     provider,

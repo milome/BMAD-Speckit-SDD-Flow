@@ -10,7 +10,10 @@ import {
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-command';
 import { createRequirementsContractJudgeProviderRegistry } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-provider-registry';
 import { buildRequirementsContractJudgeRequest } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-request-identity';
-import { createRequirementsContractJudgeSelectionReceipt } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-selection';
+import {
+  createRequirementsContractJudgeSelectionReceipt,
+  resolveRequirementsContractJudgeAdapterRef,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-selection';
 import { sha256 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-governed-write';
 
 type JsonRecord = Record<string, unknown>;
@@ -655,5 +658,14 @@ describe('canonical requirements contract judge run command', () => {
         ])
       ).toThrow(`requirements_contract_judge_command_arg_forbidden:${flag.slice(2)}`);
     }
+  });
+
+  it('preserves an explicit Claude adapter identity for the generic CLI transport', () => {
+    expect(
+      resolveRequirementsContractJudgeAdapterRef({
+        transport: 'cli',
+        adapterRef: 'ClaudeCodeCliJudgeAdapter',
+      })
+    ).toBe('ClaudeCodeCliJudgeAdapter');
   });
 });

@@ -237,6 +237,12 @@ export const REQUIREMENTS_CONTRACT_SIX_MODEL_CONSUMER_DEFINITIONS: readonly SixM
       verifiedFacadeRequired: true,
     },
     {
+      consumerId: 'six-model-controlled-closeout-confirmation',
+      canonicalPath:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-controlled-closeout-confirmation.ts',
+      roles: ['projection_reader', 'projection_writer'],
+    },
+    {
       consumerId: 'six-model-execution-closure',
       canonicalPath:
         'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-execution-closure-gate.ts',

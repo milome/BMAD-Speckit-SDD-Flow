@@ -25,6 +25,19 @@ function optionalCapacity(provider: JsonRecord) {
   return Object.values(capacity).some((value) => value !== null) ? capacity : null;
 }
 
+export function resolveRequirementsContractJudgeAdapterRef(provider: JsonRecord): string {
+  if (typeof provider.adapterRef === 'string' && provider.adapterRef) {
+    return provider.adapterRef;
+  }
+  return provider.transport === 'openai-compatible'
+    ? 'OpenAICompatibleJudgeAdapter'
+    : provider.transport === 'anthropic-compatible'
+      ? 'AnthropicCompatibleJudgeAdapter'
+      : provider.transport === 'claude-code-cli'
+        ? 'ClaudeCodeCliJudgeAdapter'
+        : 'CodexCliJudgeAdapter';
+}
+
 export function createRequirementsContractJudgeSelectionReceipt(input: {
   providerRef: string;
   provider: JsonRecord;

@@ -2,9 +2,9 @@
   "schemaVersion": "requirements-contract-consumer-registry/v2",
   "owner": {
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-consumer-registry.ts",
-    "hash": "sha256:164753a8f5359b58997d4b65d4f750bd005b9ec60ce0fd5f1f3e022585245ad2"
+    "hash": "sha256:44c803d8080c32aad29ca2f2d983b714b6ebaf0ba70a1a6e13c18ae4415b33b9"
   },
-  "registryHash": "sha256:7e5c915e92f8215ac44f24eaaba2ba66a53bc7466f50342ebab86d5af3acdc6e",
+  "registryHash": "sha256:1a6dfd636623050a6c1d2b24195b3590f1ab9c8d727233ceaa9e5a0d8b3aee40",
   "validationModes": [
     "draft",
     "confirmation-ready",
@@ -535,7 +535,7 @@
     {
       "consumerId": "requirements-contract-reverse-audit",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-reverse-audit.ts",
-      "pathHash": "sha256:6029981ca90b08263434eeea1b05a87b2bc7f75cc366a9dcee35644c4e776f5c",
+      "pathHash": "sha256:2e7dd16bbf17c082268e437d4ddf75588a5603bb9add321df0e3b7f69b0dcac0",
       "inputRole": "canonical_reverse_audit",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -1003,7 +1003,7 @@
     {
       "consumerId": "judge-provider-smoke",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-provider-smoke.ts",
-      "pathHash": "sha256:d2619fb656fddc395b9db3d0016d9007091c2d29850ef79c94453f2d7f9539f3",
+      "pathHash": "sha256:5c3d169fc5c1470cbe998ce24ddfc9fefa8c61ac2296419281113e6b76bab455",
       "inputRole": "audit_phase_context",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -1344,7 +1344,7 @@
     {
       "consumerId": "reverse-audit-gate",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-reverse-audit.ts",
-      "pathHash": "sha256:6029981ca90b08263434eeea1b05a87b2bc7f75cc366a9dcee35644c4e776f5c",
+      "pathHash": "sha256:2e7dd16bbf17c082268e437d4ddf75588a5603bb9add321df0e3b7f69b0dcac0",
       "inputRole": "candidate_evidence_bundle",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",

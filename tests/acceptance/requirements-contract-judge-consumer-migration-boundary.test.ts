@@ -44,9 +44,13 @@ describe('requirements contract Judge consumer migration boundary', () => {
       );
       expect(judgeRun?.runtimeRefs ?? []).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ role: 'legacy-critical-auditor-judge-adapter' }),
           expect.objectContaining({ role: 'claude-code-cli-judge-adapter' }),
           expect.objectContaining({ role: 'codex-cli-judge-adapter' }),
+        ])
+      );
+      expect(judgeRun?.runtimeRefs ?? []).not.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ role: 'legacy-critical-auditor-judge-adapter' }),
         ])
       );
     }

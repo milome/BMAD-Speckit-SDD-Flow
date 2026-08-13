@@ -15,7 +15,10 @@ import type {
   CodexCliCommandInvocation,
   CodexCliCommandResult,
 } from './requirements-contract-codex-cli-judge-adapter';
-import { createRequirementsContractJudgeSelectionReceipt } from './requirements-contract-judge-selection';
+import {
+  createRequirementsContractJudgeSelectionReceipt,
+  resolveRequirementsContractJudgeAdapterRef,
+} from './requirements-contract-judge-selection';
 import { verifyRequirementsContractJudgeRequest } from './requirements-contract-judge-request-identity';
 import { canonicalJson } from './requirements-contract-governed-write';
 
@@ -239,16 +242,7 @@ export async function invokePreparedRequirementsContractJudgeRequest(input: {
     input.prepared.provider,
     'requirements_contract_judge_provider_missing'
   );
-  const transport = String(provider.transport ?? '');
-  const adapterRef = typeof provider.adapterRef === 'string' && provider.adapterRef
-    ? provider.adapterRef
-    : transport === 'openai-compatible'
-      ? 'OpenAICompatibleJudgeAdapter'
-      : transport === 'anthropic-compatible'
-        ? 'AnthropicCompatibleJudgeAdapter'
-        : transport === 'claude-code-cli'
-          ? 'ClaudeCodeCliJudgeAdapter'
-          : 'CodexCliJudgeAdapter';
+  const adapterRef = resolveRequirementsContractJudgeAdapterRef(provider);
   const expectedSelection = createRequirementsContractJudgeSelectionReceipt({
     providerRef: input.prepared.providerRef,
     provider,

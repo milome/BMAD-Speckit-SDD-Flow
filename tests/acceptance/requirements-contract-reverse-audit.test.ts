@@ -12,7 +12,7 @@ const REVERSE_AUDIT_SOURCE = path.resolve(
   process.cwd(),
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-reverse-audit.ts'
 );
-const CRITICAL_AUDITOR_ADAPTER_SOURCE = path.resolve(
+const LEGACY_CRITICAL_AUDITOR_ADAPTER_SOURCE = path.resolve(
   process.cwd(),
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-critical-auditor-judge-adapter.ts'
 );
@@ -22,26 +22,24 @@ const SHARED_JUDGE_INVOCATION_SOURCE = path.resolve(
 );
 
 describe('requirements contract reverse audit', () => {
-  it('routes Reverse Audit and Critical Auditor through one shared Judge invocation authority', () => {
+  it('routes Reverse Audit through the shared Judge invocation authority after the legacy adapter hard cut', () => {
     const reverseAuditSource = readFileSync(REVERSE_AUDIT_SOURCE, 'utf8');
-    const criticalAuditorSource = readFileSync(CRITICAL_AUDITOR_ADAPTER_SOURCE, 'utf8');
 
-    for (const source of [reverseAuditSource, criticalAuditorSource]) {
-      expect(source).toContain('prepareRequirementsContractJudgeInvocation');
-      expect(source).not.toMatch(
-        /import\s*\{[^}]*\bresolveRequirementsContractJudgeCredential\b[^}]*\}\s*from/u
-      );
-      expect(source).not.toMatch(/\bresolveRequirementsContractJudgeCredential\s*\(/u);
-      expect(source).not.toMatch(
-        /import\s*\{[^}]*\bresolveRequirementsContractJudgeProvider\b[^}]*\}\s*from/u
-      );
-      expect(source).not.toMatch(/\bresolveRequirementsContractJudgeProvider\s*\(/u);
-      expect(source).not.toContain('adapter.judge');
-      expect(source).not.toMatch(/\bfetch\s*\(/u);
-      expect(source).not.toContain("new URL('/chat/completions'");
-      expect(source).not.toContain('authorization:');
-      expect(source).not.toMatch(/credentials\?*\.credentials/u);
-    }
+    expect(existsSync(LEGACY_CRITICAL_AUDITOR_ADAPTER_SOURCE)).toBe(false);
+    expect(reverseAuditSource).toContain('prepareRequirementsContractJudgeInvocation');
+    expect(reverseAuditSource).not.toMatch(
+      /import\s*\{[^}]*\bresolveRequirementsContractJudgeCredential\b[^}]*\}\s*from/u
+    );
+    expect(reverseAuditSource).not.toMatch(/\bresolveRequirementsContractJudgeCredential\s*\(/u);
+    expect(reverseAuditSource).not.toMatch(
+      /import\s*\{[^}]*\bresolveRequirementsContractJudgeProvider\b[^}]*\}\s*from/u
+    );
+    expect(reverseAuditSource).not.toMatch(/\bresolveRequirementsContractJudgeProvider\s*\(/u);
+    expect(reverseAuditSource).not.toContain('adapter.judge');
+    expect(reverseAuditSource).not.toMatch(/\bfetch\s*\(/u);
+    expect(reverseAuditSource).not.toContain("new URL('/chat/completions'");
+    expect(reverseAuditSource).not.toContain('authorization:');
+    expect(reverseAuditSource).not.toMatch(/credentials\?*\.credentials/u);
     expect(existsSync(SHARED_JUDGE_INVOCATION_SOURCE)).toBe(true);
     const sharedSource = readFileSync(SHARED_JUDGE_INVOCATION_SOURCE, 'utf8');
     expect(sharedSource).toContain('resolveRequirementsContractJudgeCredential');
@@ -226,6 +224,18 @@ describe('requirements contract reverse audit', () => {
         });
       }
       expect(result.decision).toBe('pass');
+      expect(
+        JSON.parse(readFileSync(path.join(phaseRoot, 'initial-judge.json'), 'utf8'))
+      ).toMatchObject({
+        schemaVersion: 'requirements-contract-normalized-judge-response/v1',
+        decision: 'pass',
+      });
+      expect(
+        JSON.parse(readFileSync(path.join(phaseRoot, 'final-judge.json'), 'utf8'))
+      ).toMatchObject({
+        schemaVersion: 'requirements-contract-normalized-judge-response/v1',
+        decision: 'pass',
+      });
       expect(
         JSON.parse(readFileSync(path.join(phaseRoot, 'challenge-tests.json'), 'utf8'))
       ).toMatchObject({
