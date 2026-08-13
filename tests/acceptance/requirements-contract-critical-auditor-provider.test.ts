@@ -5,7 +5,6 @@ import path from 'node:path';
 import yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 import {
-  criticalAuditorJudgeInvocationOutputDir,
   criticalAuditorPublishedRoundRequestCanReuseReceipt,
   mainMainAgentOrchestration,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
@@ -173,42 +172,6 @@ describe('requirements contract Critical Auditor provider modes', () => {
         'remediate_provider_contract_then_start_fresh_audit_transaction',
     });
     expect(route?.([`unrelated_${randomUUID().replaceAll('-', '_')}`])).toBeNull();
-  });
-
-  it('namespaces Judge invocations by request binding instead of round alone', () => {
-    const stagingDir = path.join('runtime', 'authoring', 'staging');
-    const roundIndex = 1;
-    const firstRequestHash = sha256Json({ request: 'first' });
-    const secondRequestHash = sha256Json({ request: 'second' });
-
-    const first = criticalAuditorJudgeInvocationOutputDir({
-      stagingDir,
-      roundIndex,
-      requestHash: firstRequestHash,
-    });
-    const second = criticalAuditorJudgeInvocationOutputDir({
-      stagingDir,
-      roundIndex,
-      requestHash: secondRequestHash,
-    });
-
-    expect(path.dirname(first)).toBe(path.join(stagingDir, 'j', String(roundIndex)));
-    expect(path.basename(first)).toMatch(/^request-[a-f0-9]{24}$/u);
-    expect(first).not.toBe(second);
-    expect(() =>
-      criticalAuditorJudgeInvocationOutputDir({
-        stagingDir,
-        roundIndex: 1,
-        requestHash: 'invalid',
-      })
-    ).toThrow('critical_auditor_judge_request_hash_invalid');
-    expect(() =>
-      criticalAuditorJudgeInvocationOutputDir({
-        stagingDir,
-        roundIndex: 0,
-        requestHash: firstRequestHash,
-      })
-    ).toThrow('critical_auditor_judge_round_index_invalid');
   });
 
   it('reuses a published round request across non-substantive gate evidence refreshes', () => {
@@ -570,80 +533,6 @@ describe('requirements contract Critical Auditor provider modes', () => {
       expect(
         (rebuiltConfirmation.must ?? []).map((row: Record<string, unknown>) => row.id)
       ).toEqual(expect.arrayContaining(semanticBodyIds));
-    } finally {
-      removeTempRoot(root);
-    }
-  });
-
-  it('rejects a self-hashed no-gap receipt that lacks real Judge invocation provenance', () => {
-    const root = createTempRoot('requirements-contract-critical-auditor-receipt-replay-');
-    try {
-      const recordId = `REQ-${randomUUID().replaceAll('-', '').toUpperCase()}`;
-      const fixture = createRequestForResponseFile(root, recordId);
-      const request = fixture.request as Record<string, any>;
-      const response = buildValidResponseFromRequest(request, fixture.packet);
-      const responsePath = roundArtifact(root, recordId, 'response', 1);
-      const receiptPath = roundArtifact(root, recordId, 'receipt', 1);
-      writeFileSync(responsePath, `${JSON.stringify(response, null, 2)}\n`, 'utf8');
-
-      const receipt: Record<string, unknown> = {
-        schemaVersion: 'critical-auditor-receipt/v1',
-        recordId,
-        roundIndex: request.roundIndex,
-        transactionId: request.transactionId,
-        namespaceVersion: request.namespaceVersion,
-        requestHash: request.requestHash,
-        inputHash: request.auditInputHash,
-        sourceHash: request.sourceDocumentHash,
-        sourceDocumentHash: request.sourceDocumentHash,
-        semanticModelHash: request.semanticModelHash,
-        implementationConfirmationHash: request.implementationConfirmationHash,
-        packetHash: request.packetHash,
-        projectionSetHash: request.projectionSetHash,
-        contentHash: request.packetHash,
-        gateDryRunHash: request.gateDryRun.gateDryRunHash,
-        responseHash: sha256Json(response),
-        independentProviderExpectation: {
-          ...request.independentProviderBinding,
-          transactionId: request.transactionId,
-          auditAttemptId: request.auditAttemptId,
-          requestHash: request.requestHash,
-          sourceDocumentHash: request.sourceDocumentHash,
-          semanticModelHash: request.semanticModelHash,
-          projectionSetHash: request.projectionSetHash,
-        },
-        independentProviderEvidence: response.independentProviderEvidence,
-        providerInvocationReceiptRef: null,
-        judgeAdapterHostExecution: null,
-        convergenceDecision: {
-          verdict: 'no_new_valid_gap',
-          resetsConvergenceCounter: false,
-        },
-      };
-      receipt.receiptHash = sha256Json(receipt);
-      writeFileSync(
-        receiptPath,
-        `${JSON.stringify({ criticalAuditorReceipt: receipt }, null, 2)}\n`,
-        'utf8'
-      );
-
-      const configPath = path.join(root, '_bmad', '_config', 'governance-remediation.yaml');
-      const config = yaml.load(readFileSync(configPath, 'utf8')) as Record<string, any>;
-      config.judgeRuntime.enabled = false;
-      writeFileSync(configPath, yaml.dump(config), 'utf8');
-
-      const result = runAuthoring(root, fixture.source, recordId, {
-        ...fixture.authoringOptions,
-        criticalAuditorProviderMode: 'external_adapter',
-        maxCriticalAuditorRounds: 1,
-      });
-
-      expect(issueCodes(result)).toContain('critical_auditor_judge_runtime_disabled');
-      expect(issueCodes(result)).not.toContain(
-        'critical_auditor_no_new_gap_convergence_not_reached'
-      );
-      expect(result.userConfirmable).toBe(false);
-      expectSourceHashUnchanged(fixture.source, fixture.beforeHash);
     } finally {
       removeTempRoot(root);
     }
@@ -1085,13 +974,29 @@ describe('requirements contract Critical Auditor provider modes', () => {
         '--cwd',
         root,
         '--action',
-        'pre-confirmation-drilldown',
+        'author-confirmation-ready-source',
         '--source',
         materialization.sourcePath,
         '--record-id',
         recordId,
         '--requirement-set-id',
-        recordId,
+        `${recordId}-SET`,
+        '--implementation-attempt-id',
+        materialization.authoringOptions.implementationAttemptId,
+        '--session-id',
+        materialization.authoringOptions.sessionId,
+        '--session-turn-id',
+        materialization.authoringOptions.sessionTurnId,
+        '--session-message-id',
+        materialization.authoringOptions.sessionMessageId,
+        '--session-actor-identity-class',
+        materialization.authoringOptions.sessionActorIdentityClass,
+        '--session-branch',
+        materialization.authoringOptions.sessionBranch,
+        '--session-captured-at',
+        materialization.authoringOptions.sessionCapturedAt,
+        '--confirmation-language',
+        materialization.authoringOptions.confirmationLanguage,
         '--target-path',
         materialization.authoringOptions.targetPath,
         '--required-command',
@@ -1111,180 +1016,6 @@ describe('requirements contract Critical Auditor provider modes', () => {
     } finally {
       process.stdout.write = originalStdoutWrite;
       process.stderr.write = originalStderrWrite;
-      removeTempRoot(root);
-    }
-  });
-
-  it('rejects repeated legacy production adapter attempts before writing host logs', () => {
-    const root = createTempRoot('requirements-contract-external-adapter-host-retry-');
-    try {
-      const recordId = `REQ-${randomUUID().replaceAll('-', '').toUpperCase()}`;
-      const fixture = createRequestForResponseFile(root, recordId);
-      const beforeHash = sha256File(fixture.source);
-      const configPath = path.join(root, '_bmad', '_config', 'governance-remediation.yaml');
-      const config = yaml.load(readFileSync(configPath, 'utf8')) as {
-        judgeRuntime?: {
-          activeProviderRef?: string;
-          providers?: Record<
-            string,
-            {
-              credentialRef?: string;
-              authentication?: {
-                type?: string;
-              };
-              requestPolicy?: {
-                timeoutMs?: number;
-              };
-            }
-          >;
-          credentialConfig?: {
-            path?: string;
-            schemaVersion?: string;
-          };
-        };
-      };
-      const activeProviderRef = String(config.judgeRuntime?.activeProviderRef ?? '');
-      const provider = config.judgeRuntime?.providers?.[activeProviderRef];
-      const requestPolicy = provider?.requestPolicy;
-      if (!requestPolicy) {
-        throw new Error('test_judge_request_policy_missing');
-      }
-      const credentialConfig = config.judgeRuntime?.credentialConfig;
-      const credentialRef = String(provider?.credentialRef ?? '');
-      const authenticationType = String(provider?.authentication?.type ?? '');
-      if (
-        !credentialConfig?.path ||
-        !credentialConfig.schemaVersion ||
-        !credentialRef ||
-        !authenticationType
-      ) {
-        throw new Error('test_judge_credential_configuration_missing');
-      }
-      const credentialPath = path.resolve(root, credentialConfig.path);
-      mkdirSync(path.dirname(credentialPath), { recursive: true });
-      writeFileSync(
-        credentialPath,
-        yaml.dump({
-          schemaVersion: credentialConfig.schemaVersion,
-          credentialRevision: 1,
-          providers: {
-            [credentialRef]: {
-              authenticationType,
-              apiKey: randomUUID(),
-            },
-          },
-        }),
-        'utf8'
-      );
-      const configuredTimeoutMs = Number(requestPolicy.timeoutMs);
-      requestPolicy.timeoutMs = Math.min(configuredTimeoutMs, 1_000);
-      writeFileSync(configPath, yaml.dump(config), 'utf8');
-      const invoke = () =>
-        runAuthoring(root, fixture.source, recordId, {
-          ...fixture.authoringOptions,
-          criticalAuditorProviderMode: 'external_adapter',
-          maxCriticalAuditorRounds: 1,
-        });
-
-      const first = invoke();
-      expect(issueCodes(first), JSON.stringify(first, null, 2)).toContain(
-        'main_agent_judge_legacy_direct_adapter_forbidden'
-      );
-      expect(issueCodes(first)).not.toContain('critical_auditor_external_adapter_failed');
-      expect(JSON.stringify(first)).not.toContain('critical_auditor_judge_host_log_changed');
-
-      const second = invoke();
-      expect(issueCodes(second), JSON.stringify(second, null, 2)).toContain(
-        'main_agent_judge_legacy_direct_adapter_forbidden'
-      );
-      expect(issueCodes(second)).not.toContain('critical_auditor_external_adapter_failed');
-      expect(JSON.stringify(second)).not.toContain('critical_auditor_judge_host_log_changed');
-
-      const firstStagingDir = path.resolve(
-        root,
-        String((first.stagingTransaction as Record<string, unknown>)?.stagingDir ?? '')
-      );
-      const secondStagingDir = path.resolve(
-        root,
-        String((second.stagingTransaction as Record<string, unknown>)?.stagingDir ?? '')
-      );
-      expect(secondStagingDir, JSON.stringify({ first, second }, null, 2)).toBe(firstStagingDir);
-      const currentRequest = readJson<Record<string, unknown>>(fixture.requestPath);
-      const outputDir = criticalAuditorJudgeInvocationOutputDir({
-        stagingDir: secondStagingDir,
-        roundIndex: Number(currentRequest.roundIndex),
-        requestHash: String(currentRequest.requestHash ?? ''),
-      });
-      const hostAttemptsDir = path.join(outputDir, 'judge-adapter-host-attempts');
-      expect(existsSync(hostAttemptsDir)).toBe(false);
-      expectSourceHashUnchanged(fixture.source, beforeHash);
-    } finally {
-      removeTempRoot(root);
-    }
-  });
-
-  it('archives the provider invocation namespace with a stale auditor request', () => {
-    const root = createTempRoot('requirements-contract-stale-provider-invocation-');
-    try {
-      const recordId = `REQ-${randomUUID().replaceAll('-', '').toUpperCase()}`;
-      const fixture = createRequestForResponseFile(root, recordId);
-      const stagingDir = path.resolve(
-        root,
-        String(
-          (fixture.first.stagingTransaction as Record<string, unknown>)?.stagingDir ?? ''
-        )
-      );
-      expect(path.dirname(fixture.requestPath)).toBe(stagingDir);
-      const providerInvocationDir = criticalAuditorJudgeInvocationOutputDir({
-        stagingDir,
-        roundIndex: Number(fixture.request.roundIndex),
-        requestHash: String(fixture.request.requestHash ?? ''),
-      });
-      const providerInvocationRelativePath = path.relative(stagingDir, providerInvocationDir);
-      const sentinelName = `failed-invocation-${randomUUID()}.json`;
-      mkdirSync(providerInvocationDir, { recursive: true });
-      writeFileSync(
-        path.join(providerInvocationDir, sentinelName),
-        `${JSON.stringify({
-          schemaVersion: 'failed-provider-invocation-sentinel/v1',
-          invocationId: randomUUID(),
-        })}\n`,
-        'utf8'
-      );
-      writeFileSync(
-        fixture.requestPath,
-        `${JSON.stringify(
-          {
-            ...fixture.request,
-            auditInputHash: sha256Json({ staleAuditInput: randomUUID() }),
-          },
-          null,
-          2
-        )}\n`,
-        'utf8'
-      );
-
-      runAuthoring(root, fixture.source, recordId, fixture.authoringOptions);
-
-      expect(existsSync(providerInvocationDir)).toBe(false);
-      const authoringDir = path.dirname(path.dirname(stagingDir));
-      const archiveRoot = path.join(authoringDir, 'archive');
-      const archivedSentinelExists = readdirSync(archiveRoot, { withFileTypes: true })
-        .filter((entry) => entry.isDirectory())
-        .some((entry) =>
-          existsSync(
-            path.join(
-              archiveRoot,
-              entry.name,
-              'staging',
-              path.basename(stagingDir),
-              providerInvocationRelativePath,
-              sentinelName
-            )
-          )
-        );
-      expect(archivedSentinelExists).toBe(true);
-    } finally {
       removeTempRoot(root);
     }
   });

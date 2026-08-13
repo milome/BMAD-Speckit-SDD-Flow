@@ -23881,56 +23881,7 @@ function runCriticalAuditorReceiptLoop(input: {
         requireJudgeInvocationProvenance: Boolean(provider),
       });
       if (bindingIssues.length > 0) {
-        const judgeAdapterHostExecution = recordObject(auditResult.judgeAdapterHostExecution);
-        const productionJudgeAdapterResult = [
-          'package_cli_external_adapter',
-          'committed_provider_invocation_recovery',
-        ].includes(normalizeText(judgeAdapterHostExecution.adapterKind));
-        let rejectionRecordingIssue: PreConfirmationDrilldownIssue | null = null;
-        let providerContractBlockedIssue: PreConfirmationDrilldownIssue | null = null;
-        if (productionJudgeAdapterResult) {
-          const outputDir = criticalAuditorJudgeInvocationOutputDir({
-            stagingDir: input.transaction.stagingDir,
-            roundIndex,
-            requestHash: normalizeText(request.requestHash),
-          });
-          try {
-            const rejectionDisposition =
-              rejectCommittedRequirementsContractCriticalAuditorJudgeInvocation({
-                projectRoot: input.root,
-                request: requestPath,
-                outputDir,
-                round: roundIndex,
-                semanticIssueCodes: bindingIssues.map((issue) => issue.code),
-              });
-            if (normalizeText(rejectionDisposition.decision) === 'provider_contract_blocked') {
-              providerContractBlockedIssue = preConfirmationIssue(
-                'critical_auditor_judge_provider_contract_blocked',
-                `Judge provider contract repeated the same invalid semantic response (${normalizeText(
-                  rejectionDisposition.semanticIssueFingerprint
-                )}); repair of Source authority is not permitted for this failure domain.`,
-                [
-                  normalizeText(rejectionDisposition.providerContractBlockedPath),
-                  normalizeText(rejectionDisposition.semanticRejectionPath),
-                ].filter(Boolean),
-                'critical_auditor'
-              );
-            }
-          } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            rejectionRecordingIssue = preConfirmationIssue(
-              'critical_auditor_judge_semantic_rejection_record_failed',
-              message,
-              [requestPath, outputDir],
-              'critical_auditor'
-            );
-          }
-        }
-        const blockingIssues = [
-          ...bindingIssues,
-          ...(providerContractBlockedIssue ? [providerContractBlockedIssue] : []),
-          ...(rejectionRecordingIssue ? [rejectionRecordingIssue] : []),
-        ];
+        const blockingIssues = [...bindingIssues];
         issues.push(...blockingIssues);
         const outcomeCommit = commitRoundOutcome({
           blockingIssues,
@@ -24940,20 +24891,6 @@ function archiveCriticalAuditorArtifacts(input: {
           archiveRelativePath: path.join('staging', stagingName, fileName),
         });
       }
-    }
-    const providerInvocationsPath = path.join(
-      input.stagingDir,
-      CRITICAL_AUDITOR_JUDGE_INVOCATIONS_DIR
-    );
-    if (fs.existsSync(providerInvocationsPath)) {
-      artifactEntries.push({
-        absolutePath: providerInvocationsPath,
-        archiveRelativePath: path.join(
-          'staging',
-          stagingName,
-          CRITICAL_AUDITOR_JUDGE_INVOCATIONS_DIR
-        ),
-      });
     }
   }
   if (artifactEntries.length === 0) {
@@ -30394,61 +30331,8 @@ export function runMainAgentPreConfirmationDrilldown(
   }
   const externalAdapterProvider =
     criticalAuditorProviderMode === 'external_adapter' && criticalAuditorExternalAdapterCommand
-      ? (round: CriticalAuditorRoundInput): CriticalAuditorRoundResult => {
-          const requestPath = criticalAuditorRequestPath(stagingTransaction, round.roundIndex);
-          const responsePath = criticalAuditorResponsePath(stagingTransaction, round.roundIndex);
-          const receiptPath = criticalAuditorReceiptPath(stagingTransaction, round.roundIndex);
-          const protectedFiles = snapshotCriticalAuditorProtectedFiles([
-            sourcePath,
-            paths.recordPath,
-            paths.indexPath,
-            paths.draftSourcePreview,
-            paths.semanticKernel,
-            paths.mustDecompositionPacket,
-            paths.sourceMutationDecision,
-            stagingTransaction.draftSource,
-            stagingTransaction.semanticKernel,
-            stagingTransaction.mustDecompositionPacket,
-            stagingTransaction.sourcePromotionDecision,
-            requestPath,
-            responsePath,
-            receiptPath,
-            path.join(
-              paths.authoringDir,
-              `critical-auditor-receipt-round-${round.roundIndex}.json`
-            ),
-          ]);
-          const outputDir = criticalAuditorJudgeInvocationOutputDir({
-            stagingDir: stagingTransaction.stagingDir,
-            roundIndex: round.roundIndex,
-            requestHash: round.independentProviderExpectation.requestHash,
-          });
-          const execution = (() => {
-            try {
-              return {
-                ok: true as const,
-                value: executeCriticalAuditorJudgeAdapter({
-                  projectRoot: root,
-                  requestPath,
-                  outputDir,
-                  roundIndex: round.roundIndex,
-                  expected: round.independentProviderExpectation,
-                }),
-              };
-            } catch (error) {
-              return { ok: false as const, error };
-            }
-          })();
-          const changedFiles = changedCriticalAuditorProtectedFiles(protectedFiles);
-          if (changedFiles.length > 0) {
-            throw new Error(
-              `subagent_write_boundary_violation:${changedFiles
-                .map((filePath) => toRootRelativePath(root, filePath))
-                .join(',')}`
-            );
-          }
-          if (!execution.ok) throw execution.error;
-          return execution.value;
+      ? (_round: CriticalAuditorRoundInput): CriticalAuditorRoundResult => {
+          throw new Error('main_agent_judge_legacy_direct_adapter_forbidden');
         }
       : undefined;
   const criticalAuditorLoop = runCriticalAuditorReceiptLoop({

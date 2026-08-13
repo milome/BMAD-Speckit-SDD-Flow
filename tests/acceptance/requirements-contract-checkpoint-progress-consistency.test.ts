@@ -43,27 +43,27 @@ describe('requirements contract checkpoint progress consistency', () => {
       expect(issueCodes(result)).toEqual(['critical_auditor_provider_mode_required']);
       expect(progress.implementationAttemptId).toBe(attemptId);
       expect(progress.checkpoints).toHaveLength(9);
-      for (const checkpoint of progress.checkpoints.slice(0, 2)) {
+      for (const checkpoint of progress.checkpoints.slice(0, 3)) {
         expect(checkpoint).toMatchObject({
           persistenceStatus: 'committed',
           semanticValidationStatus: 'pass',
           status: 'passed',
         });
       }
-      expect(progress.checkpoints[2]).toMatchObject({
-        persistenceStatus: 'committed',
-        semanticValidationStatus: 'block',
-        status: 'blocked',
+      expect(progress.checkpoints[3]).toMatchObject({
+        persistenceStatus: 'pending',
+        semanticValidationStatus: 'pending',
+        status: 'pending',
       });
       expect(
-        progress.checkpoints.slice(3).every((checkpoint: any) => checkpoint.status === 'pending')
+        progress.checkpoints.slice(4).every((checkpoint: any) => checkpoint.status === 'pending')
       ).toBe(true);
       expect(progress.resumeLedger.completedCheckpointIds).toEqual(
-        REQUIREMENTS_CONTRACT_CHECKPOINT_IDS.slice(0, 2)
+        REQUIREMENTS_CONTRACT_CHECKPOINT_IDS.slice(0, 3)
       );
-      expect(progress.lastCompletedCheckpoint).toBe('cp-01-must-decomposition-packet');
-      expect(progress.currentCheckpoint).toBe('cp-02-atomic-decomposition-loop-convergence');
-      expect(progress.next).toBe('cp-02-atomic-decomposition-loop-convergence');
+      expect(progress.lastCompletedCheckpoint).toBe('cp-02-deterministic-atomic-closure');
+      expect(progress.currentCheckpoint).toBe('cp-03-packet-to-source-materialization');
+      expect(progress.next).toBe('cp-03-packet-to-source-materialization');
     } finally {
       removeTempRoot(root);
     }

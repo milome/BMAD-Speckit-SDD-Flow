@@ -20,7 +20,7 @@ import {
 const EXPECTED_CHECKPOINT_SEQUENCE = [
   'cp-00-semantic-kernel',
   'cp-01-must-decomposition-packet',
-  'cp-02-atomic-decomposition-loop-convergence',
+  'cp-02-deterministic-atomic-closure',
   'cp-03-packet-to-source-materialization',
   'cp-04-id-freeze',
   'cp-05-implementation-confirmation-core',
@@ -145,8 +145,7 @@ describe('requirements contract checkpoint main lane', () => {
         expect(existsSync(receiptPath)).toBe(true);
         const receipt = readJson<Record<string, unknown>>(receiptPath);
         expect(receipt).toMatchObject({
-          schemaVersion:
-            'requirements-contract-checkpoint-semantic-validation-receipt/v1',
+          schemaVersion: 'requirements-contract-checkpoint-semantic-validation-receipt/v1',
           checkpointId,
           recordId: 'REQ-CHECKPOINT-MAIN',
           requirementSetId: 'REQ-CHECKPOINT-MAIN-SET',
@@ -180,29 +179,25 @@ describe('requirements contract checkpoint main lane', () => {
         'requirements-contract.must-decomposition-packet.cp-01-must-decomposition-packet'
       );
       expect(cp02Receipt.validatorIdentity).toBe(
-        'requirements-contract.critical-auditor-convergence.cp-02-atomic-decomposition-loop-convergence'
+        'requirements-contract.deterministic-atomic-closure.cp-02-deterministic-atomic-closure'
       );
       expect(cp01Receipt.validatorHash).toBe(sha256File(checkpointValidatorPath));
       expect(cp02Receipt.validatorHash).toBe(sha256File(checkpointValidatorPath));
       expect(
         cp01Receipt.validatedInputs.map((artifact: { role: string }) => artifact.role)
       ).toEqual(
-        expect.arrayContaining([
-          'source_document',
-          'semantic_kernel',
-          'must_decomposition_packet',
-        ])
+        expect.arrayContaining(['source_document', 'semantic_kernel', 'must_decomposition_packet'])
       );
       expect(
         cp02Receipt.validatedInputs.map((artifact: { role: string }) => artifact.role)
       ).toEqual(
-        expect.arrayContaining([
-          'source_document',
-          'semantic_kernel',
-          'must_decomposition_packet',
-          'critical_auditor_receipt',
-        ])
+        expect.arrayContaining(['source_document', 'semantic_kernel', 'must_decomposition_packet'])
       );
+      expect(
+        cp02Receipt.validatedInputs.some((artifact: { role: string }) =>
+          /auditor/iu.test(artifact.role)
+        )
+      ).toBe(false);
       expect(progress.resumeLedger).toMatchObject({
         schemaVersion: 'requirements-contract-checkpoint-resume-ledger/v1',
         completedCheckpointIds: checkpointIds,
@@ -246,25 +241,12 @@ describe('requirements contract checkpoint main lane', () => {
       const source = materialized.sourcePath;
       const initialResult = runAuthoring(root, source, 'REQ-CHECKPOINT-RESUME', {
         ...materialized.authoringOptions,
+        criticalAuditorRound: cleanCriticalAuditorRound,
       });
       const paths = artifacts(root, 'REQ-CHECKPOINT-RESUME', 'REQ-CHECKPOINT-RESUME-SET');
-      expect(
-        refreshCurrentSourceCheckpointPersistence(root, {
-          source: paths.draftSourcePreview,
-          recordId: 'REQ-CHECKPOINT-RESUME',
-          requirementSetId: 'REQ-CHECKPOINT-RESUME-SET',
-          implementationAttemptId: materialized.authoringOptions.implementationAttemptId,
-          sourceDocumentHash: initialResult.sourceDocumentHash,
-          implementationConfirmationHash: initialResult.implementationConfirmationHash,
-          forceRefresh: true,
-        })
-      ).toEqual({ ok: true });
-      expect(
-        paths.checkpointReceiptPaths.slice(0, 3).every((receiptPath) => existsSync(receiptPath))
-      ).toBe(true);
-      expect(
-        paths.checkpointReceiptPaths.slice(3).some((receiptPath) => existsSync(receiptPath))
-      ).toBe(false);
+      expect(paths.checkpointReceiptPaths.every((receiptPath) => existsSync(receiptPath))).toBe(
+        true
+      );
       expect(readJson<Record<string, unknown>>(paths.intakeReceipt)).toMatchObject({
         schemaVersion: 'requirements-contract-file-intake-receipt/v1',
         entrySource: 'source_prd_draft',
@@ -273,7 +255,7 @@ describe('requirements contract checkpoint main lane', () => {
         schemaVersion: 'requirements-contract-invocation-authority-receipt/v1',
         entrySource: 'source_prd_draft',
       });
-      const receiptsBefore = paths.checkpointReceiptPaths.slice(0, 3).map((receiptPath) =>
+      const receiptsBefore = paths.checkpointReceiptPaths.map((receiptPath) =>
         readJson<Record<string, unknown>>(receiptPath)
       );
       const cp00Path = paths.checkpointReceiptPaths[0];
@@ -286,11 +268,7 @@ describe('requirements contract checkpoint main lane', () => {
         ...tamperedPayload,
         receiptHash: sha256Stable(tamperedPayload),
       };
-      writeFileSync(
-        cp00Path,
-        `${JSON.stringify(tamperedReceipt, null, 2)}\n`,
-        'utf8'
-      );
+      writeFileSync(cp00Path, `${JSON.stringify(tamperedReceipt, null, 2)}\n`, 'utf8');
       const tamperedHash = sha256File(cp00Path);
 
       const result = refreshCurrentSourceCheckpointPersistence(root, {
@@ -306,25 +284,23 @@ describe('requirements contract checkpoint main lane', () => {
       const evidence = readJson<Record<string, unknown>>(paths.checkpointPersistenceEvidence);
       const ref = evidence.checkpointPersistenceRef as Record<string, unknown>;
 
-      const receiptsAfter = paths.checkpointReceiptPaths.slice(0, 3).map((receiptPath) =>
+      const receiptsAfter = paths.checkpointReceiptPaths.map((receiptPath) =>
         readJson<Record<string, unknown>>(receiptPath)
       );
       expect(result).toEqual({ ok: true });
       expect(sha256File(cp00Path)).not.toBe(tamperedHash);
-      for (const [index, receiptPath] of paths.checkpointReceiptPaths
-        .slice(0, 3)
-        .entries()) {
+      for (const [index, receiptPath] of paths.checkpointReceiptPaths.entries()) {
         expect(existsSync(receiptPath)).toBe(true);
         expect(receiptsAfter[index].sourceDocumentHash).toBe(initialResult.sourceDocumentHash);
         expect(receiptsAfter[index].semanticModelHash).toBe(
           receiptsBefore[index].semanticModelHash
         );
       }
-      expect(
-        (progress.resumeLedger as Record<string, unknown>).completedCheckpointIds
-      ).toEqual(REQUIREMENTS_CONTRACT_CHECKPOINT_IDS.slice(0, 2));
+      expect((progress.resumeLedger as Record<string, unknown>).completedCheckpointIds).toEqual(
+        REQUIREMENTS_CONTRACT_CHECKPOINT_IDS
+      );
       expect(ref.checkpointReceiptRefs).toHaveLength(9);
-      expect(evidence.checkpointPersistenceSatisfiedCandidate).toBe(false);
+      expect(evidence.checkpointPersistenceSatisfiedCandidate).toBe(true);
     } finally {
       removeTempRoot(root);
     }
