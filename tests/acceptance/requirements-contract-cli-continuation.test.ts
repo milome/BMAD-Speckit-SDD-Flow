@@ -155,6 +155,14 @@ describe('requirements contract package CLI continuation', () => {
           '    rootClass: functional_requirement',
           '    proposedAuthorityClass: source_authority',
           '    bodySchemaVersion: requirement-contract-requirement/v2',
+          '  - path: docs/non-functional.json',
+          '    rootClass: non_functional_requirement',
+          '    proposedAuthorityClass: source_authority',
+          '    bodySchemaVersion: requirement-contract-requirement/v2',
+          '  - path: docs/negative.json',
+          '    rootClass: negative_requirement',
+          '    proposedAuthorityClass: source_authority',
+          '    bodySchemaVersion: requirement-contract-requirement/v2',
           '---',
           '# Requirements',
           '',
@@ -204,6 +212,39 @@ describe('requirements contract package CLI continuation', () => {
               { kind: 'PATH', id: 'retry-policy-owner', value: 'src/retry-policy.ts' },
             ],
             executionConstraintRefs: ['CMD:retry-policy-test', 'PATH:retry-policy-owner'],
+          },
+        }),
+        'utf8'
+      );
+      writeFileSync(
+        path.join(root, 'docs', 'non-functional.json'),
+        JSON.stringify({
+          schemaVersion: 'requirements-contract-authority-source/v1',
+          sourceRootId: 'MUST-NFR-CONTINUATION-001',
+          semanticBody: {
+            text: 'System MUST apply the retry policy within two seconds.',
+            oracle: 'The targeted performance test proves P95 latency is at most two seconds.',
+            executionConstraints: [
+              {
+                kind: 'CMD',
+                id: 'retry-policy-performance-test',
+                value: 'npm test -- retry-policy-performance.test.ts',
+              },
+            ],
+            executionConstraintRefs: ['CMD:retry-policy-performance-test'],
+          },
+        }),
+        'utf8'
+      );
+      writeFileSync(
+        path.join(root, 'docs', 'negative.json'),
+        JSON.stringify({
+          schemaVersion: 'requirements-contract-authority-source/v1',
+          sourceRootId: 'NEG-CONTINUATION-001',
+          semanticBody: {
+            text: 'System MUST NOT report an unverified retry policy as active.',
+            negativeAssertion: 'An unverified retry policy remains inactive.',
+            blockingCondition: 'An unverified retry policy is reported as active.',
           },
         }),
         'utf8'
@@ -354,6 +395,29 @@ describe('requirements contract package CLI continuation', () => {
       };
       const semanticIr = readCp04Artifact('semantic_ir');
       const resolvedEvidenceIndex = readCp04Artifact('resolved_evidence_index');
+      expect(semanticIr.semanticPayload.semantics.requirements).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'MUST-FR-CONTINUATION-001',
+            requirementKind: 'functional',
+            polarity: 'positive',
+          }),
+          expect.objectContaining({
+            id: 'MUST-NFR-CONTINUATION-001',
+            requirementKind: 'nonfunctional',
+            polarity: 'positive',
+          }),
+          expect.objectContaining({
+            id: 'NEG-CONTINUATION-001',
+            text: 'System MUST NOT report an unverified retry policy as active.',
+            oracle: 'An unverified retry policy remains inactive.',
+            negativeAssertion: 'An unverified retry policy remains inactive.',
+            blockingCondition: 'An unverified retry policy is reported as active.',
+            requirementKind: 'negative',
+            polarity: 'negative',
+          }),
+        ])
+      );
       expect(semanticIr.semanticPayload.semantics.decisions).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
@@ -405,6 +469,38 @@ describe('requirements contract package CLI continuation', () => {
       ) as Array<Record<string, unknown>>;
       expect(cp08Artifacts).toContainEqual(
         expect.objectContaining({ providerInvocationCount: 0, committerInvocationCount: 0 })
+      );
+      const renderabilityProbe = cp08Artifacts.find(
+        (artifact) =>
+          artifact.schemaVersion === 'requirements-contract-renderability-probe-report/v1'
+      ) as Record<string, any>;
+      expect(renderabilityProbe.renderedRequirementIds).toHaveLength(3);
+      expect([...renderabilityProbe.renderedRequirementIds].sort()).toEqual([
+        'MUST-FR-CONTINUATION-001',
+        'MUST-NFR-CONTINUATION-001',
+        'NEG-CONTINUATION-001',
+      ]);
+      const cp05Manifest = JSON.parse(readFileSync(checkpointPaths[1], 'utf8')) as Record<
+        string,
+        any
+      >;
+      const confirmationProjectionEntry = cp05Manifest.artifactEntries.find(
+        (entry: Record<string, string>) => entry.role === 'confirmation_projection'
+      ) as Record<string, string>;
+      const confirmationProjection = JSON.parse(
+        readFileSync(
+          path.join(recordRoot, ...confirmationProjectionEntry.recordRelativePath.split('/')),
+          'utf8'
+        )
+      ) as Record<string, any>;
+      expect(confirmationProjection.requirements).toContainEqual(
+        expect.objectContaining({
+          id: 'NEG-CONTINUATION-001',
+          requirementKind: 'negative',
+          polarity: 'negative',
+          negativeAssertion: 'An unverified retry policy remains inactive.',
+          blockingCondition: 'An unverified retry policy is reported as active.',
+        })
       );
       expect(existsSync(path.join(recordRoot, 'record', 'active-authority.json'))).toBe(false);
       expect(existsSync(path.join(recordRoot, 'final-build-manifest.json'))).toBe(false);

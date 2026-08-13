@@ -688,11 +688,31 @@ function semanticRequirementRows(semanticIr: RequirementsContractSemanticIr) {
   if (rows.length === 0) throw new Error('requirements_cp05_frozen_requirement_rows_missing');
   return rows.map((row) => {
     const id = nonEmpty(row.id);
+    const requirementKind = nonEmpty(row.requirementKind);
+    const polarity = nonEmpty(row.polarity);
     if (!id) throw new Error('requirements_cp05_frozen_requirement_id_missing');
+    if (!['functional', 'nonfunctional', 'negative'].includes(requirementKind)) {
+      throw new Error(`requirements_cp05_frozen_requirement_kind_invalid:${id}`);
+    }
+    if (
+      !['positive', 'negative'].includes(polarity) ||
+      (requirementKind === 'negative' && polarity !== 'negative') ||
+      (requirementKind !== 'negative' && polarity !== 'positive')
+    ) {
+      throw new Error(`requirements_cp05_frozen_requirement_polarity_invalid:${id}`);
+    }
+    const negativeAssertion = nonEmpty(row.negativeAssertion);
+    const blockingCondition = nonEmpty(row.blockingCondition);
+    if (requirementKind === 'negative' && (!negativeAssertion || !blockingCondition)) {
+      throw new Error(`requirements_cp05_frozen_negative_fields_missing:${id}`);
+    }
     return {
       id,
       text: nonEmpty(row.text),
       oracle: nonEmpty(row.oracle),
+      requirementKind,
+      polarity,
+      ...(requirementKind === 'negative' ? { negativeAssertion, blockingCondition } : {}),
       atomRefs: sortedUnique(
         records(semantics.atoms)
           .filter((atom) => nonEmpty(atom.requirementRef) === id)
@@ -1156,8 +1176,7 @@ export function publishRequirementsContractCp05Cp08Stages(input: {
     role: 'lint_report',
   });
   if (publicationReady.decision === 'block') throw new Error(publicationReady.issueCodes[0]);
-  const canonicalAuditPacketPath =
-    `authoring/staging/${input.authoringAttemptId}/judge-audit-packet.json`;
+  const canonicalAuditPacketPath = `authoring/staging/${input.authoringAttemptId}/judge-audit-packet.json`;
   atomicNoClobberPublish({
     targetPath: path.join(input.recordRoot, ...canonicalAuditPacketPath.split('/')),
     value: auditPacket,

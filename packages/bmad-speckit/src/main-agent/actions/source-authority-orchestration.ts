@@ -281,12 +281,36 @@ function confirmedDecisionsFromGrillResolution(resolution, atoms) {
 function canonicalSemanticIrFromClosure(input) {
   const requirements = input.scan.sourceRootCandidates
     .filter((candidate) =>
-      ['functional_requirement', 'non_functional_requirement'].includes(candidate.rootClass)
+      ['functional_requirement', 'non_functional_requirement', 'negative_requirement'].includes(
+        candidate.rootClass
+      )
     )
     .map((candidate) => ({
       id: candidate.sourceRootId,
       text: String(candidate.semanticBody.text || '').normalize('NFC'),
-      oracle: String(candidate.semanticBody.oracle || '').normalize('NFC'),
+      oracle: String(
+        candidate.semanticBody.oracle ||
+          candidate.semanticBody.negativeAssertion ||
+          candidate.semanticBody.blockingCondition ||
+          ''
+      ).normalize('NFC'),
+      requirementKind:
+        candidate.rootClass === 'functional_requirement'
+          ? 'functional'
+          : candidate.rootClass === 'non_functional_requirement'
+            ? 'nonfunctional'
+            : 'negative',
+      polarity: candidate.rootClass === 'negative_requirement' ? 'negative' : 'positive',
+      ...(candidate.rootClass === 'negative_requirement'
+        ? {
+            negativeAssertion: String(candidate.semanticBody.negativeAssertion || '').normalize(
+              'NFC'
+            ),
+            blockingCondition: String(candidate.semanticBody.blockingCondition || '').normalize(
+              'NFC'
+            ),
+          }
+        : {}),
     }));
   const requirementByAtomId = new Map(
     input.cp02Candidate.atoms.map((atom) => [atom.atomId, atom.authorityRefs[0]])

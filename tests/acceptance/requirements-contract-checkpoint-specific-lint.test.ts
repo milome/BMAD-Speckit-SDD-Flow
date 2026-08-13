@@ -49,7 +49,15 @@ function publicationReadyFixture() {
     parentSemanticRevisionId: null,
     compilerVersion: 'requirements-contract-test/v1',
     semantics: {
-      requirements: [{ id: 'MUST-001', text: 'Persist the value.', oracle: 'Value exists.' }],
+      requirements: [
+        {
+          id: 'MUST-001',
+          text: 'Persist the value.',
+          oracle: 'Value exists.',
+          requirementKind: 'functional',
+          polarity: 'positive',
+        },
+      ],
       atoms: [
         {
           id: 'ATOM-001',

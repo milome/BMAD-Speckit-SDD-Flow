@@ -121,6 +121,62 @@ function displayValue(value: unknown): string {
   return JSON.stringify(value);
 }
 
+type FinalRequirementRow = JsonObject & {
+  id: string;
+  text: string;
+  oracle: string;
+  requirementKind: 'functional' | 'nonfunctional' | 'negative';
+  polarity: 'positive' | 'negative';
+};
+
+function finalRequirementRows(
+  semanticIr: RequirementsFinalRenderInput['semanticIr']
+): FinalRequirementRow[] {
+  const semantics = object(object(semanticIr.semanticPayload).semantics);
+  const rows = records(semantics.requirements).map((row) => {
+    const id = String(row.id ?? '').trim();
+    const text = String(row.text ?? '').trim();
+    const requirementKind = String(row.requirementKind ?? '').trim();
+    const polarity = String(row.polarity ?? '').trim();
+    const negativeAssertion = String(row.negativeAssertion ?? '').trim();
+    const blockingCondition = String(row.blockingCondition ?? '').trim();
+    const oracle = String(
+      row.oracle ?? row.negativeAssertion ?? row.blockingCondition ?? ''
+    ).trim();
+    if (
+      !id ||
+      !text ||
+      !oracle ||
+      !['functional', 'nonfunctional', 'negative'].includes(requirementKind) ||
+      !['positive', 'negative'].includes(polarity) ||
+      (requirementKind === 'negative' && polarity !== 'negative') ||
+      (requirementKind !== 'negative' && polarity !== 'positive') ||
+      (requirementKind === 'negative' && (!negativeAssertion || !blockingCondition))
+    ) {
+      throw new Error(
+        `requirements_final_render_requirement_classification_invalid:${id || '<missing>'}`
+      );
+    }
+    return {
+      ...row,
+      id,
+      text,
+      oracle,
+      requirementKind: requirementKind as FinalRequirementRow['requirementKind'],
+      polarity: polarity as FinalRequirementRow['polarity'],
+      ...(requirementKind === 'negative' ? { negativeAssertion, blockingCondition } : {}),
+    };
+  });
+  const ids = new Set<string>();
+  for (const row of rows) {
+    if (ids.has(row.id))
+      throw new Error(`requirements_final_render_requirement_identity_duplicate:${row.id}`);
+    ids.add(row.id);
+  }
+  if (rows.length === 0) throw new Error('requirements_final_render_requirement_rows_missing');
+  return rows;
+}
+
 function requirementsConfirmationText(input: RequirementsFinalRenderInput): string {
   const phrase =
     input.confirmationLanguage === 'zh-CN'
@@ -140,7 +196,7 @@ export function projectRequirementsContractFinalPages(
   input: RequirementsFinalRenderInput
 ): RequirementsFinalPages {
   const semantics = object(input.semanticIr.semanticPayload).semantics as Record<string, unknown>;
-  const requirements = records(object(semantics).requirements);
+  const requirements = finalRequirementRows(input.semanticIr);
   const atoms = records(object(semantics).atoms);
   const decisions = records(object(semantics).decisions);
   const claims = records(object(input.semanticIr.semanticPayload).evidenceClaims);
@@ -159,7 +215,14 @@ export function projectRequirementsContractFinalPages(
       '',
       String(requirement.text),
       '',
-      `Acceptance oracle: ${requirement.oracle}`,
+      requirement.requirementKind === 'negative'
+        ? `Negative assertion: ${requirement.oracle}`
+        : `Acceptance oracle: ${requirement.oracle}`,
+      `Requirement kind: ${requirement.requirementKind}`,
+      `Polarity: ${requirement.polarity}`,
+      ...(requirement.requirementKind === 'negative'
+        ? [`Blocks completion when: ${String(requirement.blockingCondition ?? requirement.oracle)}`]
+        : []),
       '',
       ...atoms
         .filter((atom) => atom.requirementRef === requirement.id)
@@ -207,7 +270,7 @@ export function projectRequirementsContractFinalPages(
     '<section id="requirements"><h2>Requirements</h2>',
     ...requirements.map(
       (requirement) =>
-        `<article data-requirement-id="${htmlEscape(requirement.id)}"><h3>${htmlEscape(requirement.id)}</h3><p>${htmlEscape(requirement.text)}</p><p>${htmlEscape(requirement.oracle)}</p></article>`
+        `<article data-requirement-id="${htmlEscape(requirement.id)}" data-requirement-kind="${htmlEscape(requirement.requirementKind)}" data-requirement-polarity="${htmlEscape(requirement.polarity)}"><h3>${htmlEscape(requirement.id)}</h3><p data-requirement-classification><strong>Requirement kind:</strong> ${htmlEscape(requirement.requirementKind)} <strong>Polarity:</strong> ${htmlEscape(requirement.polarity)}</p><p data-requirement-text>${htmlEscape(requirement.text)}</p><p data-requirement-oracle${requirement.requirementKind === 'negative' ? ' data-negative-assertion' : ''}><strong>${requirement.requirementKind === 'negative' ? 'Negative assertion' : 'Acceptance oracle'}:</strong> ${htmlEscape(requirement.oracle)}</p>${requirement.requirementKind === 'negative' ? `<p data-blocking-condition><strong>Blocks completion when:</strong> ${htmlEscape(requirement.blockingCondition ?? requirement.oracle)}</p>` : ''}</article>`
     ),
     '</section>',
     '<section id="confirmed-decisions"><h2>Confirmed Decisions</h2>',
@@ -272,14 +335,49 @@ export function validateRequirementsContractFinalRenderProjection(
     issueCodes.push(...authority.issueCodes.map((code) => `requirements_final_render_${code}`));
   }
   const semantics = object(input.semanticIr.semanticPayload).semantics as Record<string, unknown>;
-  for (const requirement of records(object(semantics).requirements)) {
-    for (const value of [requirement.id, requirement.text, requirement.oracle]) {
+  let requirements: FinalRequirementRow[] = [];
+  try {
+    requirements = finalRequirementRows(input.semanticIr);
+  } catch (error) {
+    issueCodes.push(
+      error instanceof Error ? error.message : 'requirements_final_render_requirement_rows_invalid'
+    );
+  }
+  const expectedRequirementIds = new Set(requirements.map((requirement) => requirement.id));
+  const renderedRequirementIds = [
+    ...input.pages.html.matchAll(/data-requirement-id="([^"]+)"/gu),
+  ].map((match) => match[1]);
+  if (
+    renderedRequirementIds.length !== expectedRequirementIds.size ||
+    new Set(renderedRequirementIds).size !== renderedRequirementIds.length ||
+    renderedRequirementIds.some((id) => !expectedRequirementIds.has(id))
+  ) {
+    issueCodes.push('requirements_final_render_requirement_identity_coverage_gap');
+  }
+  for (const requirement of requirements) {
+    for (const value of [
+      requirement.id,
+      requirement.text,
+      requirement.oracle,
+      requirement.requirementKind,
+      requirement.polarity,
+      ...(requirement.requirementKind === 'negative'
+        ? [requirement.blockingCondition ?? requirement.oracle]
+        : []),
+    ]) {
       if (
         !input.pages.markdown.includes(String(value)) ||
         !input.pages.html.includes(htmlEscape(value))
       ) {
         issueCodes.push('requirements_final_render_requirement_projection_gap');
       }
+    }
+    const cardPrefix =
+      `<article data-requirement-id="${htmlEscape(requirement.id)}" ` +
+      `data-requirement-kind="${htmlEscape(requirement.requirementKind)}" ` +
+      `data-requirement-polarity="${htmlEscape(requirement.polarity)}"`;
+    if (!input.pages.html.includes(cardPrefix)) {
+      issueCodes.push('requirements_final_render_requirement_classification_gap');
     }
   }
   for (const decision of records(object(semantics).decisions)) {

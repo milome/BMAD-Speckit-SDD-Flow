@@ -19,6 +19,24 @@ function projectionInput() {
           id: 'MUST-FR-001',
           text: '系统必须保存批量退款审计记录。',
           oracle: '合同测试证明终态批次写入审计记录。',
+          requirementKind: 'functional',
+          polarity: 'positive',
+        },
+        {
+          id: 'MUST-NFR-001',
+          text: '系统必须在两秒内完成退款状态查询。',
+          oracle: '性能测试证明 P95 查询耗时不超过两秒。',
+          requirementKind: 'nonfunctional',
+          polarity: 'positive',
+        },
+        {
+          id: 'NEG-001',
+          text: '系统 MUST NOT 把未验证的退款批次标记为完成。',
+          oracle: '未验证批次必须保持非完成状态。',
+          negativeAssertion: '未验证批次必须保持非完成状态。',
+          blockingCondition: '未验证批次被标记为完成。',
+          requirementKind: 'negative',
+          polarity: 'negative',
         },
       ],
       atoms: [
@@ -27,6 +45,18 @@ function projectionInput() {
           action: '保存批量退款审计记录。',
           oracle: '终态批次存在审计记录。',
           requirementRef: 'MUST-FR-001',
+        },
+        {
+          id: 'MUST-NFR-001-A1',
+          action: '测量退款状态查询耗时。',
+          oracle: 'P95 查询耗时不超过两秒。',
+          requirementRef: 'MUST-NFR-001',
+        },
+        {
+          id: 'NEG-001-A1',
+          action: '拒绝未验证批次完成状态。',
+          oracle: '未验证批次保持非完成状态。',
+          requirementRef: 'NEG-001',
         },
       ],
       decisions: [
@@ -59,6 +89,24 @@ function projectionInput() {
         premiseRefs: [],
         derivationReceiptRefs: [],
       },
+      {
+        evidenceClaimId: 'CLAIM-NFR-001',
+        authorityClass: 'source_grounded',
+        normalizedClaimHash: hash('8'),
+        sourceEvidenceRequired: true,
+        decisionReceiptRefs: [],
+        premiseRefs: [],
+        derivationReceiptRefs: [],
+      },
+      {
+        evidenceClaimId: 'CLAIM-NEG-001',
+        authorityClass: 'source_grounded',
+        normalizedClaimHash: hash('9'),
+        sourceEvidenceRequired: true,
+        decisionReceiptRefs: [],
+        premiseRefs: [],
+        derivationReceiptRefs: [],
+      },
     ],
     specSpanRegistry: [
       {
@@ -79,10 +127,30 @@ function projectionInput() {
         decisionReceiptRefs: ['DECISION-001'],
         derivationReceiptRefs: [],
       },
+      {
+        authorityClass: 'source_grounded',
+        normalizedClaimHash: hash('8'),
+        boundSemanticNodeIds: ['MUST-NFR-001', 'MUST-NFR-001-A1'],
+        boundObligationIds: ['MUST-NFR-001'],
+        evidenceClaimRefs: ['CLAIM-NFR-001'],
+        decisionReceiptRefs: [],
+        derivationReceiptRefs: [],
+      },
+      {
+        authorityClass: 'source_grounded',
+        normalizedClaimHash: hash('9'),
+        boundSemanticNodeIds: ['NEG-001', 'NEG-001-A1'],
+        boundObligationIds: ['NEG-001'],
+        evidenceClaimRefs: ['CLAIM-NEG-001'],
+        decisionReceiptRefs: [],
+        derivationReceiptRefs: [],
+      },
     ],
     executionConstraints: [],
     semanticProvenance: {
       'MUST-FR-001': 'MUST-FR-001',
+      'MUST-NFR-001': 'MUST-NFR-001',
+      'NEG-001': 'NEG-001',
       'DECISION-001': 'DECISION-001',
     },
   });
@@ -109,6 +177,22 @@ function projectionInput() {
           authorityClass: 'human_confirmed',
           sourceSpanRefs: [],
           decisionReceiptRefs: ['DECISION-001'],
+          premiseRefs: [],
+          derivationReceiptRefs: [],
+        },
+        {
+          evidenceClaimId: 'CLAIM-NFR-001',
+          authorityClass: 'source_grounded',
+          sourceSpanRefs: ['SOURCE-SPAN-002'],
+          decisionReceiptRefs: [],
+          premiseRefs: [],
+          derivationReceiptRefs: [],
+        },
+        {
+          evidenceClaimId: 'CLAIM-NEG-001',
+          authorityClass: 'source_grounded',
+          sourceSpanRefs: ['SOURCE-SPAN-003'],
+          decisionReceiptRefs: [],
           premiseRefs: [],
           derivationReceiptRefs: [],
         },
@@ -139,6 +223,31 @@ describe('Requirements final render lint', () => {
     expect(pages.markdown).toContain('180');
     expect(pages.html).toContain('CLAIM-DECISION-001');
     expect(pages.html).toContain(pages.exactConfirmationText);
+    expect(pages.html.match(/data-requirement-id=/gu)).toHaveLength(3);
+    expect(pages.html.match(/data-requirement-id="MUST-FR-001"/gu)).toHaveLength(1);
+    expect(pages.html.match(/data-requirement-id="MUST-NFR-001"/gu)).toHaveLength(1);
+    expect(pages.html.match(/data-requirement-id="NEG-001"/gu)).toHaveLength(1);
+    expect(pages.html).toContain(
+      'data-requirement-id="MUST-FR-001" data-requirement-kind="functional" data-requirement-polarity="positive"'
+    );
+    expect(pages.html).toContain(
+      'data-requirement-id="MUST-NFR-001" data-requirement-kind="nonfunctional" data-requirement-polarity="positive"'
+    );
+    expect(pages.html).toContain(
+      'data-requirement-id="NEG-001" data-requirement-kind="negative" data-requirement-polarity="negative"'
+    );
+    expect(pages.html).toContain('系统 MUST NOT 把未验证的退款批次标记为完成。');
+    expect(pages.html.match(/data-requirement-classification/gu)).toHaveLength(3);
+    expect(pages.html).toContain('<strong>Requirement kind:</strong> negative');
+    expect(pages.html).toContain('<strong>Polarity:</strong> negative');
+    expect(pages.html).toContain(
+      '<strong>Negative assertion:</strong> 未验证批次必须保持非完成状态。'
+    );
+    expect(pages.html).toContain(
+      '<strong>Blocks completion when:</strong> 未验证批次被标记为完成。'
+    );
+    expect(pages.html.match(/未验证批次必须保持非完成状态。/gu)).toHaveLength(1);
+    expect(pages.html.match(/未验证批次被标记为完成。/gu)).toHaveLength(1);
     expect(JSON.stringify(pages)).not.toMatch(
       /executionFinalJudge|delivery closeout|judge-review-campaign/iu
     );
@@ -161,5 +270,15 @@ describe('Requirements final render lint', () => {
         pages,
       }).issueCodes
     ).toContain('requirements_final_render_effective_pass_stale');
+  });
+
+  it('blocks duplicate requirement identities before rendering', () => {
+    const input = projectionInput();
+    const requirements = (input.semanticIr.semanticPayload.semantics as any).requirements;
+    requirements.push({ ...requirements[0] });
+
+    expect(() => projectRequirementsContractFinalPages(input)).toThrow(
+      /requirements_final_render_requirement_identity_duplicate/u
+    );
   });
 });
