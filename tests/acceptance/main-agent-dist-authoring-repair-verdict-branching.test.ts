@@ -6,12 +6,14 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const require = createRequire(import.meta.url);
-const { runMainAgentAuthoringRepair } = require('../../packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js') as {
-  runMainAgentAuthoringRepair: (root: string, options: Record<string, unknown>) => any;
-};
-const { criticalAuditorIndependentProviderRunHash } = require('../../packages/bmad-speckit/dist/main-agent/source-authority/scripts/requirements-contract-critical-auditor-independence.js') as {
-  criticalAuditorIndependentProviderRunHash: (value: Record<string, unknown>) => string;
-};
+const { runMainAgentAuthoringRepair } =
+  require('../../packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js') as {
+    runMainAgentAuthoringRepair: (root: string, options: Record<string, unknown>) => any;
+  };
+const { criticalAuditorIndependentProviderRunHash } =
+  require('../../packages/bmad-speckit/dist/main-agent/source-authority/scripts/requirements-contract-critical-auditor-independence.js') as {
+    criticalAuditorIndependentProviderRunHash: (value: Record<string, unknown>) => string;
+  };
 
 function sha256Text(value: string): string {
   return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
@@ -26,7 +28,10 @@ function ensureCriticalAuditorProviderConfig(root: string): void {
   mkdirSync(path.dirname(target), { recursive: true });
   writeFileSync(
     target,
-    readFileSync(path.join(process.cwd(), '_bmad', '_config', 'governance-remediation.yaml'), 'utf8'),
+    readFileSync(
+      path.join(process.cwd(), '_bmad', '_config', 'governance-remediation.yaml'),
+      'utf8'
+    ),
     'utf8'
   );
 }
@@ -63,7 +68,14 @@ function withIndependentProviderEvidence(
 }
 
 function authoringPaths(root: string, recordId: string) {
-  const dir = path.join(root, '_bmad-output', 'runtime', 'requirement-records', recordId, 'authoring');
+  const dir = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    recordId,
+    'authoring'
+  );
   return {
     dir,
     request: (round: number) => path.join(dir, `critical-auditor-round-request-${round}.json`),
@@ -137,6 +149,29 @@ function writeSource(root: string, recordId: string): string {
     '      command: "npx vitest run tests/acceptance/main-agent-dist-authoring-repair-verdict-branching.test.ts"',
     '      purpose: "Validate dist runtime Critical Auditor verdict branching."',
     '      expected: "All tests pass."',
+    '  currentTargetMap:',
+    '    schemaVersion: current-target-map/v1',
+    '    displayProfile: closed_loop_current_target_map',
+    '    currentSummary:',
+    '      - id: CURRENT-MUST-001',
+    '        requirementRefs: [MUST-001]',
+    '        current: "Existing source preserves the authored contract."',
+    '        target: "Authoring repair emits governed Critical Auditor evidence."',
+    '    targetSummary:',
+    '      - id: TARGET-MUST-001',
+    '        requirementRefs: [MUST-001]',
+    '        detail: "The source remains unchanged while the repair verdict is recorded."',
+    '    diffRows:',
+    '      - id: DIFF-MUST-001',
+    '        derivedFromMustRef: MUST-001',
+    '        currentState: "Existing source is authoritative."',
+    '        targetState: "Repair outcome is bound to current source hashes."',
+    '        action: "Record the provider verdict without source mutation."',
+    '  businessVisuals:',
+    '    - id: BUSINESS-MUST-001',
+    '      covers: [MUST-001]',
+    '      title: "Critical Auditor repair keeps the existing source authoritative"',
+    '      mermaid: "flowchart TD\\nSource[Existing source]-->Repair[Authoring repair]\\nRepair-->Evidence[Governed verdict evidence]"',
     '',
   ].join('\n');
   writeFileSync(source, text, 'utf8');
@@ -301,7 +336,12 @@ function prepareRequest(root: string, recordId: string) {
   ).toBe(true);
   const currentSourceText = readFileSync(source, 'utf8');
   expect(currentSourceText).toContain('implementationConfirmation:');
-  return { source, currentSourceHash: sha256Text(currentSourceText), paths, implementationAttemptId };
+  return {
+    source,
+    currentSourceHash: sha256Text(currentSourceText),
+    paths,
+    implementationAttemptId,
+  };
 }
 
 function expectReceiptBinding(paths: ReturnType<typeof authoringPaths>, verdict: string): void {
@@ -323,7 +363,7 @@ function expectReceiptBinding(paths: ReturnType<typeof authoringPaths>, verdict:
 
 describe('compiled dist authoring-repair verdict branching', () => {
   it('routes blocked without semantic gap materialization in package dist runtime', () => {
-      const root = mkdtempSync(path.join(os.tmpdir(), 'dist-authoring-repair-blocked-'));
+    const root = mkdtempSync(path.join(os.tmpdir(), 'dist-authoring-repair-blocked-'));
     try {
       const recordId = 'REQ-DIST-AUTHORING-REPAIR-BLOCKED';
       const { source, currentSourceHash, paths, implementationAttemptId } = prepareRequest(

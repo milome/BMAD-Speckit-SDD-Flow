@@ -181,24 +181,8 @@ function runProductionEntry(
       sourcePath,
       '--target-source',
       targetPath,
-      '--entry-source',
-      'session_requirements',
-      '--record-id',
+      '--request-id',
       sessionAuthority.requirementSetId,
-      '--requirement-set-id',
-      sessionAuthority.requirementSetId,
-      '--session-id',
-      sessionAuthority.sessionId,
-      '--session-turn-id',
-      sessionAuthority.turnId,
-      '--session-message-id',
-      sessionAuthority.messageId,
-      '--session-actor-identity-class',
-      sessionAuthority.actorIdentityClass,
-      '--session-branch',
-      sessionAuthority.branch,
-      '--session-captured-at',
-      sessionAuthority.capturedAt,
       '--json',
     ],
     {
@@ -469,9 +453,10 @@ describe('requirement entry-source production migration', () => {
         ).size
       ).toBe(intakeReceipt.excerpts.length);
       const classificationBySpanId = new Map(
-        lineageLedger.classifications.map(
-          (classification: { spanId: string }) => [classification.spanId, classification]
-        )
+        lineageLedger.classifications.map((classification: { spanId: string }) => [
+          classification.spanId,
+          classification,
+        ])
       );
       const headingExcerpt = intakeReceipt.excerpts.find(
         (excerpt: { content: string }) => excerpt.content.trim() === '# Session Requirement'
@@ -542,42 +527,33 @@ describe('requirement entry-source production migration', () => {
           JSON.parse(readFileSync(path.join(paths.semanticResolutionDir, name), 'utf8'))
         );
       const receiptBySourceRootId = new Map(
-        semanticReceipts.map((receipt) => [
-          String(receipt.fieldRef).split('/').at(-1),
-          receipt,
-        ])
+        semanticReceipts.map((receipt) => [String(receipt.fieldRef).split('/').at(-1), receipt])
       );
-      const sourceRootCandidates = manifest.sourceRoots.map(
-        (manifestRoot: Record<string, any>) => {
-          const sourceRootId = String(manifestRoot.sourceRootId);
-          const node = semanticIr.nodes[sourceRootId];
-          const receipt = receiptBySourceRootId.get(sourceRootId);
-          const sourcePremise = receipt?.premises?.find(
-            (premise: Record<string, unknown>) => premise.kind === 'source'
-          );
-          expect(node).toBeTruthy();
-          expect(sourcePremise).toBeTruthy();
-          const resolvedSourcePath = path.resolve(root, String(sourcePremise.sourcePath));
-          return {
-            sourceRootId,
-            rootClass: String(manifestRoot.rootClass),
-            nodeType: node.nodeType,
-            bodySchemaVersion: node.bodySchemaVersion,
-            semanticBody: semanticIr.semanticBodies[node.bodyHash],
-            sourcePath: String(sourcePremise.sourcePath),
-            sourceContent: readFileSync(resolvedSourcePath, 'utf8'),
-            sourceSpan: sourcePremise.sourceSpan,
-            proposedAuthorityClass: String(manifestRoot.authorityClass),
-            relatedRequirementRefs: Object.values(semanticIr.edges)
-              .filter(
-                (edge: any) =>
-                  edge.toRef === sourceRootId &&
-                  typeof edge.fromRef === 'string'
-              )
-              .map((edge: any) => edge.fromRef),
-          };
-        }
-      );
+      const sourceRootCandidates = manifest.sourceRoots.map((manifestRoot: Record<string, any>) => {
+        const sourceRootId = String(manifestRoot.sourceRootId);
+        const node = semanticIr.nodes[sourceRootId];
+        const receipt = receiptBySourceRootId.get(sourceRootId);
+        const sourcePremise = receipt?.premises?.find(
+          (premise: Record<string, unknown>) => premise.kind === 'source'
+        );
+        expect(node).toBeTruthy();
+        expect(sourcePremise).toBeTruthy();
+        const resolvedSourcePath = path.resolve(root, String(sourcePremise.sourcePath));
+        return {
+          sourceRootId,
+          rootClass: String(manifestRoot.rootClass),
+          nodeType: node.nodeType,
+          bodySchemaVersion: node.bodySchemaVersion,
+          semanticBody: semanticIr.semanticBodies[node.bodyHash],
+          sourcePath: String(sourcePremise.sourcePath),
+          sourceContent: readFileSync(resolvedSourcePath, 'utf8'),
+          sourceSpan: sourcePremise.sourceSpan,
+          proposedAuthorityClass: String(manifestRoot.authorityClass),
+          relatedRequirementRefs: Object.values(semanticIr.edges)
+            .filter((edge: any) => edge.toRef === sourceRootId && typeof edge.fromRef === 'string')
+            .map((edge: any) => edge.fromRef),
+        };
+      });
       const classificationInputs = lineageLedger.classifications.map(
         ({ sourceHash: _sourceHash, classificationHash: _classificationHash, ...row }: any) =>
           row.disposition === 'source_root'
@@ -604,9 +580,7 @@ describe('requirement entry-source production migration', () => {
       if (!left || !right) throw new Error('Production lineage did not expose swappable spans');
 
       const originalRootRefSet = [
-        ...new Set(
-          sourceRootRows.flatMap(({ row }: any) => row.sourceRootRefs as string[])
-        ),
+        ...new Set(sourceRootRows.flatMap(({ row }: any) => row.sourceRootRefs as string[])),
       ].sort();
       const leftRefs = [...left.row.sourceRootRefs];
       classificationInputs[left.index].sourceRootRefs = [...right.row.sourceRootRefs];

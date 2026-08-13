@@ -31,7 +31,7 @@ describe('controlled goal delivery closeout binding', () => {
         receiptHash: HASH,
       },
       taskReportArtifactHash: HASH,
-      judgeReviewCampaign: {
+      executionFinalJudgeCampaign: {
         closeoutAttemptId: CLOSEOUT_ATTEMPT_ID,
         decision: 'pass',
         aggregateHash: HASH,
@@ -58,7 +58,7 @@ describe('controlled goal delivery closeout binding', () => {
           receiptHash: HASH,
         },
         taskReportArtifactHash: HASH,
-        judgeReviewCampaign: { decision: 'pass', aggregateHash: HASH },
+        executionFinalJudgeCampaign: { decision: 'pass', aggregateHash: HASH },
         effectivePassReceipt: { effectivePass: true, effectivePassReceiptHash: HASH },
       })
     ).toThrow('main_agent_goal_task_report_provenance_mismatch');
@@ -120,7 +120,9 @@ function writeTaskReport(root: string): string {
   writeJson(filePath, {
     packetId: PACKET_ID,
     status: 'done',
-    filesChanged: ['packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate.ts'],
+    filesChanged: [
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate.ts',
+    ],
     validationsRun: ['native-closeout-fixture'],
     evidence: ['native closeout fixture TaskReport'],
     downstreamContext: ['native goal closeout fixture complete'],
@@ -297,9 +299,7 @@ describe('main-agent native goal delivery closeout gate', () => {
       writeTaskReport(root);
       const { code, updated } = runCloseout(root, baseRecord(root));
       expect(code).toBe(1);
-      expect(updated.closeout.attempts[0].blockingReasons).toContain(
-        'native_goal_receipt_missing'
-      );
+      expect(updated.closeout.attempts[0].blockingReasons).toContain('native_goal_receipt_missing');
     } finally {
       cleanup(root);
     }
@@ -312,9 +312,7 @@ describe('main-agent native goal delivery closeout gate', () => {
       writeTaskReport(root);
       const { code, updated } = runCloseout(root, baseRecord(root));
       expect(code).toBe(1);
-      expect(updated.closeout.attempts[0].blockingReasons).toContain(
-        'native_goal_receipt_invalid'
-      );
+      expect(updated.closeout.attempts[0].blockingReasons).toContain('native_goal_receipt_invalid');
       expect(updated.closeout.attempts[0].checks).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
