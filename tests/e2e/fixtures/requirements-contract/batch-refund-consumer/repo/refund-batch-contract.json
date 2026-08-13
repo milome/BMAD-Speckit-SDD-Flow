@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "requirements-contract-authority-source/v1",
+  "sourceRootId": "IDEMP-BATCH-REFUND",
+  "semanticBody": {
+    "policy": "Concurrent submissions with the same batchRequestKey create one batch task, return the same task ID, and execute each refund once.",
+    "key": "batchRequestKey",
+    "executionConstraints": [
+      {
+        "kind": "PATH",
+        "id": "refund-batch-owner",
+        "value": "src/refunds/batch-refund-service.ts"
+      }
+    ]
+  }
+}

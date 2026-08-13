@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "requirements-contract-authority-source/v1",
+  "sourceRootId": "QUESTION-BATCH-MIXED-RESULT",
+  "semanticBody": {
+    "question": "批次中同时存在成功和失败退款时，批次的最终业务结果是什么？",
+    "affectedFieldIds": ["batch.mixedResultOutcome"],
+    "affectedNodeIds": ["MUST-FR-BATCH-REFUND-RESULTS"],
+    "answerSchema": { "type": "string", "minLength": 1 }
+  }
+}

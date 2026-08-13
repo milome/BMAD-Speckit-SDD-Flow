@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "requirements-contract-authority-source/v1",
+  "sourceRootId": "MUST-FR-BATCH-REFUND-IDEMPOTENCY",
+  "semanticBody": {
+    "text": "Concurrent submissions with the same batchRequestKey must create one batch task, return the same task ID, and execute each refund once.",
+    "oracle": "The contract test submits the same batchRequestKey concurrently and observes one task ID and one execution per refund.",
+    "executionConstraintRefs": [
+      "CMD:refund-batch-contract",
+      "EVDREQ:refund-batch-evidence",
+      "PATH:refund-batch-owner"
+    ]
+  }
+}

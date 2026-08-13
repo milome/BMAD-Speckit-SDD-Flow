@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "requirements-contract-authority-source/v1",
+  "sourceRootId": "QUESTION-APPROVAL-SEPARATION",
+  "semanticBody": {
+    "question": "高额批次需要几名审批人，申请人能否审批自己的申请？",
+    "affectedFieldIds": ["approval.separationOfDuties"],
+    "affectedNodeIds": ["MUST-FR-BATCH-REFUND-APPROVAL"],
+    "answerSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approverCount", "requesterMayApprove"],
+      "properties": {
+        "approverCount": { "type": "integer", "minimum": 1 },
+        "requesterMayApprove": { "type": "boolean" }
+      }
+    }
+  }
+}

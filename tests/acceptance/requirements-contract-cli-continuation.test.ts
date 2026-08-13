@@ -24,6 +24,7 @@ describe('requirements contract package CLI continuation', () => {
         status: 'business_decision_required',
         issueCode: 'requirements_business_decision_required',
         authoringRequestId: 'REQ-SCHEMA',
+        requestId: 'REQ-SCHEMA',
         authoringAttemptId: 'ATTEMPT-SCHEMA',
         grillSessionId: 'GRILL-SCHEMA',
         resumable: true,
@@ -95,6 +96,7 @@ describe('requirements contract package CLI continuation', () => {
       expect(run.status, run.stderr || run.stdout).toBe(0);
       expect(run.stderr).toBe('');
       const envelope = JSON.parse(run.stdout) as Record<string, any>;
+      expect(envelope.data.requestId).toBe(envelope.data.authoringRequestId);
       expect(envelope).toMatchObject({
         action: 'author-confirmation-ready-source',
         status: 'business_decision_required',
@@ -168,7 +170,7 @@ describe('requirements contract package CLI continuation', () => {
             question: 'What retry limit is required?',
             dependencies: [],
             affectedFieldIds: ['FIELD-RETRY-LIMIT'],
-            affectedNodeIds: ['NODE-RETRY-LIMIT'],
+            affectedNodeIds: ['MUST-FR-CONTINUATION-001'],
             answerSchema: { type: 'integer', minimum: 1, maximum: 5 },
           },
         }),
@@ -183,7 +185,7 @@ describe('requirements contract package CLI continuation', () => {
             question: 'Should retries use exponential backoff?',
             dependencies: ['QUESTION-RETRY-LIMIT'],
             affectedFieldIds: ['FIELD-RETRY-MODE'],
-            affectedNodeIds: ['NODE-RETRY-MODE'],
+            affectedNodeIds: ['MUST-FR-CONTINUATION-001'],
             answerSchema: { type: 'boolean' },
           },
         }),
@@ -311,6 +313,10 @@ describe('requirements contract package CLI continuation', () => {
         frontier: [],
       });
       expect(secondEnvelope.data.decisionReceiptRefs).toHaveLength(2);
+      const decisionReceipts = secondEnvelope.data.decisionReceiptRefs.map(
+        (ref: { path: string }) =>
+          JSON.parse(readFileSync(path.join(recordRoot, ref.path), 'utf8')) as Record<string, any>
+      );
       const attemptDir = path.join(recordRoot, 'authoring', 'staging', session.authoringAttemptId);
       expect(
         JSON.parse(readFileSync(path.join(attemptDir, 'cp02-candidate.json'), 'utf8'))
@@ -334,6 +340,52 @@ describe('requirements contract package CLI continuation', () => {
         string,
         any
       >;
+      const cp04Manifest = JSON.parse(readFileSync(checkpointPaths[0], 'utf8')) as Record<
+        string,
+        any
+      >;
+      const readCp04Artifact = (role: string) => {
+        const entry = cp04Manifest.artifactEntries.find(
+          (candidate: Record<string, string>) => candidate.role === role
+        ) as Record<string, string>;
+        return JSON.parse(
+          readFileSync(path.join(recordRoot, ...entry.recordRelativePath.split('/')), 'utf8')
+        ) as Record<string, any>;
+      };
+      const semanticIr = readCp04Artifact('semantic_ir');
+      const resolvedEvidenceIndex = readCp04Artifact('resolved_evidence_index');
+      expect(semanticIr.semanticPayload.semantics.decisions).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            questionId: 'QUESTION-RETRY-LIMIT',
+            question: 'What retry limit is required?',
+            affectedFieldIds: ['FIELD-RETRY-LIMIT'],
+            answerValue: 3,
+          }),
+          expect.objectContaining({
+            questionId: 'QUESTION-RETRY-MODE',
+            question: 'Should retries use exponential backoff?',
+            affectedFieldIds: ['FIELD-RETRY-MODE'],
+            answerValue: true,
+          }),
+        ])
+      );
+      for (const receipt of decisionReceipts) {
+        const claim = semanticIr.semanticPayload.evidenceClaims.find(
+          (candidate: Record<string, any>) =>
+            candidate.authorityClass === 'human_confirmed' &&
+            candidate.decisionReceiptRefs.includes(receipt.decisionReceiptId)
+        );
+        expect(claim).toBeDefined();
+        expect(resolvedEvidenceIndex.resolutions).toContainEqual(
+          expect.objectContaining({
+            evidenceClaimId: claim.evidenceClaimId,
+            authorityClass: 'human_confirmed',
+            sourceSpanRefs: [],
+            decisionReceiptRefs: [receipt.decisionReceiptId],
+          })
+        );
+      }
       expect(
         cp08Manifest.artifactEntries.map((entry: Record<string, unknown>) => entry.role)
       ).toEqual(

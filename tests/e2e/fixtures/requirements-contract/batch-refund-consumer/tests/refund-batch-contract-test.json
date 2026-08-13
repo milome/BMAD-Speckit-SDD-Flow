@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "requirements-contract-authority-source/v1",
+  "sourceRootId": "ACC-BATCH-REFUND-IDEMPOTENCY",
+  "semanticBody": {
+    "target": "IDEMP-BATCH-REFUND",
+    "oracle": "Concurrent duplicate batchRequestKey submissions return one task ID and execute each refund once.",
+    "requiredEvidence": "Consumer contract test result for concurrent duplicate submissions.",
+    "executionConstraints": [
+      {
+        "kind": "CMD",
+        "id": "refund-batch-contract",
+        "value": "npm test -- refund-batch-contract"
+      },
+      {
+        "kind": "EVDREQ",
+        "id": "refund-batch-evidence",
+        "value": "Contract evidence covers each approved batch refund rule and its terminal outcome."
+      }
+    ]
+  },
+  "relatedRequirementRefs": [
+    "IDEMP-BATCH-REFUND"
+  ]
+}

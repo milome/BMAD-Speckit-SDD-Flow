@@ -2,9 +2,7 @@ import Ajv2020 from 'ajv/dist/2020.js';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import {
-  createRequirementsGrillQuestionPacket,
-} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-grill-model';
+import { createRequirementsGrillQuestionPacket } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-grill-model';
 import {
   createRequirementsGrillResponse,
   createRequirementsGrillSession,
@@ -46,11 +44,13 @@ function question() {
     questionId: 'question-retry-limit',
     fieldRef: 'requirements.checkout.retryLimit',
     issueCode: 'business_decision_required',
-    sourceEvidence: [{
-      path: 'docs/requirements/checkout.md',
-      hash: sha256Stable('checkout-source'),
-      excerptHash: sha256Stable('retry excerpt'),
-    }],
+    sourceEvidence: [
+      {
+        path: 'docs/requirements/checkout.md',
+        hash: sha256Stable('checkout-source'),
+        excerptHash: sha256Stable('retry excerpt'),
+      },
+    ],
     investigations: investigationRecords(),
     dependencies: [],
     affectedRequirementRefs: ['REQ-CHECKOUT'],
@@ -111,9 +111,15 @@ describe('requirements contract Grill protocol', () => {
       respondedAt: '2026-07-18T04:01:00.000Z',
     });
 
-    expect(validators.question(packet), validators.question.errors?.map(String).join('\n')).toBe(true);
-    expect(validators.response(response), validators.response.errors?.map(String).join('\n')).toBe(true);
-    expect(validators.session(session), validators.session.errors?.map(String).join('\n')).toBe(true);
+    expect(validators.question(packet), validators.question.errors?.map(String).join('\n')).toBe(
+      true
+    );
+    expect(validators.response(response), validators.response.errors?.map(String).join('\n')).toBe(
+      true
+    );
+    expect(validators.session(session), validators.session.errors?.map(String).join('\n')).toBe(
+      true
+    );
     expect(validators.decision.schema.$id).toContain('requirements-decision-receipt');
   });
 
@@ -128,7 +134,8 @@ describe('requirements contract Grill protocol', () => {
 
     expect(new Set(surfaces).size).toBe(1);
     expect(surfaces[0]).toContain('requirements-contract-grill');
-    expect(surfaces[0]).toContain('exactly one active question');
+    expect(surfaces[0]).toContain('0..N ready frontier');
+    expect(surfaces[0]).not.toContain('exactly one active question');
     expect(surfaces[0]).toContain('human_confirmed');
     expect(surfaces[0]).toContain('never automatically selected');
 

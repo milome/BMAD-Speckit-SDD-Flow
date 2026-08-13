@@ -16,9 +16,7 @@ const {
 const {
   validateRequirementsContractSchema,
 } = require('../source-authority/scripts/requirements-contract-semantic-ir-schema');
-const {
-  continueAuthoringFromContext,
-} = require('./source-authority-orchestration');
+const { continueAuthoringFromContext } = require('./source-authority-orchestration');
 
 const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9._-]*$/u;
 
@@ -168,14 +166,10 @@ async function submitRequirementsGrillResponseAction(context) {
       result = await continueAuthoringFromContext(context, continuation.session, {
         grillSessionId,
         decisionReceiptRefs: continuation.decisionReceiptRefs,
+        grillResolution: continuation,
       });
     }
-    const {
-      resultHash: _resultHash,
-      exitCode: _exitCode,
-      errors: _errors,
-      ...payload
-    } = result;
+    const { resultHash: _resultHash, exitCode: _exitCode, errors: _errors, ...payload } = result;
     const continuationPath = path.join(
       path.dirname(sessionPath),
       'continuations',
@@ -188,9 +182,10 @@ async function submitRequirementsGrillResponseAction(context) {
     });
     return result;
   } catch (error) {
-    const code = error instanceof Error && error.message
-      ? error.message
-      : 'requirements_grill_submission_failed';
+    const code =
+      error instanceof Error && error.message
+        ? error.message
+        : 'requirements_grill_submission_failed';
     return {
       ...errorResult(code, code),
       authoringRequestId: requestId,

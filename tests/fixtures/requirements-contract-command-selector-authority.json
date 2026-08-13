@@ -1,34 +1,21 @@
 {
   "schemaVersion": "requirements-contract-command-selector-authority/v1",
   "commandCount": 28,
-  "selectorCount": 272,
+  "selectorCount": 271,
   "commands": [
-
     {
       "commandId": "CMD-01",
       "allSelectors": [],
       "commandSelectors": [],
-      "acceptanceRefs": [
-        "AC-03",
-        "AC-46",
-        "AC-196"
-      ]
+      "acceptanceRefs": ["AC-03", "AC-46", "AC-196"]
     },
     {
       "commandId": "CMD-02",
-      "allSelectors": [
-        "tests/acceptance/requirements-contract-evidence-closure-baseline.test.ts"
-      ],
+      "allSelectors": ["tests/acceptance/requirements-contract-evidence-closure-baseline.test.ts"],
       "commandSelectors": [
         "tests/acceptance/requirements-contract-evidence-closure-baseline.test.ts"
       ],
-      "acceptanceRefs": [
-        "AC-01",
-        "AC-02",
-        "AC-03",
-        "AC-46",
-        "AC-196"
-      ]
+      "acceptanceRefs": ["AC-01", "AC-02", "AC-03", "AC-46", "AC-196"]
     },
     {
       "commandId": "CMD-03",
@@ -236,12 +223,7 @@
         "tests/acceptance/implementation-evidence-independent-oracle.test.ts",
         "tests/acceptance/main-agent-native-goal-closeout-gate.test.ts"
       ],
-      "acceptanceRefs": [
-        "AC-19",
-        "AC-20",
-        "AC-21",
-        "AC-46"
-      ]
+      "acceptanceRefs": ["AC-19", "AC-20", "AC-21", "AC-46"]
     },
     {
       "commandId": "CMD-06",
@@ -257,13 +239,7 @@
         "tests/acceptance/critical-auditor-receipt-binding.test.ts",
         "tests/acceptance/req-trace-confirmation-block-generator.test.ts"
       ],
-      "acceptanceRefs": [
-        "AC-22",
-        "AC-23",
-        "AC-24",
-        "AC-43",
-        "AC-46"
-      ]
+      "acceptanceRefs": ["AC-22", "AC-23", "AC-24", "AC-43", "AC-46"]
     },
     {
       "commandId": "CMD-07",
@@ -279,12 +255,7 @@
         "tests/acceptance/main-agent-delivery-truth-gate.test.ts",
         "tests/acceptance/main-agent-closeout-source-authority.test.ts"
       ],
-      "acceptanceRefs": [
-        "AC-25",
-        "AC-26",
-        "AC-27",
-        "AC-46"
-      ]
+      "acceptanceRefs": ["AC-25", "AC-26", "AC-27", "AC-46"]
     },
     {
       "commandId": "CMD-08",
@@ -555,7 +526,6 @@
       "allSelectors": [
         "tests/acceptance/goal-contract-profile.test.ts",
         "tests/acceptance/req-trace-goal-contract-profile.test.ts",
-        "tests/acceptance/requirements-contract-id-namespace-sync.test.ts",
         "tests/acceptance/requirements-contract-surface-parity.test.ts",
         "tests/acceptance/requirements-contract-canonical-assets-manifest.test.ts",
         "tests/acceptance/requirements-contract-consumer-registry.test.ts",
@@ -614,7 +584,6 @@
       "commandSelectors": [
         "tests/acceptance/goal-contract-profile.test.ts",
         "tests/acceptance/req-trace-goal-contract-profile.test.ts",
-        "tests/acceptance/requirements-contract-id-namespace-sync.test.ts",
         "tests/acceptance/requirements-contract-surface-parity.test.ts",
         "tests/acceptance/requirements-contract-canonical-assets-manifest.test.ts",
         "tests/acceptance/requirements-contract-consumer-registry.test.ts",
@@ -737,20 +706,9 @@
     },
     {
       "commandId": "CMD-12",
-      "allSelectors": [
-        "packages/bmad-speckit/tests/main-agent-build-dist.test.js"
-      ],
-      "commandSelectors": [
-        "packages/bmad-speckit/tests/main-agent-build-dist.test.js"
-      ],
-      "acceptanceRefs": [
-        "AC-43",
-        "AC-45",
-        "AC-46",
-        "AC-186",
-        "AC-205",
-        "AC-216"
-      ]
+      "allSelectors": ["packages/bmad-speckit/tests/main-agent-build-dist.test.js"],
+      "commandSelectors": ["packages/bmad-speckit/tests/main-agent-build-dist.test.js"],
+      "acceptanceRefs": ["AC-43", "AC-45", "AC-46", "AC-186", "AC-205", "AC-216"]
     },
     {
       "commandId": "CMD-13",
@@ -823,41 +781,25 @@
       "commandId": "CMD-14",
       "allSelectors": [],
       "commandSelectors": [],
-      "acceptanceRefs": [
-        "AC-46"
-      ]
+      "acceptanceRefs": ["AC-46"]
     },
     {
       "commandId": "CMD-15",
       "allSelectors": [],
       "commandSelectors": [],
-      "acceptanceRefs": [
-        "AC-46"
-      ]
+      "acceptanceRefs": ["AC-46"]
     },
     {
       "commandId": "CMD-16",
       "allSelectors": [],
       "commandSelectors": [],
-      "acceptanceRefs": [
-        "AC-45",
-        "AC-46"
-      ]
+      "acceptanceRefs": ["AC-45", "AC-46"]
     },
     {
       "commandId": "CMD-17",
       "allSelectors": [],
       "commandSelectors": [],
-      "acceptanceRefs": [
-        "AC-39",
-        "AC-46",
-        "AC-60",
-        "AC-65",
-        "AC-195",
-        "AC-200",
-        "AC-216",
-        "AC-218"
-      ]
+      "acceptanceRefs": ["AC-39", "AC-46", "AC-60", "AC-65", "AC-195", "AC-200", "AC-216", "AC-218"]
     },
     {
       "commandId": "CMD-18",
@@ -1097,15 +1039,7 @@
       "commandId": "CMD-26",
       "allSelectors": [],
       "commandSelectors": [],
-      "acceptanceRefs": [
-        "AC-46",
-        "AC-113",
-        "AC-114",
-        "AC-120",
-        "AC-125",
-        "AC-128",
-        "AC-129"
-      ]
+      "acceptanceRefs": ["AC-46", "AC-113", "AC-114", "AC-120", "AC-125", "AC-128", "AC-129"]
     },
     {
       "commandId": "CMD-27",
@@ -1182,14 +1116,7 @@
         "tests/acceptance/requirements-contract-package-runtime-action-binding-surface-parity.test.ts",
         "tests/acceptance/accept-install-consumer-cli.test.ts"
       ],
-      "acceptanceRefs": [
-        "AC-46",
-        "AC-150",
-        "AC-152",
-        "AC-153",
-        "AC-154",
-        "AC-216"
-      ]
+      "acceptanceRefs": ["AC-46", "AC-150", "AC-152", "AC-153", "AC-154", "AC-216"]
     },
     {
       "commandId": "CMD-30",

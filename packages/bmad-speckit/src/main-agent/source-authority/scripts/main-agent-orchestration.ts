@@ -91,7 +91,6 @@ import { loadAndDedupeRecords } from '../packages/scoring/query/loader';
 import { readGovernanceRemediationConfig } from './governance-remediation-config';
 import {
   buildCriticalAuditorJudgeRuntimeBinding,
-  criticalAuditorIndependentProviderRunHash,
   type CriticalAuditorJudgeRuntimeBinding,
   type CriticalAuditorIndependentProviderEvidence,
   type CriticalAuditorIndependentProviderExpectation,
@@ -5610,27 +5609,10 @@ interface AuditReviewScoringAssessment {
   rationale: string;
 }
 
-interface CriticalAuditorExternalAdapterResult {
-  schemaVersion: 'critical-auditor-external-adapter-result/v1';
-  providerRun: Record<string, unknown>;
-  response: Record<string, unknown>;
-}
-
 interface CriticalAuditorProtectedFileState {
   exists: boolean;
   hash: string | null;
 }
-
-const CRITICAL_AUDITOR_EXTERNAL_PROVIDER_IDENTITY_FIELDS = [
-  'providerId',
-  'transport',
-  'adapterRef',
-  'apiStyle',
-  'configuredBaseUrlHash',
-  'independenceClass',
-  'providerRegistryHash',
-  'providerConfigurationHash',
-] as const;
 
 const CRITICAL_AUDITOR_CREDENTIAL_KEY_PATTERN =
   /api.?key|authorization|secret|access.?token|refresh.?token|credential.?value|raw.?credential/iu;
@@ -5676,87 +5658,6 @@ function changedCriticalAuditorProtectedFiles(
     if (exists !== state.exists || hash !== state.hash) changed.push(filePath);
   }
   return changed;
-}
-
-function criticalAuditorExternalAdapterRoundResult(input: {
-  result: unknown;
-  expected: CriticalAuditorIndependentProviderExpectation;
-}): CriticalAuditorRoundResult {
-  const envelope = recordObject(input.result) as Partial<CriticalAuditorExternalAdapterResult>;
-  if (normalizeText(envelope.schemaVersion) !== 'critical-auditor-external-adapter-result/v1') {
-    throw new Error('critical_auditor_external_adapter_result_schema_invalid');
-  }
-  if (criticalAuditorContainsCredentialMaterial(envelope)) {
-    throw new Error('critical_auditor_credential_material_forbidden');
-  }
-  const providerRun = recordObject(envelope.providerRun);
-  const allowedProviderRunFields = new Set([
-    ...CRITICAL_AUDITOR_EXTERNAL_PROVIDER_IDENTITY_FIELDS,
-    'requestedModel',
-    'model',
-    'credentialRevision',
-    'capabilityReceiptHash',
-    'selectionReceiptHash',
-    'providerRunId',
-  ]);
-  if (Object.keys(providerRun).some((field) => !allowedProviderRunFields.has(field))) {
-    throw new Error('critical_auditor_external_adapter_provider_run_schema_invalid');
-  }
-  for (const field of CRITICAL_AUDITOR_EXTERNAL_PROVIDER_IDENTITY_FIELDS) {
-    if (normalizeText(providerRun[field]) !== normalizeText(input.expected[field])) {
-      throw new Error(`critical_auditor_external_adapter_${field}_mismatch`);
-    }
-  }
-  const requestedModel = normalizeConfiguredModel(providerRun.requestedModel);
-  if (!Object.hasOwn(providerRun, 'requestedModel') || requestedModel !== input.expected.model) {
-    throw new Error('critical_auditor_requested_model_identity_mismatch');
-  }
-  const returnedModel = normalizeText(providerRun.model);
-  if (!returnedModel) {
-    throw new Error('critical_auditor_returned_model_identity_missing');
-  }
-  const credentialRevision = Number(providerRun.credentialRevision);
-  if (!Number.isInteger(credentialRevision) || credentialRevision < 1) {
-    throw new Error('critical_auditor_credential_revision_invalid');
-  }
-  for (const field of ['capabilityReceiptHash', 'selectionReceiptHash'] as const) {
-    if (
-      input.expected[field] !== undefined &&
-      normalizeText(providerRun[field]) !== normalizeText(input.expected[field])
-    ) {
-      throw new Error(`critical_auditor_external_adapter_${field}_mismatch`);
-    }
-  }
-  const providerRunId = normalizeText(providerRun.providerRunId);
-  if (!providerRunId) {
-    throw new Error('critical_auditor_provider_run_id_missing');
-  }
-  const response = recordObject(envelope.response);
-  if (Object.hasOwn(response, 'independentProviderEvidence')) {
-    throw new Error('critical_auditor_external_adapter_self_authored_evidence_forbidden');
-  }
-  const evidenceWithoutRunHash: Omit<CriticalAuditorIndependentProviderEvidence, 'runHash'> = {
-    ...input.expected,
-    requestedModel,
-    model: returnedModel,
-    providerRunId,
-    responseHash: sha256Json(response),
-  };
-  const independentProviderEvidence: CriticalAuditorIndependentProviderEvidence = {
-    ...evidenceWithoutRunHash,
-    runHash: criticalAuditorIndependentProviderRunHash(evidenceWithoutRunHash),
-  };
-  const providerValidation = validateCriticalAuditorIndependentProviderEvidence({
-    expected: input.expected,
-    evidence: independentProviderEvidence,
-  });
-  if (!providerValidation.ok) {
-    throw new Error(providerValidation.issueCodes[0] ?? 'critical_auditor_provider_run_invalid');
-  }
-  return {
-    ...(response as unknown as CriticalAuditorRoundResult),
-    independentProviderEvidence,
-  };
 }
 
 export function criticalAuditorProviderContractBlockedRoute(issueCodes: string[]): {
@@ -22073,9 +21974,7 @@ function buildPreserveExistingMustDecompositionPacket(input: {
             id,
             action: normalizeText(row.action) || normalizeText(row.text) || requirement.text,
             oracle:
-              normalizeText(row.oracle) ||
-              normalizeText(row.redProofPlan) ||
-              requirement.text,
+              normalizeText(row.oracle) || normalizeText(row.redProofPlan) || requirement.text,
             dependencies: asStringArray(row.dependencies),
             originBindings: [
               {
@@ -34912,8 +34811,6 @@ const MAIN_AGENT_CLI_ACTIONS = new Set([
   'confirmation-bookkeeping-repair',
   'register-pre-confirmation-render',
   'register_pre_confirmation_render',
-  'pre-confirmation-drilldown',
-  'pre_confirmation_drilldown',
   'author-confirmation-ready-source',
   'author_confirmation_ready_source',
   'authoring-repair',
@@ -35851,13 +35748,23 @@ export function runMainAgentConfirmCloseoutAcceptance(
       ? { requirementSetId: normalizeText(args.requirementSetId) }
       : {}),
     ...(normalizeText(args.requirementRecord)
-      ? { requirementRecordPath: path.resolve(root, stripWrappingQuotes(normalizeText(args.requirementRecord))) }
+      ? {
+          requirementRecordPath: path.resolve(
+            root,
+            stripWrappingQuotes(normalizeText(args.requirementRecord))
+          ),
+        }
       : {}),
     ...(normalizeText(args.eventLog)
       ? { eventLogPath: path.resolve(root, stripWrappingQuotes(normalizeText(args.eventLog))) }
       : {}),
     ...(normalizeText(args.artifactIndex)
-      ? { artifactIndexPath: path.resolve(root, stripWrappingQuotes(normalizeText(args.artifactIndex))) }
+      ? {
+          artifactIndexPath: path.resolve(
+            root,
+            stripWrappingQuotes(normalizeText(args.artifactIndex))
+          ),
+        }
       : {}),
   });
   let parsedStdout: unknown = confirmation;
@@ -40169,47 +40076,6 @@ export function mainMainAgentOrchestration(argv: string[]): number {
     } catch (error) {
       console.error(
         `main-agent-orchestration author-confirmation-ready-source: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-      return 1;
-    }
-  }
-
-  if (action === 'pre-confirmation-drilldown' || action === 'pre_confirmation_drilldown') {
-    try {
-      const result = runMainAgentPreConfirmationDrilldown(root, {
-        source: args.source,
-        intakeSource: args.intakeSource,
-        targetSource: args.targetSource,
-        entrySource: args.entrySource,
-        recordId: args.recordId,
-        requirementSetId: args.requirementSetId,
-        implementationAttemptId: args.implementationAttemptId,
-        sessionId: args.sessionId,
-        sessionTurnId: args.sessionTurnId,
-        sessionMessageId: args.sessionMessageId,
-        sessionActorIdentityClass: args.sessionActorIdentityClass,
-        sessionBranch: args.sessionBranch,
-        sessionCapturedAt: args.sessionCapturedAt,
-        confirmationLanguage: args.confirmationLanguage,
-        localizationResponseFile: args.localizationResponseFile,
-        mode: args.mode,
-        skipDrilldownArtifacts: args.skipDrilldownArtifacts === 'true',
-        targetPath: args.targetPath,
-        requiredCommand: args.requiredCommand,
-        criticalAuditorProviderMode: args.criticalAuditorProviderMode,
-        criticalAuditorResponseFile: args.criticalAuditorResponseFile,
-        criticalAuditorResponseDir: args.criticalAuditorResponseDir,
-        criticalAuditorExternalAdapterCommand: args.criticalAuditorExternalAdapterCommand,
-        checkpointPersistenceEvidencePath: args.checkpointPersistenceEvidencePath,
-        noAutoRepair: args.noAutoRepair === 'true',
-      });
-      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-      return result.ok ? 0 : 1;
-    } catch (error) {
-      console.error(
-        `main-agent-orchestration pre-confirmation-drilldown: ${
           error instanceof Error ? error.message : String(error)
         }`
       );

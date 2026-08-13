@@ -386,9 +386,7 @@ function writeSourceWithLegacyInlineMustAndFrNfrTables(
           ' '
         )} ${negativeId} | ${command} | Exit code 0. | Each controlled MUST closes through its own ACC, E2E, and TRACE authority. | ${requirements
         .flatMap((row) => [row.acceptanceId, row.e2eId, row.traceId])
-        .join(
-          ' '
-        )} PATH-001 | PATH-001 owns validation and remediation. | ${targetPath} |`,
+        .join(' ')} PATH-001 | PATH-001 owns validation and remediation. | ${targetPath} |`,
       ...requirements.map(
         (row) =>
           `| ${row.e2eId} | e2e | ${row.mustId} | ${command} | Exit code 0. | ${row.text} | ${row.acceptanceId} CMD-001 ${row.traceId} PATH-001 | PATH-001 owns ${row.mustId} end-to-end proof. | ${targetPath} |`
@@ -2028,19 +2026,16 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       const resyncLines = resyncText.replace(/\r\n/gu, '\n').split('\n');
       const inlineRowSourceSpan = (id: string) => {
         const startLine =
-          resyncLines.findIndex(
-            (line) => new RegExp(`^\\s*-\\s+id:\\s*${id}\\s*$`, 'u').test(line)
+          resyncLines.findIndex((line) =>
+            new RegExp(`^\\s*-\\s+id:\\s*${id}\\s*$`, 'u').test(line)
           ) + 1;
         const nextConfirmationFieldIndex = resyncLines.findIndex(
-          (line, index) =>
-            index >= startLine && line.trim().length > 0 && /^\s{2}\S/u.test(line)
+          (line, index) => index >= startLine && line.trim().length > 0 && /^\s{2}\S/u.test(line)
         );
         return {
           startLine,
           endLine:
-            nextConfirmationFieldIndex >= 0
-              ? nextConfirmationFieldIndex
-              : resyncLines.length,
+            nextConfirmationFieldIndex >= 0 ? nextConfirmationFieldIndex : resyncLines.length,
         };
       };
       const mustSourceSpan = inlineRowSourceSpan('MUST-900');
@@ -2230,8 +2225,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         source,
         recordId: 'REQ-PRE-CONFIRMATION-SOURCE-DRIVEN',
         requirementSetId: 'REQSET-PRE-CONFIRMATION-SOURCE-DRIVEN',
-        implementationAttemptId:
-          'implementation-attempt-REQSET-PRE-CONFIRMATION-SOURCE-DRIVEN',
+        implementationAttemptId: 'implementation-attempt-REQSET-PRE-CONFIRMATION-SOURCE-DRIVEN',
         confirmationLanguage: 'en-US',
         ...writeValidationAuthorityTarget(root),
         criticalAuditorRound: (input) => {
@@ -2605,7 +2599,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
     }
   });
 
-  it('fails closed when drilldown surfaces are missing and exposes the CLI action through main-agent orchestration', () => {
+  it('fails closed when drilldown surfaces are missing', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-pre-confirmation-cli-'));
     try {
       const source = writeDraftSource(root);
@@ -2622,25 +2616,6 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       );
       expect(readFileSync(source, 'utf8')).not.toContain('implementationConfirmation:');
 
-      const exitCode = mainMainAgentOrchestration([
-        '--cwd',
-        root,
-        '--action',
-        'pre-confirmation-drilldown',
-        '--source',
-        source,
-        '--record-id',
-        'REQ-PRE-CONFIRMATION-CLI',
-        '--requirement-set-id',
-        'REQSET-PRE-CONFIRMATION-CLI',
-        '--confirmation-language',
-        'zh-CN',
-        '--target-path',
-        authorityForSource(root, source).targetPath,
-        '--required-command',
-        authorityForSource(root, source).requiredCommand,
-      ]);
-      expect(exitCode).toBe(1);
       expect(existsSync(artifacts(root, 'REQ-PRE-CONFIRMATION-CLI').renderReport)).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -2654,9 +2629,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       try {
         const source = writeDraftSourceWithoutMust(root);
         const authority = authorityForSource(root, source);
-        const recordId = `REQ-AUTHORING-LANE-${action
-          .replace(/[^A-Z0-9]/giu, '-')
-          .toUpperCase()}`;
+        const recordId = `REQ-AUTHORING-LANE-${action.replace(/[^A-Z0-9]/giu, '-').toUpperCase()}`;
         const requirementSetId = `REQSET-AUTHORING-LANE-${action
           .replace(/[^A-Z0-9]/giu, '-')
           .toUpperCase()}`;

@@ -3,7 +3,9 @@ const path = require('node:path');
 const { adaptiveIntakeGovernanceGateAction } = require('./actions/adaptive-intake-governance-gate');
 const { adaptiveIntakeProofGateAction } = require('./actions/adaptive-intake-proof-gate');
 const { aiTddContractGateAction } = require('./actions/ai-tdd-contract-gate');
-const { aiTddCloseoutRemediationAdapterAction } = require('./actions/ai-tdd-closeout-remediation-adapter');
+const {
+  aiTddCloseoutRemediationAdapterAction,
+} = require('./actions/ai-tdd-closeout-remediation-adapter');
 const { auditReviewGateAction } = require('./actions/audit-review-gate');
 const { auditStageRoutingAction } = require('./actions/audit-stage-routing');
 const { auditorPostActionsAction } = require('./actions/auditor-post-actions');
@@ -35,7 +37,9 @@ const { finalCloseoutEvidenceRunnerAction } = require('./actions/final-closeout-
 const { functionalResumeCheckAction } = require('./actions/functional-resume-check');
 const { governedDataProductsAction } = require('./actions/governed-data-products');
 const { gapClosureEvidenceAction } = require('./actions/gap-closure-evidence');
-const { governancePacketDispatchWorkerAction } = require('./actions/governance-packet-dispatch-worker');
+const {
+  governancePacketDispatchWorkerAction,
+} = require('./actions/governance-packet-dispatch-worker');
 const { hostMatrixPrOrchestratorAction } = require('./actions/host-matrix-pr-orchestrator');
 const { implementationReadinessGateAction } = require('./actions/implementation-readiness-gate');
 const {
@@ -43,12 +47,18 @@ const {
 } = require('./actions/initialize-six-model-requirement-confirmation');
 const { hasRuntimeState, inspectRuntimeState, legacyInspectSurface } = require('./actions/inspect');
 const { liveSmokeMainAgentRuntimeAction } = require('./actions/live-smoke-main-agent-runtime');
-const { orchestrationDispatchContractAction } = require('./actions/orchestration-dispatch-contract');
-const { orchestrationGovernanceContractAction } = require('./actions/orchestration-governance-contract');
+const {
+  orchestrationDispatchContractAction,
+} = require('./actions/orchestration-dispatch-contract');
+const {
+  orchestrationGovernanceContractAction,
+} = require('./actions/orchestration-governance-contract');
 const { orchestrationStateAction } = require('./actions/orchestration-state');
 const { ingestImplementationEvidenceAction } = require('./actions/ingest-implementation-evidence');
 const { perMustClosureEvidenceIndexAction } = require('./actions/per-must-closure-evidence-index');
-const { preRerunAntiFalsePositiveGateAction } = require('./actions/pre-rerun-anti-false-positive-gate');
+const {
+  preRerunAntiFalsePositiveGateAction,
+} = require('./actions/pre-rerun-anti-false-positive-gate');
 const { printResolvedAuditPromptAction } = require('./actions/print-resolved-audit-prompt');
 const { productionLoopReadyCheckAction } = require('./actions/production-loop-ready-check');
 const { qualityGateAction } = require('./actions/quality-gate');
@@ -57,9 +67,15 @@ const {
   recordMainAgentInspectReadinessClosureAction,
 } = require('./actions/record-main-agent-inspect-readiness-closure');
 const { releaseGateAction } = require('./actions/release-gate');
-const { requirementRecordControlStoreAction } = require('./actions/requirement-record-control-store');
-const { requirementRecordLiveSchemaGateAction } = require('./actions/requirement-record-live-schema-gate');
-const { requirementRecordSchemaEvolutionAction } = require('./actions/requirement-record-schema-evolution');
+const {
+  requirementRecordControlStoreAction,
+} = require('./actions/requirement-record-control-store');
+const {
+  requirementRecordLiveSchemaGateAction,
+} = require('./actions/requirement-record-live-schema-gate');
+const {
+  requirementRecordSchemaEvolutionAction,
+} = require('./actions/requirement-record-schema-evolution');
 const {
   requirementsContractSourceIntakeAction,
 } = require('./actions/requirements-contract-source-intake');
@@ -83,9 +99,13 @@ const {
 } = require('./actions/source-authority-orchestration');
 const { renderAuditBlockCliAction } = require('./actions/render-audit-block-cli');
 const { strictCloseoutProofGateAction } = require('./actions/strict-closeout-proof-gate');
-const { targetArtifactRealizationGateAction } = require('./actions/target-artifact-realization-gate');
+const {
+  targetArtifactRealizationGateAction,
+} = require('./actions/target-artifact-realization-gate');
 const { traceStatusPolicyCheckAction } = require('./actions/trace-status-policy-check');
-const { trace040EvidencePacketGeneratorAction } = require('./actions/trace-040-evidence-packet-generator');
+const {
+  trace040EvidencePacketGeneratorAction,
+} = require('./actions/trace-040-evidence-packet-generator');
 const { unifiedIngressAction } = require('./actions/unified-ingress');
 const { updateRuntimeAuditIndexAction } = require('./actions/update-runtime-audit-index');
 const { verifyCursorAuditGranularityAction } = require('./actions/verify-cursor-audit-granularity');
@@ -152,7 +172,10 @@ const PACKAGE_RUNTIME_READY_ACTIONS = {
 };
 const WAVE_3_12_PACKAGE_RUNTIME_ACTIONS = {
   'analytics-sft-extract': ['./actions/analytics-sft-extract', 'runAnalyticsSftExtract'],
-  'assert-implementation-entry': ['./actions/assert-implementation-entry', 'runAssertImplementationEntry'],
+  'assert-implementation-entry': [
+    './actions/assert-implementation-entry',
+    'runAssertImplementationEntry',
+  ],
   'bmad-config': ['./actions/bmad-config', 'runBmadConfig'],
   'check-sprint-ready': ['./actions/check-sprint-ready', 'runCheckSprintReady'],
   'dashboard-generate': ['./actions/dashboard-generate', 'runDashboardGenerate'],
@@ -161,7 +184,10 @@ const WAVE_3_12_PACKAGE_RUNTIME_ACTIONS = {
     'runGovernanceExecutionResultIngestor',
   ],
   'governance-hook-types': ['./actions/governance-hook-types', 'runGovernanceHookTypes'],
-  'governance-provider-adapter': ['./actions/governance-provider-adapter', 'runGovernanceProviderAdapter'],
+  'governance-provider-adapter': [
+    './actions/governance-provider-adapter',
+    'runGovernanceProviderAdapter',
+  ],
   'governance-runtime-queue': ['./actions/governance-runtime-queue', 'runGovernanceRuntimeQueue'],
   'governance-stage-event-emitter': [
     './actions/governance-stage-event-emitter',
@@ -186,7 +212,10 @@ const WAVE_3_12_PACKAGE_RUNTIME_ACTIONS = {
   ],
   'parse-and-write-score': ['./actions/parse-and-write-score', 'runParseAndWriteScore'],
   'runtime-governance': ['./actions/runtime-governance', 'runRuntimeGovernance'],
-  'runtime-governance-registry': ['./actions/runtime-governance-registry', 'runRuntimeGovernanceRegistry'],
+  'runtime-governance-registry': [
+    './actions/runtime-governance-registry',
+    'runRuntimeGovernanceRegistry',
+  ],
   'runtime-governance-template-schema': [
     './actions/runtime-governance-template-schema',
     'runRuntimeGovernanceTemplateSchema',
@@ -245,8 +274,6 @@ const ORCHESTRATION_ACTIONS = new Set([
   'confirmation-bookkeeping-repair',
   'register-pre-confirmation-render',
   'register_pre_confirmation_render',
-  'pre-confirmation-drilldown',
-  'pre_confirmation_drilldown',
   'author-confirmation-ready-source',
   'author_confirmation_ready_source',
   'authoring-repair',
@@ -263,7 +290,9 @@ function loadWave312PackageRuntimeAction(action) {
 }
 
 function normalizeAction(value) {
-  return String(value || '').trim().replace(/_/g, '-');
+  return String(value || '')
+    .trim()
+    .replace(/_/g, '-');
 }
 
 function parseKeyValueArgs(argv) {
@@ -337,8 +366,7 @@ function emitResponse(context, response) {
 }
 
 function emitPackageActionResponse(context, data, defaultStatus = 'package_runtime_ready') {
-  const exitCode =
-    typeof data?.exitCode === 'number' ? data.exitCode : data?.ok === false ? 1 : 0;
+  const exitCode = typeof data?.exitCode === 'number' ? data.exitCode : data?.ok === false ? 1 : 0;
   return emitResponse(
     context,
     envelope(
@@ -392,7 +420,9 @@ function emitLegacyAction(context, action) {
   const exitCode = captured.result.exitCode ?? (captured.result.ok === false ? 1 : 0);
   const status = exitCode === 0 ? 'package_runtime_ready' : 'legacy_action_blocked';
   const message =
-    captured.stderr.trim() || captured.stdout.trim() || `${context.action} exited with code ${exitCode}`;
+    captured.stderr.trim() ||
+    captured.stdout.trim() ||
+    `${context.action} exited with code ${exitCode}`;
   return emitResponse(
     context,
     envelope(
@@ -480,7 +510,7 @@ async function runMainAgentRuntime(context) {
       context,
       envelope(
         context,
-        result.ok === false ? 'confirmation_blocked' : 'ok',
+        result.ok === false ? 'confirmation_blocked' : result.status || 'ok',
         exitCode,
         result,
         result.ok === false
@@ -514,7 +544,10 @@ async function runMainAgentRuntime(context) {
   }
 
   if (context.action === 'quality-gate') {
-    return emitResponse(context, envelope(context, 'package_runtime_ready', 0, qualityGateAction(context)));
+    return emitResponse(
+      context,
+      envelope(context, 'package_runtime_ready', 0, qualityGateAction(context))
+    );
   }
 
   if (context.action === 'delivery-truth-gate') {
@@ -538,7 +571,10 @@ async function runMainAgentRuntime(context) {
   }
 
   if (context.action === 'unified-ingress') {
-    return emitResponse(context, envelope(context, 'package_runtime_ready', 0, unifiedIngressAction(context)));
+    return emitResponse(
+      context,
+      envelope(context, 'package_runtime_ready', 0, unifiedIngressAction(context))
+    );
   }
 
   if (context.action === 'delivery-closeout-gate') {
@@ -557,7 +593,10 @@ async function runMainAgentRuntime(context) {
   }
 
   if (context.action === 'soak-runner') {
-    return emitResponse(context, envelope(context, 'package_runtime_ready', 0, soakRunnerAction(context)));
+    return emitResponse(
+      context,
+      envelope(context, 'package_runtime_ready', 0, soakRunnerAction(context))
+    );
   }
 
   if (context.action === 'dual-host-pr-orchestrator') {
@@ -568,11 +607,15 @@ async function runMainAgentRuntime(context) {
   }
 
   if (context.action === 'chaos-scenarios') {
-    return emitResponse(context, envelope(context, 'package_runtime_ready', 0, chaosScenariosAction(context)));
+    return emitResponse(
+      context,
+      envelope(context, 'package_runtime_ready', 0, chaosScenariosAction(context))
+    );
   }
 
   const packageRuntimeReadyAction =
-    PACKAGE_RUNTIME_READY_ACTIONS[context.action] || loadWave312PackageRuntimeAction(context.action);
+    PACKAGE_RUNTIME_READY_ACTIONS[context.action] ||
+    loadWave312PackageRuntimeAction(context.action);
   if (packageRuntimeReadyAction) {
     const data = await packageRuntimeReadyAction(context);
     return emitResponse(

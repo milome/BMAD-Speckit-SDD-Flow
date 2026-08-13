@@ -35,9 +35,9 @@ repository, architecture, policy, glossary, and test investigation.
    question. Reject and defer responses create no receipt and preserve unresolved
    state.
 8. Reuse resolved receipts monotonically. Reopen only when affected fields,
-   question version, or authority premises conflict, then bind each new receipt
-   to before and after semantic model hashes and the
-   exact invalidated IR, Render, Oracle, RED, packet, and evidence refs.
+   question version, or business authority premises conflict.
+   Locator-only source binding changes never reopen Grill; use binding refresh without a new
+   decision receipt or before/after semantic model hashes.
 9. Update context only with domain vocabulary. Create an ADR only when the
    decision is hard to reverse, surprising, and has a real trade-off.
 10. Conversation, glossary, ADR, and recommendation prose never substitute for

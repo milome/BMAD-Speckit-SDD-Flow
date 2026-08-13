@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "requirements-contract-authority-source/v1",
+  "sourceRootId": "MUST-FR-BATCH-REFUND-APPROVAL",
+  "semanticBody": {
+    "text": "A batch whose total amount is at least 10000 must complete the approved authorization policy before any refund executes.",
+    "oracle": "The contract test proves approval separation of duties and the user-approved rejection and timeout outcomes.",
+    "executionConstraintRefs": [
+      "CMD:refund-batch-contract",
+      "EVDREQ:refund-batch-evidence",
+      "PATH:refund-batch-owner"
+    ]
+  }
+}

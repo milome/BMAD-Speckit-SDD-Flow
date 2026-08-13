@@ -43,10 +43,7 @@ describe('requirements contract source PRD instance lint', () => {
   });
 
   it.each([
-    ['weak-missing-neg.md', 'negative_requirement_missing'],
     ['weak-trace-all.md', 'trace_covers_all_must_forbidden'],
-    ['weak-missing-path.md', 'target_path_or_no_code_missing'],
-    ['weak-missing-current-target.md', 'current_target_map_missing'],
     ['weak-generic-business-visual.md', 'generic_business_visual_forbidden'],
     ['weak-orphan-source-binding.md', 'orphan_source_binding'],
   ])('fails closed for %s with %s', (fileName, expectedIssue) => {
@@ -61,6 +58,26 @@ describe('requirements contract source PRD instance lint', () => {
     expect(result.sourcePrdDraftReady).toBe(false);
     expect(result.issues.map((issue) => issue.code)).toContain(expectedIssue);
   });
+
+  it.each([
+    ['weak-missing-neg.md', 'negative_requirement_missing'],
+    ['weak-missing-path.md', 'target_path_or_no_code_missing'],
+    ['weak-missing-current-target.md', 'current_target_map_missing'],
+  ])(
+    'keeps %s under structural lint without restoring %s as Markdown semantic authority',
+    (fileName, retiredSemanticIssue) => {
+      const result = lintRequirementsContractSourcePrd({
+        source: fixture(fileName),
+        entrySource: 'source_prd_draft',
+        json: true,
+      });
+
+      const issueCodes = result.issues.map((issue) => issue.code);
+      expect(result.ok).toBe(false);
+      expect(issueCodes).toContain('required_heading_missing');
+      expect(issueCodes).not.toContain(retiredSemanticIssue);
+    }
+  );
 
   it('rejects inline implementationConfirmation for BMAD PRD mode', () => {
     const result = lintRequirementsContractSourcePrd({
@@ -80,7 +97,15 @@ describe('requirements contract source PRD instance lint', () => {
     const tsxCliPath = path.join(ROOT, 'node_modules', 'tsx', 'dist', 'cli.mjs');
     const output = execFileSync(
       process.execPath,
-      [tsxCliPath, LINT_SCRIPT_PATH, '--source', fixture('golden-source-prd.md'), '--entry-source', 'session_requirements', '--json'],
+      [
+        tsxCliPath,
+        LINT_SCRIPT_PATH,
+        '--source',
+        fixture('golden-source-prd.md'),
+        '--entry-source',
+        'session_requirements',
+        '--json',
+      ],
       {
         cwd: ROOT,
         encoding: 'utf8',

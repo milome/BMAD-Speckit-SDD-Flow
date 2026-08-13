@@ -57,7 +57,7 @@
     {
       "role": "diagram_set_planner",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-diagram-set-planner.ts",
-      "hash": "sha256:28b5729c7012ae10c146a88246681a06f0198609267d399e1905c7a173e27269"
+      "hash": "sha256:8f5ab09594282181b55569ff0a6f844a23daf05448ca40db199dffa587d8715a"
     },
     {
       "role": "mermaid_projection",
@@ -97,7 +97,7 @@
     {
       "role": "validation_facade",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-validation-facade.ts",
-      "hash": "sha256:2b2fb2f513afa97bb7a459ff5890725382fc4edaa26d41bb3176b8b7039656a1"
+      "hash": "sha256:565c80fa9ba60a3a08f12f05565df3f1a089845623c1c472697e994138a61225"
     }
   ]
 }

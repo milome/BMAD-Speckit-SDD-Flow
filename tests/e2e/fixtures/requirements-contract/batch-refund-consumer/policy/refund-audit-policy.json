@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "requirements-contract-authority-source/v1",
+  "sourceRootId": "MUST-FR-BATCH-REFUND-AUDIT",
+  "semanticBody": {
+    "text": "Batch refund audit records must be written to the governed audit store.",
+    "oracle": "The contract test proves every terminal batch writes the user-approved audit fields and retention policy.",
+    "rationale": "The governed refund audit policy requires durable batch records.",
+    "executionConstraintRefs": [
+      "CMD:refund-batch-contract",
+      "EVDREQ:refund-batch-evidence",
+      "PATH:refund-batch-owner"
+    ]
+  }
+}

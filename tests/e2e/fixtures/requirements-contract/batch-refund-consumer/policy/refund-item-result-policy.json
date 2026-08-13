@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "requirements-contract-authority-source/v1",
+  "sourceRootId": "MUST-FR-BATCH-REFUND-RESULTS",
+  "semanticBody": {
+    "text": "The batch processor must record and return a terminal result for every refund item.",
+    "oracle": "The contract test proves the user-approved single-item failure continuation and mixed-result batch outcome.",
+    "executionConstraintRefs": [
+      "ART:refund-batch-contract-results",
+      "CMD:refund-batch-contract",
+      "EVDREQ:refund-batch-evidence",
+      "PATH:refund-batch-owner"
+    ]
+  }
+}

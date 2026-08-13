@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "requirements-contract-authority-source/v1",
+  "sourceRootId": "QUESTION-SUBMISSION-P95-BOUNDARY",
+  "semanticBody": {
+    "question": "提交接口 P95 的起止点和基准负载如何定义？",
+    "affectedFieldIds": ["performance.submissionP95Boundary"],
+    "affectedNodeIds": ["MUST-NFR-BATCH-REFUND-P95"],
+    "answerSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["startsAt", "endsAt", "maxItemsPerBatch", "concurrentSubmissions", "durationMinutes"],
+      "properties": {
+        "startsAt": { "type": "string" },
+        "endsAt": { "type": "string" },
+        "maxItemsPerBatch": { "type": "integer", "minimum": 1 },
+        "concurrentSubmissions": { "type": "integer", "minimum": 1 },
+        "durationMinutes": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

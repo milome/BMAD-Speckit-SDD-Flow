@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   expectedSetsFromConfirmation,
   projectProductionImplementationConfirmation,
+  selectRequirementsContractFrozenConfirmationSemantics,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-confirmation-projection-facade';
 import { prepareRequirementsContractCp04FreezeStage } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-production-semantic-pipeline';
 import { createRequirementsContractCoreArtifactFreeze } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
@@ -305,6 +306,27 @@ function frozenProjectionContext(
 }
 
 describe('production confirmation projection facade', () => {
+  it('removes undefined optional values before freezing confirmation semantics', () => {
+    const confirmation = confirmationFixture();
+    const target = (confirmation.targetModificationPaths as Array<Record<string, unknown>>)[0];
+    target.sourcePathId = undefined;
+
+    const frozen = selectRequirementsContractFrozenConfirmationSemantics(confirmation);
+    const frozenTarget = (frozen.targetModificationPaths as Array<Record<string, unknown>>)[0];
+
+    expect(frozenTarget).not.toHaveProperty('sourcePathId');
+    expect(() =>
+      createRequirementsContractCoreArtifactFreeze({
+        stage: 'cp04',
+        artifactRole: 'semantic-ir',
+        artifact: {
+          schemaVersion: 'requirements-contract-semantic-ir/v1',
+          semanticPayload: { semantics: { implementationConfirmation: frozen } },
+        },
+      })
+    ).not.toThrow();
+  });
+
   it('requires a readback-verified cp04 frozen IR and never mutates semantic fields', () => {
     const confirmation = confirmationFixture();
     const context = frozenProjectionContext('cp04', confirmation);

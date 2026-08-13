@@ -85,6 +85,34 @@ If older project material says "requirements contract", treat it as a legacy ali
 
 ## Operating Modes
 
+## Requirements Semantic IR Production Lane
+
+This lane governs the production `author-confirmation-ready-source` chain built from
+frozen Requirements semantic IR. IR is the only semantic authority. Final Markdown,
+HTML, trace, acceptance, diagrams, citations, and confirmation text are projections;
+they must not be parsed back into business semantics or used as a second authority.
+
+- Run the production order: intake lint, cp00, dependency-ordered `0..N` Grill when
+  evidence cannot resolve a business decision, cp01-cp08, configured Requirements
+  Judge, EffectivePass, final render, promotion, then Requirements confirmation.
+- The Requirements Judge prompt is loaded from the configured production prompt path;
+  the rubric and structured response schema use the same production configuration.
+  Skills, tests, and orchestration must
+  not hard-code a second prompt or select a provider through a test-only branch.
+- Public Requirements confirmation accepts only
+  `requestId + exactConfirmationText`. The exact text is read from the currently
+  promoted Requirements page; users never submit hashes, receipts, provider identity,
+  or execution closeout metadata.
+- A locator-only source binding refresh may rebuild the resolved evidence index and
+  citation projection, but it must not rerun Grill, cp00-cp08, Judge, or EffectivePass.
+  It reuses the fixed staged pages and the existing source-binding refresh receipt,
+  preserves an existing confirmation for the same semantic scope, and fails closed
+  while binding CAS, page promotion, and receipt publication are not all complete.
+- Requirements scope confirmation is not delivery closeout acceptance. It only authorizes
+  the frozen Requirements scope for the next stage and must not read or require execution final Judge campaign identity.
+  Delivery/execution final Judge
+  campaigns retain their separate runtime, naming, evidence, and acceptance path.
+
 ## Intent Normalization
 
 User wording must be normalized before any authoring, repair, render, or audit route is selected.

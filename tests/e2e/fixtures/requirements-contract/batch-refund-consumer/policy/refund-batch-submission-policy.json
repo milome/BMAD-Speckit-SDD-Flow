@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "requirements-contract-authority-source/v1",
+  "sourceRootId": "MUST-FR-BATCH-REFUND-SUBMISSION",
+  "semanticBody": {
+    "text": "The service must accept a batch of at most 100 refunds, create an asynchronous batch task, and return its task ID.",
+    "oracle": "The contract test proves accepted limits and the user-approved behavior when a request exceeds 100 refunds.",
+    "executionConstraintRefs": [
+      "ART:refund-batch-contract-results",
+      "CMD:refund-batch-contract",
+      "EVDREQ:refund-batch-evidence",
+      "PATH:refund-batch-owner"
+    ]
+  }
+}

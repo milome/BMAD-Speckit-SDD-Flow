@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "requirements-contract-authority-source/v1",
+  "sourceRootId": "MUST-NFR-BATCH-REFUND-P95",
+  "semanticBody": {
+    "text": "The batch submission endpoint P95 response time must not exceed 5 seconds under the approved measurement boundary and load.",
+    "oracle": "The performance evidence measures the user-approved interval and load profile and reports P95 at or below 5 seconds.",
+    "executionConstraintRefs": [
+      "CMD:refund-batch-contract",
+      "EVDREQ:refund-batch-evidence",
+      "PATH:refund-batch-owner"
+    ]
+  }
+}

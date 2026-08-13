@@ -82,10 +82,7 @@ function normalizePathForAssert(value: string): string {
   return value.replace(/\\/gu, '/');
 }
 
-const PROJECTION_HASH_BOOKKEEPING_FIELDS = new Set([
-  'derivedFromPacketHash',
-  'projectionStatus',
-]);
+const PROJECTION_HASH_BOOKKEEPING_FIELDS = new Set(['derivedFromPacketHash', 'projectionStatus']);
 
 function stripProjectionHashBookkeeping(value: unknown): unknown {
   if (Array.isArray(value)) {
@@ -311,8 +308,7 @@ function architectureConfirmationRecordOverrides(sourcePath: string): Record<str
   const hashes = currentHashes(sourcePath);
   const architectureHash =
     'sha256:4444444444444444444444444444444444444444444444444444444444444444';
-  const resolvedRecipeHash =
-    resolveArchitectureConfirmationHashRecipe().resolvedRecipeHash;
+  const resolvedRecipeHash = resolveArchitectureConfirmationHashRecipe().resolvedRecipeHash;
   const implementationAttemptId = `IMPL-${hashes.sourceDocumentHash.slice(-12).toUpperCase()}`;
   const semanticModelHash = sha256(
     stableStringify({
@@ -386,9 +382,7 @@ function run(
   options: { env?: NodeJS.ProcessEnv } = {}
 ): { stdout: string; status: number } {
   try {
-    const entryArgs = args.includes('--entry')
-      ? []
-      : ['--entry', 'req_trace_direct'];
+    const entryArgs = args.includes('--entry') ? [] : ['--entry', 'req_trace_direct'];
     const stdout = execFileSync('python', [SCRIPT, ...entryArgs, ...args], {
       cwd: ROOT,
       encoding: 'utf8',
@@ -403,9 +397,7 @@ function run(
 
 function runNodePrompt(args: string[]): { stdout: string; status: number } {
   try {
-    const entryArgs = args.includes('--entry')
-      ? []
-      : ['--entry', 'req_trace_direct'];
+    const entryArgs = args.includes('--entry') ? [] : ['--entry', 'req_trace_direct'];
     const stdout = execFileSync(process.execPath, [NODE_SCRIPT, ...entryArgs, ...args], {
       cwd: ROOT,
       encoding: 'utf8',
@@ -765,7 +757,7 @@ describe('req trace generator confirmation block gate', () => {
           const canonicalContent = fs.readFileSync(canonicalPath, 'utf8');
           if (surface === '.codex' && relativeFile === 'SKILL.md') {
             expect(hostContent, `${surface} SKILL.md missing YAML frontmatter`).toMatch(
-              /^---\nname:\s*["']?req-trace-matrix-prompt-generator["']?\ndescription:\s*.+\n---\n/s
+              /^---\r?\nname:\s*["']?req-trace-matrix-prompt-generator["']?\r?\ndescription:\s*.+\r?\n---\r?\n/s
             );
             expect(stripYamlFrontmatter(hostContent), `${surface} has stale ${relativeFile}`).toBe(
               stripYamlFrontmatter(canonicalContent)
@@ -889,9 +881,7 @@ describe('req trace generator confirmation block gate', () => {
       expect(result.status, result.stdout).toBe(0);
       const prompt = fs.readFileSync(path.join(outDir, 'human_prompt.txt'), 'utf8');
       expect(prompt).toContain('改为 PASS 后立即本地提交一次');
-      expect(prompt).not.toContain(
-        '不要自动提交；只有用户明确要求提交时才提交，并且禁止 push。'
-      );
+      expect(prompt).not.toContain('不要自动提交；只有用户明确要求提交时才提交，并且禁止 push。');
     }
   });
 
@@ -955,8 +945,7 @@ describe('req trace generator confirmation block gate', () => {
       descriptors: [
         {
           id: 'CMD-TEST-001',
-          command:
-            'npx vitest run tests/acceptance/req-trace-confirmation-block-generator.test.ts',
+          command: 'npx vitest run tests/acceptance/req-trace-confirmation-block-generator.test.ts',
           normalizedCommand:
             'npx vitest run tests/acceptance/req-trace-confirmation-block-generator.test.ts',
           argv: [
@@ -966,9 +955,7 @@ describe('req trace generator confirmation block gate', () => {
             'tests/acceptance/req-trace-confirmation-block-generator.test.ts',
           ],
           cwd: normalizePathForAssert(ROOT),
-          receiptPath: normalizePathForAssert(
-            path.join(commandReceiptRoot, 'CMD-TEST-001.json')
-          ),
+          receiptPath: normalizePathForAssert(path.join(commandReceiptRoot, 'CMD-TEST-001.json')),
           requirementRefs: ['MUST-001'],
           acceptanceRefs: ['ACC-001', 'E2E-001'],
           traceRefs: ['TRACE-001'],
@@ -2173,9 +2160,7 @@ describe('req trace generator confirmation block gate', () => {
     const packet = readJson<Record<string, any>>(path.join(outDir, 'model_packet.json'));
     const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
     expect(packet.sourceDocumentHash).toBe(legacyHashes.sourceDocumentHash);
-    expect(packet.implementationConfirmationHash).toBe(
-      legacyHashes.implementationConfirmationHash
-    );
+    expect(packet.implementationConfirmationHash).toBe(legacyHashes.implementationConfirmationHash);
     expect(receipt.confirmationHashAuthority).toMatchObject({
       recipe: 'legacy_projection_bookkeeping_inclusive/v1',
       compatibilityDecision: 'accepted_existing_confirmation',

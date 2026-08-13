@@ -20,7 +20,19 @@ import { compileRequirementsAuditAggregateV2 } from './requirements-contract-req
 import { compileRequirementsEffectivePassReceiptV2 } from './requirements-contract-requirements-effective-pass-gate';
 import { compileRequirementsContractRemediationPlan } from './requirements-contract-remediation-delta-finalizer';
 
-type JsonRecord = Record<string, any>;
+type JsonRecord = Record<string, unknown>;
+type JudgeInvocation = Awaited<ReturnType<typeof invokeRequirementsContractJudgeWithRecovery>>;
+type ReplayedJudgeInvocation = {
+  state: 'response_received';
+  acceptedEvaluation: true;
+  response: unknown;
+  capacity: {
+    actual: {
+      requestSerializedBytes: unknown;
+      auditPacketSerializedBytes: unknown;
+    };
+  };
+};
 
 function artifactManifest(buildManifest: JsonRecord, auditPacket: JsonRecord) {
   const body = auditPacket.body as JsonRecord;
@@ -28,7 +40,9 @@ function artifactManifest(buildManifest: JsonRecord, auditPacket: JsonRecord) {
   const byId = new Map(entries.map((entry: JsonRecord) => [entry.artifactId, entry]));
   return (body.artifactIds as string[]).map((artifactId) => {
     const entry = byId.get(artifactId) as JsonRecord | undefined;
-    return entry ?? { artifactId, role: artifactId, artifactHash: sha256(canonicalJson(artifactId)) };
+    return (
+      entry ?? { artifactId, role: artifactId, artifactHash: sha256(canonicalJson(artifactId)) }
+    );
   });
 }
 
@@ -42,7 +56,8 @@ function publish(recordRoot: string, relativePath: string, value: unknown, enabl
 }
 
 function hashPathSegment(hash: string): string {
-  if (!/^sha256:[a-f0-9]{64}$/u.test(hash)) throw new Error('requirements_contract_hash_path_invalid');
+  if (!/^sha256:[a-f0-9]{64}$/u.test(hash))
+    throw new Error('requirements_contract_hash_path_invalid');
   return hash.replace(':', '-');
 }
 
@@ -93,7 +108,14 @@ function terminalResult(recordRoot: string, activeRequest: RequirementsContractJ
     if (effectivePass.requirementsEffectivePassHash !== activeRequest.effectivePassRef.hash) {
       throw new Error('requirements_contract_judge_effective_pass_readback_mismatch');
     }
-    return { status: 'audited_pass' as const, request, response, aggregate, effectivePass, activeRequest };
+    return {
+      status: 'audited_pass' as const,
+      request,
+      response,
+      aggregate,
+      effectivePass,
+      activeRequest,
+    };
   }
   if (!activeRequest.remediationPlanRef) {
     throw new Error('requirements_contract_judge_remediation_plan_ref_missing');
@@ -102,7 +124,14 @@ function terminalResult(recordRoot: string, activeRequest: RequirementsContractJ
   if (remediationPlan.remediationPlanHash !== activeRequest.remediationPlanRef.hash) {
     throw new Error('requirements_contract_judge_remediation_plan_readback_mismatch');
   }
-  return { status: remediationPlan.state, request, response, aggregate, remediationPlan, activeRequest };
+  return {
+    status: remediationPlan.state,
+    request,
+    response,
+    aggregate,
+    remediationPlan,
+    activeRequest,
+  };
 }
 
 export async function runRequirementsContractProductionJudgePipeline(input: {
@@ -144,17 +173,23 @@ export async function runRequirementsContractProductionJudgePipeline(input: {
   });
   const requestDirectory = `quality/requests/${hashPathSegment(request.judgeRequestHash)}`;
   const requestPath = `${requestDirectory}/judge-request.json`;
-  const auditPolicyHash = sha256(canonicalJson({ prompt: request.prompt, responseSchema: request.prompt.structuredOutputSchema }));
+  const auditPolicyHash = sha256(
+    canonicalJson({ prompt: request.prompt, responseSchema: request.prompt.structuredOutputSchema })
+  );
   const activeRequestPath = path.join(input.recordRoot, 'quality', 'active-request.json');
-  const currentActiveRequest = persist && fs.existsSync(activeRequestPath)
-    ? JSON.parse(fs.readFileSync(activeRequestPath, 'utf8')) as RequirementsContractJudgeActiveRequest
-    : null;
+  const currentActiveRequest =
+    persist && fs.existsSync(activeRequestPath)
+      ? (JSON.parse(
+          fs.readFileSync(activeRequestPath, 'utf8')
+        ) as RequirementsContractJudgeActiveRequest)
+      : null;
   if (currentActiveRequest) {
     validateRequirementsContractJudgeActiveRequest(currentActiveRequest);
     if (currentActiveRequest.acceptedEvaluation) {
       if (!input.remediation) {
         if (
-          currentActiveRequest.semanticRevisionId !== input.activeAuthority.activeSemanticRevisionId ||
+          currentActiveRequest.semanticRevisionId !==
+            input.activeAuthority.activeSemanticRevisionId ||
           currentActiveRequest.auditPolicyHash !== auditPolicyHash
         ) {
           throw new Error('requirements_contract_judge_terminal_policy_mismatch');
@@ -174,21 +209,22 @@ export async function runRequirementsContractProductionJudgePipeline(input: {
         throw new Error('judge_remediation_no_progress');
       }
     }
-    if (!currentActiveRequest.acceptedEvaluation && (
-      currentActiveRequest.judgeRequestHash !== request.judgeRequestHash ||
-      currentActiveRequest.providerSelectionHash !== selection.providerSelectionHash ||
-      currentActiveRequest.semanticRevisionId !== input.activeAuthority.activeSemanticRevisionId ||
-      currentActiveRequest.auditPolicyHash !== auditPolicyHash ||
-      currentActiveRequest.requestPath !== requestPath
-    )) {
+    if (
+      !currentActiveRequest.acceptedEvaluation &&
+      (currentActiveRequest.judgeRequestHash !== request.judgeRequestHash ||
+        currentActiveRequest.providerSelectionHash !== selection.providerSelectionHash ||
+        currentActiveRequest.semanticRevisionId !==
+          input.activeAuthority.activeSemanticRevisionId ||
+        currentActiveRequest.auditPolicyHash !== auditPolicyHash ||
+        currentActiveRequest.requestPath !== requestPath)
+    ) {
       throw new Error('requirements_contract_judge_pending_request_mismatch');
     }
   }
   publish(input.recordRoot, selectionPath, selection, persist);
   publish(input.recordRoot, requestPath, request, persist);
-  const successorPredecessor = currentActiveRequest?.acceptedEvaluation && input.remediation
-    ? currentActiveRequest
-    : null;
+  const successorPredecessor =
+    currentActiveRequest?.acceptedEvaluation && input.remediation ? currentActiveRequest : null;
   let persistedActiveRequest = currentActiveRequest;
   let activeRequest = successorPredecessor
     ? createRequirementsContractJudgeActiveRequest({
@@ -200,15 +236,16 @@ export async function runRequirementsContractProductionJudgePipeline(input: {
         judgeRequestHash: request.judgeRequestHash,
         requestPath,
       })
-    : currentActiveRequest ?? createRequirementsContractJudgeActiveRequest({
-    version: 1,
-    previousVersion: null,
-    semanticRevisionId: input.activeAuthority.activeSemanticRevisionId,
-    auditPolicyHash,
-    providerSelectionHash: selection.providerSelectionHash,
-    judgeRequestHash: request.judgeRequestHash,
-    requestPath,
-  });
+    : (currentActiveRequest ??
+      createRequirementsContractJudgeActiveRequest({
+        version: 1,
+        previousVersion: null,
+        semanticRevisionId: input.activeAuthority.activeSemanticRevisionId,
+        auditPolicyHash,
+        providerSelectionHash: selection.providerSelectionHash,
+        judgeRequestHash: request.judgeRequestHash,
+        requestPath,
+      }));
   const persistTransition = (next: RequirementsContractJudgeActiveRequest) => {
     if (persist) {
       compareAndSwapRequirementsContractJudgeActiveRequest({
@@ -247,24 +284,31 @@ export async function runRequirementsContractProductionJudgePipeline(input: {
   }
   const attemptOrdinal = activeRequest.attemptCount + 1;
   if (attemptOrdinal > maxAttempts) {
-    return { status: 'audit_pending' as const, issueCode: 'attempts_exhausted', request, activeRequest };
+    return {
+      status: 'audit_pending' as const,
+      issueCode: 'attempts_exhausted',
+      request,
+      activeRequest,
+    };
   }
   const attemptPath = `${requestDirectory}/dispatch-attempts/${attemptOrdinal}.json`;
-  const existingAttempt = persist && fs.existsSync(path.join(input.recordRoot, ...attemptPath.split('/')))
-    ? readRecordArtifact(input.recordRoot, attemptPath)
-    : null;
-  if (existingAttempt && (
-    existingAttempt.judgeRequestHash !== request.judgeRequestHash ||
-    existingAttempt.providerSelectionHash !== selection.providerSelectionHash ||
-    existingAttempt.attemptOrdinal !== attemptOrdinal
-  )) {
+  const existingAttempt =
+    persist && fs.existsSync(path.join(input.recordRoot, ...attemptPath.split('/')))
+      ? readRecordArtifact(input.recordRoot, attemptPath)
+      : null;
+  if (
+    existingAttempt &&
+    (existingAttempt.judgeRequestHash !== request.judgeRequestHash ||
+      existingAttempt.providerSelectionHash !== selection.providerSelectionHash ||
+      existingAttempt.attemptOrdinal !== attemptOrdinal)
+  ) {
     throw new Error('requirements_contract_judge_attempt_identity_mismatch');
   }
   const replayedAttempt = existingAttempt?.outcome === 'response_received';
   if (existingAttempt && !replayedAttempt) {
     throw new Error('requirements_contract_judge_attempt_recovery_state_invalid');
   }
-  const invocation: any = replayedAttempt
+  const invocation: JudgeInvocation | ReplayedJudgeInvocation = replayedAttempt
     ? {
         state: 'response_received',
         acceptedEvaluation: true,
@@ -280,16 +324,17 @@ export async function runRequirementsContractProductionJudgePipeline(input: {
         request,
         provider: input.providerSelection.provider,
         attemptOrdinal,
-        invoke: (frozenRequest) => requirementsContractJudgeRunFrozenRequest({
-          prepared: input.preparedInvocation,
-          request: frozenRequest,
-          providerSelection: selection,
-          executionContext: {
-            projectRoot: input.recordRoot,
-            requestPath,
-            outputDir: `${requestDirectory}/provider-output/${attemptOrdinal}`,
-          },
-        }),
+        invoke: (frozenRequest) =>
+          requirementsContractJudgeRunFrozenRequest({
+            prepared: input.preparedInvocation,
+            request: frozenRequest,
+            providerSelection: selection,
+            executionContext: {
+              projectRoot: input.recordRoot,
+              requestPath,
+              outputDir: `${requestDirectory}/provider-output/${attemptOrdinal}`,
+            },
+          }),
       });
   const capacity = invocation.capacity ?? invocation;
   if (invocation.decision === 'capacity_blocked') {
@@ -298,10 +343,17 @@ export async function runRequirementsContractProductionJudgePipeline(input: {
       lastIssueCode: invocation.issueCode,
     });
     persistTransition(next);
-    return { status: 'audit_pending' as const, issueCode: invocation.issueCode, capacity, request, activeRequest };
+    return {
+      status: 'audit_pending' as const,
+      issueCode: invocation.issueCode,
+      capacity,
+      request,
+      activeRequest,
+    };
   }
   if (invocation.state === 'audit_pending') {
-    const retryScheduled = attemptOrdinal < maxAttempts && invocation.issueCode !== 'judge_provider_payload_rejected';
+    const retryScheduled =
+      attemptOrdinal < maxAttempts && invocation.issueCode !== 'judge_provider_payload_rejected';
     const attempt = {
       schemaVersion: 'requirements-contract-judge-attempt/v1',
       judgeRequestHash: request.judgeRequestHash,
@@ -317,11 +369,20 @@ export async function runRequirementsContractProductionJudgePipeline(input: {
     };
     publish(input.recordRoot, attemptPath, attempt, persist);
     const next = applyRequirementsContractJudgeLifecycleEvent(activeRequest, {
-      type: 'transport_failed', attemptOrdinal, attemptPath, issueCode: invocation.issueCode,
+      type: 'transport_failed',
+      attemptOrdinal,
+      attemptPath,
+      issueCode: invocation.issueCode,
       retryScheduled,
     });
     persistTransition(next);
-    return { status: 'audit_pending' as const, issueCode: retryScheduled ? 'retry_scheduled' : invocation.issueCode, capacity, request, activeRequest };
+    return {
+      status: 'audit_pending' as const,
+      issueCode: retryScheduled ? 'retry_scheduled' : invocation.issueCode,
+      capacity,
+      request,
+      activeRequest,
+    };
   }
   const rawResponse = invocation.response;
   const body = input.auditPacket.body as JsonRecord;
@@ -335,7 +396,10 @@ export async function runRequirementsContractProductionJudgePipeline(input: {
       requiredMustRefs: body.requirementIds,
     });
   } catch (error) {
-    const validationIssue = error instanceof Error ? error.message : 'requirements_contract_judge_response_validation_failed';
+    const validationIssue =
+      error instanceof Error
+        ? error.message
+        : 'requirements_contract_judge_response_validation_failed';
     const retryScheduled = attemptOrdinal < maxAttempts;
     const attempt = {
       schemaVersion: 'requirements-contract-judge-attempt/v1',
@@ -355,13 +419,17 @@ export async function runRequirementsContractProductionJudgePipeline(input: {
       type: 'response_rejected',
       attemptOrdinal,
       attemptPath,
-      issueCode: retryScheduled ? 'requirements_contract_judge_response_validation_failed' : 'attempts_exhausted',
+      issueCode: retryScheduled
+        ? 'requirements_contract_judge_response_validation_failed'
+        : 'attempts_exhausted',
       retryScheduled,
     });
     persistTransition(next);
     return {
       status: 'audit_pending' as const,
-      issueCode: retryScheduled ? 'requirements_contract_judge_response_validation_failed' : 'attempts_exhausted',
+      issueCode: retryScheduled
+        ? 'requirements_contract_judge_response_validation_failed'
+        : 'attempts_exhausted',
       capacity,
       request,
       activeRequest: next,
@@ -385,13 +453,25 @@ export async function runRequirementsContractProductionJudgePipeline(input: {
   const responsePath = `${requestDirectory}/judge-response.json`;
   publish(input.recordRoot, responsePath, response, persist);
   const auditedRequest = applyRequirementsContractJudgeLifecycleEvent(activeRequest, {
-    type: 'response_accepted', attemptOrdinal, attemptPath, responsePath, responseHash,
+    type: 'response_accepted',
+    attemptOrdinal,
+    attemptPath,
+    responsePath,
+    responseHash,
     verdict: response.verdict as 'pass' | 'fail',
   });
-  const aggregate = compileRequirementsAuditAggregateV2({ activeAuthority: input.activeAuthority, buildManifest: input.buildManifest, request, response });
+  const aggregate = compileRequirementsAuditAggregateV2({
+    activeAuthority: input.activeAuthority,
+    buildManifest: input.buildManifest,
+    request,
+    response,
+  });
   const aggregatePath = `${requestDirectory}/requirements-audit-aggregate.json`;
   publish(input.recordRoot, aggregatePath, aggregate, persist);
-  activeRequest = { ...auditedRequest, aggregateRef: { path: aggregatePath, hash: aggregate.requirementsAuditAggregateHash } };
+  activeRequest = {
+    ...auditedRequest,
+    aggregateRef: { path: aggregatePath, hash: aggregate.requirementsAuditAggregateHash },
+  };
   if (response.verdict === 'fail') {
     const remediationPlan = compileRequirementsContractRemediationPlan({
       judgeRequestHash: request.judgeRequestHash,
@@ -423,7 +503,18 @@ export async function runRequirementsContractProductionJudgePipeline(input: {
   });
   const passPath = 'quality/requirements-effective-pass-receipt.json';
   publish(input.recordRoot, passPath, effectivePass, persist);
-  activeRequest = { ...activeRequest, effectivePassRef: { path: passPath, hash: effectivePass.requirementsEffectivePassHash } };
+  activeRequest = {
+    ...activeRequest,
+    effectivePassRef: { path: passPath, hash: effectivePass.requirementsEffectivePassHash },
+  };
   persistTransition(activeRequest);
-  return { status: 'audited_pass' as const, request, response, aggregate, effectivePass, activeRequest, capacity };
+  return {
+    status: 'audited_pass' as const,
+    request,
+    response,
+    aggregate,
+    effectivePass,
+    activeRequest,
+    capacity,
+  };
 }

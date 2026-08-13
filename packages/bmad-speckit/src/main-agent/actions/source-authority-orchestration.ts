@@ -77,6 +77,11 @@ const {
 const {
   sha256Stable,
 } = require('../source-authority/scripts/requirements-contract-semantic-resolver');
+const {
+  renderAndPromoteRequirementsContractConfirmation,
+  refreshRequirementsContractConfirmationBinding,
+  stageRequirementsContractConfirmationBindingRefresh,
+} = require('../source-authority/scripts/requirements-contract-confirmation-acceptance');
 
 function withoutRuntimeOnlyFlags(argv) {
   return argv.filter((arg) => {
@@ -194,36 +199,6 @@ function fileAttemptPointerCas(recordRoot) {
   };
 }
 
-function sourceBindingPayload(scan) {
-  const atomCandidates = scan.sourceRootCandidates.filter((candidate) =>
-    ['functional_requirement', 'non_functional_requirement'].includes(candidate.rootClass)
-  );
-  return {
-    schemaVersion: 'requirements-contract-source-binding/v1',
-    authoritySourceListHash: scan.sourceList.sourceListHash,
-    snapshotSetHash: sha256Stable(
-      scan.sourceRootCandidates.map((candidate) => ({
-        sourceRootId: candidate.sourceRootId,
-        sourcePath: candidate.sourcePath,
-        sourceContent: candidate.sourceContent,
-      }))
-    ),
-    sourceSpanRegistryHash: sha256Stable(
-      scan.sourceRootCandidates.map((candidate) => ({
-        sourceRootId: candidate.sourceRootId,
-        sourcePath: candidate.sourcePath,
-        sourceSpan: candidate.sourceSpan,
-      }))
-    ),
-    evidenceClaimRegistryHash: sha256Stable(
-      atomCandidates.map((candidate) => ({
-        sourceRootId: candidate.sourceRootId,
-        oracle: candidate.semanticBody.oracle,
-      }))
-    ),
-  };
-}
-
 function sourceBindingLocatorHash(sourceBinding) {
   return sha256Stable({
     snapshotSetHash: sourceBinding.snapshotSetHash ?? sha256Stable(sourceBinding.sourceArtifacts),
@@ -255,6 +230,52 @@ function atomicMustsFromScan(scan) {
           : [],
       };
     });
+}
+
+function confirmedDecisionsFromGrillResolution(resolution, atoms) {
+  if (!resolution) return [];
+  const atomById = new Map(atoms.map((atom) => [atom.atomId, atom]));
+  const atomIdsByAuthorityRef = new Map();
+  for (const atom of atoms) {
+    for (const authorityRef of atom.authorityRefs) {
+      const refs = atomIdsByAuthorityRef.get(authorityRef) ?? [];
+      refs.push(atom.atomId);
+      atomIdsByAuthorityRef.set(authorityRef, refs);
+    }
+  }
+  return [...resolution.receiptByQuestionId.values()]
+    .map((receipt) => {
+      const question = resolution.questionById.get(receipt.questionId);
+      if (!question) throw new Error('requirements_grill_receipt_question_unknown');
+      const affectedAtomIds = new Set();
+      for (const affectedNodeId of receipt.affectedNodeIds) {
+        if (atomById.has(affectedNodeId)) affectedAtomIds.add(affectedNodeId);
+        for (const atomId of atomIdsByAuthorityRef.get(affectedNodeId) ?? []) {
+          affectedAtomIds.add(atomId);
+        }
+      }
+      if (affectedAtomIds.size === 0) {
+        throw new Error('requirements_decision_affected_node_unknown');
+      }
+      const sortedAffectedAtomIds = [...affectedAtomIds].sort();
+      const affectedRequirementIds = [
+        ...new Set(sortedAffectedAtomIds.flatMap((atomId) => atomById.get(atomId).authorityRefs)),
+      ].sort();
+      return {
+        id: receipt.decisionReceiptId,
+        decisionReceiptRef: receipt.decisionReceiptId,
+        questionId: receipt.questionId,
+        questionVersion: receipt.questionVersion,
+        question: question.question,
+        affectedFieldIds: receipt.affectedFieldIds,
+        affectedNodeIds: receipt.affectedNodeIds,
+        affectedAtomIds: sortedAffectedAtomIds,
+        affectedRequirementIds,
+        authorityPremiseHashes: receipt.authorityPremiseHashes,
+        answerValue: structuredClone(receipt.answerValue),
+      };
+    })
+    .sort((left, right) => left.id.localeCompare(right.id));
 }
 
 function canonicalSemanticIrFromClosure(input) {
@@ -308,7 +329,8 @@ function canonicalSemanticIrFromClosure(input) {
       .filter(Boolean)
       .sort(),
   }));
-  const evidenceClaims = requirements.map((requirement) => ({
+  const decisions = input.confirmedDecisions;
+  const sourceEvidenceClaims = requirements.map((requirement) => ({
     evidenceClaimId: `EVIDENCE-CLAIM-${requirement.id}`,
     authorityClass: 'source_grounded',
     normalizedClaimHash: sha256Stable({
@@ -320,7 +342,22 @@ function canonicalSemanticIrFromClosure(input) {
     premiseRefs: [],
     derivationReceiptRefs: [],
   }));
-  const specSpanRegistry = requirements.map((requirement) => ({
+  const decisionEvidenceClaims = decisions.map((decision) => ({
+    evidenceClaimId: `EVIDENCE-CLAIM-${decision.id}`,
+    authorityClass: 'human_confirmed',
+    normalizedClaimHash: sha256Stable({
+      questionId: decision.questionId,
+      questionVersion: decision.questionVersion,
+      question: decision.question,
+      affectedFieldIds: decision.affectedFieldIds,
+      affectedNodeIds: decision.affectedNodeIds,
+      answerValue: decision.answerValue,
+    }),
+    decisionReceiptRefs: [decision.decisionReceiptRef],
+    premiseRefs: [],
+    derivationReceiptRefs: [],
+  }));
+  const sourceSpecSpans = requirements.map((requirement) => ({
     authorityClass: 'source_grounded',
     normalizedClaimHash: sha256Stable({
       text: requirement.text,
@@ -335,45 +372,33 @@ function canonicalSemanticIrFromClosure(input) {
     decisionReceiptRefs: [],
     derivationReceiptRefs: [],
   }));
+  const decisionSpecSpans = decisions.map((decision, index) => ({
+    authorityClass: 'human_confirmed',
+    normalizedClaimHash: decisionEvidenceClaims[index].normalizedClaimHash,
+    boundSemanticNodeIds: [
+      decision.id,
+      ...decision.affectedRequirementIds,
+      ...decision.affectedAtomIds,
+    ],
+    boundObligationIds: decision.affectedRequirementIds,
+    evidenceClaimRefs: [decisionEvidenceClaims[index].evidenceClaimId],
+    decisionReceiptRefs: [decision.decisionReceiptRef],
+    derivationReceiptRefs: [],
+  }));
   return createRequirementsContractSemanticIr({
     recordId: input.authoringRequestId,
     requestId: input.authoringRequestId,
     parentSemanticRevisionId: null,
     compilerVersion: 'requirements-contract-cp02-compiler/v1',
-    semantics: { requirements, atoms },
-    evidenceClaims,
-    specSpanRegistry,
+    semantics: { requirements, atoms, decisions },
+    evidenceClaims: [...sourceEvidenceClaims, ...decisionEvidenceClaims],
+    specSpanRegistry: [...sourceSpecSpans, ...decisionSpecSpans],
     executionConstraints: constraints,
-    semanticProvenance: Object.fromEntries(
-      requirements.map((requirement) => [requirement.id, requirement.id])
-    ),
+    semanticProvenance: Object.fromEntries([
+      ...requirements.map((requirement) => [requirement.id, requirement.id]),
+      ...decisions.map((decision) => [decision.id, decision.decisionReceiptRef]),
+    ]),
   });
-}
-
-function resolvedEvidenceIndexForClosure(input) {
-  const candidates = new Map(
-    input.scan.sourceRootCandidates.map((candidate) => [candidate.sourceRootId, candidate])
-  );
-  return {
-    schemaVersion: 'requirements-contract-resolved-evidence-index/v1',
-    semanticRevisionId: input.semanticIr.semanticRevisionId,
-    resolutions: input.semanticIr.semanticPayload.evidenceClaims.map((claim) => {
-      const requirementId = claim.evidenceClaimId.replace(/^EVIDENCE-CLAIM-/u, '');
-      const candidate = candidates.get(requirementId);
-      return {
-        evidenceClaimId: claim.evidenceClaimId,
-        authorityClass: claim.authorityClass,
-        sourceSpanRefs: candidate
-          ? [
-              `${candidate.sourceRootId}:${candidate.sourceSpan.startLine}-${candidate.sourceSpan.endLine}`,
-            ]
-          : [],
-        decisionReceiptRefs: claim.decisionReceiptRefs,
-        premiseRefs: claim.premiseRefs,
-        derivationReceiptRefs: claim.derivationReceiptRefs,
-      };
-    }),
-  };
 }
 
 function canonicalBindingFromClosure(input) {
@@ -386,6 +411,19 @@ function canonicalBindingFromClosure(input) {
   for (const claim of input.semanticIr.semanticPayload.evidenceClaims) {
     const requirementId = claim.evidenceClaimId.replace(/^EVIDENCE-CLAIM-/u, '');
     const candidate = candidateById.get(requirementId);
+    const specSpan = input.semanticIr.semanticPayload.specSpanRegistry.find((span) =>
+      span.evidenceClaimRefs.includes(claim.evidenceClaimId)
+    );
+    if (!specSpan) throw new Error('requirements_source_binding_spec_span_missing');
+    if (claim.authorityClass !== 'source_grounded') {
+      evidenceClaimBindings.push({
+        evidenceClaimId: claim.evidenceClaimId,
+        specSpanId: specSpan.specSpanId,
+        authorityClass: claim.authorityClass,
+        sourceSpanRefs: [],
+      });
+      continue;
+    }
     if (!candidate) throw new Error('requirements_source_binding_candidate_missing');
     const sourceSnapshotHash = sha256Stable({
       domain: 'requirements-source-snapshot/v1',
@@ -401,15 +439,17 @@ function canonicalBindingFromClosure(input) {
       startColumn: 1,
       endLine: candidate.sourceSpan.endLine,
       endColumn: normalizedContent.split('\n').at(-1).length + 1,
-      exactTextHash: sha256Stable({ domain: 'requirements-source-exact-text/v1', content: candidate.sourceContent }),
-      normalizedTextHash: sha256Stable({ domain: 'requirements-source-normalized-text/v1', content: normalizedContent }),
+      exactTextHash: sha256Stable({
+        domain: 'requirements-source-exact-text/v1',
+        content: candidate.sourceContent,
+      }),
+      normalizedTextHash: sha256Stable({
+        domain: 'requirements-source-normalized-text/v1',
+        content: normalizedContent,
+      }),
       structuralAnchor: candidate.sourceRootId,
     };
     const sourceSpanId = canonicalSourceSpanId(sourceSpan);
-    const specSpan = input.semanticIr.semanticPayload.specSpanRegistry.find((span) =>
-      span.evidenceClaimRefs.includes(claim.evidenceClaimId)
-    );
-    if (!specSpan) throw new Error('requirements_source_binding_spec_span_missing');
     sourceArtifacts.push({
       sourceArtifactId: candidate.sourceRootId,
       role: candidate.rootClass,
@@ -615,13 +655,21 @@ function cliContinuationResult(input) {
     status: input.status,
     issueCode: input.issueCode,
     authoringRequestId: input.authoringRequestId,
+    requestId: input.authoringRequestId,
     authoringAttemptId: input.authoringAttemptId,
     grillSessionId: input.grillSessionId ?? null,
-    resumable: true,
-    nextAction: 'resume-author-confirmation-ready-source',
+    resumable: input.status !== 'user_confirmable',
+    nextAction:
+      input.status === 'user_confirmable'
+        ? 'confirm-scope'
+        : 'resume-author-confirmation-ready-source',
     decisionReceiptRefs: input.decisionReceiptRefs ?? [],
     frontier: [],
     forbiddenArtifacts: ['active_authority', 'confirmation', 'projection', 'target_source'],
+    ...(Number.isSafeInteger(input.unresolvedDecisionCount)
+      ? { unresolvedDecisionCount: input.unresolvedDecisionCount }
+      : {}),
+    ...(input.confirmation ? { confirmation: input.confirmation } : {}),
   };
   return {
     ...payload,
@@ -629,6 +677,136 @@ function cliContinuationResult(input) {
     exitCode: 0,
     errors: [],
   };
+}
+
+function continueRequirementsFinalRender(context, input) {
+  try {
+    const rendered = renderAndPromoteRequirementsContractConfirmation({
+      projectRoot: context.cwd,
+      requestId: input.authoringRequestId,
+    });
+    return cliContinuationResult({
+      status: rendered.status,
+      issueCode: 'requirements_user_confirmable',
+      authoringRequestId: input.authoringRequestId,
+      authoringAttemptId: input.authoringAttemptId,
+      grillSessionId: input.grillSessionId,
+      decisionReceiptRefs: input.decisionReceiptRefs,
+      unresolvedDecisionCount: rendered.unresolvedDecisionCount,
+      confirmation: rendered.confirmation,
+    });
+  } catch (error) {
+    const recordRoot = authoringRecordRoot(context.cwd, input.authoringRequestId);
+    const recordPath = path.join(recordRoot, 'record', 'requirement-record.json');
+    if (fs.existsSync(recordPath)) {
+      const record = JSON.parse(fs.readFileSync(recordPath, 'utf8'));
+      writeJsonAtomic(recordPath, {
+        ...record,
+        lifecycle: 'final_render_pending',
+        finalRenderIssueCode:
+          error instanceof Error ? error.message : 'requirements_final_render_failure',
+      });
+    }
+    return cliContinuationResult({
+      status: 'final_render_pending',
+      issueCode: 'requirements_final_render_pending',
+      authoringRequestId: input.authoringRequestId,
+      authoringAttemptId: input.authoringAttemptId,
+      grillSessionId: input.grillSessionId,
+      decisionReceiptRefs: input.decisionReceiptRefs,
+    });
+  }
+}
+
+async function continuePublishedRequirementsAudit(context, input) {
+  let prepared;
+  try {
+    prepared = await prepareRequirementsContractJudgeInvocation({
+      projectRoot: context.cwd,
+      config: '_bmad/_config/governance-remediation.yaml',
+    });
+  } catch (error) {
+    const issueCode = error instanceof Error ? error.message : 'judge_provider_unavailable';
+    const unavailable = createUnavailableRequirementsContractJudgeSelectionReceipt({
+      providerRegistryHash: sha256Stable({ unavailable: true }),
+      providerConfigurationHash: sha256Stable({
+        config: '_bmad/_config/governance-remediation.yaml',
+      }),
+      issueCode,
+    });
+    atomicNoClobberPublish({
+      targetPath: path.join(
+        input.recordRoot,
+        'quality',
+        'selections',
+        unavailable.providerSelectionHash.replace(':', '-'),
+        'provider-selection-receipt.json'
+      ),
+      value: unavailable,
+      role: 'requirements_judge_selection',
+    });
+    return cliContinuationResult({
+      status: 'audit_pending',
+      issueCode: 'requirements_audit_pending',
+      authoringRequestId: input.authoringRequestId,
+      authoringAttemptId: input.authoringAttemptId,
+      grillSessionId: input.grillSessionId,
+      decisionReceiptRefs: input.decisionReceiptRefs,
+    });
+  }
+  const configuredPrompt = loadConfiguredRequirementsContractJudgePrompt({
+    projectRoot: context.cwd,
+    promptConfig: prepared.judgeRuntime.promptConfig,
+  });
+  const auditPacketBody = input.auditPacket.body || {};
+  const judge = await runRequirementsContractProductionJudgePipeline({
+    authoringRequestId: input.authoringRequestId,
+    recordRoot: input.recordRoot,
+    activeAuthority: input.activeAuthority,
+    buildManifest: input.buildManifest,
+    auditPacket: input.auditPacket,
+    judgePrompt: {
+      systemPrompt: configuredPrompt.systemPrompt,
+      rubric: {
+        mandatoryDimensionIds: Array.isArray(auditPacketBody.mandatoryDimensionIds)
+          ? auditPacketBody.mandatoryDimensionIds
+          : [],
+      },
+      structuredOutputSchema: configuredPrompt.structuredOutputSchema,
+      outputTokenReserve: configuredPrompt.outputTokenReserve,
+    },
+    providerSelection: {
+      providerRef: prepared.providerRef,
+      provider: prepared.provider,
+      adapterRef:
+        prepared.provider.adapterRef ||
+        (prepared.provider.transport === 'openai-compatible'
+          ? 'OpenAICompatibleJudgeAdapter'
+          : prepared.provider.transport === 'anthropic-compatible'
+            ? 'AnthropicCompatibleJudgeAdapter'
+            : prepared.provider.transport === 'claude-code-cli'
+              ? 'ClaudeCodeCliJudgeAdapter'
+              : 'CodexCliJudgeAdapter'),
+      providerRegistryHash: prepared.providerRegistryHash,
+    },
+    preparedInvocation: prepared,
+  });
+  if (judge.status === 'audited_pass') {
+    return continueRequirementsFinalRender(context, {
+      authoringRequestId: input.authoringRequestId,
+      authoringAttemptId: input.authoringAttemptId,
+      grillSessionId: input.grillSessionId,
+      decisionReceiptRefs: input.decisionReceiptRefs,
+    });
+  }
+  return cliContinuationResult({
+    status: 'audit_pending',
+    issueCode: 'requirements_audit_pending',
+    authoringRequestId: input.authoringRequestId,
+    authoringAttemptId: input.authoringAttemptId,
+    grillSessionId: input.grillSessionId,
+    decisionReceiptRefs: input.decisionReceiptRefs,
+  });
 }
 
 function readRecordJson(recordRoot, recordRelativePath) {
@@ -649,8 +827,10 @@ function comparableProjectionArtifacts(buildManifest) {
       schemaVersion: entry.schemaVersion,
       artifactHash: entry.artifactHash,
     }))
-    .sort((left, right) =>
-      left.role.localeCompare(right.role, 'en') || left.artifactId.localeCompare(right.artifactId, 'en')
+    .sort(
+      (left, right) =>
+        left.role.localeCompare(right.role, 'en') ||
+        left.artifactId.localeCompare(right.artifactId, 'en')
     );
 }
 
@@ -743,9 +923,10 @@ async function continueAcceptedJudgeFailure(input) {
     input.recordRoot,
     input.currentAuthority.activeBuildManifestPath
   );
-  const existingDelta = continuation === 'resume_commit'
-    ? readRecordJson(input.recordRoot, activeRequest.remediationDeltaRef.path)
-    : null;
+  const existingDelta =
+    continuation === 'resume_commit'
+      ? readRecordJson(input.recordRoot, activeRequest.remediationDeltaRef.path)
+      : null;
   if (
     existingDelta &&
     (existingDelta.remediationDeltaHash !== activeRequest.remediationDeltaRef.hash ||
@@ -770,7 +951,10 @@ async function continueAcceptedJudgeFailure(input) {
     throw new Error('requirements_contract_remediation_authority_recovery_mismatch');
   }
   const semanticIr = readRecordJson(input.recordRoot, input.currentAuthority.activeSemanticIrPath);
-  const sourceBinding = readRecordJson(input.recordRoot, input.currentAuthority.activeSourceBindingPath);
+  const sourceBinding = readRecordJson(
+    input.recordRoot,
+    input.currentAuthority.activeSourceBindingPath
+  );
   const resolvedEvidenceIndex = readRecordJson(
     input.recordRoot,
     `authoring/source-bindings/${input.currentAuthority.activeBindingRevisionId}/resolved-evidence-index.json`
@@ -801,7 +985,8 @@ async function continueAcceptedJudgeFailure(input) {
     authoringAttemptId: repairAttemptId,
     inputManifestHash: input.scan.sourceList.sourceListHash,
     previousCheckpointManifestRef: {
-      checkpointId: 'cp04', checkpointOrdinal: 4,
+      checkpointId: 'cp04',
+      checkpointOrdinal: 4,
       path: `authoring/staging/${repairAttemptId}/manifests/4-cp04.json`,
       hash: cp04Publication.checkpointManifest.checkpointManifestHash,
     },
@@ -831,9 +1016,15 @@ async function continueAcceptedJudgeFailure(input) {
   ) {
     throw new Error('judge_remediation_no_progress');
   }
-  const changedArtifacts = comparableProjectionArtifacts(nextBuildManifest)
-    .filter((next) => !comparableProjectionArtifacts(currentBuildManifest)
-      .some((current) => current.role === next.role && current.artifactId === next.artifactId && current.artifactHash === next.artifactHash));
+  const changedArtifacts = comparableProjectionArtifacts(nextBuildManifest).filter(
+    (next) =>
+      !comparableProjectionArtifacts(currentBuildManifest).some(
+        (current) =>
+          current.role === next.role &&
+          current.artifactId === next.artifactId &&
+          current.artifactHash === next.artifactHash
+      )
+  );
   const changedArtifactRoles = changedArtifacts.map((entry) => entry.role);
   const changedArtifactRefs = changedArtifacts.map((entry) => entry.artifactId);
   const nextAuthority = {
@@ -889,12 +1080,19 @@ async function continueAcceptedJudgeFailure(input) {
     current: input.currentAuthority,
     next: nextAuthority,
     recordRootPath: input.recordRoot,
-    buildManifestTargetPath: path.join(input.recordRoot, ...nextAuthority.activeBuildManifestPath.split('/')),
+    buildManifestTargetPath: path.join(
+      input.recordRoot,
+      ...nextAuthority.activeBuildManifestPath.split('/')
+    ),
     buildManifest: nextBuildManifest,
     compareAndSwapAuthorityTuple(current, next) {
       const latest = JSON.parse(fs.readFileSync(requirementRecordPath, 'utf8'));
       if (sha256Stable(latest.activeAuthority) !== sha256Stable(current)) return false;
-      writeJsonAtomic(requirementRecordPath, { ...latest, activeAuthority: next, lifecycle: 'audit_pending' });
+      writeJsonAtomic(requirementRecordPath, {
+        ...latest,
+        activeAuthority: next,
+        lifecycle: 'audit_pending',
+      });
       return true;
     },
   });
@@ -938,6 +1136,30 @@ async function continueAuthoringFromContext(context, authoringContext, options =
     throw new Error('requirements_authority_context_stale');
   }
   const recordRoot = authoringRecordRoot(context.cwd, requestId);
+  const requirementRecordPath = path.join(recordRoot, 'record', 'requirement-record.json');
+  const activeJudgeRequestPath = path.join(recordRoot, 'quality', 'active-request.json');
+  if (fs.existsSync(requirementRecordPath) && !fs.existsSync(activeJudgeRequestPath)) {
+    const requirementRecord = JSON.parse(fs.readFileSync(requirementRecordPath, 'utf8'));
+    const activeAuthority = requirementRecord.activeAuthority;
+    if (activeAuthority?.activeAuthoringAttemptId === authoringAttemptId) {
+      const buildManifest = readRecordJson(recordRoot, activeAuthority.activeBuildManifestPath);
+      if (
+        buildManifest.authoringAttemptId === authoringAttemptId &&
+        buildManifest.inputManifestHash === scan.sourceList.sourceListHash
+      ) {
+        return continuePublishedRequirementsAudit(context, {
+          recordRoot,
+          authoringRequestId: requestId,
+          authoringAttemptId,
+          grillSessionId: options.grillSessionId,
+          decisionReceiptRefs: options.decisionReceiptRefs,
+          activeAuthority,
+          buildManifest,
+          auditPacket: readRecordJson(recordRoot, buildManifest.auditPacketRef.path),
+        });
+      }
+    }
+  }
   const stagingRoot = path.join(recordRoot, 'authoring', 'staging', authoringAttemptId);
   atomicNoClobberPublish({
     targetPath: path.join(stagingRoot, 'consumer-authority-source-list.json'),
@@ -955,11 +1177,17 @@ async function continueAuthoringFromContext(context, authoringContext, options =
     value: capability,
     role: 'requirements_technical_planning_capability',
   });
+  const atoms = atomicMustsFromScan(scan);
+  const confirmedDecisions = confirmedDecisionsFromGrillResolution(options.grillResolution, atoms);
   const cp02Candidate = prepareRequirementsContractCp02PipelineStage({
     authoringRequestId: requestId,
     authoringAttemptId,
-    atoms: atomicMustsFromScan(scan),
-    decisions: [],
+    atoms,
+    decisions: confirmedDecisions.map((decision) => ({
+      decisionId: decision.id,
+      affectedAtomIds: decision.affectedAtomIds,
+      authorityPremiseHashes: decision.authorityPremiseHashes,
+    })),
     technicalPlanning: capability,
   });
   atomicNoClobberPublish({
@@ -993,7 +1221,6 @@ async function continueAuthoringFromContext(context, authoringContext, options =
   if (cp02Candidate.status !== 'closed') {
     throw new Error(cp02Candidate.issueCodes[0] || 'requirements_cp02_closure_failed');
   }
-  const activeJudgeRequestPath = path.join(recordRoot, 'quality', 'active-request.json');
   const activeJudgeRequest = fs.existsSync(activeJudgeRequestPath)
     ? JSON.parse(fs.readFileSync(activeJudgeRequestPath, 'utf8'))
     : null;
@@ -1067,7 +1294,8 @@ async function continueAuthoringFromContext(context, authoringContext, options =
       providerSelection: {
         providerRef: prepared.providerRef,
         provider: prepared.provider,
-        adapterRef: prepared.provider.adapterRef ||
+        adapterRef:
+          prepared.provider.adapterRef ||
           (prepared.provider.transport === 'openai-compatible'
             ? 'OpenAICompatibleJudgeAdapter'
             : prepared.provider.transport === 'anthropic-compatible'
@@ -1080,11 +1308,17 @@ async function continueAuthoringFromContext(context, authoringContext, options =
       preparedInvocation: prepared,
       remediation: repair.remediation,
     });
+    if (judge.status === 'audited_pass') {
+      return continueRequirementsFinalRender(context, {
+        authoringRequestId: requestId,
+        authoringAttemptId: repair.repairContext.authoringAttemptId,
+        grillSessionId: options.grillSessionId,
+        decisionReceiptRefs: options.decisionReceiptRefs,
+      });
+    }
     return cliContinuationResult({
-      status: judge.status === 'audited_pass' ? 'final_render_pending' : 'audit_pending',
-      issueCode: judge.status === 'audited_pass'
-        ? 'requirements_final_render_pending'
-        : 'requirements_audit_pending',
+      status: 'audit_pending',
+      issueCode: 'requirements_audit_pending',
       authoringRequestId: requestId,
       authoringAttemptId: repair.repairContext.authoringAttemptId,
       decisionReceiptRefs: options.decisionReceiptRefs,
@@ -1095,6 +1329,7 @@ async function continueAuthoringFromContext(context, authoringContext, options =
     scan,
     cp02Candidate,
     capability,
+    confirmedDecisions,
   });
   const canonicalBinding = canonicalBindingFromClosure({
     authoringRequestId: requestId,
@@ -1173,7 +1408,6 @@ async function continueAuthoringFromContext(context, authoringContext, options =
     activeBuildManifestPath: `authoring/staging/${authoringAttemptId}/contract-build-manifest.json`,
     activeBuildManifestHash: buildManifest.buildManifestHash,
   };
-  const requirementRecordPath = path.join(recordRoot, 'record', 'requirement-record.json');
   const currentRecord = fs.existsSync(requirementRecordPath)
     ? JSON.parse(fs.readFileSync(requirementRecordPath, 'utf8'))
     : null;
@@ -1183,7 +1417,10 @@ async function continueAuthoringFromContext(context, authoringContext, options =
       current: currentRecord?.activeAuthority ?? null,
       next: activeAuthority,
       recordRootPath: recordRoot,
-      buildManifestTargetPath: path.join(recordRoot, ...activeAuthority.activeBuildManifestPath.split('/')),
+      buildManifestTargetPath: path.join(
+        recordRoot,
+        ...activeAuthority.activeBuildManifestPath.split('/')
+      ),
       buildManifest,
       compareAndSwapAuthorityTuple(current, next) {
         const latest = fs.existsSync(requirementRecordPath)
@@ -1201,89 +1438,21 @@ async function continueAuthoringFromContext(context, authoringContext, options =
       },
     });
   }
-  let prepared;
-  try {
-    prepared = await prepareRequirementsContractJudgeInvocation({
-      projectRoot: context.cwd,
-      config: '_bmad/_config/governance-remediation.yaml',
-    });
-  } catch (error) {
-    const issueCode = error instanceof Error ? error.message : 'judge_provider_unavailable';
-    const unavailable = createUnavailableRequirementsContractJudgeSelectionReceipt({
-      providerRegistryHash: sha256Stable({ unavailable: true }),
-      providerConfigurationHash: sha256Stable({
-        config: '_bmad/_config/governance-remediation.yaml',
-      }),
-      issueCode,
-    });
-    atomicNoClobberPublish({
-      targetPath: path.join(
-        recordRoot,
-        'quality',
-        'selections',
-        unavailable.providerSelectionHash.replace(':', '-'),
-        'provider-selection-receipt.json'
-      ),
-      value: unavailable,
-      role: 'requirements_judge_selection',
-    });
-    return cliContinuationResult({
-      status: 'audit_pending',
-      issueCode: 'requirements_audit_pending',
-      authoringRequestId: requestId,
-      authoringAttemptId,
-      grillSessionId: options.grillSessionId,
-      decisionReceiptRefs: options.decisionReceiptRefs,
-    });
-  }
   const auditPacket = JSON.parse(
-    fs.readFileSync(path.join(recordRoot, ...cp08Publication.canonicalAuditPacketRef.path.split('/')), 'utf8')
+    fs.readFileSync(
+      path.join(recordRoot, ...cp08Publication.canonicalAuditPacketRef.path.split('/')),
+      'utf8'
+    )
   );
-  const configuredPrompt = loadConfiguredRequirementsContractJudgePrompt({
-    projectRoot: context.cwd,
-    promptConfig: prepared.judgeRuntime.promptConfig,
-  });
-  const auditPacketBody = auditPacket.body || {};
-  const judge = await runRequirementsContractProductionJudgePipeline({
-    authoringRequestId: requestId,
+  return continuePublishedRequirementsAudit(context, {
     recordRoot,
-    activeAuthority,
-    buildManifest,
-    auditPacket,
-    judgePrompt: {
-      systemPrompt: configuredPrompt.systemPrompt,
-      rubric: {
-        mandatoryDimensionIds: Array.isArray(auditPacketBody.mandatoryDimensionIds)
-          ? auditPacketBody.mandatoryDimensionIds
-          : [],
-      },
-      structuredOutputSchema: configuredPrompt.structuredOutputSchema,
-      outputTokenReserve: configuredPrompt.outputTokenReserve,
-    },
-    providerSelection: {
-      providerRef: prepared.providerRef,
-      provider: prepared.provider,
-      adapterRef: prepared.provider.adapterRef ||
-        (prepared.provider.transport === 'openai-compatible'
-          ? 'OpenAICompatibleJudgeAdapter'
-          : prepared.provider.transport === 'anthropic-compatible'
-            ? 'AnthropicCompatibleJudgeAdapter'
-            : prepared.provider.transport === 'claude-code-cli'
-              ? 'ClaudeCodeCliJudgeAdapter'
-              : 'CodexCliJudgeAdapter'),
-      providerRegistryHash: prepared.providerRegistryHash,
-    },
-    preparedInvocation: prepared,
-  });
-  return cliContinuationResult({
-    status: judge.status === 'audited_pass' ? 'final_render_pending' : 'audit_pending',
-    issueCode: judge.status === 'audited_pass'
-      ? 'requirements_final_render_pending'
-      : 'requirements_audit_pending',
     authoringRequestId: requestId,
     authoringAttemptId,
     grillSessionId: options.grillSessionId,
     decisionReceiptRefs: options.decisionReceiptRefs,
+    activeAuthority,
+    buildManifest,
+    auditPacket,
   });
 }
 
@@ -1451,6 +1620,7 @@ async function authorConfirmationReadySourceAction(context) {
         status: 'business_decision_required',
         issueCode: 'requirements_business_decision_required',
         authoringRequestId: requestId,
+        requestId,
         authoringAttemptId,
         grillSessionId,
         resumable: true,
@@ -1538,6 +1708,41 @@ async function resumeAuthorConfirmationReadySourceAction(context) {
       ) {
         throw new Error('requirements_authoring_context_identity_mismatch');
       }
+      const requirementRecordPath = path.join(recordRoot, 'record', 'requirement-record.json');
+      if (fs.existsSync(requirementRecordPath)) {
+        const requirementRecord = JSON.parse(fs.readFileSync(requirementRecordPath, 'utf8'));
+        const currentAuthority = requirementRecord.activeAuthority;
+        const currentPromotionEvidence = requirementRecord.currentPromotionEvidence;
+        const originalPromotionPath = path.join(
+          recordRoot,
+          'confirmation',
+          'confirmation-promotion-receipt.json'
+        );
+        if (
+          currentAuthority &&
+          fs.existsSync(originalPromotionPath) &&
+          currentPromotionEvidence?.path === 'confirmation/confirmation-promotion-receipt.json'
+        ) {
+          const originalPromotion = JSON.parse(fs.readFileSync(originalPromotionPath, 'utf8'));
+          if (
+            originalPromotion.bindingRevisionId !== currentAuthority.activeBindingRevisionId ||
+            originalPromotion.sourceBindingHash !== currentAuthority.activeSourceBindingHash
+          ) {
+            const refreshedConfirmation = refreshRequirementsContractConfirmationBinding({
+              projectRoot: context.cwd,
+              requestId,
+            });
+            return cliContinuationResult({
+              status: refreshedConfirmation.status,
+              issueCode: 'requirements_user_confirmable',
+              authoringRequestId: requestId,
+              authoringAttemptId,
+              unresolvedDecisionCount: refreshedConfirmation.unresolvedDecisionCount,
+              confirmation: refreshedConfirmation.confirmation,
+            });
+          }
+        }
+      }
       const intakeSource = confinedPath(
         context.cwd,
         currentContext.intakeSource,
@@ -1565,12 +1770,14 @@ async function resumeAuthorConfirmationReadySourceAction(context) {
           if (currentManifest.inputManifestHash !== scan.sourceList.sourceListHash) {
             throw new Error('requirements_source_binding_refresh_authority_mismatch');
           }
-          const requirementRecordPath = path.join(recordRoot, 'record', 'requirement-record.json');
           const requirementRecord = fs.existsSync(requirementRecordPath)
             ? JSON.parse(fs.readFileSync(requirementRecordPath, 'utf8'))
             : null;
           const currentAuthority = requirementRecord?.activeAuthority;
           if (currentAuthority) {
+            const hasCurrentPromotionEvidence = Boolean(
+              requirementRecord?.currentPromotionEvidence?.path
+            );
             const currentBinding = JSON.parse(
               fs.readFileSync(
                 path.join(recordRoot, ...currentAuthority.activeSourceBindingPath.split('/')),
@@ -1647,6 +1854,7 @@ async function resumeAuthorConfirmationReadySourceAction(context) {
                 sourceBindingPath: currentAuthority.activeSourceBindingPath,
               },
               preserveCurrentAttemptPointer: true,
+              deferRefreshReceipt: hasCurrentPromotionEvidence,
             });
             const buildManifest = JSON.parse(
               fs.readFileSync(
@@ -1657,10 +1865,16 @@ async function resumeAuthorConfirmationReadySourceAction(context) {
             const nextAuthority = {
               ...currentAuthority,
               activeBindingRevisionId: refreshed.bindingIdentity.bindingRevisionId,
-              activeSourceBindingPath:
-                `authoring/source-bindings/${refreshed.bindingIdentity.bindingRevisionId}/source-binding.json`,
+              activeSourceBindingPath: `authoring/source-bindings/${refreshed.bindingIdentity.bindingRevisionId}/source-binding.json`,
               activeSourceBindingHash: refreshed.bindingIdentity.sourceBindingHash,
             };
+            if (hasCurrentPromotionEvidence) {
+              stageRequirementsContractConfirmationBindingRefresh({
+                projectRoot: context.cwd,
+                requestId,
+                bindingRevisionId: refreshed.bindingIdentity.bindingRevisionId,
+              });
+            }
             commitRequirementsContractAuthorityPublication({
               route: 'binding_refresh',
               current: currentAuthority,
@@ -1685,11 +1899,25 @@ async function resumeAuthorConfirmationReadySourceAction(context) {
                 return true;
               },
             });
+            if (!hasCurrentPromotionEvidence) {
+              return cliContinuationResult({
+                status: 'audit_pending',
+                issueCode: 'requirements_audit_pending',
+                authoringRequestId: requestId,
+                authoringAttemptId: successorAttemptId,
+              });
+            }
+            const refreshedConfirmation = refreshRequirementsContractConfirmationBinding({
+              projectRoot: context.cwd,
+              requestId,
+            });
             return cliContinuationResult({
-              status: 'audit_pending',
-              issueCode: 'requirements_audit_pending',
+              status: refreshedConfirmation.status,
+              issueCode: 'requirements_user_confirmable',
               authoringRequestId: requestId,
               authoringAttemptId: successorAttemptId,
+              unresolvedDecisionCount: refreshedConfirmation.unresolvedDecisionCount,
+              confirmation: refreshedConfirmation.confirmation,
             });
           }
         }
@@ -1726,6 +1954,7 @@ async function resumeAuthorConfirmationReadySourceAction(context) {
       return await continueAuthoringFromContext(context, resolution.session, {
         grillSessionId,
         decisionReceiptRefs: resolution.decisionReceiptRefs,
+        grillResolution: resolution,
       });
     }
     const payload = {

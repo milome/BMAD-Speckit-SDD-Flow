@@ -674,7 +674,9 @@ function frozenImplementationConfirmation(
 export function selectRequirementsContractFrozenConfirmationSemantics(
   confirmation: ImplementationConfirmation
 ): ImplementationConfirmation {
-  const normalized = normalizeStagingConfirmation(confirmation);
+  const normalized = projectConfirmationToCanonicalSchema(
+    normalizeStagingConfirmation(confirmation)
+  );
   return Object.fromEntries(
     [...FROZEN_CONFIRMATION_SEMANTIC_FIELDS]
       .filter((fieldRef) => Object.prototype.hasOwnProperty.call(normalized, fieldRef))

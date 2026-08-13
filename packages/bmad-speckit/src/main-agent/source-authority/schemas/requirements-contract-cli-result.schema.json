@@ -8,6 +8,7 @@
     "status",
     "issueCode",
     "authoringRequestId",
+    "requestId",
     "authoringAttemptId",
     "grillSessionId",
     "resumable",
@@ -40,6 +41,7 @@
       ]
     },
     "authoringRequestId": { "type": "string", "minLength": 1 },
+    "requestId": { "type": "string", "minLength": 1 },
     "authoringAttemptId": { "type": ["string", "null"] },
     "grillSessionId": { "type": ["string", "null"] },
     "resumable": { "type": "boolean" },
@@ -58,16 +60,49 @@
       "uniqueItems": true,
       "items": { "type": "string", "minLength": 1 }
     },
+    "unresolvedDecisionCount": { "type": "integer", "minimum": 0 },
+    "confirmation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exactConfirmationText",
+        "markdownPath",
+        "htmlPath",
+        "markdownArtifactBytesHash",
+        "htmlArtifactBytesHash",
+        "promotionReceiptPath",
+        "promotionArtifactBytesHash"
+      ],
+      "properties": {
+        "exactConfirmationText": { "type": "string", "minLength": 1 },
+        "markdownPath": { "type": "string", "minLength": 1 },
+        "htmlPath": { "type": "string", "minLength": 1 },
+        "markdownArtifactBytesHash": { "$ref": "#/$defs/hash" },
+        "htmlArtifactBytesHash": { "$ref": "#/$defs/hash" },
+        "promotionReceiptPath": { "type": "string", "minLength": 1 },
+        "promotionArtifactBytesHash": { "$ref": "#/$defs/hash" }
+      }
+    },
     "resultHash": { "$ref": "#/$defs/hash" }
   },
   "allOf": [
     {
       "if": { "properties": { "status": { "const": "business_decision_required" } } },
-      "then": { "properties": { "issueCode": { "const": "requirements_business_decision_required" }, "resumable": { "const": true } } }
+      "then": {
+        "properties": {
+          "issueCode": { "const": "requirements_business_decision_required" },
+          "resumable": { "const": true }
+        }
+      }
     },
     {
       "if": { "properties": { "status": { "const": "technical_planning_pending" } } },
-      "then": { "properties": { "issueCode": { "const": "requirements_technical_planning_pending" }, "resumable": { "const": true } } }
+      "then": {
+        "properties": {
+          "issueCode": { "const": "requirements_technical_planning_pending" },
+          "resumable": { "const": true }
+        }
+      }
     }
   ],
   "$defs": {
