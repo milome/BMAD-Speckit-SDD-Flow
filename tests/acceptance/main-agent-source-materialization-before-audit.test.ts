@@ -419,13 +419,15 @@ describe('source materialization before deep audit', () => {
       expect(missingReceipt.purpose).toBe('post_materialization_deep_audit');
       expect(missingReceipt.purposeGuard).toMatchObject({
         purpose: 'post_materialization_deep_audit',
-        blockingStage: 'critical_auditor_round_required',
+        blockingStage: 'current_source_promotion_refresh_failed_before_audit',
       });
-      expect(missingReceipt.blockingStage).toBe('critical_auditor_round_required');
+      expect(missingReceipt.blockingStage).toBe(
+        'current_source_promotion_refresh_failed_before_audit'
+      );
       expect(readJson(promotionReceiptPath(root, recordId))).toMatchObject({
         promotionStage: 'authoring-draft',
       });
-      expect(existsSync(requestPath(root, recordId, 1))).toBe(true);
+      expect(existsSync(requestPath(root, recordId, 1))).toBe(false);
 
       const noInlineSource = writeSourceWithoutConfirmation(root);
       const missingInline = runMainAgentAuthoringRepair(root, {
@@ -433,9 +435,7 @@ describe('source materialization before deep audit', () => {
         recordId: 'REQ-NO-INLINE',
         mode: 'preserve-existing',
       });
-      expect(missingInline.purposeGuard.blockingStage).toBe(
-        'implementation_confirmation_missing'
-      );
+      expect(missingInline.purposeGuard.blockingStage).toBe('implementation_confirmation_missing');
       expect(missingInline.blockingStage).toBe('implementation_confirmation_missing');
       expect(missingInline.blockingIssues.map((issue: any) => issue.code)).toContain(
         'implementation_confirmation_missing'
@@ -465,14 +465,14 @@ describe('source materialization before deep audit', () => {
           'inline_implementationConfirmation',
           'promotion_receipt',
         ],
-        blockingStage: 'critical_auditor_round_required',
+        blockingStage: 'current_source_promotion_refresh_failed_before_audit',
       });
-      expect(result.blockingStage).toBe('critical_auditor_round_required');
+      expect(result.blockingStage).toBe('current_source_promotion_refresh_failed_before_audit');
       expect(readJson(promotionReceiptPath(root, recordId))).toMatchObject({
         promotionStage: 'authoring-draft',
       });
       expect(existsSync(sourceMaterializationReceiptPath(root, recordId))).toBe(true);
-      expect(existsSync(requestPath(root, recordId, 1))).toBe(true);
+      expect(existsSync(requestPath(root, recordId, 1))).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
