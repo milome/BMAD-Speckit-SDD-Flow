@@ -92,7 +92,7 @@ function writeSource(root: string, recordId: string): string {
     '',
     'implementationConfirmation:',
     '  contractSchemaVersion: 1',
-    '  status: draft',
+    '  status: user_confirmed',
     `  recordId: ${recordId}`,
     `  requirementSetId: ${recordId}-SET`,
     '  must:',
