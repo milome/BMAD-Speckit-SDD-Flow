@@ -392,11 +392,6 @@
       "observedAt": "2026-08-02T10:55:16.000Z"
     },
     {
-      "testPath": "tests/acceptance/requirements-contract-critical-auditor-judge-adapter.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
       "testPath": "tests/acceptance/requirements-contract-critical-auditor-provider.test.ts",
       "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
       "observedAt": "2026-08-02T10:55:16.000Z"
@@ -438,11 +433,6 @@
     },
     {
       "testPath": "tests/acceptance/requirements-contract-gold-template-render.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
-      "testPath": "tests/acceptance/requirements-contract-id-namespace-sync.test.ts",
       "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
       "observedAt": "2026-08-02T10:55:16.000Z"
     },
