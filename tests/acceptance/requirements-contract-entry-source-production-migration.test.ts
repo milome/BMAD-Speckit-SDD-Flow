@@ -393,7 +393,7 @@ describe('requirement entry-source production migration', () => {
       const paths = expectPublishedAuthority(result, fixture, root);
       expect(paths.semanticIr.semanticPayload.specSpanRegistry.length).toBeGreaterThan(0);
       expect(paths.buildManifest.auditPacketRef.path).toMatch(
-        /^authoring\/staging\/[^/]+\/projections\/cp08\/judge-audit-packet\.json$/u
+        /^authoring\/staging\/[^/]+\/judge-audit-packet\.json$/u
       );
     } finally {
       rmSync(root, { recursive: true, force: true });
