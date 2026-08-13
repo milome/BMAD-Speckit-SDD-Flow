@@ -33,7 +33,13 @@ function fixture(root: string) {
     compilerVersion: 'requirements-contract-cp02-compiler/v1',
     semantics: {
       requirements: [
-        { id: 'MUST-FR-001', text: 'Persist refund audit records.', oracle: 'ACC-001 passes.' },
+        {
+          id: 'MUST-FR-001',
+          text: 'Persist refund audit records.',
+          oracle: 'ACC-001 passes.',
+          requirementKind: 'functional',
+          polarity: 'positive',
+        },
       ],
       atoms: [
         {
