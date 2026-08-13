@@ -36,19 +36,31 @@ describe('requirements contract Judge forbidden seams', () => {
       })
     ).toThrow('main_agent_judge_bridge_caller_authority_injection');
 
+    expect(() =>
+      buildMainAgentCanonicalJudgeRunDispatch({
+        projectRoot: ROOT,
+        config: '_bmad/_config/governance-remediation.yaml',
+        request: 'request.json',
+        role: 'final_acceptance_judge' as never,
+        attemptId: 'attempt-2',
+        outputDir: 'out',
+        controlledDispatchRef: { packetId: 'packet-2', packetKind: 'execution' },
+      })
+    ).toThrow('main_agent_judge_run_role_explicit_required');
+
     const dispatch = buildMainAgentCanonicalJudgeRunDispatch({
       projectRoot: ROOT,
       config: '_bmad/_config/governance-remediation.yaml',
       request: 'request.json',
-      role: 'final_acceptance_judge',
-      attemptId: 'attempt-2',
+      role: 'requirements_critical_auditor',
+      attemptId: 'attempt-3',
       outputDir: 'out',
-      controlledDispatchRef: { packetId: 'packet-2', packetKind: 'execution' },
+      controlledDispatchRef: { packetId: 'packet-3', packetKind: 'execution' },
     });
 
     expect(dispatch).toMatchObject({
       command: 'bmad-speckit judge run',
-      role: 'final_acceptance_judge',
+      role: 'requirements_critical_auditor',
       roleInference: false,
       directAdapterDispatch: false,
       callerAuthorityInjection: false,
@@ -72,6 +84,8 @@ describe('requirements contract Judge forbidden seams', () => {
 
     expect(bin).not.toContain(LEGACY_ACTION);
     expect(manifest.actions.map((action) => action.actionId)).not.toContain(LEGACY_ACTION);
-    expect(manifest.actions.map((action) => action.actionId)).toContain('requirements-contract-judge-run');
+    expect(manifest.actions.map((action) => action.actionId)).toContain(
+      'requirements-contract-judge-run'
+    );
   });
 });

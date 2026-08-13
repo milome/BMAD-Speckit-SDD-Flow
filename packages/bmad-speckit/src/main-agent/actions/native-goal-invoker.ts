@@ -82,7 +82,7 @@ export interface NativeGoalControlledExecutorResult {
   taskReportArtifactHash?: string;
   closeoutContextHash?: string;
   producerReceipt?: Record<string, unknown>;
-  judgeReviewCampaign?: Record<string, unknown>;
+  executionFinalJudgeCampaign?: Record<string, unknown>;
   effectivePassReceipt?: Record<string, unknown>;
   deliveryGateReceipt?: Record<string, unknown>;
 }
@@ -170,8 +170,8 @@ function nativeGoalBridgeResult(value: unknown): NativeGoalControlledExecutorRes
     ...(nativeGoalBridgeRecord(record.producerReceipt)
       ? { producerReceipt: record.producerReceipt }
       : {}),
-    ...(nativeGoalBridgeRecord(record.judgeReviewCampaign)
-      ? { judgeReviewCampaign: record.judgeReviewCampaign }
+    ...(nativeGoalBridgeRecord(record.executionFinalJudgeCampaign)
+      ? { executionFinalJudgeCampaign: record.executionFinalJudgeCampaign }
       : {}),
     ...(nativeGoalBridgeRecord(record.effectivePassReceipt)
       ? { effectivePassReceipt: record.effectivePassReceipt }
@@ -349,7 +349,7 @@ export interface NativeGoalInvocationResult {
     childClosureSetHash: string;
     campaignReportHash: string;
     closureReceiptHash: string;
-    judgeReviewCampaignHash: string;
+    executionFinalJudgeCampaignHash: string;
     effectivePassReceiptHash: string;
     deliveryCloseoutGateReceiptHash: string;
   };
@@ -425,13 +425,13 @@ function validateControlledCloseoutIngest(input: {
 }): NonNullable<NativeGoalInvocationResult['controlledCloseout']> {
   const contextHash = optionalString(input.execution.closeoutContextHash);
   const producerReceipt = record(input.execution.producerReceipt);
-  const judgeReviewCampaign = record(input.execution.judgeReviewCampaign);
+  const executionFinalJudgeCampaign = record(input.execution.executionFinalJudgeCampaign);
   const effectivePassReceipt = record(input.execution.effectivePassReceipt);
   const deliveryGateReceipt = record(input.execution.deliveryGateReceipt);
   const producerAttemptId = optionalString(producerReceipt.closeoutAttemptId);
-  const campaignAttemptId = optionalString(judgeReviewCampaign.closeoutAttemptId);
+  const campaignAttemptId = optionalString(executionFinalJudgeCampaign.closeoutAttemptId);
   const producerContextHash = optionalString(producerReceipt.contextHash);
-  const campaignCandidateHash = optionalString(judgeReviewCampaign.candidateBytesHash);
+  const campaignCandidateHash = optionalString(executionFinalJudgeCampaign.candidateBytesHash);
   const effectivePass = effectivePassReceipt.effectivePass === true;
   const deliveryAwaitingAcceptance =
     deliveryGateReceipt.status === 'awaiting_user_acceptance' &&
@@ -458,7 +458,9 @@ function validateControlledCloseoutIngest(input: {
     childClosureSetHash: requiredSha256(producerReceipt.childClosureSetHash),
     campaignReportHash: requiredSha256(producerReceipt.campaignReportHash),
     closureReceiptHash: requiredSha256(producerReceipt.receiptHash),
-    judgeReviewCampaignHash: requiredSha256(judgeReviewCampaign.aggregateHash),
+    executionFinalJudgeCampaignHash: requiredSha256(
+      executionFinalJudgeCampaign.aggregateHash
+    ),
     effectivePassReceiptHash: requiredSha256(
       effectivePassReceipt.effectivePassReceiptHash
     ),

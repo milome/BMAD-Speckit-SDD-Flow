@@ -356,7 +356,7 @@ describe('main-agent host-native goal invoker', () => {
     const childClosureSetHash = sha256Text(`${fixture.attemptId}:children`);
     const campaignReportHash = sha256Text(`${fixture.attemptId}:campaign-report`);
     const closureReceiptHash = sha256Text(`${fixture.attemptId}:closure`);
-    const judgeReviewCampaignHash = sha256Text(`${fixture.attemptId}:judge-campaign`);
+    const executionFinalJudgeCampaignHash = sha256Text(`${fixture.attemptId}:judge-campaign`);
     const effectivePassReceiptHash = sha256Text(`${fixture.attemptId}:effective-pass`);
     const deliveryCloseoutGateReceiptHash = sha256Text(`${fixture.attemptId}:delivery-closeout`);
     const result = runNativeGoalInvocation({
@@ -390,12 +390,12 @@ describe('main-agent host-native goal invoker', () => {
           taskReportArtifactHash: candidateHash,
           receiptHash: closureReceiptHash,
         },
-        judgeReviewCampaign: {
+        executionFinalJudgeCampaign: {
           campaignId,
           closeoutAttemptId: fixture.attemptId,
           candidateBytesHash: candidateHash,
           decision: 'pass',
-          aggregateHash: judgeReviewCampaignHash,
+          aggregateHash: executionFinalJudgeCampaignHash,
         },
         effectivePassReceipt: {
           campaignId,
@@ -426,7 +426,7 @@ describe('main-agent host-native goal invoker', () => {
         childClosureSetHash,
         campaignReportHash,
         closureReceiptHash,
-        judgeReviewCampaignHash,
+        executionFinalJudgeCampaignHash,
         effectivePassReceiptHash,
         deliveryCloseoutGateReceiptHash,
       },

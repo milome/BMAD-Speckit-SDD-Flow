@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-judge-attempt.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "judgeRequestHash", "providerSelectionHash", "attemptOrdinal", "outcome", "acceptedEvaluation", "requestSerializedBytes", "auditPacketSerializedBytes", "validationIssueCodes", "nextEligibleAt", "rawResponse"],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-judge-attempt/v1" },
+    "judgeRequestHash": { "$ref": "#/$defs/hash" },
+    "providerSelectionHash": { "$ref": "#/$defs/hash" },
+    "attemptOrdinal": { "type": "integer", "minimum": 1 },
+    "outcome": { "enum": ["response_received", "transport_failure", "response_validation_failure"] },
+    "acceptedEvaluation": { "type": "boolean" },
+    "requestSerializedBytes": { "type": "integer", "minimum": 0 },
+    "auditPacketSerializedBytes": { "type": "integer", "minimum": 0 },
+    "validationIssueCodes": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "nextEligibleAt": { "type": ["string", "null"], "format": "date-time" },
+    "rawResponse": { "type": ["object", "null"] }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "outcome": { "const": "transport_failure" } } },
+      "then": { "properties": { "acceptedEvaluation": { "const": false }, "rawResponse": { "const": null } } }
+    },
+    {
+      "if": { "properties": { "outcome": { "const": "response_received" } } },
+      "then": { "properties": { "acceptedEvaluation": { "const": true } } }
+    }
+  ],
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+  }
+}

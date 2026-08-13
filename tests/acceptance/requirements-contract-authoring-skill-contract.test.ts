@@ -44,7 +44,14 @@ describe('requirements-contract-authoring published contract', () => {
         path.join(ROOT, '.claude', 'skills', 'requirements-contract-authoring').replace(/\\/g, '/'),
         path.join(ROOT, '.cursor', 'skills', 'requirements-contract-authoring').replace(/\\/g, '/'),
         path
-          .join(ROOT, 'packages', 'bmad-speckit', '_bmad', 'skills', 'requirements-contract-authoring')
+          .join(
+            ROOT,
+            'packages',
+            'bmad-speckit',
+            '_bmad',
+            'skills',
+            'requirements-contract-authoring'
+          )
           .replace(/\\/g, '/'),
       ].sort()
     );
@@ -184,6 +191,18 @@ describe('requirements-contract-authoring published contract', () => {
     );
   });
 
+  it('separates the semantic IR confirmation lane from delivery closeout', () => {
+    const skill = readSkillFile('SKILL.md');
+
+    expect(skill).toContain('## Requirements Semantic IR Production Lane');
+    expect(skill).toContain('IR is the only semantic authority');
+    expect(skill).toContain('`requestId + exactConfirmationText`');
+    expect(skill).toContain('must not rerun Grill, cp00-cp08, Judge, or EffectivePass');
+    expect(skill).toContain('loaded from the configured production prompt path');
+    expect(skill).toContain('Requirements scope confirmation is not delivery closeout acceptance');
+    expect(skill).toContain('must not read or require execution final Judge campaign identity');
+  });
+
   it('normalizes requirements contract authoring intents into the visible authoring lane', () => {
     for (const skill of readSkillSurface('SKILL.md')) {
       expect(skill).toContain('## Intent Normalization');
@@ -204,9 +223,7 @@ describe('requirements-contract-authoring published contract', () => {
       expect(skill).toContain(
         'Confirmation language selection and confirmation HTML rendering are post-authoring steps'
       );
-      expect(skill).toContain(
-        'Missing confirmation language MUST remain `null` or `not_selected`'
-      );
+      expect(skill).toContain('Missing confirmation language MUST remain `null` or `not_selected`');
       expect(skill).toContain(
         'Missing confirmation language MUST NOT skip lane selection, scale assessment, controlled MUST candidate detection, packet planning, or pre-write blocking gates'
       );
@@ -282,10 +299,18 @@ describe('requirements-contract-authoring published contract', () => {
 
   it('splits atomic decomposition into pre-write convergence and post-materialization verification', () => {
     for (const skill of readSkillSurface('SKILL.md')) {
-      expect(skill).toContain('pre-write phase performs packet planning, source edit planning, real Critical Auditor convergence');
-      expect(skill).toContain('may use quick scan and `pre_materialization_advisory_scan` only as read-only, non-audit guidance');
-      expect(skill).toContain('Source materialization is allowed only after `source-mutation-decision.json.finalDecision` is `allow_source_materialization`');
-      expect(skill).toContain('post-materialization phase verifies the written source, receipt, and current hashes');
+      expect(skill).toContain(
+        'pre-write phase performs packet planning, source edit planning, real Critical Auditor convergence'
+      );
+      expect(skill).toContain(
+        'may use quick scan and `pre_materialization_advisory_scan` only as read-only, non-audit guidance'
+      );
+      expect(skill).toContain(
+        'Source materialization is allowed only after `source-mutation-decision.json.finalDecision` is `allow_source_materialization`'
+      );
+      expect(skill).toContain(
+        'post-materialization phase verifies the written source, receipt, and current hashes'
+      );
     }
   });
 
@@ -294,7 +319,9 @@ describe('requirements-contract-authoring published contract', () => {
       path.join('references', 'semantic-checkpoint-workflow.md')
     )) {
       expect(workflow).toContain('The checkpoint runner does not spawn subagents');
-      expect(workflow).toContain('Checkpoint mode does not review, audit, reason over semantic gaps');
+      expect(workflow).toContain(
+        'Checkpoint mode does not review, audit, reason over semantic gaps'
+      );
       expect(workflow).toContain('run three-perspective analysis');
       expect(workflow).toContain('perform Critical Auditor convergence');
       expect(workflow).toContain('persists only source edits that were already materialized');
@@ -469,8 +496,12 @@ describe('requirements-contract-authoring published contract', () => {
       expect(skill).toContain('--promotion-stage confirmation-ready');
       expect(skill).toContain('--promotion-stage authoring-draft');
       expect(skill).toContain('--scale-assessment <authoring-dir>/scale-assessment-initial.json');
-      expect(skill).toContain('--scale-routing-decision <authoring-dir>/scale-routing-decision.json');
-      expect(skill).toContain('--source-mutation-decision <authoring-dir>/source-mutation-decision.json');
+      expect(skill).toContain(
+        '--scale-routing-decision <authoring-dir>/scale-routing-decision.json'
+      );
+      expect(skill).toContain(
+        '--source-mutation-decision <authoring-dir>/source-mutation-decision.json'
+      );
       expect(skill).toContain('--encoding-report <authoring-dir>/encoding-report.json');
       expect(skill).toContain('--receipt-out <authoring-dir>/promotion-receipt.json');
       expect(skill).toContain('--auto-repair');
@@ -484,7 +515,9 @@ describe('requirements-contract-authoring published contract', () => {
         'plain source doc -> controlled MUST candidates -> draft implementationConfirmation -> safe promotion as draft -> render/audit -> explicit user confirmation -> status: user_confirmed'
       );
       expect(skill).toContain('`--promotion-stage authoring-draft` allows only');
-      expect(skill).toContain('not confirmation-ready, not implementation-ready, and not execution-ready');
+      expect(skill).toContain(
+        'not confirmation-ready, not implementation-ready, and not execution-ready'
+      );
       expect(skill).toContain('`promotionStage`');
       expect(skill).toContain('`allowedStatuses`');
       expect(skill).toContain('`statusValue`');
@@ -501,16 +534,24 @@ describe('requirements-contract-authoring published contract', () => {
       expect(skill).toContain('MUST NOT synthesize `source-mutation-decision.json`');
       expect(skill).toContain('Critical Auditor convergence');
       expect(skill).toContain('checkpoint persistence');
-      expect(skill).toContain('sourceDocumentHashBefore` bound to the current target raw document hash');
-      expect(skill).toContain('sourceDocumentHashAfter` bound to the current draft manifest raw hash');
-      expect(skill).toContain('semanticSourceHashAfter` bound to the current draft semantic `sourceDocumentHash`');
+      expect(skill).toContain(
+        'sourceDocumentHashBefore` bound to the current target raw document hash'
+      );
+      expect(skill).toContain(
+        'sourceDocumentHashAfter` bound to the current draft manifest raw hash'
+      );
+      expect(skill).toContain(
+        'semanticSourceHashAfter` bound to the current draft semantic `sourceDocumentHash`'
+      );
       expect(skill).toContain('write-critical-auditor-no-new-gap-response.js');
       expect(skill).toContain('never writes receipt files');
       expect(skill).toContain('sourceDocumentExistedBefore: false');
       expect(skill).toContain('currentTargetState');
       expect(skill).toContain('expectedDraftHash');
       expect(skill).toContain('allows only `status: user_confirmed`');
-      expect(skill).toContain('The write flow must work when the current project root has no `scripts` directory');
+      expect(skill).toContain(
+        'The write flow must work when the current project root has no `scripts` directory'
+      );
     }
   });
 
@@ -519,18 +560,21 @@ describe('requirements-contract-authoring published contract', () => {
       'node scripts/safe-write-large-doc.mjs --target docs/plan.md',
       'node scripts/promote-draft-large-doc.js --draft draft.md --target docs/plan.md',
       'pwsh.exe -Command "& { $content = @\\"# body\\"@; $content | node writer.cjs }"',
-      'node -e "require(\'node:fs\').writeFileSync(\'docs/plan.md\', body)"',
+      "node -e \"require('node:fs').writeFileSync('docs/plan.md', body)\"",
       'Get-Content draft.md | Set-Content docs/plan.md',
       'type draft.md >> docs/plan.md',
     ];
-    const forbidden = /(?:^|\s)(?:node\s+scripts\/(?:safe-write-large-doc|promote-draft-large-doc)|pwsh(?:\.exe)?\s+-Command[\s\S]*(?:@["']|@\\["'])|node\s+-e|Set-Content|>>)/u;
+    const forbidden =
+      /(?:^|\s)(?:node\s+scripts\/(?:safe-write-large-doc|promote-draft-large-doc)|pwsh(?:\.exe)?\s+-Command[\s\S]*(?:@["']|@\\["'])|node\s+-e|Set-Content|>>)/u;
 
     for (const sample of unsafeSamples) {
       expect(sample).toMatch(forbidden);
     }
 
     for (const skill of readSkillSurface('SKILL.md')) {
-      expect(skill).toContain('Do not instruct consumers to run `node scripts/safe-write-large-doc.mjs`');
+      expect(skill).toContain(
+        'Do not instruct consumers to run `node scripts/safe-write-large-doc.mjs`'
+      );
       const commandLines = skill
         .split(/\r?\n/u)
         .filter((line) => /^\s*(?:node|pwsh|pwsh\.exe|Get-Content|type)\b/u.test(line));
@@ -564,17 +608,12 @@ describe('requirements-contract-authoring published contract', () => {
       expect(content, `${relativePath} should use the package-owned resolver`).toContain(
         'resolvePackageOwnedBmadPath'
       );
-      expect(content, `${relativePath} should resolve the skill namespace`).toContain(
-        "'skills'"
-      );
+      expect(content, `${relativePath} should resolve the skill namespace`).toContain("'skills'");
       expect(content).not.toMatch(/['"]\.(?:codex|cursor|claude|agents)['"],\s*['"]skills['"]/u);
     }
 
     const packageResolver = fs.readFileSync(
-      path.join(
-        ROOT,
-        'packages/bmad-speckit/src/main-agent/runtime/package-bmad-root.ts'
-      ),
+      path.join(ROOT, 'packages/bmad-speckit/src/main-agent/runtime/package-bmad-root.ts'),
       'utf8'
     );
     expect(packageResolver).toContain("path.join(resolvePackageRoot(startDir), '_bmad')");
@@ -638,15 +677,21 @@ describe('requirements-contract-authoring published contract', () => {
       expect(content).toContain('sourceMutationPerformed: false');
       expect(content).toContain('promotion-receipt.json');
       expect(content).toContain('source-materialization-receipt.json');
-      expect(content).toContain('Legacy `source-materialization-receipt.json` is not a valid current source write receipt');
+      expect(content).toContain(
+        'Legacy `source-materialization-receipt.json` is not a valid current source write receipt'
+      );
 
       expect(content).toContain(
         '/goal main session owns Critical Auditor response generation, staging rework, receipt writing, and source promotion'
       );
-      expect(content).toContain('Long-running requirements-contract authoring work must stay visible in the main session');
+      expect(content).toContain(
+        'Long-running requirements-contract authoring work must stay visible in the main session'
+      );
       expect(content).toContain('subagent provider modes are read-only response providers');
       expect(content).toContain('critical-auditor-round-response/v1');
-      expect(content).toContain('They must not write source documents, packets, receipts, requirement records, source promotion decisions, or convergence claims');
+      expect(content).toContain(
+        'They must not write source documents, packets, receipts, requirement records, source promotion decisions, or convergence claims'
+      );
 
       expect(content).toContain(
         'large-document-writer is transport only and is not semantic owner for requirements contracts'
@@ -669,9 +714,13 @@ describe('requirements-contract-authoring published contract', () => {
       expect(content).toContain('authoring/staging/draft-source.md');
       expect(content).toContain('New rows must carry source refs');
       expect(content).toContain('blocking question, open question, or `OUT-*` boundary');
-      expect(content).toContain('must not fabricate `ACC-*`, `E2E-*`, `CMD-*`, `TRACE-*`, `PATH-*`, or `CTM-*` rows');
+      expect(content).toContain(
+        'must not fabricate `ACC-*`, `E2E-*`, `CMD-*`, `TRACE-*`, `PATH-*`, or `CTM-*` rows'
+      );
       expect(content).toContain('BMAD source refs are inputs, not PASS evidence');
-      expect(content).toContain('Critical Auditor, packet/source reconciliation, source PRD instance lint, and pre-render gates must re-verify them');
+      expect(content).toContain(
+        'Critical Auditor, packet/source reconciliation, source PRD instance lint, and pre-render gates must re-verify them'
+      );
     }
   });
 

@@ -93,6 +93,18 @@ function evaluateDiagram(stepCount: number): DiagramGoldenCorpusEvaluationCase {
   const diagramSet = planRequirementsContractDiagramSet({
     sequenceContract: contract,
     scenarioId,
+    frozenDiagramIdentity: {
+      diagramSetId: `DSET-${scenarioId}`,
+      rootDiagramRef: `DGM-${scenarioId}-ROOT-001`,
+      diagramRefs:
+        stepCount > 25
+          ? [
+              `DGM-${scenarioId}-ROOT-001`,
+              `DGM-${scenarioId}-CHILD-001`,
+              `DGM-${scenarioId}-CHILD-002`,
+            ]
+          : [`DGM-${scenarioId}-ROOT-001`],
+    },
   });
   const scenario = contract.sequenceScenarios.find((item) => item.id === scenarioId)!;
   const expectedMessageRefs = scenario.steps.map((step) => `${scenarioId}#${step.id}`);

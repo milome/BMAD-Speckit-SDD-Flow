@@ -413,32 +413,6 @@ function materializeEvidenceSnapshot(input: {
   if (!fs.existsSync(requestPath) || !fs.statSync(requestPath).isFile()) {
     throw new Error('claude_code_cli_judge_request_path_missing');
   }
-  const sourceDocument = requiredText(
-    input.request.sourceDocument,
-    'claude_code_cli_judge_source_document_missing'
-  );
-  const sourcePath = resolveWithin(
-    projectRoot,
-    sourceDocument,
-    'claude_code_cli_judge_source_document_path_escape'
-  );
-  if (!fs.existsSync(sourcePath) || !fs.statSync(sourcePath).isFile()) {
-    throw new Error('claude_code_cli_judge_source_document_missing');
-  }
-  const sourceRealPath = fs.realpathSync(sourcePath);
-  if (!isWithin(fs.realpathSync(projectRoot), sourceRealPath)) {
-    throw new Error('claude_code_cli_judge_source_document_realpath_escape');
-  }
-  const sourceBytesHash = requiredText(
-    input.request.sourceBytesHash,
-    'claude_code_cli_judge_source_bytes_hash_missing'
-  );
-  if (!/^sha256:[a-f0-9]{64}$/u.test(sourceBytesHash)) {
-    throw new Error('claude_code_cli_judge_source_bytes_hash_invalid');
-  }
-  if (sha256(fs.readFileSync(sourcePath)) !== sourceBytesHash) {
-    throw new Error('claude_code_cli_judge_source_bytes_hash_mismatch');
-  }
   const snapshotRoot = path.join(outputDir, 's');
   if (fs.existsSync(snapshotRoot)) {
     throw new Error('claude_code_cli_judge_snapshot_already_exists');
@@ -465,32 +439,14 @@ function materializeEvidenceSnapshot(input: {
     );
   const entries = materializedFiles.flatMap((materialized) => materialized.entries);
   const readPlan = materializedFiles.map((materialized) => materialized.readPlan);
-  const sourceRelativePath = slash(path.relative(projectRoot, sourcePath));
-  const sourceReadPlan = readPlan.find((entry) => entry.sourcePath === sourceRelativePath);
-  if (!sourceReadPlan || sourceReadPlan.sourceHash !== sourceBytesHash) {
-    throw new Error('claude_code_cli_judge_source_snapshot_binding_mismatch');
-  }
   const snapshotHash = sha256(JSON.stringify({ entries, readPlan }));
   const manifestPath = path.join(snapshotRoot, 'snapshot-manifest.json');
   const requestBinding = {
     requestPath: slash(path.relative(projectRoot, requestPath)),
     requestContentHash: sha256(fs.readFileSync(requestPath)),
-    requestHash: requiredText(
-      input.request.requestHash,
+    judgeRequestHash: requiredText(
+      input.request.judgeRequestHash,
       'claude_code_cli_judge_request_hash_missing'
-    ),
-    sourceDocumentHash: requiredText(
-      input.request.sourceDocumentHash,
-      'claude_code_cli_judge_source_document_hash_missing'
-    ),
-    sourceBytesHash,
-    semanticModelHash: requiredText(
-      input.request.semanticModelHash,
-      'claude_code_cli_judge_semantic_model_hash_missing'
-    ),
-    projectionSetHash: requiredText(
-      input.request.projectionSetHash,
-      'claude_code_cli_judge_projection_set_hash_missing'
     ),
   };
   writeJsonAtomic(manifestPath, {
@@ -1162,7 +1118,20 @@ export function createClaudeCodeCliJudgeAdapter(
           executorKind
         );
         const returnedModel = modelBinding.returnedModel;
-        const normalizedDecision = structuredDecision(result.structured_output);
+        const structuredOutput = record(
+          result.structured_output,
+          'claude_code_cli_judge_structured_output_invalid'
+        );
+        const frozenResponse =
+          structuredOutput.schemaVersion === 'requirements-contract-judge-response/v2'
+            ? structuredOutput
+            : null;
+        const normalizedDecision = frozenResponse ? null : structuredDecision(structuredOutput);
+        const receiptDecision = frozenResponse
+          ? frozenResponse.verdict === 'pass'
+            ? 'pass'
+            : 'block'
+          : normalizedDecision!.decision;
         const transportEvidence = {
           schemaVersion: 'requirements-contract-cli-judge-execution-receipt/v1',
           adapterRef: 'ClaudeCodeCliJudgeAdapter',
@@ -1216,13 +1185,13 @@ export function createClaudeCodeCliJudgeAdapter(
           modelUsageModels: modelBinding.modelUsageModels,
         };
         validateExecutionReceipt(transportEvidence);
-        const normalized = {
+        const normalized = frozenResponse ?? {
           schemaVersion: 'requirements-contract-normalized-judge-response/v1',
           providerRef,
           transport: provider.transport,
           configuredModel: model,
           returnedModel,
-          ...normalizedDecision,
+          ...normalizedDecision!,
           providerRequestId: String(result.session_id),
           requestHash: sha256(prompt),
           responseHash: sha256(execution.stdout),
@@ -1235,7 +1204,7 @@ export function createClaudeCodeCliJudgeAdapter(
           providerRef,
           transport: String(provider.transport),
           providerRequestId: String(result.session_id),
-          decision: normalizedDecision.decision,
+          decision: receiptDecision,
           normalizedResponseHash: sha256(stableStringify(normalized)),
           transportEvidenceHash: sha256(stableStringify(transportEvidence)),
         });

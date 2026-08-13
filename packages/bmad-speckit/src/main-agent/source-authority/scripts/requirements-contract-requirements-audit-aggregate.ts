@@ -35,6 +35,85 @@ export interface RequirementsAuditAggregate {
   decision: RequirementsAuditDecision;
 }
 
+export function compileRequirementsAuditAggregateV2(input: {
+  activeAuthority: JsonRecord;
+  buildManifest: JsonRecord;
+  request: JsonRecord;
+  response: JsonRecord;
+}): JsonRecord {
+  const auditPacket = isRecord(input.request.auditPacket) ? input.request.auditPacket : {};
+  const body = isRecord(auditPacket.body) ? auditPacket.body : {};
+  const requiredDimensionIds = uniqueSorted(body.mandatoryDimensionIds);
+  const reviewedArtifactRefs = uniqueSorted(input.response.reviewedArtifactRefs);
+  const reviewedMustRefs = uniqueSorted(input.response.reviewedMustRefs);
+  const findings = Array.isArray(input.response.findings) ? input.response.findings : [];
+  const advisories = Array.isArray(input.response.advisoryObservations)
+    ? input.response.advisoryObservations
+    : [];
+  const issueCodes: string[] = [];
+  if (input.response.verdict === 'pass' && findings.length > 0) {
+    issueCodes.push('requirements_judge_pass_with_findings');
+  }
+  if (input.response.verdict === 'fail' && findings.length === 0) {
+    issueCodes.push('requirements_judge_fail_without_findings');
+  }
+  if (input.activeAuthority.activeBuildManifestHash !== input.buildManifest.buildManifestHash) {
+    issueCodes.push('requirements_active_build_manifest_stale');
+  }
+  const requirementIds = new Set(uniqueSorted(body.requirementIds));
+  const artifactIds = new Set(uniqueSorted(body.artifactIds));
+  const classifiedFindings = findings.map((value) => {
+    const finding = isRecord(value) ? value : {};
+    const affectedMustRefs = uniqueSorted(finding.affectedMustRefs);
+    const affectedArtifactRefs = uniqueSorted(finding.affectedArtifactRefs);
+    const existingMustAuthority =
+      affectedMustRefs.length > 0 && affectedMustRefs.every((ref) => requirementIds.has(ref));
+    const projectionTargets =
+      affectedArtifactRefs.length > 0 && affectedArtifactRefs.every((ref) => artifactIds.has(ref));
+    const classification = existingMustAuthority && projectionTargets
+      ? 'projection_repair' as const
+      : 'non_actionable_suggestion' as const;
+    return {
+      ...finding,
+      classification,
+      authorityBasis: classification === 'projection_repair'
+        ? 'frozen_ir_contains_required_semantics'
+        : 'authority_basis_unproven',
+      earliestAffectedStage: classification === 'projection_repair' ? 'cp05' : null,
+      latestValidPredecessorCheckpoint: classification === 'projection_repair' ? 'cp04' : null,
+      successorRequestAllowed: classification === 'projection_repair',
+    };
+  });
+  const payload = {
+    schemaVersion: 'requirements-contract-requirements-audit-aggregate/v2' as const,
+    semanticRevisionId: text(input.activeAuthority.activeSemanticRevisionId),
+    scopeSemanticHash: requireHash(input.activeAuthority.activeScopeSemanticHash, 'scopeSemanticHash', issueCodes),
+    sourceBindingHash: requireHash(input.activeAuthority.activeSourceBindingHash, 'sourceBindingHash', issueCodes),
+    buildManifestHash: requireHash(input.buildManifest.buildManifestHash, 'buildManifestHash', issueCodes),
+    auditPacketHash: requireHash(input.buildManifest.auditPacketRef && (input.buildManifest.auditPacketRef as JsonRecord).hash, 'auditPacketHash', issueCodes),
+    providerSelectionHash: requireHash((input.request.providerSelection as JsonRecord)?.providerSelectionHash, 'providerSelectionHash', issueCodes),
+    judgeRequestHash: requireHash(input.request.judgeRequestHash, 'judgeRequestHash', issueCodes),
+    judgeResponseHash: sha256Stable(input.response),
+    validatedDimensionIds: requiredDimensionIds,
+    reviewedArtifactRefs,
+    reviewedMustRefs,
+    projectionReportRefs: Array.isArray(input.buildManifest.projectionReportRefs)
+      ? input.buildManifest.projectionReportRefs
+      : [],
+    advisories,
+    findings: classifiedFindings,
+    issueCodes: [...new Set(issueCodes)].sort(),
+    decision: input.response.verdict === 'pass' && issueCodes.length === 0 ? 'pass' as const : 'fail' as const,
+  };
+  return {
+    ...payload,
+    requirementsAuditAggregateHash: sha256Stable({
+      domain: 'requirements-contract-requirements-audit-aggregate/v2',
+      payload,
+    }),
+  };
+}
+
 function isRecord(value: unknown): value is JsonRecord {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }

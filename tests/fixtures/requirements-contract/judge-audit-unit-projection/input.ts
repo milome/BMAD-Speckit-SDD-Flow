@@ -210,6 +210,11 @@ export function judgeAuditUnitProjectionFixture() {
         {
           traceId: JUDGE_AUDIT_FIXTURE_IDS.mustTrace,
           requirementRef: JUDGE_AUDIT_FIXTURE_IDS.mustRoot,
+          factRefs: ['FACT-CHECKOUT-001'],
+          mustRefs: [JUDGE_AUDIT_FIXTURE_IDS.mustRoot],
+          atomRefs: ['ATOM-CHECKOUT-001'],
+          originSpecSpanRefs: ['SPEC-SPAN-MUST-001'],
+          evidenceClaimRefs: ['CLAIM-MUST-001'],
           proofRefs: ['PROOF-SOURCE-001'],
           dimensions: {
             target: {
@@ -239,6 +244,11 @@ export function judgeAuditUnitProjectionFixture() {
         {
           traceId: JUDGE_AUDIT_FIXTURE_IDS.negativeTrace,
           requirementRef: JUDGE_AUDIT_FIXTURE_IDS.associatedNegativeRoot,
+          factRefs: ['FACT-CHECKOUT-NEG-001'],
+          mustRefs: [JUDGE_AUDIT_FIXTURE_IDS.mustRoot],
+          atomRefs: ['ATOM-CHECKOUT-NEG-001'],
+          originSpecSpanRefs: ['SPEC-SPAN-NEG-001'],
+          evidenceClaimRefs: ['CLAIM-NEG-001'],
           proofRefs: ['PROOF-SOURCE-002'],
           dimensions: {
             target: {
@@ -263,6 +273,11 @@ export function judgeAuditUnitProjectionFixture() {
         {
           traceId: JUDGE_AUDIT_FIXTURE_IDS.standaloneTrace,
           requirementRef: JUDGE_AUDIT_FIXTURE_IDS.standaloneNegativeRoot,
+          factRefs: ['FACT-CHECKOUT-NEG-002'],
+          mustRefs: [JUDGE_AUDIT_FIXTURE_IDS.standaloneNegativeRoot],
+          atomRefs: ['ATOM-CHECKOUT-NEG-002'],
+          originSpecSpanRefs: ['SPEC-SPAN-NEG-002'],
+          evidenceClaimRefs: ['CLAIM-NEG-002'],
           proofRefs: ['PROOF-SOURCE-003'],
           dimensions: {
             target: {

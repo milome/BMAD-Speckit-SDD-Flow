@@ -13,12 +13,10 @@ it('publishes the Compact Trace Matrix dual-projection owner', () => {
 
 describe.runIf(existsSync(ownerPath))('Compact Trace Matrix projection', () => {
   it('renders the complete atomic and acceptance-root universe to deterministic Markdown', async () => {
-    const { renderRequirementsContractCompactTraceMatrixProjection } = await import(
-      '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-compact-trace-matrix-projection'
-    );
-    const projection = renderRequirementsContractCompactTraceMatrixProjection(
-      compactTraceFixture()
-    );
+    const { renderRequirementsContractCompactTraceMatrixProjection } =
+      await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-compact-trace-matrix-projection');
+    const projection =
+      renderRequirementsContractCompactTraceMatrixProjection(compactTraceFixture());
 
     expect(projection).toMatchObject({
       atomicTraceRowCount: 1,
@@ -29,12 +27,28 @@ describe.runIf(existsSync(ownerPath))('Compact Trace Matrix projection', () => {
     expect(projection.markdown).toContain('TRACE-001');
     expect(projection.markdown).toContain('ACCEPTANCE-ROOT-001');
     expect(projection.jsonProjection.acceptanceRootIds).toEqual(['ACCEPTANCE-ROOT-001']);
+    expect(projection.jsonProjection.atomicRows[0]).toMatchObject({
+      factRefs: ['FACT-001'],
+      mustRefs: ['MUST-FR-001'],
+      atomRefs: ['ATOM-001'],
+      originSpecSpanRefs: ['SPEC-SPAN-001'],
+      evidenceClaimRefs: ['CLAIM-001'],
+    });
+    expect(projection.markdown).toContain('SPEC-SPAN-001');
+    expect(projection.markdown).toContain('CLAIM-001');
+    expect(projection.markdown).toContain('EVDREQ-001');
+    expect(projection.jsonProjection.atomicRows[0].dimensions.evidenceRequirement).toEqual({
+      state: 'bound',
+      refs: ['EVDREQ-001'],
+      proofRefs: ['PROOF-SOURCE-001'],
+    });
+    expect(projection.jsonProjection.atomicRows[0]).not.toHaveProperty('observedEvidence');
+    expect(projection.jsonProjection.atomicRows[0]).not.toHaveProperty('artifactBytesHash');
   });
 
   it('blocks an Acceptance Root binding outside the declared root universe', async () => {
-    const { renderRequirementsContractCompactTraceMatrixProjection } = await import(
-      '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-compact-trace-matrix-projection'
-    );
+    const { renderRequirementsContractCompactTraceMatrixProjection } =
+      await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-compact-trace-matrix-projection');
     const matrix = compactTraceFixture();
     matrix.acceptanceRootBindings.push({
       acceptanceRootRef: 'ACCEPTANCE-ROOT-EXTRA',
@@ -50,9 +64,8 @@ describe.runIf(existsSync(ownerPath))('Compact Trace Matrix projection', () => {
   });
 
   it('blocks a full-path row that references an unknown atomic edge', async () => {
-    const { renderRequirementsContractCompactTraceMatrixProjection } = await import(
-      '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-compact-trace-matrix-projection'
-    );
+    const { renderRequirementsContractCompactTraceMatrixProjection } =
+      await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-compact-trace-matrix-projection');
     const matrix = compactTraceFixture();
     matrix.fullPathRows[0].orderedEdgeIds = ['EDGE-MISSING'];
 

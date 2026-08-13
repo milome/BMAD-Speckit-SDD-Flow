@@ -19,6 +19,7 @@ it('reports exact deterministic mismatch counters without accepting audit prose'
     nodeHash: sha256Stable('different-payload'),
     authorityClass: 'different-authority',
     authorityBearing: true as const,
+    executionConstraintRefs: [],
   };
   const result = verifyRequirementsContractSemanticConservation({
     sourceRoots: [root, { ...root }],

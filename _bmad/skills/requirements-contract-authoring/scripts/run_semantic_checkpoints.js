@@ -36,11 +36,11 @@ const CHECKPOINTS = [
     allowedSections: ['mustDecompositionPacket', 'authoring/must_decomposition_packet.json'],
   },
   {
-    id: 'cp-02-atomic-decomposition-loop-convergence',
+    id: 'cp-02-deterministic-atomic-closure',
     legacyId: 'cp-02-confirmation-core-applicability',
-    name: 'atomic decomposition loop convergence',
-    validatorIdentity: 'requirements-contract.critical-auditor-convergence.cp-02-atomic-decomposition-loop-convergence',
-    allowedSections: ['criticalAuditorReceipt', 'gapHistory', 'atomicityCompleteness'],
+    name: 'deterministic atomic closure',
+    validatorIdentity: 'requirements-contract.deterministic-atomic-closure.cp-02-deterministic-atomic-closure',
+    allowedSections: ['mustAtomicTasks', 'atomicityCompleteness', 'executionConstraints'],
   },
   {
     id: 'cp-03-packet-to-source-materialization',
@@ -329,7 +329,6 @@ function semanticAuthoringPaths(sourcePath, progressPath = '') {
     ),
     packetSourceReconciliation: path.join(authoringDir, 'must_packet_source_reconciliation_report.json'),
     preRenderMustDecompositionGate: path.join(authoringDir, 'pre-render-must-decomposition-gate-report.json'),
-    criticalAuditorOutcome: path.join(authoringDir, 'critical-auditor-checkpoint-outcome.json'),
   };
 }
 
@@ -338,17 +337,37 @@ function readSemanticJson(filePath) {
   return read.ok ? read.value : null;
 }
 
-function collectCriticalAuditorReceiptFiles(authoringDir) {
-  if (!pathExists(authoringDir)) return [];
-  return fs
-    .readdirSync(authoringDir)
-    .filter((fileName) => /^critical-auditor-receipt-round-\d+\.json$/u.test(fileName))
-    .map((fileName) => path.join(authoringDir, fileName))
-    .sort();
+function isNonEmptySemanticText(value) {
+  return typeof value === 'string' && value.trim().length > 0;
 }
 
-function unwrapReceipt(value) {
-  return value?.criticalAuditorReceipt ?? value;
+function isUniqueSemanticTextArray(value, requireNonEmpty = false) {
+  return Array.isArray(value) &&
+    (!requireNonEmpty || value.length > 0) &&
+    value.every(isNonEmptySemanticText) &&
+    new Set(value).size === value.length;
+}
+
+function cp02DependencyGraphHasCycle(atoms) {
+  const dependencies = new Map(
+    atoms
+      .filter((atom) => isNonEmptySemanticText(atom?.id))
+      .map((atom) => [atom.id, Array.isArray(atom.dependencies) ? atom.dependencies : []])
+  );
+  const visiting = new Set();
+  const visited = new Set();
+  const visit = (atomId) => {
+    if (visiting.has(atomId)) return true;
+    if (visited.has(atomId)) return false;
+    visiting.add(atomId);
+    for (const dependency of dependencies.get(atomId) ?? []) {
+      if (dependencies.has(dependency) && visit(dependency)) return true;
+    }
+    visiting.delete(atomId);
+    visited.add(atomId);
+    return false;
+  };
+  return [...dependencies.keys()].some(visit);
 }
 
 function semanticDrilldownStatus(sourcePath, progressPath = '') {
@@ -357,16 +376,6 @@ function semanticDrilldownStatus(sourcePath, progressPath = '') {
   const packet = readSemanticJson(paths.mustDecompositionPacket)?.must_decomposition_packet ?? readSemanticJson(paths.mustDecompositionPacket)?.mustDecompositionPacket ?? readSemanticJson(paths.mustDecompositionPacket);
   const reconciliation = readSemanticJson(paths.packetSourceReconciliation);
   const gateReport = readSemanticJson(paths.preRenderMustDecompositionGate);
-  const receiptFiles = collectCriticalAuditorReceiptFiles(paths.authoringDir);
-  const receipts = receiptFiles.map((filePath) => unwrapReceipt(readSemanticJson(filePath))).filter(Boolean);
-  let consecutiveNoNewGapRounds = 0;
-  for (const receipt of receipts.sort((a, b) => Number(a.roundIndex ?? 0) - Number(b.roundIndex ?? 0))) {
-    const verdict = receipt.convergenceDecision?.verdict;
-    consecutiveNoNewGapRounds = verdict === 'no_new_valid_gap' || verdict === 'no_new_confirmation_blocking_gap'
-      ? consecutiveNoNewGapRounds + 1
-      : 0;
-  }
-  const latestReceipt = receipts[receipts.length - 1] ?? null;
   const kernelStatus = !kernel ? 'missing' : String(kernel.sourceDocumentHash ?? '').startsWith('sha256:') ? 'present' : 'blocked';
   const packetStatus = !packet ? 'missing' : packet.status === 'synchronized' ? 'synchronized' : 'blocked';
   const reconciliationStatus = !reconciliation ? 'missing' : reconciliation.verdict === 'pass' ? 'pass' : 'fail';
@@ -375,7 +384,6 @@ function semanticDrilldownStatus(sourcePath, progressPath = '') {
   if (!kernel) nextAction = 'create_semantic_kernel';
   else if (!packet) nextAction = 'create_must_decomposition_packet';
   else if (packet.status !== 'synchronized') nextAction = 'synchronize_must_decomposition_packet';
-  else if (consecutiveNoNewGapRounds < 3) nextAction = 'run_critical_auditor_until_three_no_new_gap_rounds';
   else if (reconciliationStatus !== 'pass') nextAction = 'run_packet_source_reconciliation';
   else if (gateVerdict !== 'PASS') nextAction = 'run_pre_render_must_decomposition_gate';
 
@@ -391,13 +399,6 @@ function semanticDrilldownStatus(sourcePath, progressPath = '') {
       path: normalizePathForReport(paths.mustDecompositionPacket),
       hash: packet?.packetHash ?? null,
       sourceDocumentHash: packet?.sourceDocumentHash ?? null,
-    },
-    criticalAuditor: {
-      rounds: receipts.length,
-      convergenceCounter: consecutiveNoNewGapRounds,
-      minimumRounds: 3,
-      latestReceiptHash: latestReceipt ? `sha256:${crypto.createHash('sha256').update(JSON.stringify(latestReceipt), 'utf8').digest('hex')}` : null,
-      receiptFiles: receiptFiles.map(normalizePathForReport),
     },
     packetSourceReconciliation: {
       status: reconciliationStatus,
@@ -445,11 +446,8 @@ function currentAuthoringEvidence(sourcePath, progressPath = '') {
     readSemanticJson(paths.mustDecompositionPacket)?.must_decomposition_packet ??
     readSemanticJson(paths.mustDecompositionPacket)?.mustDecompositionPacket ??
     readSemanticJson(paths.mustDecompositionPacket);
-  const receiptFiles = collectCriticalAuditorReceiptFiles(paths.authoringDir);
-  const receipts = receiptFiles.map((filePath) => unwrapReceipt(readSemanticJson(filePath))).filter(Boolean);
   const reconciliation = readSemanticJson(paths.packetSourceReconciliation);
   const gateReport = readSemanticJson(paths.preRenderMustDecompositionGate);
-  const criticalAuditorOutcomeDocument = readSemanticJson(paths.criticalAuditorOutcome);
   const authoringMaterializationReceiptDocument = readSemanticJson(
     paths.authoringMaterializationReceipt
   );
@@ -465,24 +463,11 @@ function currentAuthoringEvidence(sourcePath, progressPath = '') {
     requirementContractModelDocument,
     compilerClosureReportDocument,
     packet,
-    receiptFiles,
-    receipts,
     reconciliation,
     gateReport,
-    criticalAuditorOutcomeDocument,
     authoringMaterializationReceiptDocument,
     draftImplementationConfirmationDocument,
   };
-}
-
-function noNewGapReceiptCount(receipts, auditInputHash = null) {
-  return receipts.filter((receipt) => {
-    const verdict = receipt?.convergenceDecision?.verdict;
-    const isNoNewGap =
-      verdict === 'no_new_valid_gap' || verdict === 'no_new_confirmation_blocking_gap';
-    const hashMatches = !auditInputHash || receipt?.inputHash === auditInputHash;
-    return isNoNewGap && hashMatches;
-  }).length;
 }
 
 function validateCheckpointAuthoringEvidence({ sourcePath, checkpoint, progressPath = '' }) {
@@ -677,7 +662,7 @@ function validateCheckpointAuthoringEvidence({ sourcePath, checkpoint, progressP
     }
   }
   if (
-    ['cp-01-must-decomposition-packet', 'cp-02-atomic-decomposition-loop-convergence', 'cp-03-packet-to-source-materialization', 'cp-04-id-freeze', 'cp-05-implementation-confirmation-core', 'cp-06-projections', 'cp-07-human-readable-views', 'cp-08-pre-render-global-reconciliation'].includes(checkpoint.id) &&
+    ['cp-01-must-decomposition-packet', 'cp-02-deterministic-atomic-closure', 'cp-03-packet-to-source-materialization', 'cp-04-id-freeze', 'cp-05-implementation-confirmation-core', 'cp-06-projections', 'cp-07-human-readable-views', 'cp-08-pre-render-global-reconciliation'].includes(checkpoint.id) &&
     (!evidence.packet || evidence.packet.schemaVersion !== 'must-decomposition-packet/v1' || evidence.packet.status !== 'synchronized')
   ) {
     issue(
@@ -689,7 +674,7 @@ function validateCheckpointAuthoringEvidence({ sourcePath, checkpoint, progressP
   }
   if (
     evidence.packet &&
-    ['cp-01-must-decomposition-packet', 'cp-02-atomic-decomposition-loop-convergence', 'cp-03-packet-to-source-materialization', 'cp-04-id-freeze', 'cp-05-implementation-confirmation-core', 'cp-06-projections', 'cp-07-human-readable-views', 'cp-08-pre-render-global-reconciliation'].includes(checkpoint.id) &&
+    ['cp-01-must-decomposition-packet', 'cp-02-deterministic-atomic-closure', 'cp-03-packet-to-source-materialization', 'cp-04-id-freeze', 'cp-05-implementation-confirmation-core', 'cp-06-projections', 'cp-07-human-readable-views', 'cp-08-pre-render-global-reconciliation'].includes(checkpoint.id) &&
     evidence.packet.sourceDocumentHash !== evidence.sourceDocumentHash
   ) {
     issue(
@@ -699,91 +684,169 @@ function validateCheckpointAuthoringEvidence({ sourcePath, checkpoint, progressP
       'run_authoring_repair_preserve_existing'
     );
   }
-  const auditInputHash = evidence.kernel && evidence.packet && evidence.implementationConfirmationHash
-    ? mustDecompositionGate.buildAuditInputHash({
-        sourceDocumentHash: evidence.sourceDocumentHash,
-        implementationConfirmationHash: evidence.implementationConfirmationHash,
-        kernel: evidence.kernel,
-        packet: evidence.packet,
-      })
-    : null;
-  if (checkpoint.id === 'cp-02-atomic-decomposition-loop-convergence') {
-    const outcome = evidence.criticalAuditorOutcomeDocument;
-    if (!outcome) {
+  if (checkpoint.id === 'cp-02-deterministic-atomic-closure') {
+    const mustPackets = Array.isArray(evidence.packet?.mustPackets)
+      ? evidence.packet.mustPackets
+      : [];
+    const atomEntries = mustPackets.flatMap((mustPacket) => {
+      const mustRef = String(mustPacket?.mustRef ?? '').trim();
+      const atoms = Array.isArray(mustPacket?.mustAtomicTasks)
+        ? mustPacket.mustAtomicTasks
+        : [];
+      return atoms.map((atom) => ({ atom, mustRef }));
+    });
+    const atomIds = new Set(
+      atomEntries
+        .map(({ atom }) => String(atom?.id ?? '').trim())
+        .filter(Boolean)
+    );
+    const executionEntries = evidence.packet?.executionRegistry?.entries;
+    const executionRegistryRefs = new Set(
+      Array.isArray(executionEntries)
+        ? executionEntries
+          .filter((entry) =>
+            isNonEmptySemanticText(entry?.kind) &&
+            isNonEmptySemanticText(entry?.id) &&
+            isNonEmptySemanticText(entry?.value)
+          )
+          .map((entry) => `${entry.kind}:${entry.id}`)
+        : []
+    );
+    if (mustPackets.length === 0) {
       issue(
-        'critical_auditor_checkpoint_outcome_required',
-        'A current Critical Auditor checkpoint outcome is required before cp-02 can be recorded',
-        [evidence.criticalAuditorOutcome],
-        'run_critical_auditor_round'
+        'requirements_cp02_atom_missing',
+        'cp02 requires at least one deterministic per-MUST atomic closure packet',
+        [evidence.mustDecompositionPacket],
+        'rebuild_must_decomposition_packet'
       );
-    } else {
-      const outcomeSourceHash = String(outcome.sourceDocumentHash ?? '').trim();
-      if (outcomeSourceHash !== evidence.sourceDocumentHash) {
+    }
+    for (const mustPacket of mustPackets) {
+      const mustRef = String(mustPacket?.mustRef ?? '').trim();
+      const atoms = Array.isArray(mustPacket?.mustAtomicTasks)
+        ? mustPacket.mustAtomicTasks
+        : [];
+      if (!mustRef || atoms.length === 0) {
         issue(
-          'critical_auditor_checkpoint_outcome_source_hash_mismatch',
-          'Critical Auditor checkpoint outcome is stale for the current source document',
-          [evidence.criticalAuditorOutcome, evidence.sourceDocumentHash, outcomeSourceHash],
-          'run_critical_auditor_round'
+          'requirements_cp02_atom_closure_incomplete',
+          'Every MUST requires at least one deterministic atomic task',
+          [evidence.mustDecompositionPacket, mustRef].filter(Boolean),
+          'rebuild_must_decomposition_packet'
         );
       }
-      const outcomeAuditInputHash = String(outcome.auditInputHash ?? '').trim();
-      if (!auditInputHash || outcomeAuditInputHash !== auditInputHash) {
+      const identities = atoms.map((atom) => String(atom?.id ?? '').trim());
+      if (identities.some((identity) => !identity) || new Set(identities).size !== identities.length) {
         issue(
-          'critical_auditor_checkpoint_outcome_input_hash_mismatch',
-          'Critical Auditor checkpoint outcome is stale for the current audit input',
-          [evidence.criticalAuditorOutcome, auditInputHash, outcomeAuditInputHash],
-          'run_critical_auditor_round'
+          'requirements_cp02_atom_identity_invalid',
+          'Atomic task identities must be non-empty and unique within each MUST',
+          [evidence.mustDecompositionPacket, mustRef].filter(Boolean),
+          'rebuild_must_decomposition_packet'
         );
       }
-      const outcomeDecision = String(outcome.decision ?? '').trim();
-      const outcomeVerdict = String(outcome.verdict ?? '').trim();
-      if (!['pass', 'block'].includes(outcomeDecision)) {
+      const completeness = mustPacket?.atomicityCompleteness ?? {};
+      if (
+        Number(completeness.actualTaskCount ?? -1) !== atoms.length ||
+        Number(completeness.expectedTaskCount ?? -1) !== atoms.length
+      ) {
         issue(
-          'critical_auditor_checkpoint_outcome_decision_invalid',
-          'Critical Auditor checkpoint outcome must explicitly record pass or block',
-          [evidence.criticalAuditorOutcome],
-          'run_critical_auditor_round'
-        );
-      }
-      if (outcomeDecision === 'pass') {
-        if (
-          !['no_new_valid_gap', 'no_new_confirmation_blocking_gap'].includes(outcomeVerdict) ||
-          noNewGapReceiptCount(evidence.receipts, auditInputHash) < 3
-        ) {
-          issue(
-            'critical_auditor_checkpoint_outcome_pass_invalid',
-            'cp-02 pass requires three current-hash no-new-gap receipts',
-            [evidence.criticalAuditorOutcome, evidence.authoringDir],
-            'run_critical_auditor_until_three_no_new_gap_rounds'
-          );
-        }
-      } else if (!Array.isArray(outcome.blockingIssues) || outcome.blockingIssues.length === 0) {
-        issue(
-          'critical_auditor_checkpoint_outcome_block_reason_missing',
-          'cp-02 block requires a non-empty blockingIssues array',
-          [evidence.criticalAuditorOutcome],
-          'record_fail_closed_auditor_outcome'
-        );
-      } else {
-        const primary = outcome.blockingIssues[0] ?? {};
-        issue(
-          String(primary.code ?? 'critical_auditor_checkpoint_outcome_blocked'),
-          String(primary.message ?? 'Critical Auditor outcome blocks cp-02 progression'),
-          Array.isArray(primary.refs) ? primary.refs : [evidence.criticalAuditorOutcome],
-          'resolve_critical_auditor_blocker'
+          'requirements_cp02_atomicity_count_mismatch',
+          'Atomicity completeness must exactly match the current task inventory',
+          [evidence.mustDecompositionPacket, mustRef].filter(Boolean),
+          'rebuild_must_decomposition_packet'
         );
       }
     }
-  } else if (
-    ['cp-03-packet-to-source-materialization', 'cp-04-id-freeze', 'cp-05-implementation-confirmation-core', 'cp-06-projections', 'cp-07-human-readable-views', 'cp-08-pre-render-global-reconciliation'].includes(checkpoint.id) &&
-    noNewGapReceiptCount(evidence.receipts, auditInputHash) < 3
-  ) {
-    issue(
-      'critical_auditor_receipts_required_before_checkpoint',
-      'three current-hash no-new-gap Critical Auditor receipts are required before checkpoint materialization can continue',
-      [evidence.authoringDir],
-      'run_critical_auditor_until_three_no_new_gap_rounds'
-    );
+    for (const { atom, mustRef } of atomEntries) {
+      const atomId = String(atom?.id ?? '').trim();
+      const refs = [evidence.mustDecompositionPacket, mustRef, atomId].filter(Boolean);
+      if (!isNonEmptySemanticText(atom?.action)) {
+        issue(
+          'requirements_cp02_atom_action_invalid',
+          'Every atomic task requires a non-empty action',
+          refs,
+          'rebuild_must_decomposition_packet'
+        );
+      }
+      if (!isNonEmptySemanticText(atom?.oracle)) {
+        issue(
+          'requirements_cp02_atom_oracle_invalid',
+          'Every atomic task requires a non-empty acceptance oracle',
+          refs,
+          'rebuild_must_decomposition_packet'
+        );
+      }
+      const dependencies = atom?.dependencies;
+      if (!isUniqueSemanticTextArray(dependencies)) {
+        issue(
+          'requirements_cp02_atom_dependency_invalid',
+          'Atomic task dependencies must be a unique string list',
+          refs,
+          'rebuild_must_decomposition_packet'
+        );
+      } else if (dependencies.some((dependency) => !atomIds.has(dependency))) {
+        issue(
+          'requirements_cp02_atom_dependency_unknown',
+          'Atomic task dependencies must resolve to the current atom inventory',
+          refs,
+          'rebuild_must_decomposition_packet'
+        );
+      }
+      const originBindings = atom?.originBindings;
+      const originBindingsValid = Array.isArray(originBindings) &&
+        originBindings.length > 0 &&
+        originBindings.every((binding) =>
+          isNonEmptySemanticText(binding?.sourceRootId) &&
+          isNonEmptySemanticText(binding?.sourceSpanRef)
+        ) &&
+        originBindings.some((binding) => binding.sourceRootId === mustRef);
+      if (!originBindingsValid) {
+        issue(
+          'requirements_cp02_atom_origin_binding_invalid',
+          'Atomic task origin bindings must include the owning MUST and source span',
+          refs,
+          'rebuild_must_decomposition_packet'
+        );
+      }
+      if (!isUniqueSemanticTextArray(atom?.authorityRefs, true)) {
+        issue(
+          'requirements_cp02_atom_authority_ref_invalid',
+          'Atomic task authority refs must be non-empty and unique',
+          refs,
+          'rebuild_must_decomposition_packet'
+        );
+      }
+      const spanRefs = atom?.spanRefs;
+      if (
+        !isUniqueSemanticTextArray(spanRefs, true) ||
+        (originBindingsValid && originBindings.some((binding) => !spanRefs.includes(binding.sourceSpanRef)))
+      ) {
+        issue(
+          'requirements_cp02_atom_span_ref_invalid',
+          'Atomic task span refs must cover every origin binding span',
+          refs,
+          'rebuild_must_decomposition_packet'
+        );
+      }
+      const constraintRefs = atom?.executionConstraintRefs;
+      if (
+        !isUniqueSemanticTextArray(constraintRefs, true) ||
+        constraintRefs.some((constraintRef) => !executionRegistryRefs.has(constraintRef))
+      ) {
+        issue(
+          'requirements_cp02_execution_constraint_unknown',
+          'Atomic task execution refs must resolve through the typed execution registry',
+          refs,
+          'rebuild_must_decomposition_packet'
+        );
+      }
+    }
+    if (cp02DependencyGraphHasCycle(atomEntries.map(({ atom }) => atom))) {
+      issue(
+        'requirements_cp02_atom_dependency_cycle',
+        'Atomic task dependencies must be acyclic',
+        [evidence.mustDecompositionPacket],
+        'rebuild_must_decomposition_packet'
+      );
+    }
   }
   if (checkpoint.id === 'cp-03-packet-to-source-materialization') {
     const receipt = evidence.authoringMaterializationReceiptDocument;
@@ -933,17 +996,6 @@ function checkpointValidatedInputs({ sourcePath, checkpoint, progressPath = '', 
   }
   if (checkpointPosition >= 1) {
     candidates.push({ role: 'must_decomposition_packet', path: evidence.mustDecompositionPacket });
-  }
-  if (checkpointPosition >= 2) {
-    for (const receiptPath of evidence.receiptFiles) {
-      candidates.push({ role: 'critical_auditor_receipt', path: receiptPath });
-    }
-  }
-  if (checkpoint.id === 'cp-02-atomic-decomposition-loop-convergence') {
-    candidates.push({
-      role: 'critical_auditor_checkpoint_outcome',
-      path: evidence.criticalAuditorOutcome,
-    });
   }
   if (checkpointPosition >= 3) {
     candidates.push(

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "requirements-authoring-limits.schema.json",
+  "type": "object", "additionalProperties": false,
+  "required": ["schemaVersion", "maxSourceBytes", "maxSemanticNodes", "maxSourceSpans", "maxProjections", "maxJudgePayloadBytes", "maxJudgeTokens", "issueCodes"],
+  "properties": {
+    "schemaVersion": { "const": "requirements-authoring-limits/v1" },
+    "maxSourceBytes": { "$ref": "#/$defs/positive" }, "maxSemanticNodes": { "$ref": "#/$defs/positive" },
+    "maxSourceSpans": { "$ref": "#/$defs/positive" }, "maxProjections": { "$ref": "#/$defs/positive" },
+    "maxJudgePayloadBytes": { "$ref": "#/$defs/positive" }, "maxJudgeTokens": { "$ref": "#/$defs/positive" },
+    "issueCodes": {
+      "type": "array", "uniqueItems": true,
+      "items": { "enum": ["requirements_source_bytes_exceeded", "requirements_semantic_node_count_exceeded", "requirements_source_span_count_exceeded", "requirements_projection_count_exceeded", "judge_payload_budget_exceeded", "judge_token_budget_exceeded"] }
+    }
+  },
+  "$defs": { "positive": { "type": "integer", "minimum": 1 } }
+}

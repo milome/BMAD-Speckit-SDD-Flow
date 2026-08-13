@@ -65,7 +65,11 @@ export interface JudgeAuditUnit {
   unitKind: UnitKind;
   requirementRef: string;
   rootRefs: string[];
-  sourceSpanRefs: string[];
+  factRefs: string[];
+  mustRefs: string[];
+  atomRefs: string[];
+  originSpecSpanRefs: string[];
+  evidenceClaimRefs: string[];
   traceRowRefs: string[];
   targetRefs: string[];
   sequenceStepRefs: string[];
@@ -130,7 +134,11 @@ interface MutableUnit {
   unitKind: UnitKind;
   requirementRef: string;
   rootRefs: Set<string>;
-  sourceSpanRefs: Set<string>;
+  factRefs: Set<string>;
+  mustRefs: Set<string>;
+  atomRefs: Set<string>;
+  originSpecSpanRefs: Set<string>;
+  evidenceClaimRefs: Set<string>;
   traceRowRefs: Set<string>;
   targetRefs: Set<string>;
   sequenceStepRefs: Set<string>;
@@ -225,7 +233,11 @@ function newUnit(kind: UnitKind, requirementRef: string): MutableUnit {
     unitKind: kind,
     requirementRef,
     rootRefs: new Set(),
-    sourceSpanRefs: new Set(),
+    factRefs: new Set(),
+    mustRefs: new Set(),
+    atomRefs: new Set(),
+    originSpecSpanRefs: new Set(),
+    evidenceClaimRefs: new Set(),
     traceRowRefs: new Set(),
     targetRefs: new Set(),
     sequenceStepRefs: new Set(),
@@ -313,7 +325,11 @@ function stableUnit(unit: MutableUnit): Omit<JudgeAuditUnit, 'unitHash'> {
     unitKind: unit.unitKind,
     requirementRef: unit.requirementRef,
     rootRefs: uniqueSorted(unit.rootRefs),
-    sourceSpanRefs: uniqueSorted(unit.sourceSpanRefs),
+    factRefs: uniqueSorted(unit.factRefs),
+    mustRefs: uniqueSorted(unit.mustRefs),
+    atomRefs: uniqueSorted(unit.atomRefs),
+    originSpecSpanRefs: uniqueSorted(unit.originSpecSpanRefs),
+    evidenceClaimRefs: uniqueSorted(unit.evidenceClaimRefs),
     traceRowRefs: uniqueSorted(unit.traceRowRefs),
     targetRefs: uniqueSorted(unit.targetRefs),
     sequenceStepRefs: uniqueSorted(unit.sequenceStepRefs),
@@ -332,7 +348,6 @@ function stableUnit(unit: MutableUnit): Omit<JudgeAuditUnit, 'unitHash'> {
 }
 
 function addRootBinding(unit: MutableUnit, binding: JsonObject): void {
-  addRefs(unit.sourceSpanRefs, strings(binding.sourceSpanRefs));
   addRefs(unit.testRefs, strings(binding.testRefs));
   addRefs(unit.fixtureRefs, strings(binding.fixtureRefs));
   addRefs(unit.assertionRefs, strings(binding.assertionRefs));
@@ -346,6 +361,11 @@ function addRootBinding(unit: MutableUnit, binding: JsonObject): void {
 function addTraceRow(unit: MutableUnit, row: JsonObject): void {
   const traceId = text(row.traceId);
   if (traceId) unit.traceRowRefs.add(traceId);
+  addRefs(unit.factRefs, strings(row.factRefs));
+  addRefs(unit.mustRefs, strings(row.mustRefs));
+  addRefs(unit.atomRefs, strings(row.atomRefs));
+  addRefs(unit.originSpecSpanRefs, strings(row.originSpecSpanRefs));
+  addRefs(unit.evidenceClaimRefs, strings(row.evidenceClaimRefs));
   addRefs(unit.targetRefs, dimensionRefs(row, 'target'));
   addRefs(unit.sequenceStepRefs, dimensionRefs(row, 'sequenceStep'));
   addRefs(unit.redRefs, dimensionRefs(row, 'red'));
@@ -645,7 +665,6 @@ export function projectRequirementsContractJudgeAuditUnitSet(
     unit.rootRefs.add(rootRef);
     const canonicalRoot = canonicalRootByRef.get(rootRef);
     if (canonicalRoot) {
-      addRefs(unit.sourceSpanRefs, canonicalRoot.sourceSpanRefs);
       addRefs(unit.proofRefs, canonicalRoot.authorityProofRefs);
       addRefs(unit.proofRefs, canonicalRoot.applicability.proofRefs);
     }
@@ -660,7 +679,6 @@ export function projectRequirementsContractJudgeAuditUnitSet(
     unit.rootRefs.add(acceptanceRef);
     const canonicalRoot = canonicalRootByRef.get(acceptanceRef);
     if (canonicalRoot) {
-      addRefs(unit.sourceSpanRefs, canonicalRoot.sourceSpanRefs);
       addRefs(unit.proofRefs, canonicalRoot.authorityProofRefs);
       addRefs(unit.proofRefs, canonicalRoot.applicability.proofRefs);
     }
@@ -719,7 +737,11 @@ export function projectRequirementsContractJudgeAuditUnitSet(
   }
 
   const requiredUnitEvidenceFields = [
-    'sourceSpanRefs',
+    'factRefs',
+    'mustRefs',
+    'atomRefs',
+    'originSpecSpanRefs',
+    'evidenceClaimRefs',
     'traceRowRefs',
     'targetRefs',
     'sequenceStepRefs',
@@ -922,7 +944,11 @@ export function validateRequirementsContractJudgeAuditUnitSet(
   }
 
   const requiredUnitEvidenceFields = [
-    'sourceSpanRefs',
+    'factRefs',
+    'mustRefs',
+    'atomRefs',
+    'originSpecSpanRefs',
+    'evidenceClaimRefs',
     'traceRowRefs',
     'targetRefs',
     'sequenceStepRefs',

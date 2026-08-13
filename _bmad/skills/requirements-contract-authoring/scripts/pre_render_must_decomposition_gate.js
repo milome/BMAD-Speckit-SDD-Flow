@@ -32,6 +32,37 @@ const SOURCE_ROW_GROUPS = [
 
 const VALID_NO_NEW_GAP_VERDICTS = new Set(['no_new_valid_gap', 'no_new_confirmation_blocking_gap']);
 const RESOLVED_GAP_STATUSES = new Set(['resolved', 'converted_to_out_boundary', 'converted_to_open_question', 'rejected']);
+const SHA256_PATTERN = /^sha256:[a-f0-9]{64}$/u;
+const ATTEMPT_POINTER_KEYS = new Set([
+  'schemaVersion',
+  'authoringAttemptId',
+  'attemptManifestPath',
+  'attemptManifestHash',
+  'latestValidPredecessorCheckpoint',
+  'inputManifestHash',
+]);
+const PREPUBLICATION_REQUIRED_ROLES = new Map([
+  ['cp04', ['semantic_ir', 'source_binding', 'resolved_evidence_index']],
+  ['cp05', ['confirmation_projection', 'final_markdown']],
+  ['cp06', ['execution_manifest', 'per_must_bundle', 'trace_matrix']],
+  ['cp07', ['diagram_set']],
+  [
+    'cp08',
+    [
+      'projection_reconciliation_report',
+      'authority_resolution_report',
+      'renderability_probe_report',
+      'judge_audit_packet',
+      'judge_audit_packet_coverage',
+    ],
+  ],
+]);
+const PREPUBLICATION_FORBIDDEN_ROLES = new Set([
+  'remediation_plan',
+  'remediation_delta',
+  'effective_pass_receipt',
+  'promotion_receipt',
+]);
 
 function usage(exitCode = 0) {
   console.log(`Usage:
@@ -41,6 +72,8 @@ Options:
   --semantic-kernel <semantic-kernel.json>
   --must-decomposition-packet <must_decomposition_packet.json>
   --authoring-dir <dir>
+  --prepublication-attempt
+  --record-root <requirement-record-root>
   --out <pre-render-must-decomposition-gate-report.json>
   --receipt <must_decomposition_receipt.json>
   --reconciliation-report <must_packet_source_reconciliation_report.json>
@@ -58,6 +91,8 @@ function parseArgs(argv) {
     out: '',
     receipt: '',
     reconciliationReport: '',
+    prepublicationAttempt: false,
+    recordRoot: '',
     json: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
@@ -67,11 +102,16 @@ function parseArgs(argv) {
       args.json = true;
       continue;
     }
+    if (arg === '--prepublication-attempt') {
+      args.prepublicationAttempt = true;
+      continue;
+    }
     if (
       arg === '--source' ||
       arg === '--semantic-kernel' ||
       arg === '--must-decomposition-packet' ||
       arg === '--authoring-dir' ||
+      arg === '--record-root' ||
       arg === '--out' ||
       arg === '--receipt' ||
       arg === '--reconciliation-report'
@@ -96,6 +136,562 @@ function sha256(value) {
 
 function hashObject(value) {
   return sha256(stableStringify(value));
+}
+
+function hashDomain(domain, value) {
+  return sha256(`${domain}\n${stableStringify(value)}\n`);
+}
+
+function hashBytes(value) {
+  return `sha256:${crypto.createHash('sha256').update(value).digest('hex')}`;
+}
+
+function isRecord(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function hasExactKeys(value, keys) {
+  return isRecord(value) &&
+    Object.keys(value).length === keys.size &&
+    Object.keys(value).every((key) => keys.has(key));
+}
+
+function canonicalRecordRelativePath(value) {
+  if (typeof value !== 'string' || !value || value.includes('\\') || path.posix.isAbsolute(value)) {
+    return false;
+  }
+  const normalized = path.posix.normalize(value);
+  return normalized === value && value !== '..' && !value.startsWith('../');
+}
+
+function confinedRecordPath(recordRoot, relativePath) {
+  if (!canonicalRecordRelativePath(relativePath)) return null;
+  const root = path.resolve(recordRoot);
+  const absolute = path.resolve(root, ...relativePath.split('/'));
+  const relative = path.relative(root, absolute);
+  if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) return null;
+  const components = relative.split(path.sep).filter(Boolean);
+  let current = root;
+  if (fs.existsSync(current) && fs.lstatSync(current).isSymbolicLink()) {
+    return { error: 'authoring_record_path_reparse_forbidden', path: absolute };
+  }
+  for (const component of components) {
+    current = path.join(current, component);
+    if (!fs.existsSync(current)) break;
+    if (fs.lstatSync(current).isSymbolicLink()) {
+      return { error: 'authoring_record_path_reparse_forbidden', path: absolute };
+    }
+  }
+  if (fs.existsSync(absolute)) {
+    const realRoot = fs.realpathSync(root);
+    const realTarget = fs.realpathSync(absolute);
+    const realRelative = path.relative(realRoot, realTarget);
+    if (realRelative.startsWith('..') || path.isAbsolute(realRelative)) {
+      return { error: 'authoring_record_path_reparse_forbidden', path: absolute };
+    }
+  }
+  return { error: null, path: absolute };
+}
+
+function pathReparseError(targetPath) {
+  const absolute = path.resolve(targetPath);
+  const parsed = path.parse(absolute);
+  let current = parsed.root;
+  if (fs.existsSync(current) && fs.lstatSync(current).isSymbolicLink()) {
+    return 'authoring_record_path_reparse_forbidden';
+  }
+  for (const component of path.relative(parsed.root, absolute).split(path.sep).filter(Boolean)) {
+    current = path.join(current, component);
+    if (!fs.existsSync(current)) break;
+    if (fs.lstatSync(current).isSymbolicLink()) {
+      return 'authoring_record_path_reparse_forbidden';
+    }
+  }
+  if (fs.existsSync(absolute)) {
+    const realTarget = fs.realpathSync(absolute);
+    const realRelative = path.relative(path.resolve(parsed.root), realTarget);
+    if (realRelative.startsWith('..') || path.isAbsolute(realRelative)) {
+      return 'authoring_record_path_reparse_forbidden';
+    }
+  }
+  return null;
+}
+
+function prepublicationFailureReport({ sourcePath, recordRoot, pointerPath, blockingIssues }) {
+  const report = {
+    schemaVersion: 'requirements-contract-prepublication-render-gate-report/v1',
+    verdict: 'FAIL',
+    sourcePath: normalizePathForReport(sourcePath),
+    recordRoot: normalizePathForReport(recordRoot),
+    pointerPath: normalizePathForReport(pointerPath),
+    manifestPaths: [],
+    artifactRefs: [],
+    semanticRevisionId: null,
+    scopeSemanticHash: null,
+    sourceHashBefore: null,
+    sourceHashAfter: null,
+    sourceHashPreserved: false,
+    failedChecks: unique(blockingIssues.map((item) => item.code)),
+    blockingIssues,
+  };
+  report.contentHash = hashObject({ ...report, contentHash: null });
+  return { exitCode: 1, report };
+}
+
+function prepublicationIssue(code, refs = []) {
+  return issue(code, code.replace(/_/gu, ' '), refs, 'blocker', 'prepublication_attempt_gate');
+}
+
+function validateAttemptPointer(pointer) {
+  const codes = [];
+  if (!hasExactKeys(pointer, ATTEMPT_POINTER_KEYS)) {
+    return ['active_authoring_attempt_pointer_shape_invalid'];
+  }
+  if (pointer.schemaVersion !== 'ActiveAuthoringAttemptPointer/v1') {
+    codes.push('active_authoring_attempt_pointer_schema_invalid');
+  }
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/u.test(String(pointer.authoringAttemptId ?? ''))) {
+    codes.push('active_authoring_attempt_id_invalid');
+  }
+  if (!canonicalRecordRelativePath(pointer.attemptManifestPath)) {
+    codes.push('active_authoring_attempt_manifest_path_invalid');
+  } else if (
+    pointer.attemptManifestPath !==
+      `authoring/staging/${pointer.authoringAttemptId}/manifests/8-cp08.json`
+  ) {
+    codes.push('active_authoring_attempt_cp08_path_identity_mismatch');
+  }
+  if (!SHA256_PATTERN.test(String(pointer.attemptManifestHash ?? ''))) {
+    codes.push('active_authoring_attempt_manifest_hash_invalid');
+  }
+  if (!SHA256_PATTERN.test(String(pointer.inputManifestHash ?? ''))) {
+    codes.push('active_authoring_attempt_input_manifest_hash_invalid');
+  }
+  if (pointer.latestValidPredecessorCheckpoint !== 'cp07') {
+    codes.push('active_authoring_attempt_predecessor_mismatch');
+  }
+  return unique(codes);
+}
+
+const CHECKPOINT_MANIFEST_KEYS = new Set([
+  'schemaVersion',
+  'authoringRequestId',
+  'authoringAttemptId',
+  'checkpointId',
+  'checkpointOrdinal',
+  'stage',
+  'status',
+  'inputManifestHash',
+  'previousCheckpointManifestRef',
+  'latestValidPredecessorCheckpoint',
+  'compilerIdentity',
+  'artifactEntries',
+  'decisionReceiptRefs',
+  'baseAuthorityRef',
+  'checkpointManifestHash',
+]);
+const CHECKPOINT_REF_KEYS = new Set(['checkpointId', 'checkpointOrdinal', 'path', 'hash']);
+const ARTIFACT_ENTRY_KEYS = new Set([
+  'role',
+  'schemaVersion',
+  'artifactId',
+  'recordRelativePath',
+  'artifactHash',
+]);
+const PREPUBLICATION_ALLOWED_ROLES = new Map([
+  ['cp04', new Set(['semantic_ir', 'source_binding', 'resolved_evidence_index', 'lint_report'])],
+  ['cp05', new Set(['confirmation_projection', 'final_markdown', 'lint_report'])],
+  [
+    'cp06',
+    new Set([
+      'execution_manifest',
+      'per_must_bundle',
+      'trace_matrix',
+      'acceptance_contracts',
+      'failure_matrix',
+      'edge_matrix',
+      'lint_report',
+    ]),
+  ],
+  ['cp07', new Set(['diagram_set', 'confirmation_html', 'confirmation_summary', 'lint_report'])],
+  [
+    'cp08',
+    new Set([
+      'projection_reconciliation_report',
+      'authority_resolution_report',
+      'renderability_probe_report',
+      'judge_audit_packet',
+      'judge_audit_packet_coverage',
+      'lint_report',
+    ]),
+  ],
+]);
+const LOGICAL_IDENTITY_ROLES = new Set([
+  'confirmation_projection',
+  'execution_manifest',
+  'per_must_bundle',
+  'trace_matrix',
+  'acceptance_contracts',
+  'failure_matrix',
+  'edge_matrix',
+  'diagram_set',
+  'projection_reconciliation_report',
+  'authority_resolution_report',
+  'renderability_probe_report',
+  'judge_audit_packet',
+  'judge_audit_packet_coverage',
+]);
+
+function checkpointArtifactHashCandidates(stage, entry, bytes, parsed) {
+  const candidates = new Set();
+  if (stage === 'cp04' && parsed !== null) {
+    const coreRole = {
+      semantic_ir: 'semantic-ir',
+      source_binding: 'source-binding',
+      resolved_evidence_index: 'resolved-evidence-index',
+    }[entry.role];
+    if (coreRole) {
+      candidates.add(
+        hashObject({
+          domain: 'requirements-contract-core-artifact/v1',
+          checkpointId: 'cp-04-id-freeze',
+          profileId: 'requirements-contract-cp04-freeze-publication/v1',
+          artifactRole: coreRole,
+          artifact: parsed,
+        })
+      );
+    }
+    return candidates;
+  }
+  candidates.add(hashBytes(bytes));
+  if (parsed !== null) candidates.add(hashObject(parsed));
+  return candidates;
+}
+
+function cp08ArtifactIssues(entry, parsed) {
+  const codes = [];
+  if (
+    ['projection_reconciliation_report', 'authority_resolution_report'].includes(entry.role) &&
+    parsed?.decision !== 'pass'
+  ) {
+    codes.push(`prepublication_${entry.role}_blocked`);
+  }
+  if (
+    entry.role === 'renderability_probe_report' &&
+    (parsed?.decision !== 'pass' || parsed?.promotable !== false)
+  ) {
+    codes.push('prepublication_renderability_probe_blocked');
+  }
+  if (entry.role === 'judge_audit_packet' && !isRecord(parsed?.body)) {
+    codes.push('judge_audit_packet_coverage_gap');
+  }
+  if (
+    entry.role === 'judge_audit_packet_coverage' &&
+    (parsed?.allApplicableArtifactsIncluded !== true ||
+      !Array.isArray(parsed?.omittedArtifactIds) ||
+      parsed.omittedArtifactIds.length > 0)
+  ) {
+    codes.push('judge_audit_packet_coverage_gap');
+  }
+  return codes;
+}
+
+function validateCheckpointManifest(manifest, expected) {
+  const codes = [];
+  if (!hasExactKeys(manifest, CHECKPOINT_MANIFEST_KEYS)) {
+    return ['authoring_checkpoint_manifest_shape_invalid'];
+  }
+  if (manifest.schemaVersion !== 'requirements-contract-authoring-checkpoint-manifest/v1') {
+    codes.push('authoring_checkpoint_manifest_schema_invalid');
+  }
+  if (
+    manifest.authoringAttemptId !== expected.authoringAttemptId ||
+    manifest.inputManifestHash !== expected.inputManifestHash ||
+    manifest.checkpointId !== expected.stage ||
+    manifest.stage !== expected.stage ||
+    manifest.checkpointOrdinal !== expected.ordinal ||
+    manifest.status !== 'passed'
+  ) {
+    codes.push('authoring_checkpoint_manifest_identity_mismatch');
+  }
+  const { checkpointManifestHash, ...payload } = manifest;
+  if (
+    checkpointManifestHash !== expected.hash ||
+    checkpointManifestHash !==
+      hashDomain('requirements-contract-authoring-checkpoint-manifest/v1', payload)
+  ) {
+    codes.push('authoring_checkpoint_manifest_hash_mismatch');
+  }
+  const previous = manifest.previousCheckpointManifestRef;
+  if (!hasExactKeys(previous, CHECKPOINT_REF_KEYS)) {
+    codes.push('authoring_checkpoint_previous_lineage_invalid');
+  } else {
+    const previousOrdinal = expected.ordinal - 1;
+    const previousId = `cp${String(previousOrdinal).padStart(2, '0')}`;
+    const previousPath =
+      `authoring/staging/${expected.authoringAttemptId}/manifests/${previousOrdinal}-${previousId}.json`;
+    if (
+      previous.checkpointId !== previousId ||
+      previous.checkpointOrdinal !== previousOrdinal ||
+      previous.path !== previousPath ||
+      !SHA256_PATTERN.test(String(previous.hash ?? '')) ||
+      manifest.latestValidPredecessorCheckpoint !== previousId
+    ) {
+      codes.push('authoring_checkpoint_previous_lineage_invalid');
+    }
+  }
+  return unique(codes);
+}
+
+function validatePrepublicationAttempt(input) {
+  const sourcePath = path.resolve(input.sourcePath);
+  const recordRoot = path.resolve(input.recordRoot);
+  const blockingIssues = [];
+  const pointerPath = path.join(recordRoot, 'record', 'active-authoring-request.json');
+  const sourceReparseError = pathReparseError(sourcePath);
+  if (sourceReparseError) {
+    blockingIssues.push(prepublicationIssue(sourceReparseError, [sourcePath]));
+  }
+  const pointerPathValidation = confinedRecordPath(
+    recordRoot,
+    'record/active-authoring-request.json'
+  );
+  if (!pointerPathValidation || pointerPathValidation.error) {
+    blockingIssues.push(
+      prepublicationIssue(
+        pointerPathValidation?.error ?? 'authoring_checkpoint_manifest_path_escape',
+        [pointerPath]
+      )
+    );
+  }
+  if (blockingIssues.length > 0) {
+    return prepublicationFailureReport({ sourcePath, recordRoot, pointerPath, blockingIssues });
+  }
+  const sourceBefore = fs.readFileSync(sourcePath);
+  const pointerRead = input.attemptPointer
+    ? { ok: true, value: input.attemptPointer }
+    : readJsonSafe(pointerPath);
+  if (!pointerRead.ok) {
+    blockingIssues.push(
+      prepublicationIssue(
+        pointerRead.missing
+          ? 'active_authoring_attempt_pointer_missing'
+          : 'active_authoring_attempt_pointer_unreadable',
+        [pointerPath]
+      )
+    );
+  }
+  const pointer = pointerRead.ok ? pointerRead.value : null;
+  for (const code of validateAttemptPointer(pointer)) {
+    blockingIssues.push(prepublicationIssue(code, [pointerPath]));
+  }
+
+  const manifests = [];
+  const artifacts = [];
+  if (blockingIssues.length === 0) {
+    let manifestPath = pointer.attemptManifestPath;
+    let manifestHash = pointer.attemptManifestHash;
+    for (let ordinal = 8; ordinal >= 4; ordinal -= 1) {
+      const stage = `cp${String(ordinal).padStart(2, '0')}`;
+      const confinedManifest = confinedRecordPath(recordRoot, manifestPath);
+      if (!confinedManifest) {
+        blockingIssues.push(
+          prepublicationIssue('authoring_checkpoint_manifest_path_escape', [manifestPath])
+        );
+        break;
+      }
+      if (confinedManifest.error) {
+        blockingIssues.push(prepublicationIssue(confinedManifest.error, [manifestPath]));
+        break;
+      }
+      const absoluteManifestPath = confinedManifest.path;
+      const read = readJsonSafe(absoluteManifestPath);
+      if (!read.ok) {
+        blockingIssues.push(
+          prepublicationIssue(
+            read.missing
+              ? 'authoring_checkpoint_manifest_missing'
+              : 'authoring_checkpoint_manifest_unreadable',
+            [manifestPath]
+          )
+        );
+        break;
+      }
+      const manifest = read.value;
+      const manifestCodes = validateCheckpointManifest(manifest, {
+        stage,
+        ordinal,
+        hash: manifestHash,
+        authoringAttemptId: pointer.authoringAttemptId,
+        inputManifestHash: pointer.inputManifestHash,
+      });
+      for (const code of manifestCodes) {
+        blockingIssues.push(prepublicationIssue(code, [manifestPath]));
+      }
+      manifests.push({ stage, path: manifestPath, manifest });
+      if (manifestCodes.length > 0) break;
+      manifestPath = manifest.previousCheckpointManifestRef.path;
+      manifestHash = manifest.previousCheckpointManifestRef.hash;
+    }
+  }
+
+  let semanticRevisionId = '';
+  let scopeSemanticHash = '';
+  for (const { stage, manifest } of [...manifests].reverse()) {
+    const allowedRoles = PREPUBLICATION_ALLOWED_ROLES.get(stage) ?? new Set();
+    const entries = Array.isArray(manifest.artifactEntries) ? manifest.artifactEntries : [];
+    const roles = new Set(entries.map((entry) => entry?.role));
+    for (const requiredRole of PREPUBLICATION_REQUIRED_ROLES.get(stage) ?? []) {
+      if (!roles.has(requiredRole)) {
+        blockingIssues.push(
+          prepublicationIssue(`prepublication_${stage}_artifact_role_missing:${requiredRole}`)
+        );
+      }
+    }
+    for (const entry of entries) {
+      if (!hasExactKeys(entry, ARTIFACT_ENTRY_KEYS)) {
+        blockingIssues.push(prepublicationIssue('authoring_checkpoint_artifact_shape_invalid'));
+        continue;
+      }
+      if (
+        typeof entry.schemaVersion !== 'string' ||
+        !entry.schemaVersion ||
+        typeof entry.artifactId !== 'string' ||
+        !entry.artifactId
+      ) {
+        blockingIssues.push(
+          prepublicationIssue('authoring_checkpoint_artifact_identity_invalid')
+        );
+        continue;
+      }
+      if (!allowedRoles.has(entry.role) || PREPUBLICATION_FORBIDDEN_ROLES.has(entry.role)) {
+        blockingIssues.push(
+          prepublicationIssue(`prepublication_${stage}_artifact_role_forbidden:${entry.role}`)
+        );
+        continue;
+      }
+      if (
+        !canonicalRecordRelativePath(entry.recordRelativePath) ||
+        !SHA256_PATTERN.test(String(entry.artifactHash ?? ''))
+      ) {
+        blockingIssues.push(
+          prepublicationIssue('authoring_checkpoint_artifact_ref_invalid', [entry.artifactId])
+        );
+        continue;
+      }
+      if (
+        stage !== 'cp04' &&
+        !entry.recordRelativePath.startsWith(
+          `authoring/staging/${pointer.authoringAttemptId}/`
+        )
+      ) {
+        blockingIssues.push(
+          prepublicationIssue('authoring_checkpoint_staged_artifact_path_mismatch', [entry.artifactId])
+        );
+        continue;
+      }
+      const confinedArtifact = confinedRecordPath(recordRoot, entry.recordRelativePath);
+      if (confinedArtifact?.error) {
+        blockingIssues.push(
+          prepublicationIssue(confinedArtifact.error, [entry.artifactId])
+        );
+        continue;
+      }
+      const absoluteArtifactPath = confinedArtifact?.path;
+      if (!absoluteArtifactPath || !fs.existsSync(absoluteArtifactPath)) {
+        blockingIssues.push(
+          prepublicationIssue('authoring_checkpoint_artifact_missing', [entry.artifactId])
+        );
+        continue;
+      }
+      const bytes = fs.readFileSync(absoluteArtifactPath);
+      let parsed = null;
+      if (/\.json$/u.test(entry.recordRelativePath)) {
+        try {
+          parsed = JSON.parse(bytes.toString('utf8'));
+        } catch {
+          blockingIssues.push(
+            prepublicationIssue('authoring_checkpoint_artifact_json_invalid', [entry.artifactId])
+          );
+          continue;
+        }
+        if (!isRecord(parsed) || parsed.schemaVersion !== entry.schemaVersion) {
+          blockingIssues.push(
+            prepublicationIssue('authoring_checkpoint_artifact_schema_mismatch', [entry.artifactId])
+          );
+        }
+      }
+      if (!checkpointArtifactHashCandidates(stage, entry, bytes, parsed).has(entry.artifactHash)) {
+        blockingIssues.push(
+          prepublicationIssue('authoring_checkpoint_artifact_hash_mismatch', [entry.artifactId])
+        );
+      }
+      if (stage === 'cp04' && entry.role === 'semantic_ir' && isRecord(parsed)) {
+        semanticRevisionId = String(parsed.semanticRevisionId ?? '');
+        scopeSemanticHash = String(parsed.scopeSemanticHash ?? '');
+        if (!semanticRevisionId || !SHA256_PATTERN.test(scopeSemanticHash)) {
+          blockingIssues.push(prepublicationIssue('prepublication_cp04_semantic_identity_invalid'));
+        }
+      }
+      if (stage === 'cp04' && entry.role === 'source_binding' && isRecord(parsed)) {
+        if (
+          parsed.semanticRevisionId !== semanticRevisionId ||
+          parsed.scopeSemanticHash !== scopeSemanticHash
+        ) {
+          blockingIssues.push(prepublicationIssue('prepublication_cp04_binding_identity_mismatch'));
+        }
+      }
+      if (LOGICAL_IDENTITY_ROLES.has(entry.role) && isRecord(parsed)) {
+        if (
+          parsed.semanticRevisionId !== semanticRevisionId ||
+          parsed.scopeSemanticHash !== scopeSemanticHash
+        ) {
+          blockingIssues.push(
+            prepublicationIssue('prepublication_projection_semantic_identity_mismatch', [
+              entry.artifactId,
+            ])
+          );
+        }
+      }
+      if (stage === 'cp08') {
+        for (const code of cp08ArtifactIssues(entry, parsed)) {
+          blockingIssues.push(prepublicationIssue(code, [entry.artifactId]));
+        }
+      }
+      artifacts.push({
+        stage,
+        role: entry.role,
+        artifactId: entry.artifactId,
+        path: entry.recordRelativePath,
+        hash: entry.artifactHash,
+      });
+    }
+  }
+
+  const sourceAfter = fs.readFileSync(sourcePath);
+  const sourceHashBefore = hashBytes(sourceBefore);
+  const sourceHashAfter = hashBytes(sourceAfter);
+  if (!sourceBefore.equals(sourceAfter)) {
+    blockingIssues.push(prepublicationIssue('prepublication_probe_source_bytes_changed'));
+  }
+  const report = {
+    schemaVersion: 'requirements-contract-prepublication-render-gate-report/v1',
+    verdict: blockingIssues.length === 0 ? 'PASS' : 'FAIL',
+    sourcePath: normalizePathForReport(sourcePath),
+    recordRoot: normalizePathForReport(recordRoot),
+    pointerPath: normalizePathForReport(pointerPath),
+    manifestPaths: manifests.map((item) => item.path),
+    artifactRefs: artifacts,
+    semanticRevisionId: semanticRevisionId || null,
+    scopeSemanticHash: scopeSemanticHash || null,
+    sourceHashBefore,
+    sourceHashAfter,
+    sourceHashPreserved: sourceBefore.equals(sourceAfter),
+    failedChecks: unique(blockingIssues.map((item) => item.code)),
+    blockingIssues,
+  };
+  report.contentHash = hashObject({ ...report, contentHash: null });
+  return { exitCode: report.verdict === 'PASS' ? 0 : 1, report };
 }
 
 function readJsonFile(filePath) {
@@ -536,6 +1132,26 @@ function buildReconciliationReport({
 
 function runGate(args) {
   const sourcePath = path.resolve(args.source);
+  if (args.prepublicationAttempt) {
+    if (!args.recordRoot) {
+      const finding = prepublicationIssue('prepublication_record_root_missing');
+      return {
+        exitCode: 1,
+        report: {
+          schemaVersion: 'requirements-contract-prepublication-render-gate-report/v1',
+          verdict: 'FAIL',
+          failedChecks: [finding.code],
+          blockingIssues: [finding],
+        },
+      };
+    }
+    const result = validatePrepublicationAttempt({
+      sourcePath,
+      recordRoot: args.recordRoot,
+    });
+    if (args.out) writeJson(args.out, result.report);
+    return result;
+  }
   let sourceText;
   let confirmation;
   let blockText;
@@ -698,6 +1314,7 @@ module.exports = {
   main,
   parseArgs,
   runGate,
+  validatePrepublicationAttempt,
   buildAuditInputHash,
   buildReconciliationReport,
 };

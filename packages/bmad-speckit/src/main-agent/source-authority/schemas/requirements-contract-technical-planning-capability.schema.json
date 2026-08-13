@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-technical-planning-capability.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "authoringRequestId",
+    "authoringAttemptId",
+    "checkpointId",
+    "capabilityId",
+    "capabilityStatus",
+    "capabilityHash",
+    "configHash",
+    "premiseHash",
+    "triggerIdentity",
+    "status",
+    "issueCode",
+    "resumable",
+    "executionRegistry",
+    "resultHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-technical-planning-capability/v1" },
+    "authoringRequestId": { "$ref": "#/$defs/nonEmpty" },
+    "authoringAttemptId": { "$ref": "#/$defs/nonEmpty" },
+    "checkpointId": { "enum": ["cp02", "g02"] },
+    "capabilityId": { "$ref": "#/$defs/nonEmpty" },
+    "capabilityStatus": { "enum": ["available", "unavailable"] },
+    "capabilityHash": { "$ref": "#/$defs/hash" },
+    "configHash": { "$ref": "#/$defs/hash" },
+    "premiseHash": { "$ref": "#/$defs/hash" },
+    "triggerIdentity": { "$ref": "#/$defs/hash" },
+    "status": { "enum": ["resolved", "technical_planning_pending"] },
+    "issueCode": {
+      "oneOf": [
+        { "const": "requirements_technical_planning_pending" },
+        { "type": "null" }
+      ]
+    },
+    "resumable": { "type": "boolean" },
+    "executionRegistry": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/executionRegistry" }
+      ]
+    },
+    "resultHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "nonEmpty": { "type": "string", "minLength": 1 },
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "value"],
+      "properties": {
+        "kind": { "enum": ["ART", "CMD", "CTM", "EVDREQ", "PATH", "STOP"] },
+        "id": { "$ref": "#/$defs/nonEmpty" },
+        "value": { "$ref": "#/$defs/nonEmpty" }
+      }
+    },
+    "executionRegistry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "entries", "registryHash"],
+      "properties": {
+        "schemaVersion": { "const": "requirements-contract-typed-execution-registry/v1" },
+        "entries": { "type": "array", "items": { "$ref": "#/$defs/entry" } },
+        "registryHash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

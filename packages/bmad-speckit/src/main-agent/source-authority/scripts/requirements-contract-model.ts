@@ -1331,3 +1331,14 @@ export function migrateRequirementContractV1ToV2(
     semanticModelHash: semanticModelHashForContract(preimage),
   };
 }
+export type {
+  RequirementsContractSemanticIr as FrozenRequirementsContractSemanticIr,
+  RequirementsEvidenceClaim,
+  RequirementsExecutionConstraint,
+} from './requirements-contract-semantic-ir';
+export type {
+  RequirementsContractSourceBindingCapsule,
+} from './requirements-contract-source-binding-capsule';
+
+export const REQUIREMENTS_CONTRACT_FROZEN_SEMANTIC_IR_SCHEMA_VERSION =
+  'requirements-contract-semantic-ir/v1' as const;

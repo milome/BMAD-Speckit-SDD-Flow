@@ -1,3 +1,14 @@
+import {
+  requirementsContractCoreCheckpointProfile,
+  requirementsContractCoreProfileAllowsArtifact,
+  type RequirementsContractCoreArtifactRole,
+  type RequirementsContractCoreCheckpointStage,
+} from './requirements-contract-cp00-cp04';
+import {
+  createRequirementsContractCoreArtifactFreeze,
+  type RequirementsContractCoreArtifactFreeze,
+} from './requirements-contract-semantic-resolver';
+
 export interface ConservationSourceRoot {
   order: number;
   sourceRootId: string;
@@ -13,6 +24,26 @@ export interface ConservationSemanticNode {
   nodeHash: string;
   authorityClass: string;
   authorityBearing: true;
+  executionConstraintRefs: string[];
+}
+
+export type ConservationExecutionConstraintKind =
+  | 'PATH'
+  | 'CMD'
+  | 'ART'
+  | 'CTM'
+  | 'EVDREQ'
+  | 'STOP';
+
+export interface ConservationExecutionRegistryEntry {
+  kind: ConservationExecutionConstraintKind;
+  id: string;
+  value: string;
+}
+
+export interface ExecutionConstraintConservationResult {
+  decision: 'pass' | 'block';
+  issueCodes: string[];
 }
 
 export interface RootToNodeMappingInput {
@@ -47,6 +78,21 @@ export interface SemanticConservationVerificationResult {
 }
 
 const HASH_PATTERN = /^sha256:[a-f0-9]{64}$/u;
+const CORE_CHECKPOINT_STAGES: readonly RequirementsContractCoreCheckpointStage[] = [
+  'cp00',
+  'cp01',
+  'cp03',
+  'cp04',
+];
+const EXECUTION_CONSTRAINT_KINDS = new Set<ConservationExecutionConstraintKind>([
+  'PATH',
+  'CMD',
+  'ART',
+  'CTM',
+  'EVDREQ',
+  'STOP',
+]);
+const EXECUTION_CONSTRAINT_REF = /^(PATH|CMD|ART|CTM|EVDREQ|STOP):[^:\s]+$/u;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
@@ -55,6 +101,55 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function exactKeys(value: Record<string, unknown>, keys: readonly string[]): boolean {
   return keys.every((key) => Object.prototype.hasOwnProperty.call(value, key)) &&
     Object.keys(value).every((key) => keys.includes(key));
+}
+
+export function verifyRequirementsContractCoreArtifactReadback(input: {
+  freeze: unknown;
+  artifact: unknown;
+}): input is { freeze: RequirementsContractCoreArtifactFreeze; artifact: unknown } {
+  if (
+    !isRecord(input.freeze) ||
+    !exactKeys(input.freeze, [
+      'schemaVersion',
+      'checkpointId',
+      'profileId',
+      'artifactRole',
+      'artifactHash',
+      'freezeHash',
+    ]) ||
+    input.freeze.schemaVersion !== 'requirements-contract-core-artifact-freeze/v1' ||
+    typeof input.freeze.checkpointId !== 'string' ||
+    typeof input.freeze.profileId !== 'string' ||
+    typeof input.freeze.artifactRole !== 'string' ||
+    typeof input.freeze.artifactHash !== 'string' ||
+    !HASH_PATTERN.test(input.freeze.artifactHash) ||
+    typeof input.freeze.freezeHash !== 'string' ||
+    !HASH_PATTERN.test(input.freeze.freezeHash)
+  ) {
+    return false;
+  }
+  const stage = CORE_CHECKPOINT_STAGES.find((candidate) =>
+    requirementsContractCoreCheckpointProfile(candidate).checkpointId === input.freeze.checkpointId
+  );
+  if (!stage) return false;
+  const profile = requirementsContractCoreCheckpointProfile(stage);
+  const artifactRole = input.freeze.artifactRole as RequirementsContractCoreArtifactRole;
+  if (
+    input.freeze.profileId !== profile.profileId ||
+    !requirementsContractCoreProfileAllowsArtifact(stage, artifactRole)
+  ) {
+    return false;
+  }
+  try {
+    const expected = createRequirementsContractCoreArtifactFreeze({
+      stage,
+      artifactRole,
+      artifact: input.artifact,
+    });
+    return Object.entries(expected).every(([key, value]) => input.freeze[key] === value);
+  } catch {
+    return false;
+  }
 }
 
 function isNonEmptyString(value: unknown): value is string {
@@ -89,14 +184,74 @@ function isSourceRoot(value: unknown): value is ConservationSourceRoot {
 
 function isSemanticNode(value: unknown): value is ConservationSemanticNode {
   return isRecord(value) &&
-    exactKeys(value, ['order', 'nodeId', 'nodeHash', 'authorityClass', 'authorityBearing']) &&
+    exactKeys(value, [
+      'order',
+      'nodeId',
+      'nodeHash',
+      'authorityClass',
+      'authorityBearing',
+      'executionConstraintRefs',
+    ]) &&
     Number.isSafeInteger(value.order) &&
     Number(value.order) > 0 &&
     isNonEmptyString(value.nodeId) &&
     typeof value.nodeHash === 'string' &&
     HASH_PATTERN.test(value.nodeHash) &&
     isNonEmptyString(value.authorityClass) &&
-    value.authorityBearing === true;
+    value.authorityBearing === true &&
+    isUniqueNonEmptyStringArray(value.executionConstraintRefs) &&
+    value.executionConstraintRefs.every((ref) => EXECUTION_CONSTRAINT_REF.test(ref));
+}
+
+function isExecutionRegistryEntry(value: unknown): value is ConservationExecutionRegistryEntry {
+  return isRecord(value) &&
+    exactKeys(value, ['kind', 'id', 'value']) &&
+    typeof value.kind === 'string' &&
+    EXECUTION_CONSTRAINT_KINDS.has(value.kind as ConservationExecutionConstraintKind) &&
+    isNonEmptyString(value.id) &&
+    !value.id.includes(':') &&
+    isNonEmptyString(value.value);
+}
+
+export function verifyExecutionConstraintConservation(input: unknown):
+  ExecutionConstraintConservationResult {
+  if (
+    !isRecord(input) ||
+    !exactKeys(input, ['semanticNodes', 'executionRegistry']) ||
+    !Array.isArray(input.semanticNodes) ||
+    !input.semanticNodes.every(isSemanticNode) ||
+    !isRecord(input.executionRegistry) ||
+    !exactKeys(input.executionRegistry, ['entries']) ||
+    !Array.isArray(input.executionRegistry.entries) ||
+    !input.executionRegistry.entries.every(isExecutionRegistryEntry)
+  ) {
+    return {
+      decision: 'block',
+      issueCodes: ['requirements_execution_conservation_input_invalid'],
+    };
+  }
+  const registryRefs = input.executionRegistry.entries.map(
+    (entry) => `${entry.kind}:${entry.id}`
+  );
+  const issues = new Set<string>();
+  if (new Set(registryRefs).size !== registryRefs.length) {
+    issues.add('requirements_execution_registry_ref_duplicate');
+  }
+  const knownRefs = new Set(registryRefs);
+  const referencedRefs = new Set(
+    input.semanticNodes.flatMap((node) => node.executionConstraintRefs)
+  );
+  if ([...referencedRefs].some((ref) => !knownRefs.has(ref))) {
+    issues.add('requirements_execution_constraint_unknown');
+  }
+  if (registryRefs.some((ref) => !referencedRefs.has(ref))) {
+    issues.add('requirements_execution_registry_entry_unreferenced');
+  }
+  const issueCodes = [...issues].sort();
+  return {
+    decision: issueCodes.length === 0 ? 'pass' : 'block',
+    issueCodes,
+  };
 }
 
 function isRootToNodeMapping(value: unknown): value is RootToNodeMappingInput {

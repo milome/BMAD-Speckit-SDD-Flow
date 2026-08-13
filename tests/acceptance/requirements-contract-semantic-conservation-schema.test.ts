@@ -43,6 +43,7 @@ function manifest() {
         nodeHash: HASH,
         authorityClass: 'source_authority',
         authorityBearing: true,
+        executionConstraintRefs: ['CMD:targeted-conservation-test'],
       },
       {
         order: 2,
@@ -50,6 +51,7 @@ function manifest() {
         nodeHash: HASH,
         authorityClass: 'decision_authority',
         authorityBearing: true,
+        executionConstraintRefs: [],
       },
     ],
     rootToNodeMappings: [

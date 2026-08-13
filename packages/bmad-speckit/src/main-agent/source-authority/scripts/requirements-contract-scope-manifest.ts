@@ -35,31 +35,11 @@ const REQUIREMENTS_INPUT_FIELDS = new Set([
   'priorRequirementsFindingsHash',
   'kernelImplementationLineage',
 ]);
-const FINAL_INPUT_FIELDS = new Set([...COMMON_INPUT_FIELDS, 'kernelImplementationLineage']);
-const FINAL_LINEAGE_FIELDS = new Set([
-  'applicability',
-  'parentGoalContractHash',
-  'partitionManifestHash',
-  'partitionSetHash',
-  'sourceCompositionPolicyHash',
-  'sourceSnapshotSetHash',
-  'specSpanRegistryHash',
-  'sourceObligationGraphHash',
-  'compilerIdentityHash',
-  'goalCampaignClosureReceiptHash',
-  'subcontractClosureSetHash',
-  'subcontractClosureReceiptHashes',
-  'governedByteManifestHash',
-  'productionReachabilityReceiptHash',
-  'installedRuntimeIdentity',
-  'packageAndConsumerIdentity',
-]);
-
 type SchemaRecord = Record<string, unknown>;
 
 export interface RequirementsContractCommonScopeManifest {
-  actorClass: 'requirements_critical_auditor_judge' | 'final_acceptance_judge';
-  judgeRole: 'requirements_critical_auditor' | 'final_acceptance_judge';
+  actorClass: 'requirements_critical_auditor_judge';
+  judgeRole: 'requirements_critical_auditor';
   purpose: string;
   attemptId: string;
   includedRequirementRefs: string[];
@@ -79,25 +59,6 @@ export interface RequirementsAuditKernelImplementationLineage {
   authorityReason: 'requirements_scope_has_no_kernel_implementation_authority';
 }
 
-export interface FinalAcceptanceKernelImplementationLineage {
-  applicability: 'applicable';
-  parentGoalContractHash: string;
-  partitionManifestHash: string;
-  partitionSetHash: string;
-  sourceCompositionPolicyHash: string;
-  sourceSnapshotSetHash: string;
-  specSpanRegistryHash: string;
-  sourceObligationGraphHash: string;
-  compilerIdentityHash: string;
-  goalCampaignClosureReceiptHash: string;
-  subcontractClosureSetHash: string;
-  subcontractClosureReceiptHashes: string[];
-  governedByteManifestHash: string;
-  productionReachabilityReceiptHash: string;
-  installedRuntimeIdentity: string;
-  packageAndConsumerIdentity: string;
-}
-
 export interface RequirementsAuditScopeManifest extends RequirementsContractCommonScopeManifest {
   schemaVersion: 'requirements-contract-requirements-audit-scope-manifest/v1';
   actorClass: 'requirements_critical_auditor_judge';
@@ -109,13 +70,6 @@ export interface RequirementsAuditScopeManifest extends RequirementsContractComm
   requirementsQualityRulesHash: string;
   priorRequirementsFindingsHash: string;
   kernelImplementationLineage: RequirementsAuditKernelImplementationLineage;
-}
-
-export interface FinalAcceptanceScopeManifest extends RequirementsContractCommonScopeManifest {
-  schemaVersion: 'requirements-contract-final-acceptance-scope-manifest/v1';
-  actorClass: 'final_acceptance_judge';
-  judgeRole: 'final_acceptance_judge';
-  kernelImplementationLineage: FinalAcceptanceKernelImplementationLineage;
 }
 
 export class RequirementsContractScopeManifestError extends Error {
@@ -254,37 +208,6 @@ function requirementsLineage(record: SchemaRecord) {
   };
 }
 
-function finalLineage(record: SchemaRecord) {
-  if (!isRecord(record.kernelImplementationLineage)) {
-    fail('scope_manifest_field_missing');
-  }
-  const lineage = record.kernelImplementationLineage;
-  if (Object.keys(lineage).some((key) => !FINAL_LINEAGE_FIELDS.has(key))) {
-    fail('scope_manifest_unknown_field');
-  }
-  if (lineage.applicability !== 'applicable') {
-    fail('scope_manifest_final_lineage_invalid');
-  }
-  return {
-    applicability: 'applicable' as const,
-    parentGoalContractHash: requiredHash(lineage, 'parentGoalContractHash'),
-    partitionManifestHash: requiredHash(lineage, 'partitionManifestHash'),
-    partitionSetHash: requiredHash(lineage, 'partitionSetHash'),
-    sourceCompositionPolicyHash: requiredHash(lineage, 'sourceCompositionPolicyHash'),
-    sourceSnapshotSetHash: requiredHash(lineage, 'sourceSnapshotSetHash'),
-    specSpanRegistryHash: requiredHash(lineage, 'specSpanRegistryHash'),
-    sourceObligationGraphHash: requiredHash(lineage, 'sourceObligationGraphHash'),
-    compilerIdentityHash: requiredHash(lineage, 'compilerIdentityHash'),
-    goalCampaignClosureReceiptHash: requiredHash(lineage, 'goalCampaignClosureReceiptHash'),
-    subcontractClosureSetHash: requiredHash(lineage, 'subcontractClosureSetHash'),
-    subcontractClosureReceiptHashes: canonicalSet(lineage, 'subcontractClosureReceiptHashes'),
-    governedByteManifestHash: requiredHash(lineage, 'governedByteManifestHash'),
-    productionReachabilityReceiptHash: requiredHash(lineage, 'productionReachabilityReceiptHash'),
-    installedRuntimeIdentity: requiredText(lineage, 'installedRuntimeIdentity'),
-    packageAndConsumerIdentity: requiredText(lineage, 'packageAndConsumerIdentity'),
-  };
-}
-
 function schemaValidator(schemaFile: string): ValidateFunction {
   const cached = validators.get(schemaFile);
   if (cached) return cached;
@@ -304,7 +227,6 @@ function validateManifest(
     actorClass: string;
     judgeRole: string;
     schemaFile: string;
-    finalLineage: boolean;
   }
 ): SchemaRecord {
   if (!isRecord(value)) fail('scope_manifest_schema_invalid');
@@ -324,13 +246,6 @@ function validateManifest(
   }
   if (!isRecord(current)) fail('scope_manifest_field_missing');
   assertCurrentAuthority(value, current);
-  if (
-    expected.finalLineage &&
-    requiredHash(current, 'kernelImplementationLineageHash') !==
-      sha256Stable(value.kernelImplementationLineage)
-  ) {
-    fail('scope_manifest_stale');
-  }
   for (const field of COMMON_ARRAY_FIELDS) {
     if (stableStringify(value[field]) !== stableStringify(canonicalSet(value, field))) {
       fail('scope_manifest_non_canonical');
@@ -373,35 +288,6 @@ export function compileRequirementsAuditScopeManifest(
   return validateRequirementsAuditScopeManifest(manifest, currentAuthority(input));
 }
 
-export function compileFinalAcceptanceScopeManifest(input: unknown): FinalAcceptanceScopeManifest {
-  if (!isRecord(input)) fail('scope_manifest_field_missing');
-  rejectUntrustedInput(input, FINAL_INPUT_FIELDS);
-  const { authority, payload } = commonPayload(input);
-  if (
-    payload.actorClass !== 'final_acceptance_judge' ||
-    payload.judgeRole !== 'final_acceptance_judge'
-  ) {
-    fail('scope_manifest_role_mismatch');
-  }
-  const kernelImplementationLineage = finalLineage(input);
-  if (
-    requiredHash(authority, 'kernelImplementationLineageHash') !==
-    sha256Stable(kernelImplementationLineage)
-  ) {
-    fail('scope_manifest_stale');
-  }
-  const manifestPayload = {
-    schemaVersion: 'requirements-contract-final-acceptance-scope-manifest/v1',
-    ...payload,
-    kernelImplementationLineage,
-  };
-  const manifest = {
-    ...manifestPayload,
-    scopeManifestHash: sha256Stable(manifestPayload),
-  } as FinalAcceptanceScopeManifest;
-  return validateFinalAcceptanceScopeManifest(manifest, authority);
-}
-
 export function validateRequirementsAuditScopeManifest(
   value: unknown,
   current: unknown
@@ -411,19 +297,5 @@ export function validateRequirementsAuditScopeManifest(
     actorClass: 'requirements_critical_auditor_judge',
     judgeRole: 'requirements_critical_auditor',
     schemaFile: 'requirements-contract-requirements-audit-scope-manifest.schema.json',
-    finalLineage: false,
   }) as unknown as RequirementsAuditScopeManifest;
-}
-
-export function validateFinalAcceptanceScopeManifest(
-  value: unknown,
-  current: unknown
-): FinalAcceptanceScopeManifest {
-  return validateManifest(value, current, {
-    schemaVersion: 'requirements-contract-final-acceptance-scope-manifest/v1',
-    actorClass: 'final_acceptance_judge',
-    judgeRole: 'final_acceptance_judge',
-    schemaFile: 'requirements-contract-final-acceptance-scope-manifest.schema.json',
-    finalLineage: true,
-  }) as unknown as FinalAcceptanceScopeManifest;
 }

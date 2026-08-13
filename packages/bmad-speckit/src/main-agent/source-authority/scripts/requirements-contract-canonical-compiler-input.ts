@@ -5,6 +5,11 @@ import type {
 import type { ProductionSemanticSourceRoot } from './requirements-contract-production-semantic-pipeline';
 import type { RequirementsContractSemanticConservationManifest } from './requirements-contract-semantic-conservation-manifest';
 import { sha256Stable, sha256Text } from './requirements-contract-semantic-resolver';
+import type { RequirementsContractSemanticIr } from './requirements-contract-semantic-ir';
+import type { RequirementsContractSourceBindingCapsule } from './requirements-contract-source-binding-capsule';
+import {
+  requirementsContractDomainHash,
+} from './requirements-contract-hash-domains';
 
 export interface CanonicalCompilerInputAuthority {
   source: 'canonical_semantic_ir';
@@ -18,6 +23,54 @@ export interface CanonicalCompilerInputAuthority {
 export interface CanonicalPreCheckpointCompilerInput {
   compilerInput: RequirementContractCompilerInput;
   authority: CanonicalCompilerInputAuthority;
+}
+
+export interface CanonicalFrozenRequirementsCompilerInput {
+  semantic: {
+    source: 'requirements-contract-semantic-ir/v1';
+    semanticRevisionId: string;
+    scopeSemanticHash: string;
+    payload: RequirementsContractSemanticIr['semanticPayload'];
+  };
+  binding: {
+    source: 'requirements-contract-source-binding/v1';
+    bindingRevisionId: string;
+    sourceBindingHash: string;
+    semanticRevisionId: string;
+  };
+  compilerInputHash: string;
+}
+
+export function buildCanonicalFrozenRequirementsCompilerInput(input: {
+  semanticIr: RequirementsContractSemanticIr;
+  sourceBinding: RequirementsContractSourceBindingCapsule;
+}): CanonicalFrozenRequirementsCompilerInput {
+  if (
+    input.sourceBinding.semanticRevisionId !== input.semanticIr.semanticRevisionId ||
+    input.sourceBinding.scopeSemanticHash !== input.semanticIr.scopeSemanticHash
+  ) {
+    throw new Error('canonical_frozen_compiler_input_binding_incompatible');
+  }
+  const payload = {
+    semantic: {
+      source: 'requirements-contract-semantic-ir/v1' as const,
+      semanticRevisionId: input.semanticIr.semanticRevisionId,
+      scopeSemanticHash: input.semanticIr.scopeSemanticHash,
+      payload: input.semanticIr.semanticPayload,
+    },
+    binding: {
+      source: 'requirements-contract-source-binding/v1' as const,
+      bindingRevisionId: input.sourceBinding.bindingRevisionId,
+      sourceBindingHash: input.sourceBinding.sourceBindingHash,
+      semanticRevisionId: input.sourceBinding.semanticRevisionId,
+    },
+  };
+  return {
+    ...payload,
+    compilerInputHash: requirementsContractDomainHash(
+      'requirements-contract-canonical-frozen-compiler-input/v1', payload
+    ),
+  };
 }
 
 export interface CanonicalMustRequirementProjection {

@@ -2,6 +2,10 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { sha256Stable } from '../scripts/requirements-contract-semantic-resolver';
+import { REQUIREMENTS_CONTRACT_VALIDATION_FACADE_ID } from '../scripts/requirements-contract-validation-facade';
+
+export const REQUIREMENTS_CONTRACT_CANONICAL_ASSETS_VALIDATION_FACADE =
+  REQUIREMENTS_CONTRACT_VALIDATION_FACADE_ID;
 
 export const REQUIREMENTS_CONTRACT_CANONICAL_ASSETS_MANIFEST_OWNER_PATH =
   'packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-canonical-assets-manifest.ts';
@@ -600,30 +604,6 @@ const CANONICAL_ASSETS = [
     authorityClass: 'deterministic_contract',
   },
   {
-    assetId: 'critical_auditor_judge_adapter_input_schema',
-    version: 'requirements-contract-critical-auditor-judge-adapter-input/v1',
-    path: 'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-critical-auditor-judge-adapter-input.schema.json',
-    role: 'critical_auditor_judge_adapter_input_schema',
-    assetKind: 'schema',
-    authorityClass: 'deterministic_contract',
-  },
-  {
-    assetId: 'critical_auditor_judge_assessment_schema',
-    version: 'requirements-contract-critical-auditor-judge-assessment/v1',
-    path: 'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-critical-auditor-judge-assessment.schema.json',
-    role: 'critical_auditor_judge_assessment_schema',
-    assetKind: 'schema',
-    authorityClass: 'deterministic_contract',
-  },
-  {
-    assetId: 'critical_auditor_external_adapter_result_schema',
-    version: 'requirements-contract-critical-auditor-external-adapter-result/v1',
-    path: 'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-critical-auditor-external-adapter-result.schema.json',
-    role: 'critical_auditor_external_adapter_result_schema',
-    assetKind: 'schema',
-    authorityClass: 'deterministic_contract',
-  },
-  {
     assetId: 'gap_closure_readonly_auditor_adapter_input_schema',
     version: 'requirements-contract-gap-closure-readonly-auditor-adapter-input/v1',
     path: 'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-gap-closure-readonly-auditor-adapter-input.schema.json',
@@ -759,14 +739,6 @@ const CANONICAL_ASSETS = [
     assetKind: 'resolver',
     authorityClass: 'deterministic_contract',
     symbolRef: 'resolveRequirementsContractJudgeRuntimeBindings',
-  },
-  {
-    assetId: 'critical_auditor_judge_adapter',
-    version: 'requirements-contract-critical-auditor-judge-adapter/v1',
-    path: 'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-critical-auditor-judge-adapter.ts',
-    role: 'critical_auditor_judge_adapter',
-    assetKind: 'adapter',
-    authorityClass: 'deterministic_contract',
   },
   {
     assetId: 'reverse_audit_validator',

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-evidence-claim-registry.schema.json",
+  "type": "object", "additionalProperties": false,
+  "required": ["schemaVersion", "claims", "registryHash"],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-evidence-claim-registry/v1" },
+    "claims": { "type": "array", "items": { "$ref": "#/$defs/claim" } },
+    "registryHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "refs": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "claim": {
+      "type": "object", "additionalProperties": false,
+      "required": ["evidenceClaimId", "authorityClass", "normalizedClaimHash", "decisionReceiptRefs", "premiseRefs", "derivationReceiptRefs"],
+      "properties": {
+        "evidenceClaimId": { "type": "string", "minLength": 1 }, "authorityClass": { "enum": ["source_grounded", "human_confirmed", "derived"] },
+        "normalizedClaimHash": { "$ref": "#/$defs/hash" }, "sourceEvidenceRequired": { "type": "boolean" },
+        "decisionReceiptRefs": { "$ref": "#/$defs/refs" }, "premiseRefs": { "$ref": "#/$defs/refs" }, "derivationReceiptRefs": { "$ref": "#/$defs/refs" }
+      }
+    }
+  }
+}

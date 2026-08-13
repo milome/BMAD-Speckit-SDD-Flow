@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "requirements-contract-authoring-identity.schema.json",
+  "type": "object", "additionalProperties": false,
+  "required": ["authoringRequestId", "requestId", "grillSessionId", "authoringAttemptId", "semanticRevisionId", "judgeRequestHash", "remediationPlanHash", "remediationDeltaHash"],
+  "properties": {
+    "authoringRequestId": { "$ref": "#/$defs/id" }, "requestId": { "$ref": "#/$defs/id" },
+    "grillSessionId": { "$ref": "#/$defs/id" }, "authoringAttemptId": { "$ref": "#/$defs/id" },
+    "semanticRevisionId": { "$ref": "#/$defs/id" }, "judgeRequestHash": { "$ref": "#/$defs/hash" },
+    "remediationPlanHash": { "$ref": "#/$defs/hash" }, "remediationDeltaHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": { "id": { "type": "string", "minLength": 1 }, "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" } }
+}

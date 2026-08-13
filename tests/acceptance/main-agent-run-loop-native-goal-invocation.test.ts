@@ -491,7 +491,7 @@ describe('main-agent run-loop native goal invocation routing', () => {
         taskReportArtifactHash: candidateHash,
         receiptHash: hashText(`${closeoutAttemptId}:closure`),
       };
-      const judgeReviewCampaign = {
+      const executionFinalJudgeCampaign = {
         schemaVersion: 'requirements-contract-parent-goal-blind-review-aggregate/v2',
         campaignId,
         closeoutAttemptId,
@@ -524,7 +524,7 @@ describe('main-agent run-loop native goal invocation routing', () => {
           taskReportArtifactHash: candidateHash,
           closeoutContextHash: contextHash,
           producerReceipt,
-          judgeReviewCampaign,
+          executionFinalJudgeCampaign,
           effectivePassReceipt,
           deliveryGateReceipt,
         };
@@ -785,7 +785,7 @@ describe('main-agent run-loop native goal invocation routing', () => {
         taskReportArtifactHash: candidateHash,
         receiptHash: hashText(`${closeoutAttemptId}:closure`),
       };
-      const judgeReviewCampaign = {
+      const executionFinalJudgeCampaign = {
         schemaVersion: 'requirements-contract-parent-goal-blind-review-aggregate/v2',
         campaignId,
         closeoutAttemptId,
@@ -822,7 +822,7 @@ describe('main-agent run-loop native goal invocation routing', () => {
           taskReportArtifactHash: candidateHash,
           closeoutContextHash: contextHash,
           producerReceipt,
-          judgeReviewCampaign,
+          executionFinalJudgeCampaign,
           effectivePassReceipt,
           deliveryGateReceipt,
         };

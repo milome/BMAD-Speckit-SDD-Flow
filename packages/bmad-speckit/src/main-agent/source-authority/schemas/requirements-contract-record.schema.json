@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "requirements-contract-record.schema.json",
+  "type": "object", "additionalProperties": false,
+  "required": ["schemaVersion", "recordId", "lifecycle", "confirmedScopeSemanticHash", "activeAuthority"],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-record/v1" }, "recordId": { "type": "string", "minLength": 1 },
+    "lifecycle": { "type": "string", "minLength": 1 },
+    "confirmedScopeSemanticHash": { "oneOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }] },
+    "activeAuthority": { "oneOf": [{ "$ref": "#/$defs/RequirementsActiveAuthorityTuple" }, { "type": "null" }] }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$" },
+    "RequirementsActiveAuthorityTuple": {
+      "title": "RequirementsActiveAuthorityTuple/v1", "type": "object", "additionalProperties": false,
+      "required": ["activeSemanticRevisionId", "activeSemanticIrPath", "activeScopeSemanticHash", "activeBindingRevisionId", "activeSourceBindingPath", "activeSourceBindingHash", "activeAuthoringAttemptId", "activeBuildManifestPath", "activeBuildManifestHash"],
+      "properties": {
+        "activeSemanticRevisionId": { "$ref": "#/$defs/id" }, "activeSemanticIrPath": { "type": "string", "pattern": "^authoring/semantic-revisions/[A-Za-z0-9][A-Za-z0-9._-]*/semantic-ir\\.json$" }, "activeScopeSemanticHash": { "$ref": "#/$defs/hash" },
+        "activeBindingRevisionId": { "$ref": "#/$defs/id" }, "activeSourceBindingPath": { "type": "string", "pattern": "^authoring/source-bindings/[A-Za-z0-9][A-Za-z0-9._-]*/source-binding\\.json$" }, "activeSourceBindingHash": { "$ref": "#/$defs/hash" },
+        "activeAuthoringAttemptId": { "$ref": "#/$defs/id" }, "activeBuildManifestPath": { "type": "string", "pattern": "^authoring/staging/[A-Za-z0-9][A-Za-z0-9._-]*/contract-build-manifest\\.json$" }, "activeBuildManifestHash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

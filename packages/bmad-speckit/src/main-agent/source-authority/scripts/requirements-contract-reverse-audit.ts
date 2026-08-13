@@ -11,6 +11,10 @@ import {
 } from './requirements-contract-governed-write';
 import { prepareRequirementsContractJudgeInvocation } from './requirements-contract-judge-invocation';
 import { resolveRequirementsContractJudgeRuntimeBindings } from './requirements-contract-judge-runtime-bindings';
+import {
+  createRequirementsContractJudgeSelectionReceipt,
+  resolveRequirementsContractJudgeAdapterRef,
+} from './requirements-contract-judge-selection';
 
 type JsonRecord = Record<string, ReturnType<typeof JSON.parse>>;
 const REVERSE_AUDIT_SYSTEM_PROMPT =
@@ -70,19 +74,17 @@ function validate(value: JsonRecord, schemaName: string): void {
   }
 }
 
-function assertReceiptIdentity(
-  receipt: JsonRecord,
+function assertCapabilityReceiptIdentity(
+  capability: JsonRecord,
   context: JsonRecord,
-  phaseAuditAttemptId: string,
-  expectedDecision: string,
-  label: string
+  phaseAuditAttemptId: string
 ): void {
   if (
-    receipt.transactionId !== context.transactionId ||
-    receipt.auditAttemptId !== phaseAuditAttemptId ||
-    receipt.decision !== expectedDecision
+    capability.transactionId !== context.transactionId ||
+    capability.auditAttemptId !== phaseAuditAttemptId ||
+    capability.decision !== 'pass'
   ) {
-    throw new Error(`reverse_audit_${label}_mismatch`);
+    throw new Error('reverse_audit_capability_mismatch');
   }
 }
 
@@ -169,20 +171,8 @@ export async function requirementsContractReverseAuditCommand(
   const selection = readJson(selectionPath);
   validate(capability, 'requirements-contract-judge-capability-receipt.schema.json');
   validate(selection, 'requirements-contract-judge-selection-receipt.schema.json');
-  assertReceiptIdentity(capability, context, options.phaseAuditAttemptId, 'pass', 'capability');
-  assertReceiptIdentity(selection, context, options.phaseAuditAttemptId, 'frozen', 'selection');
-  if (
-    selection.capabilityReceiptHash !== fileHash(capabilityPath) ||
-    selection.providerRef !== capability.providerRef ||
-    selection.model !== capability.configuredModel ||
-    selection.publicProviderConfigHash !== capability.publicProviderConfigHash ||
-    selection.configuredBaseUrlHash !== capability.configuredBaseUrlHash ||
-    selection.transport !== capability.transport ||
-    selection.apiStyle !== capability.apiStyle ||
-    selection.credentialRevision !== capability.credentialRevision
-  ) {
-    throw new Error('reverse_audit_selection_binding_mismatch');
-  }
+  assertCapabilityReceiptIdentity(capability, context, options.phaseAuditAttemptId);
+  if (selection.decision !== 'selected') throw new Error('reverse_audit_selection_mismatch');
   const judgeInvocation = await prepareRequirementsContractJudgeInvocation({
     projectRoot: root,
     config: options.judgeConfig,
@@ -193,37 +183,29 @@ export async function requirementsContractReverseAuditCommand(
   const auditPolicy = record(provider.auditPolicy, 'reverse_audit_provider_selection_mismatch');
   const publicProviderConfigHash = fileHash(configPath);
   const configuredBaseUrlHash = sha256(String(endpoint.baseUrl));
+  const expectedSelection = createRequirementsContractJudgeSelectionReceipt({
+    providerRef: judgeInvocation.providerRef,
+    provider,
+    adapterRef: resolveRequirementsContractJudgeAdapterRef(provider),
+    providerRegistryHash: judgeInvocation.providerRegistryHash,
+  });
   if (
-    judgeInvocation.providerRef !== selection.providerRef ||
+    canonicalJson(selection) !== canonicalJson(expectedSelection) ||
+    judgeInvocation.providerRef !== capability.providerRef ||
     judgeInvocation.credentialProviderRef !== selection.providerRef ||
-    judgeInvocation.credentialRevision !== selection.credentialRevision ||
-    judgeInvocation.providerRegistryHash !== selection.providerRegistryHash ||
-    publicProviderConfigHash !== selection.publicProviderConfigHash ||
-    configuredBaseUrlHash !== selection.configuredBaseUrlHash ||
-    provider?.model !== selection.model ||
-    provider.transport !== selection.transport ||
-    provider.apiStyle !== selection.apiStyle ||
+    judgeInvocation.credentialRevision !== capability.credentialRevision ||
+    publicProviderConfigHash !== capability.publicProviderConfigHash ||
+    configuredBaseUrlHash !== capability.configuredBaseUrlHash ||
+    provider?.model !== capability.configuredModel ||
+    provider.transport !== capability.transport ||
+    provider.apiStyle !== capability.apiStyle ||
     auditPolicy.allowPassAuthority !== false ||
-    selection.runtimeFallbackAllowed !== false
+    record(
+      judgeInvocation.judgeRuntime.selectionPolicy,
+      'reverse_audit_provider_selection_mismatch'
+    ).runtimeFallbackAllowed !== false
   ) {
     throw new Error('reverse_audit_provider_selection_mismatch');
-  }
-  if (
-    selection.rubricHash !== runtimeBindings.refs.rubric.hash ||
-    selection.systemPromptHash !== runtimeBindings.refs.systemPrompt.hash ||
-    selection.sourceHash !== runtimeBindings.refs.source.hash ||
-    selection.traceHash !== runtimeBindings.refs.trace.hash ||
-    selection.redHash !== runtimeBindings.refs.red.hash ||
-    selection.baseEvidenceHash !== runtimeBindings.refs.baseEvidence.hash ||
-    selection.auditUniverseHash !== runtimeBindings.judgeAuditUnitSet.judgeAuditUniverseHash ||
-    selection.judgeAuditUnitSetRef.path !== runtimeBindings.refs.judgeAuditUnitSet.path ||
-    selection.judgeAuditUnitSetRef.hash !== runtimeBindings.refs.judgeAuditUnitSet.hash ||
-    selection.judgeAuditUnitSetHash !== runtimeBindings.judgeAuditUnitSet.judgeAuditUnitSetHash ||
-    selection.baseJudgeInputBundleHash !== runtimeBindings.baseJudgeInputBundleHash ||
-    selection.authorizedChallengeDerivationProtocolHash !==
-      runtimeBindings.refs.authorizedChallengeDerivationProtocol.hash
-  ) {
-    throw new Error('reverse_audit_selection_context_mismatch');
   }
   const contractPath = resolveWithin(root, options.contract);
   const blindBundle = {
@@ -239,7 +221,7 @@ export async function requirementsContractReverseAuditCommand(
       path: slash(path.relative(root, selectionPath)),
       hash: fileHash(selectionPath),
     },
-    baseJudgeInputBundleHash: selection.baseJudgeInputBundleHash,
+    baseJudgeInputBundleHash: runtimeBindings.baseJudgeInputBundleHash,
     judgeAuditUnitSetRef: runtimeBindings.refs.judgeAuditUnitSet,
     judgeAuditUnitSetHash: runtimeBindings.judgeAuditUnitSet.judgeAuditUnitSetHash,
     auditUniverseHash: runtimeBindings.judgeAuditUnitSet.judgeAuditUniverseHash,
@@ -249,25 +231,14 @@ export async function requirementsContractReverseAuditCommand(
     systemPrompt: REVERSE_AUDIT_SYSTEM_PROMPT,
     request: blindBundle,
   })) as JsonRecord;
-  const initial = {
-    schemaVersion: 'requirements-contract-judge-response/v1',
-    phase: options.phase,
-    phaseAuditAttemptId: options.phaseAuditAttemptId,
-    requestHash: initialRequestHash,
-    responseHash: sha256(canonicalJson(initialResponse)),
-    decision: initialResponse.decision,
-    findings: initialResponse.findings,
-    challengeRequests: initialResponse.challengeRequests,
-    allowPassAuthority: false,
-    writeSequence: 1,
-  };
-  validate(initial, 'requirements-contract-judge-response.schema.json');
+  validate(initialResponse, 'requirements-contract-normalized-judge-response.schema.json');
+  const initialResponseHash = sha256(canonicalJson(initialResponse));
   const initialPath = resolveWithin(root, options.outInitialJudge);
-  createOnly(initialPath, initial);
+  createOnly(initialPath, initialResponse);
   const challenge = buildChallengeReceipt(
     phaseRoot,
     options.phaseAuditAttemptId,
-    initial.responseHash,
+    initialResponseHash,
     initialResponse.challengeRequests
   );
   validate(challenge, 'requirements-contract-judge-challenge-tests.schema.json');
@@ -276,7 +247,7 @@ export async function requirementsContractReverseAuditCommand(
   const finalBundle = {
     ...blindBundle,
     finalJudgeInputBundleHash: sha256(
-      `${selection.baseJudgeInputBundleHash}\n${fileHash(challengePath)}\n${selection.authorizedChallengeDerivationProtocolHash}`
+      `${runtimeBindings.baseJudgeInputBundleHash}\n${fileHash(challengePath)}\n${runtimeBindings.refs.authorizedChallengeDerivationProtocol.hash}`
     ),
     challengeReceiptRef: {
       path: slash(path.relative(root, challengePath)),
@@ -290,43 +261,32 @@ export async function requirementsContractReverseAuditCommand(
   if (finalResponse.challengeRequests.length > 0) {
     throw new Error('reverse_audit_final_challenge_request_forbidden');
   }
-  const final = {
-    schemaVersion: 'requirements-contract-judge-response/v1',
-    phase: options.phase,
-    phaseAuditAttemptId: options.phaseAuditAttemptId,
-    requestHash: sha256(canonicalJson(finalBundle)),
-    responseHash: sha256(canonicalJson(finalResponse)),
-    decision: finalResponse.decision,
-    findings: finalResponse.findings,
-    challengeRequests: [],
-    allowPassAuthority: false,
-    writeSequence: 3,
-  };
-  validate(final, 'requirements-contract-judge-response.schema.json');
+  validate(finalResponse, 'requirements-contract-normalized-judge-response.schema.json');
+  const finalResponseHash = sha256(canonicalJson(finalResponse));
   const finalPath = resolveWithin(root, options.outFinalJudge);
-  createOnly(finalPath, final);
-  const blockerCount = final.findings.filter(
+  createOnly(finalPath, finalResponse);
+  const blockerCount = finalResponse.findings.filter(
     (finding: JsonRecord) => finding.severity === 'blocker'
   ).length;
-  const inconclusiveCount = final.decision === 'inconclusive' ? 1 : 0;
+  const inconclusiveCount = finalResponse.decision === 'inconclusive' ? 1 : 0;
   const audit = {
     schemaVersion: 'requirements-contract-test-source-audit/v1',
     phase: options.phase,
     phaseAuditAttemptId: options.phaseAuditAttemptId,
     inputBundleHash: initialRequestHash,
     initialJudgeRequestHash: initialRequestHash,
-    initialJudgeResponseHash: initial.responseHash,
+    initialJudgeResponseHash: initialResponseHash,
     judgeChallengeTestsHash: fileHash(challengePath),
-    finalJudgeRequestHash: final.requestHash,
-    finalJudgeResponseHash: final.responseHash,
-    judgeDecision: final.decision,
+    finalJudgeRequestHash: sha256(canonicalJson(finalBundle)),
+    finalJudgeResponseHash: finalResponseHash,
+    judgeDecision: finalResponse.decision,
     allowPassAuthority: false,
     blockerCount,
     inconclusiveCount,
-    auditRows: final.findings,
+    auditRows: finalResponse.findings,
     writeSequence: 4,
     decision:
-      final.decision === 'pass' &&
+      finalResponse.decision === 'pass' &&
       blockerCount === 0 &&
       inconclusiveCount === 0 &&
       ['pass', 'not_requested'].includes(challenge.decision)

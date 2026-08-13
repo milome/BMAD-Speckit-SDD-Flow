@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-judge-request.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "authority", "providerSelection", "prompt", "auditPacket", "auditPacketArtifactManifest", "remediation", "judgeRequestHash"],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-judge-request/v2" },
+    "authority": { "type": "object", "additionalProperties": true },
+    "providerSelection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "decision", "providerRef", "transport", "apiStyle", "model", "adapterRef", "providerRegistryHash", "providerConfigurationHash", "declaredCapacity", "issueCodes", "providerSelectionHash"],
+      "properties": {
+        "schemaVersion": { "const": "requirements-contract-judge-selection-receipt/v1" },
+        "decision": { "const": "selected" },
+        "providerRef": { "type": "string", "minLength": 1 },
+        "transport": { "type": "string", "minLength": 1 },
+        "apiStyle": { "type": "string", "minLength": 1 },
+        "model": { "type": ["string", "null"], "minLength": 1 },
+        "adapterRef": { "type": "string", "minLength": 1 },
+        "providerRegistryHash": { "$ref": "#/$defs/hash" },
+        "providerConfigurationHash": { "$ref": "#/$defs/hash" },
+        "declaredCapacity": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["transportByteLimit", "contextWindowTokens", "maximumOutputTokens"],
+          "properties": {
+            "transportByteLimit": { "type": ["integer", "null"], "minimum": 1 },
+            "contextWindowTokens": { "type": ["integer", "null"], "minimum": 1 },
+            "maximumOutputTokens": { "type": ["integer", "null"], "minimum": 1 }
+          }
+        },
+        "issueCodes": { "type": "array", "maxItems": 0 },
+        "providerSelectionHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "prompt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["systemPrompt", "rubric", "structuredOutputSchema", "outputTokenReserve"],
+      "properties": {
+        "systemPrompt": { "type": "string", "minLength": 1 },
+        "rubric": { "type": "object" },
+        "structuredOutputSchema": { "type": "object" },
+        "outputTokenReserve": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "auditPacket": { "type": "object", "additionalProperties": true },
+    "auditPacketArtifactManifest": { "type": "array", "items": { "type": "object" } },
+    "remediation": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["remediatesRequestHash", "remediationAggregateHash", "remediationDeltaHash"],
+          "properties": {
+            "remediatesRequestHash": { "$ref": "#/$defs/hash" },
+            "remediationAggregateHash": { "$ref": "#/$defs/hash" },
+            "remediationDeltaHash": { "$ref": "#/$defs/hash" }
+          }
+        }
+      ]
+    },
+    "judgeRequestHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+  }
+}

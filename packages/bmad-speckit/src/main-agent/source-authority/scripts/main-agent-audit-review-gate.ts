@@ -1558,8 +1558,3 @@ if (require.main === module && isDirectMainAgentAuditReviewGateCli(process.argv[
     process.exitCode = 2;
   }
 }
-
-export {
-  evaluateRequirementsContractFinalAcceptanceEffectivePass as evaluateMainAgentFinalAcceptanceEffectivePass,
-  validateRequirementsContractFinalAcceptanceEffectivePassReceipt as validateMainAgentFinalAcceptanceEffectivePassReceipt,
-} from './requirements-contract-final-acceptance-effective-pass-gate';

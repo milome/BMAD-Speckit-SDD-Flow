@@ -285,7 +285,13 @@ function withSuppressedStderr<T>(operation: () => T): T {
 function runSemanticPipelineForSourceRoots(
   root: string,
   descriptor: InteractionFixtureDescriptor,
-  sourceRoots: ReturnType<typeof buildInteractionSourceRoots>
+  sourceRoots: ReturnType<typeof buildInteractionSourceRoots>,
+  executionConstraints?: {
+    registry: {
+      entries: Array<{ kind: 'CMD'; id: string; value: string }>;
+    };
+    refsBySourceRootId: Record<string, string[]>;
+  }
 ) {
   const authoring = path.join(root, 'authoring');
   const intakeReceiptPath = path.join(authoring, 'intake', 'intake-receipt.json');
@@ -338,6 +344,12 @@ function runSemanticPipelineForSourceRoots(
     semanticResolutionDir,
     interactionResolutionPath: path.join(authoring, 'interaction-resolution.json'),
     semanticConservationManifestPath: path.join(authoring, 'semantic-conservation-manifest.json'),
+    ...(executionConstraints
+      ? {
+          executionRegistry: executionConstraints.registry,
+          executionConstraintRefsBySourceRootId: executionConstraints.refsBySourceRootId,
+        }
+      : {}),
   });
 }
 
@@ -411,6 +423,69 @@ describe('production interaction candidate extraction', () => {
           }),
         ])
       );
+    }
+  });
+
+  it('conserves typed execution refs through the production semantic pipeline', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'requirements-contract-execution-conservation-'));
+    try {
+      const sourceRoots = buildInteractionSourceRoots(PRIMARY_INTERACTION_FIXTURE);
+      const result = runSemanticPipelineForSourceRoots(
+        root,
+        PRIMARY_INTERACTION_FIXTURE,
+        sourceRoots,
+        {
+          registry: {
+            entries: [{
+              kind: 'CMD',
+              id: 'interaction-targeted-test',
+              value: 'npm test -- requirements-contract-production-interaction-extraction.test.ts',
+            }],
+          },
+          refsBySourceRootId: {
+            [sourceRoots[0].sourceRootId]: ['CMD:interaction-targeted-test'],
+          },
+        }
+      );
+
+      expect(result.semanticConservationManifest.semanticNodes).toContainEqual(
+        expect.objectContaining({
+          nodeId: sourceRoots[0].sourceRootId,
+          executionConstraintRefs: ['CMD:interaction-targeted-test'],
+        })
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks production semantic publication when a typed execution ref is unknown', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'requirements-contract-execution-unknown-'));
+    try {
+      const sourceRoots = buildInteractionSourceRoots(PRIMARY_INTERACTION_FIXTURE);
+      expect(() =>
+        runSemanticPipelineForSourceRoots(
+          root,
+          PRIMARY_INTERACTION_FIXTURE,
+          sourceRoots,
+          {
+            registry: {
+              entries: [{
+                kind: 'CMD',
+                id: 'interaction-targeted-test',
+                value: 'npm test -- requirements-contract-production-interaction-extraction.test.ts',
+              }],
+            },
+            refsBySourceRootId: {
+              [sourceRoots[0].sourceRootId]: ['CMD:missing'],
+            },
+          }
+        )
+      ).toThrow(/requirements_execution_constraint_unknown/u);
+      expect(() => readFileSync(path.join(root, 'authoring', 'semantic-ir.json'), 'utf8'))
+        .toThrow();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
     }
   });
 
@@ -736,7 +811,7 @@ describe('production interaction candidate extraction', () => {
             [
               '-semantic-kernel',
               '-must-decomposition-packet',
-              '-atomic-decomposition-loop-convergence',
+              '-deterministic-atomic-closure',
               '-packet-to-source-materialization',
               '-id-freeze',
               '-implementation-confirmation-core',

@@ -78,6 +78,33 @@ export interface CreateRequirementsGrillQuestionPacketInput {
   };
 }
 
+export interface RequirementsGrillQuestionGraphNode {
+  questionId: string;
+  questionVersion: string;
+  dependencies: string[];
+  affectedFieldIds: string[];
+  authorityPremiseHashes: string[];
+  affectedNodeIds: string[];
+}
+
+export interface RequirementsGrillQuestionGraph {
+  schemaVersion: 'requirements-grill-question-graph/v1';
+  authoringRequestId: string;
+  grillSessionId: string;
+  questions: RequirementsGrillQuestionGraphNode[];
+  resolvedQuestionIds: string[];
+  dependencyOrder: string[];
+  readyFrontier: string[];
+  graphHash: string;
+}
+
+export interface CreateRequirementsGrillQuestionGraphInput {
+  authoringRequestId: string;
+  grillSessionId: string;
+  questions: RequirementsGrillQuestionGraphNode[];
+  resolvedQuestionIds: string[];
+}
+
 const SHA256 = /^sha256:[a-f0-9]{64}$/u;
 const INVESTIGATION_KINDS: RequirementsGrillInvestigationKind[] = [
   'source',
@@ -110,6 +137,156 @@ function uniqueStrings(values: unknown): values is string[] {
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function utf8SortedUnique(values: string[]): string[] {
+  return [...new Set(values.map((value) => value.normalize('NFC')))].sort(
+    (left, right) => Buffer.from(left, 'utf8').compare(Buffer.from(right, 'utf8'))
+  );
+}
+
+function normalizeQuestionGraphNode(
+  value: RequirementsGrillQuestionGraphNode
+): RequirementsGrillQuestionGraphNode {
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    Array.isArray(value) ||
+    Object.keys(value).sort().join('|') !==
+      [
+        'affectedFieldIds',
+        'affectedNodeIds',
+        'authorityPremiseHashes',
+        'dependencies',
+        'questionId',
+        'questionVersion',
+      ].sort().join('|') ||
+    !nonEmpty(value.questionId) ||
+    !nonEmpty(value.questionVersion) ||
+    !uniqueStrings(value.dependencies) ||
+    !uniqueStrings(value.affectedFieldIds) ||
+    value.affectedFieldIds.length === 0 ||
+    !uniqueStrings(value.authorityPremiseHashes) ||
+    value.authorityPremiseHashes.length === 0 ||
+    value.authorityPremiseHashes.some((hash) => !SHA256.test(hash)) ||
+    !uniqueStrings(value.affectedNodeIds) ||
+    value.affectedNodeIds.length === 0
+  ) {
+    throw new Error('requirements_grill_question_graph_node_invalid');
+  }
+  return {
+    questionId: value.questionId.normalize('NFC'),
+    questionVersion: value.questionVersion.normalize('NFC'),
+    dependencies: utf8SortedUnique(value.dependencies),
+    affectedFieldIds: utf8SortedUnique(value.affectedFieldIds),
+    authorityPremiseHashes: utf8SortedUnique(value.authorityPremiseHashes),
+    affectedNodeIds: utf8SortedUnique(value.affectedNodeIds),
+  };
+}
+
+export function createRequirementsGrillQuestionGraph(
+  input: CreateRequirementsGrillQuestionGraphInput
+): RequirementsGrillQuestionGraph {
+  if (
+    !nonEmpty(input.authoringRequestId) ||
+    !nonEmpty(input.grillSessionId) ||
+    !Array.isArray(input.questions) ||
+    !uniqueStrings(input.resolvedQuestionIds)
+  ) {
+    throw new Error('requirements_grill_question_graph_input_invalid');
+  }
+  const questions = input.questions
+    .map(normalizeQuestionGraphNode)
+    .sort((left, right) =>
+      Buffer.from(left.questionId, 'utf8').compare(Buffer.from(right.questionId, 'utf8'))
+    );
+  const ids = questions.map((question) => question.questionId);
+  if (new Set(ids).size !== ids.length) {
+    throw new Error('requirements_grill_question_graph_duplicate_question');
+  }
+  const knownIds = new Set(ids);
+  for (const question of questions) {
+    if (question.dependencies.some((dependency) => !knownIds.has(dependency))) {
+      throw new Error('requirements_grill_question_graph_dependency_unknown');
+    }
+  }
+  const resolvedQuestionIds = utf8SortedUnique(input.resolvedQuestionIds);
+  if (resolvedQuestionIds.some((questionId) => !knownIds.has(questionId))) {
+    throw new Error('requirements_grill_question_graph_resolved_unknown');
+  }
+  const remainingDependencies = new Map(
+    questions.map((question) => [question.questionId, new Set(question.dependencies)])
+  );
+  const dependencyOrder: string[] = [];
+  while (dependencyOrder.length < questions.length) {
+    const ready = ids.filter(
+      (questionId) =>
+        !dependencyOrder.includes(questionId) &&
+        remainingDependencies.get(questionId)?.size === 0
+    );
+    if (ready.length === 0) {
+      throw new Error('requirements_grill_question_graph_cycle');
+    }
+    for (const questionId of ready) {
+      dependencyOrder.push(questionId);
+      for (const dependencies of remainingDependencies.values()) {
+        dependencies.delete(questionId);
+      }
+    }
+  }
+  const resolved = new Set(resolvedQuestionIds);
+  const readyFrontier = questions
+    .filter(
+      (question) =>
+        !resolved.has(question.questionId) &&
+        question.dependencies.every((dependency) => resolved.has(dependency))
+    )
+    .map((question) => question.questionId);
+  const payload = {
+    schemaVersion: 'requirements-grill-question-graph/v1' as const,
+    authoringRequestId: input.authoringRequestId.normalize('NFC'),
+    grillSessionId: input.grillSessionId.normalize('NFC'),
+    questions,
+    resolvedQuestionIds,
+    dependencyOrder,
+    readyFrontier,
+  };
+  return {
+    ...payload,
+    graphHash: sha256Stable({
+      domain: 'requirements-grill-question-graph-hash/v1',
+      payload,
+    }),
+  };
+}
+
+export function validateRequirementsGrillQuestionGraph(
+  value: unknown
+): value is RequirementsGrillQuestionGraph {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const graph = value as RequirementsGrillQuestionGraph;
+  if (
+    Object.keys(graph).sort().join('|') !==
+      [
+        'authoringRequestId',
+        'dependencyOrder',
+        'graphHash',
+        'grillSessionId',
+        'questions',
+        'readyFrontier',
+        'resolvedQuestionIds',
+        'schemaVersion',
+      ].sort().join('|') ||
+    graph.schemaVersion !== 'requirements-grill-question-graph/v1' ||
+    !SHA256.test(graph.graphHash)
+  ) {
+    return false;
+  }
+  try {
+    return sha256Stable(graph) === sha256Stable(createRequirementsGrillQuestionGraph(graph));
+  } catch {
+    return false;
+  }
 }
 
 function validateSourceEvidence(value: unknown): value is RequirementsGrillSourceEvidence[] {

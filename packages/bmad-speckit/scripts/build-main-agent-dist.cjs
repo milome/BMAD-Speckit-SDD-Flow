@@ -677,6 +677,20 @@ function refreshRequirementsContractArtifactRoleRegistry() {
   );
 }
 
+function refreshRequirementsContractLintProfileRegistry() {
+  const registry = require('../dist/main-agent/source-authority/rules/requirements-contract-lint-profile-registry.js');
+  const ownerPath = path.resolve(
+    repoRoot,
+    registry.REQUIREMENTS_CONTRACT_LINT_PROFILE_REGISTRY_OWNER_PATH
+  );
+  writeRequirementsContractProjection(
+    'requirements-contract-lint-profile-registry.json',
+    registry.createRequirementsContractLintProfileRegistryProjection(
+      `sha256:${sha256File(ownerPath)}`
+    )
+  );
+}
+
 function publishRequirementsContractDerivedRegistries() {
   const judgeProviderRegistryModule = require('../dist/main-agent/source-authority/scripts/requirements-contract-judge-provider-registry.js');
   writeRequirementsContractProjection(
@@ -684,6 +698,7 @@ function publishRequirementsContractDerivedRegistries() {
     judgeProviderRegistryModule.createRequirementsContractJudgeProviderRegistryProjection(repoRoot)
   );
   refreshRequirementsContractArtifactRoleRegistry();
+  refreshRequirementsContractLintProfileRegistry();
   refreshRequirementsContractConsumerRegistry();
   const projectionRegistryModule = require('../dist/main-agent/source-authority/rules/requirements-contract-projection-registry.js');
   projectionRegistryModule.synchronizeRequirementsContractProjectionSurfaces(repoRoot);

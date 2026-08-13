@@ -1,6 +1,12 @@
-import { existsSync } from 'node:fs';
+import { existsSync, renameSync, symlinkSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { createRequirementsContractCheckpointManifest } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-authoring-manifest';
+import {
+  createRequirementsContractCoreArtifactFreeze,
+  sha256Stable,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 import {
   artifacts,
   cleanCriticalAuditorRound,
@@ -10,9 +16,193 @@ import {
   removeTempRoot,
   runIntakeAuthoring,
   sha256File,
+  sha256Text,
   sourcePromotionDecisionPath,
   writeText,
 } from './helpers/requirements-contract-authoring-fixture';
+
+const require = createRequire(import.meta.url);
+const hash = (digit: string) => `sha256:${digit.repeat(64)}`;
+
+function linkDirectory(target: string, linkPath: string): void {
+  symlinkSync(target, linkPath, process.platform === 'win32' ? 'junction' : 'dir');
+}
+
+function prepublicationAttemptFixture(root: string, sourcePath: string) {
+  const recordRoot = path.join(root, '_bmad-output/runtime/requirement-records/REQ-PREPUBLICATION');
+  const attemptId = 'ATTEMPT-PREPUBLICATION-001';
+  const inputManifestHash = hash('1');
+  const semanticRevisionId = 'SEMREV-PREPUBLICATION-001';
+  const scopeSemanticHash = hash('2');
+  const stagingRoot = `authoring/staging/${attemptId}`;
+  const writeJsonArtifact = (
+    stage: string,
+    role: string,
+    fileName: string,
+    value: Record<string, unknown>
+  ) => {
+    const recordRelativePath = `${stagingRoot}/${stage}/${fileName}`;
+    writeText(recordRoot, recordRelativePath, `${JSON.stringify(value, null, 2)}\n`);
+    const artifactHash =
+      stage === 'cp04'
+        ? createRequirementsContractCoreArtifactFreeze({
+            stage: 'cp04',
+            artifactRole: role.replaceAll('_', '-') as never,
+            artifact: value,
+          }).artifactHash
+        : sha256Stable(value);
+    return {
+      role,
+      schemaVersion: String(value.schemaVersion),
+      artifactId: `${stage.toUpperCase()}-${role.toUpperCase()}`,
+      recordRelativePath,
+      artifactHash,
+    };
+  };
+  const writeTextArtifact = (stage: string, role: string, fileName: string, value: string) => {
+    const recordRelativePath = `${stagingRoot}/${stage}/${fileName}`;
+    writeText(recordRoot, recordRelativePath, value);
+    return {
+      role,
+      schemaVersion: 'text/markdown',
+      artifactId: `${stage.toUpperCase()}-${role.toUpperCase()}`,
+      recordRelativePath,
+      artifactHash: sha256Text(value),
+    };
+  };
+  const identity = { semanticRevisionId, scopeSemanticHash };
+  const artifactsByStage = {
+    cp04: [
+      writeJsonArtifact('cp04', 'semantic_ir', 'semantic-ir.json', {
+        schemaVersion: 'requirements-contract-semantic-ir/v1',
+        ...identity,
+      }),
+      writeJsonArtifact('cp04', 'source_binding', 'source-binding.json', {
+        schemaVersion: 'requirements-contract-source-binding/v1',
+        ...identity,
+      }),
+      writeJsonArtifact('cp04', 'resolved_evidence_index', 'resolved-evidence-index.json', {
+        schemaVersion: 'requirements-contract-resolved-evidence-index/v1',
+        ...identity,
+      }),
+    ],
+    cp05: [
+      writeJsonArtifact('cp05', 'confirmation_projection', 'confirmation-projection.json', {
+        schemaVersion: 'requirements-contract-confirmation-projection/v1',
+        ...identity,
+        specSpanRefs: ['SPEC-SPAN-001'],
+        evidenceClaimRefs: ['CLAIM-001'],
+      }),
+      writeTextArtifact(
+        'cp05',
+        'final_markdown',
+        'requirements.md',
+        '# Frozen projection\n\nMUST-001 SPEC-SPAN-001 CLAIM-001\n'
+      ),
+    ],
+    cp06: ['execution_manifest', 'per_must_bundle', 'trace_matrix'].map((role) =>
+      writeJsonArtifact('cp06', role, `${role}.json`, {
+        schemaVersion: `requirements-contract-${role.replaceAll('_', '-')}/v1`,
+        ...identity,
+        mustRefs: ['MUST-001'],
+        atomRefs: ['ATOM-001'],
+        specSpanRefs: ['SPEC-SPAN-001'],
+        evidenceClaimRefs: ['CLAIM-001'],
+      })
+    ),
+    cp07: [
+      writeJsonArtifact('cp07', 'diagram_set', 'diagram-set.json', {
+        schemaVersion: 'requirements-contract-diagram-set/v1',
+        ...identity,
+        diagramRefs: ['DIAGRAM-001'],
+      }),
+    ],
+    cp08: [
+      writeJsonArtifact('cp08', 'projection_reconciliation_report', 'reconciliation.json', {
+        schemaVersion: 'requirements-contract-projection-reconciliation-report/v1',
+        ...identity,
+        decision: 'pass',
+      }),
+      writeJsonArtifact('cp08', 'authority_resolution_report', 'authority-resolution.json', {
+        schemaVersion: 'requirements-contract-authority-resolution-report/v1',
+        ...identity,
+        decision: 'pass',
+      }),
+      writeJsonArtifact('cp08', 'renderability_probe_report', 'renderability-probe.json', {
+        schemaVersion: 'requirements-contract-renderability-probe-report/v1',
+        ...identity,
+        decision: 'pass',
+        promotable: false,
+      }),
+      writeJsonArtifact('cp08', 'judge_audit_packet', 'judge-audit-packet.json', {
+        schemaVersion: 'requirements-contract-judge-audit-packet/v1',
+        ...identity,
+        body: { mustRefs: ['MUST-001'] },
+      }),
+      writeJsonArtifact('cp08', 'judge_audit_packet_coverage', 'coverage.json', {
+        schemaVersion: 'requirements-contract-judge-audit-packet-coverage/v1',
+        ...identity,
+        allApplicableArtifactsIncluded: true,
+        omittedArtifactIds: [],
+      }),
+    ],
+  };
+  let previous = {
+    checkpointId: 'cp03',
+    checkpointOrdinal: 3,
+    path: `${stagingRoot}/manifests/3-cp03.json`,
+    hash: hash('3'),
+  };
+  for (let ordinal = 4; ordinal <= 8; ordinal += 1) {
+    const stage = `cp0${ordinal}` as keyof typeof artifactsByStage;
+    const manifest = createRequirementsContractCheckpointManifest({
+      authoringRequestId: 'REQUEST-PREPUBLICATION-001',
+      authoringAttemptId: attemptId,
+      checkpointId: stage,
+      checkpointOrdinal: ordinal,
+      stage,
+      status: 'passed',
+      inputManifestHash,
+      previousCheckpointManifestRef: previous,
+      latestValidPredecessorCheckpoint: previous.checkpointId,
+      compilerIdentity: 'requirements-compiler/v1',
+      artifactEntries: artifactsByStage[stage] as never,
+      decisionReceiptRefs: [],
+      baseAuthorityRef: null,
+    });
+    const manifestPath = `${stagingRoot}/manifests/${ordinal}-${stage}.json`;
+    writeText(recordRoot, manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+    previous = {
+      checkpointId: stage,
+      checkpointOrdinal: ordinal,
+      path: manifestPath,
+      hash: manifest.checkpointManifestHash,
+    };
+  }
+  writeText(
+    recordRoot,
+    'record/active-authoring-request.json',
+    `${JSON.stringify(
+      {
+        schemaVersion: 'ActiveAuthoringAttemptPointer/v1',
+        authoringAttemptId: attemptId,
+        attemptManifestPath: previous.path,
+        attemptManifestHash: previous.hash,
+        latestValidPredecessorCheckpoint: 'cp07',
+        inputManifestHash,
+      },
+      null,
+      2
+    )}\n`
+  );
+  return {
+    recordRoot,
+    sourcePath,
+    cp08ManifestPath: previous.path,
+    pointerPath: 'record/active-authoring-request.json',
+    probePath: path.join(recordRoot, `${stagingRoot}/cp08/renderability-probe.json`),
+  };
+}
 
 function prepromotionSource(): string {
   return [
@@ -126,6 +316,186 @@ function prepromotionSource(): string {
 }
 
 describe('requirements contract authoring prepromotion render', () => {
+  it('validates only the active attempt pointer and its confined cp08-to-cp04 lineage', () => {
+    const root = createTempRoot('bmad-prepublication-attempt-');
+    try {
+      const sourcePath = writeText(root, 'source.md', '# Existing final source\n');
+      const fixture = prepublicationAttemptFixture(root, sourcePath);
+      const gate = require(
+        path.resolve(
+          '_bmad/skills/requirements-contract-authoring/scripts/pre_render_must_decomposition_gate.js'
+        )
+      ) as {
+        validatePrepublicationAttempt(input: { sourcePath: string; recordRoot: string }): {
+          exitCode: number;
+          report: Record<string, unknown>;
+        };
+      };
+
+      const result = gate.validatePrepublicationAttempt(fixture);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.report).toMatchObject({
+        verdict: 'PASS',
+        sourceHashPreserved: true,
+        semanticRevisionId: 'SEMREV-PREPUBLICATION-001',
+        scopeSemanticHash: hash('2'),
+        manifestPaths: [
+          'authoring/staging/ATTEMPT-PREPUBLICATION-001/manifests/8-cp08.json',
+          'authoring/staging/ATTEMPT-PREPUBLICATION-001/manifests/7-cp07.json',
+          'authoring/staging/ATTEMPT-PREPUBLICATION-001/manifests/6-cp06.json',
+          'authoring/staging/ATTEMPT-PREPUBLICATION-001/manifests/5-cp05.json',
+          'authoring/staging/ATTEMPT-PREPUBLICATION-001/manifests/4-cp04.json',
+        ],
+      });
+      expect(JSON.stringify(result.report)).not.toContain('activeAuthority');
+      expect(JSON.stringify(result.report)).not.toContain('providerSelection');
+      expect(JSON.stringify(result.report)).not.toContain('judgeRequest');
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
+  it('blocks a tampered cp08 renderability probe without changing final source bytes', () => {
+    const root = createTempRoot('bmad-prepublication-probe-fail-');
+    try {
+      const sourcePath = writeText(root, 'source.md', '# Existing final source\n');
+      const beforeHash = sha256File(sourcePath);
+      const fixture = prepublicationAttemptFixture(root, sourcePath);
+      writeText(
+        path.dirname(fixture.probePath),
+        path.basename(fixture.probePath),
+        `${JSON.stringify(
+          {
+            schemaVersion: 'requirements-contract-renderability-probe-report/v1',
+            semanticRevisionId: 'SEMREV-PREPUBLICATION-001',
+            scopeSemanticHash: hash('2'),
+            decision: 'block',
+            promotable: false,
+          },
+          null,
+          2
+        )}\n`
+      );
+      const gate = require(
+        path.resolve(
+          '_bmad/skills/requirements-contract-authoring/scripts/pre_render_must_decomposition_gate.js'
+        )
+      ) as {
+        validatePrepublicationAttempt(input: { sourcePath: string; recordRoot: string }): {
+          exitCode: number;
+          report: { failedChecks: string[] };
+        };
+      };
+
+      const result = gate.validatePrepublicationAttempt(fixture);
+
+      expect(result.exitCode).toBe(1);
+      expect(result.report.failedChecks).toContain('authoring_checkpoint_artifact_hash_mismatch');
+      expect(result.report.failedChecks).toContain('prepublication_renderability_probe_blocked');
+      expectSourceHashUnchanged(sourcePath, beforeHash);
+    } finally {
+      removeTempRoot(root);
+    }
+  });
+
+  it.each(['manifest-parent', 'artifact-parent'] as const)(
+    'blocks %s reparse escapes before reading outside the requirement record',
+    (escapeKind) => {
+      const root = createTempRoot(`bmad-prepublication-${escapeKind}-`);
+      try {
+        const sourcePath = writeText(root, 'source.md', '# Existing final source\n');
+        const fixture = prepublicationAttemptFixture(root, sourcePath);
+        const attemptRoot = path.join(
+          fixture.recordRoot,
+          'authoring',
+          'staging',
+          'ATTEMPT-PREPUBLICATION-001'
+        );
+        const linkedPath =
+          escapeKind === 'manifest-parent'
+            ? path.join(attemptRoot, 'manifests')
+            : path.join(attemptRoot, 'cp08');
+        const outsidePath = path.join(root, `outside-${escapeKind}`);
+        renameSync(linkedPath, outsidePath);
+        linkDirectory(outsidePath, linkedPath);
+        const gate = require(
+          path.resolve(
+            '_bmad/skills/requirements-contract-authoring/scripts/pre_render_must_decomposition_gate.js'
+          )
+        ) as {
+          validatePrepublicationAttempt(input: { sourcePath: string; recordRoot: string }): {
+            exitCode: number;
+            report: { failedChecks: string[] };
+          };
+        };
+
+        const result = gate.validatePrepublicationAttempt(fixture);
+
+        expect(result.exitCode).toBe(1);
+        expect(result.report.failedChecks).toContain('authoring_record_path_reparse_forbidden');
+        expect(result.report.failedChecks).not.toContain(
+          'authoring_checkpoint_artifact_hash_mismatch'
+        );
+        expect(result.report.failedChecks).not.toContain(
+          'authoring_checkpoint_manifest_hash_mismatch'
+        );
+      } finally {
+        removeTempRoot(root);
+      }
+    }
+  );
+
+  it.each(['pointer-parent', 'source-parent', 'record-root'] as const)(
+    'blocks %s reparse escapes before reading external bytes',
+    (escapeKind) => {
+      const root = createTempRoot(`bmad-prepublication-${escapeKind}-`);
+      try {
+        const sourceParent = path.join(root, 'source-parent');
+        const sourcePath = writeText(sourceParent, 'source.md', '# Existing final source\n');
+        const fixture = prepublicationAttemptFixture(root, sourcePath);
+        const linkedPath =
+          escapeKind === 'pointer-parent'
+            ? path.join(fixture.recordRoot, 'record')
+            : escapeKind === 'source-parent'
+              ? sourceParent
+              : fixture.recordRoot;
+        const outsidePath = path.join(root, `outside-${escapeKind}`);
+        renameSync(linkedPath, outsidePath);
+        linkDirectory(outsidePath, linkedPath);
+        const gate = require(
+          path.resolve(
+            '_bmad/skills/requirements-contract-authoring/scripts/pre_render_must_decomposition_gate.js'
+          )
+        ) as {
+          validatePrepublicationAttempt(input: { sourcePath: string; recordRoot: string }): {
+            exitCode: number;
+            report: {
+              failedChecks: string[];
+              sourceHashBefore: string | null;
+              sourceHashAfter: string | null;
+            };
+          };
+        };
+
+        const result = gate.validatePrepublicationAttempt(fixture);
+
+        expect(result.exitCode).toBe(1);
+        expect(result.report.failedChecks).toContain('authoring_record_path_reparse_forbidden');
+        expect(result.report.sourceHashBefore).toBeNull();
+        expect(result.report.sourceHashAfter).toBeNull();
+        expect(result.report.failedChecks).not.toContain(
+          'active_authoring_attempt_pointer_unreadable'
+        );
+        expect(result.report.failedChecks).not.toContain(
+          'authoring_checkpoint_artifact_hash_mismatch'
+        );
+      } finally {
+        removeTempRoot(root);
+      }
+    }
+  );
+
   it('strict_render_precedes_promotion', () => {
     const root = createTempRoot('bmad-prepromotion-render-');
     try {
@@ -189,9 +559,7 @@ describe('requirements contract authoring prepromotion render', () => {
       expect(
         result.blockingIssues.map((issue) => issue.code),
         JSON.stringify(result.blockingIssues, null, 2)
-      ).toContain(
-        'renderer_oracle_escape_upstream_runtime_defect'
-      );
+      ).toContain('renderer_oracle_escape_upstream_runtime_defect');
       expect(existsSync(paths.promotionReceipt)).toBe(false);
       expect(readJson<Record<string, unknown>>(decisionPath)).toMatchObject({
         finalDecision: 'block_source_promotion',

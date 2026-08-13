@@ -5,9 +5,11 @@ import Ajv2020 from 'ajv/dist/2020.js';
 import { describe, expect, it } from 'vitest';
 import {
   compileRequirementsEffectivePassReceipt,
+  compileRequirementsEffectivePassReceiptV2,
   validateRequirementsEffectivePassReceipt,
   writeRequirementsEffectivePassReceipt,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-requirements-effective-pass-gate';
+import { compileRequirementsAuditAggregateV2 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-requirements-audit-aggregate';
 import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 
 type JsonRecord = Record<string, unknown>;
@@ -94,6 +96,106 @@ function validInput(overrides: JsonRecord = {}) {
 }
 
 describe('Requirements EffectivePass gate', () => {
+  it('creates the production v2 pass only from a current pass aggregate', () => {
+    const activeAuthority = {
+      activeSemanticRevisionId: 'SEM-V2',
+      activeScopeSemanticHash: HASHES.scope,
+      activeSourceBindingHash: HASHES.evidence,
+      activeBuildManifestHash: HASHES.providerInvocation,
+    };
+    const aggregate = compileRequirementsAuditAggregateV2({
+      activeAuthority,
+      buildManifest: {
+        buildManifestHash: HASHES.providerInvocation,
+        auditPacketRef: { hash: HASHES.ledger },
+        projectionReportRefs: [],
+      },
+      request: {
+        judgeRequestHash: HASHES.request,
+        providerSelection: { providerSelectionHash: HASHES.providerConfiguration },
+        auditPacket: { body: { mandatoryDimensionIds: ['completeness'] } },
+      },
+      response: {
+        verdict: 'pass',
+        findings: [],
+        advisoryObservations: [],
+        reviewedArtifactRefs: ['final-markdown'],
+        reviewedMustRefs: ['MUST-001'],
+      },
+    });
+
+    const receipt = compileRequirementsEffectivePassReceiptV2({ activeAuthority, aggregate });
+    expect(receipt).toMatchObject({
+      schemaVersion: 'requirements-effective-pass-receipt/v2',
+      semanticRevisionId: 'SEM-V2',
+      requirementsAuditAggregateHash: aggregate.requirementsAuditAggregateHash,
+      decision: 'pass',
+    });
+    expect(receipt).not.toHaveProperty('attemptKeyHash');
+    expect(receipt).not.toHaveProperty('ledgerEntryHash');
+  });
+
+  it('blocks the production v2 pass for fail findings or stale authority', () => {
+    const authority = {
+      activeSemanticRevisionId: 'SEM-V2', activeScopeSemanticHash: HASHES.scope,
+      activeSourceBindingHash: HASHES.evidence, activeBuildManifestHash: HASHES.providerInvocation,
+    };
+    const aggregate = {
+      schemaVersion: 'requirements-contract-requirements-audit-aggregate/v2',
+      semanticRevisionId: 'SEM-V2', scopeSemanticHash: HASHES.scope,
+      sourceBindingHash: HASHES.evidence, buildManifestHash: HASHES.providerInvocation,
+      providerSelectionHash: HASHES.providerConfiguration, judgeRequestHash: HASHES.request,
+      judgeResponseHash: HASHES.schema, requirementsAuditAggregateHash: HASHES.ledger,
+      validatedDimensionIds: [], reviewedArtifactRefs: [], reviewedMustRefs: [],
+      findings: [{ findingId: 'F-1' }], issueCodes: [], decision: 'fail',
+    };
+    expect(() => compileRequirementsEffectivePassReceiptV2({ activeAuthority: authority, aggregate }))
+      .toThrow('requirements_effective_pass_blocked');
+    expect(() => compileRequirementsEffectivePassReceiptV2({
+      activeAuthority: { ...authority, activeBuildManifestHash: HASHES.prompt },
+      aggregate: { ...aggregate, findings: [], decision: 'pass' },
+    })).toThrow('requirements_effective_pass_authority_stale');
+  });
+
+  it('classifies accepted fail findings only from frozen coverage evidence', () => {
+    const aggregate = compileRequirementsAuditAggregateV2({
+      activeAuthority: {
+        activeSemanticRevisionId: 'SEM-V2', activeScopeSemanticHash: HASHES.scope,
+        activeSourceBindingHash: HASHES.evidence, activeBuildManifestHash: HASHES.providerInvocation,
+      },
+      buildManifest: {
+        buildManifestHash: HASHES.providerInvocation,
+        auditPacketRef: { hash: HASHES.ledger },
+        projectionReportRefs: [],
+      },
+      request: {
+        judgeRequestHash: HASHES.request,
+        providerSelection: { providerSelectionHash: HASHES.providerConfiguration },
+        auditPacket: { body: {
+          mandatoryDimensionIds: ['completeness'],
+          requirementIds: ['MUST-001'],
+          artifactIds: ['final-markdown'],
+        } },
+      },
+      response: {
+        verdict: 'fail', advisoryObservations: [], reviewedArtifactRefs: ['final-markdown'],
+        reviewedMustRefs: ['MUST-001'],
+        findings: [
+          { findingId: 'F-1', affectedMustRefs: ['MUST-001'], affectedArtifactRefs: ['final-markdown'] },
+          { findingId: 'F-2', affectedMustRefs: ['MUST-UNKNOWN'], affectedArtifactRefs: [] },
+        ],
+      },
+    });
+    expect(aggregate.decision).toBe('fail');
+    expect((aggregate.findings as JsonRecord[]).map((finding) => [
+      finding.findingId, finding.classification, finding.successorRequestAllowed,
+    ])).toEqual([
+      ['F-1', 'projection_repair', true],
+      ['F-2', 'non_actionable_suggestion', false],
+    ]);
+  });
+
+
   it('writes only a complete current Requirements authority tuple as EffectivePass', () => {
     const root = mkdtempSync(path.join(tmpdir(), 'requirements-effective-pass-'));
     const receiptPath = path.join(root, 'requirements-effective-pass.receipt.json');

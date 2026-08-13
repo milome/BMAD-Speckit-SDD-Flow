@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "requirements-contract-authority-source/v1",
+  "sourceRootId": "QUESTION-ITEM-FAILURE-POLICY",
+  "semanticBody": {
+    "question": "一笔退款失败后，批次应停止还是继续处理其余退款？",
+    "affectedFieldIds": ["refund.itemFailurePolicy"],
+    "affectedNodeIds": ["MUST-FR-BATCH-REFUND-RESULTS"],
+    "answerSchema": {
+      "type": "string",
+      "enum": ["continue_and_report_each_result", "stop_on_first_failure"]
+    }
+  }
+}

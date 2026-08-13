@@ -8,6 +8,10 @@ import {
   resolveRequirementsContractJudgeProvider,
 } from './requirements-contract-judge-provider-registry';
 import { resolveRequirementsContractJudgeRuntimeBindings } from './requirements-contract-judge-runtime-bindings';
+import {
+  createRequirementsContractJudgeSelectionReceipt,
+  resolveRequirementsContractJudgeAdapterRef,
+} from './requirements-contract-judge-selection';
 import { fileHash, sha256, slash, writeGovernedJson } from './requirements-contract-governed-write';
 
 type JsonRecord = Record<string, ReturnType<typeof JSON.parse>>;
@@ -110,14 +114,13 @@ export async function requirementsContractJudgeProviderSmokeCommand(
   ) {
     throw new Error('judge_provider_smoke_attempt_context_mismatch');
   }
-  const { refs, judgeAuditUnitSet, baseJudgeInputBundleHash } =
-    resolveRequirementsContractJudgeRuntimeBindings({
-      root,
-      phaseRoot,
-      phase: options.phase,
-      phaseAuditAttemptId: options.phaseAuditAttemptId,
-      context,
-    });
+  resolveRequirementsContractJudgeRuntimeBindings({
+    root,
+    phaseRoot,
+    phase: options.phase,
+    phaseAuditAttemptId: options.phaseAuditAttemptId,
+    context,
+  });
   const configPath = resolveWithin(root, options.config);
   const config = record(
     yaml.load(fs.readFileSync(configPath, 'utf8')),
@@ -193,36 +196,13 @@ export async function requirementsContractJudgeProviderSmokeCommand(
   const capabilityPath = resolveWithin(root, options.capabilityReceipt);
   validate(capability, 'requirements-contract-judge-capability-receipt.schema.json');
   createOnlyWrite(capabilityPath, capability);
-  const selectionReceipt = {
-    schemaVersion: 'requirements-contract-judge-selection-receipt/v1',
-    transactionId: context.transactionId,
-    auditAttemptId: options.phaseAuditAttemptId,
-    providerRegistryHash: registry.registryHash,
-    publicProviderConfigHash,
-    capabilityReceiptHash: fileHash(capabilityPath),
+  const adapterRef = resolveRequirementsContractJudgeAdapterRef(provider);
+  const selectionReceipt = createRequirementsContractJudgeSelectionReceipt({
     providerRef: providerSelection.providerRef,
-    configuredBaseUrlHash,
-    transport: provider.transport,
-    apiStyle: provider.apiStyle,
-    model: configuredModel,
-    credentialRevision: credential.credentialRevision,
-    independenceClass: provider.auditPolicy?.independenceClass,
-    blindReview: provider.auditPolicy?.blindReview,
-    allowPassAuthority: provider.auditPolicy?.allowPassAuthority,
-    runtimeFallbackAllowed: false,
-    rubricHash: refs.rubric.hash,
-    systemPromptHash: refs.systemPrompt.hash,
-    sourceHash: refs.source.hash,
-    traceHash: refs.trace.hash,
-    redHash: refs.red.hash,
-    baseEvidenceHash: refs.baseEvidence.hash,
-    auditUniverseHash: judgeAuditUnitSet.judgeAuditUniverseHash,
-    judgeAuditUnitSetRef: refs.judgeAuditUnitSet,
-    judgeAuditUnitSetHash: judgeAuditUnitSet.judgeAuditUnitSetHash,
-    baseJudgeInputBundleHash,
-    authorizedChallengeDerivationProtocolHash: refs.authorizedChallengeDerivationProtocol.hash,
-    decision: 'frozen',
-  };
+    provider,
+    adapterRef,
+    providerRegistryHash: registry.registryHash,
+  });
   const selectionPath = resolveWithin(root, options.selectionReceipt);
   validate(selectionReceipt, 'requirements-contract-judge-selection-receipt.schema.json');
   createOnlyWrite(selectionPath, selectionReceipt);

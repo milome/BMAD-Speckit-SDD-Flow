@@ -2,7 +2,7 @@
   "schemaVersion": "requirements-contract-lint-profile-registry/v1",
   "owner": {
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-lint-profile-registry.ts",
-    "hash": "sha256:2ae7c18ad1e369ab6e00605e52fff9cdd85cad7394db071c49f02d8ca0ebd6dc"
+    "hash": "sha256:a5642f875d3601a633e6a97acefe1e4d6a92b6afae57f2ce74baf576886c842f"
   },
   "registryHash": "sha256:bdf0f5fefdfaae1914ecff7cf559973f8e983d9dad8c798fecfb34f40e146224",
   "profiles": [

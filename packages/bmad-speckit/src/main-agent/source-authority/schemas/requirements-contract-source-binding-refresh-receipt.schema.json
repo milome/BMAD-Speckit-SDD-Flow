@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-source-binding-refresh-receipt.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "semanticRevisionId",
+    "scopeSemanticHash",
+    "fromBindingRevisionId",
+    "toBindingRevisionId",
+    "fromSourceBindingHash",
+    "toSourceBindingHash",
+    "fromSnapshotSetHash",
+    "toSnapshotSetHash",
+    "fromSourceSpanRegistryHash",
+    "toSourceSpanRegistryHash",
+    "evidenceClaimRegistryHash",
+    "resolverDisposition",
+    "conservationDisposition",
+    "citationProjectionRefreshDisposition",
+    "confirmationPromotionReceiptRef",
+    "pageArtifactBytesHash",
+    "htmlPageArtifactBytesHash",
+    "pageReadbackDisposition",
+    "pagePromotionDisposition",
+    "receiptHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-source-binding-refresh-receipt/v2" },
+    "semanticRevisionId": { "$ref": "#/$defs/id" },
+    "scopeSemanticHash": { "$ref": "#/$defs/hash" },
+    "fromBindingRevisionId": { "$ref": "#/$defs/id" },
+    "toBindingRevisionId": { "$ref": "#/$defs/id" },
+    "fromSourceBindingHash": { "$ref": "#/$defs/hash" },
+    "toSourceBindingHash": { "$ref": "#/$defs/hash" },
+    "fromSnapshotSetHash": { "$ref": "#/$defs/hash" },
+    "toSnapshotSetHash": { "$ref": "#/$defs/hash" },
+    "fromSourceSpanRegistryHash": { "$ref": "#/$defs/hash" },
+    "toSourceSpanRegistryHash": { "$ref": "#/$defs/hash" },
+    "evidenceClaimRegistryHash": { "$ref": "#/$defs/hash" },
+    "resolverDisposition": { "const": "passed" },
+    "conservationDisposition": { "const": "passed" },
+    "citationProjectionRefreshDisposition": { "enum": ["not_applicable", "passed"] },
+    "confirmationPromotionReceiptRef": { "oneOf": [{ "$ref": "#/$defs/ref" }, { "type": "null" }] },
+    "pageArtifactBytesHash": { "oneOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }] },
+    "htmlPageArtifactBytesHash": { "oneOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }] },
+    "pageReadbackDisposition": { "enum": ["not_applicable", "passed"] },
+    "pagePromotionDisposition": { "enum": ["not_applicable", "promoted"] },
+    "receiptHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "id": { "type": "string", "minLength": 1 },
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

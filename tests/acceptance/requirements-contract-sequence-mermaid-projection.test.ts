@@ -13,19 +13,21 @@ it('publishes the Sequence Mermaid projection owner', () => {
 
 describe.runIf(existsSync(ownerPath))('requirements-contract Mermaid projection', () => {
   it('renders each diagram once with fixed readability and concise MSG labels', async () => {
-    const { compileRequirementsContractSequenceContract } = await import(
-      '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-sequence-compiler'
-    );
-    const { planRequirementsContractDiagramSet } = await import(
-      '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-diagram-set-planner'
-    );
-    const { renderRequirementsContractSequenceMermaid } = await import(
-      '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-sequence-mermaid-projection'
-    );
+    const { compileRequirementsContractSequenceContract } =
+      await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-sequence-compiler');
+    const { planRequirementsContractDiagramSet } =
+      await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-diagram-set-planner');
+    const { renderRequirementsContractSequenceMermaid } =
+      await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-sequence-mermaid-projection');
     const contract = compileRequirementsContractSequenceContract(sequenceCompilerFixture());
     const diagramSet = planRequirementsContractDiagramSet({
       sequenceContract: contract,
       scenarioId: 'SCN-CHECKOUT-001',
+      frozenDiagramIdentity: {
+        diagramSetId: 'DSET-CHECKOUT-001',
+        rootDiagramRef: 'DGM-CHECKOUT-ROOT-001',
+        diagramRefs: ['DGM-CHECKOUT-ROOT-001'],
+      },
     });
     const report = renderRequirementsContractSequenceMermaid({
       sequenceContract: contract,

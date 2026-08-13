@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "requirements-contract-authority-source/v1",
+  "sourceRootId": "ADR-BATCH-REFUND-QUEUE",
+  "semanticBody": {
+    "decision": "Accepted batch tasks are processed asynchronously by the refund queue worker.",
+    "requirementImpact": "The submission path returns a batch task ID before item processing completes.",
+    "executionConstraints": [
+      {
+        "kind": "ART",
+        "id": "refund-batch-contract-results",
+        "value": "artifacts/refund-batch-contract-results.json"
+      }
+    ]
+  }
+}

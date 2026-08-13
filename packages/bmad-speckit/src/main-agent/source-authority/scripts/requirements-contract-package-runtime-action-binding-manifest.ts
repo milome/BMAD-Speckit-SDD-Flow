@@ -245,28 +245,16 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
     distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-judge-command.js`,
     gateSymbol: 'requirementsContractJudgeRunCommand',
     inputSchemas: [
-      `${SCHEMA_ROOT}/requirements-contract-critical-auditor-judge-request.schema.json`,
-      `${SCHEMA_ROOT}/requirements-contract-final-acceptance-judge-request.schema.json`,
-      `${SCHEMA_ROOT}/requirements-contract-judge-attempt-key.schema.json`,
-      `${SCHEMA_ROOT}/requirements-contract-judge-invocation-readiness-receipt.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-judge-request.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-judge-selection-receipt.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-judge-runtime.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-judge-credentials.schema.json`,
     ],
     outputSchemas: [
-      `${SCHEMA_ROOT}/requirements-contract-normalized-judge-response.schema.json`,
-      `${SCHEMA_ROOT}/requirements-contract-cli-judge-execution-receipt.schema.json`,
-      `${SCHEMA_ROOT}/requirements-contract-judge-invocation-receipt.schema.json`,
-      `${SCHEMA_ROOT}/requirements-contract-critical-auditor-judge-assessment.schema.json`,
-      `${SCHEMA_ROOT}/requirements-contract-final-acceptance-judge-assessment.schema.json`,
+      `${SCHEMA_ROOT}/requirements-contract-judge-response.schema.json`,
     ],
     behaviorTests: ['tests/acceptance/requirements-contract-judge-command.test.ts'],
     runtimeRefs: [
-      {
-        role: 'legacy-critical-auditor-judge-adapter',
-        repositoryPath: `${DIST_SCRIPT_ROOT}/requirements-contract-critical-auditor-judge-adapter.js`,
-        packagePath:
-          'dist/main-agent/source-authority/scripts/requirements-contract-critical-auditor-judge-adapter.js',
-      },
       {
         role: 'judge-credential-resolver',
         repositoryPath: `${DIST_SCRIPT_ROOT}/requirements-contract-judge-credential-resolver.js`,

@@ -20,25 +20,21 @@ const PROMOTION_STAGE_POLICIES = {
     allowedStatuses: new Set(["user_confirmed"]),
     confirmationReadyOnSuccess: true,
     safePromotionAsDraft: false,
-    allowDeferredCriticalAuditorCheckpoints: false,
   },
   "authoring-draft": {
     allowedStatuses: new Set(["draft", "draft_updated_not_confirmation_ready", "reconfirm_required"]),
     confirmationReadyOnSuccess: false,
     safePromotionAsDraft: true,
-    allowDeferredCriticalAuditorCheckpoints: true,
   },
   "current-source-receipt-refresh": {
     allowedStatuses: new Set(["draft", "draft_updated_not_confirmation_ready", "reconfirm_required", "user_confirmed"]),
     confirmationReadyOnSuccess: false,
     safePromotionAsDraft: false,
-    allowDeferredCriticalAuditorCheckpoints: true,
   },
   "projection-metadata-resync": {
     allowedStatuses: new Set(["draft", "draft_updated_not_confirmation_ready", "reconfirm_required", "user_confirmed"]),
     confirmationReadyOnSuccess: false,
     safePromotionAsDraft: false,
-    allowDeferredCriticalAuditorCheckpoints: true,
   },
 };
 
@@ -562,7 +558,7 @@ function autoRepairDeterministicGateArtifacts(args, manifest, targetPath) {
 const REQUIRED_CHECKPOINT_IDS = [
   "cp-00-semantic-kernel",
   "cp-01-must-decomposition-packet",
-  "cp-02-atomic-decomposition-loop-convergence",
+  "cp-02-deterministic-atomic-closure",
   "cp-03-packet-to-source-materialization",
   "cp-04-id-freeze",
   "cp-05-implementation-confirmation-core",
@@ -570,19 +566,6 @@ const REQUIRED_CHECKPOINT_IDS = [
   "cp-07-human-readable-views",
   "cp-08-pre-render-global-reconciliation",
 ];
-const PRE_AUDITOR_CHECKPOINT_IDS = REQUIRED_CHECKPOINT_IDS.slice(0, 2);
-const CRITICAL_AUDITOR_DEFERRED_CHECKPOINT_ID =
-  REQUIRED_CHECKPOINT_IDS[PRE_AUDITOR_CHECKPOINT_IDS.length];
-const CRITICAL_AUDITOR_DEFERRED_CHECKPOINT_BLOCKER_CODES = new Set([
-  "critical_auditor_receipt_missing",
-  "critical_auditor_receipt_input_hash_stale",
-  "critical_auditor_less_than_three_no_new_gap_rounds",
-  "critical_auditor_validated_gap_unresolved",
-  "critical_auditor_receipts_required_before_checkpoint",
-  "critical_auditor_checkpoint_outcome_required",
-  "author_claim_lacks_critic_disposition",
-]);
-
 function validateScaleAssessment(assessment) {
   const issues = [];
   if (!assessment || typeof assessment !== "object") issues.push("scale_assessment_missing_or_invalid");
@@ -632,25 +615,7 @@ function validateCheckpointPersistenceEvidence(evidence, context = {}) {
   if (!evidence || typeof evidence !== "object") {
     return ["checkpoint_persistence_evidence_missing_or_invalid"];
   }
-  const policy =
-    evidence.checkpointPersistenceRef &&
-    typeof evidence.checkpointPersistenceRef === "object" &&
-    !Array.isArray(evidence.checkpointPersistenceRef)
-      ? evidence.checkpointPersistenceRef.preRenderGatePolicy
-      : null;
-  const deferredCriticalAuditorOnly =
-    context.allowDeferredCriticalAuditorBlockers === true &&
-    policy &&
-    typeof policy === "object" &&
-    !Array.isArray(policy) &&
-    policy.mode === "source_gap_fix_materialization" &&
-    policy.auditorConvergenceDeferredToNextRound === true &&
-    Array.isArray(policy.deferredCriticalAuditorBlockers) &&
-    policy.deferredCriticalAuditorBlockers.length > 0 &&
-    policy.deferredCriticalAuditorBlockers.every((blocker) =>
-      CRITICAL_AUDITOR_DEFERRED_CHECKPOINT_BLOCKER_CODES.has(String(blocker?.code ?? ""))
-    );
-  if (evidence.checkpointPersistenceSatisfiedCandidate !== true && !deferredCriticalAuditorOnly) {
+  if (evidence.checkpointPersistenceSatisfiedCandidate !== true) {
     issues.push("checkpoint_persistence_satisfied_candidate_required");
   }
   if (Array.isArray(evidence.completedCheckpointIds)) {
@@ -659,9 +624,7 @@ function validateCheckpointPersistenceEvidence(evidence, context = {}) {
   const completed = Array.isArray(evidence.checkpointPersistenceRef?.completedCheckpointIds)
     ? evidence.checkpointPersistenceRef.completedCheckpointIds
     : [];
-  const expectedCompleted = deferredCriticalAuditorOnly
-    ? PRE_AUDITOR_CHECKPOINT_IDS
-    : REQUIRED_CHECKPOINT_IDS;
+  const expectedCompleted = REQUIRED_CHECKPOINT_IDS;
   if (
     completed.length !== expectedCompleted.length ||
     expectedCompleted.some((checkpointId, index) => completed[index] !== checkpointId)
@@ -681,26 +644,6 @@ function validateCheckpointPersistenceEvidence(evidence, context = {}) {
       continue;
     }
     if (!receiptRef.path) issues.push(`checkpoint_receipt_ref_path_missing:${checkpointId}`);
-    const checkpointIndex = REQUIRED_CHECKPOINT_IDS.indexOf(checkpointId);
-    if (
-      deferredCriticalAuditorOnly &&
-      checkpointIndex > REQUIRED_CHECKPOINT_IDS.indexOf(CRITICAL_AUDITOR_DEFERRED_CHECKPOINT_ID)
-    ) {
-      if (receiptRef.hash) issues.push(`checkpoint_receipt_ref_hash_forbidden:${checkpointId}`);
-      if (receiptRef.status !== "pending") {
-        issues.push(`checkpoint_receipt_ref_not_pending:${checkpointId}`);
-      }
-      if (receiptRef.persistenceStatus !== "pending") {
-        issues.push(`checkpoint_receipt_ref_persistence_not_pending:${checkpointId}`);
-      }
-      if (receiptRef.semanticValidationStatus !== "pending") {
-        issues.push(`checkpoint_receipt_ref_semantic_not_pending:${checkpointId}`);
-      }
-      if (receiptRef.path && fs.existsSync(path.resolve(receiptRef.path))) {
-        issues.push(`checkpoint_receipt_file_forbidden:${checkpointId}`);
-      }
-      continue;
-    }
     if (!receiptRef.hash) issues.push(`checkpoint_receipt_ref_hash_missing:${checkpointId}`);
     if (receiptRef.path) {
       const receiptPath = path.resolve(receiptRef.path);
@@ -750,52 +693,21 @@ function validateCheckpointPersistenceEvidence(evidence, context = {}) {
         if (!Array.isArray(receipt?.validatedInputs) || receipt.validatedInputs.length === 0) {
           issues.push(`checkpoint_receipt_validated_inputs_missing:${checkpointId}`);
         }
-        const deferredCheckpoint =
-          deferredCriticalAuditorOnly &&
-          checkpointId === CRITICAL_AUDITOR_DEFERRED_CHECKPOINT_ID;
-        if (deferredCheckpoint) {
-          if (
-            receiptRef.status !== "blocked" ||
-            receiptRef.persistenceStatus !== "committed" ||
-            receiptRef.semanticValidationStatus !== "block"
-          ) {
-            issues.push(`checkpoint_receipt_ref_not_deferred_block:${checkpointId}`);
-          }
-          if (
-            receipt?.persistenceStatus !== "committed" ||
-            receipt?.semanticValidationStatus !== "block" ||
-            receipt?.decision !== "block"
-          ) {
-            issues.push(`checkpoint_receipt_status_not_deferred_block:${checkpointId}`);
-          }
-          if (
-            !Array.isArray(receipt?.blockers) ||
-            receipt.blockers.length === 0 ||
-            !receipt.blockers.every((blocker) =>
-              CRITICAL_AUDITOR_DEFERRED_CHECKPOINT_BLOCKER_CODES.has(
-                String(blocker?.code ?? "")
-              )
-            )
-          ) {
-            issues.push(`checkpoint_receipt_deferred_blockers_invalid:${checkpointId}`);
-          }
-        } else {
-          if (
-            receiptRef.status !== "passed" ||
-            receiptRef.persistenceStatus !== "committed" ||
-            receiptRef.semanticValidationStatus !== "pass"
-          ) {
-            issues.push(`checkpoint_receipt_ref_not_passed:${checkpointId}`);
-          }
-          if (
-            receipt?.persistenceStatus !== "committed" ||
-            receipt?.semanticValidationStatus !== "pass" ||
-            receipt?.decision !== "pass" ||
-            !Array.isArray(receipt?.blockers) ||
-            receipt.blockers.length !== 0
-          ) {
-            issues.push(`checkpoint_receipt_status_not_passed:${checkpointId}`);
-          }
+        if (
+          receiptRef.status !== "passed" ||
+          receiptRef.persistenceStatus !== "committed" ||
+          receiptRef.semanticValidationStatus !== "pass"
+        ) {
+          issues.push(`checkpoint_receipt_ref_not_passed:${checkpointId}`);
+        }
+        if (
+          receipt?.persistenceStatus !== "committed" ||
+          receipt?.semanticValidationStatus !== "pass" ||
+          receipt?.decision !== "pass" ||
+          !Array.isArray(receipt?.blockers) ||
+          receipt.blockers.length !== 0
+        ) {
+          issues.push(`checkpoint_receipt_status_not_passed:${checkpointId}`);
         }
         const { receiptHash, ...receiptPayload } = receipt || {};
         if (!receiptHash) {
@@ -1112,13 +1024,6 @@ function validateAuthoringPromotionGate(args, targetPath, manifest) {
           ...validateCheckpointPersistenceEvidence(checkpointEvidence, {
             sourceDocumentHash: semanticBinding.sourceDocumentHash,
             implementationConfirmationHash: semanticBinding.implementationConfirmationHash,
-            allowDeferredCriticalAuditorBlockers:
-              promotionPolicyFor(args.promotionStage)
-                ?.allowDeferredCriticalAuditorCheckpoints === true &&
-              checkpointEvidence.checkpointPersistenceRef?.preRenderGatePolicy?.mode ===
-                "source_gap_fix_materialization" &&
-              checkpointEvidence.checkpointPersistenceRef?.preRenderGatePolicy
-                ?.auditorConvergenceDeferredToNextRound === true,
           })
         );
       }

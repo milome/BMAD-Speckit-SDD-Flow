@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "requirements-contract-user-approved-authority/v1",
+  "authorities": [
+    {
+      "fieldKey": "approval.separationOfDuties",
+      "originalText": "高额批次采用双人审批，且申请人不得成为审批人。",
+      "value": {
+        "approverCount": 2,
+        "requesterMayApprove": false
+      }
+    },
+    {
+      "fieldKey": "refund.itemFailurePolicy",
+      "originalText": "单笔退款失败时继续处理其余退款，并在最终结果中逐笔报告成功或失败。",
+      "value": "continue_and_report_each_result"
+    },
+    {
+      "fieldKey": "batch.limitExceededPolicy",
+      "originalText": "超过 100 笔时整批拒绝，不创建批次任务。",
+      "value": "reject_without_creating_task"
+    },
+    {
+      "fieldKey": "approval.failureOutcomes",
+      "originalText": "审批拒绝时不执行任何退款并终止该批次；审批开始后 24 小时仍未完成时不执行任何退款并以“审批超时”终止该批次。",
+      "value": {
+        "rejected": "terminate_without_refunds",
+        "timeoutHours": 24,
+        "timeout": "terminate_without_refunds"
+      }
+    },
+    {
+      "fieldKey": "batch.mixedResultOutcome",
+      "originalText": "有成功也有失败时，批次以“处理完成且包含失败”的业务结果结束。",
+      "value": "处理完成且包含失败"
+    },
+    {
+      "fieldKey": "audit.requiredContentAndRetention",
+      "originalText": "审计至少记录操作者、时间、batchRequestKey、批次金额、审批人以及逐笔退款结果，保留 180 天。",
+      "value": {
+        "fields": [
+          "operator",
+          "timestamp",
+          "batchRequestKey",
+          "batchAmount",
+          "approvers",
+          "itemResults"
+        ],
+        "retentionDays": 180
+      }
+    },
+    {
+      "fieldKey": "performance.submissionP95Boundary",
+      "originalText": "P95 从服务收到提交请求开始，到返回批次任务 ID 为止；基准负载为每批不超过 100 笔、50 个并发提交、持续 5 分钟。",
+      "value": {
+        "startsAt": "request_received",
+        "endsAt": "batch_task_id_returned",
+        "maxItemsPerBatch": 100,
+        "concurrentSubmissions": 50,
+        "durationMinutes": 5
+      }
+    }
+  ]
+}

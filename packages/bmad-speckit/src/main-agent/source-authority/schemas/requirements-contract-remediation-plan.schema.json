@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "requirements-contract-remediation-plan.schema.json",
+  "type": "object", "additionalProperties": false,
+  "required": ["schemaVersion", "remediatesRequestHash", "remediationAggregateHash", "repairSteps", "authorityBasisRefs", "findingDispositionRefs", "affectedIds", "earliestAffectedStage", "latestValidPredecessorCheckpoint", "beforeState", "expectedChangedArtifactRoles", "compilerIdentity", "remediationPlanHash"],
+  "properties": {
+    "schemaVersion": { "const": "requirements-remediation-plan/v1" }, "remediatesRequestHash": { "$ref": "#/$defs/hash" }, "remediationAggregateHash": { "$ref": "#/$defs/hash" },
+    "repairSteps": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/step" } },
+    "authorityBasisRefs": { "$ref": "#/$defs/refs" }, "findingDispositionRefs": { "$ref": "#/$defs/refs" }, "affectedIds": { "$ref": "#/$defs/refs" },
+    "earliestAffectedStage": { "$ref": "#/$defs/id" }, "latestValidPredecessorCheckpoint": { "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
+    "beforeState": { "$ref": "#/$defs/state" }, "expectedChangedArtifactRoles": { "$ref": "#/$defs/refs" }, "compilerIdentity": { "$ref": "#/$defs/id" }, "remediationPlanHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "id": { "type": "string", "minLength": 1 }, "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }, "refs": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/id" } },
+    "state": { "type": "object", "minProperties": 1, "additionalProperties": { "$ref": "#/$defs/hash" } },
+    "step": { "type": "object", "additionalProperties": false, "required": ["stepId", "route", "findingDispositionRefs", "authorityBasisRefs", "affectedIds", "earliestAffectedStage", "latestValidPredecessorCheckpoint", "expectedChangedArtifactRoles", "initialDisposition"], "properties": { "stepId": { "$ref": "#/$defs/id" }, "route": { "enum": ["new_business_decision", "compiler_gap", "projection_repair"] }, "findingDispositionRefs": { "$ref": "#/$defs/refs" }, "authorityBasisRefs": { "$ref": "#/$defs/refs" }, "affectedIds": { "$ref": "#/$defs/refs" }, "earliestAffectedStage": { "$ref": "#/$defs/id" }, "latestValidPredecessorCheckpoint": { "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] }, "expectedChangedArtifactRoles": { "$ref": "#/$defs/refs" }, "initialDisposition": { "$ref": "#/$defs/id" } } }
+  }
+}

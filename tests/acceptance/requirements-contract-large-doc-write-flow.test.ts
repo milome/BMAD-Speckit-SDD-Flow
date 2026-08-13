@@ -8,7 +8,13 @@ import * as yaml from 'js-yaml';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
-const SKILL_SCRIPTS = path.join(ROOT, '_bmad', 'skills', 'requirements-contract-authoring', 'scripts');
+const SKILL_SCRIPTS = path.join(
+  ROOT,
+  '_bmad',
+  'skills',
+  'requirements-contract-authoring',
+  'scripts'
+);
 const NORMALIZE = path.join(SKILL_SCRIPTS, 'normalize-draft-markdown.js');
 const MANIFEST = path.join(SKILL_SCRIPTS, 'generate-draft-manifest.js');
 const PROMOTE = path.join(SKILL_SCRIPTS, 'promote-draft-large-doc.js');
@@ -16,22 +22,20 @@ const PREPARE_CURRENT_SOURCE_PROMOTION = path.join(
   SKILL_SCRIPTS,
   'prepare-current-source-promotion.js'
 );
-const WRITE_CRITICAL_AUDITOR_NO_NEW_GAP_RESPONSE = path.join(
-  SKILL_SCRIPTS,
-  'write-critical-auditor-no-new-gap-response.js'
-);
 const requireForTest = createRequire(import.meta.url);
 const {
   extractImplementationConfirmation,
   sourceDocumentHashFor,
   implementationConfirmationHashFor,
 } = requireForTest(path.join(SKILL_SCRIPTS, 'pre_render_definition_drilldown_lib.js'));
-const { normalizeMarkdown } = requireForTest(path.join(SKILL_SCRIPTS, 'normalize-draft-markdown.js'));
+const { normalizeMarkdown } = requireForTest(
+  path.join(SKILL_SCRIPTS, 'normalize-draft-markdown.js')
+);
 
 const REQUIRED_CHECKPOINT_IDS = [
   'cp-00-semantic-kernel',
   'cp-01-must-decomposition-packet',
-  'cp-02-atomic-decomposition-loop-convergence',
+  'cp-02-deterministic-atomic-closure',
   'cp-03-packet-to-source-materialization',
   'cp-04-id-freeze',
   'cp-05-implementation-confirmation-core',
@@ -94,7 +98,8 @@ function writeJson(fileName: string, value: any): string {
 
 function listTemporaryExecutables(dir: string): string[] {
   if (!fs.existsSync(dir)) return [];
-  return fs.readdirSync(dir)
+  return fs
+    .readdirSync(dir)
     .filter((entry) => /\.(?:cjs|js|mjs|ps1)$/iu.test(entry))
     .sort();
 }
@@ -106,8 +111,6 @@ function writeAuthoringPromotionGuard(
     targetPath: string;
     routeDecision?: string;
     includeCheckpointEvidence?: boolean;
-    checkpointEvidenceMode?: 'complete' | 'deferred-critical-auditor';
-    deferredCriticalAuditorBlockerCodes?: string[];
     sourceMutationFinalDecision?: string;
     encodingFindings?: any[];
     sourceDocumentHashBefore?: string;
@@ -117,7 +120,9 @@ function writeAuthoringPromotionGuard(
 ): { args: string[]; paths: Record<string, string> } {
   const routeDecision = options.routeDecision ?? 'single_pass_final_allowed';
   const targetExists = fs.existsSync(options.targetPath);
-  const targetHash = targetExists ? sha256Text(fs.readFileSync(options.targetPath, 'utf8')) : 'absent';
+  const targetHash = targetExists
+    ? sha256Text(fs.readFileSync(options.targetPath, 'utf8'))
+    : 'absent';
   let targetSemanticSourceHash: string | null = null;
   if (targetExists) {
     try {
@@ -159,11 +164,14 @@ function writeAuthoringPromotionGuard(
       start: {
         phase: 'initial_assessment',
         source: path.join(tempDir, `${name}-intake-source.md`).replace(/\\/g, '/'),
-        progressPath: path.join(tempDir, `${name}-semantic-checkpoint-progress.json`).replace(/\\/g, '/'),
+        progressPath: path
+          .join(tempDir, `${name}-semantic-checkpoint-progress.json`)
+          .replace(/\\/g, '/'),
       },
       process: {
         scoreReason: 'fixture',
-        triggeredHardTriggers: routeDecision === 'single_pass_final_allowed' ? [] : ['line_count_gt_600'],
+        triggeredHardTriggers:
+          routeDecision === 'single_pass_final_allowed' ? [] : ['line_count_gt_600'],
         scoreBreakdown: [],
         hardTriggerBreakdown: [],
       },
@@ -173,7 +181,8 @@ function writeAuthoringPromotionGuard(
         authoringMode: 'semantic_kernel_then_packet',
         riskLevel: 'low',
         checkpointRequired: routeDecision !== 'single_pass_final_allowed',
-        recommendedCheckpointCount: routeDecision === 'single_pass_final_allowed' ? 0 : REQUIRED_CHECKPOINT_IDS.length,
+        recommendedCheckpointCount:
+          routeDecision === 'single_pass_final_allowed' ? 0 : REQUIRED_CHECKPOINT_IDS.length,
       },
     },
   };
@@ -200,7 +209,8 @@ function writeAuthoringPromotionGuard(
   const sourceMutationDecisionPath = writeJson(`${name}-source-mutation-decision.json`, {
     schemaVersion: 'requirements-authoring-source-mutation-decision/v1',
     finalDecision: options.sourceMutationFinalDecision ?? 'allow_source_materialization',
-    sourceMutationAllowed: (options.sourceMutationFinalDecision ?? 'allow_source_materialization') ===
+    sourceMutationAllowed:
+      (options.sourceMutationFinalDecision ?? 'allow_source_materialization') ===
       'allow_source_materialization',
     sourceDocumentExistedBefore: options.sourceDocumentExistedBefore ?? targetExists,
     sourceDocumentHashBefore: options.sourceDocumentHashBefore ?? targetHash,
@@ -232,31 +242,8 @@ function writeAuthoringPromotionGuard(
     paths.receiptOutPath,
   ];
   if (options.includeCheckpointEvidence) {
-    const checkpointEvidenceMode = options.checkpointEvidenceMode ?? 'complete';
-    const deferredCriticalAuditor = checkpointEvidenceMode === 'deferred-critical-auditor';
-    const deferredCriticalAuditorBlockerCodes =
-      options.deferredCriticalAuditorBlockerCodes ?? [
-        'critical_auditor_receipt_missing',
-        'critical_auditor_checkpoint_outcome_required',
-      ];
-    const deferredCheckpointIndex = 2;
-    const checkpointReceiptRefs = REQUIRED_CHECKPOINT_IDS.map((checkpointId, checkpointIndex) => {
+    const checkpointReceiptRefs = REQUIRED_CHECKPOINT_IDS.map((checkpointId) => {
       const receiptPath = path.join(tempDir, `${name}-${checkpointId}-receipt.json`);
-      if (deferredCriticalAuditor && checkpointIndex > deferredCheckpointIndex) {
-        return {
-          checkpointId,
-          path: receiptPath.replace(/\\/g, '/'),
-          hash: null,
-          status: 'pending',
-          persistenceStatus: 'pending',
-          semanticValidationStatus: 'pending',
-        };
-      }
-      const deferredCheckpoint =
-        deferredCriticalAuditor && checkpointIndex === deferredCheckpointIndex;
-      const blockers = deferredCheckpoint
-        ? deferredCriticalAuditorBlockerCodes.map((code) => ({ code, refs: [] }))
-        : [];
       const receiptPayload = {
         schemaVersion: 'requirements-contract-checkpoint-semantic-validation-receipt/v1',
         checkpointId,
@@ -267,7 +254,7 @@ function writeAuthoringPromotionGuard(
         sourceDocumentHash: draftSemanticSourceHash,
         implementationConfirmationHash: draftImplementationHash,
         persistenceStatus: 'committed',
-        semanticValidationStatus: deferredCheckpoint ? 'block' : 'pass',
+        semanticValidationStatus: 'pass',
         validatedInputs: [
           {
             role: 'source_document',
@@ -275,8 +262,8 @@ function writeAuthoringPromotionGuard(
             hash: draftHash,
           },
         ],
-        blockers,
-        decision: deferredCheckpoint ? 'block' : 'pass',
+        blockers: [],
+        decision: 'pass',
         createdAt: '2026-06-02T00:00:00.000Z',
       };
       fs.writeFileSync(
@@ -295,41 +282,34 @@ function writeAuthoringPromotionGuard(
         checkpointId,
         path: receiptPath.replace(/\\/g, '/'),
         hash: sha256Text(fs.readFileSync(receiptPath, 'utf8')),
-        status: deferredCheckpoint ? 'blocked' : 'passed',
+        status: 'passed',
         persistenceStatus: 'committed',
-        semanticValidationStatus: deferredCheckpoint ? 'block' : 'pass',
+        semanticValidationStatus: 'pass',
       };
     });
-    paths.checkpointPersistenceEvidencePath = writeJson(`${name}-checkpoint-persistence-evidence.json`, {
-      ...checkpointIdentity,
-      checkpointPersistenceSatisfiedCandidate: !deferredCriticalAuditor,
-      checkpointPersistenceRef: {
-        routeDecisionHash: `sha256:${'3'.repeat(64)}`,
-        progressPath: path.join(tempDir, `${name}-semantic-checkpoint-progress.json`).replace(/\\/g, '/'),
+    paths.checkpointPersistenceEvidencePath = writeJson(
+      `${name}-checkpoint-persistence-evidence.json`,
+      {
+        ...checkpointIdentity,
+        checkpointPersistenceSatisfiedCandidate: true,
+        checkpointPersistenceRef: {
+          routeDecisionHash: `sha256:${'3'.repeat(64)}`,
+          progressPath: path
+            .join(tempDir, `${name}-semantic-checkpoint-progress.json`)
+            .replace(/\\/g, '/'),
+          progressHash: `sha256:${'4'.repeat(64)}`,
+          checkpointReceiptRefs,
+          completedCheckpointIds: REQUIRED_CHECKPOINT_IDS,
+          preRenderMustDecompositionGateHash: `sha256:${'5'.repeat(64)}`,
+          preRenderGlobalConsistencyHash: `sha256:${'6'.repeat(64)}`,
+          packetSourceReconciliationHash: `sha256:${'7'.repeat(64)}`,
+        },
         progressHash: `sha256:${'4'.repeat(64)}`,
-        checkpointReceiptRefs,
-        completedCheckpointIds: deferredCriticalAuditor
-          ? REQUIRED_CHECKPOINT_IDS.slice(0, deferredCheckpointIndex)
-          : REQUIRED_CHECKPOINT_IDS,
         preRenderMustDecompositionGateHash: `sha256:${'5'.repeat(64)}`,
         preRenderGlobalConsistencyHash: `sha256:${'6'.repeat(64)}`,
         packetSourceReconciliationHash: `sha256:${'7'.repeat(64)}`,
-        preRenderGatePolicy: deferredCriticalAuditor
-          ? {
-              mode: 'source_gap_fix_materialization',
-              structuralGateSatisfied: false,
-              auditorConvergenceDeferredToNextRound: true,
-              deferredCriticalAuditorBlockers: deferredCriticalAuditorBlockerCodes.map(
-                (code) => ({ code, refs: [] })
-              ),
-            }
-          : undefined,
-      },
-      progressHash: `sha256:${'4'.repeat(64)}`,
-      preRenderMustDecompositionGateHash: `sha256:${'5'.repeat(64)}`,
-      preRenderGlobalConsistencyHash: `sha256:${'6'.repeat(64)}`,
-      packetSourceReconciliationHash: `sha256:${'7'.repeat(64)}`,
-    });
+      }
+    );
     args.push('--checkpoint-persistence-evidence', paths.checkpointPersistenceEvidencePath);
   }
   return { args, paths };
@@ -575,8 +555,16 @@ ${extras}`;
 }
 
 function materializeConfirmationReadyDraft(): { source: string; reportPath: string } {
-  fs.writeFileSync(path.join(tempDir, 'acceptance.test.ts'), 'import { it } from "vitest"; it("ok", () => {});\n', 'utf8');
-  fs.writeFileSync(path.join(tempDir, 'e2e.test.ts'), 'import { it } from "vitest"; it("ok", () => {});\n', 'utf8');
+  fs.writeFileSync(
+    path.join(tempDir, 'acceptance.test.ts'),
+    'import { it } from "vitest"; it("ok", () => {});\n',
+    'utf8'
+  );
+  fs.writeFileSync(
+    path.join(tempDir, 'e2e.test.ts'),
+    'import { it } from "vitest"; it("ok", () => {});\n',
+    'utf8'
+  );
   const source = write('ready-draft.md', draftWithStatus('user_confirmed'));
   const extracted = extractImplementationConfirmation(fs.readFileSync(source, 'utf8'));
   const sourceHash = sourceDocumentHashFor(
@@ -817,9 +805,7 @@ describe('requirements-contract large document write flow', () => {
 
     const semantic = runNode(PROMOTE, ['--draft', draft, '--target', target, '--json']);
     expect(semantic.result.status).toBe(1);
-    expect(semantic.json.failureClass).toBe(
-      'semantic_decision_required:expected_draft_gap_policy'
-    );
+    expect(semantic.json.failureClass).toBe('semantic_decision_required:expected_draft_gap_policy');
     expect(semantic.json).toMatchObject({
       promotionStage: 'confirmation-ready',
       allowedStatuses: ['user_confirmed'],
@@ -937,7 +923,9 @@ describe('requirements-contract large document write flow', () => {
         'default_promotion_receipt_path_selected',
       ])
     );
-    expect(repaired.json.authoringPromotionGate.errors).toContain('sourceMutationDecision_required');
+    expect(repaired.json.authoringPromotionGate.errors).toContain(
+      'sourceMutationDecision_required'
+    );
     expect(repaired.json.details.nextRequiredActions).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -947,21 +935,28 @@ describe('requirements-contract large document write flow', () => {
     );
     expect(fs.existsSync(repaired.json.autoRepair.defaultAuthoringDir)).toBe(true);
     expect(
-      fs.existsSync(path.join(repaired.json.autoRepair.defaultAuthoringDir, 'scale-assessment-initial.json'))
+      fs.existsSync(
+        path.join(repaired.json.autoRepair.defaultAuthoringDir, 'scale-assessment-initial.json')
+      )
     ).toBe(true);
     expect(
-      fs.existsSync(path.join(repaired.json.autoRepair.defaultAuthoringDir, 'scale-routing-decision.json'))
+      fs.existsSync(
+        path.join(repaired.json.autoRepair.defaultAuthoringDir, 'scale-routing-decision.json')
+      )
     ).toBe(true);
-    expect(fs.existsSync(path.join(repaired.json.autoRepair.defaultAuthoringDir, 'encoding-report.json'))).toBe(
-      true
-    );
+    expect(
+      fs.existsSync(path.join(repaired.json.autoRepair.defaultAuthoringDir, 'encoding-report.json'))
+    ).toBe(true);
     expect(fs.existsSync(target)).toBe(false);
   });
 
   it('allows guarded authoring-draft promotion only after scale, routing, mutation, encoding, and receipt-out gates pass', () => {
     const target = write('target.md', '# old target\n');
     const draft = write('authoring-draft.md', draftWithStatus('draft'));
-    const guard = writeAuthoringPromotionGuard('authoring-draft', { draftPath: draft, targetPath: target });
+    const guard = writeAuthoringPromotionGuard('authoring-draft', {
+      draftPath: draft,
+      targetPath: target,
+    });
 
     const promoted = runNode(PROMOTE, [
       '--draft',
@@ -1009,7 +1004,10 @@ describe('requirements-contract large document write flow', () => {
       targetPath: target,
     });
     fs.writeFileSync(
-      path.join(path.dirname(guard.paths.sourceMutationDecisionPath), 'prepare-current-source-promotion.cjs'),
+      path.join(
+        path.dirname(guard.paths.sourceMutationDecisionPath),
+        'prepare-current-source-promotion.cjs'
+      ),
       'require("node:fs").writeFileSync("unsafe.txt", "unsafe");\n',
       'utf8'
     );
@@ -1031,9 +1029,7 @@ describe('requirements-contract large document write flow', () => {
       'authoring_temporary_executable_helper_present'
     );
     expect(blocked.json.authoringPromotionGate.decisions.temporaryExecutableHelpers.files).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining('prepare-current-source-promotion.cjs'),
-      ])
+      expect.arrayContaining([expect.stringContaining('prepare-current-source-promotion.cjs')])
     );
     expect(fs.readFileSync(target, 'utf8')).toBe('# old target\n');
   });
@@ -1052,13 +1048,11 @@ describe('requirements-contract large document write flow', () => {
       'authoring'
     );
 
-    const prepared = runNode(PREPARE_CURRENT_SOURCE_PROMOTION, [
-      '--source',
-      source,
-      '--authoring-dir',
-      authoringDir,
-      '--json',
-    ], tempDir);
+    const prepared = runNode(
+      PREPARE_CURRENT_SOURCE_PROMOTION,
+      ['--source', source, '--authoring-dir', authoringDir, '--json'],
+      tempDir
+    );
 
     expect(prepared.result.status).toBe(0);
     expect(prepared.json.ok).toBe(true);
@@ -1070,9 +1064,9 @@ describe('requirements-contract large document write flow', () => {
     expect(prepared.json.authoringMaterializationReceipt).toContain(
       'authoring-materialization-receipt.json'
     );
-    expect(fs.readFileSync(path.join(authoringDir, 'current-source-authoring-draft.md'), 'utf8')).toBe(
-      fs.readFileSync(source, 'utf8')
-    );
+    expect(
+      fs.readFileSync(path.join(authoringDir, 'current-source-authoring-draft.md'), 'utf8')
+    ).toBe(fs.readFileSync(source, 'utf8'));
     const decision = JSON.parse(
       fs.readFileSync(path.join(authoringDir, 'source-mutation-decision.json'), 'utf8')
     );
@@ -1142,20 +1136,24 @@ describe('requirements-contract large document write flow', () => {
       targetPath: target,
     });
 
-    const promoted = runNode(PROMOTE, [
-      '--draft',
-      draft,
-      '--target',
-      target,
-      '--promotion-stage',
-      'authoring-draft',
-      '--scale-assessment',
-      scaleGuard.paths.scaleAssessmentPath,
-      '--scale-routing-decision',
-      scaleGuard.paths.scaleRoutingDecisionPath,
-      '--auto-repair',
-      '--json',
-    ], tempDir);
+    const promoted = runNode(
+      PROMOTE,
+      [
+        '--draft',
+        draft,
+        '--target',
+        target,
+        '--promotion-stage',
+        'authoring-draft',
+        '--scale-assessment',
+        scaleGuard.paths.scaleAssessmentPath,
+        '--scale-routing-decision',
+        scaleGuard.paths.scaleRoutingDecisionPath,
+        '--auto-repair',
+        '--json',
+      ],
+      tempDir
+    );
 
     expect(promoted.result.status).toBe(0);
     expect(promoted.json.ok).toBe(true);
@@ -1169,97 +1167,14 @@ describe('requirements-contract large document write flow', () => {
       targetRawHashBefore: sha256Text(sourceText),
       targetRawHashAfter: sha256Text(sourceText),
     });
-    const receipt = JSON.parse(fs.readFileSync(path.join(authoringDir, 'promotion-receipt.json'), 'utf8'));
+    const receipt = JSON.parse(
+      fs.readFileSync(path.join(authoringDir, 'promotion-receipt.json'), 'utf8')
+    );
     expect(receipt.targetHash).toBe(sha256Text(sourceText));
     expect(receipt.preflight.manifest.draftHash).toBe(sha256Text(sourceText));
     expect(receipt.authoringPromotionGate.decisions.sourceMutation.sourceDocumentHashAfter).toBe(
       sha256Text(sourceText)
     );
-    expect(listTemporaryExecutables(authoringDir)).toEqual([]);
-  });
-
-  it('blocks deterministic Critical Auditor no-new-gap response writing without helper scripts', () => {
-    const authoringDir = path.join(
-      tempDir,
-      '_bmad-output',
-      'runtime',
-      'requirement-records',
-      'REQ-CRITICAL-AUDITOR-SKILL-LOCAL',
-      'authoring'
-    );
-    fs.mkdirSync(authoringDir, { recursive: true });
-    const requestPath = path.join(authoringDir, 'critical-auditor-round-request-1.json');
-    fs.writeFileSync(
-      requestPath,
-      `${JSON.stringify(
-        {
-          schemaVersion: 'critical-auditor-round-request/v1',
-          requestHash: `sha256:${'1'.repeat(64)}`,
-          recordId: 'REQ-CRITICAL-AUDITOR-SKILL-LOCAL',
-          roundIndex: 1,
-          sourceDocumentHash: `sha256:${'2'.repeat(64)}`,
-          implementationConfirmationHash: `sha256:${'3'.repeat(64)}`,
-          packetHash: `sha256:${'4'.repeat(64)}`,
-          gateDryRun: {
-            gateDryRunHash: `sha256:${'5'.repeat(64)}`,
-            actionableBlockingIssueCount: 0,
-            actionableBlockingIssues: [],
-            reconciliation: {
-              issueCount: 0,
-            },
-            reconciliationReportPath: path.join(authoringDir, 'must_packet_source_reconciliation_report.json'),
-          },
-          packetProjectionSummary: {
-            projectionGroups: ['semantic_kernel', 'must_decomposition_packet'],
-            projectionRefs: ['DECOMP-MUST-001', 'TASK-MUST-001'],
-          },
-          projectionQualityGate: {
-            requiredRuleCodes: [
-              'projection_per_must_acceptance_not_independent',
-              'projection_shared_evidence_without_per_must_oracle',
-              'required_command_all_cover_all_without_per_must_assertions',
-              'target_modification_path_all_cover_all',
-              'current_target_map_not_product_specific',
-              'business_visual_generic_or_compressed',
-            ],
-          },
-          requiredResponseSchema: {
-            checkedProjectionGroups: ['semantic_kernel', 'must_decomposition_packet'],
-            checkedProjectionQualityRuleCodes: [
-              'projection_per_must_acceptance_not_independent',
-              'projection_shared_evidence_without_per_must_oracle',
-              'required_command_all_cover_all_without_per_must_assertions',
-              'target_modification_path_all_cover_all',
-              'current_target_map_not_product_specific',
-              'business_visual_generic_or_compressed',
-            ],
-          },
-          mustRefs: ['MUST-001'],
-        },
-        null,
-        2
-      )}\n`,
-      'utf8'
-    );
-
-    const written = runNode(WRITE_CRITICAL_AUDITOR_NO_NEW_GAP_RESPONSE, [
-      '--authoring-dir',
-      authoringDir,
-      '--round',
-      '1',
-      '--json',
-    ], tempDir);
-    const responsePath = path.join(authoringDir, 'critical-auditor-round-response-1.json');
-
-    expect(written.result.status).toBe(1);
-    expect(written.json).toMatchObject({
-      ok: false,
-      failureClass: 'critical_auditor_independent_provider_evidence_required',
-      issues: ['deterministic_no_new_gap_response_writer_forbidden'],
-      requestHash: `sha256:${'1'.repeat(64)}`,
-      receiptWritten: false,
-    });
-    expect(fs.existsSync(responsePath)).toBe(false);
     expect(listTemporaryExecutables(authoringDir)).toEqual([]);
   });
 
@@ -1318,64 +1233,6 @@ describe('requirements-contract large document write flow', () => {
       completedCheckpointCount: REQUIRED_CHECKPOINT_IDS.length,
     });
     expect(fs.readFileSync(target, 'utf8')).toContain('implementationConfirmation:');
-  });
-
-  it('allows deferred Critical Auditor checkpoints only for staging draft promotion', () => {
-    const stagingTarget = path.join(tempDir, 'staging-repair-target.md');
-    const stagingDraft = write('staging-repair-draft.md', draftWithStatus('draft'));
-    const stagingGuard = writeAuthoringPromotionGuard('staging-repair-deferred', {
-      draftPath: stagingDraft,
-      targetPath: stagingTarget,
-      routeDecision: 'checkpoint_required',
-      includeCheckpointEvidence: true,
-      checkpointEvidenceMode: 'deferred-critical-auditor',
-    });
-
-    const staged = runNode(PROMOTE, [
-      '--draft',
-      stagingDraft,
-      '--target',
-      stagingTarget,
-      '--promotion-stage',
-      'authoring-draft',
-      ...stagingGuard.args,
-      '--json',
-    ]);
-
-    expect(staged.result.status, staged.output).toBe(0);
-    expect(staged.json.authoringPromotionGate).toMatchObject({
-      required: true,
-      ok: true,
-    });
-    expect(fs.existsSync(stagingTarget)).toBe(true);
-
-    const finalTarget = path.join(tempDir, 'docs', 'plans', 'final-source-target.md');
-    const finalDraft = write('final-source-draft.md', draftWithStatus('user_confirmed'));
-    const finalGuard = writeAuthoringPromotionGuard('final-source-deferred', {
-      draftPath: finalDraft,
-      targetPath: finalTarget,
-      routeDecision: 'checkpoint_required',
-      includeCheckpointEvidence: true,
-      checkpointEvidenceMode: 'deferred-critical-auditor',
-    });
-
-    const blockedFinal = runNode(PROMOTE, [
-      '--draft',
-      finalDraft,
-      '--target',
-      finalTarget,
-      '--promotion-stage',
-      'confirmation-ready',
-      ...finalGuard.args,
-      '--json',
-    ]);
-
-    expect(blockedFinal.result.status).toBe(1);
-    expect(blockedFinal.json.failureClass).toBe('authoring_promotion_gate_failed');
-    expect(blockedFinal.json.authoringPromotionGate.errors).toContain(
-      'checkpoint_persistence_satisfied_candidate_required'
-    );
-    expect(fs.existsSync(finalTarget)).toBe(false);
   });
 
   it('blocks checkpoint persistence evidence when checkpoint receipts are bound to a stale semantic source hash', () => {
@@ -1506,7 +1363,9 @@ describe('requirements-contract large document write flow', () => {
     const blockedEncodingGuard = writeAuthoringPromotionGuard('blocked-encoding', {
       draftPath: draft,
       targetPath: blockedEncodingTarget,
-      encodingFindings: [{ file: 'docs/plans/broken.md', hits: [{ line: 1, pattern: 'UTF-8-BOM' }] }],
+      encodingFindings: [
+        { file: 'docs/plans/broken.md', hits: [{ line: 1, pattern: 'UTF-8-BOM' }] },
+      ],
     });
     const blockedEncoding = runNode(PROMOTE, [
       '--draft',
@@ -1632,7 +1491,10 @@ describe('requirements-contract large document write flow', () => {
     for (const status of ['draft_updated_not_confirmation_ready', 'reconfirm_required']) {
       const target = write(`target-${status}.md`, '# old target\n');
       const draft = write(`authoring-${status}.md`, draftWithStatus(status));
-      const guard = writeAuthoringPromotionGuard(`authoring-${status}`, { draftPath: draft, targetPath: target });
+      const guard = writeAuthoringPromotionGuard(`authoring-${status}`, {
+        draftPath: draft,
+        targetPath: target,
+      });
 
       const promoted = runNode(PROMOTE, [
         '--draft',

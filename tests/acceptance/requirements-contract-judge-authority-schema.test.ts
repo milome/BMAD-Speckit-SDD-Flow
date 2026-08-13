@@ -4,16 +4,17 @@ import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import { describe, expect, it } from 'vitest';
 
-const HASH = `sha256:${'5'.repeat(64)}`;
+const HASH = (digit: string) => `sha256:${digit.repeat(64)}`;
 const schemaRoot = path.resolve('packages/bmad-speckit/src/main-agent/source-authority/schemas');
 const schemaFiles = {
-  attemptKey: 'requirements-contract-judge-attempt-key.schema.json',
-  ledgerEntry: 'requirements-contract-judge-ledger-entry.schema.json',
-  transitionReceipt: 'requirements-contract-judge-transition-receipt.schema.json',
+  selection: 'requirements-contract-judge-selection-receipt.schema.json',
+  request: 'requirements-contract-judge-request.schema.json',
+  attempt: 'requirements-contract-judge-attempt.schema.json',
+  activeRequest: 'requirements-contract-judge-active-request.schema.json',
+  response: 'requirements-contract-judge-response.schema.json',
 };
 
 type SchemaName = keyof typeof schemaFiles;
-type JsonRecord = Record<string, unknown>;
 
 function validator(name: SchemaName) {
   const ajv = new Ajv2020({ allErrors: true, strict: false });
@@ -21,140 +22,125 @@ function validator(name: SchemaName) {
   return ajv.compile(JSON.parse(readFileSync(path.join(schemaRoot, schemaFiles[name]), 'utf8')));
 }
 
-function attemptKey(overrides: JsonRecord = {}) {
+function selection() {
   return {
-    schemaVersion: 'requirements-contract-judge-attempt-key/v1',
-    attemptId: 'JUDGE-ATTEMPT-001',
-    actorClass: 'requirements_critical_auditor_judge',
-    judgeRole: 'requirements_critical_auditor',
-    sourceAuthorityHash: HASH,
-    scopeManifestHash: HASH,
-    promptTemplateHash: HASH,
-    assessmentSchemaHash: HASH,
-    providerRegistryHash: HASH,
-    providerConfigurationHash: HASH,
-    ledgerNamespace: 'requirements',
-    previousAttemptKeyHash: null,
-    attemptOrdinal: 1,
-    attemptKeyHash: HASH,
-    ...overrides,
+    schemaVersion: 'requirements-contract-judge-selection-receipt/v1',
+    decision: 'selected',
+    providerRef: 'judge-a',
+    transport: 'openai-compatible',
+    apiStyle: 'chat_completions',
+    model: 'judge-model',
+    adapterRef: 'OpenAICompatibleJudgeAdapter',
+    providerRegistryHash: HASH('1'),
+    providerConfigurationHash: HASH('2'),
+    declaredCapacity: null,
+    issueCodes: [],
+    providerSelectionHash: HASH('3'),
   };
 }
 
-function ledgerEntry(overrides: JsonRecord = {}) {
+function request() {
   return {
-    schemaVersion: 'requirements-contract-judge-ledger-entry/v1',
-    ledgerEntryId: 'LEDGER-ENTRY-001',
-    ledgerNamespace: 'requirements',
-    actorClass: 'requirements_critical_auditor_judge',
-    judgeRole: 'requirements_critical_auditor',
-    attemptKeyHash: HASH,
-    sourceAuthorityHash: HASH,
-    observationHash: HASH,
-    dispositionHash: HASH,
-    previousLedgerEntryHash: null,
-    ledgerEntryHash: HASH,
-    appendOnly: true,
-    decisionFieldOrigin: 'package_calculated',
-    decision: 'recorded',
-    ...overrides,
-  };
-}
-
-function transitionReceipt(overrides: JsonRecord = {}) {
-  return {
-    schemaVersion: 'requirements-contract-judge-transition-receipt/v1',
-    transitionId: 'TRANSITION-001',
-    actorClass: 'requirements_critical_auditor_judge',
-    judgeRole: 'requirements_critical_auditor',
-    attemptKeyHash: HASH,
-    fromState: 'RequirementsAssessed',
-    toState: 'RequirementsEffectivePass',
-    ledgerEntryHash: HASH,
-    evidenceManifestHash: HASH,
-    blockingReasonHash: HASH,
-    effectivePassReceiptRef: {
-      schemaVersion: 'requirements-effective-pass-receipt/v1',
-      path: 'judge/requirements/effective-pass.receipt.json',
-      hash: HASH,
+    schemaVersion: 'requirements-contract-judge-request/v2',
+    authority: {
+      activeSemanticRevisionId: 'sem-1',
+      activeScopeSemanticHash: HASH('1'),
+      activeBindingRevisionId: 'binding-1',
+      activeSourceBindingHash: HASH('2'),
+      activeAuthoringAttemptId: 'attempt-1',
+      activeBuildManifestHash: HASH('3'),
     },
-    writeSemantics: 'create_only',
-    writer: 'package_owned_judge_transition_writer',
-    decisionFieldOrigin: 'package_calculated',
-    decision: 'pass',
-    receiptHash: HASH,
-    ...overrides,
+    providerSelection: selection(),
+    prompt: {
+      systemPrompt: 'Audit the complete requirements contract.',
+      rubric: {},
+      structuredOutputSchema: {},
+      outputTokenReserve: 4096,
+    },
+    auditPacket: {
+      schemaVersion: 'requirements-contract-judge-audit-packet/v1',
+      semanticRevisionId: 'sem-1',
+      scopeSemanticHash: HASH('1'),
+      body: {},
+    },
+    auditPacketArtifactManifest: [],
+    remediation: null,
+    judgeRequestHash: HASH('4'),
   };
 }
 
 describe('requirements contract Judge authority schemas', () => {
-  it('publishes the shared AttemptKey, ledger, and transition schemas', () => {
-    expect(
-      Object.values(schemaFiles).every((name) => existsSync(path.join(schemaRoot, name)))
-    ).toBe(true);
+  it('publishes only the selection, request, attempt, active request, and response contracts', () => {
+    expect(Object.values(schemaFiles).every((name) => existsSync(path.join(schemaRoot, name)))).toBe(
+      true
+    );
   });
 
-  describe.runIf(
-    Object.values(schemaFiles).every((name) => existsSync(path.join(schemaRoot, name)))
-  )('J01-T05 authority fixtures', () => {
-    it('accepts role-separated Requirements and Final AttemptKey fixtures', () => {
-      const validate = validator('attemptKey');
-      const requirements = attemptKey();
-      const final = attemptKey({
-        actorClass: 'final_acceptance_judge',
-        judgeRole: 'final_acceptance_judge',
-        ledgerNamespace: 'final_acceptance',
-        previousAttemptKeyHash: HASH,
-        attemptOrdinal: 2,
-      });
+  it('accepts optional provider capacity and does not require a guessed capacity', () => {
+    const validate = validator('selection');
+    expect(validate(selection()), JSON.stringify(validate.errors)).toBe(true);
+    expect(
+      validate({
+        ...selection(),
+        declaredCapacity: {
+          transportByteLimit: 2_000_000,
+          contextWindowTokens: 200_000,
+          maximumOutputTokens: 16_384,
+        },
+      }),
+      JSON.stringify(validate.errors)
+    ).toBe(true);
+    expect(validate({ ...selection(), estimatedTokens: 1234 })).toBe(false);
+  });
 
-      expect(validate(requirements), JSON.stringify(validate.errors)).toBe(true);
-      expect(validate(final), JSON.stringify(validate.errors)).toBe(true);
-    });
+  it('accepts the complete canonical request and rejects unknown summary identities', () => {
+    const validate = validator('request');
+    expect(validate(request()), JSON.stringify(validate.errors)).toBe(true);
+    expect(validate({ ...request(), inputSummaryHash: HASH('5') })).toBe(false);
+  });
 
-    it('rejects actor-role mismatches and incomplete authority hash binding', () => {
-      const validate = validator('attemptKey');
-      const mismatched = attemptKey({ judgeRole: 'final_acceptance_judge' });
-      const missingHash = attemptKey();
-      delete (missingHash as JsonRecord).providerRegistryHash;
+  it('records transport failures without accepting an evaluation or creating a response', () => {
+    const validate = validator('attempt');
+    const attempt = {
+      schemaVersion: 'requirements-contract-judge-attempt/v1',
+      judgeRequestHash: HASH('4'),
+      providerSelectionHash: HASH('3'),
+      attemptOrdinal: 1,
+      outcome: 'transport_failure',
+      acceptedEvaluation: false,
+      requestSerializedBytes: 2048,
+      auditPacketSerializedBytes: 1024,
+      validationIssueCodes: ['judge_provider_payload_rejected'],
+      nextEligibleAt: null,
+      rawResponse: null,
+    };
+    expect(validate(attempt), JSON.stringify(validate.errors)).toBe(true);
+    expect(validate({ ...attempt, acceptedEvaluation: true })).toBe(false);
+  });
 
-      expect(validate(mismatched)).toBe(false);
-      expect(validate(missingHash)).toBe(false);
-    });
-
-    it('accepts append-only ledger entries and rejects caller-provided pass authority', () => {
-      const validate = validator('ledgerEntry');
-
-      expect(validate(ledgerEntry()), JSON.stringify(validate.errors)).toBe(true);
-      expect(validate(ledgerEntry({ appendOnly: false }))).toBe(false);
-      expect(validate(ledgerEntry({ closeoutApproved: true }))).toBe(false);
-      expect(validate(ledgerEntry({ decisionFieldOrigin: 'caller_provided' }))).toBe(false);
-    });
-
-    it('accepts create-only transition receipts and rejects Kernel/Judge substitution', () => {
-      const validate = validator('transitionReceipt');
-
-      expect(validate(transitionReceipt()), JSON.stringify(validate.errors)).toBe(true);
-      expect(validate(transitionReceipt({ writeSemantics: 'upsert' }))).toBe(false);
-      expect(validate(transitionReceipt({ expectedHash: HASH }))).toBe(false);
-      expect(validate(transitionReceipt({ pass: true }))).toBe(false);
-      expect(
-        validate({
-          ...transitionReceipt(),
-          schemaVersion: 'goal-contract-subcontract-closure-receipt/v1',
-        })
-      ).toBe(false);
-      expect(
-        validate(
-          transitionReceipt({
-            effectivePassReceiptRef: {
-              schemaVersion: 'goal-contract-subcontract-closure-receipt/v1',
-              path: 'kernel/closure.receipt.json',
-              hash: HASH,
-            },
-          })
-        )
-      ).toBe(false);
-    });
+  it('keeps a closed current-state pointer without a ledger or pointer history', () => {
+    const validate = validator('activeRequest');
+    const active = {
+      schemaVersion: 'requirements-contract-judge-active-request/v1',
+      version: 1,
+      previousVersion: null,
+      semanticRevisionId: 'sem-1',
+      auditPolicyHash: HASH('1'),
+      providerSelectionHash: HASH('3'),
+      judgeRequestHash: HASH('4'),
+      requestPath: `quality/requests/${HASH('4').replace(':', '-')}/judge-request.json`,
+      status: 'audit_pending',
+      acceptedEvaluation: false,
+      attemptCount: 1,
+      lastAttemptPath: `quality/requests/${HASH('4').replace(':', '-')}/dispatch-attempts/1.json`,
+      lastIssueCode: 'judge_provider_payload_rejected',
+      responseRef: null,
+      aggregateRef: null,
+      effectivePassRef: null,
+      remediationPlanRef: null,
+      remediationDeltaRef: null,
+    };
+    expect(validate(active), JSON.stringify(validate.errors)).toBe(true);
+    expect(validate({ ...active, pointerHistory: [] })).toBe(false);
   });
 });

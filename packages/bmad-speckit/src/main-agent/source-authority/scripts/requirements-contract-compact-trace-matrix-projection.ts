@@ -17,6 +17,11 @@ interface CompactTraceMatrix {
     edgeId: string;
     edgeType: string;
     requirementRef: string;
+    factRefs: string[];
+    mustRefs: string[];
+    atomRefs: string[];
+    originSpecSpanRefs: string[];
+    evidenceClaimRefs: string[];
     fromRef: { id: string };
     toRef: { id: string };
     bundleBinding: unknown;
@@ -24,6 +29,7 @@ interface CompactTraceMatrix {
     acceptanceRootProofManifestBinding: unknown;
     dimensions: {
       acceptance: { state: string; refs?: string[]; reasonCode?: string };
+      evidenceRequirement: { state: string; refs?: string[]; reasonCode?: string };
     };
   }>;
   fullPathRows: Array<{
@@ -72,7 +78,8 @@ export function renderRequirementsContractCompactTraceMatrixProjection(input: un
     (binding) => binding.acceptanceRootRef
   );
   const missingAcceptanceRootCount = input.acceptanceRootIds.filter(
-    (rootId) => !input.acceptanceRootBindings.some((binding) => binding.acceptanceRootRef === rootId)
+    (rootId) =>
+      !input.acceptanceRootBindings.some((binding) => binding.acceptanceRootRef === rootId)
   ).length;
   const extraAcceptanceRootCount = acceptanceRootBindingRefs.filter(
     (rootRef) => !acceptanceRootIds.has(rootRef)
@@ -88,10 +95,7 @@ export function renderRequirementsContractCompactTraceMatrixProjection(input: un
     .flatMap((row) => row.orderedEdgeIds)
     .filter((edgeRef) => !edgeIds.has(edgeRef)).length;
   const pathTraceEdgeMismatchCount = input.fullPathRows.reduce((count, pathRow) => {
-    const pairCount = Math.min(
-      pathRow.orderedAtomicTraceIds.length,
-      pathRow.orderedEdgeIds.length
-    );
+    const pairCount = Math.min(pathRow.orderedAtomicTraceIds.length, pathRow.orderedEdgeIds.length);
     let rowMismatchCount = Math.abs(
       pathRow.orderedAtomicTraceIds.length - pathRow.orderedEdgeIds.length
     );
@@ -103,9 +107,7 @@ export function renderRequirementsContractCompactTraceMatrixProjection(input: un
     }
     return count + rowMismatchCount;
   }, 0);
-  const duplicateAtomicTraceIdCount = duplicateCount(
-    input.atomicRows.map((row) => row.traceId)
-  );
+  const duplicateAtomicTraceIdCount = duplicateCount(input.atomicRows.map((row) => row.traceId));
   const duplicateAtomicEdgeIdCount = duplicateCount(input.atomicRows.map((row) => row.edgeId));
   const acceptanceRootDriftCount =
     input.acceptanceRootCount === input.acceptanceRootIds.length ? 0 : 1;
@@ -113,10 +115,7 @@ export function renderRequirementsContractCompactTraceMatrixProjection(input: un
     (row) =>
       !sameBinding(row.bundleBinding, input.bundleBinding) ||
       !sameBinding(row.acceptanceManifestBinding, input.acceptanceManifestBinding) ||
-      !sameBinding(
-        row.acceptanceRootProofManifestBinding,
-        input.acceptanceRootProofManifestBinding
-      )
+      !sameBinding(row.acceptanceRootProofManifestBinding, input.acceptanceRootProofManifestBinding)
   ).length;
   const acceptanceRootRows = input.acceptanceRootBindings.map(
     (binding) =>
@@ -127,7 +126,11 @@ export function renderRequirementsContractCompactTraceMatrixProjection(input: un
       row.dimensions.acceptance.state === 'bound'
         ? (row.dimensions.acceptance.refs ?? []).join(', ')
         : `not_applicable:${row.dimensions.acceptance.reasonCode ?? 'unspecified'}`;
-    return `| ${cell(row.traceId)} | ${cell(row.edgeId)} | ${cell(row.edgeType)} | ${cell(row.requirementRef)} | ${cell(row.fromRef.id)} | ${cell(row.toRef.id)} | ${cell(acceptance)} |`;
+    const evidenceRequirement =
+      row.dimensions.evidenceRequirement.state === 'bound'
+        ? (row.dimensions.evidenceRequirement.refs ?? []).join(', ')
+        : `not_applicable:${row.dimensions.evidenceRequirement.reasonCode ?? 'unspecified'}`;
+    return `| ${cell(row.traceId)} | ${cell(row.edgeId)} | ${cell(row.edgeType)} | ${cell(row.requirementRef)} | ${cell(row.factRefs.join(', '))} | ${cell(row.mustRefs.join(', '))} | ${cell(row.atomRefs.join(', '))} | ${cell(row.originSpecSpanRefs.join(', '))} | ${cell(row.evidenceClaimRefs.join(', '))} | ${cell(row.fromRef.id)} | ${cell(row.toRef.id)} | ${cell(acceptance)} | ${cell(evidenceRequirement)} |`;
   });
   const fullPathRows = input.fullPathRows.map(
     (row) =>
@@ -142,8 +145,8 @@ export function renderRequirementsContractCompactTraceMatrixProjection(input: un
     '',
     '## Atomic Trace Rows',
     '',
-    '| Trace | Edge | Type | Requirement | From | To | Acceptance |',
-    '|---|---|---|---|---|---|---|',
+    '| Trace | Edge | Type | Requirement | Facts | MUSTs | Atoms | Origin spec spans | Evidence claims | From | To | Acceptance | Evidence requirements |',
+    '|---|---|---|---|---|---|---|---|---|---|---|---|---|',
     ...atomicRows,
     '',
     '## Full Path Rows',

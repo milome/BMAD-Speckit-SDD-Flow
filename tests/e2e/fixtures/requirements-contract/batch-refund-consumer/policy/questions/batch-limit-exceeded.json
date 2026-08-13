@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "requirements-contract-authority-source/v1",
+  "sourceRootId": "QUESTION-BATCH-LIMIT-EXCEEDED",
+  "semanticBody": {
+    "question": "一次提交超过 100 笔退款时应如何处理？",
+    "affectedFieldIds": ["batch.limitExceededPolicy"],
+    "affectedNodeIds": ["MUST-FR-BATCH-REFUND-SUBMISSION"],
+    "answerSchema": {
+      "type": "string",
+      "enum": ["reject_without_creating_task", "split_into_multiple_tasks"]
+    }
+  }
+}

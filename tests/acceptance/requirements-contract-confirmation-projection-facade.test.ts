@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   expectedSetsFromConfirmation,
   projectProductionImplementationConfirmation,
+  selectRequirementsContractFrozenConfirmationSemantics,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-confirmation-projection-facade';
+import { prepareRequirementsContractCp04FreezeStage } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-production-semantic-pipeline';
+import { createRequirementsContractCoreArtifactFreeze } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 
 const hash = (digit: string) => `sha256:${digit.repeat(64)}`;
 
@@ -176,14 +179,86 @@ function confirmationFixture(): Record<string, unknown> {
   };
 }
 
-function projectFixture(confirmation: Record<string, unknown>) {
+const frozenConfirmationSemanticFields = [
+  'contractAuthoringRequired',
+  'applicability',
+  'must',
+  'notDone',
+  'mustNot',
+  'evidence',
+  'openQuestions',
+  'failurePaths',
+  'edgeCases',
+  'acceptanceTests',
+  'e2eSuites',
+  'traceRows',
+  'sequenceViews',
+  'flowViews',
+  'edgeCaseViews',
+  'boundaryViews',
+  'targetModificationPaths',
+  'requirementBoundary',
+  'artifactAutomationPlan',
+  'requiredCommands',
+  'suggestedCommands',
+  'requiredContractChecks',
+  'implementationTasks',
+  'closeoutReadinessPreview',
+] as const;
+
+function frozenConfirmationSemantics(confirmation: Record<string, unknown>) {
+  return Object.fromEntries(
+    frozenConfirmationSemanticFields
+      .filter((fieldRef) => Object.prototype.hasOwnProperty.call(confirmation, fieldRef))
+      .map((fieldRef) => [fieldRef, structuredClone(confirmation[fieldRef])])
+  );
+}
+
+function frozenProjectionContextFor(
+  semanticModelHash: string,
+  confirmation: Record<string, unknown> = confirmationFixture()
+) {
+  const frozenSemanticIr = {
+    schemaVersion: 'requirements-contract-semantic-ir/v1',
+    recordId: 'REQ-FACADE',
+    semanticRevisionId: 'semantic-revision-facade',
+    scopeSemanticHash: semanticModelHash,
+    mustIds: ['MUST-001'],
+    semanticPayload: {
+      semantics: {
+        implementationConfirmation: frozenConfirmationSemantics(confirmation),
+      },
+    },
+  };
+  return {
+    checkpointId: 'cp04' as const,
+    checkpointStatus: 'passed' as const,
+    semanticIdentity: {
+      scopeSemanticHash: semanticModelHash,
+      semanticRevisionId: frozenSemanticIr.semanticRevisionId,
+    },
+    frozenSemanticIr,
+    semanticIrFreeze: createRequirementsContractCoreArtifactFreeze({
+      stage: 'cp04',
+      artifactRole: 'semantic-ir',
+      artifact: frozenSemanticIr,
+    }),
+    readbackVerified: true as const,
+  };
+}
+
+function projectFixture(
+  confirmation: Record<string, unknown>,
+  frozenConfirmation: Record<string, unknown> = confirmation
+) {
+  const semanticModelHash = hash('b');
   return projectProductionImplementationConfirmation({
     source: {
       recordId: 'REQ-FACADE',
       requirementSetId: 'REQ-FACADE',
       sourceDocumentHash: hash('a'),
     },
-    semanticModelHash: hash('b'),
+    semanticModelHash,
     confirmation,
     decisionReceipts: [{ receiptId: 'semantic:001', receiptHash: hash('c') }],
     attemptBindings: {
@@ -191,13 +266,131 @@ function projectFixture(confirmation: Record<string, unknown>) {
       implementationAttemptId: 'IMP-FACADE',
       auditAttemptId: 'AUD-FACADE',
     },
-    expectedSets: expectedSetsFromConfirmation(confirmation),
+    expectedSets: expectedSetsFromConfirmation(frozenConfirmation),
     conservationReceiptRefs: ['semantic:001'],
     auditReceiptRefs: ['semantic:001'],
+    frozenProjectionContext: frozenProjectionContextFor(semanticModelHash, frozenConfirmation),
   });
 }
 
+function frozenProjectionContext(
+  checkpointId: 'cp03' | 'cp04' = 'cp04',
+  confirmation: Record<string, unknown> = confirmationFixture()
+) {
+  const stage = prepareRequirementsContractCp04FreezeStage({
+    semanticIr: {
+      schemaVersion: 'requirements-contract-semantic-ir/v1',
+      recordId: 'REQ-FACADE',
+      mustIds: ['MUST-001'],
+      atomIds: ['TASK-001'],
+      logicalSpecSpanRefs: ['SPEC-MUST-001'],
+      semanticPayload: {
+        semantics: {
+          implementationConfirmation: frozenConfirmationSemantics(confirmation),
+        },
+      },
+    },
+    sourceBinding: { schemaVersion: 'requirements-contract-source-binding/v1' },
+    resolvedEvidenceIndex: {
+      schemaVersion: 'requirements-contract-resolved-evidence-index/v1',
+    },
+  });
+  return {
+    checkpointId,
+    checkpointStatus: 'passed' as const,
+    semanticIdentity: stage.semanticIdentity,
+    frozenSemanticIr: stage.semanticIr,
+    semanticIrFreeze: stage.freezes.semanticIr,
+    readbackVerified: stage.readback.semanticIr,
+  };
+}
+
 describe('production confirmation projection facade', () => {
+  it('removes undefined optional values before freezing confirmation semantics', () => {
+    const confirmation = confirmationFixture();
+    const target = (confirmation.targetModificationPaths as Array<Record<string, unknown>>)[0];
+    target.sourcePathId = undefined;
+
+    const frozen = selectRequirementsContractFrozenConfirmationSemantics(confirmation);
+    const frozenTarget = (frozen.targetModificationPaths as Array<Record<string, unknown>>)[0];
+
+    expect(frozenTarget).not.toHaveProperty('sourcePathId');
+    expect(() =>
+      createRequirementsContractCoreArtifactFreeze({
+        stage: 'cp04',
+        artifactRole: 'semantic-ir',
+        artifact: {
+          schemaVersion: 'requirements-contract-semantic-ir/v1',
+          semanticPayload: { semantics: { implementationConfirmation: frozen } },
+        },
+      })
+    ).not.toThrow();
+  });
+
+  it('requires a readback-verified cp04 frozen IR and never mutates semantic fields', () => {
+    const confirmation = confirmationFixture();
+    const context = frozenProjectionContext('cp04', confirmation);
+    const before = JSON.stringify(context.frozenSemanticIr);
+    const input = {
+      source: {
+        recordId: 'REQ-FACADE',
+        requirementSetId: 'REQ-FACADE',
+        sourceDocumentHash: hash('a'),
+      },
+      semanticModelHash: context.semanticIdentity.scopeSemanticHash,
+      confirmation,
+      decisionReceipts: [{ receiptId: 'semantic:001', receiptHash: hash('c') }],
+      attemptBindings: {
+        transactionId: 'TX-FACADE',
+        implementationAttemptId: 'IMP-FACADE',
+        auditAttemptId: 'AUD-FACADE',
+      },
+      expectedSets: expectedSetsFromConfirmation(confirmation),
+      conservationReceiptRefs: ['semantic:001'],
+      auditReceiptRefs: ['semantic:001'],
+      frozenProjectionContext: context,
+    };
+
+    projectProductionImplementationConfirmation(input);
+
+    expect(JSON.stringify(context.frozenSemanticIr)).toBe(before);
+    expect(() =>
+      projectProductionImplementationConfirmation({
+        ...input,
+        frozenProjectionContext: frozenProjectionContext('cp03', confirmation),
+      })
+    ).toThrow('requirements_projection_cp04_frozen_ir_required');
+  });
+
+  it('projects semantic values only from frozen IR when mutable confirmation text drifts', () => {
+    const frozenConfirmation = confirmationFixture();
+    const mutableConfirmation = structuredClone(frozenConfirmation);
+    (mutableConfirmation.must as Record<string, unknown>[])[0].text =
+      'Tampered mutable requirement text.';
+    (mutableConfirmation.acceptanceTests as Record<string, unknown>[])[0].oracle =
+      'Tampered mutable oracle.';
+    (mutableConfirmation.traceRows as Record<string, unknown>[])[0].targetStateAssertion =
+      'Tampered mutable trace assertion.';
+
+    const frozenResult = projectFixture(frozenConfirmation);
+    const driftedResult = projectFixture(mutableConfirmation, frozenConfirmation);
+
+    expect(driftedResult.confirmation).toEqual(frozenResult.confirmation);
+  });
+
+  it('blocks mutable confirmation rows with IDs absent from frozen IR', () => {
+    const frozenConfirmation = confirmationFixture();
+    const mutableConfirmation = structuredClone(frozenConfirmation);
+    (mutableConfirmation.must as Record<string, unknown>[]).push({
+      ...(mutableConfirmation.must as Record<string, unknown>[])[0],
+      id: 'MUST-UNKNOWN',
+    });
+
+    expect(() => projectFixture(mutableConfirmation, frozenConfirmation)).toThrow(
+      'requirements_projection_unknown_semantic_id:MUST-UNKNOWN'
+    );
+  });
+
   it('preserves localized semantic projections and expected-red acceptance metadata', () => {
     const confirmation = confirmationFixture();
     const must = (confirmation.must as Record<string, unknown>[])[0];
@@ -314,6 +507,7 @@ describe('production confirmation projection facade', () => {
       },
       conservationReceiptRefs: ['semantic:001'],
       auditReceiptRefs: ['audit:001'],
+      frozenProjectionContext: frozenProjectionContextFor(hash('b')),
     });
 
     expect(result.confirmation.recordId).toBe('REQ-FACADE');
@@ -368,6 +562,7 @@ describe('production confirmation projection facade', () => {
         },
         conservationReceiptRefs: ['semantic:001'],
         auditReceiptRefs: ['semantic:001'],
+        frozenProjectionContext: frozenProjectionContextFor(hash('b'), confirmation),
       })
     ).toThrow(/missing_required_semantic_value:must/u);
   });
@@ -414,6 +609,17 @@ describe('production confirmation projection facade', () => {
         },
       },
     ];
+    const frozenConfirmation = structuredClone(confirmation);
+    frozenConfirmation.implementationTasks = [
+      {
+        id: 'TASK-001',
+        title: 'Persist value.',
+        requirementRefs: ['MUST-001'],
+        targetPaths: ['src/target.ts'],
+        traceRefs: ['TRACE-001'],
+        evidenceRefs: ['EVD-001'],
+      },
+    ];
 
     const result = projectProductionImplementationConfirmation({
       source: {
@@ -441,6 +647,7 @@ describe('production confirmation projection facade', () => {
       },
       conservationReceiptRefs: ['semantic:001'],
       auditReceiptRefs: ['semantic:001'],
+      frozenProjectionContext: frozenProjectionContextFor(hash('b'), frozenConfirmation),
     });
 
     expect(result.confirmation.mustNot).toEqual(mustNot);
@@ -521,6 +728,7 @@ describe('production confirmation projection facade', () => {
       },
       conservationReceiptRefs: ['semantic:001'],
       auditReceiptRefs: ['semantic:001'],
+      frozenProjectionContext: frozenProjectionContextFor(hash('b'), confirmation),
     });
 
     expect(result.confirmation.sequenceViews[0].acceptanceRefs).toEqual(['ACC-001']);
@@ -559,6 +767,7 @@ describe('production confirmation projection facade', () => {
         },
         conservationReceiptRefs: ['semantic:001'],
         auditReceiptRefs: ['semantic:001'],
+        frozenProjectionContext: frozenProjectionContextFor(hash('b')),
       })
     ).toThrow(/confirmation_projection_undeclared_field:inventedBusinessTruth/u);
   });

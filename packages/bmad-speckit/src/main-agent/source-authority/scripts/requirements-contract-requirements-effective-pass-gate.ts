@@ -38,6 +38,55 @@ export interface RequirementsEffectivePassReceipt {
   receiptHash: string;
 }
 
+export function compileRequirementsEffectivePassReceiptV2(input: {
+  activeAuthority: JsonRecord;
+  aggregate: JsonRecord;
+}): JsonRecord {
+  const aggregate = input.aggregate;
+  if (
+    aggregate.schemaVersion !== 'requirements-contract-requirements-audit-aggregate/v2' ||
+    aggregate.decision !== 'pass' ||
+    !Array.isArray(aggregate.findings) || aggregate.findings.length > 0 ||
+    !Array.isArray(aggregate.issueCodes) || aggregate.issueCodes.length > 0
+  ) {
+    throw new Error('requirements_effective_pass_blocked');
+  }
+  if (
+    input.activeAuthority.activeSemanticRevisionId !== aggregate.semanticRevisionId ||
+    input.activeAuthority.activeScopeSemanticHash !== aggregate.scopeSemanticHash ||
+    input.activeAuthority.activeSourceBindingHash !== aggregate.sourceBindingHash ||
+    input.activeAuthority.activeBuildManifestHash !== aggregate.buildManifestHash
+  ) {
+    throw new Error('requirements_effective_pass_authority_stale');
+  }
+  const payload = {
+    schemaVersion: 'requirements-effective-pass-receipt/v2' as const,
+    semanticRevisionId: String(aggregate.semanticRevisionId),
+    scopeSemanticHash: requireHash(aggregate.scopeSemanticHash, 'scope_semantic_hash_invalid'),
+    sourceBindingHash: requireHash(aggregate.sourceBindingHash, 'source_binding_hash_invalid'),
+    buildManifestHash: requireHash(aggregate.buildManifestHash, 'build_manifest_hash_invalid'),
+    providerSelectionHash: requireHash(aggregate.providerSelectionHash, 'provider_selection_hash_invalid'),
+    judgeRequestHash: requireHash(aggregate.judgeRequestHash, 'judge_request_hash_invalid'),
+    judgeResponseHash: requireHash(aggregate.judgeResponseHash, 'judge_response_hash_invalid'),
+    requirementsAuditAggregateHash: requireHash(
+      aggregate.requirementsAuditAggregateHash,
+      'requirements_audit_aggregate_hash_invalid'
+    ),
+    validatedDimensionIds: aggregate.validatedDimensionIds,
+    reviewedArtifactRefs: aggregate.reviewedArtifactRefs,
+    reviewedMustRefs: aggregate.reviewedMustRefs,
+    decision: 'pass' as const,
+    writer: 'requirements-contract-requirements-effective-pass-gate.ts' as const,
+  };
+  return {
+    ...payload,
+    requirementsEffectivePassHash: sha256Stable({
+      domain: 'requirements-effective-pass-receipt/v2',
+      payload,
+    }),
+  };
+}
+
 function isRecord(value: unknown): value is JsonRecord {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }

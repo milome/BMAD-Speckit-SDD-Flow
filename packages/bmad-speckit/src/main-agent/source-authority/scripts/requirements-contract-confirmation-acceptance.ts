@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as yaml from 'js-yaml';
@@ -14,6 +15,7 @@ import {
   receiptPathForEvent,
   sha256Json,
   sha256Text,
+  writeJsonAtomic,
   type ControlCommitResult,
   type ControlStoreCommitDeps,
 } from './requirement-record-control-store';
@@ -26,8 +28,18 @@ import {
   validateRequirementsEffectivePassReceipt,
   type RequirementsEffectivePassReceipt,
 } from './requirements-contract-requirements-effective-pass-gate';
+import { artifactBytesHash, canonicalRequirementsJson } from './requirements-contract-hash-domains';
+import { atomicNoClobberPublish } from './requirements-contract-atomic-no-clobber-publisher';
+import { validateRequirementsContractBuildManifest } from './requirements-contract-authoring-manifest';
+import { validateRequirementsActiveAuthorityTuple } from './requirements-contract-authority-publication-committer';
+import { validateRequirementsContractSemanticIr } from './requirements-contract-semantic-ir';
+import { validateRequirementsContractSourceBindingCapsule } from './requirements-contract-source-binding-capsule';
+import { resolveEvidenceClaimAuthority } from './requirements-contract-span-registry';
+import { sha256Stable } from './requirements-contract-semantic-resolver';
+import { createRequirementsContractSourceBindingRefreshReceipt } from './requirements-contract-source-binding-refresh';
 
 const CONFIRMATION_WRITER_ID = 'requirements-confirmation-ingest';
+const SAFE_REQUEST_ID = /^[A-Za-z0-9][A-Za-z0-9._-]*$/u;
 const MODELS = [
   'requirement_confirmation',
   'architecture_confirmation',
@@ -60,6 +72,1157 @@ interface ConfirmationInput {
   root: string;
   args: ConfirmationArgs;
   controlStoreDeps?: ControlStoreCommitDeps;
+}
+
+type RequirementsFinalRenderInput = {
+  requestId: string;
+  confirmationLanguage: string;
+  semanticIr: JsonObject;
+  resolvedEvidenceIndex: JsonObject;
+  effectivePass: JsonObject;
+  bindingRefresh?: {
+    auditedSourceBindingHash: string;
+    currentSourceBindingHash: string;
+  };
+};
+
+type RequirementsFinalPages = {
+  markdown: string;
+  html: string;
+  exactConfirmationText: string;
+};
+
+function records(value: unknown): JsonObject[] {
+  return Array.isArray(value)
+    ? value.filter(
+        (entry): entry is JsonObject =>
+          Boolean(entry) && typeof entry === 'object' && !Array.isArray(entry)
+      )
+    : [];
+}
+
+function strings(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === 'string')
+    : [];
+}
+
+function htmlEscape(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/gu, '&amp;')
+    .replace(/</gu, '&lt;')
+    .replace(/>/gu, '&gt;')
+    .replace(/"/gu, '&quot;')
+    .replace(/'/gu, '&#39;');
+}
+
+function displayValue(value: unknown): string {
+  if (typeof value === 'string') return value;
+  return JSON.stringify(value);
+}
+
+type FinalRequirementRow = JsonObject & {
+  id: string;
+  text: string;
+  oracle: string;
+  requirementKind: 'functional' | 'nonfunctional' | 'negative';
+  polarity: 'positive' | 'negative';
+};
+
+function finalRequirementRows(
+  semanticIr: RequirementsFinalRenderInput['semanticIr']
+): FinalRequirementRow[] {
+  const semantics = object(object(semanticIr.semanticPayload).semantics);
+  const rows = records(semantics.requirements).map((row) => {
+    const id = String(row.id ?? '').trim();
+    const text = String(row.text ?? '').trim();
+    const requirementKind = String(row.requirementKind ?? '').trim();
+    const polarity = String(row.polarity ?? '').trim();
+    const negativeAssertion = String(row.negativeAssertion ?? '').trim();
+    const blockingCondition = String(row.blockingCondition ?? '').trim();
+    const oracle = String(
+      row.oracle ?? row.negativeAssertion ?? row.blockingCondition ?? ''
+    ).trim();
+    if (
+      !id ||
+      !text ||
+      !oracle ||
+      !['functional', 'nonfunctional', 'negative'].includes(requirementKind) ||
+      !['positive', 'negative'].includes(polarity) ||
+      (requirementKind === 'negative' && polarity !== 'negative') ||
+      (requirementKind !== 'negative' && polarity !== 'positive') ||
+      (requirementKind === 'negative' && (!negativeAssertion || !blockingCondition))
+    ) {
+      throw new Error(
+        `requirements_final_render_requirement_classification_invalid:${id || '<missing>'}`
+      );
+    }
+    return {
+      ...row,
+      id,
+      text,
+      oracle,
+      requirementKind: requirementKind as FinalRequirementRow['requirementKind'],
+      polarity: polarity as FinalRequirementRow['polarity'],
+      ...(requirementKind === 'negative' ? { negativeAssertion, blockingCondition } : {}),
+    };
+  });
+  const ids = new Set<string>();
+  for (const row of rows) {
+    if (ids.has(row.id))
+      throw new Error(`requirements_final_render_requirement_identity_duplicate:${row.id}`);
+    ids.add(row.id);
+  }
+  if (rows.length === 0) throw new Error('requirements_final_render_requirement_rows_missing');
+  return rows;
+}
+
+function requirementsConfirmationText(input: RequirementsFinalRenderInput): string {
+  const phrase =
+    input.confirmationLanguage === 'zh-CN'
+      ? '确认以上需求范围进入下一阶段'
+      : 'Confirm the Requirements scope above for the next stage';
+  return [
+    phrase,
+    `requestId=${input.requestId}`,
+    `semanticRevisionId=${input.semanticIr.semanticRevisionId}`,
+    `scopeSemanticHash=${input.semanticIr.scopeSemanticHash}`,
+    `bindingRevisionId=${input.resolvedEvidenceIndex.bindingRevisionId}`,
+    `requirementsEffectivePassHash=${input.effectivePass.requirementsEffectivePassHash}`,
+  ].join('\n');
+}
+
+export function projectRequirementsContractFinalPages(
+  input: RequirementsFinalRenderInput
+): RequirementsFinalPages {
+  const semantics = object(input.semanticIr.semanticPayload).semantics as Record<string, unknown>;
+  const requirements = finalRequirementRows(input.semanticIr);
+  const atoms = records(object(semantics).atoms);
+  const decisions = records(object(semantics).decisions);
+  const claims = records(object(input.semanticIr.semanticPayload).evidenceClaims);
+  const exactConfirmationText = requirementsConfirmationText(input);
+  const markdown = [
+    '# Requirements Contract',
+    '',
+    `Request: \`${input.requestId}\``,
+    `Semantic revision: \`${input.semanticIr.semanticRevisionId}\``,
+    `Binding revision: \`${input.resolvedEvidenceIndex.bindingRevisionId}\``,
+    '',
+    '## Requirements',
+    '',
+    ...requirements.flatMap((requirement) => [
+      `### ${requirement.id}`,
+      '',
+      String(requirement.text),
+      '',
+      requirement.requirementKind === 'negative'
+        ? `Negative assertion: ${requirement.oracle}`
+        : `Acceptance oracle: ${requirement.oracle}`,
+      `Requirement kind: ${requirement.requirementKind}`,
+      `Polarity: ${requirement.polarity}`,
+      ...(requirement.requirementKind === 'negative'
+        ? [`Blocks completion when: ${String(requirement.blockingCondition ?? requirement.oracle)}`]
+        : []),
+      '',
+      ...atoms
+        .filter((atom) => atom.requirementRef === requirement.id)
+        .map((atom) => `- ${atom.id}: ${atom.action} | ${atom.oracle}`),
+      '',
+    ]),
+    '## Confirmed Decisions',
+    '',
+    ...(decisions.length > 0
+      ? decisions.flatMap((decision) => [
+          `### ${decision.questionId}`,
+          '',
+          String(decision.question),
+          '',
+          `Fields: ${strings(decision.affectedFieldIds).join(', ')}`,
+          `Answer: ${displayValue(decision.answerValue)}`,
+          `Decision receipt: ${decision.decisionReceiptRef}`,
+          '',
+        ])
+      : ['No user decisions were required.', '']),
+    '## Authority Citations',
+    '',
+    ...claims.map(
+      (claim) =>
+        `- ${claim.evidenceClaimId}: ${claim.authorityClass}` +
+        (Array.isArray(claim.decisionReceiptRefs) && claim.decisionReceiptRefs.length > 0
+          ? ` (${claim.decisionReceiptRefs.join(', ')})`
+          : '')
+    ),
+    '',
+    '## Confirmation',
+    '',
+    '```text',
+    exactConfirmationText,
+    '```',
+    '',
+  ].join('\n');
+  const html = [
+    '<!doctype html>',
+    `<html lang="${htmlEscape(input.confirmationLanguage)}">`,
+    '<head><meta charset="utf-8"><title>Requirements Contract</title></head>',
+    '<body>',
+    `<main data-request-id="${htmlEscape(input.requestId)}" data-semantic-revision-id="${htmlEscape(input.semanticIr.semanticRevisionId)}">`,
+    '<h1>Requirements Contract</h1>',
+    '<section id="requirements"><h2>Requirements</h2>',
+    ...requirements.map(
+      (requirement) =>
+        `<article data-requirement-id="${htmlEscape(requirement.id)}" data-requirement-kind="${htmlEscape(requirement.requirementKind)}" data-requirement-polarity="${htmlEscape(requirement.polarity)}"><h3>${htmlEscape(requirement.id)}</h3><p data-requirement-classification><strong>Requirement kind:</strong> ${htmlEscape(requirement.requirementKind)} <strong>Polarity:</strong> ${htmlEscape(requirement.polarity)}</p><p data-requirement-text>${htmlEscape(requirement.text)}</p><p data-requirement-oracle${requirement.requirementKind === 'negative' ? ' data-negative-assertion' : ''}><strong>${requirement.requirementKind === 'negative' ? 'Negative assertion' : 'Acceptance oracle'}:</strong> ${htmlEscape(requirement.oracle)}</p>${requirement.requirementKind === 'negative' ? `<p data-blocking-condition><strong>Blocks completion when:</strong> ${htmlEscape(requirement.blockingCondition ?? requirement.oracle)}</p>` : ''}</article>`
+    ),
+    '</section>',
+    '<section id="confirmed-decisions"><h2>Confirmed Decisions</h2>',
+    ...decisions.map(
+      (decision) =>
+        `<article data-decision-receipt="${htmlEscape(decision.decisionReceiptRef)}"><h3>${htmlEscape(decision.questionId)}</h3><p>${htmlEscape(decision.question)}</p><p>${htmlEscape(strings(decision.affectedFieldIds).join(', '))}</p><pre>${htmlEscape(displayValue(decision.answerValue))}</pre></article>`
+    ),
+    '</section>',
+    '<section id="authority-citations"><h2>Authority Citations</h2><ul>',
+    ...claims.map(
+      (claim) =>
+        `<li data-evidence-claim="${htmlEscape(claim.evidenceClaimId)}">${htmlEscape(claim.evidenceClaimId)}: ${htmlEscape(claim.authorityClass)}</li>`
+    ),
+    '</ul></section>',
+    `<section id="confirmation"><h2>Confirmation</h2><pre>${htmlEscape(exactConfirmationText)}</pre></section>`,
+    '</main>',
+    '</body></html>',
+    '',
+  ].join('\n');
+  return { markdown, html, exactConfirmationText };
+}
+
+export function validateRequirementsContractFinalRenderProjection(
+  input: RequirementsFinalRenderInput & { pages: RequirementsFinalPages }
+) {
+  const issueCodes: string[] = [];
+  const semanticValidation = validateRequirementsContractSemanticIr(input.semanticIr);
+  issueCodes.push(
+    ...semanticValidation.issueCodes.map((code) => `requirements_final_render_${code}`)
+  );
+  const passBindingCurrent =
+    input.effectivePass.sourceBindingHash === input.resolvedEvidenceIndex.sourceBindingHash;
+  const passBindingRefreshValid = Boolean(
+    input.bindingRefresh &&
+    input.effectivePass.sourceBindingHash === input.bindingRefresh.auditedSourceBindingHash &&
+    input.resolvedEvidenceIndex.sourceBindingHash === input.bindingRefresh.currentSourceBindingHash
+  );
+  if (
+    input.effectivePass.decision !== 'pass' ||
+    input.effectivePass.semanticRevisionId !== input.semanticIr.semanticRevisionId ||
+    input.effectivePass.scopeSemanticHash !== input.semanticIr.scopeSemanticHash ||
+    (!passBindingCurrent && !passBindingRefreshValid)
+  ) {
+    issueCodes.push('requirements_final_render_effective_pass_stale');
+  }
+  if (input.resolvedEvidenceIndex.semanticRevisionId !== input.semanticIr.semanticRevisionId) {
+    issueCodes.push('requirements_final_render_resolved_evidence_stale');
+  }
+  const resolutionByClaim = new Map(
+    records(input.resolvedEvidenceIndex.resolutions).map((resolution) => [
+      resolution.evidenceClaimId,
+      resolution,
+    ])
+  );
+  for (const claim of records(object(input.semanticIr.semanticPayload).evidenceClaims)) {
+    const resolution = resolutionByClaim.get(claim.evidenceClaimId);
+    if (!resolution || resolution.authorityClass !== claim.authorityClass) {
+      issueCodes.push('requirements_final_render_authority_resolution_missing');
+      continue;
+    }
+    const authority = resolveEvidenceClaimAuthority(resolution as never);
+    issueCodes.push(...authority.issueCodes.map((code) => `requirements_final_render_${code}`));
+  }
+  const semantics = object(input.semanticIr.semanticPayload).semantics as Record<string, unknown>;
+  let requirements: FinalRequirementRow[] = [];
+  try {
+    requirements = finalRequirementRows(input.semanticIr);
+  } catch (error) {
+    issueCodes.push(
+      error instanceof Error ? error.message : 'requirements_final_render_requirement_rows_invalid'
+    );
+  }
+  const expectedRequirementIds = new Set(requirements.map((requirement) => requirement.id));
+  const renderedRequirementIds = [
+    ...input.pages.html.matchAll(/data-requirement-id="([^"]+)"/gu),
+  ].map((match) => match[1]);
+  if (
+    renderedRequirementIds.length !== expectedRequirementIds.size ||
+    new Set(renderedRequirementIds).size !== renderedRequirementIds.length ||
+    renderedRequirementIds.some((id) => !expectedRequirementIds.has(id))
+  ) {
+    issueCodes.push('requirements_final_render_requirement_identity_coverage_gap');
+  }
+  for (const requirement of requirements) {
+    for (const value of [
+      requirement.id,
+      requirement.text,
+      requirement.oracle,
+      requirement.requirementKind,
+      requirement.polarity,
+      ...(requirement.requirementKind === 'negative'
+        ? [requirement.blockingCondition ?? requirement.oracle]
+        : []),
+    ]) {
+      if (
+        !input.pages.markdown.includes(String(value)) ||
+        !input.pages.html.includes(htmlEscape(value))
+      ) {
+        issueCodes.push('requirements_final_render_requirement_projection_gap');
+      }
+    }
+    const cardPrefix =
+      `<article data-requirement-id="${htmlEscape(requirement.id)}" ` +
+      `data-requirement-kind="${htmlEscape(requirement.requirementKind)}" ` +
+      `data-requirement-polarity="${htmlEscape(requirement.polarity)}"`;
+    if (!input.pages.html.includes(cardPrefix)) {
+      issueCodes.push('requirements_final_render_requirement_classification_gap');
+    }
+  }
+  for (const decision of records(object(semantics).decisions)) {
+    const requiredValues = [
+      decision.questionId,
+      decision.question,
+      decision.decisionReceiptRef,
+      ...strings(decision.affectedFieldIds),
+      displayValue(decision.answerValue),
+    ];
+    if (
+      requiredValues.some(
+        (value) =>
+          !input.pages.markdown.includes(String(value)) ||
+          !input.pages.html.includes(htmlEscape(value))
+      )
+    ) {
+      issueCodes.push('requirements_final_render_decision_projection_gap');
+    }
+  }
+  const expected = projectRequirementsContractFinalPages(input);
+  if (
+    input.pages.markdown !== expected.markdown ||
+    input.pages.html !== expected.html ||
+    input.pages.exactConfirmationText !== expected.exactConfirmationText
+  ) {
+    issueCodes.push('requirements_final_render_projection_drift');
+  }
+  return {
+    decision: issueCodes.length > 0 ? ('block' as const) : ('pass' as const),
+    issueCodes: [...new Set(issueCodes)].sort(),
+  };
+}
+
+function replaceBytesAtomic(targetPath: string, bytes: string): string {
+  const resolved = path.resolve(targetPath);
+  const directory = path.dirname(resolved);
+  fs.mkdirSync(directory, { recursive: true });
+  const temporary = path.join(
+    directory,
+    `.${path.basename(resolved)}.binding-refresh.${process.pid}.${randomUUID()}.tmp`
+  );
+  let descriptor: number | null = null;
+  try {
+    descriptor = fs.openSync(temporary, 'wx', 0o600);
+    fs.writeFileSync(descriptor, bytes, 'utf8');
+    fs.fsyncSync(descriptor);
+    fs.closeSync(descriptor);
+    descriptor = null;
+    if (fs.readFileSync(temporary, 'utf8') !== bytes) {
+      throw new Error('requirements_binding_refresh_temp_readback_mismatch');
+    }
+    fs.renameSync(temporary, resolved);
+    const readback = fs.readFileSync(resolved, 'utf8');
+    if (readback !== bytes) throw new Error('requirements_binding_refresh_page_readback_mismatch');
+    return readback;
+  } finally {
+    if (descriptor !== null) fs.closeSync(descriptor);
+    if (fs.existsSync(temporary)) fs.unlinkSync(temporary);
+  }
+}
+
+function validateRefreshReceiptHash(receipt: JsonObject): void {
+  const { receiptHash, ...payload } = receipt;
+  if (
+    receipt.schemaVersion !== 'requirements-source-binding-refresh-receipt/v2' ||
+    receiptHash !==
+      sha256Stable({ domain: 'requirements-source-binding-refresh-receipt/v2', payload })
+  ) {
+    throw new Error('requirements_binding_refresh_receipt_invalid');
+  }
+}
+
+function confirmationTextFromMarkdown(markdown: string): string {
+  const marker = '## Confirmation\n\n```text\n';
+  const start = markdown.indexOf(marker);
+  if (start < 0) throw new Error('requirements_confirmation_page_text_missing');
+  const bodyStart = start + marker.length;
+  const end = markdown.indexOf('\n```', bodyStart);
+  if (end < 0) throw new Error('requirements_confirmation_page_text_missing');
+  return markdown.slice(bodyStart, end);
+}
+
+export function stageRequirementsContractConfirmationBindingRefresh(input: {
+  projectRoot: string;
+  requestId: string;
+  bindingRevisionId: string;
+}) {
+  const root = path.resolve(input.projectRoot);
+  const recordRoot = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    input.requestId
+  );
+  const recordPath = path.join(recordRoot, 'record', 'requirement-record.json');
+  const record = readJson(recordPath);
+  const activeAuthority = object(record.activeAuthority);
+  const tupleValidation = validateRequirementsActiveAuthorityTuple(activeAuthority);
+  if (tupleValidation.decision === 'block') throw new Error(tupleValidation.issueCodes[0]);
+  const semanticIr = readJson(
+    confinedRecordArtifact(recordRoot, text(activeAuthority.activeSemanticIrPath))
+  );
+  const sourceBinding = readJson(
+    path.join(
+      recordRoot,
+      'authoring',
+      'source-bindings',
+      input.bindingRevisionId,
+      'source-binding.json'
+    )
+  );
+  const resolvedEvidenceIndex = readJson(
+    path.join(
+      recordRoot,
+      'authoring',
+      'source-bindings',
+      input.bindingRevisionId,
+      'resolved-evidence-index.json'
+    )
+  );
+  const effectivePass = readJson(
+    path.join(recordRoot, 'quality', 'requirements-effective-pass-receipt.json')
+  );
+  validateEffectivePassV2(effectivePass);
+  const promotionPath = path.join(
+    recordRoot,
+    'confirmation',
+    'confirmation-promotion-receipt.json'
+  );
+  const promotion = readJson(promotionPath);
+  if (
+    promotion.requestId !== input.requestId ||
+    promotion.semanticRevisionId !== activeAuthority.activeSemanticRevisionId ||
+    promotion.scopeSemanticHash !== activeAuthority.activeScopeSemanticHash ||
+    promotion.buildManifestHash !== activeAuthority.activeBuildManifestHash ||
+    promotion.requirementsEffectivePassHash !== effectivePass.requirementsEffectivePassHash ||
+    promotion.sourceBindingHash !== effectivePass.sourceBindingHash ||
+    sourceBinding.semanticRevisionId !== semanticIr.semanticRevisionId ||
+    sourceBinding.scopeSemanticHash !== semanticIr.scopeSemanticHash
+  ) {
+    throw new Error('requirements_binding_refresh_promotion_stale');
+  }
+  const context = readJson(
+    path.join(
+      recordRoot,
+      'authoring',
+      'staging',
+      text(activeAuthority.activeAuthoringAttemptId),
+      'authoring-context.json'
+    )
+  );
+  const renderInput: RequirementsFinalRenderInput = {
+    requestId: input.requestId,
+    confirmationLanguage: text(context.confirmationLanguage) || 'en-US',
+    semanticIr,
+    resolvedEvidenceIndex,
+    effectivePass,
+    bindingRefresh: {
+      auditedSourceBindingHash: promotion.sourceBindingHash,
+      currentSourceBindingHash: sourceBinding.sourceBindingHash,
+    },
+  };
+  const pages = projectRequirementsContractFinalPages(renderInput);
+  const lint = validateRequirementsContractFinalRenderProjection({ ...renderInput, pages });
+  if (lint.decision === 'block') throw new Error(lint.issueCodes[0]);
+  const stagingRoot = path.join(
+    recordRoot,
+    'confirmation',
+    'staging',
+    'binding-refresh',
+    sourceBinding.bindingRevisionId
+  );
+  const stagedMarkdown = atomicNoClobberPublish({
+    targetPath: path.join(stagingRoot, 'requirements.md'),
+    bytes: pages.markdown,
+    role: 'final_markdown',
+    mediaType: 'text/markdown',
+  });
+  const stagedHtml = atomicNoClobberPublish({
+    targetPath: path.join(stagingRoot, 'requirements.html'),
+    bytes: pages.html,
+    role: 'confirmation_html',
+    mediaType: 'text/html',
+  });
+  return {
+    bindingRevisionId: sourceBinding.bindingRevisionId,
+    sourceBindingHash: sourceBinding.sourceBindingHash,
+    exactConfirmationText: pages.exactConfirmationText,
+    stagingRoot,
+    stagedMarkdown,
+    stagedHtml,
+  };
+}
+
+export function refreshRequirementsContractConfirmationBinding(input: {
+  projectRoot: string;
+  requestId: string;
+}) {
+  const root = path.resolve(input.projectRoot);
+  const recordRoot = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    input.requestId
+  );
+  const recordPath = path.join(recordRoot, 'record', 'requirement-record.json');
+  const record = readJson(recordPath);
+  const activeAuthority = object(record.activeAuthority);
+  const tupleValidation = validateRequirementsActiveAuthorityTuple(activeAuthority);
+  if (tupleValidation.decision === 'block') throw new Error(tupleValidation.issueCodes[0]);
+  const semanticIr = readJson(
+    confinedRecordArtifact(recordRoot, text(activeAuthority.activeSemanticIrPath))
+  );
+  const sourceBinding = readJson(
+    confinedRecordArtifact(recordRoot, text(activeAuthority.activeSourceBindingPath))
+  );
+  const parentBindingRevisionId = text(sourceBinding.parentBindingRevisionId);
+  if (!parentBindingRevisionId) throw new Error('requirements_binding_refresh_parent_missing');
+  const parentBinding = readJson(
+    path.join(
+      recordRoot,
+      'authoring',
+      'source-bindings',
+      parentBindingRevisionId,
+      'source-binding.json'
+    )
+  );
+  const effectivePass = readJson(
+    path.join(recordRoot, 'quality', 'requirements-effective-pass-receipt.json')
+  );
+  validateEffectivePassV2(effectivePass);
+  const promotionPath = path.join(
+    recordRoot,
+    'confirmation',
+    'confirmation-promotion-receipt.json'
+  );
+  const promotion = readJson(promotionPath);
+  const promotionArtifactBytesHash = artifactBytesHash({
+    role: 'promotion_receipt',
+    mediaType: 'application/json',
+    bytes: fs.readFileSync(promotionPath),
+  });
+  if (
+    promotion.requestId !== input.requestId ||
+    promotion.semanticRevisionId !== activeAuthority.activeSemanticRevisionId ||
+    promotion.scopeSemanticHash !== activeAuthority.activeScopeSemanticHash ||
+    promotion.buildManifestHash !== activeAuthority.activeBuildManifestHash ||
+    promotion.requirementsEffectivePassHash !== effectivePass.requirementsEffectivePassHash ||
+    promotion.sourceBindingHash !== effectivePass.sourceBindingHash ||
+    sourceBinding.semanticRevisionId !== semanticIr.semanticRevisionId ||
+    sourceBinding.scopeSemanticHash !== semanticIr.scopeSemanticHash
+  ) {
+    throw new Error('requirements_binding_refresh_promotion_stale');
+  }
+  const stagingRoot = path.join(
+    recordRoot,
+    'confirmation',
+    'staging',
+    'binding-refresh',
+    sourceBinding.bindingRevisionId
+  );
+  const stagedMarkdownPath = path.join(stagingRoot, 'requirements.md');
+  const stagedHtmlPath = path.join(stagingRoot, 'requirements.html');
+  if (!fs.existsSync(stagedMarkdownPath) || !fs.existsSync(stagedHtmlPath)) {
+    throw new Error('requirements_binding_refresh_staged_pages_missing');
+  }
+  const stagedMarkdown = fs.readFileSync(stagedMarkdownPath, 'utf8');
+  const stagedHtml = fs.readFileSync(stagedHtmlPath, 'utf8');
+  const markdownArtifact = records(promotion.artifacts).find(
+    (artifact) => artifact.role === 'final_markdown'
+  );
+  const htmlArtifact = records(promotion.artifacts).find(
+    (artifact) => artifact.role === 'confirmation_html'
+  );
+  if (!markdownArtifact || !htmlArtifact) {
+    throw new Error('requirements_binding_refresh_promotion_artifacts_missing');
+  }
+  const targetMarkdownPath = resolvePath(root, text(markdownArtifact.targetPath));
+  const targetHtmlPath = resolvePath(root, text(htmlArtifact.targetPath));
+  const markdownReadback = replaceBytesAtomic(targetMarkdownPath, stagedMarkdown);
+  const htmlReadback = replaceBytesAtomic(targetHtmlPath, stagedHtml);
+  const markdownArtifactBytesHash = artifactBytesHash({
+    role: 'final_markdown',
+    mediaType: 'text/markdown',
+    bytes: markdownReadback,
+  });
+  const htmlArtifactBytesHash = artifactBytesHash({
+    role: 'confirmation_html',
+    mediaType: 'text/html',
+    bytes: htmlReadback,
+  });
+  if (markdownReadback !== stagedMarkdown || htmlReadback !== stagedHtml) {
+    throw new Error('requirements_binding_refresh_page_promotion_mismatch');
+  }
+  const refreshReceipt = createRequirementsContractSourceBindingRefreshReceipt({
+    semanticRevisionId: semanticIr.semanticRevisionId,
+    scopeSemanticHash: semanticIr.scopeSemanticHash,
+    fromBindingRevisionId: parentBinding.bindingRevisionId,
+    toBindingRevisionId: sourceBinding.bindingRevisionId,
+    fromSourceBindingHash: parentBinding.sourceBindingHash,
+    toSourceBindingHash: sourceBinding.sourceBindingHash,
+    fromSnapshotSetHash: sha256Stable(parentBinding.sourceArtifacts),
+    toSnapshotSetHash: sha256Stable(sourceBinding.sourceArtifacts),
+    fromSourceSpanRegistryHash: parentBinding.sourceSpanRegistryHash,
+    toSourceSpanRegistryHash: sourceBinding.sourceSpanRegistryHash,
+    evidenceClaimRegistryHash: sourceBinding.evidenceClaimBindingRegistryHash,
+    pageEvidence: {
+      confirmationPromotionReceiptRef: {
+        path: 'confirmation/confirmation-promotion-receipt.json',
+        hash: promotionArtifactBytesHash,
+      },
+      pageArtifactBytesHash: markdownArtifactBytesHash,
+      htmlPageArtifactBytesHash: htmlArtifactBytesHash,
+    },
+  });
+  const refreshReceiptPath = path.join(
+    recordRoot,
+    'authoring',
+    'source-bindings',
+    sourceBinding.bindingRevisionId,
+    'source-binding-refresh-receipt.json'
+  );
+  const receiptPublication = atomicNoClobberPublish({
+    targetPath: refreshReceiptPath,
+    value: refreshReceipt,
+    role: 'source-binding-refresh-receipt',
+    mediaType: 'application/json',
+  });
+  const nextRecord = {
+    ...record,
+    lifecycle: record.lifecycle === 'user_confirmed' ? 'user_confirmed' : 'user_confirmable',
+    currentPromotionEvidence: {
+      path: path.relative(recordRoot, refreshReceiptPath).replace(/\\/gu, '/'),
+      artifactBytesHash: receiptPublication.artifactBytesHash,
+    },
+  };
+  if (canonicalRequirementsJson(nextRecord) !== canonicalRequirementsJson(record)) {
+    writeJsonAtomic(recordPath, nextRecord);
+  }
+  return {
+    status: nextRecord.lifecycle,
+    unresolvedDecisionCount: 0,
+    confirmation: {
+      exactConfirmationText: confirmationTextFromMarkdown(stagedMarkdown),
+      markdownPath: path.relative(root, targetMarkdownPath).replace(/\\/gu, '/'),
+      htmlPath: path.relative(root, targetHtmlPath).replace(/\\/gu, '/'),
+      markdownArtifactBytesHash,
+      htmlArtifactBytesHash,
+      promotionReceiptPath: path.relative(recordRoot, refreshReceiptPath).replace(/\\/gu, '/'),
+      promotionArtifactBytesHash: receiptPublication.artifactBytesHash,
+    },
+  };
+}
+
+function confinedRecordArtifact(recordRoot: string, recordRelativePath: string): string {
+  const resolved = path.resolve(recordRoot, ...recordRelativePath.split('/'));
+  const relative = path.relative(recordRoot, resolved);
+  if (!recordRelativePath || relative.startsWith('..') || path.isAbsolute(relative)) {
+    throw new Error('requirements_confirmation_artifact_path_escape');
+  }
+  return resolved;
+}
+
+function validateEffectivePassV2(value: JsonObject): void {
+  const { requirementsEffectivePassHash, ...payload } = value;
+  if (
+    value.schemaVersion !== 'requirements-effective-pass-receipt/v2' ||
+    value.decision !== 'pass' ||
+    requirementsEffectivePassHash !==
+      sha256Stable({ domain: 'requirements-effective-pass-receipt/v2', payload })
+  ) {
+    throw new Error('requirements_final_render_effective_pass_invalid');
+  }
+}
+
+export function renderAndPromoteRequirementsContractConfirmation(input: {
+  projectRoot: string;
+  requestId: string;
+}) {
+  const root = path.resolve(input.projectRoot);
+  const recordRoot = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    input.requestId
+  );
+  const requirementRecordPath = path.join(recordRoot, 'record', 'requirement-record.json');
+  const requirementRecord = readJson(requirementRecordPath);
+  const activeAuthority = object(requirementRecord.activeAuthority);
+  const tupleValidation = validateRequirementsActiveAuthorityTuple(activeAuthority);
+  if (tupleValidation.decision === 'block') throw new Error(tupleValidation.issueCodes[0]);
+  const buildManifest = readJson(
+    confinedRecordArtifact(recordRoot, text(activeAuthority.activeBuildManifestPath))
+  );
+  const buildValidation = validateRequirementsContractBuildManifest(buildManifest);
+  if (buildValidation.decision === 'block') throw new Error(buildValidation.issueCodes[0]);
+  if (buildManifest.buildManifestHash !== activeAuthority.activeBuildManifestHash) {
+    throw new Error('requirements_final_render_build_manifest_stale');
+  }
+  const semanticIr = readJson(
+    confinedRecordArtifact(recordRoot, text(activeAuthority.activeSemanticIrPath))
+  );
+  const sourceBinding = readJson(
+    confinedRecordArtifact(recordRoot, text(activeAuthority.activeSourceBindingPath))
+  );
+  const bindingValidation = validateRequirementsContractSourceBindingCapsule(sourceBinding);
+  if (bindingValidation.decision === 'block') throw new Error(bindingValidation.issueCodes[0]);
+  if (
+    semanticIr.semanticRevisionId !== activeAuthority.activeSemanticRevisionId ||
+    semanticIr.scopeSemanticHash !== activeAuthority.activeScopeSemanticHash ||
+    sourceBinding.bindingRevisionId !== activeAuthority.activeBindingRevisionId ||
+    sourceBinding.sourceBindingHash !== activeAuthority.activeSourceBindingHash
+  ) {
+    throw new Error('requirements_final_render_active_authority_stale');
+  }
+  const resolvedEvidenceIndex = readJson(
+    path.join(
+      recordRoot,
+      'authoring',
+      'source-bindings',
+      text(activeAuthority.activeBindingRevisionId),
+      'resolved-evidence-index.json'
+    )
+  );
+  const effectivePass = readJson(
+    path.join(recordRoot, 'quality', 'requirements-effective-pass-receipt.json')
+  );
+  validateEffectivePassV2(effectivePass);
+  if (effectivePass.buildManifestHash !== buildManifest.buildManifestHash) {
+    throw new Error('requirements_final_render_effective_pass_stale');
+  }
+  const context = readJson(
+    path.join(
+      recordRoot,
+      'authoring',
+      'staging',
+      text(activeAuthority.activeAuthoringAttemptId),
+      'authoring-context.json'
+    )
+  );
+  const renderInput: RequirementsFinalRenderInput = {
+    requestId: input.requestId,
+    confirmationLanguage: text(context.confirmationLanguage) || 'en-US',
+    semanticIr,
+    resolvedEvidenceIndex,
+    effectivePass,
+  };
+  const pages = projectRequirementsContractFinalPages(renderInput);
+  const lint = validateRequirementsContractFinalRenderProjection({ ...renderInput, pages });
+  if (lint.decision === 'block') throw new Error(lint.issueCodes[0]);
+  const stagingRoot = path.join(recordRoot, 'confirmation', 'staging');
+  const stagedMarkdownPath = path.join(stagingRoot, 'requirements.md');
+  const stagedHtmlPath = path.join(stagingRoot, 'requirements.html');
+  const stagedMarkdown = atomicNoClobberPublish({
+    targetPath: stagedMarkdownPath,
+    bytes: pages.markdown,
+    role: 'final_markdown',
+    mediaType: 'text/markdown',
+  });
+  const stagedHtml = atomicNoClobberPublish({
+    targetPath: stagedHtmlPath,
+    bytes: pages.html,
+    role: 'confirmation_html',
+    mediaType: 'text/html',
+  });
+  const report = {
+    schemaVersion: 'requirements-contract-confirmation-render-report/v1',
+    requestId: input.requestId,
+    semanticRevisionId: semanticIr.semanticRevisionId,
+    scopeSemanticHash: semanticIr.scopeSemanticHash,
+    bindingRevisionId: sourceBinding.bindingRevisionId,
+    sourceBindingHash: sourceBinding.sourceBindingHash,
+    buildManifestHash: buildManifest.buildManifestHash,
+    requirementsEffectivePassHash: effectivePass.requirementsEffectivePassHash,
+    decision: 'pass',
+    issueCodes: [],
+    exactConfirmationText: pages.exactConfirmationText,
+    artifacts: [
+      {
+        role: 'final_markdown',
+        mediaType: 'text/markdown',
+        stagingPath: path.relative(recordRoot, stagedMarkdownPath).replace(/\\/gu, '/'),
+        artifactBytesHash: stagedMarkdown.artifactBytesHash,
+        byteLength: stagedMarkdown.byteLength,
+      },
+      {
+        role: 'confirmation_html',
+        mediaType: 'text/html',
+        stagingPath: path.relative(recordRoot, stagedHtmlPath).replace(/\\/gu, '/'),
+        artifactBytesHash: stagedHtml.artifactBytesHash,
+        byteLength: stagedHtml.byteLength,
+      },
+    ],
+  };
+  const reportPath = path.join(recordRoot, 'confirmation', 'confirmation-render-report.json');
+  const reportPublication = atomicNoClobberPublish({
+    targetPath: reportPath,
+    value: report,
+    role: 'confirmation_render_report',
+    mediaType: 'application/json',
+  });
+  const targetMarkdownPath = resolvePath(root, text(context.targetSource));
+  const relativeTarget = path.relative(root, targetMarkdownPath);
+  if (relativeTarget.startsWith('..') || path.isAbsolute(relativeTarget)) {
+    throw new Error('requirements_final_render_target_path_escape');
+  }
+  const targetHtmlPath = targetMarkdownPath.replace(/\.[^.]+$/u, '') + '.html';
+  const markdownPromotion = atomicNoClobberPublish({
+    targetPath: targetMarkdownPath,
+    bytes: pages.markdown,
+    role: 'final_markdown',
+    mediaType: 'text/markdown',
+  });
+  const htmlPromotion = atomicNoClobberPublish({
+    targetPath: targetHtmlPath,
+    bytes: pages.html,
+    role: 'confirmation_html',
+    mediaType: 'text/html',
+  });
+  const promotionReceipt = {
+    schemaVersion: 'requirements-contract-confirmation-promotion-receipt/v1',
+    requestId: input.requestId,
+    semanticRevisionId: semanticIr.semanticRevisionId,
+    scopeSemanticHash: semanticIr.scopeSemanticHash,
+    bindingRevisionId: sourceBinding.bindingRevisionId,
+    sourceBindingHash: sourceBinding.sourceBindingHash,
+    buildManifestHash: buildManifest.buildManifestHash,
+    requirementsEffectivePassHash: effectivePass.requirementsEffectivePassHash,
+    renderReportRef: {
+      path: path.relative(recordRoot, reportPath).replace(/\\/gu, '/'),
+      artifactBytesHash: reportPublication.artifactBytesHash,
+    },
+    exactConfirmationText: pages.exactConfirmationText,
+    artifacts: [
+      {
+        role: 'final_markdown',
+        targetPath: path.relative(root, targetMarkdownPath).replace(/\\/gu, '/'),
+        artifactBytesHash: markdownPromotion.artifactBytesHash,
+      },
+      {
+        role: 'confirmation_html',
+        targetPath: path.relative(root, targetHtmlPath).replace(/\\/gu, '/'),
+        artifactBytesHash: htmlPromotion.artifactBytesHash,
+      },
+    ],
+  };
+  const promotionReceiptPath = path.join(
+    recordRoot,
+    'confirmation',
+    'confirmation-promotion-receipt.json'
+  );
+  const promotionPublication = atomicNoClobberPublish({
+    targetPath: promotionReceiptPath,
+    value: promotionReceipt,
+    role: 'promotion_receipt',
+    mediaType: 'application/json',
+  });
+  const nextRecord = {
+    ...requirementRecord,
+    lifecycle: 'user_confirmable',
+    currentPromotionEvidence: {
+      path: 'confirmation/confirmation-promotion-receipt.json',
+      artifactBytesHash: promotionPublication.artifactBytesHash,
+    },
+  };
+  if (canonicalRequirementsJson(nextRecord) !== canonicalRequirementsJson(requirementRecord)) {
+    writeJsonAtomic(requirementRecordPath, nextRecord);
+  }
+  return {
+    status: 'user_confirmable' as const,
+    unresolvedDecisionCount: 0,
+    confirmation: {
+      exactConfirmationText: pages.exactConfirmationText,
+      markdownPath: path.relative(root, targetMarkdownPath).replace(/\\/gu, '/'),
+      htmlPath: path.relative(root, targetHtmlPath).replace(/\\/gu, '/'),
+      markdownArtifactBytesHash: markdownPromotion.artifactBytesHash,
+      htmlArtifactBytesHash: htmlPromotion.artifactBytesHash,
+      promotionReceiptPath: 'confirmation/confirmation-promotion-receipt.json',
+      promotionArtifactBytesHash: promotionPublication.artifactBytesHash,
+    },
+  };
+}
+
+export function confirmRequirementsContractIrScope(input: {
+  projectRoot: string;
+  requestId: string;
+  exactConfirmationText: string;
+}) {
+  if (!SAFE_REQUEST_ID.test(input.requestId)) {
+    throw new Error('requirements_confirmation_request_id_invalid');
+  }
+  const recordRoot = path.join(
+    path.resolve(input.projectRoot),
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    input.requestId
+  );
+  const recordPath = path.join(recordRoot, 'record', 'requirement-record.json');
+  const record = readJson(recordPath);
+  if (record.lifecycle !== 'user_confirmable' && record.lifecycle !== 'user_confirmed') {
+    throw new Error('requirements_confirmation_not_confirmable');
+  }
+  const activeAuthority = object(record.activeAuthority);
+  const tupleValidation = validateRequirementsActiveAuthorityTuple(activeAuthority);
+  if (tupleValidation.decision === 'block') {
+    throw new Error('requirements_confirmation_promotion_stale');
+  }
+  const effectivePassPath = path.join(
+    recordRoot,
+    'quality',
+    'requirements-effective-pass-receipt.json'
+  );
+  if (!fs.existsSync(effectivePassPath)) {
+    throw new Error('requirements_confirmation_effective_pass_missing');
+  }
+  let effectivePass: JsonObject;
+  try {
+    effectivePass = readJson(effectivePassPath);
+    validateEffectivePassV2(effectivePass);
+  } catch {
+    throw new Error('requirements_confirmation_effective_pass_invalid');
+  }
+  if (
+    effectivePass.semanticRevisionId !== activeAuthority.activeSemanticRevisionId ||
+    effectivePass.scopeSemanticHash !== activeAuthority.activeScopeSemanticHash ||
+    effectivePass.buildManifestHash !== activeAuthority.activeBuildManifestHash
+  ) {
+    throw new Error('requirements_confirmation_effective_pass_invalid');
+  }
+  const originalPromotionPath = path.join(
+    recordRoot,
+    'confirmation',
+    'confirmation-promotion-receipt.json'
+  );
+  const originalPromotion = readJson(originalPromotionPath);
+  const currentPromotionEvidence = object(record.currentPromotionEvidence);
+  if (!text(currentPromotionEvidence.path) || !text(currentPromotionEvidence.artifactBytesHash)) {
+    throw new Error('requirements_confirmation_promotion_evidence_missing');
+  }
+  if (
+    text(currentPromotionEvidence.path) === 'confirmation/confirmation-promotion-receipt.json' &&
+    (originalPromotion.bindingRevisionId !== activeAuthority.activeBindingRevisionId ||
+      originalPromotion.sourceBindingHash !== activeAuthority.activeSourceBindingHash)
+  ) {
+    throw new Error('citation_binding_stale');
+  }
+  const currentPromotionPath = confinedRecordArtifact(
+    recordRoot,
+    text(currentPromotionEvidence.path)
+  );
+  const currentPromotion = readJson(currentPromotionPath);
+  const currentPromotionHash = artifactBytesHash({
+    role:
+      currentPromotion.schemaVersion === 'requirements-source-binding-refresh-receipt/v2'
+        ? 'source-binding-refresh-receipt'
+        : 'promotion_receipt',
+    mediaType: 'application/json',
+    bytes: fs.readFileSync(currentPromotionPath),
+  });
+  if (
+    text(currentPromotionEvidence.artifactBytesHash) &&
+    currentPromotionHash !== currentPromotionEvidence.artifactBytesHash
+  ) {
+    throw new Error('requirements_confirmation_promotion_evidence_stale');
+  }
+  const refreshReceipt =
+    currentPromotion.schemaVersion === 'requirements-source-binding-refresh-receipt/v2'
+      ? currentPromotion
+      : null;
+  if (refreshReceipt) validateRefreshReceiptHash(refreshReceipt);
+  const promotion = refreshReceipt ? originalPromotion : currentPromotion;
+  const markdownArtifact = records(promotion.artifacts).find(
+    (artifact) => artifact.role === 'final_markdown'
+  );
+  const htmlArtifact = records(promotion.artifacts).find(
+    (artifact) => artifact.role === 'confirmation_html'
+  );
+  if (!markdownArtifact || !htmlArtifact) throw new Error('requirements_confirmation_page_missing');
+  const pageArtifacts = [
+    {
+      artifact: markdownArtifact,
+      role: 'final_markdown',
+      mediaType: 'text/markdown',
+      expectedHash: refreshReceipt
+        ? refreshReceipt.pageArtifactBytesHash
+        : markdownArtifact.artifactBytesHash,
+    },
+    {
+      artifact: htmlArtifact,
+      role: 'confirmation_html',
+      mediaType: 'text/html',
+      expectedHash: refreshReceipt
+        ? refreshReceipt.htmlPageArtifactBytesHash
+        : htmlArtifact.artifactBytesHash,
+    },
+  ];
+  const pageReadbacks = pageArtifacts.map((page) => {
+    const targetPath = resolvePath(input.projectRoot, text(page.artifact.targetPath));
+    const relative = path.relative(path.resolve(input.projectRoot), targetPath);
+    if (relative.startsWith('..') || path.isAbsolute(relative) || !fs.existsSync(targetPath)) {
+      throw new Error('requirements_confirmation_page_missing');
+    }
+    const bytes = fs.readFileSync(targetPath);
+    if (
+      artifactBytesHash({ role: page.role, mediaType: page.mediaType, bytes }) !== page.expectedHash
+    ) {
+      throw new Error('requirements_confirmation_page_stale');
+    }
+    return bytes;
+  });
+  const currentMarkdown = pageReadbacks[0].toString('utf8');
+  if (!currentMarkdown) {
+    throw new Error('requirements_confirmation_page_stale');
+  }
+  if (input.exactConfirmationText !== confirmationTextFromMarkdown(currentMarkdown)) {
+    throw new Error('requirements_confirmation_exact_text_mismatch');
+  }
+  const promotionCurrent =
+    promotion.requestId !== input.requestId ||
+    promotion.semanticRevisionId !== activeAuthority.activeSemanticRevisionId ||
+    promotion.scopeSemanticHash !== activeAuthority.activeScopeSemanticHash ||
+    (!refreshReceipt &&
+      (promotion.bindingRevisionId !== activeAuthority.activeBindingRevisionId ||
+        promotion.sourceBindingHash !== activeAuthority.activeSourceBindingHash));
+  const refreshCurrent = Boolean(
+    refreshReceipt &&
+    refreshReceipt.semanticRevisionId === activeAuthority.activeSemanticRevisionId &&
+    refreshReceipt.scopeSemanticHash === activeAuthority.activeScopeSemanticHash &&
+    refreshReceipt.toBindingRevisionId === activeAuthority.activeBindingRevisionId &&
+    refreshReceipt.toSourceBindingHash === activeAuthority.activeSourceBindingHash &&
+    refreshReceipt.confirmationPromotionReceiptRef?.path ===
+      'confirmation/confirmation-promotion-receipt.json' &&
+    refreshReceipt.confirmationPromotionReceiptRef?.hash ===
+      artifactBytesHash({
+        role: 'promotion_receipt',
+        mediaType: 'application/json',
+        bytes: fs.readFileSync(originalPromotionPath),
+      }) &&
+    refreshReceipt.fromBindingRevisionId === originalPromotion.bindingRevisionId &&
+    refreshReceipt.fromSourceBindingHash === originalPromotion.sourceBindingHash &&
+    effectivePass.sourceBindingHash === originalPromotion.sourceBindingHash &&
+    refreshReceipt.citationProjectionRefreshDisposition === 'passed' &&
+    refreshReceipt.pageReadbackDisposition === 'passed' &&
+    refreshReceipt.pagePromotionDisposition === 'promoted'
+  );
+  if (promotionCurrent || (refreshReceipt && !refreshCurrent)) {
+    throw new Error('requirements_confirmation_promotion_stale');
+  }
+  if (
+    promotion.requirementsEffectivePassHash !== effectivePass.requirementsEffectivePassHash ||
+    (!refreshReceipt && effectivePass.sourceBindingHash !== activeAuthority.activeSourceBindingHash)
+  ) {
+    throw new Error('requirements_confirmation_effective_pass_invalid');
+  }
+  if (record.lifecycle === 'user_confirmed') {
+    const eventRef = object(record.confirmationEventRef);
+    if (
+      record.confirmedScopeSemanticHash !== activeAuthority.activeScopeSemanticHash ||
+      !text(eventRef.path) ||
+      !text(eventRef.artifactBytesHash)
+    ) {
+      throw new Error('requirements_confirmation_promotion_stale');
+    }
+    const existingEventPath = confinedRecordArtifact(recordRoot, text(eventRef.path));
+    if (!fs.existsSync(existingEventPath)) {
+      throw new Error('requirements_confirmation_promotion_stale');
+    }
+    const existingEventBytes = fs.readFileSync(existingEventPath);
+    const existingEventHash = artifactBytesHash({
+      role: 'requirements_confirmation_event',
+      mediaType: 'application/json',
+      bytes: existingEventBytes,
+    });
+    const existingEvent = JSON.parse(existingEventBytes.toString('utf8')) as JsonObject;
+    if (
+      existingEventHash !== eventRef.artifactBytesHash ||
+      existingEvent.requestId !== input.requestId ||
+      existingEvent.semanticRevisionId !== activeAuthority.activeSemanticRevisionId ||
+      existingEvent.scopeSemanticHash !== activeAuthority.activeScopeSemanticHash
+    ) {
+      throw new Error('requirements_confirmation_promotion_stale');
+    }
+    return {
+      ok: true,
+      action: 'confirm-scope' as const,
+      status: 'confirmation_reused' as const,
+      exitCode: 0,
+      authority: 'main-agent-controlled-requirements-confirmation' as const,
+      requestId: input.requestId,
+      semanticRevisionId: activeAuthority.activeSemanticRevisionId,
+      confirmationEventId: existingEventHash,
+      eventPath: path.relative(input.projectRoot, existingEventPath).replace(/\\/gu, '/'),
+    };
+  }
+  const event = {
+    schemaVersion: 'requirements-contract-confirmation-event/v1',
+    requestId: input.requestId,
+    semanticRevisionId: activeAuthority.activeSemanticRevisionId,
+    scopeSemanticHash: activeAuthority.activeScopeSemanticHash,
+    bindingRevisionId: activeAuthority.activeBindingRevisionId,
+    requirementsEffectivePassRef: {
+      path: 'quality/requirements-effective-pass-receipt.json',
+      hash: promotion.requirementsEffectivePassHash,
+    },
+    promotionEvidenceRef: {
+      path: path.relative(recordRoot, currentPromotionPath).replace(/\\/gu, '/'),
+      artifactBytesHash: currentPromotionHash,
+    },
+    exactConfirmationText: input.exactConfirmationText,
+  };
+  const eventPath = path.join(recordRoot, 'confirmation', 'confirmation-event.json');
+  const eventPublication = atomicNoClobberPublish({
+    targetPath: eventPath,
+    value: event,
+    role: 'requirements_confirmation_event',
+    mediaType: 'application/json',
+  });
+  const nextRecord = {
+    ...record,
+    lifecycle: 'user_confirmed',
+    confirmedScopeSemanticHash: activeAuthority.activeScopeSemanticHash,
+    confirmationEventRef: {
+      path: 'confirmation/confirmation-event.json',
+      artifactBytesHash: eventPublication.artifactBytesHash,
+    },
+  };
+  if (canonicalRequirementsJson(nextRecord) !== canonicalRequirementsJson(record)) {
+    writeJsonAtomic(recordPath, nextRecord);
+  }
+  return {
+    ok: true,
+    action: 'confirm-scope' as const,
+    status: record.lifecycle === 'user_confirmed' ? 'confirmation_reused' : 'user_confirmed',
+    exitCode: 0,
+    authority: 'main-agent-controlled-requirements-confirmation' as const,
+    requestId: input.requestId,
+    semanticRevisionId: activeAuthority.activeSemanticRevisionId,
+    confirmationEventId: eventPublication.artifactBytesHash,
+    eventPath: path.relative(input.projectRoot, eventPath).replace(/\\/gu, '/'),
+  };
 }
 
 function text(value: unknown): string {

@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "requirements-contract-authority-source/v1",
+  "sourceRootId": "QUESTION-AUDIT-CONTENT-RETENTION",
+  "semanticBody": {
+    "question": "批量退款审计需要记录哪些内容，并保留多久？",
+    "affectedFieldIds": ["audit.requiredContentAndRetention"],
+    "affectedNodeIds": ["MUST-FR-BATCH-REFUND-AUDIT"],
+    "answerSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fields", "retentionDays"],
+      "properties": {
+        "fields": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "retentionDays": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

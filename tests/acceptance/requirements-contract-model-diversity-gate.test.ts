@@ -7,11 +7,9 @@ import {
   validateRequirementsContractModelDiversityReceipt,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-model-diversity-gate';
 import {
-  compileRequirementsContractJudgeReviewCampaignInput,
-  validateRequirementsContractJudgeReviewCampaignInput,
-} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-review-campaign-input';
-import { compileRequirementsContractFinalScopeManifest } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-final-scope-compiler';
-import { compileRequirementsContractMandatoryVerificationPortfolio } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-mandatory-verification-portfolio';
+  compileMainAgentExecutionFinalJudgeCampaignInput,
+  validateMainAgentExecutionFinalJudgeCampaignInput,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-execution-final-judge-campaign-input';
 import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 
 const hash = (label: string) => sha256Stable({ label });
@@ -57,69 +55,6 @@ function diversityInput(overrides = {}) {
     },
     ...overrides,
   };
-}
-
-function scopeAndPortfolio() {
-  const scopeManifest = compileRequirementsContractFinalScopeManifest({
-    campaignId: 'goal-campaign-001',
-    attemptId: 'attempt-001',
-    partitionManifestHash: hash('manifest'),
-    partitionSetHash: hash('partition-set'),
-    sourceAuthorityBundleHash: hash('source-authority'),
-    sourceCompositionPolicyHash: hash('source-policy'),
-    expectedPartitionIds: ['partition-a'],
-    childClosureReceipts: [
-      {
-        partitionId: 'partition-a',
-        childContractHash: hash('child'),
-        receiptHash: hash('closure'),
-        governedFileManifestHash: hash('files'),
-        subcontractEvidenceHash: hash('evidence'),
-        productionReachabilityReceiptHash: hash('reachability'),
-        dependencyClosureHash: hash('deps'),
-        decision: 'pass',
-      },
-    ],
-    governedPathRefs: ['src/a.ts'],
-    taskReportProvenanceRefs: ['task-report/p01'],
-    priorFindingRefs: [],
-    deliverySurfaceRefs: ['surface/codex'],
-    policyRefs: ['policy/fail-closed'],
-    currentImplementationLineage: {
-      current: true,
-      decision: 'pass',
-      partitionManifestHash: hash('manifest'),
-      partitionSetHash: hash('partition-set'),
-      implementationLineageHash: hash('lineage-root'),
-    },
-  });
-  const portfolio = compileRequirementsContractMandatoryVerificationPortfolio({
-    campaignId: scopeManifest.campaignId,
-    scopeManifestHash: scopeManifest.scopeManifestHash,
-    campaignLineageKey: scopeManifest.campaignLineageKey,
-    requiredSections: [
-      'complete_dependencies',
-      'governed_bytes',
-      'verification_evidence',
-      'production_reachability',
-      'task_report_provenance',
-      'mandatory_portfolio',
-      'delivery_surfaces',
-      'prior_findings',
-      'policy',
-    ],
-    evidenceRefs: ['evidence/child-closure'],
-    commandRefs: ['CMD-J05-T01-01'],
-    taskReportProvenanceRefs: ['task-report/p01'],
-    deliverySurfaceRefs: ['surface/codex'],
-    policyRefs: ['policy/fail-closed'],
-    priorFindingRefs: [],
-    currentAuthority: {
-      scopeManifestHash: scopeManifest.scopeManifestHash,
-      campaignLineageKey: scopeManifest.campaignLineageKey,
-    },
-  });
-  return { scopeManifest, portfolio };
 }
 
 describe('requirements contract model diversity gate', () => {
@@ -193,55 +128,57 @@ describe('requirements contract model diversity gate', () => {
     ).toThrow(code);
   });
 
-  it('exports a typed campaign input bound to scope, portfolio, diversity, and initial attempt', () => {
-    const { scopeManifest, portfolio } = scopeAndPortfolio();
-    const modelDiversityReceipt = compileRequirementsContractModelDiversityReceipt(
-      diversityInput({
-        campaignId: scopeManifest.campaignId,
-        campaignLineageKey: scopeManifest.campaignLineageKey,
-        currentAuthority: {
-          campaignId: scopeManifest.campaignId,
-          campaignLineageKey: scopeManifest.campaignLineageKey,
-        },
-      })
-    );
-    const campaignInput = compileRequirementsContractJudgeReviewCampaignInput({
-      scopeManifest,
-      portfolio,
-      modelDiversityReceipt,
+  it('binds the diverse initial review attempt to the current final Judge campaign input', () => {
+    const modelDiversityReceipt =
+      compileRequirementsContractModelDiversityReceipt(diversityInput());
+    const campaignInput = compileMainAgentExecutionFinalJudgeCampaignInput({
+      campaignId: modelDiversityReceipt.campaignId,
+      campaignLineageKey: modelDiversityReceipt.campaignLineageKey,
+      closureReceiptHash: hash('closure'),
+      candidateBytesHash: hash('candidate'),
+      currentImplementationHash: hash('implementation'),
+      currentEvidenceHash: hash('evidence'),
+      initialReviewAttemptKey: modelDiversityReceipt.initialReviewAttemptKey,
+      providerRef: modelDiversityReceipt.finalJudgeModel.providerRef,
     });
 
     expect(campaignInput).toMatchObject({
-      schemaVersion: 'requirements-contract-judge-review-campaign-input/v1',
-      campaignId: scopeManifest.campaignId,
-      campaignLineageKey: scopeManifest.campaignLineageKey,
-      scopeManifestHash: scopeManifest.scopeManifestHash,
-      portfolioHash: portfolio.portfolioHash,
-      modelDiversityReceiptHash: modelDiversityReceipt.receiptHash,
+      schemaVersion: 'main-agent-execution-final-judge-campaign-input/v1',
+      campaignId: modelDiversityReceipt.campaignId,
+      campaignLineageKey: modelDiversityReceipt.campaignLineageKey,
       initialReviewAttemptKey: modelDiversityReceipt.initialReviewAttemptKey,
+      providerRef: modelDiversityReceipt.finalJudgeModel.providerRef,
+      reviewerActorClass: 'bounded_code_reviewer',
+      finalJudgeActorClass: 'final_acceptance_judge',
     });
     expect(
-      validateRequirementsContractJudgeReviewCampaignInput(campaignInput, {
+      validateMainAgentExecutionFinalJudgeCampaignInput(campaignInput, {
         campaignId: campaignInput.campaignId,
         campaignLineageKey: campaignInput.campaignLineageKey,
-        scopeManifestHash: campaignInput.scopeManifestHash,
-        portfolioHash: campaignInput.portfolioHash,
-        modelDiversityReceiptHash: campaignInput.modelDiversityReceiptHash,
+        closureReceiptHash: campaignInput.closureReceiptHash,
+        candidateBytesHash: campaignInput.candidateBytesHash,
+        currentImplementationHash: campaignInput.currentImplementationHash,
+        currentEvidenceHash: campaignInput.currentEvidenceHash,
         initialReviewAttemptKey: campaignInput.initialReviewAttemptKey,
+        providerRef: campaignInput.providerRef,
+        actorBindingHash: campaignInput.actorBindingHash,
       })
     ).toBe(campaignInput);
     expect(() =>
-      validateRequirementsContractJudgeReviewCampaignInput(
-        { ...campaignInput, portfolioHash: hash('tamper') },
+      validateMainAgentExecutionFinalJudgeCampaignInput(
+        { ...campaignInput, candidateBytesHash: hash('tamper') },
         {
           campaignId: campaignInput.campaignId,
           campaignLineageKey: campaignInput.campaignLineageKey,
-          scopeManifestHash: campaignInput.scopeManifestHash,
-          portfolioHash: campaignInput.portfolioHash,
-          modelDiversityReceiptHash: campaignInput.modelDiversityReceiptHash,
+          closureReceiptHash: campaignInput.closureReceiptHash,
+          candidateBytesHash: campaignInput.candidateBytesHash,
+          currentImplementationHash: campaignInput.currentImplementationHash,
+          currentEvidenceHash: campaignInput.currentEvidenceHash,
           initialReviewAttemptKey: campaignInput.initialReviewAttemptKey,
+          providerRef: campaignInput.providerRef,
+          actorBindingHash: campaignInput.actorBindingHash,
         }
       )
-    ).toThrow('judge_review_campaign_input_hash_mismatch');
+    ).toThrow('main_agent_execution_final_judge_campaign_input_hash_mismatch');
   });
 });

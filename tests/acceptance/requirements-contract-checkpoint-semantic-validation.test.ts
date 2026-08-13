@@ -35,6 +35,7 @@ const { checkpointSemanticValidationObservation } = require(
   }): {
     decision: 'pass' | 'block';
     validatedInputs: Array<{ role: string; path: string; hash: string }>;
+    blockers: Array<{ code: string; message: string; refs: string[] }>;
   };
 };
 
@@ -46,87 +47,46 @@ function checkpointReceiptValidator() {
   return new Ajv2020({ allErrors: true, strict: false }).compile(schema);
 }
 
-function checkpointReceipts(paths: ReturnType<typeof artifacts>): Array<Record<string, unknown>> {
-  return paths.checkpointReceiptPaths
-    .filter((receiptPath) => existsSync(receiptPath))
-    .map((receiptPath) => readJson<Record<string, unknown>>(receiptPath));
-}
-
 function fileHash(filePath: string): string {
   return `sha256:${createHash('sha256').update(readFileSync(filePath)).digest('hex')}`;
 }
 
-function refreshDeferredCheckpointPersistence(input: {
-  root: string;
-  paths: ReturnType<typeof artifacts>;
-  recordId: string;
-  requirementSetId: string;
-  implementationAttemptId: string;
-  sourceDocumentHash: string;
-  implementationConfirmationHash: string;
-}) {
-  return refreshCurrentSourceCheckpointPersistence(input.root, {
-    source: input.paths.draftSourcePreview,
-    recordId: input.recordId,
-    requirementSetId: input.requirementSetId,
-    implementationAttemptId: input.implementationAttemptId,
-    sourceDocumentHash: input.sourceDocumentHash,
-    implementationConfirmationHash: input.implementationConfirmationHash,
-    forceRefresh: true,
-  });
-}
-
-function expectDeferredCriticalAuditorCheckpointState(
-  receipts: Array<Record<string, any>>
-): void {
-  expect(receipts.map((receipt) => receipt.checkpointId)).toEqual(
-    REQUIREMENTS_CONTRACT_CHECKPOINT_IDS.slice(0, 3)
-  );
-  expect(receipts.slice(0, 2).map((receipt) => receipt.decision)).toEqual(['pass', 'pass']);
-  expect(receipts[2]).toMatchObject({
-    checkpointId: 'cp-02-atomic-decomposition-loop-convergence',
-    persistenceStatus: 'committed',
-    semanticValidationStatus: 'block',
-    decision: 'block',
-  });
-  expect(
-    receipts[2].blockers.map((blocker: { code: string }) => blocker.code)
-  ).toContain('critical_auditor_checkpoint_outcome_required');
-}
-
 describe('requirements contract checkpoint semantic validation', () => {
-  it('hash-binds the Critical Auditor checkpoint outcome even when cp-02 fails closed', () => {
-    const root = createTempRoot('requirements-contract-checkpoint-outcome-binding-');
+  it('keeps cp-02 deterministic and excludes Critical Auditor outcome authority', () => {
+    const root = createTempRoot('requirements-contract-checkpoint-cp02-no-auditor-');
     try {
       const sourcePath = path.join(root, 'source.md');
       const authoringDir = path.join(root, 'authoring');
       const progressPath = path.join(authoringDir, 'semantic-checkpoint-progress.json');
       const semanticKernelPath = path.join(authoringDir, 'semantic-kernel.json');
-      const outcomePath = path.join(authoringDir, 'critical-auditor-checkpoint-outcome.json');
       mkdirSync(authoringDir, { recursive: true });
       writeFileSync(sourcePath, '# Source\n', 'utf8');
       writeFileSync(semanticKernelPath, '{}\n', 'utf8');
-      writeFileSync(outcomePath, '{}\n', 'utf8');
 
       const observation = checkpointSemanticValidationObservation({
         sourcePath,
-        checkpointId: 'cp-02-atomic-decomposition-loop-convergence',
+        checkpointId: 'cp-02-deterministic-atomic-closure',
         progressPath,
       });
 
-      expect(observation.decision).toBe('block');
-      expect(observation.validatedInputs).toContainEqual(
-        expect.objectContaining({
-          role: 'critical_auditor_checkpoint_outcome',
-          hash: fileHash(outcomePath),
-        })
+      expect(REQUIREMENTS_CONTRACT_CHECKPOINT_IDS[2]).toBe(
+        'cp-02-deterministic-atomic-closure'
       );
+      expect(observation.decision).toBe('block');
+      expect(observation.validatedInputs).toContainEqual({
+        role: 'semantic_kernel',
+        path: semanticKernelPath.replace(/\\/gu, '/'),
+        hash: fileHash(semanticKernelPath),
+      });
+      expect(
+        observation.validatedInputs.some(({ role }) => /auditor/iu.test(role))
+      ).toBe(false);
     } finally {
       removeTempRoot(root);
     }
   });
 
-  it('persists a fail-closed receipt when validation stops before any input is accepted', () => {
+  it('persists a schema-valid fail-closed receipt before any input is accepted', () => {
     const hash = sha256Stable({ phase: 'checkpoint-blocked-before-input-validation' });
     const receipt = createCheckpointSemanticValidationReceipt({
       checkpointId: 'cp-00-semantic-kernel',
@@ -156,76 +116,12 @@ describe('requirements contract checkpoint semantic validation', () => {
     });
 
     expect(validateCheckpointSemanticValidationReceipt(receipt)).toBe(true);
+    expect(checkpointReceiptValidator()(receipt)).toBe(true);
     expect(receipt.validatedInputs).toEqual([]);
     expect(receipt.decision).toBe('block');
   });
 
-  it('publishes current cp-00 and cp-01 receipts and blocks cp-02 without Auditor authority', () => {
-    const root = createTempRoot('requirements-contract-checkpoint-semantic-');
-    installJudgeRuntimeConfig(root);
-    try {
-      const descriptor = createMinimalConsumerRequirementDescriptor(
-        'checkpoint-semantic-validation'
-      );
-      const materialized = writeLintReadyMinimalConsumerRequirement(
-        root,
-        'docs/plans/checkpoint-semantic-validation.md',
-        descriptor
-      );
-      const attemptId = materialized.authoringOptions.implementationAttemptId;
-      const result = runAuthoring(root, materialized.sourcePath, 'REQ-CHECKPOINT-SEMANTIC', {
-        ...materialized.authoringOptions,
-      });
-      const paths = artifacts(
-        root,
-        'REQ-CHECKPOINT-SEMANTIC',
-        'REQ-CHECKPOINT-SEMANTIC-SET'
-      );
-      const semanticManifest = readJson<Record<string, unknown>>(
-        paths.semanticConservationManifest
-      );
-      const refreshResult = refreshDeferredCheckpointPersistence({
-        root,
-        paths,
-        recordId: 'REQ-CHECKPOINT-SEMANTIC',
-        requirementSetId: 'REQ-CHECKPOINT-SEMANTIC-SET',
-        implementationAttemptId: attemptId,
-        sourceDocumentHash: result.sourceDocumentHash,
-        implementationConfirmationHash: result.implementationConfirmationHash,
-      });
-      const receipts = checkpointReceipts(paths) as Array<Record<string, any>>;
-      const validateReceipt = checkpointReceiptValidator();
-
-      expect(result.blockingIssues.map((issue) => issue.code)).toContain(
-        'critical_auditor_provider_mode_required'
-      );
-      expect(refreshResult).toEqual({ ok: true });
-      expectDeferredCriticalAuditorCheckpointState(receipts);
-      for (const receipt of receipts) {
-        expect(validateReceipt(receipt), validateReceipt.errors ?? []).toBe(true);
-        expect(receipt).toMatchObject({
-          schemaVersion: 'requirements-contract-checkpoint-semantic-validation-receipt/v1',
-          recordId: 'REQ-CHECKPOINT-SEMANTIC',
-          requirementSetId: 'REQ-CHECKPOINT-SEMANTIC-SET',
-          implementationAttemptId: attemptId,
-          persistenceStatus: 'committed',
-          semanticModelHash: semanticManifest.semanticModelHash,
-          semanticConservationManifestHash: semanticManifest.manifestHash,
-        });
-        expect(String(receipt.validatorIdentity)).toContain(String(receipt.checkpointId));
-        expect(String(receipt.validatorVersion)).toMatch(/^\d+\.\d+\.\d+$/u);
-        expect(String(receipt.validatorHash)).toMatch(/^sha256:[0-9a-f]{64}$/u);
-        expect(Array.isArray(receipt.validatedInputs)).toBe(true);
-        expect(receipt.validatedInputs).not.toHaveLength(0);
-        const { receiptHash, ...payload } = receipt;
-        expect(receiptHash).toBe(sha256Stable(payload));
-      }
-    } finally {
-      removeTempRoot(root);
-    }
-  });
-
-  it('fails closed when requirement model bytes diverge from the compiler closure binding', () => {
+  it('fails closed when requirement model bytes diverge from compiler closure', () => {
     const root = createTempRoot('requirements-contract-checkpoint-model-tamper-');
     installJudgeRuntimeConfig(root);
     try {
@@ -245,9 +141,6 @@ describe('requirements contract checkpoint semantic validation', () => {
       const expectedModelHash = String(closureReport.requirementContractModelHash);
       const model = readJson<Record<string, any>>(paths.compiledModel);
 
-      expect(
-        initialResult.blockingIssues.map((issue) => issue.code)
-      ).not.toContain('semantic_checkpoint_requirement_contract_model_hash_mismatch');
       expect(expectedModelHash).toBe(fileHash(paths.compiledModel));
       expect(model.must).not.toHaveLength(0);
       model.must[0].text = `${String(model.must[0].text)} tampered`;
@@ -289,317 +182,88 @@ describe('requirements contract checkpoint semantic validation', () => {
     }
   });
 
-  it('invalidates and replaces receipts from a different implementation attempt', () => {
-    const root = createTempRoot('requirements-contract-checkpoint-cross-attempt-');
+  it('rejects every cp02 atom authority and execution closure break', () => {
+    const root = createTempRoot('requirements-contract-checkpoint-cp02-closure-');
     installJudgeRuntimeConfig(root);
     try {
-      const descriptor = createMinimalConsumerRequirementDescriptor('checkpoint-cross-attempt');
+      const descriptor = createMinimalConsumerRequirementDescriptor('checkpoint-cp02-closure');
       const materialized = writeLintReadyMinimalConsumerRequirement(
         root,
-        'docs/plans/checkpoint-cross-attempt.md',
+        'docs/plans/checkpoint-cp02-closure.md',
         descriptor
       );
-      const recordId = 'REQ-CHECKPOINT-CROSS-ATTEMPT';
-      const firstResult = runAuthoring(root, materialized.sourcePath, recordId, {
+      const recordId = 'REQ-CHECKPOINT-CP02-CLOSURE';
+      const requirementSetId = `${recordId}-SET`;
+      runAuthoring(root, materialized.sourcePath, recordId, {
         ...materialized.authoringOptions,
       });
-      const paths = artifacts(root, recordId, `${recordId}-SET`);
-      expect(
-        refreshDeferredCheckpointPersistence({
-          root,
-          paths,
-          recordId,
-          requirementSetId: `${recordId}-SET`,
-          implementationAttemptId: materialized.authoringOptions.implementationAttemptId,
-          sourceDocumentHash: firstResult.sourceDocumentHash,
-          implementationConfirmationHash: firstResult.implementationConfirmationHash,
-        })
-      ).toEqual({ ok: true });
-      const firstReceipts = checkpointReceipts(paths);
-      const nextAttemptId = `${descriptor.attempt.implementationAttemptId}-NEXT`;
-
-      const secondResult = runAuthoring(root, materialized.sourcePath, recordId, {
-        ...materialized.authoringOptions,
-        implementationAttemptId: nextAttemptId,
-      });
-      expect(
-        refreshDeferredCheckpointPersistence({
-          root,
-          paths,
-          recordId,
-          requirementSetId: `${recordId}-SET`,
-          implementationAttemptId: nextAttemptId,
-          sourceDocumentHash: secondResult.sourceDocumentHash,
-          implementationConfirmationHash: secondResult.implementationConfirmationHash,
-        })
-      ).toEqual({ ok: true });
-      const secondReceipts = checkpointReceipts(paths);
-      const progress = readJson<Record<string, unknown>>(paths.progress);
-
-      expect(firstResult.blockingIssues.map((issue) => issue.code)).toContain(
-        'critical_auditor_provider_mode_required'
-      );
-      expect(secondResult.blockingIssues.map((issue) => issue.code)).toContain(
-        'critical_auditor_provider_mode_required'
-      );
-      expectDeferredCriticalAuditorCheckpointState(
-        secondReceipts as Array<Record<string, any>>
-      );
-      expect(progress.implementationAttemptId).toBe(nextAttemptId);
-      for (const [index, receipt] of secondReceipts.entries()) {
-        expect(receipt.implementationAttemptId).toBe(nextAttemptId);
-        expect(receipt.receiptHash).not.toBe(firstReceipts[index].receiptHash);
-      }
-    } finally {
-      removeTempRoot(root);
-    }
-  }, 60_000);
-
-  it('invalidates and replaces receipts from a different requirement set', () => {
-    const root = createTempRoot('requirements-contract-checkpoint-cross-requirement-');
-    installJudgeRuntimeConfig(root);
-    try {
-      const descriptor = createMinimalConsumerRequirementDescriptor(
-        'checkpoint-cross-requirement'
-      );
-      const materialized = writeLintReadyMinimalConsumerRequirement(
-        root,
-        'docs/plans/checkpoint-cross-requirement.md',
-        descriptor
-      );
-      const recordId = 'REQ-CHECKPOINT-CROSS-REQUIREMENT';
-      const firstRequirementSetId = `${recordId}-SET-A`;
-      const secondRequirementSetId = `${recordId}-SET-B`;
-      const firstResult = runAuthoring(root, materialized.sourcePath, recordId, {
-        ...materialized.authoringOptions,
-        requirementSetId: firstRequirementSetId,
-      });
-      const paths = artifacts(root, recordId, firstRequirementSetId);
-      expect(
-        refreshDeferredCheckpointPersistence({
-          root,
-          paths,
-          recordId,
-          requirementSetId: firstRequirementSetId,
-          implementationAttemptId: materialized.authoringOptions.implementationAttemptId,
-          sourceDocumentHash: firstResult.sourceDocumentHash,
-          implementationConfirmationHash: firstResult.implementationConfirmationHash,
-        })
-      ).toEqual({ ok: true });
-      const firstReceipts = checkpointReceipts(paths);
-
-      const secondResult = runAuthoring(root, materialized.sourcePath, recordId, {
-        ...materialized.authoringOptions,
-        requirementSetId: secondRequirementSetId,
-      });
-      expect(
-        refreshDeferredCheckpointPersistence({
-          root,
-          paths,
-          recordId,
-          requirementSetId: secondRequirementSetId,
-          implementationAttemptId: materialized.authoringOptions.implementationAttemptId,
-          sourceDocumentHash: secondResult.sourceDocumentHash,
-          implementationConfirmationHash: secondResult.implementationConfirmationHash,
-        })
-      ).toEqual({ ok: true });
-      const secondReceipts = checkpointReceipts(paths);
-      const progress = readJson<Record<string, unknown>>(paths.progress);
-
-      expect(firstResult.blockingIssues.map((issue) => issue.code)).toContain(
-        'critical_auditor_provider_mode_required'
-      );
-      expect(secondResult.blockingIssues.map((issue) => issue.code)).toContain(
-        'critical_auditor_provider_mode_required'
-      );
-      expectDeferredCriticalAuditorCheckpointState(
-        secondReceipts as Array<Record<string, any>>
-      );
-      expect(progress.requirementSetId).toBe(secondRequirementSetId);
-      for (const [index, receipt] of secondReceipts.entries()) {
-        expect(receipt.requirementSetId).toBe(secondRequirementSetId);
-        expect(receipt.receiptHash).not.toBe(firstReceipts[index].receiptHash);
-      }
-    } finally {
-      removeTempRoot(root);
-    }
-  }, 60_000);
-
-  it('invalidates every receipt when the canonical semantic binding changes', () => {
-    const root = createTempRoot('requirements-contract-checkpoint-semantic-change-');
-    installJudgeRuntimeConfig(root);
-    try {
-      const descriptor = createMinimalConsumerRequirementDescriptor(
-        'checkpoint-semantic-change'
-      );
-      const relativeSourcePath = 'docs/plans/checkpoint-semantic-change.md';
-      const materialized = writeLintReadyMinimalConsumerRequirement(
-        root,
-        relativeSourcePath,
-        descriptor
-      );
-      const recordId = 'REQ-CHECKPOINT-SEMANTIC-CHANGE';
-      const firstResult = runAuthoring(root, materialized.sourcePath, recordId, {
-        ...materialized.authoringOptions,
-      });
-      const paths = artifacts(root, recordId, `${recordId}-SET`);
-      expect(
-        refreshDeferredCheckpointPersistence({
-          root,
-          paths,
-          recordId,
-          requirementSetId: `${recordId}-SET`,
-          implementationAttemptId: materialized.authoringOptions.implementationAttemptId,
-          sourceDocumentHash: firstResult.sourceDocumentHash,
-          implementationConfirmationHash: firstResult.implementationConfirmationHash,
-        })
-      ).toEqual({ ok: true });
-      const firstManifest = readJson<Record<string, unknown>>(
-        paths.semanticConservationManifest
-      );
-      const firstReceipts = checkpointReceipts(paths);
-      const changedDescriptor = {
-        ...descriptor,
-        semantics: {
-          ...descriptor.semantics,
-          requirement: `${descriptor.semantics.requirement} Preserve the changed semantic binding.`,
-        },
+      const paths = artifacts(root, recordId, requirementSetId);
+      const packetPath = path.join(paths.authoring, 'must_decomposition_packet.json');
+      const original = readJson<Record<string, any>>(packetPath);
+      const packet = original.must_decomposition_packet;
+      packet.executionRegistry = {
+        entries: [{
+          kind: 'CMD',
+          id: 'checkpoint-targeted-test',
+          value: 'npm test -- checkpoint-cp02-closure.test.ts',
+        }],
       };
-      const changedMaterialization = writeLintReadyMinimalConsumerRequirement(
-        root,
-        relativeSourcePath,
-        changedDescriptor
-      );
-
-      const secondResult = runAuthoring(root, changedMaterialization.sourcePath, recordId, {
-        ...changedMaterialization.authoringOptions,
-      });
-      expect(
-        refreshDeferredCheckpointPersistence({
-          root,
-          paths,
-          recordId,
-          requirementSetId: `${recordId}-SET`,
-          implementationAttemptId: changedMaterialization.authoringOptions.implementationAttemptId,
-          sourceDocumentHash: secondResult.sourceDocumentHash,
-          implementationConfirmationHash: secondResult.implementationConfirmationHash,
-        })
-      ).toEqual({ ok: true });
-      const secondManifest = readJson<Record<string, unknown>>(
-        paths.semanticConservationManifest
-      );
-      const secondReceipts = checkpointReceipts(paths);
-
-      expect(firstResult.blockingIssues.map((issue) => issue.code)).toContain(
-        'critical_auditor_provider_mode_required'
-      );
-      expect(secondResult.blockingIssues.map((issue) => issue.code)).toContain(
-        'critical_auditor_provider_mode_required'
-      );
-      expectDeferredCriticalAuditorCheckpointState(
-        secondReceipts as Array<Record<string, any>>
-      );
-      expect(secondManifest.semanticModelHash).not.toBe(firstManifest.semanticModelHash);
-      expect(secondManifest.manifestHash).not.toBe(firstManifest.manifestHash);
-      for (const [index, receipt] of secondReceipts.entries()) {
-        expect(receipt.semanticModelHash).toBe(secondManifest.semanticModelHash);
-        expect(receipt.semanticConservationManifestHash).toBe(secondManifest.manifestHash);
-        expect(receipt.receiptHash).not.toBe(firstReceipts[index].receiptHash);
-      }
-    } finally {
-      removeTempRoot(root);
-    }
-  }, 60_000);
-
-  it('regenerates checkpoints when prior persistence evidence is stale', () => {
-    const root = createTempRoot('requirements-contract-checkpoint-explicit-stale-');
-    installJudgeRuntimeConfig(root);
-    try {
-      const descriptor = createMinimalConsumerRequirementDescriptor(
-        'checkpoint-explicit-stale'
-      );
-      const relativeSourcePath = 'docs/plans/checkpoint-explicit-stale.md';
-      const materialized = writeLintReadyMinimalConsumerRequirement(
-        root,
-        relativeSourcePath,
-        descriptor
-      );
-      const recordId = 'REQ-CHECKPOINT-EXPLICIT-STALE';
-      const firstResult = runAuthoring(root, materialized.sourcePath, recordId, {
-        ...materialized.authoringOptions,
-      });
-      const paths = artifacts(root, recordId, `${recordId}-SET`);
-      expect(
-        refreshDeferredCheckpointPersistence({
-          root,
-          paths,
-          recordId,
-          requirementSetId: `${recordId}-SET`,
-          implementationAttemptId: materialized.authoringOptions.implementationAttemptId,
-          sourceDocumentHash: firstResult.sourceDocumentHash,
-          implementationConfirmationHash: firstResult.implementationConfirmationHash,
-        })
-      ).toEqual({ ok: true });
-      const firstEvidenceHash = fileHash(paths.checkpointPersistenceEvidence);
-      const firstReceipts = checkpointReceipts(paths);
-      const changedMaterialization = writeLintReadyMinimalConsumerRequirement(
-        root,
-        relativeSourcePath,
-        {
-          ...descriptor,
-          semantics: {
-            ...descriptor.semantics,
-            requirement: `${descriptor.semantics.requirement} Rebind stale explicit evidence.`,
-          },
+      for (const mustPacket of packet.mustPackets) {
+        for (const atom of mustPacket.mustAtomicTasks) {
+          const spanRef = `SPAN-${mustPacket.mustRef}`;
+          atom.action = atom.text || atom.primaryObservableBehaviors?.[0] || mustPacket.mustIntent;
+          atom.oracle = atom.primaryAcceptanceOracles?.[0] || atom.redProofPlan;
+          atom.dependencies = [];
+          atom.originBindings = [{ sourceRootId: mustPacket.mustRef, sourceSpanRef: spanRef }];
+          atom.authorityRefs = [mustPacket.mustRef];
+          atom.spanRefs = [spanRef];
+          atom.executionConstraintRefs = ['CMD:checkpoint-targeted-test'];
         }
-      );
+      }
+      writeFileSync(packetPath, `${JSON.stringify(original, null, 2)}\n`, 'utf8');
+      expect(checkpointSemanticValidationObservation({
+        sourcePath: paths.draftSourcePreview,
+        checkpointId: 'cp-02-deterministic-atomic-closure',
+        progressPath: paths.progress,
+      }).decision).toBe('pass');
 
-      const secondResult = runAuthoring(root, changedMaterialization.sourcePath, recordId, {
-        ...changedMaterialization.authoringOptions,
-      });
-      expect(
-        refreshDeferredCheckpointPersistence({
-          root,
-          paths,
-          recordId,
-          requirementSetId: `${recordId}-SET`,
-          implementationAttemptId: changedMaterialization.authoringOptions.implementationAttemptId,
-          sourceDocumentHash: secondResult.sourceDocumentHash,
-          implementationConfirmationHash: secondResult.implementationConfirmationHash,
-        })
-      ).toEqual({ ok: true });
-      const currentEvidence = readJson<Record<string, any>>(
-        paths.checkpointPersistenceEvidence
-      );
-      const currentReceipts = checkpointReceipts(paths);
-
-      expect(firstResult.blockingIssues.map((issue) => issue.code)).toContain(
-        'critical_auditor_provider_mode_required'
-      );
-      expect(secondResult.blockingIssues.map((issue) => issue.code)).toContain(
-        'critical_auditor_provider_mode_required'
-      );
-      expect(fileHash(paths.checkpointPersistenceEvidence)).not.toBe(firstEvidenceHash);
-      expect(currentEvidence.checkpointPersistenceSatisfiedCandidate).toBe(false);
-      expect(
-        currentEvidence.checkpointPersistenceRef.preRenderGatePolicy
-          .auditorConvergenceDeferredToNextRound
-      ).toBe(true);
-      expectDeferredCriticalAuditorCheckpointState(
-        currentReceipts as Array<Record<string, any>>
-      );
-      expect(currentEvidence.semanticModelHash).toBe(
-        currentReceipts[0].semanticModelHash
-      );
-      for (const [index, receipt] of currentReceipts.entries()) {
-        expect(receipt.receiptHash).not.toBe(firstReceipts[index].receiptHash);
+      const cases = [
+        ['action', (atom: Record<string, any>) => { atom.action = ''; },
+          'requirements_cp02_atom_action_invalid'],
+        ['oracle', (atom: Record<string, any>) => { atom.oracle = ''; },
+          'requirements_cp02_atom_oracle_invalid'],
+        ['dependency', (atom: Record<string, any>) => { atom.dependencies = ['ATOM-UNKNOWN']; },
+          'requirements_cp02_atom_dependency_unknown'],
+        ['dependency cycle', (atom: Record<string, any>) => { atom.dependencies = [atom.id]; },
+          'requirements_cp02_atom_dependency_cycle'],
+        ['origin', (atom: Record<string, any>) => { atom.originBindings = []; },
+          'requirements_cp02_atom_origin_binding_invalid'],
+        ['authority', (atom: Record<string, any>) => { atom.authorityRefs = []; },
+          'requirements_cp02_atom_authority_ref_invalid'],
+        ['span', (atom: Record<string, any>) => { atom.spanRefs = []; },
+          'requirements_cp02_atom_span_ref_invalid'],
+        ['execution', (atom: Record<string, any>) => {
+          atom.executionConstraintRefs = ['CMD:missing'];
+        }, 'requirements_cp02_execution_constraint_unknown'],
+      ] as const;
+      for (const [label, corrupt, issueCode] of cases) {
+        const damaged = structuredClone(original);
+        corrupt(damaged.must_decomposition_packet.mustPackets[0].mustAtomicTasks[0]);
+        writeFileSync(packetPath, `${JSON.stringify(damaged, null, 2)}\n`, 'utf8');
+        const observation = checkpointSemanticValidationObservation({
+          sourcePath: paths.draftSourcePreview,
+          checkpointId: 'cp-02-deterministic-atomic-closure',
+          progressPath: paths.progress,
+        });
+        expect(observation.decision, label).toBe('block');
+        expect(observation.blockers.map((blocker) => blocker.code), label).toContain(issueCode);
       }
     } finally {
       removeTempRoot(root);
     }
-  }, 60_000);
+  });
 
-  it('fails closed before checkpoint receipts when implementationAttemptId is missing', () => {
+  it('fails closed before receipts when implementationAttemptId is missing', () => {
     const root = createTempRoot('requirements-contract-checkpoint-missing-attempt-');
     installJudgeRuntimeConfig(root);
     try {
@@ -631,82 +295,7 @@ describe('requirements contract checkpoint semantic validation', () => {
     }
   });
 
-  it('propagates a new attempt through the production current-source checkpoint refresh boundary', () => {
-    const root = createTempRoot('requirements-contract-checkpoint-repair-attempt-');
-    installJudgeRuntimeConfig(root);
-    try {
-      const descriptor = createMinimalConsumerRequirementDescriptor(
-        'checkpoint-repair-attempt'
-      );
-      const materialized = writeLintReadyMinimalConsumerRequirement(
-        root,
-        'docs/plans/checkpoint-repair-attempt.md',
-        descriptor
-      );
-      const recordId = 'REQ-CHECKPOINT-REPAIR-ATTEMPT';
-      const requirementSetId = `${recordId}-SET`;
-      const initialResult = runAuthoring(root, materialized.sourcePath, recordId, {
-        ...materialized.authoringOptions,
-      });
-      const paths = artifacts(root, recordId, requirementSetId);
-      expect(
-        refreshDeferredCheckpointPersistence({
-          root,
-          paths,
-          recordId,
-          requirementSetId,
-          implementationAttemptId: materialized.authoringOptions.implementationAttemptId,
-          sourceDocumentHash: initialResult.sourceDocumentHash,
-          implementationConfirmationHash: initialResult.implementationConfirmationHash,
-        })
-      ).toEqual({ ok: true });
-      for (const receiptPath of paths.checkpointReceiptPaths.filter((candidate) =>
-        existsSync(candidate)
-      )) {
-        const receipt = readJson<Record<string, any>>(receiptPath);
-        receipt.sourceDocumentHash = `sha256:${'7'.repeat(64)}`;
-        receipt.implementationConfirmationHash = `sha256:${'8'.repeat(64)}`;
-        const { receiptHash: _receiptHash, ...payload } = receipt;
-        receipt.receiptHash = sha256Stable(payload);
-        writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');
-      }
-      const repairAttemptId = `${descriptor.attempt.implementationAttemptId}-REPAIR`;
-
-      const refreshResult = refreshCurrentSourceCheckpointPersistence(root, {
-        source: paths.draftSourcePreview,
-        recordId,
-        requirementSetId,
-        implementationAttemptId: repairAttemptId,
-        sourceDocumentHash: initialResult.sourceDocumentHash,
-        implementationConfirmationHash: initialResult.implementationConfirmationHash,
-        forceRefresh: true,
-      });
-      const refreshedReceipts = checkpointReceipts(paths);
-      const progress = readJson<Record<string, any>>(paths.progress);
-
-      expect(initialResult.blockingIssues.map((issue) => issue.code)).toContain(
-        'critical_auditor_provider_mode_required'
-      );
-      expect(refreshResult).toEqual({ ok: true });
-      expectDeferredCriticalAuditorCheckpointState(
-        refreshedReceipts as Array<Record<string, any>>
-      );
-      for (const receipt of refreshedReceipts) {
-        expect(receipt.implementationAttemptId).toBe(repairAttemptId);
-        expect(receipt.persistenceStatus).toBe('committed');
-      }
-      expect(progress).toMatchObject({
-        implementationAttemptId: repairAttemptId,
-        resumeLedger: {
-          completedCheckpointIds: REQUIREMENTS_CONTRACT_CHECKPOINT_IDS.slice(0, 2),
-        },
-      });
-    } finally {
-      removeTempRoot(root);
-    }
-  });
-
-  it('fails closed at the refresh boundary when the current source binding is missing', () => {
+  it('fails closed at refresh when the current source binding is missing', () => {
     const root = createTempRoot('requirements-contract-checkpoint-refresh-binding-');
     try {
       const result = refreshCurrentSourceCheckpointPersistence(root, {

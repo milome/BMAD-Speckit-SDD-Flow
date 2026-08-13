@@ -704,7 +704,7 @@ function buildAssessment(sourcePath, progressPath = '', options = {}) {
 const CHECKPOINT_IDS_PRE_RENDER = [
   'cp-00-semantic-kernel',
   'cp-01-must-decomposition-packet',
-  'cp-02-atomic-decomposition-loop-convergence',
+  'cp-02-deterministic-atomic-closure',
   'cp-03-packet-to-source-materialization',
   'cp-04-id-freeze',
   'cp-05-implementation-confirmation-core',

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-resolved-evidence-index.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "semanticRevisionId", "bindingRevisionId", "sourceBindingHash", "resolutions", "indexHash", "authority"],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-resolved-evidence-index/v1" },
+    "semanticRevisionId": { "$ref": "#/$defs/id" }, "bindingRevisionId": { "$ref": "#/$defs/id" },
+    "sourceBindingHash": { "$ref": "#/$defs/hash" },
+    "resolutions": { "type": "array", "items": { "$ref": "#/$defs/resolution" } },
+    "indexHash": { "$ref": "#/$defs/hash" }, "authority": { "const": "none" }
+  },
+  "$defs": {
+    "id": { "type": "string", "minLength": 1 }, "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "refs": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/id" } },
+    "resolution": {
+      "type": "object", "additionalProperties": false,
+      "required": ["evidenceClaimId", "authorityClass", "sourceSpanRefs", "decisionReceiptRefs", "premiseRefs", "derivationReceiptRefs"],
+      "properties": {
+        "evidenceClaimId": { "$ref": "#/$defs/id" }, "authorityClass": { "enum": ["source_grounded", "human_confirmed", "derived"] },
+        "sourceSpanRefs": { "$ref": "#/$defs/refs" }, "decisionReceiptRefs": { "$ref": "#/$defs/refs" },
+        "premiseRefs": { "$ref": "#/$defs/refs" }, "derivationReceiptRefs": { "$ref": "#/$defs/refs" }
+      },
+      "allOf": [
+        { "if": { "properties": { "authorityClass": { "const": "source_grounded" } } }, "then": { "properties": { "sourceSpanRefs": { "minItems": 1 }, "decisionReceiptRefs": { "maxItems": 0 }, "premiseRefs": { "maxItems": 0 }, "derivationReceiptRefs": { "maxItems": 0 } } } },
+        { "if": { "properties": { "authorityClass": { "const": "human_confirmed" } } }, "then": { "properties": { "sourceSpanRefs": { "maxItems": 0 }, "decisionReceiptRefs": { "minItems": 1 }, "premiseRefs": { "maxItems": 0 }, "derivationReceiptRefs": { "maxItems": 0 } } } },
+        { "if": { "properties": { "authorityClass": { "const": "derived" } } }, "then": { "properties": { "sourceSpanRefs": { "maxItems": 0 }, "decisionReceiptRefs": { "maxItems": 0 }, "premiseRefs": { "minItems": 1 }, "derivationReceiptRefs": { "minItems": 1 } } } }
+      ]
+    }
+  }
+}

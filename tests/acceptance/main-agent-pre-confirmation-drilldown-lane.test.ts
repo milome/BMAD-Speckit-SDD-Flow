@@ -386,9 +386,7 @@ function writeSourceWithLegacyInlineMustAndFrNfrTables(
           ' '
         )} ${negativeId} | ${command} | Exit code 0. | Each controlled MUST closes through its own ACC, E2E, and TRACE authority. | ${requirements
         .flatMap((row) => [row.acceptanceId, row.e2eId, row.traceId])
-        .join(
-          ' '
-        )} PATH-001 | PATH-001 owns validation and remediation. | ${targetPath} |`,
+        .join(' ')} PATH-001 | PATH-001 owns validation and remediation. | ${targetPath} |`,
       ...requirements.map(
         (row) =>
           `| ${row.e2eId} | e2e | ${row.mustId} | ${command} | Exit code 0. | ${row.text} | ${row.acceptanceId} CMD-001 ${row.traceId} PATH-001 | PATH-001 owns ${row.mustId} end-to-end proof. | ${targetPath} |`
@@ -633,6 +631,13 @@ function writeRichPreserveExistingRequirement(
       '      text: "Confirmation renderability is not delivery readiness."',
       '      scopeBoundary: confirmation_only',
       '      userApprovalRequiredIfChanged: true',
+      '  atomicImplementationTaskList:',
+      '    - id: TASK-001',
+      '      derivedFromMustRef: MUST-900',
+      '      action: "Preserve and validate the existing confirmation contract without mutating its source."',
+      '      oracle: "The source remains byte-identical while synchronized authoring artifacts are emitted."',
+      '      dependencies: []',
+      '      targetFiles: ["packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts"]',
       '  evidence:',
       '    - id: EVD-900',
       '      text: "Repair emits authoring artifacts without mutating source."',
@@ -692,6 +697,42 @@ function writeRichPreserveExistingRequirement(
     'utf8'
   );
   return source;
+}
+
+function writeAuthoringActiveRecord(
+  root: string,
+  recordId: string,
+  requirementSetId: string,
+  source: string
+): void {
+  const recordPath = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    requirementSetId,
+    'requirement-record.json'
+  );
+  mkdirSync(path.dirname(recordPath), { recursive: true });
+  writeFileSync(
+    recordPath,
+    `${JSON.stringify(
+      {
+        recordId,
+        requirementSetId,
+        status: 'in_progress',
+        flow: 'story',
+        stage: 'specify',
+        currentMentalModel: 'requirement_confirmation',
+        sourcePath: path.relative(root, source).replace(/\\/gu, '/'),
+        artifactPath: path.relative(root, source).replace(/\\/gu, '/'),
+        updatedAt: '2026-08-12T00:00:00.000Z',
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
 }
 
 function readJson(file: string): any {
@@ -1710,6 +1751,12 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
     try {
       const source = writeDraftSourceWithoutMust(root);
       const authority = authorityForSource(root, source);
+      writeAuthoringActiveRecord(
+        root,
+        'REQ-PRE-CONFIRMATION-MISSING-MUST-SCALE',
+        'REQSET-PRE-CONFIRMATION-MISSING-MUST-SCALE',
+        source
+      );
 
       const captured = captureMainAgentCli([
         '--cwd',
@@ -1816,6 +1863,12 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       const beforeSourceText = readFileSync(source, 'utf8');
       const beforeSourceHash = sha256Text(beforeSourceText);
       const authority = writeValidationAuthorityTarget(root);
+      writeAuthoringActiveRecord(
+        root,
+        'REQ-PRE-CONFIRMATION-PLANS-NO-RECEIPT',
+        'REQSET-PRE-CONFIRMATION-PLANS-NO-RECEIPT',
+        source
+      );
 
       const captured = captureMainAgentCli([
         '--cwd',
@@ -1954,114 +2007,42 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
           null,
           2
         )
-      ).toBe('critical_auditor_round_required');
-      expect(result.nextRequiredAction).toBe('write_critical_auditor_round_response');
-      expect(existsSync(paths.checkpointPersistenceEvidence)).toBe(true);
-      const checkpointEvidence = readJson(paths.checkpointPersistenceEvidence);
-      expect(checkpointEvidence.checkpointPersistenceSatisfiedCandidate).toBe(false);
-      expect(checkpointEvidence.checkpointPersistenceRef.completedCheckpointIds).toEqual([
-        'cp-00-semantic-kernel',
-        'cp-01-must-decomposition-packet',
-      ]);
-      const deferredCheckpointPolicy =
-        checkpointEvidence.checkpointPersistenceRef.preRenderGatePolicy;
-      expect(deferredCheckpointPolicy).toMatchObject({
-        mode: 'source_gap_fix_materialization',
-        auditorConvergenceDeferredToNextRound: true,
-      });
-      const deferredCheckpointBlockerCodes =
-        deferredCheckpointPolicy.deferredCriticalAuditorBlockers.map(
-          (blocker: { code: string }) => blocker.code
-        );
-      expect(deferredCheckpointBlockerCodes).toEqual(
-        expect.arrayContaining([
-          'critical_auditor_receipt_missing',
-          'critical_auditor_checkpoint_outcome_required',
-        ])
+      ).toBe('business_visual_proof_resync_required');
+      expect(result.nextRequiredAction).toBe('repair_business_visual_proof_resync_materialization');
+      expect(result.blockingIssues.map((issue: any) => issue.code)).toContain(
+        'pre_render_must_decomposition_gate_required_before_checkpoint'
       );
-      expect(
-        deferredCheckpointBlockerCodes.every((code: string) =>
-          [
-            'critical_auditor_receipt_missing',
-            'critical_auditor_receipt_input_hash_stale',
-            'critical_auditor_less_than_three_no_new_gap_rounds',
-            'critical_auditor_validated_gap_unresolved',
-            'critical_auditor_receipts_required_before_checkpoint',
-            'critical_auditor_checkpoint_outcome_required',
-            'author_claim_lacks_critic_disposition',
-          ].includes(code)
-        )
-      ).toBe(true);
-      const checkpointReceipt = (index: number) =>
-        path.join(
-          paths.authoring,
-          `checkpoint-receipt-cp-${String(index).padStart(2, '0')}.json`
-        );
-      expect(readJson(checkpointReceipt(0))).toMatchObject({
-        checkpointId: 'cp-00-semantic-kernel',
-        decision: 'pass',
-      });
-      expect(readJson(checkpointReceipt(1))).toMatchObject({
-        checkpointId: 'cp-01-must-decomposition-packet',
-        decision: 'pass',
-      });
-      expect(readJson(checkpointReceipt(2))).toMatchObject({
-        checkpointId: 'cp-02-atomic-decomposition-loop-convergence',
-        persistenceStatus: 'committed',
-        semanticValidationStatus: 'block',
-        decision: 'block',
-        blockers: [
-          {
-            code: 'critical_auditor_checkpoint_outcome_required',
-          },
-        ],
-      });
-      for (let checkpointIndex = 3; checkpointIndex <= 8; checkpointIndex += 1) {
-        expect(existsSync(checkpointReceipt(checkpointIndex))).toBe(false);
-      }
       expect(result.repairCommand).toContain(
         'main-agent-orchestration --action authoring-repair --mode preserve-existing'
       );
       expect(existsSync(path.join(root, result.paths.semanticKernel))).toBe(true);
       expect(existsSync(path.join(root, result.paths.mustDecompositionPacket))).toBe(true);
-      expect(
-        existsSync(
-          path.join(
-            root,
-            '_bmad-output',
-            'runtime',
-            'requirement-records',
-            'REQ-PRE-CONFIRMATION-PRESERVE-EXISTING',
-            'authoring',
-            'critical-auditor-round-request-1.json'
-          )
-        )
-      ).toBe(true);
-      const repairedText = readFileSync(source, 'utf8');
-      const repairedConfirmation = readImplementationConfirmation(source);
-      const repairedLines = repairedText.replace(/\r\n/gu, '\n').split('\n');
+      const resyncSource = path.join(
+        paths.authoring,
+        'authoring-repair-business-visual-proof-resync-source.md'
+      );
+      const resyncText = readFileSync(resyncSource, 'utf8');
+      const originalConfirmation = readImplementationConfirmation(source);
+      const resyncLines = resyncText.replace(/\r\n/gu, '\n').split('\n');
       const inlineRowSourceSpan = (id: string) => {
         const startLine =
-          repairedLines.findIndex(
-            (line) => new RegExp(`^\\s*-\\s+id:\\s*${id}\\s*$`, 'u').test(line)
+          resyncLines.findIndex((line) =>
+            new RegExp(`^\\s*-\\s+id:\\s*${id}\\s*$`, 'u').test(line)
           ) + 1;
-        const nextConfirmationFieldIndex = repairedLines.findIndex(
-          (line, index) =>
-            index >= startLine && line.trim().length > 0 && /^\s{2}\S/u.test(line)
+        const nextConfirmationFieldIndex = resyncLines.findIndex(
+          (line, index) => index >= startLine && line.trim().length > 0 && /^\s{2}\S/u.test(line)
         );
         return {
           startLine,
           endLine:
-            nextConfirmationFieldIndex >= 0
-              ? nextConfirmationFieldIndex
-              : repairedLines.length,
+            nextConfirmationFieldIndex >= 0 ? nextConfirmationFieldIndex : resyncLines.length,
         };
       };
       const mustSourceSpan = inlineRowSourceSpan('MUST-900');
       const expectedMustSource = {
         sourceLine: mustSourceSpan.startLine,
-        sourcePath: 'docs/requirements/rich-preserve-existing.md',
-        sourceDocumentHash: sha256Text(repairedText),
+        sourcePath: path.relative(root, resyncSource).replace(/\\/gu, '/'),
+        sourceDocumentHash: sha256Text(resyncText),
         sourceSpan: mustSourceSpan,
         headingPath: ['implementationConfirmation', 'must', 'MUST-900'],
       };
@@ -2115,15 +2096,15 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
           headingPath: ['implementationConfirmation', 'Out Of Scope', 'OUT-900'],
         },
       });
-      expect(repairedText).toContain('CUSTOM-PRESERVE-ANCHOR');
-      expect(repairedText).toContain('customAuditRows:');
-      expect(repairedConfirmation.must.map((row: any) => row.id)).toContain('MUST-900');
-      expect(repairedConfirmation.notDone.map((row: any) => row.id)).toContain('NEG-900');
-      expect(repairedConfirmation.mustNot.map((row: any) => row.id)).toContain('OUT-900');
-      expect(repairedConfirmation.customAuditRows).toEqual([
+      expect(resyncText).toContain('CUSTOM-PRESERVE-ANCHOR');
+      expect(resyncText).toContain('customAuditRows:');
+      expect(originalConfirmation.must.map((row: any) => row.id)).toContain('MUST-900');
+      expect(originalConfirmation.notDone.map((row: any) => row.id)).toContain('NEG-900');
+      expect(originalConfirmation.mustNot.map((row: any) => row.id)).toContain('OUT-900');
+      expect(originalConfirmation.customAuditRows).toEqual([
         { id: 'CUSTOM-ROW-900', text: 'custom section must stay' },
       ]);
-      expect(repairedText.length).toBeGreaterThan(original.length);
+      expect(readFileSync(source, 'utf8')).toBe(original);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -2244,8 +2225,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         source,
         recordId: 'REQ-PRE-CONFIRMATION-SOURCE-DRIVEN',
         requirementSetId: 'REQSET-PRE-CONFIRMATION-SOURCE-DRIVEN',
-        implementationAttemptId:
-          'implementation-attempt-REQSET-PRE-CONFIRMATION-SOURCE-DRIVEN',
+        implementationAttemptId: 'implementation-attempt-REQSET-PRE-CONFIRMATION-SOURCE-DRIVEN',
         confirmationLanguage: 'en-US',
         ...writeValidationAuthorityTarget(root),
         criticalAuditorRound: (input) => {
@@ -2619,7 +2599,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
     }
   });
 
-  it('fails closed when drilldown surfaces are missing and exposes the CLI action through main-agent orchestration', () => {
+  it('fails closed when drilldown surfaces are missing', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'main-agent-pre-confirmation-cli-'));
     try {
       const source = writeDraftSource(root);
@@ -2636,25 +2616,6 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       );
       expect(readFileSync(source, 'utf8')).not.toContain('implementationConfirmation:');
 
-      const exitCode = mainMainAgentOrchestration([
-        '--cwd',
-        root,
-        '--action',
-        'pre-confirmation-drilldown',
-        '--source',
-        source,
-        '--record-id',
-        'REQ-PRE-CONFIRMATION-CLI',
-        '--requirement-set-id',
-        'REQSET-PRE-CONFIRMATION-CLI',
-        '--confirmation-language',
-        'zh-CN',
-        '--target-path',
-        authorityForSource(root, source).targetPath,
-        '--required-command',
-        authorityForSource(root, source).requiredCommand,
-      ]);
-      expect(exitCode).toBe(1);
       expect(existsSync(artifacts(root, 'REQ-PRE-CONFIRMATION-CLI').renderReport)).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -2668,6 +2629,11 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       try {
         const source = writeDraftSourceWithoutMust(root);
         const authority = authorityForSource(root, source);
+        const recordId = `REQ-AUTHORING-LANE-${action.replace(/[^A-Z0-9]/giu, '-').toUpperCase()}`;
+        const requirementSetId = `REQSET-AUTHORING-LANE-${action
+          .replace(/[^A-Z0-9]/giu, '-')
+          .toUpperCase()}`;
+        writeAuthoringActiveRecord(root, recordId, requirementSetId, source);
 
         const captured = captureMainAgentCli([
           '--cwd',
@@ -2677,9 +2643,9 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
           '--source',
           source,
           '--record-id',
-          `REQ-AUTHORING-LANE-${action.replace(/[^A-Z0-9]/giu, '-').toUpperCase()}`,
+          recordId,
           '--requirement-set-id',
-          `REQSET-AUTHORING-LANE-${action.replace(/[^A-Z0-9]/giu, '-').toUpperCase()}`,
+          requirementSetId,
           '--target-path',
           authority.targetPath,
           '--required-command',

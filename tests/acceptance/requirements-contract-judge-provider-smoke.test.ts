@@ -1,21 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
-import {
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createJudgeRuntimeBindingsFixture } from './helpers/requirements-contract-judge-runtime-bindings-fixture';
 import { requirementsContractJudgeProviderSmokeCommand } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-provider-smoke';
-import {
-  canonicalJson,
-  sha256,
-} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-governed-write';
 
 const roots: string[] = [];
 
@@ -159,45 +149,23 @@ describe('requirements contract Judge Provider smoke', () => {
       expect(result.providerRef).toBe(providerRef);
       expect(result.phaseAuditAttemptId).toBe(phaseAuditAttemptId);
       expect(readFileSync(path.join(phaseRoot, 'selection.json'), 'utf8')).not.toContain(token);
-      const selection = JSON.parse(
-        readFileSync(path.join(phaseRoot, 'selection.json'), 'utf8')
-      );
-      const expectedBaseJudgeInputBundleHash = sha256(
-        canonicalJson({
-          schemaVersion: 'requirements-contract-base-judge-input-bundle/v1',
-          phase: auditContext.phase,
-          phaseAuditAttemptId,
-          requirementSetId: auditContext.requirementSetId,
-          transactionId,
-          implementationAttemptId,
-          judgeAuditUnitSetRef: judgeRuntimeBindings.judgeAuditUnitSetRef,
-          judgeAuditUniverseHash: judgeAuditUnitSet.judgeAuditUniverseHash,
-          judgeAuditUnitSetHash: judgeAuditUnitSet.judgeAuditUnitSetHash,
-          rubricRef: judgeRuntimeBindings.rubricRef,
-          systemPromptRef: judgeRuntimeBindings.systemPromptRef,
-          sourceRef: judgeRuntimeBindings.sourceRef,
-          traceRef: judgeRuntimeBindings.traceRef,
-          redRef: judgeRuntimeBindings.redRef,
-          baseEvidenceRef: judgeRuntimeBindings.baseEvidenceRef,
-          authorizedChallengeDerivationProtocolRef:
-            judgeRuntimeBindings.authorizedChallengeDerivationProtocolRef,
-        })
-      );
+      const selection = JSON.parse(readFileSync(path.join(phaseRoot, 'selection.json'), 'utf8'));
       expect(selection).toMatchObject({
-        rubricHash: judgeRuntimeBindings.rubricRef.hash,
-        systemPromptHash: judgeRuntimeBindings.systemPromptRef.hash,
-        sourceHash: judgeRuntimeBindings.sourceRef.hash,
-        traceHash: judgeRuntimeBindings.traceRef.hash,
-        redHash: judgeRuntimeBindings.redRef.hash,
-        baseEvidenceHash: judgeRuntimeBindings.baseEvidenceRef.hash,
-        auditUniverseHash: judgeAuditUnitSet.judgeAuditUniverseHash,
-        judgeAuditUnitSetRef: judgeRuntimeBindings.judgeAuditUnitSetRef,
-        judgeAuditUnitSetHash: judgeAuditUnitSet.judgeAuditUnitSetHash,
-        baseJudgeInputBundleHash: expectedBaseJudgeInputBundleHash,
-        authorizedChallengeDerivationProtocolHash:
-          judgeRuntimeBindings.authorizedChallengeDerivationProtocolRef.hash,
+        schemaVersion: 'requirements-contract-judge-selection-receipt/v1',
+        decision: 'selected',
+        providerRef,
+        transport: 'openai-compatible',
+        apiStyle: 'chat_completions',
+        model: requestedModel,
+        adapterRef: 'OpenAICompatibleJudgeAdapter',
+        providerConfigurationHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
+        declaredCapacity: null,
+        issueCodes: [],
+        providerSelectionHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
       });
-      expect(JSON.parse(readFileSync(path.join(phaseRoot, 'capability.json'), 'utf8'))).toMatchObject({
+      expect(
+        JSON.parse(readFileSync(path.join(phaseRoot, 'capability.json'), 'utf8'))
+      ).toMatchObject({
         transactionId,
         auditAttemptId: phaseAuditAttemptId,
         transportSuccess: true,

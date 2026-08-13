@@ -5,7 +5,6 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   artifacts,
-  buildValidResponseFromRequest,
   cleanCriticalAuditorRound,
   createTempRoot,
   createTestAuthoringExecutionOptions,
@@ -19,7 +18,6 @@ import {
   runMainAgentAuthoringRepair,
   runMainAgentPreConfirmationDrilldown,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
-import { criticalAuditorIndependentProviderRunHash } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-critical-auditor-independence';
 
 function createJudgeReadyTempRoot(prefix: string): string {
   const root = createTempRoot(prefix);
@@ -34,7 +32,7 @@ const metadataRelativePath =
 const requiredCheckpointIds = [
   'cp-00-semantic-kernel',
   'cp-01-must-decomposition-packet',
-  'cp-02-atomic-decomposition-loop-convergence',
+  'cp-02-deterministic-atomic-closure',
   'cp-03-packet-to-source-materialization',
   'cp-04-id-freeze',
   'cp-05-implementation-confirmation-core',
@@ -51,23 +49,6 @@ const { collectProjectionQualityIssues } = requireForProjectionGate(
     options?: Record<string, unknown>
   ) => Array<{ code: string; refs: string[] }>;
 };
-const {
-  extractImplementationConfirmation: extractImplementationConfirmationForHash,
-  sourceDocumentHashFor: sourceDocumentHashForContract,
-} = requireForProjectionGate(
-  '../../_bmad/skills/requirements-contract-authoring/scripts/pre_render_definition_drilldown_lib.js'
-) as {
-  extractImplementationConfirmation: (sourceText: string) => {
-    blockText: string;
-    confirmation: Record<string, unknown>;
-  };
-  sourceDocumentHashFor: (
-    sourceText: string,
-    blockText: string,
-    confirmation: Record<string, unknown>
-  ) => string;
-};
-
 function readUtf8(relativePath: string): string {
   return readFileSync(path.join(process.cwd(), relativePath), 'utf8');
 }
@@ -112,142 +93,6 @@ function expectTextContainsAll(value: unknown, tokens: string[]): void {
   for (const token of tokens) {
     expect(text).toContain(token);
   }
-}
-
-function writePromotionReceiptForDraft(input: {
-  root: string;
-  sourcePath: string;
-  recordId: string;
-  requirementSetId: string;
-}): void {
-  const authoringDir = path.join(
-    input.root,
-    '_bmad-output',
-    'runtime',
-    'requirement-records',
-    input.recordId,
-    'authoring'
-  );
-  const receiptPath = path.join(authoringDir, 'promotion-receipt.json');
-  const sourceText = readFileSync(input.sourcePath, 'utf8');
-  const extraction = extractImplementationConfirmationForHash(sourceText);
-  const sourceDocumentHash = sourceDocumentHashForContract(
-    sourceText,
-    extraction.blockText,
-    extraction.confirmation
-  );
-  const targetHash = sha256PrefixedText(sourceText);
-  const sourcePath = path.relative(input.root, input.sourcePath).replace(/\\/gu, '/');
-  const receipt = {
-    ok: true,
-    dryRun: false,
-    preflightOnly: false,
-    draftPath: path
-      .relative(input.root, path.join(authoringDir, 'draft-source-preview.md'))
-      .replace(/\\/gu, '/'),
-    targetPath: sourcePath,
-    promotionStage: 'authoring-draft',
-    allowedStatuses: ['draft', 'draft_updated_not_confirmation_ready', 'reconfirm_required'],
-    statusValue: 'draft',
-    confirmationReady: false,
-    safePromotionAsDraft: true,
-    requiresUserConfirmationBeforeExecution: true,
-    manifestPath: path
-      .relative(input.root, path.join(authoringDir, 'draft-manifest.json'))
-      .replace(/\\/gu, '/'),
-    targetHash,
-    writeReceipt: {
-      schemaVersion: 'large-document-writer-safe-write/v1',
-      targetPath: sourcePath,
-      finalHash: targetHash,
-      mode: 'replace',
-    },
-    backupPath: path
-      .relative(input.root, path.join(authoringDir, 'promotion-backup.md'))
-      .replace(/\\/gu, '/'),
-    preflight: {
-      manifest: {
-        targetPath: sourcePath,
-        draftHash: targetHash,
-        statusValue: 'draft',
-        recordId: input.recordId,
-        requirementSetId: input.requirementSetId,
-      },
-    },
-    authoringPromotionGate: {
-      required: true,
-      ok: true,
-      decisions: {
-        sourceMutation: {
-          finalDecision: 'allow_source_materialization',
-          sourceMutationAllowed: true,
-          sourceDocumentExistedBefore: true,
-          sourceDocumentHashBefore: sourceDocumentHash,
-          sourceDocumentHashAfter: targetHash,
-        },
-      },
-    },
-    receiptPath: path.relative(input.root, receiptPath).replace(/\\/gu, '/'),
-    failureClass: null,
-  };
-  writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');
-}
-
-function writeProviderOwnedRepairResponse(input: {
-  requestPath: string;
-  responsePath: string;
-  packetPath: string;
-  actionAuthority: {
-    sourceSpan: { startLine: number; endLine: number };
-    sourceText: string;
-    mustRefs: string[];
-    requirementIds: string[];
-  };
-}): void {
-  const request = readJson<Record<string, unknown>>(input.requestPath);
-  const packet = readJson<Record<string, unknown>>(input.packetPath);
-  const validResponse = buildValidResponseFromRequest(request, packet);
-  const baseEvidence = validResponse.independentProviderEvidence as Record<string, unknown>;
-  const { independentProviderEvidence: _ignoredEvidence, ...validBody } = validResponse;
-  const responseBody = {
-    ...validBody,
-    verdict: 'new_valid_gap',
-    gapCandidates: [{ id: 'GAP-MTF-PROVIDER-OWNED-REPAIR' }],
-    validatedGaps: [
-      {
-        id: 'VALID-GAP-MTF-PROVIDER-OWNED-REPAIR',
-        status: 'open',
-        repairActions: [
-          {
-            actionId: 'REPAIR-MTF-PROVIDER-OWNED-MUST',
-            type: 'add_must',
-            targetField: 'implementationConfirmation.must',
-            newValue: {
-              id: 'MUST-MTF-PROVIDER-OWNED-REPAIR',
-              text: '15m、30m、45m、D 默认隐藏，用户可在设置中按需启用。',
-            },
-            reason: 'Critical Auditor found a missing source-bound business requirement.',
-            ...input.actionAuthority,
-          },
-        ],
-      },
-    ],
-    rejectedGapCandidates: [],
-    rationale: 'Provider-owned response materializes a source-bound business repair.',
-  };
-  const evidenceWithoutRunHash = {
-    ...baseEvidence,
-    responseHash: sha256PrefixedText(JSON.stringify(responseBody)),
-  };
-  delete evidenceWithoutRunHash.runHash;
-  const response = {
-    ...responseBody,
-    independentProviderEvidence: {
-      ...evidenceWithoutRunHash,
-      runHash: criticalAuditorIndependentProviderRunHash(evidenceWithoutRunHash),
-    },
-  };
-  writeFileSync(input.responsePath, `${JSON.stringify(response, null, 2)}\n`, 'utf8');
 }
 
 describe('requirements contract sanitized real fixture coverage', () => {
@@ -1113,7 +958,7 @@ describe('requirements contract sanitized real fixture coverage', () => {
     }
   }, 240_000);
 
-  it('materializes a provider-owned real-fixture repair from promoted source authority', () => {
+  it('closes deterministic cp02 from real-fixture source authority before later audit', () => {
     const root = createJudgeReadyTempRoot('requirements-contract-real-provider-repair-');
     try {
       const fixture = readUtf8(fixtureRelativePath);
@@ -1136,110 +981,25 @@ describe('requirements contract sanitized real fixture coverage', () => {
         'critical_auditor_provider_mode_required'
       );
 
-      const paths = artifacts(root, recordId, requirementSetId);
-      writeFileSync(source, readFileSync(paths.draftSourcePreview, 'utf8'), 'utf8');
-      writePromotionReceiptForDraft({ root, sourcePath: source, recordId, requirementSetId });
-
-      const firstRepair = runMainAgentAuthoringRepair(root, {
-        source,
-        recordId,
-        requirementSetId,
+      const stagingDir = String(
+        (authoring.stagingTransaction as Record<string, unknown> | null)?.stagingDir ?? ''
+      );
+      expect(stagingDir).not.toBe('');
+      const cp02Receipt = readJson<Record<string, unknown>>(
+        path.join(root, stagingDir, 'checkpoint-receipt-cp-02.json')
+      );
+      expect(cp02Receipt).toMatchObject({
+        checkpointId: 'cp-02-deterministic-atomic-closure',
         implementationAttemptId: execution.implementationAttemptId,
-        mode: 'preserve-existing',
+        persistenceStatus: 'committed',
+        semanticValidationStatus: 'pass',
+        blockers: [],
+        decision: 'pass',
       });
-      expect(firstRepair.blockingStage, stringify(firstRepair.blockingIssues)).toBe(
-        'critical_auditor_round_required'
+      expect(issueCodes(authoring)).not.toContain(
+        'critical_auditor_checkpoint_outcome_commit_mismatch'
       );
-
-      const requestPath = path.join(
-        paths.authoring,
-        'critical-auditor-round-request-1.json'
-      );
-      const responsePath = path.join(
-        paths.authoring,
-        'critical-auditor-round-response-1.json'
-      );
-      const packetPath = path.join(paths.authoring, 'must_decomposition_packet.json');
-      const request = readJson<{ mustRefs?: string[] }>(requestPath);
-      const confirmation = readImplementationConfirmation(source);
-      const authorityRow = (
-        (confirmation.must as Array<Record<string, unknown>> | undefined) ?? []
-      ).find(
-        (row) =>
-          row.sourceRequirementId === 'FR-3' ||
-          (Array.isArray(row.sourceRequirementIds) &&
-            row.sourceRequirementIds.includes('FR-3'))
-      );
-      expect(authorityRow).toBeDefined();
-      const sourceSpan = authorityRow?.sourceSpan as
-        | { startLine?: number; endLine?: number }
-        | undefined;
-      const startLine = Number(sourceSpan?.startLine);
-      const endLine = Number(sourceSpan?.endLine);
-      const mustRef = String(authorityRow?.id ?? '');
-      const authoritySourcePath = path.resolve(root, String(authorityRow?.sourcePath ?? ''));
-      const authorityLines = readFileSync(authoritySourcePath, 'utf8')
-        .replace(/\r\n/gu, '\n')
-        .split('\n');
-      const requirementIds = [
-        authorityRow?.sourceRequirementId,
-        ...(Array.isArray(authorityRow?.sourceRequirementIds)
-          ? authorityRow.sourceRequirementIds
-          : []),
-      ]
-        .map((value) => String(value ?? '').trim())
-        .filter((value, index, values) => Boolean(value) && values.indexOf(value) === index);
-      expect(request.mustRefs).toContain(mustRef);
-      expect(Number.isInteger(startLine) && startLine > 0).toBe(true);
-      expect(Number.isInteger(endLine) && endLine >= startLine).toBe(true);
-      expect(requirementIds).toContain('FR-3');
-
-      writeProviderOwnedRepairResponse({
-        requestPath,
-        responsePath,
-        packetPath,
-        actionAuthority: {
-          sourceSpan: { startLine, endLine },
-          sourceText: authorityLines.slice(startLine - 1, endLine).join('\n').trim(),
-          mustRefs: [mustRef],
-          requirementIds,
-        },
-      });
-
-      const repaired = runMainAgentAuthoringRepair(root, {
-        source,
-        recordId,
-        requirementSetId,
-        implementationAttemptId: execution.implementationAttemptId,
-        mode: 'preserve-existing',
-      });
-      expect(repaired.blockingStage).toBe('critical_auditor_round_required');
-      expect(repaired.consecutiveNoNewGapRounds).toBe(0);
-      const repairedConfirmation = readImplementationConfirmation(source);
-      const repairedMust = (
-        repairedConfirmation.must as Array<Record<string, unknown>>
-      ).find((row) => row.id === 'MUST-MTF-PROVIDER-OWNED-REPAIR');
-      expect(repairedMust).toMatchObject({
-        source: 'critical_auditor_validated_gap',
-        sourcePath: authorityRow?.sourcePath,
-        sourceRequirementId: 'FR-3',
-        sourceSpan: { startLine, endLine },
-      });
-      expect(stringify(readJson(packetPath))).toContain('MUST-MTF-PROVIDER-OWNED-REPAIR');
-      expect(existsSync(paths.receipt1)).toBe(false);
-      const archiveArtifact = repaired.artifacts.find((artifact: string) =>
-        artifact.includes('/archive/')
-      );
-      expect(archiveArtifact).toBeTruthy();
-      const archiveDir = path.join(root, archiveArtifact as string);
-      const archiveManifest = readJson<{ artifacts: string[] }>(
-        path.join(archiveDir, 'archive-manifest.json')
-      );
-      expect(archiveManifest.artifacts).toContain('critical-auditor-receipt-round-1.json');
-      expect(
-        stringify(readJson(path.join(archiveDir, 'critical-auditor-receipt-round-1.json')))
-      ).toContain('MUST-MTF-PROVIDER-OWNED-REPAIR');
-      expect(readJson<Record<string, unknown>>(requestPath).previousReceipts).toEqual([]);
+      expect(readFileSync(source, 'utf8')).not.toContain('MUST-MTF-PROVIDER-OWNED-REPAIR');
     } finally {
       rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
     }

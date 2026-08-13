@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -16,6 +16,43 @@ const SPECKIT_CLI_SOURCE = readFileSync(
 );
 
 describe('Judge public entry hard cut', () => {
+  it('removes legacy Requirements campaign, final acceptance, and ledger artifacts from source and dist', () => {
+    const legacyRelativePaths = [
+      'scripts/requirements-contract-critical-auditor-judge-adapter',
+      'scripts/requirements-contract-final-acceptance-effective-pass-gate',
+      'scripts/requirements-contract-final-acceptance-judge-validator',
+      'scripts/requirements-contract-final-acceptance-ledger',
+      'scripts/requirements-contract-final-acceptance-state-machine',
+      'scripts/requirements-contract-judge-convergence',
+      'scripts/requirements-contract-judge-final-integration-lineage',
+      'scripts/requirements-contract-judge-remediation-store',
+      'scripts/requirements-contract-judge-review-campaign-input',
+      'scripts/requirements-contract-judge-review-campaign-trace',
+      'scripts/requirements-contract-judge-review-campaign',
+      'scripts/requirements-contract-judge-state-machine',
+      'schemas/requirements-contract-final-acceptance-effective-pass-receipt.schema',
+      'schemas/requirements-contract-final-acceptance-judge-assessment.schema',
+      'schemas/requirements-contract-final-acceptance-judge-request.schema',
+      'schemas/requirements-contract-final-acceptance-scope-manifest.schema',
+      'schemas/requirements-contract-judge-attempt-key.schema',
+      'schemas/requirements-contract-judge-ledger-entry.schema',
+      'schemas/requirements-contract-judge-remediation-receipt.schema',
+      'schemas/requirements-contract-judge-transition-receipt.schema',
+    ];
+    for (const relativePath of legacyRelativePaths) {
+      expect(existsSync(path.join(
+        ROOT,
+        'packages/bmad-speckit/src/main-agent/source-authority',
+        `${relativePath}.${relativePath.startsWith('schemas/') ? 'json' : 'ts'}`
+      )), `source:${relativePath}`).toBe(false);
+      expect(existsSync(path.join(
+        ROOT,
+        'packages/bmad-speckit/dist/main-agent/source-authority',
+        `${relativePath}.${relativePath.startsWith('schemas/') ? 'json' : 'js'}`
+      )), `dist:${relativePath}`).toBe(false);
+    }
+  });
+
   it('exposes only the canonical nested judge run public entry', () => {
     expect(BIN_SOURCE).toContain(".command('judge')");
     expect(BIN_SOURCE).toContain(".command('run')");

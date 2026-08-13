@@ -176,43 +176,27 @@ describe.runIf(Object.values(schemaFiles).every((name) => existsSync(path.join(s
       };
       const selection = {
         schemaVersion: 'requirements-contract-judge-selection-receipt/v1',
-        transactionId: 'TX-001',
-        auditAttemptId: 'AUD-001',
-        providerRegistryHash: HASH,
-        publicProviderConfigHash: HASH,
-        capabilityReceiptHash: HASH,
+        decision: 'selected',
         providerRef,
-        configuredBaseUrlHash: HASH,
         transport: 'claude-code-cli',
         apiStyle: 'cli',
         model: null,
-        credentialRevision: 1,
-        independenceClass: 'different_provider_different_model',
-        blindReview: true,
-        allowPassAuthority: false,
-        runtimeFallbackAllowed: false,
-        rubricHash: HASH,
-        systemPromptHash: HASH,
-        sourceHash: HASH,
-        traceHash: HASH,
-        redHash: HASH,
-        baseEvidenceHash: HASH,
-        auditUniverseHash: HASH,
-        judgeAuditUnitSetRef: {
-          path: 'audit/AUD-001/judge-audit-unit-set.json',
-          hash: HASH,
-          schemaVersion: 'requirements-contract-judge-audit-unit-set/v1',
+        adapterRef: 'ClaudeCodeCliJudgeAdapter',
+        providerRegistryHash: HASH,
+        providerConfigurationHash: HASH,
+        declaredCapacity: {
+          transportByteLimit: 1_000_000,
+          contextWindowTokens: 200_000,
+          maximumOutputTokens: 8_192,
         },
-        judgeAuditUnitSetHash: HASH,
-        baseJudgeInputBundleHash: HASH,
-        authorizedChallengeDerivationProtocolHash: HASH,
-        decision: 'frozen',
+        issueCodes: [],
+        providerSelectionHash: HASH,
       };
 
       expect(validateCapability(capability), JSON.stringify(validateCapability.errors)).toBe(true);
       expect(validateSelection(selection), JSON.stringify(validateSelection.errors)).toBe(true);
       expect(validateCapability({ ...capability, fallbackObserved: true })).toBe(false);
-      expect(validateSelection({ ...selection, allowPassAuthority: true })).toBe(false);
+      expect(validateSelection({ ...selection, decision: 'frozen' })).toBe(false);
     });
 
     it('allows a gateway-managed Claude CLI provider to delegate model selection', () => {
@@ -257,6 +241,12 @@ describe.runIf(Object.values(schemaFiles).every((name) => existsSync(path.join(s
       };
 
       expect(validate(base), JSON.stringify(validate.errors)).toBe(true);
+      const retryEnabled = structuredClone(base);
+      retryEnabled.providers[providerRef].requestPolicy.maximumAttempts = 2;
+      expect(validate(retryEnabled), JSON.stringify(validate.errors)).toBe(true);
+      const retryDisabled = structuredClone(base);
+      retryDisabled.providers[providerRef].requestPolicy.maximumAttempts = 0;
+      expect(validate(retryDisabled)).toBe(false);
       const explicitNull = structuredClone(base);
       explicitNull.providers[providerRef].model = null;
       expect(validate(explicitNull), JSON.stringify(validate.errors)).toBe(true);

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-grill-answers.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "answers"],
+  "properties": {
+    "schemaVersion": { "const": "requirements-grill-answers/v1" },
+    "answers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["questionId", "questionVersion", "answerValue"],
+        "properties": {
+          "questionId": { "type": "string", "minLength": 1 },
+          "questionVersion": { "type": "string", "minLength": 1 },
+          "answerValue": {}
+        }
+      }
+    }
+  }
+}

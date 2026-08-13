@@ -1,7 +1,8 @@
+import { isCanonicalJsonValue, sha256Stable } from './requirements-contract-semantic-resolver';
 import {
-  isCanonicalJsonValue,
-  sha256Stable,
-} from './requirements-contract-semantic-resolver';
+  validateRequirementsContractSemanticIr,
+  type RequirementsContractSemanticIr,
+} from './requirements-contract-semantic-ir';
 
 export type RequirementsRenderFieldAuthorityClass =
   | 'source_grounded'
@@ -123,15 +124,77 @@ function nonEmpty(value: unknown): value is string {
 }
 
 function uniqueStrings(value: unknown): value is string[] {
-  return (
-    Array.isArray(value) &&
-    value.every(nonEmpty) &&
-    new Set(value).size === value.length
-  );
+  return Array.isArray(value) && value.every(nonEmpty) && new Set(value).size === value.length;
 }
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
+}
+
+export function createRequirementsConfirmationIrBoundRenderInput(input: {
+  semanticIr: RequirementsContractSemanticIr;
+  fields: Array<{
+    fieldRef: string;
+    value: unknown;
+    specSpanRefs: string[];
+    evidenceClaimRefs: string[];
+  }>;
+}) {
+  const validation = validateRequirementsContractSemanticIr(input.semanticIr);
+  if (validation.decision === 'block') {
+    throw new Error(`requirements_render_frozen_ir_invalid:${validation.issueCodes[0]}`);
+  }
+  const spanById = new Map(
+    input.semanticIr.semanticPayload.specSpanRegistry.map((span) => [span.specSpanId, span])
+  );
+  const claimIds = new Set(
+    input.semanticIr.semanticPayload.evidenceClaims.map((claim) => claim.evidenceClaimId)
+  );
+  const fields = input.fields
+    .map((field) => {
+      if (
+        !nonEmpty(field.fieldRef) ||
+        !isCanonicalJsonValue(field.value) ||
+        !uniqueStrings(field.specSpanRefs) ||
+        field.specSpanRefs.length === 0 ||
+        !uniqueStrings(field.evidenceClaimRefs) ||
+        field.evidenceClaimRefs.length === 0
+      ) {
+        throw new Error('requirements_render_logical_binding_invalid');
+      }
+      const specSpanRefs = [...field.specSpanRefs].sort();
+      const evidenceClaimRefs = [...field.evidenceClaimRefs].sort();
+      if (specSpanRefs.some((ref) => !spanById.has(ref))) {
+        throw new Error('requirements_render_unknown_spec_span');
+      }
+      if (evidenceClaimRefs.some((ref) => !claimIds.has(ref))) {
+        throw new Error('requirements_render_unknown_evidence_claim');
+      }
+      const boundClaimRefs = new Set(
+        specSpanRefs.flatMap((ref) => spanById.get(ref)?.evidenceClaimRefs ?? [])
+      );
+      if (evidenceClaimRefs.some((ref) => !boundClaimRefs.has(ref))) {
+        throw new Error('requirements_render_span_claim_binding_mismatch');
+      }
+      return {
+        fieldRef: field.fieldRef,
+        value: clone(field.value),
+        specSpanRefs,
+        evidenceClaimRefs,
+      };
+    })
+    .sort((left, right) => left.fieldRef.localeCompare(right.fieldRef));
+  if (new Set(fields.map((field) => field.fieldRef)).size !== fields.length) {
+    throw new Error('requirements_render_field_identity_duplicate');
+  }
+  const payload = {
+    schemaVersion: 'requirements-confirmation-ir-bound-render-input/v1' as const,
+    semanticRevisionId: input.semanticIr.semanticRevisionId,
+    scopeSemanticHash: input.semanticIr.scopeSemanticHash,
+    authority: 'none' as const,
+    fields,
+  };
+  return { ...payload, renderInputHash: sha256Stable(payload) };
 }
 
 function fieldAuthorityInvalid(field: RequirementsConfirmationRenderField): boolean {
@@ -195,7 +258,8 @@ export function validateRequirementsConfirmationRenderInput(
     new Set(fieldRefs).size !== fieldRefs.length ||
     fieldRefs.join('|') !== [...fieldRefs].sort().join('|') ||
     input.requiredRenderFieldCount !== input.fields.length ||
-    input.coveredFieldCount !== input.fields.filter((field) => field.provenanceRefs.length > 0).length ||
+    input.coveredFieldCount !==
+      input.fields.filter((field) => field.provenanceRefs.length > 0).length ||
     input.blockingUnresolvedCount !==
       input.fields.filter((field) => field.applicability === 'unresolved').length ||
     input.syntheticFieldCount !== input.fields.filter((field) => field.synthetic).length ||
@@ -241,9 +305,7 @@ export function createRequirementsConfirmationRenderInput(input: {
     fields,
     requiredRenderFieldCount: requiredFieldRefs.length,
     coveredFieldCount: fields.filter((field) => field.provenanceRefs.length > 0).length,
-    blockingUnresolvedCount: fields.filter(
-      (field) => field.applicability === 'unresolved'
-    ).length,
+    blockingUnresolvedCount: fields.filter((field) => field.applicability === 'unresolved').length,
     syntheticFieldCount: fields.filter((field) => field.synthetic).length,
     authorityInvalidCount: fields.filter(fieldAuthorityInvalid).length,
     requiredFieldSetHash: sha256Stable(requiredFieldRefs),
@@ -293,9 +355,7 @@ export function createRequirementsCloseoutRender(input: {
     !SHA256.test(input.semanticModelHash) ||
     !Array.isArray(input.executionEvidenceRefs) ||
     input.executionEvidenceRefs.length === 0 ||
-    !input.executionEvidenceRefs.every(
-      (ref) => nonEmpty(ref.path) && SHA256.test(ref.hash)
-    ) ||
+    !input.executionEvidenceRefs.every((ref) => nonEmpty(ref.path) && SHA256.test(ref.hash)) ||
     new Set(input.executionEvidenceRefs.map((ref) => ref.path)).size !==
       input.executionEvidenceRefs.length
   ) {

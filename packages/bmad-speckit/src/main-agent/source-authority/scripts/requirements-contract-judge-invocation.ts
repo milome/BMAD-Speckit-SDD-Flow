@@ -15,6 +15,12 @@ import type {
   CodexCliCommandInvocation,
   CodexCliCommandResult,
 } from './requirements-contract-codex-cli-judge-adapter';
+import {
+  createRequirementsContractJudgeSelectionReceipt,
+  resolveRequirementsContractJudgeAdapterRef,
+} from './requirements-contract-judge-selection';
+import { verifyRequirementsContractJudgeRequest } from './requirements-contract-judge-request-identity';
+import { canonicalJson } from './requirements-contract-governed-write';
 
 export type RequirementsContractJudgeJsonRecord = Record<string, unknown>;
 
@@ -77,24 +83,29 @@ function validateNormalizedResponse(value: unknown): RequirementsContractJudgeJs
     value,
     'requirements_contract_judge_normalized_response_invalid'
   );
+  const schemaFile = normalized.schemaVersion === 'requirements-contract-judge-response/v2'
+    ? 'requirements-contract-judge-response.schema.json'
+    : 'requirements-contract-normalized-judge-response.schema.json';
   const schema = JSON.parse(
     fs.readFileSync(
       path.resolve(
         __dirname,
         '..',
         'schemas',
-        'requirements-contract-normalized-judge-response.schema.json'
+        schemaFile
       ),
       'utf8'
     )
   );
   const validate = new Ajv2020({ allErrors: true, strict: false }).compile(schema);
   if (!validate(normalized)) {
-    throw new Error(
+    const error = new Error(
       `requirements_contract_judge_normalized_response_invalid:${JSON.stringify(
         validate.errors ?? []
       )}`
-    );
+    ) as Error & { rawResponse?: RequirementsContractJudgeJsonRecord };
+    error.rawResponse = normalized;
+    throw error;
   }
   return normalized;
 }
@@ -218,4 +229,43 @@ export async function prepareRequirementsContractJudgeInvocation(input: {
       );
     },
   };
+}
+
+export async function invokePreparedRequirementsContractJudgeRequest(input: {
+  prepared: PreparedRequirementsContractJudgeInvocation;
+  request: RequirementsContractJudgeJsonRecord;
+  providerSelection: RequirementsContractJudgeJsonRecord;
+  executionContext?: RequirementsContractJudgeJsonRecord;
+}): Promise<RequirementsContractJudgeJsonRecord> {
+  const request = verifyRequirementsContractJudgeRequest(input.request);
+  const provider = record(
+    input.prepared.provider,
+    'requirements_contract_judge_provider_missing'
+  );
+  const adapterRef = resolveRequirementsContractJudgeAdapterRef(provider);
+  const expectedSelection = createRequirementsContractJudgeSelectionReceipt({
+    providerRef: input.prepared.providerRef,
+    provider,
+    adapterRef,
+    providerRegistryHash: input.prepared.providerRegistryHash,
+  });
+  if (
+    canonicalJson(expectedSelection) !== canonicalJson(input.providerSelection) ||
+    canonicalJson(request.providerSelection) !== canonicalJson(input.providerSelection)
+  ) {
+    throw new Error('requirements_contract_judge_frozen_selection_mismatch');
+  }
+  const prompt = record(request.prompt, 'requirements_contract_judge_request_prompt_invalid');
+  return input.prepared.invoke({
+    systemPrompt: requiredText(
+      prompt.systemPrompt,
+      'requirements_contract_judge_system_prompt_missing'
+    ),
+    request,
+    ...(input.executionContext ? { executionContext: input.executionContext } : {}),
+    structuredOutputSchema: record(
+      prompt.structuredOutputSchema,
+      'requirements_contract_judge_response_schema_invalid'
+    ),
+  });
 }

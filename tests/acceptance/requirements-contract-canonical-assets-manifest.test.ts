@@ -1,12 +1,5 @@
 import { createHash } from 'node:crypto';
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
@@ -144,21 +137,6 @@ const REQUIRED_DSA16_ASSETS = [
     'schema',
   ],
   [
-    'critical_auditor_judge_adapter_input_schema',
-    'schemas/requirements-contract-critical-auditor-judge-adapter-input.schema.json',
-    'schema',
-  ],
-  [
-    'critical_auditor_judge_assessment_schema',
-    'schemas/requirements-contract-critical-auditor-judge-assessment.schema.json',
-    'schema',
-  ],
-  [
-    'critical_auditor_external_adapter_result_schema',
-    'schemas/requirements-contract-critical-auditor-external-adapter-result.schema.json',
-    'schema',
-  ],
-  [
     'judge_provider_registry_projection',
     '_bmad/shared/requirements-contract/requirements-contract-judge-provider-registry.json',
     'registry',
@@ -208,11 +186,6 @@ const REQUIRED_DSA16_ASSETS = [
     'judge_runtime_bindings_resolver',
     'scripts/requirements-contract-judge-runtime-bindings.ts',
     'resolver',
-  ],
-  [
-    'critical_auditor_judge_adapter',
-    'scripts/requirements-contract-critical-auditor-judge-adapter.ts',
-    'adapter',
   ],
   ['reverse_audit_validator', 'scripts/requirements-contract-reverse-audit.ts', 'validator'],
 ] as const;
@@ -397,8 +370,7 @@ const REQUIRED_PARTITION_ASSETS = [
   {
     assetId: 'goal_contract_partition_closure_feasibility_receipt_schema',
     version: 'goal-contract-partition-closure-feasibility-receipt/v1',
-    path:
-      '_bmad/shared/goal-contract/goal-contract-partition-closure-feasibility-receipt.schema.json',
+    path: '_bmad/shared/goal-contract/goal-contract-partition-closure-feasibility-receipt.schema.json',
     assetKind: 'schema',
   },
   {

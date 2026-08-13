@@ -8,14 +8,13 @@ import {
   parseRequirementsContractJudgeRunArgv,
   requirementsContractJudgeRunCommand,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-command';
-import { evaluateRequirementsContractJudgeInvocationReadiness } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-invocation-readiness-gate';
 import { createRequirementsContractJudgeProviderRegistry } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-provider-registry';
-import type { RequirementsContractJudgeRole } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-role';
+import { buildRequirementsContractJudgeRequest } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-request-identity';
 import {
-  canonicalJson,
-  sha256,
-} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-governed-write';
-import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
+  createRequirementsContractJudgeSelectionReceipt,
+  resolveRequirementsContractJudgeAdapterRef,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-selection';
+import { sha256 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-governed-write';
 
 type JsonRecord = Record<string, unknown>;
 
@@ -23,7 +22,9 @@ const roots: string[] = [];
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  roots.splice(0).forEach((root) => rmSync(root, { recursive: true, force: true }));
+  roots.splice(0).forEach((root) =>
+    rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 })
+  );
 });
 
 function createRoot(): string {
@@ -125,8 +126,7 @@ function judgeRuntime(transport: string, adapterRef: string, command?: string): 
 function materializeCommandFixture(
   transport: string,
   adapterRef: string,
-  command?: string,
-  role: RequirementsContractJudgeRole = 'requirements_critical_auditor'
+  command?: string
 ) {
   const root = createRoot();
   const runtime = judgeRuntime(transport, adapterRef, command);
@@ -136,84 +136,74 @@ function materializeCommandFixture(
     judgeRuntime: runtime,
     runtime,
   });
-  const sourceAuthorityHash = sha256(`source-authority-${randomUUID()}`);
-  const sourceContent = '# Requirement Source\n\n- MUST pass.\n';
-  const sourceDocumentHash = sha256(sourceContent);
-  const sourceBytesHash = sha256(sourceContent);
-  const semanticModelHash = sha256(`semantic-${randomUUID()}`);
-  const projectionSetHash = sha256(`projection-${randomUUID()}`);
-  const scopeManifestHash = sha256(`scope-${randomUUID()}`);
   const systemPrompt = 'Return one JSON object.';
   const structuredOutputSchema = {
     type: 'object',
     additionalProperties: false,
-    required: ['decision'],
+    required: [
+      'schemaVersion',
+      'judgeRequestHash',
+      'verdict',
+      'findings',
+      'advisoryObservations',
+      'checkedDimensionIds',
+      'dimensionResults',
+      'reviewedArtifactRefs',
+      'reviewedMustRefs',
+      'insufficientAuditReasons',
+    ],
     properties: {
-      decision: { enum: ['pass', 'block', 'inconclusive'] },
+      schemaVersion: { const: 'requirements-contract-judge-response/v2' },
+      judgeRequestHash: { type: 'string' },
+      verdict: { enum: ['pass', 'fail'] },
+      findings: { type: 'array' },
+      advisoryObservations: { type: 'array' },
+      checkedDimensionIds: { type: 'array' },
+      dimensionResults: { type: 'array' },
+      reviewedArtifactRefs: { type: 'array' },
+      reviewedMustRefs: { type: 'array' },
+      insufficientAuditReasons: { type: 'array' },
     },
   };
-  const promptTemplateHash = sha256(systemPrompt);
-  const assessmentSchemaHash = sha256(canonicalJson(structuredOutputSchema));
-  const attemptKey = {
-    schemaVersion: 'requirements-contract-judge-attempt-key/v1',
-    attemptId: `attempt-${randomUUID()}`,
-    actorClass:
-      role === 'requirements_critical_auditor'
-        ? 'requirements_critical_auditor_judge'
-        : 'final_acceptance_judge',
-    judgeRole: role,
-    sourceAuthorityHash,
-    scopeManifestHash,
-    promptTemplateHash,
-    assessmentSchemaHash,
-    providerRegistryHash: registry.registryHash,
-    providerConfigurationHash: sha256Stable(provider),
-    ledgerNamespace: role === 'requirements_critical_auditor' ? 'requirements' : 'final_acceptance',
-    previousAttemptKeyHash: null,
-    attemptOrdinal: 1,
-    attemptKeyHash: sha256(`attempt-key-${randomUUID()}`),
-  };
-  const requestAuthority = {
-    schemaVersion: 'requirements-contract-canonical-judge-request/v1',
-    role,
-    sourceDocument: 'source.md',
-    sourceAuthorityHash,
-    sourceDocumentHash,
-    sourceBytesHash,
-    semanticModelHash,
-    projectionSetHash,
-    scopeManifestHash,
-    attemptKey,
-    systemPrompt,
-    payload: { requirementSetId: `REQ-${randomUUID()}` },
-    structuredOutputSchema,
-  };
-  writeFileSync(path.join(root, 'source.md'), sourceContent, 'utf8');
-  const requestHash = sha256(canonicalJson(requestAuthority));
-  const readinessReceipt = evaluateRequirementsContractJudgeInvocationReadiness({
-    role: 'requirements',
-    attemptId: attemptKey.attemptId,
-    scope: {
-      requestHash,
-      sourceDocumentHash,
-      semanticModelHash,
-      projectionSetHash,
-      scopeHash: scopeManifestHash,
-    },
-    providerRegistryHash: registry.registryHash,
-    credentialBindingHash: sha256(`credential-${randomUUID()}`),
-    promptHash: promptTemplateHash,
-    schemaHash: assessmentSchemaHash,
-    policyHash: sha256(`policy-${randomUUID()}`),
-    ledgerHash: sha256(`ledger-${randomUUID()}`),
-    auditUnitSetHash: sha256(`audit-units-${randomUUID()}`),
-    vetoSetHash: sha256(`veto-${randomUUID()}`),
+  const providerSelection = createRequirementsContractJudgeSelectionReceipt({
+    providerRef,
+    provider,
+    adapterRef,
+    providerRegistryHash: String(registry.registryHash),
   });
-  const request = {
-    ...requestAuthority,
-    requestHash,
-    readinessReceipt,
-  };
+  const request = buildRequirementsContractJudgeRequest({
+    authority: {
+      semanticRevisionId: `SEM-${randomUUID()}`,
+      scopeSemanticHash: sha256(`scope-${randomUUID()}`),
+      bindingRevisionId: `BIND-${randomUUID()}`,
+      sourceBindingHash: sha256(`binding-${randomUUID()}`),
+      authoringAttemptId: `AUTHOR-${randomUUID()}`,
+      buildManifestHash: sha256(`build-${randomUUID()}`),
+    },
+    providerSelection,
+    prompt: {
+      systemPrompt,
+      rubric: { mandatoryDimensionIds: ['business-rule-completeness'] },
+      structuredOutputSchema,
+      outputTokenReserve: 2048,
+    },
+    auditPacket: {
+      schemaVersion: 'requirements-contract-judge-audit-packet/v1',
+      body: {
+        artifactIds: ['final-markdown'],
+        requirementIds: ['MUST-001'],
+        mandatoryDimensionIds: ['business-rule-completeness'],
+      },
+    },
+    auditPacketArtifactManifest: [
+      {
+        artifactId: 'final-markdown',
+        path: 'artifacts/final.md',
+        hash: sha256('final-markdown'),
+      },
+    ],
+    remediation: null,
+  });
   mkdirSync(path.join(root, 'private'), { recursive: true });
   writeFileSync(
     path.join(root, 'config.yaml'),
@@ -238,15 +228,44 @@ function materializeCommandFixture(
     root,
     providerRef,
     request,
+    providerSelection,
+    attemptId: `attempt-${randomUUID()}`,
   };
 }
 
-function normalizedJudgeResponse(decision: 'pass' | 'block' | 'inconclusive'): JsonRecord {
+function normalizedJudgeResponse(
+  request: JsonRecord,
+  verdict: 'pass' | 'fail' = 'pass'
+): JsonRecord {
+  const body = record(record(request.auditPacket).body);
+  const dimensionIds = body.mandatoryDimensionIds as string[];
   return {
-    decision,
-    findings: [],
-    challengeRequests: [],
-    evidenceRefs: [],
+    schemaVersion: 'requirements-contract-judge-response/v2',
+    judgeRequestHash: request.judgeRequestHash,
+    verdict,
+    findings:
+      verdict === 'pass'
+        ? []
+        : [
+            {
+              findingId: 'F-001',
+              severity: 'Major',
+              summary: 'Required rule is missing from the projection.',
+              affectedMustRefs: ['MUST-001'],
+              affectedArtifactRefs: ['final-markdown'],
+              logicalEvidenceRefs: ['MUST-001'],
+            },
+          ],
+    advisoryObservations: [],
+    checkedDimensionIds: dimensionIds,
+    dimensionResults: dimensionIds.map((dimensionId) => ({
+      dimensionId,
+      decision: verdict === 'pass' ? 'pass' : 'fail',
+      findingRefs: verdict === 'pass' ? [] : ['F-001'],
+    })),
+    reviewedArtifactRefs: body.artifactIds,
+    reviewedMustRefs: body.requirementIds,
+    insufficientAuditReasons: [],
   };
 }
 
@@ -257,30 +276,14 @@ function jsonResponse(body: unknown): Response {
   });
 }
 
-function resealRequestEnvelope(request: JsonRecord): void {
-  const readinessReceipt = record(request.readinessReceipt);
-  delete request.requestHash;
-  delete request.readinessReceipt;
-  const requestHash = sha256(canonicalJson(request));
-  request.requestHash = requestHash;
-  request.readinessReceipt = evaluateRequirementsContractJudgeInvocationReadiness({
-    role: 'requirements',
-    attemptId: String(record(request.attemptKey).attemptId),
-    scope: {
-      requestHash,
-      sourceDocumentHash: request.sourceDocumentHash,
-      semanticModelHash: request.semanticModelHash,
-      projectionSetHash: request.projectionSetHash,
-      scopeHash: request.scopeManifestHash,
-    },
-    providerRegistryHash: String(readinessReceipt.providerRegistryHash),
-    credentialBindingHash: String(readinessReceipt.credentialBindingHash),
-    promptHash: String(readinessReceipt.promptHash),
-    schemaHash: String(readinessReceipt.schemaHash),
-    policyHash: String(readinessReceipt.policyHash),
-    ledgerHash: String(readinessReceipt.ledgerHash),
-    auditUnitSetHash: String(readinessReceipt.auditUnitSetHash),
-    vetoSetHash: String(readinessReceipt.vetoSetHash),
+function resealRequest(request: JsonRecord): JsonRecord {
+  return buildRequirementsContractJudgeRequest({
+    authority: record(request.authority),
+    providerSelection: record(request.providerSelection),
+    prompt: record(request.prompt),
+    auditPacket: record(request.auditPacket),
+    auditPacketArtifactManifest: request.auditPacketArtifactManifest as JsonRecord[],
+    remediation: request.remediation as JsonRecord | null,
   });
 }
 
@@ -306,11 +309,8 @@ describe('canonical requirements contract judge run command', () => {
             choices: [
               {
                 message: {
-                  content: JSON.stringify({
-                    decision: 'pass',
-                    findings: [],
-                    challengeRequests: [],
-                    evidenceRefs: [],
+                   content: JSON.stringify({
+                    ...normalizedJudgeResponse(fixture.request),
                   }),
                 },
               },
@@ -324,10 +324,7 @@ describe('canonical requirements contract judge run command', () => {
             {
               type: 'text',
               text: JSON.stringify({
-                decision: 'pass',
-                findings: [],
-                challengeRequests: [],
-                evidenceRefs: [],
+                ...normalizedJudgeResponse(fixture.request),
               }),
             },
           ],
@@ -338,7 +335,7 @@ describe('canonical requirements contract judge run command', () => {
         config: 'config.yaml',
         request: 'request.json',
         role: 'requirements_critical_auditor',
-        attemptId: String((fixture.request.attemptKey as JsonRecord).attemptId),
+        attemptId: fixture.attemptId,
         outputDir,
         json: true,
         executeClaudeCodeCliCommand: async () => {
@@ -361,7 +358,7 @@ describe('canonical requirements contract judge run command', () => {
                 session_id: randomUUID(),
                 permission_denials: [],
                 modelUsage: { 'model-test': { input_tokens: 1, output_tokens: 1 } },
-                structured_output: normalizedJudgeResponse('pass'),
+                structured_output: normalizedJudgeResponse(fixture.request),
               }),
             ].join('\n'),
             stderr: '',
@@ -370,7 +367,7 @@ describe('canonical requirements contract judge run command', () => {
         },
         executeCodexCliCommand: async (invocation) => {
           invocationCount += 1;
-          writeJson(invocation.outputPath, normalizedJudgeResponse('pass'));
+          writeJson(invocation.outputPath, normalizedJudgeResponse(fixture.request));
           return {
             exitCode: 0,
             stdout: [
@@ -390,16 +387,15 @@ describe('canonical requirements contract judge run command', () => {
 
       expect(invocationCount).toBe(1);
       expect(result).toMatchObject({
-        schemaVersion: 'requirements-contract-judge-command-result/v1',
+        schemaVersion: 'requirements-contract-judge-command-result/v2',
         command: 'bmad-speckit judge run',
         role: 'requirements_critical_auditor',
         processExitCode: 0,
-        jsonDecision: 'pass',
+        verdict: 'pass',
         processStatusParity: true,
         providerRef: fixture.providerRef,
         adapterRef,
-        requestHash: fixture.request.requestHash,
-        decision: 'pass',
+        judgeRequestHash: fixture.request.judgeRequestHash,
       });
       const receipt = JSON.parse(
         readFileSync(path.join(outputDir, 'judge-run-result.json'), 'utf8')
@@ -408,72 +404,14 @@ describe('canonical requirements contract judge run command', () => {
         command: 'bmad-speckit judge run',
         processExitCode: 0,
         processStatusParity: true,
-        requestHash: fixture.request.requestHash,
-        decision: 'pass',
+        judgeRequestHash: fixture.request.judgeRequestHash,
+        verdict: 'pass',
       });
     }
   );
 
-  it('runs Final Acceptance when the expected-role pin matches the request authority', async () => {
-      const fixture = materializeCommandFixture(
-        'claude-code-cli',
-        'ClaudeCodeCliJudgeAdapter',
-        'claude',
-        'final_acceptance_judge'
-      );
-      let invocationCount = 0;
-    const result = await requirementsContractJudgeRunCommand({
-      projectRoot: fixture.root,
-      config: 'config.yaml',
-      request: 'request.json',
-        role: 'final_acceptance_judge',
-        attemptId: String((fixture.request.attemptKey as JsonRecord).attemptId),
-        outputDir: 'out',
-        executeClaudeCodeCliCommand: async () => {
-          invocationCount += 1;
-          return {
-            exitCode: 0,
-            stdout: [
-              JSON.stringify({ type: 'system', subtype: 'init', model: 'model-test' }),
-              JSON.stringify({
-                type: 'assistant',
-                message: {
-                  model: 'model-test',
-                  content: [{ type: 'tool_use', name: 'StructuredOutput' }],
-                },
-              }),
-              JSON.stringify({
-                type: 'result',
-                subtype: 'success',
-                is_error: false,
-                session_id: randomUUID(),
-                permission_denials: [],
-                modelUsage: { 'model-test': { input_tokens: 1, output_tokens: 1 } },
-                structured_output: normalizedJudgeResponse('pass'),
-              }),
-            ].join('\n'),
-            stderr: '',
-            processId: 303,
-          };
-        },
-      });
-
-    expect(invocationCount).toBe(1);
-    expect(result).toMatchObject({
-      role: 'final_acceptance_judge',
-      processExitCode: 0,
-      jsonDecision: 'pass',
-      processStatusParity: true,
-    });
-  });
-
-  it('fails closed before provider invocation when the expected-role pin mismatches', async () => {
-    const fixture = materializeCommandFixture(
-      'cli',
-      'CodexCliJudgeAdapter',
-      'codex',
-      'final_acceptance_judge'
-    );
+  it('rejects the removed Final Acceptance role before provider invocation', async () => {
+    const fixture = materializeCommandFixture('cli', 'CodexCliJudgeAdapter', 'codex');
     let invocationCount = 0;
 
     await expect(
@@ -481,8 +419,8 @@ describe('canonical requirements contract judge run command', () => {
         projectRoot: fixture.root,
         config: 'config.yaml',
         request: 'request.json',
-        role: 'requirements_critical_auditor',
-        attemptId: String((fixture.request.attemptKey as JsonRecord).attemptId),
+        role: 'final_acceptance_judge',
+        attemptId: fixture.attemptId,
         outputDir: 'out',
         executeCodexCliCommand: async () => {
           invocationCount += 1;
@@ -510,7 +448,7 @@ describe('canonical requirements contract judge run command', () => {
         config: 'config.yaml',
         request: 'linked-request-root/request.json',
         role: 'requirements_critical_auditor',
-        attemptId: String((fixture.request.attemptKey as JsonRecord).attemptId),
+        attemptId: fixture.attemptId,
         outputDir: 'out',
         executeCodexCliCommand: async () => {
           invocationCount += 1;
@@ -529,7 +467,7 @@ describe('canonical requirements contract judge run command', () => {
         config: 'config.yaml',
         request: 'request.json',
         role: 'requirements_critical_auditor',
-        attemptId: String((fixture.request.attemptKey as JsonRecord).attemptId),
+        attemptId: fixture.attemptId,
         outputDir: 'out',
         provider: 'attacker',
         executeCodexCliCommand: async () => {
@@ -539,49 +477,49 @@ describe('canonical requirements contract judge run command', () => {
     ).rejects.toThrow('requirements_contract_judge_command_authority_override:provider');
   });
 
-  it('blocks stale request, prompt, schema, provider, and scope bindings before provider invocation', async () => {
+  it('blocks mutated request content and frozen provider selection before provider invocation', async () => {
     const fixture = materializeCommandFixture('cli', 'CodexCliJudgeAdapter', 'codex');
     const cases: Array<[string, (request: JsonRecord) => void, RegExp]> = [
       [
-        'request',
+        'self hash',
         (request) => {
-          request.requestHash = sha256(`tampered-request-${randomUUID()}`);
+          request.judgeRequestHash = sha256(`tampered-request-${randomUUID()}`);
         },
-        /requirements_contract_judge_(?:command_request_hash_mismatch|readiness_stale:requestHash)/,
+        /requirements_contract_judge_request_hash_mismatch/,
       ],
       [
         'prompt',
         (request) => {
-          request.systemPrompt = 'Tampered prompt.';
-          resealRequestEnvelope(request);
+          record(request.prompt).systemPrompt = 'Tampered prompt.';
         },
-        /requirements_contract_judge_command_prompt_hash_mismatch/,
+        /requirements_contract_judge_request_hash_mismatch/,
       ],
       [
         'schema',
         (request) => {
-          (record(request.structuredOutputSchema).properties as JsonRecord).unexpected = {
+          (record(record(request.prompt).structuredOutputSchema).properties as JsonRecord).unexpected = {
             type: 'string',
           };
-          resealRequestEnvelope(request);
         },
-        /requirements_contract_judge_command_schema_hash_mismatch/,
+        /requirements_contract_judge_request_hash_mismatch/,
       ],
       [
-        'provider registry',
+        'provider selection content',
         (request) => {
-          record(request.attemptKey).providerRegistryHash = sha256(`stale-registry-${randomUUID()}`);
-          resealRequestEnvelope(request);
+          record(request.providerSelection).providerConfigurationHash = sha256(
+            `stale-provider-${randomUUID()}`
+          );
         },
-        /requirements_contract_judge_command_provider_registry_hash_mismatch/,
+        /requirements_contract_judge_request_hash_mismatch/,
       ],
       [
-        'scope',
+        'frozen provider selection',
         (request) => {
-          request.scopeManifestHash = sha256(`stale-scope-${randomUUID()}`);
-          resealRequestEnvelope(request);
+          const selection = record(request.providerSelection);
+          selection.providerConfigurationHash = sha256(`stale-provider-${randomUUID()}`);
+          Object.assign(request, resealRequest(request));
         },
-        /requirements_contract_judge_command_scope_mismatch/,
+        /requirements_contract_judge_frozen_selection_mismatch/,
       ],
     ];
 
@@ -603,7 +541,7 @@ describe('canonical requirements contract judge run command', () => {
           config: 'config.yaml',
           request: 'request.json',
           role: 'requirements_critical_auditor',
-          attemptId: String(record(caseRequest.attemptKey).attemptId),
+          attemptId: fixture.attemptId,
           outputDir: 'out',
           executeCodexCliCommand: async () => {
             invocationCount += 1;
@@ -615,17 +553,17 @@ describe('canonical requirements contract judge run command', () => {
     }
   });
 
-  it('maps non-pass adapter decisions to nonzero JSON/process parity', async () => {
+  it('maps fail verdicts to nonzero JSON/process parity', async () => {
     const fixture = materializeCommandFixture('cli', 'CodexCliJudgeAdapter', 'codex');
     const result = await requirementsContractJudgeRunCommand({
       projectRoot: fixture.root,
       config: 'config.yaml',
       request: 'request.json',
       role: 'requirements_critical_auditor',
-      attemptId: String((fixture.request.attemptKey as JsonRecord).attemptId),
+      attemptId: fixture.attemptId,
       outputDir: 'out',
       executeCodexCliCommand: async (invocation) => {
-        writeJson(invocation.outputPath, normalizedJudgeResponse('block'));
+        writeJson(invocation.outputPath, normalizedJudgeResponse(fixture.request, 'fail'));
         return {
           exitCode: 0,
           stdout: [
@@ -644,10 +582,9 @@ describe('canonical requirements contract judge run command', () => {
     });
 
     expect(result).toMatchObject({
-      jsonDecision: 'block',
+      verdict: 'fail',
       processExitCode: 1,
       processStatusParity: true,
-      decision: 'block',
     });
   });
 
@@ -721,5 +658,14 @@ describe('canonical requirements contract judge run command', () => {
         ])
       ).toThrow(`requirements_contract_judge_command_arg_forbidden:${flag.slice(2)}`);
     }
+  });
+
+  it('preserves an explicit Claude adapter identity for the generic CLI transport', () => {
+    expect(
+      resolveRequirementsContractJudgeAdapterRef({
+        transport: 'cli',
+        adapterRef: 'ClaudeCodeCliJudgeAdapter',
+      })
+    ).toBe('ClaudeCodeCliJudgeAdapter');
   });
 });

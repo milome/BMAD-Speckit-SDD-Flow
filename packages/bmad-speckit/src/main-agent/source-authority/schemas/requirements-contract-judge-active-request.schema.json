@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-judge-active-request.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "version", "previousVersion", "semanticRevisionId", "auditPolicyHash", "providerSelectionHash", "judgeRequestHash", "requestPath", "status", "acceptedEvaluation", "attemptCount", "lastAttemptPath", "lastIssueCode", "responseRef", "aggregateRef", "effectivePassRef", "remediationPlanRef", "remediationDeltaRef"],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-judge-active-request/v1" },
+    "version": { "type": "integer", "minimum": 1 },
+    "previousVersion": { "type": ["integer", "null"], "minimum": 1 },
+    "semanticRevisionId": { "type": "string", "minLength": 1 },
+    "auditPolicyHash": { "$ref": "#/$defs/hash" },
+    "providerSelectionHash": { "$ref": "#/$defs/hash" },
+    "judgeRequestHash": { "$ref": "#/$defs/hash" },
+    "requestPath": { "type": "string", "pattern": "^quality/requests/sha256-[a-f0-9]{64}/judge-request\\.json$" },
+    "status": { "enum": ["audit_pending", "dispatch_pending", "retry_scheduled", "audited_pass", "audited_fail", "superseded"] },
+    "acceptedEvaluation": { "type": "boolean" },
+    "attemptCount": { "type": "integer", "minimum": 0 },
+    "lastAttemptPath": { "type": ["string", "null"] },
+    "lastIssueCode": { "type": ["string", "null"] },
+    "responseRef": { "$ref": "#/$defs/artifactRefOrNull" },
+    "aggregateRef": { "$ref": "#/$defs/artifactRefOrNull" },
+    "effectivePassRef": { "$ref": "#/$defs/artifactRefOrNull" },
+    "remediationPlanRef": { "$ref": "#/$defs/artifactRefOrNull" },
+    "remediationDeltaRef": { "$ref": "#/$defs/artifactRefOrNull" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "artifactRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": { "path": { "type": "string", "minLength": 1 }, "hash": { "$ref": "#/$defs/hash" } }
+    },
+    "artifactRefOrNull": { "oneOf": [{ "$ref": "#/$defs/artifactRef" }, { "type": "null" }] }
+  }
+}

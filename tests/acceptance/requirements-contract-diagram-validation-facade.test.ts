@@ -34,6 +34,15 @@ function fixture() {
   const diagramSet = planRequirementsContractDiagramSet({
     sequenceContract,
     scenarioId: sequenceContract.sequenceScenarios[0].id,
+    frozenDiagramIdentity: {
+      diagramSetId: 'DSET-VALIDATION-001',
+      rootDiagramRef: 'DGM-VALIDATION-ROOT-001',
+      diagramRefs: [
+        'DGM-VALIDATION-ROOT-001',
+        'DGM-VALIDATION-CHILD-001',
+        'DGM-VALIDATION-CHILD-002',
+      ],
+    },
   });
   return {
     ...resolvedProfile,
