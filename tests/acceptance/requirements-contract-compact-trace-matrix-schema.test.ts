@@ -77,6 +77,11 @@ function compactTraceMatrix() {
         edgeId: 'EDGE-001',
         edgeType: 'requirement_to_scenario',
         requirementRef: 'MUST-FR-001',
+        factRefs: ['FACT-ORDER-001'],
+        mustRefs: ['MUST-FR-001'],
+        atomRefs: ['ATOM-ORDER-001'],
+        originSpecSpanRefs: ['SPAN-ORDER-001'],
+        evidenceClaimRefs: ['EVIDENCE-CLAIM-ORDER-001'],
         fromRef: {
           id: 'MUST-FR-001',
           type: 'requirement',

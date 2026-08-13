@@ -13,6 +13,8 @@ interface PromptContract {
   actorClass: string;
   forbiddenTerms: RegExp[];
   requiredTerms: RegExp[];
+  requiredContractTerms: string[];
+  forbiddenContractTerms: string[];
 }
 
 const prompts: PromptContract[] = [
@@ -26,8 +28,15 @@ const prompts: PromptContract[] = [
       /final acceptance judge/iu,
       /implementation approval/iu,
       /delivery recommendation/iu,
+      /source repair actions/iu,
     ],
-    requiredTerms: [/requirements findings/iu, /source repair actions/iu, /requirements-only/iu],
+    requiredTerms: [/report findings/iu, /audit packet/iu, /requirements-only/iu],
+    requiredContractTerms: [
+      'requirements-contract-judge-request/v2',
+      'requirements-contract-judge-response/v2',
+      'judgeRequestHash',
+    ],
+    forbiddenContractTerms: ['assessmentSchemaHash', 'providerAuthority', 'ledgerAuthority'],
   },
   {
     path: '_bmad/shared/requirements-contract/judge-prompts/audit-review-final-acceptance-judge.prompt.md',
@@ -44,6 +53,12 @@ const prompts: PromptContract[] = [
       /implementation evidence/iu,
       /acceptance evidence/iu,
       /final-acceptance-only/iu,
+    ],
+    requiredContractTerms: ['assessmentSchemaHash', 'providerAuthority', 'ledgerAuthority'],
+    forbiddenContractTerms: [
+      'requirements-contract-judge-request/v2',
+      'requirements-contract-judge-response/v2',
+      'judgeRequestHash',
     ],
   },
 ];
@@ -89,9 +104,8 @@ describe('requirements contract Judge prompt templates', () => {
     expect(content).toContain('## Required Output');
     expect(content).toContain('## Prohibited Behavior');
     expect(content).toContain('promptTemplateHash');
-    expect(content).toContain('assessmentSchemaHash');
-    expect(content).toContain('providerAuthority');
-    expect(content).toContain('ledgerAuthority');
+    for (const term of prompt.requiredContractTerms) expect(content).toContain(term);
+    for (const term of prompt.forbiddenContractTerms) expect(content).not.toContain(term);
     expect(content).not.toMatch(/\{\{\s*(?:include|path|file|authority|schema|prompt)/iu);
     expect(content).not.toMatch(/<!--\s*include|@include|include:/iu);
     expect(content).not.toMatch(/[A-Z]:[\\/]|\/Users\/|\/home\//u);
@@ -117,5 +131,4 @@ describe('requirements contract Judge prompt templates', () => {
       'final_acceptance_judge',
     ]);
   });
-
 });
