@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "main-agent-architecture-confirmation-candidate.schema.json",
+  "title": "Main Agent Architecture Confirmation Candidate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "requestId",
+    "requirementsLineage",
+    "pinnedPremises",
+    "logicalScope",
+    "ownership",
+    "toolchain",
+    "isolation",
+    "consumerImpact",
+    "governanceImpact",
+    "triggerMatrix",
+    "architectureDecisions",
+    "goalExecutionStructurePremises",
+    "architectureConfirmationCandidateHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "ArchitectureConfirmationCandidate/v1" },
+    "requestId": { "$ref": "#/$defs/id" },
+    "requirementsLineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recordId",
+        "semanticRevisionId",
+        "scopeSemanticHash",
+        "executionConstraintRegistryHash",
+        "technicalExecutionClosure"
+      ],
+      "properties": {
+        "recordId": { "$ref": "#/$defs/id" },
+        "semanticRevisionId": { "$ref": "#/$defs/id" },
+        "scopeSemanticHash": { "$ref": "#/$defs/hash" },
+        "executionConstraintRegistryHash": { "$ref": "#/$defs/hash" },
+        "technicalExecutionClosure": { "const": "pass" }
+      }
+    },
+    "pinnedPremises": { "type": "array", "items": { "$ref": "#/$defs/premise" } },
+    "logicalScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targetPaths", "forbiddenPaths"],
+      "properties": {
+        "targetPaths": { "$ref": "#/$defs/stringSet" },
+        "forbiddenPaths": { "$ref": "#/$defs/stringSet" }
+      }
+    },
+    "ownership": { "type": "array", "items": { "$ref": "#/$defs/ownership" } },
+    "toolchain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commands", "artifacts", "evidenceRequirements"],
+      "properties": {
+        "commands": { "type": "array", "items": { "$ref": "#/$defs/command" } },
+        "artifacts": { "type": "array", "items": { "$ref": "#/$defs/valueBinding" } },
+        "evidenceRequirements": { "type": "array", "items": { "$ref": "#/$defs/valueBinding" } }
+      }
+    },
+    "isolation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "forbiddenPaths", "basisRefs"],
+      "properties": {
+        "mode": { "const": "consumer_worktree" },
+        "forbiddenPaths": { "$ref": "#/$defs/stringSet" },
+        "basisRefs": { "$ref": "#/$defs/idSet" }
+      }
+    },
+    "consumerImpact": { "type": "array", "items": { "$ref": "#/$defs/impact" } },
+    "governanceImpact": { "type": "array", "items": { "$ref": "#/$defs/impact" } },
+    "triggerMatrix": { "type": "array", "items": { "$ref": "#/$defs/trigger" } },
+    "architectureDecisions": { "type": "array", "items": { "$ref": "#/$defs/decision" } },
+    "goalExecutionStructurePremises": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/valueBinding" }
+    },
+    "architectureConfirmationCandidateHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "id": { "type": "string", "minLength": 1, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$" },
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "stringSet": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "idSet": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/id" } },
+    "premise": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["premiseId", "authorityRole", "mediaType", "sourceSnapshotHash"],
+      "properties": {
+        "premiseId": { "$ref": "#/$defs/id" },
+        "authorityRole": { "$ref": "#/$defs/id" },
+        "mediaType": { "type": "string", "minLength": 1 },
+        "sourceSnapshotHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "ownership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targetPath", "owner", "basisRefs"],
+      "properties": {
+        "targetPath": { "type": "string", "minLength": 1 },
+        "owner": { "const": "requirements_backed_main_agent" },
+        "basisRefs": { "$ref": "#/$defs/idSet" }
+      }
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commandId", "invocation", "basisRefs"],
+      "properties": {
+        "commandId": { "$ref": "#/$defs/id" },
+        "invocation": { "type": "string", "minLength": 1 },
+        "basisRefs": { "$ref": "#/$defs/idSet" }
+      }
+    },
+    "valueBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["premiseId", "kind", "value", "basisRefs"],
+      "properties": {
+        "premiseId": { "$ref": "#/$defs/id" },
+        "kind": { "enum": ["ART", "EVDREQ", "CTM"] },
+        "value": { "type": "string", "minLength": 1 },
+        "basisRefs": { "$ref": "#/$defs/idSet" }
+      }
+    },
+    "impact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["impactId", "status", "basisRefs"],
+      "properties": {
+        "impactId": { "$ref": "#/$defs/id" },
+        "status": { "enum": ["applicable", "not_applicable"] },
+        "basisRefs": { "$ref": "#/$defs/idSet" }
+      }
+    },
+    "trigger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["triggerId", "triggered", "basisRefs"],
+      "properties": {
+        "triggerId": { "$ref": "#/$defs/id" },
+        "triggered": { "type": "boolean" },
+        "basisRefs": { "$ref": "#/$defs/idSet" }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decisionId", "decisionType", "selection", "basisRefs"],
+      "properties": {
+        "decisionId": { "$ref": "#/$defs/id" },
+        "decisionType": { "enum": ["ownership", "toolchain", "isolation", "execution_structure"] },
+        "selection": { "type": "string", "minLength": 1 },
+        "basisRefs": { "$ref": "#/$defs/idSet" }
+      }
+    }
+  }
+}

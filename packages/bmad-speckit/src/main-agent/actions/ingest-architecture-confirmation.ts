@@ -17,10 +17,14 @@ export function runIngestArchitectureConfirmation(context: MainAgentActionContex
     context,
     action: 'ingest-architecture-confirmation',
     invoke: mainIngestArchitectureConfirmation,
-    successStatus: (result) =>
-      eventType(result) === 'architecture_confirmation_state_checked'
-        ? 'architecture_confirmation_state_checked'
-        : 'architecture_confirmation_recorded',
+    successStatus: (result) => {
+      if (eventType(result) === 'architecture_confirmation_state_checked') {
+        return 'architecture_confirmation_state_checked';
+      }
+      return result?.status === 'architecture_confirmation_reused'
+        ? 'architecture_confirmation_reused'
+        : 'architecture_confirmation_recorded';
+    },
     blockedStatus: 'architecture_confirmation_blocked',
   });
 }

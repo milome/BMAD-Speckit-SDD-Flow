@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "main-agent-architecture-confirmation-result.schema.json",
+  "title": "Main Agent Architecture Confirmation Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "status", "requestId", "requirementsLineage", "issueCodes"],
+  "properties": {
+    "schemaVersion": { "const": "architecture-confirmation-candidate-result/v1" },
+    "status": { "enum": ["user_confirmable", "architecture_confirmation_reused", "blocked"] },
+    "requestId": { "type": "string", "minLength": 1 },
+    "requirementsLineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["semanticRevisionId", "scopeSemanticHash"],
+      "properties": {
+        "semanticRevisionId": { "type": "string", "minLength": 1 },
+        "scopeSemanticHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "architectureConfirmationCandidateHash": { "$ref": "#/$defs/hash" },
+    "candidateRef": { "$ref": "#/$defs/ref" },
+    "pageRef": { "$ref": "#/$defs/ref" },
+    "exactConfirmationText": { "type": "string", "minLength": 1 },
+    "issueCodes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "requirements_confirmation_record_missing",
+          "requirements_confirmation_required",
+          "requirements_successor_required:active_authority_tuple",
+          "requirements_successor_required:semantic_authority",
+          "requirements_successor_required:source_binding",
+          "requirements_successor_required:build_manifest",
+          "architecture_successor_required:execution_manifest",
+          "architecture_successor_required:technical_execution_closure",
+          "requirements_effective_pass_required",
+          "requirements_confirmation_event_missing",
+          "requirements_confirmation_event_stale",
+          "architecture_successor_required:logical_target_paths",
+          "architecture_successor_required:toolchain",
+          "architecture_successor_required:artifacts",
+          "architecture_successor_required:execution_structure",
+          "architecture_successor_required:evidence_requirements",
+          "architecture_successor_required:forbidden_scope",
+          "architecture_successor_required:repository_premise",
+          "architecture_successor_required:policy_premise",
+          "request_id_missing",
+          "caller_derived_input_forbidden",
+          "architecture_confirmation_request_id_invalid",
+          "architecture_confirmation_malformed_input",
+          "architecture_confirmation_integrity_invalid",
+          "architecture_confirmation_production_failure",
+          "architecture_confirmation_domain_blocked"
+        ]
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "architectureConfirmationCandidateHash",
+        "candidateRef",
+        "pageRef",
+        "exactConfirmationText"
+      ],
+      "properties": {
+        "status": { "enum": ["user_confirmable", "architecture_confirmation_reused"] },
+        "issueCodes": { "maxItems": 0 }
+      }
+    },
+    {
+      "properties": {
+        "status": { "const": "blocked" },
+        "issueCodes": { "minItems": 1 }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["architectureConfirmationCandidateHash"] },
+          { "required": ["candidateRef"] },
+          { "required": ["pageRef"] },
+          { "required": ["exactConfirmationText"] }
+        ]
+      }
+    }
+  ],
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "artifactBytesHash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "artifactBytesHash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

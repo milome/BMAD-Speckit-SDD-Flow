@@ -198,6 +198,10 @@ const WAVE_3_12_PACKAGE_RUNTIME_ACTIONS = {
     './actions/ingest-architecture-confirmation',
     'runIngestArchitectureConfirmation',
   ],
+  'prepare-architecture-confirmation': [
+    './actions/prepare-architecture-confirmation',
+    'runPrepareArchitectureConfirmation',
+  ],
   'mcp-consumer-install-consumer-mcp': [
     './actions/mcp-consumer-install-consumer-mcp',
     'runInstallConsumerMcp',

@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
@@ -12,11 +13,24 @@ import {
   type ControlCommitResult,
 } from './requirement-record-control-store';
 import {
+  artifactBytesHash,
+  canonicalRequirementsJson,
+  requirementsContractDomainHash,
+} from './requirements-contract-hash-domains';
+import {
   createRuntimeStatusProjectionUpdate,
   runtimeStatusProjectionArtifactWrites,
   runtimeStatusProjectionRecordPatch,
   type RequirementsContractSixModelId,
 } from './requirements-contract-runtime-status-decision-receipt';
+import {
+  ArchitectureConfirmationBlock,
+  architectureConfirmationProjection,
+  classifyArchitectureConfirmationError,
+  deriveArchitectureConfirmationCandidate,
+  readCurrentArchitectureConfirmationAcceptance,
+  resolveArchitectureConfirmationContext,
+} from './prepare-architecture-confirmation';
 import { hasOpenReconfirmationRequest } from './reconfirmation-runtime';
 import { validateSourcePrdLintTransitionFromFiles } from './requirements-contract-validation-facade';
 import { resolveVerifiedSixModelStatus } from './verified-six-model-status-facade';
@@ -32,10 +46,13 @@ const NEXT_MODEL: Record<string, string> = {
 };
 
 interface ParsedArgs {
+  requestId?: string;
+  architectureConfirmationCandidateHash?: string;
   architectureConfirmation?: string;
   renderReport?: string;
   requirementRecord?: string;
   confirmationText?: string;
+  exactConfirmationText?: string;
   confirmationTextFile?: string;
   confirmedBy?: string;
   confirmedAt?: string;
@@ -210,10 +227,7 @@ function hasSixModelRuntime(record: JsonObject): boolean {
   );
 }
 
-function verifiedModelStatus(
-  record: JsonObject,
-  modelId: RequirementsContractSixModelId
-) {
+function verifiedModelStatus(record: JsonObject, modelId: RequirementsContractSixModelId) {
   return resolveVerifiedSixModelStatus({
     record,
     modelId,
@@ -739,6 +753,391 @@ function architectureStateCheck(
   };
 }
 
+function publicArchitectureConfirmationArgs(args: ParsedArgs): boolean {
+  return Boolean(args.requestId || args.architectureConfirmationCandidateHash);
+}
+
+function emitArchitectureConfirmationResult(
+  args: ParsedArgs,
+  stream: NodeJS.WriteStream,
+  value: JsonObject
+): void {
+  if (args.json) stream.write(`${JSON.stringify(value, null, 2)}\n`);
+  else stream.write(`${text(value.status) || 'architecture_confirmation_blocked'}\n`);
+}
+
+function projectRelative(root: string, target: string): string {
+  const relative = path.relative(root, target).replace(/\\/gu, '/');
+  if (!relative || relative.startsWith('../') || path.isAbsolute(relative)) {
+    throw new Error('architecture_confirmation_projection_path_invalid');
+  }
+  return relative;
+}
+
+function writeDurableFile(targetPath: string, bytes: Buffer): void {
+  const handle = fs.openSync(targetPath, 'wx', 0o600);
+  try {
+    let offset = 0;
+    while (offset < bytes.length) {
+      offset += fs.writeSync(handle, bytes, offset, bytes.length - offset, null);
+    }
+    fs.fsyncSync(handle);
+  } finally {
+    fs.closeSync(handle);
+  }
+  if (!fs.readFileSync(targetPath).equals(bytes)) {
+    throw new Error('architecture_confirmation_acceptance_staging_readback_mismatch');
+  }
+}
+
+export function publishArchitectureConfirmationAcceptance(input: {
+  acceptanceDirectory: string;
+  eventBytes: Buffer;
+  runtimeReceiptBytes: Buffer;
+  assertCurrentAuthority?: () => void;
+}): 'published' | 'reused' {
+  const acceptanceDirectory = path.resolve(input.acceptanceDirectory);
+  const parent = path.dirname(acceptanceDirectory);
+  input.assertCurrentAuthority?.();
+  fs.mkdirSync(parent, { recursive: true });
+  const existingBundleMatches = (): boolean => {
+    const eventPath = path.join(acceptanceDirectory, 'architecture-confirmation-event.json');
+    const receiptPath = path.join(acceptanceDirectory, 'runtime-status-decision-receipt.json');
+    return (
+      fs.existsSync(eventPath) &&
+      fs.existsSync(receiptPath) &&
+      fs.readFileSync(eventPath).equals(input.eventBytes) &&
+      fs.readFileSync(receiptPath).equals(input.runtimeReceiptBytes)
+    );
+  };
+  if (fs.existsSync(acceptanceDirectory)) {
+    input.assertCurrentAuthority?.();
+    if (existingBundleMatches()) return 'reused';
+    throw new Error('architecture_confirmation_acceptance_conflict');
+  }
+  const stagingDirectory = path.join(
+    parent,
+    `.${path.basename(acceptanceDirectory)}.staging.${process.pid}.${randomUUID()}`
+  );
+  fs.mkdirSync(stagingDirectory);
+  try {
+    writeDurableFile(
+      path.join(stagingDirectory, 'architecture-confirmation-event.json'),
+      input.eventBytes
+    );
+    writeDurableFile(
+      path.join(stagingDirectory, 'runtime-status-decision-receipt.json'),
+      input.runtimeReceiptBytes
+    );
+    try {
+      input.assertCurrentAuthority?.();
+      fs.renameSync(stagingDirectory, acceptanceDirectory);
+      try {
+        input.assertCurrentAuthority?.();
+        return 'published';
+      } catch (error) {
+        fs.rmSync(acceptanceDirectory, { recursive: true, force: true });
+        throw error;
+      }
+    } catch (error) {
+      if (fs.existsSync(acceptanceDirectory)) {
+        input.assertCurrentAuthority?.();
+        if (existingBundleMatches()) return 'reused';
+        throw new Error('architecture_confirmation_acceptance_conflict');
+      }
+      throw error;
+    }
+  } finally {
+    if (fs.existsSync(stagingDirectory)) {
+      fs.rmSync(stagingDirectory, { recursive: true, force: true });
+    }
+  }
+}
+
+function preparedIngestIssue(args: ParsedArgs): string | null {
+  const allowed = new Set([
+    'requestId',
+    'architectureConfirmationCandidateHash',
+    'exactConfirmationText',
+    'json',
+    'help',
+  ]);
+  const forbidden = Object.keys(args).filter(
+    (key) => args[key as keyof ParsedArgs] !== undefined && !allowed.has(key)
+  );
+  if (forbidden.length > 0) return 'caller_derived_input_forbidden';
+  if (!text(args.requestId)) return 'request_id_missing';
+  if (!/^sha256:[a-f0-9]{64}$/u.test(text(args.architectureConfirmationCandidateHash))) {
+    return 'architecture_confirmation_candidate_hash_invalid';
+  }
+  if (typeof args.exactConfirmationText !== 'string' || args.exactConfirmationText.length === 0) {
+    return 'exact_confirmation_text_missing';
+  }
+  return null;
+}
+
+function ingestPreparedArchitectureConfirmation(args: ParsedArgs): {
+  exitCode: number;
+  result: JsonObject;
+} {
+  const issue = preparedIngestIssue(args);
+  if (issue) {
+    return {
+      exitCode: 2,
+      result: { ok: false, status: 'architecture_confirmation_blocked', issueCodes: [issue] },
+    };
+  }
+  const requestId = text(args.requestId);
+  const context = resolveArchitectureConfirmationContext({
+    projectRoot: process.cwd(),
+    requestId,
+  });
+  const candidate = deriveArchitectureConfirmationCandidate(context);
+  const projection = architectureConfirmationProjection({ context, candidate });
+  const candidateHash = text(args.architectureConfirmationCandidateHash);
+  if (candidateHash !== candidate.architectureConfirmationCandidateHash) {
+    return {
+      exitCode: 1,
+      result: {
+        ok: false,
+        status: 'architecture_confirmation_blocked',
+        issueCodes: ['architecture_confirmation_candidate_stale'],
+      },
+    };
+  }
+  if (args.exactConfirmationText !== projection.exactConfirmationText) {
+    return {
+      exitCode: 1,
+      result: {
+        ok: false,
+        status: 'architecture_confirmation_blocked',
+        issueCodes: ['architecture_confirmation_exact_text_mismatch'],
+      },
+    };
+  }
+  const currentAcceptance = readCurrentArchitectureConfirmationAcceptance({ context, candidate });
+  if (currentAcceptance) {
+    return {
+      exitCode: 0,
+      result: {
+        ok: true,
+        status: 'architecture_confirmation_reused',
+        event: currentAcceptance.event,
+        eventRef: currentAcceptance.eventRef,
+        runtimeStatusDecisionRef: currentAcceptance.runtimeStatusDecisionRef,
+        architectureConfirmationCandidateHash: candidateHash,
+      },
+    };
+  }
+  if (!fs.existsSync(projection.candidatePath) || !fs.existsSync(projection.pagePath)) {
+    return {
+      exitCode: 1,
+      result: {
+        ok: false,
+        status: 'architecture_confirmation_blocked',
+        issueCodes: ['architecture_confirmation_projection_missing'],
+      },
+    };
+  }
+  const candidateBytes = fs.readFileSync(projection.candidatePath);
+  const pageBytes = fs.readFileSync(projection.pagePath);
+  let candidateReadback: unknown;
+  try {
+    candidateReadback = JSON.parse(candidateBytes.toString('utf8'));
+  } catch {
+    candidateReadback = null;
+  }
+  if (
+    canonicalRequirementsJson(candidateReadback) !== canonicalRequirementsJson(candidate) ||
+    !pageBytes.equals(Buffer.from(projection.pageBytes, 'utf8'))
+  ) {
+    return {
+      exitCode: 1,
+      result: {
+        ok: false,
+        status: 'architecture_confirmation_blocked',
+        issueCodes: ['architecture_confirmation_projection_stale'],
+      },
+    };
+  }
+  const candidateRef = {
+    path: projectRelative(context.recordRoot, projection.candidatePath),
+    artifactBytesHash: artifactBytesHash({
+      role: 'architecture_confirmation_candidate',
+      mediaType: 'application/json',
+      bytes: candidateBytes,
+    }),
+  };
+  const pageRef = {
+    path: projectRelative(context.recordRoot, projection.pagePath),
+    artifactBytesHash: artifactBytesHash({
+      role: 'architecture_confirmation_page',
+      mediaType: 'text/html',
+      bytes: pageBytes,
+    }),
+  };
+  const exactConfirmationTextHash = requirementsContractDomainHash(
+    'architecture-confirmation-exact-text/v1',
+    projection.exactConfirmationText
+  );
+  const attemptId = text(context.activeAuthority.activeAuthoringAttemptId);
+  const event = {
+    schemaVersion: 'architecture-confirmation-event/v1',
+    eventType: 'architecture_confirmation_recorded',
+    requestId,
+    semanticRevisionId: context.semanticIr.semanticRevisionId,
+    scopeSemanticHash: context.semanticIr.scopeSemanticHash,
+    architectureConfirmationCandidateHash: candidateHash,
+    requirementsAuthoringAttemptId: attemptId,
+    requirementsBindingRevisionId: context.sourceBinding.bindingRevisionId,
+    requirementsSourceBindingHash: context.sourceBinding.sourceBindingHash,
+    requirementsConfirmationEventRef: {
+      path: text(object(context.record.confirmationEventRef).path),
+      artifactBytesHash: context.confirmationEventHash,
+    },
+    requirementsEffectivePassRef: {
+      path: 'quality/requirements-effective-pass-receipt.json',
+      hash: text(context.effectivePass.requirementsEffectivePassHash),
+    },
+    candidateRef,
+    pageRef,
+    exactConfirmationTextHash,
+    decision: 'pass',
+  };
+  const eventPath = projection.eventPath;
+  const eventBytes = Buffer.from(canonicalRequirementsJson(event), 'utf8');
+  const eventRef = {
+    path: projectRelative(context.recordRoot, eventPath),
+    artifactBytesHash: artifactBytesHash({
+      role: 'architecture_confirmation_event',
+      mediaType: 'application/json',
+      bytes: eventBytes,
+    }),
+  };
+  const runtimeReceiptRelativePath = projectRelative(
+    context.recordRoot,
+    projection.runtimeReceiptPath
+  );
+  const runtimeReceiptPath = projection.runtimeReceiptPath;
+  const existingRuntimeReceipt = fs.existsSync(runtimeReceiptPath)
+    ? readJson(runtimeReceiptPath)
+    : null;
+  const recordedAt = text(existingRuntimeReceipt?.createdAt) || new Date().toISOString();
+  const projectionRecord = {
+    payloadKind: 'model_result',
+    model: 'architecture_confirmation',
+    recordId: requestId,
+    requirementSetId: text(context.record.requirementSetId) || requestId,
+    sourceDocumentHash: context.semanticIr.scopeSemanticHash,
+    implementationConfirmationHash: context.semanticIr.scopeSemanticHash,
+    status: 'pass',
+    resultRecordedAt: recordedAt,
+    resultRecordedBy: 'architecture-confirmation-ingest',
+    blockingReasons: [],
+    sourceRefs: [
+      { sourceType: 'architecture_confirmation_candidate', id: candidateHash },
+      { sourceType: 'architecture_confirmation_event', id: eventRef.artifactBytesHash },
+    ],
+    currentHashes: {
+      semanticModelHash: context.semanticIr.scopeSemanticHash,
+      architectureConfirmationCandidateHash: candidateHash,
+    },
+  };
+  const runtimeStatus = createRuntimeStatusProjectionUpdate({
+    recordId: requestId,
+    requirementSetId: text(context.record.requirementSetId) || requestId,
+    modelId: 'architecture_confirmation',
+    implementationAttemptId: attemptId,
+    sourceDocumentHash: context.semanticIr.scopeSemanticHash,
+    implementationConfirmationHash: context.semanticIr.scopeSemanticHash,
+    semanticModelHash: context.semanticIr.scopeSemanticHash,
+    stageInputs: [
+      {
+        role: 'requirements_semantic_ir',
+        path: text(context.activeAuthority.activeSemanticIrPath),
+        hash: context.semanticIr.scopeSemanticHash,
+      },
+      {
+        role: 'requirements_confirmation_event',
+        path: text(object(context.record.confirmationEventRef).path),
+        hash: context.confirmationEventHash,
+      },
+      {
+        role: 'requirements_effective_pass',
+        path: 'quality/requirements-effective-pass-receipt.json',
+        hash: text(context.effectivePass.requirementsEffectivePassHash),
+      },
+      { role: 'architecture_confirmation_candidate', path: candidateRef.path, hash: candidateHash },
+    ],
+    deterministicGateOutputs: [
+      {
+        role: 'architecture_confirmation_event',
+        path: eventRef.path,
+        hash: eventRef.artifactBytesHash,
+      },
+    ],
+    blockerRefs: [],
+    evidenceRefs: [
+      text(object(context.record.confirmationEventRef).path),
+      'quality/requirements-effective-pass-receipt.json',
+      candidateRef.path,
+      pageRef.path,
+      eventRef.path,
+    ],
+    authorityClass: 'controlled_confirmation',
+    decision: 'pass',
+    effectiveStatus: 'pass',
+    createdAt: recordedAt,
+    receiptPath: runtimeReceiptRelativePath,
+    projection: projectionRecord,
+  });
+  if (!runtimeStatus.authorityEstablished || !runtimeStatus.receiptRef) {
+    throw new Error(
+      `architecture_confirmation_runtime_status_invalid:${runtimeStatus.missingAuthorityBindings.join(',')}`
+    );
+  }
+  let committedContext = context;
+  const assertCurrentAuthority = (): void => {
+    const currentContext = resolveArchitectureConfirmationContext({
+      projectRoot: context.projectRoot,
+      requestId,
+    });
+    const currentCandidate = deriveArchitectureConfirmationCandidate(currentContext);
+    if (currentCandidate.architectureConfirmationCandidateHash !== candidateHash) {
+      throw new ArchitectureConfirmationBlock('architecture_confirmation_candidate_stale');
+    }
+    committedContext = currentContext;
+  };
+  const publicationDisposition = publishArchitectureConfirmationAcceptance({
+    acceptanceDirectory: projection.acceptanceDirectory,
+    eventBytes,
+    runtimeReceiptBytes: Buffer.from(
+      canonicalRequirementsJson(runtimeStatus.receiptRef.receipt),
+      'utf8'
+    ),
+    assertCurrentAuthority,
+  });
+  const accepted = readCurrentArchitectureConfirmationAcceptance({
+    context: committedContext,
+    candidate: deriveArchitectureConfirmationCandidate(committedContext),
+  });
+  if (!accepted) throw new Error('architecture_confirmation_acceptance_readback_invalid');
+  return {
+    exitCode: 0,
+    result: {
+      ok: true,
+      status:
+        publicationDisposition === 'published'
+          ? 'architecture_confirmation_recorded'
+          : 'architecture_confirmation_reused',
+      event: accepted.event,
+      eventRef: accepted.eventRef,
+      runtimeStatusDecisionRef: accepted.runtimeStatusDecisionRef,
+      architectureConfirmationCandidateHash: candidateHash,
+    },
+  };
+}
+
 export function mainIngestArchitectureConfirmation(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
@@ -746,6 +1145,25 @@ export function mainIngestArchitectureConfirmation(argv: string[]): number {
       'Usage: node ingest-architecture-confirmation.ts --architecture-confirmation <json> --render-report <json> --requirement-record <json> --confirmation-text <text> --confirmed-by <user> [--json]'
     );
     return 0;
+  }
+  if (publicArchitectureConfirmationArgs(args)) {
+    try {
+      const prepared = ingestPreparedArchitectureConfirmation(args);
+      emitArchitectureConfirmationResult(
+        args,
+        prepared.exitCode === 0 ? process.stdout : process.stderr,
+        prepared.result
+      );
+      return prepared.exitCode;
+    } catch (error) {
+      const failure = classifyArchitectureConfirmationError(error);
+      emitArchitectureConfirmationResult(args, process.stderr, {
+        ok: false,
+        status: 'architecture_confirmation_blocked',
+        issueCodes: [failure.issueCode],
+      });
+      return failure.exitCode;
+    }
   }
   if (args.action === 'check-state') {
     if (!args.requirementRecord) throw new Error('missing required args: requirementRecord');
