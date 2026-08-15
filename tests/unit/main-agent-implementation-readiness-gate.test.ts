@@ -3,6 +3,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { mainImplementationReadinessGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate';
+import { parseReadinessCommandInvocation } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate';
 import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
 
 const SOURCE_HASH = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
@@ -173,5 +174,27 @@ describe('implementation readiness gate activation metadata', () => {
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
+  });
+});
+
+describe('implementation readiness v2 command normalization', () => {
+  it('normalizes quoted argv without introducing a shell', () => {
+    expect(parseReadinessCommandInvocation('node --test "tests/refund worker.test.cjs"')).toEqual(
+      expect.objectContaining({
+        executable: 'node',
+        args: ['--test', 'tests/refund worker.test.cjs'],
+        normalizedInvocation: 'node\u0000--test\u0000tests/refund worker.test.cjs',
+      })
+    );
+  });
+
+  it.each([
+    'node --test tests/a.test.cjs | tee output.log',
+    'node --test tests/a.test.cjs > output.log',
+    'node --test tests/a.test.cjs && echo done',
+  ])('rejects shell syntax: %s', (invocation) => {
+    expect(() => parseReadinessCommandInvocation(invocation)).toThrow(
+      'implementation_readiness_shell_syntax_forbidden'
+    );
   });
 });

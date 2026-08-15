@@ -1,0 +1,206 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "main-agent-implementation-readiness-result.schema.json",
+  "title": "Main Agent Implementation Readiness Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "status",
+    "requestId",
+    "issueCodes",
+    "commandExecutionCount",
+    "writeCount"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "implementation-readiness-result/v2" },
+    "status": {
+      "enum": [
+        "implementation_readiness_pass",
+        "implementation_readiness_reused",
+        "implementation_readiness_blocked"
+      ]
+    },
+    "requestId": { "type": "string", "minLength": 1 },
+    "requirementsLineage": { "$ref": "#/$defs/requirementsLineage" },
+    "architectureConfirmationCandidateHash": { "$ref": "#/$defs/hash" },
+    "readinessScopedInputDigest": { "$ref": "#/$defs/hash" },
+    "implementationReadinessCandidateHash": { "$ref": "#/$defs/hash" },
+    "candidateRef": { "$ref": "#/$defs/artifactRef" },
+    "reportRef": { "$ref": "#/$defs/artifactRef" },
+    "decisionReceiptRef": { "$ref": "#/$defs/receiptRef" },
+    "issueCodes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/issueCode" }
+    },
+    "commandExecutionCount": { "type": "integer", "minimum": 0 },
+    "writeCount": { "type": "integer", "minimum": 0 }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "requirementsLineage",
+        "architectureConfirmationCandidateHash",
+        "readinessScopedInputDigest",
+        "implementationReadinessCandidateHash",
+        "candidateRef",
+        "reportRef",
+        "decisionReceiptRef"
+      ],
+      "properties": {
+        "status": { "const": "implementation_readiness_pass" },
+        "issueCodes": { "maxItems": 0 },
+        "commandExecutionCount": { "minimum": 1 },
+        "writeCount": { "minimum": 4 }
+      }
+    },
+    {
+      "required": [
+        "requirementsLineage",
+        "architectureConfirmationCandidateHash",
+        "readinessScopedInputDigest",
+        "implementationReadinessCandidateHash",
+        "candidateRef",
+        "reportRef",
+        "decisionReceiptRef"
+      ],
+      "properties": {
+        "status": { "const": "implementation_readiness_reused" },
+        "issueCodes": { "maxItems": 0 },
+        "commandExecutionCount": { "const": 0 },
+        "writeCount": { "const": 0 }
+      }
+    },
+    {
+      "properties": {
+        "status": { "const": "implementation_readiness_blocked" },
+        "issueCodes": { "minItems": 1 },
+        "writeCount": { "const": 0 }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["requirementsLineage"] },
+          { "required": ["architectureConfirmationCandidateHash"] },
+          { "required": ["readinessScopedInputDigest"] },
+          { "required": ["implementationReadinessCandidateHash"] },
+          { "required": ["candidateRef"] },
+          { "required": ["reportRef"] },
+          { "required": ["decisionReceiptRef"] }
+        ]
+      }
+    }
+  ],
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "issueCode": {
+      "oneOf": [
+        {
+          "enum": [
+            "requirements_confirmation_record_missing",
+            "requirements_confirmation_required",
+            "requirements_successor_required:active_authority_tuple",
+            "requirements_successor_required:semantic_authority",
+            "requirements_successor_required:source_binding",
+            "requirements_successor_required:build_manifest",
+            "architecture_successor_required:execution_manifest",
+            "architecture_successor_required:technical_execution_closure",
+            "requirements_effective_pass_required",
+            "requirements_confirmation_event_missing",
+            "requirements_confirmation_event_stale",
+            "architecture_successor_required:logical_target_paths",
+            "architecture_successor_required:toolchain",
+            "architecture_successor_required:artifacts",
+            "architecture_successor_required:execution_structure",
+            "architecture_successor_required:evidence_requirements",
+            "architecture_successor_required:forbidden_scope",
+            "architecture_successor_required:repository_premise",
+            "architecture_successor_required:policy_premise",
+            "architecture_confirmation_required",
+            "request_id_missing",
+            "execute_red_proof_required",
+            "caller_derived_input_forbidden",
+            "architecture_confirmation_request_id_invalid",
+            "architecture_confirmation_malformed_input",
+            "architecture_confirmation_integrity_invalid",
+            "architecture_confirmation_production_failure",
+            "architecture_confirmation_domain_blocked",
+            "implementation_readiness_malformed_input",
+            "implementation_readiness_request_id_invalid",
+            "implementation_readiness_physical_path_forbidden",
+            "implementation_readiness_record_path_invalid",
+            "implementation_readiness_shell_syntax_forbidden",
+            "implementation_readiness_command_quote_unclosed",
+            "implementation_readiness_command_missing",
+            "implementation_readiness_command_scope_unclosed",
+            "implementation_readiness_test_input_missing",
+            "implementation_readiness_published_bundle_incomplete",
+            "implementation_readiness_published_candidate_invalid",
+            "implementation_readiness_published_log_invalid",
+            "implementation_readiness_published_receipt_invalid",
+            "implementation_readiness_published_receipt_lineage_invalid",
+            "implementation_readiness_published_projection_invalid",
+            "implementation_readiness_runtime_record_missing",
+            "implementation_readiness_runtime_prerequisite_invalid",
+            "implementation_readiness_production_failure"
+          ]
+        },
+        {
+          "pattern": "^red_proof_not_observed:[A-Za-z0-9][A-Za-z0-9._:-]*$"
+        },
+        {
+          "pattern": "^implementation_readiness_(?:oracle_missing|output_bound_exceeded|environment_failure|red_output_invalid|red_identity_invalid):[A-Za-z0-9][A-Za-z0-9._:-]*$"
+        },
+        {
+          "pattern": "^implementation_readiness_runner_failed:[A-Za-z0-9][A-Za-z0-9._:-]*:[A-Za-z0-9][A-Za-z0-9._:-]*$"
+        },
+        {
+          "pattern": "^implementation_readiness_executable_unsupported:[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        {
+          "pattern": "^implementation_readiness_input_missing:[A-Za-z0-9][A-Za-z0-9._/@+ -]*$"
+        },
+        {
+          "pattern": "^implementation_readiness_publication_failure:[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        {
+          "pattern": "^readiness_recheck_required:[A-Za-z0-9][A-Za-z0-9._:-]*$"
+        }
+      ]
+    },
+    "requirementsLineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recordId",
+        "semanticRevisionId",
+        "scopeSemanticHash",
+        "executionConstraintRegistryHash"
+      ],
+      "properties": {
+        "recordId": { "type": "string", "minLength": 1 },
+        "semanticRevisionId": { "type": "string", "minLength": 1 },
+        "scopeSemanticHash": { "$ref": "#/$defs/hash" },
+        "executionConstraintRegistryHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "artifactRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "artifactBytesHash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "artifactBytesHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "receiptRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "receiptHash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "receiptHash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

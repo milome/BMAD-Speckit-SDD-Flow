@@ -22,6 +22,7 @@ import {
   runtimeStatusProjectionArtifactWrites,
   runtimeStatusProjectionRecordPatch,
   type RequirementsContractSixModelId,
+  type RuntimeStatusProjectionUpdate,
 } from './requirements-contract-runtime-status-decision-receipt';
 import {
   ArchitectureConfirmationBlock,
@@ -30,6 +31,7 @@ import {
   deriveArchitectureConfirmationCandidate,
   readCurrentArchitectureConfirmationAcceptance,
   resolveArchitectureConfirmationContext,
+  type ArchitectureConfirmationContext,
 } from './prepare-architecture-confirmation';
 import { hasOpenReconfirmationRequest } from './reconfirmation-runtime';
 import { validateSourcePrdLintTransitionFromFiles } from './requirements-contract-validation-facade';
@@ -876,6 +878,302 @@ function preparedIngestIssue(args: ParsedArgs): string | null {
   return null;
 }
 
+const SIX_MODELS = [
+  'requirement_confirmation',
+  'architecture_confirmation',
+  'implementation_readiness',
+  'execution_closure',
+  'audit_review',
+  'delivery_confirmation',
+] as const;
+
+function requirementsRuntimeProjection(
+  context: ArchitectureConfirmationContext,
+  model: (typeof SIX_MODELS)[number],
+  status: 'pass' | 'not_established',
+  recordedAt: string
+): JsonObject {
+  return {
+    payloadKind: 'model_result',
+    model,
+    recordId: text(context.record.recordId),
+    requirementSetId: text(context.record.requirementSetId) || text(context.record.recordId),
+    sourceDocumentHash: context.semanticIr.scopeSemanticHash,
+    implementationConfirmationHash: context.semanticIr.scopeSemanticHash,
+    status,
+    resultRecordedAt: recordedAt,
+    resultRecordedBy: 'requirements-contract-six-model-bridge',
+    blockingReasons: status === 'pass' ? [] : [`${model}_not_established`],
+    sourceRefs: [
+      {
+        sourceType:
+          model === 'requirement_confirmation'
+            ? 'requirements_confirmation_event'
+            : 'six_model_initialization',
+        id:
+          model === 'requirement_confirmation'
+            ? context.confirmationEventHash
+            : `${model}:not_established`,
+      },
+    ],
+    currentHashes: {
+      semanticModelHash: context.semanticIr.scopeSemanticHash,
+    },
+  };
+}
+
+function requirementsConfirmationRuntimeInput(
+  context: ArchitectureConfirmationContext,
+  recordedAt: string
+): {
+  recordPath: string;
+  baseRecord: JsonObject;
+  runtimeStatus: RuntimeStatusProjectionUpdate;
+} {
+  const promotionRef = object(context.record.currentPromotionEvidence);
+  const promotionPath = path.resolve(context.recordRoot, text(promotionRef.path));
+  const promotionRelative = path.relative(context.recordRoot, promotionPath);
+  if (
+    !text(promotionRef.path) ||
+    promotionRelative.startsWith('..') ||
+    path.isAbsolute(promotionRelative) ||
+    !fs.existsSync(promotionPath)
+  ) {
+    throw new Error('requirements_confirmation_runtime_promotion_missing');
+  }
+  const promotion = readJson(promotionPath);
+  const artifacts = objects(promotion.artifacts);
+  const markdown = artifacts.find((entry) => text(entry.role) === 'final_markdown');
+  const html = artifacts.find((entry) => text(entry.role) === 'confirmation_html');
+  const sourcePath =
+    text(markdown?.targetPath) || text(context.activeAuthority.activeSemanticIrPath);
+  const htmlPath = text(html?.targetPath);
+  const confirmationPageHash = text(html?.artifactBytesHash);
+  if (!sourcePath || !htmlPath || !/^sha256:[a-f0-9]{64}$/u.test(confirmationPageHash)) {
+    throw new Error('requirements_confirmation_runtime_projection_missing');
+  }
+  const recordId = text(context.record.recordId);
+  const requirementSetId = text(context.record.requirementSetId) || recordId;
+  const attemptId = text(context.activeAuthority.activeAuthoringAttemptId);
+  const confirmationText = text(context.confirmationEvent.exactConfirmationText);
+  const confirmation = {
+    eventType: 'confirmation_recorded',
+    recordId,
+    requirementSetId,
+    confirmedAt: recordedAt,
+    confirmedBy: 'requirements-contract-confirmation',
+    sourcePath,
+    sourceDocumentHash: context.semanticIr.scopeSemanticHash,
+    implementationConfirmationHash: context.semanticIr.scopeSemanticHash,
+    confirmationPageHash,
+    confirmationText: confirmationText || 'requirements scope confirmed',
+    renderReportPath: text(promotionRef.path),
+    htmlPath,
+  };
+  const sixModelResults = Object.fromEntries(
+    SIX_MODELS.map((model) => [
+      model,
+      requirementsRuntimeProjection(
+        context,
+        model,
+        model === 'requirement_confirmation' ? 'pass' : 'not_established',
+        recordedAt
+      ),
+    ])
+  );
+  const baseRecord = {
+    schemaVersion: 'requirement-record/v1',
+    recordId,
+    requirementSetId,
+    status: 'user_confirmed',
+    flow: 'standalone_tasks',
+    entryFlow: 'standalone_tasks',
+    sourcePath,
+    sourceDocumentHash: context.semanticIr.scopeSemanticHash,
+    implementationConfirmationHash: context.semanticIr.scopeSemanticHash,
+    semanticModelHash: context.semanticIr.scopeSemanticHash,
+    confirmationPageHash,
+    currentAttemptId: attemptId,
+    confirmationHistory: [confirmation],
+    currentMentalModel: 'requirement_confirmation',
+    mentalModelTransitions: [],
+    reconfirmationRequests: [],
+    pendingBlockerIntake: [],
+    blockerIntakeRuns: [],
+    rerunLoops: [],
+    sixModelResults,
+    artifactIndex: [],
+    updatedAt: recordedAt,
+  };
+  const requirementProjection = object(sixModelResults.requirement_confirmation);
+  const runtimeStatus = createRuntimeStatusProjectionUpdate({
+    recordId,
+    requirementSetId,
+    modelId: 'requirement_confirmation',
+    implementationAttemptId: attemptId,
+    sourceDocumentHash: context.semanticIr.scopeSemanticHash,
+    implementationConfirmationHash: context.semanticIr.scopeSemanticHash,
+    semanticModelHash: context.semanticIr.scopeSemanticHash,
+    stageInputs: [
+      {
+        role: 'requirements_semantic_ir',
+        path: text(context.activeAuthority.activeSemanticIrPath),
+        hash: context.semanticIr.scopeSemanticHash,
+      },
+    ],
+    deterministicGateOutputs: [
+      {
+        role: 'requirements_confirmation_event',
+        path: text(object(context.record.confirmationEventRef).path),
+        hash: context.confirmationEventHash,
+      },
+    ],
+    blockerRefs: [],
+    evidenceRefs: [text(object(context.record.confirmationEventRef).path), text(promotionRef.path)],
+    authorityClass: 'controlled_confirmation',
+    decision: 'pass',
+    effectiveStatus: 'pass',
+    createdAt: recordedAt,
+    receiptPath: `runtime/status-decisions/${attemptId}/requirement_confirmation.json`,
+    projection: requirementProjection,
+  });
+  if (!runtimeStatus.authorityEstablished) {
+    throw new Error('requirements_confirmation_runtime_status_invalid');
+  }
+  return {
+    recordPath: path.join(context.recordRoot, 'requirement-record.json'),
+    baseRecord,
+    runtimeStatus,
+  };
+}
+
+function ensureRequirementsConfirmationRuntime(
+  context: ArchitectureConfirmationContext,
+  recordedAt: string
+): string {
+  const input = requirementsConfirmationRuntimeInput(context, recordedAt);
+  if (fs.existsSync(input.recordPath)) {
+    const current = readJson(input.recordPath);
+    const verified = verifiedModelStatus(current, 'requirement_confirmation');
+    if (
+      verified.effectiveStatus === 'pass' &&
+      text(current.semanticModelHash) === context.semanticIr.scopeSemanticHash &&
+      text(current.currentAttemptId) === text(context.activeAuthority.activeAuthoringAttemptId)
+    ) {
+      return input.recordPath;
+    }
+    throw new Error('requirements_confirmation_runtime_lineage_conflict');
+  }
+  appendControlEventAndReplay({
+    recordPath: input.recordPath,
+    writerId: 'main-agent-six-model-initializer',
+    eventType: 'requirement_confirmation_result_recorded',
+    recordedAt,
+    bootstrapConfirmation: true,
+    bootstrapRecord: input.baseRecord,
+    payload: {
+      model: 'requirement_confirmation',
+      status: 'pass',
+      recordedAt,
+      sourceRefs: [
+        { sourceType: 'requirements_confirmation_event', id: context.confirmationEventHash },
+      ],
+    },
+    artifactWrites: runtimeStatusProjectionArtifactWrites(input.runtimeStatus),
+    reduce: (record) => ({
+      ...record,
+      ...runtimeStatusProjectionRecordPatch({
+        record,
+        modelId: 'requirement_confirmation',
+        update: input.runtimeStatus,
+      }),
+      currentMentalModel: 'requirement_confirmation',
+      lastEventType: 'requirement_confirmation_result_recorded',
+      updatedAt: recordedAt,
+    }),
+  });
+  return input.recordPath;
+}
+
+function ensureArchitectureRuntimeStatus(input: {
+  context: ArchitectureConfirmationContext;
+  accepted: NonNullable<ReturnType<typeof readCurrentArchitectureConfirmationAcceptance>>;
+  recordedAt: string;
+}): void {
+  const recordPath = ensureRequirementsConfirmationRuntime(input.context, input.recordedAt);
+  const current = readJson(recordPath);
+  const existing = object(object(current.sixModelResults).architecture_confirmation);
+  if (
+    verifiedModelStatus(current, 'architecture_confirmation').effectiveStatus === 'pass' &&
+    text(object(existing.currentHashes).architectureConfirmationCandidateHash) ===
+      text(input.accepted.event.architectureConfirmationCandidateHash)
+  ) {
+    return;
+  }
+  const receiptPath = path.resolve(
+    input.context.recordRoot,
+    input.accepted.runtimeStatusDecisionRef.path
+  );
+  const receipt = readJson(receiptPath);
+  const projection = {
+    payloadKind: 'model_result',
+    model: 'architecture_confirmation',
+    recordId: text(current.recordId),
+    requirementSetId: text(current.requirementSetId) || text(current.recordId),
+    sourceDocumentHash: input.context.semanticIr.scopeSemanticHash,
+    implementationConfirmationHash: input.context.semanticIr.scopeSemanticHash,
+    status: 'pass',
+    resultRecordedAt: text(receipt.createdAt) || input.recordedAt,
+    resultRecordedBy: 'architecture-confirmation-ingest',
+    blockingReasons: [],
+    sourceRefs: [
+      {
+        sourceType: 'architecture_confirmation_candidate',
+        id: text(input.accepted.event.architectureConfirmationCandidateHash),
+      },
+      {
+        sourceType: 'architecture_confirmation_event',
+        id: input.accepted.eventRef.artifactBytesHash,
+      },
+    ],
+    currentHashes: {
+      semanticModelHash: input.context.semanticIr.scopeSemanticHash,
+      architectureConfirmationCandidateHash: text(
+        input.accepted.event.architectureConfirmationCandidateHash
+      ),
+    },
+    currentAttemptId: text(receipt.implementationAttemptId),
+    semanticModelHash: text(receipt.semanticModelHash),
+    decisionReceiptRef: input.accepted.runtimeStatusDecisionRef.path,
+    decisionReceiptHash: text(receipt.receiptHash),
+  };
+  const runtimeStatus = {
+    projection,
+    receiptRef: { path: input.accepted.runtimeStatusDecisionRef.path, receipt },
+    authorityEstablished: true,
+    missingAuthorityBindings: [],
+  } satisfies RuntimeStatusProjectionUpdate;
+  appendControlEventAndReplay({
+    recordPath,
+    writerId: 'architecture-confirmation-ingest',
+    eventType: 'six_model_results_recorded',
+    recordedAt: text(receipt.createdAt) || input.recordedAt,
+    expectedBeforeRecordHash: sha256Json(canonicalizeRequirementRecord(current)),
+    payload: { eventType: 'six_model_results_recorded', ...projection },
+    reduce: (record) => ({
+      ...record,
+      ...runtimeStatusProjectionRecordPatch({
+        record,
+        modelId: 'architecture_confirmation',
+        update: runtimeStatus,
+      }),
+      currentMentalModel: 'architecture_confirmation',
+      lastEventType: 'six_model_results_recorded',
+      updatedAt: text(receipt.createdAt) || input.recordedAt,
+    }),
+  });
+}
+
 function ingestPreparedArchitectureConfirmation(args: ParsedArgs): {
   exitCode: number;
   result: JsonObject;
@@ -917,6 +1215,14 @@ function ingestPreparedArchitectureConfirmation(args: ParsedArgs): {
   }
   const currentAcceptance = readCurrentArchitectureConfirmationAcceptance({ context, candidate });
   if (currentAcceptance) {
+    const receipt = readJson(
+      path.resolve(context.recordRoot, currentAcceptance.runtimeStatusDecisionRef.path)
+    );
+    ensureArchitectureRuntimeStatus({
+      context,
+      accepted: currentAcceptance,
+      recordedAt: text(receipt.createdAt) || new Date().toISOString(),
+    });
     return {
       exitCode: 0,
       result: {
@@ -1122,6 +1428,7 @@ function ingestPreparedArchitectureConfirmation(args: ParsedArgs): {
     candidate: deriveArchitectureConfirmationCandidate(committedContext),
   });
   if (!accepted) throw new Error('architecture_confirmation_acceptance_readback_invalid');
+  ensureArchitectureRuntimeStatus({ context: committedContext, accepted, recordedAt });
   return {
     exitCode: 0,
     result: {

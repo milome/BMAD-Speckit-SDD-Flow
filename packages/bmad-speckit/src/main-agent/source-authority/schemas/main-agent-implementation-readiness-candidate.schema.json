@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "main-agent-implementation-readiness-candidate.schema.json",
+  "title": "Main Agent Implementation Readiness Candidate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "requestId",
+    "requirementsLineage",
+    "architectureConfirmationCandidateHash",
+    "architectureAcceptanceRef",
+    "readinessScopedInputDigest",
+    "readinessPolicy",
+    "normalizedCommands",
+    "inputArtifacts",
+    "redOutcomes",
+    "implementationReadinessCandidateHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "ImplementationReadinessCandidate/v1" },
+    "requestId": { "type": "string", "minLength": 1 },
+    "requirementsLineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recordId",
+        "semanticRevisionId",
+        "scopeSemanticHash",
+        "executionConstraintRegistryHash"
+      ],
+      "properties": {
+        "recordId": { "type": "string", "minLength": 1 },
+        "semanticRevisionId": { "type": "string", "minLength": 1 },
+        "scopeSemanticHash": { "$ref": "#/$defs/hash" },
+        "executionConstraintRegistryHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "architectureConfirmationCandidateHash": { "$ref": "#/$defs/hash" },
+    "architectureAcceptanceRef": { "$ref": "#/$defs/artifactRef" },
+    "readinessScopedInputDigest": { "$ref": "#/$defs/hash" },
+    "readinessPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "timeoutMs", "maxOutputBytes", "reporter", "shell"],
+      "properties": {
+        "schemaVersion": { "const": "implementation-readiness-policy/v1" },
+        "timeoutMs": { "type": "integer", "minimum": 1, "maximum": 120000 },
+        "maxOutputBytes": { "type": "integer", "minimum": 1024, "maximum": 1048576 },
+        "reporter": { "const": "tap" },
+        "shell": { "const": false }
+      }
+    },
+    "normalizedCommands": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/command" }
+    },
+    "inputArtifacts": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/inputArtifact" }
+    },
+    "redOutcomes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/outcome" }
+    },
+    "implementationReadinessCandidateHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "stringSet": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "artifactRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "artifactBytesHash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "artifactBytesHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "normalizedCommandHash",
+        "commandIds",
+        "executable",
+        "args",
+        "normalizedInvocation",
+        "expectedTestIds",
+        "expectedFailureSignatures"
+      ],
+      "properties": {
+        "normalizedCommandHash": { "$ref": "#/$defs/hash" },
+        "commandIds": { "$ref": "#/$defs/stringSet" },
+        "executable": { "enum": ["node", "npm", "npx", "pnpm", "yarn", "bun"] },
+        "args": { "type": "array", "items": { "type": "string" } },
+        "normalizedInvocation": { "type": "string", "minLength": 1 },
+        "expectedTestIds": { "$ref": "#/$defs/stringSet" },
+        "expectedFailureSignatures": { "$ref": "#/$defs/stringSet" }
+      }
+    },
+    "inputArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "artifactId", "logicalPath", "bytesHash"],
+      "properties": {
+        "role": { "enum": ["test", "pre_implementation_target", "config", "lock"] },
+        "artifactId": { "type": "string", "minLength": 1 },
+        "logicalPath": { "type": "string", "minLength": 1 },
+        "bytesHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "normalizedCommandHash",
+        "commandIds",
+        "status",
+        "exitCode",
+        "failedTestIds",
+        "expectedFailureSignaturesObserved",
+        "unrelatedFailureIds",
+        "negativeControl",
+        "rawLogRef"
+      ],
+      "properties": {
+        "normalizedCommandHash": { "$ref": "#/$defs/hash" },
+        "commandIds": { "$ref": "#/$defs/stringSet" },
+        "status": { "const": "expected_red_observed" },
+        "exitCode": { "const": 1 },
+        "failedTestIds": { "$ref": "#/$defs/stringSet" },
+        "expectedFailureSignaturesObserved": { "$ref": "#/$defs/stringSet" },
+        "unrelatedFailureIds": { "type": "array", "maxItems": 0 },
+        "negativeControl": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "runnerCompleted",
+            "tapFailuresObserved",
+            "noUnrelatedFailures",
+            "environmentFailure"
+          ],
+          "properties": {
+            "runnerCompleted": { "const": true },
+            "tapFailuresObserved": { "const": true },
+            "noUnrelatedFailures": { "const": true },
+            "environmentFailure": { "const": false }
+          }
+        },
+        "rawLogRef": { "$ref": "#/$defs/artifactRef" }
+      }
+    }
+  }
+}
