@@ -1,11 +1,11 @@
 ---
 name: goal-execution-contract-generator
-description: Generate strict frozen /goal execution contract documents from conversation requirements or existing requirement documents using the shared goal-contract template projection. Use when the user asks for a /goal-ready execution contract, strict goal plan, autonomous implementation contract, or docs/plans goal execution document.
+description: Compile standalone source or confirmed Requirements authorities into a frozen GoalExecutionIR/v1 authority and a strict /goal projection. Use when the user asks for a /goal-ready execution contract, strict goal plan, autonomous implementation contract, or docs/plans goal execution document.
 ---
 
 # Goal Execution Contract Generator
 
-Create a frozen `/goal` execution contract. This skill only generates and audits the contract document; it must not execute `/goal` or start implementation.
+Create a frozen `/goal` execution authority and projection. This skill compiles and audits Task 6 artifacts; it must not partition, activate, or execute `/goal`.
 
 ## Workflow
 
@@ -18,11 +18,9 @@ Create a frozen `/goal` execution contract. This skill only generates and audits
 3. For source-plan goal contracts, use the first-class package CLI:
    - Run `bmad-speckit goal-contract generate --entry standalone_goal_contract --source <path> --out <path> --json`.
    - Build one immutable `SourceSnapshot` from the exact Source Plan bytes or LF-normalized ordered conversation segments.
-   - Invoke `StandaloneViewProvider.deriveImplementationView` with only that snapshot, repository facts, and the implementation role contract.
-   - Invoke `StandaloneViewProvider.deriveAcceptanceEvidenceView` separately with the same snapshot and the acceptance/evidence role contract.
-   - Require distinct provider session identities, reject cross-view inputs or shared responses, and record both input/output hashes.
-   - Do not persist either transient view as an authority file.
-   - Treat `coverageReceiptPath`, `generationReceiptPath`, `sourcePlanHash`, `goalContractHash`, `sourceObligationCount`, and `unmappedSourceObligations: 0` from the JSON output as required generation evidence.
+   - Freeze `StandaloneGoalSemanticIR/v1`, dispatch exactly one `goal_full` authoring Judge, and require `StandaloneGoalAuthoringEffectivePass/v1` before execution compilation.
+   - Require `goalJudgeDispatchCount=1`, `goalExecutionIRHash`, `standaloneGoalSemanticIrRef`, `standaloneAuthoringEffectivePassRef`, `goalExecutionIrRef`, `closureRef`, and `activeAuthorityRef` in the JSON result.
+   - Treat `coverageReceiptPath`, `generationReceiptPath`, `sourcePlanHash`, `goalContractHash`, `sourceObligationCount`, and `unmappedSourceObligations: 0` as compatibility generation evidence, not execution authority.
    - Require the coverage receipt before public release use.
    - The installed consumer invocation must work for Codex, Claude Code, and Cursor without host-specific lock-in and without consumer root `scripts/`.
 4. Load the contract template and profile only for manual or compatibility contract authoring:
@@ -37,7 +35,7 @@ Create a frozen `/goal` execution contract. This skill only generates and audits
    - If that retained workflow reports `blocked`, stop it with `docs_review_dependency_blocked` and include the reported reason.
 6. Generate the contract from the template only when the package CLI is not applicable.
 7. Run the contract completeness gate and command portability gate.
-8. Delegate semantic review convergence to `multi-view-doc-review-loop`.
+8. Do not run a second Task 6 authoring semantic Judge or authoring EffectivePass after the CLI succeeds; optional prose review cannot alter frozen authority. The post-execution Task 7C Execution Final Judge and execution EffectivePass remain mandatory and are not this authoring review.
 9. Run encoding integrity gate after all text edits.
 
 ## Contract Generation Rules
@@ -48,7 +46,7 @@ Create a frozen `/goal` execution contract. This skill only generates and audits
 - Coverage receipt is source coverage evidence only; it is not implementation evidence.
 - Code obligations must bind to real implementation proof through behavior tests, source seam static assertions, receipt field assertions, or CLI output assertions.
 - Generated commands for code obligations must not use coverage-receipt grep as the only proof.
-- Treat Markdown as the human/model-readable canonical prose and structure.
+- Treat Markdown as a human/model-readable `GoalExecutionIR/v1` projection, never semantic or execution authority.
 - Treat JSON profile as a machine-readable index and compatibility contract only.
 - Do not generate the contract from JSON profile alone.
 - Do not rewrite the template's static prose unless the user explicitly asks to update the template itself.
@@ -206,17 +204,16 @@ Run command portability checks before freezing the first semantic-review hash an
 - Smoke-test read-only commands in their declared shell when repository state permits. Do not execute mutating, destructive, credentialed, release, commit, push, or deployment commands during contract generation.
 - Record the target hash and portability receipt with the deterministic completeness evidence so a later docs-review cannot discover the same command defect after semantic convergence.
 
-## Review Convergence Delegation
+## Review Boundary
 
-`multi-view-doc-review-loop` is the only owner of audit convergence. This generator MUST NOT run an independent audit/fix loop or maintain a no-gap counter.
+The CLI's single `goal_full` authoring Judge is the only standalone semantic review before shared Goal Execution IR compilation. This generator MUST NOT run an independent semantic audit/fix loop, repeat EffectivePass, or maintain a no-gap counter.
 
 Handoff rules:
 
-1. Complete generation, source coverage, the deterministic completeness gate, and the command portability gate.
-2. Hand the generated target path, source hash, and current target hash to `multi-view-doc-review-loop`.
-3. Let that skill own audit epochs, target freezing, batch fixes, selective revalidation, timeout takeover, and completion receipts.
-4. For `standalone_goal_contract`, treat the latest-hash three-perspective PASS as the terminal model-audit result and do not run a separate final docs-review.
-5. Preserve any existing final docs-review only for unrelated non-standalone documentation workflows; if it changes governed semantics, return that target to its convergence controller.
+1. Complete source admission, deterministic completeness, command portability, the single authoring Judge, Goal Execution IR closure, and active-authority readback.
+2. Optional prose review may inspect the Markdown projection only and must not change semantic IR, Goal Execution IR, binding, closure, or active authority.
+3. Any semantic defect requires a new standalone source successor and a new single authoring Judge pass.
+4. Preserve any existing final docs-review only for unrelated documentation workflows.
 
 Treat standalone style, clarity, structure, command-order, or readability defects as deterministic or three-perspective audit findings. Do not create a second audit loop for them.
 

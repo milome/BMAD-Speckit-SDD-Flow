@@ -53,7 +53,7 @@ function loadWholeSourceDependencies() {
     'utils/goal-contract/source-obligation-extractor'
   );
   const { buildSourceSnapshot } = loadPartitionModule('utils/goal-contract/dual-view-derivation');
-  const { resolveEntryScenario, validateEntryAuthority } = loadDistModule(
+  const { resolveEntryScenario, validateEntryAuthority } = loadPartitionModule(
     'utils/goal-contract/entry-scenarios'
   );
   const { compileCanonicalIntent } = loadPartitionModule(
@@ -131,6 +131,10 @@ function takeAll(args, name) {
     if (value && !value.startsWith('-')) values.push(value);
   }
   return values;
+}
+
+function countFlag(args, name) {
+  return args.filter((value) => value === name).length;
 }
 
 function emitJson(value) {
@@ -407,7 +411,7 @@ function assertPartitionGenerationArgsComplete(args) {
   }
 }
 
-function generateWholeSource(args) {
+async function generateWholeSource(args, commandOptions = {}) {
   assertPartitionGenerationArgsComplete(args);
   const dependencies = loadWholeSourceDependencies();
   const {
@@ -485,7 +489,11 @@ function generateWholeSource(args) {
   ]);
   const profileBytes = fs.readFileSync(profilePath);
   const templateBytes = fs.readFileSync(templatePath);
-  const { bundle: compilation, sourceCompositionPolicy } = compileStandaloneGoalContract({
+  const {
+    bundle: compilation,
+    sourceCompositionPolicy,
+    canonicalIntentBundle,
+  } = compileStandaloneGoalContract({
     source,
     sourceText,
     resolvedOut,
@@ -594,6 +602,20 @@ function generateWholeSource(args) {
       }
     );
   }
+  const { publishStandaloneGoalAuthority } = loadPartitionModule(
+    'utils/goal-contract/control-plane/standalone-goal-authority'
+  );
+  const standaloneGoalAuthority = await publishStandaloneGoalAuthority(
+    {
+      source,
+      canonicalIntentBundle,
+      goalContractPath: resolvedOut,
+      projectRoot: process.cwd(),
+    },
+    {
+      prepareInvocation: commandOptions.prepareStandaloneGoalJudgeInvocation,
+    }
+  );
   const writeReceipt = safeWriteText(resolvedOut, rendered.document, {
     mode: fs.existsSync(resolvedOut) ? 'replace' : 'create',
   });
@@ -660,6 +682,7 @@ function generateWholeSource(args) {
     auditMetrics,
     auditProfile,
     writeReceipt,
+    ...standaloneGoalAuthority,
   };
   writeGenerationReceipt(generationReceiptPath, generationReceipt);
   return generationReceipt;
@@ -1067,12 +1090,59 @@ async function generatePartitionBound(args) {
   });
 }
 
-async function generate(args) {
+async function generate(args, commandOptions = {}) {
   assertPartitionGenerationArgsComplete(args);
+  const { resolveEntryScenario, validateEntryAuthority } = loadPartitionModule(
+    'utils/goal-contract/entry-scenarios'
+  );
+  const entry = resolveEntryScenario(takeAll(args, '--entry'));
+  if (entry.entryScenario === 'requirements_backed_goal') {
+    const allowedFlags = new Set(['--entry', '--requirements-record', '--out', '--json']);
+    const forbidden = args.filter((value) => value.startsWith('--') && !allowedFlags.has(value));
+    if (forbidden.length > 0) {
+      throw Object.assign(
+        new Error(`requirements_backed_caller_derived_input_forbidden:${forbidden[0].slice(2)}`),
+        {
+          failureClass: `requirements_backed_caller_derived_input_forbidden:${forbidden[0].slice(2)}`,
+        }
+      );
+    }
+    for (const flag of ['--requirements-record', '--out']) {
+      if (countFlag(args, flag) !== 1 || !take(args, flag)) {
+        throw Object.assign(new Error(`requirements_backed_argument_invalid:${flag.slice(2)}`), {
+          failureClass: `requirements_backed_argument_invalid:${flag.slice(2)}`,
+        });
+      }
+    }
+    const entryAuthority = validateEntryAuthority({
+      entryScenario: entry.entryScenario,
+      sourceAuthority: entry.sourceAuthority,
+      requestedOutputs: ['goal-run-root'],
+    });
+    if (entryAuthority.decision !== 'pass') {
+      throw Object.assign(new Error(entryAuthority.failureClass), entryAuthority);
+    }
+    const { compileRequirementsBackedGoal } = loadPartitionModule(
+      'utils/goal-contract/control-plane/goal-requirements-adapter'
+    );
+    try {
+      return {
+        ok: true,
+        ...compileRequirementsBackedGoal({
+          projectRoot: process.cwd(),
+          requirementRecordPath: take(args, '--requirements-record'),
+          outRoot: take(args, '--out'),
+        }),
+      };
+    } catch (error) {
+      if (error && !error.failureClass && error.message) error.failureClass = error.message;
+      throw error;
+    }
+  }
   if (has(args, '--partition-manifest') && has(args, '--partition-id')) {
     return generatePartitionBound(args);
   }
-  return generateWholeSource(args);
+  return generateWholeSource(args, commandOptions);
 }
 
 function assertNoForbiddenPartitionAuthorityArgs(args) {
@@ -4245,7 +4315,7 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
     if (!['generate', 'partition', 'supersede-authority'].includes(subcommand)) {
       throw Object.assign(
         new Error(
-          'Usage: bmad-speckit goal-contract <generate|partition|supersede-authority> --entry standalone_goal_contract --source <plan.md> --out <artifact> [--sequence-mode auto|required|disabled] --json'
+          'Usage: bmad-speckit goal-contract generate --entry <standalone_goal_contract|requirements_backed_goal> (--source <plan.md> | --requirements-record <record.json>) --out <artifact-or-run-root> --json'
         ),
         {
           failureClass: 'invalid_subcommand',
@@ -4257,7 +4327,7 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
         ? await partition(args)
         : subcommand === 'supersede-authority'
           ? await supersedeAuthority(args)
-          : await generate(args);
+          : await generate(args, _opts);
     if (json) emitJson(result);
     else if (result?.goalContractPath) {
       process.stdout.write(`${result.goalContractPath}\n`);
@@ -4421,6 +4491,16 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
     });
     if (json) emitJson(payload);
     else console.error(payload.message);
+    if (take(args, '--entry') === 'requirements_backed_goal') {
+      if (
+        failureClass.startsWith('requirements_successor_required:') ||
+        failureClass.startsWith('architecture_successor_required:') ||
+        failureClass.startsWith('readiness_recheck_required:')
+      ) {
+        return 1;
+      }
+      return 2;
+    }
     return 1;
   }
 }

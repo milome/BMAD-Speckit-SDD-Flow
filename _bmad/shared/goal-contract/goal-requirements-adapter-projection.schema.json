@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/goal-requirements-adapter-projection.schema.json",
+  "title": "Goal Requirements Adapter Projection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "profile", "requirementsLineage", "obligationMappings", "conservationCounts", "adapterProjectionHash"],
+  "properties": {
+    "schemaVersion": { "const": "GoalRequirementsAdapterProjection/v1" },
+    "profile": { "const": "requirements_backed" },
+    "requirementsLineage": { "type": "object" },
+    "obligationMappings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sourceObligationId", "goalObligationId", "kind", "sourceRefs"],
+        "properties": {
+          "sourceObligationId": { "type": "string", "minLength": 1 },
+          "goalObligationId": { "type": "string", "minLength": 1 },
+          "kind": { "enum": ["MUST", "NEG", "OUT", "FR", "NFR", "ACCEPTANCE", "FAILURE", "EDGE"] },
+          "sourceRefs": { "$ref": "#/$defs/nonemptyStrings" }
+        }
+      }
+    },
+    "conservationCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["MUST", "NEG", "OUT", "FR", "NFR", "ACCEPTANCE", "FAILURE", "EDGE"],
+      "properties": {
+        "MUST": { "type": "integer", "minimum": 0 },
+        "NEG": { "type": "integer", "minimum": 0 },
+        "OUT": { "type": "integer", "minimum": 0 },
+        "FR": { "type": "integer", "minimum": 0 },
+        "NFR": { "type": "integer", "minimum": 0 },
+        "ACCEPTANCE": { "type": "integer", "minimum": 0 },
+        "FAILURE": { "type": "integer", "minimum": 0 },
+        "EDGE": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "adapterProjectionHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "nonemptyStrings": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+  }
+}

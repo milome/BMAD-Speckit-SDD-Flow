@@ -7,8 +7,10 @@
     "executionConstraintRefs": [
       "ART:refund-batch-contract-results",
       "CMD:refund-batch-contract",
+      "CTM:refund-queue-vertical-slice",
       "EVDREQ:refund-batch-evidence",
-      "PATH:refund-batch-owner"
+      "PATH:refund-batch-owner",
+      "STOP:refund-queue-forbidden-scope"
     ]
   }
 }

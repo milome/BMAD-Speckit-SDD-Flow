@@ -413,238 +413,51 @@ function writeZhLocalizationBundle(): string {
 }
 
 describe('generate-architecture-confirmation-artifact', () => {
-  it('generates a requirement-scoped architecture confirmation JSON without mutating the requirement record', () => {
-    const fixture = writeFixture();
-    const productSources = writeProductSourceFixture();
-    const expectedProductTargetRefs = [
-      expectedTargetRef(productSources.hostPath),
-      expectedTargetRef(productSources.widgetPath),
-      expectedTargetRef(productSources.dialogPath),
-    ];
-    const expectedSupplementalTargetRefs = [
-      path.normalize('tests/product/test_display_settings_batch_and_rollback.py'),
-      path.normalize('docs/plans/display_settings_requirements.md'),
-    ];
-    const beforeRecord = fs.readFileSync(fixture.record, 'utf8');
-    const out = path.join(tempDir, 'architecture-confirmation.json');
-    const localization = writeZhLocalizationBundle();
-    const result = runNode(SCRIPT, [
-      '--source',
-      fixture.source,
-      '--requirement-record',
-      fixture.record,
-      '--out',
-      out,
-      '--run-id',
-      'arch-fixture-001',
-      '--target-paths',
-      JSON.stringify([
-        productSources.hostPath,
-        productSources.widgetPath,
-        productSources.dialogPath,
-        'tests/product/test_display_settings_batch_and_rollback.py',
-        'docs/plans/display_settings_requirements.md',
-      ]),
-      '--consumer-impact-scan',
-      consumerImpactScan,
-      '--governance-impact-scan',
-      governanceImpactScan,
-      '--full-architecture-trigger-matrix',
-      triggerMatrix,
-      '--localization',
-      localization,
-      '--json',
-    ]);
+  it('publishes only the canonical request-id compatibility contract', () => {
+    const result = runNode(SCRIPT, ['--help']);
 
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
-    expect(fs.readFileSync(fixture.record, 'utf8')).toBe(beforeRecord);
-    const artifact = JSON.parse(fs.readFileSync(out, 'utf8'));
-    const recipe = resolveArchitectureConfirmationHashRecipe();
-    expect(artifact.recordId).toBe('REQ-FIXTURE');
-    expect(artifact.architectureConfirmationArtifactHash).toBe(
-      architectureConfirmationHashFor(artifact, recipe)
+    expect(result.stdout).toContain(
+      'generate-architecture-confirmation-artifact.ts --request-id <requestId> --json'
     );
-    expect(artifact.confirmationPhrase).toContain('确认架构确认进入实施准备');
-    expect(artifact.riskStatementZh).toContain('错误的架构边界');
-    expect(artifact.consumerImpactScan[0].summaryZh).toBe('数据模型变更需要架构确认。');
-    expect(artifact.businessArchitectureDiagrams?.map((view: Record<string, unknown>) => view.type)).toEqual(
-      requiredArchitectureDiagramTypes
-    );
-    expect(artifact.governanceArchitectureDiagrams?.map((view: Record<string, unknown>) => view.type)).toEqual(
-      requiredArchitectureDiagramTypes
-    );
-    expect(artifact.architectureDiagrams?.map((view: Record<string, unknown>) => view.type)).toEqual(
-      requiredArchitectureDiagramTypes
-    );
-    const businessByType = new Map(
-      (artifact.businessArchitectureDiagrams as Array<Record<string, unknown>>).map((view) => [
-        view.type,
-        view,
-      ])
-    );
-    const businessJson = JSON.stringify(artifact.businessArchitectureDiagrams);
-    expect(businessJson).not.toMatch(
-      /Business UI Surface|Canonical Apply Path|Chart Display Result|BusinessRequirement|UserVisibleSurface/u
-    );
-    expect(String(businessByType.get('system_architecture')?.mermaid)).toContain('DisplaySettingsWidget');
-    expect(String(businessByType.get('system_architecture')?.mermaid)).toContain('ProductHostWindow');
-    expect(String(businessByType.get('system_architecture')?.mermaid)).not.toContain('ContractManager');
-    expect(String(businessByType.get('system_architecture')?.mermaid)).toContain('display_settings_button');
-    expect(String(businessByType.get('system_architecture')?.mermaid)).toContain('DisplaySettingsDialog');
-    expect(String(businessByType.get('system_architecture')?.mermaid)).toContain('DisplaySettingsSnapshot');
-    expect(String(businessByType.get('system_architecture')?.mermaid)).toContain('PolicyManager');
-    expect(String(businessByType.get('system_architecture')?.mermaid)).toContain('Rendered product state update');
-    expect(String(businessByType.get('system_architecture')?.mermaid)).not.toMatch(
-      /-->\|[^|\n]*\[[A-Z]+-\d+\][^|\n]*\|/u
-    );
-    expect(String(businessByType.get('class')?.mermaid)).toContain('DisplaySettingsWidget');
-    expect(String(businessByType.get('class')?.mermaid)).toContain('ProductHostWindow');
-    expect(String(businessByType.get('class')?.mermaid)).not.toContain('ContractManager');
-    expect(String(businessByType.get('class')?.mermaid)).toContain('DisplaySettingsDialog');
-    expect(String(businessByType.get('class')?.mermaid)).toContain('DisplaySettingsSnapshot');
-    expect(String(businessByType.get('class')?.mermaid)).toContain('_apply_display_settings');
-    expect(String(businessByType.get('class')?.mermaid)).toContain('_on_cancel');
-    expect(String(businessByType.get('class')?.mermaid)).not.toMatch(/\bclass\s+(?:Open|Generic)\b/u);
-    expect(String(businessByType.get('class')?.mermaid)).not.toMatch(/sourceAnchored(?:State|Surface)/u);
-    expect(String(businessByType.get('class')?.mermaid)).not.toMatch(/\bclass\s+Test/u);
-    expect(String(businessByType.get('class')?.mermaid)).not.toMatch(/\bclass\s+\w*Requirements\b/u);
-    expect(String(businessByType.get('swimlane')?.mermaid)).toContain('subgraph UserLane');
-    expect(String(businessByType.get('swimlane')?.mermaid)).toContain('subgraph HostSurfaceLane');
-    expect(String(businessByType.get('swimlane')?.mermaid)).toContain('subgraph WidgetLane');
-    expect(String(businessByType.get('swimlane')?.mermaid)).toContain('subgraph DialogLane');
-    expect(String(businessByType.get('swimlane')?.mermaid)).toContain('subgraph RenderStateLane');
-    expect(String(businessByType.get('swimlane')?.mermaid)).toContain('clicked.connect');
-    expect(String(businessByType.get('swimlane')?.mermaid)).toContain('on_preview');
-    expect(String(businessByType.get('swimlane')?.mermaid)).toContain('cancel rollback');
-    expect(String(businessByType.get('state_machine')?.mermaid)).toContain(
-      'Current display controls are embedded in the dense footer surface'
-    );
-    expect(String(businessByType.get('state_machine')?.mermaid)).toContain(
-      'Target display settings move dense controls behind a compact settings dialog'
-    );
-    expect(businessJson).toContain('DisplaySettings');
-    for (const view of artifact.businessArchitectureDiagrams as Array<Record<string, unknown>>) {
-      const businessTargetRefs = (view.targetPathRefs as string[]).map((targetPath) =>
-        path.normalize(targetPath)
-      );
-      expect(view.mermaid).toMatch(/^(?:flowchart|sequenceDiagram|classDiagram|stateDiagram-v2)/u);
-      expect(view.evidenceRefs).toEqual(expect.arrayContaining(['EVD-036', 'EVD-037']));
-      expect(businessTargetRefs).toEqual(expect.arrayContaining(expectedProductTargetRefs));
-      expect(
-        businessTargetRefs.every((targetPath) =>
-          [...expectedProductTargetRefs, ...expectedSupplementalTargetRefs].includes(targetPath)
-        )
-      ).toBe(true);
-      expect(businessTargetRefs.some((targetPath) => /(?:^|[\\/])scripts[\\/].+\.ts$/u.test(targetPath))).toBe(
-        false
-      );
-      expect(view.scope).toBe('business_architecture');
-      expect(view.titleZh).toContain('业务');
-      expect(view.descriptionZh).toContain('authoring agent');
-      expect(view.mermaidZh).toMatch(/[\u3400-\u9fff]/u);
-    }
-    for (const view of artifact.governanceArchitectureDiagrams as Array<Record<string, unknown>>) {
-      expect(view.scope).toBe('governance_architecture');
-    }
-
-    const html = path.join(tempDir, 'architecture-confirmation.html');
-    const render = runNode(RENDERER, [
-      '--architecture-confirmation',
-      out,
-      '--out',
-      html,
-      '--language',
-      'zh-CN',
-      '--json',
-    ]);
-    expect(render.status, `${render.stdout}\n${render.stderr}`).toBe(0);
+    expect(result.stdout).not.toContain('--source');
   });
 
-  it('uses confirmation hash normalization for preConfirmationDrilldown volatile fields', () => {
-    const fixture = writeFixture({ includePreConfirmationDrilldown: true });
-    const out = path.join(tempDir, 'architecture-confirmation-drilldown.json');
-    const localization = writeZhLocalizationBundle();
+  it.each([
+    ['--source', 'source.md'],
+    ['--target-paths', '["src/injected.ts"]'],
+    ['--consumer-impact-scan', '[]'],
+    ['--governance-impact-scan', '[]'],
+    ['--full-architecture-trigger-matrix', '[]'],
+    ['--decision', 'caller decision'],
+    ['--risk-statement', 'caller risk'],
+    ['--rollback-plan', 'caller rollback'],
+  ])('fails closed on caller-derived producer input %s', (flag, value) => {
+    const out = path.join(tempDir, 'legacy-architecture-confirmation.json');
     const result = runNode(SCRIPT, [
-      '--source',
-      fixture.source,
-      '--requirement-record',
-      fixture.record,
+      '--request-id',
+      'REQ-FIXTURE',
+      flag,
+      value,
       '--out',
       out,
-      '--run-id',
-      'arch-fixture-drilldown',
-      '--target-paths',
-      targetPaths,
-      '--consumer-impact-scan',
-      consumerImpactScan,
-      '--governance-impact-scan',
-      governanceImpactScan,
-      '--full-architecture-trigger-matrix',
-      triggerMatrix,
-      '--localization',
-      localization,
-      '--json',
-    ]);
-
-    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
-    const artifact = JSON.parse(fs.readFileSync(out, 'utf8'));
-    const record = JSON.parse(fs.readFileSync(fixture.record, 'utf8'));
-    expect(artifact.sourceDocumentHash).toBe(record.sourceDocumentHash);
-    expect(artifact.implementationConfirmationHash).toBe(record.implementationConfirmationHash);
-  });
-
-  it('fails closed when zh-CN authoring localization is missing', () => {
-    const fixture = writeFixture();
-    const out = path.join(tempDir, 'architecture-confirmation-missing-localization.json');
-    const result = runNode(SCRIPT, [
-      '--source',
-      fixture.source,
-      '--requirement-record',
-      fixture.record,
-      '--out',
-      out,
-      '--run-id',
-      'arch-fixture-missing-localization',
-      '--target-paths',
-      targetPaths,
-      '--consumer-impact-scan',
-      consumerImpactScan,
-      '--governance-impact-scan',
-      governanceImpactScan,
-      '--full-architecture-trigger-matrix',
-      triggerMatrix,
       '--json',
     ]);
 
     expect(result.status).toBe(2);
-    expect(result.stderr).toContain('missing zh-CN authoring localization bundle');
+    expect(result.stderr).toContain(`caller_derived_input_forbidden:${flag.slice(2)}`);
     expect(fs.existsSync(out)).toBe(false);
   });
 
-  it('fails closed when impact scans or target paths are missing', () => {
-    const fixture = writeFixture();
-    const out = path.join(tempDir, 'architecture-confirmation.json');
-    const result = runNode(SCRIPT, [
-      '--source',
-      fixture.source,
-      '--requirement-record',
-      fixture.record,
-      '--out',
-      out,
-      '--run-id',
-      'arch-fixture-002',
-      '--target-paths',
-      '[]',
-      '--consumer-impact-scan',
-      consumerImpactScan,
-      '--governance-impact-scan',
-      governanceImpactScan,
-      '--full-architecture-trigger-matrix',
-      triggerMatrix,
-      '--json',
-    ]);
+  it('delegates request-id-only calls to the canonical package producer', () => {
+    const result = runNode(SCRIPT, ['--request-id', 'REQ-MISSING', '--json']);
 
-    expect(result.status).toBe(2);
-    expect(result.stderr).toContain('targetPaths must not be empty');
+    expect(result.status).toBe(1);
+    expect(JSON.parse(result.stdout).data.result).toMatchObject({
+      schemaVersion: 'architecture-confirmation-candidate-result/v1',
+      status: 'blocked',
+      requestId: 'REQ-MISSING',
+      issueCodes: ['requirements_confirmation_record_missing'],
+    });
   });
 });

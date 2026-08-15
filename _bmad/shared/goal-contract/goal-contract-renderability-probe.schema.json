@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/goal-contract-renderability-probe.schema.json",
+  "title": "Goal Contract Renderability Probe",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "goalExecutionIRHash",
+    "expectedObligationIds",
+    "renderedObligationIds",
+    "missingObligationIds",
+    "unexpectedObligationIds",
+    "expectedTaskIds",
+    "renderedTaskIds",
+    "missingTaskIds",
+    "unexpectedTaskIds",
+    "decision",
+    "issueCodes"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "GoalContractRenderabilityProbe/v1" },
+    "goalExecutionIRHash": { "$ref": "#/$defs/hash" },
+    "expectedObligationIds": { "$ref": "#/$defs/nonEmptyIds" },
+    "renderedObligationIds": { "$ref": "#/$defs/ids" },
+    "missingObligationIds": { "$ref": "#/$defs/ids" },
+    "unexpectedObligationIds": { "$ref": "#/$defs/ids" },
+    "expectedTaskIds": { "$ref": "#/$defs/nonEmptyIds" },
+    "renderedTaskIds": { "$ref": "#/$defs/ids" },
+    "missingTaskIds": { "$ref": "#/$defs/ids" },
+    "unexpectedTaskIds": { "$ref": "#/$defs/ids" },
+    "decision": { "enum": ["pass", "block"] },
+    "issueCodes": { "$ref": "#/$defs/ids" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "decision": { "const": "pass" } } },
+      "then": {
+        "properties": {
+          "missingObligationIds": { "maxItems": 0 },
+          "unexpectedObligationIds": { "maxItems": 0 },
+          "missingTaskIds": { "maxItems": 0 },
+          "unexpectedTaskIds": { "maxItems": 0 },
+          "issueCodes": { "maxItems": 0 }
+        }
+      },
+      "else": { "properties": { "issueCodes": { "minItems": 1 } } }
+    }
+  ],
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "nonEmptyIds": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

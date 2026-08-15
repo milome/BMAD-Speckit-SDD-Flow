@@ -22,6 +22,14 @@ import {
   resolvePackageBmadRoot,
   resolvePackageOwnedBmadPath,
 } from '../../runtime/package-bmad-root';
+import { mainImplementationReadinessGateV2 } from './main-agent-implementation-readiness-v2';
+
+export {
+  mainImplementationReadinessGateV2,
+  parseReadinessCommandInvocation,
+  produceImplementationReadiness,
+  runReadinessCommand,
+} from './main-agent-implementation-readiness-v2';
 
 type JsonObject = Record<string, unknown>;
 type ReadinessDecision = 'pass' | 'blocked';
@@ -856,16 +864,5 @@ export function mainImplementationReadinessGate(argv: string[]): number {
 }
 
 if (require.main === module && isDirectImplementationReadinessGateCli(process.argv[1])) {
-  try {
-    process.exitCode = mainImplementationReadinessGate(process.argv.slice(2));
-  } catch (error) {
-    console.error(
-      JSON.stringify(
-        { ok: false, error: error instanceof Error ? error.message : String(error) },
-        null,
-        2
-      )
-    );
-    process.exitCode = 2;
-  }
+  process.exitCode = mainImplementationReadinessGateV2(process.argv.slice(2));
 }

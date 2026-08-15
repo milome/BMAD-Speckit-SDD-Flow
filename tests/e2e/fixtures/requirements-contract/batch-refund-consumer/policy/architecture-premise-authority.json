@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "requirements-contract-authority-source/v1",
+  "sourceRootId": "policy-refund-architecture-premise",
+  "semanticBody": {
+    "schemaVersion": "ArchitecturePremiseAuthority/v1",
+    "authorityKind": "policy",
+    "authorityRole": "policy_authority",
+    "authorityId": "policy-refund-architecture-premise",
+    "forbiddenScope": {
+      "paths": [".git/**"]
+    },
+    "ownershipRules": [
+      {
+        "targetPath": "src/refunds/batch-refund-service.ts",
+        "owner": "refund_platform_owner"
+      }
+    ],
+    "isolationSelection": "consumer_worktree",
+    "governanceImpactRules": [
+      {
+        "impactId": "governance:refund-policy",
+        "whenConstraintKinds": [],
+        "whenConstraintIds": []
+      }
+    ],
+    "triggerRules": [
+      {
+        "triggerId": "architecture:refund-queue-structure",
+        "whenConstraintKinds": ["CTM"],
+        "whenConstraintIds": []
+      }
+    ]
+  }
+}

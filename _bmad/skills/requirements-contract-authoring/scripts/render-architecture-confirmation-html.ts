@@ -5,6 +5,7 @@
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
+const Ajv2020 = require('ajv/dist/2020.js').default;
 const yaml = require('./load-js-yaml');
 
 const VALID_LANGUAGES = new Set(['zh-CN', 'en-US', 'bilingual']);
@@ -21,9 +22,15 @@ const REQUIRED_ARCHITECTURE_DIAGRAM_TYPES = [
   'sequence',
   'activity',
 ];
+const ARCHITECTURE_CONFIRMATION_CANDIDATE_SCHEMA =
+  'main-agent-architecture-confirmation-candidate.schema.json';
+const INSTALLED_ARCHITECTURE_CONFIRMATION_CANDIDATE_SCHEMA =
+  'architecture-confirmation-candidate.schema.json';
+let architectureConfirmationCandidateValidator;
 
 function parseArgs(argv) {
-  const args = { strict: true, language: 'zh-CN', theme: 'audit' };
+  const args = {};
+  const allowedValueFlags = new Set(['--architecture-confirmation-candidate', '--out']);
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === '--help' || arg === '-h') {
@@ -34,11 +41,14 @@ function parseArgs(argv) {
       args.json = true;
       continue;
     }
-    if (!arg.startsWith('--')) throw new Error(`Unexpected positional argument: ${arg}`);
+    if (!allowedValueFlags.has(arg)) {
+      const name = arg.startsWith('--') ? arg.slice(2) : arg;
+      throw new Error(`caller_derived_input_forbidden:${name}`);
+    }
     const key = arg.slice(2).replace(/-([a-z])/gu, (_, letter) => letter.toUpperCase());
     const value = argv[index + 1];
     if (!value || value.startsWith('--')) throw new Error(`Missing value for ${arg}`);
-    args[key] = key === 'strict' ? value !== 'false' : value;
+    args[key] = value;
     index += 1;
   }
   return args;
@@ -88,6 +98,66 @@ function object(value) {
 
 function array(value) {
   return Array.isArray(value) ? value : [];
+}
+
+function resolveArchitectureConfirmationCandidateSchemaPath() {
+  const relativeSchemaPath = path.join(
+    'main-agent',
+    'source-authority',
+    'schemas',
+    ARCHITECTURE_CONFIRMATION_CANDIDATE_SCHEMA
+  );
+  const candidates = [
+    path.resolve(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      '..',
+      'packages',
+      'bmad-speckit',
+      'src',
+      relativeSchemaPath
+    ),
+    path.resolve(__dirname, '..', '..', '..', '..', 'src', relativeSchemaPath),
+    path.resolve(__dirname, '..', '..', '..', '..', 'dist', relativeSchemaPath),
+    path.resolve(process.cwd(), 'packages', 'bmad-speckit', 'src', relativeSchemaPath),
+    path.resolve(process.cwd(), 'packages', 'bmad-speckit', 'dist', relativeSchemaPath),
+  ];
+  try {
+    const installedPackageRoot = path.dirname(
+      require.resolve('bmad-speckit/package.json', {
+        paths: [process.cwd(), __dirname],
+      })
+    );
+    const installedSchemaRoot = path.join(
+      installedPackageRoot,
+      'dist',
+      'main-agent',
+      'source-authority',
+      'schemas'
+    );
+    candidates.push(
+      path.join(installedSchemaRoot, INSTALLED_ARCHITECTURE_CONFIRMATION_CANDIDATE_SCHEMA),
+      path.join(installedSchemaRoot, ARCHITECTURE_CONFIRMATION_CANDIDATE_SCHEMA)
+    );
+  } catch {
+    // The monorepo/source candidates above remain authoritative when no package is installed.
+  }
+  const schemaPath = candidates.find((candidate) => fs.existsSync(candidate));
+  if (!schemaPath) throw new Error('architecture_confirmation_candidate_schema_unavailable');
+  return schemaPath;
+}
+
+function validateArchitectureConfirmationCandidate(candidate) {
+  if (!architectureConfirmationCandidateValidator) {
+    const schema = readJson(resolveArchitectureConfirmationCandidateSchemaPath());
+    architectureConfirmationCandidateValidator = new Ajv2020({
+      allErrors: true,
+      strict: false,
+    }).compile(schema);
+  }
+  return architectureConfirmationCandidateValidator(candidate);
 }
 
 function normalizeRepoPath(value, repoRoot = process.cwd()) {
@@ -1245,112 +1315,169 @@ ${renderMermaidRuntimeScript(input.mermaidRuntime)}
 </html>`;
 }
 
+function renderCanonicalCandidateProjection(candidate) {
+  const lineage = object(candidate.requirementsLineage);
+  const logicalScope = object(candidate.logicalScope);
+  const toolchain = object(candidate.toolchain);
+  const isolation = object(candidate.isolation);
+  const list = (values, project) =>
+    array(values)
+      .map((value) => `<li>${escapeHtml(project(value))}</li>`)
+      .join('');
+  const refs = (value) => array(value).map((item) => String(item)).join(', ');
+  const row = (fields) =>
+    fields.map(([label, value]) => `${label}=${String(value)}`).join(' | ');
+  const bindings = (values) =>
+    list(values, (value) => {
+      const binding = object(value);
+      return row([
+        ['premiseId', binding.premiseId],
+        ['kind', binding.kind],
+        ['value', binding.value],
+        ['basisRefs', refs(binding.basisRefs)],
+      ]);
+    });
+  const impacts = (values) =>
+    list(values, (value) => {
+      const impact = object(value);
+      return row([
+        ['impactId', impact.impactId],
+        ['status', impact.status],
+        ['basisRefs', refs(impact.basisRefs)],
+      ]);
+    });
+  return [
+    '<!doctype html>',
+    '<html lang="en"><head><meta charset="utf-8">',
+    '<meta name="viewport" content="width=device-width,initial-scale=1">',
+    '<title>Architecture confirmation candidate projection</title>',
+    '<style>body{font-family:Georgia,serif;margin:0;background:#f4f5f1;color:#17221b}main{max-width:960px;margin:auto;padding:32px 24px 64px}section{border-top:1px solid #9ca69e;padding:20px 0}code{font-family:Consolas,monospace;background:#e5e9e3;padding:2px 5px}li{margin:8px 0}</style>',
+    '</head><body><main>',
+    '<h1>Architecture confirmation candidate</h1>',
+    `<p>Request <code>${escapeHtml(candidate.requestId)}</code></p>`,
+    `<p>Candidate <code>${escapeHtml(candidate.architectureConfirmationCandidateHash)}</code></p>`,
+    '<section><h2>Requirements lineage</h2><ul>',
+    list(
+      [
+        'recordId',
+        'semanticRevisionId',
+        'scopeSemanticHash',
+        'executionConstraintRegistryHash',
+        'technicalExecutionClosure',
+      ],
+      (key) => `${key}: ${String(lineage[key])}`
+    ),
+    '</ul></section>',
+    '<section><h2>Pinned premises</h2><ul>',
+    list(candidate.pinnedPremises, (value) => {
+      const premise = object(value);
+      return row([
+        ['premiseId', premise.premiseId],
+        ['authorityRole', premise.authorityRole],
+        ['mediaType', premise.mediaType],
+        ['sourceSnapshotHash', premise.sourceSnapshotHash],
+      ]);
+    }),
+    '</ul></section>',
+    '<section><h2>Target paths</h2><ul>',
+    list(logicalScope.targetPaths, String),
+    '</ul><h2>Forbidden paths</h2><ul>',
+    list(logicalScope.forbiddenPaths, String),
+    '</ul></section><section><h2>Ownership</h2><ul>',
+    list(candidate.ownership, (value) => {
+      const ownership = object(value);
+      return row([
+        ['targetPath', ownership.targetPath],
+        ['owner', ownership.owner],
+        ['basisRefs', refs(ownership.basisRefs)],
+      ]);
+    }),
+    '</ul></section><section><h2>Toolchain</h2><h3>Commands</h3><ul>',
+    list(toolchain.commands, (value) => {
+      const command = object(value);
+      return row([
+        ['commandId', command.commandId],
+        ['invocation', command.invocation],
+        ['basisRefs', refs(command.basisRefs)],
+      ]);
+    }),
+    '</ul><h3>Artifacts</h3><ul>',
+    bindings(toolchain.artifacts),
+    '</ul><h3>Evidence requirements</h3><ul>',
+    bindings(toolchain.evidenceRequirements),
+    '</ul></section><section><h2>Isolation</h2><ul>',
+    list(
+      [
+        ['mode', isolation.mode],
+        ['forbiddenPaths', refs(isolation.forbiddenPaths)],
+        ['basisRefs', refs(isolation.basisRefs)],
+      ],
+      (value) => row([value])
+    ),
+    '</ul></section><section><h2>Consumer impact</h2><ul>',
+    impacts(candidate.consumerImpact),
+    '</ul></section><section><h2>Governance impact</h2><ul>',
+    impacts(candidate.governanceImpact),
+    '</ul></section><section><h2>Trigger matrix</h2><ul>',
+    list(candidate.triggerMatrix, (value) => {
+      const trigger = object(value);
+      return row([
+        ['triggerId', trigger.triggerId],
+        ['triggered', trigger.triggered],
+        ['basisRefs', refs(trigger.basisRefs)],
+      ]);
+    }),
+    '</ul></section><section><h2>Architecture decisions</h2><ul>',
+    list(candidate.architectureDecisions, (value) => {
+      const decision = object(value);
+      return row([
+        ['decisionId', decision.decisionId],
+        ['decisionType', decision.decisionType],
+        ['selection', decision.selection],
+        ['basisRefs', refs(decision.basisRefs)],
+      ]);
+    }),
+    '</ul></section><section><h2>Goal execution structure premises</h2><ul>',
+    bindings(candidate.goalExecutionStructurePremises),
+    '</ul></section></main></body></html>\n',
+  ].join('');
+}
+
 function main(argv) {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: node render-architecture-confirmation-html.ts --architecture-confirmation <json> --out <html> --language zh-CN [--json]');
+    console.log(
+      'Usage: node render-architecture-confirmation-html.ts --architecture-confirmation-candidate <ArchitectureConfirmationCandidate/v1.json> --out <html> [--json]'
+    );
     return 0;
   }
-  if (!args.architectureConfirmation || !args.out) {
-    throw new Error('missing required args: architectureConfirmation, out');
+  if (!args.architectureConfirmationCandidate || !args.out) {
+    throw new Error('missing required args: architectureConfirmationCandidate, out');
   }
-  if (!VALID_LANGUAGES.has(args.language)) throw new Error(`invalid language: ${args.language}`);
-  if (!VALID_THEMES.has(args.theme)) throw new Error(`invalid theme: ${args.theme}`);
 
-  const architecturePath = path.resolve(args.architectureConfirmation);
+  const candidatePath = path.resolve(args.architectureConfirmationCandidate);
   const outPath = path.resolve(args.out);
-  const summaryPath = path.resolve(args.summary || deriveSibling(outPath, '.summary.json'));
-  const reportPath = path.resolve(args.renderReport || deriveSibling(outPath, '.render-report.json'));
-  const confirmation = readJson(architecturePath);
-  const recipe = resolveRecipe(args.recipe);
-  const validation = validate(confirmation, recipe, args.language);
-  const architectureDelta = buildArchitectureDelta(confirmation, validation, args.language);
-  const businessArchitectureDiagrams = normalizeArchitectureDiagrams(
-    confirmation,
-    'businessArchitectureDiagrams',
-    'architectureDiagrams',
-    args.language
-  );
-  const governanceArchitectureDiagrams = normalizeArchitectureDiagrams(
-    confirmation,
-    'governanceArchitectureDiagrams',
-    'architectureDiagrams',
-    args.language
-  );
-  const mermaidRuntime = readMermaidRuntimeScript();
-  const html = renderHtml({
-    confirmation,
-    recipe,
-    validation,
-    language: args.language,
-    architecturePath,
-    outPath,
-    mermaidRuntime,
-  });
-  const htmlHash = sha256Text(html);
-  fs.mkdirSync(path.dirname(outPath), { recursive: true });
-  fs.writeFileSync(outPath, html, 'utf8');
+  const candidate = readJson(candidatePath);
+  if (!validateArchitectureConfirmationCandidate(candidate)) {
+    throw new Error('architecture_confirmation_candidate_schema_invalid');
+  }
 
-  const architectureConfirmationArtifactHash = validation.declaredHash || validation.computedHash;
-  const confirmInstruction = confirmPhrase(confirmation, architectureConfirmationArtifactHash);
-  const confirmability = validation.blockingIssues.length ? 'blocked' : 'confirmable';
-  const summary = {
-    recordId: text(confirmation.recordId),
-    requirementSetId: text(confirmation.requirementSetId),
-    runId: text(confirmation.runId),
-    sourceDocumentHash: text(confirmation.sourceDocumentHash),
-    implementationConfirmationHash: text(confirmation.implementationConfirmationHash),
-    resolvedRecipeHash: text(confirmation.resolvedRecipeHash),
-    architectureConfirmationArtifactHash,
-    computedArchitectureConfirmationArtifactHash: validation.computedHash,
-    htmlHash,
-    confirmability,
-    blockingIssues: validation.blockingIssues,
-    warnings: validation.warnings,
-    architectureDelta,
-    businessArchitectureDiagrams,
-    governanceArchitectureDiagrams,
-    mermaidRuntime: {
-      available: mermaidRuntime.available,
-      path: mermaidRuntime.path,
-      hash: mermaidRuntime.hash,
-      error: mermaidRuntime.error,
-    },
-    counts: {
-      targetPaths: array(confirmation.targetPaths).length,
-      consumerImpactScan: array(confirmation.consumerImpactScan).length,
-      governanceImpactScan: array(confirmation.governanceImpactScan).length,
-      fullArchitectureTriggerMatrix: array(confirmation.fullArchitectureTriggerMatrix).length,
-      businessArchitectureDiagrams: businessArchitectureDiagrams.filter(
-        (diagram) => !diagram.missing && text(diagram.mermaid)
-      ).length,
-      governanceArchitectureDiagrams: governanceArchitectureDiagrams.filter(
-        (diagram) => !diagram.missing && text(diagram.mermaid)
-      ).length,
-      evidenceRefs: array(confirmation.evidenceRefs).length,
-    },
+  fs.mkdirSync(path.dirname(outPath), { recursive: true });
+  fs.writeFileSync(outPath, renderCanonicalCandidateProjection(candidate), 'utf8');
+  const output = {
+    schemaVersion: 'architecture-confirmation-projection-result/v1',
+    ok: true,
+    requestId: candidate.requestId,
+    architectureConfirmationCandidateHash: candidate.architectureConfirmationCandidateHash,
+    candidatePath: normalizeRepoPath(candidatePath),
+    htmlPath: normalizeRepoPath(outPath),
   };
-  const report = {
-    ...summary,
-    architectureConfirmationPath: normalizeRepoPath(architecturePath),
-    htmlRef: {
-      artifactType: 'architecture_confirmation_view',
-      sourceOfTruthRole: 'projection',
-      path: normalizeRepoPath(outPath),
-      hash: htmlHash,
-    },
-    artifactRef: object(confirmation.architectureConfirmationArtifactRef),
-    confirmInstruction,
-    summaryPath: normalizeRepoPath(summaryPath),
-    reportPath: normalizeRepoPath(reportPath),
-  };
-  writeJson(summaryPath, summary);
-  writeJson(reportPath, report);
-  const output = { ok: confirmability === 'confirmable', summaryPath, reportPath, htmlPath: outPath, ...summary };
   if (args.json) process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
-  else console.log(`architecture_confirmation_html=${normalizeRepoPath(outPath)}`);
-  return args.strict && validation.blockingIssues.length ? 1 : 0;
+  else console.log(`architecture_confirmation_html=${output.htmlPath}`);
+  return 0;
 }
+
+module.exports = { main };
 
 if (require.main === module) {
   try {

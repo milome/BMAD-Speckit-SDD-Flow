@@ -3,6 +3,7 @@
 /* eslint-disable no-console */
 
 const crypto = require('node:crypto');
+const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const yaml = require('./load-js-yaml');
@@ -39,14 +40,46 @@ function parseArgs(argv) {
       args.json = true;
       continue;
     }
-    if (!arg.startsWith('--')) throw new Error(`Unexpected positional argument: ${arg}`);
-    const key = arg.slice(2).replace(/-([a-z])/gu, (_, letter) => letter.toUpperCase());
+    if (arg !== '--request-id') {
+      const name = arg.startsWith('--') ? arg.slice(2) : arg;
+      throw new Error(`caller_derived_input_forbidden:${name}`);
+    }
     const value = argv[index + 1];
-    if (!value || value.startsWith('--')) throw new Error(`Missing value for ${arg}`);
-    args[key] = value;
+    if (!value || value.startsWith('--')) throw new Error('request_id_missing');
+    args.requestId = value;
     index += 1;
   }
   return args;
+}
+
+function resolvePackageCli() {
+  const skillDir = path.resolve(__dirname, '..');
+  const candidates = [
+    path.resolve('packages/bmad-speckit/bin/bmad-speckit.js'),
+    path.resolve('node_modules/bmad-speckit/bin/bmad-speckit.js'),
+    path.resolve(
+      'node_modules',
+      'bmad-speckit-sdd-flow',
+      'node_modules',
+      'bmad-speckit',
+      'bin',
+      'bmad-speckit.js'
+    ),
+    path.resolve(skillDir, '..', '..', '..', 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js'),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  try {
+    const packageRoot = path.dirname(
+      require.resolve('bmad-speckit/package.json', { paths: [process.cwd(), skillDir] })
+    );
+    const candidate = path.join(packageRoot, 'bin', 'bmad-speckit.js');
+    if (fs.existsSync(candidate)) return candidate;
+  } catch {
+    // Fall through to the fail-closed error.
+  }
+  throw new Error('bmad_speckit_package_cli_missing');
 }
 
 function stableStringify(value) {
@@ -1687,25 +1720,28 @@ function buildArtifact(args) {
 function main(argv) {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: node generate-architecture-confirmation-artifact.ts --source <source.md> --requirement-record <record.json> --out <architecture-confirmation.json> --target-paths <json|file> --consumer-impact-scan <json|file> --governance-impact-scan <json|file> --full-architecture-trigger-matrix <json|file> [--run-id <id>] [--json]');
+    console.log(
+      'Usage: node generate-architecture-confirmation-artifact.ts --request-id <requestId> --json'
+    );
     return 0;
   }
-  for (const key of ['source', 'requirementRecord', 'out', 'targetPaths', 'consumerImpactScan', 'governanceImpactScan', 'fullArchitectureTriggerMatrix']) {
-    if (!args[key]) throw new Error(`missing required arg: ${key}`);
-  }
-  const { artifact, outPath } = buildArtifact(args);
-  fs.mkdirSync(path.dirname(outPath), { recursive: true });
-  fs.writeFileSync(outPath, `${JSON.stringify(artifact, null, 2)}\n`, 'utf8');
-  const result = {
-    ok: true,
-    architectureConfirmationPath: normalizeRepoPath(outPath),
-    architectureConfirmationArtifactHash: artifact.architectureConfirmationArtifactHash,
-    sourceDocumentHash: artifact.sourceDocumentHash,
-    implementationConfirmationHash: artifact.implementationConfirmationHash,
-    resolvedRecipeHash: artifact.resolvedRecipeHash,
-  };
-  process.stdout.write(args.json ? `${JSON.stringify(result, null, 2)}\n` : `architecture_confirmation=${result.architectureConfirmationPath}\n`);
-  return 0;
+  if (!args.requestId) throw new Error('request_id_missing');
+  const result = spawnSync(
+    process.execPath,
+    [
+      resolvePackageCli(),
+      'main-agent',
+      'prepare-architecture-confirmation',
+      '--request-id',
+      args.requestId,
+      '--json',
+    ],
+    { cwd: process.cwd(), encoding: 'utf8' }
+  );
+  if (result.stdout) process.stdout.write(result.stdout);
+  if (result.stderr) process.stderr.write(result.stderr);
+  if (result.status === null) throw result.error ?? new Error('package_cli_execution_failed');
+  return result.status;
 }
 
 if (require.main === module) {

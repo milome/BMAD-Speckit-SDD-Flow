@@ -29,44 +29,27 @@ describe('goal-execution-contract-generator skill contract', () => {
     expect(skill).toContain('not a success path');
   });
 
-  it('delegates review convergence to one hash-bound multi-view loop', () => {
+  it('keeps one standalone authoring Judge and forbids duplicate semantic review', () => {
     for (const skillRoot of ['_bmad', '.codex']) {
       const generatorSkill = readFileSync(
         join(ROOT, skillRoot, 'skills', 'goal-execution-contract-generator', 'SKILL.md'),
         'utf8'
       );
-      const reviewSkill = readFileSync(
-        join(ROOT, skillRoot, 'skills', 'multi-view-doc-review-loop', 'SKILL.md'),
-        'utf8'
-      );
-
       expect(generatorSkill).toContain(
-        'Generate strict frozen /goal execution contract documents from conversation requirements or existing requirement documents using the shared goal-contract template projection.'
+        'Compile standalone source or confirmed Requirements authorities into a frozen GoalExecutionIR/v1 authority and a strict /goal projection.'
       );
       expect(generatorSkill).not.toContain('3 consecutive no-gap');
-      expect(generatorSkill).toContain('multi-view-doc-review-loop');
-      expect(generatorSkill).toContain('latest-hash three-perspective PASS');
-      expect(generatorSkill).toContain('do not run a separate final docs-review');
+      expect(generatorSkill).toContain('exactly one `goal_full` authoring Judge');
       expect(generatorSkill).toContain(
-        'Preserve any existing final docs-review only for unrelated non-standalone documentation workflows'
+        'Do not run a second Task 6 authoring semantic Judge or authoring EffectivePass'
+      );
+      expect(generatorSkill).toContain(
+        'The post-execution Task 7C Execution Final Judge and execution EffectivePass remain mandatory'
+      );
+      expect(generatorSkill).toContain(
+        'Optional prose review may inspect the Markdown projection only'
       );
       expect(generatorSkill).toContain('check-contract-command-portability.js');
-
-      expect(reviewSkill).toContain('auditEpochId');
-      expect(reviewSkill).toContain('targetHash');
-      expect(reviewSkill).toContain('MUST NOT edit');
-      expect(reviewSkill).toContain('batch fix');
-      expect(reviewSkill).toContain('Selective Revalidation Matrix');
-      expect(reviewSkill).toContain('180000');
-      expect(reviewSkill).toContain('two audit epochs');
-      expect(reviewSkill).toContain('single final docs-review');
-      expect(reviewSkill).toContain(
-        'Existing user authorization remains valid across internal convergence cycles'
-      );
-      expect(reviewSkill).toContain(
-        'keep that perspective local for the remainder of the convergence run'
-      );
-      expect(reviewSkill).not.toContain('start a new user-authorized convergence cycle');
     }
   });
 });

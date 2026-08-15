@@ -269,159 +269,11 @@ function writeFixture(root: string): {
 }
 
 describe('architecture confirmation ingest', () => {
-  it('returns the controlled ingest result and receipt through the stable package action', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'stable-architecture-ingest-'));
-    try {
-      const fixture = writeFixture(root);
-      const confirmedAt = new Date().toISOString();
-      const confirmedBy = path.basename(root);
-      const rawArgv = [
-        'ingest-architecture-confirmation',
-        '--architecture-confirmation',
-        fixture.architecturePath,
-        '--render-report',
-        fixture.reportPath,
-        '--requirement-record',
-        fixture.recordPath,
-        '--confirmation-text',
-        fixture.confirmationText,
-        '--confirmed-by',
-        confirmedBy,
-        '--confirmed-at',
-        confirmedAt,
-        '--json',
-      ];
-      const result = runIngestArchitectureConfirmation({
-        action: 'ingest-architecture-confirmation',
-        cwd: root,
-        args: {
-          architectureConfirmation: fixture.architecturePath,
-          renderReport: fixture.reportPath,
-          requirementRecord: fixture.recordPath,
-          confirmationText: fixture.confirmationText,
-          confirmedBy,
-          confirmedAt,
-          json: 'true',
-        },
-        rawArgv,
-        rootArgv: ['--action', ...rawArgv],
-        json: true,
-      });
-
-      expect(result.errors).toEqual([]);
-      expect(result).toMatchObject({
-        exitCode: 0,
-        status: 'architecture_confirmation_recorded',
-        result: {
-          ok: true,
-          receiptPath: expect.any(String),
-          requirementRecordPath: fixture.recordPath.replace(/\\/gu, '/'),
-        },
-      });
-      expect(existsSync(path.resolve(result.result.receiptPath))).toBe(true);
-
-      const updated = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
-      expect(updated.architectureConfirmationState.status).toBe('active');
-      expect(updated.sixModelResults.architecture_confirmation.status).toBe('pass');
-    } finally {
-      removeTempTree(root);
-    }
-  });
-
-  it('records architecture confirmation through controlled ingest', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'arch-confirm-ingest-'));
-    try {
-      const fixture = writeFixture(root);
-      const code = mainIngestArchitectureConfirmation([
-        '--architecture-confirmation',
-        fixture.architecturePath,
-        '--render-report',
-        fixture.reportPath,
-        '--requirement-record',
-        fixture.recordPath,
-        '--confirmation-text',
-        fixture.confirmationText,
-        '--confirmed-by',
-        'test-user',
-        '--confirmed-at',
-        '2026-05-19T00:00:00.000Z',
-        '--json',
-      ]);
-      expect(code).toBe(0);
-      const record = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
-      expect(record.lastEventType).toBe('mental_model_transition_recorded');
-      expect(record.architectureConfirmationState).toMatchObject({
-        status: 'active',
-        currentArchitectureConfirmationRunId: 'arch-run-001',
-        currentArchitectureConfirmationHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
-      });
-      expect(record.architectureConfirmations.at(-1)).toMatchObject({
-        eventType: 'architecture_confirmation_recorded',
-        confirmedBy: 'test-user',
-        resolvedRecipeHash: resolveArchitectureConfirmationHashRecipe().resolvedRecipeHash,
-      });
-      expect(record.sixModelResults.architecture_confirmation).toMatchObject({
-        payloadKind: 'model_result',
-        model: 'architecture_confirmation',
-        status: 'pass',
-        sourceDocumentHash:
-          'sha256:1111111111111111111111111111111111111111111111111111111111111111',
-        implementationConfirmationHash:
-          'sha256:2222222222222222222222222222222222222222222222222222222222222222',
-        semanticModelHash:
-          'sha256:1111111111111111111111111111111111111111111111111111111111111111',
-        currentAttemptId: 'implementation-attempt-001',
-        decisionReceiptRef: expect.any(String),
-        decisionReceiptHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/u),
-      });
-      expect(record.runtimeStatusDecisionReceipts.at(-1)).toMatchObject({
-        path: record.sixModelResults.architecture_confirmation.decisionReceiptRef,
-        receipt: {
-          modelId: 'architecture_confirmation',
-          implementationAttemptId: 'implementation-attempt-001',
-          receiptHash: record.sixModelResults.architecture_confirmation.decisionReceiptHash,
-        },
-      });
-      const decisionReceiptPath = path.resolve(
-        path.dirname(fixture.recordPath),
-        record.sixModelResults.architecture_confirmation.decisionReceiptRef
-      );
-      expect(existsSync(decisionReceiptPath)).toBe(true);
-      expect(JSON.parse(readFileSync(decisionReceiptPath, 'utf8'))).toMatchObject({
-        modelId: 'architecture_confirmation',
-        implementationAttemptId: record.sixModelResults.architecture_confirmation.currentAttemptId,
-        receiptHash: record.sixModelResults.architecture_confirmation.decisionReceiptHash,
-      });
-      expect(record.currentMentalModel).toBe('implementation_readiness');
-      expect(record.stage).toBe('implementation_readiness');
-      expect(record.currentStage).toBe('implementation_readiness');
-      expect(
-        record.mentalModelTransitions.map(
-          (transition: Record<string, unknown>) => transition.toModel
-        )
-      ).toEqual(['architecture_confirmation', 'implementation_readiness']);
-      expect(
-        record.mentalModelTransitions.map(
-          (transition: Record<string, unknown>) => transition.eventType
-        )
-      ).toEqual(['mental_model_transition_recorded', 'mental_model_transition_recorded']);
-      expect(existsSync(path.join(path.dirname(fixture.recordPath), 'artifact-index.jsonl'))).toBe(
-        true
-      );
-    } finally {
-      removeTempTree(root);
-    }
-  });
-
-  it('rejects stale architecture confirmation hashes without writing record state', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'arch-confirm-ingest-stale-'));
+  it('fails closed on the legacy artifact and render-report ingest surface', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'legacy-architecture-ingest-'));
     try {
       const fixture = writeFixture(root);
       const before = readFileSync(fixture.recordPath, 'utf8');
-      const badText = fixture.confirmationText.replace(
-        /architectureConfirmationArtifactHash=sha256:[a-f0-9]{64}/u,
-        'architectureConfirmationArtifactHash=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
-      );
       const code = mainIngestArchitectureConfirmation([
         '--architecture-confirmation',
         fixture.architecturePath,
@@ -430,132 +282,51 @@ describe('architecture confirmation ingest', () => {
         '--requirement-record',
         fixture.recordPath,
         '--confirmation-text',
-        badText,
+        fixture.confirmationText,
         '--confirmed-by',
-        'test-user',
+        'legacy-caller',
+        '--json',
       ]);
-      expect(code).toBe(3);
+
+      expect(code).toBe(2);
       expect(readFileSync(fixture.recordPath, 'utf8')).toBe(before);
     } finally {
       removeTempTree(root);
     }
   });
 
-  it('reports architecture confirmation state checks as diagnostic-only output', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'arch-confirm-state-check-'));
+  it('rejects check-state persistence instead of writing a new state-check event', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'arch-confirm-state-check-hard-cut-'));
     try {
       const fixture = writeFixture(root);
-      expect(
-        mainIngestArchitectureConfirmation([
-          '--architecture-confirmation',
-          fixture.architecturePath,
-          '--render-report',
-          fixture.reportPath,
-          '--requirement-record',
-          fixture.recordPath,
-          '--confirmation-text',
-          fixture.confirmationText,
-          '--confirmed-by',
-          'test-user',
-          '--confirmed-at',
-          '2026-05-19T00:00:00.000Z',
-        ])
-      ).toBe(0);
-      expect(
-        mainIngestArchitectureConfirmation([
-          '--action',
-          'check-state',
-          '--requirement-record',
-          fixture.recordPath,
-          '--confirmed-by',
-          'test-agent',
-          '--confirmed-at',
-          '2026-05-19T00:00:01.000Z',
-          '--json',
-        ])
-      ).toBe(0);
-      const active = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
-      expect(active.architectureConfirmationState.status).toBe('active');
-      expect(active.architectureConfirmationStateChecks ?? []).toHaveLength(0);
-      expect(active.lastEventType).toBe('mental_model_transition_recorded');
+      const before = readFileSync(fixture.recordPath, 'utf8');
+      const code = mainIngestArchitectureConfirmation([
+        '--action',
+        'check-state',
+        '--requirement-record',
+        fixture.recordPath,
+        '--confirmed-by',
+        'legacy-state-check-caller',
+        '--persist-state-check',
+        '--json',
+      ]);
 
-      active.sourceDocumentHash =
-        'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-      writeFileSync(fixture.recordPath, `${JSON.stringify(active, null, 2)}\n`, 'utf8');
-      expect(
-        mainIngestArchitectureConfirmation([
-          '--action',
-          'check-state',
-          '--requirement-record',
-          fixture.recordPath,
-          '--confirmed-by',
-          'test-agent',
-          '--confirmed-at',
-          '2026-05-19T00:00:02.000Z',
-        ])
-      ).toBe(1);
-      const stale = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
-      expect(stale.architectureConfirmationState.status).toBe('active');
-      expect(stale.architectureConfirmationStateChecks ?? []).toHaveLength(0);
-      expect(stale.gateChecks ?? []).toHaveLength(0);
-      expect(stale.lastEventType).toBe('mental_model_transition_recorded');
+      expect(code).toBe(2);
+      expect(readFileSync(fixture.recordPath, 'utf8')).toBe(before);
     } finally {
       removeTempTree(root);
     }
   });
 
-  it('persists architecture confirmation state checks only when explicitly requested', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'arch-confirm-state-check-persist-'));
-    try {
-      const fixture = writeFixture(root);
-      expect(
-        mainIngestArchitectureConfirmation([
-          '--architecture-confirmation',
-          fixture.architecturePath,
-          '--render-report',
-          fixture.reportPath,
-          '--requirement-record',
-          fixture.recordPath,
-          '--confirmation-text',
-          fixture.confirmationText,
-          '--confirmed-by',
-          'test-user',
-          '--confirmed-at',
-          '2026-05-19T00:00:00.000Z',
-        ])
-      ).toBe(0);
-      expect(
-        mainIngestArchitectureConfirmation([
-          '--action',
-          'check-state',
-          '--requirement-record',
-          fixture.recordPath,
-          '--confirmed-by',
-          'test-agent',
-          '--confirmed-at',
-          '2026-05-19T00:00:01.000Z',
-          '--persist-state-check',
-          '--json',
-        ])
-      ).toBe(0);
+  it('does not classify architecture_confirmation_state_checked as an action success event', () => {
+    const actionSource = readFileSync(
+      path.join(
+        process.cwd(),
+        'packages/bmad-speckit/src/main-agent/actions/ingest-architecture-confirmation.ts'
+      ),
+      'utf8'
+    );
 
-      const record = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
-      expect(record.architectureConfirmationState.status).toBe('active');
-      expect(record.architectureConfirmationStateChecks).toHaveLength(1);
-      expect(record.architectureConfirmationStateChecks[0]).toMatchObject({
-        eventType: 'architecture_confirmation_state_checked',
-        decision: 'pass',
-      });
-      expect(record.gateChecks).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            gate: 'architecture_confirmation_state',
-            decision: 'pass',
-          }),
-        ])
-      );
-    } finally {
-      removeTempTree(root);
-    }
+    expect(actionSource).not.toContain('architecture_confirmation_state_checked');
   });
 });

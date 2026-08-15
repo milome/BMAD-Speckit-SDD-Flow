@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/standalone-goal-semantic-ir.schema.json",
+  "title": "Standalone Goal Semantic IR",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "sourcePlanHash", "semanticPayload", "standaloneGoalSemanticIRHash"],
+  "properties": {
+    "schemaVersion": { "const": "StandaloneGoalSemanticIR/v1" },
+    "sourcePlanHash": { "$ref": "#/$defs/hash" },
+    "semanticPayload": {
+      "type": "object",
+      "required": ["obligations", "atoms", "logicalSpecSpans", "executionConstraints", "architecture"],
+      "properties": {
+        "obligations": { "type": "array", "minItems": 1, "items": { "type": "object" } },
+        "atoms": { "type": "array", "minItems": 1, "items": { "type": "object" } },
+        "logicalSpecSpans": { "type": "array", "items": { "type": "object" } },
+        "executionConstraints": { "type": "array", "minItems": 1, "items": { "type": "object" } },
+        "architecture": { "type": "object" }
+      }
+    },
+    "standaloneGoalSemanticIRHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": { "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" } }
+}

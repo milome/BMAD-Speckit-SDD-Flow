@@ -1,11 +1,11 @@
 {
   "schemaVersion": "goal-contract-profile.schema/v1",
   "profileId": "bmad-speckit-goal-execution-contract",
-  "profileVersion": "2.1.0",
+  "profileVersion": "3.0.0",
   "contractVersion": "goal-execution-contract/v1",
   "templatePath": "_bmad/shared/goal-contract/goal-execution-contract-template.md",
   "templateHash": "sha256:0b2903baf933aa6f658ba7613ed314862624ca3c0db5d193b9effae977240d70",
-  "profileHash": "sha256:4299a86e4d3c9bff9b18f1f94a9e0a38b26fb7edf742d2db89660431f5db0656",
+  "profileHash": "sha256:36004afb9cdc655243a2d0ee85e6e33cc109bc944415f6e28d22be787d182db0",
   "entryProfiles": {
     "req_trace_direct": {
       "sourceAuthority": "confirmed_implementation_confirmation_and_requirement_record",
@@ -63,16 +63,38 @@
         "dual_view_forbidden"
       ]
     },
+    "requirements_backed_goal": {
+      "sourceAuthority": "confirmed_requirements_architecture_and_readiness_authorities",
+      "requiredOutputs": [
+        "goal-run-root"
+      ],
+      "finalArtifactAuthority": "goal_active_execution_authority_tuple",
+      "compilerRoute": "shared_goal_execution_ir_compiler",
+      "dualViewPolicy": "forbidden",
+      "artifactRoles": {
+        "goal-run-root": "authority_bundle"
+      },
+      "requiredSections": [],
+      "requiredFrontMatterFields": [],
+      "requiredSlots": [],
+      "invariantFragments": [],
+      "requiredSemantics": [
+        "confirmed_requirements_semantic_source",
+        "shared_goal_execution_ir",
+        "zero_goal_judge_dispatch",
+        "atomic_goal_authority_handoff"
+      ]
+    },
     "standalone_goal_contract": {
       "sourceAuthority": "source_plan_or_bounded_conversation_snapshot",
       "requiredOutputs": [
         "*-goal-execution-plan.md"
       ],
-      "finalArtifactAuthority": "standalone_goal_execution_plan_markdown",
-      "compilerRoute": "standalone_dual_view_goal_contract_generator",
+      "finalArtifactAuthority": "goal_active_execution_authority_tuple",
+      "compilerRoute": "standalone_semantic_frontend_to_shared_goal_execution_ir_compiler",
       "dualViewPolicy": "required",
       "artifactRoles": {
-        "*-goal-execution-plan.md": "frozen_execution_authority"
+        "*-goal-execution-plan.md": "projection"
       },
       "requiredSections": [
         "Trace Slice Tracking Matrix",
@@ -99,13 +121,16 @@
         "stopConditions"
       ],
       "invariantFragments": [
-        "standalone Markdown contract is the frozen execution authority"
+        "standalone Markdown contract is a GoalExecutionIR projection"
       ],
       "requiredSemantics": [
         "standalone_trace_slice_tracking",
         "standalone_expected_evidence_registry",
         "deterministic_validation",
-        "hash_bound_three_perspective_audit"
+        "hash_bound_three_perspective_audit",
+        "standalone_goal_semantic_ir",
+        "shared_goal_execution_ir",
+        "atomic_goal_authority_handoff"
       ]
     }
   },
@@ -231,7 +256,8 @@
     "minimumRendererVersion": "1.0.0",
     "supportedMajorVersions": [
       1,
-      2
+      2,
+      3
     ]
   },
   "governanceRules": {

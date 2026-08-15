@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "main-agent-architecture-premise-authority.schema.json",
+  "title": "Main Agent Architecture Premise Authority",
+  "oneOf": [{ "$ref": "#/$defs/repositoryAuthority" }, { "$ref": "#/$defs/policyAuthority" }],
+  "$defs": {
+    "id": { "type": "string", "minLength": 1, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$" },
+    "nonEmptyString": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "logicalPath": {
+      "allOf": [
+        { "$ref": "#/$defs/nonEmptyString" },
+        {
+          "pattern": "^(?![A-Za-z]:)(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*//)(?!.*\/$).+$"
+        }
+      ]
+    },
+    "stringSet": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/nonEmptyString" }
+    },
+    "nonEmptyStringSet": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/nonEmptyString" }
+    },
+    "logicalPathSet": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/logicalPath" }
+    },
+    "constraintKindSet": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "enum": ["PATH", "CMD", "ART", "CTM", "EVDREQ", "STOP"] }
+    },
+    "impactRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["impactId", "whenConstraintKinds", "whenConstraintIds"],
+      "properties": {
+        "impactId": { "$ref": "#/$defs/id" },
+        "whenConstraintKinds": { "$ref": "#/$defs/constraintKindSet" },
+        "whenConstraintIds": { "$ref": "#/$defs/stringSet" }
+      }
+    },
+    "triggerRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["triggerId", "whenConstraintKinds", "whenConstraintIds"],
+      "properties": {
+        "triggerId": { "$ref": "#/$defs/id" },
+        "whenConstraintKinds": { "$ref": "#/$defs/constraintKindSet" },
+        "whenConstraintIds": { "$ref": "#/$defs/stringSet" }
+      }
+    },
+    "ownershipRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targetPath", "owner"],
+      "properties": {
+        "targetPath": { "$ref": "#/$defs/logicalPath" },
+        "owner": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "forbiddenScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["paths"],
+      "properties": { "paths": { "$ref": "#/$defs/logicalPathSet" } }
+    },
+    "repositoryAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "authorityKind",
+        "authorityRole",
+        "authorityId",
+        "allowedTargetPaths",
+        "consumerImpactRules",
+        "triggerRules"
+      ],
+      "properties": {
+        "schemaVersion": { "const": "ArchitecturePremiseAuthority/v1" },
+        "authorityKind": { "const": "repository" },
+        "authorityRole": { "const": "repository_authority" },
+        "authorityId": { "$ref": "#/$defs/id" },
+        "allowedTargetPaths": { "$ref": "#/$defs/logicalPathSet" },
+        "consumerImpactRules": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/impactRule" }
+        },
+        "triggerRules": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/triggerRule" }
+        }
+      }
+    },
+    "policyAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "authorityKind",
+        "authorityRole",
+        "authorityId",
+        "forbiddenScope",
+        "ownershipRules",
+        "isolationSelection",
+        "governanceImpactRules",
+        "triggerRules"
+      ],
+      "properties": {
+        "schemaVersion": { "const": "ArchitecturePremiseAuthority/v1" },
+        "authorityKind": { "const": "policy" },
+        "authorityRole": { "const": "policy_authority" },
+        "authorityId": { "$ref": "#/$defs/id" },
+        "forbiddenScope": { "$ref": "#/$defs/forbiddenScope" },
+        "ownershipRules": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/ownershipRule" }
+        },
+        "isolationSelection": { "$ref": "#/$defs/nonEmptyString" },
+        "governanceImpactRules": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/impactRule" }
+        },
+        "triggerRules": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/triggerRule" }
+        }
+      }
+    }
+  }
+}

@@ -873,58 +873,43 @@ The HTML must answer:
 
 ### 6a. Prepare Architecture Confirmation Page When Architecture Confirmation Applies
 
-When the current requirement needs full architecture confirmation or an existing `architectureConfirmationState` is stale, use the skill-local prepare entry. Do not ask the user to run `architecture_confirmation_state_checked`, manually generate architecture JSON, or call the renderer directly as the normal workflow.
+When architecture confirmation applies, invoke the canonical package action with only the current request identity:
+
+```bash
+bmad-speckit main-agent prepare-architecture-confirmation --request-id <requestId> --json
+```
+
+The package action is the only public architecture confirmation producer. It resolves the confirmed Requirements authority, derives `ArchitectureConfirmationCandidate/v1`, computes `architectureConfirmationCandidateHash`, and publishes the candidate plus its deterministic HTML page in one controlled package runtime. Caller-derived architecture inputs must fail closed, including source, target, consumer impact, governance impact, trigger matrix, candidate, hash, and result overrides.
+
+The skill-local prepare script is a request-id-only compatibility wrapper:
 
 ```bash
 node <skill-dir>/scripts/prepare-architecture-confirmation-page.ts \
-  --source <source-document.md> \
-  --requirement-record _bmad-output/runtime/requirement-records/<recordId>/requirement-record.json \
-  --run-id <runId> \
-  --target-paths <json-array-or-file> \
-  --consumer-impact-scan <json-array-or-file> \
-  --governance-impact-scan <json-array-or-file> \
-  --full-architecture-trigger-matrix <json-array-or-file> \
-  --localization <authoring-agent-zh-CN-localization.json> \
-  --out _bmad-output/runtime/requirement-records/<recordId>/architecture/architecture-confirmation-<runId>.html \
-  --language zh-CN \
+  --request-id <requestId> \
   --json
 ```
 
-The prepare entry is part of this skill. It must automatically:
+It must delegate to the package action without deriving candidate fields, generating a second artifact, recomputing hashes, or calling the skill-local legacy generator. Initial prepare must not write `architecture_confirmation_state_checked`; currentness is established from the canonical Requirements authority during package preparation, not by a pre-accept state-check event.
 
-- record `architecture_confirmation_state_checked` through controlled ingest before rendering,
-- generate requirement-scoped `architecture-confirmation-<runId>.json`,
-- render the user-facing architecture confirmation HTML,
-- write a prepare report with the internal step results and the user-facing confirmation instruction.
+`generate-architecture-confirmation-artifact.ts` is a request-id-only compatibility wrapper for the same package action. Derived producer flags such as `--source`, `--target-paths`, impact scans, decisions, risk, rollback, candidate, hash, or result must be rejected.
 
-For `zh-CN` or `bilingual`, the main-session authoring agent must create the localization
-bundle before prepare. The bundle must contain semantic Chinese projections for every
-consumer impact row, governance impact row, trigger row, risk statement, rollback plan,
-and every required business/governance diagram title, description, and Mermaid label.
-The producer persists these projections as `*Zh` fields. The renderer only selects the
-requested projection and must fail closed when any required Chinese projection is
-missing or non-CJK; it must not translate business content, synthesize fixed prefixes,
-or fall back to English.
+The package action returns `candidateRef`, `pageRef`, `architectureConfirmationCandidateHash`, and `exactConfirmationText`. Present the published page and require the user to return `exactConfirmationText` exactly. Do not accept a paraphrase, a hash-only reply, or confirmation against a caller-supplied candidate.
 
-The user-facing next step is only to open the architecture confirmation HTML and confirm the hashes in chat. Do not expose stale check or JSON producer commands as manual user steps.
+After exact acceptance, use only the canonical ingest contract:
 
-The architecture JSON producer and renderer are also part of this skill. Do not create temporary scripts, hand-written HTML, or root-level wrappers to generate or render architecture confirmation pages.
+```bash
+bmad-speckit main-agent ingest-architecture-confirmation \
+  --request-id <requestId> \
+  --architecture-confirmation-candidate-hash <architectureConfirmationCandidateHash> \
+  --exact-confirmation-text "<exactConfirmationText>" \
+  --json
+```
 
-Required outputs:
+Public ingest must reject legacy artifact paths, render reports, caller identities, timestamps, `--action check-state`, and `--persist-state-check`. Historical `architecture_confirmation_state_checked` events may be canonicalized while replaying old records, but no new event of that type may be written by prepare or ingest.
 
-- `architecture-confirmation-<runId>.json`
-- `architecture-confirmation-<runId>.html`
-- `architecture-confirmation-<runId>.summary.json`
-- `architecture-confirmation-<runId>.render-report.json`
-- `architecture-confirmation-<runId>.prepare-report.json`
+The skill-local architecture renderer is projection-only compatibility surface over `ArchitectureConfirmationCandidate/v1`. The canonical package producer already publishes the confirmation page. The compatibility renderer must not derive or recompute candidate identity, currentness, source hashes, impact scans, decisions, or acceptance state.
 
-The architecture JSON producer must only generate the evidence artifact. It must not write `architectureConfirmationState`, append `architectureConfirmations[]`, write `confirmationHistory[]`, or mark architecture confirmation active.
-
-The architecture renderer is a read-only projection over `architecture-confirmation-<runId>.json`. It must not write `requirement-record.json`, change `architectureConfirmationState`, append `architectureConfirmations[]`, write `confirmationHistory[]`, or mark architecture confirmation active.
-
-The page must show the requirement-scoped decision, consumer impact scan, governance impact scan, full architecture trigger matrix, target paths, hash recipe, stale input hashes, risk statement, rollback plan, evidence refs, exact confirmation phrase, and artifact metadata.
-
-If the prepare entry, producer, or architecture renderer reports missing core fields, hash mismatch, recipe mismatch, missing impact scans, missing trigger matrix, missing target paths, or missing localization projections, stop before Implementation Readiness. Do not use an older architecture HTML projection or a manually assembled fallback page.
+If canonical prepare or ingest reports a blocked result, stop before Implementation Readiness. Do not use an older architecture projection, the legacy derived producer surface, or a manually assembled fallback page.
 
 ### 7. Confirm In Chat With Hashes
 

@@ -61,6 +61,14 @@ authoritySources:
     rootClass: rule
     proposedAuthorityClass: derived
     bodySchemaVersion: requirements-contract-rule-root/v1
+  - path: architecture/repository-premise-authority.json
+    rootClass: repository_authority
+    proposedAuthorityClass: architecture_premise_authority
+    bodySchemaVersion: ArchitecturePremiseAuthority/v1
+  - path: policy/architecture-premise-authority.json
+    rootClass: policy_authority
+    proposedAuthorityClass: architecture_premise_authority
+    bodySchemaVersion: ArchitecturePremiseAuthority/v1
   - path: tests/refund-batch-contract-test.json
     rootClass: acceptance
     proposedAuthorityClass: derived

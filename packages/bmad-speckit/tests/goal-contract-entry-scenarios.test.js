@@ -37,10 +37,11 @@ function capturedFailureClass(run) {
 }
 
 describe('goal-contract entry scenarios', () => {
-  it('freezes the three exact entry authority contracts', () => {
+  it('freezes the four exact entry authority contracts', () => {
     assert.deepEqual(Object.keys(ENTRY_SCENARIOS).sort(), [
       'main_agent_compile',
       'req_trace_direct',
+      'requirements_backed_goal',
       'standalone_goal_contract',
     ]);
 
@@ -59,16 +60,29 @@ describe('goal-contract entry scenarios', () => {
     assert.deepEqual(standalone.requiredOutputs, ['*-goal-execution-plan.md']);
     assert.equal(
       standalone.finalArtifactAuthority,
-      'standalone_goal_execution_plan_markdown'
+      'goal_active_execution_authority_tuple'
     );
     assert.equal(standalone.dualViewPolicy, 'required');
     assert.equal(
       standalone.compilerRoute,
-      'standalone_dual_view_goal_contract_generator'
+      'standalone_semantic_frontend_to_shared_goal_execution_ir_compiler'
     );
+
+    const requirementsBacked = ENTRY_SCENARIOS.requirements_backed_goal;
+    assert.equal(
+      requirementsBacked.sourceAuthority,
+      'confirmed_requirements_architecture_and_readiness_authorities'
+    );
+    assert.deepEqual(requirementsBacked.requiredOutputs, ['goal-run-root']);
+    assert.equal(
+      requirementsBacked.finalArtifactAuthority,
+      'goal_active_execution_authority_tuple'
+    );
+    assert.equal(requirementsBacked.compilerRoute, 'shared_goal_execution_ir_compiler');
+    assert.equal(requirementsBacked.dualViewPolicy, 'forbidden');
   });
 
-  it('resolves the backward-compatible 2.1 standalone overlay', () => {
+  it('resolves the v3 shared GoalExecutionIR standalone overlay', () => {
     const validation = validateEntryProfile(PROFILE, 'standalone_goal_contract');
     const resolved = resolveEntryProfileOverlay(
       PROFILE,
@@ -76,11 +90,11 @@ describe('goal-contract entry scenarios', () => {
     );
 
     assert.equal(validation.decision, 'pass');
-    assert.equal(PROFILE.profileVersion, '2.1.0');
+    assert.equal(PROFILE.profileVersion, '3.0.0');
     assert.equal(resolved.entryScenario, 'standalone_goal_contract');
     assert.equal(
       resolved.finalArtifactAuthority,
-      'standalone_goal_execution_plan_markdown'
+      'goal_active_execution_authority_tuple'
     );
     assert.ok(
       resolved.requiredSections.includes('Trace Slice Tracking Matrix')
@@ -88,7 +102,7 @@ describe('goal-contract entry scenarios', () => {
     assert.ok(resolved.requiredSections.includes('Expected Evidence Freeze'));
     assert.ok(
       resolved.invariantFragments.includes(
-        'standalone Markdown contract is the frozen execution authority'
+        'standalone Markdown contract is a GoalExecutionIR projection'
       )
     );
     assert.deepEqual(
@@ -132,6 +146,10 @@ describe('goal-contract entry scenarios', () => {
       resolveEntryScenario(['standalone_goal_contract']).entryScenario,
       'standalone_goal_contract'
     );
+    assert.equal(
+      resolveEntryScenario(['requirements_backed_goal']).entryScenario,
+      'requirements_backed_goal'
+    );
   });
 
   it('fails closed on authority, output, and dual-view mismatches', () => {
@@ -167,6 +185,14 @@ describe('goal-contract entry scenarios', () => {
         dualViewRequested: true,
       }).failureClass,
       'entry_dual_view_forbidden'
+    );
+    assert.equal(
+      validateEntryAuthority({
+        entryScenario: 'requirements_backed_goal',
+        sourceAuthority: 'confirmed_requirements_architecture_and_readiness_authorities',
+        requestedOutputs: ['goal-run-root'],
+      }).decision,
+      'pass'
     );
   });
 });

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/goal-contract-resolved-evidence-index.schema.json",
+  "title": "Goal Contract Resolved Evidence Index",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "profile", "goalExecutionIRHash", "goalSourceBindingHash", "resolutions", "resolvedEvidenceIndexHash"],
+  "properties": {
+    "schemaVersion": { "const": "GoalContractResolvedEvidenceIndex/v1" },
+    "profile": { "enum": ["requirements_backed", "standalone"] },
+    "goalExecutionIRHash": { "$ref": "#/$defs/hash" },
+    "goalSourceBindingHash": { "$ref": "#/$defs/hash" },
+    "requirementsBindingRevisionId": { "type": "string", "minLength": 1 },
+    "resolutions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["goalObligationId", "logicalSpecSpanRefs", "evidenceClaimRefs"],
+        "properties": {
+          "goalObligationId": { "type": "string", "minLength": 1 },
+          "logicalSpecSpanRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+          "evidenceClaimRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+        }
+      }
+    },
+    "resolvedEvidenceIndexHash": { "$ref": "#/$defs/hash" }
+  },
+  "allOf": [
+    { "if": { "properties": { "profile": { "const": "requirements_backed" } } }, "then": { "required": ["requirementsBindingRevisionId"] } },
+    { "if": { "properties": { "profile": { "const": "standalone" } } }, "then": { "not": { "required": ["requirementsBindingRevisionId"] } } }
+  ],
+  "$defs": { "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" } }
+}

@@ -93,6 +93,68 @@ describe('Requirements production-entry confirmation', () => {
         },
       });
       expect(provider.requests).toHaveLength(1);
+
+      const sourceBinding = JSON.parse(
+        fs.readFileSync(
+          path.join(recordRoot, ...record.activeAuthority.activeSourceBindingPath.split('/')),
+          'utf8'
+        )
+      );
+      expect(sourceBinding.sourceArtifacts).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            sourceArtifactId: 'repo-refund-architecture-premise',
+            role: 'repository_authority',
+            immutableBlobRef: 'architecture/repository-premise-authority.json',
+          }),
+          expect.objectContaining({
+            sourceArtifactId: 'policy-refund-architecture-premise',
+            role: 'policy_authority',
+            immutableBlobRef: 'policy/architecture-premise-authority.json',
+          }),
+        ])
+      );
+      const semanticIrPath = path.join(
+        recordRoot,
+        ...record.activeAuthority.activeSemanticIrPath.split('/')
+      );
+      const semanticIrBeforeArchitecture = fs.readFileSync(semanticIrPath, 'utf8');
+      const prepared = await spawnMainAgent(consumerRoot, 'prepare-architecture-confirmation', [
+        '--request-id',
+        requestId,
+      ]);
+      expect(prepared).toMatchObject({
+        action: 'prepare-architecture-confirmation',
+        status: 'user_confirmable',
+        exitCode: 0,
+        data: {
+          result: {
+            status: 'user_confirmable',
+            architectureConfirmationCandidateHash: expect.any(String),
+          },
+        },
+      });
+      const architectureResult = prepared.data.result as Record<string, any>;
+      const architectureCandidate = JSON.parse(
+        fs.readFileSync(
+          path.join(consumerRoot, ...architectureResult.candidateRef.path.split('/')),
+          'utf8'
+        )
+      );
+      expect(architectureCandidate).toMatchObject({
+        logicalScope: { targetPaths: ['src/refunds/batch-refund-service.ts'] },
+        isolation: { mode: 'consumer_worktree' },
+        ownership: [
+          {
+            targetPath: 'src/refunds/batch-refund-service.ts',
+            owner: 'refund_platform_owner',
+            basisRefs: expect.any(Array),
+          },
+        ],
+      });
+      expect(fs.readFileSync(semanticIrPath, 'utf8')).toBe(semanticIrBeforeArchitecture);
+      expect(fs.existsSync(path.join(recordRoot, 'implementation-readiness'))).toBe(false);
+      expect(fs.existsSync(path.join(recordRoot, 'goal'))).toBe(false);
     } finally {
       await provider.close();
     }

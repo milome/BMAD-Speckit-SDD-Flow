@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/goal-contract-source-binding-refresh-receipt.schema.json",
+  "title": "Goal Contract Source Binding Refresh Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "profile", "goalExecutionIRHash", "fromGoalSourceBindingHash", "toGoalSourceBindingHash", "toResolvedEvidenceIndexHash", "decision", "semanticCompileCount", "judgeDispatchCount", "refreshReceiptHash"],
+  "properties": {
+    "schemaVersion": { "const": "GoalContractSourceBindingRefreshReceipt/v1" },
+    "profile": { "enum": ["requirements_backed", "standalone"] },
+    "goalExecutionIRHash": { "$ref": "#/$defs/hash" },
+    "fromGoalSourceBindingHash": { "$ref": "#/$defs/hash" },
+    "toGoalSourceBindingHash": { "$ref": "#/$defs/hash" },
+    "toResolvedEvidenceIndexHash": { "$ref": "#/$defs/hash" },
+    "decision": { "const": "binding_only_refreshed" },
+    "semanticCompileCount": { "const": 0 },
+    "judgeDispatchCount": { "const": 0 },
+    "refreshReceiptHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": { "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" } }
+}

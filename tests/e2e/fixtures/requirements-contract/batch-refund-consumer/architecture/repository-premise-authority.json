@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "requirements-contract-authority-source/v1",
+  "sourceRootId": "repo-refund-architecture-premise",
+  "semanticBody": {
+    "schemaVersion": "ArchitecturePremiseAuthority/v1",
+    "authorityKind": "repository",
+    "authorityRole": "repository_authority",
+    "authorityId": "repo-refund-architecture-premise",
+    "allowedTargetPaths": ["src/refunds/batch-refund-service.ts"],
+    "consumerImpactRules": [
+      {
+        "impactId": "consumer:refund-queue-target",
+        "whenConstraintKinds": ["PATH"],
+        "whenConstraintIds": []
+      }
+    ],
+    "triggerRules": [
+      {
+        "triggerId": "architecture:refund-queue-target",
+        "whenConstraintKinds": ["PATH"],
+        "whenConstraintIds": []
+      },
+      {
+        "triggerId": "architecture:refund-queue-toolchain",
+        "whenConstraintKinds": ["CMD", "ART", "EVDREQ"],
+        "whenConstraintIds": []
+      }
+    ]
+  }
+}

@@ -269,282 +269,488 @@ function runRenderer(args: string[]) {
   });
 }
 
+function runRendererFrom(script: string, cwd: string, args: string[]) {
+  return spawnSync(process.execPath, [script, ...args], {
+    cwd,
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      NODE_PATH: path.join(ROOT, 'node_modules'),
+    },
+  });
+}
+
 describe('render-architecture-confirmation-html', () => {
-  it('renders a full architecture confirmation HTML projection and machine reports', () => {
-    const source = writeArchitectureConfirmation();
+  function canonicalCandidate(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+    return {
+      schemaVersion: 'ArchitectureConfirmationCandidate/v1',
+      requestId: 'REQ-ARCH-HTML',
+      requirementsLineage: {
+        recordId: 'REQ-ARCH-HTML',
+        semanticRevisionId: 'semantic-revision-001',
+        scopeSemanticHash:
+          'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        executionConstraintRegistryHash:
+          'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+        technicalExecutionClosure: 'pass',
+      },
+      pinnedPremises: [
+        {
+          premiseId: 'policy-refund-worker',
+          authorityRole: 'policy_authority',
+          mediaType: 'application/json',
+          sourceSnapshotHash:
+            'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+        },
+        {
+          premiseId: 'repo-refund-worker',
+          authorityRole: 'repository_authority',
+          mediaType: 'application/json',
+          sourceSnapshotHash:
+            'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+        },
+      ],
+      logicalScope: {
+        targetPaths: ['src/refund-worker.ts'],
+        forbiddenPaths: ['.git/**'],
+      },
+      ownership: [
+        {
+          targetPath: 'src/refund-worker.ts',
+          owner: 'requirements_backed_main_agent',
+          basisRefs: ['PATH-refund-worker', 'policy-refund-worker'],
+        },
+      ],
+      toolchain: {
+        commands: [
+          {
+            commandId: 'CMD-refund-worker-test',
+            invocation: 'npm test -- refund-worker.test.ts',
+            basisRefs: ['CMD-refund-worker-test'],
+          },
+        ],
+        artifacts: [
+          {
+            premiseId: 'ART-refund-worker-output',
+            kind: 'ART',
+            value: 'dist/refund-worker.js',
+            basisRefs: ['ART-refund-worker-output'],
+          },
+        ],
+        evidenceRequirements: [
+          {
+            premiseId: 'EVDREQ-refund-worker-red-green',
+            kind: 'EVDREQ',
+            value: 'refund-worker RED/GREEN evidence',
+            basisRefs: ['EVDREQ-refund-worker-red-green'],
+          },
+        ],
+      },
+      isolation: {
+        mode: 'consumer_worktree',
+        forbiddenPaths: ['.git/**'],
+        basisRefs: ['PATH-refund-worker', 'STOP-refund-worker-forbidden'],
+      },
+      consumerImpact: [
+        {
+          impactId: 'consumer:logical-targets',
+          status: 'applicable',
+          basisRefs: ['PATH-refund-worker', 'repo-refund-worker'],
+        },
+      ],
+      governanceImpact: [
+        {
+          impactId: 'governance:pinned-policy',
+          status: 'applicable',
+          basisRefs: ['policy-refund-worker'],
+        },
+      ],
+      triggerMatrix: [
+        {
+          triggerId: 'architecture:target-scope',
+          triggered: true,
+          basisRefs: ['PATH-refund-worker'],
+        },
+        {
+          triggerId: 'architecture:toolchain',
+          triggered: true,
+          basisRefs: ['CMD-refund-worker-test'],
+        },
+        {
+          triggerId: 'architecture:governance',
+          triggered: true,
+          basisRefs: ['policy-refund-worker'],
+        },
+        {
+          triggerId: 'architecture:execution-structure',
+          triggered: true,
+          basisRefs: ['CTM-refund-worker-slice'],
+        },
+      ],
+      architectureDecisions: [
+        {
+          decisionId: 'ARCH-OWNERSHIP-1',
+          decisionType: 'ownership',
+          selection: 'requirements_backed_main_agent:src/refund-worker.ts',
+          basisRefs: ['PATH-refund-worker', 'policy-refund-worker'],
+        },
+        {
+          decisionId: 'ARCH-TOOLCHAIN-1',
+          decisionType: 'toolchain',
+          selection: 'npm test -- refund-worker.test.ts',
+          basisRefs: ['CMD-refund-worker-test'],
+        },
+        {
+          decisionId: 'ARCH-ISOLATION-1',
+          decisionType: 'isolation',
+          selection: 'consumer_worktree',
+          basisRefs: ['PATH-refund-worker', 'STOP-refund-worker-forbidden'],
+        },
+        {
+          decisionId: 'ARCH-STRUCTURE-1',
+          decisionType: 'execution_structure',
+          selection: 'refund-worker vertical slice',
+          basisRefs: ['CTM-refund-worker-slice'],
+        },
+      ],
+      goalExecutionStructurePremises: [
+        {
+          premiseId: 'CTM-refund-worker-slice',
+          kind: 'CTM',
+          value: 'refund-worker vertical slice',
+          basisRefs: ['CTM-refund-worker-slice'],
+        },
+      ],
+      architectureConfirmationCandidateHash:
+        'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ...overrides,
+    };
+  }
+
+  function writeCandidate(candidate: Record<string, unknown>): string {
+    const source = path.join(tempDir, 'architecture-confirmation-candidate.json');
+    fs.writeFileSync(
+      source,
+      `${JSON.stringify(candidate, null, 2)}\n`,
+      'utf8'
+    );
+    return source;
+  }
+
+  function writeCanonicalCandidate(overrides: Record<string, unknown> = {}): string {
+    return writeCandidate(canonicalCandidate(overrides));
+  }
+
+  it('renders only a canonical ArchitectureConfirmationCandidate projection', () => {
+    const source = writeCanonicalCandidate();
+    const before = fs.readFileSync(source, 'utf8');
     const out = path.join(tempDir, 'architecture-confirmation.html');
     const result = runRenderer([
-      '--architecture-confirmation',
+      '--architecture-confirmation-candidate',
       source,
       '--out',
       out,
-      '--language',
-      'zh-CN',
       '--json',
     ]);
 
-    expect(result.status).toBe(0);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      schemaVersion: 'architecture-confirmation-projection-result/v1',
+      ok: true,
+      architectureConfirmationCandidateHash:
+        'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    });
     expect(fs.existsSync(out)).toBe(true);
     const html = fs.readFileSync(out, 'utf8');
-    expect(html).toContain('REQ-ARCH-HTML 架构确认草案');
-    expect(html).toContain('命中 1 个完整架构触发项');
-    expect(html).toContain('>可确认</span>');
-    expect(html).toContain('>草案</span>');
-    expect(html).toContain('<strong>阻断项：</strong>无');
-    expect(html).toContain('id="architecture-delta"');
-    expect(html).toContain('class="review-flow"');
-    expect(html).toContain('class="review-step"');
-    expect(html).toContain('本次架构确认重点');
-    expect(html).toContain('重点影响行');
-    expect(html).toContain('有效路径样例');
-    expect(html).toContain('消费项目影响扫描');
-    expect(html).toContain('治理系统影响扫描');
-    expect(html).toContain('完整架构触发矩阵');
-    expect(html).toContain('id="business-architecture-diagrams"');
-    expect(html).toContain('id="governance-architecture-diagrams"');
-    expect(html).toContain('业务架构图谱');
-    expect(html).toContain('治理架构图谱');
-    expect(html).toContain('业务system_architecture架构图');
-    expect(html).toContain('数据模型');
-    expect(html).toContain('模式变更需要架构确认。');
-    expect(html).toContain('共享模式或契约发生变更');
-    expect(html).toContain('错误的架构边界可能导致共享契约冲突和不安全的状态推进。');
-    expect(html).toContain('拒绝本次架构确认并基于已确认需求重新生成架构工件。');
-    expect(html).toContain('用户');
-    expect(html).not.toContain('Display Settings System Architecture Diagram');
-    expect(html).not.toContain('Fixture architecture risk statement.');
-    expect(html).toContain('系统架构图');
-    expect(html).toContain('部署图');
-    expect(html).toContain('类图');
-    expect(html).toContain('泳道图');
-    expect(html).toContain('状态机图');
-    expect(html).toContain('时序图');
-    expect(html).toContain('活动图');
-    expect(html.match(/data-diagram-viewer/g)?.length).toBeGreaterThanOrEqual(2);
-    expect(html.match(/class="diagram-tab/g)?.length).toBeGreaterThanOrEqual(
-      requiredArchitectureDiagramTypes.length * 2
-    );
-    expect(html.match(/class="diagram-card/g)?.length).toBeGreaterThanOrEqual(
-      requiredArchitectureDiagramTypes.length * 2
-    );
-    expect(html).not.toContain('architecture-diagram-grid');
-    expect(html).toContain('startOnLoad: false');
-    expect(html).toContain('data-mermaid-source');
-    expect(html).toContain('data-mermaid-render');
-    expect(html).toContain('class="mermaid-source-native"');
-    expect(html).toContain('class="mermaid-native-render"');
-    expect(html).toContain('class="mermaid-runtime-status ok"');
-    expect(html).toContain('fallback-diagram');
-    expect(html).toContain('Mermaid 源码和 diagramHash');
-    expect(html).toContain('renderNativeMermaid');
-    expect(html).toContain('window.mermaid.render(');
-    expect(html).toContain('split(/\\s+/)');
-    expect(html).not.toContain('split(/s+/)');
-    expect(html).toContain("svg.setAttribute('width', String(naturalWidth))");
-    expect(html).toContain("svg.setAttribute('height', String(naturalHeight))");
-    expect(html).not.toContain('pre.architecture-mermaid:not([data-processed])');
-    expect(html).not.toContain('class="mermaid architecture-mermaid"');
-    expect(html).not.toContain('window.mermaid.run({ nodes })');
-    expect(html).toContain('确认架构确认进入实施准备');
-    expect(html).toContain('data-copy-target="architecture-confirmation-phrase"');
-    expect(html).toContain('id="architecture-confirmation-phrase"');
-    expect(html).toContain('复制确认口令');
-    expect(html).toContain('data-copy-status');
-    expect(html).toContain('--shadow:none');
-    expect(html).toContain('.mermaid-native-render{display:block;min-width:max-content;min-height:210px');
-    expect(html).toContain('.mermaid-native-render svg{display:block;margin:0 !important;max-width:none !important;overflow:visible}');
-    expect(html).toContain('function inferMermaidDiagramKind(source)');
-    expect(html).toContain("target.dataset.diagramKind = diagramKind");
-    expect(html).toContain("svg.classList.add('normalized-mermaid-svg')");
-    expect(html).toContain('.mermaid-native-render[data-diagram-kind="flowchart"]');
-    expect(html).toContain('.mermaid-native-render[data-diagram-kind="class"]');
-    expect(html).toContain('.mermaid-native-render[data-diagram-kind="state"]');
-    expect(html).toContain('.rendered-mermaid{background:transparent;border-radius:0}');
-    expect(html).toContain('class="rendered-mermaid compact-flow"');
-    expect(html).toContain('class="flow-step-card');
-    expect(html).toContain('data-density="compact-card-flow"');
-    expect(html).toContain('main.layout{display:grid;grid-template-columns:280px minmax(0,1fr)');
+    expect(html).toContain('REQ-ARCH-HTML');
+    expect(html).toContain('src/refund-worker.ts');
+    expect(html).toContain('.git/**');
+    expect(html).toContain('policy-refund-worker');
+    expect(html).toContain('repository_authority');
+    expect(html).toContain('requirements_backed_main_agent');
+    expect(html).toContain('PATH-refund-worker');
+    expect(html).toContain('npm test -- refund-worker.test.ts');
+    expect(html).toContain('dist/refund-worker.js');
+    expect(html).toContain('refund-worker RED/GREEN evidence');
+    expect(html).toContain('consumer_worktree');
+    expect(html).toContain('consumer:logical-targets');
+    expect(html).toContain('governance:pinned-policy');
+    expect(html).toContain('architecture:target-scope');
+    expect(html).toContain('architecture:toolchain');
+    expect(html).toContain('architecture:governance');
+    expect(html).toContain('architecture:execution-structure');
+    expect(html).toContain('execution_structure');
+    expect(html).toContain('refund-worker vertical slice');
     expect(html).toContain(
-      '.hero,.card{background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none'
+      'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
     );
-    expect(html).toContain('counter-reset:arch-section');
-    expect(html).toContain(
-      '.card>h2::before,.section-title h2::before{counter-increment:arch-section'
+    expect(html).not.toContain('immutableBlobRef');
+    expect(html).not.toContain('citation-refund-worker');
+    expect(fs.readFileSync(source, 'utf8')).toBe(before);
+    expect(fs.existsSync(path.join(tempDir, 'architecture-confirmation.summary.json'))).toBe(false);
+    expect(fs.existsSync(path.join(tempDir, 'architecture-confirmation.render-report.json'))).toBe(
+      false
     );
-    expect(html).toContain(
-      '.table-wrap{overflow-x:auto;overflow-y:auto;border:1px solid var(--line);border-radius:0;min-width:0;max-width:100%;scrollbar-gutter:stable;background:#fff}'
-    );
-    expect(html).toContain(
-      '.table-wrap table{width:max-content;min-width:100%;border-collapse:collapse;background:#fff;table-layout:auto}'
-    );
-    const architectureDeltaSection = html.slice(
-      html.indexOf('id="architecture-delta"'),
-      html.indexOf('id="impact"')
-    );
-    expect(architectureDeltaSection).toContain('class="review-flow"');
-    expect(architectureDeltaSection.match(/class="review-step"/g)?.length).toBeGreaterThanOrEqual(
-      3
-    );
-    expect(architectureDeltaSection).not.toContain('class="grid"');
-    const impactSection = html.slice(html.indexOf('id="impact"'), html.indexOf('id="triggers"'));
-    expect(impactSection).toContain('class="review-flow"');
-    expect(impactSection).not.toContain('class="grid"');
-
-    const report = JSON.parse(
-      fs.readFileSync(path.join(tempDir, 'architecture-confirmation.render-report.json'), 'utf8')
-    );
-    expect(report.confirmability).toBe('confirmable');
-    expect(report.htmlRef).toMatchObject({
-      artifactType: 'architecture_confirmation_view',
-      sourceOfTruthRole: 'projection',
-    });
-    expect(report.htmlRef.hash).toMatch(/^sha256:[a-f0-9]{64}$/u);
-    expect(report.confirmInstruction).toContain('architectureConfirmationArtifactHash=sha256:');
-
-    const summary = JSON.parse(
-      fs.readFileSync(path.join(tempDir, 'architecture-confirmation.summary.json'), 'utf8')
-    );
-    expect(summary.counts).toMatchObject({
-      targetPaths: 2,
-      consumerImpactScan: 2,
-      governanceImpactScan: 1,
-      fullArchitectureTriggerMatrix: 2,
-      businessArchitectureDiagrams: requiredArchitectureDiagramTypes.length,
-      governanceArchitectureDiagrams: requiredArchitectureDiagramTypes.length,
-    });
-    expect(
-      summary.businessArchitectureDiagrams.map((view: Record<string, unknown>) => view.type)
-    ).toEqual(requiredArchitectureDiagramTypes);
-    expect(
-      summary.governanceArchitectureDiagrams.map((view: Record<string, unknown>) => view.type)
-    ).toEqual(requiredArchitectureDiagramTypes);
-    expect(summary.architectureDelta.counts).toMatchObject({
-      targetPaths: 2,
-      triggeredConsumerImpacts: 1,
-      triggeredGovernanceImpacts: 1,
-      triggeredArchitectureRules: 1,
-    });
-    expect(summary.architectureDelta.reviewFocus.length).toBeGreaterThanOrEqual(3);
   });
 
-  it('blocks when the architecture confirmation artifact hash is stale', () => {
-    const source = writeArchitectureConfirmation();
-    const stale = JSON.parse(fs.readFileSync(source, 'utf8')) as Record<string, unknown>;
-    stale.architectureConfirmationArtifactHash =
-      'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-    stale.artifactHash = 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-    fs.writeFileSync(source, `${JSON.stringify(stale, null, 2)}\n`, 'utf8');
-    const out = path.join(tempDir, 'architecture-confirmation.html');
+  it('does not recompute candidate identity or currentness', () => {
+    const source = writeCanonicalCandidate({
+      logicalScope: { targetPaths: ['src/changed-after-hash.ts'], forbiddenPaths: [] },
+    });
+    const out = path.join(tempDir, 'projection-only.html');
     const result = runRenderer([
-      '--architecture-confirmation',
+      '--architecture-confirmation-candidate',
       source,
       '--out',
       out,
-      '--language',
-      'zh-CN',
       '--json',
     ]);
 
-    expect(result.status).toBe(1);
-    const report = JSON.parse(
-      fs.readFileSync(path.join(tempDir, 'architecture-confirmation.render-report.json'), 'utf8')
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(fs.readFileSync(out, 'utf8')).toContain(
+      'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
     );
-    expect(report.confirmability).toBe('blocked');
-    expect(report.blockingIssues).toContain('architecture_confirmation_artifact_hash_mismatch');
   });
 
-  it('fails closed for zh-CN when authoring-agent Chinese projections are missing', () => {
-    const source = writeArchitectureConfirmation({
-      consumerImpactScan: [
+  it('resolves and enforces the candidate schema from an installed consumer package', () => {
+    const projectRoot = path.join(tempDir, 'consumer-project');
+    const consumerScriptRoot = path.join(
+      projectRoot,
+      '_bmad',
+      'skills',
+      'requirements-contract-authoring',
+      'scripts'
+    );
+    fs.cpSync(
+      path.join(ROOT, '_bmad', 'skills', 'requirements-contract-authoring'),
+      path.join(projectRoot, '_bmad', 'skills', 'requirements-contract-authoring'),
+      { recursive: true }
+    );
+    fs.cpSync(
+      path.join(ROOT, '_bmad', 'shared', 'skill-runtime'),
+      path.join(projectRoot, '_bmad', 'shared', 'skill-runtime'),
+      { recursive: true }
+    );
+    const consumerScript = path.join(consumerScriptRoot, path.basename(SCRIPT));
+
+    const installedPackageRoot = path.join(projectRoot, 'node_modules', 'bmad-speckit');
+    fs.mkdirSync(installedPackageRoot, { recursive: true });
+    fs.writeFileSync(
+      path.join(installedPackageRoot, 'package.json'),
+      `${JSON.stringify({ name: 'bmad-speckit', version: '0.0.0' }, null, 2)}\n`,
+      'utf8'
+    );
+    const installedSchema = path.join(
+      installedPackageRoot,
+      'dist',
+      'main-agent',
+      'source-authority',
+      'schemas',
+      'architecture-confirmation-candidate.schema.json'
+    );
+    fs.mkdirSync(path.dirname(installedSchema), { recursive: true });
+    fs.copyFileSync(
+      path.join(
+        ROOT,
+        'packages',
+        'bmad-speckit',
+        'src',
+        'main-agent',
+        'source-authority',
+        'schemas',
+        'main-agent-architecture-confirmation-candidate.schema.json'
+      ),
+      installedSchema
+    );
+
+    const candidatePath = path.join(projectRoot, 'candidate.json');
+    fs.writeFileSync(
+      candidatePath,
+      `${JSON.stringify(canonicalCandidate(), null, 2)}\n`,
+      'utf8'
+    );
+    const validOut = path.join(projectRoot, 'valid.html');
+    const valid = runRendererFrom(consumerScript, projectRoot, [
+      '--architecture-confirmation-candidate',
+      candidatePath,
+      '--out',
+      validOut,
+      '--json',
+    ]);
+
+    expect(valid.status, `${valid.stdout}\n${valid.stderr}`).toBe(0);
+    expect(fs.readFileSync(validOut, 'utf8')).toContain('refund-worker vertical slice');
+
+    const incomplete = canonicalCandidate();
+    delete incomplete.ownership;
+    fs.writeFileSync(candidatePath, `${JSON.stringify(incomplete, null, 2)}\n`, 'utf8');
+    const invalidOut = path.join(projectRoot, 'invalid.html');
+    const invalid = runRendererFrom(consumerScript, projectRoot, [
+      '--architecture-confirmation-candidate',
+      candidatePath,
+      '--out',
+      invalidOut,
+      '--json',
+    ]);
+
+    expect(invalid.status).toBe(2);
+    expect(invalid.stderr).toContain('architecture_confirmation_candidate_schema_invalid');
+    expect(fs.existsSync(invalidOut)).toBe(false);
+  });
+
+  it('HTML-escapes every displayed free-text technical field', () => {
+    const source = writeCanonicalCandidate({
+      pinnedPremises: [
         {
-          category: 'data_model',
-          status: 'triggered',
-          summary: 'schema changes require architecture confirmation',
+          premiseId: 'policy-refund-worker',
+          authorityRole: 'policy_authority',
+          mediaType: 'application/json; profile="<policy>&"',
+          sourceSnapshotHash:
+            'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+        },
+      ],
+      logicalScope: {
+        targetPaths: ['src/refund<worker>&"quoted".ts'],
+        forbiddenPaths: ['.git/<private>&"quoted"/**'],
+      },
+      ownership: [
+        {
+          targetPath: 'src/refund<worker>&"quoted".ts',
+          owner: 'requirements_backed_main_agent',
+          basisRefs: ['PATH-refund-worker', 'policy-refund-worker'],
+        },
+      ],
+      toolchain: {
+        commands: [
+          {
+            commandId: 'CMD-refund-worker-test',
+            invocation: 'npm test -- "refund<worker>&quoted"',
+            basisRefs: ['CMD-refund-worker-test'],
+          },
+        ],
+        artifacts: [
+          {
+            premiseId: 'ART-refund-worker-output',
+            kind: 'ART',
+            value: 'dist/refund<worker>&"quoted".js',
+            basisRefs: ['ART-refund-worker-output'],
+          },
+        ],
+        evidenceRequirements: [
+          {
+            premiseId: 'EVDREQ-refund-worker-red-green',
+            kind: 'EVDREQ',
+            value: 'refund<worker>&"quoted" evidence',
+            basisRefs: ['EVDREQ-refund-worker-red-green'],
+          },
+        ],
+      },
+      isolation: {
+        mode: 'consumer_worktree',
+        forbiddenPaths: ['.git/<private>&"quoted"/**'],
+        basisRefs: ['PATH-refund-worker', 'STOP-refund-worker-forbidden'],
+      },
+      architectureDecisions: [
+        {
+          decisionId: 'ARCH-STRUCTURE-1',
+          decisionType: 'execution_structure',
+          selection: 'refund<worker>&"quoted" structure',
+          basisRefs: ['CTM-refund-worker-slice'],
+        },
+      ],
+      goalExecutionStructurePremises: [
+        {
+          premiseId: 'CTM-refund-worker-slice',
+          kind: 'CTM',
+          value: 'refund<worker>&"quoted" slice',
+          basisRefs: ['CTM-refund-worker-slice'],
         },
       ],
     });
-    const out = path.join(tempDir, 'architecture-confirmation-missing-zh.html');
+    const out = path.join(tempDir, 'escaped-projection.html');
     const result = runRenderer([
-      '--architecture-confirmation',
+      '--architecture-confirmation-candidate',
       source,
       '--out',
       out,
-      '--language',
-      'zh-CN',
       '--json',
     ]);
 
-    expect(result.status).toBe(1);
-    const report = JSON.parse(
-      fs.readFileSync(
-        path.join(tempDir, 'architecture-confirmation-missing-zh.render-report.json'),
-        'utf8'
-      )
-    );
-    expect(report.confirmability).toBe('blocked');
-    expect(report.blockingIssues).toContain(
-      'missing_zh_projection_consumerImpactScan_0_summaryZh'
-    );
-  });
-
-  it('uses the selected language for architecture confirmation labels', () => {
-    const source = writeArchitectureConfirmation();
-    const out = path.join(tempDir, 'architecture-confirmation-en.html');
-    const result = runRenderer([
-      '--architecture-confirmation',
-      source,
-      '--out',
-      out,
-      '--language',
-      'en-US',
-      '--json',
-    ]);
-
-    expect(result.status).toBe(0);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
     const html = fs.readFileSync(out, 'utf8');
-    expect(html).toContain('Architecture Confirmation Draft');
-    expect(html).toContain('Architecture Review Focus');
-    expect(html).toContain('Business Architecture Diagrams');
-    expect(html).toContain('Governance Architecture Diagrams');
-    expect(html).toContain('Display Settings System Architecture Diagram');
-    expect(html).toContain('System Architecture Diagram');
-    expect(html).toContain('Deployment Diagram');
-    expect(html).toContain('Class Diagram');
-    expect(html).toContain('Swimlane Diagram');
-    expect(html).toContain('State Machine Diagram');
-    expect(html).toContain('Sequence Diagram');
-    expect(html).toContain('Activity Diagram');
-    expect(html).toContain('Focus Rows');
-    expect(html).toContain('Target Path Samples');
-    expect(html).toContain('Consumer Impact Scan');
-    expect(html).toContain('Governance Impact Scan');
-    expect(html).toContain('Copy Confirmation Phrase');
-    expect(html).not.toContain('本次架构确认重点');
-    expect(html).not.toContain('重点影响行');
-    expect(html).not.toContain('复制确认口令');
+    expect(html).toContain('src/refund&lt;worker&gt;&amp;&quot;quoted&quot;.ts');
+    expect(html).toContain('.git/&lt;private&gt;&amp;&quot;quoted&quot;/**');
+    expect(html).toContain('application/json; profile=&quot;&lt;policy&gt;&amp;&quot;');
+    expect(html).toContain('npm test -- &quot;refund&lt;worker&gt;&amp;quoted&quot;');
+    expect(html).toContain('dist/refund&lt;worker&gt;&amp;&quot;quoted&quot;.js');
+    expect(html).toContain('refund&lt;worker&gt;&amp;&quot;quoted&quot; evidence');
+    expect(html).toContain('refund&lt;worker&gt;&amp;&quot;quoted&quot; structure');
+    expect(html).toContain('refund&lt;worker&gt;&amp;&quot;quoted&quot; slice');
+    expect(html).not.toContain('refund<worker>');
   });
 
-  it('blocks when required architecture diagrams are missing', () => {
-    const source = writeArchitectureConfirmation({ businessArchitectureDiagrams: [] });
-    const out = path.join(tempDir, 'architecture-confirmation-missing-diagrams.html');
+  it('fails closed on the legacy architecture artifact input', () => {
+    const source = writeArchitectureConfirmation();
+    const out = path.join(tempDir, 'legacy-architecture-confirmation.html');
     const result = runRenderer([
       '--architecture-confirmation',
       source,
       '--out',
       out,
-      '--language',
-      'zh-CN',
       '--json',
     ]);
 
-    expect(result.status).toBe(1);
-    const report = JSON.parse(
-      fs.readFileSync(
-        path.join(tempDir, 'architecture-confirmation-missing-diagrams.render-report.json'),
-        'utf8'
-      )
-    );
-    expect(report.confirmability).toBe('blocked');
-    expect(report.blockingIssues).toContain('missing_businessArchitectureDiagrams');
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain('caller_derived_input_forbidden:architecture-confirmation');
+    expect(fs.existsSync(out)).toBe(false);
+  });
+
+  it('fails closed when the projection input is not the canonical candidate schema', () => {
+    const source = writeCanonicalCandidate({ schemaVersion: 'ArchitectureConfirmation/v1' });
+    const out = path.join(tempDir, 'invalid-candidate.html');
+    const result = runRenderer([
+      '--architecture-confirmation-candidate',
+      source,
+      '--out',
+      out,
+      '--json',
+    ]);
+
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain('architecture_confirmation_candidate_schema_invalid');
+    expect(fs.existsSync(out)).toBe(false);
+  });
+
+  it.each([
+    'schemaVersion',
+    'requestId',
+    'requirementsLineage',
+    'pinnedPremises',
+    'logicalScope',
+    'ownership',
+    'toolchain',
+    'isolation',
+    'consumerImpact',
+    'governanceImpact',
+    'triggerMatrix',
+    'architectureDecisions',
+    'goalExecutionStructurePremises',
+    'architectureConfirmationCandidateHash',
+  ])('fails closed when required candidate field %s is missing', (field) => {
+    const candidate = canonicalCandidate();
+    delete candidate[field];
+    const source = writeCandidate(candidate);
+    const out = path.join(tempDir, `missing-${field}.html`);
+    const result = runRenderer([
+      '--architecture-confirmation-candidate',
+      source,
+      '--out',
+      out,
+      '--json',
+    ]);
+
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain('architecture_confirmation_candidate_schema_invalid');
+    expect(fs.existsSync(out)).toBe(false);
   });
 });

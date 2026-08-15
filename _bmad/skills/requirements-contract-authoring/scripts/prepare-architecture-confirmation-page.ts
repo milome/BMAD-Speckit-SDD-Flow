@@ -7,22 +7,18 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const SKILL_DIR = path.resolve(__dirname, '..');
-const PRODUCER = path.join(SKILL_DIR, 'scripts', 'generate-architecture-confirmation-artifact.ts');
-const RENDERER = path.join(SKILL_DIR, 'scripts', 'render-architecture-confirmation-html.ts');
-const INGEST = resolvePackageDistScript(
-  'dist/main-agent/source-authority/scripts/ingest-architecture-confirmation.js'
-);
 
-function resolvePackageDistScript(relativeDistPath) {
+function resolvePackageCli() {
   const directCandidates = [
-    path.resolve('packages/bmad-speckit', relativeDistPath),
-    path.resolve('node_modules/bmad-speckit', relativeDistPath),
+    path.resolve('packages/bmad-speckit/bin/bmad-speckit.js'),
+    path.resolve('node_modules/bmad-speckit/bin/bmad-speckit.js'),
     path.resolve(
       'node_modules',
       'bmad-speckit-sdd-flow',
       'node_modules',
       'bmad-speckit',
-      relativeDistPath
+      'bin',
+      'bmad-speckit.js'
     ),
     path.resolve(
       SKILL_DIR,
@@ -33,8 +29,10 @@ function resolvePackageDistScript(relativeDistPath) {
       'bmad-speckit-sdd-flow',
       'node_modules',
       'bmad-speckit',
-      relativeDistPath
+      'bin',
+      'bmad-speckit.js'
     ),
+    path.resolve(SKILL_DIR, '..', '..', '..', 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js'),
   ];
   for (const candidate of directCandidates) {
     if (fs.existsSync(candidate)) return candidate;
@@ -45,19 +43,19 @@ function resolvePackageDistScript(relativeDistPath) {
       paths: [process.cwd(), SKILL_DIR],
     });
     const packageRoot = path.dirname(packageJson);
-    const packageCandidate = path.join(packageRoot, relativeDistPath);
+    const packageCandidate = path.join(packageRoot, 'bin', 'bmad-speckit.js');
     if (fs.existsSync(packageCandidate)) return packageCandidate;
   } catch {
     // Fall through to the fail-closed error below.
   }
 
   throw new Error(
-    `Unable to resolve package dist script ${relativeDistPath}; build or install bmad-speckit before preparing architecture confirmation.`
+    'Unable to resolve the bmad-speckit package CLI; build or install bmad-speckit before preparing architecture confirmation.'
   );
 }
 
 function parseArgs(argv) {
-  const args = { language: 'zh-CN', theme: 'audit' };
+  const args = {};
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === '--help' || arg === '-h') {
@@ -68,200 +66,44 @@ function parseArgs(argv) {
       args.json = true;
       continue;
     }
-    if (arg === '--skip-state-check') {
-      args.skipStateCheck = true;
-      continue;
+    if (arg !== '--request-id') {
+      const name = arg.startsWith('--') ? arg.slice(2) : arg;
+      throw new Error(`caller_derived_input_forbidden:${name}`);
     }
-    if (!arg.startsWith('--')) throw new Error(`Unexpected positional argument: ${arg}`);
-    const key = arg.slice(2).replace(/-([a-z])/gu, (_, letter) => letter.toUpperCase());
     const value = argv[index + 1];
-    if (!value || value.startsWith('--')) throw new Error(`Missing value for ${arg}`);
-    args[key] = value;
+    if (!value || value.startsWith('--')) throw new Error('request_id_missing');
+    args.requestId = value;
     index += 1;
   }
   return args;
 }
 
-function normalize(value) {
-  return String(value || '').replace(/\\/gu, '/');
-}
-
-function runNode(script, args, label, allowNonZero = false) {
-  const result = spawnSync(process.execPath, [script, ...args], {
-    cwd: process.cwd(),
-    encoding: 'utf8',
-  });
-  if (!allowNonZero && result.status !== 0) {
-    throw new Error(`${label} failed: ${result.stdout}\n${result.stderr}`);
-  }
-  return {
-    label,
-    status: result.status,
-    stdout: result.stdout,
-    stderr: result.stderr,
-  };
-}
-
-function parseJsonOutput(step) {
-  const text = String(step.stdout || '').trim();
-  if (!text) return {};
-  return JSON.parse(text);
-}
-
-function readJson(file) {
-  return JSON.parse(fs.readFileSync(file, 'utf8'));
-}
-
-function parseOptionalJsonOutput(step) {
-  try {
-    return parseJsonOutput(step);
-  } catch {
-    return {};
-  }
-}
-
-function deriveBase(recordPath, runId) {
-  return path.join(path.dirname(path.resolve(recordPath)), 'architecture', `architecture-confirmation-${runId}`);
-}
-
-function requireArgs(args) {
-  const required = [
-    'source',
-    'requirementRecord',
-    'runId',
-    'targetPaths',
-    'consumerImpactScan',
-    'governanceImpactScan',
-    'fullArchitectureTriggerMatrix',
-  ];
-  const missing = required.filter((key) => !args[key]);
-  if (missing.length) throw new Error(`missing required args: ${missing.join(', ')}`);
-}
-
 function main(argv) {
   const args = parseArgs(argv);
   if (args.help) {
-    console.log('Usage: node prepare-architecture-confirmation-page.ts --source <source.md> --requirement-record <record.json> --run-id <id> --target-paths <json|file> --consumer-impact-scan <json|file> --governance-impact-scan <json|file> --full-architecture-trigger-matrix <json|file> [--localization <json|file>] [--out <html>] [--json]');
+    console.log(
+      'Usage: node prepare-architecture-confirmation-page.ts --request-id <requestId> --json'
+    );
     return 0;
   }
-  requireArgs(args);
+  if (!args.requestId) throw new Error('request_id_missing');
 
-  const base = args.out
-    ? path.resolve(args.out).replace(/\.html?$/iu, '')
-    : deriveBase(args.requirementRecord, args.runId);
-  const architecturePath = path.resolve(args.architectureConfirmation || `${base}.json`);
-  const htmlPath = path.resolve(args.out || `${base}.html`);
-  const prepareReportPath = path.resolve(args.prepareReport || `${base}.prepare-report.json`);
-  const steps = [];
-
-  if (!args.skipStateCheck) {
-    const stateCheckStep = runNode(
-      INGEST,
-      [
-        '--action',
-        'check-state',
-        '--requirement-record',
-        args.requirementRecord,
-        '--confirmed-by',
-        args.checkedBy || 'architecture-confirmation-prepare',
-        '--persist-state-check',
-        '--json',
-      ],
-      'architecture_confirmation_state_checked',
-      true
-    );
-    const stateCheckOutput = parseOptionalJsonOutput(stateCheckStep);
-    if (
-      !stateCheckOutput.event ||
-      stateCheckOutput.diagnosticOnly !== false ||
-      !stateCheckOutput.controlEventHash ||
-      !stateCheckOutput.receiptPath ||
-      stateCheckStep.status === 2 ||
-      stateCheckStep.status === null
-    ) {
-      throw new Error(`architecture_confirmation_state_checked did not record a controlled state check: ${stateCheckStep.stdout}\n${stateCheckStep.stderr}`);
-    }
-    stateCheckStep.controlEvent = stateCheckOutput.event;
-    stateCheckStep.controlEventHash = stateCheckOutput.controlEventHash;
-    stateCheckStep.controlReceiptPath = stateCheckOutput.receiptPath;
-    steps.push(stateCheckStep);
-  }
-
-  const producerArgs = [
-    '--source',
-    args.source,
-    '--requirement-record',
-    args.requirementRecord,
-    '--out',
-    architecturePath,
-    '--run-id',
-    args.runId,
-    '--target-paths',
-    args.targetPaths,
-    '--consumer-impact-scan',
-    args.consumerImpactScan,
-    '--governance-impact-scan',
-    args.governanceImpactScan,
-    '--full-architecture-trigger-matrix',
-    args.fullArchitectureTriggerMatrix,
-    '--language',
-    args.language,
-    '--json',
-  ];
-  if (args.localization) producerArgs.push('--localization', args.localization);
-  for (const passthrough of ['decision', 'outcome', 'riskStatement', 'rollbackPlan', 'evidenceRefs', 'relatedRequirementIds']) {
-    if (args[passthrough]) producerArgs.push(`--${passthrough.replace(/[A-Z]/gu, (letter) => `-${letter.toLowerCase()}`)}`, args[passthrough]);
-  }
-  const producerStep = runNode(PRODUCER, producerArgs, 'generate_architecture_confirmation_artifact');
-  steps.push(producerStep);
-
-  const renderStep = runNode(
-    RENDERER,
+  const result = spawnSync(
+    process.execPath,
     [
-      '--architecture-confirmation',
-      architecturePath,
-      '--out',
-      htmlPath,
-      '--language',
-      args.language,
-      '--theme',
-      args.theme,
+      resolvePackageCli(),
+      'main-agent',
+      'prepare-architecture-confirmation',
+      '--request-id',
+      args.requestId,
       '--json',
     ],
-    'render_architecture_confirmation_html'
+    { cwd: process.cwd(), encoding: 'utf8' }
   );
-  steps.push(renderStep);
-  const producer = parseJsonOutput(producerStep);
-  const render = parseJsonOutput(renderStep);
-  const renderReport = readJson(render.reportPath);
-  const report = {
-    ok: true,
-    userFacingNextStep: 'open_architecture_confirmation_html_and_confirm_hashes',
-    internalSteps: steps.map((step) => ({
-      label: step.label,
-      status: step.status,
-      ok: step.status === 0 || (step.label === 'architecture_confirmation_state_checked' && Boolean(step.controlEvent)),
-      eventType: step.controlEvent?.eventType,
-      decision: step.controlEvent?.decision,
-      stateTransition: step.controlEvent?.stateTransition,
-      controlEventHash: step.controlEventHash,
-      receiptPath: step.controlReceiptPath,
-    })),
-    architectureConfirmationPath: normalize(architecturePath),
-    htmlPath: normalize(htmlPath),
-    renderReportPath: normalize(render.reportPath),
-    summaryPath: normalize(render.summaryPath),
-    confirmInstruction: renderReport.confirmInstruction,
-    architectureConfirmationArtifactHash: producer.architectureConfirmationArtifactHash,
-    sourceDocumentHash: producer.sourceDocumentHash,
-    implementationConfirmationHash: producer.implementationConfirmationHash,
-    resolvedRecipeHash: producer.resolvedRecipeHash,
-  };
-  fs.mkdirSync(path.dirname(prepareReportPath), { recursive: true });
-  fs.writeFileSync(prepareReportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-  const output = { ...report, prepareReportPath: normalize(prepareReportPath) };
-  process.stdout.write(args.json ? `${JSON.stringify(output, null, 2)}\n` : `architecture_confirmation_html=${normalize(htmlPath)}\n`);
-  return 0;
+  if (result.stdout) process.stdout.write(result.stdout);
+  if (result.stderr) process.stderr.write(result.stderr);
+  if (result.status === null) throw result.error ?? new Error('package_cli_execution_failed');
+  return result.status;
 }
 
 if (require.main === module) {

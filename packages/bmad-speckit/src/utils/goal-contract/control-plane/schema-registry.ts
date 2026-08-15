@@ -1,8 +1,8 @@
-const { createHash } = require('node:crypto');
-const fs = require('node:fs');
-const path = require('node:path');
-const Ajv2020 = require('ajv/dist/2020');
-const addFormats = require('ajv-formats');
+import { createHash } from 'node:crypto';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import Ajv2020 from 'ajv/dist/2020.js';
+import addFormats from 'ajv-formats';
 
 export interface GoalContractSchemaOptions {
   packageRoot?: string;
@@ -54,15 +54,41 @@ function assertSchemaName(schemaName: string): void {
 
 function candidatePackageRoots(explicitRoot?: string): string[] {
   if (explicitRoot) return [path.resolve(explicitRoot)];
-  const levelsToPackageRoot = __filename.endsWith('.ts') ? 6 : 4;
-  let packageRoot = path.resolve(__dirname);
-  for (let level = 0; level < levelsToPackageRoot; level += 1) {
-    packageRoot = path.dirname(packageRoot);
+  const startDirectories = [
+    typeof __dirname === 'string' ? __dirname : '',
+    process.argv[1] ? path.dirname(path.resolve(process.argv[1])) : '',
+    process.cwd(),
+    path.join(process.cwd(), 'packages', 'bmad-speckit'),
+  ];
+  const prefersWorkspaceRoot =
+    typeof __dirname !== 'string' ||
+    (typeof __filename === 'string' && __filename.endsWith('.ts'));
+  const roots: string[] = [];
+  for (const startDirectory of startDirectories.filter(Boolean)) {
+    const ancestorRoots: string[] = [];
+    let current = path.resolve(startDirectory);
+    for (let level = 0; level < 8; level += 1) {
+      ancestorRoots.push(current);
+      const parent = path.dirname(current);
+      if (parent === current) break;
+      current = parent;
+    }
+    if (prefersWorkspaceRoot) {
+      const workspacePackageRoot = ancestorRoots.find(
+        (root) =>
+          path.basename(root) === 'bmad-speckit' &&
+          path.basename(path.dirname(root)) === 'packages'
+      );
+      if (workspacePackageRoot) {
+        roots.push(path.resolve(workspacePackageRoot, '..', '..'));
+      }
+    }
+    roots.push(...ancestorRoots);
   }
-  return [packageRoot, path.resolve(packageRoot, '..', '..')];
+  return [...new Set(roots)];
 }
 
-function resolveGoalContractSchema(
+export function resolveGoalContractSchema(
   schemaName: string,
   options: GoalContractSchemaOptions = {}
 ): string {
@@ -105,7 +131,7 @@ function compileSchemaValidator(
   }
 }
 
-function loadGoalContractSchema(
+export function loadGoalContractSchema(
   schemaName: string,
   options: GoalContractSchemaOptions = {}
 ): GoalContractSchemaBinding {
@@ -153,7 +179,7 @@ function loadGoalContractSchema(
   return binding;
 }
 
-function validateGoalContractSchema<T>(
+export function validateGoalContractSchema<T>(
   schemaName: string,
   value: T,
   options: GoalContractSchemaOptions = {}
@@ -176,16 +202,9 @@ function validateGoalContractSchema<T>(
   return value;
 }
 
-function goalContractSchemaArtifactHash(
+export function goalContractSchemaArtifactHash(
   schemaName: string,
   options: GoalContractSchemaOptions = {}
 ): string {
   return loadGoalContractSchema(schemaName, options).schemaArtifactHash;
 }
-
-module.exports = {
-  goalContractSchemaArtifactHash,
-  loadGoalContractSchema,
-  resolveGoalContractSchema,
-  validateGoalContractSchema,
-};

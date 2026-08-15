@@ -16,6 +16,18 @@ const packageDistRoot = path.join(packageRoot, 'dist');
 const distRoot = path.join(packageDistRoot, 'main-agent');
 const repoBmadRoot = path.join(repoRoot, '_bmad');
 const packageBmadRoot = path.join(packageRoot, '_bmad');
+const architectureRendererSourceRoot = path.join(
+  packageBmadRoot,
+  'skills',
+  'requirements-contract-authoring',
+  'scripts'
+);
+const architectureRendererDistRoot = path.join(
+  distRoot,
+  'skill-runtime',
+  'requirements-contract-authoring',
+  'scripts'
+);
 const packageBuildLockDir = path.join(packageRoot, 'node_modules', '.pack-session.lock');
 const packageBuildLockTimeoutMs = Number.parseInt(
   process.env.BMAD_PACK_SESSION_LOCK_TIMEOUT_MS || '180000',
@@ -877,6 +889,27 @@ try {
       consumer: 'main-agent-source-authority',
     });
   }
+
+  compileTypeScriptFile({
+    source: path.join(architectureRendererSourceRoot, 'render-architecture-confirmation-html.ts'),
+    target: path.join(architectureRendererDistRoot, 'render-architecture-confirmation-html.js'),
+    relativePath:
+      '_bmad/skills/requirements-contract-authoring/scripts/render-architecture-confirmation-html.ts',
+    purpose: 'installed-skill-runtime-compiled-module',
+    consumer: 'architecture-confirmation-renderer',
+  });
+  copyDeclaredAsset({
+    source: path.join(architectureRendererSourceRoot, 'load-js-yaml.js'),
+    target: path.join(architectureRendererDistRoot, 'load-js-yaml.js'),
+    purpose: 'installed-skill-runtime-dependency',
+    consumer: 'architecture-confirmation-renderer',
+  });
+  copyDeclaredAsset({
+    source: path.join(architectureRendererSourceRoot, 'resolve-bmad-runtime.js'),
+    target: path.join(architectureRendererDistRoot, 'resolve-bmad-runtime.js'),
+    purpose: 'installed-skill-runtime-dependency',
+    consumer: 'architecture-confirmation-renderer',
+  });
 
   for (const asset of declaredAssets) copyDeclaredAsset(asset);
 
