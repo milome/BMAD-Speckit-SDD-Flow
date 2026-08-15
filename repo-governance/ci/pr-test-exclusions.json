@@ -232,11 +232,6 @@
       "observedAt": "2026-08-02T10:55:16.000Z"
     },
     {
-      "testPath": "tests/acceptance/main-agent-readiness-auto-remediation.test.ts",
-      "reasonCode": "KNOWN_FAILING_TEST_FIXTURE_DRIFT",
-      "observedAt": "2026-08-01T11:09:57.276Z"
-    },
-    {
       "testPath": "tests/acceptance/main-agent-reconfirmation-runtime.test.ts",
       "reasonCode": "KNOWN_GOAL_EXECUTION_PROOF_GAP",
       "observedAt": "2026-08-01T20:51:19.000Z"
