@@ -197,4 +197,12 @@ describe('implementation readiness v2 command normalization', () => {
       'implementation_readiness_shell_syntax_forbidden'
     );
   });
+
+  it('rejects npx package-resolution options before the declared executable', () => {
+    expect(() =>
+      parseReadinessCommandInvocation(
+        'npx --yes --package node@20 node --test tests/refund-worker.test.cjs'
+      )
+    ).toThrow('implementation_readiness_npx_wrapper_prefix_forbidden');
+  });
 });

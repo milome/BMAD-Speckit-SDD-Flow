@@ -76,7 +76,7 @@
       "properties": {
         "status": { "const": "implementation_readiness_blocked" },
         "issueCodes": { "minItems": 1 },
-        "writeCount": { "const": 0 }
+        "writeCount": { "minimum": 0, "maximum": 1 }
       },
       "not": {
         "anyOf": [

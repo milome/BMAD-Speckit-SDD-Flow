@@ -1012,6 +1012,45 @@ function assertControlStoreLockAvailable(recordPath: string): void {
   if (fs.existsSync(lockPath)) throw new Error('control_store_lock_held');
 }
 
+function controlStoreCommitMarkerHash(recordPath: string): string {
+  const markerPath = path.join(controlStoreRoot(recordPath), 'current-commit.json');
+  return fs.existsSync(markerPath) ? sha256Text(fs.readFileSync(markerPath, 'utf8')) : ZERO_HASH;
+}
+
+export function readControlStoreAuthoritatively<T>(recordPath: string, read: () => T): T {
+  const resolvedRecordPath = path.resolve(recordPath);
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    recoverControlStore(resolvedRecordPath);
+    assertControlStoreLockAvailable(resolvedRecordPath);
+    const leaseId = `READ-${crypto.randomBytes(12).toString('hex')}`;
+    const lockPath = acquireControlStoreLock(
+      resolvedRecordPath,
+      leaseId,
+      'control-store-authoritative-reader',
+      'authoritative_read',
+      [],
+      []
+    );
+    try {
+      const markerBefore = controlStoreCommitMarkerHash(resolvedRecordPath);
+      let value: T | undefined;
+      let readError: unknown;
+      try {
+        value = read();
+      } catch (error) {
+        readError = error;
+      }
+      const markerAfter = controlStoreCommitMarkerHash(resolvedRecordPath);
+      if (markerAfter !== markerBefore) continue;
+      if (readError) throw readError;
+      return value as T;
+    } finally {
+      releaseControlStoreLock(lockPath, leaseId);
+    }
+  }
+  throw new Error('control_store_authoritative_read_unstable');
+}
+
 function assertCommitInputRecord(record: JsonObject, allowBootstrap = false): void {
   if (!text(record.status)) {
     throw new Error('control_store_migration_required:confirmation_lineage_missing');

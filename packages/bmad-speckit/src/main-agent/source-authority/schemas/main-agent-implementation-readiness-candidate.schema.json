@@ -42,13 +42,23 @@
     "readinessPolicy": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schemaVersion", "timeoutMs", "maxOutputBytes", "reporter", "shell"],
+      "required": [
+        "schemaVersion",
+        "timeoutMs",
+        "maxOutputBytes",
+        "reporter",
+        "shell",
+        "runtimeIsolation",
+        "executablePathPolicy"
+      ],
       "properties": {
-        "schemaVersion": { "const": "implementation-readiness-policy/v1" },
+        "schemaVersion": { "const": "implementation-readiness-policy/v2" },
         "timeoutMs": { "type": "integer", "minimum": 1, "maximum": 120000 },
         "maxOutputBytes": { "type": "integer", "minimum": 1024, "maximum": 1048576 },
         "reporter": { "const": "tap" },
-        "shell": { "const": false }
+        "shell": { "const": false },
+        "runtimeIsolation": { "const": "isolated-runtime-v1" },
+        "executablePathPolicy": { "const": "controlled-project-node-path-v1" }
       }
     },
     "normalizedCommands": {

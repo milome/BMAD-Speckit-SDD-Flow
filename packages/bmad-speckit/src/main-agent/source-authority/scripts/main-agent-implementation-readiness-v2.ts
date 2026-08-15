@@ -2,6 +2,7 @@
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -27,9 +28,11 @@ import {
 import {
   appendControlEventAndReplay,
   canonicalizeRequirementRecord,
+  readControlStoreAuthoritatively,
   sha256Json,
   sha256Text,
   type ControlArtifactWrite,
+  type ControlStoreCommitDeps,
 } from './requirement-record-control-store';
 import { resolveVerifiedSixModelStatus } from './verified-six-model-status-facade';
 
@@ -44,11 +47,13 @@ const SHELL_SYNTAX = /[|&;<>`\r\n]/u;
 const INFRA_FAILURE =
   /(?:MODULE_NOT_FOUND|ERR_MODULE_NOT_FOUND|Cannot find module|Cannot find package|SyntaxError|command not found|is not recognized as an internal|ENOENT|EACCES|EPERM|No test files found|failed to load config|npm ERR!)/iu;
 const POLICY = {
-  schemaVersion: 'implementation-readiness-policy/v1',
+  schemaVersion: 'implementation-readiness-policy/v2',
   timeoutMs: 120_000,
   maxOutputBytes: 1_048_576,
   reporter: 'tap',
   shell: false,
+  runtimeIsolation: 'isolated-runtime-v1',
+  executablePathPolicy: 'controlled-project-node-path-v1',
 };
 const ALLOWED_EXECUTABLES = new Set(['node', 'npm', 'npx', 'pnpm', 'yarn', 'bun']);
 const LOCK_NAMES = ['package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', 'bun.lock', 'bun.lockb'];
@@ -99,6 +104,14 @@ const NODE_VALUE_OPTIONS = new Set([
   '--trace-event-file-pattern',
   '--watch-path',
 ]);
+const READINESS_OPERATIONAL_ENV_KEYS = [
+  'SystemRoot',
+  'SYSTEMROOT',
+  'WINDIR',
+  'ComSpec',
+  'COMSPEC',
+] as const;
+const READINESS_RUNTIME_BASE = fs.realpathSync(os.tmpdir());
 
 interface ParsedArgs {
   requestId?: string;
@@ -171,6 +184,7 @@ export interface ReadinessProducerDeps {
   onCommandExecuted?: (command: NormalizedCommand) => void;
   beforePublish?: () => void;
   afterAtomicPublish?: () => void;
+  controlStoreCommitDeps?: ControlStoreCommitDeps;
   now?: () => string;
 }
 
@@ -182,7 +196,8 @@ export interface ReadinessEvaluationInput {
 export class ImplementationReadinessBlock extends Error {
   constructor(
     readonly issueCode: string,
-    readonly commandExecutionCount = 0
+    readonly commandExecutionCount = 0,
+    readonly writeCount = 0
   ) {
     super(issueCode);
   }
@@ -191,7 +206,8 @@ export class ImplementationReadinessBlock extends Error {
 export class ImplementationReadinessFailure extends Error {
   constructor(
     readonly issueCode: string,
-    readonly commandExecutionCount = 0
+    readonly commandExecutionCount = 0,
+    readonly writeCount = 0
   ) {
     super(issueCode);
   }
@@ -351,6 +367,9 @@ export function parseReadinessCommandInvocation(invocation: string): {
   if (!ALLOWED_EXECUTABLES.has(executable.toLowerCase())) {
     throw new Error(`implementation_readiness_executable_unsupported:${executable}`);
   }
+  if (executable.toLowerCase() === 'npx' && tokens[0]?.startsWith('-')) {
+    throw new Error('implementation_readiness_npx_wrapper_prefix_forbidden');
+  }
   const normalizedInvocation = [executable.toLowerCase(), ...tokens].join('\u0000');
   return {
     executable: executable.toLowerCase(),
@@ -436,8 +455,11 @@ function logicalInputPath(token: string): string | null {
 function nodeArgs(command: NormalizedCommand): string[] | null {
   if (command.executable === 'node') return command.args;
   if (command.executable !== 'npx') return null;
-  const nodeIndex = command.args.findIndex((argument) => argument.toLowerCase() === 'node');
-  return nodeIndex >= 0 ? command.args.slice(nodeIndex + 1) : null;
+  if (command.args[0]?.toLowerCase() === 'node') return command.args.slice(1);
+  if (command.args.some((argument) => argument.toLowerCase() === 'node')) {
+    throw new Error('implementation_readiness_npx_wrapper_prefix_forbidden');
+  }
+  return null;
 }
 
 function localNodeInputPath(
@@ -689,6 +711,9 @@ function readinessSpawn(command: NormalizedCommand): { executable: string; args:
   if (command.executable === 'node') {
     return { executable: process.execPath, args: command.args };
   }
+  if (command.executable === 'npx' && command.args[0]?.toLowerCase() === 'node') {
+    return { executable: process.execPath, args: command.args.slice(1) };
+  }
   if (process.platform !== 'win32') {
     return { executable: command.executable, args: command.args };
   }
@@ -714,6 +739,42 @@ function readinessSpawn(command: NormalizedCommand): { executable: string; args:
     : null;
 }
 
+function readinessEnvironment(
+  projectRoot: string,
+  runtimeHome: string,
+  runtimeTemp: string
+): NodeJS.ProcessEnv {
+  const environment: NodeJS.ProcessEnv = {
+    CI: '1',
+    NODE_ENV: 'test',
+    NO_COLOR: '1',
+    FORCE_COLOR: '0',
+    PATH: [path.join(projectRoot, 'node_modules', '.bin'), path.dirname(process.execPath)].join(
+      path.delimiter
+    ),
+    ...(process.platform === 'win32' ? { PATHEXT: '.COM;.EXE;.BAT;.CMD' } : {}),
+    HOME: runtimeHome,
+    USERPROFILE: runtimeHome,
+    APPDATA: path.join(runtimeHome, 'appdata'),
+    LOCALAPPDATA: path.join(runtimeHome, 'local-appdata'),
+    TEMP: runtimeTemp,
+    TMP: runtimeTemp,
+    TMPDIR: runtimeTemp,
+    npm_config_audit: 'false',
+    npm_config_cache: path.join(runtimeHome, 'npm-cache'),
+    npm_config_fund: 'false',
+    npm_config_globalconfig: path.join(runtimeHome, 'global-npmrc-disabled'),
+    npm_config_offline: 'true',
+    npm_config_update_notifier: 'false',
+    npm_config_userconfig: path.join(runtimeHome, 'user-npmrc-disabled'),
+  };
+  for (const key of READINESS_OPERATIONAL_ENV_KEYS) {
+    const value = process.env[key];
+    if (value !== undefined) environment[key] = value;
+  }
+  return environment;
+}
+
 export function runReadinessCommand(
   command: NormalizedCommand,
   projectRoot: string
@@ -728,23 +789,37 @@ export function runReadinessCommand(
       errorCode: `${command.executable}_js_cli_missing`,
     };
   }
-  const result = spawnSync(invocation.executable, invocation.args, {
-    cwd: projectRoot,
-    encoding: 'utf8',
-    shell: false,
-    windowsHide: true,
-    timeout: POLICY.timeoutMs,
-    maxBuffer: POLICY.maxOutputBytes,
-  });
-  return {
-    status: result.status,
-    signal: result.signal,
-    stdout: String(result.stdout ?? ''),
-    stderr: String(result.stderr ?? ''),
-    ...(result.error
-      ? { errorCode: (result.error as NodeJS.ErrnoException).code ?? 'spawn_error' }
-      : {}),
-  };
+  const runtimeRoot = fs.mkdtempSync(path.join(READINESS_RUNTIME_BASE, 'bmad-readiness-'));
+  const runtimeHome = path.join(runtimeRoot, 'home');
+  const runtimeTemp = path.join(runtimeRoot, 'tmp');
+  fs.mkdirSync(path.join(runtimeHome, 'appdata'), { recursive: true });
+  fs.mkdirSync(path.join(runtimeHome, 'local-appdata'), { recursive: true });
+  fs.mkdirSync(path.join(runtimeHome, 'npm-cache'), { recursive: true });
+  fs.mkdirSync(runtimeTemp, { recursive: true });
+  fs.writeFileSync(path.join(runtimeHome, 'global-npmrc-disabled'), '', 'utf8');
+  fs.writeFileSync(path.join(runtimeHome, 'user-npmrc-disabled'), '', 'utf8');
+  try {
+    const result = spawnSync(invocation.executable, invocation.args, {
+      cwd: projectRoot,
+      encoding: 'utf8',
+      shell: false,
+      windowsHide: true,
+      timeout: POLICY.timeoutMs,
+      maxBuffer: POLICY.maxOutputBytes,
+      env: readinessEnvironment(projectRoot, runtimeHome, runtimeTemp),
+    });
+    return {
+      status: result.status,
+      signal: result.signal,
+      stdout: String(result.stdout ?? ''),
+      stderr: String(result.stderr ?? ''),
+      ...(result.error
+        ? { errorCode: (result.error as NodeJS.ErrnoException).code ?? 'spawn_error' }
+        : {}),
+    };
+  } finally {
+    fs.rmSync(runtimeRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+  }
 }
 
 interface TapFailure {
@@ -997,6 +1072,120 @@ function readinessRuntimePublication(input: {
   return { runtimeRecordPath, record, runtimeStatus };
 }
 
+function hasCommittedStaleReadinessProjection(input: {
+  context: ArchitectureConfirmationContext;
+  runtimeRecordPath: string;
+  architectureConfirmationCandidateHash: string;
+  readinessScopedInputDigest: string;
+  issueCode: string;
+}): boolean {
+  try {
+    return readControlStoreAuthoritatively(input.runtimeRecordPath, () => {
+      const { record } = readValidReadinessRuntimeRecord(
+        input.context,
+        input.architectureConfirmationCandidateHash
+      );
+      const projection = object(object(record.sixModelResults).implementation_readiness);
+      const currentHashes = object(projection.currentHashes);
+      const blockingReasons = Array.isArray(projection.blockingReasons)
+        ? projection.blockingReasons
+        : [];
+      return (
+        text(projection.status) === 'stale' &&
+        blockingReasons.length === 1 &&
+        blockingReasons[0] === input.issueCode &&
+        text(currentHashes.architectureConfirmationCandidateHash) ===
+          input.architectureConfirmationCandidateHash &&
+        (text(projection.readinessScopedInputDigest) ||
+          text(currentHashes.readinessScopedInputDigest)) === input.readinessScopedInputDigest &&
+        !text(projection.decisionReceiptRef) &&
+        !text(projection.decisionReceiptHash) &&
+        !text(projection.implementationReadinessCandidateHash)
+      );
+    });
+  } catch {
+    return false;
+  }
+}
+
+function invalidateReadinessRuntimeProjection(input: {
+  context: ArchitectureConfirmationContext;
+  runtimeRecordPath: string;
+  record: JsonObject;
+  architectureConfirmationCandidateHash: string;
+  readinessScopedInputDigest: string;
+  recordedAt: string;
+  controlStoreCommitDeps?: ControlStoreCommitDeps;
+}): void {
+  const issueCode = 'readiness_recheck_required:scoped_input_digest';
+  const projection = {
+    payloadKind: 'model_result',
+    model: 'implementation_readiness',
+    recordId: text(input.record.recordId),
+    requirementSetId: text(input.record.requirementSetId) || text(input.record.recordId),
+    sourceDocumentHash: input.context.semanticIr.scopeSemanticHash,
+    implementationConfirmationHash: input.context.semanticIr.scopeSemanticHash,
+    status: 'stale',
+    resultRecordedAt: input.recordedAt,
+    resultRecordedBy: 'implementation-readiness-gate',
+    blockingReasons: [issueCode],
+    sourceRefs: [],
+    currentHashes: {
+      semanticModelHash: input.context.semanticIr.scopeSemanticHash,
+      architectureConfirmationCandidateHash: input.architectureConfirmationCandidateHash,
+      readinessScopedInputDigest: input.readinessScopedInputDigest,
+    },
+    currentAttemptId: text(input.record.currentAttemptId),
+    semanticModelHash: input.context.semanticIr.scopeSemanticHash,
+    readinessScopedInputDigest: input.readinessScopedInputDigest,
+  };
+  const runtimeStatus = {
+    projection,
+    receiptRef: null,
+    authorityEstablished: false,
+    missingAuthorityBindings: ['implementationReadinessCandidateHash'],
+  } satisfies RuntimeStatusProjectionUpdate;
+  try {
+    appendControlEventAndReplay(
+      {
+        recordPath: input.runtimeRecordPath,
+        writerId: 'implementation-readiness-gate-writer',
+        eventType: 'implementation_readiness_result_recorded',
+        recordedAt: input.recordedAt,
+        expectedBeforeRecordHash: sha256Json(canonicalizeRequirementRecord(input.record)),
+        payload: {
+          eventType: 'implementation_readiness_result_recorded',
+          ...projection,
+        },
+        reduce: (currentRecord) => ({
+          ...currentRecord,
+          ...runtimeStatusProjectionRecordPatch({
+            record: currentRecord,
+            modelId: 'implementation_readiness',
+            update: runtimeStatus,
+          }),
+          currentMentalModel: 'implementation_readiness',
+          lastEventType: 'implementation_readiness_result_recorded',
+          updatedAt: input.recordedAt,
+        }),
+      },
+      input.controlStoreCommitDeps
+    );
+  } catch (error) {
+    if (
+      !hasCommittedStaleReadinessProjection({
+        context: input.context,
+        runtimeRecordPath: input.runtimeRecordPath,
+        architectureConfirmationCandidateHash: input.architectureConfirmationCandidateHash,
+        readinessScopedInputDigest: input.readinessScopedInputDigest,
+        issueCode,
+      })
+    ) {
+      throw error;
+    }
+  }
+}
+
 function assertPublishedReadinessRuntimeProjection(input: {
   context: ArchitectureConfirmationContext;
   candidate: ReadinessCandidate;
@@ -1083,7 +1272,11 @@ function existingBundle(
   const reportPath = path.join(evaluationRoot, 'implementation-readiness-report.json');
   const receiptPath = path.join(evaluationRoot, 'runtime-status-decision-receipt.json');
   if (!fs.existsSync(evaluationRoot)) return null;
-  if (!fs.existsSync(candidatePath) || !fs.existsSync(reportPath) || !fs.existsSync(receiptPath)) {
+  const publishedFiles = [candidatePath, reportPath, receiptPath].map((artifactPath) =>
+    fs.existsSync(artifactPath)
+  );
+  if (publishedFiles.every((exists) => !exists)) return null;
+  if (publishedFiles.some((exists) => !exists)) {
     throw new Error('implementation_readiness_published_bundle_incomplete');
   }
   const candidateValue = JSON.parse(fs.readFileSync(candidatePath, 'utf8')) as ReadinessCandidate;
@@ -1176,53 +1369,117 @@ export function produceImplementationReadiness(
   const projectRoot = path.resolve(input.projectRoot);
   if (!SAFE_REQUEST_ID.test(input.requestId))
     throw new Error('implementation_readiness_request_id_invalid');
-  const context = resolveArchitectureConfirmationContext({
+  const runtimeRecordPath = path.join(
     projectRoot,
-    requestId: input.requestId,
-  });
-  const architectureCandidate = deriveArchitectureConfirmationCandidate(context);
-  const acceptance = readCurrentArchitectureConfirmationAcceptance({
-    context,
-    candidate: architectureCandidate,
-  });
-  if (!acceptance) throw new ImplementationReadinessBlock('architecture_confirmation_required');
-  readValidReadinessRuntimeRecord(
-    context,
-    architectureCandidate.architectureConfirmationCandidateHash
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    input.requestId,
+    'requirement-record.json'
   );
-  const commands = normalizedCommandsFor(context, architectureCandidate);
-  const inputArtifacts = collectInputArtifacts(context, architectureCandidate, commands);
-  const digest = scopedInputDigest({
-    context,
-    candidate: architectureCandidate,
-    commands,
-    inputArtifacts,
+  const authoritative = readControlStoreAuthoritatively(runtimeRecordPath, () => {
+    const context = resolveArchitectureConfirmationContext({
+      projectRoot,
+      requestId: input.requestId,
+    });
+    const architectureCandidate = deriveArchitectureConfirmationCandidate(context);
+    const acceptance = readCurrentArchitectureConfirmationAcceptance({
+      context,
+      candidate: architectureCandidate,
+    });
+    if (!acceptance) {
+      throw new ImplementationReadinessBlock('architecture_confirmation_required');
+    }
+    const runtimeState = readValidReadinessRuntimeRecord(
+      context,
+      architectureCandidate.architectureConfirmationCandidateHash
+    );
+    const commands = normalizedCommandsFor(context, architectureCandidate);
+    const inputArtifacts = collectInputArtifacts(context, architectureCandidate, commands);
+    const digest = scopedInputDigest({
+      context,
+      candidate: architectureCandidate,
+      commands,
+      inputArtifacts,
+    });
+    return {
+      context,
+      architectureCandidate,
+      acceptance,
+      commands,
+      inputArtifacts,
+      digest,
+      runtimeState,
+      invalidateCurrentPass:
+        resolveVerifiedSixModelStatus({
+          record: runtimeState.record,
+          modelId: 'implementation_readiness',
+          currentImplementationAttemptId: text(runtimeState.record.currentAttemptId),
+        }).effectiveStatus === 'pass' &&
+        (text(
+          object(object(runtimeState.record.sixModelResults).implementation_readiness)
+            .readinessScopedInputDigest
+        ) ||
+          text(
+            object(
+              object(object(runtimeState.record.sixModelResults).implementation_readiness)
+                .currentHashes
+            ).readinessScopedInputDigest
+          )) !== digest,
+      reused: existingBundle(
+        input,
+        context,
+        architectureCandidate,
+        digest,
+        commands,
+        inputArtifacts
+      ),
+    };
   });
-  const reused = existingBundle(
-    input,
+  const {
     context,
     architectureCandidate,
-    digest,
+    acceptance,
     commands,
-    inputArtifacts
-  );
+    inputArtifacts,
+    digest,
+    runtimeState,
+    invalidateCurrentPass,
+    reused,
+  } = authoritative;
   if (reused) return reused;
+  const now = deps.now ?? (() => new Date().toISOString());
+  let staleTransitionWriteCount = 0;
+  if (invalidateCurrentPass) {
+    invalidateReadinessRuntimeProjection({
+      context,
+      runtimeRecordPath: runtimeState.runtimeRecordPath,
+      record: runtimeState.record,
+      architectureConfirmationCandidateHash:
+        architectureCandidate.architectureConfirmationCandidateHash,
+      readinessScopedInputDigest: digest,
+      recordedAt: now(),
+      controlStoreCommitDeps: deps.controlStoreCommitDeps,
+    });
+    staleTransitionWriteCount = 1;
+  }
   let executionCount = 0;
+  let attemptedPublicationWriteCount = 0;
   const outcomes: Array<Omit<ReadinessOutcome, 'rawLogRef'>> = [];
   const logs: string[] = [];
-  for (const command of commands) {
-    executionCount += 1;
-    deps.onCommandExecuted?.(command);
-    const run = runAndValidate(
-      command,
-      projectRoot,
-      deps.runCommand ?? runReadinessCommand,
-      executionCount
-    );
-    outcomes.push(run.outcome);
-    logs.push(run.log);
-  }
   try {
+    for (const command of commands) {
+      executionCount += 1;
+      deps.onCommandExecuted?.(command);
+      const run = runAndValidate(
+        command,
+        projectRoot,
+        deps.runCommand ?? runReadinessCommand,
+        executionCount
+      );
+      outcomes.push(run.outcome);
+      logs.push(run.log);
+    }
     const evaluationRoot = path.join(
       context.recordRoot,
       'record',
@@ -1273,7 +1530,6 @@ export function produceImplementationReadiness(
     const candidatePath = path.join(evaluationRoot, 'implementation-readiness-candidate.json');
     const reportPath = path.join(evaluationRoot, 'implementation-readiness-report.json');
     const receiptPath = path.join(evaluationRoot, 'runtime-status-decision-receipt.json');
-    const now = deps.now ?? (() => new Date().toISOString());
     const report = {
       schemaVersion: 'implementation-readiness-report/v1',
       generatedAt: now(),
@@ -1365,29 +1621,33 @@ export function produceImplementationReadiness(
         expectedBeforeHash: CONTROL_STORE_ZERO_HASH,
       })),
     ];
-    appendControlEventAndReplay({
-      recordPath: publication.runtimeRecordPath,
-      writerId: 'implementation-readiness-gate-writer',
-      eventType: 'implementation_readiness_result_recorded',
-      recordedAt: text(receipt.createdAt),
-      expectedBeforeRecordHash: sha256Json(canonicalizeRequirementRecord(publication.record)),
-      payload: {
+    attemptedPublicationWriteCount = artifactWrites.length + 1;
+    appendControlEventAndReplay(
+      {
+        recordPath: publication.runtimeRecordPath,
+        writerId: 'implementation-readiness-gate-writer',
         eventType: 'implementation_readiness_result_recorded',
-        ...publication.runtimeStatus.projection,
-      },
-      artifactWrites,
-      reduce: (currentRecord) => ({
-        ...currentRecord,
-        ...runtimeStatusProjectionRecordPatch({
-          record: currentRecord,
-          modelId: 'implementation_readiness',
-          update: publication.runtimeStatus,
+        recordedAt: text(receipt.createdAt),
+        expectedBeforeRecordHash: sha256Json(canonicalizeRequirementRecord(publication.record)),
+        payload: {
+          eventType: 'implementation_readiness_result_recorded',
+          ...publication.runtimeStatus.projection,
+        },
+        artifactWrites,
+        reduce: (currentRecord) => ({
+          ...currentRecord,
+          ...runtimeStatusProjectionRecordPatch({
+            record: currentRecord,
+            modelId: 'implementation_readiness',
+            update: publication.runtimeStatus,
+          }),
+          currentMentalModel: 'implementation_readiness',
+          lastEventType: 'implementation_readiness_result_recorded',
+          updatedAt: text(receipt.createdAt),
         }),
-        currentMentalModel: 'implementation_readiness',
-        lastEventType: 'implementation_readiness_result_recorded',
-        updatedAt: text(receipt.createdAt),
-      }),
-    });
+      },
+      deps.controlStoreCommitDeps
+    );
     deps.afterAtomicPublish?.();
     return resultPayload({
       status: 'implementation_readiness_pass',
@@ -1408,30 +1668,61 @@ export function produceImplementationReadiness(
       },
       issueCodes: [],
       commandExecutionCount: executionCount,
-      writeCount: artifactWrites.length + 1,
+      writeCount: staleTransitionWriteCount + attemptedPublicationWriteCount,
     });
   } catch (error) {
-    if (
-      error instanceof ImplementationReadinessBlock ||
-      error instanceof ImplementationReadinessFailure
-    ) {
-      throw error;
+    if (attemptedPublicationWriteCount > 0) {
+      let committed: JsonObject | null = null;
+      try {
+        committed = readControlStoreAuthoritatively(runtimeState.runtimeRecordPath, () =>
+          existingBundle(input, context, architectureCandidate, digest, commands, inputArtifacts)
+        );
+      } catch {
+        committed = null;
+      }
+      if (committed) {
+        return {
+          ...committed,
+          status: 'implementation_readiness_pass',
+          commandExecutionCount: executionCount,
+          writeCount: staleTransitionWriteCount + attemptedPublicationWriteCount,
+        };
+      }
     }
-    throw new ImplementationReadinessFailure(issueCodeFromError(error), executionCount);
+    if (error instanceof ImplementationReadinessBlock) {
+      throw new ImplementationReadinessBlock(
+        error.issueCode,
+        error.commandExecutionCount,
+        staleTransitionWriteCount + error.writeCount
+      );
+    }
+    if (error instanceof ImplementationReadinessFailure) {
+      throw new ImplementationReadinessFailure(
+        error.issueCode,
+        error.commandExecutionCount,
+        staleTransitionWriteCount + error.writeCount
+      );
+    }
+    throw new ImplementationReadinessFailure(
+      issueCodeFromError(error),
+      executionCount,
+      staleTransitionWriteCount
+    );
   }
 }
 
 function blockedResult(
   requestId: string,
   issueCodes: string[],
-  commandExecutionCount = 0
+  commandExecutionCount = 0,
+  writeCount = 0
 ): JsonObject {
   return resultPayload({
     status: 'implementation_readiness_blocked',
     requestId,
     issueCodes,
     commandExecutionCount,
-    writeCount: 0,
+    writeCount,
   });
 }
 
@@ -1468,7 +1759,12 @@ export function mainImplementationReadinessGateV2(argv: string[]): number {
     if (error instanceof ImplementationReadinessBlock) {
       emitJson(
         process.stderr,
-        blockedResult(args.requestId, [error.issueCode], error.commandExecutionCount)
+        blockedResult(
+          args.requestId,
+          [error.issueCode],
+          error.commandExecutionCount,
+          error.writeCount
+        )
       );
       return 1;
     }
@@ -1478,7 +1774,8 @@ export function mainImplementationReadinessGateV2(argv: string[]): number {
         blockedResult(
           args.requestId,
           [publicProducerFailureIssueCode(error.issueCode)],
-          error.commandExecutionCount
+          error.commandExecutionCount,
+          error.writeCount
         )
       );
       return 2;

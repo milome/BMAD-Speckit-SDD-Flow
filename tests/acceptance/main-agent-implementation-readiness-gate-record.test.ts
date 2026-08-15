@@ -10,6 +10,7 @@ import {
   implementationConfirmationHashFor,
   sourceDocumentHashFor,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-implementation-confirmation-codec';
+import { assertRuntimeBuildAuthorityCurrent } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-runtime-build-authority';
 import { implementationReadinessGateAction } from '../../packages/bmad-speckit/src/main-agent/actions/implementation-readiness-gate';
 import {
   materializeImplementationReadinessFixture,
@@ -49,6 +50,10 @@ function writeRecord(root: string, record: Record<string, unknown>): string {
 function writeText(filePath: string, value: string): void {
   mkdirSync(path.dirname(filePath), { recursive: true });
   writeFileSync(filePath, value, 'utf8');
+}
+
+function cleanupTempRoot(root: string): void {
+  rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
 }
 
 function writeReadinessFixture(
@@ -663,6 +668,25 @@ describe('requirement-scoped implementation readiness gate', () => {
   });
 
   it('keeps source, built dist, and package CLI on the same candidate identity', () => {
+    const packageRoot = path.join(process.cwd(), 'packages', 'bmad-speckit');
+    const buildAuthority = assertRuntimeBuildAuthorityCurrent({
+      receipt: JSON.parse(
+        readFileSync(
+          path.join(packageRoot, 'dist', 'main-agent', 'runtime-build-authority-receipt.json'),
+          'utf8'
+        )
+      ),
+      packageRoot,
+      runtimeAssetManifestPath: path.join(
+        packageRoot,
+        'dist',
+        'main-agent',
+        'runtime-asset-manifest.json'
+      ),
+      buildScriptPath: path.join(packageRoot, 'scripts', 'build-main-agent-dist.cjs'),
+      dependencyLockPath: path.join(process.cwd(), 'package-lock.json'),
+    });
+    expect(buildAuthority.decision).toBe('pass');
     const sourceFixture = materializeImplementationReadinessFixture();
     const distFixture = materializeImplementationReadinessFixture();
     try {
@@ -792,7 +816,7 @@ describe('requirement-scoped implementation readiness gate', () => {
           'implementation-readiness-result:REQ-READINESS:2026-05-19T00:00:01.000Z',
       });
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -831,7 +855,7 @@ describe('requirement-scoped implementation readiness gate', () => {
         ])
       );
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -863,7 +887,7 @@ describe('requirement-scoped implementation readiness gate', () => {
         'ai_tdd_pre_implementation_readiness_not_ready'
       );
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -893,7 +917,7 @@ describe('requirement-scoped implementation readiness gate', () => {
       );
       expect(code).toBe(record.gateChecks.at(-1).decision === 'pass' ? 0 : 1);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -915,7 +939,7 @@ describe('requirement-scoped implementation readiness gate', () => {
       ).toThrow('control_store_migration_required:confirmation_lineage_missing');
       expect(readFileSync(recordPath, 'utf8')).toBe(before);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -939,7 +963,7 @@ describe('requirement-scoped implementation readiness gate', () => {
         'source_document_hash_not_current'
       );
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -975,7 +999,7 @@ describe('requirement-scoped implementation readiness gate', () => {
         ])
       );
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 
@@ -1005,7 +1029,7 @@ describe('requirement-scoped implementation readiness gate', () => {
         'architecture_confirmation_source_hash_not_current'
       );
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 });
@@ -1040,7 +1064,7 @@ describe('implementation readiness v2 public hard cut', () => {
       });
       expect(existsSync(path.join(root, '_bmad-output'))).toBe(false);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      cleanupTempRoot(root);
     }
   });
 });
