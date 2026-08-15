@@ -171,6 +171,14 @@ interface ReadinessCandidate extends JsonObject {
   implementationReadinessCandidateHash: string;
 }
 
+interface ExistingReadinessBundle {
+  result: JsonObject;
+  candidate: ReadinessCandidate;
+  receiptPath: string;
+  receipt: JsonObject;
+  projectionCurrent: boolean;
+}
+
 interface ReadinessCommandRun {
   status: number | null;
   signal: string | null;
@@ -332,6 +340,126 @@ function confinedFile(projectRoot: string, logicalPath: string): string {
     throw new Error('implementation_readiness_physical_path_forbidden');
   }
   return absolute;
+}
+
+const LOCAL_MODULE_EXTENSIONS = [
+  '',
+  '.js',
+  '.cjs',
+  '.mjs',
+  '.ts',
+  '.cts',
+  '.mts',
+  '.jsx',
+  '.tsx',
+  '.json',
+];
+const MODULE_SOURCE_EXTENSIONS = new Set([
+  '.js',
+  '.cjs',
+  '.mjs',
+  '.ts',
+  '.cts',
+  '.mts',
+  '.jsx',
+  '.tsx',
+]);
+
+function executableCodeMask(source: string): Uint8Array {
+  const mask = new Uint8Array(source.length);
+  let mode: 'code' | 'single' | 'double' | 'template' | 'line_comment' | 'block_comment' = 'code';
+  const templateExpressionDepths: number[] = [];
+  for (let index = 0; index < source.length; index += 1) {
+    const current = source[index];
+    const next = source[index + 1];
+    if (mode === 'line_comment') {
+      if (current === '\n' || current === '\r') mode = 'code';
+      continue;
+    }
+    if (mode === 'block_comment') {
+      if (current === '*' && next === '/') {
+        index += 1;
+        mode = 'code';
+      }
+      continue;
+    }
+    if (mode === 'single' || mode === 'double') {
+      if (current === '\\') index += 1;
+      else if ((mode === 'single' && current === "'") || (mode === 'double' && current === '"')) {
+        mode = 'code';
+      }
+      continue;
+    }
+    if (mode === 'template') {
+      if (current === '\\') index += 1;
+      else if (current === '`') mode = 'code';
+      else if (current === '$' && next === '{') {
+        templateExpressionDepths.push(1);
+        index += 1;
+        mode = 'code';
+      }
+      continue;
+    }
+    if (current === '/' && next === '/') {
+      index += 1;
+      mode = 'line_comment';
+      continue;
+    }
+    if (current === '/' && next === '*') {
+      index += 1;
+      mode = 'block_comment';
+      continue;
+    }
+    mask[index] = 1;
+    if (current === "'") mode = 'single';
+    else if (current === '"') mode = 'double';
+    else if (current === '`') mode = 'template';
+    else if (templateExpressionDepths.length > 0 && current === '{') {
+      templateExpressionDepths[templateExpressionDepths.length - 1] += 1;
+    } else if (templateExpressionDepths.length > 0 && current === '}') {
+      const last = templateExpressionDepths.length - 1;
+      templateExpressionDepths[last] -= 1;
+      if (templateExpressionDepths[last] === 0) {
+        templateExpressionDepths.pop();
+        mode = 'template';
+      }
+    }
+  }
+  return mask;
+}
+
+function localModuleSpecifiers(filePath: string): string[] {
+  if (!MODULE_SOURCE_EXTENSIONS.has(path.extname(filePath).toLowerCase())) return [];
+  const source = fs.readFileSync(filePath, 'utf8');
+  const codeMask = executableCodeMask(source);
+  const specifiers: string[] = [];
+  for (const pattern of [
+    /\b(?:import|export)\s+(?:[^'"]*?\s+from\s+)?['"]([^'"]+)['"]/gu,
+    /\brequire\s*\(\s*['"]([^'"]+)['"]\s*\)/gu,
+    /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/gu,
+  ]) {
+    for (const match of source.matchAll(pattern)) {
+      if (match.index !== undefined && codeMask[match.index] === 1 && match[1].startsWith('.')) {
+        specifiers.push(match[1]);
+      }
+    }
+  }
+  return sortedUnique(specifiers);
+}
+
+function resolveLocalModule(projectRoot: string, importerPath: string, specifier: string): string {
+  const base = path.resolve(path.dirname(importerPath), specifier);
+  const candidates = [
+    ...LOCAL_MODULE_EXTENSIONS.map((extension) => `${base}${extension}`),
+    ...LOCAL_MODULE_EXTENSIONS.slice(1).map((extension) => path.join(base, `index${extension}`)),
+  ];
+  const resolved = candidates.find(
+    (candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile()
+  );
+  if (!resolved) {
+    throw new Error(`implementation_readiness_input_missing:${specifier}`);
+  }
+  return confinedFile(projectRoot, projectRelative(projectRoot, resolved));
 }
 
 export function parseReadinessCommandInvocation(invocation: string): {
@@ -599,6 +727,33 @@ function collectInputArtifacts(
   if (fs.existsSync(packageJson)) add('config', 'package.json');
   for (const lockName of LOCK_NAMES) {
     if (fs.existsSync(path.join(context.projectRoot, lockName))) add('lock', lockName);
+  }
+  const knownPaths = new Set([...byId.values()].map((artifact) => artifact.logicalPath));
+  const dependencyQueue = [...byId.values()]
+    .filter((artifact) => artifact.role === 'test' || artifact.role === 'config')
+    .map((artifact) => ({
+      role: artifact.role,
+      absolutePath: confinedFile(context.projectRoot, artifact.logicalPath),
+    }));
+  const traversed = new Set<string>();
+  while (dependencyQueue.length > 0) {
+    const current = dependencyQueue.shift()!;
+    const traversalKey = `${current.role}:${current.absolutePath}`;
+    if (traversed.has(traversalKey)) continue;
+    traversed.add(traversalKey);
+    for (const specifier of localModuleSpecifiers(current.absolutePath)) {
+      const dependencyPath = resolveLocalModule(
+        context.projectRoot,
+        current.absolutePath,
+        specifier
+      );
+      const logicalPath = projectRelative(context.projectRoot, dependencyPath);
+      if (!knownPaths.has(logicalPath)) {
+        add(current.role, logicalPath);
+        knownPaths.add(logicalPath);
+      }
+      dependencyQueue.push({ role: current.role, absolutePath: dependencyPath });
+    }
   }
   if (![...byId.values()].some((entry) => entry.role === 'test')) {
     throw new Error('implementation_readiness_test_input_missing');
@@ -1204,12 +1359,12 @@ function invalidateReadinessRuntimeProjection(input: {
   }
 }
 
-function assertPublishedReadinessRuntimeProjection(input: {
+function isPublishedReadinessRuntimeProjection(input: {
   context: ArchitectureConfirmationContext;
   candidate: ReadinessCandidate;
   receiptPath: string;
   receipt: JsonObject;
-}): void {
+}): boolean {
   const { record } = readValidReadinessRuntimeRecord(
     input.context,
     input.candidate.architectureConfirmationCandidateHash
@@ -1224,16 +1379,14 @@ function assertPublishedReadinessRuntimeProjection(input: {
   const currentDigest =
     text(currentProjection.readinessScopedInputDigest) ||
     text(currentHashes.readinessScopedInputDigest);
-  if (
+  return !(
     currentStatus.effectiveStatus !== 'pass' ||
     text(object(currentProjection.currentHashes).implementationReadinessCandidateHash) !==
       input.candidate.implementationReadinessCandidateHash ||
     text(currentProjection.decisionReceiptHash) !== text(input.receipt.receiptHash) ||
     text(currentProjection.decisionReceiptRef) !== input.receiptPath ||
     currentDigest !== input.candidate.readinessScopedInputDigest
-  ) {
-    throw new Error('implementation_readiness_published_projection_invalid');
-  }
+  );
 }
 
 function resultPayload(input: {
@@ -1277,7 +1430,7 @@ function existingBundle(
   digest: string,
   commands: NormalizedCommand[],
   inputArtifacts: InputArtifact[]
-): JsonObject | null {
+): ExistingReadinessBundle | null {
   const recordRoot = context.recordRoot;
   const evaluationRoot = path.join(
     recordRoot,
@@ -1351,33 +1504,103 @@ function existingBundle(
     throw new Error('implementation_readiness_published_receipt_lineage_invalid');
   }
   const receiptRelativePath = recordRelative(context.recordRoot, receiptPath);
-  assertPublishedReadinessRuntimeProjection({
+  const projectionCurrent = isPublishedReadinessRuntimeProjection({
     context,
     candidate: candidateValue,
     receiptPath: receiptRelativePath,
     receipt,
   });
-  return resultPayload({
-    status: 'implementation_readiness_reused',
-    requestId: input.requestId,
+  return {
+    result: resultPayload({
+      status: 'implementation_readiness_reused',
+      requestId: input.requestId,
+      candidate: candidateValue,
+      candidateRef: candidateArtifactRef,
+      reportRef: {
+        path: projectRelative(input.projectRoot, reportPath),
+        artifactBytesHash: artifactBytesHash({
+          role: 'implementation_readiness_report',
+          mediaType: 'application/json',
+          bytes: reportBytes,
+        }),
+      },
+      decisionReceiptRef: {
+        path: projectRelative(input.projectRoot, receiptPath),
+        receiptHash: receipt.receiptHash,
+      },
+      issueCodes: [],
+      commandExecutionCount: 0,
+      writeCount: 0,
+    }),
     candidate: candidateValue,
-    candidateRef: candidateArtifactRef,
-    reportRef: {
-      path: projectRelative(input.projectRoot, reportPath),
-      artifactBytesHash: artifactBytesHash({
-        role: 'implementation_readiness_report',
-        mediaType: 'application/json',
-        bytes: reportBytes,
-      }),
-    },
-    decisionReceiptRef: {
-      path: projectRelative(input.projectRoot, receiptPath),
-      receiptHash: receipt.receiptHash,
-    },
-    issueCodes: [],
-    commandExecutionCount: 0,
-    writeCount: 0,
+    receiptPath: receiptRelativePath,
+    receipt,
+    projectionCurrent,
+  };
+}
+
+function rebindExistingReadinessBundle(input: {
+  context: ArchitectureConfirmationContext;
+  bundle: ExistingReadinessBundle;
+  recordedAt: string;
+  controlStoreCommitDeps?: ControlStoreCommitDeps;
+}): boolean {
+  const publication = readinessRuntimePublication({
+    context: input.context,
+    candidate: input.bundle.candidate,
+    receiptPath: input.bundle.receiptPath,
+    receipt: input.bundle.receipt,
   });
+  try {
+    appendControlEventAndReplay(
+      {
+        recordPath: publication.runtimeRecordPath,
+        writerId: 'implementation-readiness-gate-writer',
+        eventType: 'implementation_readiness_result_recorded',
+        recordedAt: input.recordedAt,
+        expectedBeforeRecordHash: sha256Json(canonicalizeRequirementRecord(publication.record)),
+        payload: {
+          eventType: 'implementation_readiness_result_recorded',
+          ...publication.runtimeStatus.projection,
+        },
+        reduce: (currentRecord) => ({
+          ...currentRecord,
+          ...runtimeStatusProjectionRecordPatch({
+            record: currentRecord,
+            modelId: 'implementation_readiness',
+            update: publication.runtimeStatus,
+          }),
+          currentMentalModel: 'implementation_readiness',
+          lastEventType: 'implementation_readiness_result_recorded',
+          updatedAt: input.recordedAt,
+        }),
+      },
+      input.controlStoreCommitDeps
+    );
+  } catch (error) {
+    if (
+      isPublishedReadinessRuntimeProjection({
+        context: input.context,
+        candidate: input.bundle.candidate,
+        receiptPath: input.bundle.receiptPath,
+        receipt: input.bundle.receipt,
+      })
+    ) {
+      return false;
+    }
+    throw error;
+  }
+  if (
+    !isPublishedReadinessRuntimeProjection({
+      context: input.context,
+      candidate: input.bundle.candidate,
+      receiptPath: input.bundle.receiptPath,
+      receipt: input.bundle.receipt,
+    })
+  ) {
+    throw new Error('implementation_readiness_published_projection_invalid');
+  }
+  return true;
 }
 
 export function produceImplementationReadiness(
@@ -1385,6 +1608,7 @@ export function produceImplementationReadiness(
   deps: ReadinessProducerDeps = {}
 ): JsonObject {
   const projectRoot = path.resolve(input.projectRoot);
+  const now = deps.now ?? (() => new Date().toISOString());
   if (!SAFE_REQUEST_ID.test(input.requestId))
     throw new Error('implementation_readiness_request_id_invalid');
   const runtimeRecordPath = path.join(
@@ -1465,8 +1689,17 @@ export function produceImplementationReadiness(
     invalidateCurrentPass,
     reused,
   } = authoritative;
-  if (reused) return reused;
-  const now = deps.now ?? (() => new Date().toISOString());
+  if (reused) {
+    const rebound = reused.projectionCurrent
+      ? false
+      : rebindExistingReadinessBundle({
+          context,
+          bundle: reused,
+          recordedAt: now(),
+          controlStoreCommitDeps: deps.controlStoreCommitDeps,
+        });
+    return { ...reused.result, writeCount: rebound ? 1 : 0 };
+  }
   let staleTransitionWriteCount = 0;
   if (invalidateCurrentPass) {
     invalidateReadinessRuntimeProjection({
@@ -1690,7 +1923,7 @@ export function produceImplementationReadiness(
     });
   } catch (error) {
     if (attemptedPublicationWriteCount > 0) {
-      let committed: JsonObject | null = null;
+      let committed: ExistingReadinessBundle | null = null;
       try {
         committed = readControlStoreAuthoritatively(runtimeState.runtimeRecordPath, () =>
           existingBundle(input, context, architectureCandidate, digest, commands, inputArtifacts)
@@ -1700,7 +1933,7 @@ export function produceImplementationReadiness(
       }
       if (committed) {
         return {
-          ...committed,
+          ...committed.result,
           status: 'implementation_readiness_pass',
           commandExecutionCount: executionCount,
           writeCount: staleTransitionWriteCount + attemptedPublicationWriteCount,

@@ -102,6 +102,109 @@ describe('Main Agent implementation readiness replay and recovery', () => {
     }
   });
 
+  it('invalidates readiness when an imported RED dependency changes', () => {
+    const fixture = materializeImplementationReadinessFixture({
+      additionalFiles: {
+        'tests/refund-helper.cjs': "module.exports = { expectedStatus: 'accepted' };\n",
+      },
+    });
+    try {
+      writeFileSync(
+        fixture.testPath,
+        [
+          "const test = require('node:test');",
+          "const assert = require('node:assert/strict');",
+          "const { refundStatus } = require('../src/refund-worker.cjs');",
+          "const { expectedStatus } = require('./refund-helper.cjs');",
+          "// require('./missing-commented-dependency.cjs');",
+          'const dependencyExample = "import \'./missing-string-dependency.cjs\'";',
+          `test('${fixture.commandIds.join(' ')} ${fixture.oracle}', () => {`,
+          '  void dependencyExample;',
+          `  assert.equal(refundStatus(), expectedStatus, '${fixture.oracle}');`,
+          '});',
+          '',
+        ].join('\n'),
+        'utf8'
+      );
+      const first = produceImplementationReadiness({
+        projectRoot: fixture.root,
+        requestId: fixture.requestId,
+      }) as Record<string, any>;
+      writeFileSync(
+        path.join(fixture.root, 'tests', 'refund-helper.cjs'),
+        "module.exports = { expectedStatus: 'accepted', revision: 2 };\n",
+        'utf8'
+      );
+
+      const second = produceImplementationReadiness({
+        projectRoot: fixture.root,
+        requestId: fixture.requestId,
+      }) as Record<string, any>;
+
+      expect(second.status).toBe('implementation_readiness_pass');
+      expect(second.commandExecutionCount).toBe(1);
+      expect(second.readinessScopedInputDigest).not.toBe(first.readinessScopedInputDigest);
+      expect(second.implementationReadinessCandidateHash).not.toBe(
+        first.implementationReadinessCandidateHash
+      );
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('rebinds an intact A bundle after A-B-A scoped-input restoration', () => {
+    const fixture = materializeImplementationReadinessFixture();
+    try {
+      const originalTarget = readFileSync(fixture.targetPath);
+      const first = produceImplementationReadiness({
+        projectRoot: fixture.root,
+        requestId: fixture.requestId,
+      }) as Record<string, any>;
+      writeFileSync(
+        fixture.targetPath,
+        "module.exports = { refundStatus: () => 'pending' }; // readiness B\n",
+        'utf8'
+      );
+      const second = produceImplementationReadiness({
+        projectRoot: fixture.root,
+        requestId: fixture.requestId,
+      }) as Record<string, any>;
+      expect(second.implementationReadinessCandidateHash).not.toBe(
+        first.implementationReadinessCandidateHash
+      );
+      writeFileSync(fixture.targetPath, originalTarget);
+      let executions = 0;
+
+      const restored = produceImplementationReadiness(
+        { projectRoot: fixture.root, requestId: fixture.requestId },
+        {
+          onCommandExecuted: () => {
+            executions += 1;
+          },
+        }
+      ) as Record<string, any>;
+      const runtimeRecord = JSON.parse(readFileSync(fixture.runtimeRecordPath, 'utf8'));
+      const projection = runtimeRecord.sixModelResults.implementation_readiness;
+
+      expect(restored).toMatchObject({
+        status: 'implementation_readiness_reused',
+        implementationReadinessCandidateHash: first.implementationReadinessCandidateHash,
+        readinessScopedInputDigest: first.readinessScopedInputDigest,
+        commandExecutionCount: 0,
+        writeCount: 1,
+      });
+      expect(executions).toBe(0);
+      expect(projection.currentHashes.implementationReadinessCandidateHash).toBe(
+        first.implementationReadinessCandidateHash
+      );
+      expect(projection.currentHashes.readinessScopedInputDigest).toBe(
+        first.readinessScopedInputDigest
+      );
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
   it('reruns the bounded command set after a pre-publication crash without publishing a receipt', () => {
     const fixture = materializeImplementationReadinessFixture({ duplicateCommand: true });
     let executions = 0;

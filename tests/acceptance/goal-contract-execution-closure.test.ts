@@ -191,6 +191,94 @@ describe('GoalExecutionIR deterministic closure', () => {
     );
   });
 
+  it('maps the atom dependency DAG into task dependency rows', () => {
+    const input = compilerInput();
+    input.atoms = [
+      {
+        atomId: 'NEG-001-A1',
+        coverageSeed: 'NEG-001',
+        action: 'Reject a duplicate refund.',
+        oracle: 'one refund',
+        dependencies: ['MUST-001-A1'],
+      },
+      {
+        atomId: 'MUST-001-A1',
+        coverageSeed: 'MUST-001',
+        action: 'Implement refund.',
+        oracle: 'refund accepted',
+        dependencies: [],
+      },
+    ];
+
+    const compiled = compileGoalExecutionIR(input);
+
+    expect(compiled.dependencies).toEqual([
+      {
+        from: 'TASK-002',
+        to: 'TASK-001',
+        basisRefs: ['MUST-001-A1', 'NEG-001-A1'],
+      },
+    ]);
+  });
+
+  it('merges Architecture-only forbidden paths without duplicating Requirements STOP scope', () => {
+    const input = compilerInput();
+    input.architecture.logicalScope = {
+      forbiddenPaths: ['docs/generated/**', '.git/**'],
+    };
+
+    const compiled = compileGoalExecutionIR(input);
+
+    expect(compiled.logicalScopes.forbiddenPaths).toEqual(['.git/**', 'docs/generated/**']);
+  });
+
+  it('binds atom-only commands and evidence contracts to the matching trace', () => {
+    const input = compilerInput();
+    input.executionConstraints.push(
+      {
+        constraintId: 'CMD-refund-atom',
+        kind: 'CMD',
+        canonicalValue: 'npm test -- refund-atom',
+        applicableMustRefs: [],
+        applicableAtomRefs: ['MUST-001-A1'],
+        premiseRefs: ['MUST-001-A1'],
+        derivationReceiptRefs: [],
+        disposition: 'proven',
+      },
+      {
+        constraintId: 'EVDREQ-refund-atom',
+        kind: 'EVDREQ',
+        canonicalValue: 'atom RED/GREEN evidence',
+        applicableMustRefs: [],
+        applicableAtomRefs: ['MUST-001-A1'],
+        premiseRefs: ['MUST-001-A1'],
+        derivationReceiptRefs: [],
+        disposition: 'proven',
+      }
+    );
+
+    const compiled = compileGoalExecutionIR(input);
+    const mustTrace = compiled.traceSlices.find((row) =>
+      (row.obligationRefs as string[]).includes('MUST-001')
+    );
+
+    expect(mustTrace?.commandRefs).toContain('CMD-refund-atom');
+    expect(mustTrace?.evidenceContractRefs).toContain('EVDREQ-refund-atom');
+  });
+
+  it('blocks swapped task-to-obligation trace membership', () => {
+    const compiled = compileGoalExecutionIR(compilerInput());
+    const broken = structuredClone(compiled) as GoalExecutionIR;
+    const firstTaskRefs = broken.traceSlices[0].taskRefs;
+    broken.traceSlices[0].taskRefs = broken.traceSlices[1].taskRefs;
+    broken.traceSlices[1].taskRefs = firstTaskRefs;
+    broken.goalExecutionIRHash = goalExecutionIRHash(broken);
+
+    expect(() => compileGoalExecutionClosure(broken)).toThrowError(
+      'goal_execution_trace_task_membership_mismatch'
+    );
+  });
+
   it('creates a vertical task for an obligation without an explicit atom', () => {
     const input = compilerInput();
     input.obligations.push({

@@ -292,8 +292,7 @@ function fixture(
   const semanticPath = `authoring/semantic-revisions/${semanticIr.semanticRevisionId}/semantic-ir.json`;
   const bindingPath = `authoring/source-bindings/${sourceBinding.bindingRevisionId}/source-binding.json`;
   const executionPath =
-    overrides.executionPath ??
-    `authoring/staging/${activeAttemptId}/cp06/execution-manifest.json`;
+    overrides.executionPath ?? `authoring/staging/${activeAttemptId}/cp06/execution-manifest.json`;
   const buildPath = `authoring/staging/${activeAttemptId}/contract-build-manifest.json`;
   writeJson(recordRoot, semanticPath, semanticIr);
   writeJson(recordRoot, bindingPath, sourceBinding);
@@ -1220,7 +1219,7 @@ describe('Main Agent architecture confirmation candidate', () => {
     }
   });
 
-  it('blocks when a forbidden scope is nested under a broader logical target', () => {
+  it('blocks a wildcard logical target before forbidden-scope comparison', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'architecture-candidate-'));
     try {
       const input = fixture(root, {
@@ -1235,12 +1234,53 @@ describe('Main Agent architecture confirmation candidate', () => {
       });
 
       expect(() => deriveArchitectureConfirmationCandidate(architectureContext)).toThrow(
-        'architecture_successor_required:forbidden_scope'
+        'architecture_successor_required:logical_target_paths'
       );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it('blocks a wildcard repository target authority', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'architecture-candidate-target-authority-'));
+    try {
+      const input = fixture(root, {
+        repositoryAuthority: { allowedTargetPaths: ['src/**'] },
+      });
+      const result = runPrepareArchitectureConfirmation(
+        context(root, 'prepare-architecture-confirmation', ['--request-id', input.requestId])
+      ) as Record<string, any>;
+
+      expect(result.exitCode, JSON.stringify(result, null, 2)).toBe(1);
+      expect(result.result.issueCodes).toEqual([
+        'architecture_successor_required:target_authority',
+      ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it.each(['src/*/secrets.ts', 'src/**/secrets.ts', 'src/secrets/*.ts'])(
+    'blocks unsupported forbidden-scope pattern %s',
+    (forbiddenPath) => {
+      const root = mkdtempSync(path.join(os.tmpdir(), 'architecture-candidate-forbidden-pattern-'));
+      try {
+        const input = fixture(root, {
+          policyAuthority: { forbiddenScope: { paths: [forbiddenPath] } },
+        });
+        const result = runPrepareArchitectureConfirmation(
+          context(root, 'prepare-architecture-confirmation', ['--request-id', input.requestId])
+        ) as Record<string, any>;
+
+        expect(result.exitCode, JSON.stringify(result, null, 2)).toBe(1);
+        expect(result.result.issueCodes).toEqual([
+          'architecture_successor_required:forbidden_scope',
+        ]);
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    }
+  );
 
   it('blocks a non-canonical logical target before authority scope comparison', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'architecture-candidate-path-'));
@@ -1250,9 +1290,7 @@ describe('Main Agent architecture confirmation candidate', () => {
         repositoryAuthority: { allowedTargetPaths: ['src/**'] },
         policyAuthority: {
           forbiddenScope: { paths: ['.git/**'] },
-          ownershipRules: [
-            { targetPath: 'src/**', owner: 'requirements_backed_main_agent' },
-          ],
+          ownershipRules: [{ targetPath: 'src/**', owner: 'requirements_backed_main_agent' }],
         },
       });
       const result = runPrepareArchitectureConfirmation(
@@ -1279,9 +1317,7 @@ describe('Main Agent architecture confirmation candidate', () => {
       ) as Record<string, any>;
 
       expect(result.exitCode, JSON.stringify(result, null, 2)).toBe(1);
-      expect(result.result.issueCodes).toEqual([
-        'architecture_successor_required:forbidden_scope',
-      ]);
+      expect(result.result.issueCodes).toEqual(['architecture_successor_required:forbidden_scope']);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1540,9 +1576,7 @@ describe('Main Agent architecture confirmation candidate', () => {
         successor.triggerMatrix.find(
           (entry: Record<string, unknown>) => entry.triggerId === 'architecture:target-scope'
         ).basisRefs
-      ).toEqual(
-        expect.arrayContaining(['STOP-refund-worker-forbidden', 'repo-refund-worker'])
-      );
+      ).toEqual(expect.arrayContaining(['STOP-refund-worker-forbidden', 'repo-refund-worker']));
       expect(
         successor.triggerMatrix.find(
           (entry: Record<string, unknown>) => entry.triggerId === 'architecture:target-scope'

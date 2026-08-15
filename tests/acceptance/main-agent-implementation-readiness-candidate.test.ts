@@ -112,7 +112,7 @@ describe('Main Agent implementation readiness candidate identity', () => {
           commandExecutionCount: 0,
           writeCount: 1,
         })
-      ).toBe(false);
+      ).toBe(true);
       for (const issueCode of [
         'implementation_readiness_command_scope_unclosed',
         'implementation_readiness_runtime_prerequisite_invalid',

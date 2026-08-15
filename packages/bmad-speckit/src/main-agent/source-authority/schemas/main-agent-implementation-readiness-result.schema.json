@@ -69,7 +69,7 @@
         "status": { "const": "implementation_readiness_reused" },
         "issueCodes": { "maxItems": 0 },
         "commandExecutionCount": { "const": 0 },
-        "writeCount": { "const": 0 }
+        "writeCount": { "minimum": 0, "maximum": 1 }
       }
     },
     {

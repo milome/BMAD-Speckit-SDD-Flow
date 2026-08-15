@@ -32,6 +32,7 @@ export function compileGoalExecutionClosure(ir: GoalExecutionIR): GoalExecutionC
   if (validation.decision !== 'pass') fail(validation.issueCodes[0]);
   const obligationIds = sortedUnique(ir.obligations.map((row) => row.obligationId));
   const taskIds = sortedUnique(ir.atomicTasks.map((row) => String(row.taskId || '')));
+  const taskById = new Map(ir.atomicTasks.map((row) => [String(row.taskId || ''), row]));
   const domainIds = new Set(ir.executionDomains.map((row) => String(row.executionDomainId || '')));
   const traceTaskRefs = sortedUnique(
     ir.traceSlices.flatMap((row) => (Array.isArray(row.taskRefs) ? row.taskRefs.map(String) : []))
@@ -51,6 +52,34 @@ export function compileGoalExecutionClosure(ir: GoalExecutionIR): GoalExecutionC
     }
     if (!domainIds.has(String(trace.executionDomainRef || '')))
       fail('goal_execution_domain_closure_invalid');
+  }
+  for (const trace of ir.traceSlices) {
+    const obligationRefs = new Set(
+      Array.isArray(trace.obligationRefs) ? trace.obligationRefs.map(String) : []
+    );
+    const taskRefs = Array.isArray(trace.taskRefs) ? trace.taskRefs.map(String) : [];
+    const traceTasks = taskRefs.map((taskRef) => taskById.get(taskRef));
+    if (
+      traceTasks.some(
+        (task) =>
+          !task ||
+          !Array.isArray(task.obligationRefs) ||
+          !task.obligationRefs
+            .map(String)
+            .some((obligationRef) => obligationRefs.has(obligationRef))
+      ) ||
+      [...obligationRefs].some(
+        (obligationRef) =>
+          !traceTasks.some(
+            (task) =>
+              task &&
+              Array.isArray(task.obligationRefs) &&
+              task.obligationRefs.map(String).includes(obligationRef)
+          )
+      )
+    ) {
+      fail('goal_execution_trace_task_membership_mismatch');
+    }
   }
   for (const task of ir.atomicTasks) {
     if (
