@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/goal-contract-active-authority.schema.json",
+  "title": "Goal Contract Active Authority",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "profile", "goalId", "goalExecutionIRHash", "goalExecutionIrRef", "sourceBindingRef", "resolvedEvidenceIndexRef", "closureRef", "parentProjectionRef", "renderabilityReportRef", "activeAuthorityHash"],
+  "properties": {
+    "schemaVersion": { "const": "GoalContractActiveAuthority/v1" },
+    "profile": { "enum": ["requirements_backed", "standalone"] },
+    "goalId": { "type": "string", "minLength": 1 },
+    "goalExecutionIRHash": { "$ref": "#/$defs/hash" },
+    "goalExecutionIrRef": { "$ref": "#/$defs/hashRef" },
+    "standaloneSemanticIrRef": { "$ref": "#/$defs/hashRef" },
+    "standaloneAuthoringEffectivePassRef": { "$ref": "#/$defs/hashRef" },
+    "sourceBindingRef": { "$ref": "#/$defs/hashRef" },
+    "resolvedEvidenceIndexRef": { "$ref": "#/$defs/hashRef" },
+    "closureRef": { "$ref": "#/$defs/hashRef" },
+    "parentProjectionRef": { "$ref": "#/$defs/bytesRef" },
+    "renderabilityReportRef": { "$ref": "#/$defs/bytesRef" },
+    "activeAuthorityHash": { "$ref": "#/$defs/hash" }
+  },
+  "allOf": [
+    { "if": { "properties": { "profile": { "const": "requirements_backed" } } }, "then": { "not": { "anyOf": [{ "required": ["standaloneSemanticIrRef"] }, { "required": ["standaloneAuthoringEffectivePassRef"] }] } } },
+    { "if": { "properties": { "profile": { "const": "standalone" } } }, "then": { "required": ["standaloneSemanticIrRef", "standaloneAuthoringEffectivePassRef"] } }
+  ],
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "hashRef": { "type": "object", "additionalProperties": false, "required": ["path", "hash"], "properties": { "path": { "type": "string", "minLength": 1 }, "hash": { "$ref": "#/$defs/hash" } } },
+    "bytesRef": { "type": "object", "additionalProperties": false, "required": ["path", "bytesHash"], "properties": { "path": { "type": "string", "minLength": 1 }, "bytesHash": { "$ref": "#/$defs/hash" } } }
+  }
+}

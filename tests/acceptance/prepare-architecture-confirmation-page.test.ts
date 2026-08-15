@@ -266,23 +266,9 @@ function writeZhLocalizationBundle(): string {
 }
 
 describe('prepare-architecture-confirmation-page', () => {
-  it('resolves nested packaged bmad-speckit dist scripts from npm tarball installs', () => {
+  it('publishes only the canonical request-id prepare contract', () => {
     const installRoot = path.join(tempDir, 'consumer-install');
     const prepare = copyPrepareScriptIntoInstallSurface(installRoot);
-    const nestedIngest = path.join(
-      installRoot,
-      'node_modules',
-      'bmad-speckit-sdd-flow',
-      'node_modules',
-      'bmad-speckit',
-      'dist',
-      'main-agent',
-      'source-authority',
-      'scripts',
-      'ingest-architecture-confirmation.js'
-    );
-    fs.mkdirSync(path.dirname(nestedIngest), { recursive: true });
-    fs.writeFileSync(nestedIngest, 'module.exports = {};', 'utf8');
 
     const result = spawnSync(process.execPath, [prepare, '--help'], {
       cwd: installRoot,
@@ -290,147 +276,64 @@ describe('prepare-architecture-confirmation-page', () => {
     });
 
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
-    expect(result.stdout).toContain('Usage: node prepare-architecture-confirmation-page.ts');
+    expect(result.stdout).toContain(
+      'prepare-architecture-confirmation-page.ts --request-id <requestId> --json'
+    );
+    expect(result.stdout).not.toContain('--source');
+    expect(result.stdout).not.toContain('--target-paths');
   });
 
-  it('automatically checks stale state, generates the architecture artifact, and renders user-facing HTML', () => {
-    const fixture = writeConfirmedFixture();
-    const out = path.join(
-      tempDir,
-      '_bmad-output/runtime/requirement-records/REQ-PREPARE/architecture/architecture-confirmation-run-001.html'
+  it('delegates request-id preparation to the installed package CLI without derived inputs', () => {
+    const installRoot = path.join(tempDir, 'consumer-install');
+    const prepare = copyPrepareScriptIntoInstallSurface(installRoot);
+    const packageCli = path.join(
+      installRoot,
+      'node_modules',
+      'bmad-speckit',
+      'bin',
+      'bmad-speckit.js'
     );
-    const localization = writeZhLocalizationBundle();
-    const result = runNode(PREPARE, [
-      '--source',
-      fixture.source,
-      '--requirement-record',
-      fixture.record,
-      '--run-id',
-      'run-001',
-      '--target-paths',
-      targetPaths,
-      '--consumer-impact-scan',
-      consumerImpactScan,
-      '--governance-impact-scan',
-      governanceImpactScan,
-      '--full-architecture-trigger-matrix',
-      triggerMatrix,
-      '--localization',
-      localization,
-      '--out',
-      out,
-      '--json',
-    ]);
+    fs.mkdirSync(path.dirname(packageCli), { recursive: true });
+    fs.writeFileSync(
+      packageCli,
+      "process.stdout.write(JSON.stringify({ argv: process.argv.slice(2), cwd: process.cwd() }) + '\\n');\n",
+      'utf8'
+    );
+    const result = spawnSync(
+      process.execPath,
+      [prepare, '--request-id', 'REQ-PREPARE', '--json'],
+      { cwd: installRoot, encoding: 'utf8' }
+    );
 
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
     const output = JSON.parse(result.stdout);
-    expect(output.userFacingNextStep).toBe(
-      'open_architecture_confirmation_html_and_confirm_hashes'
-    );
-    expect(output.internalSteps.map((step: { label: string }) => step.label)).toEqual([
-      'architecture_confirmation_state_checked',
-      'generate_architecture_confirmation_artifact',
-      'render_architecture_confirmation_html',
-    ]);
-    expect(output.confirmInstruction).toContain('确认架构确认进入实施准备');
-    expect(output.confirmInstruction).toContain('architectureConfirmationArtifactHash=sha256:');
-    expect(fs.existsSync(output.architectureConfirmationPath)).toBe(true);
-    expect(fs.existsSync(output.htmlPath)).toBe(true);
-    expect(fs.existsSync(output.prepareReportPath)).toBe(true);
-
-    expect(output.internalSteps[0]).toMatchObject({
-      eventType: 'architecture_confirmation_state_checked',
-    });
-    expect(['pass', 'fail', 'blocked']).toContain(output.internalSteps[0].decision);
-    expect(output.internalSteps[0].receiptPath).toMatch(
-      /events\/receipts\/architecture_confirmation_state_checked_.*\.json$/u
-    );
-    const prepareReport = JSON.parse(fs.readFileSync(output.prepareReportPath, 'utf8'));
-    expect(prepareReport.userFacingNextStep).toBe(
-      'open_architecture_confirmation_html_and_confirm_hashes'
-    );
-    expect(prepareReport.internalSteps[0].label).toBe('architecture_confirmation_state_checked');
-
-    const record = JSON.parse(fs.readFileSync(fixture.record, 'utf8'));
-    expect(record.architectureConfirmationStateChecks).toHaveLength(1);
-    expect(record.architectureConfirmationStateChecks[0]).toMatchObject({
-      eventType: 'architecture_confirmation_state_checked',
-      decision: output.internalSteps[0].decision,
-    });
-    expect(['pass', 'fail', 'blocked']).toContain(
-      record.architectureConfirmationStateChecks[0].decision
-    );
-    expect(record.controlStore.lastEventId).toContain('architecture_confirmation_state_checked');
-    expect(record.architectureConfirmations ?? []).toHaveLength(0);
-  });
-
-  it('canonicalizes legacy runtime refs and architecture state before persisting the state check', () => {
-    const fixture = writeConfirmedFixture();
-    const localization = writeZhLocalizationBundle();
-    const runtimePolicySnapshot = path.join(tempDir, 'runtime-policy-snapshot.json');
-    fs.writeFileSync(runtimePolicySnapshot, '{"schemaVersion":"runtime-policy-snapshot/v1"}\n', 'utf8');
-    const legacyRecord = JSON.parse(fs.readFileSync(fixture.record, 'utf8'));
-    legacyRecord.runtimePolicySnapshotRef = { path: runtimePolicySnapshot };
-    legacyRecord.architectureConfirmationState.reasonCode = 'legacy_missing_reason';
-    fs.writeFileSync(fixture.record, `${JSON.stringify(legacyRecord, null, 2)}\n`, 'utf8');
-
-    const result = runNode(PREPARE, [
-      '--source',
-      fixture.source,
-      '--requirement-record',
-      fixture.record,
-      '--run-id',
-      'run-legacy-record',
-      '--target-paths',
-      targetPaths,
-      '--consumer-impact-scan',
-      consumerImpactScan,
-      '--governance-impact-scan',
-      governanceImpactScan,
-      '--full-architecture-trigger-matrix',
-      triggerMatrix,
-      '--localization',
-      localization,
-      '--out',
-      path.join(tempDir, 'architecture-confirmation-legacy.html'),
+    expect(output.argv).toEqual([
+      'main-agent',
+      'prepare-architecture-confirmation',
+      '--request-id',
+      'REQ-PREPARE',
       '--json',
     ]);
-
-    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
-    const record = JSON.parse(fs.readFileSync(fixture.record, 'utf8'));
-    expect(record.runtimePolicySnapshotRef.contentHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
-    expect(record.architectureConfirmationState).not.toHaveProperty('reasonCode');
-    expect(record.architectureConfirmationStateChecks).toHaveLength(1);
+    expect(output.cwd.replace(/\\/gu, '/')).toBe(installRoot.replace(/\\/gu, '/'));
   });
 
-  it('fails closed instead of rendering when required architecture inputs are missing', () => {
-    const fixture = writeConfirmedFixture();
-    const localization = writeZhLocalizationBundle();
-    const out = path.join(tempDir, 'architecture-confirmation.html');
+  it('fails closed on caller-derived producer inputs', () => {
     const result = runNode(PREPARE, [
-      '--source',
-      fixture.source,
-      '--requirement-record',
-      fixture.record,
-      '--run-id',
-      'run-002',
+      '--request-id',
+      'REQ-PREPARE',
       '--target-paths',
-      '[]',
-      '--consumer-impact-scan',
-      consumerImpactScan,
-      '--governance-impact-scan',
-      governanceImpactScan,
-      '--full-architecture-trigger-matrix',
-      triggerMatrix,
-      '--localization',
-      localization,
-      '--out',
-      out,
+      targetPaths,
       '--json',
     ]);
 
     expect(result.status).toBe(2);
-    expect(result.stderr).toContain('targetPaths must not be empty');
-    expect(fs.existsSync(out)).toBe(false);
+    expect(result.stderr).toContain('caller_derived_input_forbidden:target-paths');
+  });
+
+  it('requires request-id without creating a local architecture state check', () => {
+    const result = runNode(PREPARE, ['--json']);
+
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain('request_id_missing');
   });
 });

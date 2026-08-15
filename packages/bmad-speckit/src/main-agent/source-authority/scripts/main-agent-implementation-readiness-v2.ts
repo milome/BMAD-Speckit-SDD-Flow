@@ -636,6 +636,24 @@ function scopedInputDigest(input: {
   });
 }
 
+export function computeCurrentReadinessScopedInputDigest(input: {
+  context: ArchitectureConfirmationContext;
+  architectureCandidate: ArchitectureConfirmationCandidate;
+}): string {
+  const commands = normalizedCommandsFor(input.context, input.architectureCandidate);
+  const inputArtifacts = collectInputArtifacts(
+    input.context,
+    input.architectureCandidate,
+    commands
+  );
+  return scopedInputDigest({
+    context: input.context,
+    candidate: input.architectureCandidate,
+    commands,
+    inputArtifacts,
+  });
+}
+
 function assertReadinessCurrent(input: {
   projectRoot: string;
   requestId: string;

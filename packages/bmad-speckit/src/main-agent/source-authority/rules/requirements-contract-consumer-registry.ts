@@ -701,6 +701,10 @@ export const REQUIREMENTS_CONTRACT_PRODUCTION_SEMANTIC_SOURCE_PATHS = [
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/strict-command-resolution-preflight.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/trace-closure-matrix.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-requirements-contract-source-writes.ts',
+  'packages/bmad-speckit/src/utils/goal-contract/control-plane/standalone-goal-authoring-judge.ts',
+  'packages/bmad-speckit/src/utils/goal-contract/control-plane/standalone-goal-authority.ts',
+  'packages/bmad-speckit/dist/utils/goal-contract/control-plane/standalone-goal-authoring-judge.js',
+  'packages/bmad-speckit/dist/utils/goal-contract/control-plane/standalone-goal-authority.js',
 ] as const;
 
 interface ConsumerDiscoveryRule {

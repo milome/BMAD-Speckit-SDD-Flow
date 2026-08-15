@@ -31,6 +31,15 @@ function sourceAuthorityArgv(context: MainAgentActionContext, action: string): s
       argv.splice(actionIndex, value === '--action' ? 2 : 1);
     }
   }
+  for (let index = argv.length - 1; index >= 0; index -= 1) {
+    if (argv[index].startsWith('--cwd=')) {
+      argv.splice(index, 1);
+      continue;
+    }
+    if (argv[index] === '--cwd') {
+      argv.splice(index, 2);
+    }
+  }
   if (!argv.includes('--json')) argv.push('--json');
   return argv;
 }

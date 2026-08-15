@@ -1,8 +1,18 @@
 /* eslint-disable no-console */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {
+  ArchitecturePremiseAuthorityBlock,
+  isCanonicalArchitecturePath,
+  resolveArchitecturePremiseAuthorities,
+  type ResolvedArchitectureImpactRule,
+  type ResolvedArchitectureTriggerRule,
+} from './architecture-premise-authority';
 import { atomicNoClobberPublish } from './requirements-contract-atomic-no-clobber-publisher';
-import { validateRequirementsContractBuildManifest } from './requirements-contract-authoring-manifest';
+import {
+  validateRequirementsContractBuildManifest,
+  validateRequirementsContractCheckpointManifest,
+} from './requirements-contract-authoring-manifest';
 import { validateRequirementsActiveAuthorityTuple } from './requirements-contract-authority-publication-committer';
 import {
   artifactBytesHash,
@@ -69,6 +79,12 @@ const ARCHITECTURE_CONFIRMATION_BLOCK_ISSUE_CODES = [
   'architecture_successor_required:execution_structure',
   'architecture_successor_required:evidence_requirements',
   'architecture_successor_required:forbidden_scope',
+  'architecture_successor_required:target_authority',
+  'architecture_successor_required:consumer_impact',
+  'architecture_successor_required:trigger_rules',
+  'architecture_successor_required:ownership',
+  'architecture_successor_required:isolation',
+  'architecture_successor_required:governance_impact',
   'architecture_successor_required:repository_premise',
   'architecture_successor_required:policy_premise',
 ] as const;
@@ -195,10 +211,90 @@ function requireCurrent(value: boolean, issueCode: string): void {
   if (!value) throw new ArchitectureConfirmationBlock(issueCode);
 }
 
-function roleEntry(buildManifest: JsonObject, role: string): JsonObject {
-  const entry = objects(buildManifest.artifactEntries).find((item) => text(item.role) === role);
-  if (!entry) throw new ArchitectureConfirmationBlock(`architecture_successor_required:${role}`);
-  return entry;
+function resolveBuildArtifactEntry(input: {
+  recordRoot: string;
+  buildManifest: JsonObject;
+  role: string;
+}): JsonObject {
+  const directEntries = objects(input.buildManifest.artifactEntries).filter(
+    (item) => text(item.role) === input.role
+  );
+  if (directEntries.length > 1) {
+    throw new Error('architecture_confirmation_build_artifact_duplicate');
+  }
+
+  let checkpointRef = object(input.buildManifest.terminalCheckpointManifestRef);
+  const visited = new Set<string>();
+  while (text(checkpointRef.path)) {
+    const checkpointPath = text(checkpointRef.path);
+    if (visited.has(checkpointPath)) {
+      throw new Error('architecture_confirmation_checkpoint_manifest_lineage_invalid');
+    }
+    visited.add(checkpointPath);
+    const checkpoint = readJson(confinedArtifact(input.recordRoot, checkpointPath));
+    const validation = validateRequirementsContractCheckpointManifest(checkpoint);
+    if (validation.decision !== 'pass') {
+      throw new Error(
+        `architecture_confirmation_checkpoint_manifest_invalid:${validation.issueCodes[0]}`
+      );
+    }
+    if (
+      text(checkpoint.checkpointId) !== text(checkpointRef.checkpointId) ||
+      checkpoint.checkpointOrdinal !== checkpointRef.checkpointOrdinal ||
+      text(checkpoint.checkpointManifestHash) !== text(checkpointRef.hash) ||
+      text(checkpoint.authoringRequestId) !== text(input.buildManifest.authoringRequestId) ||
+      text(checkpoint.authoringAttemptId) !== text(input.buildManifest.authoringAttemptId) ||
+      text(checkpoint.inputManifestHash) !== text(input.buildManifest.inputManifestHash)
+    ) {
+      throw new Error('architecture_confirmation_checkpoint_manifest_identity_mismatch');
+    }
+    const entries = objects(checkpoint.artifactEntries).filter(
+      (item) => text(item.role) === input.role
+    );
+    if (entries.length > 1) {
+      throw new Error('architecture_confirmation_checkpoint_artifact_duplicate');
+    }
+    if (text(checkpoint.checkpointId) !== 'cp06' && entries.length > 0) {
+      throw new Error('architecture_confirmation_execution_manifest_stage_mismatch');
+    }
+    if (text(checkpoint.checkpointId) === 'cp06') {
+      const previous = object(checkpoint.previousCheckpointManifestRef);
+      if (
+        checkpoint.checkpointOrdinal !== 6 ||
+        text(checkpoint.status) !== 'passed' ||
+        text(checkpoint.compilerIdentity) !==
+          'requirements-contract-cp06-execution-projection/v1' ||
+        text(previous.checkpointId) !== 'cp05' ||
+        previous.checkpointOrdinal !== 5 ||
+        text(checkpoint.latestValidPredecessorCheckpoint) !== 'cp05'
+      ) {
+        throw new Error('architecture_confirmation_execution_manifest_checkpoint_invalid');
+      }
+      const entry = entries[0];
+      if (!entry) {
+        throw new ArchitectureConfirmationBlock(`architecture_successor_required:${input.role}`);
+      }
+      const expectedPath = `authoring/staging/${text(
+        input.buildManifest.authoringAttemptId
+      )}/cp06/execution-manifest.json`;
+      if (
+        text(entry.schemaVersion) !== 'requirements-contract-execution-manifest/v1' ||
+        text(entry.artifactId) !== 'execution-manifest' ||
+        text(entry.recordRelativePath) !== expectedPath
+      ) {
+        throw new Error('architecture_confirmation_execution_manifest_entry_invalid');
+      }
+      if (
+        directEntries[0] &&
+        canonicalRequirementsJson(directEntries[0]) !== canonicalRequirementsJson(entry)
+      ) {
+        throw new Error('architecture_confirmation_execution_manifest_entry_mismatch');
+      }
+      return entry;
+    }
+    checkpointRef = object(checkpoint.previousCheckpointManifestRef);
+  }
+  throw new ArchitectureConfirmationBlock(`architecture_successor_required:${input.role}`);
 }
 
 function validateRequirementsEffectivePassV2(value: JsonObject): JsonObject {
@@ -403,7 +499,11 @@ export function resolveArchitectureConfirmationContext(input: {
     'requirements_successor_required:build_manifest'
   );
 
-  const executionEntry = roleEntry(buildManifest, 'execution_manifest');
+  const executionEntry = resolveBuildArtifactEntry({
+    recordRoot,
+    buildManifest,
+    role: 'execution_manifest',
+  });
   const executionManifest = readJson(
     confinedArtifact(recordRoot, text(executionEntry.recordRelativePath))
   );
@@ -587,12 +687,90 @@ function logicalPathScope(value: string): string {
 function logicalPathOverlapsForbidden(targetPath: string, forbiddenPath: string): boolean {
   const target = logicalPathScope(targetPath);
   const forbidden = logicalPathScope(forbiddenPath);
-  return target === forbidden || target.startsWith(`${forbidden}/`);
+  return (
+    target === forbidden || target.startsWith(`${forbidden}/`) || forbidden.startsWith(`${target}/`)
+  );
 }
 
-function authorityRoleHasToken(authorityRole: string, expected: string[]): boolean {
-  const tokens = authorityRole.toLowerCase().split(/[^a-z0-9]+/u);
-  return expected.some((value) => tokens.includes(value));
+function authorityPathCoversTarget(authorityPath: string, targetPath: string): boolean {
+  const authorityScope = logicalPathScope(authorityPath);
+  const targetScope = logicalPathScope(targetPath);
+  return targetScope === authorityScope || targetScope.startsWith(`${authorityScope}/`);
+}
+
+function projectImpactRules(
+  rules: ResolvedArchitectureImpactRule[],
+  premiseRefs: string[],
+  issueCode: ArchitectureConfirmationIssueCode
+) {
+  const byId = new Map<
+    string,
+    Pick<ResolvedArchitectureImpactRule, 'status' | 'predicateSignature'> & {
+      matchedConstraintIds: string[];
+    }
+  >();
+  for (const rule of rules) {
+    const existing = byId.get(rule.impactId);
+    if (
+      existing &&
+      (existing.status !== rule.status || existing.predicateSignature !== rule.predicateSignature)
+    )
+      throw new ArchitectureConfirmationBlock(issueCode);
+    byId.set(rule.impactId, {
+      status: rule.status,
+      predicateSignature: rule.predicateSignature,
+      matchedConstraintIds: sortedUnique([
+        ...(existing?.matchedConstraintIds ?? []),
+        ...rule.matchedConstraintIds,
+      ]),
+    });
+  }
+  return [...byId.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([impactId, rule]) => ({
+      impactId,
+      status: rule.status,
+      basisRefs: sortedUnique([...premiseRefs, ...rule.matchedConstraintIds]),
+    }));
+}
+
+function projectTriggerRules(
+  entries: Array<{ rule: ResolvedArchitectureTriggerRule; premiseRefs: string[] }>
+) {
+  const byId = new Map<
+    string,
+    {
+      triggered: boolean;
+      predicateSignature: string;
+      basisRefs: string[];
+    }
+  >();
+  for (const { rule, premiseRefs } of entries) {
+    const existing = byId.get(rule.triggerId);
+    if (
+      existing &&
+      (existing.triggered !== rule.triggered ||
+        existing.predicateSignature !== rule.predicateSignature)
+    ) {
+      throw new ArchitectureConfirmationBlock('architecture_successor_required:trigger_rules');
+    }
+    byId.set(rule.triggerId, {
+      triggered: rule.triggered,
+      predicateSignature: rule.predicateSignature,
+      basisRefs: sortedUnique([
+        ...(existing?.basisRefs ?? []),
+        ...premiseRefs,
+        ...rule.matchedConstraintIds,
+      ]),
+    });
+  }
+  return [...byId.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([triggerId, value]) => ({
+      triggerId,
+      triggered: value.triggered,
+      basisRefs: value.basisRefs,
+    }));
 }
 
 export function deriveArchitectureConfirmationCandidate(
@@ -602,9 +780,11 @@ export function deriveArchitectureConfirmationCandidate(
   const commands = constraintsOfKind(context, 'CMD');
   const artifacts = constraintsOfKind(context, 'ART');
   const evidence = constraintsOfKind(context, 'EVDREQ');
-  const stopConditions = constraintsOfKind(context, 'STOP');
   const structure = constraintsOfKind(context, 'CTM');
-  if (paths.length === 0) {
+  if (
+    paths.length === 0 ||
+    paths.some((constraint) => !isCanonicalArchitecturePath(constraint.canonicalValue))
+  ) {
     throw new ArchitectureConfirmationBlock('architecture_successor_required:logical_target_paths');
   }
   const requiredClosures: Array<
@@ -614,13 +794,25 @@ export function deriveArchitectureConfirmationCandidate(
     [artifacts, 'architecture_successor_required:artifacts'],
     [structure, 'architecture_successor_required:execution_structure'],
     [evidence, 'architecture_successor_required:evidence_requirements'],
-    [stopConditions, 'architecture_successor_required:forbidden_scope'],
   ];
   for (const [constraints, issueCode] of requiredClosures) {
     if (constraints.length === 0) throw new ArchitectureConfirmationBlock(issueCode);
   }
 
-  const authorityPremises = context.sourceBinding.sourceArtifacts
+  let authorities: ReturnType<typeof resolveArchitecturePremiseAuthorities>;
+  try {
+    authorities = resolveArchitecturePremiseAuthorities({
+      projectRoot: context.projectRoot,
+      sourceArtifacts: context.sourceBinding.sourceArtifacts,
+      constraints: context.semanticIr.semanticPayload.executionConstraints,
+    });
+  } catch (error) {
+    if (error instanceof ArchitecturePremiseAuthorityBlock) {
+      throw new ArchitectureConfirmationBlock(error.issueCode);
+    }
+    throw error;
+  }
+  const authorityPremises = [...authorities.repositoryArtifacts, ...authorities.policyArtifacts]
     .map((artifact) => ({
       premiseId: safeId(artifact.sourceArtifactId),
       authorityRole: safeId(artifact.role),
@@ -628,26 +820,31 @@ export function deriveArchitectureConfirmationCandidate(
       sourceSnapshotHash: artifact.sourceSnapshotHash,
     }))
     .sort((left, right) => left.premiseId.localeCompare(right.premiseId));
-  const repositoryPremises = authorityPremises.filter((premise) =>
-    authorityRoleHasToken(premise.authorityRole, ['repo', 'repository'])
+  const repositoryPremises = authorityPremises.filter(
+    (premise) => premise.authorityRole === 'repository_authority'
   );
-  const policyPremises = authorityPremises.filter((premise) =>
-    authorityRoleHasToken(premise.authorityRole, ['policy', 'governance'])
+  const policyPremises = authorityPremises.filter(
+    (premise) => premise.authorityRole === 'policy_authority'
   );
   const pinnedPremises = [...repositoryPremises, ...policyPremises].sort((left, right) =>
     left.premiseId.localeCompare(right.premiseId)
   );
   const repositoryPremiseRefs = repositoryPremises.map((premise) => premise.premiseId);
   const policyPremiseRefs = policyPremises.map((premise) => premise.premiseId);
-  if (repositoryPremiseRefs.length === 0) {
-    throw new ArchitectureConfirmationBlock('architecture_successor_required:repository_premise');
-  }
-  if (policyPremiseRefs.length === 0) {
-    throw new ArchitectureConfirmationBlock('architecture_successor_required:policy_premise');
+  const targetPaths = sortedUnique(paths.map((constraint) => constraint.canonicalValue));
+  if (
+    targetPaths.some(
+      (targetPath) =>
+        !authorities.repository.allowedTargetPaths.some((allowedPath) =>
+          authorityPathCoversTarget(allowedPath, targetPath)
+        )
+    )
+  ) {
+    throw new ArchitectureConfirmationBlock('architecture_successor_required:target_authority');
   }
   const logicalScope = {
-    targetPaths: sortedUnique(paths.map((constraint) => constraint.canonicalValue)),
-    forbiddenPaths: sortedUnique(stopConditions.map((constraint) => constraint.canonicalValue)),
+    targetPaths,
+    forbiddenPaths: sortedUnique(authorities.policy.forbiddenScope.paths),
   };
   if (
     logicalScope.targetPaths.some((targetPath) =>
@@ -658,16 +855,26 @@ export function deriveArchitectureConfirmationCandidate(
   ) {
     throw new ArchitectureConfirmationBlock('architecture_successor_required:forbidden_scope');
   }
-  const ownership = logicalScope.targetPaths.map((targetPath) => ({
-    targetPath,
-    owner: 'requirements_backed_main_agent' as const,
-    basisRefs: sortedUnique([
-      ...policyPremiseRefs,
-      ...paths
-        .filter((constraint) => constraint.canonicalValue === targetPath)
-        .map((constraint) => constraint.constraintId),
-    ]),
-  }));
+  const ownership = logicalScope.targetPaths.map((targetPath) => {
+    const owners = sortedUnique(
+      authorities.policy.ownershipRules
+        .filter((rule) => authorityPathCoversTarget(rule.targetPath, targetPath))
+        .map((rule) => rule.owner)
+    );
+    if (owners.length !== 1) {
+      throw new ArchitectureConfirmationBlock('architecture_successor_required:ownership');
+    }
+    return {
+      targetPath,
+      owner: owners[0],
+      basisRefs: sortedUnique([
+        ...policyPremiseRefs,
+        ...paths
+          .filter((constraint) => constraint.canonicalValue === targetPath)
+          .map((constraint) => constraint.constraintId),
+      ]),
+    };
+  });
   const toolchain = {
     commands: commands.map((constraint) => ({
       commandId: constraint.constraintId,
@@ -687,46 +894,26 @@ export function deriveArchitectureConfirmationCandidate(
       basisRefs: [constraint.constraintId],
     })),
   };
-  const consumerImpact = [
-    {
-      impactId: 'consumer:logical-targets',
-      status:
-        logicalScope.targetPaths.length > 0 ? ('applicable' as const) : ('not_applicable' as const),
-      basisRefs: sortedUnique([
-        ...repositoryPremiseRefs,
-        ...paths.map((item) => item.constraintId),
-      ]),
-    },
-  ];
-  const governanceImpact = [
-    {
-      impactId: 'governance:pinned-policy',
-      status: policyPremiseRefs.length > 0 ? ('applicable' as const) : ('not_applicable' as const),
-      basisRefs: policyPremiseRefs,
-    },
-  ];
-  const triggerMatrix = [
-    {
-      triggerId: 'architecture:target-scope',
-      triggered: paths.length > 0,
-      basisRefs: paths.map((item) => item.constraintId),
-    },
-    {
-      triggerId: 'architecture:toolchain',
-      triggered: commands.length > 0,
-      basisRefs: commands.map((item) => item.constraintId),
-    },
-    {
-      triggerId: 'architecture:governance',
-      triggered: policyPremiseRefs.length > 0,
-      basisRefs: policyPremiseRefs,
-    },
-    {
-      triggerId: 'architecture:execution-structure',
-      triggered: structure.length > 0,
-      basisRefs: structure.map((item) => item.constraintId),
-    },
-  ];
+  const consumerImpact = projectImpactRules(
+    authorities.repository.consumerImpactRules,
+    repositoryPremiseRefs,
+    'architecture_successor_required:consumer_impact'
+  );
+  const governanceImpact = projectImpactRules(
+    authorities.policy.governanceImpactRules,
+    policyPremiseRefs,
+    'architecture_successor_required:governance_impact'
+  );
+  const triggerMatrix = projectTriggerRules([
+    ...authorities.repository.triggerRules.map((rule) => ({
+      rule,
+      premiseRefs: repositoryPremiseRefs,
+    })),
+    ...authorities.policy.triggerRules.map((rule) => ({
+      rule,
+      premiseRefs: policyPremiseRefs,
+    })),
+  ]);
   const architectureDecisions = [
     ...ownership.map((item, index) => ({
       decisionId: `ARCH-OWNERSHIP-${index + 1}`,
@@ -743,11 +930,8 @@ export function deriveArchitectureConfirmationCandidate(
     {
       decisionId: 'ARCH-ISOLATION-1',
       decisionType: 'isolation' as const,
-      selection: 'consumer_worktree',
-      basisRefs: sortedUnique([
-        ...policyPremiseRefs,
-        ...[...paths, ...stopConditions].map((item) => item.constraintId),
-      ]),
+      selection: authorities.policy.isolationSelection,
+      basisRefs: sortedUnique([...policyPremiseRefs, ...paths.map((item) => item.constraintId)]),
     },
     ...structure.map((item, index) => ({
       decisionId: `ARCH-STRUCTURE-${index + 1}`,
@@ -781,12 +965,9 @@ export function deriveArchitectureConfirmationCandidate(
     ownership,
     toolchain,
     isolation: {
-      mode: 'consumer_worktree' as const,
+      mode: authorities.policy.isolationSelection,
       forbiddenPaths: logicalScope.forbiddenPaths,
-      basisRefs: sortedUnique([
-        ...policyPremiseRefs,
-        ...[...paths, ...stopConditions].map((item) => item.constraintId),
-      ]),
+      basisRefs: sortedUnique([...policyPremiseRefs, ...paths.map((item) => item.constraintId)]),
     },
     consumerImpact,
     governanceImpact,
@@ -829,11 +1010,36 @@ function renderArchitectureConfirmationPage(
   candidate: ArchitectureConfirmationCandidate,
   exactConfirmationText: string
 ): string {
+  const lineage = object(candidate.requirementsLineage);
   const scope = object(candidate.logicalScope);
   const toolchain = object(candidate.toolchain);
+  const isolation = object(candidate.isolation);
   const decisions = objects(candidate.architectureDecisions);
   const list = (values: unknown[], projector: (value: unknown) => string) =>
     values.map((value) => `<li>${htmlEscape(projector(value))}</li>`).join('');
+  const refs = (value: unknown) =>
+    (Array.isArray(value) ? value : []).map((item) => String(item)).join(', ');
+  const row = (fields: Array<[string, unknown]>) =>
+    fields.map(([label, value]) => `${label}=${String(value)}`).join(' | ');
+  const bindings = (values: unknown[]) =>
+    list(objects(values), (value) => {
+      const binding = object(value);
+      return row([
+        ['premiseId', binding.premiseId],
+        ['kind', binding.kind],
+        ['value', binding.value],
+        ['basisRefs', refs(binding.basisRefs)],
+      ]);
+    });
+  const impacts = (values: unknown[]) =>
+    list(objects(values), (value) => {
+      const impact = object(value);
+      return row([
+        ['impactId', impact.impactId],
+        ['status', impact.status],
+        ['basisRefs', refs(impact.basisRefs)],
+      ]);
+    });
   return [
     '<!doctype html>',
     '<html lang="en">',
@@ -842,20 +1048,103 @@ function renderArchitectureConfirmationPage(
     '<style>body{font-family:Georgia,serif;margin:0;color:#17221b;background:#f4f5f1}main{max-width:960px;margin:auto;padding:32px 24px 64px}h1{font-size:2rem}section{border-top:1px solid #9ca69e;padding:20px 0}code,pre{font-family:Consolas,monospace;background:#e5e9e3;padding:2px 5px}pre{white-space:pre-wrap;padding:16px}li{margin:8px 0}</style></head>',
     '<body><main>',
     '<h1>Architecture confirmation</h1>',
+    `<p>Request <code>${htmlEscape(candidate.requestId)}</code></p>`,
     `<p>Candidate <code>${htmlEscape(candidate.architectureConfirmationCandidateHash)}</code></p>`,
+    '<section><h2>Requirements lineage</h2><ul>',
+    list(
+      [
+        'recordId',
+        'semanticRevisionId',
+        'scopeSemanticHash',
+        'executionConstraintRegistryHash',
+        'technicalExecutionClosure',
+      ],
+      (key) => `${String(key)}: ${String(lineage[String(key)])}`
+    ),
+    '</ul></section>',
+    '<section><h2>Pinned premises</h2><ul>',
+    list(objects(candidate.pinnedPremises), (value) => {
+      const premise = object(value);
+      return row([
+        ['premiseId', premise.premiseId],
+        ['authorityRole', premise.authorityRole],
+        ['mediaType', premise.mediaType],
+        ['sourceSnapshotHash', premise.sourceSnapshotHash],
+      ]);
+    }),
+    '</ul></section>',
     '<section><h2>Logical scope</h2><h3>Targets</h3><ul>',
     list(Array.isArray(scope.targetPaths) ? scope.targetPaths : [], String),
     '</ul><h3>Forbidden paths</h3><ul>',
     list(Array.isArray(scope.forbiddenPaths) ? scope.forbiddenPaths : [], String),
     '</ul></section>',
-    '<section><h2>Commands</h2><ul>',
-    list(objects(toolchain.commands), (value) => text(object(value).invocation)),
+    '<section><h2>Ownership</h2><ul>',
+    list(objects(candidate.ownership), (value) => {
+      const ownership = object(value);
+      return row([
+        ['targetPath', ownership.targetPath],
+        ['owner', ownership.owner],
+        ['basisRefs', refs(ownership.basisRefs)],
+      ]);
+    }),
+    '</ul></section>',
+    '<section><h2>Toolchain</h2><h3>Commands</h3><ul>',
+    list(objects(toolchain.commands), (value) => {
+      const command = object(value);
+      return row([
+        ['commandId', command.commandId],
+        ['invocation', command.invocation],
+        ['basisRefs', refs(command.basisRefs)],
+      ]);
+    }),
+    '</ul><h3>Artifacts</h3><ul>',
+    bindings(Array.isArray(toolchain.artifacts) ? toolchain.artifacts : []),
+    '</ul><h3>Evidence requirements</h3><ul>',
+    bindings(Array.isArray(toolchain.evidenceRequirements) ? toolchain.evidenceRequirements : []),
+    '</ul></section>',
+    '<section><h2>Isolation</h2><ul>',
+    list(
+      [
+        ['mode', isolation.mode],
+        ['forbiddenPaths', refs(isolation.forbiddenPaths)],
+        ['basisRefs', refs(isolation.basisRefs)],
+      ],
+      (value) => row([value as [string, unknown]])
+    ),
+    '</ul></section>',
+    '<section><h2>Consumer impact</h2><ul>',
+    impacts(Array.isArray(candidate.consumerImpact) ? candidate.consumerImpact : []),
+    '</ul></section>',
+    '<section><h2>Governance impact</h2><ul>',
+    impacts(Array.isArray(candidate.governanceImpact) ? candidate.governanceImpact : []),
+    '</ul></section>',
+    '<section><h2>Trigger matrix</h2><ul>',
+    list(objects(candidate.triggerMatrix), (value) => {
+      const trigger = object(value);
+      return row([
+        ['triggerId', trigger.triggerId],
+        ['triggered', trigger.triggered],
+        ['basisRefs', refs(trigger.basisRefs)],
+      ]);
+    }),
     '</ul></section>',
     '<section><h2>Typed decisions</h2><ul>',
     list(decisions, (value) => {
       const decision = object(value);
-      return `${text(decision.decisionId)}: ${text(decision.selection)}`;
+      return row([
+        ['decisionId', decision.decisionId],
+        ['decisionType', decision.decisionType],
+        ['selection', decision.selection],
+        ['basisRefs', refs(decision.basisRefs)],
+      ]);
     }),
+    '</ul></section>',
+    '<section><h2>Goal execution structure premises</h2><ul>',
+    bindings(
+      Array.isArray(candidate.goalExecutionStructurePremises)
+        ? candidate.goalExecutionStructurePremises
+        : []
+    ),
     '</ul></section>',
     '<section><h2>Exact acceptance</h2>',
     `<pre>${htmlEscape(exactConfirmationText)}</pre></section>`,

@@ -9,6 +9,16 @@
         "kind": "ART",
         "id": "refund-batch-contract-results",
         "value": "artifacts/refund-batch-contract-results.json"
+      },
+      {
+        "kind": "CTM",
+        "id": "refund-queue-vertical-slice",
+        "value": "refund queue vertical slice"
+      },
+      {
+        "kind": "STOP",
+        "id": "refund-queue-forbidden-scope",
+        "value": ".git/**"
       }
     ]
   }

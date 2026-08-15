@@ -109,9 +109,65 @@ const {
 const { unifiedIngressAction } = require('./actions/unified-ingress');
 const { updateRuntimeAuditIndexAction } = require('./actions/update-runtime-audit-index');
 const { verifyCursorAuditGranularityAction } = require('./actions/verify-cursor-audit-granularity');
+const {
+  compileRequirementsBackedGoal,
+} = require('../utils/goal-contract/control-plane/goal-requirements-adapter');
+
+function compileGoalExecutionIrAction(context) {
+  if (context.args.entry !== 'requirements_backed_goal') {
+    return {
+      ok: false,
+      status: 'goal_compile_ingress_invalid',
+      exitCode: 2,
+      errors: [
+        { code: 'goal_compile_entry_invalid', message: 'requirements_backed_goal required' },
+      ],
+    };
+  }
+  const forbidden = Object.keys(context.args).find(
+    (field) => !['action', 'cwd', 'entry', 'requirementsRecord', 'out', 'json'].includes(field)
+  );
+  if (forbidden) {
+    return {
+      ok: false,
+      status: 'goal_compile_ingress_invalid',
+      exitCode: 2,
+      errors: [
+        {
+          code: `requirements_backed_caller_derived_input_forbidden:${forbidden}`,
+          message: `requirements_backed_caller_derived_input_forbidden:${forbidden}`,
+        },
+      ],
+    };
+  }
+  try {
+    return {
+      ok: true,
+      exitCode: 0,
+      ...compileRequirementsBackedGoal({
+        projectRoot: context.cwd,
+        requirementRecordPath: context.args.requirementsRecord,
+        outRoot: context.args.out,
+      }),
+    };
+  } catch (error) {
+    const code = error instanceof Error ? error.message : String(error);
+    const recoverable =
+      /^(?:requirements_successor_required|architecture_successor_required|readiness_recheck_required):/u.test(
+        code
+      );
+    return {
+      ok: false,
+      status: 'goal_compile_ingress_blocked',
+      exitCode: recoverable ? 1 : 2,
+      errors: [{ code, message: code }],
+    };
+  }
+}
 
 const SCHEMA_VERSION = 'main-agent-package-runtime/v1';
 const PACKAGE_RUNTIME_READY_ACTIONS = {
+  'compile-goal-execution-ir': compileGoalExecutionIrAction,
   'live-smoke-main-agent-runtime': liveSmokeMainAgentRuntimeAction,
   'ai-tdd-closeout-remediation-adapter': aiTddCloseoutRemediationAdapterAction,
   'audit-review-gate': auditReviewGateAction,

@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/goal-source-binding.schema.json",
+  "title": "Goal Source Binding",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "profile", "goalExecutionIRHash", "goalSourceBindingHash"],
+  "properties": {
+    "schemaVersion": { "const": "GoalSourceBinding/v1" },
+    "profile": { "enum": ["requirements_backed", "standalone"] },
+    "goalExecutionIRHash": { "$ref": "#/$defs/hash" },
+    "requirementsSemanticRevisionId": { "type": "string", "minLength": 1 },
+    "requirementsBindingRevisionId": { "type": "string", "minLength": 1 },
+    "requirementsSourceBindingHash": { "$ref": "#/$defs/hash" },
+    "architectureAcceptanceRef": { "$ref": "#/$defs/ref" },
+    "readinessDecisionReceiptRef": { "$ref": "#/$defs/ref" },
+    "sourcePlanHash": { "$ref": "#/$defs/hash" },
+    "sourceSnapshotHash": { "$ref": "#/$defs/hash" },
+    "goalSourceBindingHash": { "$ref": "#/$defs/hash" }
+  },
+  "allOf": [
+    { "if": { "properties": { "profile": { "const": "requirements_backed" } } }, "then": { "required": ["requirementsSemanticRevisionId", "requirementsBindingRevisionId", "requirementsSourceBindingHash", "architectureAcceptanceRef", "readinessDecisionReceiptRef"], "not": { "anyOf": [{ "required": ["sourcePlanHash"] }, { "required": ["sourceSnapshotHash"] }] } } },
+    { "if": { "properties": { "profile": { "const": "standalone" } } }, "then": { "required": ["sourcePlanHash", "sourceSnapshotHash"], "not": { "anyOf": [{ "required": ["requirementsSemanticRevisionId"] }, { "required": ["requirementsBindingRevisionId"] }] } } }
+  ],
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "ref": {
+      "type": "object",
+      "required": ["path"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" },
+        "artifactBytesHash": { "$ref": "#/$defs/hash" }
+      },
+      "anyOf": [{ "required": ["hash"] }, { "required": ["artifactBytesHash"] }]
+    }
+  }
+}

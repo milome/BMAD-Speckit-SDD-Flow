@@ -2,9 +2,9 @@
   "schemaVersion": "requirements-contract-consumer-registry/v2",
   "owner": {
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-consumer-registry.ts",
-    "hash": "sha256:44c803d8080c32aad29ca2f2d983b714b6ebaf0ba70a1a6e13c18ae4415b33b9"
+    "hash": "sha256:82c108e5e19c0fdedc24a1e6903066123256a33d47af4e8350f35b08494c2389"
   },
-  "registryHash": "sha256:7e902e7cabd8d456c41ca1612bb2bb8bada50a76bc4cff39c491951ebb952cbb",
+  "registryHash": "sha256:5a3b044c4f5465cdb1573662acf40de01bba2cf356b5976ab277b5639b808c15",
   "validationModes": [
     "draft",
     "confirmation-ready",
@@ -505,7 +505,7 @@
     {
       "consumerId": "architecture-confirmation-artifact",
       "path": "_bmad/skills/requirements-contract-authoring/scripts/generate-architecture-confirmation-artifact.ts",
-      "pathHash": "sha256:6eb029832773a78bf64bf49929d8be6b6287b3d105abc3fb7630cc601eb31608",
+      "pathHash": "sha256:87c68e86a8cc62f32b75e9dbc27ff5fc44a0f6ebf719861b0853a3e09b91f745",
       "inputRole": "canonical_architecture_interaction",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",

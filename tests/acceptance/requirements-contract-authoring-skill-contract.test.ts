@@ -118,7 +118,7 @@ describe('requirements-contract-authoring published contract', () => {
     expect(rendererSpec).toContain('strict mode must require `controlledIngestWriterRegistry[]`');
   });
 
-  it('publishes architecture confirmation prepare as the user-facing entry', () => {
+  it('publishes the package prepare action as the only architecture confirmation producer', () => {
     const skill = readSkillFile('SKILL.md');
     const rendererSpec = readSkillFile(
       path.join('references', 'html-confirmation-renderer-spec.md')
@@ -126,20 +126,27 @@ describe('requirements-contract-authoring published contract', () => {
 
     for (const content of [skill, rendererSpec]) {
       expect(content).toContain('prepare-architecture-confirmation-page.ts');
-      expect(content).toContain('architecture_confirmation_state_checked');
       expect(content).toContain(
-        'generate requirement-scoped `architecture-confirmation-<runId>.json`'
+        'bmad-speckit main-agent prepare-architecture-confirmation --request-id <requestId> --json'
       );
       expect(content).toContain(
-        'Do not expose stale check or JSON producer commands as manual user steps'
+        'The package action is the only public architecture confirmation producer'
+      );
+      expect(content).toContain('Caller-derived architecture inputs must fail closed');
+      expect(content).toContain(
+        'Initial prepare must not write `architecture_confirmation_state_checked`'
+      );
+      expect(content).toContain('exactConfirmationText');
+      expect(content).not.toContain(
+        'generate requirement-scoped `architecture-confirmation-<runId>.json`'
       );
     }
 
     expect(skill).toContain(
-      'The user-facing next step is only to open the architecture confirmation HTML and confirm the hashes in chat'
+      'The skill-local prepare script is a request-id-only compatibility wrapper'
     );
     expect(rendererSpec).toContain(
-      'The user-facing next step must only be to open the architecture confirmation HTML and confirm the hashes in chat'
+      'The skill-local architecture renderer is projection-only compatibility surface'
     );
   });
 

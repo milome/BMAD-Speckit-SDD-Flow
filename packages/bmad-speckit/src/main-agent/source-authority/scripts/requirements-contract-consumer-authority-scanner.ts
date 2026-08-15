@@ -1,9 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { ProductionSemanticSourceRootCandidate } from './requirements-contract-production-semantic-pipeline';
-import {
-  REQUIREMENTS_CONTRACT_SOURCE_ROOT_CLASS_REGISTRY,
-} from './requirements-contract-source-root-class-registry';
+import { REQUIREMENTS_CONTRACT_SOURCE_ROOT_CLASS_REGISTRY } from './requirements-contract-source-root-class-registry';
 import { sha256Stable, sha256Text } from './requirements-contract-semantic-resolver';
 
 export interface RequirementsContractConsumerAuthoritySourceEntry {
@@ -20,6 +18,19 @@ export interface RequirementsContractConsumerAuthorityScanInput {
   maxSourceBytes?: number;
   maxSourceCount?: number;
 }
+
+export interface ArchitecturePremiseAuthoritySourceCandidate {
+  authorityId: string;
+  authorityKind: 'repository' | 'policy';
+  authorityRole: 'repository_authority' | 'policy_authority';
+  sourcePath: string;
+  sourceContent: string;
+}
+
+const ARCHITECTURE_PREMISE_AUTHORITY_ROOTS = new Map([
+  ['repository_authority', 'repository'],
+  ['policy_authority', 'policy'],
+] as const);
 
 export function readRequirementsContractDeclaredAuthoritySources(
   intakeSource: string
@@ -58,8 +69,9 @@ export function readRequirementsContractDeclaredAuthoritySources(
   if (current) entries.push(current as RequirementsContractConsumerAuthoritySourceEntry);
   if (
     entries.length === 0 ||
-    entries.some((entry) =>
-      !entry.path || !entry.rootClass || !entry.proposedAuthorityClass || !entry.bodySchemaVersion
+    entries.some(
+      (entry) =>
+        !entry.path || !entry.rootClass || !entry.proposedAuthorityClass || !entry.bodySchemaVersion
     )
   ) {
     throw new Error('requirements_authority_sources_declaration_invalid');
@@ -90,7 +102,11 @@ function normalizedRelativePath(cwd: string, candidatePath: string): string {
   return relative;
 }
 
-function validatedFile(cwd: string, relativePath: string, maxSourceBytes: number): {
+function validatedFile(
+  cwd: string,
+  relativePath: string,
+  maxSourceBytes: number
+): {
   absolutePath: string;
   content: string;
 } {
@@ -130,24 +146,28 @@ export function scanRequirementsContractConsumerAuthority(
   if (!Array.isArray(input.authoritySources) || input.authoritySources.length > maxSourceCount) {
     throw new Error('requirements_authority_source_count_exceeded');
   }
-  const registryByRootClass = new Map(
+  const registryByRootClass = new Map<
+    string,
+    (typeof REQUIREMENTS_CONTRACT_SOURCE_ROOT_CLASS_REGISTRY)[number]
+  >(
     REQUIREMENTS_CONTRACT_SOURCE_ROOT_CLASS_REGISTRY.map((entry) => [entry.rootClass, entry])
   );
-  const declaredEntries = input.authoritySources.map((entry) => ({
-    path: normalizedRelativePath(cwd, entry.path),
-    rootClass: entry.rootClass,
-    proposedAuthorityClass: entry.proposedAuthorityClass,
-    bodySchemaVersion: entry.bodySchemaVersion,
-  })).sort((left, right) => left.path.localeCompare(right.path));
+  const declaredEntries = input.authoritySources
+    .map((entry) => ({
+      path: normalizedRelativePath(cwd, entry.path),
+      rootClass: entry.rootClass,
+      proposedAuthorityClass: entry.proposedAuthorityClass,
+      bodySchemaVersion: entry.bodySchemaVersion,
+    }))
+    .sort((left, right) => left.path.localeCompare(right.path));
   if (new Set(declaredEntries.map((entry) => entry.path)).size !== declaredEntries.length) {
     throw new Error('requirements_authority_source_duplicate');
   }
   const sourceRootCandidates: ProductionSemanticSourceRootCandidate[] = [];
+  const architecturePremiseAuthorityCandidates: ArchitecturePremiseAuthoritySourceCandidate[] = [];
+  const entryBodies: Record<string, unknown>[] = [];
   for (const entry of declaredEntries) {
     const definition = registryByRootClass.get(entry.rootClass);
-    if (!definition || definition.bodySchemaVersion !== entry.bodySchemaVersion) {
-      throw new Error('requirements_authority_schema_unknown');
-    }
     if (!entry.proposedAuthorityClass?.trim()) {
       throw new Error('requirements_authority_class_invalid');
     }
@@ -157,6 +177,42 @@ export function scanRequirementsContractConsumerAuthority(
       document = JSON.parse(source.content) as Record<string, unknown>;
     } catch {
       throw new Error('requirements_authority_source_json_invalid');
+    }
+    const architectureKind = ARCHITECTURE_PREMISE_AUTHORITY_ROOTS.get(
+      entry.rootClass as 'repository_authority' | 'policy_authority'
+    );
+    if (architectureKind) {
+      const authorityRole = entry.rootClass as 'repository_authority' | 'policy_authority';
+      const semanticBody = document.semanticBody;
+      if (
+        entry.bodySchemaVersion !== 'ArchitecturePremiseAuthority/v1' ||
+        entry.proposedAuthorityClass !== 'architecture_premise_authority' ||
+        document.schemaVersion !== 'requirements-contract-authority-source/v1' ||
+        typeof document.sourceRootId !== 'string' ||
+        !document.sourceRootId.trim() ||
+        !semanticBody ||
+        typeof semanticBody !== 'object' ||
+        Array.isArray(semanticBody) ||
+        (semanticBody as Record<string, unknown>).schemaVersion !==
+          'ArchitecturePremiseAuthority/v1' ||
+        (semanticBody as Record<string, unknown>).authorityKind !== architectureKind ||
+        (semanticBody as Record<string, unknown>).authorityRole !== authorityRole ||
+        (semanticBody as Record<string, unknown>).authorityId !== document.sourceRootId
+      ) {
+        throw new Error('architecture_premise_authority_source_schema_invalid');
+      }
+      architecturePremiseAuthorityCandidates.push({
+        authorityId: document.sourceRootId,
+        authorityKind: architectureKind,
+        authorityRole,
+        sourcePath: entry.path,
+        sourceContent: source.content,
+      });
+      entryBodies.push(semanticBody as Record<string, unknown>);
+      continue;
+    }
+    if (!definition || definition.bodySchemaVersion !== entry.bodySchemaVersion) {
+      throw new Error('requirements_authority_schema_unknown');
     }
     if (
       document.schemaVersion !== 'requirements-contract-authority-source/v1' ||
@@ -183,19 +239,25 @@ export function scanRequirementsContractConsumerAuthority(
         ? { relatedRequirementRefs: document.relatedRequirementRefs.map(String).sort() }
         : {}),
     });
+    entryBodies.push(document.semanticBody as Record<string, unknown>);
   }
-  const sourceRootIds = sourceRootCandidates.map((candidate) => candidate.sourceRootId);
-  const duplicates = [...new Set(sourceRootIds.filter(
-    (sourceRootId, index) => sourceRootIds.indexOf(sourceRootId) !== index
-  ))].sort();
+  const sourceRootIds = [
+    ...sourceRootCandidates.map((candidate) => candidate.sourceRootId),
+    ...architecturePremiseAuthorityCandidates.map((candidate) => candidate.authorityId),
+  ];
+  const duplicates = [
+    ...new Set(
+      sourceRootIds.filter((sourceRootId, index) => sourceRootIds.indexOf(sourceRootId) !== index)
+    ),
+  ].sort();
   const conflicts = duplicates.map((sourceRootId) => ({
-      conflictId: sha256Stable({ domain: 'requirements-authority-conflict/v1', sourceRootId }),
+    conflictId: sha256Stable({ domain: 'requirements-authority-conflict/v1', sourceRootId }),
     sourceRootId,
     issueCode: 'requirements_authority_source_root_conflict' as const,
   }));
   const entries = declaredEntries.map((entry, index) => ({
     ...entry,
-    bodyHash: sha256Stable(sourceRootCandidates[index].semanticBody),
+    bodyHash: sha256Stable(entryBodies[index]),
   }));
   const sourceListPayload = {
     schemaVersion: 'requirements-contract-consumer-authority-source-list/v1' as const,
@@ -209,6 +271,7 @@ export function scanRequirementsContractConsumerAuthority(
       sourceListHash: sha256Stable(sourceListPayload),
     },
     sourceRootCandidates,
+    architecturePremiseAuthorityCandidates,
     facts: sourceRootCandidates.map((candidate) => ({
       factId: candidate.sourceRootId,
       rootClass: candidate.rootClass,

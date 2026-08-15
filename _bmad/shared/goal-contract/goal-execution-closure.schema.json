@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/goal-execution-closure.schema.json",
+  "title": "Goal Execution Closure",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "goalExecutionIRHash", "profile", "coverage", "decision", "issueCodes", "goalExecutionClosureHash"],
+  "properties": {
+    "schemaVersion": { "const": "GoalExecutionClosure/v1" },
+    "goalExecutionIRHash": { "$ref": "#/$defs/hash" },
+    "profile": { "enum": ["requirements_backed", "standalone"] },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["obligationIds", "traceSliceIds", "taskIds", "commandIds", "evidenceContractIds"],
+      "properties": {
+        "obligationIds": { "$ref": "#/$defs/ids" },
+        "traceSliceIds": { "$ref": "#/$defs/ids" },
+        "taskIds": { "$ref": "#/$defs/ids" },
+        "commandIds": { "$ref": "#/$defs/ids" },
+        "evidenceContractIds": { "$ref": "#/$defs/ids" }
+      }
+    },
+    "decision": { "const": "pass" },
+    "issueCodes": { "type": "array", "maxItems": 0 },
+    "goalExecutionClosureHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "ids": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+  }
+}

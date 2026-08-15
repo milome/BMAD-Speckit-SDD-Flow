@@ -1,11 +1,17 @@
-import { execFileSync } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { promisify } from 'node:util';
 import { describe, expect, it } from 'vitest';
+import {
+  materializeStandaloneGoalJudgeHttpFixture,
+  type StandaloneGoalJudgeHttpFixture,
+} from '../helpers/standalone-goal-judge-http-fixture';
 
 const ROOT = process.cwd();
 const CLI = join(ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
+const execFileAsync = promisify(execFile);
 
 function largeSourcePlan(): string {
   const sections = Array.from({ length: 180 }, (_, index) =>
@@ -32,14 +38,16 @@ function largeSourcePlan(): string {
 }
 
 describe('goal-contract generate Windows command length regression', () => {
-  it('uses path-only CLI arguments for large source documents', () => {
+  it('uses path-only CLI arguments for large source documents', async () => {
     const root = mkdtempSync(join(tmpdir(), 'goal-contract-long-command-'));
+    let judge: StandaloneGoalJudgeHttpFixture | undefined;
     try {
+      judge = await materializeStandaloneGoalJudgeHttpFixture(root);
       const source = join(root, 'large-source-plan.md');
       const out = join(root, 'large-goal-execution-plan.md');
       writeFileSync(source, largeSourcePlan(), 'utf8');
 
-      const stdout = execFileSync(
+      const { stdout } = await execFileAsync(
         process.execPath,
         [
           CLI,
@@ -53,7 +61,7 @@ describe('goal-contract generate Windows command length regression', () => {
           out,
           '--json',
         ],
-        { cwd: ROOT, encoding: 'utf8', maxBuffer: 50 * 1024 * 1024 }
+        { cwd: root, encoding: 'utf8', maxBuffer: 50 * 1024 * 1024 }
       );
       const payload = JSON.parse(stdout);
       const generationReceipt = JSON.parse(readFileSync(payload.generationReceiptPath, 'utf8'));
@@ -71,7 +79,10 @@ describe('goal-contract generate Windows command length regression', () => {
       expect(generationReceipt.writeReceipt.finalHash).toBe(
         generationReceipt.goalContractDocumentHash
       );
+      expect(payload.goalJudgeDispatchCount).toBe(1);
+      expect(judge.requests).toBe(1);
     } finally {
+      if (judge) await judge.close();
       rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
     }
   }, 120_000);

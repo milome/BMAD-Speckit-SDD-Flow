@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/standalone-goal-authoring-judge-response.schema.json",
+  "title": "Standalone Goal Authoring Judge Normalized Response",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schemaVersion",
+    "providerRef",
+    "transport",
+    "configuredModel",
+    "returnedModel",
+    "decision",
+    "findings",
+    "challengeRequests",
+    "evidenceRefs",
+    "providerRequestId",
+    "requestHash",
+    "responseHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-normalized-judge-response/v1" },
+    "providerRef": { "type": "string", "minLength": 1 },
+    "transport": {
+      "enum": ["openai-compatible", "anthropic-compatible", "claude-code-cli", "cli"]
+    },
+    "configuredModel": { "type": ["string", "null"], "minLength": 1 },
+    "returnedModel": { "type": "string", "minLength": 1 },
+    "decision": { "enum": ["pass", "block", "inconclusive"] },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["findingId", "category", "message", "evidenceRefs"],
+        "properties": {
+          "findingId": { "type": "string", "minLength": 1 },
+          "category": { "type": "string", "minLength": 1 },
+          "message": { "type": "string", "minLength": 1 },
+          "evidenceRefs": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "challengeRequests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "request"],
+        "properties": {
+          "code": { "type": "string", "minLength": 1 },
+          "request": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "evidenceRefs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "providerRequestId": { "type": "string", "minLength": 1 },
+    "requestHash": { "$ref": "#/$defs/hash" },
+    "responseHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+  }
+}

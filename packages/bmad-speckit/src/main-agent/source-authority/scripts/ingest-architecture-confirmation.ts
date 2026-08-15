@@ -1449,11 +1449,11 @@ export function mainIngestArchitectureConfirmation(argv: string[]): number {
   const args = parseArgs(argv);
   if (args.help) {
     console.log(
-      'Usage: node ingest-architecture-confirmation.ts --architecture-confirmation <json> --render-report <json> --requirement-record <json> --confirmation-text <text> --confirmed-by <user> [--json]'
+      'Usage: bmad-speckit main-agent ingest-architecture-confirmation --request-id <requestId> --architecture-confirmation-candidate-hash <sha256> --exact-confirmation-text <text> --json'
     );
     return 0;
   }
-  if (publicArchitectureConfirmationArgs(args)) {
+  {
     try {
       const prepared = ingestPreparedArchitectureConfirmation(args);
       emitArchitectureConfirmationResult(
@@ -1471,42 +1471,6 @@ export function mainIngestArchitectureConfirmation(argv: string[]): number {
       });
       return failure.exitCode;
     }
-  }
-  if (args.action === 'check-state') {
-    if (!args.requirementRecord) throw new Error('missing required args: requirementRecord');
-    const recordPath = path.resolve(args.requirementRecord);
-    if (!fs.existsSync(recordPath)) throw new Error(`requirement record missing: ${recordPath}`);
-    const record = readJson(recordPath);
-    const checkedAt = args.confirmedAt ?? new Date().toISOString();
-    const checkedBy = args.confirmedBy ?? 'agent';
-    const result = architectureStateCheck(record, checkedAt, checkedBy);
-    const commit = args.persistStateCheck
-      ? appendControlEventAndReplay({
-          recordPath,
-          writerId: 'architecture-confirmation-ingest',
-          eventType: 'architecture_confirmation_state_checked',
-          recordedAt: checkedAt,
-          payload: { event: result.event },
-          reduce: () => result.nextRecord,
-        })
-      : null;
-    const output = {
-      ok: result.decision === 'pass',
-      event: result.event,
-      mismatches: result.mismatches,
-      requirementRecordPath: normalizePathForRecord(recordPath),
-      diagnosticOnly: !args.persistStateCheck,
-      eventLogPath: commit ? normalizePathForRecord(commit.eventLogPath) : null,
-      controlEventId: commit?.event.eventId ?? null,
-      controlEventHash: commit?.event.eventHash ?? null,
-      receiptPath: commit ? normalizePathForRecord(commit.receiptPath) : null,
-    };
-    process.stdout.write(
-      args.json
-        ? `${JSON.stringify(output, null, 2)}\n`
-        : `architecture_confirmation_state=${result.decision}\n`
-    );
-    return result.decision === 'pass' ? 0 : 1;
   }
   requireArgs(args);
 

@@ -3,7 +3,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { runIngestArchitectureConfirmation } from '../../packages/bmad-speckit/src/main-agent/actions/ingest-architecture-confirmation';
 import { runPrepareArchitectureConfirmation } from '../../packages/bmad-speckit/src/main-agent/actions/prepare-architecture-confirmation';
-import { createRequirementsContractBuildManifest } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-authoring-manifest';
+import {
+  createRequirementsContractBuildManifest,
+  createRequirementsContractCheckpointManifest,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-authoring-manifest';
 import { artifactBytesHash } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-hash-domains';
 import { compileRequirementsEffectivePassReceiptV2 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-requirements-effective-pass-gate';
 import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
@@ -16,10 +19,29 @@ import { createRequirementsContractSourceBindingCapsule } from '../../packages/b
 const ORACLE = 'ORACLE-REFUND-ACCEPTED';
 const hash = (digit: string) => `sha256:${digit.repeat(64)}`;
 
+function jsonText(value: unknown): string {
+  return `${JSON.stringify(value, null, 2)}\n`;
+}
+
+function architectureAuthoritySource(authority: Record<string, unknown>) {
+  return {
+    schemaVersion: 'requirements-contract-authority-source/v1',
+    sourceRootId: authority.authorityId,
+    semanticBody: authority,
+  };
+}
+
+function authoritySnapshotHash(authority: Record<string, unknown>): string {
+  return sha256Stable({
+    domain: 'requirements-source-snapshot/v1',
+    content: jsonText(architectureAuthoritySource(authority)),
+  });
+}
+
 function writeJson(root: string, relativePath: string, value: unknown): string {
   const target = path.join(root, ...relativePath.split('/'));
   mkdirSync(path.dirname(target), { recursive: true });
-  writeFileSync(target, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+  writeFileSync(target, jsonText(value), 'utf8');
   return target;
 }
 
@@ -128,6 +150,48 @@ export function materializeImplementationReadinessFixture(
     executionConstraints,
     semanticProvenance: { 'MUST-READINESS-001': 'MUST-READINESS-001' },
   });
+  const repositoryAuthority = {
+    schemaVersion: 'ArchitecturePremiseAuthority/v1',
+    authorityKind: 'repository',
+    authorityRole: 'repository_authority',
+    authorityId: 'repo-readiness-fixture',
+    allowedTargetPaths: ['src/refund-worker.cjs'],
+    consumerImpactRules: [
+      {
+        impactId: 'consumer:readiness-target',
+        whenConstraintKinds: ['PATH'],
+        whenConstraintIds: [],
+      },
+    ],
+    triggerRules: [
+      {
+        triggerId: 'architecture:readiness-target',
+        whenConstraintKinds: ['PATH'],
+        whenConstraintIds: [],
+      },
+    ],
+  };
+  const policyAuthority = {
+    schemaVersion: 'ArchitecturePremiseAuthority/v1',
+    authorityKind: 'policy',
+    authorityRole: 'policy_authority',
+    authorityId: 'policy-readiness-fixture',
+    forbiddenScope: { paths: ['.git/**'] },
+    ownershipRules: [
+      { targetPath: 'src/refund-worker.cjs', owner: 'requirements_backed_main_agent' },
+    ],
+    isolationSelection: 'consumer_worktree',
+    governanceImpactRules: [
+      { impactId: 'governance:readiness-policy', whenConstraintKinds: [], whenConstraintIds: [] },
+    ],
+    triggerRules: [
+      { triggerId: 'architecture:readiness-policy', whenConstraintKinds: [], whenConstraintIds: [] },
+    ],
+  };
+  const repositoryAuthorityPath = 'repo/readiness.json';
+  const policyAuthorityPath = 'policy/readiness.json';
+  writeJson(root, repositoryAuthorityPath, architectureAuthoritySource(repositoryAuthority));
+  writeJson(root, policyAuthorityPath, architectureAuthoritySource(policyAuthority));
   const sourceBinding = createRequirementsContractSourceBindingCapsule({
     recordId: requestId,
     semanticRevisionId: semanticIr.semanticRevisionId,
@@ -139,17 +203,17 @@ export function materializeImplementationReadinessFixture(
         sourceArtifactId: 'repo-readiness-fixture',
         role: 'repository_authority',
         mediaType: 'application/json',
-        sourceSnapshotHash: hash('1'),
+        sourceSnapshotHash: authoritySnapshotHash(repositoryAuthority),
         orderedPosition: 0,
-        immutableBlobRef: 'repo/readiness.json',
+        immutableBlobRef: repositoryAuthorityPath,
       },
       {
         sourceArtifactId: 'policy-readiness-fixture',
         role: 'policy_authority',
         mediaType: 'application/json',
-        sourceSnapshotHash: hash('2'),
+        sourceSnapshotHash: authoritySnapshotHash(policyAuthority),
         orderedPosition: 1,
-        immutableBlobRef: 'policy/readiness.json',
+        immutableBlobRef: policyAuthorityPath,
       },
     ],
     sourceSpans: [],
@@ -157,7 +221,7 @@ export function materializeImplementationReadinessFixture(
   });
   const semanticPath = `authoring/semantic-revisions/${semanticIr.semanticRevisionId}/semantic-ir.json`;
   const bindingPath = `authoring/source-bindings/${sourceBinding.bindingRevisionId}/source-binding.json`;
-  const executionPath = `authoring/staging/${activeAttemptId}/execution-manifest.json`;
+  const executionPath = `authoring/staging/${activeAttemptId}/cp06/execution-manifest.json`;
   const buildPath = `authoring/staging/${activeAttemptId}/contract-build-manifest.json`;
   writeJson(recordRoot, semanticPath, semanticIr);
   writeJson(recordRoot, bindingPath, sourceBinding);
@@ -168,16 +232,55 @@ export function materializeImplementationReadinessFixture(
     constraints: semanticIr.semanticPayload.executionConstraints,
   };
   writeJson(recordRoot, executionPath, executionManifest);
+  const executionEntry = {
+    role: 'execution_manifest' as const,
+    schemaVersion: 'requirements-contract-execution-manifest/v1',
+    artifactId: 'execution-manifest',
+    recordRelativePath: executionPath,
+    artifactHash: sha256Stable(executionManifest),
+  };
+  let previousCheckpointManifestRef = {
+    checkpointId: 'cp05',
+    checkpointOrdinal: 5,
+    path: `authoring/staging/${activeAttemptId}/manifests/5-cp05.json`,
+    hash: hash('4'),
+  };
+  const compilerProfiles: Record<number, string> = {
+    6: 'requirements-contract-cp06-execution-projection/v1',
+    7: 'requirements-contract-cp07-view-diagram-projection/v1',
+    8: 'requirements-contract-cp08-reconciliation-renderability/v1',
+  };
+  for (const ordinal of [6, 7, 8]) {
+    const checkpointId = `cp${String(ordinal).padStart(2, '0')}`;
+    const checkpoint = createRequirementsContractCheckpointManifest({
+      authoringRequestId: requestId,
+      authoringAttemptId: activeAttemptId,
+      checkpointId,
+      checkpointOrdinal: ordinal,
+      stage: checkpointId,
+      status: 'passed',
+      inputManifestHash: hash('3'),
+      previousCheckpointManifestRef,
+      latestValidPredecessorCheckpoint: previousCheckpointManifestRef.checkpointId,
+      compilerIdentity: compilerProfiles[ordinal],
+      artifactEntries: ordinal === 6 ? [executionEntry] : [],
+      decisionReceiptRefs: [],
+      baseAuthorityRef: null,
+    });
+    const checkpointRef = {
+      checkpointId,
+      checkpointOrdinal: ordinal,
+      path: `authoring/staging/${activeAttemptId}/manifests/${ordinal}-${checkpointId}.json`,
+      hash: checkpoint.checkpointManifestHash,
+    };
+    writeJson(recordRoot, checkpointRef.path, checkpoint);
+    previousCheckpointManifestRef = checkpointRef;
+  }
   const buildManifest = createRequirementsContractBuildManifest({
     authoringRequestId: requestId,
     authoringAttemptId: activeAttemptId,
     inputManifestHash: hash('3'),
-    terminalCheckpointManifestRef: {
-      checkpointId: 'cp08',
-      checkpointOrdinal: 8,
-      path: `authoring/staging/${activeAttemptId}/manifests/8-cp08.json`,
-      hash: hash('4'),
-    },
+    terminalCheckpointManifestRef: previousCheckpointManifestRef,
     semanticAuthorityRef: {
       semanticRevisionId: semanticIr.semanticRevisionId,
       path: semanticPath,
@@ -188,15 +291,7 @@ export function materializeImplementationReadinessFixture(
       path: bindingPath,
       hash: sourceBinding.sourceBindingHash,
     },
-    artifactEntries: [
-      {
-        role: 'execution_manifest',
-        schemaVersion: 'requirements-contract-execution-manifest/v1',
-        artifactId: 'execution-manifest',
-        recordRelativePath: executionPath,
-        artifactHash: sha256Stable(executionManifest),
-      },
-    ],
+    artifactEntries: [executionEntry],
     decisionReceiptRefs: [],
     auditPacketRef: {
       artifactId: 'judge-audit-packet',

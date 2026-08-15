@@ -67,7 +67,7 @@
       "additionalProperties": false,
       "required": ["mode", "forbiddenPaths", "basisRefs"],
       "properties": {
-        "mode": { "const": "consumer_worktree" },
+        "mode": { "type": "string", "minLength": 1 },
         "forbiddenPaths": { "$ref": "#/$defs/stringSet" },
         "basisRefs": { "$ref": "#/$defs/idSet" }
       }
@@ -108,7 +108,7 @@
       "required": ["targetPath", "owner", "basisRefs"],
       "properties": {
         "targetPath": { "type": "string", "minLength": 1 },
-        "owner": { "const": "requirements_backed_main_agent" },
+        "owner": { "type": "string", "minLength": 1 },
         "basisRefs": { "$ref": "#/$defs/idSet" }
       }
     },

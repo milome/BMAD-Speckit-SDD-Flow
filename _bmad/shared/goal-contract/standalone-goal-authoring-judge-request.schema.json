@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/standalone-goal-authoring-judge-request.schema.json",
+  "title": "Standalone Goal Authoring Judge Request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "role",
+    "candidateHash",
+    "candidate",
+    "requiredCoverageRefs",
+    "responseSchemaVersion",
+    "judgeRequestHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "StandaloneGoalAuthoringJudgeRequest/v1" },
+    "role": { "const": "goal_full" },
+    "candidateHash": { "$ref": "#/$defs/hash" },
+    "candidate": { "type": "object" },
+    "requiredCoverageRefs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "responseSchemaVersion": { "const": "StandaloneGoalAuthoringJudgeResponse/v1" },
+    "judgeRequestHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+  }
+}

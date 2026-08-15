@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/standalone-goal-authoring-judge-aggregate.schema.json",
+  "title": "Standalone Goal Authoring Judge Aggregate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "standaloneGoalSemanticIRHash",
+    "judgeRequestHash",
+    "providerSelectionHash",
+    "normalizedResponseHash",
+    "decision",
+    "findingIds",
+    "requiredCoverageRefs",
+    "coveredRefs",
+    "missingCoverageRefs",
+    "issueCodes",
+    "authoringJudgeAggregateHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "StandaloneGoalAuthoringJudgeAggregate/v1" },
+    "standaloneGoalSemanticIRHash": { "$ref": "#/$defs/hash" },
+    "judgeRequestHash": { "$ref": "#/$defs/hash" },
+    "providerSelectionHash": { "$ref": "#/$defs/hash" },
+    "normalizedResponseHash": { "$ref": "#/$defs/hash" },
+    "decision": { "enum": ["pass", "block"] },
+    "findingIds": { "$ref": "#/$defs/stringSet" },
+    "requiredCoverageRefs": { "$ref": "#/$defs/nonemptyStringSet" },
+    "coveredRefs": { "$ref": "#/$defs/stringSet" },
+    "missingCoverageRefs": { "$ref": "#/$defs/stringSet" },
+    "issueCodes": { "$ref": "#/$defs/stringSet" },
+    "authoringJudgeAggregateHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "stringSet": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "nonemptyStringSet": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

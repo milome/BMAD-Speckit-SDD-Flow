@@ -33,25 +33,29 @@ npm exec --prefix "<project_root>" -- bmad-speckit confirm-scope \
 
 After exact chat confirmation, agents must run this entry immediately with `<project_root>` resolved from `_bmad-output/config/bmad-speckit-install-manifest.json`. It calls the high-level orchestration action, which calls the skill-local controlled ingest wrapper, writes `confirmation_recorded` to `requirement-record.json`, and blocks readiness or prompt generation if the controlled record is missing or stale. `bmad-speckit main-agent:confirm-scope` remains a compatibility alias, but the stable user-facing entry is `npm exec --prefix "<project_root>" -- bmad-speckit confirm-scope`.
 
-Architecture confirmation has a skill-local prepare entry that is the normal user-facing workflow:
+Architecture confirmation is produced only by the canonical package action:
 
 ```bash
-node <skill-dir>/scripts/prepare-architecture-confirmation-page.ts \
-  --source <source-document.md> \
-  --requirement-record _bmad-output/runtime/requirement-records/<recordId>/requirement-record.json \
-  --run-id <runId> \
-  --target-paths <json-array-or-file> \
-  --consumer-impact-scan <json-array-or-file> \
-  --governance-impact-scan <json-array-or-file> \
-  --full-architecture-trigger-matrix <json-array-or-file> \
-  --out _bmad-output/runtime/requirement-records/<recordId>/architecture/architecture-confirmation-<runId>.html \
-  --language zh-CN \
+bmad-speckit main-agent prepare-architecture-confirmation --request-id <requestId> --json
+```
+
+The package action is the only public architecture confirmation producer. It resolves confirmed Requirements authority, derives `ArchitectureConfirmationCandidate/v1`, publishes the deterministic candidate and page, and returns `architectureConfirmationCandidateHash` plus `exactConfirmationText`. Caller-derived architecture inputs must fail closed, including source, target, consumer impact, governance impact, trigger matrix, candidate, hash, result, decision, risk, and rollback overrides.
+
+`prepare-architecture-confirmation-page.ts` and `generate-architecture-confirmation-artifact.ts` are request-id-only compatibility wrappers that delegate to the package action. Initial prepare must not write `architecture_confirmation_state_checked`, and public ingest must reject `--action check-state` and `--persist-state-check` rather than creating a pre-accept state-check event.
+
+The skill-local architecture renderer is projection-only compatibility surface over `ArchitectureConfirmationCandidate/v1`. The canonical package action already renders the user-facing page. The compatibility renderer may project canonical candidate fields, but it must not derive or recompute candidate identity, currentness, impact scans, source hashes, decisions, or acceptance state.
+
+Exact acceptance uses only the package ingest action:
+
+```bash
+bmad-speckit main-agent ingest-architecture-confirmation \
+  --request-id <requestId> \
+  --architecture-confirmation-candidate-hash <architectureConfirmationCandidateHash> \
+  --exact-confirmation-text "<exactConfirmationText>" \
   --json
 ```
 
-The prepare entry must automatically run the controlled `architecture_confirmation_state_checked` precheck, generate requirement-scoped `architecture-confirmation-<runId>.json`, and call the read-only renderer. The user-facing next step must only be to open the architecture confirmation HTML and confirm the hashes in chat. Do not expose stale check or JSON producer commands as manual user steps.
-
-The renderer remains read-only. It renders an existing requirement-scoped `architecture-confirmation-<runId>.json`; it must not generate architecture decisions, infer target paths, write `requirement-record.json`, append `architectureConfirmations[]`, change `architectureConfirmationState`, or confirm architecture on behalf of the user. Do not replace the prepare entry, producer, or renderer with temporary scripts, hand-written HTML, or root-level wrappers.
+Legacy artifact, render-report, caller identity, and timestamp arguments must fail closed. Historical `architecture_confirmation_state_checked` events may remain readable during canonical replay, but prepare and ingest must not append new events of that type.
 
 ## CLI Contract
 

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/standalone-goal-authoring-effective-pass.schema.json",
+  "title": "Standalone Goal Authoring Effective Pass",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "standaloneGoalSemanticIRHash",
+    "authoringJudgeAggregateHash",
+    "decision",
+    "authoringEffectivePassHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "StandaloneGoalAuthoringEffectivePass/v1" },
+    "standaloneGoalSemanticIRHash": { "$ref": "#/$defs/hash" },
+    "authoringJudgeAggregateHash": { "$ref": "#/$defs/hash" },
+    "decision": { "const": "pass" },
+    "authoringEffectivePassHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+  }
+}

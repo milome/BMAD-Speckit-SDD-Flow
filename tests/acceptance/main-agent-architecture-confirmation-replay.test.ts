@@ -13,7 +13,10 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { runIngestArchitectureConfirmation } from '../../packages/bmad-speckit/src/main-agent/actions/ingest-architecture-confirmation';
 import { runPrepareArchitectureConfirmation } from '../../packages/bmad-speckit/src/main-agent/actions/prepare-architecture-confirmation';
-import { createRequirementsContractBuildManifest } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-authoring-manifest';
+import {
+  createRequirementsContractBuildManifest,
+  createRequirementsContractCheckpointManifest,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-authoring-manifest';
 import { artifactBytesHash } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-hash-domains';
 import { compileRequirementsEffectivePassReceiptV2 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-requirements-effective-pass-gate';
 import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
@@ -24,10 +27,29 @@ import { createRuntimeStatusDecisionReceipt } from '../../packages/bmad-speckit/
 
 const hash = (digit: string) => `sha256:${digit.repeat(64)}`;
 
+function jsonText(value: unknown): string {
+  return `${JSON.stringify(value, null, 2)}\n`;
+}
+
+function architectureAuthoritySource(authority: Record<string, unknown>) {
+  return {
+    schemaVersion: 'requirements-contract-authority-source/v1',
+    sourceRootId: authority.authorityId,
+    semanticBody: authority,
+  };
+}
+
+function authoritySnapshotHash(value: unknown): string {
+  return sha256Stable({
+    domain: 'requirements-source-snapshot/v1',
+    content: jsonText(architectureAuthoritySource(value as Record<string, unknown>)),
+  });
+}
+
 function writeJson(root: string, relativePath: string, value: unknown): string {
   const target = path.join(root, ...relativePath.split('/'));
   mkdirSync(path.dirname(target), { recursive: true });
-  writeFileSync(target, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+  writeFileSync(target, jsonText(value), 'utf8');
   return target;
 }
 
@@ -93,6 +115,62 @@ function fixture(root: string) {
     ],
     semanticProvenance: { 'MUST-001': 'MUST-001' },
   });
+  const repositoryAuthority = {
+    schemaVersion: 'ArchitecturePremiseAuthority/v1',
+    authorityKind: 'repository',
+    authorityRole: 'repository_authority',
+    authorityId: 'repo-worker',
+    allowedTargetPaths: ['src/worker.ts'],
+    consumerImpactRules: [
+      {
+        impactId: 'consumer:logical-targets',
+        whenConstraintKinds: ['PATH'],
+        whenConstraintIds: [],
+      },
+    ],
+    triggerRules: [
+      {
+        triggerId: 'architecture:target-scope',
+        whenConstraintKinds: ['PATH'],
+        whenConstraintIds: [],
+      },
+      {
+        triggerId: 'architecture:toolchain',
+        whenConstraintKinds: ['CMD', 'ART', 'EVDREQ'],
+        whenConstraintIds: [],
+      },
+    ],
+  };
+  const policyAuthority = {
+    schemaVersion: 'ArchitecturePremiseAuthority/v1',
+    authorityKind: 'policy',
+    authorityRole: 'policy_authority',
+    authorityId: 'policy-worker',
+    forbiddenScope: { paths: ['.git/**'] },
+    ownershipRules: [{ targetPath: 'src/worker.ts', owner: 'requirements_backed_main_agent' }],
+    isolationSelection: 'consumer_worktree',
+    governanceImpactRules: [
+      {
+        impactId: 'governance:pinned-policy',
+        whenConstraintKinds: [],
+        whenConstraintIds: [],
+      },
+    ],
+    triggerRules: [
+      {
+        triggerId: 'architecture:governance',
+        whenConstraintKinds: [],
+        whenConstraintIds: [],
+      },
+      {
+        triggerId: 'architecture:execution-structure',
+        whenConstraintKinds: ['CTM'],
+        whenConstraintIds: [],
+      },
+    ],
+  };
+  writeJson(root, 'repo/worker.json', architectureAuthoritySource(repositoryAuthority));
+  writeJson(root, 'policy/worker.json', architectureAuthoritySource(policyAuthority));
   const binding = createRequirementsContractSourceBindingCapsule({
     recordId: requestId,
     semanticRevisionId: semanticIr.semanticRevisionId,
@@ -104,7 +182,7 @@ function fixture(root: string) {
         sourceArtifactId: 'repo-worker',
         role: 'repository_authority',
         mediaType: 'application/json',
-        sourceSnapshotHash: hash('1'),
+        sourceSnapshotHash: authoritySnapshotHash(repositoryAuthority),
         orderedPosition: 0,
         immutableBlobRef: 'repo/worker.json',
       },
@@ -112,7 +190,7 @@ function fixture(root: string) {
         sourceArtifactId: 'policy-worker',
         role: 'policy_authority',
         mediaType: 'application/json',
-        sourceSnapshotHash: hash('2'),
+        sourceSnapshotHash: authoritySnapshotHash(policyAuthority),
         orderedPosition: 1,
         immutableBlobRef: 'policy/worker.json',
       },
@@ -122,7 +200,7 @@ function fixture(root: string) {
   });
   const semanticPath = `authoring/semantic-revisions/${semanticIr.semanticRevisionId}/semantic-ir.json`;
   const bindingPath = `authoring/source-bindings/${binding.bindingRevisionId}/source-binding.json`;
-  const executionPath = 'authoring/staging/ATTEMPT-001/execution-manifest.json';
+  const executionPath = 'authoring/staging/ATTEMPT-001/cp06/execution-manifest.json';
   const buildPath = 'authoring/staging/ATTEMPT-001/contract-build-manifest.json';
   writeJson(recordRoot, semanticPath, semanticIr);
   writeJson(recordRoot, bindingPath, binding);
@@ -133,16 +211,54 @@ function fixture(root: string) {
     constraints: semanticIr.semanticPayload.executionConstraints,
   };
   writeJson(recordRoot, executionPath, executionManifest);
+  const executionEntry = {
+    role: 'execution_manifest' as const,
+    schemaVersion: 'requirements-contract-execution-manifest/v1',
+    artifactId: 'execution-manifest',
+    recordRelativePath: executionPath,
+    artifactHash: sha256Stable(executionManifest),
+  };
+  const profileIds: Record<number, string> = {
+    6: 'requirements-contract-cp06-execution-projection/v1',
+    7: 'requirements-contract-cp07-view-diagram-projection/v1',
+    8: 'requirements-contract-cp08-reconciliation-renderability/v1',
+  };
+  let previousCheckpointManifestRef = {
+    checkpointId: 'cp05',
+    checkpointOrdinal: 5,
+    path: 'authoring/staging/ATTEMPT-001/manifests/5-cp05.json',
+    hash: hash('3'),
+  };
+  for (const ordinal of [6, 7, 8]) {
+    const checkpointId = `cp${String(ordinal).padStart(2, '0')}`;
+    const checkpoint = createRequirementsContractCheckpointManifest({
+      authoringRequestId: requestId,
+      authoringAttemptId: 'ATTEMPT-001',
+      checkpointId,
+      checkpointOrdinal: ordinal,
+      stage: checkpointId,
+      status: 'passed',
+      inputManifestHash: hash('2'),
+      previousCheckpointManifestRef,
+      latestValidPredecessorCheckpoint: previousCheckpointManifestRef.checkpointId,
+      compilerIdentity: profileIds[ordinal],
+      artifactEntries: ordinal === 6 ? [executionEntry] : [],
+      decisionReceiptRefs: [],
+      baseAuthorityRef: null,
+    });
+    previousCheckpointManifestRef = {
+      checkpointId,
+      checkpointOrdinal: ordinal,
+      path: `authoring/staging/ATTEMPT-001/manifests/${ordinal}-${checkpointId}.json`,
+      hash: checkpoint.checkpointManifestHash,
+    };
+    writeJson(recordRoot, previousCheckpointManifestRef.path, checkpoint);
+  }
   const buildManifest = createRequirementsContractBuildManifest({
     authoringRequestId: requestId,
     authoringAttemptId: 'ATTEMPT-001',
     inputManifestHash: hash('2'),
-    terminalCheckpointManifestRef: {
-      checkpointId: 'cp08',
-      checkpointOrdinal: 8,
-      path: 'authoring/staging/ATTEMPT-001/manifests/8-cp08.json',
-      hash: hash('3'),
-    },
+    terminalCheckpointManifestRef: previousCheckpointManifestRef,
     semanticAuthorityRef: {
       semanticRevisionId: semanticIr.semanticRevisionId,
       path: semanticPath,
@@ -153,15 +269,7 @@ function fixture(root: string) {
       path: bindingPath,
       hash: binding.sourceBindingHash,
     },
-    artifactEntries: [
-      {
-        role: 'execution_manifest',
-        schemaVersion: 'requirements-contract-execution-manifest/v1',
-        artifactId: 'execution-manifest',
-        recordRelativePath: executionPath,
-        artifactHash: sha256Stable(executionManifest),
-      },
-    ],
+    artifactEntries: [executionEntry],
     decisionReceiptRefs: [],
     auditPacketRef: {
       artifactId: 'judge-audit-packet',
@@ -311,6 +419,8 @@ function fixture(root: string) {
     requirementsHtmlPath,
     requirementsMarkdownTarget,
     requirementsHtmlTarget,
+    repositoryAuthority,
+    policyAuthority,
   };
 }
 
@@ -370,6 +480,21 @@ describe('Main Agent architecture confirmation replay', () => {
       const record = JSON.parse(readFileSync(input.recordPath, 'utf8'));
       expect(record.architectureConfirmationStateChecks).toBeUndefined();
       expect(record.lastEventType).toBeUndefined();
+
+      const recordBeforeRejectedStateCheck = readFileSync(input.recordPath);
+      const rejectedStateCheck = runIngestArchitectureConfirmation(
+        actionContext(root, 'ingest-architecture-confirmation', [
+          '--action',
+          'check-state',
+          '--requirement-record',
+          input.recordPath,
+          '--persist-state-check',
+        ])
+      ) as Record<string, any>;
+      expect(rejectedStateCheck.exitCode, JSON.stringify(rejectedStateCheck, null, 2)).toBe(2);
+      expect(rejectedStateCheck.status).toBe('architecture_confirmation_blocked');
+      expect(rejectedStateCheck.result.issueCodes).toEqual(['caller_derived_input_forbidden']);
+      expect(readFileSync(input.recordPath)).toEqual(recordBeforeRejectedStateCheck);
 
       const ingested = runIngestArchitectureConfirmation(
         actionContext(root, 'ingest-architecture-confirmation', [
@@ -798,11 +923,24 @@ describe('Main Agent architecture confirmation replay', () => {
         resolverIdentity: input.binding.resolverIdentity,
         sourceArtifacts: input.binding.sourceArtifacts.map((artifact) => ({
           ...artifact,
-          immutableBlobRef: 'repo/worker-refreshed.json',
+          immutableBlobRef:
+            artifact.role === 'repository_authority'
+              ? 'repo/worker-refreshed.json'
+              : 'policy/worker-refreshed.json',
         })),
         sourceSpans: input.binding.sourceSpanRegistry,
         evidenceClaimBindings: input.binding.evidenceClaimBindings,
       });
+      writeJson(
+        root,
+        'repo/worker-refreshed.json',
+        architectureAuthoritySource(input.repositoryAuthority)
+      );
+      writeJson(
+        root,
+        'policy/worker-refreshed.json',
+        architectureAuthoritySource(input.policyAuthority)
+      );
       const bindingPath = `authoring/source-bindings/${refreshedBinding.bindingRevisionId}/source-binding.json`;
       writeJson(input.recordRoot, bindingPath, refreshedBinding);
       const activeAuthority = {
@@ -876,11 +1014,24 @@ describe('Main Agent architecture confirmation replay', () => {
         resolverIdentity: input.binding.resolverIdentity,
         sourceArtifacts: refreshedBinding.sourceArtifacts.map((artifact) => ({
           ...artifact,
-          immutableBlobRef: 'repo/worker-refreshed-again.json',
+          immutableBlobRef:
+            artifact.role === 'repository_authority'
+              ? 'repo/worker-refreshed-again.json'
+              : 'policy/worker-refreshed-again.json',
         })),
         sourceSpans: refreshedBinding.sourceSpanRegistry,
         evidenceClaimBindings: refreshedBinding.evidenceClaimBindings,
       });
+      writeJson(
+        root,
+        'repo/worker-refreshed-again.json',
+        architectureAuthoritySource(input.repositoryAuthority)
+      );
+      writeJson(
+        root,
+        'policy/worker-refreshed-again.json',
+        architectureAuthoritySource(input.policyAuthority)
+      );
       const secondBindingPath = `authoring/source-bindings/${secondBinding.bindingRevisionId}/source-binding.json`;
       writeJson(input.recordRoot, secondBindingPath, secondBinding);
       const secondRefreshReceipt = createRequirementsContractSourceBindingRefreshReceipt({

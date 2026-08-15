@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/goal-contract-admission-snapshot.schema.json",
+  "title": "Goal Contract Admission Snapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "profile", "requirementsLineage", "sixModelStatus", "admissionSnapshotHash"],
+  "properties": {
+    "schemaVersion": { "const": "GoalContractAdmissionSnapshot/v1" },
+    "profile": { "const": "requirements_backed" },
+    "requirementsLineage": { "$ref": "#/$defs/requirementsLineage" },
+    "sixModelStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requirement_confirmation", "architecture_confirmation", "implementation_readiness"],
+      "properties": {
+        "requirement_confirmation": { "const": "pass" },
+        "architecture_confirmation": { "const": "pass" },
+        "implementation_readiness": { "const": "pass" }
+      }
+    },
+    "admissionSnapshotHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "requirementsLineage": {
+      "type": "object",
+      "required": ["recordId", "semanticRevisionId", "scopeSemanticHash", "executionConstraintRegistryHash", "architectureConfirmationCandidateHash", "implementationReadinessCandidateHash", "readinessScopedInputDigest"],
+      "properties": {
+        "recordId": { "type": "string", "minLength": 1 },
+        "semanticRevisionId": { "type": "string", "minLength": 1 },
+        "scopeSemanticHash": { "$ref": "#/$defs/hash" },
+        "executionConstraintRegistryHash": { "$ref": "#/$defs/hash" },
+        "architectureConfirmationCandidateHash": { "$ref": "#/$defs/hash" },
+        "implementationReadinessCandidateHash": { "$ref": "#/$defs/hash" },
+        "readinessScopedInputDigest": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

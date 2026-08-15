@@ -490,6 +490,23 @@ function canonicalBindingFromClosure(input) {
       sourceSpanRefs: [sourceSpanId],
     });
   }
+  for (const candidate of [...(input.scan.architecturePremiseAuthorityCandidates ?? [])].sort(
+    (left, right) =>
+      left.authorityRole.localeCompare(right.authorityRole) ||
+      left.authorityId.localeCompare(right.authorityId)
+  )) {
+    sourceArtifacts.push({
+      sourceArtifactId: candidate.authorityId,
+      role: candidate.authorityRole,
+      mediaType: 'application/json',
+      sourceSnapshotHash: sha256Stable({
+        domain: 'requirements-source-snapshot/v1',
+        content: candidate.sourceContent,
+      }),
+      orderedPosition: sourceArtifacts.length,
+      immutableBlobRef: candidate.sourcePath,
+    });
+  }
   const sourceBinding = createRequirementsContractSourceBindingCapsule({
     recordId: input.authoringRequestId,
     semanticRevisionId: input.semanticIr.semanticRevisionId,

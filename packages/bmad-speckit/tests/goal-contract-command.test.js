@@ -19,9 +19,22 @@ const { makeRegistries } = require('../src/utils/goal-contract/slot-data-builder
 
 const BIN = path.join(__dirname, '..', 'bin', 'bmad-speckit.js');
 const SOURCE_COMMAND = path.join(__dirname, '..', 'src', 'commands', 'goal-contract.ts');
+const BUILT_COMMAND = path.join(__dirname, '..', 'dist', 'commands', 'goal-contract.js');
+const TSX = path.join(__dirname, '..', '..', '..', 'node_modules', 'tsx', 'dist', 'cli.mjs');
 const SOURCE_RUNNER = [
   'const { goalContractCommand } = require(process.argv[1]);',
-  'Promise.resolve(goalContractCommand({}, process.argv.slice(2)))',
+  'const hash=(digit)=>`sha256:${digit.repeat(64)}`;',
+  'const prepareStandaloneGoalJudgeInvocation=async()=>({',
+  "configPath:'test',judgeRuntime:{},providerRef:'test-goal-judge',",
+  "provider:{transport:'openai-compatible',apiStyle:'responses',model:'test-model',requestPolicy:{}},",
+  "providerRegistryHash:hash('7'),credentialProviderRef:'test-goal-judge',credentialRevision:1,",
+  'invoke:async({request})=>({',
+  "schemaVersion:'requirements-contract-normalized-judge-response/v1',",
+  "providerRef:'test-goal-judge',transport:'openai-compatible',configuredModel:'test-model',returnedModel:'test-model',",
+  "decision:'pass',findings:[],challengeRequests:[],evidenceRefs:request.requiredCoverageRefs,",
+  "providerRequestId:'request-1',requestHash:hash('8'),responseHash:hash('9'),",
+  '}),});',
+  'Promise.resolve(goalContractCommand({prepareStandaloneGoalJudgeInvocation}, process.argv.slice(2)))',
   '.then((code)=>{process.exitCode=code;})',
   '.catch((error)=>{console.error(error);process.exitCode=1;});',
 ].join('');
@@ -40,7 +53,15 @@ function runCli(args, options = {}) {
 }
 
 function runSourceCommand(args) {
-  return spawnSync(process.execPath, ['-e', SOURCE_RUNNER, SOURCE_COMMAND, ...args], {
+  return spawnSync(process.execPath, [TSX, '-e', SOURCE_RUNNER, SOURCE_COMMAND, ...args], {
+    cwd: path.join(__dirname, '..'),
+    encoding: 'utf8',
+    maxBuffer: 20 * 1024 * 1024,
+  });
+}
+
+function runBuiltCommand(args) {
+  return spawnSync(process.execPath, ['-e', SOURCE_RUNNER, BUILT_COMMAND, ...args], {
     cwd: path.join(__dirname, '..'),
     encoding: 'utf8',
     maxBuffer: 20 * 1024 * 1024,
@@ -565,7 +586,9 @@ describe('bmad-speckit goal-contract command', () => {
     const source = writeSourcePlan(root);
     const out = path.join(root, 'goal-execution-plan.md');
 
-    const result = runCli(standaloneGenerateArgs(['--source', source, '--out', out, '--json']));
+    const result = runSourceCommand(
+      standaloneGenerateArgs(['--source', source, '--out', out, '--json'])
+    );
 
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const payload = JSON.parse(result.stdout);
@@ -583,9 +606,9 @@ describe('bmad-speckit goal-contract command', () => {
     const goalText = fs.readFileSync(out, 'utf8');
     assert.match(goalText, /sourceBytes: \d+/u);
     assert.match(goalText, /sourceLines: \d+/u);
-    assert.match(goalText, /goalContractProfileVersion: 2\.1\.0/u);
+    assert.match(goalText, /goalContractProfileVersion: 3\.0\.0/u);
     assert.match(goalText, /entryScenario: standalone_goal_contract/u);
-    assert.match(goalText, /finalArtifactAuthority: standalone_goal_execution_plan_markdown/u);
+    assert.match(goalText, /finalArtifactAuthority: goal_active_execution_authority_tuple/u);
     assert.match(goalText, /coverageReceiptPath:/u);
     assert.match(goalText, /generationReceiptPath:/u);
     assert.match(goalText, /unmappedSourceObligations: 0/u);
@@ -598,7 +621,10 @@ describe('bmad-speckit goal-contract command', () => {
     assert.doesNotMatch(goalText, /rg -n -F 'SRC001' -- '.*source-plan\.md'/u);
     assert.doesNotMatch(goalText, /rg -n -F 'SRC\d{3}'.*coverage\.json/u);
     assert.match(goalText, /sourceTextHash=sha256:[0-9a-f]{64}/u);
-    assert.match(goalText, /standalone Markdown contract is the frozen execution authority/u);
+    assert.match(goalText, /standalone Markdown contract is a GoalExecutionIR projection/u);
+    assert.equal(payload.goalJudgeDispatchCount, 1);
+    assert.match(payload.goalExecutionIRHash, /^sha256:[0-9a-f]{64}$/u);
+    assert.ok(fs.existsSync(payload.activeAuthorityRef.path));
 
     const coverage = JSON.parse(fs.readFileSync(payload.coverageReceiptPath, 'utf8'));
     const generation = JSON.parse(fs.readFileSync(payload.generationReceiptPath, 'utf8'));
@@ -621,6 +647,43 @@ describe('bmad-speckit goal-contract command', () => {
     assert.equal(payload.auditProfile.finalDocsReviewRequired, false);
     assert.deepEqual(generation.deterministicPreflight, payload.deterministicPreflight);
     assert.equal(generation.writeReceipt.schemaVersion, 'large-document-writer-safe-write/v1');
+  });
+
+  it('preserves standalone Judge and Goal Execution IR handoff in the built command', () => {
+    const root = tempRoot();
+    try {
+      const source = writeSourcePlan(root);
+      const out = path.join(root, 'built-goal-execution-plan.md');
+      const result = runBuiltCommand(
+        standaloneGenerateArgs(['--source', source, '--out', out, '--json'])
+      );
+
+      assert.equal(result.status, 0, result.stderr || result.stdout);
+      const payload = JSON.parse(result.stdout);
+      const executionIR = JSON.parse(fs.readFileSync(payload.goalExecutionIrRef.path, 'utf8'));
+      const activeAuthority = JSON.parse(fs.readFileSync(payload.activeAuthorityRef.path, 'utf8'));
+      assert.equal(payload.goalJudgeDispatchCount, 1);
+      assert.equal(executionIR.schemaVersion, 'GoalExecutionIR/v1');
+      assert.equal(executionIR.profile, 'standalone');
+      assert.equal(activeAuthority.schemaVersion, 'GoalContractActiveAuthority/v1');
+      assert.equal(activeAuthority.goalExecutionIRHash, executionIR.goalExecutionIRHash);
+
+      const replay = runBuiltCommand(
+        standaloneGenerateArgs(['--source', source, '--out', out, '--json'])
+      );
+      assert.equal(replay.status, 0, replay.stderr || replay.stdout);
+      const replayPayload = JSON.parse(replay.stdout);
+      assert.deepEqual(
+        {
+          goalJudgeDispatchCount: replayPayload.goalJudgeDispatchCount,
+          publicationStatus: replayPayload.publicationStatus,
+          writeCount: replayPayload.writeCount,
+        },
+        { goalJudgeDispatchCount: 0, publicationStatus: 'reused', writeCount: 0 }
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+    }
   });
 
   it('generates typed parent projections from explicit structured records', () => {
@@ -815,7 +878,7 @@ describe('bmad-speckit goal-contract command', () => {
 
     const aggregateTask = goalText
       .split('### PLAN-T02')[1]
-      .split('<!-- \/goal-slot:implementationTasks -->')[0];
+      .split('<!-- /goal-slot:implementationTasks -->')[0];
     assert.match(aggregateTask, /\*\*Execution Class:\*\* `aggregate_only`/u);
     assert.match(aggregateTask, /\*\*Owned Production Paths:\*\* `none`/u);
     assert.match(aggregateTask, /\*\*Aggregate Gate Phase:\*\* `final_aggregate`/u);
@@ -927,7 +990,9 @@ describe('bmad-speckit goal-contract command', () => {
     );
     const out = path.join(root, 'goal-execution-plan.md');
 
-    const result = runCli(standaloneGenerateArgs(['--source', sourcePath, '--out', out, '--json']));
+    const result = runSourceCommand(
+      standaloneGenerateArgs(['--source', sourcePath, '--out', out, '--json'])
+    );
 
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const goalText = fs.readFileSync(out, 'utf8');
@@ -1013,7 +1078,9 @@ describe('bmad-speckit goal-contract command', () => {
       'utf8'
     );
 
-    const result = runCli(standaloneGenerateArgs(['--source', sourcePath, '--out', out, '--json']));
+    const result = runSourceCommand(
+      standaloneGenerateArgs(['--source', sourcePath, '--out', out, '--json'])
+    );
 
     assert.notEqual(result.status, 0);
     const payload = JSON.parse(result.stdout);

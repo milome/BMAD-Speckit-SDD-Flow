@@ -34,16 +34,28 @@ const ENTRY_SCENARIOS = Object.freeze({
     dualViewPolicy: 'forbidden',
     artifactRoles: FOUR_ARTIFACT_ROLES,
   }),
+  requirements_backed_goal: Object.freeze({
+    entryId: 'ENTRY-04',
+    entryScenario: 'requirements_backed_goal',
+    sourceAuthority: 'confirmed_requirements_architecture_and_readiness_authorities',
+    requiredOutputs: Object.freeze(['goal-run-root']),
+    finalArtifactAuthority: 'goal_active_execution_authority_tuple',
+    compilerRoute: 'shared_goal_execution_ir_compiler',
+    dualViewPolicy: 'forbidden',
+    artifactRoles: Object.freeze({
+      'goal-run-root': 'authority_bundle',
+    }),
+  }),
   standalone_goal_contract: Object.freeze({
     entryId: 'ENTRY-03',
     entryScenario: 'standalone_goal_contract',
     sourceAuthority: 'source_plan_or_bounded_conversation_snapshot',
     requiredOutputs: Object.freeze(['*-goal-execution-plan.md']),
-    finalArtifactAuthority: 'standalone_goal_execution_plan_markdown',
-    compilerRoute: 'standalone_dual_view_goal_contract_generator',
+    finalArtifactAuthority: 'goal_active_execution_authority_tuple',
+    compilerRoute: 'standalone_semantic_frontend_to_shared_goal_execution_ir_compiler',
     dualViewPolicy: 'required',
     artifactRoles: Object.freeze({
-      '*-goal-execution-plan.md': 'frozen_execution_authority',
+      '*-goal-execution-plan.md': 'projection',
     }),
   }),
 });
@@ -55,6 +67,11 @@ const SUPPORTED_REQUIRED_SEMANTICS = new Set([
   'standalone_expected_evidence_registry',
   'deterministic_validation',
   'hash_bound_three_perspective_audit',
+  'confirmed_requirements_semantic_source',
+  'standalone_goal_semantic_ir',
+  'shared_goal_execution_ir',
+  'zero_goal_judge_dispatch',
+  'atomic_goal_authority_handoff',
 ]);
 
 function unique(values) {
@@ -155,7 +172,7 @@ function validateEntryProfile(profile, entryScenario) {
   if (!scenario) {
     return validationBlock('entry_profile_unknown_entry', { entryScenario });
   }
-  if (profile?.profileVersion !== '2.1.0') {
+  if (profile?.profileVersion !== '3.0.0') {
     return validationBlock('entry_profile_version_unsupported', {
       profileVersion: profile?.profileVersion ?? null,
     });
