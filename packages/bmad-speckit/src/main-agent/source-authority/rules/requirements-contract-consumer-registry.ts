@@ -255,6 +255,20 @@ export const REQUIREMENTS_CONTRACT_SIX_MODEL_CONSUMER_DEFINITIONS: readonly SixM
       roles: ['projection_writer'],
     },
     {
+      consumerId: 'six-model-implementation-readiness-v2',
+      canonicalPath:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-v2.ts',
+      roles: ['verified_status_reader', 'projection_reader', 'projection_writer'],
+      verifiedFacadeRequired: true,
+    },
+    {
+      consumerId: 'six-model-goal-requirements-adapter',
+      canonicalPath:
+        'packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-requirements-adapter.ts',
+      roles: ['verified_status_reader', 'projection_reader'],
+      verifiedFacadeRequired: true,
+    },
+    {
       consumerId: 'six-model-main-orchestration',
       canonicalPath:
         'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts',
@@ -809,6 +823,10 @@ function canonicalSixModelConsumerPath(root: string, relativePath: string): stri
         sourceCanonicalPath(root, `packages/bmad-speckit/src/main-agent/runtime/${remainder}`),
     ],
     [
+      'packages/bmad-speckit/dist/utils/',
+      (remainder) => sourceCanonicalPath(root, `packages/bmad-speckit/src/utils/${remainder}`),
+    ],
+    [
       'packages/bmad-speckit/dist/runtime/',
       (remainder) => sourceCanonicalPath(root, `packages/bmad-speckit/src/runtime/${remainder}`),
     ],
@@ -1081,10 +1099,7 @@ function canonicalDeclaredConsumerPath(
   return normalizedPath;
 }
 
-function discoverProductionConsumerPaths(
-  root: string,
-  declaredPaths: readonly string[]
-): string[] {
+function discoverProductionConsumerPaths(root: string, declaredPaths: readonly string[]): string[] {
   const discovered = new Set<string>();
   for (const rule of PRODUCTION_DISCOVERY_RULES) {
     const pattern = new RegExp(rule.fileNamePattern, 'u');
@@ -1131,9 +1146,7 @@ function fileHash(root: string, relativePath: string): string {
   if (bytes.includes(0x0d)) {
     throw new Error(`requirements_contract_projection_hash_input_not_lf:${relativePath}`);
   }
-  return `sha256:${createHash('sha256')
-    .update(bytes)
-    .digest('hex')}`;
+  return `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
 }
 
 export function createRequirementsContractConsumerRegistry(root = process.cwd()) {

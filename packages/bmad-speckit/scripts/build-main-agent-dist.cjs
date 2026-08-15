@@ -17,7 +17,7 @@ const distRoot = path.join(packageDistRoot, 'main-agent');
 const repoBmadRoot = path.join(repoRoot, '_bmad');
 const packageBmadRoot = path.join(packageRoot, '_bmad');
 const architectureRendererSourceRoot = path.join(
-  repoBmadRoot,
+  packageBmadRoot,
   'skills',
   'requirements-contract-authoring',
   'scripts'

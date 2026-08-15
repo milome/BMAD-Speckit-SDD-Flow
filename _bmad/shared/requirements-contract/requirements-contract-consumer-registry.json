@@ -2,7 +2,7 @@
   "schemaVersion": "requirements-contract-consumer-registry/v2",
   "owner": {
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-consumer-registry.ts",
-    "hash": "sha256:82c108e5e19c0fdedc24a1e6903066123256a33d47af4e8350f35b08494c2389"
+    "hash": "sha256:99ea1b01688ab3f29b808af721c72fd08ae74f8b9811ba01f82c1ec68f0589d2"
   },
   "registryHash": "sha256:5a3b044c4f5465cdb1573662acf40de01bba2cf356b5976ab277b5639b808c15",
   "validationModes": [
