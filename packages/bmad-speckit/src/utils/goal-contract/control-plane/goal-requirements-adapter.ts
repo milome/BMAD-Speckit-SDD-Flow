@@ -539,6 +539,15 @@ function assertAdmissionStillCurrent(input: {
   }
 }
 
+export function validateRequirementsBackedGoalAdmissionCurrent(input: {
+  projectRoot: string;
+  requestId: string;
+  requirementRecordPath: string;
+  expectedRequirementsLineage: JsonObject;
+}): void {
+  assertAdmissionStillCurrent(input);
+}
+
 function renderParentGoal(ir: JsonObject): string {
   const obligations = objects(ir.obligations);
   const tasks = objects(ir.atomicTasks);

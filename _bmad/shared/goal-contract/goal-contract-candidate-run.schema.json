@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/goal-contract-candidate-run.schema.json",
+  "title": "Goal Contract Candidate Run",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "candidateRunId", "profile", "goalId", "goalExecutionIRHash", "executionMode", "partitionOutcome", "goalExecutionAuthorityRef", "eligibilityRef", "executionPackageRefs", "candidateRunHash"],
+  "properties": {
+    "schemaVersion": { "const": "GoalContractCandidateRun/v1" },
+    "candidateRunId": { "type": "string", "pattern": "^RUN-[A-F0-9]{16}$" },
+    "profile": { "enum": ["requirements_backed", "standalone"] },
+    "goalId": { "type": "string", "minLength": 1 },
+    "goalExecutionIRHash": { "$ref": "#/$defs/hash" },
+    "executionMode": { "enum": ["direct_goal", "partitioned_goal"] },
+    "partitionOutcome": { "enum": ["not_applicable", "complete_valid", "bounded_valid"] },
+    "goalExecutionAuthorityRef": { "$ref": "#/$defs/hashRef" },
+    "eligibilityRef": { "$ref": "#/$defs/hashRef" },
+    "executionPackageRefs": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/hashRef" } },
+    "selectedPartitionManifestRef": { "$ref": "#/$defs/hashRef" },
+    "candidateRunHash": { "$ref": "#/$defs/hash" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "executionMode": { "const": "direct_goal" } }, "required": ["executionMode"] },
+      "then": {
+        "properties": {
+          "partitionOutcome": { "const": "not_applicable" },
+          "executionPackageRefs": { "maxItems": 1 }
+        },
+        "not": { "required": ["selectedPartitionManifestRef"] }
+      }
+    },
+    {
+      "if": { "properties": { "executionMode": { "const": "partitioned_goal" } }, "required": ["executionMode"] },
+      "then": {
+        "required": ["selectedPartitionManifestRef"],
+        "properties": { "partitionOutcome": { "enum": ["complete_valid", "bounded_valid"] } }
+      }
+    }
+  ],
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "hashRef": { "type": "object", "additionalProperties": false, "required": ["path", "hash"], "properties": { "path": { "type": "string", "minLength": 1 }, "hash": { "$ref": "#/$defs/hash" } } }
+  }
+}

@@ -90,6 +90,7 @@ export function materializeImplementationReadinessFixture(
     invocation?: string;
     invocations?: string[];
     additionalFiles?: Record<string, string>;
+    additionalGoalAtoms?: number;
   } = {}
 ): ImplementationReadinessFixture {
   const root = input.root ?? mkdtempSync(path.join(os.tmpdir(), 'implementation-readiness-'));
@@ -108,16 +109,21 @@ export function materializeImplementationReadinessFixture(
         ? 'CMD-readiness-refund-alias'
         : `CMD-readiness-refund-${index + 1}`
   );
+  const goalAtomIds = Array.from(
+    { length: 1 + (input.additionalGoalAtoms ?? 0) },
+    (_value, index) => `MUST-READINESS-001-A${index + 1}`
+  );
   const constraint = (
     constraintId: string,
     kind: RequirementsExecutionConstraint['kind'],
-    canonicalValue: string
+    canonicalValue: string,
+    applicableAtomRefs: string[] = goalAtomIds
   ): RequirementsExecutionConstraint => ({
     constraintId,
     kind,
     canonicalValue,
     applicableMustRefs: ['MUST-READINESS-001'],
-    applicableAtomRefs: ['MUST-READINESS-001-A1'],
+    applicableAtomRefs,
     premiseRefs: ['MUST-READINESS-001'],
     derivationReceiptRefs: [],
     disposition: 'proven',
@@ -126,7 +132,14 @@ export function materializeImplementationReadinessFixture(
     constraint('PATH-refund-worker', 'PATH', 'src/refund-worker.cjs'),
     ...commandIds.map((commandId, index) => constraint(commandId, 'CMD', invocations[index])),
     constraint('ART-refund-worker', 'ART', 'dist/refund-worker.cjs'),
-    constraint('CTM-refund-worker', 'CTM', 'refund worker vertical slice'),
+    ...goalAtomIds.map((atomId, index) =>
+      constraint(
+        `CTM-refund-worker-${index + 1}`,
+        'CTM',
+        `refund worker vertical slice ${index + 1}`,
+        [atomId]
+      )
+    ),
     constraint('EVDREQ-refund-worker', 'EVDREQ', 'same-test RED/GREEN evidence'),
     constraint('STOP-refund-worker', 'STOP', '.git/**'),
   ];
@@ -143,14 +156,15 @@ export function materializeImplementationReadinessFixture(
           oracle: ORACLE,
         },
       ],
-      atoms: [
-        {
-          id: 'MUST-READINESS-001-A1',
-          requirementRef: 'MUST-READINESS-001',
-          action: 'Return the accepted refund state.',
-          oracle: ORACLE,
-        },
-      ],
+      atoms: goalAtomIds.map((atomId, index) => ({
+        id: atomId,
+        requirementRef: 'MUST-READINESS-001',
+        action:
+          index === 0
+            ? 'Return the accepted refund state.'
+            : `Verify accepted refund behavior ${index + 1}.`,
+        oracle: ORACLE,
+      })),
       decisions: [],
     },
     evidenceClaims: [],
