@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/goal-contract-direct-execution-package.schema.json",
+  "title": "Goal Contract Direct Execution Package",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "profile", "goalId", "goalExecutionIRHash", "executionMode", "goalExecutionAuthorityRef", "eligibilityRef", "artifacts", "directExecutionPackageHash"],
+  "properties": {
+    "schemaVersion": { "const": "GoalContractDirectExecutionPackage/v1" },
+    "profile": { "enum": ["requirements_backed", "standalone"] },
+    "goalId": { "type": "string", "minLength": 1 },
+    "goalExecutionIRHash": { "$ref": "#/$defs/hash" },
+    "executionMode": { "const": "direct_goal" },
+    "goalExecutionAuthorityRef": { "$ref": "#/$defs/hashRef" },
+    "eligibilityRef": { "$ref": "#/$defs/hashRef" },
+    "artifacts": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "path", "hash"],
+        "properties": {
+          "role": { "enum": ["model_packet", "human_prompt", "audit_receipt", "goal_execution_projection"] },
+          "path": { "type": "string", "minLength": 1 },
+          "hash": { "$ref": "#/$defs/hash" }
+        }
+      },
+      "allOf": [
+        { "contains": { "properties": { "role": { "const": "model_packet" } }, "required": ["role"] }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "properties": { "role": { "const": "human_prompt" } }, "required": ["role"] }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "properties": { "role": { "const": "audit_receipt" } }, "required": ["role"] }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "properties": { "role": { "const": "goal_execution_projection" } }, "required": ["role"] }, "minContains": 1, "maxContains": 1 }
+      ]
+    },
+    "directExecutionPackageHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "hashRef": { "type": "object", "additionalProperties": false, "required": ["path", "hash"], "properties": { "path": { "type": "string", "minLength": 1 }, "hash": { "$ref": "#/$defs/hash" } } }
+  }
+}

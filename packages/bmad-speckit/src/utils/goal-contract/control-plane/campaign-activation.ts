@@ -6,88 +6,52 @@ const {
   hashReceiptPayload,
   stableControlPlaneStringify,
   verifyReceiptSelfHash,
-} = require(
-  __filename.endsWith('.ts') ? './canonical-hash.ts' : './canonical-hash'
+} = require(__filename.endsWith('.ts') ? './canonical-hash.ts' : './canonical-hash');
+const { commitCreateOnceReceipt, readCommittedReceipt } = require(
+  __filename.endsWith('.ts') ? './campaign-receipt-store.ts' : './campaign-receipt-store'
 );
-const {
-  commitCreateOnceReceipt,
-  readCommittedReceipt,
-} = require(
-  __filename.endsWith('.ts')
-    ? './campaign-receipt-store.ts'
-    : './campaign-receipt-store'
-);
-const {
-  verifyCompositeSourceAuthorityBundle,
-} = require(
+const { verifyCompositeSourceAuthorityBundle } = require(
   __filename.endsWith('.ts')
     ? './composite-source-authority-bundle.ts'
     : './composite-source-authority-bundle'
 );
-const {
-  verifyIntentAuthorityEnvelope,
-} = require(
+const { verifyIntentAuthorityEnvelope } = require(
   __filename.endsWith('.ts') ? './intent-authority.ts' : './intent-authority'
 );
-const {
-  verifySourceCompositionPolicy,
-} = require(
-  __filename.endsWith('.ts')
-    ? './source-composition-policy.ts'
-    : './source-composition-policy'
+const { verifySourceCompositionPolicy } = require(
+  __filename.endsWith('.ts') ? './source-composition-policy.ts' : './source-composition-policy'
 );
-const {
-  verifyOrderedSourceSnapshotSet,
-} = require(
+const { verifyOrderedSourceSnapshotSet } = require(
   __filename.endsWith('.ts') ? './source-snapshot.ts' : './source-snapshot'
 );
-const {
-  validateGoalContractSchema,
-} = require(
+const { validateGoalContractSchema } = require(
   __filename.endsWith('.ts') ? './schema-registry.ts' : './schema-registry'
 );
-const {
-  verifyAuthoritySupersessionReceipt,
-} = require(
-  __filename.endsWith('.ts')
-    ? './authority-supersession.ts'
-    : './authority-supersession'
+const { verifyAuthoritySupersessionReceipt } = require(
+  __filename.endsWith('.ts') ? './authority-supersession.ts' : './authority-supersession'
 );
-const {
-  deriveClosureScopeMode,
-} = require(
-  __filename.endsWith('.ts')
-    ? './partition-closure-scope.ts'
-    : './partition-closure-scope'
+const { deriveClosureScopeMode } = require(
+  __filename.endsWith('.ts') ? './partition-closure-scope.ts' : './partition-closure-scope'
 );
 const {
   lifecycleAuthorityFieldsFromManifest,
   verifyLifecycleAuthorityBinding,
   verifyLifecyclePredecessorOrigin,
 } = require(
-  __filename.endsWith('.ts')
-    ? './lifecycle-authority-binding.ts'
-    : './lifecycle-authority-binding'
+  __filename.endsWith('.ts') ? './lifecycle-authority-binding.ts' : './lifecycle-authority-binding'
 );
 
-const ACTIVATION_SCHEMA =
-  'goal-contract-campaign-activation-receipt.schema.json';
-const LEASE_SCHEMA =
-  'goal-contract-subcontract-execution-lease.schema.json';
-const CLOSURE_SCHEMA =
-  'goal-contract-subcontract-closure-receipt.schema.json';
-const REPAIR_AUTHORITY_SCHEMA =
-  'goal-contract-campaign-repair-authority-receipt.schema.json';
+const ACTIVATION_SCHEMA = 'goal-contract-campaign-activation-receipt.schema.json';
+const LEASE_SCHEMA = 'goal-contract-subcontract-execution-lease.schema.json';
+const CLOSURE_SCHEMA = 'goal-contract-subcontract-closure-receipt.schema.json';
+const REPAIR_AUTHORITY_SCHEMA = 'goal-contract-campaign-repair-authority-receipt.schema.json';
 const HASH_PATTERN = /^sha256:[0-9a-f]{64}$/u;
 
 // Schema validation establishes the shape before these dynamic records are consumed.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SchemaRecord = Record<string, any>;
 
-function failure(
-  failureClass: string,
-  details: Record<string, unknown> = {}
-): Error {
+function failure(failureClass: string, details: Record<string, unknown> = {}): Error {
   return Object.assign(new Error(failureClass), {
     failureClass,
     ...details,
@@ -121,10 +85,7 @@ function sha256(bytes: Buffer): string {
   return `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
 }
 
-function readJsonFile(
-  filePath: string,
-  failureClass: string
-): SchemaRecord {
+function readJsonFile(filePath: string, failureClass: string): SchemaRecord {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
   } catch {
@@ -140,10 +101,7 @@ function equalOrdered(left: unknown[], right: unknown[]): boolean {
 
 function exactHashSet(left: unknown[], right: unknown[]): boolean {
   if (!Array.isArray(left) || !Array.isArray(right)) return false;
-  return equalOrdered(
-    [...new Set(left)].sort(),
-    [...new Set(right)].sort()
-  );
+  return equalOrdered([...new Set(left)].sort(), [...new Set(right)].sort());
 }
 
 function assertNoAuthorityInjection(request: Record<string, unknown>): void {
@@ -162,10 +120,7 @@ function assertNoAuthorityInjection(request: Record<string, unknown>): void {
 
 function verifyCurrentSourceBytes(snapshotSet: SchemaRecord): void {
   for (const snapshot of snapshotSet.sourceSnapshots) {
-    if (
-      snapshot.sourceKind !== 'source_plan' ||
-      typeof snapshot.sourcePath !== 'string'
-    ) {
+    if (snapshot.sourceKind !== 'source_plan' || typeof snapshot.sourcePath !== 'string') {
       continue;
     }
     const staleClass =
@@ -191,17 +146,10 @@ function verifyCurrentSourceBytes(snapshotSet: SchemaRecord): void {
 
 function subordinateReceiptList(bundle: SchemaRecord): SchemaRecord[] {
   const coverage = bundle.subordinateCoverage;
-  return Array.isArray(coverage?.receipts)
-    ? coverage.receipts
-    : coverage
-      ? [coverage]
-      : [];
+  return Array.isArray(coverage?.receipts) ? coverage.receipts : coverage ? [coverage] : [];
 }
 
-function verifySubordinateCoverage(
-  bundle: SchemaRecord,
-  receipts: unknown
-): string[] {
+function verifySubordinateCoverage(bundle: SchemaRecord, receipts: unknown): string[] {
   if (!Array.isArray(receipts)) {
     throw failure('subordinate_coverage_incomplete');
   }
@@ -222,14 +170,8 @@ function verifySubordinateCoverage(
   return [...actualHashes].sort();
 }
 
-function verifyGoalContractBundle(
-  bundle: unknown,
-  bindings: Record<string, string>
-): SchemaRecord {
-  if (
-    !isRecord(bundle) ||
-    bundle.schemaVersion !== 'goal-contract-bundle/v1'
-  ) {
+function verifyGoalContractBundle(bundle: unknown, bindings: Record<string, string>): SchemaRecord {
+  if (!isRecord(bundle) || bundle.schemaVersion !== 'goal-contract-bundle/v1') {
     throw failure('goal_contract_authority_missing');
   }
   for (const [field, expected] of Object.entries(bindings)) {
@@ -245,8 +187,7 @@ function verifyGoalContractBundle(
     schemaVersion: 'goal-contract-authority/v1',
     goalContractSemanticHash: bundle.goalContractSemanticHash,
     authorityAttestationHash: bundle.authorityAttestationHash,
-    sourceCompositionPolicyHash:
-      bundle.sourceCompositionPolicyHash,
+    sourceCompositionPolicyHash: bundle.sourceCompositionPolicyHash,
     sourceAuthorityBundleHash: bundle.sourceAuthorityBundleHash,
     compilerIdentityHash: bundle.compilerIdentityHash,
   });
@@ -258,10 +199,7 @@ function verifyGoalContractBundle(
   return bundle;
 }
 
-function verifyFinalManifest(
-  manifest: unknown,
-  bindings: Record<string, string>
-): SchemaRecord {
+function verifyFinalManifest(manifest: unknown, bindings: Record<string, string>): SchemaRecord {
   if (
     !isRecord(manifest) ||
     manifest.schemaVersion !== 'goal-contract-partition-manifest/v2' ||
@@ -302,48 +240,36 @@ function verifyFinalManifest(
       'duplicateObligationIds',
       'unmappedObligationIds',
       'scopeEscapeObligationIds',
-    ].some(
-      (field) =>
-        !Array.isArray(coverage[field]) || coverage[field].length > 0
-    )
+    ].some((field) => !Array.isArray(coverage[field]) || coverage[field].length > 0)
   ) {
     throw failure('campaign_global_coverage_incomplete');
   }
   const expectedManifestHash = hashControlPlaneValue({
     goalContractHash: manifest.goalContractHash,
-    sourceCompositionPolicyHash:
-      manifest.sourceCompositionPolicyHash,
+    sourceCompositionPolicyHash: manifest.sourceCompositionPolicyHash,
     sourceAuthorityBundleHash: manifest.sourceAuthorityBundleHash,
     partitionPolicyHash: manifest.partitionPolicyHash,
     partitionPlanHash: manifest.partitionPlanHash,
     partitionSetHash: manifest.partitionSetHash,
     ...(manifest.aggregateValidation
       ? {
-          taskExecutionRoleAuthorityHash:
-            manifest.taskExecutionRoleAuthorityHash,
+          taskExecutionRoleAuthorityHash: manifest.taskExecutionRoleAuthorityHash,
           aggregateValidation: manifest.aggregateValidation,
         }
       : {}),
     ...(manifest.partitionImpactGraphHash
       ? {
           repositoryTreeHash: manifest.repositoryTreeHash,
-          partitionImpactPolicyHash:
-            manifest.partitionImpactPolicyHash,
-          partitionImpactAnalyzerIdentityHash:
-            manifest.partitionImpactAnalyzerIdentityHash,
-          partitionImpactGraphHash:
-            manifest.partitionImpactGraphHash,
-          partitionImpactGraphDocumentHash:
-            manifest.partitionImpactGraphDocumentHash,
-          partitionClosureFeasibilityReceiptHash:
-            manifest.partitionClosureFeasibilityReceiptHash,
-          partitionImpactDriftReceiptHash:
-            manifest.partitionImpactDriftReceiptHash,
+          partitionImpactPolicyHash: manifest.partitionImpactPolicyHash,
+          partitionImpactAnalyzerIdentityHash: manifest.partitionImpactAnalyzerIdentityHash,
+          partitionImpactGraphHash: manifest.partitionImpactGraphHash,
+          partitionImpactGraphDocumentHash: manifest.partitionImpactGraphDocumentHash,
+          partitionClosureFeasibilityReceiptHash: manifest.partitionClosureFeasibilityReceiptHash,
+          partitionImpactDriftReceiptHash: manifest.partitionImpactDriftReceiptHash,
           driftHash: manifest.driftHash,
         }
       : {}),
-    orderedChildContractHashes:
-      manifest.orderedChildContractHashes,
+    orderedChildContractHashes: manifest.orderedChildContractHashes,
   });
   if (manifest.partitionManifestHash !== expectedManifestHash) {
     throw failure('campaign_partition_manifest_stale');
@@ -351,20 +277,12 @@ function verifyFinalManifest(
   return manifest;
 }
 
-function verifyChildReleaseReceipts(
-  manifest: SchemaRecord,
-  receipts: unknown
-): string[] {
-  if (
-    !Array.isArray(receipts) ||
-    receipts.length !== manifest.partitions.length
-  ) {
+function verifyChildReleaseReceipts(manifest: SchemaRecord, receipts: unknown): string[] {
+  if (!Array.isArray(receipts) || receipts.length !== manifest.partitions.length) {
     throw failure('campaign_child_release_incomplete');
   }
   const byPartition = new Map(
-    receipts
-      .filter(isRecord)
-      .map((receipt) => [receipt.partitionId, receipt])
+    receipts.filter(isRecord).map((receipt) => [receipt.partitionId, receipt])
   );
   if (byPartition.size !== manifest.partitions.length) {
     throw failure('campaign_child_release_incomplete');
@@ -383,24 +301,15 @@ function verifyChildReleaseReceipts(
       });
     }
     for (const [field, expected] of [
-      [
-        'partitionManifestAuthorityHash',
-        manifest.partitionManifestHash,
-      ],
+      ['partitionManifestAuthorityHash', manifest.partitionManifestHash],
       ['partitionPlanHash', manifest.partitionPlanHash],
       ['partitionSetHash', manifest.partitionSetHash],
-      [
-        'sourceCompositionPolicyHash',
-        manifest.sourceCompositionPolicyHash,
-      ],
+      ['sourceCompositionPolicyHash', manifest.sourceCompositionPolicyHash],
       ['sourceAuthorityBundleHash', manifest.sourceAuthorityBundleHash],
       ['goalContractHash', partition.childContractHash],
       ['childContractHash', partition.childContractHash],
       ['selectionSetHash', partition.selectionSetHash],
-      [
-        'childCompilationReceiptHash',
-        partition.childCompilationReceiptHash,
-      ],
+      ['childCompilationReceiptHash', partition.childCompilationReceiptHash],
     ]) {
       if (receipt[field] !== expected) {
         throw failure('campaign_child_release_stale', {
@@ -431,20 +340,12 @@ function normalizeExecutionAuthorization(
     'authorizationSourceHash',
     'authorizationStatementHash',
   ]);
-  if (
-    Object.keys(authorization).some((field) => !allowedFields.has(field))
-  ) {
+  if (Object.keys(authorization).some((field) => !allowedFields.has(field))) {
     throw failure('campaign_activation_authority_injection');
   }
   const normalized = {
-    authorizerIdentity: requireText(
-      authorization.authorizerIdentity,
-      'authorizerIdentity'
-    ),
-    authorizationKind: requireText(
-      authorization.authorizationKind,
-      'authorizationKind'
-    ),
+    authorizerIdentity: requireText(authorization.authorizerIdentity, 'authorizerIdentity'),
+    authorizationKind: requireText(authorization.authorizationKind, 'authorizationKind'),
     authorizedSourceCompositionPolicyHash: requireHash(
       authorization.authorizedSourceCompositionPolicyHash,
       'authorizedSourceCompositionPolicyHash'
@@ -470,11 +371,7 @@ function normalizeExecutionAuthorization(
       'authorizationStatementHash'
     ),
   };
-  if (
-    !['user_explicit', 'main_agent_controlled_dispatch'].includes(
-      normalized.authorizationKind
-    )
-  ) {
+  if (!['user_explicit', 'main_agent_controlled_dispatch'].includes(normalized.authorizationKind)) {
     throw failure('campaign_execution_authorization_invalid');
   }
   for (const [field, value] of Object.entries(expected)) {
@@ -506,9 +403,7 @@ function commitCampaignActivationReceipt({
   attemptId,
   activatedAt,
 }: SchemaRecord) {
-  const executionAuthorizationHash = hashControlPlaneValue(
-    executionAuthorization
-  );
+  const executionAuthorizationHash = hashControlPlaneValue(executionAuthorization);
   const campaignActivationHash = hashControlPlaneValue({
     schemaVersion: 'goal-contract-campaign-activation/v1',
     sourceCompositionPolicyHash,
@@ -555,17 +450,13 @@ function commitCampaignActivationReceipt({
   try {
     committed = commitCreateOnceReceipt({
       receiptRoot: requireText(request.receiptRoot, 'receiptRoot'),
-      relativePath:
-        `campaigns/${campaignId}/activation.receipt.json`,
+      relativePath: `campaigns/${campaignId}/activation.receipt.json`,
       schemaName: ACTIVATION_SCHEMA,
       receipt,
       recovery: request.recovery === true,
     });
   } catch (error) {
-    if (
-      (error as { failureClass?: string }).failureClass ===
-      'control_plane_duplicate_receipt'
-    ) {
+    if ((error as { failureClass?: string }).failureClass === 'control_plane_duplicate_receipt') {
       throw failure('campaign_activation_duplicate');
     }
     throw error;
@@ -582,96 +473,64 @@ function activateGoalCampaign(request: unknown = {}) {
     throw failure('campaign_activation_request_invalid');
   }
   assertNoAuthorityInjection(request);
-  const policy = verifySourceCompositionPolicy(
-    request.sourceCompositionPolicy
-  );
-  const snapshotSet = verifyOrderedSourceSnapshotSet(
-    request.orderedSourceSnapshotSet
-  );
+  const policy = verifySourceCompositionPolicy(request.sourceCompositionPolicy);
+  const snapshotSet = verifyOrderedSourceSnapshotSet(request.orderedSourceSnapshotSet);
   verifyCurrentSourceBytes(snapshotSet);
   const authorityBundle = verifyCompositeSourceAuthorityBundle(
     request.compositeSourceAuthorityBundle
   );
-  const intentEnvelope = verifyIntentAuthorityEnvelope(
-    request.intentAuthorityEnvelope
-  );
+  const intentEnvelope = verifyIntentAuthorityEnvelope(request.intentAuthorityEnvelope);
   const rootBindings = {
-    sourceCompositionPolicyHash:
-      policy.sourceCompositionPolicyHash,
-    orderedSourceSnapshotSetHash:
-      snapshotSet.orderedSourceSnapshotSetHash,
-    sourceAuthorityBundleHash:
-      authorityBundle.sourceAuthorityBundleHash,
+    sourceCompositionPolicyHash: policy.sourceCompositionPolicyHash,
+    orderedSourceSnapshotSetHash: snapshotSet.orderedSourceSnapshotSetHash,
+    sourceAuthorityBundleHash: authorityBundle.sourceAuthorityBundleHash,
   };
   if (
-    authorityBundle.sourceCompositionPolicyHash !==
-      rootBindings.sourceCompositionPolicyHash ||
-    authorityBundle.orderedSourceSnapshotSetHash !==
-      rootBindings.orderedSourceSnapshotSetHash ||
+    authorityBundle.sourceCompositionPolicyHash !== rootBindings.sourceCompositionPolicyHash ||
+    authorityBundle.orderedSourceSnapshotSetHash !== rootBindings.orderedSourceSnapshotSetHash ||
     intentEnvelope.subject.sourceCompositionPolicyHash !==
       rootBindings.sourceCompositionPolicyHash ||
     intentEnvelope.subject.orderedSourceSnapshotSetHash !==
       rootBindings.orderedSourceSnapshotSetHash ||
-    intentEnvelope.subject.sourceAuthorityBundleHash !==
-      rootBindings.sourceAuthorityBundleHash
+    intentEnvelope.subject.sourceAuthorityBundleHash !== rootBindings.sourceAuthorityBundleHash
   ) {
     throw failure('campaign_authority_stale');
   }
-  const goalContract = verifyGoalContractBundle(
-    request.goalContractBundle,
-    {
-      ...rootBindings,
-      authorityAttestationHash:
-        intentEnvelope.authorityAttestationHash,
-    }
-  );
+  const goalContract = verifyGoalContractBundle(request.goalContractBundle, {
+    ...rootBindings,
+    authorityAttestationHash: intentEnvelope.authorityAttestationHash,
+  });
   const manifest = verifyFinalManifest(request.partitionManifest, {
     ...rootBindings,
-    intentAuthorityAttestationHash:
-      intentEnvelope.authorityAttestationHash,
+    intentAuthorityAttestationHash: intentEnvelope.authorityAttestationHash,
     goalContractHash: goalContract.goalContractHash,
   });
   const subordinateCoverageReceiptHashes = verifySubordinateCoverage(
     authorityBundle,
     request.subordinateCoverageReceipts
   );
-  if (
-    !exactHashSet(
-      subordinateCoverageReceiptHashes,
-      manifest.subordinateCoverageReceiptHashes
-    )
-  ) {
+  if (!exactHashSet(subordinateCoverageReceiptHashes, manifest.subordinateCoverageReceiptHashes)) {
     throw failure('subordinate_coverage_incomplete');
   }
   const childReleaseReceiptHashes = verifyChildReleaseReceipts(
     manifest,
     request.childReleaseGateReceipts
   );
-  const executionAuthorization = normalizeExecutionAuthorization(
-    request.executionAuthorization,
-    {
-      authorizedSourceCompositionPolicyHash:
-        policy.sourceCompositionPolicyHash,
-      authorizedGoalContractHash: goalContract.goalContractHash,
-      authorizedPartitionManifestHash:
-        manifest.partitionManifestHash,
-      authorizedPartitionSetHash: manifest.partitionSetHash,
-    }
-  );
+  const executionAuthorization = normalizeExecutionAuthorization(request.executionAuthorization, {
+    authorizedSourceCompositionPolicyHash: policy.sourceCompositionPolicyHash,
+    authorizedGoalContractHash: goalContract.goalContractHash,
+    authorizedPartitionManifestHash: manifest.partitionManifestHash,
+    authorizedPartitionSetHash: manifest.partitionSetHash,
+  });
   const attemptId = requireText(request.attemptId, 'attemptId');
   const activatedAt = requireText(request.activatedAt, 'activatedAt');
-  const lifecycleAuthorityFields =
-    lifecycleAuthorityFieldsFromManifest(manifest);
+  const lifecycleAuthorityFields = lifecycleAuthorityFieldsFromManifest(manifest);
   return commitCampaignActivationReceipt({
     request,
-    sourceCompositionPolicyHash:
-      policy.sourceCompositionPolicyHash,
-    orderedSourceSnapshotSetHash:
-      snapshotSet.orderedSourceSnapshotSetHash,
-    sourceAuthorityBundleHash:
-      authorityBundle.sourceAuthorityBundleHash,
-    authorityAttestationHash:
-      intentEnvelope.authorityAttestationHash,
+    sourceCompositionPolicyHash: policy.sourceCompositionPolicyHash,
+    orderedSourceSnapshotSetHash: snapshotSet.orderedSourceSnapshotSetHash,
+    sourceAuthorityBundleHash: authorityBundle.sourceAuthorityBundleHash,
+    authorityAttestationHash: intentEnvelope.authorityAttestationHash,
     goalContractHash: goalContract.goalContractHash,
     partitionPlanHash: manifest.partitionPlanHash,
     partitionManifestHash: manifest.partitionManifestHash,
@@ -687,24 +546,19 @@ function activateGoalCampaign(request: unknown = {}) {
   });
 }
 
-function activateGoalCampaignFromSuccessorAuthority(
-  request: unknown = {}
-) {
+function activateGoalCampaignFromSuccessorAuthority(request: unknown = {}) {
   if (!isRecord(request)) {
     throw failure('campaign_activation_request_invalid');
   }
   assertNoAuthorityInjection(request);
-  const authorityRoot = path.resolve(
-    requireText(request.authorityRoot, 'authorityRoot')
-  );
+  const authorityRoot = path.resolve(requireText(request.authorityRoot, 'authorityRoot'));
   const verified = verifyAuthoritySupersessionReceipt({
     authorityRoot,
   });
   const supersessionReceipt = verified.receipt;
   if (
     supersessionReceipt.activationMode !== 'successor_only' ||
-    supersessionReceipt.supersededDisposition !==
-      'superseded_non_executable'
+    supersessionReceipt.supersededDisposition !== 'superseded_non_executable'
   ) {
     throw failure('authority_supersession_not_executable');
   }
@@ -724,10 +578,7 @@ function activateGoalCampaignFromSuccessorAuthority(
   const sourcePath = path.resolve(
     requireText(sourceIdentity.sourcePath, 'sourceIdentity.sourcePath')
   );
-  const expectedSourceHash = requireHash(
-    sourceIdentity.sourceHash,
-    'sourceIdentity.sourceHash'
-  );
+  const expectedSourceHash = requireHash(sourceIdentity.sourceHash, 'sourceIdentity.sourceHash');
   const sourceSnapshotHash = requireHash(
     sourceIdentity.sourceSnapshotHash,
     'sourceIdentity.sourceSnapshotHash'
@@ -753,14 +604,8 @@ function activateGoalCampaignFromSuccessorAuthority(
     });
   }
 
-  const partitionPlanPath = path.join(
-    authorityRoot,
-    'partition-plan.json'
-  );
-  const partitionManifestPath = path.join(
-    authorityRoot,
-    'partition-manifest.json'
-  );
+  const partitionPlanPath = path.join(authorityRoot, 'partition-plan.json');
+  const partitionManifestPath = path.join(authorityRoot, 'partition-manifest.json');
   const partitionPlan = readJsonFile(
     partitionPlanPath,
     'campaign_successor_partition_plan_invalid'
@@ -771,23 +616,14 @@ function activateGoalCampaignFromSuccessorAuthority(
   }
   const semanticPartitionPlan = structuredClone(partitionPlan);
   delete semanticPartitionPlan.partitionPlanHash;
-  if (
-    partitionPlan.partitionPlanHash !==
-      hashControlPlaneValue(semanticPartitionPlan)
-  ) {
+  if (partitionPlan.partitionPlanHash !== hashControlPlaneValue(semanticPartitionPlan)) {
     throw failure('campaign_successor_partition_plan_invalid');
   }
   for (const [field, expected] of [
     ['partitionPlanHash', successorAuthority.partitionPlanHash],
     ['partitionSetHash', successorAuthority.partitionSetHash],
-    [
-      'sourceCompositionPolicyHash',
-      successorAuthority.sourceCompositionPolicyHash,
-    ],
-    [
-      'sourceAuthorityBundleHash',
-      successorAuthority.sourceAuthorityBundleHash,
-    ],
+    ['sourceCompositionPolicyHash', successorAuthority.sourceCompositionPolicyHash],
+    ['sourceAuthorityBundleHash', successorAuthority.sourceAuthorityBundleHash],
     ['specSpanRegistryHash', successorAuthority.specSpanRegistryHash],
     ['partitionPolicyHash', supersessionReceipt.partitionPolicyHash],
   ]) {
@@ -801,40 +637,26 @@ function activateGoalCampaignFromSuccessorAuthority(
   }
 
   const manifestBytes = fs.readFileSync(partitionManifestPath);
-  if (
-    sha256(manifestBytes) !==
-    successorAuthority.partitionManifestDocumentHash
-  ) {
+  if (sha256(manifestBytes) !== successorAuthority.partitionManifestDocumentHash) {
     throw failure('campaign_partition_manifest_stale');
   }
   const manifest = verifyFinalManifest(
-    readJsonFile(
-      partitionManifestPath,
-      'campaign_successor_partition_manifest_invalid'
-    ),
+    readJsonFile(partitionManifestPath, 'campaign_successor_partition_manifest_invalid'),
     {
-      sourceCompositionPolicyHash:
-        partitionPlan.sourceCompositionPolicyHash,
-      orderedSourceSnapshotSetHash:
-        requireHash(
-          partitionPlan.orderedSourceSnapshotSetHash,
-          'orderedSourceSnapshotSetHash'
-        ),
-      sourceAuthorityBundleHash:
-        partitionPlan.sourceAuthorityBundleHash,
-      intentAuthorityAttestationHash:
-        requireHash(
-          partitionPlan.intentAuthorityAttestationHash,
-          'intentAuthorityAttestationHash'
-        ),
-      goalContractHash: requireHash(
-        partitionPlan.goalContractHash,
-        'goalContractHash'
+      sourceCompositionPolicyHash: partitionPlan.sourceCompositionPolicyHash,
+      orderedSourceSnapshotSetHash: requireHash(
+        partitionPlan.orderedSourceSnapshotSetHash,
+        'orderedSourceSnapshotSetHash'
       ),
+      sourceAuthorityBundleHash: partitionPlan.sourceAuthorityBundleHash,
+      intentAuthorityAttestationHash: requireHash(
+        partitionPlan.intentAuthorityAttestationHash,
+        'intentAuthorityAttestationHash'
+      ),
+      goalContractHash: requireHash(partitionPlan.goalContractHash, 'goalContractHash'),
       partitionPolicyHash: partitionPlan.partitionPolicyHash,
       partitionPlanHash: partitionPlan.partitionPlanHash,
-      partitionManifestHash:
-        successorAuthority.partitionManifestHash,
+      partitionManifestHash: successorAuthority.partitionManifestHash,
       partitionSetHash: partitionPlan.partitionSetHash,
       specSpanRegistryHash: partitionPlan.specSpanRegistryHash,
     }
@@ -847,13 +669,10 @@ function activateGoalCampaignFromSuccessorAuthority(
   ) {
     throw failure('campaign_authority_stale');
   }
-  const subordinateCoverageReceiptHashes =
-    manifest.subordinateCoverageReceiptHashes;
+  const subordinateCoverageReceiptHashes = manifest.subordinateCoverageReceiptHashes;
   if (
     !Array.isArray(subordinateCoverageReceiptHashes) ||
-    subordinateCoverageReceiptHashes.some(
-      (receiptHash) => !HASH_PATTERN.test(receiptHash)
-    )
+    subordinateCoverageReceiptHashes.some((receiptHash) => !HASH_PATTERN.test(receiptHash))
   ) {
     throw failure('subordinate_coverage_incomplete');
   }
@@ -861,29 +680,19 @@ function activateGoalCampaignFromSuccessorAuthority(
     manifest,
     request.childReleaseGateReceipts
   );
-  const executionAuthorization = normalizeExecutionAuthorization(
-    request.executionAuthorization,
-    {
-      authorizedSourceCompositionPolicyHash:
-        manifest.sourceCompositionPolicyHash,
-      authorizedGoalContractHash: manifest.goalContractHash,
-      authorizedPartitionManifestHash:
-        manifest.partitionManifestHash,
-      authorizedPartitionSetHash: manifest.partitionSetHash,
-    }
-  );
-  const lifecycleAuthorityFields =
-    lifecycleAuthorityFieldsFromManifest(manifest);
+  const executionAuthorization = normalizeExecutionAuthorization(request.executionAuthorization, {
+    authorizedSourceCompositionPolicyHash: manifest.sourceCompositionPolicyHash,
+    authorizedGoalContractHash: manifest.goalContractHash,
+    authorizedPartitionManifestHash: manifest.partitionManifestHash,
+    authorizedPartitionSetHash: manifest.partitionSetHash,
+  });
+  const lifecycleAuthorityFields = lifecycleAuthorityFieldsFromManifest(manifest);
   return commitCampaignActivationReceipt({
     request,
-    sourceCompositionPolicyHash:
-      manifest.sourceCompositionPolicyHash,
-    orderedSourceSnapshotSetHash:
-      manifest.orderedSourceSnapshotSetHash,
-    sourceAuthorityBundleHash:
-      manifest.sourceAuthorityBundleHash,
-    authorityAttestationHash:
-      manifest.intentAuthorityAttestationHash,
+    sourceCompositionPolicyHash: manifest.sourceCompositionPolicyHash,
+    orderedSourceSnapshotSetHash: manifest.orderedSourceSnapshotSetHash,
+    sourceAuthorityBundleHash: manifest.sourceAuthorityBundleHash,
+    authorityAttestationHash: manifest.intentAuthorityAttestationHash,
     goalContractHash: manifest.goalContractHash,
     partitionPlanHash: manifest.partitionPlanHash,
     partitionManifestHash: manifest.partitionManifestHash,
@@ -940,10 +749,7 @@ function verifyCommittedActivationReceipt({
       reason: (error as { failureClass?: string }).failureClass,
     });
   }
-  if (
-    stableControlPlaneStringify(committed) !==
-    stableControlPlaneStringify(activationReceipt)
-  ) {
+  if (stableControlPlaneStringify(committed) !== stableControlPlaneStringify(activationReceipt)) {
     throw failure('subcontract_activation_receipt_not_committed', {
       targetPath: targetPath.replace(/\\/gu, '/'),
       reason: 'activation_bytes_mismatch',
@@ -995,25 +801,20 @@ function verifyCommittedRepairAuthorityReceipt({
   }
   if (
     repairAuthorityReceipt !== undefined &&
-    stableControlPlaneStringify(committed) !==
-      stableControlPlaneStringify(repairAuthorityReceipt)
+    stableControlPlaneStringify(committed) !== stableControlPlaneStringify(repairAuthorityReceipt)
   ) {
     throw failure('campaign_repair_authority_required', {
       reason: 'repair_authority_receipt_mismatch',
     });
   }
   const { verifyGoalCampaignRepairAuthority } = require(
-    __filename.endsWith('.ts')
-      ? './campaign-repair-authority.ts'
-      : './campaign-repair-authority'
+    __filename.endsWith('.ts') ? './campaign-repair-authority.ts' : './campaign-repair-authority'
   );
   return verifyGoalCampaignRepairAuthority(committed, {
     baseActivationReceipt: activationReceipt,
     partitionManifest,
-    expectedRepairAttemptId:
-      expectedRepairAttemptId || committed.repairAttemptId,
-    partitionManifestDocumentHash:
-      committed.basePartitionManifestDocumentHash,
+    expectedRepairAttemptId: expectedRepairAttemptId || committed.repairAttemptId,
+    partitionManifestDocumentHash: committed.basePartitionManifestDocumentHash,
   });
 }
 
@@ -1037,12 +838,9 @@ function verifyCommittedRepairPredecessor({
   closureCandidate: SchemaRecord;
 }): SchemaRecord {
   const repaired = predecessorOrigin === 'repaired';
-  const relativeDirectories = repaired
-    ? ['repair', 'closures']
-    : ['closures'];
+  const relativeDirectories = repaired ? ['repair', 'closures'] : ['closures'];
   const fileName =
-    `${String(dependencyIndex + 1).padStart(4, '0')}-` +
-    `${dependency.partitionId}.receipt.json`;
+    `${String(dependencyIndex + 1).padStart(4, '0')}-` + `${dependency.partitionId}.receipt.json`;
   const closurePath = path.resolve(
     receiptRoot,
     'campaigns',
@@ -1063,10 +861,7 @@ function verifyCommittedRepairPredecessor({
       reason: (error as { failureClass?: string }).failureClass,
     });
   }
-  if (
-    stableControlPlaneStringify(closure) !==
-    stableControlPlaneStringify(closureCandidate)
-  ) {
+  if (stableControlPlaneStringify(closure) !== stableControlPlaneStringify(closureCandidate)) {
     throw failure('subcontract_predecessor_closure_stale', {
       dependencyId: dependency.partitionId,
       reason: 'predecessor_closure_bytes_mismatch',
@@ -1103,8 +898,7 @@ function verifyCommittedRepairPredecessor({
     lease.childContractHash !== dependency.childContractHash ||
     lease.decision !== 'pass' ||
     (repaired &&
-      (lease.schemaVersion !==
-        'goal-contract-subcontract-execution-lease/v2' ||
+      (lease.schemaVersion !== 'goal-contract-subcontract-execution-lease/v2' ||
         lease.baseAttemptId !== repairAuthority.baseAttemptId ||
         lease.repairAttemptId !== repairAuthority.repairAttemptId ||
         lease.repairAuthorityReceiptHash !== repairAuthority.receiptHash))
@@ -1115,12 +909,9 @@ function verifyCommittedRepairPredecessor({
     });
   }
   if (!repaired) {
-    const preservedBindings = Array.isArray(
-      repairAuthority.preservedClosureBindings
-    )
+    const preservedBindings = Array.isArray(repairAuthority.preservedClosureBindings)
       ? repairAuthority.preservedClosureBindings.filter(
-          (binding) =>
-            binding.partitionId === dependency.partitionId
+          (binding) => binding.partitionId === dependency.partitionId
         )
       : [];
     if (
@@ -1149,9 +940,7 @@ function verifyCommittedRepairPredecessor({
   return closure;
 }
 
-function hasValidPredecessorClosureSelfHash(
-  closure: unknown
-): boolean {
+function hasValidPredecessorClosureSelfHash(closure: unknown): boolean {
   try {
     return verifyReceiptSelfHash(closure);
   } catch {
@@ -1164,41 +953,31 @@ function issueSubcontractExecutionLease(request: unknown = {}) {
   if (!isRecord(request)) {
     throw failure('subcontract_execution_lease_request_invalid');
   }
-  const forbiddenFields = [
-    'leaseHash',
-    'receiptHash',
-    'receiptPath',
-  ].filter((field) => Object.hasOwn(request, field));
+  const forbiddenFields = ['leaseHash', 'receiptHash', 'receiptPath'].filter((field) =>
+    Object.hasOwn(request, field)
+  );
   if (forbiddenFields.length > 0) {
     throw failure('subcontract_execution_lease_authority_injection', {
       forbiddenFields,
     });
   }
-  const activationCandidate = verifyActivationReceipt(
-    request.activationReceipt
-  );
+  const activationCandidate = verifyActivationReceipt(request.activationReceipt);
   const receiptRoot = requireText(request.receiptRoot, 'receiptRoot');
   const activation = verifyCommittedActivationReceipt({
     receiptRoot,
     activationReceipt: activationCandidate,
   });
   const manifest = verifyFinalManifest(request.partitionManifest, {
-    sourceCompositionPolicyHash:
-      activation.sourceCompositionPolicyHash,
-    orderedSourceSnapshotSetHash:
-      activation.orderedSourceSnapshotSetHash,
-    sourceAuthorityBundleHash:
-      activation.sourceAuthorityBundleHash,
+    sourceCompositionPolicyHash: activation.sourceCompositionPolicyHash,
+    orderedSourceSnapshotSetHash: activation.orderedSourceSnapshotSetHash,
+    sourceAuthorityBundleHash: activation.sourceAuthorityBundleHash,
     goalContractHash: activation.goalContractHash,
     partitionPlanHash: activation.partitionPlanHash,
     partitionManifestHash: activation.partitionManifestHash,
     partitionSetHash: activation.partitionSetHash,
   });
   const attemptId = requireText(request.attemptId, 'attemptId');
-  const partitionIdValue = requireText(
-    request.partitionId,
-    'partitionId'
-  );
+  const partitionIdValue = requireText(request.partitionId, 'partitionId');
   const index = manifest.topologicalOrder.indexOf(partitionIdValue);
   if (index < 0) {
     throw failure('subcontract_manifest_membership_missing');
@@ -1215,16 +994,13 @@ function issueSubcontractExecutionLease(request: unknown = {}) {
       ? undefined
       : requireText(request.nodeAttemptId, 'nodeAttemptId');
   const repairAuthorityReceipt =
-    request.repairAuthorityReceipt === undefined
-      ? undefined
-      : request.repairAuthorityReceipt;
+    request.repairAuthorityReceipt === undefined ? undefined : request.repairAuthorityReceipt;
   const repairAuthority = verifyCommittedRepairAuthorityReceipt({
     receiptRoot,
     activationReceipt: activation,
     partitionManifest: manifest,
     repairAuthorityReceipt,
-    expectedRepairAttemptId:
-      repairAuthorityReceipt === undefined ? undefined : attemptId,
+    expectedRepairAttemptId: repairAuthorityReceipt === undefined ? undefined : attemptId,
   });
   const repairMode = repairAuthorityReceipt !== undefined;
   const repairedPartitions = new Set(
@@ -1256,8 +1032,7 @@ function issueSubcontractExecutionLease(request: unknown = {}) {
   const closureScopeMode = deriveClosureScopeMode(partition);
   const dependencies = partition.dependencyPartitionIds || [];
   for (const dependencyId of dependencies) {
-    const dependencyIndex =
-      manifest.topologicalOrder.indexOf(dependencyId);
+    const dependencyIndex = manifest.topologicalOrder.indexOf(dependencyId);
     if (dependencyIndex < 0 || dependencyIndex >= index) {
       throw failure('subcontract_future_dependency', {
         partitionId: partitionIdValue,
@@ -1270,9 +1045,7 @@ function issueSubcontractExecutionLease(request: unknown = {}) {
     throw failure('subcontract_predecessor_closure_missing');
   }
   const byPartition = new Map(
-    closures
-      .filter(isRecord)
-      .map((receipt) => [receipt.partitionId, receipt])
+    closures.filter(isRecord).map((receipt) => [receipt.partitionId, receipt])
   );
   if (closures.length !== dependencies.length) {
     throw failure(
@@ -1282,78 +1055,70 @@ function issueSubcontractExecutionLease(request: unknown = {}) {
     );
   }
   const predecessorClosureBindings: SchemaRecord[] = [];
-  const predecessorClosureReceiptHashes = dependencies.map(
-    (dependencyId) => {
-      const closure = byPartition.get(dependencyId);
-      const dependency =
-        manifest.partitions[
-          manifest.topologicalOrder.indexOf(dependencyId)
-        ];
-      if (!closure) {
-        throw failure('subcontract_predecessor_closure_missing', {
-          dependencyId,
-        });
-      }
-      let expectedClosureAttemptId = attemptId;
-      let predecessorOrigin = 'repaired';
-      if (repairMode) {
-        if (preservedPartitions.has(dependencyId)) {
-          expectedClosureAttemptId = repairAuthority.baseAttemptId;
-          predecessorOrigin = 'preserved_base';
-        } else if (!repairedPartitions.has(dependencyId)) {
-          throw failure('campaign_repair_authority_required', {
-            partitionId: dependencyId,
-          });
-        }
-      }
-      if (
-        !hasValidPredecessorClosureSelfHash(closure) ||
-        closure.decision !== 'pass' ||
-        closure.attemptId !== expectedClosureAttemptId ||
-        closure.partitionManifestHash !== manifest.partitionManifestHash ||
-        closure.childContractHash !== dependency.childContractHash
-      ) {
-        throw failure('subcontract_predecessor_closure_stale', {
-          dependencyId,
-        });
-      }
-      const committedClosure = repairMode
-        ? verifyCommittedRepairPredecessor({
-            receiptRoot,
-            activation,
-            manifest,
-            repairAuthority,
-            dependency,
-            dependencyIndex:
-              manifest.topologicalOrder.indexOf(dependencyId),
-            predecessorOrigin,
-            closureCandidate: closure,
-          })
-        : closure;
-      verifyLifecyclePredecessorOrigin({
-        record: committedClosure,
-        partitionManifest: manifest,
-        campaignId: activation.campaignId,
-        campaignAttemptId: activation.attemptId,
-        baseAttemptId: repairAuthority?.baseAttemptId,
-        repairAttemptId: attemptId,
-        predecessorOrigin: repairMode ? predecessorOrigin : 'base',
-        partitionId: dependencyId,
-        childContractHash: dependency.childContractHash,
-        nodeAttemptId: repairMode
-          ? committedClosure.nodeAttemptId
-          : closure.nodeAttemptId,
+  const predecessorClosureReceiptHashes = dependencies.map((dependencyId) => {
+    const closure = byPartition.get(dependencyId);
+    const dependency = manifest.partitions[manifest.topologicalOrder.indexOf(dependencyId)];
+    if (!closure) {
+      throw failure('subcontract_predecessor_closure_missing', {
+        dependencyId,
       });
-      if (repairMode) {
-        predecessorClosureBindings.push({
+    }
+    let expectedClosureAttemptId = attemptId;
+    let predecessorOrigin = 'repaired';
+    if (repairMode) {
+      if (preservedPartitions.has(dependencyId)) {
+        expectedClosureAttemptId = repairAuthority.baseAttemptId;
+        predecessorOrigin = 'preserved_base';
+      } else if (!repairedPartitions.has(dependencyId)) {
+        throw failure('campaign_repair_authority_required', {
           partitionId: dependencyId,
-          origin: predecessorOrigin,
-          closureReceiptHash: committedClosure.receiptHash,
         });
       }
-      return committedClosure.receiptHash;
     }
-  );
+    if (
+      !hasValidPredecessorClosureSelfHash(closure) ||
+      closure.decision !== 'pass' ||
+      closure.attemptId !== expectedClosureAttemptId ||
+      closure.partitionManifestHash !== manifest.partitionManifestHash ||
+      closure.childContractHash !== dependency.childContractHash
+    ) {
+      throw failure('subcontract_predecessor_closure_stale', {
+        dependencyId,
+      });
+    }
+    const committedClosure = repairMode
+      ? verifyCommittedRepairPredecessor({
+          receiptRoot,
+          activation,
+          manifest,
+          repairAuthority,
+          dependency,
+          dependencyIndex: manifest.topologicalOrder.indexOf(dependencyId),
+          predecessorOrigin,
+          closureCandidate: closure,
+        })
+      : closure;
+    verifyLifecyclePredecessorOrigin({
+      record: committedClosure,
+      partitionManifest: manifest,
+      campaignId: activation.campaignId,
+      campaignAttemptId: activation.attemptId,
+      baseAttemptId: repairAuthority?.baseAttemptId,
+      repairAttemptId: attemptId,
+      predecessorOrigin: repairMode ? predecessorOrigin : 'base',
+      partitionId: dependencyId,
+      childContractHash: dependency.childContractHash,
+      nodeAttemptId: repairMode ? committedClosure.nodeAttemptId : closure.nodeAttemptId,
+    });
+    if (repairMode) {
+      predecessorClosureBindings.push({
+        partitionId: dependencyId,
+        origin: predecessorOrigin,
+        closureReceiptHash: committedClosure.receiptHash,
+      });
+    }
+    return committedClosure.receiptHash;
+  });
   const issuedAt = requireText(request.issuedAt, 'issuedAt');
   const payload = {
     schemaVersion: repairMode
@@ -1373,8 +1138,7 @@ function issueSubcontractExecutionLease(request: unknown = {}) {
     partitionId: partitionIdValue,
     partitionManifestHash: manifest.partitionManifestHash,
     partitionSetHash: manifest.partitionSetHash,
-    sourceCompositionPolicyHash:
-      manifest.sourceCompositionPolicyHash,
+    sourceCompositionPolicyHash: manifest.sourceCompositionPolicyHash,
     sourceAuthorityBundleHash: manifest.sourceAuthorityBundleHash,
     partitionPlanHash: manifest.partitionPlanHash,
     childContractHash: partition.childContractHash,
@@ -1409,10 +1173,7 @@ function issueSubcontractExecutionLease(request: unknown = {}) {
       recovery: request.recovery === true,
     });
   } catch (error) {
-    if (
-      (error as { failureClass?: string }).failureClass ===
-      'control_plane_duplicate_receipt'
-    ) {
+    if ((error as { failureClass?: string }).failureClass === 'control_plane_duplicate_receipt') {
       throw failure('subcontract_execution_lease_duplicate');
     }
     throw error;
@@ -1424,9 +1185,35 @@ function issueSubcontractExecutionLease(request: unknown = {}) {
   });
 }
 
+function frozenGoalActivationRuntime() {
+  return require(
+    __filename.endsWith('.ts') ? './frozen-goal-activation.ts' : './frozen-goal-activation'
+  );
+}
+
+function activateFrozenGoalAuthority(request: unknown = {}) {
+  return frozenGoalActivationRuntime().activateFrozenGoalAuthority(request);
+}
+
+function compilePartitionFromFrozenGoalAuthority(request: unknown = {}) {
+  return frozenGoalActivationRuntime().compilePartitionFromFrozenGoalAuthority(request);
+}
+
+function goalContractActivationFailureResult(error: unknown) {
+  return frozenGoalActivationRuntime().goalContractActivationFailureResult(error);
+}
+
+function validateGoalExecutionAdmission(request: unknown = {}) {
+  return frozenGoalActivationRuntime().validateGoalExecutionAdmission(request);
+}
+
 module.exports = {
+  activateFrozenGoalAuthority,
   activateGoalCampaign,
   activateGoalCampaignFromSuccessorAuthority,
+  compilePartitionFromFrozenGoalAuthority,
+  goalContractActivationFailureResult,
   issueSubcontractExecutionLease,
+  validateGoalExecutionAdmission,
   verifyActivationReceipt,
 };

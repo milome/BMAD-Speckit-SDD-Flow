@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -7,6 +8,44 @@ import { compileRequirementsBackedGoal } from '../../packages/bmad-speckit/src/u
 import { refreshGoalSourceBinding } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-source-binding-refresh';
 import { materializeImplementationReadinessFixture } from '../helpers/implementation-readiness-fixture';
 
+const ROOT = process.cwd();
+const TSX = path.join(ROOT, 'node_modules', 'tsx', 'dist', 'cli.mjs');
+const SOURCE_COMMAND = path.join(
+  ROOT,
+  'packages',
+  'bmad-speckit',
+  'src',
+  'commands',
+  'goal-contract.ts'
+);
+const SOURCE_RUNNER = [
+  'const { goalContractCommand } = require(process.argv[1]);',
+  'Promise.resolve(goalContractCommand({}, process.argv.slice(2)))',
+  '.then((code)=>{process.exitCode=code;})',
+  '.catch((error)=>{console.error(error);process.exitCode=2;});',
+].join('');
+
+function activate(cwd: string, goalAuthorityPath: string) {
+  const completed = spawnSync(
+    process.execPath,
+    [
+      TSX,
+      '-e',
+      SOURCE_RUNNER,
+      SOURCE_COMMAND,
+      'activate',
+      '--cwd',
+      cwd,
+      '--goal-authority',
+      goalAuthorityPath,
+      '--json',
+    ],
+    { cwd, encoding: 'utf8', maxBuffer: 20 * 1024 * 1024 }
+  );
+  expect(completed.status, completed.stderr || completed.stdout).toBe(0);
+  return JSON.parse(completed.stdout);
+}
+
 function withoutHash(value: Record<string, unknown>, field: string) {
   const payload = { ...value };
   delete payload[field];
@@ -14,6 +53,76 @@ function withoutHash(value: Record<string, unknown>, field: string) {
 }
 
 describe('Goal source binding-only refresh', () => {
+  it('reuses the committed active run across a compatible binding-only refresh', () => {
+    const fixture = materializeImplementationReadinessFixture();
+    try {
+      produceImplementationReadiness({
+        projectRoot: fixture.root,
+        requestId: fixture.requestId,
+      });
+      const outRoot = path.join(fixture.root, 'goal-run-active-run-currentness');
+      const compiled = compileRequirementsBackedGoal({
+        projectRoot: fixture.root,
+        requirementRecordPath: fixture.runtimeRecordPath,
+        outRoot,
+      });
+      const first = activate(fixture.root, compiled.activeAuthorityRef.path);
+      const firstActivation = first.artifacts.find(
+        (artifact: { role: string }) => artifact.role === 'activation_record'
+      );
+      const firstPointer = first.artifacts.find(
+        (artifact: { role: string }) => artifact.role === 'active_run_pointer'
+      );
+      const activationBytes = readFileSync(firstActivation.artifactRef);
+      const pointerBytes = readFileSync(firstPointer.artifactRef);
+      const binding = JSON.parse(readFileSync(compiled.sourceBindingRef.path, 'utf8'));
+      const evidenceIndex = JSON.parse(
+        readFileSync(compiled.resolvedEvidenceIndexRef.path, 'utf8')
+      );
+      const nextBindingPayload = {
+        ...withoutHash(binding, 'goalSourceBindingHash'),
+        requirementsBindingRevisionId: 'binding-revision-active-run-compatible-refresh',
+        requirementsSourceBindingHash: `sha256:${'d'.repeat(64)}`,
+      };
+      const nextBinding = {
+        ...nextBindingPayload,
+        goalSourceBindingHash: sha256Stable(nextBindingPayload),
+      };
+      const nextEvidencePayload = {
+        ...withoutHash(evidenceIndex, 'resolvedEvidenceIndexHash'),
+        goalSourceBindingHash: nextBinding.goalSourceBindingHash,
+        requirementsBindingRevisionId: nextBinding.requirementsBindingRevisionId,
+      };
+      const nextEvidenceIndex = {
+        ...nextEvidencePayload,
+        resolvedEvidenceIndexHash: sha256Stable(nextEvidencePayload),
+      };
+      refreshGoalSourceBinding({
+        outRoot,
+        expectedActiveAuthorityHash: compiled.activeAuthorityRef.hash,
+        sourceBinding: nextBinding,
+        resolvedEvidenceIndex: nextEvidenceIndex,
+      });
+
+      const replay = activate(fixture.root, compiled.activeAuthorityRef.path);
+
+      expect(replay.status).toBe('activation_reused');
+      expect(
+        replay.artifacts.find((artifact: { role: string }) => artifact.role === 'activation_record')
+          .artifactHash
+      ).toBe(firstActivation.artifactHash);
+      expect(
+        replay.artifacts.find(
+          (artifact: { role: string }) => artifact.role === 'active_run_pointer'
+        ).artifactHash
+      ).toBe(firstPointer.artifactHash);
+      expect(readFileSync(firstActivation.artifactRef)).toEqual(activationBytes);
+      expect(readFileSync(firstPointer.artifactRef)).toEqual(pointerBytes);
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
   it('rejects a schema-invalid binding even when its hash is self-consistent', () => {
     const fixture = materializeImplementationReadinessFixture();
     try {

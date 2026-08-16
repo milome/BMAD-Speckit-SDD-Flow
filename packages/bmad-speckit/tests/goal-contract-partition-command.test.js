@@ -706,6 +706,12 @@ function writeSourcePackageFixture(root) {
   );
   const fixture = writeProviderFixture(root);
   const packageRoot = path.join(providerRoot, 'packages', 'bmad-speckit');
+  fs.mkdirSync(packageRoot, { recursive: true });
+  fs.symlinkSync(
+    path.join(REPO_ROOT, 'node_modules'),
+    path.join(packageRoot, 'node_modules'),
+    process.platform === 'win32' ? 'junction' : 'dir'
+  );
   fs.mkdirSync(path.join(packageRoot, 'src', 'commands'), { recursive: true });
   fs.copyFileSync(SOURCE_COMMAND, path.join(packageRoot, 'src', 'commands', 'goal-contract.ts'));
   fs.cpSync(

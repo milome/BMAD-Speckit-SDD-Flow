@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/goal-contract-execution-eligibility.schema.json",
+  "title": "Goal Contract Execution Eligibility",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "profile", "goalId", "goalExecutionIRHash", "executionMode", "partitionOutcome", "componentCount", "components", "decision", "eligibilityHash"],
+  "properties": {
+    "schemaVersion": { "const": "GoalContractExecutionEligibility/v1" },
+    "profile": { "enum": ["requirements_backed", "standalone"] },
+    "goalId": { "type": "string", "minLength": 1 },
+    "goalExecutionIRHash": { "$ref": "#/$defs/hash" },
+    "executionMode": { "enum": ["direct_goal", "partitioned_goal"] },
+    "partitionOutcome": { "enum": ["not_applicable", "complete_valid", "bounded_valid", "partition_no_valid_solution", "partition_search_inconclusive"] },
+    "componentCount": { "type": "integer", "minimum": 1 },
+    "components": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["componentId", "executionDomainRefs", "traceSliceRefs", "taskRefs", "expectedEffortMinutes", "upperBoundEffortMinutes", "basisRefs", "ownedPaths", "admissible"],
+        "properties": {
+          "componentId": { "type": "string", "minLength": 1 },
+          "executionDomainRefs": { "$ref": "#/$defs/strings" },
+          "traceSliceRefs": { "$ref": "#/$defs/strings" },
+          "taskRefs": { "$ref": "#/$defs/strings" },
+          "expectedEffortMinutes": { "type": "integer", "minimum": 1 },
+          "upperBoundEffortMinutes": { "type": "integer", "minimum": 1 },
+          "basisRefs": { "$ref": "#/$defs/strings" },
+          "ownedPaths": { "$ref": "#/$defs/strings" },
+          "admissible": { "type": "boolean" }
+        }
+      }
+    },
+    "decision": { "const": "pass" },
+    "eligibilityHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "strings": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+  }
+}

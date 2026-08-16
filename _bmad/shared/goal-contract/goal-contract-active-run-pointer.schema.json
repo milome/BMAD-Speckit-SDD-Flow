@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/goal-contract-active-run-pointer.schema.json",
+  "title": "Goal Contract Active Run Pointer",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "pointerVersion", "candidateRunId", "activationRecordRef", "activationRecordHash", "activeRunPointerHash"],
+  "properties": {
+    "schemaVersion": { "const": "GoalContractActiveRunPointer/v1" },
+    "pointerVersion": { "type": "integer", "minimum": 1 },
+    "candidateRunId": { "type": "string", "pattern": "^RUN-[A-F0-9]{16}$" },
+    "activationRecordRef": { "type": "string", "minLength": 1 },
+    "activationRecordHash": { "$ref": "#/$defs/hash" },
+    "activeRunPointerHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+  }
+}

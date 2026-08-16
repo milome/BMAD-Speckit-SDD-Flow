@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/goal-contract-activation-result.schema.json",
+  "title": "Goal Contract Activation Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "profile", "status", "issueCode", "executionMode", "partitionOutcome", "artifacts"],
+  "properties": {
+    "schemaVersion": { "const": "goal-contract-activation-result/v1" },
+    "profile": { "enum": ["requirements_backed", "standalone", null] },
+    "status": { "enum": ["activated", "activation_reused", "blocked"] },
+    "issueCode": {
+      "anyOf": [
+        { "type": "null" },
+        { "enum": ["activation_request_invalid", "goal_execution_authority_invalid", "goal_execution_ir_invalid", "goal_execution_package_invalid", "active_run_cas_conflict", "partition_no_valid_solution", "partition_search_inconclusive", "activation_internal_error"] },
+        { "type": "string", "pattern": "^(requirements_successor_required|architecture_successor_required|readiness_recheck_required|standalone_goal_successor_required):[a-z0-9_]+$" }
+      ]
+    },
+    "executionMode": { "type": ["string", "null"], "enum": ["direct_goal", "partitioned_goal", null] },
+    "partitionOutcome": { "type": ["string", "null"], "enum": ["not_applicable", "complete_valid", "bounded_valid", "partition_no_valid_solution", "partition_search_inconclusive", null] },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "artifactRef", "artifactHash"],
+        "properties": {
+          "role": { "enum": ["goal_execution_authority", "execution_eligibility", "candidate_run", "activation_record", "direct_execution_package", "partition_manifest", "child_execution_package", "active_run_pointer"] },
+          "artifactRef": { "type": "string", "minLength": 1 },
+          "artifactHash": { "$ref": "#/$defs/hash" }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "enum": ["activated", "activation_reused"] } } },
+      "then": {
+        "properties": {
+          "issueCode": { "type": "null" },
+          "executionMode": { "enum": ["direct_goal", "partitioned_goal"] },
+          "partitionOutcome": { "enum": ["not_applicable", "complete_valid", "bounded_valid"] },
+          "profile": { "enum": ["requirements_backed", "standalone"] },
+          "artifacts": { "minItems": 6 }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "blocked" } } },
+      "then": {
+        "properties": {
+          "issueCode": { "type": "string" },
+          "artifacts": { "maxItems": 0 }
+        },
+        "oneOf": [
+          {
+            "properties": {
+              "issueCode": { "const": "partition_no_valid_solution" },
+              "executionMode": { "const": "partitioned_goal" },
+              "partitionOutcome": { "const": "partition_no_valid_solution" }
+            }
+          },
+          {
+            "properties": {
+              "issueCode": { "const": "partition_search_inconclusive" },
+              "executionMode": { "const": "partitioned_goal" },
+              "partitionOutcome": { "const": "partition_search_inconclusive" }
+            }
+          },
+          {
+            "properties": {
+              "issueCode": { "not": { "enum": ["partition_no_valid_solution", "partition_search_inconclusive"] } },
+              "executionMode": { "type": "null" },
+              "partitionOutcome": { "type": "null" }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": { "enum": ["activated", "activation_reused"] },
+          "executionMode": { "const": "direct_goal" }
+        },
+        "required": ["status", "executionMode"]
+      },
+      "then": {
+        "properties": {
+          "partitionOutcome": { "const": "not_applicable" },
+          "artifacts": {
+            "minItems": 6,
+            "maxItems": 6,
+            "allOf": [
+              { "contains": { "properties": { "role": { "const": "goal_execution_authority" } }, "required": ["role"] }, "minContains": 1, "maxContains": 1 },
+              { "contains": { "properties": { "role": { "const": "execution_eligibility" } }, "required": ["role"] }, "minContains": 1, "maxContains": 1 },
+              { "contains": { "properties": { "role": { "const": "candidate_run" } }, "required": ["role"] }, "minContains": 1, "maxContains": 1 },
+              { "contains": { "properties": { "role": { "const": "activation_record" } }, "required": ["role"] }, "minContains": 1, "maxContains": 1 },
+              { "contains": { "properties": { "role": { "const": "direct_execution_package" } }, "required": ["role"] }, "minContains": 1, "maxContains": 1 },
+              { "contains": { "properties": { "role": { "const": "active_run_pointer" } }, "required": ["role"] }, "minContains": 1, "maxContains": 1 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": { "enum": ["activated", "activation_reused"] },
+          "executionMode": { "const": "partitioned_goal" }
+        },
+        "required": ["status", "executionMode"]
+      },
+      "then": {
+        "properties": {
+          "partitionOutcome": { "enum": ["complete_valid", "bounded_valid", "partition_no_valid_solution", "partition_search_inconclusive"] },
+          "artifacts": {
+            "allOf": [
+              { "contains": { "properties": { "role": { "const": "goal_execution_authority" } }, "required": ["role"] }, "minContains": 1, "maxContains": 1 },
+              { "contains": { "properties": { "role": { "const": "execution_eligibility" } }, "required": ["role"] }, "minContains": 1, "maxContains": 1 },
+              { "contains": { "properties": { "role": { "const": "candidate_run" } }, "required": ["role"] }, "minContains": 1, "maxContains": 1 },
+              { "contains": { "properties": { "role": { "const": "activation_record" } }, "required": ["role"] }, "minContains": 1, "maxContains": 1 },
+              { "contains": { "properties": { "role": { "const": "partition_manifest" } }, "required": ["role"] }, "minContains": 1, "maxContains": 1 },
+              { "contains": { "properties": { "role": { "const": "child_execution_package" } }, "required": ["role"] }, "minContains": 1 },
+              { "contains": { "properties": { "role": { "const": "active_run_pointer" } }, "required": ["role"] }, "minContains": 1, "maxContains": 1 },
+              { "contains": { "properties": { "role": { "const": "direct_execution_package" } }, "required": ["role"] }, "minContains": 0, "maxContains": 0 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "issueCode": { "type": "string", "pattern": "^(requirements_successor_required|architecture_successor_required|readiness_recheck_required):" } }, "required": ["issueCode"] },
+      "then": { "properties": { "profile": { "const": "requirements_backed" } } }
+    },
+    {
+      "if": { "properties": { "issueCode": { "type": "string", "pattern": "^standalone_goal_successor_required:" } }, "required": ["issueCode"] },
+      "then": { "properties": { "profile": { "const": "standalone" } } }
+    }
+  ],
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+  }
+}

@@ -29,6 +29,10 @@ function largeSourcePlan(): string {
   return [
     '# Large Source Plan',
     '',
+    '## File Map',
+    '',
+    '- Modify `packages/bmad-speckit/src/generated/large-source-plan.ts`.',
+    '',
     ...sections,
     '## Completion Criteria',
     '',

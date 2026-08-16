@@ -56,7 +56,7 @@ function semanticRequest(snapshot, extra = {}) {
 }
 
 describe('goal-contract dual-view derivation', () => {
-  it('requires the standalone entry and isolated Implementation View in the skill workflow', () => {
+  it('requires the standalone entry and frozen semantic authoring authority', () => {
     const skill = fs.readFileSync(
       path.resolve(
         __dirname,
@@ -75,12 +75,10 @@ describe('goal-contract dual-view derivation', () => {
       skill,
       /goal-contract generate --entry standalone_goal_contract/u
     );
-    assert.match(skill, /StandaloneViewProvider\.deriveImplementationView/u);
-    assert.match(
-      skill,
-      /StandaloneViewProvider\.deriveAcceptanceEvidenceView/u
-    );
     assert.match(skill, /immutable `SourceSnapshot`/u);
+    assert.match(skill, /StandaloneGoalSemanticIR\/v1/u);
+    assert.match(skill, /goal_full/u);
+    assert.match(skill, /StandaloneGoalAuthoringEffectivePass\/v1/u);
   });
 
   it('builds an immutable source-plan snapshot from exact raw bytes', () => {

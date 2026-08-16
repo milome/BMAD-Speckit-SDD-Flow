@@ -145,6 +145,36 @@ function normalize(filePath) {
   return path.resolve(filePath).replace(/\\/g, '/');
 }
 
+function parseActivationArguments(args) {
+  const values = new Map();
+  for (let index = 0; index < args.length; index += 1) {
+    const flag = args[index];
+    if (flag === '--json') continue;
+    if (!['--cwd', '--goal-authority'].includes(flag)) {
+      throw Object.assign(new Error('activation_request_invalid'), {
+        failureClass: 'activation_request_invalid',
+      });
+    }
+    const value = args[index + 1];
+    if (!value || value.startsWith('-') || values.has(flag)) {
+      throw Object.assign(new Error('activation_request_invalid'), {
+        failureClass: 'activation_request_invalid',
+      });
+    }
+    values.set(flag, value);
+    index += 1;
+  }
+  if (!values.has('--cwd') || !values.has('--goal-authority')) {
+    throw Object.assign(new Error('activation_request_invalid'), {
+      failureClass: 'activation_request_invalid',
+    });
+  }
+  return {
+    projectRoot: values.get('--cwd'),
+    goalAuthorityPath: values.get('--goal-authority'),
+  };
+}
+
 function stableStringify(value) {
   if (value === null || typeof value !== 'object') {
     return JSON.stringify(value) ?? 'null';
@@ -167,10 +197,7 @@ function sha256FileBytes(filePath) {
 }
 
 const FUNCTIONAL_TITLE_REWRITES = new Map([
-  [
-    'execute the certified campaign',
-    'Certified campaign produces closed child results',
-  ],
+  ['execute the certified campaign', 'Certified campaign produces closed child results'],
   ['close every bypass path', 'Every bypass path fails closed'],
   [
     'execute the complete deterministic matrix',
@@ -188,8 +215,7 @@ function normalizeFunctionalTaskTitle(value) {
 
 function projectPartitionDisplayTitles(sourceText, partitions) {
   const titleByTaskId = new Map();
-  const headingPattern =
-    /^###\s+(?:Task\s+)?([A-Za-z][A-Za-z0-9-]*\d+)\s*:\s*(.+)$/gmu;
+  const headingPattern = /^###\s+(?:Task\s+)?([A-Za-z][A-Za-z0-9-]*\d+)\s*:\s*(.+)$/gmu;
   for (const match of String(sourceText || '').matchAll(headingPattern)) {
     const title = normalizeFunctionalTaskTitle(match[2]);
     if (title) titleByTaskId.set(match[1], title);
@@ -199,9 +225,7 @@ function projectPartitionDisplayTitles(sourceText, partitions) {
       const titles = (partition.primaryTaskIds || [])
         .map((taskId) => titleByTaskId.get(taskId))
         .filter(Boolean);
-      return titles.length > 0
-        ? [[partition.partitionId, [...new Set(titles)].join('; ')]]
-        : [];
+      return titles.length > 0 ? [[partition.partitionId, [...new Set(titles)].join('; ')]] : [];
     })
   );
 }
@@ -1443,10 +1467,7 @@ function structuredArrowTaskDependencies({ sourceObligations, knownTaskIds }) {
         const dependentTaskId = taskIds[index];
         dependenciesByTaskId.set(
           dependentTaskId,
-          uniqueStrings([
-            ...(dependenciesByTaskId.get(dependentTaskId) || []),
-            taskIds[index - 1],
-          ])
+          uniqueStrings([...(dependenciesByTaskId.get(dependentTaskId) || []), taskIds[index - 1]])
         );
       }
     }
@@ -2409,10 +2430,7 @@ function resolveSequenceConstraintBranch({
   });
 }
 
-async function compilePartitionAuthority(
-  args,
-  { canonicalSourceAuthority = null } = {}
-) {
+async function compilePartitionAuthority(args, { canonicalSourceAuthority = null } = {}) {
   assertNoForbiddenPartitionAuthorityArgs(args);
   const {
     assertNoForbiddenPartitionAuthorityArgs: assertNoForbiddenSemanticAuthorityArgs,
@@ -2464,10 +2482,7 @@ async function compilePartitionAuthority(
     'utils/goal-contract/sequence-mode'
   );
   const sequenceMode = resolveSequenceMode(take(args, '--sequence-mode', 'auto'));
-  const {
-    compileLegacySingleSourcePartitions,
-    compilePartitions,
-  } = loadPartitionModule(
+  const { compileLegacySingleSourcePartitions, compilePartitions } = loadPartitionModule(
     'utils/goal-contract/control-plane/partition-compiler'
   );
   const snapshot = buildSourceSnapshot({
@@ -2824,15 +2839,9 @@ function currentPartitionCompilerIdentityHash() {
 function parseFrozenGoalContractFrontMatter(goalContractPath) {
   const text = fs.readFileSync(goalContractPath, 'utf8');
   const lines = text.split(/\r?\n/u);
-  const slotIndex = lines.findIndex((line) =>
-    line.startsWith('<!-- goal-slot:frontMatter ')
-  );
+  const slotIndex = lines.findIndex((line) => line.startsWith('<!-- goal-slot:frontMatter '));
   const openingIndex =
-    lines[0] === '---'
-      ? 0
-      : slotIndex >= 0 && lines[slotIndex + 1] === '---'
-        ? slotIndex + 1
-        : -1;
+    lines[0] === '---' ? 0 : slotIndex >= 0 && lines[slotIndex + 1] === '---' ? slotIndex + 1 : -1;
   if (openingIndex < 0) {
     throw partitionFailure('blocked_by_frozen_successor_goal_contract');
   }
@@ -2843,10 +2852,7 @@ function parseFrozenGoalContractFrontMatter(goalContractPath) {
   return Object.fromEntries(
     lines.slice(openingIndex + 1, closingIndex).map((line) => {
       const separator = line.indexOf(':');
-      return [
-        line.slice(0, separator),
-        line.slice(separator + 1).trim(),
-      ];
+      return [line.slice(0, separator), line.slice(separator + 1).trim()];
     })
   );
 }
@@ -2874,9 +2880,7 @@ function readFrozenSuccessorAuthority({ goalContractPath, sourcePath }) {
   let coverageReceipt;
   let generationReceipt;
   try {
-    coverageReceipt = JSON.parse(
-      fs.readFileSync(path.resolve(fields.coverageReceiptPath), 'utf8')
-    );
+    coverageReceipt = JSON.parse(fs.readFileSync(path.resolve(fields.coverageReceiptPath), 'utf8'));
     generationReceipt = JSON.parse(
       fs.readFileSync(path.resolve(fields.generationReceiptPath), 'utf8')
     );
@@ -2989,12 +2993,8 @@ function createPartitionChildRenderer({
   renderEvidence,
   repositoryRelativeUnitRoot = null,
 }) {
-  const { buildPartitionSlotData } = loadPartitionModule(
-    'utils/goal-contract/slot-data-builder'
-  );
-  const { selectPartitionScope } = loadPartitionModule(
-    'utils/goal-contract/partition-selector'
-  );
+  const { buildPartitionSlotData } = loadPartitionModule('utils/goal-contract/slot-data-builder');
+  const { selectPartitionScope } = loadPartitionModule('utils/goal-contract/partition-selector');
   const { renderGoalContract } = loadRenderer();
   const { auditCommandPortability } = loadCommandPortabilityChecker();
   return ({ childProjectionInput, displayOrdinal }) => {
@@ -3027,43 +3027,29 @@ function createPartitionChildRenderer({
         ...legacySelectedScope,
         partition: {
           ...legacySelectedScope.partition,
-          primarySourceObligationIds:
-            childProjectionInput.primarySourceObligationIds,
+          primarySourceObligationIds: childProjectionInput.primarySourceObligationIds,
           selectionSetHash: childProjectionInput.selectionHash,
         },
         selectionReceipt: {
           ...legacySelectedScope.selectionReceipt,
-          selectedPrimarySourceObligationIds:
-            childProjectionInput.primarySourceObligationIds,
+          selectedPrimarySourceObligationIds: childProjectionInput.primarySourceObligationIds,
         },
       },
       reconciliation: authority.reconciliation,
     });
     const ordinal = String(displayOrdinal).padStart(2, '0');
     const unitChildContractPath =
-      `children/p${ordinal}-${childProjectionInput.partitionId}` +
-      '-goal-execution-plan.md';
-    const unitCoverageReceiptPath =
-      `receipts/children/${childProjectionInput.partitionId}.coverage.json`;
-    const unitGenerationReceiptPath =
-      `receipts/children/${childProjectionInput.partitionId}.generation.json`;
+      `children/p${ordinal}-${childProjectionInput.partitionId}` + '-goal-execution-plan.md';
+    const unitCoverageReceiptPath = `receipts/children/${childProjectionInput.partitionId}.coverage.json`;
+    const unitGenerationReceiptPath = `receipts/children/${childProjectionInput.partitionId}.generation.json`;
     const childContractPath = repositoryRelativeUnitRoot
-      ? path.posix.join(
-          repositoryRelativeUnitRoot,
-          unitChildContractPath
-        )
+      ? path.posix.join(repositoryRelativeUnitRoot, unitChildContractPath)
       : unitChildContractPath;
     const coverageReceiptPath = repositoryRelativeUnitRoot
-      ? path.posix.join(
-          repositoryRelativeUnitRoot,
-          unitCoverageReceiptPath
-        )
+      ? path.posix.join(repositoryRelativeUnitRoot, unitCoverageReceiptPath)
       : unitCoverageReceiptPath;
     const generationReceiptPath = repositoryRelativeUnitRoot
-      ? path.posix.join(
-          repositoryRelativeUnitRoot,
-          unitGenerationReceiptPath
-        )
+      ? path.posix.join(repositoryRelativeUnitRoot, unitGenerationReceiptPath)
       : unitGenerationReceiptPath;
     const renderedAuthorityPath = childContractPath;
     const coverageAuthorityPath = coverageReceiptPath;
@@ -3091,17 +3077,13 @@ function createPartitionChildRenderer({
         },
         bindings: {
           partitionPlanHash: authority.partitionPlan.partitionPlanHash,
-          sourceCompositionPolicyHash:
-            authority.partitionPlan.sourceCompositionPolicyHash,
+          sourceCompositionPolicyHash: authority.partitionPlan.sourceCompositionPolicyHash,
           goalContractHash: authority.partitionPlan.goalContractHash,
           partitionSetHash: authority.partitionPlan.partitionSetHash,
           selectionSetHash: childProjectionInput.selectionHash,
-          orderedSourceSnapshotSetHash:
-            authority.partitionPlan.orderedSourceSnapshotSetHash,
-          sourceAuthorityBundleHash:
-            authority.partitionPlan.sourceAuthorityBundleHash,
-          subordinateCoverageReceiptHashes:
-            childProjectionInput.subordinateCoverageReceiptHashes,
+          orderedSourceSnapshotSetHash: authority.partitionPlan.orderedSourceSnapshotSetHash,
+          sourceAuthorityBundleHash: authority.partitionPlan.sourceAuthorityBundleHash,
+          subordinateCoverageReceiptHashes: childProjectionInput.subordinateCoverageReceiptHashes,
           displayOrdinal,
           obligationRefs: childProjectionInput.primarySourceObligationIds,
           namespacedObligations: childProjectionInput.namespacedObligations,
@@ -3109,30 +3091,20 @@ function createPartitionChildRenderer({
           sourceArtifactRefs: childProjectionInput.sourceArtifactRefs,
           specSpanRefs: childProjectionInput.specSpanRefs,
           governedPaths:
-            childProjectionInput.governedPaths ??
-            childProjectionInput.ownedArtifactPaths,
-          sourceSnapshotHash:
-            authority.partitionPlan.orderedSourceSnapshotSetHash,
-          methodologyProfileHash:
-            authority.partitionPlan.methodologyProfileHash,
-          methodologyProfileArtifactHash:
-            authority.methodology.methodologyProfileArtifactHash,
-          executionProjectionHash:
-            authority.partitionPlan.executionProjectionHash,
+            childProjectionInput.governedPaths ?? childProjectionInput.ownedArtifactPaths,
+          sourceSnapshotHash: authority.partitionPlan.orderedSourceSnapshotSetHash,
+          methodologyProfileHash: authority.partitionPlan.methodologyProfileHash,
+          methodologyProfileArtifactHash: authority.methodology.methodologyProfileArtifactHash,
+          executionProjectionHash: authority.partitionPlan.executionProjectionHash,
           taskDagHash: authority.partitionPlan.taskDagHash,
           partitionPolicyHash: authority.partitionPlan.partitionPolicyHash,
-          partitionPolicyArtifactHash:
-            authority.optimizerPolicyBinding.partitionPolicyArtifactHash,
-          partitionAnalysisReceiptHash:
-            authority.partitionPlan.partitionPlanHash,
+          partitionPolicyArtifactHash: authority.optimizerPolicyBinding.partitionPolicyArtifactHash,
+          partitionAnalysisReceiptHash: authority.partitionPlan.partitionPlanHash,
           sequenceMode: authority.partitionPlan.sequenceMode,
-          sequenceApplicability:
-            authority.partitionPlan.sequenceApplicability,
+          sequenceApplicability: authority.partitionPlan.sequenceApplicability,
           sequenceCoverage: authority.partitionPlan.sequenceCoverage,
-          sequenceClosureStatus:
-            authority.partitionPlan.sequenceClosureStatus,
-          childContractAuthority:
-            authority.partitionPlan.childContractAuthority,
+          sequenceClosureStatus: authority.partitionPlan.sequenceClosureStatus,
+          childContractAuthority: authority.partitionPlan.childContractAuthority,
         },
         generatedAt: '1970-01-01T00:00:00.000Z',
       });
@@ -3145,8 +3117,7 @@ function createPartitionChildRenderer({
     });
     const embeddedFrontMatter = slotData.frontMatter.trim();
     const childContractBytes =
-      `${embeddedFrontMatter}\n\n` +
-      rendered.document.replace(`\n${embeddedFrontMatter}\n`, '\n');
+      `${embeddedFrontMatter}\n\n` + rendered.document.replace(`\n${embeddedFrontMatter}\n`, '\n');
     const commandPortabilityAudit = auditCommandPortability({
       content: childContractBytes,
       targetPath: renderedAuthorityPath,
@@ -3184,8 +3155,7 @@ function createPartitionChildRenderer({
       commandPortabilityAudit,
       selectedPrimaryObligationIds:
         selectedScope.selectionReceipt.selectedPrimarySourceObligationIds,
-      inheritedConstraintIds:
-        selectedScope.selectionReceipt.inheritedConstraintIds,
+      inheritedConstraintIds: selectedScope.selectionReceipt.inheritedConstraintIds,
       excludedObligationIds: [
         ...selectedScope.selectionReceipt.excludedSourceObligationIds,
         ...selectedScope.selectionReceipt.excludedTraceSliceIds,
@@ -3195,23 +3165,17 @@ function createPartitionChildRenderer({
         ...selectedScope.selectionReceipt.excludedEvidenceContractIds,
       ],
       orphanGeneratedTaskIds: registries.tasks.filter(
-        (taskId) =>
-          !selectedScope.selectionReceipt.selectedPrimaryAtomicTaskIds.includes(
-            taskId
-          )
+        (taskId) => !selectedScope.selectionReceipt.selectedPrimaryAtomicTaskIds.includes(taskId)
       ),
       orphanGeneratedAcceptanceIds: registries.acceptance.filter(
         (acceptanceId) =>
-          !selectedScope.selectionReceipt.selectedAcceptanceIds.includes(
-            acceptanceId
-          )
+          !selectedScope.selectionReceipt.selectedAcceptanceIds.includes(acceptanceId)
       ),
       selectedAtomicTaskCount: selectedScope.primaryAtomicTasks.length,
       inheritedConstraintCount: selectedScope.inheritedConstraints.length,
       partitionRole: selectedScope.partition.partitionRole,
       deterministicPreflight: {
-        schemaVersion:
-          'goal-contract-governed-child-deterministic-preflight/v1',
+        schemaVersion: 'goal-contract-governed-child-deterministic-preflight/v1',
         decision: 'pass',
       },
     });
@@ -3221,49 +3185,33 @@ function createPartitionChildRenderer({
 
 function projectFunctionalPartitionTitles(authority) {
   const taskTitles = new Map(
-    (authority?.projection?.atomicTasks || []).map((task) => [
-      task.taskId,
-      task.title,
-    ])
+    (authority?.projection?.atomicTasks || []).map((task) => [task.taskId, task.title])
   );
   return Object.freeze(
     Object.fromEntries(
-      (authority?.partitionPlan?.childProjectionInputs || []).map(
-        (partition) => {
-          const titles = [
-            ...new Set(
-              (partition.primaryTaskIds || [])
-                .map((taskId) => taskTitles.get(taskId))
-                .filter(
-                  (title) =>
-                    typeof title === 'string' &&
-                    title.trim().length > 0
-                )
-                .map((title) => title.trim())
-            ),
-          ];
-          if (titles.length === 0) {
-            throw partitionFailure(
-              'partition_display_title_missing',
-              { partitionId: partition.partitionId }
-            );
-          }
-          return [partition.partitionId, titles.join('; ')];
+      (authority?.partitionPlan?.childProjectionInputs || []).map((partition) => {
+        const titles = [
+          ...new Set(
+            (partition.primaryTaskIds || [])
+              .map((taskId) => taskTitles.get(taskId))
+              .filter((title) => typeof title === 'string' && title.trim().length > 0)
+              .map((title) => title.trim())
+          ),
+        ];
+        if (titles.length === 0) {
+          throw partitionFailure('partition_display_title_missing', {
+            partitionId: partition.partitionId,
+          });
         }
-      )
+        return [partition.partitionId, titles.join('; ')];
+      })
     )
   );
 }
 
 function authorityUnitChildArtifactPath(output, childContractPath) {
-  const repositoryCandidate = path.resolve(
-    process.cwd(),
-    childContractPath
-  );
-  const repositoryRelativeToUnit = path.relative(
-    output.unitRoot,
-    repositoryCandidate
-  );
+  const repositoryCandidate = path.resolve(process.cwd(), childContractPath);
+  const repositoryRelativeToUnit = path.relative(output.unitRoot, repositoryCandidate);
   if (
     repositoryRelativeToUnit.length > 0 &&
     repositoryRelativeToUnit !== '..' &&
@@ -3277,9 +3225,7 @@ function authorityUnitChildArtifactPath(output, childContractPath) {
 
 async function supersedeAuthority(args) {
   const sourcePath = path.resolve(requireSupersessionArg(args, '--source'));
-  const {
-    assertRawNonAuthoritativeContainmentRoot,
-  } = loadPartitionModule(
+  const { assertRawNonAuthoritativeContainmentRoot } = loadPartitionModule(
     'utils/goal-contract/control-plane/partition-output-paths'
   );
   const finalRoot = assertRawNonAuthoritativeContainmentRoot({
@@ -3410,8 +3356,7 @@ async function supersedeAuthority(args) {
           sourceArtifactRefs: childProjectionInput.sourceArtifactRefs,
           specSpanRefs: childProjectionInput.specSpanRefs,
           governedPaths:
-            childProjectionInput.governedPaths ??
-            childProjectionInput.ownedArtifactPaths,
+            childProjectionInput.governedPaths ?? childProjectionInput.ownedArtifactPaths,
           sourceSnapshotHash: partitionPlan.orderedSourceSnapshotSetHash,
           methodologyProfileHash: partitionPlan.methodologyProfileHash,
           methodologyProfileArtifactHash: authority.methodology.methodologyProfileArtifactHash,
@@ -3613,9 +3558,7 @@ async function partition(args) {
   });
   const authority = await compilePartitionAuthority(args);
   const { projection, compiled } = authority;
-  const { stagePartitionSolution } = loadPartitionModule(
-    'utils/goal-contract/partition-manifest'
-  );
+  const { stagePartitionSolution } = loadPartitionModule('utils/goal-contract/partition-manifest');
   const { buildGlobalPartitionCoverageReceipt, selectPartitionScope } = loadPartitionModule(
     'utils/goal-contract/partition-selector'
   );
@@ -3698,18 +3641,13 @@ async function partition(args) {
 
 async function governedPartition(args) {
   const goalContractPath = take(args, '--goal-contract');
-  if (
-    !goalContractPath ||
-    !fs.existsSync(path.resolve(goalContractPath))
-  ) {
+  if (!goalContractPath || !fs.existsSync(path.resolve(goalContractPath))) {
     throw partitionFailure('blocked_by_frozen_successor_goal_contract', {
-      requiredPath: goalContractPath
-        ? normalize(goalContractPath)
-        : null,
+      requiredPath: goalContractPath ? normalize(goalContractPath) : null,
     });
   }
-  const rawOutputFlags = ['--out', '--out-root', '--receipts-dir'].filter(
-    (flag) => has(args, flag)
+  const rawOutputFlags = ['--out', '--out-root', '--receipts-dir'].filter((flag) =>
+    has(args, flag)
   );
   if (rawOutputFlags.length > 0) {
     throw partitionFailure('partition_governed_raw_output_override_rejected', {
@@ -3734,21 +3672,17 @@ async function governedPartition(args) {
   const { compilePartitionImpactAuthority } = loadPartitionModule(
     'utils/goal-contract/control-plane/partition-compiler'
   );
-  const partitionImpactAuthority =
-    compilePartitionImpactAuthority({
-      repositoryRoot: process.cwd(),
-      packageRoot: PARTITION_ASSET_ROOT,
-      partitionPlan: coreAuthority.partitionPlan,
-      reconciledGraph:
-        coreAuthority.reconciledGraphAuthority,
-    });
+  const partitionImpactAuthority = compilePartitionImpactAuthority({
+    repositoryRoot: process.cwd(),
+    packageRoot: PARTITION_ASSET_ROOT,
+    partitionPlan: coreAuthority.partitionPlan,
+    reconciledGraph: coreAuthority.reconciledGraphAuthority,
+  });
   const authority = Object.freeze({
     ...coreAuthority,
     partitionPlan: partitionImpactAuthority.partitionPlan,
-    partitionPlanBytes:
-      partitionImpactAuthority.partitionPlanBytes,
-    partitionPlanHash:
-      partitionImpactAuthority.partitionPlanHash,
+    partitionPlanBytes: partitionImpactAuthority.partitionPlanBytes,
+    partitionPlanHash: partitionImpactAuthority.partitionPlanHash,
     partitionImpactAuthority,
   });
   if (
@@ -3764,9 +3698,7 @@ async function governedPartition(args) {
     writeImmutableAuthorityFile,
     assertImmutableAuthorityUnit,
     activateStandalonePartitionGeneration,
-  } = loadPartitionModule(
-    'utils/goal-contract/control-plane/partition-output-paths'
-  );
+  } = loadPartitionModule('utils/goal-contract/control-plane/partition-output-paths');
   const generationInput = {
     sourceHash: frozen.sourceHash,
     templateHash: sha256Text(assets.templateBytes),
@@ -3774,29 +3706,21 @@ async function governedPartition(args) {
     compilerIdentityHash: currentPartitionCompilerIdentityHash(),
     methodologyProfileHash: authority.methodology.methodologyProfileHash,
     partitionPolicyHash: authority.optimizerPolicyBinding.partitionPolicyHash,
-    sourceCompositionPolicyHash:
-      authority.partitionPlan.sourceCompositionPolicyHash,
-    partitionImpactGraphHash:
-      partitionImpactAuthority.impactGraph.impactGraphHash,
+    sourceCompositionPolicyHash: authority.partitionPlan.sourceCompositionPolicyHash,
+    partitionImpactGraphHash: partitionImpactAuthority.impactGraph.impactGraphHash,
   };
   const generationKey = computePartitionGenerationKey(generationInput);
   const { projectExecutionArtifacts } = loadPartitionModule(
     'utils/goal-contract/control-plane/partition-compiler'
   );
-  const {
-    buildPartitionPlanGlobalCoverageReceipt,
-    buildPartitionPlanSelectionReceipt,
-  } = loadPartitionModule('utils/goal-contract/partition-selector');
+  const { buildPartitionPlanGlobalCoverageReceipt, buildPartitionPlanSelectionReceipt } =
+    loadPartitionModule('utils/goal-contract/partition-selector');
   let requirementRecord = null;
   let resolvedRequirementRecordPath = null;
   if (requirementRecordPath) {
-    resolvedRequirementRecordPath = path.resolve(
-      requirementRecordPath
-    );
+    resolvedRequirementRecordPath = path.resolve(requirementRecordPath);
     try {
-      requirementRecord = JSON.parse(
-        fs.readFileSync(resolvedRequirementRecordPath, 'utf8')
-      );
+      requirementRecord = JSON.parse(fs.readFileSync(resolvedRequirementRecordPath, 'utf8'));
     } catch {
       throw partitionFailure('partition_authority_record_invalid', {
         recordPath: normalize(resolvedRequirementRecordPath),
@@ -3808,21 +3732,16 @@ async function governedPartition(args) {
     : resolveCanonicalPartitionOutputPaths({
         repositoryRoot: process.cwd(),
         ...generationInput,
-        ...(authorityRootOverride
-          ? { authorityRootOverride }
-          : {}),
+        ...(authorityRootOverride ? { authorityRootOverride } : {}),
       });
   const repositoryRelativeUnitRoot = output
-    ? path
-        .relative(process.cwd(), output.unitRoot)
-        .replace(/\\/gu, '/')
+    ? path.relative(process.cwd(), output.unitRoot).replace(/\\/gu, '/')
     : null;
   const renderEvidence = [];
   const projection = projectExecutionArtifacts({
     partitionPlan: authority.partitionPlan,
     displayTitles: projectFunctionalPartitionTitles(authority),
-    partitionAnalysisReceipt:
-      authority.compiled.analysisReceipt,
+    partitionAnalysisReceipt: authority.compiled.analysisReceipt,
     partitionImpactAuthority,
     artifactLayout: 'authority_unit',
     renderChildContract: createPartitionChildRenderer({
@@ -3838,9 +3757,7 @@ async function governedPartition(args) {
     ...generationInput,
     requirementSetId: requirementRecord.requirementSetId,
     partitionRunId: projection.partitionManifest.partitionRunId,
-    ...(authorityRootOverride
-      ? { authorityRootOverride }
-      : {}),
+    ...(authorityRootOverride ? { authorityRootOverride } : {}),
   });
   const globalCoverage = buildPartitionPlanGlobalCoverageReceipt({
     partitionPlan: authority.partitionPlan,
@@ -3851,22 +3768,18 @@ async function governedPartition(args) {
       blockingReasons: globalCoverage.blockingReasons,
     });
   }
-  const selections = projection.partitionManifest.partitions.map(
-    (partition) =>
-      buildPartitionPlanSelectionReceipt({
-        partitionPlan: authority.partitionPlan,
-        partitionManifest: projection.partitionManifest,
-        partitionId: partition.partitionId,
-      })
+  const selections = projection.partitionManifest.partitions.map((partition) =>
+    buildPartitionPlanSelectionReceipt({
+      partitionPlan: authority.partitionPlan,
+      partitionManifest: projection.partitionManifest,
+      partitionId: partition.partitionId,
+    })
   );
-  const {
-    buildPartitionChildCoverageReceipt,
-    buildPartitionChildGenerationReceipt,
-  } = loadPartitionModule('utils/goal-contract/goal-contract-receipts');
-  const {
-    readValidatedPartitionReceipt,
-    serializeValidatedPartitionReceipt,
-  } = loadPartitionModule('utils/goal-contract/partition-receipts');
+  const { buildPartitionChildCoverageReceipt, buildPartitionChildGenerationReceipt } =
+    loadPartitionModule('utils/goal-contract/goal-contract-receipts');
+  const { readValidatedPartitionReceipt, serializeValidatedPartitionReceipt } = loadPartitionModule(
+    'utils/goal-contract/partition-receipts'
+  );
   const pendingReceiptArtifacts = [];
   const finalReceiptArtifacts = [];
   const requiredReceiptPaths = [];
@@ -3874,38 +3787,23 @@ async function governedPartition(args) {
     schemaId
       ? serializeValidatedPartitionReceipt({ schemaId, payload })
       : `${stableStringify(payload)}\n`;
-  const queueReceipt = (
-    target,
-    payload,
-    schemaId = null,
-    phase = 'pending'
-  ) => {
+  const queueReceipt = (target, payload, schemaId = null, phase = 'pending') => {
     const artifact = Object.freeze({
       relativePath: target,
       bytes: receiptBytes(schemaId, payload),
       schemaId,
     });
-    (phase === 'pending'
-      ? pendingReceiptArtifacts
-      : finalReceiptArtifacts
-    ).push(artifact);
+    (phase === 'pending' ? pendingReceiptArtifacts : finalReceiptArtifacts).push(artifact);
     requiredReceiptPaths.push(target);
     return artifact;
   };
-  const queueReceiptBytes = (
-    target,
-    bytes,
-    phase = 'pending'
-  ) => {
+  const queueReceiptBytes = (target, bytes, phase = 'pending') => {
     const artifact = Object.freeze({
       relativePath: target,
       bytes,
       schemaId: null,
     });
-    (phase === 'pending'
-      ? pendingReceiptArtifacts
-      : finalReceiptArtifacts
-    ).push(artifact);
+    (phase === 'pending' ? pendingReceiptArtifacts : finalReceiptArtifacts).push(artifact);
     requiredReceiptPaths.push(target);
     return artifact;
   };
@@ -3918,8 +3816,7 @@ async function governedPartition(args) {
     partitionImpactAuthority.impactGraphBytes
   );
   queueReceiptBytes(
-    projection.partitionManifest
-      .partitionClosureFeasibilityReceiptPath,
+    projection.partitionManifest.partitionClosureFeasibilityReceiptPath,
     partitionImpactAuthority.closureFeasibilityBytes
   );
   queueReceiptBytes(
@@ -3936,7 +3833,7 @@ async function governedPartition(args) {
     selectionArtifacts.set(
       selection.partitionId,
       queueReceipt(
-      `receipts/partitions/${selection.partitionId}/selection.receipt.json`,
+        `receipts/partitions/${selection.partitionId}/selection.receipt.json`,
         selection,
         'goal-contract-partition-selection-receipt/v1'
       )
@@ -3944,10 +3841,7 @@ async function governedPartition(args) {
   }
   for (const child of projection.childCompilationReceipts) {
     const { childContractBytes: _childContractBytes, ...pendingReceipt } = child;
-    queueReceipt(
-      `receipts/children/${child.partitionId}.compilation.json`,
-      pendingReceipt
-    );
+    queueReceipt(`receipts/children/${child.partitionId}.compilation.json`, pendingReceipt);
   }
   const renderEvidenceByPartitionId = new Map(
     renderEvidence.map((evidence) => [evidence.partitionId, evidence])
@@ -3960,8 +3854,7 @@ async function governedPartition(args) {
         partitionId: child.partitionId,
       });
     }
-    const coverageReceiptPath =
-      `receipts/children/${child.partitionId}.coverage.json`;
+    const coverageReceiptPath = `receipts/children/${child.partitionId}.coverage.json`;
     const coverage = buildPartitionChildCoverageReceipt({
       partitionId: child.partitionId,
       partitionManifestHash: projection.partitionManifestDocumentHash,
@@ -3984,35 +3877,24 @@ async function governedPartition(args) {
       masterSourcePath: projection.partitionManifest.masterSourcePath,
       masterSourceHash: projection.partitionManifest.masterSourceHash,
       sourceSnapshotHash: projection.partitionManifest.sourceSnapshotHash,
-      methodologyProfileHash:
-        projection.partitionManifest.methodologyProfileHash,
-      methodologyProfileArtifactHash:
-        authority.methodology.methodologyProfileArtifactHash,
-      executionProjectionHash:
-        projection.partitionManifest.executionProjectionHash,
+      methodologyProfileHash: projection.partitionManifest.methodologyProfileHash,
+      methodologyProfileArtifactHash: authority.methodology.methodologyProfileArtifactHash,
+      executionProjectionHash: projection.partitionManifest.executionProjectionHash,
       taskDagHash: projection.partitionManifest.taskDagHash,
       sequenceMode: projection.partitionManifest.sequenceMode,
-      sequenceApplicability:
-        projection.partitionManifest.sequenceApplicability,
+      sequenceApplicability: projection.partitionManifest.sequenceApplicability,
       sequenceCoverage: projection.partitionManifest.sequenceCoverage,
-      sequenceClosureStatus:
-        projection.partitionManifest.sequenceClosureStatus,
-      childContractAuthority:
-        projection.partitionManifest.childContractAuthority,
+      sequenceClosureStatus: projection.partitionManifest.sequenceClosureStatus,
+      childContractAuthority: projection.partitionManifest.childContractAuthority,
       partitionPolicyHash: projection.partitionManifest.partitionPolicyHash,
-      partitionPolicyArtifactHash:
-        authority.optimizerPolicyBinding.partitionPolicyArtifactHash,
+      partitionPolicyArtifactHash: authority.optimizerPolicyBinding.partitionPolicyArtifactHash,
       partitionManifestPath: 'partition-manifest.json',
       partitionManifestHash: projection.partitionManifestDocumentHash,
-      partitionAnalysisReceiptHash:
-        projection.partitionManifest.partitionAnalysisReceiptHash,
-      partitionImpactGraphHash:
-        projection.partitionManifest.partitionImpactGraphHash,
-      partitionClosureFeasibilityHash:
-        projection.partitionManifest.partitions.find(
-          (partition) =>
-            partition.partitionId === child.partitionId
-        ).partitionClosureFeasibilityHash,
+      partitionAnalysisReceiptHash: projection.partitionManifest.partitionAnalysisReceiptHash,
+      partitionImpactGraphHash: projection.partitionManifest.partitionImpactGraphHash,
+      partitionClosureFeasibilityHash: projection.partitionManifest.partitions.find(
+        (partition) => partition.partitionId === child.partitionId
+      ).partitionClosureFeasibilityHash,
       driftHash: projection.partitionManifest.driftHash,
       partitionSetHash: projection.partitionManifest.partitionSetHash,
       partitionId: child.partitionId,
@@ -4022,8 +3904,7 @@ async function governedPartition(args) {
       ).selectionReceiptPath,
       selectionReceiptHash: sha256Text(selectionArtifact.bytes),
       selectionSetHash: child.selectionHash,
-      globalCoverageReceiptPath:
-        projection.partitionManifest.globalCoverageReceiptPath,
+      globalCoverageReceiptPath: projection.partitionManifest.globalCoverageReceiptPath,
       globalCoverageReceiptHash: sha256Text(globalCoverageArtifact.bytes),
       goalContractPath: child.childContractPath,
       goalContractHash: child.childContractHash,
@@ -4066,8 +3947,7 @@ async function governedPartition(args) {
       generationKey,
       partitionPlanHash: authority.partitionPlanHash,
       partitionManifestHash: projection.partitionManifestHash,
-      partitionManifestDocumentHash:
-        projection.partitionManifestDocumentHash,
+      partitionManifestDocumentHash: projection.partitionManifestDocumentHash,
       renderEvidence,
     })}\n`,
   });
@@ -4086,10 +3966,7 @@ async function governedPartition(args) {
       bytes: authority.partitionPlanBytes,
     },
     ...projection.childCompilationReceipts.map((child) => ({
-      relativePath: authorityUnitChildArtifactPath(
-        output,
-        child.childContractPath
-      ),
+      relativePath: authorityUnitChildArtifactPath(output, child.childContractPath),
       bytes: child.childContractBytes,
     })),
     ...pendingReceiptArtifacts,
@@ -4112,10 +3989,7 @@ async function governedPartition(args) {
       bytes: artifact.bytes,
     });
   }
-  for (const artifact of [
-    ...pendingReceiptArtifacts,
-    ...finalReceiptArtifacts,
-  ]) {
+  for (const artifact of [...pendingReceiptArtifacts, ...finalReceiptArtifacts]) {
     if (artifact.schemaId) {
       readValidatedPartitionReceipt(
         path.join(output.unitRoot, artifact.relativePath),
@@ -4126,34 +4000,29 @@ async function governedPartition(args) {
   let activePointerPath;
   let activePointerHash;
   if (output.authorityMode === 'requirement_record') {
-    const {
-      commitRequirementRecordPartitionAuthoritySupersession,
-    } = loadPartitionModule(
+    const { commitRequirementRecordPartitionAuthoritySupersession } = loadPartitionModule(
       'utils/goal-contract/control-plane/authority-supersession'
     );
-    const committed =
-      commitRequirementRecordPartitionAuthoritySupersession({
-        repositoryRoot: process.cwd(),
-        recordPath: resolvedRequirementRecordPath,
-        sourceHash: frozen.sourceHash,
-        partitionRunId: output.partitionRunId,
-        authorityRoot: output.authorityRoot,
-        partitionPlanHash: authority.partitionPlanHash,
-        partitionManifestHash: projection.partitionManifestHash,
-        partitionManifestDocumentHash:
-          projection.partitionManifestDocumentHash,
-        partitionSetHash: projection.partitionManifest.partitionSetHash,
-        eventChainProjection: sha256Text(
-          stableStringify({
-            requirementSetId: output.requirementSetId,
-            sourceHash: frozen.sourceHash,
-            partitionRunId: output.partitionRunId,
-            partitionManifestHash: projection.partitionManifestHash,
-            partitionManifestDocumentHash:
-              projection.partitionManifestDocumentHash,
-          })
-        ),
-      });
+    const committed = commitRequirementRecordPartitionAuthoritySupersession({
+      repositoryRoot: process.cwd(),
+      recordPath: resolvedRequirementRecordPath,
+      sourceHash: frozen.sourceHash,
+      partitionRunId: output.partitionRunId,
+      authorityRoot: output.authorityRoot,
+      partitionPlanHash: authority.partitionPlanHash,
+      partitionManifestHash: projection.partitionManifestHash,
+      partitionManifestDocumentHash: projection.partitionManifestDocumentHash,
+      partitionSetHash: projection.partitionManifest.partitionSetHash,
+      eventChainProjection: sha256Text(
+        stableStringify({
+          requirementSetId: output.requirementSetId,
+          sourceHash: frozen.sourceHash,
+          partitionRunId: output.partitionRunId,
+          partitionManifestHash: projection.partitionManifestHash,
+          partitionManifestDocumentHash: projection.partitionManifestDocumentHash,
+        })
+      ),
+    });
     activePointerPath = normalize(committed.pointer.pointerPath);
     activePointerHash = committed.pointer.pointerProjectionHash;
   } else {
@@ -4162,8 +4031,7 @@ async function governedPartition(args) {
       partitionPlanBytes: authority.partitionPlanBytes,
       partitionManifestBytes: projection.partitionManifestBytes,
       partitionManifestHash: projection.partitionManifestHash,
-      partitionManifestDocumentHash:
-        projection.partitionManifestDocumentHash,
+      partitionManifestDocumentHash: projection.partitionManifestDocumentHash,
       childContractPaths: projection.childCompilationReceipts.map(
         ({ childContractPath }) => childContractPath
       ),
@@ -4241,21 +4109,13 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
             'receipts/checkpoint-mappings.json',
             'receipts/render-evidence.json',
           ];
-          const supersessionDirectories = [
-            'receipts/pending',
-            'receipts/membership',
-          ];
+          const supersessionDirectories = ['receipts/pending', 'receipts/membership'];
           const supersessionMarkerPresent =
             supersessionMarkers.some((relativePath) =>
-              fs.existsSync(
-                path.join(inferredAuthorityRoot, relativePath)
-              )
+              fs.existsSync(path.join(inferredAuthorityRoot, relativePath))
             ) ||
             supersessionDirectories.some((relativePath) => {
-              const directoryPath = path.join(
-                inferredAuthorityRoot,
-                relativePath
-              );
+              const directoryPath = path.join(inferredAuthorityRoot, relativePath);
               if (!fs.existsSync(directoryPath)) return false;
               try {
                 return fs.readdirSync(directoryPath).length > 0;
@@ -4264,30 +4124,25 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
               }
             });
           if (supersessionMarkerPresent) {
-            const { loadAuthoritySupersessionForRelease } =
-              loadPartitionModule(
-                'utils/goal-contract/control-plane/authority-supersession'
-              );
+            const { loadAuthoritySupersessionForRelease } = loadPartitionModule(
+              'utils/goal-contract/control-plane/authority-supersession'
+            );
             partitionAuthority = loadAuthoritySupersessionForRelease({
               authorityRoot: inferredAuthorityRoot,
               partitionManifestPath: manifestPath,
               goalPath,
-              expectedPartitionPlanHash:
-                binding.fields.partitionPlanHash,
+              expectedPartitionPlanHash: binding.fields.partitionPlanHash,
             });
           } else {
-            const { loadCanonicalPartitionAuthorityForRelease } =
-              loadPartitionModule(
-                'utils/goal-contract/control-plane/partition-output-paths'
-              );
-            partitionAuthority =
-              loadCanonicalPartitionAuthorityForRelease({
-                repositoryRoot: process.cwd(),
-                partitionManifestPath: manifestPath,
-                goalPath,
-                expectedPartitionPlanHash:
-                  binding.fields.partitionPlanHash,
-              });
+            const { loadCanonicalPartitionAuthorityForRelease } = loadPartitionModule(
+              'utils/goal-contract/control-plane/partition-output-paths'
+            );
+            partitionAuthority = loadCanonicalPartitionAuthorityForRelease({
+              repositoryRoot: process.cwd(),
+              partitionManifestPath: manifestPath,
+              goalPath,
+              expectedPartitionPlanHash: binding.fields.partitionPlanHash,
+            });
           }
         } else {
           const authorityArgs = [
@@ -4312,6 +4167,19 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
         partitionAuthority,
       });
     }
+    if (subcommand === 'activate') {
+      if (!json) {
+        throw Object.assign(new Error('activation_request_invalid'), {
+          failureClass: 'activation_request_invalid',
+        });
+      }
+      const { activateFrozenGoalAuthority } = loadPartitionModule(
+        'utils/goal-contract/control-plane/campaign-activation'
+      );
+      const result = activateFrozenGoalAuthority(parseActivationArguments(args));
+      emitJson(result);
+      return ['activated', 'activation_reused'].includes(result.status) ? 0 : 1;
+    }
     if (!['generate', 'partition', 'supersede-authority'].includes(subcommand)) {
       throw Object.assign(
         new Error(
@@ -4334,6 +4202,15 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
     }
     return 0;
   } catch (error) {
+    if (subcommand === 'activate') {
+      const { goalContractActivationFailureResult } = loadPartitionModule(
+        'utils/goal-contract/control-plane/campaign-activation'
+      );
+      const result = goalContractActivationFailureResult(error);
+      if (json) emitJson(result);
+      else console.error(result.issueCode);
+      return 1;
+    }
     const failureClass = error.failureClass || error.code || 'goal_contract_generation_failed';
     const payload = failurePayload(failureClass, error, {
       ...(error.entryScenario ? { entryScenario: error.entryScenario } : {}),
@@ -4354,9 +4231,7 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
         : {}),
       ...(error.auditMetrics ? { auditMetrics: error.auditMetrics } : {}),
       ...(error.forbidden ? { forbidden: error.forbidden } : {}),
-      ...(error.mismatchedFields
-        ? { mismatchedFields: error.mismatchedFields }
-        : {}),
+      ...(error.mismatchedFields ? { mismatchedFields: error.mismatchedFields } : {}),
       ...(error.reason ? { reason: error.reason } : {}),
       ...(error.missingArguments ? { missingArguments: error.missingArguments } : {}),
       ...(error.sourceSnapshotHash ? { sourceSnapshotHash: error.sourceSnapshotHash } : {}),
@@ -4471,19 +4346,11 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
       ...(error.field ? { field: error.field } : {}),
       ...(error.reason ? { reason: error.reason } : {}),
       ...(typeof error.value === 'string' ? { value: error.value } : {}),
-      ...(typeof error.relativePath === 'string'
-        ? { relativePath: error.relativePath }
-        : {}),
-      ...(typeof error.sourcePath === 'string'
-        ? { sourcePath: error.sourcePath }
-        : {}),
+      ...(typeof error.relativePath === 'string' ? { relativePath: error.relativePath } : {}),
+      ...(typeof error.sourcePath === 'string' ? { sourcePath: error.sourcePath } : {}),
       ...(typeof error.path === 'string' ? { path: error.path } : {}),
-      ...(typeof error.artifactPath === 'string'
-        ? { artifactPath: error.artifactPath }
-        : {}),
-      ...(typeof error.artifactId === 'string'
-        ? { artifactId: error.artifactId }
-        : {}),
+      ...(typeof error.artifactPath === 'string' ? { artifactPath: error.artifactPath } : {}),
+      ...(typeof error.artifactId === 'string' ? { artifactId: error.artifactId } : {}),
       ...(Number.isInteger(error.line) ? { line: error.line } : {}),
       ...(typeof error.limit === 'string' ? { limit: error.limit } : {}),
       ...(error.expected ? { expected: error.expected } : {}),
