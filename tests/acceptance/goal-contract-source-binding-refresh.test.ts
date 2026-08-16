@@ -124,4 +124,55 @@ describe('Goal source binding-only refresh', () => {
       fixture.cleanup();
     }
   });
+
+  it('does not replace the active authority when the commit-time currentness check fails', () => {
+    const fixture = materializeImplementationReadinessFixture();
+    try {
+      produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
+      const outRoot = path.join(fixture.root, 'goal-run-currentness');
+      const compiled = compileRequirementsBackedGoal({
+        projectRoot: fixture.root,
+        requirementRecordPath: fixture.runtimeRecordPath,
+        outRoot,
+      });
+      const activeBytes = readFileSync(compiled.activeAuthorityRef.path);
+      const binding = JSON.parse(readFileSync(compiled.sourceBindingRef.path, 'utf8'));
+      const evidenceIndex = JSON.parse(
+        readFileSync(compiled.resolvedEvidenceIndexRef.path, 'utf8')
+      );
+      const nextBindingPayload = {
+        ...withoutHash(binding, 'goalSourceBindingHash'),
+        requirementsBindingRevisionId: 'binding-revision-currentness-check',
+        requirementsSourceBindingHash: `sha256:${'c'.repeat(64)}`,
+      };
+      const nextBinding = {
+        ...nextBindingPayload,
+        goalSourceBindingHash: sha256Stable(nextBindingPayload),
+      };
+      const nextEvidencePayload = {
+        ...withoutHash(evidenceIndex, 'resolvedEvidenceIndexHash'),
+        goalSourceBindingHash: nextBinding.goalSourceBindingHash,
+        requirementsBindingRevisionId: nextBinding.requirementsBindingRevisionId,
+      };
+      const nextEvidenceIndex = {
+        ...nextEvidencePayload,
+        resolvedEvidenceIndexHash: sha256Stable(nextEvidencePayload),
+      };
+
+      expect(() =>
+        refreshGoalSourceBinding({
+          outRoot,
+          expectedActiveAuthorityHash: compiled.activeAuthorityRef.hash,
+          sourceBinding: nextBinding,
+          resolvedEvidenceIndex: nextEvidenceIndex,
+          beforeActiveAuthorityCommit: () => {
+            throw new Error('simulated_binding_currentness_drift');
+          },
+        })
+      ).toThrowError('simulated_binding_currentness_drift');
+      expect(readFileSync(compiled.activeAuthorityRef.path)).toEqual(activeBytes);
+    } finally {
+      fixture.cleanup();
+    }
+  });
 });

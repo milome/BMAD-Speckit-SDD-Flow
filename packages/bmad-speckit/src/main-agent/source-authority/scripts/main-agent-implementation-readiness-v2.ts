@@ -2,9 +2,11 @@
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
+import { createRequire } from 'node:module';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import Ajv2020 from 'ajv/dist/2020.js';
 import {
   artifactBytesHash,
   canonicalRequirementsJson,
@@ -112,6 +114,8 @@ const READINESS_OPERATIONAL_ENV_KEYS = [
   'COMSPEC',
 ] as const;
 const READINESS_RUNTIME_BASE = fs.realpathSync(os.tmpdir());
+const READINESS_CANDIDATE_SCHEMA = 'main-agent-implementation-readiness-candidate.schema.json';
+let validateReadinessCandidate: ((value: unknown) => boolean) | undefined;
 
 interface ParsedArgs {
   requestId?: string;
@@ -157,7 +161,7 @@ interface ReadinessOutcome {
   };
 }
 
-interface ReadinessCandidate extends JsonObject {
+export interface ReadinessCandidate extends JsonObject {
   schemaVersion: 'ImplementationReadinessCandidate/v1';
   requestId: string;
   requirementsLineage: JsonObject;
@@ -169,6 +173,14 @@ interface ReadinessCandidate extends JsonObject {
   inputArtifacts: InputArtifact[];
   redOutcomes: ReadinessOutcome[];
   implementationReadinessCandidateHash: string;
+}
+
+interface ExistingReadinessBundle {
+  result: JsonObject;
+  candidate: ReadinessCandidate;
+  receiptPath: string;
+  receipt: JsonObject;
+  projectionCurrent: boolean;
 }
 
 interface ReadinessCommandRun {
@@ -332,6 +344,638 @@ function confinedFile(projectRoot: string, logicalPath: string): string {
     throw new Error('implementation_readiness_physical_path_forbidden');
   }
   return absolute;
+}
+
+const LOCAL_MODULE_EXTENSIONS = [
+  '',
+  '.js',
+  '.cjs',
+  '.mjs',
+  '.ts',
+  '.cts',
+  '.mts',
+  '.jsx',
+  '.tsx',
+  '.json',
+];
+const MODULE_SOURCE_EXTENSIONS = new Set([
+  '.js',
+  '.cjs',
+  '.mjs',
+  '.ts',
+  '.cts',
+  '.mts',
+  '.jsx',
+  '.tsx',
+]);
+
+function executableCodeMask(source: string): Uint8Array {
+  const mask = new Uint8Array(source.length);
+  let mode: 'code' | 'single' | 'double' | 'template' | 'line_comment' | 'block_comment' = 'code';
+  const templateExpressionDepths: number[] = [];
+  for (let index = 0; index < source.length; index += 1) {
+    const current = source[index];
+    const next = source[index + 1];
+    if (mode === 'line_comment') {
+      if (current === '\n' || current === '\r') mode = 'code';
+      continue;
+    }
+    if (mode === 'block_comment') {
+      if (current === '*' && next === '/') {
+        index += 1;
+        mode = 'code';
+      }
+      continue;
+    }
+    if (mode === 'single' || mode === 'double') {
+      if (current === '\\') index += 1;
+      else if ((mode === 'single' && current === "'") || (mode === 'double' && current === '"')) {
+        mode = 'code';
+      }
+      continue;
+    }
+    if (mode === 'template') {
+      if (current === '\\') index += 1;
+      else if (current === '`') mode = 'code';
+      else if (current === '$' && next === '{') {
+        templateExpressionDepths.push(1);
+        index += 1;
+        mode = 'code';
+      }
+      continue;
+    }
+    if (current === '/' && next === '/') {
+      index += 1;
+      mode = 'line_comment';
+      continue;
+    }
+    if (current === '/' && next === '*') {
+      index += 1;
+      mode = 'block_comment';
+      continue;
+    }
+    mask[index] = 1;
+    if (current === "'") mode = 'single';
+    else if (current === '"') mode = 'double';
+    else if (current === '`') mode = 'template';
+    else if (templateExpressionDepths.length > 0 && current === '{') {
+      templateExpressionDepths[templateExpressionDepths.length - 1] += 1;
+    } else if (templateExpressionDepths.length > 0 && current === '}') {
+      const last = templateExpressionDepths.length - 1;
+      templateExpressionDepths[last] -= 1;
+      if (templateExpressionDepths[last] === 0) {
+        templateExpressionDepths.pop();
+        mode = 'template';
+      }
+    }
+  }
+  return mask;
+}
+
+function localModuleSpecifiers(filePath: string, allowBunBuiltins = false): string[] {
+  if (!MODULE_SOURCE_EXTENSIONS.has(path.extname(filePath).toLowerCase())) return [];
+  const source = fs.readFileSync(filePath, 'utf8');
+  const codeMask = executableCodeMask(source);
+  const specifiers: string[] = [];
+  for (const pattern of [
+    /\b(?:import|export)\s+(?:[^'"]*?\s+from\s+)?['"]([^'"]+)['"]/gu,
+    /\brequire\s*\(\s*['"]([^'"]+)['"]\s*\)/gu,
+    /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/gu,
+  ]) {
+    for (const match of source.matchAll(pattern)) {
+      const specifier = match[1];
+      if (
+        match.index !== undefined &&
+        codeMask[match.index] === 1 &&
+        !/^(?:node:|data:|https?:)/iu.test(specifier) &&
+        !(allowBunBuiltins && (specifier === 'bun' || specifier.startsWith('bun:')))
+      ) {
+        specifiers.push(specifier);
+      }
+    }
+  }
+  return sortedUnique(specifiers);
+}
+
+function moduleCandidates(base: string): string[] {
+  return [
+    ...LOCAL_MODULE_EXTENSIONS.map((extension) => `${base}${extension}`),
+    ...LOCAL_MODULE_EXTENSIONS.slice(1).map((extension) => path.join(base, `index${extension}`)),
+  ];
+}
+
+function packageSpecifierParts(
+  specifier: string
+): { packageName: string; exportSubpath: string } | null {
+  if (specifier.startsWith('#')) return null;
+  const parts = specifier.split('/');
+  const packagePartCount = specifier.startsWith('@') ? 2 : 1;
+  if (parts.length < packagePartCount || parts.slice(0, packagePartCount).some((part) => !part)) {
+    return null;
+  }
+  return {
+    packageName: parts.slice(0, packagePartCount).join('/'),
+    exportSubpath:
+      parts.length === packagePartCount ? '.' : `./${parts.slice(packagePartCount).join('/')}`,
+  };
+}
+
+function packageDescriptorPath(
+  projectRoot: string,
+  importerPath: string,
+  packageName: string,
+  resolvedModulePath: string | null
+): string | null {
+  const root = path.resolve(projectRoot);
+  const candidates: string[] = [];
+  if (resolvedModulePath) {
+    const resolvedSegments = path.relative(root, resolvedModulePath).split(path.sep);
+    const packageSegments = packageName.split('/');
+    let packageRootSegmentCount = 0;
+    for (let index = 0; index < resolvedSegments.length; index += 1) {
+      if (
+        resolvedSegments[index] === 'node_modules' &&
+        packageSegments.every((segment, offset) => resolvedSegments[index + offset + 1] === segment)
+      ) {
+        packageRootSegmentCount = index + packageSegments.length + 1;
+      }
+    }
+    if (packageRootSegmentCount > 0) {
+      candidates.push(
+        path.join(root, ...resolvedSegments.slice(0, packageRootSegmentCount), 'package.json')
+      );
+    }
+  }
+  const nearestImporterDescriptor = nearestPackageDescriptorPath(root, importerPath);
+  if (nearestImporterDescriptor) candidates.push(nearestImporterDescriptor);
+  for (const searchRoot of createRequire(importerPath).resolve.paths(packageName) ?? []) {
+    candidates.push(path.join(searchRoot, ...packageName.split('/'), 'package.json'));
+  }
+  const seen = new Set<string>();
+  for (const candidate of candidates) {
+    if (seen.has(candidate)) continue;
+    seen.add(candidate);
+    const relative = path.relative(root, candidate);
+    if (
+      relative.startsWith('..') ||
+      path.isAbsolute(relative) ||
+      !fs.existsSync(candidate) ||
+      !fs.statSync(candidate).isFile()
+    ) {
+      continue;
+    }
+    let descriptor: JsonObject;
+    try {
+      descriptor = object(JSON.parse(fs.readFileSync(candidate, 'utf8')));
+    } catch {
+      throw new Error(
+        `implementation_readiness_config_invalid:${projectRelative(root, candidate)}`
+      );
+    }
+    if (text(descriptor.name) === packageName) {
+      return confinedFile(root, projectRelative(root, candidate));
+    }
+  }
+  return null;
+}
+
+function nearestPackageDescriptorPath(projectRoot: string, importerPath: string): string | null {
+  const root = path.resolve(projectRoot);
+  let current = path.dirname(importerPath);
+  while (current === root || current.startsWith(`${root}${path.sep}`)) {
+    const candidate = path.join(current, 'package.json');
+    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+      return confinedFile(root, projectRelative(root, candidate));
+    }
+    if (current === root) break;
+    const parent = path.dirname(current);
+    if (parent === current || (parent !== root && !parent.startsWith(`${root}${path.sep}`))) break;
+    current = parent;
+  }
+  return null;
+}
+
+function packagePatternSelection(
+  entries: Array<[string, unknown]>,
+  requestedKey: string
+): { matched: boolean; target: unknown; wildcard: string } {
+  const matches = entries
+    .map(([pattern, target]) => {
+      const star = pattern.indexOf('*');
+      const wildcard =
+        star < 0
+          ? requestedKey === pattern
+            ? ''
+            : null
+          : requestedKey.startsWith(pattern.slice(0, star)) &&
+              requestedKey.endsWith(pattern.slice(star + 1))
+            ? requestedKey.slice(
+                star,
+                requestedKey.length - (pattern.length - star - 1) || undefined
+              )
+            : null;
+      return wildcard === null ? null : { pattern, target, wildcard, star };
+    })
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== null)
+    .sort((left, right) => {
+      const leftExact = left.star < 0;
+      const rightExact = right.star < 0;
+      if (leftExact !== rightExact) return leftExact ? -1 : 1;
+      if (left.star !== right.star) return right.star - left.star;
+      const leftSuffixLength = left.pattern.length - left.star - 1;
+      const rightSuffixLength = right.pattern.length - right.star - 1;
+      if (leftSuffixLength !== rightSuffixLength) return rightSuffixLength - leftSuffixLength;
+      return left.pattern < right.pattern ? -1 : left.pattern > right.pattern ? 1 : 0;
+    });
+  return matches[0]
+    ? { matched: true, target: matches[0].target, wildcard: matches[0].wildcard }
+    : { matched: false, target: null, wildcard: '' };
+}
+
+function packageExportSelection(
+  exportsValue: unknown,
+  exportSubpath: string
+): { matched: boolean; target: unknown; wildcard: string } {
+  const exportsObject = object(exportsValue);
+  const subpathEntries = Object.entries(exportsObject).filter(([key]) => key.startsWith('.'));
+  if (subpathEntries.length === 0) {
+    return exportSubpath === '.'
+      ? { matched: exportsValue !== undefined, target: exportsValue, wildcard: '' }
+      : { matched: false, target: null, wildcard: '' };
+  }
+  return packagePatternSelection(subpathEntries, exportSubpath);
+}
+
+function packageExportTargetStrings(target: unknown, wildcard: string): string[] {
+  if (typeof target === 'string') return [target.replace(/\*/gu, wildcard)];
+  if (Array.isArray(target)) {
+    return target.flatMap((entry) => packageExportTargetStrings(entry, wildcard));
+  }
+  return Object.values(object(target)).flatMap((entry) =>
+    packageExportTargetStrings(entry, wildcard)
+  );
+}
+
+function localPackageExportFiles(input: {
+  projectRoot: string;
+  importerPath: string;
+  specifier: string;
+  resolvedModulePath: string | null;
+  onConfig?: (configPath: string) => void;
+}): string[] {
+  const parts = packageSpecifierParts(input.specifier);
+  if (!parts) return [];
+  const descriptorPath = packageDescriptorPath(
+    input.projectRoot,
+    input.importerPath,
+    parts.packageName,
+    input.resolvedModulePath
+  );
+  if (!descriptorPath) return [];
+  const descriptor = object(JSON.parse(fs.readFileSync(descriptorPath, 'utf8')));
+  input.onConfig?.(descriptorPath);
+  const selection = packageExportSelection(descriptor.exports, parts.exportSubpath);
+  if (!selection.matched) return [];
+  const packageRoot = path.dirname(descriptorPath);
+  const resolved: string[] = [];
+  for (const target of packageExportTargetStrings(selection.target, selection.wildcard)) {
+    if (!target.startsWith('./')) continue;
+    const candidate = moduleCandidates(path.resolve(packageRoot, target)).find(
+      (entry) => fs.existsSync(entry) && fs.statSync(entry).isFile()
+    );
+    if (candidate) {
+      resolved.push(confinedFile(input.projectRoot, projectRelative(input.projectRoot, candidate)));
+    }
+  }
+  return sortedUnique(resolved);
+}
+
+function localPackageImportFiles(input: {
+  projectRoot: string;
+  importerPath: string;
+  specifier: string;
+  resolutionChain: Set<string>;
+  onConfig?: (configPath: string) => void;
+}): string[] {
+  if (!input.specifier.startsWith('#')) return [];
+  const descriptorPath = nearestPackageDescriptorPath(input.projectRoot, input.importerPath);
+  if (!descriptorPath) return [];
+  const descriptor = object(JSON.parse(fs.readFileSync(descriptorPath, 'utf8')));
+  const selection = packagePatternSelection(
+    Object.entries(object(descriptor.imports)).filter(([key]) => key.startsWith('#')),
+    input.specifier
+  );
+  if (!selection.matched) return [];
+  input.onConfig?.(descriptorPath);
+  const packageRoot = path.dirname(descriptorPath);
+  const resolved: string[] = [];
+  for (const target of packageExportTargetStrings(selection.target, selection.wildcard)) {
+    if (target.startsWith('./')) {
+      const candidate = moduleCandidates(path.resolve(packageRoot, target)).find(
+        (entry) => fs.existsSync(entry) && fs.statSync(entry).isFile()
+      );
+      if (candidate) {
+        resolved.push(
+          confinedFile(input.projectRoot, projectRelative(input.projectRoot, candidate))
+        );
+      }
+    } else {
+      resolved.push(
+        ...resolveLocalModule(
+          input.projectRoot,
+          descriptorPath,
+          target,
+          input.onConfig,
+          input.resolutionChain
+        )
+      );
+    }
+  }
+  return sortedUnique(resolved);
+}
+
+function parseJsonConfig(configPath: string): JsonObject {
+  const source = fs.readFileSync(configPath, 'utf8');
+  let stripped = '';
+  let mode: 'code' | 'string' | 'line_comment' | 'block_comment' = 'code';
+  let quote = '';
+  for (let index = 0; index < source.length; index += 1) {
+    const current = source[index];
+    const next = source[index + 1];
+    if (mode === 'line_comment') {
+      stripped += current === '\n' || current === '\r' ? current : ' ';
+      if (current === '\n' || current === '\r') mode = 'code';
+      continue;
+    }
+    if (mode === 'block_comment') {
+      stripped += current === '\n' || current === '\r' ? current : ' ';
+      if (current === '*' && next === '/') {
+        stripped += ' ';
+        index += 1;
+        mode = 'code';
+      }
+      continue;
+    }
+    if (mode === 'string') {
+      stripped += current;
+      if (current === '\\') {
+        stripped += next ?? '';
+        index += 1;
+      } else if (current === quote) {
+        mode = 'code';
+      }
+      continue;
+    }
+    if (current === '/' && next === '/') {
+      stripped += '  ';
+      index += 1;
+      mode = 'line_comment';
+      continue;
+    }
+    if (current === '/' && next === '*') {
+      stripped += '  ';
+      index += 1;
+      mode = 'block_comment';
+      continue;
+    }
+    stripped += current;
+    if (current === '"') {
+      quote = current;
+      mode = 'string';
+    }
+  }
+  let normalized = '';
+  mode = 'code';
+  quote = '';
+  for (let index = 0; index < stripped.length; index += 1) {
+    const current = stripped[index];
+    if (mode === 'string') {
+      normalized += current;
+      if (current === '\\') {
+        normalized += stripped[index + 1] ?? '';
+        index += 1;
+      } else if (current === quote) {
+        mode = 'code';
+      }
+      continue;
+    }
+    if (current === '"') {
+      normalized += current;
+      quote = current;
+      mode = 'string';
+      continue;
+    }
+    if (current === ',') {
+      let lookahead = index + 1;
+      while (/\s/u.test(stripped[lookahead] ?? '')) lookahead += 1;
+      if (stripped[lookahead] === '}' || stripped[lookahead] === ']') continue;
+    }
+    normalized += current;
+  }
+  const parsed = JSON.parse(normalized) as unknown;
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('implementation_readiness_config_invalid');
+  }
+  return parsed as JsonObject;
+}
+
+interface ResolvedTsConfig {
+  configPaths: string[];
+  baseUrl: string | null;
+  paths: JsonObject;
+}
+
+function resolveExtendedConfigPath(configPath: string, value: string): string {
+  if (!value.startsWith('.') && !path.isAbsolute(value)) {
+    throw new Error('implementation_readiness_config_extends_external');
+  }
+  const base = path.resolve(path.dirname(configPath), value);
+  const candidates = [base, `${base}.json`, path.join(base, 'tsconfig.json')];
+  const resolved = candidates.find(
+    (candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile()
+  );
+  if (!resolved) throw new Error('implementation_readiness_config_extends_missing');
+  return resolved;
+}
+
+function loadTsConfig(configPath: string, seen = new Set<string>()): ResolvedTsConfig {
+  const absolute = path.resolve(configPath);
+  if (seen.has(absolute)) throw new Error('implementation_readiness_config_extends_cycle');
+  seen.add(absolute);
+  const config = parseJsonConfig(absolute);
+  const extensionValues = Array.isArray(config.extends)
+    ? config.extends.filter((value): value is string => typeof value === 'string')
+    : typeof config.extends === 'string'
+      ? [config.extends]
+      : [];
+  let inherited: ResolvedTsConfig = { configPaths: [], baseUrl: null, paths: {} };
+  for (const extension of extensionValues) {
+    const parent = loadTsConfig(resolveExtendedConfigPath(absolute, extension), seen);
+    inherited = {
+      configPaths: [...inherited.configPaths, ...parent.configPaths],
+      baseUrl: parent.baseUrl ?? inherited.baseUrl,
+      paths: { ...inherited.paths, ...parent.paths },
+    };
+  }
+  const compilerOptions = object(config.compilerOptions);
+  const configuredBaseUrl = text(compilerOptions.baseUrl);
+  const ownPaths = object(compilerOptions.paths);
+  return {
+    configPaths: sortedUnique([...inherited.configPaths, absolute]),
+    baseUrl: configuredBaseUrl
+      ? path.resolve(path.dirname(absolute), configuredBaseUrl)
+      : inherited.baseUrl,
+    paths: Object.keys(ownPaths).length > 0 ? ownPaths : inherited.paths,
+  };
+}
+
+function resolveTsConfigAlias(
+  projectRoot: string,
+  importerPath: string,
+  specifier: string
+): {
+  matched: boolean;
+  resolved: string | null;
+  configPaths: string[];
+} {
+  let current = path.dirname(importerPath);
+  const root = path.resolve(projectRoot);
+  while (current === root || current.startsWith(`${root}${path.sep}`)) {
+    const configPath = ['tsconfig.json', 'jsconfig.json']
+      .map((name) => path.join(current, name))
+      .find((candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile());
+    if (configPath) {
+      let config: ResolvedTsConfig;
+      try {
+        config = loadTsConfig(configPath);
+      } catch {
+        throw new Error(
+          `implementation_readiness_config_invalid:${projectRelative(root, configPath)}`
+        );
+      }
+      const baseUrl = config.baseUrl ?? path.dirname(configPath);
+      const orderedPathMappings = Object.entries(config.paths).sort(([left], [right]) => {
+        const leftStar = left.indexOf('*');
+        const rightStar = right.indexOf('*');
+        const leftExact = leftStar < 0;
+        const rightExact = rightStar < 0;
+        if (leftExact !== rightExact) return leftExact ? -1 : 1;
+        const leftPrefixLength = leftExact ? left.length : leftStar;
+        const rightPrefixLength = rightExact ? right.length : rightStar;
+        if (leftPrefixLength !== rightPrefixLength) return rightPrefixLength - leftPrefixLength;
+        const leftSuffixLength = leftExact ? 0 : left.length - leftStar - 1;
+        const rightSuffixLength = rightExact ? 0 : right.length - rightStar - 1;
+        if (leftSuffixLength !== rightSuffixLength) return rightSuffixLength - leftSuffixLength;
+        return left < right ? -1 : left > right ? 1 : 0;
+      });
+      for (const [pattern, targets] of orderedPathMappings) {
+        const star = pattern.indexOf('*');
+        const matches =
+          star < 0
+            ? specifier === pattern
+              ? ''
+              : null
+            : specifier.startsWith(pattern.slice(0, star)) &&
+                specifier.endsWith(pattern.slice(star + 1))
+              ? specifier.slice(star, specifier.length - (pattern.length - star - 1) || undefined)
+              : null;
+        if (matches === null) continue;
+        const targetList = Array.isArray(targets)
+          ? targets.filter((value) => typeof value === 'string')
+          : [];
+        for (const target of targetList) {
+          const candidate = target.replace('*', matches);
+          const resolved = moduleCandidates(path.resolve(baseUrl, candidate)).find(
+            (entry) => fs.existsSync(entry) && fs.statSync(entry).isFile()
+          );
+          if (resolved) return { matched: true, resolved, configPaths: config.configPaths };
+        }
+        return { matched: true, resolved: null, configPaths: config.configPaths };
+      }
+      if (config.baseUrl) {
+        const resolved = moduleCandidates(path.resolve(config.baseUrl, specifier)).find(
+          (entry) => fs.existsSync(entry) && fs.statSync(entry).isFile()
+        );
+        return { matched: true, resolved: resolved ?? null, configPaths: config.configPaths };
+      }
+    }
+    if (current === root) break;
+    const parent = path.dirname(current);
+    if (parent === current || (parent !== root && !parent.startsWith(`${root}${path.sep}`))) break;
+    current = parent;
+  }
+  return { matched: false, resolved: null, configPaths: [] };
+}
+
+function resolveLocalModule(
+  projectRoot: string,
+  importerPath: string,
+  specifier: string,
+  onConfig?: (configPath: string) => void,
+  resolutionChain = new Set<string>()
+): string[] {
+  const resolutionKey = `${path.resolve(importerPath)}\0${specifier}`;
+  if (resolutionChain.has(resolutionKey)) {
+    throw new Error(`implementation_readiness_module_resolution_cycle:${specifier}`);
+  }
+  const nextResolutionChain = new Set(resolutionChain);
+  nextResolutionChain.add(resolutionKey);
+  const isRelative = specifier.startsWith('.') || specifier.startsWith('file:');
+  if (!isRelative) {
+    let requireResolved: string | null = null;
+    let requireResolutionSucceeded = false;
+    try {
+      const resolved = createRequire(importerPath).resolve(specifier);
+      requireResolutionSucceeded = true;
+      if (
+        path.isAbsolute(resolved) &&
+        resolved.startsWith(`${path.resolve(projectRoot)}${path.sep}`)
+      ) {
+        requireResolved = confinedFile(projectRoot, projectRelative(projectRoot, resolved));
+      }
+    } catch {
+      requireResolved = null;
+    }
+    const packageExportFiles = localPackageExportFiles({
+      projectRoot,
+      importerPath,
+      specifier,
+      resolvedModulePath: requireResolved,
+      onConfig,
+    });
+    const packageImportFiles = localPackageImportFiles({
+      projectRoot,
+      importerPath,
+      specifier,
+      resolutionChain: nextResolutionChain,
+      onConfig,
+    });
+    const resolvedBareModules = sortedUnique([
+      ...(requireResolved ? [requireResolved] : []),
+      ...packageExportFiles,
+      ...packageImportFiles,
+    ]);
+    if (resolvedBareModules.length > 0) return resolvedBareModules;
+    if (requireResolutionSucceeded) return [];
+    const alias = resolveTsConfigAlias(projectRoot, importerPath, specifier);
+    alias.configPaths.forEach((configPath) => onConfig?.(configPath));
+    if (alias.resolved) {
+      return [confinedFile(projectRoot, projectRelative(projectRoot, alias.resolved))];
+    }
+    throw new Error(`implementation_readiness_input_missing:${specifier}`);
+  }
+  const base = path.resolve(
+    path.dirname(importerPath),
+    specifier.startsWith('file:') ? fileURLToPath(specifier) : specifier
+  );
+  const candidates = [...moduleCandidates(base)];
+  const resolved = candidates.find(
+    (candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile()
+  );
+  if (!resolved) {
+    throw new Error(`implementation_readiness_input_missing:${specifier}`);
+  }
+  return [confinedFile(projectRoot, projectRelative(projectRoot, resolved))];
 }
 
 export function parseReadinessCommandInvocation(invocation: string): {
@@ -563,7 +1207,7 @@ function collectInputArtifacts(
   commands: NormalizedCommand[]
 ): InputArtifact[] {
   const byId = new Map<string, InputArtifact>();
-  const add = (role: InputArtifact['role'], logicalPath: string) => {
+  const add = (role: InputArtifact['role'], logicalPath: string): string => {
     const absolute = confinedFile(context.projectRoot, logicalPath);
     const normalized = projectRelative(context.projectRoot, absolute);
     const artifactId = `${role}:${normalized}`;
@@ -572,6 +1216,27 @@ function collectInputArtifacts(
       artifactId,
       logicalPath: normalized,
       bytesHash: sha256Bytes(fs.readFileSync(absolute)),
+    });
+    return normalized;
+  };
+  const dependencySeeds = new Map<
+    string,
+    {
+      role: InputArtifact['role'];
+      logicalPath: string;
+      allowBunBuiltins: boolean;
+    }
+  >();
+  const addDependencySeed = (
+    role: InputArtifact['role'],
+    logicalPath: string,
+    allowBunBuiltins: boolean
+  ): void => {
+    const normalized = add(role, logicalPath);
+    dependencySeeds.set(`${role}:${normalized}:${allowBunBuiltins ? 'bun' : 'default'}`, {
+      role,
+      logicalPath: normalized,
+      allowBunBuiltins,
     });
   };
   const scope = object(candidate.logicalScope);
@@ -582,23 +1247,68 @@ function collectInputArtifacts(
     if (changesCommandScope(command)) {
       throw new Error('implementation_readiness_command_scope_unclosed');
     }
-    collectNodeRuntimeInputs(command, context.projectRoot, add);
+    const allowBunBuiltins = command.executable === 'bun';
+    collectNodeRuntimeInputs(command, context.projectRoot, (role, logicalPath) =>
+      addDependencySeed(role, logicalPath, allowBunBuiltins)
+    );
     for (const argument of command.args) {
       const equalsConfig = /^--config=(.+)$/u.exec(argument);
-      if (equalsConfig) add('config', equalsConfig[1]);
+      if (equalsConfig) addDependencySeed('config', equalsConfig[1], allowBunBuiltins);
       const testPath = logicalInputPath(argument);
-      if (testPath) add('test', testPath);
+      if (testPath) addDependencySeed('test', testPath, allowBunBuiltins);
     }
     for (let index = 0; index < command.args.length - 1; index += 1) {
       if (command.args[index] === '--config' || command.args[index] === '-c') {
-        add('config', command.args[index + 1]);
+        addDependencySeed('config', command.args[index + 1], allowBunBuiltins);
       }
     }
   }
   const packageJson = path.join(context.projectRoot, 'package.json');
   if (fs.existsSync(packageJson)) add('config', 'package.json');
+  for (const configName of ['tsconfig.json', 'jsconfig.json']) {
+    if (fs.existsSync(path.join(context.projectRoot, configName))) add('config', configName);
+  }
   for (const lockName of LOCK_NAMES) {
     if (fs.existsSync(path.join(context.projectRoot, lockName))) add('lock', lockName);
+  }
+  const knownPaths = new Set([...byId.values()].map((artifact) => artifact.logicalPath));
+  const dependencyQueue = [...dependencySeeds.values()].map((seed) => ({
+    role: seed.role,
+    absolutePath: confinedFile(context.projectRoot, seed.logicalPath),
+    allowBunBuiltins: seed.allowBunBuiltins,
+  }));
+  const traversed = new Set<string>();
+  while (dependencyQueue.length > 0) {
+    const current = dependencyQueue.shift()!;
+    const traversalKey = `${current.role}:${current.absolutePath}:${current.allowBunBuiltins ? 'bun' : 'default'}`;
+    if (traversed.has(traversalKey)) continue;
+    traversed.add(traversalKey);
+    for (const specifier of localModuleSpecifiers(current.absolutePath, current.allowBunBuiltins)) {
+      const dependencyPaths = resolveLocalModule(
+        context.projectRoot,
+        current.absolutePath,
+        specifier,
+        (configPath) => {
+          const logicalPath = projectRelative(context.projectRoot, configPath);
+          if (!knownPaths.has(logicalPath)) {
+            add('config', logicalPath);
+            knownPaths.add(logicalPath);
+          }
+        }
+      );
+      for (const dependencyPath of dependencyPaths) {
+        const logicalPath = projectRelative(context.projectRoot, dependencyPath);
+        if (!knownPaths.has(logicalPath)) {
+          add(current.role, logicalPath);
+          knownPaths.add(logicalPath);
+        }
+        dependencyQueue.push({
+          role: current.role,
+          absolutePath: dependencyPath,
+          allowBunBuiltins: current.allowBunBuiltins,
+        });
+      }
+    }
   }
   if (![...byId.values()].some((entry) => entry.role === 'test')) {
     throw new Error('implementation_readiness_test_input_missing');
@@ -989,10 +1699,10 @@ function candidateHashPayload(candidate: ReadinessCandidate): JsonObject {
   };
 }
 
-function candidateHash(candidate: ReadinessCandidate): string {
+export function implementationReadinessCandidateHash(candidate: JsonObject): string {
   return requirementsContractDomainHash(
     'implementation-readiness-candidate/v1',
-    candidateHashPayload(candidate)
+    candidateHashPayload(candidate as ReadinessCandidate)
   );
 }
 
@@ -1005,6 +1715,80 @@ function candidateRef(projectRoot: string, candidatePath: string, bytes: Buffer)
       bytes,
     }),
   };
+}
+
+function readinessCandidateValidator(): (value: unknown) => boolean {
+  if (!validateReadinessCandidate) {
+    const schemaPath = path.resolve(__dirname, '..', 'schemas', READINESS_CANDIDATE_SCHEMA);
+    const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8')) as object;
+    validateReadinessCandidate = new Ajv2020({ allErrors: true, strict: false }).compile(schema);
+  }
+  return validateReadinessCandidate;
+}
+
+function validateReadinessCandidateObject(value: unknown): asserts value is ReadinessCandidate {
+  if (!readinessCandidateValidator()(value)) {
+    throw new Error('implementation_readiness_published_candidate_invalid');
+  }
+}
+
+export function verifyImplementationReadinessCandidateArtifact(input: {
+  projectRoot: string;
+  recordRoot: string;
+  candidatePath: string;
+  expectedArtifactBytesHash?: string;
+}): {
+  candidate: ReadinessCandidate;
+  candidateRef: { path: string; artifactBytesHash: string };
+} {
+  const relative = path.relative(path.resolve(input.recordRoot), path.resolve(input.candidatePath));
+  if (
+    relative.startsWith('..') ||
+    path.isAbsolute(relative) ||
+    !fs.existsSync(input.candidatePath)
+  ) {
+    throw new Error('implementation_readiness_published_candidate_invalid');
+  }
+  const candidateBytes = fs.readFileSync(input.candidatePath);
+  let candidateValue: unknown;
+  try {
+    candidateValue = JSON.parse(candidateBytes.toString('utf8')) as unknown;
+  } catch {
+    throw new Error('implementation_readiness_published_candidate_invalid');
+  }
+  validateReadinessCandidateObject(candidateValue);
+  if (
+    candidateValue.schemaVersion !== 'ImplementationReadinessCandidate/v1' ||
+    implementationReadinessCandidateHash(candidateValue) !==
+      candidateValue.implementationReadinessCandidateHash ||
+    !candidateBytes.equals(Buffer.from(`${canonicalRequirementsJson(candidateValue)}\n`, 'utf8'))
+  ) {
+    throw new Error('implementation_readiness_published_candidate_invalid');
+  }
+  const artifactRef = candidateRef(input.projectRoot, input.candidatePath, candidateBytes);
+  if (
+    input.expectedArtifactBytesHash &&
+    artifactRef.artifactBytesHash !== input.expectedArtifactBytesHash
+  ) {
+    throw new Error('implementation_readiness_published_candidate_invalid');
+  }
+  for (const outcome of candidateValue.redOutcomes) {
+    const logPath = path.resolve(input.recordRoot, outcome.rawLogRef.path);
+    const logRelative = path.relative(input.recordRoot, logPath);
+    if (
+      logRelative.startsWith('..') ||
+      path.isAbsolute(logRelative) ||
+      !fs.existsSync(logPath) ||
+      artifactBytesHash({
+        role: 'implementation_readiness_raw_log',
+        mediaType: 'application/json',
+        bytes: fs.readFileSync(logPath),
+      }) !== outcome.rawLogRef.artifactBytesHash
+    ) {
+      throw new Error('implementation_readiness_published_log_invalid');
+    }
+  }
+  return { candidate: candidateValue, candidateRef: artifactRef };
 }
 
 function readValidReadinessRuntimeRecord(
@@ -1204,12 +1988,12 @@ function invalidateReadinessRuntimeProjection(input: {
   }
 }
 
-function assertPublishedReadinessRuntimeProjection(input: {
+function isPublishedReadinessRuntimeProjection(input: {
   context: ArchitectureConfirmationContext;
   candidate: ReadinessCandidate;
   receiptPath: string;
   receipt: JsonObject;
-}): void {
+}): boolean {
   const { record } = readValidReadinessRuntimeRecord(
     input.context,
     input.candidate.architectureConfirmationCandidateHash
@@ -1224,16 +2008,14 @@ function assertPublishedReadinessRuntimeProjection(input: {
   const currentDigest =
     text(currentProjection.readinessScopedInputDigest) ||
     text(currentHashes.readinessScopedInputDigest);
-  if (
+  return !(
     currentStatus.effectiveStatus !== 'pass' ||
     text(object(currentProjection.currentHashes).implementationReadinessCandidateHash) !==
       input.candidate.implementationReadinessCandidateHash ||
     text(currentProjection.decisionReceiptHash) !== text(input.receipt.receiptHash) ||
     text(currentProjection.decisionReceiptRef) !== input.receiptPath ||
     currentDigest !== input.candidate.readinessScopedInputDigest
-  ) {
-    throw new Error('implementation_readiness_published_projection_invalid');
-  }
+  );
 }
 
 function resultPayload(input: {
@@ -1277,7 +2059,7 @@ function existingBundle(
   digest: string,
   commands: NormalizedCommand[],
   inputArtifacts: InputArtifact[]
-): JsonObject | null {
+): ExistingReadinessBundle | null {
   const recordRoot = context.recordRoot;
   const evaluationRoot = path.join(
     recordRoot,
@@ -1297,7 +2079,12 @@ function existingBundle(
   if (publishedFiles.some((exists) => !exists)) {
     throw new Error('implementation_readiness_published_bundle_incomplete');
   }
-  const candidateValue = JSON.parse(fs.readFileSync(candidatePath, 'utf8')) as ReadinessCandidate;
+  const verifiedCandidate = verifyImplementationReadinessCandidateArtifact({
+    projectRoot: input.projectRoot,
+    recordRoot,
+    candidatePath,
+  });
+  const candidateValue = verifiedCandidate.candidate;
   if (
     candidateValue.schemaVersion !== 'ImplementationReadinessCandidate/v1' ||
     candidateValue.requestId !== input.requestId ||
@@ -1308,33 +2095,46 @@ function existingBundle(
       canonicalRequirementsJson(commands) ||
     canonicalRequirementsJson(candidateValue.inputArtifacts) !==
       canonicalRequirementsJson(inputArtifacts) ||
-    candidateHash(candidateValue) !== candidateValue.implementationReadinessCandidateHash
+    implementationReadinessCandidateHash(candidateValue) !==
+      candidateValue.implementationReadinessCandidateHash
   ) {
     throw new Error('implementation_readiness_published_candidate_invalid');
   }
-  const candidateBytes = fs.readFileSync(candidatePath);
-  const candidateArtifactRef = candidateRef(input.projectRoot, candidatePath, candidateBytes);
-  for (const outcome of candidateValue.redOutcomes) {
-    const logPath = path.resolve(recordRoot, outcome.rawLogRef.path);
-    const relative = path.relative(recordRoot, logPath);
-    if (
-      relative.startsWith('..') ||
-      path.isAbsolute(relative) ||
-      !fs.existsSync(logPath) ||
-      artifactBytesHash({
-        role: 'implementation_readiness_raw_log',
-        mediaType: 'application/json',
-        bytes: fs.readFileSync(logPath),
-      }) !== outcome.rawLogRef.artifactBytesHash
-    ) {
-      throw new Error('implementation_readiness_published_log_invalid');
-    }
-  }
+  const candidateArtifactRef = verifiedCandidate.candidateRef;
   const reportBytes = fs.readFileSync(reportPath);
+  const report = JSON.parse(reportBytes.toString('utf8')) as JsonObject;
+  const reportCandidateRef = object(report.candidateRef);
+  const reportRelativePath = recordRelative(context.recordRoot, reportPath);
+  const reportArtifactBytesHash = artifactBytesHash({
+    role: 'implementation_readiness_report',
+    mediaType: 'application/json',
+    bytes: reportBytes,
+  });
+  if (
+    report.schemaVersion !== 'implementation-readiness-report/v1' ||
+    report.requestId !== input.requestId ||
+    report.status !== 'pass' ||
+    report.implementationReadinessCandidateHash !==
+      candidateValue.implementationReadinessCandidateHash ||
+    report.readinessScopedInputDigest !== digest ||
+    !Array.isArray(report.issueCodes) ||
+    report.issueCodes.length !== 0 ||
+    reportCandidateRef.path !== projectRelative(input.projectRoot, candidatePath) ||
+    reportCandidateRef.artifactBytesHash !== candidateArtifactRef.artifactBytesHash
+  ) {
+    throw new Error('implementation_readiness_published_report_invalid');
+  }
   const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8')) as JsonObject;
   if (!validateRuntimeStatusDecisionReceipt(receipt)) {
     throw new Error('implementation_readiness_published_receipt_invalid');
   }
+  const candidateOutputs = receipt.deterministicGateOutputs.filter(
+    (binding) => binding.role === 'implementation_readiness_candidate'
+  );
+  const reportOutputs = receipt.deterministicGateOutputs.filter(
+    (binding) => binding.role === 'implementation_readiness_report'
+  );
+  const candidateRelativePath = recordRelative(recordRoot, candidatePath);
   if (
     receipt.modelId !== 'implementation_readiness' ||
     receipt.decision !== 'pass' ||
@@ -1342,42 +2142,113 @@ function existingBundle(
     !receipt.stageInputs.some(
       (binding) => binding.role === 'readiness_scoped_input' && binding.hash === digest
     ) ||
-    !receipt.deterministicGateOutputs.some(
-      (binding) =>
-        binding.role === 'implementation_readiness_candidate' &&
-        binding.hash === candidateValue.implementationReadinessCandidateHash
-    )
+    candidateOutputs.length !== 1 ||
+    candidateOutputs[0].path !== candidateRelativePath ||
+    candidateOutputs[0].hash !== candidateValue.implementationReadinessCandidateHash ||
+    reportOutputs.length !== 1 ||
+    reportOutputs[0].path !== reportRelativePath ||
+    reportOutputs[0].hash !== reportArtifactBytesHash
   ) {
     throw new Error('implementation_readiness_published_receipt_lineage_invalid');
   }
   const receiptRelativePath = recordRelative(context.recordRoot, receiptPath);
-  assertPublishedReadinessRuntimeProjection({
+  const projectionCurrent = isPublishedReadinessRuntimeProjection({
     context,
     candidate: candidateValue,
     receiptPath: receiptRelativePath,
     receipt,
   });
-  return resultPayload({
-    status: 'implementation_readiness_reused',
-    requestId: input.requestId,
+  return {
+    result: resultPayload({
+      status: 'implementation_readiness_reused',
+      requestId: input.requestId,
+      candidate: candidateValue,
+      candidateRef: candidateArtifactRef,
+      reportRef: {
+        path: projectRelative(input.projectRoot, reportPath),
+        artifactBytesHash: artifactBytesHash({
+          role: 'implementation_readiness_report',
+          mediaType: 'application/json',
+          bytes: reportBytes,
+        }),
+      },
+      decisionReceiptRef: {
+        path: projectRelative(input.projectRoot, receiptPath),
+        receiptHash: receipt.receiptHash,
+      },
+      issueCodes: [],
+      commandExecutionCount: 0,
+      writeCount: 0,
+    }),
     candidate: candidateValue,
-    candidateRef: candidateArtifactRef,
-    reportRef: {
-      path: projectRelative(input.projectRoot, reportPath),
-      artifactBytesHash: artifactBytesHash({
-        role: 'implementation_readiness_report',
-        mediaType: 'application/json',
-        bytes: reportBytes,
-      }),
-    },
-    decisionReceiptRef: {
-      path: projectRelative(input.projectRoot, receiptPath),
-      receiptHash: receipt.receiptHash,
-    },
-    issueCodes: [],
-    commandExecutionCount: 0,
-    writeCount: 0,
+    receiptPath: receiptRelativePath,
+    receipt,
+    projectionCurrent,
+  };
+}
+
+function rebindExistingReadinessBundle(input: {
+  context: ArchitectureConfirmationContext;
+  bundle: ExistingReadinessBundle;
+  recordedAt: string;
+  controlStoreCommitDeps?: ControlStoreCommitDeps;
+}): boolean {
+  const publication = readinessRuntimePublication({
+    context: input.context,
+    candidate: input.bundle.candidate,
+    receiptPath: input.bundle.receiptPath,
+    receipt: input.bundle.receipt,
   });
+  try {
+    appendControlEventAndReplay(
+      {
+        recordPath: publication.runtimeRecordPath,
+        writerId: 'implementation-readiness-gate-writer',
+        eventType: 'implementation_readiness_result_recorded',
+        recordedAt: input.recordedAt,
+        expectedBeforeRecordHash: sha256Json(canonicalizeRequirementRecord(publication.record)),
+        payload: {
+          eventType: 'implementation_readiness_result_recorded',
+          ...publication.runtimeStatus.projection,
+        },
+        reduce: (currentRecord) => ({
+          ...currentRecord,
+          ...runtimeStatusProjectionRecordPatch({
+            record: currentRecord,
+            modelId: 'implementation_readiness',
+            update: publication.runtimeStatus,
+          }),
+          currentMentalModel: 'implementation_readiness',
+          lastEventType: 'implementation_readiness_result_recorded',
+          updatedAt: input.recordedAt,
+        }),
+      },
+      input.controlStoreCommitDeps
+    );
+  } catch (error) {
+    if (
+      isPublishedReadinessRuntimeProjection({
+        context: input.context,
+        candidate: input.bundle.candidate,
+        receiptPath: input.bundle.receiptPath,
+        receipt: input.bundle.receipt,
+      })
+    ) {
+      return false;
+    }
+    throw error;
+  }
+  if (
+    !isPublishedReadinessRuntimeProjection({
+      context: input.context,
+      candidate: input.bundle.candidate,
+      receiptPath: input.bundle.receiptPath,
+      receipt: input.bundle.receipt,
+    })
+  ) {
+    throw new Error('implementation_readiness_published_projection_invalid');
+  }
+  return true;
 }
 
 export function produceImplementationReadiness(
@@ -1385,6 +2256,7 @@ export function produceImplementationReadiness(
   deps: ReadinessProducerDeps = {}
 ): JsonObject {
   const projectRoot = path.resolve(input.projectRoot);
+  const now = deps.now ?? (() => new Date().toISOString());
   if (!SAFE_REQUEST_ID.test(input.requestId))
     throw new Error('implementation_readiness_request_id_invalid');
   const runtimeRecordPath = path.join(
@@ -1465,8 +2337,17 @@ export function produceImplementationReadiness(
     invalidateCurrentPass,
     reused,
   } = authoritative;
-  if (reused) return reused;
-  const now = deps.now ?? (() => new Date().toISOString());
+  if (reused) {
+    const rebound = reused.projectionCurrent
+      ? false
+      : rebindExistingReadinessBundle({
+          context,
+          bundle: reused,
+          recordedAt: now(),
+          controlStoreCommitDeps: deps.controlStoreCommitDeps,
+        });
+    return { ...reused.result, writeCount: rebound ? 1 : 0 };
+  }
   let staleTransitionWriteCount = 0;
   if (invalidateCurrentPass) {
     invalidateReadinessRuntimeProjection({
@@ -1542,7 +2423,8 @@ export function produceImplementationReadiness(
     } satisfies ReadinessCandidate;
     const candidate = {
       ...candidateWithoutHash,
-      implementationReadinessCandidateHash: candidateHash(candidateWithoutHash),
+      implementationReadinessCandidateHash:
+        implementationReadinessCandidateHash(candidateWithoutHash),
     } satisfies ReadinessCandidate;
     const candidateBytes = Buffer.from(`${canonicalRequirementsJson(candidate)}\n`, 'utf8');
     const candidatePath = path.join(evaluationRoot, 'implementation-readiness-candidate.json');
@@ -1559,6 +2441,11 @@ export function produceImplementationReadiness(
       candidateRef: candidateRef(projectRoot, candidatePath, candidateBytes),
     };
     const reportBytes = Buffer.from(`${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    const reportArtifactBytesHash = artifactBytesHash({
+      role: 'implementation_readiness_report',
+      mediaType: 'application/json',
+      bytes: reportBytes,
+    });
     const receipt = createRuntimeStatusDecisionReceipt({
       recordId: input.requestId,
       requirementSetId: text(context.record.requirementSetId) || input.requestId,
@@ -1585,6 +2472,11 @@ export function produceImplementationReadiness(
           role: 'implementation_readiness_candidate',
           path: recordRelative(context.recordRoot, candidatePath),
           hash: candidate.implementationReadinessCandidateHash,
+        },
+        {
+          role: 'implementation_readiness_report',
+          path: recordRelative(context.recordRoot, reportPath),
+          hash: reportArtifactBytesHash,
         },
       ],
       blockerRefs: [],
@@ -1690,7 +2582,7 @@ export function produceImplementationReadiness(
     });
   } catch (error) {
     if (attemptedPublicationWriteCount > 0) {
-      let committed: JsonObject | null = null;
+      let committed: ExistingReadinessBundle | null = null;
       try {
         committed = readControlStoreAuthoritatively(runtimeState.runtimeRecordPath, () =>
           existingBundle(input, context, architectureCandidate, digest, commands, inputArtifacts)
@@ -1700,7 +2592,7 @@ export function produceImplementationReadiness(
       }
       if (committed) {
         return {
-          ...committed,
+          ...committed.result,
           status: 'implementation_readiness_pass',
           commandExecutionCount: executionCount,
           writeCount: staleTransitionWriteCount + attemptedPublicationWriteCount,

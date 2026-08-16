@@ -101,16 +101,46 @@ function constraintsOfKind(input: GoalExecutionCompilerInput, kind: string): Jso
   );
 }
 
+function dependencyDagIsValid(taskIds: string[], dependencies: JsonObject[]): boolean {
+  const known = new Set(taskIds);
+  const edges = new Map(taskIds.map((taskId) => [taskId, [] as string[]]));
+  for (const dependency of dependencies) {
+    const from = text(dependency.from);
+    const to = text(dependency.to);
+    if (!known.has(from) || !known.has(to) || from === to) return false;
+    edges.get(from)!.push(to);
+  }
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  const visit = (taskId: string): boolean => {
+    if (visiting.has(taskId)) return false;
+    if (visited.has(taskId)) return true;
+    visiting.add(taskId);
+    for (const dependency of edges.get(taskId) ?? []) {
+      if (!visit(dependency)) return false;
+    }
+    visiting.delete(taskId);
+    visited.add(taskId);
+    return true;
+  };
+  return taskIds.every(visit);
+}
+
 function taskRows(input: GoalExecutionCompilerInput, obligations: GoalExecutionObligation[]) {
   const obligationById = new Map(
     obligations.map((obligation) => [obligation.obligationId, obligation])
   );
-  const atomRows = sortedObjects(input.atoms, 'id');
+  const atomRows = input.atoms
+    .map((atom) => ({ ...atom }))
+    .sort((left, right) =>
+      (text(left.atomId) || text(left.id)).localeCompare(text(right.atomId) || text(right.id))
+    );
   const atomUnits = atomRows.map((atom) => ({
-    unitId: text(atom.id),
-    obligationId: text(atom.requirementRef),
+    unitId: text(atom.atomId) || text(atom.id),
+    obligationId: text(atom.coverageSeed) || text(atom.requirementRef),
     action: text(atom.action) || text(atom.text),
     oracle: text(atom.oracle),
+    dependencyAtomRefs: sortedUnique(strings(atom.dependencies)),
   }));
   const coveredObligationIds = new Set(atomUnits.map((unit) => unit.obligationId));
   const fallbackUnits = obligations
@@ -120,13 +150,14 @@ function taskRows(input: GoalExecutionCompilerInput, obligations: GoalExecutionO
       obligationId: obligation.obligationId,
       action: obligation.text,
       oracle: obligation.oracle,
+      dependencyAtomRefs: [],
     }));
   const units = [...atomUnits, ...fallbackUnits];
   const structureBasisRefs = constraintsOfKind(input, 'CTM').map((row) => text(row.constraintId));
   if (structureBasisRefs.length === 0) {
     throw new Error('architecture_successor_required:goal_task_decomposition');
   }
-  return units.map((unit, index) => {
+  const tasks = units.map((unit, index) => {
     const obligation = obligationById.get(unit.obligationId);
     if (!unit.unitId || !obligation) {
       throw new Error('requirements_successor_required:goal_task_membership');
@@ -146,6 +177,37 @@ function taskRows(input: GoalExecutionCompilerInput, obligations: GoalExecutionO
       oracle: unit.oracle || obligation.oracle,
     };
   });
+  const taskIdByAtomRef = new Map(
+    tasks.flatMap((task) => task.atomRefs.map((atomRef) => [atomRef, task.taskId] as const))
+  );
+  const dependencies = units
+    .flatMap((unit, index) =>
+      unit.dependencyAtomRefs.map((dependencyAtomRef) => {
+        const dependsOnTaskId = taskIdByAtomRef.get(dependencyAtomRef);
+        if (!dependsOnTaskId) {
+          throw new Error('requirements_successor_required:goal_task_membership');
+        }
+        return {
+          from: tasks[index].taskId,
+          to: dependsOnTaskId,
+          basisRefs: sortedUnique([dependencyAtomRef, unit.unitId]),
+        };
+      })
+    )
+    .filter((dependency, index, rows) => {
+      const key = `${dependency.from}:${dependency.to}`;
+      return rows.findIndex((row) => `${row.from}:${row.to}` === key) === index;
+    })
+    .sort((left, right) => left.from.localeCompare(right.from) || left.to.localeCompare(right.to));
+  if (
+    !dependencyDagIsValid(
+      tasks.map((task) => task.taskId),
+      dependencies
+    )
+  ) {
+    throw new Error('requirements_successor_required:goal_task_dependency_dag');
+  }
+  return { tasks, dependencies };
 }
 
 function withoutHash(ir: GoalExecutionIR): Omit<GoalExecutionIR, 'goalExecutionIRHash'> {
@@ -181,7 +243,7 @@ export function compileGoalExecutionIR(input: GoalExecutionCompilerInput): GoalE
   ) {
     throw new Error('goal_execution_obligation_set_invalid');
   }
-  const tasks = taskRows(input, obligations);
+  const { tasks, dependencies } = taskRows(input, obligations);
   const taskByObligation = new Map<string, string[]>();
   for (const task of tasks) {
     for (const obligationRef of task.obligationRefs) {
@@ -199,11 +261,11 @@ export function compileGoalExecutionIR(input: GoalExecutionCompilerInput): GoalE
     basisRefs: sortedUnique([text(constraint.constraintId), ...strings(constraint.premiseRefs)]),
   }));
   const targetConstraints = constraintsOfKind(input, 'PATH');
-  const forbiddenConstraints = constraintsOfKind(input, 'STOP');
   const evidenceContracts = constraintsOfKind(input, 'EVDREQ').map((constraint) => ({
     evidenceContractId: text(constraint.constraintId),
     requirement: text(constraint.canonicalValue),
     obligationRefs: sortedUnique(strings(constraint.applicableMustRefs)),
+    atomRefs: sortedUnique(strings(constraint.applicableAtomRefs)),
     basisRefs: sortedUnique([text(constraint.constraintId), ...strings(constraint.premiseRefs)]),
   }));
   const artifacts = constraintsOfKind(input, 'ART').map((constraint) => ({
@@ -216,6 +278,7 @@ export function compileGoalExecutionIR(input: GoalExecutionCompilerInput): GoalE
   const isolation = object(architecture.isolation);
   const ownership = objects(architecture.ownership);
   const decisions = objects(architecture.architectureDecisions);
+  const architectureLogicalScope = object(architecture.logicalScope);
   const domainBasisRefs = sortedUnique([
     ...decisions.map((decision) => text(decision.decisionId)),
     ...commands.flatMap((command) => command.basisRefs),
@@ -243,19 +306,33 @@ export function compileGoalExecutionIR(input: GoalExecutionCompilerInput): GoalE
       basisRefs: domainBasisRefs,
     },
   ];
-  const traceSlices = obligations.map((obligation, index) => ({
-    traceSliceId: `TRACE-${String(index + 1).padStart(3, '0')}`,
-    executionDomainRef: 'DOMAIN-001',
-    obligationRefs: [obligation.obligationId],
-    taskRefs: sortedUnique(taskByObligation.get(obligation.obligationId) ?? []),
-    commandRefs: commands
-      .filter((command) => command.obligationRefs.includes(obligation.obligationId))
-      .map((command) => command.commandId),
-    evidenceContractRefs: evidenceContracts
-      .filter((contract) => contract.obligationRefs.includes(obligation.obligationId))
-      .map((contract) => contract.evidenceContractId),
-    basisRefs: sortedUnique([obligation.obligationId, ...obligation.sourceRefs]),
-  }));
+  const traceSlices = obligations.map((obligation, index) => {
+    const traceTasks = tasks.filter((task) =>
+      task.obligationRefs.includes(obligation.obligationId)
+    );
+    const traceAtomRefs = new Set(traceTasks.flatMap((task) => task.atomRefs));
+    return {
+      traceSliceId: `TRACE-${String(index + 1).padStart(3, '0')}`,
+      executionDomainRef: 'DOMAIN-001',
+      obligationRefs: [obligation.obligationId],
+      taskRefs: sortedUnique(taskByObligation.get(obligation.obligationId) ?? []),
+      commandRefs: commands
+        .filter(
+          (command) =>
+            command.obligationRefs.includes(obligation.obligationId) ||
+            command.atomRefs.some((atomRef) => traceAtomRefs.has(atomRef))
+        )
+        .map((command) => command.commandId),
+      evidenceContractRefs: evidenceContracts
+        .filter(
+          (contract) =>
+            contract.obligationRefs.includes(obligation.obligationId) ||
+            contract.atomRefs.some((atomRef) => traceAtomRefs.has(atomRef))
+        )
+        .map((contract) => contract.evidenceContractId),
+      basisRefs: sortedUnique([obligation.obligationId, ...obligation.sourceRefs]),
+    };
+  });
   const coExecutionConstraints = constraintsOfKind(input, 'CTM').map((constraint) => ({
     constraintId: text(constraint.constraintId),
     kind: 'must_link',
@@ -289,10 +366,13 @@ export function compileGoalExecutionIR(input: GoalExecutionCompilerInput): GoalE
     executionDomains,
     traceSlices,
     atomicTasks: tasks,
-    dependencies: [],
+    dependencies,
     logicalScopes: {
       ownedPaths: sortedUnique(targetConstraints.map((row) => text(row.canonicalValue))),
-      forbiddenPaths: sortedUnique(forbiddenConstraints.map((row) => text(row.canonicalValue))),
+      forbiddenPaths: sortedUnique([
+        ...strings(architectureLogicalScope.forbiddenPaths),
+        ...strings(isolation.forbiddenPaths),
+      ]),
     },
     commands,
     evidenceContracts,
@@ -327,6 +407,16 @@ export function validateGoalExecutionIR(value: unknown): {
     issues.push('goal_execution_ir_domains_missing');
   if (!Array.isArray(ir.traceSlices) || ir.traceSlices.length === 0)
     issues.push('goal_execution_ir_traces_missing');
+  if (
+    Array.isArray(ir.atomicTasks) &&
+    Array.isArray(ir.dependencies) &&
+    !dependencyDagIsValid(
+      ir.atomicTasks.map((task) => text(task.taskId)),
+      ir.dependencies
+    )
+  ) {
+    issues.push('goal_execution_dependency_dag_invalid');
+  }
   if (
     !ir.goalExecutionIRHash ||
     goalExecutionIRHash(ir as GoalExecutionIR) !== ir.goalExecutionIRHash

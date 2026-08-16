@@ -3,7 +3,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
   ArchitecturePremiseAuthorityBlock,
-  isCanonicalArchitecturePath,
+  isConcreteArchitectureTargetPath,
   resolveArchitecturePremiseAuthorities,
   type ResolvedArchitectureImpactRule,
   type ResolvedArchitectureTriggerRule,
@@ -783,7 +783,7 @@ export function deriveArchitectureConfirmationCandidate(
   const structure = constraintsOfKind(context, 'CTM');
   if (
     paths.length === 0 ||
-    paths.some((constraint) => !isCanonicalArchitecturePath(constraint.canonicalValue))
+    paths.some((constraint) => !isConcreteArchitectureTargetPath(constraint.canonicalValue))
   ) {
     throw new ArchitectureConfirmationBlock('architecture_successor_required:logical_target_paths');
   }
@@ -834,10 +834,7 @@ export function deriveArchitectureConfirmationCandidate(
   const targetPaths = sortedUnique(paths.map((constraint) => constraint.canonicalValue));
   if (
     targetPaths.some(
-      (targetPath) =>
-        !authorities.repository.allowedTargetPaths.some((allowedPath) =>
-          authorityPathCoversTarget(allowedPath, targetPath)
-        )
+      (targetPath) => !authorities.repository.allowedTargetPaths.includes(targetPath)
     )
   ) {
     throw new ArchitectureConfirmationBlock('architecture_successor_required:target_authority');

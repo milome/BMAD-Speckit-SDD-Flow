@@ -105,6 +105,21 @@ export function isCanonicalArchitecturePath(value: string): boolean {
   return value.split('/').every((segment) => segment && segment !== '.' && segment !== '..');
 }
 
+function containsArchitectureGlobSyntax(value: string): boolean {
+  return ['*', '?', '[', ']', '{', '}'].some((token) => value.includes(token));
+}
+
+export function isConcreteArchitectureTargetPath(value: string): boolean {
+  return isCanonicalArchitecturePath(value) && !containsArchitectureGlobSyntax(value);
+}
+
+export function isCanonicalArchitectureForbiddenPath(value: string): boolean {
+  if (!isCanonicalArchitecturePath(value)) return false;
+  if (!containsArchitectureGlobSyntax(value)) return true;
+  if (!value.endsWith('/**')) return false;
+  return isConcreteArchitectureTargetPath(value.slice(0, -3));
+}
+
 function validator() {
   if (!validateAuthority) {
     const schemaPath = path.resolve(__dirname, '..', 'schemas', SCHEMA_FILE);
@@ -173,7 +188,7 @@ function invalidFieldIssue(value: Record<string, unknown>, kind: AuthorityKind):
     if (
       Array.isArray(allowedTargetPaths) &&
       allowedTargetPaths.some(
-        (item) => typeof item === 'string' && !isCanonicalArchitecturePath(item)
+        (item) => typeof item === 'string' && !isConcreteArchitectureTargetPath(item)
       )
     ) {
       return 'architecture_successor_required:target_authority';
@@ -186,7 +201,7 @@ function invalidFieldIssue(value: Record<string, unknown>, kind: AuthorityKind):
     const paths = (forbiddenScope as Record<string, unknown>).paths;
     if (
       Array.isArray(paths) &&
-      paths.some((item) => typeof item === 'string' && !isCanonicalArchitecturePath(item))
+      paths.some((item) => typeof item === 'string' && !isCanonicalArchitectureForbiddenPath(item))
     ) {
       return 'architecture_successor_required:forbidden_scope';
     }

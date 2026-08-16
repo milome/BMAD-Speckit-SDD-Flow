@@ -13,6 +13,7 @@ export interface GoalSourceBindingRefreshInput {
   expectedActiveAuthorityHash: string;
   sourceBinding: JsonObject;
   resolvedEvidenceIndex: JsonObject;
+  beforeActiveAuthorityCommit?: () => void;
 }
 
 function text(value: unknown): string {
@@ -97,6 +98,7 @@ export function refreshGoalSourceBinding(input: GoalSourceBindingRefreshInput) {
     }
     throw error;
   }
+  let temporaryPath = '';
   try {
     const active = readJson(activePath);
     validateGoalContractSchema('goal-contract-active-authority.schema.json', active);
@@ -163,9 +165,11 @@ export function refreshGoalSourceBinding(input: GoalSourceBindingRefreshInput) {
       activeAuthorityHash: sha256Stable(activePayload),
     };
     validateGoalContractSchema('goal-contract-active-authority.schema.json', nextActive);
-    const temporaryPath = `${activePath}.candidate-${process.pid}`;
+    temporaryPath = `${activePath}.candidate-${process.pid}`;
     fs.writeFileSync(temporaryPath, canonicalBytes(nextActive), { flag: 'wx' });
+    input.beforeActiveAuthorityCommit?.();
     fs.renameSync(temporaryPath, activePath);
+    temporaryPath = '';
     const readback = readJson(activePath);
     validateGoalContractSchema('goal-contract-active-authority.schema.json', readback);
     if (text(readback.activeAuthorityHash) !== nextActive.activeAuthorityHash) {
@@ -182,6 +186,7 @@ export function refreshGoalSourceBinding(input: GoalSourceBindingRefreshInput) {
       activeAuthorityRef: { path: activePath, hash: nextActive.activeAuthorityHash },
     });
   } finally {
+    if (temporaryPath) fs.rmSync(temporaryPath, { force: true });
     fs.closeSync(lock!);
     fs.rmSync(lockPath, { force: true });
   }
