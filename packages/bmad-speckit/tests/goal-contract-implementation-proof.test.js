@@ -3,9 +3,14 @@ const assert = require('node:assert');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { spawnSync } = require('node:child_process');
+const { execFile, spawnSync } = require('node:child_process');
+const { promisify } = require('node:util');
+const {
+  materializeStandaloneGoalJudgeHttpFixture,
+} = require('../../../tests/helpers/standalone-goal-judge-http-fixture.ts');
 
 const BIN = path.join(__dirname, '..', 'bin', 'bmad-speckit.js');
+const execFileAsync = promisify(execFile);
 
 function tempRoot() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'goal-contract-proof-'));
@@ -17,6 +22,33 @@ function runCli(args, options = {}) {
     encoding: 'utf8',
     maxBuffer: 20 * 1024 * 1024,
   });
+}
+
+async function runCliWithJudge(root, args) {
+  const judge = await materializeStandaloneGoalJudgeHttpFixture(root);
+  try {
+    try {
+      const { stdout, stderr } = await execFileAsync(
+        process.execPath,
+        [BIN, 'goal-contract', ...args],
+        {
+          cwd: root,
+          encoding: 'utf8',
+          maxBuffer: 20 * 1024 * 1024,
+        }
+      );
+      return { status: 0, signal: null, stdout, stderr };
+    } catch (error) {
+      return {
+        status: typeof error.code === 'number' ? error.code : 1,
+        signal: error.signal ?? null,
+        stdout: error.stdout ?? '',
+        stderr: error.stderr ?? String(error),
+      };
+    }
+  } finally {
+    await judge.close();
+  }
 }
 
 function standaloneGenerateArgs(args) {
@@ -82,7 +114,7 @@ describe('goal-contract implementation proof audit', () => {
     assert.match(payload.sourceExcerpt, /allowed seam/u);
   });
 
-  it('does not reject nondeterministic wording inside non-executable problem statements', () => {
+  it('does not reject nondeterministic wording inside non-executable problem statements', async () => {
     const root = tempRoot();
     const source = writePlan(root, [
       '# Problem Description Plan',
@@ -110,7 +142,10 @@ describe('goal-contract implementation proof audit', () => {
     ]);
     const out = path.join(root, 'goal-execution-plan.md');
 
-    const result = runCli(standaloneGenerateArgs(['--source', source, '--out', out, '--json']));
+    const result = await runCliWithJudge(
+      root,
+      standaloneGenerateArgs(['--source', source, '--out', out, '--json'])
+    );
     const payload = generationPayload(result);
 
     assert.equal(result.status, 0, result.stderr || result.stdout);
@@ -118,7 +153,7 @@ describe('goal-contract implementation proof audit', () => {
     assert.equal(payload.implementationProofAudit.decision, 'pass');
   });
 
-  it('does not reject backticked nondeterministic phrase names inside executable detection rules', () => {
+  it('does not reject backticked nondeterministic phrase names inside executable detection rules', async () => {
     const root = tempRoot();
     const source = writePlan(root, [
       '# Denylist Rule Plan',
@@ -139,7 +174,10 @@ describe('goal-contract implementation proof audit', () => {
     ]);
     const out = path.join(root, 'goal-execution-plan.md');
 
-    const result = runCli(standaloneGenerateArgs(['--source', source, '--out', out, '--json']));
+    const result = await runCliWithJudge(
+      root,
+      standaloneGenerateArgs(['--source', source, '--out', out, '--json'])
+    );
     const payload = generationPayload(result);
 
     assert.equal(result.status, 0, result.stderr || result.stdout);
@@ -147,7 +185,7 @@ describe('goal-contract implementation proof audit', () => {
     assert.equal(payload.implementationProofAudit.decision, 'pass');
   });
 
-  it('emits implementationProofAudit and non coverage-grep commands for a mandatory code seam', () => {
+  it('emits implementationProofAudit and non coverage-grep commands for a mandatory code seam', async () => {
     const root = tempRoot();
     const source = writePlan(root, [
       '# Mandatory Code Seam Plan',
@@ -170,7 +208,10 @@ describe('goal-contract implementation proof audit', () => {
     ]);
     const out = path.join(root, 'goal-execution-plan.md');
 
-    const result = runCli(standaloneGenerateArgs(['--source', source, '--out', out, '--json']));
+    const result = await runCliWithJudge(
+      root,
+      standaloneGenerateArgs(['--source', source, '--out', out, '--json'])
+    );
     const payload = generationPayload(result);
 
     assert.equal(result.status, 0, result.stderr || result.stdout);
