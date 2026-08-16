@@ -123,6 +123,140 @@ function competingActiveAuthorityBytes(winnerBytes: Buffer): Buffer {
 }
 
 describe('requirements-backed Goal admission', () => {
+  it.each([
+    ['candidate bytes', 'candidate', 'readiness_recheck_required:implementation_readiness'],
+    ['report bytes', 'report', 'readiness_recheck_required:implementation_readiness'],
+  ] as const)('rejects readiness reuse after %s drift', (_case, role, issueCode) => {
+    const fixture = materializeImplementationReadinessFixture();
+    try {
+      produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
+      const runtimeRecord = JSON.parse(readFileSync(fixture.runtimeRecordPath, 'utf8'));
+      const projection = runtimeRecord.sixModelResults.implementation_readiness;
+      const receiptPath = path.join(
+        fixture.recordRoot,
+        ...projection.decisionReceiptRef.split('/')
+      );
+      const receipt = JSON.parse(readFileSync(receiptPath, 'utf8'));
+      const binding = receipt.deterministicGateOutputs.find(
+        (entry: { role: string }) =>
+          entry.role ===
+          (role === 'candidate'
+            ? 'implementation_readiness_candidate'
+            : 'implementation_readiness_report')
+      );
+      const artifactPath = path.join(fixture.recordRoot, ...binding.path.split('/'));
+      writeFileSync(artifactPath, `${readFileSync(artifactPath, 'utf8')}\n`, 'utf8');
+
+      expect(() =>
+        compileRequirementsBackedGoal({
+          projectRoot: fixture.root,
+          requirementRecordPath: fixture.runtimeRecordPath,
+          outRoot: path.join(fixture.root, `goal-run-${role}-drift`),
+        })
+      ).toThrowError(issueCode);
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it.each(['implementation_readiness_candidate', 'implementation_readiness_report'] as const)(
+    'rejects a readiness receipt with duplicate %s roles',
+    (role) => {
+      const fixture = materializeImplementationReadinessFixture();
+      try {
+        produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
+        const runtimeRecord = JSON.parse(readFileSync(fixture.runtimeRecordPath, 'utf8'));
+        const projection = runtimeRecord.sixModelResults.implementation_readiness;
+        const receiptPath = path.join(
+          fixture.recordRoot,
+          ...projection.decisionReceiptRef.split('/')
+        );
+        const receipt = JSON.parse(readFileSync(receiptPath, 'utf8'));
+        const output = receipt.deterministicGateOutputs.find(
+          (entry: { role: string }) => entry.role === role
+        );
+        receipt.deterministicGateOutputs.push({ ...output });
+        const payload = { ...receipt };
+        delete payload.receiptHash;
+        receipt.receiptHash = sha256Stable(payload);
+        writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');
+        projection.decisionReceiptHash = receipt.receiptHash;
+        const receiptRef = runtimeRecord.runtimeStatusDecisionReceipts.find(
+          (entry: { path: string }) => entry.path === projection.decisionReceiptRef
+        );
+        receiptRef.receipt = receipt;
+        const artifact = runtimeRecord.artifactIndex.find(
+          (entry: { path: string }) => entry.path === projection.decisionReceiptRef
+        );
+        artifact.contentHash = receipt.receiptHash;
+        writeFileSync(
+          fixture.runtimeRecordPath,
+          `${JSON.stringify(runtimeRecord, null, 2)}\n`,
+          'utf8'
+        );
+
+        expect(() =>
+          compileRequirementsBackedGoal({
+            projectRoot: fixture.root,
+            requirementRecordPath: fixture.runtimeRecordPath,
+            outRoot: path.join(fixture.root, `goal-run-duplicate-${role}`),
+          })
+        ).toThrowError('readiness_recheck_required:implementation_readiness');
+      } finally {
+        fixture.cleanup();
+      }
+    }
+  );
+
+  it.each(['repository', 'policy'] as const)(
+    'rejects %s authority integrity drift without successor normalization',
+    (kind) => {
+      const fixture = materializeImplementationReadinessFixture();
+      try {
+        const record = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
+        const sourceBindingPath = path.join(
+          fixture.recordRoot,
+          ...record.activeAuthority.activeSourceBindingPath.split('/')
+        );
+        const binding = JSON.parse(readFileSync(sourceBindingPath, 'utf8'));
+        const authority = binding.sourceArtifacts.find(
+          (entry: { role: string }) => entry.role === `${kind}_authority`
+        );
+        const authorityPath = path.join(fixture.root, ...authority.immutableBlobRef.split('/'));
+        writeFileSync(authorityPath, `${readFileSync(authorityPath, 'utf8')}\n`, 'utf8');
+
+        expect(() =>
+          compileRequirementsBackedGoal({
+            projectRoot: fixture.root,
+            requirementRecordPath: fixture.runtimeRecordPath,
+            outRoot: path.join(fixture.root, `goal-run-${kind}-authority-drift`),
+          })
+        ).toThrowError('architecture_confirmation_authority_snapshot_hash_mismatch');
+      } finally {
+        fixture.cleanup();
+      }
+    }
+  );
+  it('normalizes initial architecture authority drift to a requirements successor', () => {
+    const fixture = materializeImplementationReadinessFixture();
+    try {
+      const semanticPath = semanticAuthorityPath(fixture);
+      const semanticIr = JSON.parse(readFileSync(semanticPath, 'utf8'));
+      semanticIr.semanticPayload.semantics.requirements[0].text = 'Tampered before admission.';
+      writeFileSync(semanticPath, `${JSON.stringify(semanticIr, null, 2)}\n`, 'utf8');
+
+      expect(() =>
+        compileRequirementsBackedGoal({
+          projectRoot: fixture.root,
+          requirementRecordPath: fixture.runtimeRecordPath,
+          outRoot: path.join(fixture.root, 'goal-run-initial-authority-drift'),
+        })
+      ).toThrowError('requirements_successor_required:semantic_authority');
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
   it('requires the current passed readiness authority before compiling GoalExecutionIR', () => {
     const fixture = materializeImplementationReadinessFixture();
     try {

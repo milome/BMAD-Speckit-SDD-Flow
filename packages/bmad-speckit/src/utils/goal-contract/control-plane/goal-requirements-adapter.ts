@@ -1,16 +1,17 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { computeCurrentReadinessScopedInputDigest } from '../../../main-agent/source-authority/scripts/main-agent-implementation-readiness-v2';
+import {
+  computeCurrentReadinessScopedInputDigest,
+  implementationReadinessCandidateHash,
+  verifyImplementationReadinessCandidateArtifact,
+} from '../../../main-agent/source-authority/scripts/main-agent-implementation-readiness-v2';
 import {
   deriveArchitectureConfirmationCandidate,
   readCurrentArchitectureConfirmationAcceptance,
   resolveArchitectureConfirmationContext,
 } from '../../../main-agent/source-authority/scripts/prepare-architecture-confirmation';
 import { validateRuntimeStatusDecisionReceipt } from '../../../main-agent/source-authority/scripts/requirements-contract-runtime-status-decision-receipt';
-import {
-  artifactBytesHash,
-  requirementsContractDomainHash,
-} from '../../../main-agent/source-authority/scripts/requirements-contract-hash-domains';
+import { artifactBytesHash } from '../../../main-agent/source-authority/scripts/requirements-contract-hash-domains';
 import {
   sha256Stable,
   sha256Text,
@@ -190,24 +191,8 @@ export function projectRequirementsToGoalObligations(
   return requirements.sort((left, right) => left.obligationId.localeCompare(right.obligationId));
 }
 
-function readinessCandidateHash(candidate: JsonObject): string {
-  const stableOutcomes = objects(candidate.redOutcomes).map(
-    ({ rawLogRef: _rawLogRef, ...outcome }) => outcome
-  );
-  return requirementsContractDomainHash('implementation-readiness-candidate/v1', {
-    schemaVersion: candidate.schemaVersion,
-    requestId: candidate.requestId,
-    requirementsLineage: candidate.requirementsLineage,
-    architectureConfirmationCandidateHash: candidate.architectureConfirmationCandidateHash,
-    readinessScopedInputDigest: candidate.readinessScopedInputDigest,
-    readinessPolicy: candidate.readinessPolicy,
-    normalizedCommands: candidate.normalizedCommands,
-    inputArtifacts: candidate.inputArtifacts,
-    redOutcomes: stableOutcomes,
-  });
-}
-
 function readCurrentReadiness(input: {
+  projectRoot: string;
   recordRoot: string;
   runtimeRecord: JsonObject;
   semanticRevisionId: string;
@@ -222,54 +207,80 @@ function readCurrentReadiness(input: {
   if (!candidateHash || !fs.existsSync(receiptPath)) {
     throw new Error('readiness_recheck_required:implementation_readiness');
   }
-  const decisionReceipt = readJson(receiptPath);
-  if (
-    !validateRuntimeStatusDecisionReceipt(decisionReceipt) ||
-    decisionReceipt.receiptHash !== text(projection.decisionReceiptHash)
-  ) {
-    throw new Error('readiness_recheck_required:implementation_readiness');
-  }
-  const candidateOutput = objects(decisionReceipt.deterministicGateOutputs).find(
-    (row) => text(row.role) === 'implementation_readiness_candidate'
-  );
-  if (!candidateOutput) throw new Error('readiness_recheck_required:implementation_readiness');
-  const candidate = readJson(confined(input.recordRoot, text(candidateOutput.path)));
-  const lineage = object(candidate.requirementsLineage);
-  if (
-    candidate.schemaVersion !== 'ImplementationReadinessCandidate/v1' ||
-    text(candidate.implementationReadinessCandidateHash) !== candidateHash ||
-    readinessCandidateHash(candidate) !== candidateHash ||
-    text(candidateOutput.hash) !== candidateHash ||
-    text(candidate.architectureConfirmationCandidateHash) !==
-      input.architectureConfirmationCandidateHash ||
-    text(lineage.semanticRevisionId) !== input.semanticRevisionId ||
-    text(lineage.scopeSemanticHash) !== input.scopeSemanticHash ||
-    text(lineage.executionConstraintRegistryHash) !== input.executionConstraintRegistryHash ||
-    text(decisionReceipt.decision) !== 'pass' ||
-    text(decisionReceipt.effectiveStatus) !== 'pass'
-  ) {
+  let decisionReceipt: JsonObject;
+  let candidate: JsonObject;
+  try {
+    decisionReceipt = readJson(receiptPath);
+    if (
+      !validateRuntimeStatusDecisionReceipt(decisionReceipt) ||
+      decisionReceipt.receiptHash !== text(projection.decisionReceiptHash)
+    ) {
+      throw new Error('readiness_chain_invalid');
+    }
+    const outputs = objects(decisionReceipt.deterministicGateOutputs);
+    const candidateOutputs = outputs.filter(
+      (row) => text(row.role) === 'implementation_readiness_candidate'
+    );
+    const reportOutputs = outputs.filter(
+      (row) => text(row.role) === 'implementation_readiness_report'
+    );
+    if (candidateOutputs.length !== 1 || reportOutputs.length !== 1) {
+      throw new Error('readiness_chain_invalid');
+    }
+    const candidateOutput = candidateOutputs[0];
+    const reportOutput = reportOutputs[0];
+    const reportPath = confined(input.recordRoot, text(reportOutput.path));
+    const reportBytes = fs.readFileSync(reportPath);
+    const reportArtifactBytesHash = artifactBytesHash({
+      role: 'implementation_readiness_report',
+      mediaType: 'application/json',
+      bytes: reportBytes,
+    });
+    if (reportArtifactBytesHash !== text(reportOutput.hash)) {
+      throw new Error('readiness_chain_invalid');
+    }
+    const report = JSON.parse(reportBytes.toString('utf8')) as JsonObject;
+    const reportCandidateRef = object(report.candidateRef);
+    const candidatePath = confined(input.recordRoot, text(candidateOutput.path));
+    const reportCandidatePath = confined(input.projectRoot, text(reportCandidateRef.path));
+    if (path.resolve(candidatePath) !== path.resolve(reportCandidatePath)) {
+      throw new Error('readiness_chain_invalid');
+    }
+    const verified = verifyImplementationReadinessCandidateArtifact({
+      projectRoot: input.projectRoot,
+      recordRoot: input.recordRoot,
+      candidatePath,
+      expectedArtifactBytesHash: text(reportCandidateRef.artifactBytesHash),
+    });
+    candidate = verified.candidate;
+    const lineage = object(candidate.requirementsLineage);
+    if (
+      text(candidate.implementationReadinessCandidateHash) !== candidateHash ||
+      implementationReadinessCandidateHash(candidate) !== candidateHash ||
+      text(candidateOutput.hash) !== candidateHash ||
+      text(candidate.architectureConfirmationCandidateHash) !==
+        input.architectureConfirmationCandidateHash ||
+      text(lineage.semanticRevisionId) !== input.semanticRevisionId ||
+      text(lineage.scopeSemanticHash) !== input.scopeSemanticHash ||
+      text(lineage.executionConstraintRegistryHash) !== input.executionConstraintRegistryHash ||
+      report.schemaVersion !== 'implementation-readiness-report/v1' ||
+      text(report.requestId) !== text(candidate.requestId) ||
+      text(report.status) !== 'pass' ||
+      text(report.implementationReadinessCandidateHash) !== candidateHash ||
+      text(report.readinessScopedInputDigest) !== text(candidate.readinessScopedInputDigest) ||
+      !Array.isArray(report.issueCodes) ||
+      report.issueCodes.length !== 0 ||
+      text(reportCandidateRef.path) !== verified.candidateRef.path ||
+      text(decisionReceipt.decision) !== 'pass' ||
+      text(decisionReceipt.effectiveStatus) !== 'pass'
+    ) {
+      throw new Error('readiness_chain_invalid');
+    }
+  } catch {
     throw new Error('readiness_recheck_required:implementation_readiness');
   }
   if (input.currentScopedInputDigest !== text(candidate.readinessScopedInputDigest)) {
     throw new Error('readiness_recheck_required:scoped_input_digest');
-  }
-  try {
-    for (const outcome of objects(candidate.redOutcomes)) {
-      const rawLogRef = object(outcome.rawLogRef);
-      const rawLogPath = confined(input.recordRoot, text(rawLogRef.path));
-      if (
-        !fs.existsSync(rawLogPath) ||
-        artifactBytesHash({
-          role: 'implementation_readiness_raw_log',
-          mediaType: 'application/json',
-          bytes: fs.readFileSync(rawLogPath),
-        }) !== text(rawLogRef.artifactBytesHash)
-      ) {
-        throw new Error('readiness_raw_log_invalid');
-      }
-    }
-  } catch {
-    throw new Error('readiness_recheck_required:implementation_readiness');
   }
   return { candidate, decisionReceipt, projection };
 }
@@ -438,21 +449,18 @@ function publishActiveAuthority(
   }
 }
 
-function assertAdmissionStillCurrent(input: {
-  projectRoot: string;
-  requestId: string;
-  requirementRecordPath: string;
-  expectedRequirementsLineage: JsonObject;
-}): void {
-  const runtimeRecord = readJson(input.requirementRecordPath);
-  let context: ReturnType<typeof resolveArchitectureConfirmationContext>;
+function resolveCurrentArchitectureContext(input: { projectRoot: string; requestId: string }) {
   try {
-    context = resolveArchitectureConfirmationContext({
-      projectRoot: input.projectRoot,
-      requestId: input.requestId,
-    });
+    return resolveArchitectureConfirmationContext(input);
   } catch (error) {
     const issue = error instanceof Error ? error.message : '';
+    if (
+      issue.startsWith('requirements_successor_required:') ||
+      issue.startsWith('architecture_successor_required:') ||
+      issue.startsWith('readiness_recheck_required:')
+    ) {
+      throw error;
+    }
     if (issue.startsWith('architecture_confirmation_semantic_ir_invalid:')) {
       throw new Error('requirements_successor_required:semantic_authority');
     }
@@ -464,6 +472,19 @@ function assertAdmissionStillCurrent(input: {
     }
     throw error;
   }
+}
+
+function assertAdmissionStillCurrent(input: {
+  projectRoot: string;
+  requestId: string;
+  requirementRecordPath: string;
+  expectedRequirementsLineage: JsonObject;
+}): void {
+  const runtimeRecord = readJson(input.requirementRecordPath);
+  const context = resolveCurrentArchitectureContext({
+    projectRoot: input.projectRoot,
+    requestId: input.requestId,
+  });
   const architecture = deriveArchitectureConfirmationCandidate(context);
   const architectureAcceptance = readCurrentArchitectureConfirmationAcceptance({
     context,
@@ -482,6 +503,7 @@ function assertAdmissionStillCurrent(input: {
     throw new Error('readiness_recheck_required:scoped_input_digest');
   }
   const readiness = readCurrentReadiness({
+    projectRoot: input.projectRoot,
     recordRoot: context.recordRoot,
     runtimeRecord,
     semanticRevisionId: context.semanticIr.semanticRevisionId,
@@ -564,7 +586,7 @@ export function compileRequirementsBackedGoal(
   if (!requestId || requirementRecordPath !== expectedRecordPath) {
     throw new Error('requirements_backed_requirement_record_invalid');
   }
-  const context = resolveArchitectureConfirmationContext({ projectRoot, requestId });
+  const context = resolveCurrentArchitectureContext({ projectRoot, requestId });
   const architecture = deriveArchitectureConfirmationCandidate(context);
   const architectureAcceptance = readCurrentArchitectureConfirmationAcceptance({
     context,
@@ -608,6 +630,7 @@ export function compileRequirementsBackedGoal(
     throw new Error('readiness_recheck_required:scoped_input_digest');
   }
   const readiness = readCurrentReadiness({
+    projectRoot,
     recordRoot: context.recordRoot,
     runtimeRecord,
     semanticRevisionId: context.semanticIr.semanticRevisionId,

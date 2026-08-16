@@ -88,6 +88,7 @@ export function materializeImplementationReadinessFixture(
     requestId?: string;
     root?: string;
     invocation?: string;
+    invocations?: string[];
     additionalFiles?: Record<string, string>;
   } = {}
 ): ImplementationReadinessFixture {
@@ -95,11 +96,18 @@ export function materializeImplementationReadinessFixture(
   const requestId = input.requestId ?? 'REQ-READINESS-V2-001';
   const activeAttemptId = 'ATTEMPT-READINESS-V2-001';
   const recordRoot = path.join(root, '_bmad-output', 'runtime', 'requirement-records', requestId);
-  const commandIds = [
-    'CMD-readiness-refund',
-    ...(input.duplicateCommand ? ['CMD-readiness-refund-alias'] : []),
+  const defaultInvocation = input.invocation ?? 'node --test tests/refund-worker.test.cjs';
+  const invocations = input.invocations ?? [
+    defaultInvocation,
+    ...(input.duplicateCommand ? [defaultInvocation] : []),
   ];
-  const invocation = input.invocation ?? 'node --test tests/refund-worker.test.cjs';
+  const commandIds = invocations.map((_invocation, index) =>
+    index === 0
+      ? 'CMD-readiness-refund'
+      : input.duplicateCommand && !input.invocations
+        ? 'CMD-readiness-refund-alias'
+        : `CMD-readiness-refund-${index + 1}`
+  );
   const constraint = (
     constraintId: string,
     kind: RequirementsExecutionConstraint['kind'],
@@ -116,7 +124,7 @@ export function materializeImplementationReadinessFixture(
   });
   const executionConstraints: RequirementsExecutionConstraint[] = [
     constraint('PATH-refund-worker', 'PATH', 'src/refund-worker.cjs'),
-    ...commandIds.map((commandId) => constraint(commandId, 'CMD', invocation)),
+    ...commandIds.map((commandId, index) => constraint(commandId, 'CMD', invocations[index])),
     constraint('ART-refund-worker', 'ART', 'dist/refund-worker.cjs'),
     constraint('CTM-refund-worker', 'CTM', 'refund worker vertical slice'),
     constraint('EVDREQ-refund-worker', 'EVDREQ', 'same-test RED/GREEN evidence'),
@@ -185,7 +193,11 @@ export function materializeImplementationReadinessFixture(
       { impactId: 'governance:readiness-policy', whenConstraintKinds: [], whenConstraintIds: [] },
     ],
     triggerRules: [
-      { triggerId: 'architecture:readiness-policy', whenConstraintKinds: [], whenConstraintIds: [] },
+      {
+        triggerId: 'architecture:readiness-policy',
+        whenConstraintKinds: [],
+        whenConstraintIds: [],
+      },
     ],
   };
   const repositoryAuthorityPath = 'repo/readiness.json';

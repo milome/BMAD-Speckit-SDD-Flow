@@ -101,6 +101,31 @@ function constraintsOfKind(input: GoalExecutionCompilerInput, kind: string): Jso
   );
 }
 
+function dependencyDagIsValid(taskIds: string[], dependencies: JsonObject[]): boolean {
+  const known = new Set(taskIds);
+  const edges = new Map(taskIds.map((taskId) => [taskId, [] as string[]]));
+  for (const dependency of dependencies) {
+    const from = text(dependency.from);
+    const to = text(dependency.to);
+    if (!known.has(from) || !known.has(to) || from === to) return false;
+    edges.get(from)!.push(to);
+  }
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  const visit = (taskId: string): boolean => {
+    if (visiting.has(taskId)) return false;
+    if (visited.has(taskId)) return true;
+    visiting.add(taskId);
+    for (const dependency of edges.get(taskId) ?? []) {
+      if (!visit(dependency)) return false;
+    }
+    visiting.delete(taskId);
+    visited.add(taskId);
+    return true;
+  };
+  return taskIds.every(visit);
+}
+
 function taskRows(input: GoalExecutionCompilerInput, obligations: GoalExecutionObligation[]) {
   const obligationById = new Map(
     obligations.map((obligation) => [obligation.obligationId, obligation])
@@ -174,6 +199,14 @@ function taskRows(input: GoalExecutionCompilerInput, obligations: GoalExecutionO
       return rows.findIndex((row) => `${row.from}:${row.to}` === key) === index;
     })
     .sort((left, right) => left.from.localeCompare(right.from) || left.to.localeCompare(right.to));
+  if (
+    !dependencyDagIsValid(
+      tasks.map((task) => task.taskId),
+      dependencies
+    )
+  ) {
+    throw new Error('requirements_successor_required:goal_task_dependency_dag');
+  }
   return { tasks, dependencies };
 }
 
@@ -228,7 +261,6 @@ export function compileGoalExecutionIR(input: GoalExecutionCompilerInput): GoalE
     basisRefs: sortedUnique([text(constraint.constraintId), ...strings(constraint.premiseRefs)]),
   }));
   const targetConstraints = constraintsOfKind(input, 'PATH');
-  const forbiddenConstraints = constraintsOfKind(input, 'STOP');
   const evidenceContracts = constraintsOfKind(input, 'EVDREQ').map((constraint) => ({
     evidenceContractId: text(constraint.constraintId),
     requirement: text(constraint.canonicalValue),
@@ -338,7 +370,6 @@ export function compileGoalExecutionIR(input: GoalExecutionCompilerInput): GoalE
     logicalScopes: {
       ownedPaths: sortedUnique(targetConstraints.map((row) => text(row.canonicalValue))),
       forbiddenPaths: sortedUnique([
-        ...forbiddenConstraints.map((row) => text(row.canonicalValue)),
         ...strings(architectureLogicalScope.forbiddenPaths),
         ...strings(isolation.forbiddenPaths),
       ]),
@@ -376,6 +407,16 @@ export function validateGoalExecutionIR(value: unknown): {
     issues.push('goal_execution_ir_domains_missing');
   if (!Array.isArray(ir.traceSlices) || ir.traceSlices.length === 0)
     issues.push('goal_execution_ir_traces_missing');
+  if (
+    Array.isArray(ir.atomicTasks) &&
+    Array.isArray(ir.dependencies) &&
+    !dependencyDagIsValid(
+      ir.atomicTasks.map((task) => text(task.taskId)),
+      ir.dependencies
+    )
+  ) {
+    issues.push('goal_execution_dependency_dag_invalid');
+  }
   if (
     !ir.goalExecutionIRHash ||
     goalExecutionIRHash(ir as GoalExecutionIR) !== ir.goalExecutionIRHash

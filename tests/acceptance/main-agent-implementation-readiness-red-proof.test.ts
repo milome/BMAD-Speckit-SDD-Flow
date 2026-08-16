@@ -585,7 +585,7 @@ describe('Main Agent implementation readiness real RED proof', () => {
     try {
       writeFileSync(
         fixture.testPath,
-        "require('implementation-readiness-missing-module');\n",
+        "throw new SyntaxError('fixture runner setup broke');\n",
         'utf8'
       );
       const action = implementationReadinessGateAction(readinessActionContext(fixture)) as Record<
