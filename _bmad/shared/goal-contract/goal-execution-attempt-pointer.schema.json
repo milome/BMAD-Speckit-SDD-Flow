@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/goal-execution-attempt-pointer.schema.json",
+  "title": "Goal Execution Attempt Pointer",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "pointerVersion",
+    "executionAttemptId",
+    "activeRunPointerHash",
+    "activationRecordHash",
+    "orderedExecutionAuthorityIds",
+    "executionAuthorities",
+    "executionStarted",
+    "phase",
+    "nextExecutionAuthorityId",
+    "validClosureRefs",
+    "blockedIssueCode",
+    "attemptPointerHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "GoalExecutionAttemptPointer/v1" },
+    "pointerVersion": { "type": "integer", "minimum": 1 },
+    "executionAttemptId": { "type": "string", "pattern": "^ATTEMPT-[A-F0-9]{16}$" },
+    "activeRunPointerHash": { "$ref": "#/$defs/hash" },
+    "activationRecordHash": { "$ref": "#/$defs/hash" },
+    "orderedExecutionAuthorityIds": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "executionAuthorities": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/executionAuthority" }
+    },
+    "executionStarted": { "type": "boolean" },
+    "phase": { "enum": ["prepared", "executing", "closure_pending", "blocked", "closed"] },
+    "nextExecutionAuthorityId": { "type": ["string", "null"], "minLength": 1 },
+    "validClosureRefs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/closureRef" }
+    },
+    "blockedIssueCode": { "type": ["string", "null"], "minLength": 1 },
+    "attemptPointerHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "closureRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executionAuthorityId", "path", "hash"],
+      "properties": {
+        "executionAuthorityId": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "executionAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profile",
+        "candidateRunId",
+        "executionAuthorityId",
+        "executionAuthorityHash",
+        "executionPackageHash",
+        "dependencyExecutionAuthorityIds",
+        "ownedPaths"
+      ],
+      "properties": {
+        "profile": { "enum": ["requirements_backed", "standalone"] },
+        "candidateRunId": { "type": "string", "pattern": "^RUN-[A-F0-9]{16}$" },
+        "executionAuthorityId": { "type": "string", "minLength": 1 },
+        "executionAuthorityHash": { "$ref": "#/$defs/hash" },
+        "executionPackageHash": { "$ref": "#/$defs/hash" },
+        "dependencyExecutionAuthorityIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "ownedPaths": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 const { createHash } = require('node:crypto');
 
-export type CanonicalControlPlaneValue =
+type CanonicalControlPlaneValue =
   | null
   | boolean
   | number
@@ -8,16 +8,16 @@ export type CanonicalControlPlaneValue =
   | CanonicalControlPlaneValue[]
   | { [key: string]: CanonicalControlPlaneValue };
 
-export interface SetLikeArrayRegistration {
+interface SetLikeArrayRegistration {
   path: string;
   identityFields?: readonly string[];
 }
 
-export interface CanonicalControlPlaneOptions {
+interface CanonicalControlPlaneOptions {
   setLikeArrays?: readonly SetLikeArrayRegistration[];
 }
 
-export interface ReceiptHashOptions extends CanonicalControlPlaneOptions {
+interface ReceiptHashOptions extends CanonicalControlPlaneOptions {
   selfHashField?: string;
 }
 
@@ -49,14 +49,10 @@ function escapePointerSegment(value: string): string {
   return value.replace(/~/gu, '~0').replace(/\//gu, '~1');
 }
 
-function compileSetLikeRules(
-  options: CanonicalControlPlaneOptions = {}
-): SetLikeRuleMap {
+function compileSetLikeRules(options: CanonicalControlPlaneOptions = {}): SetLikeRuleMap {
   if (!isPlainRecord(options)) unsupported('', 'options_not_plain_object', options);
   const typedOptions = options as CanonicalControlPlaneOptions;
-  const unknownOptions = Object.keys(typedOptions).filter(
-    (key) => key !== 'setLikeArrays'
-  );
+  const unknownOptions = Object.keys(typedOptions).filter((key) => key !== 'setLikeArrays');
   if (unknownOptions.length > 0) {
     unsupported('', 'unknown_canonical_options', unknownOptions);
   }
@@ -82,9 +78,7 @@ function compileSetLikeRules(
     const identityFields = registration.identityFields ?? [];
     if (
       !Array.isArray(identityFields) ||
-      identityFields.some(
-        (field) => typeof field !== 'string' || field.length === 0
-      ) ||
+      identityFields.some((field) => typeof field !== 'string' || field.length === 0) ||
       new Set(identityFields).size !== identityFields.length
     ) {
       unsupported(registration.path, 'set_like_identity_fields_invalid');
@@ -145,9 +139,7 @@ function canonicalizeValue(
         if (!Object.hasOwn(value, index)) {
           unsupported(`${path}/${index}`, 'sparse_array', value);
         }
-        canonicalItems.push(
-          canonicalizeValue(value[index], rules, `${path}/${index}`, ancestors)
-        );
+        canonicalItems.push(canonicalizeValue(value[index], rules, `${path}/${index}`, ancestors));
       }
       const identityFields = rules.get(path);
       if (!identityFields) return canonicalItems;
@@ -205,10 +197,7 @@ function stableControlPlaneStringify(
   return JSON.stringify(canonicalizeControlPlaneValue(value, options));
 }
 
-function hashControlPlaneValue(
-  value: unknown,
-  options: CanonicalControlPlaneOptions = {}
-): string {
+function hashControlPlaneValue(value: unknown, options: CanonicalControlPlaneOptions = {}): string {
   return `sha256:${createHash('sha256')
     .update(stableControlPlaneStringify(value, options), 'utf8')
     .digest('hex')}`;
@@ -216,8 +205,7 @@ function hashControlPlaneValue(
 
 function normalizeReceiptOptions(
   options: ReceiptHashOptions | string = {}
-): Required<Pick<ReceiptHashOptions, 'selfHashField'>> &
-  CanonicalControlPlaneOptions {
+): Required<Pick<ReceiptHashOptions, 'selfHashField'>> & CanonicalControlPlaneOptions {
   if (typeof options === 'string') {
     return { selfHashField: options, setLikeArrays: [] };
   }
@@ -244,10 +232,7 @@ function normalizeReceiptOptions(
   };
 }
 
-function hashReceiptPayload(
-  receipt: unknown,
-  options: ReceiptHashOptions | string = {}
-): string {
+function hashReceiptPayload(receipt: unknown, options: ReceiptHashOptions | string = {}): string {
   const normalizedOptions = normalizeReceiptOptions(options);
   const canonicalOptions = {
     setLikeArrays: normalizedOptions.setLikeArrays,
@@ -268,10 +253,7 @@ function verifyReceiptSelfHash(
   const normalizedOptions = normalizeReceiptOptions(options);
   if (!isPlainRecord(receipt)) return false;
   const actualHash = receipt[normalizedOptions.selfHashField];
-  if (
-    typeof actualHash !== 'string' ||
-    !/^sha256:[0-9a-f]{64}$/u.test(actualHash)
-  ) {
+  if (typeof actualHash !== 'string' || !/^sha256:[0-9a-f]{64}$/u.test(actualHash)) {
     return false;
   }
   return actualHash === hashReceiptPayload(receipt, normalizedOptions);

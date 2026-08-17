@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { produceImplementationReadiness } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-v2';
+import { materializeGoalRunExecutionAdapter } from '../helpers/goal-run-execution-adapter-fixture';
 import { materializeImplementationReadinessFixture } from '../helpers/implementation-readiness-fixture';
 
 const ROOT = process.cwd();
@@ -33,6 +34,7 @@ describe('goal-contract activation dist parity', () => {
         '--json',
       ]);
       expect(generated.status, generated.stderr || generated.stdout).toBe(0);
+      materializeGoalRunExecutionAdapter(outRoot);
 
       const activated = run(fixture.root, [
         'activate',

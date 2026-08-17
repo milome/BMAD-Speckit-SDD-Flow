@@ -1,8 +1,11 @@
+import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
+  collectReadinessStructuredInputArtifacts,
   computeCurrentReadinessScopedInputDigest,
   implementationReadinessCandidateHash,
+  parseReadinessCommandInvocation,
   verifyImplementationReadinessCandidateArtifact,
 } from '../../../main-agent/source-authority/scripts/main-agent-implementation-readiness-v2';
 import {
@@ -11,7 +14,10 @@ import {
   resolveArchitectureConfirmationContext,
 } from '../../../main-agent/source-authority/scripts/prepare-architecture-confirmation';
 import { validateRuntimeStatusDecisionReceipt } from '../../../main-agent/source-authority/scripts/requirements-contract-runtime-status-decision-receipt';
-import { artifactBytesHash } from '../../../main-agent/source-authority/scripts/requirements-contract-hash-domains';
+import {
+  artifactBytesHash,
+  requirementsContractDomainHash,
+} from '../../../main-agent/source-authority/scripts/requirements-contract-hash-domains';
 import {
   sha256Stable,
   sha256Text,
@@ -60,6 +66,16 @@ export interface RequirementsBackedGoalResult extends JsonObject {
   parentProjectionRef: { path: string; bytesHash: string };
   renderabilityReportRef: { path: string; bytesHash: string };
   activeAuthorityRef: { path: string; hash: string };
+}
+
+export interface VerifiedRequirementsReadinessView {
+  readinessScopedInputDigest: string;
+  implementationReadinessCandidateHash: string;
+  candidateRef: { path: string; hash: string };
+  candidate: JsonObject;
+  normalizedCommands: JsonObject[];
+  inputArtifacts: JsonObject[];
+  redOutcomes: JsonObject[];
 }
 
 function text(value: unknown): string {
@@ -200,7 +216,13 @@ function readCurrentReadiness(input: {
   executionConstraintRegistryHash: string;
   architectureConfirmationCandidateHash: string;
   currentScopedInputDigest: string;
-}): { candidate: JsonObject; decisionReceipt: JsonObject; projection: JsonObject } {
+  enforceScopedInputDigest?: boolean;
+}): {
+  candidate: JsonObject;
+  candidatePath: string;
+  decisionReceipt: JsonObject;
+  projection: JsonObject;
+} {
   const projection = object(object(input.runtimeRecord.sixModelResults).implementation_readiness);
   const candidateHash = text(object(projection.currentHashes).implementationReadinessCandidateHash);
   const receiptPath = confined(input.recordRoot, text(projection.decisionReceiptRef));
@@ -279,10 +301,21 @@ function readCurrentReadiness(input: {
   } catch {
     throw new Error('readiness_recheck_required:implementation_readiness');
   }
-  if (input.currentScopedInputDigest !== text(candidate.readinessScopedInputDigest)) {
+  if (
+    input.enforceScopedInputDigest !== false &&
+    input.currentScopedInputDigest !== text(candidate.readinessScopedInputDigest)
+  ) {
     throw new Error('readiness_recheck_required:scoped_input_digest');
   }
-  return { candidate, decisionReceipt, projection };
+  const candidateOutput = objects(decisionReceipt.deterministicGateOutputs).find(
+    (row) => text(row.role) === 'implementation_readiness_candidate'
+  );
+  return {
+    candidate,
+    candidatePath: confined(input.recordRoot, text(candidateOutput?.path)),
+    decisionReceipt,
+    projection,
+  };
 }
 
 function canonicalBytes(value: unknown): Buffer {
@@ -474,12 +507,276 @@ function resolveCurrentArchitectureContext(input: { projectRoot: string; request
   }
 }
 
+function fileBytesHash(filePath: string): string {
+  try {
+    return `sha256:${createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')}`;
+  } catch {
+    return '';
+  }
+}
+
+function confinedExecutionInputFile(projectRoot: string, logicalPath: string): string {
+  const absolutePath = confined(projectRoot, logicalPath);
+  if (!fs.existsSync(absolutePath) || !fs.statSync(absolutePath).isFile()) {
+    throw new Error('readiness_recheck_required:input_set');
+  }
+  const realRoot = fs.realpathSync(projectRoot);
+  const realFile = fs.realpathSync(absolutePath);
+  if (realFile !== realRoot && !realFile.startsWith(`${realRoot}${path.sep}`)) {
+    throw new Error('readiness_recheck_required:input_set');
+  }
+  return absolutePath;
+}
+
+function normalizedExecutionCommandIdentity(input: {
+  context: ReturnType<typeof resolveArchitectureConfirmationContext>;
+  architecture: ReturnType<typeof deriveArchitectureConfirmationCandidate>;
+}): JsonObject[] {
+  const semantics = object(input.context.semanticIr.semanticPayload.semantics);
+  const oracleMap = new Map(
+    [...objects(semantics.requirements), ...objects(semantics.atoms)]
+      .map((entry) => [text(entry.id), text(entry.oracle) || text(entry.signature)] as const)
+      .filter(([id, oracle]) => Boolean(id && oracle))
+  );
+  const byHash = new Map<string, JsonObject>();
+  for (const rawCommand of objects(object(input.architecture.toolchain).commands)) {
+    const commandId = text(rawCommand.commandId);
+    const parsed = parseReadinessCommandInvocation(text(rawCommand.invocation));
+    const constraint = input.context.semanticIr.semanticPayload.executionConstraints.find(
+      (entry) => entry.constraintId === commandId
+    );
+    const signatures = constraint
+      ? sortedUnique([
+          ...constraint.applicableMustRefs.map((id) => oracleMap.get(id) ?? ''),
+          ...constraint.applicableAtomRefs.map((id) => oracleMap.get(id) ?? ''),
+        ])
+      : [];
+    if (!commandId || signatures.length === 0) {
+      throw new Error('readiness_recheck_required:command_identity');
+    }
+    const current = byHash.get(parsed.normalizedCommandHash);
+    if (current) {
+      current.commandIds = sortedUnique([...strings(current.commandIds), commandId]);
+      current.expectedTestIds = sortedUnique([...strings(current.expectedTestIds), commandId]);
+      current.expectedFailureSignatures = sortedUnique([
+        ...strings(current.expectedFailureSignatures),
+        ...signatures,
+      ]);
+      continue;
+    }
+    byHash.set(parsed.normalizedCommandHash, {
+      ...parsed,
+      commandIds: [commandId],
+      expectedTestIds: [commandId],
+      expectedFailureSignatures: signatures,
+    });
+  }
+  if (byHash.size === 0) throw new Error('readiness_recheck_required:command_identity');
+  return [...byHash.values()].sort((left, right) =>
+    text(left.normalizedCommandHash).localeCompare(text(right.normalizedCommandHash))
+  );
+}
+
+function frozenExecutionCommandIdentity(candidate: JsonObject): JsonObject[] {
+  return objects(candidate.normalizedCommands)
+    .map((command) => ({
+      executable: text(command.executable),
+      args: strings(command.args),
+      normalizedInvocation: text(command.normalizedInvocation),
+      normalizedCommandHash: text(command.normalizedCommandHash),
+      commandIds: strings(command.commandIds),
+      expectedTestIds: strings(command.expectedTestIds),
+      expectedFailureSignatures: strings(command.expectedFailureSignatures),
+    }))
+    .sort((left, right) => left.normalizedCommandHash.localeCompare(right.normalizedCommandHash));
+}
+
+function executionCommandIdentityMatches(input: {
+  context: ReturnType<typeof resolveArchitectureConfirmationContext>;
+  architecture: ReturnType<typeof deriveArchitectureConfirmationCandidate>;
+  readinessCandidate: JsonObject;
+}): boolean {
+  try {
+    return (
+      stableStringify(
+        normalizedExecutionCommandIdentity({
+          context: input.context,
+          architecture: input.architecture,
+        })
+      ) === stableStringify(frozenExecutionCommandIdentity(input.readinessCandidate))
+    );
+  } catch {
+    return false;
+  }
+}
+
+export function resolveExecutionInputMembershipForCurrentness(input: {
+  projectRoot: string;
+  readinessCandidate: JsonObject;
+  authorizedOwnedPaths?: readonly string[];
+}): string[] {
+  const authorizedOwnedPaths = new Set(input.authorizedOwnedPaths ?? []);
+  const targetPaths = objects(input.readinessCandidate.inputArtifacts)
+    .filter((artifact) => text(artifact.role) === 'pre_implementation_target')
+    .map((artifact) => text(artifact.logicalPath));
+  const missingAuthorizedTargets = targetPaths.filter((logicalPath) => {
+    const absolutePath = confined(input.projectRoot, logicalPath);
+    return authorizedOwnedPaths.has(logicalPath) && !fs.existsSync(absolutePath);
+  });
+  const currentMembership = collectReadinessStructuredInputArtifacts({
+    projectRoot: input.projectRoot,
+    targetPaths: targetPaths.filter(
+      (logicalPath) => !missingAuthorizedTargets.includes(logicalPath)
+    ),
+    commands: objects(input.readinessCandidate.normalizedCommands).map((command) => ({
+      executable: text(command.executable),
+      args: strings(command.args),
+    })),
+  }).map((artifact) => `${artifact.role}:${artifact.logicalPath}`);
+  return [
+    ...new Set([
+      ...currentMembership,
+      ...missingAuthorizedTargets.map((logicalPath) => `pre_implementation_target:${logicalPath}`),
+    ]),
+  ].sort();
+}
+
+function executionInputMembershipMatches(input: {
+  projectRoot: string;
+  readinessCandidate: JsonObject;
+  authorizedOwnedPaths: readonly string[];
+}): boolean {
+  try {
+    const frozenMembership = new Set(
+      objects(input.readinessCandidate.inputArtifacts).map(
+        (artifact) => `${text(artifact.role)}:${text(artifact.logicalPath)}`
+      )
+    );
+    const currentMembership = resolveExecutionInputMembershipForCurrentness(input);
+    return stableStringify(currentMembership) === stableStringify([...frozenMembership].sort());
+  } catch {
+    return false;
+  }
+}
+
+export function classifyExecutionReadinessDrift(input: {
+  commandIdentityMatches: boolean;
+  inputMembershipMatches: boolean;
+  currentScopedInputDigest: string | null;
+  permittedScopedInputDigest: string | null;
+}): string | null {
+  if (!input.commandIdentityMatches) return 'readiness_recheck_required:command_identity';
+  if (!input.inputMembershipMatches) return 'readiness_recheck_required:input_set';
+  if (input.currentScopedInputDigest !== input.permittedScopedInputDigest) {
+    return 'readiness_recheck_required:readiness_policy';
+  }
+  return null;
+}
+
+function computeExecutionReadinessDigest(input: {
+  context: ReturnType<typeof resolveArchitectureConfirmationContext>;
+  architecture: ReturnType<typeof deriveArchitectureConfirmationCandidate>;
+  resume: boolean;
+}): string {
+  try {
+    return computeCurrentReadinessScopedInputDigest({
+      context: input.context,
+      architectureCandidate: input.architecture,
+    });
+  } catch (error) {
+    const issueCode = error instanceof Error ? error.message : '';
+    if (
+      issueCode.startsWith('requirements_successor_required:') ||
+      issueCode.startsWith('architecture_successor_required:') ||
+      issueCode.startsWith('readiness_recheck_required:')
+    ) {
+      throw error;
+    }
+    throw new Error(
+      input.resume
+        ? 'readiness_recheck_required:input_set'
+        : 'readiness_recheck_required:scoped_input_digest'
+    );
+  }
+}
+
+function resumeScopedInputDigest(input: {
+  projectRoot: string;
+  context: ReturnType<typeof resolveArchitectureConfirmationContext>;
+  architecture: ReturnType<typeof deriveArchitectureConfirmationCandidate>;
+  readinessCandidate: JsonObject;
+  authorizedOwnedPaths: readonly string[];
+}): string {
+  const ownedPaths = new Set(input.authorizedOwnedPaths);
+  const inputArtifacts = objects(input.readinessCandidate.inputArtifacts);
+  for (const [role, issueField] of [
+    ['test', 'test_bytes'],
+    ['config', 'config_bytes'],
+    ['lock', 'lock_bytes'],
+  ] as const) {
+    for (const artifact of inputArtifacts.filter((entry) => text(entry.role) === role)) {
+      const logicalPath = text(artifact.logicalPath);
+      if (
+        fileBytesHash(confinedExecutionInputFile(input.projectRoot, logicalPath)) !==
+        text(artifact.bytesHash)
+      ) {
+        throw new Error(`readiness_recheck_required:${issueField}`);
+      }
+    }
+  }
+  const permittedInputArtifacts = inputArtifacts.map((artifact) => {
+    if (text(artifact.role) !== 'pre_implementation_target') return artifact;
+    const logicalPath = text(artifact.logicalPath);
+    const absolutePath = confined(input.projectRoot, logicalPath);
+    const currentBytesHash = fs.existsSync(absolutePath)
+      ? fileBytesHash(confinedExecutionInputFile(input.projectRoot, logicalPath))
+      : '';
+    if (ownedPaths.has(logicalPath)) {
+      return {
+        ...artifact,
+        bytesHash:
+          currentBytesHash ||
+          requirementsContractDomainHash('execution-owned-target-tombstone/v1', {
+            logicalPath,
+          }),
+      };
+    }
+    if (currentBytesHash !== text(artifact.bytesHash)) {
+      throw new Error('readiness_recheck_required:pre_implementation_target_bytes');
+    }
+    return artifact;
+  });
+  const normalizedCommands = objects(input.readinessCandidate.normalizedCommands);
+  return requirementsContractDomainHash('implementation-readiness-scoped-input/v1', {
+    requirementsSemanticIdentity: {
+      semanticRevisionId: input.context.semanticIr.semanticRevisionId,
+      scopeSemanticHash: input.context.semanticIr.scopeSemanticHash,
+      executionConstraintRegistryHash:
+        input.context.semanticIr.semanticPayload.executionConstraintRegistryHash,
+    },
+    architectureConfirmationCandidateHash: input.architecture.architectureConfirmationCandidateHash,
+    normalizedCommandIds: normalizedCommands.map((command) => ({
+      hash: text(command.normalizedCommandHash),
+      commandIds: strings(command.commandIds),
+      testIds: strings(command.expectedTestIds),
+    })),
+    readinessPolicy: input.readinessCandidate.readinessPolicy,
+    inputArtifacts: permittedInputArtifacts.map((artifact) => ({
+      role: text(artifact.role),
+      artifactId: text(artifact.artifactId),
+      bytesHash: text(artifact.bytesHash),
+    })),
+  });
+}
+
 function assertAdmissionStillCurrent(input: {
   projectRoot: string;
   requestId: string;
   requirementRecordPath: string;
   expectedRequirementsLineage: JsonObject;
-}): void {
+  phase?: 'activation' | 'execution_start' | 'execution_resume';
+  authorizedOwnedPaths?: readonly string[];
+}): VerifiedRequirementsReadinessView {
   const runtimeRecord = readJson(input.requirementRecordPath);
   const context = resolveCurrentArchitectureContext({
     projectRoot: input.projectRoot,
@@ -493,26 +790,6 @@ function assertAdmissionStillCurrent(input: {
   if (!architectureAcceptance) {
     throw new Error('architecture_successor_required:architecture_confirmation');
   }
-  let currentScopedInputDigest = '';
-  try {
-    currentScopedInputDigest = computeCurrentReadinessScopedInputDigest({
-      context,
-      architectureCandidate: architecture,
-    });
-  } catch {
-    throw new Error('readiness_recheck_required:scoped_input_digest');
-  }
-  const readiness = readCurrentReadiness({
-    projectRoot: input.projectRoot,
-    recordRoot: context.recordRoot,
-    runtimeRecord,
-    semanticRevisionId: context.semanticIr.semanticRevisionId,
-    scopeSemanticHash: context.semanticIr.scopeSemanticHash,
-    executionConstraintRegistryHash:
-      context.semanticIr.semanticPayload.executionConstraintRegistryHash,
-    architectureConfirmationCandidateHash: architecture.architectureConfirmationCandidateHash,
-    currentScopedInputDigest,
-  });
   const expected = input.expectedRequirementsLineage;
   if (
     context.semanticIr.semanticRevisionId !== text(expected.semanticRevisionId) ||
@@ -528,15 +805,81 @@ function assertAdmissionStillCurrent(input: {
   ) {
     throw new Error('architecture_successor_required:architecture_confirmation');
   }
+  const readiness = readCurrentReadiness({
+    projectRoot: input.projectRoot,
+    recordRoot: context.recordRoot,
+    runtimeRecord,
+    semanticRevisionId: context.semanticIr.semanticRevisionId,
+    scopeSemanticHash: context.semanticIr.scopeSemanticHash,
+    executionConstraintRegistryHash:
+      context.semanticIr.semanticPayload.executionConstraintRegistryHash,
+    architectureConfirmationCandidateHash: architecture.architectureConfirmationCandidateHash,
+    currentScopedInputDigest: text(expected.readinessScopedInputDigest),
+    enforceScopedInputDigest: false,
+  });
   if (
     text(readiness.candidate.implementationReadinessCandidateHash) !==
     text(expected.implementationReadinessCandidateHash)
   ) {
     throw new Error('readiness_recheck_required:implementation_readiness');
   }
-  if (currentScopedInputDigest !== text(expected.readinessScopedInputDigest)) {
-    throw new Error('readiness_recheck_required:scoped_input_digest');
+  const resume = input.phase === 'execution_resume';
+  if (!resume) {
+    const currentScopedInputDigest = computeExecutionReadinessDigest({
+      context,
+      architecture,
+      resume: false,
+    });
+    if (currentScopedInputDigest !== text(expected.readinessScopedInputDigest)) {
+      throw new Error('readiness_recheck_required:scoped_input_digest');
+    }
+  } else {
+    const commandIdentityMatches = executionCommandIdentityMatches({
+      context,
+      architecture,
+      readinessCandidate: readiness.candidate,
+    });
+    const inputMembershipMatches = executionInputMembershipMatches({
+      projectRoot: input.projectRoot,
+      readinessCandidate: readiness.candidate,
+      authorizedOwnedPaths: input.authorizedOwnedPaths ?? [],
+    });
+    const preliminaryIssue = classifyExecutionReadinessDrift({
+      commandIdentityMatches,
+      inputMembershipMatches,
+      currentScopedInputDigest: null,
+      permittedScopedInputDigest: null,
+    });
+    if (preliminaryIssue) throw new Error(preliminaryIssue);
+    const permittedScopedInputDigest = resumeScopedInputDigest({
+      projectRoot: input.projectRoot,
+      context,
+      architecture,
+      readinessCandidate: readiness.candidate,
+      authorizedOwnedPaths: input.authorizedOwnedPaths ?? [],
+    });
+    const currentScopedInputDigest = permittedScopedInputDigest;
+    const residualIssue = classifyExecutionReadinessDrift({
+      commandIdentityMatches: true,
+      inputMembershipMatches: true,
+      currentScopedInputDigest,
+      permittedScopedInputDigest,
+    });
+    if (residualIssue) throw new Error(residualIssue);
   }
+  const candidateHash = text(readiness.candidate.implementationReadinessCandidateHash);
+  return Object.freeze({
+    readinessScopedInputDigest: text(readiness.candidate.readinessScopedInputDigest),
+    implementationReadinessCandidateHash: candidateHash,
+    candidateRef: Object.freeze({
+      path: path.relative(input.projectRoot, readiness.candidatePath).replace(/\\/gu, '/'),
+      hash: candidateHash,
+    }),
+    candidate: readiness.candidate,
+    normalizedCommands: objects(readiness.candidate.normalizedCommands),
+    inputArtifacts: objects(readiness.candidate.inputArtifacts),
+    redOutcomes: objects(readiness.candidate.redOutcomes),
+  });
 }
 
 export function validateRequirementsBackedGoalAdmissionCurrent(input: {
@@ -544,8 +887,10 @@ export function validateRequirementsBackedGoalAdmissionCurrent(input: {
   requestId: string;
   requirementRecordPath: string;
   expectedRequirementsLineage: JsonObject;
-}): void {
-  assertAdmissionStillCurrent(input);
+  phase?: 'activation' | 'execution_start' | 'execution_resume';
+  authorizedOwnedPaths?: readonly string[];
+}): VerifiedRequirementsReadinessView {
+  return assertAdmissionStillCurrent(input);
 }
 
 function renderParentGoal(ir: JsonObject): string {

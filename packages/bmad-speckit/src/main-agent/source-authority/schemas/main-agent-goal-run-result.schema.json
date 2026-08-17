@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/main-agent-goal-run-result.schema.json",
+  "title": "Main Agent Goal Run Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "profile",
+    "status",
+    "issueCode",
+    "activeRunPointer",
+    "activationRecord",
+    "attemptPointer",
+    "validClosures",
+    "campaignClosure",
+    "projections"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "main-agent-goal-run-result/v1" },
+    "profile": { "type": ["string", "null"], "enum": ["requirements_backed", "standalone", null] },
+    "status": { "enum": ["closed", "execution_reused", "blocked"] },
+    "issueCode": { "type": ["string", "null"] },
+    "activeRunPointer": { "oneOf": [{ "$ref": "#/$defs/hashRef" }, { "type": "null" }] },
+    "activationRecord": { "oneOf": [{ "$ref": "#/$defs/hashRef" }, { "type": "null" }] },
+    "attemptPointer": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["artifactRef", "artifactHash", "pointerVersion", "phase"],
+          "properties": {
+            "artifactRef": { "type": "string", "minLength": 1 },
+            "artifactHash": { "$ref": "#/$defs/hash" },
+            "pointerVersion": { "type": "integer", "minimum": 1 },
+            "phase": { "enum": ["prepared", "executing", "closure_pending", "blocked", "closed"] }
+          }
+        },
+        { "type": "null" }
+      ]
+    },
+    "validClosures": { "type": "array", "items": { "$ref": "#/$defs/roleRef" } },
+    "campaignClosure": { "oneOf": [{ "$ref": "#/$defs/hashRef" }, { "type": "null" }] },
+    "projections": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          { "$ref": "#/$defs/roleRef" },
+          {
+            "properties": {
+              "role": {
+                "enum": [
+                  "campaign_report",
+                  "final_execution_projection",
+                  "task_report",
+                  "main_agent_handoff"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "hashRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifactRef", "artifactHash"],
+      "properties": {
+        "artifactRef": { "type": "string", "minLength": 1 },
+        "artifactHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "roleRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "artifactRef", "artifactHash"],
+      "properties": {
+        "role": { "type": "string", "minLength": 1 },
+        "artifactRef": { "type": "string", "minLength": 1 },
+        "artifactHash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

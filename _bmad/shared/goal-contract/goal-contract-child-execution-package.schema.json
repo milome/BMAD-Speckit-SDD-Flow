@@ -4,15 +4,16 @@
   "title": "Goal Contract Child Execution Package",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "profile", "goalId", "goalExecutionIRHash", "executionMode", "partitionId", "childContractRef", "artifacts", "childExecutionPackageHash"],
+  "required": ["schemaVersion", "profile", "goalId", "goalExecutionIRHash", "executionMode", "partitionId", "childContractRef", "executionAdapterRef", "artifacts", "childExecutionPackageHash"],
   "properties": {
-    "schemaVersion": { "const": "GoalContractChildExecutionPackage/v1" },
+    "schemaVersion": { "const": "GoalContractChildExecutionPackage/v2" },
     "profile": { "enum": ["requirements_backed", "standalone"] },
     "goalId": { "type": "string", "minLength": 1 },
     "goalExecutionIRHash": { "$ref": "#/$defs/hash" },
     "executionMode": { "const": "partitioned_goal" },
     "partitionId": { "type": "string", "pattern": "^PART-[0-9]{3}$" },
     "childContractRef": { "$ref": "#/$defs/hashRef" },
+    "executionAdapterRef": { "$ref": "#/$defs/hashRef" },
     "artifacts": {
       "type": "array",
       "minItems": 4,

@@ -1,9 +1,11 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
+  closeSync,
   copyFileSync,
   existsSync,
   mkdirSync,
+  openSync,
   readFileSync,
   readdirSync,
   rmSync,
@@ -13,6 +15,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { produceImplementationReadiness } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-v2';
 import { compileRequirementsBackedGoal } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-requirements-adapter';
+import { materializeGoalRunExecutionAdapter } from '../helpers/goal-run-execution-adapter-fixture';
 import { materializeImplementationReadinessFixture } from '../helpers/implementation-readiness-fixture';
 
 const ROOT = process.cwd();
@@ -36,6 +39,7 @@ function hashControlPlaneValue(value: unknown): string {
     .digest('hex')}`;
 }
 const TSX = path.join(ROOT, 'node_modules', 'tsx', 'dist', 'cli.mjs');
+const LOCK_PRELOAD = path.join(ROOT, 'tests', 'fixtures', 'control-plane-lock-preload.cjs');
 const SOURCE_COMMAND = path.join(
   ROOT,
   'packages',
@@ -51,7 +55,12 @@ const SOURCE_RUNNER = [
   '.catch((error)=>{console.error(error);process.exitCode=2;});',
 ].join('');
 
-function activate(cwd: string, goalAuthorityPath: string) {
+function activate(
+  cwd: string,
+  goalAuthorityPath: string,
+  environment: NodeJS.ProcessEnv = process.env
+) {
+  materializeGoalRunExecutionAdapter(path.dirname(path.dirname(goalAuthorityPath)));
   const completed = spawnSync(
     process.execPath,
     [
@@ -66,12 +75,17 @@ function activate(cwd: string, goalAuthorityPath: string) {
       goalAuthorityPath,
       '--json',
     ],
-    { cwd, encoding: 'utf8', maxBuffer: 20 * 1024 * 1024 }
+    { cwd, env: environment, encoding: 'utf8', maxBuffer: 20 * 1024 * 1024 }
   );
   return { ...completed, result: JSON.parse(completed.stdout) };
 }
 
-function activateAsync(cwd: string, goalAuthorityPath: string) {
+function activateAsync(
+  cwd: string,
+  goalAuthorityPath: string,
+  environment: NodeJS.ProcessEnv = process.env
+) {
+  materializeGoalRunExecutionAdapter(path.dirname(path.dirname(goalAuthorityPath)));
   return new Promise<{ status: number | null; stdout: string; stderr: string; result: unknown }>(
     (resolve) => {
       const child = spawn(
@@ -88,7 +102,7 @@ function activateAsync(cwd: string, goalAuthorityPath: string) {
           goalAuthorityPath,
           '--json',
         ],
-        { cwd, stdio: ['ignore', 'pipe', 'pipe'] }
+        { cwd, env: environment, stdio: ['ignore', 'pipe', 'pipe'] }
       );
       let stdout = '';
       let stderr = '';
@@ -101,6 +115,30 @@ function activateAsync(cwd: string, goalAuthorityPath: string) {
       });
     }
   );
+}
+
+async function waitForPath(targetPath: string): Promise<void> {
+  const deadline = Date.now() + 10_000;
+  while (!existsSync(targetPath)) {
+    if (Date.now() >= deadline) throw new Error(`test_timeout:${targetPath}`);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+}
+
+function lateV1CanAcquire(lockPath: string): boolean {
+  let descriptor: number | undefined;
+  try {
+    descriptor = openSync(lockPath, 'wx');
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST') return false;
+    throw error;
+  } finally {
+    if (descriptor !== undefined) {
+      closeSync(descriptor);
+      rmSync(lockPath, { force: true });
+    }
+  }
 }
 
 function activeRunClaimPath(pointerPath: string, expectedBeforeVersion = 0) {
@@ -152,22 +190,32 @@ function failureEnvelope(issueCode: string) {
 }
 
 function crashWithActiveRunLock(lockPath: string) {
+  const ticketPath = `${lockPath}.owner-00000000000000000001-crashed-test-owner.ticket`;
   const runner = [
     'const fs = require("node:fs");',
-    'const lockPath = process.argv[1];',
-    'fs.writeFileSync(lockPath, JSON.stringify({',
-    '  schemaVersion: "GoalContractActiveRunLock/v1",',
+    'const ticketPath = process.argv[1];',
+    'fs.mkdirSync(require("node:path").dirname(ticketPath), { recursive: true });',
+    'fs.writeFileSync(ticketPath, JSON.stringify({',
+    '  schemaVersion: "ControlPlaneGenerationLockMarker/v1",',
+    '  lockSchemaVersion: "GoalContractActiveRunLock/v2",',
+    '  markerKind: "ticket",',
     '  ownerPid: process.pid,',
+    '  ownerProcessStartIdentity: "unavailable:00000000000000000000000000000000",',
     '  ownerToken: "crashed-test-owner",',
+    '  ticket: "1",',
     '  acquiredAtMs: Date.now() - 60000,',
     '  leaseExpiresAtMs: Date.now() - 30000,',
     '}));',
+    'fs.utimesSync(ticketPath, new Date(0), new Date(0));',
     'process.exit(137);',
   ].join('\n');
-  return spawnSync(process.execPath, ['-e', runner, lockPath], {
-    encoding: 'utf8',
-    maxBuffer: 20 * 1024 * 1024,
-  });
+  return {
+    completed: spawnSync(process.execPath, ['-e', runner, ticketPath], {
+      encoding: 'utf8',
+      maxBuffer: 20 * 1024 * 1024,
+    }),
+    ticketPath,
+  };
 }
 
 describe('goal-contract activation recovery', () => {
@@ -258,7 +306,7 @@ describe('goal-contract activation recovery', () => {
     }
   });
 
-  it('recovers when a previous reclaimer crashes before deleting the stale lock', () => {
+  it('fails closed when a legacy reclaimer artifact occupies the versioned lock', () => {
     const fixture = materializeImplementationReadinessFixture();
     try {
       produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
@@ -268,23 +316,140 @@ describe('goal-contract activation recovery', () => {
         outRoot: path.join(fixture.root, 'goal-run'),
       });
       const pointerPath = path.join(fixture.root, 'goal-run', 'goal', 'runtime', 'active-run.json');
-      const legacyLockPath = `${pointerPath}.lock`;
-      mkdirSync(path.dirname(legacyLockPath), { recursive: true });
-      const crashed = crashWithActiveRunLock(legacyLockPath);
-      expect(crashed.status).not.toBe(0);
+      const legacyLockPath = activeRunLockPath(pointerPath);
+      const reclaimPath = `${legacyLockPath}.reclaim`;
+      mkdirSync(path.dirname(reclaimPath), { recursive: true });
+      const legacyReclaimer = {
+        schemaVersion: 'GoalExecutionReclaimBarrier/v1',
+        ownerPid: 2_147_483_647,
+        ownerToken: 'crashed-reclaimer',
+        acquiredAtMs: 0,
+        leaseExpiresAtMs: 1,
+      };
+      writeFileSync(reclaimPath, JSON.stringify(legacyReclaimer));
+
+      const blocked = activate(fixture.root, compiled.activeAuthorityRef.path);
+
+      expect(blocked.status).toBe(1);
+      expect(blocked.result).toMatchObject({
+        status: 'blocked',
+        issueCode: 'active_run_cas_conflict',
+      });
+      expect(JSON.parse(readFileSync(reclaimPath, 'utf8'))).toEqual(legacyReclaimer);
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('preserves a recent unique legacy quarantine on the versioned lock', () => {
+    const fixture = materializeImplementationReadinessFixture();
+    try {
+      produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
+      const compiled = compileRequirementsBackedGoal({
+        projectRoot: fixture.root,
+        requirementRecordPath: fixture.runtimeRecordPath,
+        outRoot: path.join(fixture.root, 'goal-run'),
+      });
+      const pointerPath = path.join(fixture.root, 'goal-run', 'goal', 'runtime', 'active-run.json');
+      const lockPath = activeRunLockPath(pointerPath);
+      const ownerToken = 'recent-active-run-owner';
+      const quarantinePath = `${lockPath}.quarantine-${ownerToken}`;
+      const acquiredAtMs = Date.now();
+      const quarantine = {
+        schemaVersion: 'GoalContractActiveRunLock/v1',
+        ownerPid: 2_147_483_647,
+        ownerToken,
+        expectedBeforeHash: ACTIVE_RUN_ZERO_HASH,
+        expectedBeforeVersion: 0,
+        candidateRunId: 'RUN-FFFFFFFFFFFFFFFF',
+        acquiredAtMs,
+        leaseExpiresAtMs: acquiredAtMs + 60_000,
+      };
+      mkdirSync(path.dirname(quarantinePath), { recursive: true });
+      writeFileSync(quarantinePath, JSON.stringify(quarantine));
+
+      const blocked = activate(fixture.root, compiled.activeAuthorityRef.path);
+
+      expect(blocked.status).toBe(1);
+      expect(blocked.result).toMatchObject({
+        status: 'blocked',
+        issueCode: 'active_run_cas_conflict',
+      });
+      expect(JSON.parse(readFileSync(quarantinePath, 'utf8'))).toEqual(quarantine);
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('cleans a stale unique legacy quarantine on the versioned lock', () => {
+    const fixture = materializeImplementationReadinessFixture();
+    try {
+      produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
+      const compiled = compileRequirementsBackedGoal({
+        projectRoot: fixture.root,
+        requirementRecordPath: fixture.runtimeRecordPath,
+        outRoot: path.join(fixture.root, 'goal-run'),
+      });
+      const pointerPath = path.join(fixture.root, 'goal-run', 'goal', 'runtime', 'active-run.json');
+      const lockPath = activeRunLockPath(pointerPath);
+      const ownerToken = 'stale-active-run-owner';
+      const quarantinePath = `${lockPath}.quarantine-${ownerToken}`;
+      mkdirSync(path.dirname(quarantinePath), { recursive: true });
       writeFileSync(
-        `${legacyLockPath}.reclaim`,
+        quarantinePath,
         JSON.stringify({
-          schemaVersion: 'GoalContractActiveRunReclaim/v1',
+          schemaVersion: 'GoalContractActiveRunLock/v1',
           ownerPid: 2_147_483_647,
-          ownerToken: 'crashed-reclaimer',
+          ownerToken,
+          expectedBeforeHash: ACTIVE_RUN_ZERO_HASH,
+          expectedBeforeVersion: 0,
+          candidateRunId: 'RUN-FFFFFFFFFFFFFFFF',
+          acquiredAtMs: 0,
+          leaseExpiresAtMs: 1,
         })
       );
 
-      const recovered = activate(fixture.root, compiled.activeAuthorityRef.path);
+      const activated = activate(fixture.root, compiled.activeAuthorityRef.path);
 
-      expect(recovered.status, recovered.stderr || recovered.stdout).toBe(0);
-      expect(recovered.result.status).toBe('activated');
+      expect(activated.status, activated.stderr || activated.stdout).toBe(0);
+      expect(existsSync(quarantinePath)).toBe(false);
+      expect(artifact(activated.result, 'active_run_pointer')).toBeDefined();
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('hard-cut fences late v1 writers on the active-run version production lock', async () => {
+    const fixture = materializeImplementationReadinessFixture();
+    try {
+      produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
+      const compiled = compileRequirementsBackedGoal({
+        projectRoot: fixture.root,
+        requirementRecordPath: fixture.runtimeRecordPath,
+        outRoot: path.join(fixture.root, 'goal-run'),
+      });
+      const pointerPath = path.join(fixture.root, 'goal-run', 'goal', 'runtime', 'active-run.json');
+      const lockPath = activeRunLockPath(pointerPath);
+      const stagePath = path.join(fixture.root, 'goal-run', 'goal', 'runtime', 'active-critical');
+      const resumePath = path.join(fixture.root, 'goal-run', 'goal', 'runtime', 'active-resume');
+      const environment = {
+        ...process.env,
+        NODE_OPTIONS: [process.env.NODE_OPTIONS, `--require=${LOCK_PRELOAD}`]
+          .filter(Boolean)
+          .join(' '),
+        BMAD_LOCK_CRITICAL_PATH_INCLUDES: pointerPath,
+        BMAD_LOCK_CRITICAL_STAGE: stagePath,
+        BMAD_LOCK_CRITICAL_RESUME: resumePath,
+      };
+      const running = activateAsync(fixture.root, compiled.activeAuthorityRef.path, environment);
+      await waitForPath(stagePath);
+      const whileOwned = lateV1CanAcquire(lockPath);
+      writeFileSync(resumePath, '', 'utf8');
+      const completed = await running;
+      const afterRelease = lateV1CanAcquire(lockPath);
+
+      expect(completed.status, completed.stderr || completed.stdout).toBe(0);
+      expect([whileOwned, afterRelease]).toEqual([false, false]);
     } finally {
       fixture.cleanup();
     }
@@ -440,15 +605,15 @@ describe('goal-contract activation recovery', () => {
         const lockPath = activeRunLockPath(pointerPath);
         if (removePointer) rmSync(pointerPath);
         const crashed = crashWithActiveRunLock(lockPath);
-        expect(crashed.status).not.toBe(0);
-        expect(existsSync(lockPath)).toBe(true);
+        expect(crashed.completed.status).not.toBe(0);
+        expect(existsSync(crashed.ticketPath)).toBe(true);
 
         const recovered = activate(fixture.root, compiled.activeAuthorityRef.path);
 
         expect(recovered.status, recovered.stderr || recovered.stdout).toBe(0);
         expect(recovered.result.status).toBe(expectedStatus);
         expect(existsSync(pointerPath)).toBe(true);
-        expect(existsSync(lockPath)).toBe(expectedLockExists);
+        expect(existsSync(crashed.ticketPath)).toBe(expectedLockExists);
       } finally {
         fixture.cleanup();
       }
@@ -470,7 +635,7 @@ describe('goal-contract activation recovery', () => {
       const lockPath = activeRunLockPath(pointerPath);
       rmSync(pointerPath);
       const crashed = crashWithActiveRunLock(lockPath);
-      expect(crashed.status).not.toBe(0);
+      expect(crashed.completed.status).not.toBe(0);
 
       const contenders = await Promise.all([
         activateAsync(fixture.root, compiled.activeAuthorityRef.path),
@@ -482,9 +647,65 @@ describe('goal-contract activation recovery', () => {
         ['activation_reused', 'activation_reused']
       );
       expect(existsSync(activeRunClaimPath(pointerPath))).toBe(true);
-      expect(existsSync(lockPath)).toBe(false);
+      expect(existsSync(crashed.ticketPath)).toBe(false);
     } finally {
       fixture.cleanup();
     }
   });
+
+  it.each([
+    ['choosing', 'writeFileSync'],
+    ['choosing', 'fsyncSync'],
+    ['ticket', 'writeFileSync'],
+    ['ticket', 'fsyncSync'],
+  ] as const)(
+    'closes and removes an active-run %s generation after %s fails',
+    (markerKind, operation) => {
+      const fixture = materializeImplementationReadinessFixture();
+      try {
+        produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
+        const compiled = compileRequirementsBackedGoal({
+          projectRoot: fixture.root,
+          requirementRecordPath: fixture.runtimeRecordPath,
+          outRoot: path.join(fixture.root, 'goal-run'),
+        });
+        const pointerPath = path.join(
+          fixture.root,
+          'goal-run',
+          'goal',
+          'runtime',
+          'active-run.json'
+        );
+        const lockPath = activeRunLockPath(pointerPath);
+        const eventPath = path.join(
+          fixture.root,
+          'goal-run',
+          'goal',
+          'runtime',
+          `active-run-${markerKind}-${operation}.events`
+        );
+        const result = activate(fixture.root, compiled.activeAuthorityRef.path, {
+          ...process.env,
+          NODE_OPTIONS: [process.env.NODE_OPTIONS, `--require=${LOCK_PRELOAD}`]
+            .filter(Boolean)
+            .join(' '),
+          BMAD_LOCK_FAULT_OPERATION: operation,
+          BMAD_LOCK_FAULT_PATH_INCLUDES: lockPath,
+          BMAD_LOCK_FAULT_PATH_ENDS_WITH: `.${markerKind}`,
+          BMAD_LOCK_EVENT_PATH: eventPath,
+        });
+
+        expect(result.status).toBe(1);
+        expect(readFileSync(eventPath, 'utf8')).toContain('close:');
+        expect(readdirSync(`${lockPath}.owners`)).toEqual([]);
+        expect(
+          readdirSync(
+            `${path.join(fixture.root, 'goal-run', 'goal', 'runtime', 'execution-control.lock')}.owners`
+          )
+        ).toEqual([]);
+      } finally {
+        fixture.cleanup();
+      }
+    }
+  );
 });

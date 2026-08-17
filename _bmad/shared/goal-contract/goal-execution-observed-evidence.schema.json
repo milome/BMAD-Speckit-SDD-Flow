@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/goal-execution-observed-evidence.schema.json",
+  "title": "Goal Execution Observed Evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "profile", "candidateRunId", "activeRunPointerHash",
+    "activationRecordHash", "executionAuthorityId", "executionAuthorityHash",
+    "executionPackageHash", "readinessScopedInputDigest", "ownedPaths",
+    "forbiddenPaths", "observedFiles", "ownedPathStates", "commandObservations",
+    "reviewerInvocationCount", "auditorInvocationCount", "judgeSemanticAttemptCount",
+    "evidenceHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "GoalExecutionObservedEvidence/v1" },
+    "profile": { "enum": ["requirements_backed", "standalone"] },
+    "candidateRunId": { "type": "string", "pattern": "^RUN-[A-F0-9]{16}$" },
+    "activeRunPointerHash": { "$ref": "#/$defs/hash" },
+    "activationRecordHash": { "$ref": "#/$defs/hash" },
+    "executionAuthorityId": { "type": "string", "minLength": 1 },
+    "executionAuthorityHash": { "$ref": "#/$defs/hash" },
+    "executionPackageHash": { "$ref": "#/$defs/hash" },
+    "readinessScopedInputDigest": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+    "ownedPaths": { "$ref": "#/$defs/paths" },
+    "forbiddenPaths": { "$ref": "#/$defs/paths" },
+    "observedFiles": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["path", "beforeHash", "afterHash", "existsAfter"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "beforeHash": { "$ref": "#/$defs/hash" },
+          "afterHash": { "$ref": "#/$defs/hash" },
+          "existsAfter": { "type": "boolean" }
+        }
+      }
+    },
+    "ownedPathStates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["path", "hash", "exists"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "hash": { "$ref": "#/$defs/hash" },
+          "exists": { "type": "boolean" }
+        }
+      }
+    },
+    "commandObservations": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["commandId", "normalizedInvocation", "exitCode", "stdoutHash", "stderrHash", "decision"],
+        "properties": {
+          "commandId": { "type": "string", "minLength": 1 },
+          "normalizedInvocation": { "type": "string", "minLength": 1 },
+          "exitCode": { "const": 0 },
+          "stdoutHash": { "$ref": "#/$defs/hash" },
+          "stderrHash": { "$ref": "#/$defs/hash" },
+          "decision": { "const": "green" }
+        }
+      }
+    },
+    "reviewerInvocationCount": { "const": 0 },
+    "auditorInvocationCount": { "const": 0 },
+    "judgeSemanticAttemptCount": { "const": 0 },
+    "evidenceHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "paths": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+  }
+}

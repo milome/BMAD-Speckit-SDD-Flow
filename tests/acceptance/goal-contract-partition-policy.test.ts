@@ -74,6 +74,7 @@ describe('frozen Goal partition policy identity', () => {
   it('excludes solver outcome, eligibility and package bytes from candidate identity', () => {
     const authority = {
       goalExecutionIRHash: `sha256:${'1'.repeat(64)}`,
+      executionAdapterAuthorityHash: `sha256:${'9'.repeat(64)}`,
       executionMode: 'partitioned_goal',
       partitionSelectionIdentityHash: `sha256:${'2'.repeat(64)}`,
     };
@@ -98,6 +99,7 @@ describe('frozen Goal partition policy identity', () => {
   it('changes candidate identity for a semantic successor or different selected membership', () => {
     const baseline = identity({
       goalExecutionIRHash: `sha256:${'1'.repeat(64)}`,
+      executionAdapterAuthorityHash: `sha256:${'9'.repeat(64)}`,
       executionMode: 'partitioned_goal',
       partitionSelectionIdentityHash: `sha256:${'2'.repeat(64)}`,
     });
@@ -105,6 +107,7 @@ describe('frozen Goal partition policy identity', () => {
     expect(
       identity({
         goalExecutionIRHash: `sha256:${'7'.repeat(64)}`,
+        executionAdapterAuthorityHash: `sha256:${'9'.repeat(64)}`,
         executionMode: 'partitioned_goal',
         partitionSelectionIdentityHash: `sha256:${'2'.repeat(64)}`,
       })
@@ -112,6 +115,7 @@ describe('frozen Goal partition policy identity', () => {
     expect(
       identity({
         goalExecutionIRHash: `sha256:${'1'.repeat(64)}`,
+        executionAdapterAuthorityHash: `sha256:${'9'.repeat(64)}`,
         executionMode: 'partitioned_goal',
         partitionSelectionIdentityHash: `sha256:${'8'.repeat(64)}`,
       })

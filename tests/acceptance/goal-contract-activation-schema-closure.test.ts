@@ -16,11 +16,12 @@ function expectInvalid(schemaName: string, value: unknown): void {
 
 function directCandidate() {
   return {
-    schemaVersion: 'GoalContractCandidateRun/v1',
+    schemaVersion: 'GoalContractCandidateRun/v2',
     candidateRunId: 'RUN-AAAAAAAAAAAAAAAA',
     profile: 'requirements_backed',
     goalId: 'GOAL-AAAAAAAAAAAAAAAA',
     goalExecutionIRHash: HASH,
+    executionAdapterAuthorityHash: HASH,
     executionMode: 'direct_goal',
     partitionOutcome: 'not_applicable',
     goalExecutionAuthorityRef: hashRef('goal/goal-execution-ir.json'),
@@ -34,7 +35,7 @@ function activationRecord() {
   const { candidateRunHash: _candidateRunHash, ...candidate } = directCandidate();
   return {
     ...candidate,
-    schemaVersion: 'GoalContractActivationRecord/v1',
+    schemaVersion: 'GoalContractActivationRecord/v2',
     candidateRunRef: hashRef('candidate-run.json'),
     activationRecordHash: HASH,
   };
@@ -42,13 +43,14 @@ function activationRecord() {
 
 function directPackage() {
   return {
-    schemaVersion: 'GoalContractDirectExecutionPackage/v1',
+    schemaVersion: 'GoalContractDirectExecutionPackage/v2',
     profile: 'requirements_backed',
     goalId: 'GOAL-AAAAAAAAAAAAAAAA',
     goalExecutionIRHash: HASH,
     executionMode: 'direct_goal',
     goalExecutionAuthorityRef: hashRef('goal/goal-execution-ir.json'),
     eligibilityRef: hashRef('eligibility.json'),
+    executionAdapterRef: hashRef('adapter/authority.json'),
     artifacts: [
       packageArtifact('model_packet'),
       packageArtifact('human_prompt'),
@@ -107,7 +109,7 @@ describe('goal-contract activation schema closure', () => {
     const value = directPackage();
     if (schemaName.includes('child')) {
       Object.assign(value, {
-        schemaVersion: 'GoalContractChildExecutionPackage/v1',
+        schemaVersion: 'GoalContractChildExecutionPackage/v2',
         executionMode: 'partitioned_goal',
         partitionId: 'PART-001',
         childContractRef: hashRef('child-execution-contract.json'),

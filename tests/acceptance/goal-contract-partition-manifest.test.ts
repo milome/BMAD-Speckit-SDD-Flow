@@ -87,6 +87,10 @@ function frozenPartitionInput() {
     admissible: true,
   }));
   return {
+    executionAdapterRef: {
+      path: 'adapter/authority.json',
+      hash: `sha256:${'9'.repeat(64)}`,
+    },
     goalExecutionIr: {
       schemaVersion: 'GoalExecutionIR/v1',
       profile: 'requirements_backed',
@@ -169,6 +173,19 @@ describe('frozen Goal partition manifest', () => {
       topologicalOrder: ['PART-001', 'PART-002'],
     });
     expect(compiled.manifest.partitions[1].dependencyPartitionRefs).toEqual(['PART-001']);
+    const firstPackage = JSON.parse(
+      Buffer.from(
+        files.get('partition/children/PART-001/package/child-execution-package.json')!,
+        'base64'
+      ).toString('utf8')
+    );
+    expect(firstPackage).toMatchObject({
+      schemaVersion: 'GoalContractChildExecutionPackage/v2',
+      executionAdapterRef: {
+        path: 'adapter/authority.json',
+        hash: `sha256:${'9'.repeat(64)}`,
+      },
+    });
     expect(child('PART-001')).toMatchObject({
       taskRefs: ['TASK-001'],
       logicalScopes: { ownedPaths: ['src/zeta.ts'], forbiddenPaths: ['.git/**'] },

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/goal-execution-authority-closure.schema.json",
+  "title": "Goal Execution Authority Closure",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "profile", "candidateRunId", "activeRunPointerHash",
+    "activationRecordHash", "executionAuthorityId", "executionAuthorityHash",
+    "executionPackageHash", "evidenceRef", "dependencyClosureRefs", "changedPaths",
+    "commitProof", "reviewerInvocationCount", "auditorInvocationCount",
+    "judgeSemanticAttemptCount", "decision", "closureHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "GoalExecutionAuthorityClosure/v1" },
+    "profile": { "enum": ["requirements_backed", "standalone"] },
+    "candidateRunId": { "type": "string", "pattern": "^RUN-[A-F0-9]{16}$" },
+    "activeRunPointerHash": { "$ref": "#/$defs/hash" },
+    "activationRecordHash": { "$ref": "#/$defs/hash" },
+    "executionAuthorityId": { "type": "string", "minLength": 1 },
+    "executionAuthorityHash": { "$ref": "#/$defs/hash" },
+    "executionPackageHash": { "$ref": "#/$defs/hash" },
+    "evidenceRef": { "$ref": "#/$defs/hashRef" },
+    "dependencyClosureRefs": { "type": "array", "items": { "$ref": "#/$defs/closureRef" } },
+    "changedPaths": { "$ref": "#/$defs/paths" },
+    "commitProof": {
+      "oneOf": [
+        { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "not_applicable" } } },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "commitCount", "commitHash", "parentHash", "treeHash", "changedPaths", "trailer"],
+          "properties": {
+            "kind": { "const": "owned_path_commit" }, "commitCount": { "const": 1 },
+            "commitHash": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+            "parentHash": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+            "treeHash": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+            "changedPaths": { "$ref": "#/$defs/paths" }, "trailer": { "type": "string", "minLength": 1 }
+          }
+        }
+      ]
+    },
+    "reviewerInvocationCount": { "const": 0 },
+    "auditorInvocationCount": { "const": 0 },
+    "judgeSemanticAttemptCount": { "const": 0 },
+    "decision": { "const": "pass" },
+    "closureHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "paths": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "hashRef": { "type": "object", "additionalProperties": false, "required": ["path", "hash"], "properties": { "path": { "type": "string", "minLength": 1 }, "hash": { "$ref": "#/$defs/hash" } } },
+    "closureRef": { "type": "object", "additionalProperties": false, "required": ["executionAuthorityId", "path", "hash"], "properties": { "executionAuthorityId": { "type": "string", "minLength": 1 }, "path": { "type": "string", "minLength": 1 }, "hash": { "$ref": "#/$defs/hash" } } }
+  }
+}

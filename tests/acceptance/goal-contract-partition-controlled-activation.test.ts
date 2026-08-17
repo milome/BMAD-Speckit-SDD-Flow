@@ -11,6 +11,7 @@ import {
   type GoalExecutionIR,
 } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-execution-ir';
 import { compileRequirementsBackedGoal } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-requirements-adapter';
+import { materializeGoalRunExecutionAdapter } from '../helpers/goal-run-execution-adapter-fixture';
 import { materializeImplementationReadinessFixture } from '../helpers/implementation-readiness-fixture';
 
 const ROOT = process.cwd();
@@ -43,6 +44,14 @@ const PARTITION_MODULE = path.join(
   'control-plane',
   'frozen-goal-partition.ts'
 );
+const MAIN_AGENT_RUNTIME = path.join(
+  ROOT,
+  'packages',
+  'bmad-speckit',
+  'src',
+  'main-agent',
+  'runtime.ts'
+);
 
 function canonicalize(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonicalize);
@@ -73,6 +82,15 @@ const SOURCE_RUNNER = [
 ].join('');
 
 function runSourceCommand(cwd: string, args: string[]) {
+  if (args[0] === 'activate') {
+    const authorityIndex = args.indexOf('--goal-authority');
+    if (authorityIndex >= 0) {
+      const outRoot = path.dirname(path.dirname(path.resolve(cwd, args[authorityIndex + 1])));
+      if (!existsSync(path.join(outRoot, 'goal', 'execution-adapter', 'authority.json'))) {
+        materializeGoalRunExecutionAdapter(outRoot);
+      }
+    }
+  }
   return spawnSync(process.execPath, [TSX, '-e', SOURCE_RUNNER, SOURCE_COMMAND, ...args], {
     cwd,
     encoding: 'utf8',
@@ -80,7 +98,28 @@ function runSourceCommand(cwd: string, args: string[]) {
   });
 }
 
+function runMainAgent(cwd: string, args: string[]) {
+  const runner = [
+    'const { mainAgentRuntimeCommand } = require(process.argv[1]);',
+    'Promise.resolve(mainAgentRuntimeCommand(process.argv.slice(2)))',
+    '.then((code)=>{process.exitCode=code;})',
+    '.catch((error)=>{console.error(error);process.exitCode=2;});',
+  ].join('');
+  return spawnSync(process.execPath, [TSX, '-e', runner, MAIN_AGENT_RUNTIME, ...args], {
+    cwd,
+    encoding: 'utf8',
+    maxBuffer: 20 * 1024 * 1024,
+  });
+}
+
+function git(cwd: string, args: string[]): string {
+  const completed = spawnSync('git', args, { cwd, encoding: 'utf8' });
+  expect(completed.status, completed.stderr || completed.stdout).toBe(0);
+  return completed.stdout.trim();
+}
+
 function activateWithForbiddenSolver(cwd: string, goalAuthorityPath: string) {
+  materializeGoalRunExecutionAdapter(path.dirname(path.dirname(goalAuthorityPath)));
   const runner = [
     'const partition = require(process.argv[1]);',
     'partition.compilePartitionFromFrozenGoalAuthority = () => { throw new Error("solver_invoked_before_reuse"); };',
@@ -114,14 +153,15 @@ function compilePartitionFixtureIr(input: GoalExecutionCompilerInput): GoalExecu
     text: 'Verify the independent partition result.',
     atomRefs: secondTask.atomRefs,
   };
+  const [firstBaseCommand, secondBaseCommand = firstBaseCommand] = base.commands;
   const firstCommand = {
-    ...base.commands[0],
+    ...firstBaseCommand,
     commandId: 'CMD-PARTITION-001',
     obligationRefs: [firstObligation.obligationId],
     atomRefs: firstTask.atomRefs,
   };
   const secondCommand = {
-    ...base.commands[0],
+    ...secondBaseCommand,
     commandId: 'CMD-PARTITION-002',
     obligationRefs: [secondObligation.obligationId],
     atomRefs: secondTask.atomRefs,
@@ -308,6 +348,145 @@ describe('goal-contract partition controlled activation', () => {
       fixture.cleanup();
     }
   });
+
+  it('executes each child with one owned-path commit and a dependency-ordered campaign closure', () => {
+    const fixture = materializeImplementationReadinessFixture({
+      additionalGoalAtoms: 1,
+      targetPaths: ['src/partition-one.cjs', 'src/partition-two.cjs'],
+      invocations: [
+        'node --test tests/partition-one.test.cjs',
+        'node --test tests/partition-two.test.cjs',
+      ],
+      additionalFiles: {
+        'src/partition-one.cjs': "module.exports = { status: 'pending' };\n",
+        'src/partition-two.cjs': "module.exports = { status: 'pending' };\n",
+        'tests/partition-one.test.cjs': [
+          "const test = require('node:test');",
+          "const assert = require('node:assert/strict');",
+          "test('CMD-readiness-refund ORACLE-REFUND-ACCEPTED partition one is green', () => {",
+          "  assert.equal(require('../src/partition-one.cjs').status, 'green', 'ORACLE-REFUND-ACCEPTED');",
+          '});',
+          '',
+        ].join('\n'),
+        'tests/partition-two.test.cjs': [
+          "const test = require('node:test');",
+          "const assert = require('node:assert/strict');",
+          "test('CMD-readiness-refund-2 ORACLE-REFUND-ACCEPTED partition two is green', () => {",
+          "  assert.equal(require('../src/partition-two.cjs').status, 'green', 'ORACLE-REFUND-ACCEPTED');",
+          '});',
+          '',
+        ].join('\n'),
+      },
+    });
+    try {
+      produceImplementationReadiness({
+        projectRoot: fixture.root,
+        requestId: fixture.requestId,
+      });
+      git(fixture.root, ['init']);
+      git(fixture.root, ['config', 'user.name', 'Goal Fixture']);
+      git(fixture.root, ['config', 'user.email', 'goal-fixture@example.invalid']);
+      git(fixture.root, ['commit', '--allow-empty', '-m', 'test: establish partition baseline']);
+      const baseline = git(fixture.root, ['rev-parse', 'HEAD']);
+      const outRoot = path.join(fixture.root, 'goal-run');
+      const generated = compileRequirementsBackedGoal(
+        {
+          projectRoot: fixture.root,
+          requirementRecordPath: fixture.runtimeRecordPath,
+          outRoot,
+        },
+        { compileGoalExecutionIR: compilePartitionFixtureIr }
+      );
+      materializeGoalRunExecutionAdapter(outRoot, {
+        adapterId: 'partition-fixture-mutator',
+        executableSource: [
+          "const fs = require('node:fs');",
+          "const path = require('node:path');",
+          "let input = '';",
+          "process.stdin.setEncoding('utf8');",
+          "process.stdin.on('data', (chunk) => (input += chunk));",
+          "process.stdin.on('end', () => {",
+          '  const request = JSON.parse(input);',
+          '  const ownedPath = request.ownedPaths[0];',
+          '  fs.mkdirSync(path.dirname(path.join(request.projectRoot, ownedPath)), { recursive: true });',
+          "  fs.writeFileSync(path.join(request.projectRoot, ownedPath), \"module.exports = { status: 'green' };\\n\", 'utf8');",
+          "  process.stdout.write(JSON.stringify({ schemaVersion: 'GoalRunMutationResult/v1', exitCode: 0, changedPaths: [ownedPath] }));",
+          '});',
+          '',
+        ].join('\n'),
+      });
+      const activated = runSourceCommand(fixture.root, [
+        'activate',
+        '--cwd',
+        fixture.root,
+        '--goal-authority',
+        generated.activeAuthorityRef.path,
+        '--json',
+      ]);
+      expect(activated.status, activated.stderr || activated.stdout).toBe(0);
+      const activation = JSON.parse(activated.stdout);
+      const activeRun = activation.artifacts.find(
+        (artifact: { role: string }) => artifact.role === 'active_run_pointer'
+      ).artifactRef;
+      const executed = runMainAgent(fixture.root, [
+        'execute-goal-run',
+        '--cwd',
+        fixture.root,
+        '--active-run',
+        activeRun,
+        '--json',
+      ]);
+      expect(executed.status, executed.stderr || executed.stdout).toBe(0);
+      const result = JSON.parse(executed.stdout);
+      expect(result).toMatchObject({
+        schemaVersion: 'main-agent-goal-run-result/v1',
+        status: 'closed',
+        issueCode: null,
+      });
+      expect(result.validClosures).toHaveLength(2);
+      const closures = result.validClosures.map((entry: { artifactRef: string }) =>
+        JSON.parse(readFileSync(path.join(fixture.root, entry.artifactRef), 'utf8'))
+      );
+      expect(closures.map((closure: Record<string, unknown>) => closure.commitProof.kind)).toEqual([
+        'owned_path_commit',
+        'owned_path_commit',
+      ]);
+      expect(
+        closures.every((closure: Record<string, any>) => closure.commitProof.commitCount === 1)
+      ).toBe(true);
+      expect(closures[1].dependencyClosureRefs).toHaveLength(1);
+      expect(git(fixture.root, ['rev-list', '--count', `${baseline}..HEAD`])).toBe('2');
+      const firstClosureRef = result.validClosures[0].artifactRef;
+      const firstClosureBytes = readFileSync(path.join(fixture.root, firstClosureRef));
+      writeFileSync(
+        path.join(fixture.root, 'src', 'partition-two.cjs'),
+        "module.exports = { status: 'stale' };\n",
+        'utf8'
+      );
+      const remediated = runMainAgent(fixture.root, [
+        'execute-goal-run',
+        '--cwd',
+        fixture.root,
+        '--active-run',
+        activeRun,
+        '--remediate-from',
+        closures[1].executionAuthorityId,
+        '--json',
+      ]);
+      expect(remediated.status, remediated.stderr || remediated.stdout).toBe(0);
+      const remediatedResult = JSON.parse(remediated.stdout);
+      expect(remediatedResult).toMatchObject({ status: 'closed', issueCode: null });
+      expect(remediatedResult.validClosures).toHaveLength(2);
+      expect(remediatedResult.validClosures[0]).toEqual(result.validClosures[0]);
+      expect(readFileSync(path.join(fixture.root, firstClosureRef))).toEqual(firstClosureBytes);
+      expect(readFileSync(path.join(fixture.root, 'src', 'partition-two.cjs'), 'utf8')).toContain(
+        "status: 'green'"
+      );
+      expect(git(fixture.root, ['rev-list', '--count', `${baseline}..HEAD`])).toBe('2');
+    } finally {
+      fixture.cleanup();
+    }
+  }, 60_000);
 
   it('reuses a compatible active partition before invoking the solver again', () => {
     const fixture = materializeImplementationReadinessFixture({ additionalGoalAtoms: 1 });
