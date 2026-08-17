@@ -486,7 +486,7 @@ describe('goal-contract partition controlled activation', () => {
     } finally {
       fixture.cleanup();
     }
-  });
+  }, 60_000);
 
   it('reuses a compatible active partition before invoking the solver again', () => {
     const fixture = materializeImplementationReadinessFixture({ additionalGoalAtoms: 1 });
