@@ -883,7 +883,7 @@ describe('control-plane generation lock', () => {
     );
     const completed = await runChild(
       {
-        options: options(lockPath, 100),
+        options: options(lockPath),
         criticalPath: path.join(root, 'critical'),
         violationPath: path.join(root, 'violation'),
         eventsPath: path.join(root, 'events'),
@@ -940,7 +940,7 @@ describe('control-plane generation lock', () => {
     );
     const completed = await runChild(
       {
-        options: options(lockPath, 100),
+        options: options(lockPath),
         criticalPath: path.join(root, 'critical'),
         violationPath: path.join(root, 'violation'),
         eventsPath: path.join(root, 'events'),
