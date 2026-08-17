@@ -287,7 +287,7 @@ export function acquireGoalExecutionRunLease(outRoot: string): GoalExecutionRunL
   return acquireControlPlaneGenerationLock({
     lockPath,
     lockSchemaVersion: 'GoalExecutionRunLease/v1',
-    timeoutMs: 100,
+    timeoutMs: ATTEMPT_LOCK_TIMEOUT_MS,
     pollMs: ATTEMPT_LOCK_POLL_MS,
     leaseMs: ATTEMPT_LOCK_LEASE_MS,
     conflictIssueCode: 'goal_execution_attempt_in_progress',
