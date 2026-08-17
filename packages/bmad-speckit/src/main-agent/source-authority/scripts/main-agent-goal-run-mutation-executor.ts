@@ -772,9 +772,6 @@ export function executeGoalRunMutation(input: {
         authorityFileId: String(input.authorityFileId),
       })
     : null;
-  const workspaceBefore = prepared
-    ? checkpointWorkspaceSnapshot(prepared.checkpoint)
-    : workspaceSnapshot(input.projectRoot);
   const before = new Map(
     prepared
       ? prepared.checkpoint.ownedPathStates.map((entry) => [
@@ -783,6 +780,9 @@ export function executeGoalRunMutation(input: {
         ])
       : ownedPaths.map((ownedPath) => [ownedPath, fileState(input.projectRoot, ownedPath)])
   );
+  const workspaceBefore = prepared
+    ? checkpointWorkspaceSnapshot(prepared.checkpoint)
+    : workspaceSnapshot(input.projectRoot);
   const parentHash = typeof partitionId === 'string' ? workspaceBefore.headHash : null;
   ownedPaths.forEach((ownedPath) => fileState(input.projectRoot, ownedPath));
   const currentBeforeAdapter = workspaceSnapshot(input.projectRoot);

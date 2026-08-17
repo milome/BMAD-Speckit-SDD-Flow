@@ -2,7 +2,6 @@ import { createHash, randomBytes } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { Worker } from 'node:worker_threads';
 import { stableControlPlaneStringify } from './canonical-hash';
 
 const MARKER_SCHEMA = 'ControlPlaneGenerationLockMarker/v1';
@@ -35,9 +34,7 @@ interface LiveMarker {
   markerPath: string;
 }
 
-interface GenerationHeartbeat {
-  worker: Worker;
-  state: Int32Array;
+interface GenerationLease {
   ticketDescriptor: number | null;
 }
 
@@ -48,7 +45,7 @@ interface OwnerDirectoryIdentity {
 }
 
 interface ActiveGenerationLock extends ControlPlaneGenerationLockHandle {
-  heartbeat: GenerationHeartbeat;
+  lease: GenerationLease;
 }
 
 export interface ControlPlaneGenerationLockOptions {
@@ -613,94 +610,26 @@ function assertOwnerDirectoryIdentity(
   if (!ownerDirectoryIdentityMatches(ownersPath, identity, options)) fail(options);
 }
 
-const HEARTBEAT_SOURCE = String.raw`
-const fs = require('node:fs');
-const { workerData } = require('node:worker_threads');
-const state = new Int32Array(workerData.state);
-const descriptor = workerData.ticketDescriptor;
-try {
-  fs.fstatSync(descriptor);
-  Atomics.store(state, 0, 1);
-  Atomics.notify(state, 0);
-  while (Atomics.load(state, 1) === 0) {
-    const now = new Date();
-    fs.futimesSync(descriptor, now, now);
-    Atomics.wait(state, 1, 0, workerData.intervalMs);
-  }
-} catch (error) {
-  const failedAfterReady = Atomics.load(state, 0) === 1;
-  Atomics.store(state, 0, -1);
-  Atomics.notify(state, 0);
-  if (failedAfterReady) throw error;
-} finally {
-  Atomics.store(state, 2, 1);
-  Atomics.notify(state, 2);
-}
-`;
-
-function startGenerationHeartbeat(
+function startGenerationLease(
   ticketDescriptor: number,
   options: ControlPlaneGenerationLockOptions
-): GenerationHeartbeat {
-  const state = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 3));
-  const heartbeatEnvironment = Object.fromEntries(
-    Object.entries(process.env).filter(
-      (entry): entry is [string, string] =>
-        entry[1] !== undefined && !entry[0].startsWith('BMAD_LOCK_')
-    )
-  );
-  let worker: Worker;
+): GenerationLease {
   try {
-    worker = new Worker(HEARTBEAT_SOURCE, {
-      eval: true,
-      env: heartbeatEnvironment,
-      execArgv: [],
-      workerData: {
-        ticketDescriptor,
-        intervalMs: Math.max(10, Math.floor(options.leaseMs / 3)),
-        state: state.buffer,
-      },
-    });
+    fs.fstatSync(ticketDescriptor);
+    const now = new Date();
+    fs.futimesSync(ticketDescriptor, now, now);
   } catch {
     const closeError = closeOwnedDescriptorOrAbort(ticketDescriptor);
     if (closeError) throw closeError;
     return fail(options);
   }
-  worker.unref();
-  const readyDeadline = Date.now() + Math.min(options.timeoutMs, 2_000);
-  while (Atomics.load(state, 0) === 0 && Date.now() < readyDeadline) {
-    Atomics.wait(state, 0, 0, Math.min(options.pollMs, 25));
-  }
-  if (Atomics.load(state, 0) !== 1) {
-    Atomics.store(state, 1, 1);
-    Atomics.notify(state, 1);
-    void worker.terminate();
-    const stoppedDeadline = Date.now() + 2_000;
-    while (Atomics.load(state, 2) === 0 && Date.now() < stoppedDeadline) {
-      Atomics.wait(state, 2, 0, 25);
-    }
-    if (Atomics.load(state, 2) === 0) process.abort();
-    const closeError = closeOwnedDescriptorOrAbort(ticketDescriptor);
-    if (closeError) throw closeError;
-    return fail(options);
-  }
-  return { worker, state, ticketDescriptor };
+  return { ticketDescriptor };
 }
 
-function stopGenerationHeartbeat(heartbeat: GenerationHeartbeat): void {
-  Atomics.store(heartbeat.state, 1, 1);
-  Atomics.notify(heartbeat.state, 1);
-  const deadline = Date.now() + 2_000;
-  while (Atomics.load(heartbeat.state, 2) === 0 && Date.now() < deadline) {
-    Atomics.wait(heartbeat.state, 2, 0, 25);
-  }
-  if (Atomics.load(heartbeat.state, 2) === 0) {
-    void heartbeat.worker.terminate();
-    process.abort();
-  }
-  if (heartbeat.ticketDescriptor !== null) {
-    const closeError = closeOwnedDescriptorOrAbort(heartbeat.ticketDescriptor);
-    heartbeat.ticketDescriptor = null;
+function stopGenerationLease(lease: GenerationLease): void {
+  if (lease.ticketDescriptor !== null) {
+    const closeError = closeOwnedDescriptorOrAbort(lease.ticketDescriptor);
+    lease.ticketDescriptor = null;
     if (closeError) throw closeError;
   }
 }
@@ -731,7 +660,7 @@ export function acquireControlPlaneGenerationLock(
   );
   let ticketPath = '';
   let ticketDescriptor: number | null = null;
-  let heartbeat: GenerationHeartbeat | null = null;
+  let lease: GenerationLease | null = null;
   try {
     publishMarker(choosingPath, { ...markerBase, markerKind: 'choosing', ticket: null }, options);
     let ticket: bigint | null = null;
@@ -767,9 +696,9 @@ export function acquireControlPlaneGenerationLock(
       true
     );
     if (ticketDescriptor === null) fail(options);
-    const heartbeatDescriptor = ticketDescriptor;
+    const leaseDescriptor = ticketDescriptor;
     ticketDescriptor = null;
-    heartbeat = startGenerationHeartbeat(heartbeatDescriptor, options);
+    lease = startGenerationLease(leaseDescriptor, options);
     removeUnreturnedAuthoritativeMarkerOrAbort(choosingPath);
 
     while (Date.now() < deadline) {
@@ -810,7 +739,7 @@ export function acquireControlPlaneGenerationLock(
           ownerToken: handle.ownerToken,
           ticket: handle.ticket,
           ticketPath: handle.ticketPath,
-          heartbeat,
+          lease,
         });
         return handle;
       }
@@ -828,9 +757,9 @@ export function acquireControlPlaneGenerationLock(
       const closeError = closeOwnedDescriptorOrAbort(ticketDescriptor);
       if (!cleanupError && closeError) cleanupError = closeError;
     }
-    if (heartbeat) {
+    if (lease) {
       try {
-        stopGenerationHeartbeat(heartbeat);
+        stopGenerationLease(lease);
       } catch (error) {
         cleanupError ??= error;
       }
@@ -865,7 +794,7 @@ export function releaseControlPlaneGenerationLock(handle: ControlPlaneGeneration
   ) {
     throw new Error('control_plane_generation_lock_handle_invalid');
   }
-  stopGenerationHeartbeat(ownership.heartbeat);
+  stopGenerationLease(ownership.lease);
   if (!fs.existsSync(ownership.ticketPath)) {
     throw new Error('control_plane_generation_lock_handle_invalid');
   }

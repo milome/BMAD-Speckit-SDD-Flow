@@ -7,6 +7,7 @@ const original = {
   closeSync: fs.closeSync,
   existsSync: fs.existsSync,
   fsyncSync: fs.fsyncSync,
+  futimesSync: fs.futimesSync,
   linkSync: fs.linkSync,
   openSync: fs.openSync,
   readFileSync: fs.readFileSync,
@@ -32,7 +33,8 @@ function waitForFile(target) {
 const faultOperation = process.env.BMAD_LOCK_FAULT_OPERATION;
 const faultPathIncludes = process.env.BMAD_LOCK_FAULT_PATH_INCLUDES;
 const faultPathEndsWith = process.env.BMAD_LOCK_FAULT_PATH_ENDS_WITH;
-const faultHeartbeatClose = process.env.BMAD_LOCK_FAULT_HEARTBEAT_CLOSE === '1';
+const faultLeaseClose = process.env.BMAD_LOCK_FAULT_LEASE_CLOSE === '1';
+const rejectHeartbeatWorker = process.env.BMAD_LOCK_REJECT_HEARTBEAT_WORKER === '1';
 const faultAlways = process.env.BMAD_LOCK_FAULT_ALWAYS === '1';
 const holdPathIncludes = process.env.BMAD_LOCK_HOLD_PATH_INCLUDES;
 const holdPathEndsWith = process.env.BMAD_LOCK_HOLD_PATH_ENDS_WITH;
@@ -56,7 +58,7 @@ let holdInjected = false;
 let beforeOpenHoldInjected = false;
 let readdirHoldInjected = false;
 let linkHoldInjected = false;
-let heartbeatStarted = false;
+let leaseStarted = false;
 
 if (
   (faultOperation && faultPathIncludes) ||
@@ -144,13 +146,16 @@ if (
     return result;
   };
 
+  fs.futimesSync = function patchedFutimes(descriptor, ...rest) {
+    if (faultLeaseClose && trackedDescriptors.has(descriptor)) {
+      leaseStarted = true;
+    }
+    return original.futimesSync(descriptor, ...rest);
+  };
+
   fs.closeSync = function patchedClose(descriptor) {
     if (trackedDescriptors.has(descriptor)) {
-      if (
-        !faultInjected &&
-        faultOperation === 'closeSync' &&
-        (!faultHeartbeatClose || heartbeatStarted)
-      ) {
+      if (!faultInjected && faultOperation === 'closeSync' && (!faultLeaseClose || leaseStarted)) {
         faultInjected = true;
         event(`fault:${trackedDescriptors.get(descriptor)}`);
         const error = new Error('injected_lock_close_failure');
@@ -222,30 +227,14 @@ if (linkHoldPathIncludes || rejectLinkDestinationIncludes) {
   };
 }
 
-if (process.env.BMAD_LOCK_FAKE_STUCK_HEARTBEAT === '1' || faultHeartbeatClose) {
+if (rejectHeartbeatWorker) {
   const workerThreads = require('node:worker_threads');
   const OriginalWorker = workerThreads.Worker;
-  class StuckHeartbeatWorker {
-    constructor(options) {
-      this.state = new Int32Array(options.workerData.state);
-      Atomics.store(this.state, 0, 1);
-      Atomics.notify(this.state, 0);
-    }
-
-    unref() {}
-
-    terminate() {
-      return Promise.resolve(1);
-    }
-  }
   workerThreads.Worker = new Proxy(OriginalWorker, {
     construct(Target, args) {
       const [source, options] = args;
       if (options?.eval && String(source).includes('workerData.ticketDescriptor')) {
-        heartbeatStarted = true;
-        if (process.env.BMAD_LOCK_FAKE_STUCK_HEARTBEAT === '1') {
-          return new StuckHeartbeatWorker(options);
-        }
+        throw new Error('heartbeat_worker_forbidden');
       }
       return Reflect.construct(Target, args);
     },

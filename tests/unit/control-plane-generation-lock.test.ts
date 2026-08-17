@@ -764,7 +764,7 @@ describe('control-plane generation lock', () => {
     }
   });
 
-  it('does not follow a replacement ticket symlink when starting its heartbeat', async () => {
+  it('does not follow a replacement ticket symlink when initializing its lease', async () => {
     const root = temporaryRoot();
     const outside = temporaryRoot();
     const lockPath = path.join(root, 'control.lock');
@@ -892,7 +892,7 @@ describe('control-plane generation lock', () => {
         BMAD_LOCK_FAULT_OPERATION: 'closeSync',
         BMAD_LOCK_FAULT_PATH_INCLUDES: '.marker-candidate-',
         BMAD_LOCK_FAULT_PATH_ENDS_WITH: '.ticket',
-        BMAD_LOCK_FAULT_HEARTBEAT_CLOSE: '1',
+        BMAD_LOCK_FAULT_LEASE_CLOSE: '1',
         BMAD_LOCK_EVENT_PATH: eventsPath,
       }
     );
@@ -957,7 +957,7 @@ describe('control-plane generation lock', () => {
     expect(completed.output).toEqual({});
   });
 
-  it('fails the process closed when heartbeat shutdown cannot be confirmed', async () => {
+  it('does not require a worker thread to maintain a live generation lease', async () => {
     const root = temporaryRoot();
     const completed = await runChild(
       {
@@ -967,11 +967,13 @@ describe('control-plane generation lock', () => {
         eventsPath: path.join(root, 'events'),
         releaseBeforeOutput: true,
       },
-      { BMAD_LOCK_FAKE_STUCK_HEARTBEAT: '1' }
+      { BMAD_LOCK_REJECT_HEARTBEAT_WORKER: '1' }
     );
 
-    expect(completed.status).not.toBe(0);
-    expect(Object.keys(completed.output)).toEqual([]);
+    expect(completed).toEqual({
+      status: 0,
+      output: { ok: true, ticket: expect.any(String) },
+    });
   });
 
   it('keeps a malformed marker with a live owner after its mtime lease expires', () => {
@@ -995,7 +997,7 @@ describe('control-plane generation lock', () => {
     expect(existsSync(markerPath)).toBe(true);
   });
 
-  it('renews a live owner generation beyond its lease duration', async () => {
+  it('keeps a live owner generation authoritative beyond its lease duration', async () => {
     const root = temporaryRoot();
     const lockPath = path.join(root, 'control.lock');
     const enteredPath = path.join(root, 'entered');
@@ -1009,13 +1011,8 @@ describe('control-plane generation lock', () => {
       resumePath,
     });
     await waitForPath(enteredPath);
-    const [ticketName] = flatMarkerNames(lockPath).filter((name) => name.endsWith('.ticket'));
-    const ticketPath = path.join(root, ticketName);
-    const beforeHeartbeat = statSync(ticketPath).mtimeMs;
     await new Promise((resolve) => setTimeout(resolve, 250));
-    const afterHeartbeat = statSync(ticketPath).mtimeMs;
 
-    expect(afterHeartbeat).toBeGreaterThan(beforeHeartbeat);
     expect(() =>
       acquireControlPlaneGenerationLock({ ...options(lockPath, 100), leaseMs: 90 })
     ).toThrowError('test_control_plane_lock_conflict');
