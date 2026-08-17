@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/goal-run-execution-adapter-authority.schema.json",
+  "title": "Goal Run Execution Adapter Authority",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "adapterId",
+    "protocol",
+    "executableRef",
+    "args",
+    "timeoutMs",
+    "adapterAuthorityHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "GoalRunExecutionAdapterAuthority/v1" },
+    "adapterId": { "type": "string", "minLength": 1 },
+    "protocol": { "const": "GoalRunMutationProtocol/v1" },
+    "executableRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "args": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "timeoutMs": { "type": "integer", "minimum": 1, "maximum": 900000 },
+    "adapterAuthorityHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+  }
+}

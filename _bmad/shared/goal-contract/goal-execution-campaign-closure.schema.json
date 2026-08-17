@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/goal-execution-campaign-closure.schema.json",
+  "title": "Goal Execution Campaign Closure",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "profile", "goalId", "goalExecutionIRHash", "candidateRunId",
+    "activeRunPointerHash", "activationRecordHash", "executionMode",
+    "readinessScopedInputDigest", "readinessCandidateRef",
+    "normalizedReadinessCommands", "readinessRedOutcomes",
+    "orderedClosureRefs", "orderedEvidenceRefs",
+    "reviewerInvocationCount", "auditorInvocationCount", "judgeSemanticAttemptCount",
+    "decision", "campaignClosureHash"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "goal-contract-campaign-closure-receipt/v1" },
+    "profile": { "enum": ["requirements_backed", "standalone"] },
+    "goalId": { "type": "string", "minLength": 1 },
+    "goalExecutionIRHash": { "$ref": "#/$defs/hash" },
+    "candidateRunId": { "type": "string", "pattern": "^RUN-[A-F0-9]{16}$" },
+    "activeRunPointerHash": { "$ref": "#/$defs/hash" },
+    "activationRecordHash": { "$ref": "#/$defs/hash" },
+    "executionMode": { "enum": ["direct_goal", "partitioned_goal"] },
+    "readinessScopedInputDigest": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+    "readinessCandidateRef": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/hashRef" }] },
+    "normalizedReadinessCommands": { "oneOf": [{ "type": "null" }, { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/command" } }] },
+    "readinessRedOutcomes": { "oneOf": [{ "type": "null" }, { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/outcome" } }] },
+    "orderedClosureRefs": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/closureRef" } },
+    "orderedEvidenceRefs": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/hashRef" } },
+    "reviewerInvocationCount": { "const": 0 },
+    "auditorInvocationCount": { "const": 0 },
+    "judgeSemanticAttemptCount": { "const": 0 },
+    "decision": { "const": "pass" },
+    "campaignClosureHash": { "$ref": "#/$defs/hash" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "profile": { "const": "requirements_backed" } } },
+      "then": {
+        "properties": {
+          "readinessScopedInputDigest": { "$ref": "#/$defs/hash" },
+          "readinessCandidateRef": { "$ref": "#/$defs/hashRef" },
+          "normalizedReadinessCommands": { "type": "array", "minItems": 1 },
+          "readinessRedOutcomes": { "type": "array", "minItems": 1 }
+        }
+      },
+      "else": {
+        "properties": {
+          "readinessScopedInputDigest": { "type": "null" },
+          "readinessCandidateRef": { "type": "null" },
+          "normalizedReadinessCommands": { "type": "null" },
+          "readinessRedOutcomes": { "type": "null" }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "hashRef": { "type": "object", "additionalProperties": false, "required": ["path", "hash"], "properties": { "path": { "type": "string", "minLength": 1 }, "hash": { "$ref": "#/$defs/hash" } } },
+    "closureRef": { "type": "object", "additionalProperties": false, "required": ["executionAuthorityId", "path", "hash"], "properties": { "executionAuthorityId": { "type": "string", "minLength": 1 }, "path": { "type": "string", "minLength": 1 }, "hash": { "$ref": "#/$defs/hash" } } },
+    "stringSet": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "command": {
+      "type": "object", "additionalProperties": false,
+      "required": ["normalizedCommandHash", "commandIds", "executable", "args", "normalizedInvocation", "expectedTestIds", "expectedFailureSignatures"],
+      "properties": {
+        "normalizedCommandHash": { "$ref": "#/$defs/hash" },
+        "commandIds": { "$ref": "#/$defs/stringSet" },
+        "executable": { "enum": ["node", "npm", "npx", "pnpm", "yarn", "bun"] },
+        "args": { "type": "array", "items": { "type": "string" } },
+        "normalizedInvocation": { "type": "string", "minLength": 1 },
+        "expectedTestIds": { "$ref": "#/$defs/stringSet" },
+        "expectedFailureSignatures": { "$ref": "#/$defs/stringSet" }
+      }
+    },
+    "outcome": {
+      "type": "object", "additionalProperties": false,
+      "required": ["normalizedCommandHash", "commandIds", "status", "exitCode", "failedTestIds", "expectedFailureSignaturesObserved", "unrelatedFailureIds", "negativeControl", "rawLogRef"],
+      "properties": {
+        "normalizedCommandHash": { "$ref": "#/$defs/hash" },
+        "commandIds": { "$ref": "#/$defs/stringSet" },
+        "status": { "const": "expected_red_observed" },
+        "exitCode": { "const": 1 },
+        "failedTestIds": { "$ref": "#/$defs/stringSet" },
+        "expectedFailureSignaturesObserved": { "$ref": "#/$defs/stringSet" },
+        "unrelatedFailureIds": { "type": "array", "maxItems": 0 },
+        "negativeControl": {
+          "type": "object", "additionalProperties": false,
+          "required": ["runnerCompleted", "tapFailuresObserved", "noUnrelatedFailures", "environmentFailure"],
+          "properties": {
+            "runnerCompleted": { "const": true },
+            "tapFailuresObserved": { "const": true },
+            "noUnrelatedFailures": { "const": true },
+            "environmentFailure": { "const": false }
+          }
+        },
+        "rawLogRef": {
+          "type": "object", "additionalProperties": false,
+          "required": ["path", "artifactBytesHash"],
+          "properties": {
+            "path": { "type": "string", "minLength": 1 },
+            "artifactBytesHash": { "$ref": "#/$defs/hash" }
+          }
+        }
+      }
+    }
+  }
+}

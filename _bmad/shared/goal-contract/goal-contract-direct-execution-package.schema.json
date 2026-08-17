@@ -4,15 +4,16 @@
   "title": "Goal Contract Direct Execution Package",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "profile", "goalId", "goalExecutionIRHash", "executionMode", "goalExecutionAuthorityRef", "eligibilityRef", "artifacts", "directExecutionPackageHash"],
+  "required": ["schemaVersion", "profile", "goalId", "goalExecutionIRHash", "executionMode", "goalExecutionAuthorityRef", "eligibilityRef", "executionAdapterRef", "artifacts", "directExecutionPackageHash"],
   "properties": {
-    "schemaVersion": { "const": "GoalContractDirectExecutionPackage/v1" },
+    "schemaVersion": { "const": "GoalContractDirectExecutionPackage/v2" },
     "profile": { "enum": ["requirements_backed", "standalone"] },
     "goalId": { "type": "string", "minLength": 1 },
     "goalExecutionIRHash": { "$ref": "#/$defs/hash" },
     "executionMode": { "const": "direct_goal" },
     "goalExecutionAuthorityRef": { "$ref": "#/$defs/hashRef" },
     "eligibilityRef": { "$ref": "#/$defs/hashRef" },
+    "executionAdapterRef": { "$ref": "#/$defs/hashRef" },
     "artifacts": {
       "type": "array",
       "minItems": 4,

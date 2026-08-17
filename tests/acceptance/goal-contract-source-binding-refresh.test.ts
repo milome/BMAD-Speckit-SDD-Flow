@@ -6,6 +6,7 @@ import { produceImplementationReadiness } from '../../packages/bmad-speckit/src/
 import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 import { compileRequirementsBackedGoal } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-requirements-adapter';
 import { refreshGoalSourceBinding } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-source-binding-refresh';
+import { materializeGoalRunExecutionAdapter } from '../helpers/goal-run-execution-adapter-fixture';
 import { materializeImplementationReadinessFixture } from '../helpers/implementation-readiness-fixture';
 
 const ROOT = process.cwd();
@@ -66,6 +67,7 @@ describe('Goal source binding-only refresh', () => {
         requirementRecordPath: fixture.runtimeRecordPath,
         outRoot,
       });
+      materializeGoalRunExecutionAdapter(outRoot);
       const first = activate(fixture.root, compiled.activeAuthorityRef.path);
       const firstActivation = first.artifacts.find(
         (artifact: { role: string }) => artifact.role === 'activation_record'

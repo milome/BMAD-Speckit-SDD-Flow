@@ -1,28 +1,36 @@
-const { createHash } = require('node:crypto');
-const fs = require('node:fs');
-const path = require('node:path');
-const { hashControlPlaneValue, stableControlPlaneStringify } = require(
-  __filename.endsWith('.ts') ? './canonical-hash.ts' : './canonical-hash'
-);
-const { validateGoalContractSchema } = require(
-  __filename.endsWith('.ts') ? './schema-registry.ts' : './schema-registry'
-);
+import { createHash } from 'node:crypto';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { hashControlPlaneValue, stableControlPlaneStringify } from './canonical-hash';
+import {
+  acquireControlPlaneGenerationLock,
+  releaseControlPlaneGenerationLock,
+} from './control-plane-generation-lock';
+import {
+  freezeGoalRunExecutionAdapterAuthority,
+  PACKAGED_GOAL_RUN_EXECUTION_ADAPTER_PATH,
+  resolvePackagedGoalRunExecutionAdapterAuthority,
+} from './goal-run-execution-adapter-authority';
+import { validateGoalContractSchema } from './schema-registry';
 
 export type FrozenGoalActivationModule = never;
 
 const EXECUTION_ELIGIBILITY_SCHEMA = 'goal-contract-execution-eligibility.schema.json';
 const DIRECT_EXECUTION_PACKAGE_SCHEMA = 'goal-contract-direct-execution-package.schema.json';
 const CHILD_EXECUTION_PACKAGE_SCHEMA = 'goal-contract-child-execution-package.schema.json';
+const CHILD_EXECUTION_CONTRACT_SCHEMA = 'goal-child-execution-contract.schema.json';
 const PARTITION_MANIFEST_SCHEMA = 'goal-contract-frozen-partition-manifest.schema.json';
 const CANDIDATE_RUN_SCHEMA = 'goal-contract-candidate-run.schema.json';
 const ACTIVATION_RECORD_SCHEMA = 'goal-contract-activation-record.schema.json';
 const ACTIVE_RUN_POINTER_SCHEMA = 'goal-contract-active-run-pointer.schema.json';
 const ACTIVATION_RESULT_SCHEMA = 'goal-contract-activation-result.schema.json';
+const GOAL_EXECUTION_IR_SCHEMA = 'goal-execution-ir.schema.json';
 const HASH_PATTERN = /^sha256:[0-9a-f]{64}$/u;
 const ACTIVE_RUN_ZERO_HASH =
   'sha256:0000000000000000000000000000000000000000000000000000000000000000';
-const ACTIVE_RUN_LOCK_SLEEP = new Int32Array(new SharedArrayBuffer(4));
 const ACTIVE_RUN_LOCK_LEASE_MS = 30_000;
+const ACTIVE_RUN_LOCK_TIMEOUT_MS = 2_000;
+const ACTIVE_RUN_LOCK_POLL_MS = 10;
 
 // Schema validation establishes shape before dynamic records are consumed.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -69,8 +77,23 @@ function normalizedPath(filePath: string): string {
 }
 
 function isConfined(root: string, target: string): boolean {
-  const relative = path.relative(path.resolve(root), path.resolve(target));
-  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+  const resolvedRoot = path.resolve(root);
+  const resolvedTarget = path.resolve(target);
+  const relative = path.relative(resolvedRoot, resolvedTarget);
+  if (relative !== '' && (relative.startsWith('..') || path.isAbsolute(relative))) return false;
+  let existing = resolvedTarget;
+  while (!fs.existsSync(existing)) {
+    const parent = path.dirname(existing);
+    if (parent === existing) return false;
+    existing = parent;
+  }
+  try {
+    const realRoot = fs.realpathSync.native(resolvedRoot);
+    const realExisting = fs.realpathSync.native(existing);
+    return realExisting === realRoot || realExisting.startsWith(`${realRoot}${path.sep}`);
+  } catch {
+    return false;
+  }
 }
 
 function confinedPath(root: string, value: unknown, field: string): string {
@@ -259,11 +282,24 @@ function resolveFrozenGoalAuthority(input: { projectRoot: string; goalAuthorityP
 }
 
 function validateGoalExecutionAdmission(input: {
-  phase: 'activation_prepare' | 'activation_commit';
+  phase: 'activation_prepare' | 'activation_commit' | 'execution_start_or_resume';
   projectRoot: string;
   goalAuthorityPath: string;
   expectedGoalExecutionIRHash?: string;
+  activeRunPointerPath?: string;
 }) {
+  if (input.phase === 'execution_start_or_resume') {
+    const committed = resolveCommittedActiveRun({
+      projectRoot: input.projectRoot,
+      activeRunPointerPath: requireText(input.activeRunPointerPath, 'activeRunPointerPath'),
+    });
+    if (path.resolve(input.goalAuthorityPath) !== path.resolve(committed.goalAuthorityPath)) {
+      throw failure('goal_execution_authority_invalid', {
+        field: 'execution_start_or_resume.goalAuthorityPath',
+      });
+    }
+    return Object.freeze({ ...committed, phase: input.phase });
+  }
   const resolved = resolveFrozenGoalAuthority(input);
   if (input.phase === 'activation_commit') {
     const expectedGoalExecutionIRHash = requireHash(
@@ -293,14 +329,19 @@ function validateGoalExecutionAdmission(input: {
     const { validateRequirementsBackedGoalAdmissionCurrent } = require(
       __filename.endsWith('.ts') ? './goal-requirements-adapter.ts' : './goal-requirements-adapter'
     );
-    validateRequirementsBackedGoalAdmissionCurrent({
+    const requirementsReadiness = validateRequirementsBackedGoalAdmissionCurrent({
       projectRoot: resolved.projectRoot,
       requestId,
       requirementRecordPath,
       expectedRequirementsLineage: requirementsLineage,
     });
+    return Object.freeze({
+      ...resolved,
+      phase: input.phase,
+      requirementsReadiness,
+    });
   }
-  return Object.freeze({ ...resolved, phase: input.phase });
+  return Object.freeze({ ...resolved, phase: input.phase, requirementsReadiness: null });
 }
 
 function sortedUniqueText(values: unknown[]): string[] {
@@ -588,6 +629,7 @@ function compileDirectPackage(input: {
   activeAuthority: SchemaRecord;
   goalExecutionIr: SchemaRecord;
   eligibility: SchemaRecord;
+  executionAdapterRef: { path: string; hash: string };
 }): {
   directPackage: SchemaRecord;
   files: Map<string, Buffer>;
@@ -652,7 +694,7 @@ function compileDirectPackage(input: {
   };
   const auditReceiptBytes = canonicalJsonBytes(auditReceipt);
   const packagePayload = {
-    schemaVersion: 'GoalContractDirectExecutionPackage/v1',
+    schemaVersion: 'GoalContractDirectExecutionPackage/v2',
     profile: ir.profile,
     goalId: ir.goalId,
     goalExecutionIRHash: ir.goalExecutionIRHash,
@@ -665,6 +707,7 @@ function compileDirectPackage(input: {
       path: 'eligibility.json',
       hash: input.eligibility.eligibilityHash,
     },
+    executionAdapterRef: input.executionAdapterRef,
     artifacts: [
       {
         role: 'model_packet',
@@ -777,6 +820,9 @@ function readActiveRunPointer(pointerPath: string): SchemaRecord | null {
   const pointer = readJsonFile(pointerPath, 'active_run_cas_conflict');
   validateGoalContractSchema(ACTIVE_RUN_POINTER_SCHEMA, pointer);
   verifyRecordHash(pointer, 'activeRunPointerHash', 'active_run_cas_conflict');
+  if (!fs.readFileSync(pointerPath).equals(canonicalJsonBytes(pointer))) {
+    throw failure('active_run_cas_conflict');
+  }
   return pointer;
 }
 
@@ -791,44 +837,6 @@ function activeRunPointerMatches(
   );
 }
 
-function activeRunLockOwnerAlive(ownerPid: number): boolean {
-  if (!Number.isInteger(ownerPid) || ownerPid <= 0) return false;
-  try {
-    process.kill(ownerPid, 0);
-    return true;
-  } catch (error) {
-    return (error as NodeJS.ErrnoException).code === 'EPERM';
-  }
-}
-
-function readActiveRunLock(lockPath: string): SchemaRecord | null {
-  try {
-    const value = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
-    return isRecord(value) ? value : null;
-  } catch {
-    return null;
-  }
-}
-
-function reclaimStaleActiveRunLock(lockPath: string): boolean {
-  if (!fs.existsSync(lockPath)) return true;
-  const observedBytes = fs.readFileSync(lockPath);
-  const lock = readActiveRunLock(lockPath);
-  const stale = lock
-    ? lock.schemaVersion === 'GoalContractActiveRunLock/v1' &&
-      !activeRunLockOwnerAlive(Number(lock.ownerPid))
-    : fs.statSync(lockPath).mtimeMs + ACTIVE_RUN_LOCK_LEASE_MS <= Date.now();
-  if (!stale || !fs.existsSync(lockPath)) return false;
-  if (!fs.readFileSync(lockPath).equals(observedBytes)) return false;
-  fs.rmSync(lockPath, { force: true });
-  return !fs.existsSync(lockPath);
-}
-
-function releaseActiveRunLock(lockPath: string, ownerToken: string): void {
-  const lock = readActiveRunLock(lockPath);
-  if (lock?.ownerToken === ownerToken) fs.rmSync(lockPath, { force: true });
-}
-
 function activeRunPointerClaimPath(pointerPath: string, nextPointerVersion: number): string {
   return path.join(
     path.dirname(pointerPath),
@@ -839,6 +847,120 @@ function activeRunPointerClaimPath(pointerPath: string, nextPointerVersion: numb
 
 function activeRunVersionLockPath(pointerPath: string, nextPointerVersion: number): string {
   return `${pointerPath}.lock-v${String(nextPointerVersion).padStart(16, '0')}`;
+}
+
+function readHighestContinuousActiveRunClaim(pointerPath: string): SchemaRecord | null {
+  const claimsRoot = path.join(path.dirname(pointerPath), 'active-run-claims');
+  if (!fs.existsSync(claimsRoot)) return null;
+  try {
+    const claimNames = fs
+      .readdirSync(claimsRoot)
+      .filter((name) => /^v[0-9]{16}\.json$/u.test(name))
+      .sort();
+    if (claimNames.length === 0) return null;
+    let previousHash = ACTIVE_RUN_ZERO_HASH;
+    let previousVersion = 0;
+    let highest: SchemaRecord | null = null;
+    const expectedClaimKeys = [
+      'activationRecordHash',
+      'activationRecordRef',
+      'candidateRunId',
+      'claimHash',
+      'expectedBeforeHash',
+      'expectedBeforeVersion',
+      'nextActiveRunPointerHash',
+      'nextPointerVersion',
+      'schemaVersion',
+    ].sort();
+    for (const claimName of claimNames) {
+      const nextVersion = previousVersion + 1;
+      if (claimName !== `v${String(nextVersion).padStart(16, '0')}.json`) {
+        throw failure('active_run_cas_conflict');
+      }
+      const claimPath = path.join(claimsRoot, claimName);
+      const claim = readJsonFile(claimPath, 'active_run_cas_conflict');
+      if (
+        stableControlPlaneStringify(Object.keys(claim).sort()) !==
+          stableControlPlaneStringify(expectedClaimKeys) ||
+        claim.schemaVersion !== 'GoalContractActiveRunPointerClaim/v1' ||
+        claim.expectedBeforeHash !== previousHash ||
+        claim.expectedBeforeVersion !== previousVersion ||
+        claim.nextPointerVersion !== nextVersion ||
+        !fs.readFileSync(claimPath).equals(canonicalJsonBytes(claim)) ||
+        hashControlPlaneValue(recordWithoutHash(claim, 'claimHash')) !== claim.claimHash
+      ) {
+        throw failure('active_run_cas_conflict');
+      }
+      const payload = {
+        schemaVersion: 'GoalContractActiveRunPointer/v1',
+        pointerVersion: nextVersion,
+        candidateRunId: claim.candidateRunId,
+        activationRecordRef: claim.activationRecordRef,
+        activationRecordHash: claim.activationRecordHash,
+      };
+      const pointer = {
+        ...payload,
+        activeRunPointerHash: hashControlPlaneValue(payload),
+      };
+      validateGoalContractSchema(ACTIVE_RUN_POINTER_SCHEMA, pointer);
+      if (pointer.activeRunPointerHash !== claim.nextActiveRunPointerHash) {
+        throw failure('active_run_cas_conflict');
+      }
+      highest = pointer;
+      previousHash = pointer.activeRunPointerHash;
+      previousVersion = nextVersion;
+    }
+    return highest;
+  } catch (error) {
+    if ((error as { failureClass?: string }).failureClass === 'active_run_cas_conflict') {
+      throw error;
+    }
+    throw failure('active_run_cas_conflict');
+  }
+}
+
+function requireCurrentActiveRunClaim(pointerPath: string, pointer: SchemaRecord): void {
+  const highestClaimedPointer = readHighestContinuousActiveRunClaim(pointerPath);
+  if (
+    !highestClaimedPointer ||
+    highestClaimedPointer.pointerVersion !== pointer.pointerVersion ||
+    highestClaimedPointer.activeRunPointerHash !== pointer.activeRunPointerHash ||
+    highestClaimedPointer.activationRecordHash !== pointer.activationRecordHash
+  ) {
+    throw failure('active_run_cas_conflict');
+  }
+}
+
+function restoreClaimedActiveRunPointer(pointerPath: string, pointer: SchemaRecord): SchemaRecord {
+  const lock = acquireControlPlaneGenerationLock({
+    lockPath: activeRunVersionLockPath(pointerPath, Number(pointer.pointerVersion)),
+    lockSchemaVersion: 'GoalContractActiveRunLock/v2',
+    legacyLockSchemaVersions: ['GoalContractActiveRunLock/v1'],
+    timeoutMs: ACTIVE_RUN_LOCK_TIMEOUT_MS,
+    pollMs: ACTIVE_RUN_LOCK_POLL_MS,
+    leaseMs: ACTIVE_RUN_LOCK_LEASE_MS,
+    conflictIssueCode: 'active_run_cas_conflict',
+  });
+  let temporaryPath = '';
+  try {
+    const current = readActiveRunPointer(pointerPath);
+    if (current) {
+      if (current.activeRunPointerHash !== pointer.activeRunPointerHash) {
+        throw failure('active_run_cas_conflict');
+      }
+      return current;
+    }
+    const bytes = canonicalJsonBytes(pointer);
+    temporaryPath = `${pointerPath}.candidate-${process.pid}-${Date.now()}-${process.hrtime.bigint()}`;
+    writeFileDurably(temporaryPath, bytes);
+    fs.renameSync(temporaryPath, pointerPath);
+    temporaryPath = '';
+    if (!fs.readFileSync(pointerPath).equals(bytes)) throw failure('active_run_cas_conflict');
+    return pointer;
+  } finally {
+    if (temporaryPath && fs.existsSync(temporaryPath)) fs.rmSync(temporaryPath, { force: true });
+    releaseControlPlaneGenerationLock(lock);
+  }
 }
 
 function publishActiveRunPointerClaim(input: {
@@ -886,7 +1008,7 @@ function publishActiveRunPointerClaim(input: {
   return created;
 }
 
-function commitActiveRunPointer(input: {
+function commitActiveRunPointerUnderControl(input: {
   pointerPath: string;
   expectedBeforeHash: string;
   expectedBeforeVersion: number;
@@ -895,11 +1017,44 @@ function commitActiveRunPointer(input: {
   activationRecordHash: string;
 }): { pointer: SchemaRecord; reused: boolean } {
   fs.mkdirSync(path.dirname(input.pointerPath), { recursive: true });
-  const alreadyCommitted = readActiveRunPointer(input.pointerPath);
+  let alreadyCommitted = readActiveRunPointer(input.pointerPath);
+  const { readGoalExecutionAttemptPointer } = require(
+    __filename.endsWith('.ts')
+      ? '../../../main-agent/source-authority/scripts/main-agent-goal-execution-attempt.ts'
+      : '../../../main-agent/source-authority/scripts/main-agent-goal-execution-attempt'
+  );
+  const outRoot = path.dirname(path.dirname(path.dirname(input.pointerPath)));
+  const attemptPointer = readGoalExecutionAttemptPointer({ outRoot });
+  if (!alreadyCommitted) {
+    const claimedPointer = readHighestContinuousActiveRunClaim(input.pointerPath);
+    if (claimedPointer) {
+      const nonClosedAttempt = attemptPointer && attemptPointer.phase !== 'closed';
+      const claimedByAttempt =
+        nonClosedAttempt &&
+        attemptPointer.activeRunPointerHash === claimedPointer.activeRunPointerHash &&
+        attemptPointer.activationRecordHash === claimedPointer.activationRecordHash;
+      if (nonClosedAttempt && !claimedByAttempt) {
+        throw failure('active_run_cas_conflict');
+      }
+      if (
+        !activeRunPointerMatches(
+          claimedPointer,
+          input.activationRecordRef,
+          input.activationRecordHash
+        )
+      ) {
+        throw failure('active_run_cas_conflict');
+      }
+      alreadyCommitted = restoreClaimedActiveRunPointer(input.pointerPath, claimedPointer);
+    }
+  }
   if (
     activeRunPointerMatches(alreadyCommitted, input.activationRecordRef, input.activationRecordHash)
   ) {
     return { pointer: alreadyCommitted, reused: true };
+  }
+  if (attemptPointer && attemptPointer.phase !== 'closed') {
+    throw failure('active_run_cas_conflict');
   }
   const observedBeforeHash = alreadyCommitted?.activeRunPointerHash ?? ACTIVE_RUN_ZERO_HASH;
   const observedBeforeVersion = Number(alreadyCommitted?.pointerVersion ?? 0);
@@ -933,46 +1088,15 @@ function commitActiveRunPointer(input: {
     pointer,
   });
   const lockPath = activeRunVersionLockPath(input.pointerPath, pointer.pointerVersion);
-  const deadline = Date.now() + 2_000;
-  let descriptor: number | undefined;
-  const ownerToken = sha256(
-    Buffer.from(`${process.pid}:${Date.now()}:${process.hrtime.bigint()}`, 'utf8')
-  );
-  while (descriptor === undefined && Date.now() < deadline) {
-    try {
-      descriptor = fs.openSync(lockPath, 'wx');
-      const acquiredAtMs = Date.now();
-      fs.writeFileSync(
-        descriptor,
-        canonicalJsonBytes({
-          schemaVersion: 'GoalContractActiveRunLock/v1',
-          ownerPid: process.pid,
-          ownerToken,
-          expectedBeforeHash: input.expectedBeforeHash,
-          expectedBeforeVersion: input.expectedBeforeVersion,
-          candidateRunId: input.candidateRunId,
-          acquiredAtMs,
-          leaseExpiresAtMs: acquiredAtMs + ACTIVE_RUN_LOCK_LEASE_MS,
-        })
-      );
-      fs.fsyncSync(descriptor);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
-      const current = readActiveRunPointer(input.pointerPath);
-      if (activeRunPointerMatches(current, input.activationRecordRef, input.activationRecordHash)) {
-        return { pointer: current, reused: true };
-      }
-      if (reclaimStaleActiveRunLock(lockPath)) continue;
-      Atomics.wait(ACTIVE_RUN_LOCK_SLEEP, 0, 0, 10);
-    }
-  }
-  if (descriptor === undefined) {
-    const current = readActiveRunPointer(input.pointerPath);
-    if (activeRunPointerMatches(current, input.activationRecordRef, input.activationRecordHash)) {
-      return { pointer: current, reused: true };
-    }
-    throw failure('active_run_cas_conflict');
-  }
+  const lock = acquireControlPlaneGenerationLock({
+    lockPath,
+    lockSchemaVersion: 'GoalContractActiveRunLock/v2',
+    legacyLockSchemaVersions: ['GoalContractActiveRunLock/v1'],
+    timeoutMs: ACTIVE_RUN_LOCK_TIMEOUT_MS,
+    pollMs: ACTIVE_RUN_LOCK_POLL_MS,
+    leaseMs: ACTIVE_RUN_LOCK_LEASE_MS,
+    conflictIssueCode: 'active_run_cas_conflict',
+  });
   let temporaryPath = '';
   try {
     const current = readActiveRunPointer(input.pointerPath);
@@ -1005,8 +1129,33 @@ function commitActiveRunPointer(input: {
     if (temporaryPath && fs.existsSync(temporaryPath)) {
       fs.rmSync(temporaryPath, { force: true });
     }
-    fs.closeSync(descriptor);
-    releaseActiveRunLock(lockPath, ownerToken);
+    releaseControlPlaneGenerationLock(lock);
+  }
+}
+
+function commitActiveRunPointer(input: {
+  pointerPath: string;
+  expectedBeforeHash: string;
+  expectedBeforeVersion: number;
+  candidateRunId: string;
+  activationRecordRef: string;
+  activationRecordHash: string;
+}): { pointer: SchemaRecord; reused: boolean } {
+  const outRoot = path.dirname(path.dirname(path.dirname(input.pointerPath)));
+  const lockPath = path.join(outRoot, 'goal', 'runtime', 'execution-control.lock');
+  const lock = acquireControlPlaneGenerationLock({
+    lockPath,
+    lockSchemaVersion: 'GoalExecutionControlLock/v2',
+    legacyLockSchemaVersions: ['GoalExecutionControlLock/v1'],
+    timeoutMs: ACTIVE_RUN_LOCK_TIMEOUT_MS,
+    pollMs: ACTIVE_RUN_LOCK_POLL_MS,
+    leaseMs: ACTIVE_RUN_LOCK_LEASE_MS,
+    conflictIssueCode: 'active_run_cas_conflict',
+  });
+  try {
+    return commitActiveRunPointerUnderControl(input);
+  } finally {
+    releaseControlPlaneGenerationLock(lock);
   }
 }
 
@@ -1034,6 +1183,7 @@ function activationIssueCode(error: unknown): string {
     return issue;
   }
   if (issue === 'active_run_cas_conflict') return issue;
+  if (issue === 'goal_run_execution_adapter_authority_invalid') return issue;
   if (issue.includes('package') || issue.includes('candidate_run')) {
     return 'goal_execution_package_invalid';
   }
@@ -1084,6 +1234,7 @@ function goalContractActivationFailureResult(error: unknown) {
 function compilePartitionFromFrozenGoalAuthority(input: {
   goalExecutionIr: SchemaRecord;
   eligibility: SchemaRecord;
+  executionAdapterRef: { path: string; hash: string };
 }) {
   const { compilePartitionFromFrozenGoalAuthority: compile } = require(
     __filename.endsWith('.ts') ? './frozen-goal-partition.ts' : './frozen-goal-partition'
@@ -1100,6 +1251,10 @@ function compileFrozenCandidateRunIdentity(input: unknown): string {
   const payload = {
     schemaVersion: 'GoalContractCandidateRunIdentity/v1',
     goalExecutionIRHash: requireHash(input.goalExecutionIRHash, 'goalExecutionIRHash'),
+    executionAdapterAuthorityHash: requireHash(
+      input.executionAdapterAuthorityHash,
+      'executionAdapterAuthorityHash'
+    ),
     executionMode,
     ...(executionMode === 'partitioned_goal'
       ? {
@@ -1132,11 +1287,13 @@ function partitionSelectionIdentityFromManifest(manifest: SchemaRecord): string 
 
 function candidateRunIdFromIdentity(input: {
   goalExecutionIRHash: string;
+  executionAdapterAuthorityHash: string;
   executionMode: string;
   partitionSelectionIdentityHash: string | null;
 }): string {
   const identityHash = compileFrozenCandidateRunIdentity({
     goalExecutionIRHash: input.goalExecutionIRHash,
+    executionAdapterAuthorityHash: input.executionAdapterAuthorityHash,
     executionMode: input.executionMode,
     ...(input.partitionSelectionIdentityHash
       ? { partitionSelectionIdentityHash: input.partitionSelectionIdentityHash }
@@ -1154,6 +1311,7 @@ function assertActivationCandidateBindings(
     'profile',
     'goalId',
     'goalExecutionIRHash',
+    'executionAdapterAuthorityHash',
     'executionMode',
     'partitionOutcome',
   ];
@@ -1216,6 +1374,7 @@ function readReusableCandidateRun(input: {
   runtimeRoot: string;
   candidateRunId: string;
   goalExecutionIRHash: string;
+  executionAdapterAuthorityHash: string;
   executionMode: string;
   partitionSelectionIdentityHash: string | null;
 }): {
@@ -1237,6 +1396,7 @@ function readReusableCandidateRun(input: {
   if (
     candidateRun.candidateRunId !== input.candidateRunId ||
     candidateRun.goalExecutionIRHash !== input.goalExecutionIRHash ||
+    candidateRun.executionAdapterAuthorityHash !== input.executionAdapterAuthorityHash ||
     candidateRun.executionMode !== input.executionMode
   ) {
     throw failure('goal_execution_package_invalid', { field: 'candidateRunIdentity' });
@@ -1253,6 +1413,7 @@ function readReusableCandidateRun(input: {
     !isRecord(activationRecord.candidateRunRef) ||
     activationRecord.candidateRunRef.hash !== candidateRun.candidateRunHash ||
     activationRecord.goalExecutionIRHash !== input.goalExecutionIRHash ||
+    activationRecord.executionAdapterAuthorityHash !== input.executionAdapterAuthorityHash ||
     activationRecord.executionMode !== input.executionMode
   ) {
     throw failure('goal_execution_package_invalid', { field: 'activationRecordIdentity' });
@@ -1320,6 +1481,16 @@ function readReusableCandidateRun(input: {
       packagePath: resolved.path,
       packageRecord: resolved.record,
     });
+    if (
+      !isRecord(resolved.record.executionAdapterRef) ||
+      resolved.record.executionAdapterRef.hash !== input.executionAdapterAuthorityHash
+    ) {
+      throw failure('goal_execution_package_invalid', { field: 'executionAdapterRef' });
+    }
+    resolvePackagedGoalRunExecutionAdapterAuthority({
+      runRoot,
+      executionAdapterRef: resolved.record.executionAdapterRef,
+    });
     packageArtifacts.push({
       role:
         input.executionMode === 'direct_goal'
@@ -1344,6 +1515,7 @@ function readCompatibleActiveRun(input: {
   profile: string;
   goalId: string;
   goalExecutionIRHash: string;
+  executionAdapterAuthorityHash: string;
   executionMode: string;
 }): (ReturnType<typeof readReusableCandidateRun> & { pointer: SchemaRecord }) | null {
   const pointerPath = path.join(input.runtimeRoot, 'active-run.json');
@@ -1387,6 +1559,7 @@ function readCompatibleActiveRun(input: {
     candidateRun.profile !== input.profile ||
     candidateRun.goalId !== input.goalId ||
     candidateRun.goalExecutionIRHash !== input.goalExecutionIRHash ||
+    candidateRun.executionAdapterAuthorityHash !== input.executionAdapterAuthorityHash ||
     candidateRun.executionMode !== input.executionMode
   ) {
     return null;
@@ -1428,6 +1601,7 @@ function readCompatibleActiveRun(input: {
   if (
     candidateRunIdFromIdentity({
       goalExecutionIRHash: input.goalExecutionIRHash,
+      executionAdapterAuthorityHash: input.executionAdapterAuthorityHash,
       executionMode: input.executionMode,
       partitionSelectionIdentityHash,
     }) !== candidateRunId
@@ -1438,6 +1612,7 @@ function readCompatibleActiveRun(input: {
     runtimeRoot: input.runtimeRoot,
     candidateRunId,
     goalExecutionIRHash: input.goalExecutionIRHash,
+    executionAdapterAuthorityHash: input.executionAdapterAuthorityHash,
     executionMode: input.executionMode,
     partitionSelectionIdentityHash,
   });
@@ -1457,6 +1632,551 @@ function readCompatibleActiveRun(input: {
     throw failure('active_run_cas_conflict', { field: 'activationRecordRef' });
   }
   return { ...reusable, pointer };
+}
+
+function sameControlPlaneValue(left: unknown, right: unknown): boolean {
+  return stableControlPlaneStringify(left ?? null) === stableControlPlaneStringify(right ?? null);
+}
+
+function requireCommittedActiveRunPointerPath(input: {
+  projectRoot: string;
+  activeRunPointerPath: string;
+}): {
+  projectRoot: string;
+  outRoot: string;
+  runtimeRoot: string;
+  activeRunPointerPath: string;
+} {
+  const projectRoot = path.resolve(requireText(input.projectRoot, 'projectRoot'));
+  const activeRunPointerPath = path.resolve(
+    projectRoot,
+    requireText(input.activeRunPointerPath, 'activeRunPointerPath')
+  );
+  if (
+    !isConfined(projectRoot, activeRunPointerPath) ||
+    path.basename(activeRunPointerPath) !== 'active-run.json' ||
+    path.basename(path.dirname(activeRunPointerPath)) !== 'runtime' ||
+    path.basename(path.dirname(path.dirname(activeRunPointerPath))) !== 'goal'
+  ) {
+    throw failure('goal_execution_package_invalid', { field: 'activeRunPointerPath' });
+  }
+  const runtimeRoot = path.dirname(activeRunPointerPath);
+  return {
+    projectRoot,
+    outRoot: path.dirname(path.dirname(runtimeRoot)),
+    runtimeRoot,
+    activeRunPointerPath,
+  };
+}
+
+function assertExecutionIdentity(
+  record: SchemaRecord,
+  identity: { profile: string; goalId: string; goalExecutionIRHash: string; executionMode: string },
+  field: string
+): void {
+  if (
+    record.profile !== identity.profile ||
+    record.goalId !== identity.goalId ||
+    record.goalExecutionIRHash !== identity.goalExecutionIRHash ||
+    record.executionMode !== identity.executionMode
+  ) {
+    throw failure('goal_execution_package_invalid', { field });
+  }
+}
+
+function resolveDirectExecutionAuthority(input: {
+  outRoot: string;
+  runRoot: string;
+  candidateRun: SchemaRecord;
+  eligibility: SchemaRecord;
+  goalExecutionIr: SchemaRecord;
+}) {
+  const packageRefs = Array.isArray(input.candidateRun.executionPackageRefs)
+    ? input.candidateRun.executionPackageRefs.filter(isRecord)
+    : [];
+  if (packageRefs.length !== 1) {
+    throw failure('goal_execution_package_invalid', { field: 'executionPackageRefs' });
+  }
+  const packageRef = readHashReferencedRecord({
+    outRoot: input.runRoot,
+    ref: packageRefs[0],
+    field: 'executionPackageRefs[0]',
+    schemaName: DIRECT_EXECUTION_PACKAGE_SCHEMA,
+    hashField: 'directExecutionPackageHash',
+  });
+  verifyCanonicalRecordBytes(packageRef.path, packageRef.record);
+  verifyExecutionPackageArtifacts({
+    runRoot: input.runRoot,
+    packagePath: packageRef.path,
+    packageRecord: packageRef.record,
+  });
+  assertExecutionIdentity(
+    packageRef.record,
+    {
+      profile: String(input.candidateRun.profile),
+      goalId: String(input.candidateRun.goalId),
+      goalExecutionIRHash: String(input.candidateRun.goalExecutionIRHash),
+      executionMode: 'direct_goal',
+    },
+    'directExecutionPackageIdentity'
+  );
+  if (
+    !sameControlPlaneValue(
+      packageRef.record.goalExecutionAuthorityRef,
+      input.candidateRun.goalExecutionAuthorityRef
+    ) ||
+    !sameControlPlaneValue(packageRef.record.eligibilityRef, input.candidateRun.eligibilityRef) ||
+    input.eligibility.executionMode !== 'direct_goal'
+  ) {
+    throw failure('goal_execution_package_invalid', { field: 'directExecutionPackageBindings' });
+  }
+  const logicalScopes = isRecord(input.goalExecutionIr.logicalScopes)
+    ? input.goalExecutionIr.logicalScopes
+    : {};
+  return [
+    Object.freeze({
+      profile: String(input.candidateRun.profile),
+      candidateRunId: String(input.candidateRun.candidateRunId),
+      executionAuthorityId: String(input.goalExecutionIr.goalId),
+      executionAuthorityHash: String(input.goalExecutionIr.goalExecutionIRHash),
+      executionPackagePath: packageRef.path,
+      executionPackageHash: packageRef.hash,
+      ownedPaths: sortedUniqueText(
+        Array.isArray(logicalScopes.ownedPaths) ? logicalScopes.ownedPaths : []
+      ),
+      forbiddenPaths: sortedUniqueText(
+        Array.isArray(logicalScopes.forbiddenPaths) ? logicalScopes.forbiddenPaths : []
+      ),
+      commands: Array.isArray(input.goalExecutionIr.commands)
+        ? input.goalExecutionIr.commands.filter(isRecord)
+        : [],
+      dependencies: Array.isArray(input.goalExecutionIr.dependencies)
+        ? input.goalExecutionIr.dependencies.filter(isRecord)
+        : [],
+      dependencyExecutionAuthorityIds: [],
+    }),
+  ];
+}
+
+function resolvePartitionedExecutionAuthorities(input: {
+  runRoot: string;
+  candidateRun: SchemaRecord;
+  eligibility: SchemaRecord;
+}) {
+  const manifestRef = readHashReferencedRecord({
+    outRoot: input.runRoot,
+    ref: input.candidateRun.selectedPartitionManifestRef,
+    field: 'selectedPartitionManifestRef',
+    schemaName: PARTITION_MANIFEST_SCHEMA,
+    hashField: 'partitionManifestHash',
+  });
+  verifyCanonicalRecordBytes(manifestRef.path, manifestRef.record);
+  assertExecutionIdentity(
+    { ...manifestRef.record, executionMode: 'partitioned_goal' },
+    {
+      profile: String(input.candidateRun.profile),
+      goalId: String(input.candidateRun.goalId),
+      goalExecutionIRHash: String(input.candidateRun.goalExecutionIRHash),
+      executionMode: 'partitioned_goal',
+    },
+    'partitionManifestIdentity'
+  );
+  if (
+    manifestRef.record.partitionOutcome !== input.candidateRun.partitionOutcome ||
+    input.eligibility.partitionOutcome !== input.candidateRun.partitionOutcome
+  ) {
+    throw failure('goal_execution_package_invalid', { field: 'partitionOutcome' });
+  }
+  const rows = Array.isArray(manifestRef.record.partitions)
+    ? manifestRef.record.partitions.filter(isRecord)
+    : [];
+  const rowByPartitionId = new Map(rows.map((row) => [String(row.partitionId), row] as const));
+  const topologicalOrder = Array.isArray(manifestRef.record.topologicalOrder)
+    ? manifestRef.record.topologicalOrder.map(String)
+    : [];
+  if (
+    rows.length !== Number(manifestRef.record.partitionCount) ||
+    topologicalOrder.length !== rows.length ||
+    topologicalOrder.some((partitionId) => !rowByPartitionId.has(partitionId))
+  ) {
+    throw failure('goal_execution_package_invalid', { field: 'partitionTopologicalOrder' });
+  }
+  const topologicalIndex = new Map(
+    topologicalOrder.map((partitionId, index) => [partitionId, index] as const)
+  );
+  for (const row of rows) {
+    const consumerId = String(row.partitionId);
+    const consumerIndex = topologicalIndex.get(consumerId)!;
+    for (const dependencyId of Array.isArray(row.dependencyPartitionRefs)
+      ? row.dependencyPartitionRefs.map(String)
+      : []) {
+      const dependencyIndex = topologicalIndex.get(dependencyId);
+      if (dependencyIndex === undefined || dependencyIndex >= consumerIndex) {
+        throw failure('goal_execution_package_invalid', {
+          field: `${consumerId}.dependencyTopologicalOrder`,
+        });
+      }
+    }
+  }
+  const candidatePackageRefs = Array.isArray(input.candidateRun.executionPackageRefs)
+    ? input.candidateRun.executionPackageRefs.filter(isRecord)
+    : [];
+  if (candidatePackageRefs.length !== rows.length) {
+    throw failure('goal_execution_package_invalid', { field: 'executionPackageRefs' });
+  }
+  const manifestBase = path.dirname(manifestRef.path);
+  const authorities = new Map<string, SchemaRecord>();
+  for (const row of rows) {
+    const partitionId = String(row.partitionId);
+    const childContractPath = confinedPath(
+      manifestBase,
+      isRecord(row.childContractRef) ? row.childContractRef.path : null,
+      `${partitionId}.childContractRef.path`
+    );
+    const childContract = readJsonFile(childContractPath, 'goal_execution_package_invalid');
+    validateGoalContractSchema(CHILD_EXECUTION_CONTRACT_SCHEMA, childContract);
+    const childContractHash = verifyRecordHash(
+      childContract,
+      'childContractHash',
+      'goal_execution_package_invalid'
+    );
+    verifyCanonicalRecordBytes(childContractPath, childContract);
+    if (!isRecord(row.childContractRef) || childContractHash !== row.childContractRef.hash) {
+      throw failure('goal_execution_package_invalid', { field: `${partitionId}.childContractRef` });
+    }
+    const membership = {
+      partitionId,
+      componentRefs: row.componentRefs,
+      taskRefs: row.taskRefs,
+      traceSliceRefs: row.traceSliceRefs,
+      obligationRefs: row.obligationRefs,
+      dependencyPartitionRefs: row.dependencyPartitionRefs,
+      expectedEffortMinutes: row.expectedEffortMinutes,
+      upperBoundEffortMinutes: row.upperBoundEffortMinutes,
+      ownedPaths: row.ownedPaths,
+      forbiddenPaths: row.forbiddenPaths,
+    };
+    const expectedChildContractId = `CHILD-${hashControlPlaneValue(membership)
+      .slice('sha256:'.length, 'sha256:'.length + 16)
+      .toUpperCase()}`;
+    const childMembership = {
+      partitionId: childContract.partitionId,
+      componentRefs: childContract.componentRefs,
+      taskRefs: childContract.taskRefs,
+      traceSliceRefs: childContract.traceSliceRefs,
+      obligationRefs: childContract.obligationRefs,
+      dependencyPartitionRefs: childContract.dependencyPartitionRefs,
+      expectedEffortMinutes: childContract.expectedEffortMinutes,
+      upperBoundEffortMinutes: childContract.upperBoundEffortMinutes,
+      ownedPaths: isRecord(childContract.logicalScopes)
+        ? childContract.logicalScopes.ownedPaths
+        : null,
+      forbiddenPaths: isRecord(childContract.logicalScopes)
+        ? childContract.logicalScopes.forbiddenPaths
+        : null,
+    };
+    if (
+      childContract.partitionMembershipHash !== hashControlPlaneValue(membership) ||
+      childContract.childContractId !== expectedChildContractId ||
+      !sameControlPlaneValue(membership, childMembership) ||
+      childContract.profile !== input.candidateRun.profile ||
+      childContract.goalId !== input.candidateRun.goalId ||
+      childContract.goalExecutionIRHash !== input.candidateRun.goalExecutionIRHash
+    ) {
+      throw failure('goal_execution_package_invalid', { field: `${partitionId}.childContract` });
+    }
+    const childPackagePath = confinedPath(
+      manifestBase,
+      isRecord(row.childExecutionPackageRef) ? row.childExecutionPackageRef.path : null,
+      `${partitionId}.childExecutionPackageRef.path`
+    );
+    const candidateRelativePackagePath = path
+      .relative(input.runRoot, childPackagePath)
+      .replace(/\\/gu, '/');
+    const candidatePackageRef = candidatePackageRefs.find(
+      (ref) => ref.path === candidateRelativePackagePath
+    );
+    if (
+      !candidatePackageRef ||
+      !isRecord(row.childExecutionPackageRef) ||
+      candidatePackageRef.hash !== row.childExecutionPackageRef.hash
+    ) {
+      throw failure('goal_execution_package_invalid', {
+        field: `${partitionId}.childExecutionPackageRef`,
+      });
+    }
+    const childPackage = readJsonFile(childPackagePath, 'goal_execution_package_invalid');
+    validateGoalContractSchema(CHILD_EXECUTION_PACKAGE_SCHEMA, childPackage);
+    const childPackageHash = verifyRecordHash(
+      childPackage,
+      'childExecutionPackageHash',
+      'goal_execution_package_invalid'
+    );
+    verifyCanonicalRecordBytes(childPackagePath, childPackage);
+    verifyExecutionPackageArtifacts({
+      runRoot: input.runRoot,
+      packagePath: childPackagePath,
+      packageRecord: childPackage,
+    });
+    const expectedPackageChildContractPath = confinedPath(
+      path.dirname(path.dirname(childPackagePath)),
+      isRecord(childPackage.childContractRef) ? childPackage.childContractRef.path : null,
+      `${partitionId}.childPackage.childContractRef.path`
+    );
+    if (
+      childPackageHash !== candidatePackageRef.hash ||
+      childPackage.partitionId !== partitionId ||
+      childPackage.profile !== input.candidateRun.profile ||
+      childPackage.goalId !== input.candidateRun.goalId ||
+      childPackage.goalExecutionIRHash !== input.candidateRun.goalExecutionIRHash ||
+      !isRecord(childPackage.childContractRef) ||
+      childPackage.childContractRef.hash !== childContractHash ||
+      expectedPackageChildContractPath !== path.resolve(childContractPath)
+    ) {
+      throw failure('goal_execution_package_invalid', { field: `${partitionId}.childPackage` });
+    }
+    authorities.set(
+      partitionId,
+      Object.freeze({
+        profile: String(input.candidateRun.profile),
+        candidateRunId: String(input.candidateRun.candidateRunId),
+        executionAuthorityId: String(childContract.childContractId),
+        executionAuthorityHash: childContractHash,
+        executionPackagePath: childPackagePath,
+        executionPackageHash: childPackageHash,
+        partitionId,
+        ownedPaths: sortedUniqueText(
+          isRecord(childContract.logicalScopes) &&
+            Array.isArray(childContract.logicalScopes.ownedPaths)
+            ? childContract.logicalScopes.ownedPaths
+            : []
+        ),
+        forbiddenPaths: sortedUniqueText(
+          isRecord(childContract.logicalScopes) &&
+            Array.isArray(childContract.logicalScopes.forbiddenPaths)
+            ? childContract.logicalScopes.forbiddenPaths
+            : []
+        ),
+        commands: Array.isArray(childContract.commands)
+          ? childContract.commands.filter(isRecord)
+          : [],
+        dependencies: Array.isArray(childContract.dependencies)
+          ? childContract.dependencies.filter(isRecord)
+          : [],
+        dependencyPartitionRefs: Array.isArray(childContract.dependencyPartitionRefs)
+          ? childContract.dependencyPartitionRefs.map(String)
+          : [],
+      })
+    );
+  }
+  const ordered = topologicalOrder.map((partitionId) => authorities.get(partitionId)!);
+  const authorityIdByPartitionId = new Map(
+    ordered.map((authority) => [
+      String(authority.partitionId),
+      String(authority.executionAuthorityId),
+    ])
+  );
+  return ordered.map((authority) =>
+    Object.freeze({
+      ...authority,
+      dependencyExecutionAuthorityIds: (Array.isArray(authority.dependencyPartitionRefs)
+        ? authority.dependencyPartitionRefs.map(String)
+        : []
+      ).map((partitionId) => {
+        const authorityId = authorityIdByPartitionId.get(partitionId);
+        if (!authorityId) {
+          throw failure('goal_execution_package_invalid', {
+            field: `${String(authority.partitionId)}.dependencyPartitionRefs`,
+          });
+        }
+        return authorityId;
+      }),
+    })
+  );
+}
+
+export function executionResumeAuthorizedOwnedPaths(
+  attemptPointer: {
+    executionStarted?: unknown;
+    phase?: unknown;
+    nextExecutionAuthorityId?: unknown;
+    validClosureRefs?: unknown;
+  } | null,
+  executionAuthorities: Array<{ executionAuthorityId: string; ownedPaths: string[] }>
+): string[] {
+  if (!attemptPointer?.executionStarted) return [];
+  const authorizedAuthorityIds = new Set(
+    Array.isArray(attemptPointer.validClosureRefs)
+      ? attemptPointer.validClosureRefs
+          .filter(isRecord)
+          .map((closureRef) => String(closureRef.executionAuthorityId))
+      : []
+  );
+  if (typeof attemptPointer.nextExecutionAuthorityId === 'string') {
+    authorizedAuthorityIds.add(attemptPointer.nextExecutionAuthorityId);
+  }
+  return sortedUniqueText(
+    executionAuthorities
+      .filter((authority) => authorizedAuthorityIds.has(authority.executionAuthorityId))
+      .flatMap((authority) => authority.ownedPaths)
+  );
+}
+
+function executionAttemptAuthoritySnapshot(executionAuthorities: SchemaRecord[]): SchemaRecord[] {
+  return executionAuthorities.map((authority) => ({
+    profile: String(authority.profile),
+    candidateRunId: String(authority.candidateRunId),
+    executionAuthorityId: String(authority.executionAuthorityId),
+    executionAuthorityHash: String(authority.executionAuthorityHash),
+    executionPackageHash: String(authority.executionPackageHash),
+    dependencyExecutionAuthorityIds: Array.isArray(authority.dependencyExecutionAuthorityIds)
+      ? authority.dependencyExecutionAuthorityIds.map(String)
+      : [],
+    ownedPaths: sortedUniqueText(authority.ownedPaths),
+  }));
+}
+
+export function resolveCommittedActiveRun(input: {
+  projectRoot: string;
+  activeRunPointerPath: string;
+}) {
+  const location = requireCommittedActiveRunPointerPath(input);
+  const activeRunPointer = readActiveRunPointer(location.activeRunPointerPath);
+  if (!activeRunPointer) {
+    throw failure('goal_execution_package_invalid', { field: 'activeRunPointer' });
+  }
+  requireCurrentActiveRunClaim(location.activeRunPointerPath, activeRunPointer);
+  verifyCanonicalRecordBytes(location.activeRunPointerPath, activeRunPointer);
+  const candidateRunId = requireText(activeRunPointer.candidateRunId, 'candidateRunId');
+  const runRoot = path.join(location.runtimeRoot, 'runs', candidateRunId);
+  const candidateRunPath = path.join(runRoot, 'candidate-run.json');
+  const candidateRun = readJsonFile(candidateRunPath, 'goal_execution_package_invalid');
+  validateGoalContractSchema(CANDIDATE_RUN_SCHEMA, candidateRun);
+  verifyRecordHash(candidateRun, 'candidateRunHash', 'goal_execution_package_invalid');
+  verifyCanonicalRecordBytes(candidateRunPath, candidateRun);
+  const compatible = readCompatibleActiveRun({
+    outRoot: location.outRoot,
+    runtimeRoot: location.runtimeRoot,
+    profile: String(candidateRun.profile),
+    goalId: String(candidateRun.goalId),
+    goalExecutionIRHash: String(candidateRun.goalExecutionIRHash),
+    executionAdapterAuthorityHash: String(candidateRun.executionAdapterAuthorityHash),
+    executionMode: String(candidateRun.executionMode),
+  });
+  if (!compatible) {
+    throw failure('goal_execution_package_invalid', { field: 'activeRunCompatibility' });
+  }
+  const goalExecutionIrRef = readHashReferencedRecord({
+    outRoot: location.outRoot,
+    ref: candidateRun.goalExecutionAuthorityRef,
+    field: 'goalExecutionAuthorityRef',
+    schemaName: GOAL_EXECUTION_IR_SCHEMA,
+    hashField: 'goalExecutionIRHash',
+  });
+  verifyCanonicalRecordBytes(goalExecutionIrRef.path, goalExecutionIrRef.record);
+  const { validateGoalExecutionIR } = require(
+    __filename.endsWith('.ts') ? './goal-execution-ir.ts' : './goal-execution-ir'
+  );
+  const goalExecutionIrValidation = validateGoalExecutionIR(goalExecutionIrRef.record);
+  if (
+    goalExecutionIrValidation.decision !== 'pass' ||
+    goalExecutionIrRef.record.profile !== candidateRun.profile ||
+    goalExecutionIrRef.record.goalId !== candidateRun.goalId ||
+    goalExecutionIrRef.record.goalExecutionIRHash !== candidateRun.goalExecutionIRHash ||
+    compatible.eligibility.profile !== candidateRun.profile ||
+    compatible.eligibility.goalId !== candidateRun.goalId ||
+    compatible.eligibility.goalExecutionIRHash !== candidateRun.goalExecutionIRHash ||
+    compatible.eligibility.executionMode !== candidateRun.executionMode ||
+    compatible.eligibility.decision !== 'pass'
+  ) {
+    throw failure('goal_execution_package_invalid', { field: 'committedAuthorityBindings' });
+  }
+  const executionAuthorities =
+    candidateRun.executionMode === 'direct_goal'
+      ? resolveDirectExecutionAuthority({
+          outRoot: location.outRoot,
+          runRoot,
+          candidateRun,
+          eligibility: compatible.eligibility,
+          goalExecutionIr: goalExecutionIrRef.record,
+        })
+      : resolvePartitionedExecutionAuthorities({
+          runRoot,
+          candidateRun,
+          eligibility: compatible.eligibility,
+        });
+  const orderedExecutionAuthorityIds = executionAuthorities.map((authority) =>
+    String(authority.executionAuthorityId)
+  );
+  const executionAdapter = resolvePackagedGoalRunExecutionAdapterAuthority({
+    runRoot,
+    executionAdapterRef: {
+      path: PACKAGED_GOAL_RUN_EXECUTION_ADAPTER_PATH,
+      hash: candidateRun.executionAdapterAuthorityHash,
+    },
+  });
+  let requirementsReadiness = null;
+  if (candidateRun.profile === 'requirements_backed') {
+    const requirementsLineage = goalExecutionIrRef.record.requirementsLineage;
+    if (!isRecord(requirementsLineage)) {
+      throw failure('requirements_successor_required:semantic_authority');
+    }
+    const requestId = requireText(requirementsLineage.recordId, 'requirementsLineage.recordId');
+    const requirementRecordPath = path.join(
+      location.projectRoot,
+      '_bmad-output',
+      'runtime',
+      'requirement-records',
+      requestId,
+      'requirement-record.json'
+    );
+    const { readGoalExecutionAttemptPointer } = require(
+      __filename.endsWith('.ts')
+        ? '../../../main-agent/source-authority/scripts/main-agent-goal-execution-attempt.ts'
+        : '../../../main-agent/source-authority/scripts/main-agent-goal-execution-attempt'
+    );
+    const attemptPointer = readGoalExecutionAttemptPointer({ outRoot: location.outRoot });
+    const isResume =
+      attemptPointer?.activeRunPointerHash === activeRunPointer.activeRunPointerHash &&
+      attemptPointer?.activationRecordHash === compatible.activationRecord.activationRecordHash &&
+      attemptPointer?.executionStarted === true &&
+      sameControlPlaneValue(
+        attemptPointer.executionAuthorities,
+        executionAttemptAuthoritySnapshot(executionAuthorities)
+      ) &&
+      ['executing', 'closure_pending', 'blocked', 'closed'].includes(String(attemptPointer?.phase));
+    const { validateRequirementsBackedGoalAdmissionCurrent } = require(
+      __filename.endsWith('.ts') ? './goal-requirements-adapter.ts' : './goal-requirements-adapter'
+    );
+    requirementsReadiness = validateRequirementsBackedGoalAdmissionCurrent({
+      projectRoot: location.projectRoot,
+      requestId,
+      requirementRecordPath,
+      expectedRequirementsLineage: requirementsLineage,
+      phase: isResume ? 'execution_resume' : 'execution_start',
+      authorizedOwnedPaths: isResume
+        ? executionResumeAuthorizedOwnedPaths(attemptPointer, executionAuthorities)
+        : [],
+    });
+  }
+  return Object.freeze({
+    ...location,
+    goalAuthorityPath: path.join(location.outRoot, 'goal', 'active-authority.json'),
+    goalExecutionIrPath: goalExecutionIrRef.path,
+    profile: String(candidateRun.profile),
+    goalId: String(candidateRun.goalId),
+    goalExecutionIRHash: String(candidateRun.goalExecutionIRHash),
+    executionMode: String(candidateRun.executionMode),
+    activeRunPointer,
+    runRoot,
+    candidateRun: compatible.candidateRun,
+    activationRecord: compatible.activationRecord,
+    eligibility: compatible.eligibility,
+    executionAdapter,
+    executionAuthorities,
+    orderedExecutionAuthorityIds,
+    requirementsReadiness,
+  });
 }
 
 function activationResultFromRun(input: {
@@ -1526,6 +2246,9 @@ function activateFrozenGoalAuthority(request: unknown = {}) {
     projectRoot,
     goalAuthorityPath,
   });
+  const executionAdapter = freezeGoalRunExecutionAdapterAuthority({
+    outRoot: prepared.outRoot,
+  });
   let eligibility = compileFrozenGoalExecutionEligibility(prepared.goalExecutionIr);
   const executionMode = String(eligibility.executionMode);
   const runtimeRoot = path.join(prepared.outRoot, 'goal', 'runtime');
@@ -1536,6 +2259,7 @@ function activateFrozenGoalAuthority(request: unknown = {}) {
     profile: String(prepared.goalExecutionIr.profile),
     goalId: String(prepared.goalExecutionIr.goalId),
     goalExecutionIRHash: String(prepared.goalExecutionIr.goalExecutionIRHash),
+    executionAdapterAuthorityHash: executionAdapter.authority.adapterAuthorityHash,
     executionMode,
   });
   if (compatibleActiveRun) {
@@ -1578,6 +2302,7 @@ function activateFrozenGoalAuthority(request: unknown = {}) {
       activeAuthority: prepared.activeAuthority,
       goalExecutionIr: prepared.goalExecutionIr,
       eligibility,
+      executionAdapterRef: executionAdapter.executionAdapterRef,
     });
     packageFiles = new Map(direct.files);
     executionPackageRefs = [
@@ -1597,6 +2322,7 @@ function activateFrozenGoalAuthority(request: unknown = {}) {
     const partitioned = compilePartitionFromFrozenGoalAuthority({
       goalExecutionIr: prepared.goalExecutionIr,
       eligibility,
+      executionAdapterRef: executionAdapter.executionAdapterRef,
     });
     eligibility = partitioned.eligibility;
     partitionOutcome = String(partitioned.manifest.partitionOutcome);
@@ -1625,6 +2351,7 @@ function activateFrozenGoalAuthority(request: unknown = {}) {
   }
   const candidateRunIdentityHash = compileFrozenCandidateRunIdentity({
     goalExecutionIRHash: prepared.goalExecutionIr.goalExecutionIRHash,
+    executionAdapterAuthorityHash: executionAdapter.authority.adapterAuthorityHash,
     executionMode,
     ...(partitionSelectionIdentityHash ? { partitionSelectionIdentityHash } : {}),
   });
@@ -1635,6 +2362,7 @@ function activateFrozenGoalAuthority(request: unknown = {}) {
     runtimeRoot,
     candidateRunId,
     goalExecutionIRHash: String(prepared.goalExecutionIr.goalExecutionIRHash),
+    executionAdapterAuthorityHash: executionAdapter.authority.adapterAuthorityHash,
     executionMode,
     partitionSelectionIdentityHash,
   });
@@ -1665,11 +2393,12 @@ function activateFrozenGoalAuthority(request: unknown = {}) {
     });
   }
   const candidatePayload = {
-    schemaVersion: 'GoalContractCandidateRun/v1',
+    schemaVersion: 'GoalContractCandidateRun/v2',
     candidateRunId,
     profile: prepared.goalExecutionIr.profile,
     goalId: prepared.goalExecutionIr.goalId,
     goalExecutionIRHash: prepared.goalExecutionIr.goalExecutionIRHash,
+    executionAdapterAuthorityHash: executionAdapter.authority.adapterAuthorityHash,
     executionMode,
     partitionOutcome,
     goalExecutionAuthorityRef: {
@@ -1689,11 +2418,12 @@ function activateFrozenGoalAuthority(request: unknown = {}) {
   };
   validateGoalContractSchema(CANDIDATE_RUN_SCHEMA, candidateRun);
   const activationPayload = {
-    schemaVersion: 'GoalContractActivationRecord/v1',
+    schemaVersion: 'GoalContractActivationRecord/v2',
     candidateRunId,
     profile: prepared.goalExecutionIr.profile,
     goalId: prepared.goalExecutionIr.goalId,
     goalExecutionIRHash: prepared.goalExecutionIr.goalExecutionIRHash,
+    executionAdapterAuthorityHash: executionAdapter.authority.adapterAuthorityHash,
     executionMode,
     partitionOutcome,
     goalExecutionAuthorityRef: {
@@ -1721,6 +2451,9 @@ function activateFrozenGoalAuthority(request: unknown = {}) {
   const expectedBeforeHash = beforePointer?.activeRunPointerHash ?? ACTIVE_RUN_ZERO_HASH;
   const expectedBeforeVersion = Number(beforePointer?.pointerVersion ?? 0);
   const files = new Map(packageFiles);
+  for (const [relativePath, bytes] of executionAdapter.files) {
+    files.set(relativePath, bytes);
+  }
   files.set('eligibility.json', canonicalJsonBytes(eligibility));
   files.set('candidate-run.json', canonicalJsonBytes(candidateRun));
   files.set('activation.json', canonicalJsonBytes(activationRecord));
@@ -1759,12 +2492,16 @@ function activateFrozenGoalAuthority(request: unknown = {}) {
   });
 }
 
-module.exports = {
-  activateFrozenGoalAuthority,
-  compileFrozenCandidateRunIdentity,
-  compileFrozenGoalExecutionEligibility,
-  compilePartitionFromFrozenGoalAuthority,
-  deriveGoalExecutionComponents,
-  goalContractActivationFailureResult,
-  validateGoalExecutionAdmission,
-};
+if (typeof module !== 'undefined') {
+  module.exports = {
+    activateFrozenGoalAuthority,
+    compileFrozenCandidateRunIdentity,
+    compileFrozenGoalExecutionEligibility,
+    compilePartitionFromFrozenGoalAuthority,
+    deriveGoalExecutionComponents,
+    goalContractActivationFailureResult,
+    executionResumeAuthorizedOwnedPaths,
+    resolveCommittedActiveRun,
+    validateGoalExecutionAdmission,
+  };
+}

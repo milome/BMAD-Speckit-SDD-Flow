@@ -91,6 +91,7 @@ export function materializeImplementationReadinessFixture(
     invocations?: string[];
     additionalFiles?: Record<string, string>;
     additionalGoalAtoms?: number;
+    targetPaths?: string[];
   } = {}
 ): ImplementationReadinessFixture {
   const root = input.root ?? mkdtempSync(path.join(os.tmpdir(), 'implementation-readiness-'));
@@ -113,6 +114,8 @@ export function materializeImplementationReadinessFixture(
     { length: 1 + (input.additionalGoalAtoms ?? 0) },
     (_value, index) => `MUST-READINESS-001-A${index + 1}`
   );
+  const targetPaths = input.targetPaths ?? ['src/refund-worker.cjs'];
+  if (targetPaths.length === 0) throw new Error('fixture_target_paths_missing');
   const constraint = (
     constraintId: string,
     kind: RequirementsExecutionConstraint['kind'],
@@ -129,7 +132,14 @@ export function materializeImplementationReadinessFixture(
     disposition: 'proven',
   });
   const executionConstraints: RequirementsExecutionConstraint[] = [
-    constraint('PATH-refund-worker', 'PATH', 'src/refund-worker.cjs'),
+    ...targetPaths.map((targetPath, index) =>
+      constraint(
+        index === 0 ? 'PATH-refund-worker' : `PATH-refund-worker-${index + 1}`,
+        'PATH',
+        targetPath,
+        [goalAtomIds[index] ?? goalAtomIds[goalAtomIds.length - 1]]
+      )
+    ),
     ...commandIds.map((commandId, index) => constraint(commandId, 'CMD', invocations[index])),
     constraint('ART-refund-worker', 'ART', 'dist/refund-worker.cjs'),
     ...goalAtomIds.map((atomId, index) =>
@@ -177,7 +187,7 @@ export function materializeImplementationReadinessFixture(
     authorityKind: 'repository',
     authorityRole: 'repository_authority',
     authorityId: 'repo-readiness-fixture',
-    allowedTargetPaths: ['src/refund-worker.cjs'],
+    allowedTargetPaths: targetPaths,
     consumerImpactRules: [
       {
         impactId: 'consumer:readiness-target',
@@ -199,9 +209,10 @@ export function materializeImplementationReadinessFixture(
     authorityRole: 'policy_authority',
     authorityId: 'policy-readiness-fixture',
     forbiddenScope: { paths: ['.git/**'] },
-    ownershipRules: [
-      { targetPath: 'src/refund-worker.cjs', owner: 'requirements_backed_main_agent' },
-    ],
+    ownershipRules: targetPaths.map((targetPath) => ({
+      targetPath,
+      owner: 'requirements_backed_main_agent',
+    })),
     isolationSelection: 'consumer_worktree',
     governanceImpactRules: [
       { impactId: 'governance:readiness-policy', whenConstraintKinds: [], whenConstraintIds: [] },

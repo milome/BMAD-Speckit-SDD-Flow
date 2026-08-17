@@ -4,6 +4,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { produceImplementationReadiness } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-v2';
 import { compileRequirementsBackedGoal } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-requirements-adapter';
+import { materializeGoalRunExecutionAdapter } from '../helpers/goal-run-execution-adapter-fixture';
 import { materializeImplementationReadinessFixture } from '../helpers/implementation-readiness-fixture';
 
 const ROOT = process.cwd();
@@ -60,6 +61,7 @@ describe('goal-contract active-run history', () => {
         requirementRecordPath: firstFixture.runtimeRecordPath,
         outRoot,
       });
+      materializeGoalRunExecutionAdapter(outRoot);
       const firstActivation = activate(firstFixture.root, firstGoal.activeAuthorityRef.path);
       const firstActivationArtifact = firstActivation.artifacts.find(
         (artifact: { role: string }) => artifact.role === 'activation_record'

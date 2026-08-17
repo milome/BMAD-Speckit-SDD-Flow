@@ -134,11 +134,16 @@ interface NormalizedCommand {
   expectedFailureSignatures: string[];
 }
 
-interface InputArtifact {
+export interface InputArtifact {
   role: 'test' | 'pre_implementation_target' | 'config' | 'lock';
   artifactId: string;
   logicalPath: string;
   bytesHash: string;
+}
+
+export interface ReadinessStructuredDependencyCommand {
+  executable: string;
+  args: string[];
 }
 
 interface ReadinessOutcome {
@@ -1201,15 +1206,15 @@ function changesCommandScope(command: NormalizedCommand): boolean {
   });
 }
 
-function collectInputArtifacts(
-  context: ArchitectureConfirmationContext,
-  candidate: ArchitectureConfirmationCandidate,
-  commands: NormalizedCommand[]
-): InputArtifact[] {
+export function collectReadinessStructuredInputArtifacts(input: {
+  projectRoot: string;
+  targetPaths: readonly string[];
+  commands: readonly ReadinessStructuredDependencyCommand[];
+}): InputArtifact[] {
   const byId = new Map<string, InputArtifact>();
   const add = (role: InputArtifact['role'], logicalPath: string): string => {
-    const absolute = confinedFile(context.projectRoot, logicalPath);
-    const normalized = projectRelative(context.projectRoot, absolute);
+    const absolute = confinedFile(input.projectRoot, logicalPath);
+    const normalized = projectRelative(input.projectRoot, absolute);
     const artifactId = `${role}:${normalized}`;
     byId.set(artifactId, {
       role,
@@ -1239,16 +1244,15 @@ function collectInputArtifacts(
       allowBunBuiltins,
     });
   };
-  const scope = object(candidate.logicalScope);
-  for (const target of Array.isArray(scope.targetPaths) ? scope.targetPaths.map(String) : []) {
+  for (const target of input.targetPaths) {
     add('pre_implementation_target', target);
   }
-  for (const command of commands) {
+  for (const command of input.commands) {
     if (changesCommandScope(command)) {
       throw new Error('implementation_readiness_command_scope_unclosed');
     }
     const allowBunBuiltins = command.executable === 'bun';
-    collectNodeRuntimeInputs(command, context.projectRoot, (role, logicalPath) =>
+    collectNodeRuntimeInputs(command as NormalizedCommand, input.projectRoot, (role, logicalPath) =>
       addDependencySeed(role, logicalPath, allowBunBuiltins)
     );
     for (const argument of command.args) {
@@ -1263,18 +1267,18 @@ function collectInputArtifacts(
       }
     }
   }
-  const packageJson = path.join(context.projectRoot, 'package.json');
+  const packageJson = path.join(input.projectRoot, 'package.json');
   if (fs.existsSync(packageJson)) add('config', 'package.json');
   for (const configName of ['tsconfig.json', 'jsconfig.json']) {
-    if (fs.existsSync(path.join(context.projectRoot, configName))) add('config', configName);
+    if (fs.existsSync(path.join(input.projectRoot, configName))) add('config', configName);
   }
   for (const lockName of LOCK_NAMES) {
-    if (fs.existsSync(path.join(context.projectRoot, lockName))) add('lock', lockName);
+    if (fs.existsSync(path.join(input.projectRoot, lockName))) add('lock', lockName);
   }
   const knownPaths = new Set([...byId.values()].map((artifact) => artifact.logicalPath));
   const dependencyQueue = [...dependencySeeds.values()].map((seed) => ({
     role: seed.role,
-    absolutePath: confinedFile(context.projectRoot, seed.logicalPath),
+    absolutePath: confinedFile(input.projectRoot, seed.logicalPath),
     allowBunBuiltins: seed.allowBunBuiltins,
   }));
   const traversed = new Set<string>();
@@ -1285,11 +1289,11 @@ function collectInputArtifacts(
     traversed.add(traversalKey);
     for (const specifier of localModuleSpecifiers(current.absolutePath, current.allowBunBuiltins)) {
       const dependencyPaths = resolveLocalModule(
-        context.projectRoot,
+        input.projectRoot,
         current.absolutePath,
         specifier,
         (configPath) => {
-          const logicalPath = projectRelative(context.projectRoot, configPath);
+          const logicalPath = projectRelative(input.projectRoot, configPath);
           if (!knownPaths.has(logicalPath)) {
             add('config', logicalPath);
             knownPaths.add(logicalPath);
@@ -1297,7 +1301,7 @@ function collectInputArtifacts(
         }
       );
       for (const dependencyPath of dependencyPaths) {
-        const logicalPath = projectRelative(context.projectRoot, dependencyPath);
+        const logicalPath = projectRelative(input.projectRoot, dependencyPath);
         if (!knownPaths.has(logicalPath)) {
           add(current.role, logicalPath);
           knownPaths.add(logicalPath);
@@ -1316,6 +1320,19 @@ function collectInputArtifacts(
   return [...byId.values()].sort((left, right) =>
     `${left.role}:${left.artifactId}`.localeCompare(`${right.role}:${right.artifactId}`)
   );
+}
+
+function collectInputArtifacts(
+  context: ArchitectureConfirmationContext,
+  candidate: ArchitectureConfirmationCandidate,
+  commands: NormalizedCommand[]
+): InputArtifact[] {
+  const scope = object(candidate.logicalScope);
+  return collectReadinessStructuredInputArtifacts({
+    projectRoot: context.projectRoot,
+    targetPaths: Array.isArray(scope.targetPaths) ? scope.targetPaths.map(String) : [],
+    commands,
+  });
 }
 
 function scopedInputDigest(input: {

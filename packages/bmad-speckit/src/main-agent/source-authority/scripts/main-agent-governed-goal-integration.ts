@@ -57,9 +57,7 @@ export function materializeCollectionEvidenceFromManifest(input: UnknownRecord) 
     ? packageManifest.collectionVerificationCommands
     : [];
   const { packageManifestHash: declaredManifestHash, ...manifestCore } = packageManifest;
-  const evidenceByCommandId = isRecord(input.evidenceByCommandId)
-    ? input.evidenceByCommandId
-    : {};
+  const evidenceByCommandId = isRecord(input.evidenceByCommandId) ? input.evidenceByCommandId : {};
   if (
     !isSha256Hash(input.selectedManifestHash) ||
     declaredManifestHash !== input.selectedManifestHash ||
@@ -71,11 +69,12 @@ export function materializeCollectionEvidenceFromManifest(input: UnknownRecord) 
     commands.length === 0 ||
     !commands.every(isRecord) ||
     new Set(commands.map((command) => command.id)).size !== commands.length ||
-    commands.some((command) =>
-      typeof command.id !== 'string' ||
-      command.id.trim() === '' ||
-      typeof command.command !== 'string' ||
-      command.command.trim() === ''
+    commands.some(
+      (command) =>
+        typeof command.id !== 'string' ||
+        command.id.trim() === '' ||
+        typeof command.command !== 'string' ||
+        command.command.trim() === ''
     ) ||
     Object.keys(evidenceByCommandId).length !== commands.length
   ) {
@@ -92,9 +91,7 @@ export function materializeCollectionEvidenceFromManifest(input: UnknownRecord) 
       typeof evidence.immutablePath !== 'string' ||
       typeof evidence.schemaVersion !== 'string' ||
       typeof evidence.sourceAttempt !== 'string' ||
-      !['fresh', 'reused', 'reused_no_run', 'carry_forward'].includes(
-        String(evidence.provenance)
-      )
+      !['fresh', 'reused', 'reused_no_run', 'carry_forward'].includes(String(evidence.provenance))
     ) {
       throw failure('campaign_closeout_evidence_mismatch', { commandId });
     }
@@ -140,9 +137,7 @@ export function ingestMainAgentControlledCloseout(input: UnknownRecord) {
   ) {
     throw failure('main_agent_goal_task_report_provenance_mismatch');
   }
-  const candidateBytesHash = `sha256:${createHash('sha256')
-    .update(candidateBytes)
-    .digest('hex')}`;
+  const candidateBytesHash = `sha256:${createHash('sha256').update(candidateBytes).digest('hex')}`;
   if (producerReceipt.taskReportArtifactHash !== candidateBytesHash) {
     throw failure('main_agent_goal_task_report_provenance_mismatch');
   }
@@ -264,12 +259,7 @@ function bindingProjection(binding: UnknownRecord) {
 }
 
 function validatePresentBinding(binding: UnknownRecord) {
-  const allowedFields = new Set([
-    'status',
-    'recordId',
-    'requirementSetId',
-    'recordPathHash',
-  ]);
+  const allowedFields = new Set(['status', 'recordId', 'requirementSetId', 'recordPathHash']);
   if (
     Object.keys(binding).some((field) => !allowedFields.has(field)) ||
     typeof binding.recordId !== 'string' ||
@@ -499,10 +489,7 @@ function campaignStatus(childResults: UnknownRecord[]) {
   return 'partial';
 }
 
-function closedChildSetMatches(
-  children: UnknownRecord[],
-  childResults: UnknownRecord[]
-) {
+function closedChildSetMatches(children: UnknownRecord[], childResults: UnknownRecord[]) {
   if (children.length === 0 || childResults.length !== children.length) {
     return false;
   }
@@ -510,8 +497,7 @@ function closedChildSetMatches(
   const resultIds = childResults.map((result) => result.partitionId);
   if (
     expectedIds.some(
-      (partitionId) =>
-        typeof partitionId !== 'string' || partitionId.length === 0
+      (partitionId) => typeof partitionId !== 'string' || partitionId.length === 0
     ) ||
     new Set(expectedIds).size !== expectedIds.length ||
     new Set(resultIds).size !== resultIds.length
@@ -544,13 +530,10 @@ function requireTerminalPackageProvenance({
     !isSha256Hash(packageResult.packageManifestHash) ||
     !isSha256Hash(packageAudit.packageManifestHash) ||
     !isSha256Hash(aggregateAudit.packageManifestHash) ||
-    packageAudit.packageManifestHash !==
-      packageResult.packageManifestHash ||
-    aggregateAudit.packageManifestHash !==
-      packageResult.packageManifestHash ||
+    packageAudit.packageManifestHash !== packageResult.packageManifestHash ||
+    aggregateAudit.packageManifestHash !== packageResult.packageManifestHash ||
     (campaignResult !== undefined &&
-      campaignResult.packageManifestHash !==
-        packageResult.packageManifestHash)
+      campaignResult.packageManifestHash !== packageResult.packageManifestHash)
   ) {
     throw failure('main_agent_goal_task_report_provenance_mismatch');
   }
@@ -573,10 +556,7 @@ function collectedStrings(
     ? campaignResult.childResults.filter(isRecord)
     : [];
   return [
-    ...new Set([
-      ...direct,
-      ...childResults.flatMap((result) => stringArray(result[childField])),
-    ]),
+    ...new Set([...direct, ...childResults.flatMap((result) => stringArray(result[childField]))]),
   ].sort();
 }
 
@@ -634,10 +614,7 @@ export function projectGovernedSkillCampaignTaskReport(input: UnknownRecord) {
   const aggregateClosed = ['pass', 'closed', 'done'].includes(
     typeof aggregateAudit.status === 'string' ? aggregateAudit.status : ''
   );
-  const childSetClosed = closedChildSetMatches(
-    children,
-    childResults
-  );
+  const childSetClosed = closedChildSetMatches(children, childResults);
   const terminalCampaignHashValid =
     isSha256Hash(provenance.campaignReportHash) &&
     isSha256Hash(campaignResult.campaignReportHash) &&
@@ -665,11 +642,7 @@ export function projectGovernedSkillCampaignTaskReport(input: UnknownRecord) {
     packetId,
     status,
     filesChanged: collectedStrings(campaignResult, 'filesChanged', 'filesChanged'),
-    validationsRun: collectedStrings(
-      campaignResult,
-      'validationsRun',
-      'validationsRun'
-    ),
+    validationsRun: collectedStrings(campaignResult, 'validationsRun', 'validationsRun'),
     evidence: collectedStrings(campaignResult, 'evidence', 'evidence'),
     downstreamContext: taskReportContext(campaignResult),
   };
@@ -678,6 +651,59 @@ export function projectGovernedSkillCampaignTaskReport(input: UnknownRecord) {
     report.driftFlags = driftFlags;
   }
   return Object.freeze(report);
+}
+
+export function projectGovernedGoalExecutionTaskReport(input: UnknownRecord) {
+  if (
+    !isRecord(input) ||
+    typeof input.packetId !== 'string' ||
+    input.packetId.length === 0 ||
+    !isSha256Hash(input.packageManifestHash) ||
+    !isSha256Hash(input.campaignClosureHash) ||
+    !Array.isArray(input.closedAuthorities) ||
+    input.closedAuthorities.length === 0 ||
+    !input.closedAuthorities.every(
+      (entry) =>
+        isRecord(entry) &&
+        typeof entry.executionAuthorityId === 'string' &&
+        entry.executionAuthorityId.length > 0 &&
+        isSha256Hash(entry.closureHash)
+    )
+  ) {
+    throw failure('main_agent_goal_task_report_provenance_mismatch');
+  }
+  const closedAuthorities = input.closedAuthorities as UnknownRecord[];
+  return projectGovernedSkillCampaignTaskReport({
+    packetId: input.packetId,
+    campaignResult: {
+      status: 'done',
+      packageManifestHash: input.packageManifestHash,
+      campaignReportHash: input.campaignClosureHash,
+      packageResult: { packageManifestHash: input.packageManifestHash },
+      packageAudit: { status: 'pass', packageManifestHash: input.packageManifestHash },
+      aggregateAudit: {
+        status: 'done',
+        packageManifestHash: input.packageManifestHash,
+        campaignReportHash: input.campaignClosureHash,
+      },
+      children: closedAuthorities.map((entry) => ({
+        partitionId: entry.executionAuthorityId,
+      })),
+      childResults: closedAuthorities.map((entry) => ({
+        status: 'closed',
+        partitionId: entry.executionAuthorityId,
+        commitHash: entry.closureHash,
+      })),
+      filesChanged: stringArray(input.filesChanged),
+      validationsRun: stringArray(input.validationsRun),
+      evidence: stringArray(input.evidence),
+      downstreamContext: stringArray(input.downstreamContext),
+    },
+    provenance: {
+      packageManifestHash: input.packageManifestHash,
+      campaignReportHash: input.campaignClosureHash,
+    },
+  });
 }
 
 export function runMainAgentGoalSubcontractCampaign(input: UnknownRecord) {
@@ -721,12 +747,8 @@ export function runMainAgentGoalSubcontractCampaign(input: UnknownRecord) {
     });
   }
   const packageAudit = packageAuditValue;
-  const requirementRecordBinding = isRecord(
-    input.requirementRecordBinding
-  )
-    ? bindingProjection(
-        input.requirementRecordBinding
-      ).requirementRecordBinding
+  const requirementRecordBinding = isRecord(input.requirementRecordBinding)
+    ? bindingProjection(input.requirementRecordBinding).requirementRecordBinding
     : undefined;
   if (
     !['pass', 'closed', 'done'].includes(
@@ -741,10 +763,7 @@ export function runMainAgentGoalSubcontractCampaign(input: UnknownRecord) {
       packageAudit,
       packageManifestHash: packageResult.packageManifestHash,
       requirementRecordBinding,
-      driftFlags:
-        typeof packageAudit.failureClass === 'string'
-          ? [packageAudit.failureClass]
-          : [],
+      driftFlags: typeof packageAudit.failureClass === 'string' ? [packageAudit.failureClass] : [],
       ...(requirementRecordBinding?.status === 'absent'
         ? { downstreamAction: 'main_agent_resolve_requirement_record' }
         : {}),
@@ -762,8 +781,7 @@ export function runMainAgentGoalSubcontractCampaign(input: UnknownRecord) {
   if (
     !isSha256Hash(packageResult.packageManifestHash) ||
     !isSha256Hash(packageAudit.packageManifestHash) ||
-    packageAudit.packageManifestHash !==
-      packageResult.packageManifestHash
+    packageAudit.packageManifestHash !== packageResult.packageManifestHash
   ) {
     throw failure('main_agent_goal_task_report_provenance_mismatch');
   }
@@ -836,8 +854,7 @@ export function runMainAgentGoalSubcontractCampaign(input: UnknownRecord) {
       packageAudit,
       packageManifestHash: packageResult.packageManifestHash,
       requirementRecordBinding,
-      driftFlags:
-        typeof audit.failureClass === 'string' ? [audit.failureClass] : [],
+      driftFlags: typeof audit.failureClass === 'string' ? [audit.failureClass] : [],
       ...(requirementRecordBinding?.status === 'absent'
         ? { downstreamAction: 'main_agent_resolve_requirement_record' }
         : {}),
@@ -892,9 +909,7 @@ export function runMainAgentGoalSubcontractCampaign(input: UnknownRecord) {
   const aggregateAudit = aggregateAuditValue;
   const campaignReportHash = aggregateAudit.campaignReportHash;
   const aggregateClosed = ['pass', 'closed', 'done'].includes(
-    typeof aggregateAudit.status === 'string'
-      ? aggregateAudit.status
-      : ''
+    typeof aggregateAudit.status === 'string' ? aggregateAudit.status : ''
   );
   const packageManifestHash = aggregateClosed
     ? requireTerminalPackageProvenance({
@@ -903,17 +918,14 @@ export function runMainAgentGoalSubcontractCampaign(input: UnknownRecord) {
         aggregateAudit,
       })
     : packageResult.packageManifestHash;
-  if (
-    aggregateClosed &&
-    !isSha256Hash(campaignReportHash)
-  ) {
+  if (aggregateClosed && !isSha256Hash(campaignReportHash)) {
     throw failure('main_agent_goal_task_report_provenance_mismatch');
   }
   const campaignResult = {
-    status: aggregateClosed &&
-      closedChildSetMatches(children, childResults)
-      ? 'done'
-      : campaignStatus(childResults),
+    status:
+      aggregateClosed && closedChildSetMatches(children, childResults)
+        ? 'done'
+        : campaignStatus(childResults),
     children,
     childResults,
     aggregateAudit,

@@ -431,7 +431,10 @@ function renderChildExecution(child: JsonObject): string {
   ].join('\n');
 }
 
-function compileChildPackage(child: JsonObject): {
+function compileChildPackage(
+  child: JsonObject,
+  executionAdapterRef: { path: string; hash: string }
+): {
   childPackage: JsonObject;
   files: Map<string, Buffer>;
 } {
@@ -497,7 +500,7 @@ function compileChildPackage(child: JsonObject): {
     auditReceiptHash: hashControlPlaneValue(auditPayload),
   };
   const packagePayload = {
-    schemaVersion: 'GoalContractChildExecutionPackage/v1',
+    schemaVersion: 'GoalContractChildExecutionPackage/v2',
     profile: child.profile,
     goalId: child.goalId,
     goalExecutionIRHash: child.goalExecutionIRHash,
@@ -507,6 +510,7 @@ function compileChildPackage(child: JsonObject): {
       path: 'child-execution-contract.json',
       hash: child.childContractHash,
     },
+    executionAdapterRef,
     artifacts: [
       {
         role: 'model_packet',
@@ -629,6 +633,7 @@ function selectFrozenGoalPartition(input: {
 function compilePartitionFromFrozenGoalAuthority(input: {
   goalExecutionIr: JsonObject;
   eligibility: JsonObject;
+  executionAdapterRef: { path: string; hash: string };
   solverEnvelope?: { maxSearchStates?: number };
 }): {
   eligibility: JsonObject;
@@ -771,7 +776,7 @@ function compilePartitionFromFrozenGoalAuthority(input: {
       childContractHash: hashControlPlaneValue(childPayload),
     };
     validateGoalContractSchema(CHILD_SCHEMA, childContract);
-    const packaged = compileChildPackage(childContract);
+    const packaged = compileChildPackage(childContract, input.executionAdapterRef);
     const childRoot = `partition/children/${partitionId}`;
     files.set(`${childRoot}/child-execution-contract.json`, canonicalBytes(childContract));
     for (const [relativePath, bytes] of packaged.files) {

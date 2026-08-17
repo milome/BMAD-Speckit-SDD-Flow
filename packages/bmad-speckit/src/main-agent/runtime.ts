@@ -31,6 +31,7 @@ const { developmentJourneyMatrixAction } = require('./actions/development-journe
 const { dualHostPrOrchestratorAction } = require('./actions/dual-host-pr-orchestrator');
 const { entryflowTraceabilityCheckAction } = require('./actions/entryflow-traceability-check');
 const { executionClosureGateAction } = require('./actions/execution-closure-gate');
+const { runExecuteGoalRunAction } = require('./actions/execute-goal-run');
 const { e2eDualHostJourneyRunnerAction } = require('./actions/e2e-dual-host-journey-runner');
 const { e2eHostMatrixJourneyRunnerAction } = require('./actions/e2e-host-matrix-journey-runner');
 const { finalCloseoutEvidenceRunnerAction } = require('./actions/final-closeout-evidence-runner');
@@ -309,6 +310,7 @@ const SUPPORTED_ACTIONS = new Set([
   'soak-runner',
   'dual-host-pr-orchestrator',
   'chaos-scenarios',
+  'execute-goal-run',
   ...Object.keys(PACKAGE_RUNTIME_READY_ACTIONS),
   ...Object.keys(WAVE_3_12_PACKAGE_RUNTIME_ACTIONS),
 ]);
@@ -555,6 +557,10 @@ async function runMainAgentRuntime(context) {
       });
     }
     return emitResponse(context, envelope(context, 'ok', 0, inspectRuntimeState(context.cwd)));
+  }
+
+  if (context.action === 'execute-goal-run') {
+    return emitLegacyResult(runExecuteGoalRunAction(context));
   }
 
   if (context.action === 'confirm-scope') {

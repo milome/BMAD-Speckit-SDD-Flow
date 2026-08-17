@@ -12,7 +12,7 @@
     "issueCode": {
       "anyOf": [
         { "type": "null" },
-        { "enum": ["activation_request_invalid", "goal_execution_authority_invalid", "goal_execution_ir_invalid", "goal_execution_package_invalid", "active_run_cas_conflict", "partition_no_valid_solution", "partition_search_inconclusive", "activation_internal_error"] },
+        { "enum": ["activation_request_invalid", "goal_execution_authority_invalid", "goal_execution_ir_invalid", "goal_execution_package_invalid", "goal_run_execution_adapter_authority_invalid", "active_run_cas_conflict", "partition_no_valid_solution", "partition_search_inconclusive", "activation_internal_error"] },
         { "type": "string", "pattern": "^(requirements_successor_required|architecture_successor_required|readiness_recheck_required|standalone_goal_successor_required):[a-z0-9_]+$" }
       ]
     },
