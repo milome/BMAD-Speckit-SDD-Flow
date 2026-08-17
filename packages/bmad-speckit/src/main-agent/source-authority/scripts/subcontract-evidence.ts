@@ -1,9 +1,12 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {
+const {
   hashControlPlaneValue,
   stableControlPlaneStringify,
-} from '../../../utils/goal-contract/control-plane/canonical-hash';
+}: {
+  hashControlPlaneValue: (value: unknown, options?: unknown) => string;
+  stableControlPlaneStringify: (value: unknown, options?: unknown) => string;
+} = require('../../../utils/goal-contract/control-plane/canonical-hash');
 import { validateGoalContractSchema } from '../../../utils/goal-contract/control-plane/schema-registry';
 
 type JsonRecord = Record<string, unknown>;

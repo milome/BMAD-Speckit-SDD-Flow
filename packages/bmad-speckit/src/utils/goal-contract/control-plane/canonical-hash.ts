@@ -1,6 +1,6 @@
 const { createHash } = require('node:crypto');
 
-export type CanonicalControlPlaneValue =
+type CanonicalControlPlaneValue =
   | null
   | boolean
   | number
@@ -8,16 +8,16 @@ export type CanonicalControlPlaneValue =
   | CanonicalControlPlaneValue[]
   | { [key: string]: CanonicalControlPlaneValue };
 
-export interface SetLikeArrayRegistration {
+interface SetLikeArrayRegistration {
   path: string;
   identityFields?: readonly string[];
 }
 
-export interface CanonicalControlPlaneOptions {
+interface CanonicalControlPlaneOptions {
   setLikeArrays?: readonly SetLikeArrayRegistration[];
 }
 
-export interface ReceiptHashOptions extends CanonicalControlPlaneOptions {
+interface ReceiptHashOptions extends CanonicalControlPlaneOptions {
   selfHashField?: string;
 }
 
@@ -258,8 +258,6 @@ function verifyReceiptSelfHash(
   }
   return actualHash === hashReceiptPayload(receipt, normalizedOptions);
 }
-
-export { hashControlPlaneValue, stableControlPlaneStringify };
 
 module.exports = {
   canonicalizeControlPlaneValue,
