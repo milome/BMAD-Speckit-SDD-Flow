@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { produceImplementationReadiness } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-v2';
@@ -140,6 +140,39 @@ function readJsonArtifact(root: string, artifactRef: string) {
   return JSON.parse(readFileSync(path.resolve(root, artifactRef), 'utf8'));
 }
 
+function parseSpawnJson(
+  label: string,
+  completed: ReturnType<typeof spawnSync>
+): Record<string, any> {
+  const stdout = String(completed.stdout ?? '');
+  const stderr = String(completed.stderr ?? '');
+  const diagnostics = JSON.stringify({
+    label,
+    status: completed.status,
+    signal: completed.signal,
+    error: completed.error
+      ? {
+          name: completed.error.name,
+          message: completed.error.message,
+          code: (completed.error as NodeJS.ErrnoException).code ?? null,
+        }
+      : null,
+    stdout: stdout.slice(-4_000),
+    stderr: stderr.slice(-4_000),
+  });
+  if (completed.error || completed.status !== 0 || completed.signal || !stdout.trim()) {
+    throw new Error(`goal_run_child_process_failed:${diagnostics}`);
+  }
+  try {
+    return JSON.parse(stdout) as Record<string, any>;
+  } catch (error) {
+    throw new Error(
+      `goal_run_child_process_invalid_json:${diagnostics}`,
+      error instanceof Error ? { cause: error } : undefined
+    );
+  }
+}
+
 function listRelativeFiles(root: string, current = root): string[] {
   if (!existsSync(current)) return [];
   const files: string[] = [];
@@ -182,7 +215,7 @@ describe('main-agent execute-goal-run production action', () => {
       ],
       { cwd: fixture.root, encoding: 'utf8' }
     );
-    result = JSON.parse(completed.stdout);
+    result = parseSpawnJson('initial-execution', completed);
     reused = spawnSync(
       process.execPath,
       [
@@ -199,7 +232,7 @@ describe('main-agent execute-goal-run production action', () => {
       ],
       { cwd: fixture.root, encoding: 'utf8' }
     );
-    reusedResult = JSON.parse(reused.stdout);
+    reusedResult = parseSpawnJson('evidence-reuse', reused);
   }, 120_000);
 
   afterAll(() => fixture?.cleanup());
@@ -420,6 +453,84 @@ describe('main-agent execute-goal-run production action', () => {
       },
       campaignClosure: result.campaignClosure,
     });
+  });
+
+  it('recovers published evidence after a crash before closure without rerunning execution', () => {
+    const recoveryFixture = materializeImplementationReadinessFixture();
+    try {
+      produceImplementationReadiness({
+        projectRoot: recoveryFixture.root,
+        requestId: recoveryFixture.requestId,
+      });
+      const activated = activateFixture(recoveryFixture.root, recoveryFixture.runtimeRecordPath);
+      const execute = () =>
+        spawnSync(
+          process.execPath,
+          [
+            TSX,
+            '-e',
+            RUNTIME_RUNNER,
+            RUNTIME,
+            'execute-goal-run',
+            '--cwd',
+            recoveryFixture.root,
+            '--active-run',
+            activated.activeRun,
+            '--json',
+          ],
+          { cwd: recoveryFixture.root, encoding: 'utf8' }
+        );
+      const first = execute();
+      expect(first.status, first.stderr || first.stdout).toBe(0);
+      const firstResult = JSON.parse(first.stdout);
+      const campaign = readJsonArtifact(
+        recoveryFixture.root,
+        firstResult.campaignClosure.artifactRef
+      );
+      const evidenceRef = campaign.orderedEvidenceRefs[0];
+      const evidencePath = path.resolve(recoveryFixture.root, evidenceRef.path);
+      const evidenceBytes = readFileSync(evidencePath);
+      const pointerPath = path.resolve(
+        recoveryFixture.root,
+        firstResult.attemptPointer.artifactRef
+      );
+      const closedPointer = JSON.parse(readFileSync(pointerPath, 'utf8'));
+      for (const artifactRef of [
+        firstResult.validClosures[0].artifactRef,
+        firstResult.campaignClosure.artifactRef,
+        ...firstResult.projections.map((entry: { artifactRef: string }) => entry.artifactRef),
+      ]) {
+        rmSync(path.resolve(recoveryFixture.root, artifactRef), { force: true });
+      }
+      const { attemptPointerHash: _closedHash, ...closedPayload } = closedPointer;
+      const crashPayload = {
+        ...closedPayload,
+        pointerVersion: closedPointer.pointerVersion + 1,
+        phase: 'executing',
+        nextExecutionAuthorityId: closedPointer.orderedExecutionAuthorityIds[0],
+        validClosureRefs: [],
+        blockedIssueCode: null,
+      };
+      writeFileSync(
+        pointerPath,
+        `${stableControlPlaneStringify({
+          ...crashPayload,
+          attemptPointerHash: hashControlPlaneValue(crashPayload),
+        })}\n`,
+        'utf8'
+      );
+
+      const recovered = execute();
+      expect(recovered.status, recovered.stderr || recovered.stdout).toBe(0);
+      expect(JSON.parse(recovered.stdout)).toMatchObject({
+        status: 'closed',
+        issueCode: null,
+        attemptPointer: { phase: 'closed' },
+      });
+      expect(readFileSync(evidencePath)).toEqual(evidenceBytes);
+    } finally {
+      recoveryFixture.cleanup();
+    }
   });
 
   it('remediates a changed owned path from the requested authority boundary', () => {

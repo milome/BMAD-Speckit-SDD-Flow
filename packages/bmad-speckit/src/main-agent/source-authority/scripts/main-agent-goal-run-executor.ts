@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto';
-import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
   acquireGoalExecutionRunLease,
@@ -13,14 +12,22 @@ import {
   type GoalExecutionClosureRef,
   type GoalExecutionRunLease,
 } from './main-agent-goal-execution-attempt';
-import { executeGoalRunMutation } from './main-agent-goal-run-mutation-executor';
-import { parseReadinessCommandInvocation } from './main-agent-implementation-readiness-v2';
 import {
-  publishGoalExecutionAuthorityClosure,
-  publishGoalExecutionCampaignClosure,
+  executeGoalRunMutation,
+  recoverGoalRunMutationFromEvidence,
+} from './main-agent-goal-run-mutation-executor';
+import { parseReadinessCommandInvocation } from './main-agent-implementation-readiness-v2';
+import { publishGoalExecutionCampaignClosure } from './campaign-closure';
+import { publishGoalExecutionAuthorityClosure } from './subcontract-closure';
+import {
+  canonicalGoalExecutionBytes,
   publishGoalExecutionObservedEvidence,
-  publishGoalExecutionProjections,
+  readGoalExecutionConfinedBytes,
+  readGoalExecutionConfinedBytesIfExists,
+  readGoalExecutionConfinedJson,
+  readGoalExecutionConfinedJsonIfExists,
 } from './subcontract-evidence';
+import { publishGoalExecutionProjections } from './main-agent-governed-goal-integration';
 import {
   hashControlPlaneValue,
   stableControlPlaneStringify,
@@ -69,27 +76,23 @@ function closureResultRefs(
 }
 
 function readClosure(outRoot: string, closureRef: GoalExecutionClosureRef): JsonRecord {
-  return JSON.parse(
-    fs.readFileSync(path.join(outRoot, ...closureRef.path.split('/')), 'utf8')
-  ) as JsonRecord;
+  return readGoalExecutionConfinedJson({
+    root: outRoot,
+    targetPath: path.join(outRoot, ...closureRef.path.split('/')),
+  });
 }
 
-function canonicalBytes(value: unknown): Buffer {
-  return Buffer.from(`${stableControlPlaneStringify(value)}\n`, 'utf8');
-}
-
-function stateHash(targetPath: string): { exists: boolean; hash: string } {
-  if (!fs.existsSync(targetPath)) {
+function stateHash(root: string, targetPath: string): { exists: boolean; hash: string } {
+  const bytes = readGoalExecutionConfinedBytesIfExists({ root, targetPath });
+  if (!bytes) {
     return {
       exists: false,
       hash: `sha256:${createHash('sha256').update(Buffer.alloc(0)).digest('hex')}`,
     };
   }
-  const stat = fs.lstatSync(targetPath);
-  if (!stat.isFile() || stat.isSymbolicLink()) throw new Error('goal_execution_evidence_invalid');
   return {
     exists: true,
-    hash: `sha256:${createHash('sha256').update(fs.readFileSync(targetPath)).digest('hex')}`,
+    hash: `sha256:${createHash('sha256').update(bytes).digest('hex')}`,
   };
 }
 
@@ -106,30 +109,43 @@ function confinedProjectArtifact(projectRoot: string, artifactRef: unknown): str
   return target;
 }
 
-function closureConsumerStateCurrent(input: {
+function observedEvidenceCurrent(input: {
   projectRoot: string;
   outRoot: string;
-  closureRef: GoalExecutionClosureRef;
+  evidencePath: string;
+  evidence: JsonRecord;
+  expectedEvidenceHash: unknown;
   authority: JsonRecord;
+  committed?: JsonRecord;
 }): boolean {
-  const closure = readClosure(input.outRoot, input.closureRef);
-  const evidenceRef = closure.evidenceRef as JsonRecord;
-  const evidencePath = confinedProjectArtifact(input.projectRoot, evidenceRef?.path);
-  const evidence = JSON.parse(fs.readFileSync(evidencePath, 'utf8')) as JsonRecord;
-  validateGoalContractSchema('goal-execution-observed-evidence.schema.json', evidence);
-  const evidencePayload = { ...evidence };
+  validateGoalContractSchema('goal-execution-observed-evidence.schema.json', input.evidence);
+  const evidencePayload = { ...input.evidence };
   delete evidencePayload.evidenceHash;
+  const committed = input.committed;
+  const requirementsReadiness = committed?.requirementsReadiness as JsonRecord | null | undefined;
   if (
-    evidence.evidenceHash !== evidenceRef?.hash ||
-    hashControlPlaneValue(evidencePayload) !== evidence.evidenceHash ||
-    !fs.readFileSync(evidencePath).equals(canonicalBytes(evidence)) ||
-    evidence.executionAuthorityId !== input.authority.executionAuthorityId ||
-    evidence.executionAuthorityHash !== input.authority.executionAuthorityHash ||
-    evidence.executionPackageHash !== input.authority.executionPackageHash ||
-    stableControlPlaneStringify(evidence.ownedPaths) !==
+    input.evidence.evidenceHash !== input.expectedEvidenceHash ||
+    hashControlPlaneValue(evidencePayload) !== input.evidence.evidenceHash ||
+    !readGoalExecutionConfinedBytes({
+      root: input.outRoot,
+      targetPath: input.evidencePath,
+    }).equals(canonicalGoalExecutionBytes(input.evidence)) ||
+    input.evidence.executionAuthorityId !== input.authority.executionAuthorityId ||
+    input.evidence.executionAuthorityHash !== input.authority.executionAuthorityHash ||
+    input.evidence.executionPackageHash !== input.authority.executionPackageHash ||
+    stableControlPlaneStringify(input.evidence.ownedPaths) !==
       stableControlPlaneStringify(input.authority.ownedPaths) ||
-    stableControlPlaneStringify(evidence.forbiddenPaths) !==
-      stableControlPlaneStringify(input.authority.forbiddenPaths)
+    stableControlPlaneStringify(input.evidence.forbiddenPaths) !==
+      stableControlPlaneStringify(input.authority.forbiddenPaths) ||
+    (committed &&
+      (input.evidence.profile !== committed.profile ||
+        input.evidence.candidateRunId !== (committed.candidateRun as JsonRecord).candidateRunId ||
+        input.evidence.activeRunPointerHash !==
+          (committed.activeRunPointer as JsonRecord).activeRunPointerHash ||
+        input.evidence.activationRecordHash !==
+          (committed.activationRecord as JsonRecord).activationRecordHash ||
+        input.evidence.readinessScopedInputDigest !==
+          (requirementsReadiness?.readinessScopedInputDigest ?? null)))
   ) {
     throw new Error('goal_execution_evidence_invalid');
   }
@@ -137,7 +153,7 @@ function closureConsumerStateCurrent(input: {
     commandId: String(command.commandId),
     normalizedInvocation: String(command.invocation).trim(),
   }));
-  const observedCommands = (evidence.commandObservations as JsonRecord[]).map((command) => ({
+  const observedCommands = (input.evidence.commandObservations as JsonRecord[]).map((command) => ({
     commandId: String(command.commandId),
     normalizedInvocation: String(command.normalizedInvocation),
   }));
@@ -146,7 +162,7 @@ function closureConsumerStateCurrent(input: {
   ) {
     return false;
   }
-  const ownedPathStates = evidence.ownedPathStates as JsonRecord[];
+  const ownedPathStates = input.evidence.ownedPathStates as JsonRecord[];
   const expectedOwnedPaths = [...(input.authority.ownedPaths as string[])].sort();
   const observedOwnedPaths = ownedPathStates.map((entry) => String(entry.path)).sort();
   if (
@@ -158,8 +174,31 @@ function closureConsumerStateCurrent(input: {
   }
   return ownedPathStates.every((ownedPathState) => {
     const targetPath = confinedProjectArtifact(input.projectRoot, ownedPathState.path);
-    const current = stateHash(targetPath);
+    const current = stateHash(input.projectRoot, targetPath);
     return current.exists === ownedPathState.exists && current.hash === ownedPathState.hash;
+  });
+}
+
+function closureConsumerStateCurrent(input: {
+  projectRoot: string;
+  outRoot: string;
+  closureRef: GoalExecutionClosureRef;
+  authority: JsonRecord;
+}): boolean {
+  const closure = readClosure(input.outRoot, input.closureRef);
+  const evidenceRef = closure.evidenceRef as JsonRecord;
+  const evidencePath = confinedProjectArtifact(input.projectRoot, evidenceRef?.path);
+  const evidence = readGoalExecutionConfinedJson({
+    root: input.outRoot,
+    targetPath: evidencePath,
+  });
+  return observedEvidenceCurrent({
+    projectRoot: input.projectRoot,
+    outRoot: input.outRoot,
+    evidencePath,
+    evidence,
+    expectedEvidenceHash: evidenceRef?.hash,
+    authority: input.authority,
   });
 }
 
@@ -189,6 +228,7 @@ function resultBase(committed: JsonRecord, pointer: GoalExecutionAttemptPointer)
 
 function requirementsCampaignBinding(input: {
   projectRoot: string;
+  outRoot: string;
   requirementsReadiness: JsonRecord | null;
   closureRecords: JsonRecord[];
 }) {
@@ -210,7 +250,10 @@ function requirementsCampaignBinding(input: {
       input.closureRecords.flatMap((closure) => {
         const evidenceRef = closure.evidenceRef as JsonRecord;
         const evidencePath = confinedProjectArtifact(input.projectRoot, evidenceRef.path);
-        const evidence = JSON.parse(fs.readFileSync(evidencePath, 'utf8')) as JsonRecord;
+        const evidence = readGoalExecutionConfinedJson({
+          root: input.outRoot,
+          targetPath: evidencePath,
+        });
         validateGoalContractSchema('goal-execution-observed-evidence.schema.json', evidence);
         return (evidence.commandObservations as JsonRecord[]).map(
           (command) =>
@@ -245,6 +288,7 @@ function publishCampaign(input: { committed: JsonRecord; pointer: GoalExecutionA
   const activationRecord = input.committed.activationRecord as JsonRecord;
   const readinessBinding = requirementsCampaignBinding({
     projectRoot,
+    outRoot,
     requirementsReadiness,
     closureRecords,
   });
@@ -277,9 +321,10 @@ function publishCampaign(input: { committed: JsonRecord; pointer: GoalExecutionA
   });
   const evidenceRecords = closureRecords.map((closure) => {
     const evidenceRef = closure.evidenceRef as JsonRecord;
-    return JSON.parse(
-      fs.readFileSync(confinedProjectArtifact(projectRoot, evidenceRef.path), 'utf8')
-    ) as JsonRecord;
+    return readGoalExecutionConfinedJson({
+      root: outRoot,
+      targetPath: confinedProjectArtifact(projectRoot, evidenceRef.path),
+    });
   });
   const projections = publishGoalExecutionProjections({
     projectRoot,
@@ -462,16 +507,6 @@ export function executeCommittedGoalRun(input: {
       while (pointer.phase === 'executing' && pointer.nextExecutionAuthorityId) {
         const authority = authorityById.get(pointer.nextExecutionAuthorityId);
         if (!authority) throw new Error('goal_execution_authority_missing');
-        const mutation = executeGoalRunMutation({
-          projectRoot,
-          candidateRunId: String((admitted.candidateRun as JsonRecord).candidateRunId),
-          executionAuthority: authority,
-          adapter: admitted.executionAdapter as never,
-        });
-        assertSameCommittedAdmission(
-          admitted,
-          admitCommittedGoalRun(projectRoot, activeRunPointerPath)
-        );
         const attemptRoot = path.join(
           String(admitted.runRoot),
           'execution',
@@ -479,31 +514,81 @@ export function executeCommittedGoalRun(input: {
         );
         const fileId = authorityFileId(String(authority.executionAuthorityId));
         const requirementsReadiness = admitted.requirementsReadiness as JsonRecord | null;
-        const evidence = publishGoalExecutionObservedEvidence({
-          projectRoot,
-          outRoot,
-          attemptRoot,
-          authorityFileId: fileId,
-          payload: {
-            schemaVersion: 'GoalExecutionObservedEvidence/v1',
-            profile: admitted.profile,
-            candidateRunId: (admitted.candidateRun as JsonRecord).candidateRunId,
-            activeRunPointerHash: activeRunPointer.activeRunPointerHash,
-            activationRecordHash: activationRecord.activationRecordHash,
-            executionAuthorityId: authority.executionAuthorityId,
-            executionAuthorityHash: authority.executionAuthorityHash,
-            executionPackageHash: authority.executionPackageHash,
-            readinessScopedInputDigest: requirementsReadiness?.readinessScopedInputDigest ?? null,
-            ownedPaths: authority.ownedPaths,
-            forbiddenPaths: authority.forbiddenPaths,
-            observedFiles: mutation.observedFiles,
-            ownedPathStates: mutation.ownedPathStates,
-            commandObservations: mutation.commandObservations,
-            reviewerInvocationCount: 0,
-            auditorInvocationCount: 0,
-            judgeSemanticAttemptCount: 0,
-          },
+        const evidencePath = path.join(attemptRoot, 'evidence', `${fileId}.json`);
+        const existingEvidence = readGoalExecutionConfinedJsonIfExists({
+          root: outRoot,
+          targetPath: evidencePath,
         });
+        let mutation: ReturnType<typeof executeGoalRunMutation>;
+        let evidence: ReturnType<typeof publishGoalExecutionObservedEvidence>;
+        if (existingEvidence) {
+          if (
+            !observedEvidenceCurrent({
+              projectRoot,
+              outRoot,
+              evidencePath,
+              evidence: existingEvidence,
+              expectedEvidenceHash: existingEvidence.evidenceHash,
+              authority,
+              committed: admitted,
+            })
+          ) {
+            throw new Error('goal_execution_evidence_invalid');
+          }
+          mutation = recoverGoalRunMutationFromEvidence({
+            projectRoot,
+            executionAuthority: authority,
+            evidence: existingEvidence,
+          });
+          evidence = Object.freeze({
+            absolutePath: evidencePath,
+            projectRelativePath: projectRef(projectRoot, evidencePath),
+            outRootRelativePath: path
+              .relative(path.resolve(outRoot), evidencePath)
+              .replace(/\\/gu, '/'),
+            hash: String(existingEvidence.evidenceHash),
+            record: Object.freeze(existingEvidence),
+          });
+        } else {
+          mutation = executeGoalRunMutation({
+            projectRoot,
+            candidateRunId: String((admitted.candidateRun as JsonRecord).candidateRunId),
+            executionAuthority: authority,
+            adapter: admitted.executionAdapter as never,
+            outRoot,
+            attemptRoot,
+            authorityFileId: fileId,
+          });
+          evidence = publishGoalExecutionObservedEvidence({
+            projectRoot,
+            outRoot,
+            attemptRoot,
+            authorityFileId: fileId,
+            payload: {
+              schemaVersion: 'GoalExecutionObservedEvidence/v1',
+              profile: admitted.profile,
+              candidateRunId: (admitted.candidateRun as JsonRecord).candidateRunId,
+              activeRunPointerHash: activeRunPointer.activeRunPointerHash,
+              activationRecordHash: activationRecord.activationRecordHash,
+              executionAuthorityId: authority.executionAuthorityId,
+              executionAuthorityHash: authority.executionAuthorityHash,
+              executionPackageHash: authority.executionPackageHash,
+              readinessScopedInputDigest: requirementsReadiness?.readinessScopedInputDigest ?? null,
+              ownedPaths: authority.ownedPaths,
+              forbiddenPaths: authority.forbiddenPaths,
+              observedFiles: mutation.observedFiles,
+              ownedPathStates: mutation.ownedPathStates,
+              commandObservations: mutation.commandObservations,
+              reviewerInvocationCount: 0,
+              auditorInvocationCount: 0,
+              judgeSemanticAttemptCount: 0,
+            },
+          });
+        }
+        assertSameCommittedAdmission(
+          admitted,
+          admitCommittedGoalRun(projectRoot, activeRunPointerPath)
+        );
         const dependencyIds = authority.dependencyExecutionAuthorityIds as string[];
         const dependencyClosureRefs = dependencyIds.map((dependencyId) => {
           const closureRef = pointer.validClosureRefs.find(

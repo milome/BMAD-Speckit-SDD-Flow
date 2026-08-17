@@ -1,8 +1,19 @@
-import { mkdtempSync, mkdirSync, readdirSync, rmSync, symlinkSync } from 'node:fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { publishGoalExecutionObservedEvidence } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/subcontract-evidence';
+import {
+  publishGoalExecutionObservedEvidence,
+  readGoalExecutionConfinedJson,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/subcontract-evidence';
 
 const roots: string[] = [];
 const HASH = `sha256:${'a'.repeat(64)}`;
@@ -61,5 +72,40 @@ describe('goal execution evidence confinement', () => {
       })
     ).toThrow('goal_execution_artifact_path_invalid');
     expect(readdirSync(outsideRoot)).toEqual([]);
+  });
+
+  it('rejects authority reads through a junction outside the governed root', () => {
+    const governedRoot = mkdtempSync(path.join(os.tmpdir(), 'goal-read-project-'));
+    const outsideRoot = mkdtempSync(path.join(os.tmpdir(), 'goal-read-outside-'));
+    roots.push(governedRoot, outsideRoot);
+    writeFileSync(path.join(outsideRoot, 'evidence.json'), '{"decision":"pass"}\n', 'utf8');
+    symlinkSync(outsideRoot, path.join(governedRoot, 'evidence'), 'junction');
+
+    expect(() =>
+      readGoalExecutionConfinedJson({
+        root: governedRoot,
+        targetPath: path.join(governedRoot, 'evidence', 'evidence.json'),
+      })
+    ).toThrow('goal_execution_artifact_path_invalid');
+  });
+
+  it('keeps closure and projection producers outside the evidence store module', () => {
+    const sourceRoot = path.resolve(
+      'packages/bmad-speckit/src/main-agent/source-authority/scripts'
+    );
+    const evidenceSource = readFileSync(path.join(sourceRoot, 'subcontract-evidence.ts'), 'utf8');
+    const closureSource = readFileSync(path.join(sourceRoot, 'subcontract-closure.ts'), 'utf8');
+    const campaignSource = readFileSync(path.join(sourceRoot, 'campaign-closure.ts'), 'utf8');
+    const integrationSource = readFileSync(
+      path.join(sourceRoot, 'main-agent-governed-goal-integration.ts'),
+      'utf8'
+    );
+
+    expect(evidenceSource).not.toContain('publishGoalExecutionAuthorityClosure');
+    expect(evidenceSource).not.toContain('publishGoalExecutionCampaignClosure');
+    expect(evidenceSource).not.toContain('publishGoalExecutionProjections');
+    expect(closureSource).toContain('export function publishGoalExecutionAuthorityClosure');
+    expect(campaignSource).toContain('export function publishGoalExecutionCampaignClosure');
+    expect(integrationSource).toContain('export function publishGoalExecutionProjections');
   });
 });

@@ -262,7 +262,7 @@ describe('control-plane generation lock', () => {
     expect(readFileSync(lockPath, 'utf8')).toBe(bytes);
   });
 
-  it('uses the token tie-break when contenders choose the same ticket', async () => {
+  it('serializes contenders after concurrent choosing publication', async () => {
     const root = temporaryRoot();
     const resumePath = path.join(root, 'resume');
     const eventsPath = path.join(root, 'preload-events');
@@ -286,13 +286,33 @@ describe('control-plane generation lock', () => {
     await Promise.all(stages.map(waitForPath));
     writeFileSync(resumePath, '', 'utf8');
     const completed = await Promise.all(contenders);
+    const concurrency = concurrencyFrom(shared.eventsPath);
+    if (concurrency !== 1 || existsSync(shared.violationPath)) {
+      throw new Error(
+        JSON.stringify({
+          completed,
+          concurrency,
+          criticalViolation: existsSync(shared.violationPath)
+            ? readFileSync(shared.violationPath, 'utf8')
+            : null,
+          criticalEvents: readFileSync(shared.eventsPath, 'utf8').trim().split('\n'),
+          markerEvents: existsSync(eventsPath)
+            ? readFileSync(eventsPath, 'utf8').trim().split('\n')
+            : [],
+          remainingMarkers: flatMarkerNames(shared.options.lockPath),
+        })
+      );
+    }
 
     expect(completed.every(({ status }) => status === 0)).toBe(true);
-    expect(new Set(completed.map(({ output }) => output.ticket).filter(Boolean)).size).toBe(1);
-    expect(concurrencyFrom(shared.eventsPath)).toBe(1);
+    expect(completed.every(({ output }) => /^[1-9][0-9]*$/u.test(String(output.ticket)))).toBe(
+      true
+    );
+    expect(existsSync(shared.violationPath)).toBe(false);
+    expect(concurrency).toBe(1);
   });
 
-  it('retries an entry scan when a choosing marker is replaced by its ticket', async () => {
+  it('uses the token tie-break when same-ticket choosing markers are replaced', async () => {
     const root = temporaryRoot();
     const lockPath = path.join(root, 'control.lock');
     const choosingResume = path.join(root, 'resume-choosing');
@@ -351,6 +371,9 @@ describe('control-plane generation lock', () => {
         contender.ticketName
       )![1];
     }
+    expect(
+      contenders.every(({ ticketName }) => ticketName.includes('.owner-00000000000000000001-'))
+    ).toBe(true);
     const [lower, higher] = contenders.sort((left, right) =>
       left.ownerToken.localeCompare(right.ownerToken, 'en')
     );

@@ -4,6 +4,12 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { stableControlPlaneStringify } from '../../../utils/goal-contract/control-plane/canonical-hash';
 import type { ResolvedGoalRunExecutionAdapterAuthority } from '../../../utils/goal-contract/control-plane/goal-run-execution-adapter-authority';
+import {
+  assertGoalExecutionPhysicalParentConfinement,
+  publishGoalExecutionDiagnosticRecord,
+  readGoalExecutionConfinedBytesIfExists,
+  readGoalExecutionConfinedJsonIfExists,
+} from './subcontract-evidence';
 
 type JsonRecord = Record<string, unknown>;
 
@@ -39,6 +45,16 @@ interface WorkspacePathState {
 interface WorkspaceSnapshot {
   headHash: string;
   paths: Map<string, WorkspacePathState>;
+}
+
+export interface GoalRunMutationCheckpoint {
+  schemaVersion: 'GoalRunMutationCheckpoint/v1';
+  candidateRunId: string;
+  executionAuthorityId: string;
+  headHash: string;
+  ownedPaths: string[];
+  ownedPathStates: GoalRunOwnedPathState[];
+  workspacePaths: Array<WorkspacePathState & { path: string }>;
 }
 
 export type GoalRunCommitProof =
@@ -112,12 +128,14 @@ function fileState(
   hash: string;
 } {
   const targetPath = confinedPath(projectRoot, relativePath);
-  if (!fs.existsSync(targetPath)) return { exists: false, hash: sha256(Buffer.alloc(0)) };
-  const stat = fs.lstatSync(targetPath);
-  if (!stat.isFile() || stat.isSymbolicLink()) {
+  try {
+    const bytes = readGoalExecutionConfinedBytesIfExists({ root: projectRoot, targetPath });
+    return bytes === null
+      ? { exists: false, hash: sha256(Buffer.alloc(0)) }
+      : { exists: true, hash: sha256(bytes) };
+  } catch {
     throw new Error('goal_execution_owned_path_invalid');
   }
-  return { exists: true, hash: sha256(fs.readFileSync(targetPath)) };
 }
 
 function workspacePathState(
@@ -126,20 +144,50 @@ function workspacePathState(
   status: string
 ): WorkspacePathState {
   const targetPath = confinedPath(projectRoot, relativePath);
+  try {
+    assertGoalExecutionPhysicalParentConfinement({ root: projectRoot, targetPath });
+  } catch {
+    throw new Error('goal_execution_workspace_snapshot_invalid');
+  }
   if (!fs.existsSync(targetPath)) {
     return { status, exists: false, kind: 'missing', hash: sha256(Buffer.alloc(0)) };
   }
   const stat = fs.lstatSync(targetPath);
   if (stat.isSymbolicLink()) {
-    return {
-      status,
-      exists: true,
-      kind: 'symbolic_link',
-      hash: sha256(fs.readlinkSync(targetPath, 'buffer')),
-    };
+    try {
+      const before = fs.lstatSync(targetPath, { bigint: true });
+      const linkBytes = fs.readlinkSync(targetPath, 'buffer');
+      assertGoalExecutionPhysicalParentConfinement({ root: projectRoot, targetPath });
+      const after = fs.lstatSync(targetPath, { bigint: true });
+      if (
+        !before.isSymbolicLink() ||
+        !after.isSymbolicLink() ||
+        before.dev !== after.dev ||
+        before.ino !== after.ino
+      ) {
+        throw new Error('invalid');
+      }
+      return {
+        status,
+        exists: true,
+        kind: 'symbolic_link',
+        hash: sha256(linkBytes),
+      };
+    } catch {
+      throw new Error('goal_execution_workspace_snapshot_invalid');
+    }
   }
   if (stat.isFile()) {
-    return { status, exists: true, kind: 'file', hash: sha256(fs.readFileSync(targetPath)) };
+    try {
+      return {
+        status,
+        exists: true,
+        kind: 'file',
+        hash: sha256(readGoalExecutionConfinedBytesIfExists({ root: projectRoot, targetPath })!),
+      };
+    } catch {
+      throw new Error('goal_execution_workspace_snapshot_invalid');
+    }
   }
   return {
     status,
@@ -203,6 +251,130 @@ function workspaceDeltaPaths(before: WorkspaceSnapshot, after: WorkspaceSnapshot
         stableControlPlaneStringify(after.paths.get(relativePath) ?? null)
     )
     .sort();
+}
+
+function mutationCheckpointPath(input: { attemptRoot: string; authorityFileId: string }): string {
+  return path.join(
+    path.resolve(input.attemptRoot),
+    'recovery',
+    `${normalizedRelativePath(input.authorityFileId)}.mutation-baseline.json`
+  );
+}
+
+function parseMutationCheckpoint(input: {
+  value: JsonRecord;
+  candidateRunId: string;
+  executionAuthorityId: string;
+  ownedPaths: string[];
+}): GoalRunMutationCheckpoint {
+  const value = input.value as unknown as GoalRunMutationCheckpoint;
+  const ownedPathStates = Array.isArray(value.ownedPathStates) ? value.ownedPathStates : [];
+  const workspacePaths = Array.isArray(value.workspacePaths) ? value.workspacePaths : [];
+  if (
+    value.schemaVersion !== 'GoalRunMutationCheckpoint/v1' ||
+    value.candidateRunId !== input.candidateRunId ||
+    value.executionAuthorityId !== input.executionAuthorityId ||
+    (!/^sha256:[a-f0-9]{64}$/u.test(value.headHash) && !/^[a-f0-9]{40}$/u.test(value.headHash)) ||
+    stableControlPlaneStringify(value.ownedPaths) !==
+      stableControlPlaneStringify(input.ownedPaths) ||
+    ownedPathStates.length !== input.ownedPaths.length ||
+    new Set(ownedPathStates.map((entry) => entry.path)).size !== ownedPathStates.length ||
+    ownedPathStates.some(
+      (entry) =>
+        !input.ownedPaths.includes(entry.path) ||
+        typeof entry.exists !== 'boolean' ||
+        !/^sha256:[a-f0-9]{64}$/u.test(entry.hash)
+    ) ||
+    new Set(workspacePaths.map((entry) => entry.path)).size !== workspacePaths.length ||
+    workspacePaths.some(
+      (entry) =>
+        normalizedRelativePath(entry.path) !== entry.path ||
+        typeof entry.status !== 'string' ||
+        typeof entry.exists !== 'boolean' ||
+        !['missing', 'file', 'symbolic_link', 'other'].includes(entry.kind) ||
+        !/^sha256:[a-f0-9]{64}$/u.test(entry.hash)
+    )
+  ) {
+    throw new Error('goal_execution_mutation_checkpoint_invalid');
+  }
+  return Object.freeze({
+    ...value,
+    ownedPaths: Object.freeze([...value.ownedPaths]) as unknown as string[],
+    ownedPathStates: Object.freeze(
+      ownedPathStates.map((entry) => Object.freeze({ ...entry }))
+    ) as unknown as GoalRunOwnedPathState[],
+    workspacePaths: Object.freeze(
+      workspacePaths.map((entry) => Object.freeze({ ...entry }))
+    ) as unknown as Array<WorkspacePathState & { path: string }>,
+  });
+}
+
+export function prepareGoalRunMutationCheckpoint(input: {
+  projectRoot: string;
+  outRoot: string;
+  candidateRunId: string;
+  executionAuthority: JsonRecord;
+  attemptRoot: string;
+  authorityFileId: string;
+}): { checkpoint: GoalRunMutationCheckpoint; recovered: boolean } {
+  const ownedPaths = Array.isArray(input.executionAuthority.ownedPaths)
+    ? input.executionAuthority.ownedPaths.map(normalizedRelativePath)
+    : [];
+  const executionAuthorityId = String(input.executionAuthority.executionAuthorityId);
+  if (ownedPaths.length === 0) throw new Error('goal_execution_owned_paths_missing');
+  const targetPath = mutationCheckpointPath(input);
+  const existing = readGoalExecutionConfinedJsonIfExists({
+    root: input.outRoot,
+    targetPath,
+  });
+  if (existing) {
+    return {
+      checkpoint: parseMutationCheckpoint({
+        value: existing,
+        candidateRunId: input.candidateRunId,
+        executionAuthorityId,
+        ownedPaths,
+      }),
+      recovered: true,
+    };
+  }
+  const ownedPathStates = ownedPaths.map((ownedPath) => ({
+    path: ownedPath,
+    ...fileState(input.projectRoot, ownedPath),
+  }));
+  const snapshot = workspaceSnapshot(input.projectRoot);
+  const checkpoint = parseMutationCheckpoint({
+    value: {
+      schemaVersion: 'GoalRunMutationCheckpoint/v1',
+      candidateRunId: input.candidateRunId,
+      executionAuthorityId,
+      headHash: snapshot.headHash,
+      ownedPaths,
+      ownedPathStates,
+      workspacePaths: [...snapshot.paths.entries()]
+        .map(([entryPath, state]) => ({ path: entryPath, ...state }))
+        .sort((left, right) => left.path.localeCompare(right.path, 'en')),
+    },
+    candidateRunId: input.candidateRunId,
+    executionAuthorityId,
+    ownedPaths,
+  });
+  publishGoalExecutionDiagnosticRecord({
+    projectRoot: input.projectRoot,
+    outRoot: input.outRoot,
+    targetPath,
+    payload: checkpoint as unknown as JsonRecord,
+  });
+  return { checkpoint, recovered: false };
+}
+
+function checkpointWorkspaceSnapshot(checkpoint: GoalRunMutationCheckpoint): WorkspaceSnapshot {
+  return {
+    headHash: checkpoint.headHash,
+    paths: new Map(
+      checkpoint.workspacePaths.map(({ path: entryPath, ...state }) => [entryPath, state])
+    ),
+  };
 }
 
 function adapterCommand(resolved: ResolvedGoalRunExecutionAdapterAuthority): {
@@ -424,6 +596,75 @@ function replayObservedFiles(
   });
 }
 
+export function recoverGoalRunMutationFromEvidence(input: {
+  projectRoot: string;
+  executionAuthority: JsonRecord;
+  evidence: JsonRecord;
+}): {
+  changedPaths: string[];
+  observedFiles: GoalRunObservedFile[];
+  ownedPathStates: GoalRunOwnedPathState[];
+  commandObservations: GoalRunCommandObservation[];
+  commitProof: GoalRunCommitProof;
+} {
+  const ownedPaths = Array.isArray(input.executionAuthority.ownedPaths)
+    ? input.executionAuthority.ownedPaths.map(normalizedRelativePath)
+    : [];
+  const observedFiles = Array.isArray(input.evidence.observedFiles)
+    ? (input.evidence.observedFiles as GoalRunObservedFile[])
+    : [];
+  const ownedPathStates = Array.isArray(input.evidence.ownedPathStates)
+    ? (input.evidence.ownedPathStates as GoalRunOwnedPathState[])
+    : [];
+  const commandObservations = Array.isArray(input.evidence.commandObservations)
+    ? (input.evidence.commandObservations as GoalRunCommandObservation[])
+    : [];
+  const changedPaths = observedFiles.map((entry) => normalizedRelativePath(entry.path)).sort();
+  if (
+    ownedPaths.length === 0 ||
+    new Set(changedPaths).size !== changedPaths.length ||
+    changedPaths.some((changedPath) => !matchesScope(changedPath, ownedPaths)) ||
+    stableControlPlaneStringify(
+      ownedPathStates.map((entry) => normalizedRelativePath(entry.path)).sort()
+    ) !== stableControlPlaneStringify([...ownedPaths].sort()) ||
+    !ownedPathStates.every((entry) => {
+      const current = fileState(input.projectRoot, entry.path);
+      return current.exists === entry.exists && current.hash === entry.hash;
+    }) ||
+    commandObservations.some(
+      (entry) =>
+        entry.exitCode !== 0 ||
+        entry.decision !== 'green' ||
+        !/^sha256:[a-f0-9]{64}$/u.test(entry.stdoutHash) ||
+        !/^sha256:[a-f0-9]{64}$/u.test(entry.stderrHash)
+    )
+  ) {
+    throw new Error('goal_execution_evidence_invalid');
+  }
+  const commitProof =
+    typeof input.executionAuthority.partitionId === 'string'
+      ? resolveReachableAuthorityCommit({
+          projectRoot: input.projectRoot,
+          executionAuthorityId: String(input.executionAuthority.executionAuthorityId),
+          ownedPaths,
+        })
+      : ({ kind: 'not_applicable' } as const);
+  if (
+    commitProof.kind === 'owned_path_commit' &&
+    stableControlPlaneStringify(commitProof.changedPaths) !==
+      stableControlPlaneStringify(changedPaths)
+  ) {
+    throw new Error('goal_execution_commit_proof_invalid');
+  }
+  return Object.freeze({
+    changedPaths,
+    observedFiles: observedFiles.map((entry) => Object.freeze({ ...entry })),
+    ownedPathStates: ownedPathStates.map((entry) => Object.freeze({ ...entry })),
+    commandObservations: commandObservations.map((entry) => Object.freeze({ ...entry })),
+    commitProof,
+  });
+}
+
 function publishOwnedPathCommit(input: {
   projectRoot: string;
   parentHash: string;
@@ -496,6 +737,9 @@ export function executeGoalRunMutation(input: {
   candidateRunId: string;
   executionAuthority: JsonRecord;
   adapter: ResolvedGoalRunExecutionAdapterAuthority;
+  outRoot?: string;
+  attemptRoot?: string;
+  authorityFileId?: string;
 }): {
   changedPaths: string[];
   observedFiles: GoalRunObservedFile[];
@@ -511,17 +755,90 @@ export function executeGoalRunMutation(input: {
     : [];
   if (ownedPaths.length === 0) throw new Error('goal_execution_owned_paths_missing');
   const partitionId = input.executionAuthority.partitionId;
-  const parentHash =
-    typeof partitionId === 'string'
-      ? runGit(input.projectRoot, ['rev-parse', '--verify', 'HEAD'])
-      : null;
-  const workspaceBefore = workspaceSnapshot(input.projectRoot);
+  const recoveryConfigured = Boolean(input.outRoot && input.attemptRoot && input.authorityFileId);
+  if (
+    [input.outRoot, input.attemptRoot, input.authorityFileId].some(Boolean) &&
+    !recoveryConfigured
+  ) {
+    throw new Error('goal_execution_mutation_checkpoint_invalid');
+  }
+  const prepared = recoveryConfigured
+    ? prepareGoalRunMutationCheckpoint({
+        projectRoot: input.projectRoot,
+        outRoot: String(input.outRoot),
+        candidateRunId: input.candidateRunId,
+        executionAuthority: input.executionAuthority,
+        attemptRoot: String(input.attemptRoot),
+        authorityFileId: String(input.authorityFileId),
+      })
+    : null;
+  const workspaceBefore = prepared
+    ? checkpointWorkspaceSnapshot(prepared.checkpoint)
+    : workspaceSnapshot(input.projectRoot);
   const before = new Map(
-    ownedPaths.map((ownedPath) => [ownedPath, fileState(input.projectRoot, ownedPath)])
+    prepared
+      ? prepared.checkpoint.ownedPathStates.map((entry) => [
+          entry.path,
+          { exists: entry.exists, hash: entry.hash },
+        ])
+      : ownedPaths.map((ownedPath) => [ownedPath, fileState(input.projectRoot, ownedPath)])
   );
+  const parentHash = typeof partitionId === 'string' ? workspaceBefore.headHash : null;
+  ownedPaths.forEach((ownedPath) => fileState(input.projectRoot, ownedPath));
+  const currentBeforeAdapter = workspaceSnapshot(input.projectRoot);
+  if (parentHash && currentBeforeAdapter.headHash !== parentHash) {
+    const commitProof = resolveReachableAuthorityCommit({
+      projectRoot: input.projectRoot,
+      executionAuthorityId: String(input.executionAuthority.executionAuthorityId),
+      ownedPaths,
+    });
+    if (
+      commitProof.commitHash !== currentBeforeAdapter.headHash ||
+      commitProof.parentHash !== parentHash
+    ) {
+      throw new Error('goal_execution_workspace_head_changed');
+    }
+    const commandObservations = runCommands({
+      projectRoot: input.projectRoot,
+      commands: Array.isArray(input.executionAuthority.commands)
+        ? (input.executionAuthority.commands as JsonRecord[])
+        : [],
+      timeoutMs: input.adapter.authority.timeoutMs,
+    });
+    if (
+      workspaceDeltaPaths(currentBeforeAdapter, workspaceSnapshot(input.projectRoot)).length > 0
+    ) {
+      throw new Error('goal_execution_validation_mutated_workspace');
+    }
+    const observedFiles = replayObservedFiles(input.projectRoot, commitProof);
+    return Object.freeze({
+      changedPaths: observedFiles.map((entry) => entry.path).sort(),
+      observedFiles,
+      ownedPathStates: ownedPaths.map((ownedPath) => {
+        const state = fileState(input.projectRoot, ownedPath);
+        return Object.freeze({ path: ownedPath, hash: state.hash, exists: state.exists });
+      }),
+      commandObservations,
+      commitProof,
+    });
+  }
   const declaredChangedPaths = invokeAdapter(input);
+  ownedPaths.forEach((ownedPath) => fileState(input.projectRoot, ownedPath));
   const workspaceAfterAdapter = workspaceSnapshot(input.projectRoot);
-  const adapterWorkspaceDelta = workspaceDeltaPaths(workspaceBefore, workspaceAfterAdapter);
+  const checkpointProjectPath = recoveryConfigured
+    ? path
+        .relative(
+          path.resolve(input.projectRoot),
+          mutationCheckpointPath({
+            attemptRoot: String(input.attemptRoot),
+            authorityFileId: String(input.authorityFileId),
+          })
+        )
+        .replace(/\\/gu, '/')
+    : null;
+  const adapterWorkspaceDelta = workspaceDeltaPaths(workspaceBefore, workspaceAfterAdapter).filter(
+    (changedPath) => changedPath !== checkpointProjectPath
+  );
   if (
     adapterWorkspaceDelta.some(
       (changedPath) =>
@@ -545,8 +862,9 @@ export function executeGoalRunMutation(input: {
   });
   const adapterChangedPaths = adapterObservedFiles.map((entry) => entry.path).sort();
   if (
-    stableControlPlaneStringify(adapterChangedPaths) !==
-      stableControlPlaneStringify(declaredChangedPaths) ||
+    (stableControlPlaneStringify(adapterChangedPaths) !==
+      stableControlPlaneStringify(declaredChangedPaths) &&
+      !(prepared?.recovered && declaredChangedPaths.length === 0)) ||
     adapterChangedPaths.some(
       (changedPath) =>
         !matchesScope(changedPath, ownedPaths) || matchesScope(changedPath, forbiddenPaths)
@@ -561,6 +879,7 @@ export function executeGoalRunMutation(input: {
       : [],
     timeoutMs: input.adapter.authority.timeoutMs,
   });
+  ownedPaths.forEach((ownedPath) => fileState(input.projectRoot, ownedPath));
   const workspaceAfterValidation = workspaceSnapshot(input.projectRoot);
   if (workspaceDeltaPaths(workspaceAfterAdapter, workspaceAfterValidation).length > 0) {
     throw new Error('goal_execution_validation_mutated_workspace');

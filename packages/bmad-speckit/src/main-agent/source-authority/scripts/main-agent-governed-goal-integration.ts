@@ -1,4 +1,6 @@
 import { createHash } from 'node:crypto';
+import * as path from 'node:path';
+import { publishGoalExecutionImmutableArtifact } from './subcontract-evidence';
 
 export type MainAgentGovernedGoalIntegrationModule = never;
 
@@ -704,6 +706,94 @@ export function projectGovernedGoalExecutionTaskReport(input: UnknownRecord) {
       campaignReportHash: input.campaignClosureHash,
     },
   });
+}
+
+function canonicalGoalExecutionProjectionBytes(value: unknown): Buffer {
+  return Buffer.from(`${JSON.stringify(canonicalize(value))}\n`, 'utf8');
+}
+
+export function publishGoalExecutionProjections(input: {
+  projectRoot: string;
+  outRoot: string;
+  attemptRoot: string;
+  campaignClosureRef: string;
+  campaignClosureHash: string;
+  packageManifestHash: string;
+  goalId: string;
+  candidateRunId: string;
+  filesChanged: string[];
+  validationsRun: string[];
+  evidence: string[];
+  closedAuthorities: Array<{ executionAuthorityId: string; closureHash: string }>;
+}): Array<{ role: string; artifactRef: string; artifactHash: string }> {
+  const publishProjection = (entry: { role: string; fileName: string; bytes: Buffer }) => {
+    const artifactHash = `sha256:${createHash('sha256').update(entry.bytes).digest('hex')}`;
+    const published = publishGoalExecutionImmutableArtifact({
+      projectRoot: input.projectRoot,
+      outRoot: input.outRoot,
+      targetPath: path.join(input.attemptRoot, 'projections', entry.fileName),
+      bytes: entry.bytes,
+      hash: artifactHash,
+    });
+    return Object.freeze({
+      role: entry.role,
+      artifactRef: published.projectRelativePath,
+      artifactHash,
+    });
+  };
+  const campaignReport = publishProjection({
+    role: 'campaign_report',
+    fileName: 'campaign-report.md',
+    bytes: Buffer.from(
+      `# Goal Execution Campaign\n\nGoal: ${input.goalId}\nCandidate run: ${input.candidateRunId}\nCampaign closure: ${input.campaignClosureHash}\n`,
+      'utf8'
+    ),
+  });
+  const finalExecution = publishProjection({
+    role: 'final_execution_projection',
+    fileName: 'final-execution.md',
+    bytes: Buffer.from(
+      `# Final Execution Projection\n\nStatus: pre-final-review\nCampaign closure: ${input.campaignClosureHash}\n`,
+      'utf8'
+    ),
+  });
+  const taskReportRecord = projectGovernedGoalExecutionTaskReport({
+    packetId: input.goalId,
+    packageManifestHash: input.packageManifestHash,
+    campaignClosureHash: input.campaignClosureHash,
+    closedAuthorities: input.closedAuthorities,
+    filesChanged: input.filesChanged,
+    validationsRun: input.validationsRun,
+    evidence: input.evidence,
+    downstreamContext: [
+      `candidateRunId=${input.candidateRunId}`,
+      `campaignClosureRef=${input.campaignClosureRef}`,
+      `campaignClosureHash=${input.campaignClosureHash}`,
+      'state=pre-final-review',
+    ],
+  });
+  const taskReport = publishProjection({
+    role: 'task_report',
+    fileName: 'TaskReport.json',
+    bytes: canonicalGoalExecutionProjectionBytes(taskReportRecord),
+  });
+  const handoff = publishProjection({
+    role: 'main_agent_handoff',
+    fileName: 'main-agent-handoff.json',
+    bytes: canonicalGoalExecutionProjectionBytes({
+      schemaVersion: 'MainAgentGoalExecutionHandoff/v1',
+      state: 'pre-final-review',
+      goalId: input.goalId,
+      candidateRunId: input.candidateRunId,
+      campaignClosureRef: input.campaignClosureRef,
+      campaignClosureHash: input.campaignClosureHash,
+      taskReportRef: {
+        path: taskReport.artifactRef,
+        hash: taskReport.artifactHash,
+      },
+    }),
+  });
+  return [campaignReport, finalExecution, taskReport, handoff];
 }
 
 export function runMainAgentGoalSubcontractCampaign(input: UnknownRecord) {

@@ -1,10 +1,13 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { executeGoalRunMutation } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-goal-run-mutation-executor';
+import {
+  executeGoalRunMutation,
+  prepareGoalRunMutationCheckpoint,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-goal-run-mutation-executor';
 
 const roots: string[] = [];
 
@@ -54,7 +57,8 @@ function materializeMutationFixture(source: string, timeoutMs = 30_000) {
 
 function executeNegativeMutation(
   fixture: ReturnType<typeof materializeMutationFixture>,
-  commands = [{ commandId: 'CMD-child', invocation: 'node --check src/child.cjs' }]
+  commands = [{ commandId: 'CMD-child', invocation: 'node --check src/child.cjs' }],
+  partitionId: string | null = 'PART-NEGATIVE'
 ) {
   return executeGoalRunMutation({
     projectRoot: fixture.projectRoot,
@@ -64,7 +68,7 @@ function executeNegativeMutation(
       executionAuthorityHash: `sha256:${'a'.repeat(64)}`,
       executionPackagePath: path.join(fixture.projectRoot, 'child-package.json'),
       executionPackageHash: `sha256:${'b'.repeat(64)}`,
-      partitionId: 'PART-NEGATIVE',
+      partitionId,
       ownedPaths: ['src/child.cjs'],
       forbiddenPaths: ['.git/**'],
       commands,
@@ -196,6 +200,67 @@ describe('Goal run mutation executor', () => {
     );
   });
 
+  it('rejects a direct owned path through a parent junction before adapter mutation', () => {
+    const fixture = materializeMutationFixture(
+      [
+        "const fs = require('node:fs');",
+        "let input = '';",
+        "process.stdin.on('data', (chunk) => (input += chunk));",
+        "process.stdin.on('end', () => {",
+        '  const request = JSON.parse(input);',
+        "  fs.writeFileSync(request.projectRoot + '/src/child.cjs', \"module.exports = { status: 'green' };\\n\");",
+        "  process.stdout.write(JSON.stringify({ schemaVersion: 'GoalRunMutationResult/v1', exitCode: 0, changedPaths: ['src/child.cjs'] }));",
+        '});',
+        '',
+      ].join('\n')
+    );
+    const outsideRoot = mkdtempSync(path.join(os.tmpdir(), 'goal-run-mutation-outside-'));
+    roots.push(outsideRoot);
+    const outsidePath = path.join(outsideRoot, 'child.cjs');
+    const originalBytes = "module.exports = { status: 'red' };\n";
+    writeFileSync(outsidePath, originalBytes, 'utf8');
+    rmSync(path.join(fixture.projectRoot, 'src'), { recursive: true, force: true });
+    symlinkSync(
+      outsideRoot,
+      path.join(fixture.projectRoot, 'src'),
+      process.platform === 'win32' ? 'junction' : 'dir'
+    );
+
+    expect(() => executeNegativeMutation(fixture, undefined, null)).toThrow(
+      'goal_execution_owned_path_invalid'
+    );
+    expect(readFileSync(outsidePath, 'utf8')).toBe(originalBytes);
+  });
+
+  it('preserves an unrelated dirty symlink while committing an owned mutation', () => {
+    const fixture = materializeMutationFixture(
+      [
+        "const fs = require('node:fs');",
+        "let input = '';",
+        "process.stdin.on('data', (chunk) => (input += chunk));",
+        "process.stdin.on('end', () => {",
+        '  const request = JSON.parse(input);',
+        "  fs.writeFileSync(request.projectRoot + '/src/child.cjs', \"module.exports = { status: 'green' };\\n\");",
+        "  process.stdout.write(JSON.stringify({ schemaVersion: 'GoalRunMutationResult/v1', exitCode: 0, changedPaths: ['src/child.cjs'] }));",
+        '});',
+        '',
+      ].join('\n')
+    );
+    const outsideRoot = mkdtempSync(path.join(os.tmpdir(), 'goal-run-symlink-outside-'));
+    roots.push(outsideRoot);
+    const outsidePath = path.join(outsideRoot, 'unrelated.txt');
+    const originalBytes = 'unrelated consumer state\n';
+    writeFileSync(outsidePath, originalBytes, 'utf8');
+    symlinkSync(outsidePath, path.join(fixture.projectRoot, 'unrelated-link'), 'file');
+
+    expect(executeNegativeMutation(fixture).commitProof).toMatchObject({
+      kind: 'owned_path_commit',
+      commitCount: 1,
+      changedPaths: ['src/child.cjs'],
+    });
+    expect(readFileSync(outsidePath, 'utf8')).toBe(originalBytes);
+  });
+
   it('rejects workspace writes performed by a validation command', () => {
     const fixture = materializeMutationFixture(
       [
@@ -270,5 +335,66 @@ describe('Goal run mutation executor', () => {
       },
     ]);
     expect(git(fixture.projectRoot, ['rev-list', '--count', 'HEAD~2..HEAD'])).toBe('2');
+  });
+
+  it('recovers an idempotent adapter after mutation persisted before the partition commit', () => {
+    const fixture = materializeMutationFixture(
+      [
+        "const fs = require('node:fs');",
+        "let input = '';",
+        "process.stdin.on('data', (chunk) => (input += chunk));",
+        "process.stdin.on('end', () => {",
+        '  const request = JSON.parse(input);',
+        "  const target = request.projectRoot + '/src/child.cjs';",
+        "  const alreadyGreen = fs.readFileSync(target, 'utf8').includes(\"status: 'green'\");",
+        '  if (!alreadyGreen) fs.writeFileSync(target, "module.exports = { status: \'green\' };\\n");',
+        "  process.stdout.write(JSON.stringify({ schemaVersion: 'GoalRunMutationResult/v1', exitCode: 0, changedPaths: alreadyGreen ? [] : ['src/child.cjs'] }));",
+        '});',
+        '',
+      ].join('\n')
+    );
+    const attemptRoot = path.join(fixture.projectRoot, 'run', 'execution', 'ATTEMPT-RECOVERY');
+    mkdirSync(path.join(fixture.projectRoot, 'run'), { recursive: true });
+    const executionAuthority = {
+      executionAuthorityId: 'CHILD-BBBBBBBBBBBBBBBB',
+      executionAuthorityHash: `sha256:${'a'.repeat(64)}`,
+      executionPackagePath: path.join(fixture.projectRoot, 'child-package.json'),
+      executionPackageHash: `sha256:${'b'.repeat(64)}`,
+      partitionId: 'PART-NEGATIVE',
+      ownedPaths: ['src/child.cjs'],
+      forbiddenPaths: ['.git/**'],
+      commands: [{ commandId: 'CMD-child', invocation: 'node --check src/child.cjs' }],
+    };
+    const parentHash = git(fixture.projectRoot, ['rev-parse', 'HEAD']);
+    prepareGoalRunMutationCheckpoint({
+      projectRoot: fixture.projectRoot,
+      outRoot: path.join(fixture.projectRoot, 'run'),
+      candidateRunId: 'RUN-BBBBBBBBBBBBBBBB',
+      executionAuthority,
+      attemptRoot,
+      authorityFileId: 'CHILD-BBBBBBBBBBBBBBBB',
+    });
+    writeFileSync(
+      path.join(fixture.projectRoot, 'src', 'child.cjs'),
+      "module.exports = { status: 'green' };\n",
+      'utf8'
+    );
+
+    const recovered = executeGoalRunMutation({
+      projectRoot: fixture.projectRoot,
+      candidateRunId: 'RUN-BBBBBBBBBBBBBBBB',
+      executionAuthority,
+      adapter: fixture.adapter,
+      outRoot: path.join(fixture.projectRoot, 'run'),
+      attemptRoot,
+      authorityFileId: 'CHILD-BBBBBBBBBBBBBBBB',
+    });
+
+    expect(recovered.changedPaths).toEqual(['src/child.cjs']);
+    expect(recovered.commitProof).toMatchObject({
+      kind: 'owned_path_commit',
+      parentHash,
+      changedPaths: ['src/child.cjs'],
+    });
   });
 });
