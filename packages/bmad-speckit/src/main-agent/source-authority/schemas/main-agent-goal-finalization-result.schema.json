@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/main-agent-goal-finalization-result.schema.json",
+  "title": "Main Agent Goal Finalization Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "status",
+    "issueCode",
+    "campaignClosureRef",
+    "candidateRef",
+    "acceptedResultRef",
+    "aggregateRef",
+    "effectivePassRef",
+    "deliveryGateReceiptRef",
+    "closeoutRequestRef",
+    "pageRef"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "main-agent-goal-finalization-result/v1" },
+    "status": { "enum": ["awaiting_user_acceptance", "finalization_reused", "blocked"] },
+    "issueCode": { "type": ["string", "null"], "minLength": 1 },
+    "campaignClosureRef": { "$ref": "#/$defs/nullableHashRef" },
+    "candidateRef": { "$ref": "#/$defs/nullableHashRef" },
+    "acceptedResultRef": { "$ref": "#/$defs/nullableHashRef" },
+    "aggregateRef": { "$ref": "#/$defs/nullableHashRef" },
+    "effectivePassRef": { "$ref": "#/$defs/nullableHashRef" },
+    "deliveryGateReceiptRef": { "$ref": "#/$defs/nullableHashRef" },
+    "closeoutRequestRef": { "$ref": "#/$defs/nullableHashRef" },
+    "pageRef": { "$ref": "#/$defs/nullableHashRef" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "status": { "enum": ["awaiting_user_acceptance", "finalization_reused"] } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "issueCode": { "type": "null" },
+          "campaignClosureRef": { "$ref": "#/$defs/hashRef" },
+          "candidateRef": { "$ref": "#/$defs/hashRef" },
+          "acceptedResultRef": { "$ref": "#/$defs/hashRef" },
+          "aggregateRef": { "$ref": "#/$defs/hashRef" },
+          "effectivePassRef": { "$ref": "#/$defs/hashRef" },
+          "deliveryGateReceiptRef": { "$ref": "#/$defs/hashRef" },
+          "closeoutRequestRef": { "$ref": "#/$defs/hashRef" },
+          "pageRef": { "$ref": "#/$defs/hashRef" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "blocked" } }, "required": ["status"] },
+      "then": { "properties": { "issueCode": { "type": "string", "minLength": 1 } } }
+    }
+  ],
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "hashRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "nullableHashRef": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/hashRef" }] }
+  }
+}

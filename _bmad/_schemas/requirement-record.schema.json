@@ -1692,8 +1692,41 @@
           "additionalProperties": false,
           "required": ["status", "closeoutAttemptId", "htmlPath", "renderReportPath", "closeoutConfirmationPageHash", "deliveryCloseoutReportHash"],
           "properties": {
-            "status": { "enum": ["awaiting_user_acceptance", "user_accepted_closeout"] },
+            "status": { "enum": ["awaiting_user_acceptance", "user_accepted_closeout", "user_rejected_closeout"] },
             "closeoutAttemptId": { "$ref": "#/$defs/nonEmptyString" },
+            "requestId": { "$ref": "#/$defs/nonEmptyString" },
+            "requestRef": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "hash"],
+              "properties": {
+                "path": { "$ref": "#/$defs/nonEmptyString" },
+                "hash": { "$ref": "#/$defs/sha256" }
+              }
+            },
+            "deliveryGateReceiptRef": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "hash"],
+              "properties": {
+                "path": { "$ref": "#/$defs/nonEmptyString" },
+                "hash": { "$ref": "#/$defs/sha256" }
+              }
+            },
+            "pageRef": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "hash"],
+              "properties": {
+                "path": { "$ref": "#/$defs/nonEmptyString" },
+                "hash": { "$ref": "#/$defs/sha256" }
+              }
+            },
+            "executionFinalCandidateHash": { "$ref": "#/$defs/sha256" },
+            "currentImplementationAttemptId": { "$ref": "#/$defs/nonEmptyString" },
+            "expectedRecordRevision": { "type": "integer", "minimum": 0 },
+            "committedRecordRevision": { "type": "integer", "minimum": 0 },
+            "decision": { "enum": ["accept", "reject"] },
             "requestedAt": { "type": "string", "format": "date-time" },
             "requestedBy": { "$ref": "#/$defs/nonEmptyString" },
             "acceptedAt": { "type": "string", "format": "date-time" },

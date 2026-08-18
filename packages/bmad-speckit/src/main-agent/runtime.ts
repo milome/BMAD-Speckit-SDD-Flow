@@ -20,8 +20,8 @@ const {
   legacyConfirmScopeAction,
 } = require('./actions/confirm-scope');
 const { controlPlaneIsolationCheckAction } = require('./actions/control-plane-isolation-check');
+const { runControlledCloseoutAction } = require('./actions/controlled-closeout');
 const { dataGovernanceGateAction } = require('./actions/data-governance-gate');
-const { deliveryCloseoutGateAction } = require('./actions/delivery-closeout-gate');
 const { deliveryEvidenceRunAction } = require('./actions/delivery-evidence-run');
 const { datasetReleaseGateAction } = require('./actions/dataset-release-gate');
 const { decisionFieldCheckAction } = require('./actions/decision-field-check');
@@ -32,6 +32,7 @@ const { dualHostPrOrchestratorAction } = require('./actions/dual-host-pr-orchest
 const { entryflowTraceabilityCheckAction } = require('./actions/entryflow-traceability-check');
 const { executionClosureGateAction } = require('./actions/execution-closure-gate');
 const { runExecuteGoalRunAction } = require('./actions/execute-goal-run');
+const { runFinalizeGoalRunAction } = require('./actions/finalize-goal-run');
 const { e2eDualHostJourneyRunnerAction } = require('./actions/e2e-dual-host-journey-runner');
 const { e2eHostMatrixJourneyRunnerAction } = require('./actions/e2e-host-matrix-journey-runner');
 const { finalCloseoutEvidenceRunnerAction } = require('./actions/final-closeout-evidence-runner');
@@ -304,13 +305,14 @@ const SUPPORTED_ACTIONS = new Set([
   'requirements-contract-prompt-transaction-publish',
   'implementation-readiness-gate',
   'unified-ingress',
-  'delivery-closeout-gate',
   'delivery-evidence-run',
   'host-matrix-pr-orchestrator',
   'soak-runner',
   'dual-host-pr-orchestrator',
   'chaos-scenarios',
+  'controlled-closeout',
   'execute-goal-run',
+  'finalize-goal-run',
   ...Object.keys(PACKAGE_RUNTIME_READY_ACTIONS),
   ...Object.keys(WAVE_3_12_PACKAGE_RUNTIME_ACTIONS),
 ]);
@@ -319,7 +321,6 @@ const ORCHESTRATION_ACTIONS = new Set([
   'step',
   'dispatch-plan',
   'run-loop',
-  'controlled-closeout',
   'claim',
   'dispatch',
   'complete',
@@ -328,8 +329,6 @@ const ORCHESTRATION_ACTIONS = new Set([
   'adaptive-intake',
   'confirm-scope',
   'confirmation-ingest',
-  'confirm-closeout-acceptance',
-  'closeout-acceptance-ingest',
   'route-confirmation-drift',
   'confirmation-drift-route',
   'repair-confirmation-bookkeeping',
@@ -563,6 +562,14 @@ async function runMainAgentRuntime(context) {
     return emitLegacyResult(runExecuteGoalRunAction(context));
   }
 
+  if (context.action === 'finalize-goal-run') {
+    return emitLegacyResult(await runFinalizeGoalRunAction(context));
+  }
+
+  if (context.action === 'controlled-closeout') {
+    return emitLegacyResult(runControlledCloseoutAction(context));
+  }
+
   if (context.action === 'confirm-scope') {
     const reason = confirmScopeMissingReason(context.args);
     if (reason) return emitResponse(context, missingRuntimeState(context, reason));
@@ -640,13 +647,6 @@ async function runMainAgentRuntime(context) {
     return emitResponse(
       context,
       envelope(context, 'package_runtime_ready', 0, unifiedIngressAction(context))
-    );
-  }
-
-  if (context.action === 'delivery-closeout-gate') {
-    return emitResponse(
-      context,
-      envelope(context, 'package_runtime_ready', 0, deliveryCloseoutGateAction(context))
     );
   }
 

@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/main-agent-execution-final-judge-result.schema.json",
+  "title": "Execution Final Judge Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "sourceLedgerHash",
+    "actorIsolationReceipt",
+    "auditDecision",
+    "verdict",
+    "findingIds",
+    "coveredDimensionIds",
+    "coveredArtifactIds",
+    "coveredObligationIds",
+    "coveredExecutionResultIds",
+    "coveredCommandIds",
+    "coveredEvidenceIds",
+    "coveredDeliveryClaimIds",
+    "findings"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "ExecutionFinalJudgeResult/v1" },
+    "sourceLedgerHash": { "$ref": "#/$defs/hash" },
+    "actorIsolationReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "actorClass",
+        "dispatchGroupId",
+        "enforcement",
+        "snapshotHash",
+        "peerOutputMaterialization",
+        "controlPlaneMaterialization",
+        "transportPathsExposed",
+        "policyHash",
+        "isolationReceiptHash"
+      ],
+      "properties": {
+        "schemaVersion": { "const": "GoalFinalizationActorIsolationReceipt/v1" },
+        "actorClass": { "const": "final_acceptance_judge" },
+        "dispatchGroupId": { "$ref": "#/$defs/hash" },
+        "enforcement": {
+          "enum": ["codex_permission_profile", "claude_tool_free_inline_evidence"]
+        },
+        "snapshotHash": { "$ref": "#/$defs/hash" },
+        "peerOutputMaterialization": { "const": "none" },
+        "controlPlaneMaterialization": { "const": "memory_only" },
+        "transportPathsExposed": { "const": false },
+        "policyHash": { "$ref": "#/$defs/hash" },
+        "isolationReceiptHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "auditDecision": { "enum": ["pass", "fail"] },
+    "verdict": {
+      "enum": ["coverage_satisfied", "findings_present", "insufficient_evidence", "blocked"]
+    },
+    "findingIds": { "$ref": "#/$defs/ids" },
+    "coveredDimensionIds": { "$ref": "#/$defs/ids" },
+    "coveredArtifactIds": { "$ref": "#/$defs/ids" },
+    "coveredObligationIds": { "$ref": "#/$defs/ids" },
+    "coveredExecutionResultIds": { "$ref": "#/$defs/ids" },
+    "coveredCommandIds": { "$ref": "#/$defs/ids" },
+    "coveredEvidenceIds": { "$ref": "#/$defs/ids" },
+    "coveredDeliveryClaimIds": { "$ref": "#/$defs/ids" },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "findingId",
+          "severity",
+          "dimensionId",
+          "subjectKind",
+          "subjectId",
+          "evidenceRefs",
+          "issueCode",
+          "remediationOwner"
+        ],
+        "properties": {
+          "findingId": { "$ref": "#/$defs/id" },
+          "severity": { "enum": ["critical", "high", "medium", "low"] },
+          "dimensionId": { "$ref": "#/$defs/id" },
+          "subjectKind": {
+            "enum": [
+              "dimension",
+              "artifact",
+              "obligation",
+              "execution_result",
+              "command",
+              "evidence",
+              "delivery_claim"
+            ]
+          },
+          "subjectId": { "$ref": "#/$defs/id" },
+          "evidenceRefs": { "$ref": "#/$defs/ids" },
+          "issueCode": { "$ref": "#/$defs/id" },
+          "remediationOwner": {
+            "enum": [
+              "requirements_successor",
+              "architecture_successor",
+              "readiness_recheck",
+              "execution_authority",
+              "campaign_closure",
+              "delivery_claim"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "verdict": { "const": "coverage_satisfied" } },
+        "required": ["verdict"]
+      },
+      "then": {
+        "properties": {
+          "auditDecision": { "const": "pass" },
+          "findingIds": { "maxItems": 0 },
+          "findings": { "maxItems": 0 }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "verdict": { "const": "findings_present" } },
+        "required": ["verdict"]
+      },
+      "then": {
+        "properties": {
+          "auditDecision": { "const": "fail" },
+          "findingIds": { "minItems": 1 },
+          "findings": { "minItems": 1 }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "id": { "type": "string", "minLength": 1 },
+    "ids": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/id" } },
+    "hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

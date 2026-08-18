@@ -1,10 +1,30 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { build } from 'esbuild';
 import { describe, expect, it } from 'vitest';
 
 const ROOT = join(import.meta.dirname, '..', '..');
 
 describe('runtime-emit package exports', () => {
+  it('bundles the controlled closeout admission boundary through ESM exports', async () => {
+    await expect(
+      build({
+        entryPoints: [
+          join(
+            ROOT,
+            'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-controlled-closeout-confirmation.ts'
+          ),
+        ],
+        bundle: true,
+        platform: 'node',
+        format: 'cjs',
+        target: 'node18',
+        write: false,
+        logLevel: 'silent',
+      })
+    ).resolves.toMatchObject({ errors: [] });
+  });
+
   it('publishes auditor orchestration bundles for consumer hosts', () => {
     const pkg = JSON.parse(
       readFileSync(join(ROOT, 'packages/runtime-emit/package.json'), 'utf8')

@@ -25,13 +25,19 @@ import {
   runtimeStatusProjectionRecordPatch,
   type RuntimeStatusProjectionUpdate,
 } from './requirements-contract-runtime-status-decision-receipt';
-import { resolveVerifiedSixModelStatus } from './verified-six-model-status-facade';
+import {
+  resolveVerifiedSixModelStatus,
+  type VerifiedSixModelStatus,
+} from './verified-six-model-status-facade';
 import { validateSourcePrdLintTransitionFromFiles } from './requirements-contract-validation-facade';
 import {
   runtimeModeDir,
   type NativeGoalInvocationReceipt,
   validateNativeGoalInvocationReceipt,
 } from './host-runtime-mode';
+import { validateExecutionFinalCandidate } from './main-agent-execution-final-candidate';
+import { canonicalGoalExecutionBytes } from './subcontract-evidence';
+import { stableHash } from './requirements-contract-verification-evidence-normalizer';
 
 type JsonObject = Record<string, unknown>;
 type CloseoutDecision = 'pass' | 'fail' | 'blocked';
@@ -185,30 +191,167 @@ function isSha256(value: string): boolean {
   return /^sha256:[a-f0-9]{64}$/u.test(value);
 }
 
+function verifiedSixModelStatusProofs(
+  input: JsonObject[],
+  candidate: ExecutionFinalCandidate,
+  currentImplementationAttemptId: string
+): VerifiedSixModelStatus[] {
+  const requiredModelIds = candidate.requiredDimensionIds.filter(
+    (modelId) => modelId !== 'delivery_confirmation'
+  );
+  const expectedKeys = [
+    'schemaVersion',
+    'recordId',
+    'requirementSetId',
+    'modelId',
+    'effectiveStatus',
+    'projectionStatus',
+    'projectionIntegrity',
+    'authorityClass',
+    'decisionReceiptRef',
+    'decisionReceiptHash',
+    'currentAttemptId',
+    'blockerRefs',
+    'evidenceRefs',
+  ].sort();
+  const standalone = candidate.profile === 'standalone';
+  if (input.length !== requiredModelIds.length) {
+    throw new Error('main_agent_goal_six_model_proof_invalid');
+  }
+  const statuses = requiredModelIds.map((modelId) => {
+    const matches = input.filter((status) => status.modelId === modelId);
+    if (matches.length !== 1) throw new Error('main_agent_goal_six_model_proof_invalid');
+    const status = matches[0];
+    if (Object.keys(status).sort().join('\u0000') !== expectedKeys.join('\u0000')) {
+      throw new Error('main_agent_goal_six_model_proof_invalid');
+    }
+    const blockerRefs = strings(status.blockerRefs);
+    const evidenceRefs = strings(status.evidenceRefs);
+    if (
+      status.schemaVersion !== 'requirements-contract-verified-six-model-status/v1' ||
+      !text(status.recordId) ||
+      !text(status.requirementSetId) ||
+      status.effectiveStatus !== 'pass' ||
+      status.projectionStatus !== 'pass' ||
+      status.projectionIntegrity !== 'valid' ||
+      !text(status.authorityClass) ||
+      status.currentAttemptId !== currentImplementationAttemptId ||
+      !Array.isArray(status.blockerRefs) ||
+      blockerRefs.length !== status.blockerRefs.length ||
+      blockerRefs.length !== 0 ||
+      !Array.isArray(status.evidenceRefs) ||
+      evidenceRefs.length !== status.evidenceRefs.length
+    ) {
+      throw new Error('main_agent_goal_six_model_proof_invalid');
+    }
+    const decisionReceiptRef = status.decisionReceiptRef;
+    const decisionReceiptHash = status.decisionReceiptHash;
+    if (standalone) {
+      if (
+        status.authorityClass !== 'standalone_goal_authority' ||
+        decisionReceiptRef !== null ||
+        decisionReceiptHash !== null
+      ) {
+        throw new Error('main_agent_goal_six_model_proof_invalid');
+      }
+    } else if (
+      typeof decisionReceiptRef !== 'string' ||
+      !decisionReceiptRef ||
+      !isSha256(text(decisionReceiptHash))
+    ) {
+      throw new Error('main_agent_goal_six_model_proof_invalid');
+    } else {
+      controlledCloseoutArtifactRoot(decisionReceiptRef);
+    }
+    return {
+      schemaVersion: status.schemaVersion,
+      recordId: text(status.recordId),
+      requirementSetId: text(status.requirementSetId),
+      modelId: status.modelId,
+      effectiveStatus: status.effectiveStatus,
+      projectionStatus: text(status.projectionStatus),
+      projectionIntegrity: status.projectionIntegrity,
+      authorityClass: text(status.authorityClass),
+      decisionReceiptRef: typeof decisionReceiptRef === 'string' ? decisionReceiptRef : null,
+      decisionReceiptHash: typeof decisionReceiptHash === 'string' ? decisionReceiptHash : null,
+      currentAttemptId: text(status.currentAttemptId),
+      blockerRefs,
+      evidenceRefs,
+    };
+  });
+  const recordIds = new Set(statuses.map((status) => status.recordId));
+  const requirementSetIds = new Set(statuses.map((status) => status.requirementSetId));
+  if (recordIds.size !== 1 || requirementSetIds.size !== 1) {
+    throw new Error('main_agent_goal_six_model_proof_invalid');
+  }
+  return statuses;
+}
+
 export function evaluateControlledGoalCloseoutGate(input: JsonObject) {
   const closeoutAttemptId = text(input.closeoutAttemptId);
   const contextHash = text(input.contextHash);
   const taskReportArtifactHash = text(input.taskReportArtifactHash);
   const closure = input.closureReceipt as JsonObject | undefined;
+  const campaignClosure = input.campaignClosureReceipt as JsonObject | undefined;
   const campaign = input.executionFinalJudgeCampaign as JsonObject | undefined;
   const effectivePass = input.effectivePassReceipt as JsonObject | undefined;
+  const currentImplementationAttemptId = text(input.currentImplementationAttemptId);
+  const candidateBytes = input.candidateBytes;
+  const taskReportBytes = input.taskReportBytes;
+  const candidate = validateExecutionFinalCandidate(input.executionFinalCandidate);
+  if (candidate.profile !== 'requirements_backed') {
+    throw new Error('main_agent_goal_controlled_closeout_requirement_record_required');
+  }
+  const taskReportArtifacts = candidate.artifacts.filter(
+    (artifact) => artifact.artifactKind === 'task_report'
+  );
+  const canonicalCandidateBytes = canonicalGoalExecutionBytes(candidate);
+  const candidateBytesHash = Buffer.isBuffer(candidateBytes)
+    ? `sha256:${crypto.createHash('sha256').update(candidateBytes).digest('hex')}`
+    : '';
+  const taskReportBytesHash = Buffer.isBuffer(taskReportBytes)
+    ? `sha256:${crypto.createHash('sha256').update(taskReportBytes).digest('hex')}`
+    : '';
+  verifiedSixModelStatusProofs(
+    objects(input.verifiedSixModelStatuses),
+    candidate,
+    currentImplementationAttemptId
+  );
   if (
     !closeoutAttemptId ||
     !isSha256(contextHash) ||
     !isSha256(taskReportArtifactHash) ||
+    !currentImplementationAttemptId ||
+    taskReportArtifacts.length !== 1 ||
+    taskReportArtifacts[0].hash !== taskReportArtifactHash ||
+    taskReportBytesHash !== taskReportArtifactHash ||
+    !Buffer.isBuffer(candidateBytes) ||
+    !candidateBytes.equals(canonicalCandidateBytes) ||
     !closure ||
     closure.status !== 'campaign_closed' ||
     closure.closeoutAttemptId !== closeoutAttemptId ||
     closure.contextHash !== contextHash ||
     closure.taskReportArtifactHash !== taskReportArtifactHash ||
     !isSha256(text(closure.receiptHash)) ||
+    !campaignClosure ||
+    campaignClosure.schemaVersion !== 'goal-contract-campaign-closure-receipt/v1' ||
+    campaignClosure.decision !== 'pass' ||
+    campaignClosure.campaignClosureHash !== candidate.campaignClosureHash ||
     !campaign ||
+    campaign.schemaVersion !== 'main-agent-execution-final-judge-aggregate/v1' ||
     campaign.decision !== 'pass' ||
+    campaign.executionFinalCandidateHash !== candidate.executionFinalCandidateHash ||
+    campaign.candidateBytesHash !== candidateBytesHash ||
     (campaign.closeoutAttemptId !== undefined &&
       campaign.closeoutAttemptId !== closeoutAttemptId) ||
     !isSha256(text(campaign.aggregateHash)) ||
     !effectivePass ||
+    effectivePass.schemaVersion !== 'main-agent-execution-final-judge-effective-pass-receipt/v1' ||
     effectivePass.effectivePass !== true ||
+    effectivePass.decision !== 'pass' ||
+    effectivePass.executionFinalCandidateHash !== candidate.executionFinalCandidateHash ||
+    effectivePass.aggregateHash !== campaign.aggregateHash ||
+    effectivePass.campaignClosureHash !== candidate.campaignClosureHash ||
     !isSha256(text(effectivePass.effectivePassReceiptHash))
   ) {
     throw new Error('main_agent_goal_task_report_provenance_mismatch');
@@ -219,9 +362,143 @@ export function evaluateControlledGoalCloseoutGate(input: JsonObject) {
     contextHash,
     taskReportArtifactHash,
     closureReceiptHash: text(closure.receiptHash),
+    executionFinalCandidateHash: candidate.executionFinalCandidateHash,
     executionFinalJudgeCampaignHash: text(campaign.aggregateHash),
+    campaignClosureHash: candidate.campaignClosureHash,
     effectivePassReceiptHash: text(effectivePass.effectivePassReceiptHash),
   });
+}
+
+function controlledCloseoutArtifactRoot(value: unknown): string {
+  const normalized = text(value);
+  if (
+    !normalized ||
+    normalized.includes('\\') ||
+    path.posix.isAbsolute(normalized) ||
+    path.win32.isAbsolute(normalized) ||
+    normalized.split('/').some((segment) => !segment || segment === '.' || segment === '..')
+  ) {
+    throw new Error('main_agent_goal_closeout_artifact_root_invalid');
+  }
+  return normalized;
+}
+
+function controlledCloseoutHashRef(value: unknown): { path: string; hash: string } {
+  const ref = nested(value);
+  const refPath = controlledCloseoutArtifactRoot(ref.path);
+  const refHash = text(ref.hash);
+  if (!isSha256(refHash)) throw new Error('main_agent_goal_closeout_ref_invalid');
+  return { path: refPath, hash: refHash };
+}
+
+function escapeControlledCloseoutHtml(value: string): string {
+  return value
+    .replace(/&/gu, '&amp;')
+    .replace(/</gu, '&lt;')
+    .replace(/>/gu, '&gt;')
+    .replace(/"/gu, '&quot;');
+}
+
+export function compileControlledGoalCloseoutArtifacts(input: JsonObject) {
+  const gate = evaluateControlledGoalCloseoutGate(input);
+  const candidate = validateExecutionFinalCandidate(input.executionFinalCandidate);
+  const currentImplementationAttemptId = text(input.currentImplementationAttemptId);
+  const campaign = nested(input.executionFinalJudgeCampaign);
+  const artifactRoot = controlledCloseoutArtifactRoot(input.artifactRoot);
+  const recordId = text(input.recordId);
+  const taskReportRef = controlledCloseoutHashRef(input.taskReportRef);
+  if (!recordId || taskReportRef.hash !== gate.taskReportArtifactHash) {
+    throw new Error('main_agent_goal_closeout_ref_invalid');
+  }
+  const prerequisiteStatuses = verifiedSixModelStatusProofs(
+    objects(input.verifiedSixModelStatuses),
+    candidate,
+    currentImplementationAttemptId
+  ).sort((left, right) => text(left.modelId).localeCompare(text(right.modelId), 'en'));
+  const gateReceiptPayload = {
+    schemaVersion: 'GoalDeliveryCloseoutGateReceipt/v1' as const,
+    status: 'pass' as const,
+    closeoutAttemptId: gate.closeoutAttemptId,
+    contextHash: gate.contextHash,
+    executionFinalCandidateHash: gate.executionFinalCandidateHash,
+    candidateBytesHash: text(campaign.candidateBytesHash),
+    campaignClosureHash: gate.campaignClosureHash,
+    executionFinalJudgeCampaignHash: gate.executionFinalJudgeCampaignHash,
+    effectivePassReceiptHash: gate.effectivePassReceiptHash,
+    taskReportRef,
+    verifiedPrerequisiteStatusesHash: stableHash(prerequisiteStatuses),
+  };
+  const gateReceipt = Object.freeze({
+    ...gateReceiptPayload,
+    deliveryCloseoutGateReceiptHash: stableHash(gateReceiptPayload),
+  });
+  const gateReceiptRef = Object.freeze({
+    path: `${artifactRoot}/delivery-closeout-gate-receipt.json`,
+    hash: gateReceipt.deliveryCloseoutGateReceiptHash,
+  });
+  const candidateKey = candidate.executionFinalCandidateHash.slice('sha256:'.length);
+  const requestId = `goal-closeout-${candidateKey.slice(0, 32)}`;
+  const pageId = `goal-closeout-page-${candidateKey.slice(0, 32)}`;
+  const exactAcceptText = [
+    'Accept current Goal delivery and close the record',
+    'decision=accept',
+    `requestId=${requestId}`,
+    `executionFinalCandidateHash=${candidate.executionFinalCandidateHash}`,
+  ].join('\n');
+  const exactRejectText = [
+    'Reject current Goal delivery and keep the record open',
+    'decision=reject',
+    `requestId=${requestId}`,
+    `executionFinalCandidateHash=${candidate.executionFinalCandidateHash}`,
+  ].join('\n');
+  const pagePath = `${artifactRoot}/controlled-closeout.html`;
+  const pageHtml = [
+    '<!doctype html>',
+    '<html lang="en">',
+    '<head><meta charset="utf-8"><title>Goal delivery confirmation</title></head>',
+    '<body>',
+    '<main>',
+    '<h1>Goal delivery confirmation</h1>',
+    `<p>Request <code>${escapeControlledCloseoutHtml(requestId)}</code></p>`,
+    '<h2>Accept</h2>',
+    `<pre>${escapeControlledCloseoutHtml(exactAcceptText)}</pre>`,
+    '<h2>Reject</h2>',
+    `<pre>${escapeControlledCloseoutHtml(exactRejectText)}</pre>`,
+    '</main>',
+    '</body>',
+    '</html>',
+    '',
+  ].join('\n');
+  const pageRef = Object.freeze({ path: pagePath, hash: sha256Text(pageHtml) });
+  const requestIdentity = {
+    schemaVersion: 'ControlledCloseoutRequestIdentity/v1' as const,
+    deliveryGateReceiptRef: gateReceiptRef,
+    executionFinalCandidateHash: candidate.executionFinalCandidateHash,
+    requestId,
+    pageId,
+    intent: 'accept_or_reject_goal_delivery' as const,
+    exactAcceptText,
+    exactRejectText,
+  };
+  const { schemaVersion: _requestIdentitySchemaVersion, ...requestIdentityFields } =
+    requestIdentity;
+  const requestArtifactPayload = Object.freeze({
+    schemaVersion: 'ControlledCloseoutRequest/v1' as const,
+    status: 'awaiting_user_acceptance' as const,
+    recordId,
+    ...requestIdentityFields,
+    pageRef,
+    closeoutAcceptanceRequestHash: stableHash(requestIdentity),
+  });
+  const request = Object.freeze({
+    ...requestArtifactPayload,
+    controlledCloseoutRequestHash: stableHash(requestArtifactPayload),
+  });
+  const requestRef = Object.freeze({
+    path: `${artifactRoot}/controlled-closeout-request.json`,
+    hash: request.controlledCloseoutRequestHash,
+  });
+  return Object.freeze({ gateReceipt, gateReceiptRef, request, requestRef, pageHtml, pageRef });
 }
 
 function nested(value: unknown): JsonObject {
@@ -279,7 +556,11 @@ function resolveSourcePathForCloseout(
   recordPath: string,
   explicit?: string
 ): string | null {
-  for (const candidatePath of [text(explicit), text(record.sourcePath), text(record.artifactPath)]) {
+  for (const candidatePath of [
+    text(explicit),
+    text(record.sourcePath),
+    text(record.artifactPath),
+  ]) {
     if (!candidatePath) continue;
     const resolved = resolveExistingSourcePath(recordPath, candidatePath);
     if (!resolved || isSyntheticCloseoutSource(resolved)) continue;
@@ -329,11 +610,7 @@ export function resolveCloseoutSourceAuthority(input: {
 }): CloseoutSourceAuthority {
   const blockingReasons: string[] = [];
   const confirmedSource = latestConfirmedSource(input.record);
-  const sourcePath = resolveSourcePathForCloseout(
-    input.record,
-    input.recordPath,
-    input.sourcePath
-  );
+  const sourcePath = resolveSourcePathForCloseout(input.record, input.recordPath, input.sourcePath);
   const confirmedSourcePath = confirmedSource
     ? resolveExistingSourcePath(input.recordPath, text(confirmedSource.sourcePath))
     : null;
@@ -346,7 +623,8 @@ export function resolveCloseoutSourceAuthority(input: {
 
   const sourceDocumentHash = text(input.record.sourceDocumentHash);
   const confirmedSourceDocumentHash = text(confirmedSource?.sourceDocumentHash);
-  if (!isSha256(sourceDocumentHash)) blockingReasons.push('source_document_hash_missing_or_invalid');
+  if (!isSha256(sourceDocumentHash))
+    blockingReasons.push('source_document_hash_missing_or_invalid');
   if (!isSha256(confirmedSourceDocumentHash)) {
     blockingReasons.push('confirmed_source_document_hash_missing_or_invalid');
   } else if (sourceDocumentHash !== confirmedSourceDocumentHash) {
@@ -368,18 +646,14 @@ export function resolveCloseoutSourceAuthority(input: {
   if (!isSha256(semanticModelHash)) blockingReasons.push('semantic_model_hash_missing_or_invalid');
 
   const sourceAmendmentHashes = strings(input.record.sourceAmendmentHashes);
-  if (
-    sourceAmendmentHashes.length === 0 ||
-    sourceAmendmentHashes.some((hash) => !isSha256(hash))
-  ) {
+  if (sourceAmendmentHashes.length === 0 || sourceAmendmentHashes.some((hash) => !isSha256(hash))) {
     blockingReasons.push('source_amendment_hashes_missing_or_invalid');
   }
 
   if (sourcePath) {
     try {
       const source = readImplementationConfirmation(sourcePath);
-      const actualSourceDocumentHash =
-        sourceDocumentHashForImplementationConfirmation(source);
+      const actualSourceDocumentHash = sourceDocumentHashForImplementationConfirmation(source);
       const actualImplementationHash = implementationConfirmationHash(source.confirmation);
       if (sourceDocumentHash !== actualSourceDocumentHash) {
         blockingReasons.push('source_document_hash_content_mismatch');
@@ -880,9 +1154,7 @@ function nativeGoalAttemptsFromRuntimeModeArtifacts(
         'execution-runtime-mode-selection.json'
       );
       const selection = readJsonIfExists(selectionPath);
-      return selection
-        ? nativeGoalAttemptFromObject(selection, recordId, 100_000 + index)
-        : null;
+      return selection ? nativeGoalAttemptFromObject(selection, recordId, 100_000 + index) : null;
     })
     .filter((attempt): attempt is NativeGoalCloseoutAttempt => Boolean(attempt));
 }
@@ -906,12 +1178,16 @@ function latestNativeGoalCloseoutAttempt(
       ...attempt,
       taskReportPath: attempt.taskReportPath || existing?.taskReportPath || '',
       orderingKey:
-        attempt.orderingKey > (existing?.orderingKey ?? '') ? attempt.orderingKey : existing?.orderingKey ?? attempt.orderingKey,
+        attempt.orderingKey > (existing?.orderingKey ?? '')
+          ? attempt.orderingKey
+          : (existing?.orderingKey ?? attempt.orderingKey),
     });
   }
-  return [...byAttempt.values()].sort((left, right) =>
-    left.orderingKey.localeCompare(right.orderingKey)
-  ).at(-1) ?? null;
+  return (
+    [...byAttempt.values()]
+      .sort((left, right) => left.orderingKey.localeCompare(right.orderingKey))
+      .at(-1) ?? null
+  );
 }
 
 function nativeGoalReceiptPath(input: {
@@ -2717,8 +2993,7 @@ function createDeliveryRuntimeStatus(
     ],
     authorityClass: 'controlled_closeout',
     decision: input.decision === 'pass' ? 'pass' : 'block',
-    effectiveStatus:
-      input.decision === 'pass' ? 'awaiting_user_acceptance' : 'blocked',
+    effectiveStatus: input.decision === 'pass' ? 'awaiting_user_acceptance' : 'blocked',
     createdAt: input.evaluatedAt,
     receiptPath: `runtime/status-decisions/${input.attemptId}/delivery_confirmation.json`,
     projection: deliveryConfirmationResult,
@@ -2909,10 +3184,7 @@ export function mainDeliveryCloseoutGate(argv: string[]): number {
           ...baseEvaluation,
           decision: 'blocked' as const,
           blockingReasons: [
-            ...new Set([
-              ...baseEvaluation.blockingReasons,
-              ...sourcePrdLintTransition.issueCodes,
-            ]),
+            ...new Set([...baseEvaluation.blockingReasons, ...sourcePrdLintTransition.issueCodes]),
           ],
         };
   const report = {

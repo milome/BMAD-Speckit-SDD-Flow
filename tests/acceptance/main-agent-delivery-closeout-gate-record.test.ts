@@ -1,19 +1,9 @@
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import * as crypto from 'node:crypto';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import {
-  evaluateControlledGoalCloseoutGate,
-  mainDeliveryCloseoutGate,
-} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate';
+import { mainDeliveryCloseoutGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate';
 import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
 import {
   implementationConfirmationHash,
@@ -621,9 +611,7 @@ function writeRecord(root: string, record: Record<string, unknown>): string {
   const sourcePath = hasExplicitSourcePath
     ? path.resolve(root, record.sourcePath as string)
     : path.join(root, 'docs', 'requirements', 'delivery-closeout-fixture.md');
-  if (
-    !readMaybeExists(sourcePath)
-  ) {
+  if (!readMaybeExists(sourcePath)) {
     writeText(
       sourcePath,
       [
@@ -653,8 +641,7 @@ function writeRecord(root: string, record: Record<string, unknown>): string {
     );
   }
   const confirmedSource = readImplementationConfirmation(sourcePath);
-  const sourceDocumentHash =
-    sourceDocumentHashForImplementationConfirmation(confirmedSource);
+  const sourceDocumentHash = sourceDocumentHashForImplementationConfirmation(confirmedSource);
   const implementationHash = implementationConfirmationHash(confirmedSource.confirmation);
   const semanticModelHash = sha256Text(
     stableStringify({
@@ -1110,20 +1097,14 @@ function withVerifiedCloseoutPrerequisites(
     'execution_closure',
     'audit_review',
   ] as const satisfies readonly RequirementsContractSixModelId[]) {
-    const existingModel = (
-      (record.sixModelResults as Record<string, unknown> | undefined)?.[modelId] ?? {}
-    ) as Record<string, unknown>;
+    const existingModel = ((record.sixModelResults as Record<string, unknown> | undefined)?.[
+      modelId
+    ] ?? {}) as Record<string, unknown>;
     const recordedStatus = recordText(existingModel, 'status');
     const effectiveStatus =
-      (
-        [
-          'pass',
-          'blocked',
-          'stale',
-          'awaiting_user_acceptance',
-          'not_established',
-        ] as const
-      ).find((status) => status === recordedStatus) ?? 'not_established';
+      (['pass', 'blocked', 'stale', 'awaiting_user_acceptance', 'not_established'] as const).find(
+        (status) => status === recordedStatus
+      ) ?? 'not_established';
     const passed = effectiveStatus === 'pass';
     const update = createRuntimeStatusProjectionUpdate({
       recordId: recordText(record, 'recordId'),
@@ -3619,24 +3600,5 @@ describe('requirement-scoped delivery closeout gate', () => {
     } finally {
       cleanupTempRoot(root);
     }
-  });
-
-  it('rejects a controlled closeout whose EffectivePass is not current pass', () => {
-    expect(() =>
-      evaluateControlledGoalCloseoutGate({
-        closeoutAttemptId: 'controlled-closeout-001',
-        contextHash: HASH,
-        closureReceipt: {
-          status: 'campaign_closed',
-          closeoutAttemptId: 'controlled-closeout-001',
-          contextHash: HASH,
-          taskReportArtifactHash: HASH,
-          receiptHash: HASH,
-        },
-        taskReportArtifactHash: HASH,
-        judgeReviewCampaign: { decision: 'pass', aggregateHash: HASH },
-        effectivePassReceipt: { effectivePass: false, effectivePassReceiptHash: HASH },
-      })
-    ).toThrow('main_agent_goal_task_report_provenance_mismatch');
   });
 });

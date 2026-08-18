@@ -13,10 +13,27 @@ import {
   implementationConfirmationHashFor,
   sourceDocumentHashFor,
 } from './requirements-contract-implementation-confirmation-codec';
+import {
+  appendControlEventAndReplay,
+  canonicalizeRequirementRecord,
+  readControlStoreAuthoritatively,
+  sha256Json,
+} from './requirement-record-control-store';
+import {
+  createRuntimeStatusProjectionUpdate,
+  runtimeStatusProjectionArtifactWrites,
+  runtimeStatusProjectionRecordPatch,
+} from './requirements-contract-runtime-status-decision-receipt';
+import { validateGoalExecutionAdmission } from '../../../utils/goal-contract/control-plane/frozen-goal-activation';
 
 export interface MainAgentControlledCloseoutConfirmationResult {
   ok: boolean;
-  status?: 'record_closed' | 'blocked';
+  status?:
+    | 'record_closed'
+    | 'record_closed_reused'
+    | 'closeout_rejected'
+    | 'closeout_rejected_reused'
+    | 'blocked';
   exitCode: 0 | 2 | 3;
   acceptanceReceiptPath?: string;
   acceptanceReceipt?: JsonRecord;
@@ -28,9 +45,165 @@ export interface MainAgentControlledCloseoutConfirmationResult {
   eventLogPath?: string;
   artifactIndexPath?: string;
   sourceUpdated?: false;
+  issueCode?: string | null;
+  recordRevision?: number;
+  requestRef?: JsonRecord;
+  deliveryGateReceiptRef?: JsonRecord;
+  pageRef?: JsonRecord;
 }
 
 const HASH_PATTERN = /^sha256:[a-f0-9]{64}$/u;
+
+type HashRef = { path: string; hash: string };
+
+function confinedHashRef(value: unknown): HashRef {
+  if (!isRecord(value)) throw new Error('controlled_closeout_ref_invalid');
+  const refPath = text(value.path);
+  const refHash = text(value.hash);
+  if (
+    !refPath ||
+    refPath.includes('\\') ||
+    path.posix.isAbsolute(refPath) ||
+    path.win32.isAbsolute(refPath) ||
+    refPath.split('/').some((segment) => !segment || segment === '.' || segment === '..') ||
+    !HASH_PATTERN.test(refHash)
+  ) {
+    throw new Error('controlled_closeout_ref_invalid');
+  }
+  return { path: refPath, hash: refHash };
+}
+
+function sameHashRef(left: unknown, right: unknown): boolean {
+  try {
+    const leftRef = confinedHashRef(left);
+    const rightRef = confinedHashRef(right);
+    return leftRef.path === rightRef.path && leftRef.hash === rightRef.hash;
+  } catch {
+    return false;
+  }
+}
+
+function readConfinedArtifact(projectRoot: string, ref: HashRef): Buffer {
+  const root = fs.realpathSync.native(path.resolve(projectRoot));
+  const target = resolveProjectPath(root, ref.path);
+  const stat = fs.lstatSync(target);
+  if (!stat.isFile() || stat.isSymbolicLink()) {
+    throw new Error('controlled_closeout_artifact_invalid');
+  }
+  const canonicalTarget = fs.realpathSync.native(target);
+  if (canonicalTarget !== root && !canonicalTarget.startsWith(`${root}${path.sep}`)) {
+    throw new Error('controlled_closeout_artifact_invalid');
+  }
+  return fs.readFileSync(canonicalTarget);
+}
+
+function readConfinedJsonArtifact(projectRoot: string, ref: HashRef): JsonRecord {
+  const parsed = JSON.parse(readConfinedArtifact(projectRoot, ref).toString('utf8')) as unknown;
+  if (!isRecord(parsed)) throw new Error('controlled_closeout_artifact_invalid');
+  return parsed;
+}
+
+function normalizeExactConfirmationText(value: unknown): string {
+  return text(value).replace(/\r\n/gu, '\n');
+}
+
+function controlledRequestIdentity(request: JsonRecord) {
+  return {
+    schemaVersion: 'ControlledCloseoutRequestIdentity/v1',
+    deliveryGateReceiptRef: confinedHashRef(request.deliveryGateReceiptRef),
+    executionFinalCandidateHash: text(request.executionFinalCandidateHash),
+    requestId: text(request.requestId),
+    pageId: text(request.pageId),
+    intent: request.intent,
+    exactAcceptText: normalizeExactConfirmationText(request.exactAcceptText),
+    exactRejectText: normalizeExactConfirmationText(request.exactRejectText),
+  };
+}
+
+function validateControlledCloseoutArtifacts(input: {
+  projectRoot: string;
+  recordId: string;
+  record: JsonRecord;
+  currentRequest: JsonRecord;
+}) {
+  const requestRef = confinedHashRef(input.currentRequest.requestRef);
+  const request = readConfinedJsonArtifact(input.projectRoot, requestRef);
+  const expectedRequestKeys = [
+    'schemaVersion',
+    'status',
+    'recordId',
+    'deliveryGateReceiptRef',
+    'executionFinalCandidateHash',
+    'requestId',
+    'pageId',
+    'intent',
+    'exactAcceptText',
+    'exactRejectText',
+    'pageRef',
+    'closeoutAcceptanceRequestHash',
+    'controlledCloseoutRequestHash',
+  ].sort();
+  const identity = controlledRequestIdentity(request);
+  const requestHash = text(request.closeoutAcceptanceRequestHash);
+  const artifactHash = text(request.controlledCloseoutRequestHash);
+  const requestArtifactPayload = { ...request };
+  delete requestArtifactPayload.controlledCloseoutRequestHash;
+  if (
+    request.schemaVersion !== 'ControlledCloseoutRequest/v1' ||
+    request.status !== 'awaiting_user_acceptance' ||
+    request.recordId !== input.recordId ||
+    request.intent !== 'accept_or_reject_goal_delivery' ||
+    Object.keys(request).sort().join('\u0000') !== expectedRequestKeys.join('\u0000') ||
+    !HASH_PATTERN.test(identity.executionFinalCandidateHash) ||
+    !identity.requestId ||
+    !identity.pageId ||
+    !identity.exactAcceptText ||
+    !identity.exactRejectText ||
+    identity.exactAcceptText === identity.exactRejectText ||
+    stableHash(identity) !== requestHash ||
+    !HASH_PATTERN.test(artifactHash) ||
+    stableHash(requestArtifactPayload) !== artifactHash ||
+    requestRef.hash !== artifactHash
+  ) {
+    throw new Error('controlled_closeout_request_invalid');
+  }
+  const gateRef = confinedHashRef(request.deliveryGateReceiptRef);
+  const gate = readConfinedJsonArtifact(input.projectRoot, gateRef);
+  const gatePayload = { ...gate };
+  delete gatePayload.deliveryCloseoutGateReceiptHash;
+  if (
+    gate.schemaVersion !== 'GoalDeliveryCloseoutGateReceipt/v1' ||
+    gate.status !== 'pass' ||
+    gate.executionFinalCandidateHash !== identity.executionFinalCandidateHash ||
+    gate.deliveryCloseoutGateReceiptHash !== gateRef.hash ||
+    stableHash(gatePayload) !== gateRef.hash ||
+    [
+      gate.contextHash,
+      gate.candidateBytesHash,
+      gate.campaignClosureHash,
+      gate.executionFinalJudgeCampaignHash,
+      gate.effectivePassReceiptHash,
+      gate.verifiedPrerequisiteStatusesHash,
+    ].some((value) => !HASH_PATTERN.test(text(value)))
+  ) {
+    throw new Error('controlled_closeout_gate_invalid');
+  }
+  const pageRef = confinedHashRef(request.pageRef);
+  const pageBytes = readConfinedArtifact(input.projectRoot, pageRef);
+  if (sha256Text(pageBytes.toString('utf8')) !== pageRef.hash) {
+    throw new Error('controlled_closeout_page_invalid');
+  }
+  if (
+    input.currentRequest.requestId !== identity.requestId ||
+    input.currentRequest.executionFinalCandidateHash !== identity.executionFinalCandidateHash ||
+    !sameHashRef(input.currentRequest.requestRef, requestRef) ||
+    !sameHashRef(input.currentRequest.deliveryGateReceiptRef, gateRef) ||
+    !sameHashRef(input.currentRequest.pageRef, pageRef)
+  ) {
+    throw new Error('controlled_closeout_current_request_mismatch');
+  }
+  return { request, requestRef, identity, gate, gateRef, pageRef };
+}
 
 function resolveProjectPath(projectRoot: string, value: string): string {
   const root = path.resolve(projectRoot);
@@ -107,9 +280,7 @@ function parseRecordBackedCloseoutConfirmationText(value: string): {
 
 function latestCloseoutAttempt(record: JsonRecord, currentAttemptId: string): JsonRecord | null {
   const closeout = isRecord(record.closeout) ? record.closeout : {};
-  const attempts = Array.isArray(closeout.attempts)
-    ? closeout.attempts.filter(isRecord)
-    : [];
+  const attempts = Array.isArray(closeout.attempts) ? closeout.attempts.filter(isRecord) : [];
   return (
     attempts.find(
       (attempt) => text(attempt.closeoutAttemptId ?? attempt.attemptId) === currentAttemptId
@@ -126,9 +297,7 @@ function hasRecordBackedAcceptanceProof(input: {
   report: JsonRecord;
 }): boolean {
   const closeout = isRecord(input.record.closeout) ? input.record.closeout : {};
-  const acceptanceRequest = isRecord(closeout.acceptanceRequest)
-    ? closeout.acceptanceRequest
-    : {};
+  const acceptanceRequest = isRecord(closeout.acceptanceRequest) ? closeout.acceptanceRequest : {};
   const closeoutDecisionPass = text(closeout.decision).toLowerCase() === 'pass';
   const attemptDecisionPass = text(input.attempt?.decision).toLowerCase() === 'pass';
   return (
@@ -166,14 +335,9 @@ export function confirmMainAgentRecordBackedCloseout(input: {
     const confirmation = extracted.value;
     const report = readJsonObject(renderReportPath);
     const provided = parseRecordBackedCloseoutConfirmationText(input.confirmationText);
-    const sourceDocumentHash = sourceDocumentHashFor(
-      sourceText,
-      extracted.blockText,
-      confirmation
-    );
+    const sourceDocumentHash = sourceDocumentHashFor(sourceText, extracted.blockText, confirmation);
     const implementationConfirmationHash = implementationConfirmationHashFor(confirmation);
-    const recordId =
-      text(input.recordId) || text(report.recordId) || text(confirmation.recordId);
+    const recordId = text(input.recordId) || text(report.recordId) || text(confirmation.recordId);
     if (!recordId) throw new Error('closeout acceptance requires recordId');
     const requirementSetId =
       text(input.requirementSetId) ||
@@ -526,7 +690,10 @@ export function confirmMainAgentControlledCloseout(input: {
     if (!confirmationText || !expectedConfirmationTexts.includes(confirmationText)) {
       mismatches.push('controlled_closeout_confirmation_text_mismatch');
     }
-    if (!text(request.closeoutAttemptId) || hashFields.some((value) => !HASH_PATTERN.test(text(value)))) {
+    if (
+      !text(request.closeoutAttemptId) ||
+      hashFields.some((value) => !HASH_PATTERN.test(text(value)))
+    ) {
       mismatches.push('controlled_closeout_acceptance_request_provenance_invalid');
     }
     const accepted = confirmationText.includes('确认当前 Goal closeout 并关闭记录');
@@ -583,6 +750,278 @@ export function confirmMainAgentControlledCloseout(input: {
       ok: false,
       exitCode: 2,
       error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+function closeoutAdmission(input: { projectRoot: string; requestId: string; recordPath: string }) {
+  return withControlStoreLockRetry(() =>
+    readControlStoreAuthoritatively(input.recordPath, () =>
+      validateGoalExecutionAdmission({
+        phase: 'closeout',
+        projectRoot: input.projectRoot,
+        requestId: input.requestId,
+        requirementRecordPath: input.recordPath,
+      })
+    )
+  ) as unknown as {
+    requirementRecord: JsonRecord;
+    currentRequest: JsonRecord;
+    replayState: 'accepted' | 'rejected' | null;
+  };
+}
+
+function withControlStoreLockRetry<T>(operation: () => T): T {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    try {
+      return operation();
+    } catch (error) {
+      lastError = error;
+      if (!(error instanceof Error) || error.message !== 'control_store_lock_held') throw error;
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25);
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('control_store_lock_wait_timeout');
+}
+
+function closeoutDecision(
+  identity: ReturnType<typeof controlledRequestIdentity>,
+  exactConfirmationText: string
+): 'accept' | 'reject' {
+  const provided = normalizeExactConfirmationText(exactConfirmationText);
+  if (provided === identity.exactAcceptText) return 'accept';
+  if (provided === identity.exactRejectText) return 'reject';
+  throw new Error('controlled_closeout_confirmation_text_mismatch');
+}
+
+function terminalCloseoutResult(input: {
+  replayState: 'accepted' | 'rejected' | null;
+  decision: 'accept' | 'reject';
+  record: JsonRecord;
+  artifacts: ReturnType<typeof validateControlledCloseoutArtifacts>;
+}): MainAgentControlledCloseoutConfirmationResult | null {
+  if (!input.replayState) return null;
+  if (
+    input.replayState !== input.decision.replace('accept', 'accepted').replace('reject', 'rejected')
+  ) {
+    throw new Error('controlled_closeout_decision_conflict');
+  }
+  return {
+    ok: true,
+    status: input.decision === 'accept' ? 'record_closed_reused' : 'closeout_rejected_reused',
+    exitCode: 0,
+    issueCode: null,
+    recordRevision: Number(input.record.recordRevision),
+    requestRef: input.artifacts.requestRef,
+    deliveryGateReceiptRef: input.artifacts.gateRef,
+    pageRef: input.artifacts.pageRef,
+    sourceUpdated: false,
+  };
+}
+
+export function confirmMainAgentControlledCloseoutByRequestId(input: {
+  projectRoot: string;
+  requestId: string;
+  exactConfirmationText: string;
+  confirmedBy?: string;
+  confirmedAt?: string;
+}): MainAgentControlledCloseoutConfirmationResult {
+  try {
+    const projectRoot = path.resolve(input.projectRoot);
+    const requestId = text(input.requestId);
+    if (!/^[A-Za-z0-9._-]+$/u.test(requestId)) {
+      throw new Error('controlled_closeout_request_id_invalid');
+    }
+    const recordPath = path.join(
+      projectRoot,
+      '_bmad-output',
+      'runtime',
+      'requirement-records',
+      requestId,
+      'requirement-record.json'
+    );
+    let admitted = closeoutAdmission({ projectRoot, requestId, recordPath });
+    let artifacts = validateControlledCloseoutArtifacts({
+      projectRoot,
+      recordId: requestId,
+      record: admitted.requirementRecord,
+      currentRequest: admitted.currentRequest,
+    });
+    const decision = closeoutDecision(artifacts.identity, input.exactConfirmationText);
+    const replay = terminalCloseoutResult({
+      replayState: admitted.replayState,
+      decision,
+      record: admitted.requirementRecord,
+      artifacts,
+    });
+    if (replay) return replay;
+
+    const confirmedAt = input.confirmedAt ?? new Date().toISOString();
+    const statusUpdate = createRuntimeStatusProjectionUpdate({
+      recordId: requestId,
+      requirementSetId: text(admitted.requirementRecord.requirementSetId) || requestId,
+      modelId: 'delivery_confirmation',
+      implementationAttemptId: text(admitted.requirementRecord.currentAttemptId),
+      sourceDocumentHash: text(admitted.requirementRecord.sourceDocumentHash),
+      implementationConfirmationHash: text(
+        admitted.requirementRecord.implementationConfirmationHash
+      ),
+      semanticModelHash: text(admitted.requirementRecord.semanticModelHash),
+      stageInputs: [
+        { role: 'delivery_closeout_gate', ...artifacts.gateRef },
+        { role: 'controlled_closeout_page', ...artifacts.pageRef },
+      ],
+      deterministicGateOutputs: [{ role: 'controlled_closeout_request', ...artifacts.requestRef }],
+      blockerRefs: decision === 'accept' ? [] : ['controlled_closeout_user_rejected'],
+      evidenceRefs: [artifacts.gateRef.path, artifacts.requestRef.path, artifacts.pageRef.path],
+      authorityClass: 'controlled_closeout',
+      decision: decision === 'accept' ? 'pass' : 'block',
+      effectiveStatus: decision === 'accept' ? 'pass' : 'blocked',
+      createdAt: confirmedAt,
+      receiptPath: `runtime/status-decisions/${text(
+        admitted.requirementRecord.currentAttemptId
+      )}/delivery_confirmation-${decision}.json`,
+      projection: {
+        blockingReasons: decision === 'accept' ? [] : ['controlled_closeout_user_rejected'],
+      },
+    });
+    if (!statusUpdate.authorityEstablished || !statusUpdate.receiptRef) {
+      throw new Error('controlled_closeout_runtime_status_invalid');
+    }
+    const eventType = decision === 'accept' ? 'record_closed' : 'closeout_acceptance_rejected';
+    const beforeRecord = admitted.requirementRecord;
+    const nextRevision = Number(beforeRecord.recordRevision) + 1;
+    try {
+      const commit = withControlStoreLockRetry(() =>
+        appendControlEventAndReplay({
+          recordPath,
+          writerId: 'main-agent-controlled-closeout-confirmation',
+          eventType,
+          recordedAt: confirmedAt,
+          expectedBeforeRecordHash: sha256Json(canonicalizeRequirementRecord(beforeRecord)),
+          payload: {
+            schemaVersion: 'ControlledCloseoutDecision/v1',
+            requestId: artifacts.identity.requestId,
+            recordId: requestId,
+            decision,
+            expectedRecordRevision: beforeRecord.recordRevision,
+            committedRecordRevision: nextRevision,
+            requestRef: artifacts.requestRef,
+            deliveryGateReceiptRef: artifacts.gateRef,
+            pageRef: artifacts.pageRef,
+            executionFinalCandidateHash: artifacts.identity.executionFinalCandidateHash,
+            exactConfirmationTextHash: sha256Text(
+              normalizeExactConfirmationText(input.exactConfirmationText)
+            ),
+          },
+          artifactWrites: runtimeStatusProjectionArtifactWrites(statusUpdate),
+          reduce: (record) => {
+            const closeout = isRecord(record.closeout) ? record.closeout : {};
+            const currentRequest = isRecord(closeout.acceptanceRequest)
+              ? closeout.acceptanceRequest
+              : {};
+            return {
+              ...record,
+              ...runtimeStatusProjectionRecordPatch({
+                record,
+                modelId: 'delivery_confirmation',
+                update: statusUpdate,
+              }),
+              recordRevision: nextRevision,
+              status: decision === 'accept' ? 'closed' : 'blocked',
+              currentMentalModel: 'delivery_confirmation',
+              currentStage: 'delivery_confirmation',
+              closeout: {
+                ...closeout,
+                acceptanceRequest: {
+                  ...currentRequest,
+                  status:
+                    decision === 'accept' ? 'user_accepted_closeout' : 'user_rejected_closeout',
+                  decision,
+                  committedRecordRevision: nextRevision,
+                },
+              },
+              closeoutAcceptance: {
+                schemaVersion: 'ControlledCloseoutDecision/v1',
+                requestId: artifacts.identity.requestId,
+                decision,
+                requestRef: artifacts.requestRef,
+                deliveryGateReceiptRef: artifacts.gateRef,
+                pageRef: artifacts.pageRef,
+                executionFinalCandidateHash: artifacts.identity.executionFinalCandidateHash,
+                committedRecordRevision: nextRevision,
+                confirmedAt,
+                confirmedBy: input.confirmedBy ?? 'user',
+              },
+              lastEventType: eventType,
+              updatedAt: confirmedAt,
+            };
+          },
+        })
+      );
+      admitted = closeoutAdmission({ projectRoot, requestId, recordPath });
+      artifacts = validateControlledCloseoutArtifacts({
+        projectRoot,
+        recordId: requestId,
+        record: admitted.requirementRecord,
+        currentRequest: admitted.currentRequest,
+      });
+      return {
+        ok: true,
+        status: decision === 'accept' ? 'record_closed' : 'closeout_rejected',
+        exitCode: 0,
+        issueCode: null,
+        recordRevision: Number(admitted.requirementRecord.recordRevision),
+        requestRef: artifacts.requestRef,
+        deliveryGateReceiptRef: artifacts.gateRef,
+        pageRef: artifacts.pageRef,
+        event: commit.event as unknown as JsonRecord,
+        requirementRecordPath: recordPath.replace(/\\/gu, '/'),
+        eventLogPath: commit.eventLogPath.replace(/\\/gu, '/'),
+        sourceUpdated: false,
+      };
+    } catch (error) {
+      if (!String(error).includes('control_store_compare_and_swap_failed')) throw error;
+      admitted = closeoutAdmission({ projectRoot, requestId, recordPath });
+      artifacts = validateControlledCloseoutArtifacts({
+        projectRoot,
+        recordId: requestId,
+        record: admitted.requirementRecord,
+        currentRequest: admitted.currentRequest,
+      });
+      const concurrentReplay = terminalCloseoutResult({
+        replayState: admitted.replayState,
+        decision,
+        record: admitted.requirementRecord,
+        artifacts,
+      });
+      if (concurrentReplay) return concurrentReplay;
+      throw error;
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const detail = error as {
+      field?: unknown;
+      path?: unknown;
+      actual?: unknown;
+      expected?: unknown;
+    };
+    const diagnosticContext = [
+      typeof detail.field === 'string' ? detail.field : '',
+      typeof detail.path === 'string' ? detail.path : '',
+      detail.actual === undefined ? '' : `actual=${String(detail.actual)}`,
+      detail.expected === undefined ? '' : `expected=${String(detail.expected)}`,
+    ]
+      .filter((value) => value.length > 0)
+      .join(':');
+    return {
+      ok: false,
+      status: 'blocked',
+      exitCode: 3,
+      issueCode: message,
+      error: diagnosticContext ? `${message}:${diagnosticContext}` : message,
+      sourceUpdated: false,
     };
   }
 }

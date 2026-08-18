@@ -4,7 +4,7 @@
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-consumer-registry.ts",
     "hash": "sha256:99ea1b01688ab3f29b808af721c72fd08ae74f8b9811ba01f82c1ec68f0589d2"
   },
-  "registryHash": "sha256:5a3b044c4f5465cdb1573662acf40de01bba2cf356b5976ab277b5639b808c15",
+  "registryHash": "sha256:18b2760270a6f77b4bc419cedb3ae274e3d25bd731eaa5f7c60a7921f13c3a1a",
   "validationModes": [
     "draft",
     "confirmation-ready",
@@ -566,7 +566,7 @@
     {
       "consumerId": "main-agent-delivery-closeout-gate",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate.ts",
-      "pathHash": "sha256:93e428d550a51f4cb0889fad0970f21a6b50aedca0740b93dfa64db7ece85704",
+      "pathHash": "sha256:6aa683d124363feb95307e91f750533cf390aca14a060d1f68032c32d5d6552f",
       "inputRole": "canonical_delivery_closeout",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -1128,7 +1128,7 @@
     {
       "consumerId": "requirement-record-registration",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-control-store.ts",
-      "pathHash": "sha256:b5cf0c17dd355c361d7b16fb1c90901ab1b51a8521e478f2f216e1ee7a351243",
+      "pathHash": "sha256:7267770634d2451a795c5b98d4d994f0ca07ce2c7ebebc667e417824453b3027",
       "inputRole": "validated_requirement_record",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",

@@ -132,54 +132,25 @@ function confirmCloseout(input: ReturnType<typeof fixture>, confirmationText: st
 }
 
 describe('Main Agent delivery closeout acceptance', () => {
-  it('records record_closed only after exact delivery closeout acceptance', () => {
-    const input = fixture();
-    const result = confirmCloseout(input, input.confirmationText('accept'));
-    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
-    const output = JSON.parse(result.stdout);
-    const record = JSON.parse(fs.readFileSync(input.recordPath, 'utf8'));
-    expect(output.delegatedEntry).toBe('main-agent-controlled-closeout-confirmation');
-    expect(output.stdout.recordClosedReceipt).toEqual(record.closeoutAcceptance);
-    expect(record).toMatchObject({
-      status: 'closed',
-      currentMentalModel: 'delivery_confirmation',
-      currentStage: 'delivery_confirmation',
-      lastEventType: 'record_closed',
-    });
-    expect(record.confirmationHistory ?? []).toEqual([]);
-    expect(fs.readFileSync(input.eventLogPath, 'utf8')).toContain('closeout_acceptance_confirmed');
-  });
+  it.each(['accept', 'reject'] as const)(
+    'rejects the legacy %s ingress without mutating record-backed authority',
+    (decision) => {
+      const input = fixture(`attempt-closeout-${decision}-001`);
+      const recordBefore = fs.readFileSync(input.recordPath, 'utf8');
+      const reportBefore = fs.readFileSync(input.renderReportPath, 'utf8');
 
-  it('rejects stale delivery closeout page and report hashes', () => {
-    const input = fixture();
-    const staleText = input
-      .confirmationText('accept')
-      .replace(PAGE_HASH, `sha256:${'a'.repeat(64)}`)
-      .replace(REPORT_HASH, `sha256:${'b'.repeat(64)}`);
-    const result = confirmCloseout(input, staleText);
-    expect(result.status).toBe(3);
-    const output = JSON.parse(result.stdout);
-    expect(output.stdout.mismatches).toEqual(
-      expect.arrayContaining([
-        'closeout_confirmation_page_hash_mismatch',
-        'delivery_closeout_report_hash_mismatch',
-      ])
-    );
-    expect(
-      JSON.parse(fs.readFileSync(input.recordPath, 'utf8')).closeoutAcceptance
-    ).toBeUndefined();
-  });
+      const result = confirmCloseout(input, input.confirmationText(decision));
 
-  it('records an explicit delivery closeout rejection without record_closed', () => {
-    const input = fixture('attempt-closeout-reject-001');
-    const result = confirmCloseout(input, input.confirmationText('reject'));
-    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
-    const record = JSON.parse(fs.readFileSync(input.recordPath, 'utf8'));
-    expect(record.status).toBe('blocked');
-    expect(record.closeoutAcceptance).toMatchObject({
-      status: 'user_rejected_closeout',
-      closeoutAttemptId: 'attempt-closeout-reject-001',
-    });
-    expect(record.lastEventType).not.toBe('record_closed');
-  });
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      expect(JSON.parse(result.stdout)).toMatchObject({
+        status: 'unsupported_main_agent_action',
+        exitCode: 2,
+        errors: [{ code: 'unsupported_main_agent_action' }],
+      });
+      expect(fs.readFileSync(input.recordPath, 'utf8')).toBe(recordBefore);
+      expect(fs.readFileSync(input.renderReportPath, 'utf8')).toBe(reportBefore);
+      expect(fs.existsSync(input.eventLogPath)).toBe(false);
+      expect(fs.existsSync(input.artifactIndexPath)).toBe(false);
+    }
+  );
 });

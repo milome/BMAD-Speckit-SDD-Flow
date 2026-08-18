@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/main-agent-execution-final-accepted-result.schema.json",
+  "title": "Execution Final Accepted Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "executionFinalCandidateHash",
+    "candidateRef",
+    "requestRef",
+    "responseRef",
+    "aggregateRef",
+    "campaignClosureHash",
+    "decision",
+    "coverageDisposition"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "ExecutionFinalAcceptedResult/v1" },
+    "executionFinalCandidateHash": { "$ref": "#/$defs/hash" },
+    "candidateRef": { "$ref": "#/$defs/hashRef" },
+    "requestRef": { "$ref": "#/$defs/hashRef" },
+    "responseRef": { "$ref": "#/$defs/hashRef" },
+    "aggregateRef": { "$ref": "#/$defs/hashRef" },
+    "campaignClosureHash": { "$ref": "#/$defs/hash" },
+    "decision": { "enum": ["pass", "fail"] },
+    "coverageDisposition": { "enum": ["coverage_satisfied", "coverage_incomplete"] }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "decision": { "const": "pass" } }, "required": ["decision"] },
+      "then": { "properties": { "coverageDisposition": { "const": "coverage_satisfied" } } }
+    }
+  ],
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "hashRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "hash"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "hash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}
