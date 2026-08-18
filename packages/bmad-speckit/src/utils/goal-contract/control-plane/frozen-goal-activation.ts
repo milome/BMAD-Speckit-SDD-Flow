@@ -307,7 +307,7 @@ function resolveFrozenGoalAuthority(input: { projectRoot: string; goalAuthorityP
   };
 }
 
-function validateGoalExecutionAdmission(input: {
+export function validateGoalExecutionAdmission(input: {
   phase: 'activation_prepare' | 'activation_commit' | 'execution_start_or_resume' | 'closeout';
   projectRoot: string;
   goalAuthorityPath?: string;
