@@ -151,7 +151,7 @@ function installPartitionedRedWorkload(root: string): void {
         {
           kind: 'CMD',
           id: 'refund-audit-contract',
-          value: 'npm test -- tests/refund-audit-contract.test.cjs',
+          value: 'node --test tests/refund-audit-contract.test.cjs',
         },
         {
           kind: 'EVDREQ',
@@ -212,7 +212,7 @@ function installPartitionedRedWorkload(root: string): void {
     (constraint: JsonRecord) => constraint.kind === 'CMD'
   );
   if (!batchCommand) throw new Error('full_chain_batch_command_missing');
-  batchCommand.value = 'npm test -- tests/refund-batch-contract.test.cjs';
+  batchCommand.value = 'node --test tests/refund-batch-contract.test.cjs';
   writeJson(batchContractPath, batchContract);
 
   writeJson(path.join(root, 'package.json'), {
@@ -422,6 +422,13 @@ function installGoalFinalizationActor(root: string): NodeJS.ProcessEnv {
     ].join('\n'),
     'utf8'
   );
+  const unixExecutable = path.join(fakeBin, 'codex');
+  fs.writeFileSync(
+    unixExecutable,
+    `#!${process.execPath}\n${fs.readFileSync(fakeEntry, 'utf8')}`,
+    'utf8'
+  );
+  fs.chmodSync(unixExecutable, 0o755);
   const env = { ...process.env };
   delete env.Path;
   env.PATH = `${fakeBin}${path.delimiter}${process.env.PATH ?? process.env.Path ?? ''}`;
