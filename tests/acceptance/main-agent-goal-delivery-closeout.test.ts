@@ -182,6 +182,19 @@ describe('Goal delivery closeout authority gate', () => {
     });
   });
 
+  it('rejects a stale closeout attempt in an otherwise current authority chain', () => {
+    const input = closeoutInput();
+    expect(() =>
+      evaluateControlledGoalCloseoutGate({
+        ...input,
+        closureReceipt: {
+          ...input.closureReceipt,
+          closeoutAttemptId: 'stale-attempt',
+        },
+      })
+    ).toThrow('main_agent_goal_task_report_provenance_mismatch');
+  });
+
   it('rejects an execution EffectivePass that is not a current pass', () => {
     const input = closeoutInput();
     expect(() =>

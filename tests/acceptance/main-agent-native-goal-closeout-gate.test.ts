@@ -4,10 +4,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
-import {
-  evaluateControlledGoalCloseoutGate,
-  mainDeliveryCloseoutGate,
-} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate';
+import { mainDeliveryCloseoutGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate';
 import { writeNativeGoalInvocationReceipt } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/host-runtime-mode';
 import { createRecordedConfirmationHistory } from './helpers/requirement-record-confirmation-fixture';
 
@@ -17,53 +14,6 @@ const CLOSEOUT_ATTEMPT_ID = 'closeout-native';
 const PACKET_ID = 'implement-native-codex';
 const NATIVE_ATTEMPT_ID = 'implement-native-codex';
 const GOAL_TEXT = '/goal Execute native closeout fixture';
-
-describe('controlled goal delivery closeout binding', () => {
-  it('publishes only awaiting_user_acceptance for current matching receipts', () => {
-    const result = evaluateControlledGoalCloseoutGate({
-      closeoutAttemptId: CLOSEOUT_ATTEMPT_ID,
-      contextHash: HASH,
-      closureReceipt: {
-        status: 'campaign_closed',
-        closeoutAttemptId: CLOSEOUT_ATTEMPT_ID,
-        contextHash: HASH,
-        taskReportArtifactHash: HASH,
-        receiptHash: HASH,
-      },
-      taskReportArtifactHash: HASH,
-      executionFinalJudgeCampaign: {
-        closeoutAttemptId: CLOSEOUT_ATTEMPT_ID,
-        decision: 'pass',
-        aggregateHash: HASH,
-      },
-      effectivePassReceipt: {
-        effectivePass: true,
-        effectivePassReceiptHash: HASH,
-      },
-    });
-    expect(result).toMatchObject({
-      status: 'awaiting_user_acceptance',
-      closeoutAttemptId: CLOSEOUT_ATTEMPT_ID,
-    });
-    expect(result).not.toHaveProperty('completionReceipt');
-    expect(() =>
-      evaluateControlledGoalCloseoutGate({
-        closeoutAttemptId: CLOSEOUT_ATTEMPT_ID,
-        contextHash: HASH,
-        closureReceipt: {
-          status: 'campaign_closed',
-          closeoutAttemptId: 'stale-attempt',
-          contextHash: HASH,
-          taskReportArtifactHash: HASH,
-          receiptHash: HASH,
-        },
-        taskReportArtifactHash: HASH,
-        executionFinalJudgeCampaign: { decision: 'pass', aggregateHash: HASH },
-        effectivePassReceipt: { effectivePass: true, effectivePassReceiptHash: HASH },
-      })
-    ).toThrow('main_agent_goal_task_report_provenance_mismatch');
-  });
-});
 
 function sha256Buffer(value: Buffer): string {
   return `sha256:${createHash('sha256').update(value).digest('hex')}`;

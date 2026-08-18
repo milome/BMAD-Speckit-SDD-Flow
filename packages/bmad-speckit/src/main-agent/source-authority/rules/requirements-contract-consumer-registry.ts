@@ -237,6 +237,13 @@ export const REQUIREMENTS_CONTRACT_SIX_MODEL_CONSUMER_DEFINITIONS: readonly SixM
       verifiedFacadeRequired: true,
     },
     {
+      consumerId: 'six-model-goal-run-finalizer',
+      canonicalPath:
+        'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-goal-run-finalizer.ts',
+      roles: ['verified_status_reader', 'projection_writer'],
+      verifiedFacadeRequired: true,
+    },
+    {
       consumerId: 'six-model-controlled-closeout-confirmation',
       canonicalPath:
         'packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-controlled-closeout-confirmation.ts',
@@ -267,6 +274,12 @@ export const REQUIREMENTS_CONTRACT_SIX_MODEL_CONSUMER_DEFINITIONS: readonly SixM
         'packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-requirements-adapter.ts',
       roles: ['verified_status_reader', 'projection_reader'],
       verifiedFacadeRequired: true,
+    },
+    {
+      consumerId: 'six-model-frozen-goal-activation',
+      canonicalPath:
+        'packages/bmad-speckit/src/utils/goal-contract/control-plane/frozen-goal-activation.ts',
+      roles: ['projection_reader'],
     },
     {
       consumerId: 'six-model-main-orchestration',
