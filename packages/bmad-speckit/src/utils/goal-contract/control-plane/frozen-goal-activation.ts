@@ -252,13 +252,39 @@ function resolveFrozenGoalAuthority(input: { projectRoot: string; goalAuthorityP
   verifyBytesReference(outRoot, activeAuthority.renderabilityReportRef, 'renderabilityReportRef');
 
   if (activeAuthority.profile === 'standalone') {
-    readHashReferencedRecord({
+    const standaloneSemanticIrRef = activeAuthority.standaloneSemanticIrRef;
+    if (!isRecord(standaloneSemanticIrRef)) {
+      throw failure('goal_execution_authority_invalid', {
+        field: 'standaloneSemanticIrRef',
+      });
+    }
+    const standaloneSemanticIrPath = confinedPath(
       outRoot,
-      ref: activeAuthority.standaloneSemanticIrRef,
-      field: 'standaloneSemanticIrRef',
-      schemaName: 'standalone-goal-semantic-ir.schema.json',
-      hashField: 'standaloneGoalSemanticIRHash',
-    });
+      standaloneSemanticIrRef.path,
+      'standaloneSemanticIrRef.path'
+    );
+    const standaloneSemanticIr = readJsonFile(
+      standaloneSemanticIrPath,
+      'goal_execution_authority_invalid'
+    );
+    validateGoalContractSchema('standalone-goal-semantic-ir.schema.json', standaloneSemanticIr);
+    const standaloneSemanticIrHash = requireHash(
+      standaloneSemanticIr.standaloneGoalSemanticIRHash,
+      'standaloneGoalSemanticIRHash'
+    );
+    const standaloneSemanticIrPayload = {
+      sourcePlanHash: standaloneSemanticIr.sourcePlanHash,
+      semanticPayload: standaloneSemanticIr.semanticPayload,
+    };
+    if (
+      hashControlPlaneValue(standaloneSemanticIrPayload) !== standaloneSemanticIrHash ||
+      standaloneSemanticIrHash !==
+        requireHash(standaloneSemanticIrRef.hash, 'standaloneSemanticIrRef.hash')
+    ) {
+      throw failure('goal_execution_authority_invalid', {
+        field: 'standaloneGoalSemanticIRHash',
+      });
+    }
     const passRef = readHashReferencedRecord({
       outRoot,
       ref: activeAuthority.standaloneAuthoringEffectivePassRef,
@@ -282,25 +308,134 @@ function resolveFrozenGoalAuthority(input: { projectRoot: string; goalAuthorityP
 }
 
 function validateGoalExecutionAdmission(input: {
-  phase: 'activation_prepare' | 'activation_commit' | 'execution_start_or_resume';
+  phase: 'activation_prepare' | 'activation_commit' | 'execution_start_or_resume' | 'closeout';
   projectRoot: string;
-  goalAuthorityPath: string;
+  goalAuthorityPath?: string;
+  profile?: 'requirements_backed' | 'standalone';
   expectedGoalExecutionIRHash?: string;
   activeRunPointerPath?: string;
+  requestId?: string;
+  requirementRecordPath?: string;
 }) {
+  if (
+    !['activation_prepare', 'activation_commit', 'execution_start_or_resume', 'closeout'].includes(
+      input.phase
+    )
+  ) {
+    throw failure('activation_request_invalid', { field: 'phase' });
+  }
+  if (
+    input.profile !== undefined &&
+    !['requirements_backed', 'standalone'].includes(input.profile)
+  ) {
+    throw failure('activation_request_invalid', { field: 'profile' });
+  }
+  if (input.phase === 'closeout') {
+    if (input.profile !== undefined && input.profile !== 'requirements_backed') {
+      throw failure('goal_execution_authority_invalid', { field: 'profile' });
+    }
+    const projectRoot = path.resolve(input.projectRoot);
+    const requestId = requireText(input.requestId, 'requestId');
+    if (!/^[A-Za-z0-9._-]+$/u.test(requestId)) {
+      throw failure('goal_execution_closeout_admission_invalid', { field: 'requestId' });
+    }
+    const requirementRecordPath = path.resolve(
+      requireText(input.requirementRecordPath, 'requirementRecordPath')
+    );
+    const expectedRecordPath = path.join(
+      projectRoot,
+      '_bmad-output',
+      'runtime',
+      'requirement-records',
+      requestId,
+      'requirement-record.json'
+    );
+    if (requirementRecordPath !== expectedRecordPath) {
+      throw failure('goal_execution_closeout_admission_invalid', {
+        field: 'requirementRecordPath',
+      });
+    }
+    const requirementRecord = readJsonFile(
+      requirementRecordPath,
+      'goal_execution_closeout_admission_invalid'
+    );
+    const closeout = isRecord(requirementRecord.closeout) ? requirementRecord.closeout : {};
+    const currentRequest = isRecord(closeout.acceptanceRequest) ? closeout.acceptanceRequest : {};
+    const sixModelResults = isRecord(requirementRecord.sixModelResults)
+      ? requirementRecord.sixModelResults
+      : {};
+    const deliveryConfirmation = isRecord(sixModelResults.delivery_confirmation)
+      ? sixModelResults.delivery_confirmation
+      : {};
+    const acceptedReplay =
+      requirementRecord.status === 'closed' &&
+      requirementRecord.lastEventType === 'record_closed' &&
+      currentRequest.status === 'user_accepted_closeout' &&
+      currentRequest.decision === 'accept' &&
+      currentRequest.committedRecordRevision === requirementRecord.recordRevision;
+    const rejectedReplay =
+      requirementRecord.status === 'blocked' &&
+      requirementRecord.lastEventType === 'closeout_acceptance_rejected' &&
+      currentRequest.status === 'user_rejected_closeout' &&
+      currentRequest.decision === 'reject' &&
+      currentRequest.committedRecordRevision === requirementRecord.recordRevision;
+    const awaitingDecision =
+      requirementRecord.status === 'awaiting_user_acceptance' &&
+      deliveryConfirmation.status === 'awaiting_user_acceptance' &&
+      currentRequest.status === 'awaiting_user_acceptance' &&
+      currentRequest.expectedRecordRevision === requirementRecord.recordRevision;
+    if (
+      requirementRecord.recordId !== requestId ||
+      requirementRecord.requirementSetId !== requestId
+    ) {
+      throw failure('goal_execution_closeout_admission_invalid', {
+        field: 'recordLineage',
+      });
+    }
+    if (currentRequest.currentImplementationAttemptId !== requirementRecord.currentAttemptId) {
+      throw failure('goal_execution_closeout_admission_invalid', {
+        field: 'currentImplementationAttemptId',
+        actual: currentRequest.currentImplementationAttemptId,
+        expected: requirementRecord.currentAttemptId,
+      });
+    }
+    if (!awaitingDecision && !acceptedReplay && !rejectedReplay) {
+      throw failure('goal_execution_closeout_admission_invalid', {
+        field: 'currentRequestState',
+      });
+    }
+    return Object.freeze({
+      phase: input.phase,
+      projectRoot,
+      requirementRecordPath,
+      requirementRecord,
+      currentRequest,
+      replayState: acceptedReplay ? 'accepted' : rejectedReplay ? 'rejected' : null,
+    });
+  }
+  const goalAuthorityPath = requireText(input.goalAuthorityPath, 'goalAuthorityPath');
   if (input.phase === 'execution_start_or_resume') {
     const committed = resolveCommittedActiveRun({
       projectRoot: input.projectRoot,
       activeRunPointerPath: requireText(input.activeRunPointerPath, 'activeRunPointerPath'),
     });
-    if (path.resolve(input.goalAuthorityPath) !== path.resolve(committed.goalAuthorityPath)) {
+    if (path.resolve(goalAuthorityPath) !== path.resolve(committed.goalAuthorityPath)) {
       throw failure('goal_execution_authority_invalid', {
         field: 'execution_start_or_resume.goalAuthorityPath',
       });
     }
+    if (input.profile !== undefined && input.profile !== committed.profile) {
+      throw failure('goal_execution_authority_invalid', { field: 'profile' });
+    }
     return Object.freeze({ ...committed, phase: input.phase });
   }
-  const resolved = resolveFrozenGoalAuthority(input);
+  const resolved = resolveFrozenGoalAuthority({
+    projectRoot: input.projectRoot,
+    goalAuthorityPath,
+  });
+  if (input.profile !== undefined && input.profile !== resolved.activeAuthority.profile) {
+    throw failure('goal_execution_authority_invalid', { field: 'profile' });
+  }
   if (input.phase === 'activation_commit') {
     const expectedGoalExecutionIRHash = requireHash(
       input.expectedGoalExecutionIRHash,

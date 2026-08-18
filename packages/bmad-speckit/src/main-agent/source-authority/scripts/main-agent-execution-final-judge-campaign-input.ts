@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import {
   isRecord,
   requireHash,
@@ -5,6 +7,11 @@ import {
   stableHash,
   type JsonRecord,
 } from './requirements-contract-verification-evidence-normalizer';
+import {
+  validateExecutionFinalCandidate,
+  type ExecutionFinalCandidate,
+} from './main-agent-execution-final-candidate';
+import { canonicalGoalExecutionBytes } from './subcontract-evidence';
 
 export interface MainAgentExecutionFinalJudgeCampaignInput {
   schemaVersion: 'main-agent-execution-final-judge-campaign-input/v1';
@@ -18,6 +25,7 @@ export interface MainAgentExecutionFinalJudgeCampaignInput {
   reviewerActorClass: 'bounded_code_reviewer';
   finalJudgeActorClass: 'final_acceptance_judge';
   providerRef: string;
+  executionFinalCandidate?: ExecutionFinalCandidate;
   actorBindingHash: string;
   inputHash: string;
 }
@@ -45,6 +53,7 @@ export function compileMainAgentExecutionFinalJudgeCampaignInput(input: {
   currentEvidenceHash: string;
   initialReviewAttemptKey: string;
   providerRef: string;
+  executionFinalCandidate?: ExecutionFinalCandidate;
 }): MainAgentExecutionFinalJudgeCampaignInput {
   const reviewerActorClass = 'bounded_code_reviewer' as const;
   const finalJudgeActorClass = 'final_acceptance_judge' as const;
@@ -93,6 +102,9 @@ export function compileMainAgentExecutionFinalJudgeCampaignInput(input: {
     reviewerActorClass,
     finalJudgeActorClass,
     providerRef,
+    ...(input.executionFinalCandidate
+      ? { executionFinalCandidate: validateExecutionFinalCandidate(input.executionFinalCandidate) }
+      : {}),
     actorBindingHash: stableHash({ reviewerActorClass, finalJudgeActorClass, providerRef }),
   };
   return { ...payload, inputHash: stableHash(payload) };
@@ -115,6 +127,20 @@ export function validateMainAgentExecutionFinalJudgeCampaignInput(
   ) {
     fail('main_agent_execution_final_judge_campaign_input_hash_mismatch');
   }
+  const candidate = record.executionFinalCandidate
+    ? validateExecutionFinalCandidate(record.executionFinalCandidate)
+    : undefined;
+  if (
+    candidate &&
+    (`sha256:${createHash('sha256')
+      .update(canonicalGoalExecutionBytes(candidate))
+      .digest('hex')}` !== record.candidateBytesHash ||
+      candidate.campaignClosureHash !== record.closureReceiptHash ||
+      candidate.implementationContextHash !== record.currentImplementationHash ||
+      stableHash(candidate.evidence) !== record.currentEvidenceHash)
+  ) {
+    fail('main_agent_execution_final_judge_campaign_input_candidate_mismatch');
+  }
   for (const field of [
     'campaignId',
     'campaignLineageKey',
@@ -134,6 +160,12 @@ export function validateMainAgentExecutionFinalJudgeCampaignInput(
     if (record[field] !== expected) {
       fail('main_agent_execution_final_judge_campaign_input_stale');
     }
+  }
+  if (
+    stableHash(record.executionFinalCandidate ?? null) !==
+    stableHash((currentAuthority as JsonRecord).executionFinalCandidate ?? null)
+  ) {
+    fail('main_agent_execution_final_judge_campaign_input_stale');
   }
   return value as MainAgentExecutionFinalJudgeCampaignInput;
 }

@@ -18,10 +18,10 @@ import {
   runMainAgentConfirmCloseoutAcceptance,
   runMainAgentControlledCloseout,
   runMainAgentControlledCloseoutCli,
-  runMainAgentControlledCloseoutFromNativeHost,
   runMainAgentExecutionFinalJudgeCampaign,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import { compileMainAgentExecutionFinalJudgeCampaignInput } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-execution-final-judge-campaign-input';
+import { computeMainAgentExecutionActorIsolationPolicyHash } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-execution-final-judge-campaign';
 
 const HASH = `sha256:${'1'.repeat(64)}`;
 const OTHER_HASH = `sha256:${'2'.repeat(64)}`;
@@ -63,6 +63,24 @@ function compactStableHash(value: unknown): string {
             .join(',')}}`
         : (JSON.stringify(input) ?? String(input));
   return `sha256:${createHash('sha256').update(stable(value), 'utf8').digest('hex')}`;
+}
+
+function actorIsolationReceipt(intent: {
+  actorClass: 'bounded_code_reviewer' | 'final_acceptance_judge';
+  dispatchGroupId: string;
+}) {
+  const payload = {
+    schemaVersion: 'GoalFinalizationActorIsolationReceipt/v1' as const,
+    actorClass: intent.actorClass,
+    dispatchGroupId: intent.dispatchGroupId,
+    enforcement: 'codex_permission_profile' as const,
+    snapshotHash: HASH,
+    peerOutputMaterialization: 'none' as const,
+    controlPlaneMaterialization: 'memory_only' as const,
+    transportPathsExposed: false as const,
+    policyHash: computeMainAgentExecutionActorIsolationPolicyHash('codex_permission_profile'),
+  };
+  return { ...payload, isolationReceiptHash: stableHash(payload) };
 }
 
 function materializeInjectedCodexJudgeConfig(projectRoot: string, attemptRoot: string): string {
@@ -358,7 +376,7 @@ function legacyRepairAuthority(input: {
 }
 
 describe('Main Agent governed Goal explicit legacy baseline', () => {
-  it('routes controlled-closeout through the package orchestration runtime', () => {
+  it('routes controlled-closeout through its dedicated public runtime action', () => {
     const runtimeSource = fs.readFileSync(
       path.resolve('packages/bmad-speckit/src/main-agent/runtime.ts'),
       'utf8'
@@ -367,7 +385,11 @@ describe('Main Agent governed Goal explicit legacy baseline', () => {
     const actionSetEnd = runtimeSource.indexOf(']);', actionSetStart);
     expect(actionSetStart).toBeGreaterThanOrEqual(0);
     expect(actionSetEnd).toBeGreaterThan(actionSetStart);
-    expect(runtimeSource.slice(actionSetStart, actionSetEnd)).toContain("'controlled-closeout'");
+    expect(runtimeSource.slice(actionSetStart, actionSetEnd)).not.toContain(
+      "'controlled-closeout'"
+    );
+    expect(runtimeSource).toContain("if (context.action === 'controlled-closeout')");
+    expect(runtimeSource).toContain('runControlledCloseoutAction(context)');
   });
 
   it('ships a configurable Final Judge prompt that permits exact read-only evidence inspection', () => {
@@ -384,7 +406,7 @@ describe('Main Agent governed Goal explicit legacy baseline', () => {
     expect(prompt).toContain('`evidenceRefs`');
   });
 
-  it('runs the product closeout caller with configurable prompt and wires Judge to delivery gate', async () => {
+  it('rejects the legacy product closeout caller without ExecutionFinalCandidate', async () => {
     const projectRoot = process.cwd();
     const attemptRoot = fs.mkdtempSync(path.join(projectRoot, '.tmp-main-agent-closeout-'));
     const outputRoot = path.join(attemptRoot, 'main-agent-closeout');
@@ -502,10 +524,11 @@ describe('Main Agent governed Goal explicit legacy baseline', () => {
         outputRoot,
         judgeConfigPath,
         judgePrompt: { systemPrompt: 'Return only the structured final acceptance decision.' },
-        invokeReviewer: async () => {
+        invokeReviewer: async (intent) => {
           reviewerCalls += 1;
           return {
             sourceLedgerHash: HASH,
+            actorIsolationReceipt: actorIsolationReceipt(intent),
             terminalOutcome: 'clean' as const,
             findingIds: [],
           };
@@ -513,174 +536,27 @@ describe('Main Agent governed Goal explicit legacy baseline', () => {
         executeCodexCliCommand,
       };
       const result = await runMainAgentControlledCloseout(input);
-      expect(result).toMatchObject({ status: 'awaiting_user_acceptance' });
-      expect(reviewerCalls).toBe(1);
-      expect(finalJudgeCalls).toBe(1);
-      expect(observedPrompt).toContain('Return only the structured final acceptance decision.');
-      expect(observedPrompt).toContain('"judgeRole":"final_acceptance_judge"');
-      expect(observedPrompt).toContain('"actorClass":"final_acceptance_judge"');
+      expect(result).toMatchObject({
+        status: 'not_produced',
+        executionFinalJudgeCampaign: null,
+        effectivePassReceipt: null,
+        deliveryGateReceipt: null,
+        judgeStageStatusReceipt: {
+          actorClass: 'final_acceptance_judge',
+          auditDecision: 'not_produced',
+          sourceErrorCode: 'MAIN_AGENT_EXECUTION_FINAL_JUDGE_CAMPAIGN_CANDIDATE_MISSING',
+        },
+      });
+      expect(reviewerCalls).toBe(0);
+      expect(finalJudgeCalls).toBe(0);
+      expect(observedPrompt).toBe('');
       expect(
         fs.existsSync(path.join(outputRoot, 'execution-final-judge-campaign-input.json'))
       ).toBe(true);
       expect(
         fs.existsSync(path.join(outputRoot, 'execution-final-judge-campaign-aggregate.json'))
-      ).toBe(true);
+      ).toBe(false);
       expect(fs.existsSync(path.join(outputRoot, 'judge-review-campaign-input.json'))).toBe(false);
-      expect(result.effectivePassReceipt?.effectivePass).toBe(true);
-
-      const repeated = await runMainAgentControlledCloseout(input);
-      expect(repeated.status).toBe('awaiting_user_acceptance');
-      expect(reviewerCalls).toBe(1);
-      expect(finalJudgeCalls).toBe(1);
-
-      await expect(
-        runMainAgentControlledCloseout({
-          ...input,
-          outputRoot: path.join(attemptRoot, 'stale-context'),
-          expectedContextHash: OTHER_HASH,
-        })
-      ).rejects.toThrow('campaign_closeout_context_mismatch');
-
-      await expect(
-        runMainAgentControlledCloseout({
-          ...input,
-          outputRoot: path.join(attemptRoot, 'missing-prompt'),
-          judgePrompt: { systemPrompt: '' },
-        })
-      ).rejects.toThrow('main_agent_judge_system_prompt_missing');
-
-      let nativeReviewerDispatches = 0;
-      const productionTransportResult = await runMainAgentControlledCloseout({
-        ...input,
-        outputRoot: path.join(attemptRoot, 'production-native-reviewer'),
-        invokeReviewer: undefined,
-        nativeReviewerHost: 'codex',
-        dispatchNativeReviewer: async (request) => {
-          nativeReviewerDispatches += 1;
-          expect(request).toMatchObject({
-            schemaVersion: 'main-agent-native-reviewer-dispatch/v1',
-            role: 'bounded_code_reviewer',
-            host: 'codex',
-            route: { tool: 'codex', subtypeOrExecutor: 'main-session:audit' },
-          });
-          return {
-            sourceLedgerHash: HASH,
-            terminalOutcome: 'clean',
-            findingIds: [],
-          };
-        },
-      });
-      expect(productionTransportResult.status).toBe('awaiting_user_acceptance');
-      expect(nativeReviewerDispatches).toBe(1);
-
-      const hostCallerResult = await runMainAgentControlledCloseoutFromNativeHost({
-        ...input,
-        outputRoot: path.join(attemptRoot, 'formal-native-host-caller'),
-        invokeReviewer: undefined,
-        nativeReviewerHost: 'claude-code-cli',
-        nativeReviewerDispatch: async (request) => {
-          expect(request.route).toEqual({ tool: 'Agent', subtypeOrExecutor: 'code-reviewer' });
-          return {
-            sourceLedgerHash: HASH,
-            terminalOutcome: 'clean',
-            findingIds: [],
-          };
-        },
-      });
-      expect(hostCallerResult.status).toBe('awaiting_user_acceptance');
-
-      let recoveryReviewerCalls = 0;
-      let recoveryFinalJudgeCalls = 0;
-      const partialOutputRoot = path.join(attemptRoot, 'reviewer-timeout-partial');
-      const recoveryInput = {
-        ...input,
-        outputRoot: partialOutputRoot,
-        invokeReviewer: async () => {
-          recoveryReviewerCalls += 1;
-          if (recoveryReviewerCalls === 1) throw new Error('native_reviewer_host_bridge_timeout');
-          return {
-            sourceLedgerHash: HASH,
-            terminalOutcome: 'clean' as const,
-            findingIds: [],
-          };
-        },
-        executeCodexCliCommand: async (invocation: { outputPath: string }) => {
-          recoveryFinalJudgeCalls += 1;
-          fs.writeFileSync(
-            invocation.outputPath,
-            JSON.stringify({
-              decision: 'pass',
-              findings: [],
-              challengeRequests: [],
-              evidenceRefs: [],
-            })
-          );
-          return {
-            exitCode: 0,
-            stdout: `${JSON.stringify({ type: 'thread.started', thread_id: 'recovery-thread' })}\n`,
-            stderr: '',
-          };
-        },
-      };
-      const reviewerUnavailable = await runMainAgentControlledCloseout(recoveryInput);
-      expect(reviewerUnavailable).toMatchObject({
-        status: 'not_produced',
-        reviewerStageStatusReceipt: {
-          phase: 'reviewer',
-          actorClass: 'bounded_code_reviewer',
-          auditDecision: 'not_produced',
-          sourceErrorCode: 'PROVIDER_TIMEOUT',
-        },
-        judgeStageStatusReceipt: null,
-      });
-      expect(reviewerUnavailable.receiptPaths).toHaveProperty('finalJudgeResult');
-      expect(recoveryReviewerCalls).toBe(1);
-      expect(recoveryFinalJudgeCalls).toBe(1);
-
-      const resumedReviewer = await runMainAgentControlledCloseout({
-        ...recoveryInput,
-        outputRoot: path.join(attemptRoot, 'reviewer-timeout-resumed'),
-        resumeFrom: String(reviewerUnavailable.reviewerStageStatusReceipt?.receiptHash),
-        resumeFromOutputRoot: partialOutputRoot,
-      });
-      expect(resumedReviewer).toMatchObject({
-        status: 'awaiting_user_acceptance',
-        finalJudgeReused: true,
-      });
-      expect(recoveryReviewerCalls).toBe(2);
-      expect(recoveryFinalJudgeCalls).toBe(1);
-
-      const missingReviewerTransport = await runMainAgentControlledCloseout({
-        ...input,
-        outputRoot: path.join(attemptRoot, 'missing-native-reviewer'),
-        invokeReviewer: undefined,
-        nativeReviewerHost: 'codex',
-        dispatchNativeReviewer: undefined,
-      });
-      expect(missingReviewerTransport).toMatchObject({
-        status: 'not_produced',
-        reviewerStageStatusReceipt: {
-          actorClass: 'bounded_code_reviewer',
-          auditDecision: 'not_produced',
-          sourceErrorCode: 'NATIVE_REVIEWER_TRANSPORT_NOT_CONFIGURED',
-        },
-        judgeStageStatusReceipt: null,
-      });
-      expect(finalJudgeCalls).toBe(3);
-
-      const unavailable = await runMainAgentControlledCloseout({
-        ...input,
-        outputRoot: path.join(attemptRoot, 'provider-unavailable'),
-        judgeConfigPath: '_bmad/_config/missing-judge-provider.yaml',
-      });
-      expect(unavailable).toMatchObject({
-        status: 'not_produced',
-        judgeStageStatusReceipt: {
-          auditDecision: 'not_produced',
-          executionStatus: 'awaiting_provider_configuration',
-          sourceErrorCode: 'PROVIDER_NOT_CONFIGURED',
-        },
-      });
     } finally {
       fs.rmSync(attemptRoot, { recursive: true, force: true });
     }
@@ -797,7 +673,7 @@ describe('Main Agent governed Goal explicit legacy baseline', () => {
     }
   });
 
-  it('ingests producer and EffectivePass once without rerunning audit or semantic judges', () => {
+  it('rejects legacy closeout ingest that omits the typed ExecutionFinalCandidate', () => {
     const candidateBytes = Buffer.from(
       '{"schemaVersion":"goal-subcontract-campaign-task-report/v3"}\n',
       'utf8'
@@ -806,53 +682,49 @@ describe('Main Agent governed Goal explicit legacy baseline', () => {
     let producerAuditCalls = 0;
     let reviewerCalls = 0;
     let finalJudgeCalls = 0;
-    const result = ingestMainAgentControlledCloseout({
-      closeoutAttemptId: 'closeout-attempt-001',
-      contextHash: HASH,
-      producerReceipt: {
-        schemaVersion: 'goal-campaign-closure-receipt/v1',
-        status: 'campaign_closed',
+    expect(() =>
+      ingestMainAgentControlledCloseout({
         closeoutAttemptId: 'closeout-attempt-001',
         contextHash: HASH,
-        taskReportArtifactHash: candidateBytesHash,
-        receiptHash: HASH,
-      },
-      candidateBytes,
-      executionFinalJudgeCampaign: {
-        campaignId: 'dynamic-goal-campaign',
-        closeoutAttemptId: 'closeout-attempt-001',
-        candidateBytesHash,
-        decision: 'pass',
-        aggregateHash: HASH,
-      },
-      effectivePassReceipt: {
-        schemaVersion: 'main-agent-execution-final-judge-effective-pass-receipt/v1',
-        campaignId: 'dynamic-goal-campaign',
-        effectivePass: true,
-        closeoutAttemptId: 'closeout-attempt-001',
-        effectivePassReceiptHash: HASH,
-      },
-      dependencies: {
-        auditCompletedCampaign: () => {
-          producerAuditCalls += 1;
-          return { status: 'pass' };
+        producerReceipt: {
+          schemaVersion: 'goal-campaign-closure-receipt/v1',
+          status: 'campaign_closed',
+          closeoutAttemptId: 'closeout-attempt-001',
+          contextHash: HASH,
+          taskReportArtifactHash: candidateBytesHash,
+          receiptHash: HASH,
         },
-        invokeReviewer: () => {
-          reviewerCalls += 1;
-          return { terminalOutcome: 'clean' };
+        candidateBytes,
+        executionFinalJudgeCampaign: {
+          campaignId: 'dynamic-goal-campaign',
+          closeoutAttemptId: 'closeout-attempt-001',
+          candidateBytesHash,
+          decision: 'pass',
+          aggregateHash: HASH,
         },
-        invokeFinalJudge: () => {
-          finalJudgeCalls += 1;
-          return { verdict: 'coverage_satisfied' };
+        effectivePassReceipt: {
+          schemaVersion: 'main-agent-execution-final-judge-effective-pass-receipt/v1',
+          campaignId: 'dynamic-goal-campaign',
+          effectivePass: true,
+          closeoutAttemptId: 'closeout-attempt-001',
+          effectivePassReceiptHash: HASH,
         },
-      },
-    });
-
-    expect(result).toMatchObject({
-      status: 'awaiting_user_acceptance',
-      closeoutAttemptId: 'closeout-attempt-001',
-      candidateBytesHash,
-    });
+        dependencies: {
+          auditCompletedCampaign: () => {
+            producerAuditCalls += 1;
+            return { status: 'pass' };
+          },
+          invokeReviewer: () => {
+            reviewerCalls += 1;
+            return { terminalOutcome: 'clean' };
+          },
+          invokeFinalJudge: () => {
+            finalJudgeCalls += 1;
+            return { verdict: 'coverage_satisfied' };
+          },
+        },
+      })
+    ).toThrow('main_agent_execution_final_candidate_required');
     expect(producerAuditCalls).toBe(0);
     expect(reviewerCalls).toBe(0);
     expect(finalJudgeCalls).toBe(0);
@@ -919,7 +791,7 @@ describe('Main Agent governed Goal explicit legacy baseline', () => {
     ).rejects.toThrow('main_agent_goal_task_report_provenance_mismatch');
   });
 
-  it('turns a campaign-owned unavailable Final Judge into a resumable Main Agent stage receipt', async () => {
+  it('rejects a campaign-owned provider fixture that omits ExecutionFinalCandidate', async () => {
     const campaignInput = compileMainAgentExecutionFinalJudgeCampaignInput({
       campaignId: 'standalone-goal-dynamic-campaign',
       campaignLineageKey: stableHash({ kind: 'standalone-lineage' }),
@@ -933,49 +805,40 @@ describe('Main Agent governed Goal explicit legacy baseline', () => {
     let reviewerCalls = 0;
     let finalJudgeCalls = 0;
 
-    const result = await runMainAgentExecutionFinalJudgeCampaign(
-      {
-        campaignInput,
-        finalAcceptanceState: {},
-        closeoutAttemptId: 'dynamic-closeout-attempt',
-        logicalAttemptOrdinal: 1,
-        maxAttempts: 3,
-        resumeFrom: null,
-      },
-      {
-        invokeReviewer: async () => {
-          reviewerCalls += 1;
-          return {
-            sourceLedgerHash: stableHash({ kind: 'reviewer-ledger' }),
-            terminalOutcome: 'clean',
-            findingIds: [],
-          };
+    await expect(
+      runMainAgentExecutionFinalJudgeCampaign(
+        {
+          campaignInput,
+          finalAcceptanceState: {},
+          closeoutAttemptId: 'dynamic-closeout-attempt',
+          logicalAttemptOrdinal: 1,
+          maxAttempts: 3,
+          resumeFrom: null,
         },
-        invokeFinalJudge: async () => {
-          finalJudgeCalls += 1;
-          return {
-            auditDecision: 'not_produced',
-            sourceErrorCode: 'HTTP_503',
-          };
-        },
-      }
-    );
-
-    expect(reviewerCalls).toBe(1);
-    expect(finalJudgeCalls).toBe(1);
-    expect(result).toMatchObject({
-      status: 'not_produced',
-      effectivePassReceipt: null,
-      judgeStageStatusReceipt: {
-        closeoutAttemptId: 'dynamic-closeout-attempt',
-        executionStatus: 'provider_temporarily_unavailable',
-        auditDecision: 'not_produced',
-        sourceErrorCode: 'HTTP_503',
-      },
-    });
+        {
+          invokeReviewer: async () => {
+            reviewerCalls += 1;
+            return {
+              sourceLedgerHash: stableHash({ kind: 'reviewer-ledger' }),
+              terminalOutcome: 'clean',
+              findingIds: [],
+            };
+          },
+          invokeFinalJudge: async () => {
+            finalJudgeCalls += 1;
+            return {
+              auditDecision: 'not_produced',
+              sourceErrorCode: 'HTTP_503',
+            };
+          },
+        }
+      )
+    ).rejects.toThrow('main_agent_execution_final_judge_campaign_candidate_missing');
+    expect(reviewerCalls).toBe(0);
+    expect(finalJudgeCalls).toBe(0);
   });
 
-  it('converts thrown Final Judge provider failures into not_produced stage receipts', async () => {
+  it('rejects legacy thrown-provider fixtures before dispatch when the candidate is absent', async () => {
     const failureCases = [
       [
         Object.assign(new Error('provider is not configured'), { code: 'PROVIDER_NOT_CONFIGURED' }),
@@ -1024,36 +887,29 @@ describe('Main Agent governed Goal explicit legacy baseline', () => {
         initialReviewAttemptKey: stableHash({ sourceErrorCode, kind: 'attempt' }),
         providerRef: 'gateway-managed-judge',
       });
-      const result = await runMainAgentExecutionFinalJudgeCampaign(
-        {
-          campaignInput,
-          finalAcceptanceState: {},
-          closeoutAttemptId: `closeout-${sourceErrorCode}`,
-          logicalAttemptOrdinal: 1,
-          maxAttempts: 3,
-          resumeFrom: null,
-        },
-        {
-          invokeReviewer: async () => ({
-            sourceLedgerHash: stableHash({ sourceErrorCode, kind: 'reviewer-ledger' }),
-            terminalOutcome: 'clean',
-            findingIds: [],
-          }),
-          invokeFinalJudge: async () => {
-            throw providerError;
+      await expect(
+        runMainAgentExecutionFinalJudgeCampaign(
+          {
+            campaignInput,
+            finalAcceptanceState: {},
+            closeoutAttemptId: `closeout-${sourceErrorCode}`,
+            logicalAttemptOrdinal: 1,
+            maxAttempts: 3,
+            resumeFrom: null,
           },
-        }
-      );
-
-      expect(result).toMatchObject({
-        status: 'not_produced',
-        effectivePassReceipt: null,
-        judgeStageStatusReceipt: {
-          auditDecision: 'not_produced',
-          sourceErrorCode,
-          executionStatus,
-        },
-      });
+          {
+            invokeReviewer: async () => ({
+              sourceLedgerHash: stableHash({ sourceErrorCode, kind: 'reviewer-ledger' }),
+              terminalOutcome: 'clean',
+              findingIds: [],
+            }),
+            invokeFinalJudge: async () => {
+              throw providerError;
+            },
+          }
+        )
+      ).rejects.toThrow('main_agent_execution_final_judge_campaign_candidate_missing');
+      expect(executionStatus).toBeTruthy();
     }
   });
 

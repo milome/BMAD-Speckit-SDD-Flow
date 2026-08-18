@@ -280,10 +280,7 @@ function controlStoreLockOwnedBy(lockPath: string, transactionId: string): boole
   }
 }
 
-function assertControlStoreLockOwnership(
-  lockPath: string,
-  transactionId: string
-): void {
+function assertControlStoreLockOwnership(lockPath: string, transactionId: string): void {
   if (!controlStoreLockOwnedBy(lockPath, transactionId)) {
     throw new Error('control_store_lock_ownership_lost');
   }
@@ -385,9 +382,7 @@ function controlArtifactTargetPath(
   authorityContext?: ControlArtifactAuthorityContext
 ): string {
   const recordRoot = path.dirname(recordPath);
-  const targetPath = path.resolve(
-    path.isAbsolute(value) ? value : path.join(recordRoot, value)
-  );
+  const targetPath = path.resolve(path.isAbsolute(value) ? value : path.join(recordRoot, value));
   const eventRoot = path.join(recordRoot, 'events');
   const localArtifactIndex = path.join(recordRoot, 'artifact-index.jsonl');
   const physicalRecordRoot = physicalPath(recordRoot);
@@ -417,14 +412,8 @@ function controlArtifactWriteTargets(
   writes: ControlArtifactWrite[],
   authorityContext?: ControlArtifactAuthorityContext
 ): string[] {
-  const targets = declaredControlArtifactWriteTargets(recordPath, writes).map(
-    (targetPath, index) =>
-      controlArtifactTargetPath(
-        recordPath,
-        targetPath,
-        writes[index].contentHash,
-        authorityContext
-      )
+  const targets = declaredControlArtifactWriteTargets(recordPath, writes).map((targetPath, index) =>
+    controlArtifactTargetPath(recordPath, targetPath, writes[index].contentHash, authorityContext)
   );
   if (new Set(targets).size !== targets.length) {
     throw new Error('control_store_artifact_write_target_duplicate');
@@ -478,10 +467,7 @@ function artifactIndexLockOwnedBy(lock: ArtifactIndexLock, transactionId: string
   }
 }
 
-function assertArtifactIndexLockOwnership(
-  locks: ArtifactIndexLock[],
-  transactionId: string
-): void {
+function assertArtifactIndexLockOwnership(locks: ArtifactIndexLock[], transactionId: string): void {
   for (const lock of locks) {
     if (!artifactIndexLockOwnedBy(lock, transactionId)) {
       throw new Error(
@@ -522,9 +508,7 @@ function acquireArtifactIndexLocks(input: {
           existing = readJson(lock.lockPath);
         } catch {
           throw new Error(
-            `control_store_artifact_index_lock_invalid:${normalizePathForRecord(
-              lock.targetPath
-            )}`
+            `control_store_artifact_index_lock_invalid:${normalizePathForRecord(lock.targetPath)}`
           );
         }
         const ownerRecordPath = text(existing.recordPath);
@@ -591,9 +575,7 @@ function prepareArtifactIndexUpdates(
     merged.set(targetPath, [...(merged.get(targetPath) ?? []), ...update.entries]);
   }
   return [...merged.entries()].map(([targetPath, entries], index) => {
-    const previousText = fs.existsSync(targetPath)
-      ? fs.readFileSync(targetPath, 'utf8')
-      : null;
+    const previousText = fs.existsSync(targetPath) ? fs.readFileSync(targetPath, 'utf8') : null;
     return {
       targetPath,
       stagedRelativePath: `artifact-indexes/${index}.jsonl`,
@@ -615,9 +597,7 @@ function prepareArtifactWrites(
     if (fs.existsSync(targetPath) && !fs.statSync(targetPath).isFile()) {
       throw new Error('control_store_artifact_write_target_not_file');
     }
-    const previousText = fs.existsSync(targetPath)
-      ? fs.readFileSync(targetPath, 'utf8')
-      : null;
+    const previousText = fs.existsSync(targetPath) ? fs.readFileSync(targetPath, 'utf8') : null;
     if (
       text(write.expectedBeforeHash) &&
       text(write.expectedBeforeHash) !==
@@ -753,10 +733,7 @@ function transactionArtifactWrites(
   });
 }
 
-function transactionDirectory(
-  controlRoot: string,
-  transactionPath: string
-): string {
+function transactionDirectory(controlRoot: string, transactionPath: string): string {
   const candidate = path.resolve(transactionPath);
   if (!pathWithin(path.join(controlRoot, 'transactions'), candidate)) {
     throw new Error('control_store_commit_marker_path_invalid');
@@ -827,25 +804,11 @@ function materializeTransactionSnapshot(
     targets.receiptPath,
     fs.readFileSync(path.join(transactionDir, 'commit-receipt.json'), 'utf8')
   );
-  for (const artifactIndex of transactionArtifactIndexes(
-    transactionDir,
-    manifest,
-    recordPath
-  )) {
-    writeTextAtomic(
-      artifactIndex.targetPath,
-      fs.readFileSync(artifactIndex.stagedPath, 'utf8')
-    );
+  for (const artifactIndex of transactionArtifactIndexes(transactionDir, manifest, recordPath)) {
+    writeTextAtomic(artifactIndex.targetPath, fs.readFileSync(artifactIndex.stagedPath, 'utf8'));
   }
-  for (const artifactWrite of transactionArtifactWrites(
-    transactionDir,
-    manifest,
-    recordPath
-  )) {
-    writeTextAtomic(
-      artifactWrite.targetPath,
-      fs.readFileSync(artifactWrite.stagedPath, 'utf8')
-    );
+  for (const artifactWrite of transactionArtifactWrites(transactionDir, manifest, recordPath)) {
+    writeTextAtomic(artifactWrite.targetPath, fs.readFileSync(artifactWrite.stagedPath, 'utf8'));
   }
 }
 
@@ -861,8 +824,7 @@ function restorePreviousTransactionSnapshot(
   if (previous.recordExists === true) {
     if (
       !fs.existsSync(previousRecordPath) ||
-      text(previous.recordHash) !==
-        sha256Text(fs.readFileSync(previousRecordPath, 'utf8'))
+      text(previous.recordHash) !== sha256Text(fs.readFileSync(previousRecordPath, 'utf8'))
     ) {
       throw new Error('control_store_previous_snapshot_invalid:record');
     }
@@ -873,8 +835,7 @@ function restorePreviousTransactionSnapshot(
   if (
     previous.eventLogExists === true &&
     (!fs.existsSync(previousEventLogPath) ||
-      text(previous.eventLogHash) !==
-        sha256Text(fs.readFileSync(previousEventLogPath, 'utf8')))
+      text(previous.eventLogHash) !== sha256Text(fs.readFileSync(previousEventLogPath, 'utf8')))
   ) {
     throw new Error('control_store_previous_snapshot_invalid:event_log');
   }
@@ -882,8 +843,7 @@ function restorePreviousTransactionSnapshot(
   if (
     previous.receiptExists === true &&
     (!fs.existsSync(previousReceiptPath) ||
-      text(previous.receiptHash) !==
-        sha256Text(fs.readFileSync(previousReceiptPath, 'utf8')))
+      text(previous.receiptHash) !== sha256Text(fs.readFileSync(previousReceiptPath, 'utf8')))
   ) {
     throw new Error('control_store_previous_snapshot_invalid:receipt');
   }
@@ -904,11 +864,7 @@ function restorePreviousTransactionSnapshot(
   } else if (fs.existsSync(targets.receiptPath)) {
     fs.rmSync(targets.receiptPath, { force: true });
   }
-  for (const artifactIndex of transactionArtifactIndexes(
-    transactionDir,
-    manifest,
-    recordPath
-  )) {
+  for (const artifactIndex of transactionArtifactIndexes(transactionDir, manifest, recordPath)) {
     if (artifactIndex.previousExists) {
       writeTextAtomic(
         artifactIndex.targetPath,
@@ -918,11 +874,7 @@ function restorePreviousTransactionSnapshot(
       fs.rmSync(artifactIndex.targetPath, { force: true });
     }
   }
-  for (const artifactWrite of transactionArtifactWrites(
-    transactionDir,
-    manifest,
-    recordPath
-  )) {
+  for (const artifactWrite of transactionArtifactWrites(transactionDir, manifest, recordPath)) {
     if (artifactWrite.previousExists) {
       writeTextAtomic(
         artifactWrite.targetPath,
@@ -960,8 +912,7 @@ function recoverControlStore(recordPath: string): void {
   const staleStagingDir = path.join(transactionsRoot, `.staging-${staleTransactionId}`);
   const markerPath = path.join(controlRoot, 'current-commit.json');
   const marker = fs.existsSync(markerPath) ? readJson(markerPath) : undefined;
-  const markerMatchesStaleTransaction =
-    marker && text(marker.transactionId) === staleTransactionId;
+  const markerMatchesStaleTransaction = marker && text(marker.transactionId) === staleTransactionId;
   const recoveryDir = markerMatchesStaleTransaction
     ? transactionDirectory(controlRoot, text(marker.committedTransactionPath))
     : fs.existsSync(staleTransactionDir)
@@ -1378,12 +1329,8 @@ function normalizeClosure(closure: JsonObject, record: JsonObject): JsonObject {
       ? text(closure.status)
       : 'open',
     ...(text(closure.oracleId) ? { oracleId: text(closure.oracleId) } : {}),
-    ...(text(closure.oracleResultHash)
-      ? { oracleResultHash: text(closure.oracleResultHash) }
-      : {}),
-    ...(text(closure.oracleObservedAt)
-      ? { oracleObservedAt: text(closure.oracleObservedAt) }
-      : {}),
+    ...(text(closure.oracleResultHash) ? { oracleResultHash: text(closure.oracleResultHash) } : {}),
+    ...(text(closure.oracleObservedAt) ? { oracleObservedAt: text(closure.oracleObservedAt) } : {}),
     traceRows: strings(closure.traceRows),
     evidenceRefs: strings(closure.evidenceRefs),
     commandRunRefs: objects(closure.commandRunRefs).map((command) =>
@@ -1749,9 +1696,11 @@ function normalizeCloseout(closeoutValue: unknown): JsonObject | undefined {
       ? {
           acceptanceRequest: {
             ...acceptanceRequest,
-            status: ['awaiting_user_acceptance', 'user_accepted_closeout'].includes(
-              text(acceptanceRequest.status)
-            )
+            status: [
+              'awaiting_user_acceptance',
+              'user_accepted_closeout',
+              'user_rejected_closeout',
+            ].includes(text(acceptanceRequest.status))
               ? text(acceptanceRequest.status)
               : 'awaiting_user_acceptance',
             closeoutAttemptId:
@@ -2377,10 +2326,7 @@ export function appendControlEventAndReplay(
     }
     const beforeRecord = canonicalizeRequirementRecord(currentRecord);
     const beforeRecordHash = sha256Json(beforeRecord);
-    if (
-      input.expectedBeforeRecordHash &&
-      input.expectedBeforeRecordHash !== beforeRecordHash
-    ) {
+    if (input.expectedBeforeRecordHash && input.expectedBeforeRecordHash !== beforeRecordHash) {
       throw new Error('control_store_compare_and_swap_failed:before_record_hash_mismatch');
     }
     const recordedAt = input.recordedAt ?? new Date().toISOString();
@@ -2392,9 +2338,7 @@ export function appendControlEventAndReplay(
       input.writerId
     );
     assertEventWriterOwnership(existingEvents, input.eventType, input.writerId);
-    const reducedRecord = canonicalizeRequirementRecord(
-      input.reduce(beforeRecord, input.payload)
-    );
+    const reducedRecord = canonicalizeRequirementRecord(input.reduce(beforeRecord, input.payload));
     const authorityContext: ControlArtifactAuthorityContext = {
       record: reducedRecord,
       payload: input.payload,
@@ -2404,9 +2348,7 @@ export function appendControlEventAndReplay(
       input.artifactWrites ?? [],
       authorityContext
     );
-    if (
-      JSON.stringify(validatedArtifactWriteTargets) !== JSON.stringify(artifactWriteTargets)
-    ) {
+    if (JSON.stringify(validatedArtifactWriteTargets) !== JSON.stringify(artifactWriteTargets)) {
       throw new Error('control_store_artifact_write_target_changed_after_validation');
     }
     assertControlWriterRegistryImmutable(beforeRecord, reducedRecord);
@@ -2425,12 +2367,7 @@ export function appendControlEventAndReplay(
     });
     if (
       existingEvents.some((entry) => entry.eventId === event.eventId) ||
-      fs.existsSync(
-        receiptPathForEvent(
-          recordPath,
-          event.eventId.replace(/[^a-z0-9_.-]/giu, '_')
-        )
-      )
+      fs.existsSync(receiptPathForEvent(recordPath, event.eventId.replace(/[^a-z0-9_.-]/giu, '_')))
     ) {
       throw new Error(`control_store_duplicate_event:${event.eventId}`);
     }
@@ -2493,9 +2430,7 @@ export function appendControlEventAndReplay(
       artifactIndexPaths: artifactIndexUpdates.map((update) =>
         normalizePathForRecord(update.targetPath)
       ),
-      artifactPaths: artifactWrites.map((write) =>
-        normalizePathForRecord(write.targetPath)
-      ),
+      artifactPaths: artifactWrites.map((write) => normalizePathForRecord(write.targetPath)),
       schemaGate: { ok: validation.ok, errorCount: validation.errorCount },
       committedAt: recordedAt,
     };
@@ -2514,12 +2449,8 @@ export function appendControlEventAndReplay(
     const recordText = `${JSON.stringify(nextRecord, null, 2)}\n`;
     const receiptText = `${JSON.stringify(receipt, null, 2)}\n`;
     const previousRecord = preLock.exists ? fs.readFileSync(recordPath) : null;
-    const previousEventLog = fs.existsSync(eventLogPath)
-      ? fs.readFileSync(eventLogPath)
-      : null;
-    const previousReceipt = fs.existsSync(receiptPath)
-      ? fs.readFileSync(receiptPath)
-      : null;
+    const previousEventLog = fs.existsSync(eventLogPath) ? fs.readFileSync(eventLogPath) : null;
+    const previousReceipt = fs.existsSync(receiptPath) ? fs.readFileSync(receiptPath) : null;
     writeTextAtomic(path.join(stagingDir, 'control-events.jsonl'), eventLogText);
     writeTextAtomic(path.join(stagingDir, 'requirement-record.json'), recordText);
     writeTextAtomic(path.join(stagingDir, 'commit-receipt.json'), receiptText);
@@ -2590,12 +2521,8 @@ export function appendControlEventAndReplay(
         eventLogExists: previousEventLog !== null,
         receiptExists: previousReceipt !== null,
         recordHash: previousRecord ? sha256Text(previousRecord.toString('utf8')) : null,
-        eventLogHash: previousEventLog
-          ? sha256Text(previousEventLog.toString('utf8'))
-          : null,
-        receiptHash: previousReceipt
-          ? sha256Text(previousReceipt.toString('utf8'))
-          : null,
+        eventLogHash: previousEventLog ? sha256Text(previousEventLog.toString('utf8')) : null,
+        receiptHash: previousReceipt ? sha256Text(previousReceipt.toString('utf8')) : null,
       },
       artifactIndexes: artifactIndexUpdates.map((update) => ({
         targetPath: normalizePathForRecord(update.targetPath),
@@ -2603,8 +2530,7 @@ export function appendControlEventAndReplay(
         stagedHash: sha256Text(update.nextText),
         previousRelativePath: update.previousRelativePath,
         previousExists: update.previousText !== null,
-        previousHash:
-          update.previousText !== null ? sha256Text(update.previousText) : null,
+        previousHash: update.previousText !== null ? sha256Text(update.previousText) : null,
       })),
       artifactWrites: artifactWrites.map((write) => ({
         targetPath: normalizePathForRecord(write.targetPath),
@@ -2612,8 +2538,7 @@ export function appendControlEventAndReplay(
         contentHash: write.contentHash,
         previousRelativePath: write.previousRelativePath,
         previousExists: write.previousText !== null,
-        previousHash:
-          write.previousText !== null ? sha256Text(write.previousText) : null,
+        previousHash: write.previousText !== null ? sha256Text(write.previousText) : null,
       })),
       preparedAt: recordedAt,
     });
@@ -2622,13 +2547,11 @@ export function appendControlEventAndReplay(
         event.eventHash ||
       sha256Json(readJson(path.join(stagingDir, 'requirement-record.json'))) !==
         sha256Json(nextRecord) ||
-      text(readJson(path.join(stagingDir, 'commit-receipt.json')).eventHash) !==
-        event.eventHash ||
+      text(readJson(path.join(stagingDir, 'commit-receipt.json')).eventHash) !== event.eventHash ||
       artifactWrites.some(
         (write) =>
-          sha256Text(
-            fs.readFileSync(path.join(stagingDir, write.stagedRelativePath), 'utf8')
-          ) !== write.contentHash
+          sha256Text(fs.readFileSync(path.join(stagingDir, write.stagedRelativePath), 'utf8')) !==
+          write.contentHash
       )
     ) {
       throw new Error('control_store_staging_readback_failed');
@@ -2696,8 +2619,7 @@ export function appendControlEventAndReplay(
         artifactIndexUpdates.some(
           (update) =>
             !fs.existsSync(update.targetPath) ||
-            sha256Text(fs.readFileSync(update.targetPath, 'utf8')) !==
-              sha256Text(update.nextText)
+            sha256Text(fs.readFileSync(update.targetPath, 'utf8')) !== sha256Text(update.nextText)
         ) ||
         artifactWrites.some(
           (write) =>
@@ -2740,9 +2662,7 @@ export function appendControlEventAndReplay(
       artifactIndexPaths: artifactIndexUpdates.map((update) =>
         normalizePathForRecord(update.targetPath)
       ),
-      artifactPaths: artifactWrites.map((write) =>
-        normalizePathForRecord(write.targetPath)
-      ),
+      artifactPaths: artifactWrites.map((write) => normalizePathForRecord(write.targetPath)),
     };
   } finally {
     if (stagingDir && fs.existsSync(stagingDir)) {

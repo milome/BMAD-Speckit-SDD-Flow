@@ -1,6 +1,10 @@
 import { createHash } from 'node:crypto';
 import * as path from 'node:path';
-import { publishGoalExecutionImmutableArtifact } from './subcontract-evidence';
+import { validateExecutionFinalCandidate } from './main-agent-execution-final-candidate';
+import {
+  canonicalGoalExecutionBytes,
+  publishGoalExecutionImmutableArtifact,
+} from './subcontract-evidence';
 
 export type MainAgentGovernedGoalIntegrationModule = never;
 
@@ -114,6 +118,9 @@ export function ingestMainAgentControlledCloseout(input: UnknownRecord) {
   if (!isRecord(input)) {
     throw failure('main_agent_goal_task_report_provenance_mismatch');
   }
+  if (input.candidateBytes instanceof Uint8Array && !isRecord(input.executionFinalCandidate)) {
+    throw failure('main_agent_execution_final_candidate_required');
+  }
   const producerReceipt = input.producerReceipt;
   const effectivePassReceipt = input.effectivePassReceipt;
   const executionFinalJudgeCampaign = input.executionFinalJudgeCampaign;
@@ -139,17 +146,29 @@ export function ingestMainAgentControlledCloseout(input: UnknownRecord) {
   ) {
     throw failure('main_agent_goal_task_report_provenance_mismatch');
   }
+  const executionFinalCandidate = validateExecutionFinalCandidate(input.executionFinalCandidate);
+  if (!Buffer.from(candidateBytes).equals(canonicalGoalExecutionBytes(executionFinalCandidate))) {
+    throw failure('main_agent_execution_final_candidate_bytes_mismatch');
+  }
   const candidateBytesHash = `sha256:${createHash('sha256').update(candidateBytes).digest('hex')}`;
   if (producerReceipt.taskReportArtifactHash !== candidateBytesHash) {
     throw failure('main_agent_goal_task_report_provenance_mismatch');
   }
   if (
     executionFinalJudgeCampaign.candidateBytesHash !== candidateBytesHash ||
+    executionFinalJudgeCampaign.executionFinalCandidateHash !==
+      executionFinalCandidate.executionFinalCandidateHash ||
+    effectivePassReceipt.executionFinalCandidateHash !==
+      executionFinalCandidate.executionFinalCandidateHash ||
+    executionFinalJudgeCampaign.campaignClosureHash !==
+      executionFinalCandidate.campaignClosureHash ||
+    effectivePassReceipt.campaignClosureHash !== executionFinalCandidate.campaignClosureHash ||
+    effectivePassReceipt.aggregateHash !== executionFinalJudgeCampaign.aggregateHash ||
     (typeof executionFinalJudgeCampaign.campaignId === 'string' &&
       typeof effectivePassReceipt.campaignId === 'string' &&
       executionFinalJudgeCampaign.campaignId !== effectivePassReceipt.campaignId)
   ) {
-    throw failure('main_agent_goal_task_report_provenance_mismatch');
+    throw failure('main_agent_execution_final_candidate_binding_mismatch');
   }
   return Object.freeze({
     status: 'awaiting_user_acceptance' as const,
