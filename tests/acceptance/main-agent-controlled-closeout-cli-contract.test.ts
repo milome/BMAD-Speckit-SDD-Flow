@@ -69,8 +69,8 @@ describe('main-agent controlled-closeout CLI contract', () => {
     }
   });
 
-  it.each(['confirm-closeout-acceptance', 'closeout-acceptance-ingest'])(
-    'removes the legacy public alias %s',
+  it.each(['confirm-closeout-acceptance', 'closeout-acceptance-ingest', 'delivery-closeout-gate'])(
+    'removes the legacy public closeout action %s',
     (action) => {
       const root = mkdtempSync(path.join(os.tmpdir(), 'controlled-closeout-cli-'));
       try {
@@ -78,6 +78,7 @@ describe('main-agent controlled-closeout CLI contract', () => {
         const envelope = parseJson(completed);
         expect(completed.status).toBe(2);
         expect(issueCode(envelope)).toBe('unsupported_main_agent_action');
+        expect(existsSync(path.join(root, '_bmad-output'))).toBe(false);
       } finally {
         rmSync(root, { recursive: true, force: true });
       }

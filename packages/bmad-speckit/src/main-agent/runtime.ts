@@ -22,7 +22,6 @@ const {
 const { controlPlaneIsolationCheckAction } = require('./actions/control-plane-isolation-check');
 const { runControlledCloseoutAction } = require('./actions/controlled-closeout');
 const { dataGovernanceGateAction } = require('./actions/data-governance-gate');
-const { deliveryCloseoutGateAction } = require('./actions/delivery-closeout-gate');
 const { deliveryEvidenceRunAction } = require('./actions/delivery-evidence-run');
 const { datasetReleaseGateAction } = require('./actions/dataset-release-gate');
 const { decisionFieldCheckAction } = require('./actions/decision-field-check');
@@ -306,7 +305,6 @@ const SUPPORTED_ACTIONS = new Set([
   'requirements-contract-prompt-transaction-publish',
   'implementation-readiness-gate',
   'unified-ingress',
-  'delivery-closeout-gate',
   'delivery-evidence-run',
   'host-matrix-pr-orchestrator',
   'soak-runner',
@@ -649,13 +647,6 @@ async function runMainAgentRuntime(context) {
     return emitResponse(
       context,
       envelope(context, 'package_runtime_ready', 0, unifiedIngressAction(context))
-    );
-  }
-
-  if (context.action === 'delivery-closeout-gate') {
-    return emitResponse(
-      context,
-      envelope(context, 'package_runtime_ready', 0, deliveryCloseoutGateAction(context))
     );
   }
 
