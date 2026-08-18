@@ -182,6 +182,19 @@ describe('Goal delivery closeout authority gate', () => {
     });
   });
 
+  it('rejects an execution EffectivePass that is not a current pass', () => {
+    const input = closeoutInput();
+    expect(() =>
+      evaluateControlledGoalCloseoutGate({
+        ...input,
+        effectivePassReceipt: {
+          ...input.effectivePassReceipt,
+          effectivePass: false,
+        },
+      })
+    ).toThrow('main_agent_goal_task_report_provenance_mismatch');
+  });
+
   it('compiles the sole gate receipt, controlled request identity, and confirmation page', () => {
     const input = closeoutInput();
     const compiled = compileControlledGoalCloseoutArtifacts({
