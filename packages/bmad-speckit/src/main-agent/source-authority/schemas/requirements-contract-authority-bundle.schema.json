@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-authority-bundle.schema.json",
+  "type": "object", "additionalProperties": false,
+  "required": ["schemaVersion", "sourceArtifact"],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-authority-bundle/v2" },
+    "evidenceClass": { "type": "string" },
+    "sourceArtifact": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifactId", "path", "bytes", "sha256"],
+      "properties": {
+        "artifactId": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "bytes": { "type": "integer", "minimum": 1, "maximum": 1048576 },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "payloadDictionary": { "$ref": "requirements-contract-source-node.schema.json#/$defs/dictionary" },
+    "sourceRoots": { "type": "array", "items": { "$ref": "requirements-contract-source-node.schema.json" } },
+    "sourceRelations": { "type": "array" },
+    "sourceBlocks": { "type": "array" },
+    "commandDeclarations": { "type": "array" },
+    "workDeclarations": { "type": "array" },
+    "scenarioDeclarations": { "type": "array" },
+    "fixDeclarations": { "type": "array" },
+    "sections": { "type": "array" },
+    "sourceContextBindings": { "type": "array" }
+  },
+  "oneOf": [
+    { "required": ["payloadDictionary"], "not": { "anyOf": [{ "required": ["sourceRoots"] }, { "required": ["sourceRelations"] }] } },
+    { "required": ["sourceRoots", "sourceRelations"], "not": { "required": ["payloadDictionary"] } }
+  ]
+}

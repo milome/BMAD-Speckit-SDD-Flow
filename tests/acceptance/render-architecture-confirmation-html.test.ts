@@ -28,16 +28,6 @@ afterEach(() => {
   fs.rmSync(tempDir, { recursive: true, force: true });
 });
 
-const requiredArchitectureDiagramTypes = [
-  'system_architecture',
-  'deployment',
-  'class',
-  'swimlane',
-  'state_machine',
-  'sequence',
-  'activity',
-];
-
 function defaultArchitectureDiagrams(scope = 'business_architecture'): Array<Record<string, unknown>> {
   const isBusiness = scope === 'business_architecture';
   return [

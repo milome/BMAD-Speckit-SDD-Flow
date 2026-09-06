@@ -1,4 +1,5 @@
 import { isCanonicalJsonValue } from './requirements-contract-semantic-resolver';
+import { assertTypedConfirmationProjection } from './requirements-contract-typed-source-semantics';
 import {
   implementationConfirmationHashFor,
   type ImplementationConfirmation,
@@ -176,6 +177,10 @@ export const CONDITIONAL_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS = [
   'scriptsAndHooks',
   'currentTargetMap',
   'aiTddContractExecutionManifestProjection',
+] as const;
+
+export const TYPED_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS = [
+  'typedSourceAuthority', 'typedCoverage',
 ] as const;
 
 const HASH_PATTERN = /^sha256:[a-f0-9]{64}$/u;
@@ -454,6 +459,7 @@ export function projectRequirementsContractImplementationConfirmation(
   const allowedFields = new Set<string>([
     ...REQUIRED_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS,
     ...CONDITIONAL_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS,
+    ...TYPED_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS,
   ]);
   for (const fieldRef of fields.keys()) {
     if (!allowedFields.has(fieldRef)) {
@@ -494,8 +500,15 @@ export function projectRequirementsContractImplementationConfirmation(
     projectionError('confirmation_projection_field_provenance_bijection_failed');
   }
 
+  const typed = TYPED_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS.some((field) => fields.has(field));
+  if (typed) for (const field of TYPED_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS) {
+    if (!fields.has(field) || !provenance.has(field)) {
+      projectionError(`missing_required_typed_semantic_value:${field}`);
+    }
+  }
+
   const projected: ImplementationConfirmation = {
-    contractSchemaVersion: 1,
+    contractSchemaVersion: typed ? 2 : 1,
     recordId: inputValue.source.recordId,
     requirementSetId: inputValue.source.requirementSetId,
     sourceDocumentHash: inputValue.source.sourceDocumentHash,
@@ -505,6 +518,10 @@ export function projectRequirementsContractImplementationConfirmation(
   }
   for (const fieldRef of CONDITIONAL_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS) {
     if (fields.has(fieldRef)) projected[fieldRef] = clone(fields.get(fieldRef));
+  }
+  if (typed) {
+    for (const field of TYPED_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS) projected[field] = clone(fields.get(field));
+    assertTypedConfirmationProjection(projected);
   }
   projected.implementationConfirmationHash = implementationConfirmationHashFor(projected);
   return projected;

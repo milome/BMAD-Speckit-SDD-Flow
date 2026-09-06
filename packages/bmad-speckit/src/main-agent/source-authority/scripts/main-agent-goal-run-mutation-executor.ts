@@ -596,6 +596,42 @@ function replayObservedFiles(
   });
 }
 
+function isAggregateExecutionAuthority(authority: JsonRecord): boolean {
+  if (authority.executionClass === undefined) return false;
+  if (authority.executionClass === 'executable_child') return false;
+  if (authority.executionClass !== 'aggregate_only') throw new Error('goal_execution_class_invalid');
+  const tasks = Array.isArray(authority.taskExecutions) ? authority.taskExecutions as JsonRecord[] : [];
+  const commands = Array.isArray(authority.commands) ? authority.commands as JsonRecord[] : [];
+  const commandIds = new Set(commands.flatMap((command) => [command.commandId,
+    ...(Array.isArray(command.sourceDeclarationRefs) ? command.sourceDeclarationRefs : [])]));
+  if (!Array.isArray(authority.ownedPaths) || authority.ownedPaths.length !== 0 || !tasks.length || !commands.length ||
+    !['post_child_execution', 'final_aggregate'].includes(String(authority.aggregateGatePhase)) ||
+    new Set(tasks.map((task) => task.taskId)).size !== tasks.length || tasks.some((task) =>
+      typeof task.taskId !== 'string' || !task.taskId || task.executionClass !== 'aggregate_only' ||
+      !['none', '`none`'].includes(String(task.ownedProductionPaths)) || task.aggregateGatePhase !== authority.aggregateGatePhase ||
+      !Array.isArray(task.sourceRefs) || !task.sourceRefs.length || task.sourceRefs.some((ref) => typeof ref !== 'string' || !ref) ||
+      !Array.isArray(task.aggregateValidationCommands) || !task.aggregateValidationCommands.length ||
+      task.aggregateValidationCommands.some((ref) => !commandIds.has(ref)))) {
+    throw new Error('goal_execution_aggregate_authority_invalid');
+  }
+  return true;
+}
+
+function requireAggregateEvidence(authority: JsonRecord, evidence: JsonRecord): void {
+  const observations = Array.isArray(evidence.commandObservations) ? evidence.commandObservations as JsonRecord[] : [];
+  const commands = authority.commands as JsonRecord[];
+  if (evidence.executionAuthorityHash !== authority.executionAuthorityHash ||
+    evidence.executionPackageHash !== authority.executionPackageHash ||
+    !Array.isArray(evidence.observedFiles) || evidence.observedFiles.length !== 0 ||
+    !Array.isArray(evidence.ownedPathStates) || evidence.ownedPathStates.length !== 0 ||
+    (Array.isArray(evidence.changedPaths) && evidence.changedPaths.length !== 0) ||
+    (evidence.commitProof !== undefined && stableControlPlaneStringify(evidence.commitProof) !== '{"kind":"not_applicable"}') ||
+    observations.length !== commands.length || observations.some((observation, index) =>
+      observation.commandId !== commands[index].commandId || observation.normalizedInvocation !== String(commands[index].invocation).trim())) {
+    throw new Error('goal_execution_evidence_invalid');
+  }
+}
+
 export function recoverGoalRunMutationFromEvidence(input: {
   projectRoot: string;
   executionAuthority: JsonRecord;
@@ -620,8 +656,10 @@ export function recoverGoalRunMutationFromEvidence(input: {
     ? (input.evidence.commandObservations as GoalRunCommandObservation[])
     : [];
   const changedPaths = observedFiles.map((entry) => normalizedRelativePath(entry.path)).sort();
+  const aggregateOnly = isAggregateExecutionAuthority(input.executionAuthority);
+  if (aggregateOnly) requireAggregateEvidence(input.executionAuthority, input.evidence);
   if (
-    ownedPaths.length === 0 ||
+    (!aggregateOnly && ownedPaths.length === 0) ||
     new Set(changedPaths).size !== changedPaths.length ||
     changedPaths.some((changedPath) => !matchesScope(changedPath, ownedPaths)) ||
     stableControlPlaneStringify(
@@ -642,7 +680,7 @@ export function recoverGoalRunMutationFromEvidence(input: {
     throw new Error('goal_execution_evidence_invalid');
   }
   const commitProof =
-    typeof input.executionAuthority.partitionId === 'string'
+    !aggregateOnly && typeof input.executionAuthority.partitionId === 'string'
       ? resolveReachableAuthorityCommit({
           projectRoot: input.projectRoot,
           executionAuthorityId: String(input.executionAuthority.executionAuthorityId),
@@ -753,6 +791,16 @@ export function executeGoalRunMutation(input: {
   const forbiddenPaths = Array.isArray(input.executionAuthority.forbiddenPaths)
     ? input.executionAuthority.forbiddenPaths.map(normalizedRelativePath)
     : [];
+  if (isAggregateExecutionAuthority(input.executionAuthority)) {
+    const before = workspaceSnapshot(input.projectRoot);
+    const commandObservations = runCommands({ projectRoot: input.projectRoot,
+      commands: input.executionAuthority.commands as JsonRecord[], timeoutMs: input.adapter.authority.timeoutMs });
+    if (workspaceDeltaPaths(before, workspaceSnapshot(input.projectRoot)).length > 0) {
+      throw new Error('goal_execution_validation_mutated_workspace');
+    }
+    return Object.freeze({ changedPaths: [], observedFiles: [], ownedPathStates: [], commandObservations,
+      commitProof: { kind: 'not_applicable' as const } });
+  }
   if (ownedPaths.length === 0) throw new Error('goal_execution_owned_paths_missing');
   const partitionId = input.executionAuthority.partitionId;
   const recoveryConfigured = Boolean(input.outRoot && input.attemptRoot && input.authorityFileId);

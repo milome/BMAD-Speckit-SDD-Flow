@@ -7,7 +7,8 @@ import {
   type RequirementsContractSemanticIr,
   type RequirementsExecutionConstraint,
 } from './requirements-contract-semantic-ir';
-import { resolveEvidenceClaimAuthority } from './requirements-contract-span-registry';
+import { resolveEvidenceClaimAuthority, resolveRequirementsSpecSpanSourceNodeIds } from './requirements-contract-span-registry';
+import type { RequirementsTypedSourceAuthority } from './requirements-contract-typed-source-semantics';
 import {
   activeAuthoringAttemptPointerHash,
   validateActiveAuthoringAttemptPointer,
@@ -25,6 +26,7 @@ import { sha256Stable, sha256Text } from './requirements-contract-semantic-resol
 import {
   buildRequirementsContractJudgeAuditPacket,
   validateRequirementsContractJudgeAuditPacketCoverage,
+  resolveRequirementsContractJudgeAuditPacket,
 } from './requirements-contract-judge-audit-packet';
 import { canonicalJson } from './requirements-contract-governed-write';
 
@@ -176,10 +178,11 @@ function frozenPublicationLineageNodes(
   const semantics = record(semanticIr.semanticPayload.semantics);
   const requirements = records(semantics.requirements);
   const atoms = records(semantics.atoms);
+  const spanIds = resolvedSpecSpanSourceIds(semanticIr);
   return requirements.map((requirement) => {
     const requirementId = nonEmpty(requirement.id);
     const spans = semanticIr.semanticPayload.specSpanRegistry.filter((span) =>
-      span.boundObligationIds.includes(requirementId)
+      spanIds.get(span.specSpanId)!.has(requirementId)
     );
     return {
       role: 'must',
@@ -197,6 +200,13 @@ function frozenPublicationLineageNodes(
       evidenceClaimRefs: sortedUnique(spans.flatMap((span) => span.evidenceClaimRefs)),
     };
   });
+}
+
+function resolvedSpecSpanSourceIds(semanticIr: RequirementsContractSemanticIr): Map<string, Set<string>> {
+  const authority = semanticIr.semanticPayload.semantics.typedSourceAuthority as RequirementsTypedSourceAuthority | undefined;
+  if (authority && semanticIr.schemaVersion !== 'requirements-contract-semantic-ir/v2') throw new Error('requirements_projection_typed_span_version_required');
+  return new Map(semanticIr.semanticPayload.specSpanRegistry.map((span) => [span.specSpanId,
+    new Set(resolveRequirementsSpecSpanSourceNodeIds(span, authority))]));
 }
 
 function validProjectionLineageNodeShape(value: Record<string, unknown>): boolean {
@@ -264,7 +274,9 @@ export function validateRequirementsContractPublicationReady(value: unknown) {
     issueCodes.push('requirements_publication_ready_probe_promotable_forbidden');
   }
   const packet = input.auditPacket as Record<string, unknown> | undefined;
-  const packetBody = record(packet?.body);
+  let packetBody: Record<string, unknown> = {};
+  try { packetBody = record(resolveRequirementsContractJudgeAuditPacket(packet).body); }
+  catch (error) { issueCodes.push(error instanceof Error ? error.message : 'judge_audit_packet_coverage_gap'); }
   if (Object.keys(packetBody).length === 0) {
     issueCodes.push('judge_audit_packet_coverage_gap');
   }
@@ -317,7 +329,7 @@ export function validateRequirementsContractPublicationReady(value: unknown) {
         ['source_grounded', 'human_confirmed', 'derived'].includes(nonEmpty(claim.authorityClass))
     );
   const frozenSemanticInputValid =
-    semanticIr?.schemaVersion === 'requirements-contract-semantic-ir/v1' &&
+    ['requirements-contract-semantic-ir/v1', 'requirements-contract-semantic-ir/v2'].includes(semanticIr?.schemaVersion) &&
     frozenRequirementIds.length > 0 &&
     frozenRequirementIds.length === requirementRows.length &&
     specSpanRegistryValid &&
@@ -601,7 +613,7 @@ export interface RequirementsContractCp06ExecutionProjectionResult {
   latestValidPredecessorCheckpoint: 'cp01' | 'cp03' | null;
   nextAction: 'await_shared_technical_resolver_input_change' | 'restore_cp04_frozen_ir' | null;
   executionManifest: {
-    schemaVersion: 'requirements-contract-execution-manifest/v1';
+    schemaVersion: 'requirements-contract-execution-manifest/v1' | 'requirements-contract-execution-manifest/v2';
     semanticRevisionId: string;
     scopeSemanticHash: string;
     constraints: RequirementsExecutionConstraint[];
@@ -685,6 +697,7 @@ function projectionIdentity(input: {
 function semanticRequirementRows(semanticIr: RequirementsContractSemanticIr) {
   const semantics = record(semanticIr.semanticPayload.semantics);
   const rows = records(semantics.requirements);
+  const spanIds = resolvedSpecSpanSourceIds(semanticIr);
   if (rows.length === 0) throw new Error('requirements_cp05_frozen_requirement_rows_missing');
   return rows.map((row) => {
     const id = nonEmpty(row.id);
@@ -721,7 +734,7 @@ function semanticRequirementRows(semanticIr: RequirementsContractSemanticIr) {
       ),
       evidenceClaimRefs: sortedUnique(
         semanticIr.semanticPayload.specSpanRegistry
-          .filter((span) => span.boundObligationIds.includes(id))
+          .filter((span) => spanIds.get(span.specSpanId)!.has(id))
           .flatMap((span) => span.evidenceClaimRefs)
       ),
     };
@@ -732,7 +745,7 @@ type AttemptPointerCas = Parameters<
   typeof publishActiveAuthoringAttemptPointer
 >[0]['compareAndSwap'];
 
-export function publishRequirementsContractCp05Cp08Stages(input: {
+export interface RequirementsContractCp05Cp08PublicationInput {
   recordRoot: string;
   sourcePath: string;
   authoringRequestId: string;
@@ -756,10 +769,15 @@ export function publishRequirementsContractCp05Cp08Stages(input: {
     }>;
   };
   decisionReceiptRefs: Array<{ decisionReceiptId: string; path: string; hash: string }>;
-}) {
+}
+
+export function prepareRequirementsContractCp05Cp08Projection(
+  input: Pick<RequirementsContractCp05Cp08PublicationInput, 'semanticIr' | 'resolvedEvidenceIndex'>
+) {
   const requirements = semanticRequirementRows(input.semanticIr);
   const requirementIds = requirements.map((row) => row.id);
   const atoms = records(record(input.semanticIr.semanticPayload.semantics).atoms);
+  const spanIds = resolvedSpecSpanSourceIds(input.semanticIr);
   const lineageNodes: RequirementsContractProjectionLineageNode[] = requirements.map((row) => ({
     role: 'must',
     id: row.id,
@@ -768,7 +786,7 @@ export function publishRequirementsContractCp05Cp08Stages(input: {
     atomRefs: row.atomRefs,
     traceRefs: [],
     specSpanRefs: input.semanticIr.semanticPayload.specSpanRegistry
-      .filter((span) => span.boundObligationIds.includes(row.id))
+      .filter((span) => spanIds.get(span.specSpanId)!.has(row.id))
       .map((span) => span.specSpanId),
     evidenceClaimRefs: row.evidenceClaimRefs,
   }));
@@ -780,12 +798,18 @@ export function publishRequirementsContractCp05Cp08Stages(input: {
   if (reconciliation.decision === 'block') throw new Error(reconciliation.issueCodes[0]);
 
   const cp05Projection = {
-    schemaVersion: 'requirements-contract-confirmation-projection/v1',
+    schemaVersion: input.semanticIr.schemaVersion === 'requirements-contract-semantic-ir/v2'
+      ? 'requirements-contract-confirmation-projection/v2' : 'requirements-contract-confirmation-projection/v1',
     semanticRevisionId: input.semanticIr.semanticRevisionId,
     scopeSemanticHash: input.semanticIr.scopeSemanticHash,
     requirements,
+    ...(input.semanticIr.schemaVersion === 'requirements-contract-semantic-ir/v2' ? {
+      typedSourceAuthority: input.semanticIr.semanticPayload.semantics.typedSourceAuthority,
+      typedCoverage: input.semanticIr.semanticPayload.semantics.typedCoverage,
+      implementationConfirmation: input.semanticIr.semanticPayload.semantics.implementationConfirmation,
+    } : {}),
   };
-  const markdown = [
+  const markdownParts: Array<string | { canonicalJson: unknown }> = [
     '# Requirements',
     '',
     ...requirements.flatMap((row) => [
@@ -796,7 +820,18 @@ export function publishRequirementsContractCp05Cp08Stages(input: {
       `Oracle: ${row.oracle}`,
       '',
     ]),
-  ].join('\n');
+    ...(input.semanticIr.schemaVersion === 'requirements-contract-semantic-ir/v2' ? [
+      '## Typed Source Authority', '', '```json', { canonicalJson: {
+        schemaVersion: 'requirements-contract-source-projection/v2',
+        semanticRevisionId: input.semanticIr.semanticRevisionId,
+        typedSourceAuthority: input.semanticIr.semanticPayload.semantics.typedSourceAuthority,
+        typedCoverage: input.semanticIr.semanticPayload.semantics.typedCoverage,
+      } }, '```', '',
+    ] : []),
+  ];
+  const markdownComposition = { schemaVersion: 'RequirementsMarkdownComposition/v2' as const,
+    separator: '\n', parts: markdownParts };
+  const markdown = markdownParts.map((part) => typeof part === 'string' ? part : canonicalJson(part.canonicalJson)).join('\n');
   const cp06Execution = projectRequirementsContractCp06ExecutionManifest({
     checkpointId: 'cp04',
     checkpointStatus: 'passed',
@@ -867,6 +902,7 @@ export function publishRequirementsContractCp05Cp08Stages(input: {
     renderedRequirementIds: requirementIds,
   };
   const auditPacketBuild = buildRequirementsContractJudgeAuditPacket({
+    semanticIr: input.semanticIr,
     semanticRevisionId: input.semanticIr.semanticRevisionId,
     scopeSemanticHash: input.semanticIr.scopeSemanticHash,
     requirementIds,
@@ -875,7 +911,7 @@ export function publishRequirementsContractCp05Cp08Stages(input: {
     authorityResolutions: reconciliation.authorityResolutions,
     artifacts: [
       { artifactId: 'confirmation-projection', payload: cp05Projection },
-      { artifactId: 'final-markdown', payload: markdown },
+      { artifactId: 'final-markdown', payload: markdown, composition: markdownComposition },
       { artifactId: 'execution-manifest', payload: cp06Execution.executionManifest },
       { artifactId: 'per-must-bundle', payload: perMustBundle },
       { artifactId: 'trace-matrix', payload: traceMatrix },
@@ -886,7 +922,7 @@ export function publishRequirementsContractCp05Cp08Stages(input: {
     ],
   });
   const auditPacket = auditPacketBuild.packet;
-  const auditPacketBody = auditPacket.body;
+  const auditPacketBody = record(resolveRequirementsContractJudgeAuditPacket(auditPacket).body);
   const serializedBytes = auditPacketBuild.serializedBytes;
   const coverageManifest = {
     schemaVersion: 'requirements-contract-judge-audit-packet-coverage/v1',
@@ -898,6 +934,17 @@ export function publishRequirementsContractCp05Cp08Stages(input: {
     omittedArtifactIds: [],
     allApplicableArtifactsIncluded: true,
   };
+
+  return { requirements, requirementIds, atoms, lineageNodes, reconciliation, cp05Projection, markdown,
+    cp06Execution, perMustBundle, traceMatrix, diagramSet, reconciliationReport, authorityResolutionReport,
+    renderabilityProbeReport, auditPacketBuild, auditPacket, auditPacketBody, serializedBytes, coverageManifest };
+}
+
+export function publishRequirementsContractCp05Cp08Stages(input: RequirementsContractCp05Cp08PublicationInput) {
+  const { requirements, requirementIds, atoms, lineageNodes, reconciliation, cp05Projection, markdown,
+    cp06Execution, perMustBundle, traceMatrix, diagramSet, reconciliationReport, authorityResolutionReport,
+    renderabilityProbeReport, auditPacketBuild, auditPacket, auditPacketBody, serializedBytes, coverageManifest } =
+    prepareRequirementsContractCp05Cp08Projection(input);
 
   const stageDefinitions = [
     {
@@ -1257,6 +1304,7 @@ function cloneConstraint(
   constraint: RequirementsExecutionConstraint
 ): RequirementsExecutionConstraint {
   return {
+    ...structuredClone(constraint),
     constraintId: constraint.constraintId,
     kind: constraint.kind,
     canonicalValue: constraint.canonicalValue,
@@ -1270,7 +1318,8 @@ function cloneConstraint(
 
 function emptyManifest(input: RequirementsContractFrozenProjectionInput) {
   return {
-    schemaVersion: 'requirements-contract-execution-manifest/v1' as const,
+    schemaVersion: input.semanticIr?.schemaVersion === 'requirements-contract-semantic-ir/v2'
+      ? 'requirements-contract-execution-manifest/v2' as const : 'requirements-contract-execution-manifest/v1' as const,
     semanticRevisionId: String(input.semanticIr?.semanticRevisionId ?? ''),
     scopeSemanticHash: String(input.semanticIr?.scopeSemanticHash ?? ''),
     constraints: [] as RequirementsExecutionConstraint[],
@@ -1284,7 +1333,7 @@ export function projectRequirementsContractCp06ExecutionManifest(
     input.checkpointId !== 'cp04' ||
     input.checkpointStatus !== 'passed' ||
     input.readbackVerified !== true ||
-    input.semanticIr?.schemaVersion !== 'requirements-contract-semantic-ir/v1'
+    !['requirements-contract-semantic-ir/v1', 'requirements-contract-semantic-ir/v2'].includes(input.semanticIr?.schemaVersion)
   ) {
     return {
       decision: 'block',
@@ -1338,7 +1387,8 @@ export function projectRequirementsContractCp06ExecutionManifest(
     latestValidPredecessorCheckpoint: blocked ? 'cp01' : null,
     nextAction: blocked ? 'await_shared_technical_resolver_input_change' : null,
     executionManifest: {
-      schemaVersion: 'requirements-contract-execution-manifest/v1',
+      schemaVersion: input.semanticIr.schemaVersion === 'requirements-contract-semantic-ir/v2'
+        ? 'requirements-contract-execution-manifest/v2' : 'requirements-contract-execution-manifest/v1',
       semanticRevisionId: input.semanticIr.semanticRevisionId,
       scopeSemanticHash: input.semanticIr.scopeSemanticHash,
       constraints: projected.sort((left, right) =>

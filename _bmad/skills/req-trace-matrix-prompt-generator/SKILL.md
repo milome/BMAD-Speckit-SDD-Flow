@@ -1,6 +1,6 @@
 ---
 name: req-trace-matrix-prompt-generator
-description: Generate strict execution prompts and synchronized model_packet/human_prompt/audit_receipt artifacts only from implementation source documents that contain an inline implementationConfirmation block with status=user_confirmed. Use when converting confirmed PRD/BUGFIX/TASKS source documents and traceRows into implementation prompts for Codex, Cursor, Claude, or generic branches. Block conversation-only requirements, ordinary prose, unconfirmed confirmation blocks, standalone contracts, invalid trace references, sidecars, amendments, MVP downgrades, stubs, mock-only coverage, scope reduction, or changed requirement intent.
+description: Generate strict execution prompts and synchronized model_packet/human_prompt/audit_receipt/goal_execution artifacts only from implementation source documents that contain an inline implementationConfirmation block with status=user_confirmed. Use when converting confirmed PRD/BUGFIX/TASKS source documents and traceRows into implementation prompts for Codex, Cursor, Claude, or generic branches. Block conversation-only requirements, ordinary prose, unconfirmed confirmation blocks, standalone contracts, invalid trace references, sidecars, amendments, MVP downgrades, stubs, mock-only coverage, scope reduction, or changed requirement intent.
 ---
 
 # Req Trace Matrix Prompt Generator
@@ -48,6 +48,39 @@ Generated prompts must keep runtime closure in the controlled requirement record
 18. Generate implementation prompt using only confirmation IDs, trace IDs, evidence IDs, task references, command IDs, and controlled runtime closure instructions.
 19. If validation fails, output a BLOCK response, not an implementation prompt.
 
+## Typed Authority And Atomic Publication
+
+- Preserve confirmed IDs, trace order, covers, boundary views, evidence/task/acceptance refs, required commands, manifest semantics, source polarity, conditions, scope and declared-versus-observed evidence. Never re-extract new confirmed obligations from ordinary prose or strengthen permissions into requirements.
+- Use real sparse applicability, premise, dependency and co-execution relations. Genuine global constraints need source scope; no all-to-all defaults, false `proven`, generic RED/GREEN evidence, per-path invented artifacts, or task/command creation for pure boundaries. A source with no co-execution requirement may have an empty CTM; never manufacture a universal must-link group.
+- Frozen v1 authority remains immutable and readable. A v2 typed representation is valid only for a same-version runtime that supports its typed normative information throughout validators, rendering and consumers; reject unsupported readers instead of silently stripping fields. This does not admit standalone Semantic IR as confirmed-source authority.
+- A canonical inline `typedSourceAuthority` and its `typedCoverage` must remain complete, versioned and hash-bound in `req-trace-ai-tdd-model-packet/v2`. Keep one copy of each graph; `contract-execution-manifest/v2` and the audit receipt bind references and hashes rather than duplicating their bodies. Both human projections include the supported full decoding protocol.
+- Derive task-field compatibility projections only from confirmed `implementationTasks`; conflicting duplicate task projections block. Non-action requirements, boundaries, conditions and relations remain authoritative through the complete typed graph and independently reconstructed role coverage. A legacy action list is not the complete requirement scope.
+- The latest confirmation history event itself must be `confirmation_recorded`; a prior confirmation cannot survive a later reconfirmation event. Both top-level record hashes are mandatory and must match the current source and latest event. Rejection preserves the previous quartet.
+- In `--out-dir` mode, validate all four synchronized artifacts and their cross-hashes before one atomic publication: `model_packet.json`, `human_prompt.txt`, `audit_receipt.json`, `goal_execution.md`. On validation, preflight, crash or partial-publication failure, preserve the prior valid quartet and authority; no partial new success quartet or PASS receipt may become visible.
+- Runtime closure stays in controlled requirement-record/TaskReport ingest. Never rewrite confirmed `traceRows[].status`, evidence references or confirmation hashes to reflect execution results. Semantic drift requires `reconfirm_required`, downstream evidence invalidation and stop; it cannot be repaired by retaining old hashes.
+
+## Budget And Recovery Gates
+
+- Before graph allocation, check relation density and local resource budgets; separately measure packet/manifest, projections, coverage refs, compiler artifacts and final adapter representations in actual UTF-8 bytes. Legitimate sparse authority and compiler artifacts may exceed `1048576` bytes; reject only proven full fan-out, superlinear edge growth, or configured local allocation exhaustion. No scope filtering, truncation, summary authority or field deletion may satisfy a legacy transport budget.
+- Final adapter preflight is pure and binds the exact escaped/wrapped prompt or body and deterministic runtime additions before immutable request, transport, snapshot, credential files, process creation or network. A rejection permits only a bounded failure receipt, with invoke/spawn/fetch/actual dispatch all zero and the old quartet unchanged.
+- Validate actual provider field/body/context constraints separately; the external `1048576` length error has unit `unknown` until verified and applies only to the active Final Judge transport when declared/proven. Neither JavaScript character counts nor token estimates prove bytes or provider limits. Keep native `/goal`'s 4000-character hard/3800-character safe limits separate from compiler artifact bytes.
+- Resolve Codex, Claude and HTTP adapters from the active configuration. Keep each entry/stage's native Judge role, count and confirmation gates; a pure req-trace compilation adds no `goal_full` or synthetic Judge PASS, and upstream required audits remain mandatory.
+- Distinguish prepared, rejected, intent, ambiguous/sent, response-persisted and completed dispatch evidence. Preflight rejection consumes no send; resume only with trustworthy unsent evidence. Unknown sends, timeouts or lost responses block automatic retry; the same immutable native-role dispatch identity permits at most one actual send, without suppressing distinct required audits. Reuse validated persisted results without another Judge and report reuse accurately.
+- Preserve immutable requests, responses and authority across recovery. Do not delete old evidence, salt candidate hashes, edit unrelated source or overwrite a failed state to retry. Bound diagnostics by hashes, stage, units, limits and contributors; never emit credentials or full payloads.
+
+## Positive Fixture And Repair Acceptance
+
+When validating compiler repairs, all three evidence layers below are mandatory and remain distinct; automated PASS does not assert the current complete repair or actual user authorization:
+
+- Automated regression uses the complete frozen real Source Plan, strict UTF-8/byte length/SHA256, an independently reviewed full semantic expected manifest and explicit read-only dependency mappings. Missing or altered fixture is FAIL, not skip. A raw source lacking inline confirmation is a required negative fixture: BLOCK with no success quartet; this alone is not positive entry acceptance.
+- Build a separate complete implementation source with an independent original-to-confirmed-ID equivalence mapping through `requirements-contract-authoring`. Its hashes are its own, not the raw fixture hash. Real users confirm the rendered page through the current official controlled confirmation protocol, with authorization explicitly limited to isolated compiler acceptance, not business implementation. Do not synthesize user text, `user_confirmed`, history, receipts or a sidecar substitute; do not mix confirmationHistory with another version's event protocol.
+- Freeze raw/derived/source/confirmation/page/record/expected identities and trace actual user interaction plus controlled ingest. A matching hash or confirmedBy label alone is not identity proof. Test-only confirmation contexts or supported replay may exercise production compiler/gates for RED/GREEN without production writes, but cannot stand in for real authorization, online Judge or governed acceptance.
+- Installed integration must use the repaired packaged runtime through both resolved `req_trace_direct` and the real controlled `dispatch-plan` -> `main_agent_compile` path. Record CLI resolution, package/tarball/dist/code hashes and entry/host/stage/record/input/run bindings; direct internal calls or compiler exit zero do not prove the controlled journey.
+- Governed acceptance requires a currently valid real confirmation chain, legal architecture/readiness prerequisites and each stage's native required audit chain. Reuse an existing baseline only while current hashes, validity and provenance are accepted; semantic/trace/command changes require review and reconfirmation. Missing confirmation/provider/host evidence remains BLOCKED, not optional.
+- Independently verify all normative content, polarity, conditions, dependencies, boundaries, trace order, commands, evidence, sparse relations, legal empty CTM and quartet/manifest consistency. Test unconfirmed/missing-record/stale-hash/illegal-entry/invalid-reference/authority-mixing/semantic-drift rejection plus omitted obligations, false relations, missing proof and negative-polarity flips. Never rewrite expected from compiler output to turn tests green.
+- Cover N/2N/4N fixed-density growth, genuine global/shared relations, limit-1/limit/limit+1, ASCII/Chinese/non-BMP, escaping, coverage/wrapper overhead and final-request overflow. Verify zero-side-effect preflight, repeat rejection, intent-before/after crash, ambiguous send, persisted-response recovery, concurrency and atomic-publication failures without corrupting prior authority. New representations need deterministic round-trip equivalence, reachability/hash binding and incompatible-reader rejection.
+- Keep all required associated regression suites, installed host/adapter checks and native audits; report each layer as Done/Blocked/Not Run with actual counts, logs, hashes and provenance. Stop at generated artifacts and `execution_closure` pending: no business commands, `/goal`, partition, fabricated TaskReport or execution/delivery PASS during compiler acceptance.
+
 ## Script Usage
 
 ## Path And Agent Branch Portability
@@ -70,7 +103,7 @@ Compatibility aliases are accepted:
 - `codex` emits `/goal` when the caller passes `--goal-command-available true` unless confirmed host hints explicitly set `goalModeAllowed: false`; otherwise it emits `continue nonstop`.
 - `claude-code` emits Claude Code `/goal` when the caller passes `--goal-command-available true` unless confirmed host hints explicitly set `goalModeAllowed: false`; otherwise it emits an autonomous prompt contract.
 - Native `/goal` output must be an audited document-reference entry pointer, not a short natural-language task objective.
-- When native `/goal` is available in `--out-dir` mode, the generator always writes `goal_execution.md` and emits a `/goal` command that references `goal_execution.md` and `model_packet.json`.
+- In `--out-dir` mode, publish `goal_execution.md` with the other three artifacts regardless of native `/goal` availability. When native `/goal` is available, emit a command that references `goal_execution.md` and `model_packet.json`.
 - The `/goal` document-reference command is length-governed against a hard 4000-character limit and a 3800-character safe limit. If it exceeds the hard limit, generation blocks.
 - If native `/goal` is requested outside `--out-dir`, generation blocks because `goal_execution.md` and `model_packet.json` cannot be written and referenced.
 - `cursor-ide` is the default Cursor surface. It emits a Cursor IDE Agent mode prompt and must not emit `cursor-agent -p` as the primary instruction.
@@ -121,7 +154,7 @@ Useful options:
 - `--final-gate "npm run test:e2e"` to append a final gate supplied outside the source document.
 - `--extra-rule "..."` to append a hard priority rule from the user.
 - `--source-label "..."` to override the displayed source.
-- `--out-dir <path>` to compile `model_packet.json`, `human_prompt.txt`, `audit_receipt.json`, and, when needed, `goal_execution.md`.
+- `--out-dir <path>` to atomically publish `model_packet.json`, `human_prompt.txt`, `audit_receipt.json`, and `goal_execution.md` after all four pass validation.
 - `--execution-host codex|claude-code|claude|cursor-ide|cursor-cli|cursor|generic` to select host-specific continuation projection.
 - `--prompt-language zh-CN|en-US|bilingual|auto` to select human prompt prose language. `auto` reads `implementationConfirmation.promptLanguage`, then `implementationConfirmation.confirmationLanguage`, then falls back to `zh-CN`.
 - `--human-prompt-profile full|compact` to select human prompt density. `full` is the default for `--out-dir`.
@@ -473,6 +506,8 @@ Before returning a prompt, verify all items:
 - If native `/goal` is emitted, the receipt records `goalCommand.mode=native_goal_document_ref`, character counts, limits, `goalCommand.documentPath`, `goalCommand.documentHash`, and never records `native_goal_inline`.
 - If `goal_execution.md` is emitted, it contains `$executing-plans $verification-before-completion`, source authority, `model_packet.json is the machine-readable execution authority`, trace order, trace slice summary, required commands, AI-TDD protocol, runtime write policy, `reconfirm_required`, proof boundary, strict final acceptance checklist, and Completion Evidence Packet schema.
 - If required goal document fragments are missing, generation must block rather than emit a PASS receipt.
+- All four artifacts are hash-consistent and atomically published; failure preserves prior valid authority without partial new success artifacts.
+- Required budget, pure preflight, immutable recovery and entry-native audit gates passed with current evidence; test-only, installed integration and real governed acceptance are reported separately.
 
 ## Scope Change Request
 

@@ -27,3 +27,10 @@ The audit blocks when:
 ## Hash Policy
 
 `manifestHash` is computed from normalized canonical JSON with generated hash fields removed. Presentation-only authoring fields such as `title`, `note`, and `description` are ignored. Semantic projection changes must change the hash.
+
+Typed confirmed sources use `contract-execution-manifest/v2`. Their complete
+`typedSourceAuthority` and `typedCoverage` live once in `model_packet.json`; the
+manifest binds their versioned references and hashes, plus complete ordered trace
+rows. The v1 hash recipe remains unchanged. V1-only consumers reject v2 manifests;
+updated consumers validate the graph, role coverage, task projection, receipt and
+confirmed-source identity before accepting the packet.

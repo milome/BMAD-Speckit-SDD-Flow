@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
@@ -36,6 +37,8 @@ import {
   type GovernedReadbackRef,
 } from './requirements-contract-governed-write';
 import { auditModelPacketParity } from './requirements-contract-model-packet-parity';
+import { measureJudgePayload } from './requirements-contract-judge-payload-budget';
+import { resolveExecutionDisciplineProfile } from './execution-discipline-profiles';
 
 // Runtime schemas validate these records before publication uses dynamic fields.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,6 +60,367 @@ const REQUIREMENT_RECORD_SNAPSHOT = path.join(
   'authority-inputs',
   'requirement-record.snapshot.json'
 );
+const EXECUTION_DISCIPLINE_PROFILE = path.join('authority-inputs', 'execution-discipline-profile.json');
+const safeWriter = require('../../../utils/large-document-writer') as {
+  safeWriteText(targetPath: string, value: string, options: { mode: 'create' | 'replace' | 'upsert' }): unknown;
+};
+const PUBLISHER_JOURNAL_PREFIX = '.publisher-publication-';
+type PublicationJournal = {
+  root: string;
+  document: {
+    schemaVersion: 'prompt-transaction-publication/v1';
+    transactionId: string;
+    sourceDocumentHash: string;
+    ownerLockId: string;
+    controlLockPath: string;
+    state: 'prepared' | 'committed' | 'rolled_back' | 'blocked';
+    phase: 'inputs' | 'compiling' | 'compiled' | 'publishing';
+    previousPass: boolean;
+    preexistingRootNames: string[];
+    rootArtifacts: Array<{ name: string; hash: string }>;
+    entries: Array<{ targetPath: string; sharedTarget: string | null; backupPath: string | null;
+      beforeHash: string | null; expectedHashes: string[] }>;
+  };
+};
+
+function serializedJson(value: unknown): string {
+  return `${JSON.stringify(JSON.parse(canonicalJson(value)), null, 2)}\n`;
+}
+
+function plannedFileRef(targetPath: string, content: string) {
+  return { path: slash(path.resolve(targetPath)), hash: sha256(content) };
+}
+
+function publicationControlRoot(authority: PromptPublicationAuthority): string {
+  const root = path.join(path.dirname(authority.paths.currentDispatchPointer), '.publisher-control');
+  const nested = (left: string, right: string) => {
+    const relative = path.relative(left, right);
+    return !relative || (!relative.startsWith('..') && !path.isAbsolute(relative));
+  };
+  if (nested(root, authority.paths.outDir) || nested(authority.paths.outDir, root)) {
+    throw new Error('prompt_transaction_control_lock_scope_conflict');
+  }
+  return root;
+}
+
+function publicationPreimage(authority: PromptPublicationAuthority) {
+  const outputs = ALL_OUTPUTS.map((name) => path.join(authority.paths.outDir, name));
+  outputs.push(requirementRecordSnapshotPath(authority.paths.outDir),
+    path.join(authority.paths.outDir, EXECUTION_DISCIPLINE_PROFILE),
+    path.join(authority.paths.outDir, 'observations', 'consumer-cli-capability.json'));
+  const sharedOutputs = [authority.paths.currentDispatchPointer, authority.paths.evidenceOut];
+  const entries = [...outputs, ...sharedOutputs].flatMap((output) =>
+    [output, `${output}.safe-write-receipt.json`].map((targetPath) => ({
+      targetPath, sharedTarget: sharedOutputs.includes(output) ? output : null,
+      bytes: fs.existsSync(targetPath) ? fs.readFileSync(targetPath) : null,
+    })));
+  const receipt = entries.find((entry) => entry.targetPath === path.join(authority.paths.outDir, 'audit_receipt.json'));
+  let previousPass = false;
+  if (receipt?.bytes) {
+    try { previousPass = ['pass', 'PASS'].includes(JSON.parse(receipt.bytes.toString('utf8')).decision); }
+    catch { /* An invalid preimage is preserved only for a capacity rejection. */ }
+  }
+  const pointer = entries.find((entry) => entry.targetPath === authority.paths.currentDispatchPointer);
+  if (!previousPass && pointer?.bytes) {
+    try { previousPass = JSON.parse(pointer.bytes.toString('utf8')).decision === 'PASS'; }
+    catch { /* Replay validation remains responsible for pointer schema errors. */ }
+  }
+  return { entries, previousPass };
+}
+
+function persistPublicationJournal(journal: PublicationJournal): void {
+  const target = path.join(journal.root, 'journal.json');
+  const content = serializedJson(journal.document);
+  safeWriter.safeWriteText(target, content, { mode: fs.existsSync(target) ? 'replace' : 'create' });
+  if (fileHash(target) !== sha256(content)) throw new Error('prompt_transaction_recovery_required:journal_write_mismatch');
+}
+
+function createPublicationJournal(
+  authority: PromptPublicationAuthority,
+  lock: PromptTransactionLockHandle,
+  preimage: ReturnType<typeof publicationPreimage>
+): PublicationJournal {
+  const preexistingRootNames = fs.readdirSync(authority.paths.outDir);
+  const stamp = new Date().toISOString().replace(/[:.]/gu, '-');
+  const root = path.join(authority.paths.outDir, `${PUBLISHER_JOURNAL_PREFIX}${stamp}-${randomBytes(3).toString('hex')}`);
+  fs.mkdirSync(root);
+  const entries = preimage.entries.map((entry, index) => {
+    const backupPath = entry.bytes === null ? null : path.join(root, `preimage-${index}.txt`);
+    const beforeHash = entry.bytes === null ? null : sha256(entry.bytes);
+    if (backupPath && entry.bytes) {
+      safeWriter.safeWriteText(backupPath,
+        new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(entry.bytes), { mode: 'create' });
+      if (fileHash(backupPath) !== beforeHash) throw new Error('prompt_transaction_recovery_required:backup_write_mismatch');
+    }
+    return { targetPath: entry.targetPath, sharedTarget: entry.sharedTarget, backupPath, beforeHash,
+      expectedHashes: [] as string[] };
+  });
+  const journal: PublicationJournal = { root, document: {
+    schemaVersion: 'prompt-transaction-publication/v1', transactionId: authority.identity.transactionId,
+    sourceDocumentHash: authority.identity.sourceDocumentHash, ownerLockId: lock.record.lockId,
+    controlLockPath: path.join(publicationControlRoot(authority), '.prompt-transaction.lock'),
+    state: 'prepared', phase: 'inputs', previousPass: preimage.previousPass,
+    preexistingRootNames, rootArtifacts: [], entries,
+  } };
+  persistPublicationJournal(journal);
+  return journal;
+}
+
+function publicationIntent(journal: PublicationJournal, targetPath: string, contentHash: string): void {
+  const entry = journal.document.entries.find((candidate) => candidate.targetPath === targetPath);
+  if (!entry) throw new Error('prompt_transaction_recovery_required:unregistered_target');
+  if (!entry.expectedHashes.includes(contentHash)) entry.expectedHashes.push(contentHash);
+  persistPublicationJournal(journal);
+}
+
+function validatePublicationJournal(authority: PromptPublicationAuthority, name: string): PublicationJournal {
+  const fail = (): never => { throw new Error('prompt_transaction_recovery_required:journal_invalid'); };
+  if (!/^\.publisher-publication-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z-[a-zA-Z0-9]{6}$/u.test(name)) fail();
+  const root = path.join(authority.paths.outDir, name);
+  if (!fs.lstatSync(root).isDirectory() || fs.lstatSync(root).isSymbolicLink()) fail();
+  const journalPath = path.join(root, 'journal.json');
+  if (!fs.existsSync(journalPath) || !fs.lstatSync(journalPath).isFile() || fs.lstatSync(journalPath).isSymbolicLink()) fail();
+  const document = readJson(journalPath) as PublicationJournal['document'];
+  if (document.schemaVersion !== 'prompt-transaction-publication/v1' ||
+    document.transactionId !== authority.identity.transactionId ||
+    document.sourceDocumentHash !== authority.identity.sourceDocumentHash || !document.ownerLockId ||
+    document.controlLockPath !== path.join(publicationControlRoot(authority), '.prompt-transaction.lock') ||
+    !['prepared', 'committed', 'rolled_back', 'blocked'].includes(document.state) ||
+    !Array.isArray(document.entries) || !Array.isArray(document.rootArtifacts) ||
+    !Array.isArray(document.preexistingRootNames)) fail();
+  const expected = publicationPreimage(authority).entries;
+  if (expected.length !== document.entries.length) fail();
+  const files = new Set(['journal.json']);
+  document.entries.forEach((entry, index) => {
+    if (entry.targetPath !== expected[index].targetPath || entry.sharedTarget !== expected[index].sharedTarget ||
+      !Array.isArray(entry.expectedHashes) || entry.expectedHashes.some((hash) => !/^sha256:[a-f0-9]{64}$/u.test(hash))) fail();
+    if (entry.beforeHash === null) { if (entry.backupPath !== null) fail(); return; }
+    const backup = path.join(root, `preimage-${index}.txt`);
+    if (!/^sha256:[a-f0-9]{64}$/u.test(entry.beforeHash) || entry.backupPath !== backup ||
+      !fs.existsSync(backup) || !fs.lstatSync(backup).isFile() || fs.lstatSync(backup).isSymbolicLink() ||
+      fileHash(backup) !== entry.beforeHash) fail();
+    files.add(path.basename(backup));
+  });
+  const immutable = (value: PublicationJournal['document']) => canonicalJson({ transactionId: value.transactionId,
+    sourceDocumentHash: value.sourceDocumentHash, ownerLockId: value.ownerLockId, controlLockPath: value.controlLockPath,
+    entries: value.entries.map(({ targetPath, sharedTarget, backupPath, beforeHash }) =>
+      ({ targetPath, sharedTarget, backupPath, beforeHash })) });
+  for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+    if (!entry.isFile() || entry.isSymbolicLink()) fail();
+    if (files.has(entry.name)) continue;
+    if (!/^journal\.json\.backup-\d+-\d+$/u.test(entry.name)) fail();
+    const history = readJson(path.join(root, entry.name)) as PublicationJournal['document'];
+    if (history.schemaVersion !== document.schemaVersion || !Array.isArray(history.entries) ||
+      immutable(history) !== immutable(document) || history.entries.some((old, index) =>
+        !Array.isArray(old.expectedHashes) || old.expectedHashes.some((hash) =>
+          !document.entries[index].expectedHashes.includes(hash)))) fail();
+  }
+  for (const artifact of document.rootArtifacts) {
+    if (!managedRootArtifactName(artifact.name) || !/^sha256:[a-f0-9]{64}$/u.test(artifact.hash)) fail();
+    const target = path.join(authority.paths.outDir, artifact.name);
+    if (!fs.existsSync(target) || !fs.lstatSync(target).isFile() || fs.lstatSync(target).isSymbolicLink() ||
+      fileHash(target) !== artifact.hash) fail();
+  }
+  return { root, document };
+}
+
+function managedRootArtifactName(name: string): boolean {
+  return ALL_OUTPUTS.some((output) => name.startsWith(`${output}.backup-`) &&
+    /^\d+-\d+$/u.test(name.slice(`${output}.backup-`.length))) ||
+    ALL_OUTPUTS.some((output) => name.startsWith(`${output}.safe-write-receipt.json.backup-`) &&
+      /^\d+-\d+$/u.test(name.slice(`${output}.safe-write-receipt.json.backup-`.length)));
+}
+
+function retainPublicationRootArtifacts(journal: PublicationJournal): void {
+  for (const name of fs.readdirSync(path.dirname(journal.root))) {
+    if (journal.document.preexistingRootNames.includes(name) || !managedRootArtifactName(name)) continue;
+    const target = path.join(path.dirname(journal.root), name);
+    if (!fs.lstatSync(target).isFile() || fs.lstatSync(target).isSymbolicLink()) {
+      throw new Error('prompt_transaction_recovery_required:artifact_type_invalid');
+    }
+    const hash = fileHash(target);
+    const existing = journal.document.rootArtifacts.find((entry) => entry.name === name);
+    if (existing && existing.hash !== hash) throw new Error('prompt_transaction_recovery_required:artifact_changed');
+    if (!existing) journal.document.rootArtifacts.push({ name, hash });
+  }
+  persistPublicationJournal(journal);
+}
+
+function restoreDurablePublication(authority: PromptPublicationAuthority, journal: PublicationJournal): void {
+  if (fs.existsSync(path.join(authority.paths.outDir, '.compiler-publication.lock'))) {
+    throw new Error('prompt_transaction_recovery_required:compiler_recovery_pending');
+  }
+  if (journal.document.phase === 'compiling') {
+    for (const name of fs.readdirSync(authority.paths.outDir)) {
+      if (journal.document.preexistingRootNames.includes(name) || !name.startsWith('.compiler-publication-')) continue;
+      if (!validCompilerJournal(authority.paths.outDir, name)) {
+        throw new Error('prompt_transaction_recovery_required:compiler_journal_invalid');
+      }
+      const compiler = readJson(path.join(authority.paths.outDir, name, 'journal.json'));
+      for (const artifact of compiler.artifacts) {
+        const entry = journal.document.entries.find((item) => item.targetPath === path.join(authority.paths.outDir, artifact.name));
+        if (entry) entry.expectedHashes.push(`sha256:${artifact.nextHash}`);
+      }
+    }
+  }
+  const sharedWrites = new Map<string, string>();
+  for (const entry of journal.document.entries) {
+    if (entry.sharedTarget) {
+      if (entry.targetPath === entry.sharedTarget && fs.existsSync(entry.targetPath)) {
+        const currentHash = fileHash(entry.targetPath);
+        if (entry.expectedHashes.includes(currentHash)) sharedWrites.set(entry.targetPath, currentHash);
+        else if (currentHash !== entry.beforeHash) {
+          const current = readJson(entry.targetPath);
+          const packetPath = current.modelPacketRef?.path ?? current.modelPacketPath;
+          if (typeof packetPath === 'string' && samePath(packetPath, path.join(authority.paths.outDir, 'model_packet.json'))) {
+            throw new Error('prompt_transaction_recovery_required:missing_shared_intent');
+          }
+        }
+      }
+      continue;
+    }
+    const currentHash = fs.existsSync(entry.targetPath) ? fileHash(entry.targetPath) : null;
+    if (currentHash === entry.beforeHash || (currentHash && entry.expectedHashes.includes(currentHash))) continue;
+    const owner = journal.document.entries.find((item) => `${item.targetPath}.safe-write-receipt.json` === entry.targetPath);
+    if (owner && currentHash) {
+      const receipt = readJson(entry.targetPath);
+      if (receipt.schemaVersion === 'large-document-writer-safe-write/v1' &&
+        samePath(receipt.targetPath, owner.targetPath) && owner.expectedHashes.includes(receipt.finalHash)) continue;
+    }
+    throw new Error('prompt_transaction_recovery_required:unowned_local_mutation');
+  }
+  const entries = journal.document.entries.map((entry) => ({
+    targetPath: entry.targetPath, sharedTarget: entry.sharedTarget,
+    bytes: entry.backupPath ? fs.readFileSync(entry.backupPath) : null,
+  }));
+  retainPublicationRootArtifacts(journal);
+  restorePublicationPreimage({ entries, previousPass: journal.document.previousPass }, sharedWrites);
+  retainPublicationRootArtifacts(journal);
+  journal.document.state = 'rolled_back';
+  persistPublicationJournal(journal);
+}
+
+function recoverPublisherJournals(authority: PromptPublicationAuthority, lockHandle: PromptTransactionLockHandle) {
+  try {
+    const journals = fs.readdirSync(authority.paths.outDir)
+      .filter((name) => name.startsWith(PUBLISHER_JOURNAL_PREFIX))
+      .map((name) => validatePublicationJournal(authority, name));
+    const pending = journals.filter((journal) => journal.document.state === 'prepared');
+    if (pending.length > 1) throw new Error('multiple_pending_journals');
+    for (const journal of pending) restoreDurablePublication(authority, journal);
+    let acknowledgedCommit = false;
+    for (const journal of journals) {
+      if (journal.document.state !== 'committed' ||
+        journal.document.ownerLockId !== lockHandle.staleRecovery?.staleLockId) continue;
+      const pointer = journal.document.entries.find((entry) => entry.targetPath === authority.paths.currentDispatchPointer)!;
+      if (!fs.existsSync(pointer.targetPath) || fileHash(pointer.targetPath) !== pointer.expectedHashes.at(-1)) continue;
+      if (journal.document.entries.some((entry) => {
+        const currentHash = fs.existsSync(entry.targetPath) ? fileHash(entry.targetPath) : null;
+        return currentHash !== (entry.expectedHashes.at(-1) ?? entry.beforeHash);
+      })) throw new Error('committed_readback_mismatch');
+      acknowledgedCommit = true;
+    }
+    const managed = new Set(journals.map((journal) => path.basename(journal.root)));
+    for (const journal of journals) {
+      for (const artifact of journal.document.rootArtifacts) managed.add(artifact.name);
+      const archive = `.prompt-transaction.lock.stale.${journal.document.ownerLockId}`;
+      const archivePath = path.join(authority.paths.outDir, archive);
+      if (fs.existsSync(archivePath)) {
+        const lock = readJson(archivePath);
+        if (lock.lockId !== journal.document.ownerLockId || lock.transactionId !== journal.document.transactionId) {
+          throw new Error('stale_lock_binding_invalid');
+        }
+        managed.add(archive);
+      }
+    }
+    return { managed, acknowledgedCommit };
+  } catch (error) {
+    throw new Error(`prompt_transaction_recovery_required:${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+function restorePublicationPreimage(
+  preimage: ReturnType<typeof publicationPreimage>,
+  sharedWriteHashes: Map<string, string>
+): void {
+  // Output-directory locks do not own shared pointers from other transactions.
+  const ownedSharedTargets = new Set([...sharedWriteHashes].filter(([target, hash]) =>
+    fs.existsSync(target) && fileHash(target) === hash).map(([target]) => target));
+  const restoreOrder = [...preimage.entries.filter((entry) => entry.sharedTarget),
+    ...preimage.entries.filter((entry) => !entry.sharedTarget)];
+  for (const { targetPath, bytes, sharedTarget } of restoreOrder) {
+    if (sharedTarget && !ownedSharedTargets.has(sharedTarget)) continue;
+    if (bytes === null) {
+      if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
+      continue;
+    }
+    if (fs.existsSync(targetPath) && fs.readFileSync(targetPath).equals(bytes)) continue;
+    safeWriter.safeWriteText(targetPath,
+      new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes),
+      { mode: fs.existsSync(targetPath) ? 'replace' : 'create' });
+    if (!fs.readFileSync(targetPath).equals(bytes)) throw new Error('prompt_transaction_preimage_restore_failed');
+  }
+}
+
+function validCompilerJournal(outDir: string, name: string): boolean {
+  if (!/^\.compiler-publication-(?:\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z-)?[a-zA-Z0-9]{6}$/u.test(name)) return false;
+  const root = path.join(outDir, name);
+  if (!fs.lstatSync(root).isDirectory() || fs.lstatSync(root).isSymbolicLink()) return false;
+  const journalPath = path.join(root, 'journal.json');
+  if (!fs.existsSync(journalPath) || fs.lstatSync(journalPath).isSymbolicLink()) return false;
+  const journal = readJson(journalPath);
+  const names = new Set<string>();
+  const expectedFiles = new Set(['journal.json']);
+  if (journal.schemaVersion !== 'req-trace-publication/v1' ||
+    !['completed', 'rolled_back'].includes(journal.state) || !Array.isArray(journal.artifacts)) return false;
+  for (const entry of journal.artifacts) {
+    if (!['model_packet.json', 'human_prompt.txt', 'goal_execution.md', 'audit_receipt.json'].includes(entry.name) ||
+      names.has(entry.name) || !/^[a-f0-9]{64}$/u.test(entry.nextHash)) return false;
+    names.add(entry.name);
+    if (entry.previousHash === null) {
+      if (entry.backupPath !== null) return false;
+    } else {
+      const backup = path.join(root, `${entry.name}.previous`);
+      expectedFiles.add(`${entry.name}.previous`);
+      if (!/^[a-f0-9]{64}$/u.test(entry.previousHash) || entry.backupPath !== backup ||
+        !fs.existsSync(backup) || !fs.lstatSync(backup).isFile() || fs.lstatSync(backup).isSymbolicLink() ||
+        fileHash(backup) !== `sha256:${entry.previousHash}`) return false;
+    }
+  }
+  if (!['model_packet.json', 'human_prompt.txt', 'audit_receipt.json'].every((name) => names.has(name))) return false;
+  return fs.readdirSync(root, { withFileTypes: true }).every((entry) => {
+    if (!entry.isFile() || entry.isSymbolicLink()) return false;
+    if (expectedFiles.has(entry.name)) return true;
+    if (!/^journal\.json\.backup-\d+-\d+$/u.test(entry.name)) return false;
+    const previous = readJson(path.join(root, entry.name));
+    return previous.schemaVersion === journal.schemaVersion &&
+      ['prepared', 'completed', 'rolled_back'].includes(previous.state) &&
+      canonicalJson(previous.artifacts) === canonicalJson(journal.artifacts);
+  });
+}
+
+function validAuthorityInputs(outDir: string): boolean {
+  const root = path.join(outDir, 'authority-inputs');
+  if (!fs.lstatSync(root).isDirectory() || fs.lstatSync(root).isSymbolicLink()) return false;
+  return fs.readdirSync(root, { withFileTypes: true }).every((entry) => {
+    const match = /^(requirement-record\.snapshot\.json|execution-discipline-profile\.json)(\.safe-write-receipt\.json)?(\.backup-\d+-\d+)?$/u.exec(entry.name);
+    if (!match || !entry.isFile() || entry.isSymbolicLink()) return false;
+    const targetPath = path.join(root, match[1]);
+    const value = readJson(path.join(root, entry.name));
+    if (!match[2]) return value !== null && typeof value === 'object' && !Array.isArray(value);
+    if (value.schemaVersion !== 'large-document-writer-safe-write/v1' ||
+      !samePath(value.targetPath, targetPath) || !/^sha256:[a-f0-9]{64}$/u.test(value.finalHash)) return false;
+    if (!match[3] && (!fs.existsSync(targetPath) || fileHash(targetPath) !== value.finalHash)) return false;
+    if (value.backupPath === null) return value.originalHash === null && value.backupHash === null;
+    const prefix = `${path.basename(targetPath)}.backup-`;
+    if (typeof value.backupPath !== 'string' || path.dirname(value.backupPath) !== root ||
+      !path.basename(value.backupPath).startsWith(prefix) ||
+      !/^\d+-\d+$/u.test(path.basename(value.backupPath).slice(prefix.length))) return false;
+    return fs.existsSync(value.backupPath) && fs.lstatSync(value.backupPath).isFile() &&
+      !fs.lstatSync(value.backupPath).isSymbolicLink() && value.originalHash === value.backupHash &&
+      fileHash(value.backupPath) === value.backupHash;
+  });
+}
 
 export interface PromptTransactionPublisherDeps {
   runCompiledPrompt?: typeof runMainAgentCompiledPrompt;
@@ -99,6 +463,8 @@ function expectedProductionArgv(
   return [
     process.execPath,
     path.resolve(generatorPath),
+    '--entry',
+    'main_agent_compile',
     '--requirement-record',
     authority.paths.requirementRecord,
     '--source-document',
@@ -136,6 +502,8 @@ function expectedProductionArgv(
     authority.controlledExecutionContext.commandCwd,
     '--command-receipt-root',
     authority.controlledExecutionContext.commandReceiptRoot,
+    '--execution-discipline-profile-ref',
+    path.join(authority.paths.outDir, EXECUTION_DISCIPLINE_PROFILE),
   ];
 }
 
@@ -365,7 +733,8 @@ function staleLockRecoveryCases(
 function assertExactRunnerOutputSet(
   outDir: string,
   goalRequired: boolean,
-  lockHandle: PromptTransactionLockHandle
+  lockHandle: PromptTransactionLockHandle,
+  managedJournalEntries: Set<string>
 ): void {
   const recoveryCases = staleLockRecoveryCases(outDir, lockHandle);
   const expected = new Set<string>([
@@ -375,12 +744,14 @@ function assertExactRunnerOutputSet(
     '.prompt-transaction.lock',
     'observations',
     '.quarantine',
+    ...managedJournalEntries,
     ...recoveryCases.map((recovery) => path.basename(String(recovery.archivePath))),
   ]);
   const unexpected = fs
     .readdirSync(outDir, { withFileTypes: true })
     .map((entry) => entry.name)
-    .filter((name) => !expected.has(name));
+    .filter((name) => !expected.has(name) &&
+      !(name === 'authority-inputs' && validAuthorityInputs(outDir)) && !validCompilerJournal(outDir, name));
   if (unexpected.length > 0) {
     throw new Error(`prompt_transaction_output_set_mismatch:${unexpected.sort().join(',')}`);
   }
@@ -668,9 +1039,35 @@ export async function requirementsContractPromptTransactionPublishCommand(
   let authority: PromptPublicationAuthority | null = null;
   let pointerPublication: CurrentDispatchPointerPublication | null = null;
   let lockHandle: PromptTransactionLockHandle | null = null;
+  let controlLockHandle: PromptTransactionLockHandle | null = null;
   let runtimeBindings: RuntimeBindings | null = null;
   let publicationTouchedOutputs = false;
   let currentDispatchPointerPreimageHash: string | null = null;
+  let preimage: ReturnType<typeof publicationPreimage> | null = null;
+  let journal: PublicationJournal | null = null;
+  let managedJournalEntries = new Set<string>();
+  const sharedWriteHashes = new Map<string, string>();
+  const acquireControlLock = () => {
+    if (controlLockHandle) return;
+    try {
+      controlLockHandle = acquirePromptTransactionLock({ outDir: publicationControlRoot(authority!),
+        transactionId: authority!.identity.transactionId }, deps.lockDeps);
+    } catch (error) {
+      throw new Error(`prompt_transaction_control_lock_unavailable:${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+  const releaseLocks = () => {
+    if (controlLockHandle) { releasePromptTransactionLock(controlLockHandle); controlLockHandle = null; }
+    if (lockHandle) { releasePromptTransactionLock(lockHandle); lockHandle = null; }
+  };
+  const journaledJson = (targetPath: string, value: unknown) => {
+    publicationIntent(journal!, targetPath, sha256(serializedJson(value)));
+    return writeGovernedJson(targetPath, value);
+  };
+  const journaledText = (targetPath: string, value: string) => {
+    publicationIntent(journal!, targetPath, sha256(value));
+    return writeGovernedText(targetPath, value);
+  };
   try {
     authority = resolvePromptPublicationAuthority(options);
     const sourcePrdLintTransition = validateSourcePrdLintTransitionFromFiles({
@@ -683,6 +1080,11 @@ export async function requirementsContractPromptTransactionPublishCommand(
         `source_prd_lint_transition_blocked:${sourcePrdLintTransition.issueCodes.join(',')}`
       );
     }
+    const executionDisciplineProfile = resolveExecutionDisciplineProfile(authority.flow);
+    measureJudgePayload({ serializedPayload: serializedJson(executionDisciplineProfile),
+      stage: 'prompt_transaction_input:execution-discipline-profile.json',
+      sourceHash: authority.identity.sourceDocumentHash });
+    publicationControlRoot(authority);
     lockHandle = acquirePromptTransactionLock(
       {
         outDir: authority.paths.outDir,
@@ -690,7 +1092,25 @@ export async function requirementsContractPromptTransactionPublishCommand(
       },
       deps.lockDeps
     );
+    if (fs.readdirSync(authority.paths.outDir).some((name) => name.startsWith(PUBLISHER_JOURNAL_PREFIX))) {
+      acquireControlLock();
+    }
+    const recovery = recoverPublisherJournals(authority, lockHandle);
+    managedJournalEntries = recovery.managed;
     runtimeBindings = resolvePromptPublicationRuntimeBindings(authority);
+    if (recovery.acknowledgedCommit) {
+      releaseLocks();
+      if (options.json) process.stdout.write(`${JSON.stringify(readJson(authority.paths.evidenceOut))}\n`);
+      return 0;
+    }
+    if (controlLockHandle) {
+      try {
+        releasePromptTransactionLock(controlLockHandle);
+        controlLockHandle = null;
+      } catch (error) {
+        throw new Error(`prompt_transaction_recovery_required:control_unlock_failed:${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
     assertCurrentDispatchPointerReplaySafe(
       authority.paths.currentDispatchPointer,
       authority.identity.attemptSequence
@@ -698,6 +1118,13 @@ export async function requirementsContractPromptTransactionPublishCommand(
     currentDispatchPointerPreimageHash = fs.existsSync(authority.paths.currentDispatchPointer)
       ? fileHash(authority.paths.currentDispatchPointer)
       : null;
+    preimage = publicationPreimage(authority);
+    try {
+      journal = createPublicationJournal(authority, lockHandle, preimage);
+    } catch (error) {
+      throw new Error(`prompt_transaction_recovery_required:initialization_failed:${error instanceof Error ? error.message : String(error)}`);
+    }
+    managedJournalEntries.add(path.basename(journal.root));
     const capabilityResult = (deps.spawn ?? spawnSync)(
       runtimeBindings.capabilityProbeArgv[0],
       runtimeBindings.capabilityProbeArgv.slice(1),
@@ -742,7 +1169,9 @@ export async function requirementsContractPromptTransactionPublishCommand(
       'observations',
       'consumer-cli-capability.json'
     );
-    const capabilityWrite = writeGovernedJson(capabilityPath, capabilityObservation);
+    const capabilityWrite = journaledJson(capabilityPath, capabilityObservation);
+    const profileRefPath = path.join(authority.paths.outDir, EXECUTION_DISCIPLINE_PROFILE);
+    journaledJson(profileRefPath, executionDisciplineProfile);
     const goalRequired = capability.goalCommandAvailable === true;
     const productionArgv = expectedProductionArgv(
       authority,
@@ -751,6 +1180,8 @@ export async function requirementsContractPromptTransactionPublishCommand(
     );
     const runnerRef = runtimeBindings.installedRunnerRef;
     publicationTouchedOutputs = true;
+    journal.document.phase = 'compiling';
+    persistPublicationJournal(journal);
     const runResult = (deps.runCompiledPrompt ?? runMainAgentCompiledPrompt)({
       projectRoot: authority.cwd,
       recordPath: authority.paths.requirementRecord,
@@ -764,8 +1195,17 @@ export async function requirementsContractPromptTransactionPublishCommand(
       taskReportPath: authority.paths.taskReport,
       promptLanguage: 'auto',
       humanPromptProfile: 'full',
+      profileRefPath,
       ...authority.controlledExecutionContext,
     });
+    journal.document.phase = 'compiled';
+    for (const entry of journal.document.entries) {
+      if (!entry.sharedTarget && fs.existsSync(entry.targetPath)) {
+        const hash = fileHash(entry.targetPath);
+        if (!entry.expectedHashes.includes(hash)) entry.expectedHashes.push(hash);
+      }
+    }
+    persistPublicationJournal(journal);
     assertRunnerResult(
       runResult,
       authority,
@@ -774,7 +1214,7 @@ export async function requirementsContractPromptTransactionPublishCommand(
       runnerRef,
       goalRequired
     );
-    assertExactRunnerOutputSet(authority.paths.outDir, goalRequired, lockHandle);
+    assertExactRunnerOutputSet(authority.paths.outDir, goalRequired, lockHandle, managedJournalEntries);
     const rawPacket = readJson(path.join(authority.paths.outDir, 'model_packet.json'));
     const rawPrompt = fs.readFileSync(path.join(authority.paths.outDir, 'human_prompt.txt'), 'utf8');
     const rawReceipt = readJson(path.join(authority.paths.outDir, 'audit_receipt.json'));
@@ -784,13 +1224,9 @@ export async function requirementsContractPromptTransactionPublishCommand(
     if (fileHash(authority.paths.requirementRecord) !== authority.refs.requirementRecord.hash) {
       throw new Error('prompt_transaction_requirement_record_changed_during_compile');
     }
-    const requirementRecordSnapshotWrite = writeGovernedJson(
-      requirementRecordSnapshotPath(authority.paths.outDir),
-      readJson(authority.paths.requirementRecord)
-    );
-    const frozenRequirementRecordRef = fileRef(
-      requirementRecordSnapshotWrite.targetRef
-    );
+    const requirementRecordSnapshot = readJson(authority.paths.requirementRecord);
+    const frozenRequirementRecordRef = plannedFileRef(
+      requirementRecordSnapshotPath(authority.paths.outDir), serializedJson(requirementRecordSnapshot));
     const dispatchInputSetHash = sha256(
       canonicalJson({
         identity: authority.identity,
@@ -849,30 +1285,24 @@ export async function requirementsContractPromptTransactionPublishCommand(
         ].join(',')}`
       );
     }
-    const packetWrite = writeGovernedJson(
-      path.join(authority.paths.outDir, 'model_packet.json'),
-      projectedPacket
-    );
-    const humanWrite = writeGovernedText(
-      path.join(authority.paths.outDir, 'human_prompt.txt'),
-      finalHumanPrompt(rawPrompt)
-    );
-    const goalWrite = goalRequired
-      ? writeGovernedText(path.join(authority.paths.outDir, GOAL_OUTPUT), rawGoal as string)
-      : null;
+    const packetContent = serializedJson(projectedPacket);
+    const humanContent = finalHumanPrompt(rawPrompt);
+    const packetRef = plannedFileRef(path.join(authority.paths.outDir, 'model_packet.json'), packetContent);
+    const humanRef = plannedFileRef(path.join(authority.paths.outDir, 'human_prompt.txt'), humanContent);
+    const goalRef = goalRequired ? plannedFileRef(path.join(authority.paths.outDir, GOAL_OUTPUT), rawGoal as string) : null;
     const createdAt = (deps.now ?? (() => new Date().toISOString()))();
     const manifestPath = path.join(authority.paths.outDir, 'transaction-manifest.json');
     const auditReceiptPath = path.join(authority.paths.outDir, 'audit_receipt.json');
     const outputs: JsonRecord = {
-      modelPacket: fileRef(packetWrite.targetRef),
+      modelPacket: packetRef,
       transactionManifestPath: slash(manifestPath),
       auditReceipt: {
         path: slash(auditReceiptPath),
         hashApplicability: 'downstream_external',
       },
-      humanPrompt: fileRef(humanWrite.targetRef),
+      humanPrompt: humanRef,
     };
-    if (goalWrite) outputs.goalExecution = fileRef(goalWrite.targetRef);
+    if (goalRef) outputs.goalExecution = goalRef;
     const manifest = {
       schemaVersion: MANIFEST_SCHEMA_VERSION,
       transactionId: authority.identity.transactionId,
@@ -927,10 +1357,17 @@ export async function requirementsContractPromptTransactionPublishCommand(
       manifest,
       'prompt_transaction_manifest'
     );
-    const manifestWrite = writeGovernedText(
-      manifestPath,
-      `${JSON.stringify(manifest, null, 2)}\n`
-    );
+    const manifestContent = `${JSON.stringify(manifest, null, 2)}\n`;
+    const finalArtifacts: Array<[string, string]> = [
+      ['model_packet.json', packetContent], ['human_prompt.txt', humanContent],
+      ['transaction-manifest.json', manifestContent],
+      ...(goalRequired ? [[GOAL_OUTPUT, rawGoal as string] as [string, string]] : []),
+    ];
+    const finalArtifactBudgets = finalArtifacts.map(([name, content]) => ({
+      name, scope: 'publisher-final', unit: 'utf8_bytes',
+      ...measureJudgePayload({ serializedPayload: content, stage: `prompt_transaction_final:${name}`,
+        sourceHash: authority.identity.sourceDocumentHash }),
+    }));
     const auditReceipt = {
       schemaVersion: 'requirements-contract-prompt-transaction-audit-receipt/v1',
       decision: 'PASS',
@@ -939,19 +1376,33 @@ export async function requirementsContractPromptTransactionPublishCommand(
       implementationAttemptId: authority.identity.implementationAttemptId,
       promptTransaction: {
         manifestPath: slash(manifestPath),
-        manifestHash: manifestWrite.targetRef.hash,
-        modelPacketHash: packetWrite.targetRef.hash,
-        humanPromptHash: humanWrite.targetRef.hash,
-        goalExecutionHash: goalWrite?.targetRef.hash ?? null,
+        manifestHash: sha256(manifestContent),
+        modelPacketHash: packetRef.hash,
+        humanPromptHash: humanRef.hash,
+        goalExecutionHash: goalRef?.hash ?? null,
       },
       authorityPolicy: {
         executionAuthorityClaim: false,
         closeoutAuthorityClaim: false,
       },
       generatorAudit: rawReceipt,
+      finalArtifactBudgets,
       createdAt,
     };
-    const auditWrite = writeGovernedJson(auditReceiptPath, auditReceipt);
+    measureJudgePayload({ serializedPayload: serializedJson(auditReceipt),
+      stage: 'prompt_transaction_final:audit_receipt.json', sourceHash: authority.identity.sourceDocumentHash });
+    acquireControlLock();
+    for (const entry of journal.document.entries.filter((item) => item.sharedTarget)) {
+      const currentHash = fs.existsSync(entry.targetPath) ? fileHash(entry.targetPath) : null;
+      if (currentHash !== entry.beforeHash) throw new Error('current_dispatch_pointer_cas_mismatch');
+    }
+    journal.document.phase = 'publishing';
+    journaledJson(requirementRecordSnapshotPath(authority.paths.outDir), requirementRecordSnapshot);
+    const packetWrite = journaledJson(path.join(authority.paths.outDir, 'model_packet.json'), projectedPacket);
+    const humanWrite = journaledText(path.join(authority.paths.outDir, 'human_prompt.txt'), humanContent);
+    const goalWrite = goalRequired ? journaledText(path.join(authority.paths.outDir, GOAL_OUTPUT), rawGoal as string) : null;
+    const manifestWrite = journaledText(manifestPath, manifestContent);
+    const auditWrite = journaledJson(auditReceiptPath, auditReceipt);
     const outputWrites = [
       ['model_packet.json', packetWrite],
       ['transaction-manifest.json', manifestWrite],
@@ -1026,6 +1477,8 @@ export async function requirementsContractPromptTransactionPublishCommand(
       supersededPointerRef: null,
       createdAt,
     };
+    sharedWriteHashes.set(authority.paths.currentDispatchPointer, sha256(serializedJson(pointer)));
+    publicationIntent(journal, authority.paths.currentDispatchPointer, sha256(serializedJson(pointer)));
     pointerPublication = publishCurrentDispatchPointer({
       authorityRoot: authority.cwd,
       targetPath: authority.paths.currentDispatchPointer,
@@ -1116,13 +1569,50 @@ export async function requirementsContractPromptTransactionPublishCommand(
       evidence,
       'g09_prompt_transaction_evidence'
     );
-    writeGovernedJson(authority.paths.evidenceOut, evidence);
-    releasePromptTransactionLock(lockHandle);
-    lockHandle = null;
+    sharedWriteHashes.set(authority.paths.evidenceOut, sha256(serializedJson(evidence)));
+    journaledJson(authority.paths.evidenceOut, evidence);
+    retainPublicationRootArtifacts(journal);
+    for (const entry of journal.document.entries) {
+      if (fs.existsSync(entry.targetPath)) {
+        const hash = fileHash(entry.targetPath);
+        if (entry.expectedHashes.at(-1) !== hash) entry.expectedHashes.push(hash);
+      }
+    }
+    journal.document.state = 'committed';
+    persistPublicationJournal(journal);
+    releaseLocks();
     if (options.json) process.stdout.write(`${JSON.stringify(evidence)}\n`);
     return 0;
   } catch (error) {
     let blockingReason = error instanceof Error ? error.message : String(error);
+    if (blockingReason.startsWith('prompt_transaction_recovery_required:')) {
+      if (options.json) process.stdout.write(`${JSON.stringify({ decision: 'BLOCK', blockingReason,
+        recoveryRequired: true })}\n`);
+      return 1;
+    }
+    if (!journal && blockingReason.startsWith('prompt_transaction_control_lock_unavailable:')) {
+      releaseLocks();
+      if (options.json) process.stdout.write(`${JSON.stringify({ decision: 'BLOCK', blockingReason })}\n`);
+      return 1;
+    }
+    if (preimage && authority && lockHandle &&
+      (blockingReason === 'judge_provider_capacity_exceeded' || preimage.previousPass ||
+        blockingReason.startsWith('current_dispatch_pointer_') ||
+        blockingReason.startsWith('prompt_transaction_control_lock_unavailable:'))) {
+      try {
+        if (journal) restoreDurablePublication(authority, journal);
+        else restorePublicationPreimage(preimage, sharedWriteHashes);
+      } catch (restoreError) {
+        if (options.json) process.stdout.write(`${JSON.stringify({ decision: 'BLOCK', blockingReason,
+          recoveryRequired: true, recoveryError: restoreError instanceof Error ? restoreError.message : String(restoreError) })}\n`);
+        return 1;
+      }
+      pointerPublication = null;
+      releaseLocks();
+      if (options.json) process.stdout.write(`${JSON.stringify({ decision: 'BLOCK', blockingReason,
+        previousAuthorityPreserved: preimage.previousPass })}\n`);
+      return 1;
+    }
     const requiresPreLockInvalidation =
       !authority ||
       (authority !== null &&
@@ -1179,8 +1669,12 @@ export async function requirementsContractPromptTransactionPublishCommand(
         publicationTouchedOutputs = false;
       }
       if (lockHandle) {
-        releasePromptTransactionLock(lockHandle);
-        lockHandle = null;
+        if (journal) {
+          retainPublicationRootArtifacts(journal);
+          journal.document.state = 'blocked';
+          persistPublicationJournal(journal);
+        }
+        releaseLocks();
       }
       if (publicationTouchedOutputs) {
         removePublicationEvidence(authority);

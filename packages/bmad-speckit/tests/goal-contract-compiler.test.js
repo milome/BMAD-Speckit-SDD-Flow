@@ -50,18 +50,23 @@ function sha256(bytes) {
 }
 
 function sourceLines(fixture, binding) {
-  const parentTaskRef = binding?.parentTaskRefs[0] || 'PRIMARY-TASK';
+  const parentTaskRef = binding?.parentTaskRefs[0] || 'PRIMARY-T01';
   const crossSourceRefs = binding
     ? [binding.requiredRequirementIds[0], binding.requiredTaskIds[0]]
     : [];
   return [
     `# ${fixture.primaryNamespace}`,
-    `## ${parentTaskRef}`,
-    `- PRIMARY-REQ: MUST preserve canonical source authority for ${fixture.primarySourceArtifactId}.`,
+    binding ? `## ${parentTaskRef}` : `### Task ${parentTaskRef}: Compile primary authority`,
+    `- REQ-PRIMARY-001: MUST preserve canonical source authority for ${fixture.primarySourceArtifactId}.`,
     ...(crossSourceRefs.length > 0
       ? [`- ${crossSourceRefs.join(' and ')} MUST remain governed by ${parentTaskRef}.`]
       : []),
-    `- PRIMARY-BOUNDARY: MUST NOT expand ${binding?.namespace || 'standalone'} ownership.`,
+    `- REQ-PRIMARY-002: MUST NOT expand ${binding?.namespace || 'standalone'} ownership.`,
+    ...(!binding ? [
+      `- AC-${parentTaskRef}-01: Primary authority is preserved.`,
+      `- EVD-${parentTaskRef}-01: Primary authority receipt.`,
+      `- CMD-${parentTaskRef}-01: Run \`node --version\`.`,
+    ] : []),
     '## Deterministic NOT DONE',
     '- Sequence producer remains excluded.',
     '## Completion Evidence',
@@ -76,7 +81,12 @@ function subordinateLines(binding) {
   return [
     `# ${binding.namespace}`,
     ...binding.requiredRequirementIds.map((id) => `- ${id}: MUST preserve requirement ${id}.`),
-    ...binding.requiredTaskIds.map((id) => `- ${id}: MUST preserve task ${id}.`),
+    ...binding.requiredTaskIds.flatMap((id) => [
+      `### Task ${id}: Preserve task ${id}`,
+      `- AC-${id}-01: ${id} is preserved.`,
+      `- EVD-${id}-01: ${id} preservation receipt.`,
+      `- CMD-${id}-01: Run \`node --version\`.`,
+    ]),
   ];
 }
 
@@ -249,11 +259,11 @@ describe('pure GoalContractCompiler', () => {
     assert.ok(
       coverageReceipt.sourceObligations.every(
         (obligation) =>
-          obligation.goalTaskRefs.length > 0 &&
-          obligation.acceptanceRefs.length > 0 &&
-          obligation.commandRefs.length > 0 &&
-          obligation.evidenceRefs.length > 0 &&
-          obligation.stopConditionRefs.length > 0
+          obligation.executionRole !== 'action' ||
+          (obligation.goalTaskRefs.length > 0 &&
+            obligation.acceptanceRefs.length > 0 &&
+            obligation.commandRefs.length > 0 &&
+            obligation.evidenceRefs.length > 0)
       )
     );
 

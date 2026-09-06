@@ -3,6 +3,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import { validateGoalContractSchema } from '../../../utils/goal-contract/control-plane/schema-registry';
+import { resolveGoalExecutionAuthority } from '../../../utils/goal-contract/control-plane/goal-execution-authority';
 import {
   compileExecutionFinalCandidate,
   validateExecutionFinalCandidate,
@@ -210,6 +211,13 @@ function readHashedRecord(input: {
   return record;
 }
 
+export function readGoalFinalizerExecutionAuthority(input: { projectRoot: string; ref: ArtifactRef }): JsonRecord {
+  const { record } = readCanonicalJson(input.projectRoot, input.ref.path);
+  const ir = resolveGoalExecutionAuthority(record);
+  if (ir.goalExecutionIRHash !== input.ref.hash) fail();
+  return ir;
+}
+
 function readSelfHashedRecord(input: {
   projectRoot: string;
   relativePath: string;
@@ -318,11 +326,9 @@ function resolveCampaignAuthority(input: {
     ),
     hash: goalExecutionAuthorityRef.hash,
   };
-  const goalExecutionIr = readHashedRecord({
+  const goalExecutionIr = readGoalFinalizerExecutionAuthority({
     projectRoot,
     ref: goalExecutionIrRef,
-    schemaName: 'goal-execution-ir.schema.json',
-    hashField: 'goalExecutionIRHash',
   });
   const scalarBindings = [
     'candidateRunId',

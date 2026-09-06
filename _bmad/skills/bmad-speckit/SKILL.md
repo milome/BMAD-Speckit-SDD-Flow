@@ -76,6 +76,7 @@ When the inspected primary record has all of the following properties:
 - `nextSafeAction=dispatch-plan`
 - the compiled packet is missing or unusable
 - no safety blocker, stale confirmation, hash mismatch, reconfirmation, or blocking business decision is present
+- current source/inline confirmation/record hashes and the latest controlled confirmation event agree, and required architecture/readiness evidence is valid for this exact record and source
 
 the Agent must automatically execute the controlled `dispatch-plan`. Do not ask the user to copy a suggested prompt or manually run the command.
 
@@ -94,9 +95,33 @@ After the action returns:
 3. Require current hashes, packet authority, `ContractExecutionManifest`, and audit receipt validation to pass.
 4. Re-render the BMADS runtime console so the user sees the resulting `execution_closure` / `dispatch_implement` position.
 
-This automatic transition compiles execution input only. It must not execute `dispatch_implement`, must not start the implementation run loop, must not invoke `/goal`, and must not write execution closure PASS.
+This automatic transition compiles execution input only; `execution_closure` remains pending. It must not execute `dispatch_implement`, must not start the implementation run loop, must not invoke `/goal`, and must not write execution closure PASS or synthesize TaskReport/audit/delivery evidence.
 
 If controlled dispatch-plan fails, fail closed. Preserve its bounded blocker evidence, re-render the unchanged safe route, and do not substitute a manually invented packet.
+
+## Controlled Compilation Gates
+
+- Keep the legal six-state order `requirement_confirmation -> architecture_confirmation -> implementation_readiness -> execution_closure -> audit_review -> delivery_confirmation`. Never seed passing states, bypass confirmation/architecture/readiness or call the compiler directly to claim a controlled `dispatch-plan` journey. Reload the exact controlled record before branching and after every result.
+- Route controlled compilation through the resolved installed req-trace runtime with `--entry main_agent_compile`; direct req-trace uses `req_trace_direct`, while standalone uses its separate authority. Only inline `implementationConfirmation` plus the matching controlled confirmation chain authorizes req-trace; a raw Source Plan, sidecar or standalone IR cannot substitute.
+- Preserve confirmed IDs and trace order, source polarity/conditions/scope, covers/boundary views, task/acceptance/evidence/command refs and manifest semantics. Keep declarations separate from executed evidence. Use real sparse applicability/premise/dependency/co-execution relations; legal empty CTM needs no universal must-link. Do not invent tasks, artifacts, commands or `proven` to fill a schema.
+- `model_packet.json` is compiled authority; `human_prompt.txt` and `goal_execution.md` are projections, and `audit_receipt.json` is compiler self-audit. Validate and publish all four with consistent hashes atomically. Failure, overflow, stale confirmation, semantic drift or partial publication preserves the previous valid quartet, authority and safe state without an execution transition.
+- Confirmed `traceRows[].status`, evidence refs and source hashes are never runtime closure write targets. Only controlled record/TaskReport ingest records execution results; semantic changes require `reconfirm_required`, downstream invalidation and stop. Do not claim PASS from package generation or compilation alone.
+- Preserve immutable frozen v1 reads. Any new v2 typed representation requires the same-version installed runtime's typed normative support and compatible validators/renderers/consumers; fail closed for unsupported readers, never erase typed information or reuse incompatible authority.
+- Check relation/scale and local resource budgets before constructing graphs. Measure packet/manifest, projections, coverage refs, compiler artifacts and final adapter serialization separately. Legitimate sparse authority may exceed `1048576` UTF-8 bytes; reject only proven full fan-out, superlinear edge growth, or configured local allocation exhaustion. Native `/goal` keeps its separate 4000-character hard and 3800-character safe limits. No truncation, summary authority or scope filter may bypass these gates.
+- Resolve Judge adapters from configured host/provider settings, including Codex, Claude and HTTP. Preserve all stage-native Requirements/architecture/readiness audit roles and counts; do not replace them with standalone `goal_full`, add a Judge to pure compilation or manufacture Judge PASS.
+- Run pure preflight on the actual final escaped/wrapped adapter payload before immutable request, transport/snapshot/credential artifacts, child processes or network. Failure means invoke/spawn/fetch/actual dispatch are zero and allows only a bounded failure receipt. Bind inspected bytes to sent bytes, including deterministic runtime overhead; external length units stay `unknown` until verified independently of byte/token estimates.
+- Preserve immutable request/response/authority and separate prepared, rejected, intent, ambiguous/sent, response-persisted and completed states. A rejected preflight does not consume dispatch; retry only with trusted proof of no send. Ambiguous timeout/crash/lost response cannot auto-retry. Concurrent attempts permit at most one send for the same immutable native-role dispatch identity, without suppressing distinct required audits; reuse valid results and report real versus reused counts.
+
+## Compiler Repair Evidence
+
+These mandatory checks apply when validating changes to the controlled compiler route; they do not assert that the present repair has passed:
+
+- Use the complete frozen real fixture with strict UTF-8/size/hash identity and an independently reviewed full-source semantic oracle. Missing/mismatched fixture is FAIL, not skip; preserve source bytes and authorization, use explicit read-only dependency mappings, and never execute source business commands.
+- A raw source without inline confirmation must BLOCK with no successful quartet. Positive acceptance separately needs a complete equivalent implementation source authored through `requirements-contract-authoring`, an independent mapping to confirmed IDs, a rendered confirmation page, actual user confirmation and official controlled ingest. Hashes belong to the derived source/page/record; do not handwrite `user_confirmed`, confirmation text/history or receipts, borrow raw-source hashes, or treat a matching hash/confirmedBy label as proof of user identity.
+- Keep three evidence layers separate: automated full-fixture regression with clearly test-only confirmation contexts; actual packaged/installed direct and controlled entry integration; and real governed acceptance with valid user provenance, legal preconditions and native required audits. Replayed or historical confirmation is usable only when current protocol validity/hash/provenance gates accept it; it is not a new user confirmation or current-install proof. Missing confirmation/provider/recognized host evidence remains BLOCKED, never optional.
+- Test all six states' legal/illegal transitions, blockers, re-entry and idempotency, plus negative source/entry/reference/confirmation/hash/semantic-drift cases. Independently reject lost obligations, changed polarity/conditions/dependencies, missing proof, false bindings and universal must-link; retain original trace/command/evidence semantics and prior valid authority.
+- Verify N/2N/4N fixed-density growth, actual global/shared relations, limit-1/limit/limit+1, ASCII/Chinese/non-BMP, escaping/wrapper/coverage overhead, final-request overflow and zero preflight side effects. Include intent/crash/send ambiguity, persisted-response recovery, same-candidate concurrency and partial-publication failures; new representations require round-trip equivalence, reachability/hash binding and incompatible-reader rejection.
+- Retain required associated regressions and actual installed Codex/Claude/Cursor and adapter evidence, binding entry/host/stage/record/source/compiler/package/dist/run identities to logs and counts. Report automated, installed and governed results independently as Done/Blocked/Not Run. No single-entry, mock-only or historical result establishes full repair; end the compiler journey at `execution_closure` pending without business execution, `/goal`, partition or later PASS writes.
 
 ## User Activation
 
@@ -133,7 +158,7 @@ Do not treat this as upstream BMAD Method `/bmad`. Do not register `$bmad` as an
 
 ## Agent Internal First Action
 
-After user activation, the main Agent must internally run or emulate:
+After user activation, the main Agent must internally invoke the installed inspect control action (never emulate gate evidence):
 
 ```text
 main-agent-orchestration --action inspect --host <codex|cursor|claude>

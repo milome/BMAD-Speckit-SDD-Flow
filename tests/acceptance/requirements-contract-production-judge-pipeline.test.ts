@@ -7,6 +7,8 @@ import { canonicalJson } from '../../packages/bmad-speckit/src/main-agent/source
 import { atomicNoClobberPublish } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-atomic-no-clobber-publisher';
 import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 import type { PreparedRequirementsContractJudgeInvocation } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-invocation';
+import { assertJudgePayloadBudget } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-payload-budget';
+import { OpenAICompatibleJudgeAdapter } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-openai-compatible-judge-adapter';
 
 const HASH = (value: string) => sha256Stable({ value });
 
@@ -27,6 +29,9 @@ function preparedInvocation(
     providerRegistryHash: HASH('registry'),
     credentialProviderRef: 'judge-a',
     credentialRevision: 1,
+    preflight: ({ request }) => assertJudgePayloadBudget({
+      serializedPayload: JSON.stringify(request), provider, stage: 'test-only-preflight',
+    }),
     invoke,
   };
 }
@@ -86,6 +91,81 @@ function writeCanonicalJson(filePath: string, value: unknown) {
 }
 
 describe('requirements production Judge pipeline', () => {
+  it('rejects the actual final payload before publishing authority and repeats without dispatch', async () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'requirements-judge-final-budget-'));
+    const provider = {
+      transport: 'openai-compatible', apiStyle: 'chat_completions', model: 'judge-model',
+      requestPolicy: { maximumAttempts: 1, transportByteLimit: 8192 },
+    };
+    const invoke = vi.fn(async ({ request }: { request: Record<string, any> }) => responseFor(request));
+    const prepared = preparedInvocation(invoke, provider);
+    const unpublishedPaths = ['quality/selections', 'quality/requests', 'quality/active-request.json'];
+    // Test-only invocation uses the actual pure HTTP preflight and never contacts a Judge.
+    const preflight = vi.fn<PreparedRequirementsContractJudgeInvocation['preflight']>((payload) => {
+      expect(Buffer.byteLength(canonicalJson(payload.request), 'utf8')).toBeLessThan(8192);
+      for (const artifactPath of unpublishedPaths) {
+        expect.soft(existsSync(path.join(root, artifactPath))).toBe(false);
+      }
+      return OpenAICompatibleJudgeAdapter.preflight({ provider, credential: undefined, payload });
+    });
+    prepared.preflight = preflight;
+    const judgePrompt = configuredJudgePrompt('test-only-final-budget');
+    judgePrompt.systemPrompt = 'x'.repeat(4096);
+    const input = {
+      authoringRequestId: 'REQ-FINAL-BUDGET', recordRoot: root,
+      activeAuthority: {
+        activeSemanticRevisionId: 'SEM-FINAL-BUDGET',
+        activeSemanticIrPath: 'authoring/semantic-revisions/SEM-FINAL-BUDGET/semantic-ir.json',
+        activeScopeSemanticHash: HASH('final-budget-scope'),
+        activeBindingRevisionId: 'BIND-FINAL-BUDGET',
+        activeSourceBindingPath: 'authoring/source-bindings/BIND-FINAL-BUDGET/source-binding.json',
+        activeSourceBindingHash: HASH('final-budget-binding'),
+        activeAuthoringAttemptId: 'ATTEMPT-FINAL-BUDGET',
+        activeBuildManifestPath: 'authoring/staging/ATTEMPT-FINAL-BUDGET/contract-build-manifest.json',
+        activeBuildManifestHash: HASH('final-budget-build'),
+      },
+      buildManifest: {
+        buildManifestHash: HASH('final-budget-build'), artifactEntries: [],
+        auditPacketRef: { artifactId: 'judge-audit-packet', path: 'packet.json', hash: HASH('final-budget-packet') },
+        projectionReportRefs: [],
+      },
+      auditPacket: {
+        schemaVersion: 'requirements-contract-judge-audit-packet/v1',
+        semanticRevisionId: 'SEM-FINAL-BUDGET', scopeSemanticHash: HASH('final-budget-scope'),
+        body: { artifactIds: ['final-markdown'], requirementIds: ['MUST-001'], mandatoryDimensionIds: ['completeness'] },
+      },
+      judgePrompt,
+      providerSelection: {
+        providerRef: 'judge-a', provider, adapterRef: 'OpenAICompatibleJudgeAdapter',
+        providerRegistryHash: HASH('registry'),
+      },
+      preparedInvocation: prepared,
+    };
+    try {
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        const failure = await runRequirementsContractProductionJudgePipeline(input).then(
+          () => null, (error: unknown) => error
+        );
+        expect.soft(failure).toMatchObject({
+          failureClass: 'judge_provider_capacity_exceeded', dispatchState: 'not_dispatched',
+          goalJudgeDispatchCount: 0,
+        });
+        for (const artifactPath of unpublishedPaths) {
+          expect.soft(existsSync(path.join(root, artifactPath))).toBe(false);
+        }
+        expect.soft(invoke).not.toHaveBeenCalled();
+      }
+      expect(preflight).toHaveBeenCalledTimes(2);
+      expect(preflight).toHaveBeenCalledWith(expect.objectContaining({
+        systemPrompt: judgePrompt.systemPrompt,
+        executionContext: expect.objectContaining({ requestPath: expect.any(String) }),
+        structuredOutputSchema: judgePrompt.structuredOutputSchema,
+      }));
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('uses the selected production provider and creates a real aggregate and EffectivePass', async () => {
     const invoke = vi.fn(async (request: Record<string, any>) => responseFor(request));
     const judgePrompt = configuredJudgePrompt('fixture-a');

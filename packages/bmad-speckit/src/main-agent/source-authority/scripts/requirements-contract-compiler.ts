@@ -34,16 +34,18 @@ export interface RequirementsContractCp02CompilerInput {
   authoringRequestId: string;
   authoringAttemptId: string;
   atoms: RequirementsContractAtomicMust[];
+  typedSourceIds?: string[];
   decisions: Array<{
     decisionId: string;
     affectedAtomIds: string[];
+    affectedSourceRefs?: string[];
     authorityPremiseHashes: string[];
   }>;
   technicalPlanning: RequirementsTechnicalPlanningCapabilityResult;
 }
 
 export interface RequirementsContractCp02CompilerResult {
-  schemaVersion: 'requirements-contract-cp02-candidate/v1';
+  schemaVersion: 'requirements-contract-cp02-candidate/v1' | 'requirements-contract-cp02-candidate/v2';
   authoringRequestId: string;
   authoringAttemptId: string;
   status: 'closed' | 'blocked' | 'technical_planning_pending';
@@ -78,6 +80,7 @@ function canonicalCp02Decisions(
     .map((decision) => ({
       ...decision,
       affectedAtomIds: [...decision.affectedAtomIds].sort(),
+      ...(decision.affectedSourceRefs ? { affectedSourceRefs: [...decision.affectedSourceRefs].sort() } : {}),
       authorityPremiseHashes: [...decision.authorityPremiseHashes].sort(),
     }))
     .sort((left, right) => left.decisionId.localeCompare(right.decisionId));
@@ -98,7 +101,7 @@ export function compileRequirementsContractCp02Candidate(
   const decisions = canonicalCp02Decisions(input.decisions);
   const executionRegistry = input.technicalPlanning.executionRegistry;
   const closure = executionRegistry
-    ? validateRequirementsContractCp02AtomicClosure({ atoms, decisions, executionRegistry })
+    ? validateRequirementsContractCp02AtomicClosure({ atoms, decisions, executionRegistry, typedSourceIds: input.typedSourceIds })
     : { decision: 'block' as const, issueCodes: ['requirements_technical_planning_pending'] };
   const status = input.technicalPlanning.status === 'technical_planning_pending'
     ? 'technical_planning_pending' as const
@@ -106,7 +109,7 @@ export function compileRequirementsContractCp02Candidate(
       ? 'closed' as const
       : 'blocked' as const;
   const payload = {
-    schemaVersion: 'requirements-contract-cp02-candidate/v1' as const,
+    schemaVersion: input.typedSourceIds ? 'requirements-contract-cp02-candidate/v2' as const : 'requirements-contract-cp02-candidate/v1' as const,
     authoringRequestId: input.authoringRequestId,
     authoringAttemptId: input.authoringAttemptId,
     status,
@@ -119,7 +122,7 @@ export function compileRequirementsContractCp02Candidate(
   return {
     ...payload,
     candidateHash: sha256Stable({
-      domain: 'requirements-contract-cp02-candidate/v1',
+      domain: payload.schemaVersion,
       payload,
     }),
   };

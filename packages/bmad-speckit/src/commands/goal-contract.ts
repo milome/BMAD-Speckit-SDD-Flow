@@ -65,6 +65,7 @@ function loadWholeSourceDependencies() {
   const {
     compileGoalContract,
     compileGoalContractPolicy,
+    createGoalContractSourceCoverageArtifact,
     createGoalContractCompilationReceipt,
     goalContractCompilerIdentity,
   } = loadPartitionModule('utils/goal-contract/control-plane/goal-contract-compiler');
@@ -95,6 +96,7 @@ function loadWholeSourceDependencies() {
     compileIntentAuthorityEnvelope,
     compileOrderedSourceSnapshotSet,
     compileSourceCompositionPolicy,
+    createGoalContractSourceCoverageArtifact,
     createGoalContractCompilationReceipt,
     defaultReceiptPaths,
     extractSourceObligations,
@@ -397,10 +399,34 @@ function failurePayload(failureClass, error, extra = {}) {
     'matchedPhrase',
     'sourceExcerpt',
     'repairHint',
+    'sourceHash',
+    'candidateHash',
+    'requestHash',
+    'stage',
+    'serializedPayloadBytes',
+    'auxiliaryPayloadBytes',
+    'totalBytes',
+    'transportByteLimit',
+    'unit',
+    'dispatchState',
+    'goalJudgeDispatchCount',
   ]) {
     if (error && Object.prototype.hasOwnProperty.call(error, field)) {
       payload[field] = error[field];
     }
+  }
+  if (error?.preflightRejectionRef && typeof error.preflightRejectionRef === 'object') {
+    payload.preflightRejectionRef = {
+      path: String(error.preflightRejectionRef.path || ''),
+      hash: String(error.preflightRejectionRef.hash || ''),
+    };
+  }
+  if (error?.contributors && typeof error.contributors === 'object') {
+    payload.contributors = Object.fromEntries(
+      Object.entries(error.contributors)
+        .filter(([, value]) => Number.isFinite(value))
+        .slice(0, 20)
+    );
   }
   return payload;
 }
@@ -435,11 +461,12 @@ function assertPartitionGenerationArgsComplete(args) {
   }
 }
 
-async function generateWholeSource(args, commandOptions = {}) {
+async function generateWholeSource(args, _commandOptions = {}) {
   assertPartitionGenerationArgsComplete(args);
   const dependencies = loadWholeSourceDependencies();
   const {
     buildSourceSnapshot,
+    createGoalContractSourceCoverageArtifact,
     createGoalContractCompilationReceipt,
     defaultReceiptPaths,
     extractSourceObligations,
@@ -629,17 +656,12 @@ async function generateWholeSource(args, commandOptions = {}) {
   const { publishStandaloneGoalAuthority } = loadPartitionModule(
     'utils/goal-contract/control-plane/standalone-goal-authority'
   );
-  const standaloneGoalAuthority = await publishStandaloneGoalAuthority(
-    {
-      source,
-      canonicalIntentBundle,
-      goalContractPath: resolvedOut,
-      projectRoot: process.cwd(),
-    },
-    {
-      prepareInvocation: commandOptions.prepareStandaloneGoalJudgeInvocation,
-    }
-  );
+  const standaloneGoalAuthority = await publishStandaloneGoalAuthority({
+    source,
+    canonicalIntentBundle,
+    goalContractPath: resolvedOut,
+    projectRoot: process.cwd(),
+  });
   const writeReceipt = safeWriteText(resolvedOut, rendered.document, {
     mode: fs.existsSync(resolvedOut) ? 'replace' : 'create',
   });
@@ -655,23 +677,18 @@ async function generateWholeSource(args, commandOptions = {}) {
     compiledAt: new Date().toISOString(),
   });
   const goalContractHash = compilation.goalContractHash;
-  const coverageReceipt = {
-    schemaVersion: 'goal-contract-source-coverage-receipt/v1',
+  const coverageReceipt = createGoalContractSourceCoverageArtifact({
     entryScenario: entry.entryScenario,
     sourcePlanPath: source.sourcePlanPath,
-    sourcePlanHash: source.sourcePlanHash,
     sourceBytes: source.sourceBytes,
     sourceLines: source.sourceLines,
     goalContractPath: normalize(resolvedOut),
     goalContractHash,
     goalContractDocumentHash,
-    sourceObligations: registries.sourceObligations,
-    unmappedSourceObligations: coverageAudit.unmappedSourceObligations,
-    orphanGeneratedRefs: [],
-    blockingReasons: [],
-    decision: coverageAudit.decision,
-  };
+    coverageReceipt: compilation.deterministicRendererInput.coverageReceipt,
+  });
   writeCoverageReceipt(coverageReceiptPath, coverageReceipt);
+  const coverageReceiptHash = sha256File(coverageReceiptPath);
   const generationReceipt = {
     ok: true,
     schemaVersion: 'goal-contract-generation-receipt/v1',
@@ -695,6 +712,7 @@ async function generateWholeSource(args, commandOptions = {}) {
     subordinateSourceCoverageReceiptHashes: compilationReceipt.subordinateCoverageReceiptHashes,
     compilationReceipt,
     coverageReceiptPath: normalize(coverageReceiptPath),
+    coverageReceiptHash,
     generationReceiptPath: normalize(generationReceiptPath),
     sourceObligationCount: registries.sourceObligations.length,
     unmappedSourceObligations: coverageAudit.unmappedSourceObligations.length,
@@ -4233,6 +4251,9 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
       ...(error.forbidden ? { forbidden: error.forbidden } : {}),
       ...(error.mismatchedFields ? { mismatchedFields: error.mismatchedFields } : {}),
       ...(error.reason ? { reason: error.reason } : {}),
+      ...(error.constraintId ? { constraintId: error.constraintId } : {}),
+      ...(error.sourceBlockRefs ? { sourceBlockRefs: error.sourceBlockRefs } : {}),
+      ...(error.unresolvedOwnerRefs ? { unresolvedOwnerRefs: error.unresolvedOwnerRefs } : {}),
       ...(error.missingArguments ? { missingArguments: error.missingArguments } : {}),
       ...(error.sourceSnapshotHash ? { sourceSnapshotHash: error.sourceSnapshotHash } : {}),
       ...(error.sourceObligationGraphHash

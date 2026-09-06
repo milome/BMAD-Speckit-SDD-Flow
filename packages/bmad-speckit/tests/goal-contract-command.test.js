@@ -5,10 +5,14 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
-const { evaluatePartitionSequenceRelease } = require('../src/utils/goal-contract/release-gate.ts');
+const {
+  checkGoalContractReleaseGate,
+  evaluatePartitionSequenceRelease,
+} = require('../src/utils/goal-contract/release-gate.ts');
 const {
   hashControlPlaneValue,
 } = require('../src/utils/goal-contract/control-plane/canonical-hash.ts');
+const { resolveGoalExecutionAuthority } = require('../dist/utils/goal-contract/control-plane/goal-execution-authority.js');
 const {
   compileTypedCommandRecord,
   currentPartitionCompilerIdentityHash,
@@ -16,6 +20,8 @@ const {
   selectCommandStructuredBindings,
 } = require('../src/commands/goal-contract.ts');
 const { makeRegistries } = require('../src/utils/goal-contract/slot-data-builder.ts');
+const { buildSourceSnapshot } = require('../src/utils/goal-contract/dual-view-derivation.ts');
+const { extractSourceObligations } = require('../src/utils/goal-contract/source-obligation-extractor.ts');
 
 const BIN = path.join(__dirname, '..', 'bin', 'bmad-speckit.js');
 const SOURCE_COMMAND = path.join(__dirname, '..', 'src', 'commands', 'goal-contract.ts');
@@ -23,18 +29,7 @@ const BUILT_COMMAND = path.join(__dirname, '..', 'dist', 'commands', 'goal-contr
 const TSX = path.join(__dirname, '..', '..', '..', 'node_modules', 'tsx', 'dist', 'cli.mjs');
 const SOURCE_RUNNER = [
   'const { goalContractCommand } = require(process.argv[1]);',
-  'const hash=(digit)=>`sha256:${digit.repeat(64)}`;',
-  'const prepareStandaloneGoalJudgeInvocation=async()=>({',
-  "configPath:'test',judgeRuntime:{},providerRef:'test-goal-judge',",
-  "provider:{transport:'openai-compatible',apiStyle:'responses',model:'test-model',requestPolicy:{}},",
-  "providerRegistryHash:hash('7'),credentialProviderRef:'test-goal-judge',credentialRevision:1,",
-  'invoke:async({request})=>({',
-  "schemaVersion:'requirements-contract-normalized-judge-response/v1',",
-  "providerRef:'test-goal-judge',transport:'openai-compatible',configuredModel:'test-model',returnedModel:'test-model',",
-  "decision:'pass',findings:[],challengeRequests:[],evidenceRefs:request.requiredCoverageRefs,",
-  "providerRequestId:'request-1',requestHash:hash('8'),responseHash:hash('9'),",
-  '}),});',
-  'Promise.resolve(goalContractCommand({prepareStandaloneGoalJudgeInvocation}, process.argv.slice(2)))',
+  'Promise.resolve(goalContractCommand({}, process.argv.slice(2)))',
   '.then((code)=>{process.exitCode=code;})',
   '.catch((error)=>{console.error(error);process.exitCode=1;});',
 ].join('');
@@ -386,7 +381,11 @@ function writeSourcePlan(root) {
       '',
       '## Implementation Task Breakdown',
       '',
-      '### Add package CLI',
+      '### Task CLI-T01: Add package CLI',
+      '',
+      '- Acceptance: AC-CMD.',
+      '- EVD-CLI-T01-01: Preserve the public CLI proof output.',
+      '- CMD-CLI-T01-01: Run `node --test packages/bmad-speckit/tests/goal-contract-command.test.js`.',
       '',
       '- [ ] TASK-CMD: MUST parse `--source`, `--out`, and `--json`.',
       '',
@@ -613,7 +612,40 @@ describe('bmad-speckit goal-contract command', () => {
     assert.match(goalText, /generationReceiptPath:/u);
     assert.match(goalText, /unmappedSourceObligations: 0/u);
     assert.match(goalText, /## Source Coverage Matrix/u);
-    assert.match(goalText, /\| SRC001 \|/u);
+    const coverage = JSON.parse(fs.readFileSync(payload.coverageReceiptPath, 'utf8'));
+    const generation = JSON.parse(fs.readFileSync(payload.generationReceiptPath, 'utf8'));
+    assert.equal(coverage.schemaVersion, 'goal-contract-source-coverage-receipt/v2');
+    assert.equal(coverage.projectionMode, 'minimal_hash_bound');
+    assert.equal(coverage.sourceObligationCount, coverage.sourceObligations.length);
+    assert.equal(generation.coverageReceiptHash, hash(fs.readFileSync(payload.coverageReceiptPath)));
+    assert.equal(coverage.sourceObligations.some((row) =>
+      ['normativeClauses', 'resolvedCitations', 'provenanceRefs', 'text'].some((field) =>
+        Object.hasOwn(row, field))), false);
+    assert.equal(checkGoalContractReleaseGate({
+      source,
+      goal: out,
+      coverage: payload.coverageReceiptPath,
+      generation: payload.generationReceiptPath,
+    }).decision, 'pass');
+    const tamperedCoveragePath = path.join(root, 'tampered.coverage.json');
+    const tamperedCoverage = structuredClone(coverage);
+    tamperedCoverage.sourceObligations[0].semanticRowHash = `sha256:${'0'.repeat(64)}`;
+    fs.writeFileSync(tamperedCoveragePath, `${JSON.stringify(tamperedCoverage, null, 2)}\n`, 'utf8');
+    const tamperedGate = checkGoalContractReleaseGate({
+      source,
+      goal: out,
+      coverage: tamperedCoveragePath,
+      generation: payload.generationReceiptPath,
+    });
+    assert.equal(tamperedGate.decision, 'blocked');
+    assert.ok(tamperedGate.blockingReasons.includes('coverage_receipt_schema_invalid'));
+    assert.ok(tamperedGate.blockingReasons.includes('generation_coverage_receipt_hash_mismatch'));
+    const sourceCoverageSection = goalText.split('## Source Coverage Matrix')[1]
+      .split('## Required Test Commands')[0];
+    const renderedSourceIds = [...sourceCoverageSection.matchAll(/^\| ([^|]+) \|/gmu)]
+      .map((match) => match[1].trim()).filter((id) => id !== 'Source ID' && !/^:?-+:?$/u.test(id));
+    assert.deepEqual(renderedSourceIds, coverage.sourceObligations.map((row) => row.id));
+    assert.equal(new Set(renderedSourceIds).size, renderedSourceIds.length);
     assert.match(
       goalText,
       /npx --no-install bmad-speckit goal-contract generate --source docs\/plans\/source\.md --out docs\/plans\/goal\.md --json/u
@@ -622,12 +654,21 @@ describe('bmad-speckit goal-contract command', () => {
     assert.doesNotMatch(goalText, /rg -n -F 'SRC\d{3}'.*coverage\.json/u);
     assert.match(goalText, /sourceTextHash=sha256:[0-9a-f]{64}/u);
     assert.match(goalText, /standalone Markdown contract is a GoalExecutionIR projection/u);
-    assert.equal(payload.goalJudgeDispatchCount, 1);
+    assert.equal(payload.goalJudgeDispatchCount, 0);
     assert.match(payload.goalExecutionIRHash, /^sha256:[0-9a-f]{64}$/u);
     assert.ok(fs.existsSync(payload.activeAuthorityRef.path));
+    assert.ok(fs.existsSync(payload.internalSemanticGateRef.path));
+    const activeAuthority = JSON.parse(fs.readFileSync(payload.activeAuthorityRef.path, 'utf8'));
+    const internalSemanticGate = JSON.parse(
+      fs.readFileSync(payload.internalSemanticGateRef.path, 'utf8')
+    );
+    assert.equal(internalSemanticGate.schemaVersion, 'StandaloneGoalInternalSemanticGate/v1');
+    assert.equal(internalSemanticGate.decision, 'pass');
+    assert.equal(
+      activeAuthority.standaloneInternalSemanticGateRef.hash,
+      internalSemanticGate.gateHash
+    );
 
-    const coverage = JSON.parse(fs.readFileSync(payload.coverageReceiptPath, 'utf8'));
-    const generation = JSON.parse(fs.readFileSync(payload.generationReceiptPath, 'utf8'));
     assert.equal(coverage.decision, 'pass');
     assert.deepEqual(coverage.unmappedSourceObligations, []);
     assert.equal(coverage.sourcePlanHash, payload.sourcePlanHash);
@@ -649,7 +690,7 @@ describe('bmad-speckit goal-contract command', () => {
     assert.equal(generation.writeReceipt.schemaVersion, 'large-document-writer-safe-write/v1');
   });
 
-  it('preserves standalone Judge and Goal Execution IR handoff in the built command', () => {
+  it('preserves internal standalone validation and Goal Execution IR handoff in the built command', () => {
     const root = tempRoot();
     try {
       const source = writeSourcePlan(root);
@@ -660,10 +701,12 @@ describe('bmad-speckit goal-contract command', () => {
 
       assert.equal(result.status, 0, result.stderr || result.stdout);
       const payload = JSON.parse(result.stdout);
-      const executionIR = JSON.parse(fs.readFileSync(payload.goalExecutionIrRef.path, 'utf8'));
+      const executionAuthority = JSON.parse(fs.readFileSync(payload.goalExecutionIrRef.path, 'utf8'));
+      const executionIR = resolveGoalExecutionAuthority(executionAuthority);
       const activeAuthority = JSON.parse(fs.readFileSync(payload.activeAuthorityRef.path, 'utf8'));
-      assert.equal(payload.goalJudgeDispatchCount, 1);
-      assert.equal(executionIR.schemaVersion, 'GoalExecutionIR/v1');
+      assert.equal(payload.goalJudgeDispatchCount, 0);
+      assert.equal(executionAuthority.schemaVersion, 'GoalExecutionAuthority/v2');
+      assert.equal(executionIR.schemaVersion, 'GoalExecutionIR/v2');
       assert.equal(executionIR.profile, 'standalone');
       assert.equal(activeAuthority.schemaVersion, 'GoalContractActiveAuthority/v1');
       assert.equal(activeAuthority.goalExecutionIRHash, executionIR.goalExecutionIRHash);
@@ -686,7 +729,7 @@ describe('bmad-speckit goal-contract command', () => {
     }
   });
 
-  it('generates typed parent projections from explicit structured records', () => {
+  it('generates semantic parent projections from explicit structured records', () => {
     const root = tempRoot();
     const source = path.join(root, 'structured-goal-source.md');
     const out = path.join(root, 'structured-goal-execution-plan.md');
@@ -734,7 +777,7 @@ describe('bmad-speckit goal-contract command', () => {
     );
     assert.deepEqual(taskHeadings, ['J01-T01', 'J02-T01']);
     assert.doesNotMatch(goalText, /^### G\d+/gmu);
-    assert.match(goalText, /^projectionMode: typed$/mu);
+    assert.match(goalText, /^projectionMode: semantic$/mu);
     assert.match(goalText, /^taskRange: J01-T01\.\.J02-T01$/mu);
     assert.match(goalText, /^acceptanceRange: AC-J01-T01-01\.\.AC-J02-T01-01$/mu);
 
@@ -742,7 +785,7 @@ describe('bmad-speckit goal-contract command', () => {
       .split('## Strict Acceptance Checklist')[1]
       .split('## Acceptance Traceability Matrix')[0];
     assert.deepEqual(
-      [...acceptanceSection.matchAll(/^- \[ \] (AC-[A-Z0-9-]+):/gmu)].map((match) => match[1]),
+      [...acceptanceSection.matchAll(/^- (AC-[A-Z0-9-]+):$/gmu)].map((match) => match[1]),
       ['AC-J01-T01-01', 'AC-J02-T01-01']
     );
 
@@ -757,12 +800,12 @@ describe('bmad-speckit goal-contract command', () => {
     const commandSection = goalText
       .split('## Required Test Commands')[1]
       .split('## Manual Verification Scenarios')[0];
-    assert.deepEqual(
-      [...commandSection.matchAll(/^### \d+\. COMMAND (CMD-[A-Z0-9-]+)$/gmu)].map(
-        (match) => match[1]
-      ),
-      ['CMD-J01-T01-01', 'CMD-J02-T01-01']
-    );
+    const sourceAuthority = extractSourceObligations({ snapshot: buildSourceSnapshot({ sourceType: 'source_plan',
+      sourcePath: source, rawBytes: fs.readFileSync(source) }) });
+    const declaredCommands = sourceAuthority.sourceObligations.flatMap((row) => row.commandDeclarations);
+    const renderedCommandIds = [...commandSection.matchAll(/^### COMMAND (\S+)$/gmu)].map((match) => match[1]);
+    assert.deepEqual(renderedCommandIds, declaredCommands.map((command) => command.id));
+    assert.equal(new Set(renderedCommandIds).size, 2);
     assert.equal([...commandSection.matchAll(/^node --version$/gmu)].length, 2);
     assert.match(goalText, /EVD-J01-T01-01/u);
     assert.match(goalText, /EVD-J02-T01-01/u);
@@ -775,7 +818,17 @@ describe('bmad-speckit goal-contract command', () => {
     assert.deepEqual(uniqueRefs('goalTaskRefs'), ['J01-T01', 'J02-T01']);
     assert.deepEqual(uniqueRefs('acceptanceRefs'), ['AC-J01-T01-01', 'AC-J02-T01-01']);
     assert.deepEqual(uniqueRefs('evidenceRefs'), ['EVD-J01-T01-01', 'EVD-J02-T01-01']);
-    assert.deepEqual(uniqueRefs('commandRefs'), ['CMD-J01-T01-01', 'CMD-J02-T01-01']);
+    assert.deepEqual(uniqueRefs('commandRefs'), declaredCommands.map((command) => command.id).sort());
+    for (const alias of ['CMD-J01-T01-01', 'CMD-J02-T01-01']) {
+      const coverageDeclaration = coverage.sourceObligations.find((row) => row.id === alias);
+      const semanticDeclaration = sourceAuthority.sourceObligations.find((row) => row.id === alias);
+      assert.ok(coverageDeclaration, `source alias ${alias} must remain in coverage`);
+      assert.ok(semanticDeclaration, `source alias ${alias} must remain in semantic authority`);
+      assert.equal(semanticDeclaration.commandDeclarations.length, 1);
+      assert.ok(renderedCommandIds.includes(semanticDeclaration.commandDeclarations[0].id));
+      assert.equal(semanticDeclaration.commandDeclarations[0].invocation, 'node --version');
+      assert.deepEqual(coverageDeclaration.commandRefs, semanticDeclaration.commandRefs);
+    }
   });
 
   it('preserves task execution roles and readiness supersession in the frozen Goal', () => {
@@ -839,7 +892,10 @@ describe('bmad-speckit goal-contract command', () => {
     const payload = JSON.parse(result.stdout);
     const goalText = fs.readFileSync(out, 'utf8');
     const coverage = JSON.parse(fs.readFileSync(payload.coverageReceiptPath, 'utf8'));
-    const sourceTexts = coverage.sourceObligations.map(
+    const sourceAuthority = extractSourceObligations({ snapshot: buildSourceSnapshot({
+      sourceType: 'source_plan', sourcePath: source, rawBytes: fs.readFileSync(source),
+    }) });
+    const sourceTexts = sourceAuthority.sourceObligations.map(
       (obligation) => obligation.exactText || obligation.text
     );
 
@@ -850,7 +906,21 @@ describe('bmad-speckit goal-contract command', () => {
       '**Aggregate Gate Phase:** `final_aggregate`',
       '**Aggregate Validation Commands:** `CMD-PLAN-T02-01`',
     ]) {
-      assert.ok(sourceTexts.includes(requiredSourceText), requiredSourceText);
+      assert.ok(sourceTexts.some((text) => text.split(/\r?\n/u).includes(requiredSourceText)), requiredSourceText);
+    }
+    const executableSource = sourceAuthority.sourceObligations.find((row) => row.id === 'PLAN-T01');
+    const aggregateSource = sourceAuthority.sourceObligations.find((row) => row.id === 'PLAN-T02');
+    assert.equal(executableSource.taskExecution.executionClass, 'executable_child');
+    assert.equal(aggregateSource.executionRole, 'action');
+    assert.equal(aggregateSource.taskExecution.executionClass, 'aggregate_only');
+    assert.equal(aggregateSource.taskExecution.ownedProductionPaths, '`none`');
+    assert.equal(aggregateSource.taskExecution.aggregateGatePhase, 'final_aggregate');
+    assert.deepEqual(aggregateSource.taskExecution.aggregateValidationCommands, aggregateSource.commandRefs);
+    assert.ok(aggregateSource.taskExecution.sourceRefs.every((ref) => aggregateSource.provenanceRefs.includes(ref)));
+    for (const id of ['PLAN-T01', 'PLAN-T02']) {
+      const row = coverage.sourceObligations.find((item) => item.id === id);
+      assert.ok(row, `${id} must remain in compact coverage`);
+      assert.match(row.semanticRowHash, /^sha256:[0-9a-f]{64}$/u);
     }
     assert.ok(
       sourceTexts.some(
@@ -970,21 +1040,25 @@ describe('bmad-speckit goal-contract command', () => {
         '',
         '## Implementation Task Breakdown',
         '',
-        '### Task 1: First command',
+        '### Task MULTI-T01: First command',
         '',
         '- MUST run the first command block.',
         '',
         '```powershell',
         'node --test packages/bmad-speckit/tests/goal-contract-command.test.js',
         '```',
+        '- AC-MULTI-T01-01: The first command proves its declared behavior.',
+        '- EVD-MULTI-T01-01: Preserve the first command result.',
         '',
-        '### Task 2: Second command',
+        '### Task MULTI-T02: Second command',
         '',
         '- MUST run the second command block.',
         '',
         '```powershell',
         'node --test packages/bmad-speckit/tests/goal-contract-implementation-proof.test.js',
         '```',
+        '- AC-MULTI-T02-01: The second command proves its declared behavior.',
+        '- EVD-MULTI-T02-01: Preserve the second command result.',
       ].join('\n'),
       'utf8'
     );
@@ -996,9 +1070,13 @@ describe('bmad-speckit goal-contract command', () => {
 
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const goalText = fs.readFileSync(out, 'utf8');
-    const commandHeadings = [...goalText.matchAll(/### \d+\. COMMAND (CMD\d{3})/gu)].map(
+    const commandHeadings = [...goalText.matchAll(/^### COMMAND (\S+)$/gmu)].map(
       (match) => match[1]
     );
+    const sourceAuthority = extractSourceObligations({ snapshot: buildSourceSnapshot({ sourceType: 'source_plan',
+      sourcePath, rawBytes: fs.readFileSync(sourcePath) }) });
+    assert.deepEqual(commandHeadings, sourceAuthority.sourceObligations.flatMap(row =>
+      row.commandDeclarations.map(command => command.id)));
 
     assert.equal(commandHeadings.length, 2);
     assert.notEqual(commandHeadings[0], commandHeadings[1]);
@@ -1067,13 +1145,15 @@ describe('bmad-speckit goal-contract command', () => {
         '',
         '## Implementation Task Breakdown',
         '',
-        '### Task 1: Capture the tree hash',
+        '### Task PORTABILITY-T01: Capture the tree hash',
         '',
         '- MUST capture the current Git tree hash.',
         '',
         '```powershell',
         'git rev-parse HEAD^{tree}',
         '```',
+        '- AC-PORTABILITY-T01-01: The command captures the current tree hash.',
+        '- EVD-PORTABILITY-T01-01: Preserve the tree hash output.',
       ].join('\n'),
       'utf8'
     );

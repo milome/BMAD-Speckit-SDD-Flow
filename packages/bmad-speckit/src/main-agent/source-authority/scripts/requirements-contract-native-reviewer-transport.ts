@@ -333,6 +333,8 @@ async function dispatchNativeReviewerCli(
 /**
  * Uses an explicitly configured host bridge when present, otherwise dispatches through the
  * installed Codex or Claude native CLI route.
+ * @param {NativeReviewerHostBridgeOptions} options Host bridge configuration and environment overrides.
+ * @returns {NativeReviewerDispatch} A reviewer dispatch function for the selected host.
  */
 export function createNativeReviewerHostBridge(
   options: NativeReviewerHostBridgeOptions = {}

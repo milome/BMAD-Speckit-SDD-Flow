@@ -66,7 +66,7 @@ function sourceText(title, tasks) {
     '',
     '## Implementation Task Breakdown',
     '',
-    ...tasks.flatMap((task) => [`- [ ] ${task}`, '']),
+    ...tasks.flatMap((task) => [`- [ ] ${task} Acceptance: AC-CORPUS. Command: CMD-CORPUS. Evidence: EVD-CORPUS.`, '']),
     '## Acceptance Criteria',
     '',
     '- [ ] AC-CORPUS: MUST prove observable completion.',

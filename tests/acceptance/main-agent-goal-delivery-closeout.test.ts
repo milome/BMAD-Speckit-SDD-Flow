@@ -41,7 +41,7 @@ function executionFinalCandidate(
       : {
           standaloneLineage: {
             standaloneGoalSemanticIRHash: hash('5'),
-            authoringEffectivePassHash: hash('6'),
+            internalSemanticGateHash: hash('6'),
           },
         }),
     activeRunPointerHash: hash('8'),

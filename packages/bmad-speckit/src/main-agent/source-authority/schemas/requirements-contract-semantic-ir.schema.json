@@ -6,7 +6,7 @@
   "additionalProperties": false,
   "required": ["schemaVersion", "recordId", "requestId", "semanticRevisionId", "parentSemanticRevisionId", "compilerVersion", "scopeSemanticHash", "semanticPayload"],
   "properties": {
-    "schemaVersion": { "const": "requirements-contract-semantic-ir/v1" },
+    "schemaVersion": { "enum": ["requirements-contract-semantic-ir/v1", "requirements-contract-semantic-ir/v2"] },
     "recordId": { "$ref": "#/$defs/id" },
     "requestId": { "$ref": "#/$defs/id" },
     "semanticRevisionId": { "pattern": "^SEMREV-[A-F0-9]{64}$", "type": "string" },
@@ -18,7 +18,10 @@
       "additionalProperties": false,
       "required": ["semantics", "evidenceClaims", "evidenceClaimRegistryHash", "specSpanRegistry", "specSpanRegistryHash", "executionConstraints", "executionConstraintRegistryHash", "semanticProvenance"],
       "properties": {
-        "semantics": { "type": "object" },
+        "semantics": { "type": "object", "properties": {
+          "typedSourceAuthority": { "$ref": "requirements-contract-source-node.schema.json#/$defs/authority" },
+          "typedCoverage": { "$ref": "requirements-contract-source-node.schema.json#/$defs/coverage" }
+        } },
         "evidenceClaims": { "items": { "$ref": "#/$defs/evidenceClaim" }, "type": "array" },
         "evidenceClaimRegistryHash": { "$ref": "#/$defs/hash" },
         "specSpanRegistry": { "items": { "$ref": "#/$defs/specSpan" }, "type": "array" },
@@ -32,6 +35,9 @@
       }
     }
   },
+  "allOf": [{ "if": { "properties": { "schemaVersion": { "const": "requirements-contract-semantic-ir/v2" } } },
+    "then": { "properties": { "semanticPayload": { "properties": { "semantics": { "required": ["typedSourceAuthority", "typedCoverage"] } } } } },
+    "else": { "properties": { "semanticPayload": { "properties": { "semantics": { "not": { "anyOf": [{ "required": ["typedSourceAuthority"] }, { "required": ["typedCoverage"] }] } } } } } } }],
   "$defs": {
     "id": { "type": "string", "minLength": 1, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$" },
     "nonEmpty": { "type": "string", "minLength": 1 },
@@ -66,6 +72,7 @@
         "normalizedClaimHash": { "$ref": "#/$defs/hash" },
         "boundSemanticNodeIds": { "$ref": "#/$defs/idSet" },
         "boundObligationIds": { "$ref": "#/$defs/idSet" },
+        "boundTypedSourceGraphHash": { "$ref": "#/$defs/hash" },
         "evidenceClaimRefs": { "$ref": "#/$defs/idSet" },
         "decisionReceiptRefs": { "$ref": "#/$defs/idSet" },
         "derivationReceiptRefs": { "$ref": "#/$defs/idSet" }
@@ -83,7 +90,13 @@
         "applicableAtomRefs": { "$ref": "#/$defs/idSet" },
         "premiseRefs": { "$ref": "#/$defs/idSet" },
         "derivationReceiptRefs": { "$ref": "#/$defs/idSet" },
-        "disposition": { "enum": ["proven", "unresolved"] }
+        "disposition": { "enum": ["proven", "unresolved"] },
+        "authorityKind": { "enum": ["source_declared", "derived"] },
+        "applicableSourceRefs": { "$ref": "#/$defs/idSet" },
+        "conditions": { "type": "array" },
+        "scope": { "type": "object" },
+        "modality": { "enum": ["required", "suggested", "prohibited", "template", "context"] },
+        "sourceDeclarationRefs": { "$ref": "#/$defs/idSet" }
       }
     }
   }

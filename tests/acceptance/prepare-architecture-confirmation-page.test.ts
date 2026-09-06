@@ -47,7 +47,7 @@ function copyPrepareScriptIntoInstallSurface(root: string): string {
   return script;
 }
 
-function writeConfirmedFixture() {
+function _writeConfirmedFixture() {
   const source = path.join(tempDir, 'source.md');
   const record = path.join(
     tempDir,
@@ -168,18 +168,18 @@ function writeConfirmedFixture() {
   return { source, record };
 }
 
-const targetPaths = JSON.stringify(['src/product/display_settings_widget.py']);
-const consumerImpactScan = JSON.stringify([
+const _targetPaths = JSON.stringify(['src/product/display_settings_widget.py']);
+const _consumerImpactScan = JSON.stringify([
   { category: 'data_model', status: 'triggered', summary: 'fixture' },
 ]);
-const governanceImpactScan = JSON.stringify([
+const _governanceImpactScan = JSON.stringify([
   {
     category: 'orchestration_hook_gate_ingest_rerun_closeout',
     status: 'triggered',
     summary: 'fixture',
   },
 ]);
-const triggerMatrix = JSON.stringify([
+const _triggerMatrix = JSON.stringify([
   { trigger: 'shared_schema_or_contract_changed', decision: 'triggered', reason: 'fixture' },
 ]);
 const requiredArchitectureDiagramTypes = [
@@ -192,7 +192,7 @@ const requiredArchitectureDiagramTypes = [
   'activity',
 ];
 
-function writeZhLocalizationBundle(): string {
+function _writeZhLocalizationBundle(): string {
   const file = path.join(tempDir, 'architecture-localization.zh-CN.json');
   const mermaidFor = (type: string, scope: 'business' | 'governance') => {
     const noun = scope === 'business' ? '业务' : '治理';

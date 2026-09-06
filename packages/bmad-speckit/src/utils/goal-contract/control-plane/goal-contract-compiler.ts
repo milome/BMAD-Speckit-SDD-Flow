@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const {
+  canonicalIntentSemanticsProjection,
   verifyCanonicalIntentBundle,
 } = require(
   __filename.endsWith('.ts')
@@ -44,16 +45,28 @@ const {
 );
 const {
   buildSlotData,
+  implementationProofAudit,
+  makeRegistries,
 } = require(
   __filename.endsWith('.ts')
-    ? '../slot-data-builder.ts'
-    : '../slot-data-builder'
+      ? '../slot-data-builder.ts'
+      : '../slot-data-builder'
+);
+const { extractSourceObligations } = require(
+  __filename.endsWith('.ts')
+    ? '../source-obligation-extractor.ts'
+    : '../source-obligation-extractor'
+);
+const { validateSourceCoverage } = require(
+  __filename.endsWith('.ts') ? '../source-coverage-matrix.ts' : '../source-coverage-matrix'
 );
 
 export type GoalContractCompilerModule = never;
 
 const COMPILATION_RECEIPT_SCHEMA =
   'goal-contract-compilation-receipt.schema.json';
+const SOURCE_COVERAGE_RECEIPT_SCHEMA =
+  'goal-contract-source-coverage-receipt.schema.json';
 const DETERMINISTIC_GENERATED_AT = '1970-01-01T00:00:00.000Z';
 const EFFECTIVE_REVISION_TASK_AUTHORITY = Object.freeze({
   'GH-R01': ['GH-T01', 'GH-T02'],
@@ -385,7 +398,7 @@ function canonicalSourceProjection(canonicalBundle, authorityBundle) {
       { record, descriptor, citations, sourceSnapshot, firstCitation },
       index
     ) => ({
-      id: `SRC${String(index + 1).padStart(3, '0')}`,
+      id: record.executionRole === undefined ? `SRC${String(index + 1).padStart(3, '0')}` : record.sourceRootId,
       kind: record.sourceKind,
       text: firstCitation.exactText,
       summary: record.requiredOutcome,
@@ -418,6 +431,7 @@ function canonicalSourceProjection(canonicalBundle, authorityBundle) {
           ? [...descriptor.parentTaskRefs]
           : [],
       dependencyRefs: [...record.dependencyRefs],
+      ...canonicalIntentSemanticsProjection(record),
       resolvedCitations: citations,
     })
   );
@@ -425,12 +439,16 @@ function canonicalSourceProjection(canonicalBundle, authorityBundle) {
     ({ sourceArtifactId }) =>
       sourceArtifactId === authorityBundle.primarySource.sourceArtifactId
   );
+  const sourceClauseCoverageSummaries = registry.sourceSnapshots.map((snapshot) =>
+    extractSourceObligations({ snapshot: { ...snapshot, sourceOrder: 0 } }).sourceClauseCoverageSummary
+  );
   return {
     sourcePlanPath: primarySnapshot.pathOrSegmentId,
     sourcePlanHash: primarySnapshot.sourceSnapshotHash,
     sourceBytes: primarySnapshot.sourceBytes,
     sourceLines: primarySnapshot.sourceLines,
     sourceObligations,
+    sourceClauseCoverageSummaries,
   };
 }
 
@@ -453,6 +471,9 @@ function normalizeGoalContractSourceCoverageMappings(
           (value) => typeof value === 'string' && value.length > 0
         )
       : [];
+    if (obligation.executionRole !== undefined) {
+      return { ...obligation, stopConditionRefs: [...new Set(existing)].sort() };
+    }
     return {
       ...obligation,
       goalTaskRefs:
@@ -497,6 +518,10 @@ function createGoalContractSourceCoverageReceipt(request: unknown) {
   ) {
     throw failure('source_coverage_unmapped');
   }
+  if (request.canonicalIntentBundle?.schemaVersion === 'goal-contract-canonical-intent-bundle/v2' ||
+    request.sourceObligations.some((row) => row?.executionRole !== undefined)) {
+    return createCanonicalSourceCoverageReceipt(request);
+  }
   const requiredFields = [
     'goalTaskRefs',
     'acceptanceRefs',
@@ -540,6 +565,211 @@ function createGoalContractSourceCoverageReceipt(request: unknown) {
     sourceObligations: request.sourceObligations,
     unmappedSourceObligations,
   });
+}
+
+function createCanonicalSourceCoverageReceipt(request) {
+  if (!request.canonicalIntentBundle || !request.compositeSourceAuthorityBundle) {
+    throw failure('source_coverage_unmapped', { field: 'canonicalSourceAuthority' });
+  }
+  const canonical = verifyCanonicalIntentBundle(request.canonicalIntentBundle);
+  const authority = verifyCompositeSourceAuthorityBundle(request.compositeSourceAuthorityBundle);
+  if (canonical.schemaVersion !== 'goal-contract-canonical-intent-bundle/v2' ||
+    canonical.sourceAuthorityBundleHash !== authority.sourceAuthorityBundleHash ||
+    canonical.sourceCompositionPolicyHash !== authority.sourceCompositionPolicyHash ||
+    canonical.orderedSourceSnapshotSetHash !== authority.orderedSourceSnapshotSetHash) {
+    throw failure('source_coverage_unmapped', { field: 'canonicalSourceAuthority' });
+  }
+  // Rebuild from verified source snapshots; caller-supplied roles and pass labels are not authority.
+  const source = canonicalSourceProjection(canonical, authority);
+  const registries = makeRegistries(normalizeGoalContractSourceCoverageMappings(source.sourceObligations));
+  const expectedRows = normalizeGoalContractSourceCoverageMappings(registries.sourceObligations);
+  if (source.sourcePlanHash !== request.sourcePlanHash ||
+    hashControlPlaneValue(expectedRows) !== hashControlPlaneValue(request.sourceObligations)) {
+    throw failure('source_coverage_unmapped', { field: 'canonicalSourceProjection' });
+  }
+  if (request.sourceClauseCoverageSummaries !== undefined) {
+    const supplied = Array.isArray(request.sourceClauseCoverageSummaries)
+      ? request.sourceClauseCoverageSummaries
+      : source.sourceClauseCoverageSummaries.length === 1
+        ? [request.sourceClauseCoverageSummaries]
+        : null;
+    if (!supplied || hashControlPlaneValue(supplied) !== hashControlPlaneValue(source.sourceClauseCoverageSummaries)) {
+      throw failure('source_coverage_unmapped', { field: 'sourceClauseCoverageSummaries' });
+    }
+  }
+  const coverageAudit = validateSourceCoverage({ sourceObligations: expectedRows, registries });
+  const proofAudit = implementationProofAudit(expectedRows);
+  if (coverageAudit.decision !== 'pass' || proofAudit.decision !== 'pass' ||
+    request.coverageAudit.decision !== 'pass' ||
+    ['unmappedSourceObligations', 'orphanGeneratedRefs', 'blockingReasons'].some((field) =>
+      !Array.isArray(request.coverageAudit[field]) || request.coverageAudit[field].length > 0)) {
+    throw failure('source_coverage_unmapped', { coverageAudit, implementationProofAudit: proofAudit });
+  }
+  return Object.freeze({ sourcePlanHash: request.sourcePlanHash, sourceObligations: request.sourceObligations,
+    unmappedSourceObligations: [], evidenceClassification: 'coverage_only', runtimeEvidenceAuthority: false,
+    sourceClauseCoverageSummaries: source.sourceClauseCoverageSummaries,
+    canonicalIntentBundleHash: canonical.canonicalIntentBundleHash,
+    sourceAuthorityBundleHash: authority.sourceAuthorityBundleHash, coverageAudit, implementationProofAudit: proofAudit });
+}
+
+function compactCoverageRefs(row, field) {
+  const values = row[field];
+  if (!Array.isArray(values) || values.some((value) => typeof value !== 'string' || !value)) {
+    throw failure('source_coverage_receipt_invalid', { field, sourceObligationId: row.id });
+  }
+  return [...new Set(values)].sort((left, right) => left.localeCompare(right, 'en'));
+}
+
+function compactSourceCoverageRow(row) {
+  if (!isRecord(row) || typeof row.id !== 'string' || !row.id ||
+    typeof row.kind !== 'string' || !row.kind || typeof row.executionRole !== 'string' ||
+    typeof row.normativeStrength !== 'string' || typeof row.polarity !== 'string' ||
+    typeof row.required !== 'boolean' ||
+    typeof row.sourceArtifactId !== 'string' || !row.sourceArtifactId ||
+    !Number.isInteger(row.lineStart) || row.lineStart < 1 ||
+    !Number.isInteger(row.lineEnd) || row.lineEnd < row.lineStart ||
+    typeof row.textHash !== 'string' || !/^sha256:[0-9a-f]{64}$/u.test(row.textHash) ||
+    !Array.isArray(row.normativeClauses) || !Array.isArray(row.conditions) ||
+    !isRecord(row.applicability)) {
+    throw failure('source_coverage_receipt_invalid', {
+      field: 'sourceObligations',
+      sourceObligationId: isRecord(row) ? row.id : undefined,
+    });
+  }
+  return Object.freeze({
+    id: row.id,
+    declaredSourceId: typeof row.declaredSourceId === 'string' ? row.declaredSourceId : null,
+    kind: row.kind,
+    executionRole: row.executionRole,
+    normativeStrength: row.normativeStrength,
+    polarity: row.polarity,
+    required: row.required === true,
+    sourceArtifactId: row.sourceArtifactId,
+    lineStart: row.lineStart,
+    lineEnd: row.lineEnd,
+    sourceTextHash: row.textHash,
+    clauseCount: row.normativeClauses.length,
+    clauseSetHash: hashControlPlaneValue(row.normativeClauses),
+    conditionCount: row.conditions.length,
+    conditionSetHash: hashControlPlaneValue(row.conditions),
+    applicabilityHash: hashControlPlaneValue(row.applicability),
+    semanticRowHash: hashControlPlaneValue(row),
+    goalTaskRefs: compactCoverageRefs(row, 'goalTaskRefs'),
+    acceptanceRefs: compactCoverageRefs(row, 'acceptanceRefs'),
+    commandRefs: compactCoverageRefs(row, 'commandRefs'),
+    evidenceRefs: compactCoverageRefs(row, 'evidenceRefs'),
+    stopConditionRefs: compactCoverageRefs(row, 'stopConditionRefs'),
+  });
+}
+
+function compactSourceClauseCoverage(summary) {
+  if (!isRecord(summary) || summary.schemaVersion !== 'goal-contract-source-clause-coverage/v1' ||
+    typeof summary.sourceArtifactId !== 'string' || !summary.sourceArtifactId ||
+    typeof summary.sourceSnapshotHash !== 'string' || !/^sha256:[0-9a-f]{64}$/u.test(summary.sourceSnapshotHash) ||
+    !Number.isInteger(summary.clauseCount) || summary.clauseCount < 0 ||
+    typeof summary.clauseSetHash !== 'string' || !/^sha256:[0-9a-f]{64}$/u.test(summary.clauseSetHash) ||
+    !Array.isArray(summary.clauseSpans) || summary.clauseSpans.length !== summary.clauseCount) {
+    throw failure('source_coverage_receipt_invalid', { field: 'sourceClauseCoverageSummaries' });
+  }
+  return Object.freeze({
+    sourceArtifactId: summary.sourceArtifactId,
+    sourceSnapshotHash: summary.sourceSnapshotHash,
+    clauseCount: summary.clauseCount,
+    clauseSetHash: summary.clauseSetHash,
+    sourceClauseCoverageSummaryHash: hashControlPlaneValue(summary),
+  });
+}
+
+function validateGoalContractSourceCoverageArtifact(value, options = {}) {
+  let artifact;
+  try {
+    artifact = validateGoalContractSchema(SOURCE_COVERAGE_RECEIPT_SCHEMA, value);
+  } catch (error) {
+    throw failure('source_coverage_receipt_invalid', {
+      reason: 'schema_validation_failed',
+      cause: error,
+    });
+  }
+  if (artifact.sourceObligationCount !== artifact.sourceObligations.length ||
+    artifact.coverageRowsHash !== hashControlPlaneValue(artifact.sourceObligations) ||
+    new Set(artifact.sourceObligations.map((row) => row.id)).size !== artifact.sourceObligations.length ||
+    new Set(artifact.sourceClauseCoverage.map((row) => row.sourceArtifactId)).size !==
+      artifact.sourceClauseCoverage.length) {
+    throw failure('source_coverage_receipt_invalid', { reason: 'coverage_projection_hash_mismatch' });
+  }
+  if (options.semanticRows !== undefined) {
+    if (!Array.isArray(options.semanticRows) ||
+      artifact.sourceObligationSetHash !== hashControlPlaneValue(options.semanticRows) ||
+      options.semanticRows.length !== artifact.sourceObligations.length ||
+      options.semanticRows.some((row, index) =>
+        artifact.sourceObligations[index].id !== row?.id ||
+        artifact.sourceObligations[index].semanticRowHash !== hashControlPlaneValue(row))) {
+      throw failure('source_coverage_receipt_invalid', { reason: 'semantic_round_trip_mismatch' });
+    }
+  }
+  if (options.sourceClauseCoverageSummaries !== undefined) {
+    const summaries = options.sourceClauseCoverageSummaries;
+    if (!Array.isArray(summaries) || summaries.length !== artifact.sourceClauseCoverage.length ||
+      summaries.some((summary, index) => {
+        const projected = artifact.sourceClauseCoverage[index];
+        return projected.sourceArtifactId !== summary?.sourceArtifactId ||
+          projected.sourceSnapshotHash !== summary?.sourceSnapshotHash ||
+          projected.clauseCount !== summary?.clauseCount ||
+          projected.clauseSetHash !== summary?.clauseSetHash ||
+          projected.sourceClauseCoverageSummaryHash !== hashControlPlaneValue(summary);
+      })) {
+      throw failure('source_coverage_receipt_invalid', { reason: 'source_clause_round_trip_mismatch' });
+    }
+  }
+  return artifact;
+}
+
+function createGoalContractSourceCoverageArtifact(request) {
+  if (!isRecord(request) || !isRecord(request.coverageReceipt)) {
+    throw failure('source_coverage_receipt_invalid', { field: 'coverageReceipt' });
+  }
+  const semanticReceipt = request.coverageReceipt;
+  const semanticRows = semanticReceipt.sourceObligations;
+  const sourceClauseCoverageSummaries = semanticReceipt.sourceClauseCoverageSummaries;
+  if (!Array.isArray(semanticRows) || semanticRows.length === 0 ||
+    !Array.isArray(sourceClauseCoverageSummaries) || sourceClauseCoverageSummaries.length === 0 ||
+    semanticReceipt.evidenceClassification !== 'coverage_only' ||
+    semanticReceipt.runtimeEvidenceAuthority !== false ||
+    semanticReceipt.coverageAudit?.decision !== 'pass' ||
+    semanticReceipt.implementationProofAudit?.decision !== 'pass') {
+    throw failure('source_coverage_receipt_invalid', { field: 'coverageReceipt' });
+  }
+  const sourceObligations = semanticRows.map(compactSourceCoverageRow);
+  const sourceClauseCoverage = sourceClauseCoverageSummaries.map(compactSourceClauseCoverage);
+  const artifact = Object.freeze({
+    schemaVersion: 'goal-contract-source-coverage-receipt/v2',
+    projectionMode: 'minimal_hash_bound',
+    entryScenario: request.entryScenario,
+    sourcePlanPath: request.sourcePlanPath,
+    sourcePlanHash: semanticReceipt.sourcePlanHash,
+    sourceBytes: request.sourceBytes,
+    sourceLines: request.sourceLines,
+    goalContractPath: request.goalContractPath,
+    goalContractHash: request.goalContractHash,
+    goalContractDocumentHash: request.goalContractDocumentHash,
+    canonicalIntentBundleHash: semanticReceipt.canonicalIntentBundleHash,
+    sourceAuthorityBundleHash: semanticReceipt.sourceAuthorityBundleHash,
+    sourceObligationCount: semanticRows.length,
+    sourceObligationSetHash: hashControlPlaneValue(semanticRows),
+    coverageRowsHash: hashControlPlaneValue(sourceObligations),
+    sourceObligations,
+    sourceClauseCoverage,
+    unmappedSourceObligations: [],
+    orphanGeneratedRefs: [],
+    blockingReasons: [],
+    evidenceClassification: 'coverage_only',
+    runtimeEvidenceAuthority: false,
+    decision: 'pass',
+  });
+  return Object.freeze(validateGoalContractSourceCoverageArtifact(artifact, {
+    semanticRows,
+    sourceClauseCoverageSummaries,
+  }));
 }
 
 function verifyGoalContractGeneratorHardeningProvenance(request: unknown) {
@@ -1047,6 +1277,7 @@ function compileGoalContract(request: unknown = {}) {
       specSpanRefs: obligation.specSpanRefs,
       parentTaskRefs: obligation.parentTaskRefs,
       dependencyRefs: obligation.dependencyRefs,
+      ...canonicalIntentSemanticsProjection(obligation),
     })),
     primarySourceCoverage: coverage.primarySourceCoverage,
     subordinateSourceCoverageReceipts:
@@ -1105,6 +1336,8 @@ function compileGoalContract(request: unknown = {}) {
     sourcePlanHash: source.sourcePlanHash,
     sourceObligations: mappedSourceObligations,
     coverageAudit: built.coverageAudit,
+    canonicalIntentBundle: canonicalBundle,
+    compositeSourceAuthorityBundle: authorityBundle,
   });
   const rendererInput = {
     profile,
@@ -1246,9 +1479,11 @@ module.exports = {
   compileGoalContract,
   compileGoalContractPolicy,
   compileMainAgentGoalAuthorityBundle,
+  createGoalContractSourceCoverageArtifact,
   createGoalContractSourceCoverageReceipt,
   createGoalContractCompilationReceipt,
   goalContractCompilerIdentity,
   normalizeGoalContractSourceCoverageMappings,
+  validateGoalContractSourceCoverageArtifact,
   verifyGoalContractGeneratorHardeningProvenance,
 };

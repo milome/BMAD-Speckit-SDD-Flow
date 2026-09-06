@@ -12,6 +12,8 @@ import {
   resolvePackagedGoalRunExecutionAdapterAuthority,
 } from './goal-run-execution-adapter-authority';
 import { validateGoalContractSchema } from './schema-registry';
+import { standaloneGoalSemanticIRHash } from './standalone-goal-semantic-hash';
+import { renderNormativeDetails } from './goal-normative-renderer';
 
 export type FrozenGoalActivationModule = never;
 
@@ -132,18 +134,24 @@ function readHashReferencedRecord(input: {
   field: string;
   schemaName: string;
   hashField: string;
-}): { path: string; record: SchemaRecord; hash: string } {
+}): { path: string; record: SchemaRecord; hash: string; persistedRecord?: SchemaRecord } {
   if (!isRecord(input.ref)) {
     throw failure('goal_execution_authority_invalid', { field: input.field });
   }
   const targetPath = confinedPath(input.outRoot, input.ref.path, `${input.field}.path`);
-  const record = readJsonFile(targetPath, 'goal_execution_authority_invalid');
+  const persistedRecord = readJsonFile(targetPath, 'goal_execution_authority_invalid');
+  let record = persistedRecord;
+  if (input.schemaName === GOAL_EXECUTION_IR_SCHEMA) {
+    verifyCanonicalRecordBytes(targetPath, persistedRecord);
+    const { resolveGoalExecutionAuthority } = require(__filename.endsWith('.ts') ? './goal-execution-authority.ts' : './goal-execution-authority');
+    record = resolveGoalExecutionAuthority(persistedRecord);
+  }
   validateGoalContractSchema(input.schemaName, record);
   const hash = verifyRecordHash(record, input.hashField, 'goal_execution_authority_invalid');
   if (hash !== requireHash(input.ref.hash, `${input.field}.hash`)) {
     throw failure('goal_execution_authority_invalid', { field: input.field });
   }
-  return { path: targetPath, record, hash };
+  return { path: targetPath, record, hash, ...(input.schemaName === GOAL_EXECUTION_IR_SCHEMA ? { persistedRecord } : {}) };
 }
 
 function verifyBytesReference(outRoot: string, ref: unknown, field: string): string {
@@ -192,7 +200,10 @@ function resolveFrozenGoalAuthority(input: { projectRoot: string; goalAuthorityP
     });
   }
   const irPath = confinedPath(outRoot, irRef.path, 'goalExecutionIrRef.path');
-  const goalExecutionIr = readJsonFile(irPath, 'goal_execution_ir_invalid');
+  const storedGoalExecutionIr = readJsonFile(irPath, 'goal_execution_ir_invalid');
+  verifyCanonicalRecordBytes(irPath, storedGoalExecutionIr);
+  const { resolveGoalExecutionAuthority } = require(__filename.endsWith('.ts') ? './goal-execution-authority.ts' : './goal-execution-authority');
+  const goalExecutionIr = resolveGoalExecutionAuthority(storedGoalExecutionIr);
   const { validateGoalExecutionIR } = require(
     __filename.endsWith('.ts') ? './goal-execution-ir.ts' : './goal-execution-ir'
   );
@@ -242,7 +253,8 @@ function resolveFrozenGoalAuthority(input: { projectRoot: string; goalAuthorityP
     evidenceRef.record.goalExecutionIRHash !== goalExecutionIr.goalExecutionIRHash ||
     evidenceRef.record.goalSourceBindingHash !== sourceBindingRef.hash ||
     closureRef.record.goalExecutionIRHash !== goalExecutionIr.goalExecutionIRHash ||
-    closureRef.record.decision !== 'pass'
+    closureRef.record.decision !== 'pass' ||
+    closureRef.record.schemaVersion !== (goalExecutionIr.schemaVersion === 'GoalExecutionIR/v2' ? 'GoalExecutionClosure/v2' : 'GoalExecutionClosure/v1')
   ) {
     throw failure('goal_execution_authority_invalid', {
       field: 'authorityTuple',
@@ -250,6 +262,15 @@ function resolveFrozenGoalAuthority(input: { projectRoot: string; goalAuthorityP
   }
   verifyBytesReference(outRoot, activeAuthority.parentProjectionRef, 'parentProjectionRef');
   verifyBytesReference(outRoot, activeAuthority.renderabilityReportRef, 'renderabilityReportRef');
+
+  if (activeAuthority.profile === 'requirements_backed' && goalExecutionIr.schemaVersion === 'GoalExecutionIR/v2') {
+    const { compileGoalExecutionClosure } = require(
+      __filename.endsWith('.ts') ? './goal-execution-closure.ts' : './goal-execution-closure'
+    );
+    if (compileGoalExecutionClosure(goalExecutionIr).goalExecutionClosureHash !== closureRef.hash) {
+      throw failure('goal_execution_authority_invalid', { field: 'requirementsClosureEquivalence' });
+    }
+  }
 
   if (activeAuthority.profile === 'standalone') {
     const standaloneSemanticIrRef = activeAuthority.standaloneSemanticIrRef;
@@ -272,12 +293,10 @@ function resolveFrozenGoalAuthority(input: { projectRoot: string; goalAuthorityP
       standaloneSemanticIr.standaloneGoalSemanticIRHash,
       'standaloneGoalSemanticIRHash'
     );
-    const standaloneSemanticIrPayload = {
-      sourcePlanHash: standaloneSemanticIr.sourcePlanHash,
-      semanticPayload: standaloneSemanticIr.semanticPayload,
-    };
     if (
-      hashControlPlaneValue(standaloneSemanticIrPayload) !== standaloneSemanticIrHash ||
+      standaloneGoalSemanticIRHash(standaloneSemanticIr) !== standaloneSemanticIrHash ||
+      standaloneSemanticIr.schemaVersion !== (goalExecutionIr.schemaVersion === 'GoalExecutionIR/v2' ? 'StandaloneGoalSemanticIR/v2' : 'StandaloneGoalSemanticIR/v1') ||
+      goalExecutionIr.standaloneLineage?.standaloneGoalSemanticIRHash !== standaloneSemanticIrHash ||
       standaloneSemanticIrHash !==
         requireHash(standaloneSemanticIrRef.hash, 'standaloneSemanticIrRef.hash')
     ) {
@@ -285,15 +304,64 @@ function resolveFrozenGoalAuthority(input: { projectRoot: string; goalAuthorityP
         field: 'standaloneGoalSemanticIRHash',
       });
     }
-    const passRef = readHashReferencedRecord({
+    const internalGateRef = activeAuthority.standaloneInternalSemanticGateRef;
+    const internalGate = readHashReferencedRecord({
       outRoot,
-      ref: activeAuthority.standaloneAuthoringEffectivePassRef,
-      field: 'standaloneAuthoringEffectivePassRef',
-      schemaName: 'standalone-goal-authoring-effective-pass.schema.json',
-      hashField: 'authoringEffectivePassHash',
+      ref: internalGateRef,
+      field: 'standaloneInternalSemanticGateRef',
+      schemaName: 'standalone-goal-internal-semantic-gate.schema.json',
+      hashField: 'gateHash',
     });
-    if (passRef.record.decision !== 'pass') {
-      throw failure('standalone_goal_successor_required:authoring_effective_pass');
+    if (internalGate.record.decision !== 'pass' ||
+      internalGate.record.standaloneGoalSemanticIRHash !== standaloneSemanticIrHash ||
+      goalExecutionIr.standaloneLineage?.internalSemanticGateHash !== internalGate.hash ||
+      goalExecutionIr.technicalAuthority?.internalSemanticGateHash !== internalGate.hash) {
+      throw failure('standalone_goal_internal_semantic_gate_invalid');
+    }
+    if (goalExecutionIr.schemaVersion === 'GoalExecutionIR/v2') {
+      const lineage = goalExecutionIr.standaloneLineage;
+      if (sourceBindingRef.record.sourcePlanHash !== standaloneSemanticIr.sourcePlanHash ||
+        sourceBindingRef.record.sourceSnapshotHash !== standaloneSemanticIr.sourceSnapshotHash ||
+        lineage?.sourcePlanHash !== standaloneSemanticIr.sourcePlanHash ||
+        lineage?.sourceSnapshotHash !== standaloneSemanticIr.sourceSnapshotHash) {
+        throw failure('goal_execution_authority_invalid', { field: 'standaloneSourceIdentity' });
+      }
+      const { compileGoalExecutionIR } = require(
+        __filename.endsWith('.ts') ? './goal-execution-ir.ts' : './goal-execution-ir'
+      );
+      const { compileGoalExecutionClosure } = require(
+        __filename.endsWith('.ts') ? './goal-execution-closure.ts' : './goal-execution-closure'
+      );
+      const { resolveStandaloneGoalSemanticPayload } = require(
+        __filename.endsWith('.ts') ? './standalone-goal-semantic-representation.ts' : './standalone-goal-semantic-representation'
+      );
+      const payload = resolveStandaloneGoalSemanticPayload(standaloneSemanticIr);
+      const reconstructed = compileGoalExecutionIR({
+        profile: 'standalone', semanticSource: { kind: 'standalone_goal_semantic_ir', schemaVersion: 'StandaloneGoalSemanticIR/v2',
+          standaloneGoalSemanticIRHash: standaloneSemanticIrHash },
+        standaloneLineage: { sourcePlanHash: standaloneSemanticIr.sourcePlanHash, sourceSnapshotHash: standaloneSemanticIr.sourceSnapshotHash,
+          standaloneGoalSemanticIRHash: standaloneSemanticIrHash, internalSemanticGateHash: internalGate.hash },
+        technicalAuthority: { standaloneGoalSemanticIRHash: standaloneSemanticIrHash, internalSemanticGateHash: internalGate.hash },
+        obligations: payload.obligations, atoms: payload.atoms, logicalSpecSpans: payload.logicalSpecSpans,
+        executionConstraints: payload.executionConstraints, architecture: payload.architecture,
+      });
+      if (reconstructed.goalExecutionIRHash !== goalExecutionIr.goalExecutionIRHash ||
+        compileGoalExecutionClosure(reconstructed).goalExecutionClosureHash !== closureRef.hash) {
+        throw failure('goal_execution_authority_invalid', { field: 'standaloneCompilationEquivalence' });
+      }
+      const spanIds = new Set(reconstructed.logicalSpecSpans.map((span: SchemaRecord) => span.specSpanId));
+      const expectedEvidence = {
+        schemaVersion: 'GoalContractResolvedEvidenceIndex/v1', profile: 'standalone',
+        goalExecutionIRHash: reconstructed.goalExecutionIRHash, goalSourceBindingHash: sourceBindingRef.hash,
+        resolutions: reconstructed.obligations.map((obligation: SchemaRecord) => ({
+          goalObligationId: obligation.obligationId,
+          logicalSpecSpanRefs: obligation.sourceRefs.filter((ref: string) => spanIds.has(ref)),
+          evidenceClaimRefs: obligation.evidenceClaimRefs,
+        })),
+      };
+      if (hashControlPlaneValue(expectedEvidence) !== evidenceRef.hash) {
+        throw failure('goal_execution_authority_invalid', { field: 'standaloneEvidenceEquivalence' });
+      }
     }
   }
 
@@ -469,6 +537,7 @@ export function validateGoalExecutionAdmission(input: {
       requestId,
       requirementRecordPath,
       expectedRequirementsLineage: requirementsLineage,
+      expectedGoalExecutionIr: resolved.goalExecutionIr,
     });
     return Object.freeze({
       ...resolved,
@@ -527,7 +596,7 @@ function deriveComponentOwnedPaths(
     )
   );
   const candidates = new Set<string>();
-  for (const artifact of Array.isArray(ir.artifacts) ? ir.artifacts.filter(isRecord) : []) {
+  for (const artifact of ir.schemaVersion !== 'GoalExecutionIR/v2' && Array.isArray(ir.artifacts) ? ir.artifacts.filter(isRecord) : []) {
     const artifactObligations = Array.isArray(artifact.obligationRefs)
       ? artifact.obligationRefs.map(String)
       : [];
@@ -541,7 +610,7 @@ function deriveComponentOwnedPaths(
   }
   for (const domain of domains) {
     const domainId = String(domain.executionDomainId);
-    if ((domainComponentCounts.get(domainId) ?? 0) === 1) {
+    if (ir.schemaVersion !== 'GoalExecutionIR/v2' && (domainComponentCounts.get(domainId) ?? 0) === 1) {
       for (const targetPath of Array.isArray(domain.logicalTargetPaths)
         ? domain.logicalTargetPaths
         : []) {
@@ -551,6 +620,13 @@ function deriveComponentOwnedPaths(
     for (const ownership of Array.isArray(domain.ownership)
       ? domain.ownership.filter(isRecord)
       : []) {
+      if (ir.schemaVersion === 'GoalExecutionIR/v2') {
+        if ((Array.isArray(ownership.obligationRefs) && ownership.obligationRefs.some((ref) => obligationRefs.has(ref))) ||
+          (Array.isArray(ownership.atomRefs) && ownership.atomRefs.some((ref) => atomRefs.has(ref)))) {
+          candidates.add(String(ownership.targetPath ?? ''));
+        }
+        continue;
+      }
       const ownershipBasis = Array.isArray(ownership.basisRefs)
         ? ownership.basisRefs.map(String)
         : [];
@@ -749,9 +825,10 @@ function renderDirectGoalExecution(ir: SchemaRecord): string {
     'Execution Mode: direct_goal',
     '',
     '## Obligations',
-    ...obligations.map(
+    ...obligations.flatMap(
       (obligation) =>
-        `- ${String(obligation.kind)} ${String(obligation.obligationId)}: ${String(obligation.text)}`
+        [`- ${String(obligation.kind)} ${String(obligation.obligationId)}: ${String(obligation.text)}`,
+          ...(ir.schemaVersion === 'GoalExecutionIR/v2' ? renderNormativeDetails(obligation) : [])]
     ),
     '',
     '## Atomic Tasks',
@@ -1723,7 +1800,7 @@ function readCompatibleActiveRun(input: {
     const { partitionPolicyIdentity } = require(
       __filename.endsWith('.ts') ? './frozen-goal-partition.ts' : './frozen-goal-partition'
     );
-    const currentPolicy = partitionPolicyIdentity();
+    const currentPolicy = partitionPolicyIdentity(String(manifestRef.record.schemaVersion));
     if (
       manifestRef.record.hardCompatibilityPolicyHash !==
         currentPolicy.hardCompatibilityPolicyHash ||
@@ -1876,6 +1953,7 @@ function resolveDirectExecutionAuthority(input: {
       executionAuthorityHash: String(input.goalExecutionIr.goalExecutionIRHash),
       executionPackagePath: packageRef.path,
       executionPackageHash: packageRef.hash,
+      ...aggregateExecutionMetadata(input.goalExecutionIr),
       ownedPaths: sortedUniqueText(
         Array.isArray(logicalScopes.ownedPaths) ? logicalScopes.ownedPaths : []
       ),
@@ -1893,10 +1971,24 @@ function resolveDirectExecutionAuthority(input: {
   ];
 }
 
+function aggregateExecutionMetadata(authority: SchemaRecord): SchemaRecord {
+  const tasks = Array.isArray(authority.atomicTasks) ? authority.atomicTasks.filter(isRecord) : [];
+  const aggregates = tasks.filter((task) => isRecord(task.taskExecution) && task.taskExecution.executionClass === 'aggregate_only');
+  if (!aggregates.length) return {};
+  if (aggregates.length !== tasks.length || !['GoalExecutionIR/v2', 'GoalChildExecutionContract/v2'].includes(authority.schemaVersion) ||
+    !isRecord(authority.logicalScopes) || authority.logicalScopes.ownedPaths.length !== 0 ||
+    new Set(aggregates.map((task) => task.taskExecution.aggregateGatePhase)).size !== 1) {
+    throw failure('goal_execution_aggregate_authority_invalid');
+  }
+  return { executionClass: 'aggregate_only', aggregateGatePhase: aggregates[0].taskExecution.aggregateGatePhase,
+    taskExecutions: aggregates.map((task) => ({ taskId: task.taskId, ...structuredClone(task.taskExecution) })) };
+}
+
 function resolvePartitionedExecutionAuthorities(input: {
   runRoot: string;
   candidateRun: SchemaRecord;
   eligibility: SchemaRecord;
+  goalExecutionIr: SchemaRecord;
 }) {
   const manifestRef = readHashReferencedRecord({
     outRoot: input.runRoot,
@@ -1906,6 +1998,10 @@ function resolvePartitionedExecutionAuthorities(input: {
     hashField: 'partitionManifestHash',
   });
   verifyCanonicalRecordBytes(manifestRef.path, manifestRef.record);
+  const typed = input.goalExecutionIr.schemaVersion === 'GoalExecutionIR/v2';
+  if (manifestRef.record.schemaVersion !== (typed ? 'GoalContractPartitionManifest/v2' : 'GoalContractPartitionManifest/v1')) {
+    throw failure('goal_execution_package_invalid', { field: 'partitionManifestVersion' });
+  }
   assertExecutionIdentity(
     { ...manifestRef.record, executionMode: 'partitioned_goal' },
     {
@@ -1979,12 +2075,21 @@ function resolvePartitionedExecutionAuthorities(input: {
     if (!isRecord(row.childContractRef) || childContractHash !== row.childContractRef.hash) {
       throw failure('goal_execution_package_invalid', { field: `${partitionId}.childContractRef` });
     }
+    if (typed) {
+      const { validateTypedPartitionChild } = require(
+        __filename.endsWith('.ts') ? './frozen-goal-partition.ts' : './frozen-goal-partition'
+      );
+      validateTypedPartitionChild(input.goalExecutionIr,
+        Array.isArray(input.eligibility.components) ? input.eligibility.components.filter(isRecord) : [], row, childContract);
+    }
     const membership = {
       partitionId,
       componentRefs: row.componentRefs,
       taskRefs: row.taskRefs,
       traceSliceRefs: row.traceSliceRefs,
       obligationRefs: row.obligationRefs,
+      ...(typed ? { inheritedObligationRefs: row.inheritedObligationRefs } : {}),
+      ...(typed && Array.isArray(row.executionConstraintRefs) ? { executionConstraintRefs: row.executionConstraintRefs } : {}),
       dependencyPartitionRefs: row.dependencyPartitionRefs,
       expectedEffortMinutes: row.expectedEffortMinutes,
       upperBoundEffortMinutes: row.upperBoundEffortMinutes,
@@ -2000,6 +2105,8 @@ function resolvePartitionedExecutionAuthorities(input: {
       taskRefs: childContract.taskRefs,
       traceSliceRefs: childContract.traceSliceRefs,
       obligationRefs: childContract.obligationRefs,
+      ...(typed ? { inheritedObligationRefs: childContract.inheritedObligationRefs } : {}),
+      ...(typed && Array.isArray(childContract.executionConstraintRefs) ? { executionConstraintRefs: childContract.executionConstraintRefs } : {}),
       dependencyPartitionRefs: childContract.dependencyPartitionRefs,
       expectedEffortMinutes: childContract.expectedEffortMinutes,
       upperBoundEffortMinutes: childContract.upperBoundEffortMinutes,
@@ -2011,6 +2118,7 @@ function resolvePartitionedExecutionAuthorities(input: {
         : null,
     };
     if (
+      childContract.schemaVersion !== (typed ? 'GoalChildExecutionContract/v2' : 'GoalChildExecutionContract/v1') ||
       childContract.partitionMembershipHash !== hashControlPlaneValue(membership) ||
       childContract.childContractId !== expectedChildContractId ||
       !sameControlPlaneValue(membership, childMembership) ||
@@ -2080,6 +2188,7 @@ function resolvePartitionedExecutionAuthorities(input: {
         executionPackagePath: childPackagePath,
         executionPackageHash: childPackageHash,
         partitionId,
+        ...aggregateExecutionMetadata(childContract),
         ownedPaths: sortedUniqueText(
           isRecord(childContract.logicalScopes) &&
             Array.isArray(childContract.logicalScopes.ownedPaths)
@@ -2208,7 +2317,7 @@ export function resolveCommittedActiveRun(input: {
     schemaName: GOAL_EXECUTION_IR_SCHEMA,
     hashField: 'goalExecutionIRHash',
   });
-  verifyCanonicalRecordBytes(goalExecutionIrRef.path, goalExecutionIrRef.record);
+  verifyCanonicalRecordBytes(goalExecutionIrRef.path, goalExecutionIrRef.persistedRecord ?? goalExecutionIrRef.record);
   const { validateGoalExecutionIR } = require(
     __filename.endsWith('.ts') ? './goal-execution-ir.ts' : './goal-execution-ir'
   );
@@ -2239,6 +2348,7 @@ export function resolveCommittedActiveRun(input: {
           runRoot,
           candidateRun,
           eligibility: compatible.eligibility,
+          goalExecutionIr: goalExecutionIrRef.record,
         });
   const orderedExecutionAuthorityIds = executionAuthorities.map((authority) =>
     String(authority.executionAuthorityId)
@@ -2289,6 +2399,7 @@ export function resolveCommittedActiveRun(input: {
       requirementRecordPath,
       expectedRequirementsLineage: requirementsLineage,
       phase: isResume ? 'execution_resume' : 'execution_start',
+      expectedGoalExecutionIr: goalExecutionIrRef.record,
       authorizedOwnedPaths: isResume
         ? executionResumeAuthorizedOwnedPaths(attemptPointer, executionAuthorities)
         : [],

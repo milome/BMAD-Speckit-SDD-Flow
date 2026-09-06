@@ -1,4 +1,5 @@
 import { sha256Stable } from './requirements-contract-semantic-resolver';
+import { resolveTypedSourceAuthority, type RequirementsTypedSourceAuthority } from './requirements-contract-typed-source-semantics';
 
 export const REQUIREMENTS_TECHNICAL_EXECUTION_KINDS = [
   'ART',
@@ -16,9 +17,18 @@ export interface RequirementsTechnicalExecutionEntry {
   kind: RequirementsTechnicalExecutionKind;
   id: string;
   value: string;
+  authorityKind?: 'source_declared' | 'derived';
+  applicableSourceRefs?: string[];
+  premiseRefs?: string[];
+  derivationReceiptRefs?: string[];
+  conditions?: unknown[];
+  scope?: Record<string, unknown>;
+  modality?: 'required' | 'suggested' | 'prohibited' | 'template' | 'context';
+  sourceDeclarationRefs?: string[];
 }
 
 export interface RequirementsTechnicalPlanningCapabilityInput {
+  schemaVersion?: 'requirements-contract-technical-planning-input/v2';
   authoringRequestId: string;
   authoringAttemptId: string;
   checkpointId: 'cp02' | 'g02';
@@ -33,7 +43,7 @@ export interface RequirementsTechnicalPlanningCapabilityInput {
 }
 
 export interface RequirementsTechnicalPlanningCapabilityResult {
-  schemaVersion: 'requirements-contract-technical-planning-capability/v1';
+  schemaVersion: 'requirements-contract-technical-planning-capability/v1' | 'requirements-contract-technical-planning-capability/v2';
   authoringRequestId: string;
   authoringAttemptId: string;
   checkpointId: 'cp02' | 'g02';
@@ -47,7 +57,7 @@ export interface RequirementsTechnicalPlanningCapabilityResult {
   issueCode: 'requirements_technical_planning_pending' | null;
   resumable: boolean;
   executionRegistry: {
-    schemaVersion: 'requirements-contract-typed-execution-registry/v1';
+    schemaVersion: 'requirements-contract-typed-execution-registry/v1' | 'requirements-contract-typed-execution-registry/v2';
     entries: RequirementsTechnicalExecutionEntry[];
     registryHash: string;
   } | null;
@@ -68,18 +78,52 @@ function normalized(value: string, issueCode: string): string {
 }
 
 function canonicalEntries(
-  entries: RequirementsTechnicalExecutionEntry[]
+  entries: RequirementsTechnicalExecutionEntry[],
+  typed = false
 ): RequirementsTechnicalExecutionEntry[] {
   if (!Array.isArray(entries)) throw new Error('requirements_technical_candidates_invalid');
   const normalizedEntries = entries.map((entry) => {
     if (!entry || !executionKinds.has(entry.kind)) {
       throw new Error('requirements_technical_candidate_kind_invalid');
     }
-    return {
+    const canonical = {
       kind: entry.kind,
       id: normalized(entry.id, 'requirements_technical_candidate_id_invalid'),
       value: normalized(entry.value, 'requirements_technical_candidate_value_invalid'),
     };
+    if (!typed) {
+      if (Object.keys(entry).some((key) => !['kind', 'id', 'value'].includes(key))) {
+        throw new Error('requirements_technical_typed_entry_version_required');
+      }
+      return canonical;
+    }
+    if (!['source_declared', 'derived'].includes(String(entry.authorityKind)) ||
+      !Array.isArray(entry.conditions) || !entry.scope || typeof entry.scope !== 'object' || Array.isArray(entry.scope)) {
+      throw new Error('requirements_technical_typed_entry_invalid');
+    }
+    const refs: Record<string, string[]> = {};
+    for (const key of ['applicableSourceRefs', 'premiseRefs', 'derivationReceiptRefs'] as const) {
+      if (!Array.isArray(entry[key]) || !entry[key]!.every((ref) => typeof ref === 'string' && ref.length > 0)) {
+        throw new Error('requirements_technical_typed_entry_refs_invalid');
+      }
+      refs[key] = [...new Set(entry[key])].sort();
+    }
+    if (Object.keys(entry).some((key) => !['kind', 'id', 'value', 'authorityKind',
+      'applicableSourceRefs', 'premiseRefs', 'derivationReceiptRefs', 'conditions', 'scope', 'modality', 'sourceDeclarationRefs'].includes(key))) {
+      throw new Error('requirements_technical_typed_entry_field_unknown');
+    }
+    if (entry.modality !== undefined && !['required', 'suggested', 'prohibited', 'template', 'context'].includes(entry.modality)) {
+      throw new Error('requirements_technical_typed_entry_modality_invalid');
+    }
+    if (entry.sourceDeclarationRefs !== undefined && (!Array.isArray(entry.sourceDeclarationRefs) ||
+      !entry.sourceDeclarationRefs.every((ref) => typeof ref === 'string' && ref.length > 0) ||
+      new Set(entry.sourceDeclarationRefs).size !== entry.sourceDeclarationRefs.length)) {
+      throw new Error('requirements_technical_typed_entry_declaration_refs_invalid');
+    }
+    return { ...canonical, authorityKind: entry.authorityKind, ...refs,
+      conditions: structuredClone(entry.conditions), scope: structuredClone(entry.scope),
+      ...(entry.modality === undefined ? {} : { modality: entry.modality }),
+      ...(entry.sourceDeclarationRefs === undefined ? {} : { sourceDeclarationRefs: [...entry.sourceDeclarationRefs].sort() }) };
   });
   normalizedEntries.sort(
     (left, right) => left.kind.localeCompare(right.kind) || left.id.localeCompare(right.id)
@@ -95,7 +139,8 @@ function hashPayload(
   input: Omit<RequirementsTechnicalPlanningCapabilityResult, 'resultHash'>
 ): string {
   return sha256Stable({
-    domain: 'requirements-contract-technical-planning-capability-result/v1',
+    domain: input.schemaVersion === 'requirements-contract-technical-planning-capability/v2'
+      ? 'requirements-contract-technical-planning-capability-result/v2' : 'requirements-contract-technical-planning-capability-result/v1',
     payload: input,
   });
 }
@@ -128,7 +173,8 @@ export function resolveRequirementsTechnicalPlanningCapability(
   ) {
     throw new Error('requirements_technical_identity_hash_invalid');
   }
-  const entries = canonicalEntries(input.candidates);
+  const typed = input.schemaVersion === 'requirements-contract-technical-planning-input/v2';
+  const entries = canonicalEntries(input.candidates, typed);
   const triggerIdentity = sha256Stable({
     domain: 'requirements-technical-planning-trigger/v1',
     authoringRequestId,
@@ -143,15 +189,15 @@ export function resolveRequirementsTechnicalPlanningCapability(
   const executionRegistry = pending
     ? null
     : {
-        schemaVersion: 'requirements-contract-typed-execution-registry/v1' as const,
+        schemaVersion: typed ? 'requirements-contract-typed-execution-registry/v2' as const : 'requirements-contract-typed-execution-registry/v1' as const,
         entries,
         registryHash: sha256Stable({
-          domain: 'requirements-contract-typed-execution-registry/v1',
+          domain: typed ? 'requirements-contract-typed-execution-registry/v2' : 'requirements-contract-typed-execution-registry/v1',
           entries,
         }),
       };
   const payload: Omit<RequirementsTechnicalPlanningCapabilityResult, 'resultHash'> = {
-    schemaVersion: 'requirements-contract-technical-planning-capability/v1',
+    schemaVersion: typed ? 'requirements-contract-technical-planning-capability/v2' : 'requirements-contract-technical-planning-capability/v1',
     authoringRequestId,
     authoringAttemptId,
     checkpointId: input.checkpointId,
@@ -174,6 +220,7 @@ export function resolveRequirementsProductionTechnicalPlanningCapability(input: 
   authoringAttemptId: string;
   premiseHash: string;
   sourceRootCandidates: RequirementsProductionTechnicalAuthorityCandidate[];
+  typedSourceAuthority?: RequirementsTypedSourceAuthority;
 }): RequirementsTechnicalPlanningCapabilityResult {
   if (!Array.isArray(input.sourceRootCandidates)) {
     throw new Error('requirements_technical_authority_candidates_invalid');
@@ -189,9 +236,12 @@ export function resolveRequirementsProductionTechnicalPlanningCapability(input: 
     }
     return declared as RequirementsTechnicalExecutionEntry[];
   });
+  if (input.typedSourceAuthority) candidates.push(...resolveTypedTechnicalDeclarations(input.typedSourceAuthority));
   const status = candidates.length > 0 ? 'available' as const : 'unavailable' as const;
+  const typed = input.sourceRootCandidates.some((candidate) => candidate.semanticBody.schemaVersion === 'requirements-contract-source-node/v2');
   const capabilityId = 'requirements-production-technical-planner';
   return resolveRequirementsTechnicalPlanningCapability({
+    ...(typed ? { schemaVersion: 'requirements-contract-technical-planning-input/v2' as const } : {}),
     authoringRequestId: input.authoringRequestId,
     authoringAttemptId: input.authoringAttemptId,
     checkpointId: 'cp02',
@@ -205,12 +255,87 @@ export function resolveRequirementsProductionTechnicalPlanningCapability(input: 
       }),
       configHash: sha256Stable({
         domain: 'requirements-production-technical-planner-config/v1',
-        candidates: canonicalEntries(candidates),
+        candidates: canonicalEntries(candidates, typed),
       }),
     },
     premiseHash: input.premiseHash,
     candidates,
   });
+}
+
+export function resolveTypedTechnicalDeclarations(authority: RequirementsTypedSourceAuthority): RequirementsTechnicalExecutionEntry[] {
+  const graph = resolveTypedSourceAuthority(authority);
+  const actions = new Set(graph.sourceNodes.filter((node) => node.executionRole === 'action').map((node) => node.sourceRootId));
+  const entries: RequirementsTechnicalExecutionEntry[] = [];
+  const add = (kind: RequirementsTechnicalExecutionKind, key: string, value: string, owners: string[], declarationRefs: string[],
+    scope: Record<string, unknown>, conditions: unknown[] = [], modality: RequirementsTechnicalExecutionEntry['modality'] = 'required') => {
+    if (!value.trim()) throw new Error('requirements_technical_source_declaration_value_missing');
+    entries.push({ kind, id: `${kind}-${sha256Stable({ key, value }).slice(7, 31)}`, value,
+      authorityKind: 'source_declared', applicableSourceRefs: [...new Set(owners)].sort(),
+      premiseRefs: [...declarationRefs].sort(), derivationReceiptRefs: [], conditions, scope, modality,
+      sourceDeclarationRefs: [...declarationRefs].sort() });
+  };
+  const commandOwners = new Map<string, Set<string>>();
+  const includedCommands = new Map<string, string[]>();
+  for (const relation of graph.sourceRelations.filter((relation) => relation.kind === 'command_set_includes')) {
+    const children = includedCommands.get(relation.from) ?? []; children.push(relation.to); includedCommands.set(relation.from, children);
+  }
+  const bindCommand = (id: string, owner: string, visited = new Set<string>()) => {
+    if (visited.has(id)) return;
+    visited.add(id);
+    const owners = commandOwners.get(id) ?? new Set<string>(); owners.add(owner); commandOwners.set(id, owners);
+    for (const child of includedCommands.get(id) ?? []) bindCommand(child, owner, visited);
+  };
+  for (const work of graph.workDeclarations) {
+    const owner = String(work.id);
+    if (!actions.has(owner)) throw new Error('requirements_technical_work_action_unknown');
+    for (const command of Array.isArray(work.commandIds) ? work.commandIds : []) bindCommand(String(command), owner);
+    for (const field of ['productPaths', 'testPaths'] as const) {
+      for (const target of Array.isArray(work[field]) ? work[field] : []) {
+        const value = typeof target === 'string' ? target : target && typeof target === 'object' &&
+          typeof target.raw === 'string' && typeof target.resolved === 'string' ? target.resolved : null;
+        if (!value) throw new Error('requirements_technical_source_path_invalid');
+        add('PATH', `${owner}:${field}:${value}`, value, [owner], [owner], { kind: 'work', owner },
+          typeof target === 'string' ? [] : [{ kind: 'source_declared_path', declaration: structuredClone(target) }]);
+      }
+    }
+    for (const stop of Array.isArray(work.stop) ? work.stop as Record<string, unknown>[] : []) {
+      add('STOP', `${owner}:${String(stop.blockId)}`, String(stop.text ?? ''), [owner], [String(stop.blockId)], { kind: 'work', owner });
+    }
+  }
+  for (const scenario of graph.scenarioDeclarations) {
+    for (const owner of Array.isArray(scenario.works) ? scenario.works : []) {
+      if (!actions.has(String(owner))) throw new Error('requirements_technical_scenario_action_unknown');
+      for (const command of Array.isArray(scenario.commandIds) ? scenario.commandIds : []) bindCommand(String(command), String(owner));
+    }
+  }
+  const runnableRoles = new Set(['global_verification_command', 'green_command', 'red_command', 'regression_command', 'verification_command']);
+  const blocks = new Map(graph.sourceBlocks.map((block) => [String(block.id), block]));
+  for (const command of graph.commandDeclarations) {
+    const id = String(command.id);
+    const role = String(command.role);
+    if (!runnableRoles.has(role)) continue;
+    const owners = [...(commandOwners.get(id) ?? [])];
+    if (actions.has(String(command.owner))) owners.push(String(command.owner));
+    const block = blocks.get(String(command.blockId));
+    const blockScope = block?.scope as Record<string, unknown> | undefined;
+    const scopeRelations = blockScope ? graph.sourceRelations.filter((relation) =>
+      ['dirty_worktree_protection', 'quality_gate', 'real_verification_requirements'].includes(relation.kind) &&
+      relation.to === blockScope.owner && actions.has(relation.from)) : [];
+    owners.push(...scopeRelations.map((relation) => relation.from));
+    add('CMD', id, String(command.expression ?? ''), owners, [id, ...scopeRelations.map((relation) => relation.relationId)],
+      { kind: 'source_command', owner: command.owner, ...(scopeRelations.length ? { inheritedScope: blockScope } : {}) },
+      [{ role, worktree: command.worktree ?? null, expectedExit: command.expectedExit ?? null,
+        declaredContext: command.declaredContext ?? '', authorization: command.authorization ?? null }]);
+  }
+  for (const relation of graph.sourceRelations.filter((relation) => ['work_evidence', 'scenario_evidence'].includes(relation.kind))) {
+    const owners = actions.has(relation.from) ? [relation.from]
+      : (graph.scenarioDeclarations.find((scenario) => scenario.id === relation.from)?.works ?? []) as string[];
+    const scope = { kind: relation.kind === 'work_evidence' ? 'work' : 'scenario', owner: relation.from };
+    add('ART', relation.relationId, relation.to, owners, [relation.relationId], scope);
+    add('EVDREQ', relation.relationId, relation.to, owners, [relation.relationId], scope);
+  }
+  return canonicalEntries(entries, true);
 }
 
 export function validateRequirementsTechnicalPlanningCapabilityResult(
@@ -237,7 +362,7 @@ export function validateRequirementsTechnicalPlanningCapabilityResult(
   ];
   if (Object.keys(result).sort().join('|') !== [...keys].sort().join('|')) return false;
   if (
-    result.schemaVersion !== 'requirements-contract-technical-planning-capability/v1' ||
+    !['requirements-contract-technical-planning-capability/v1', 'requirements-contract-technical-planning-capability/v2'].includes(result.schemaVersion) ||
     !['cp02', 'g02'].includes(result.checkpointId) ||
     !['available', 'unavailable'].includes(result.capabilityStatus) ||
     ![result.capabilityHash, result.configHash, result.premiseHash,
@@ -255,14 +380,16 @@ export function validateRequirementsTechnicalPlanningCapabilityResult(
     return false;
   }
   try {
+    const typed = result.schemaVersion === 'requirements-contract-technical-planning-capability/v2';
+    const registryVersion = typed ? 'requirements-contract-typed-execution-registry/v2' : 'requirements-contract-typed-execution-registry/v1';
     const entries = result.executionRegistry
-      ? canonicalEntries(result.executionRegistry.entries)
+      ? canonicalEntries(result.executionRegistry.entries, typed)
       : [];
     if (
       result.executionRegistry &&
-      (JSON.stringify(entries) !== JSON.stringify(result.executionRegistry.entries) ||
+      (result.executionRegistry.schemaVersion !== registryVersion || JSON.stringify(entries) !== JSON.stringify(result.executionRegistry.entries) ||
         result.executionRegistry.registryHash !== sha256Stable({
-          domain: 'requirements-contract-typed-execution-registry/v1',
+          domain: registryVersion,
           entries,
         }))
     ) {

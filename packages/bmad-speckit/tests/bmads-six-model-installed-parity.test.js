@@ -143,24 +143,6 @@ function writeJson(target, value) {
   fs.writeFileSync(target, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 }
 
-function createFileSymlinkOrSkip(testContext, target, linkPath) {
-  try {
-    fs.symlinkSync(target, linkPath, 'file');
-    return true;
-  } catch (error) {
-    if (
-      process.platform === 'win32' &&
-      error &&
-      typeof error === 'object' &&
-      (error.code === 'EPERM' || error.code === 'EACCES')
-    ) {
-      testContext.skip(`Windows file symlink capability unavailable: ${error.code}`);
-      return false;
-    }
-    throw error;
-  }
-}
-
 function relativeFileRef(root, target) {
   const bytes = fs.readFileSync(target);
   const hash = sha256(bytes);

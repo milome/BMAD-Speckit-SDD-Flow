@@ -25,6 +25,7 @@ import {
   type RequirementsContractSemanticIr,
   type RequirementsExecutionConstraint,
 } from './requirements-contract-semantic-ir';
+import { readRequirementsContractSemanticIrAuthority } from './requirements-contract-semantic-ir-reader';
 import {
   validateRequirementsContractSourceBindingCapsule,
   type RequirementsContractSourceBindingCapsule,
@@ -438,7 +439,7 @@ export function resolveArchitectureConfirmationContext(input: {
   );
 
   const semanticPath = confinedArtifact(recordRoot, text(activeAuthority.activeSemanticIrPath));
-  const semanticIr = readJson(semanticPath) as unknown as RequirementsContractSemanticIr;
+  const semanticIr = readRequirementsContractSemanticIrAuthority(semanticPath);
   const semanticValidation = validateRequirementsContractSemanticIr(semanticIr);
   if (semanticValidation.decision !== 'pass') {
     throw new Error(

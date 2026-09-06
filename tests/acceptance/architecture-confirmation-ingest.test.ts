@@ -1,9 +1,8 @@
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readFileSync } from 'node:fs';
 import * as crypto from 'node:crypto';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { runIngestArchitectureConfirmation } from '../../packages/bmad-speckit/src/main-agent/actions/ingest-architecture-confirmation';
 import { mainIngestArchitectureConfirmation } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/ingest-architecture-confirmation';
 import { resolveArchitectureConfirmationHashRecipe } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
 import {

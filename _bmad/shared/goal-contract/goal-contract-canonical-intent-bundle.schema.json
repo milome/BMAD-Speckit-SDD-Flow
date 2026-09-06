@@ -21,7 +21,7 @@
   ],
   "properties": {
     "schemaVersion": {
-      "const": "goal-contract-canonical-intent-bundle/v1"
+      "enum": ["goal-contract-canonical-intent-bundle/v1", "goal-contract-canonical-intent-bundle/v2"]
     },
     "authorityState": {
       "enum": [
@@ -75,6 +75,19 @@
   },
   "allOf": [
     {
+      "if": { "properties": { "schemaVersion": { "const": "goal-contract-canonical-intent-bundle/v2" } } },
+      "then": { "properties": {
+        "canonicalIntentIR": { "items": { "$ref": "#/$defs/typedIntentRequirements" } },
+        "sourceObligationGraph": { "properties": { "obligations": { "items": { "$ref": "#/$defs/typedIntentRequirements" } } } },
+        "compilerIdentity": { "properties": { "compilerVersion": { "const": "goal-contract-canonical-intent-compiler/v2" } } }
+      } },
+      "else": { "properties": {
+        "canonicalIntentIR": { "items": { "$ref": "#/$defs/legacyIntentRequirements" } },
+        "sourceObligationGraph": { "properties": { "obligations": { "items": { "$ref": "#/$defs/legacyIntentRequirements" } } } },
+        "compilerIdentity": { "properties": { "compilerVersion": { "const": "goal-contract-canonical-intent-compiler/v1" } } }
+      } }
+    },
+    {
       "if": {
         "properties": {
           "authorityState": {
@@ -107,6 +120,19 @@
     }
   ],
   "$defs": {
+    "typedIntentRequirements": {
+      "required": ["sourceRootId", "normativeStrength", "required", "executionRole", "conditions", "applicability", "applicabilityState", "normativeClauses", "provenanceRefs", "sourceBlockRefs", "clauseRefs", "typedRefs", "commandDeclarations"],
+      "properties": { "polarity": { "enum": ["required", "forbidden", "permitted", "preserve", "mixed", "descriptive"] } }
+    },
+    "legacyIntentRequirements": {
+      "properties": {
+        "polarity": { "enum": ["positive", "negative"] },
+        "target": { "minLength": 1 },
+        "sourceRootId": false, "normativeStrength": false, "required": false, "executionRole": false, "conditions": false, "applicability": false, "applicabilityState": false,
+        "normativeClauses": false, "provenanceRefs": false, "sourceBlockRefs": false, "clauseRefs": false, "typedRefs": false,
+        "taskRefs": false, "acceptanceRefs": false, "commandRefs": false, "evidenceRefs": false, "atomicGroupRefs": false, "commandDeclarations": false
+      }
+    },
     "hash": {
       "type": "string",
       "pattern": "^sha256:[0-9a-f]{64}$"
@@ -118,6 +144,26 @@
         "type": "string",
         "minLength": 1
       }
+    },
+    "taskExecution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executionClass", "ownedProductionPaths", "sourceRefs"],
+      "properties": {
+        "executionClass": { "enum": ["executable_child", "aggregate_only"] },
+        "ownedProductionPaths": { "type": "string", "minLength": 1 },
+        "sourceRefs": { "$ref": "#/$defs/stringArray", "minItems": 1 },
+        "aggregateGatePhase": { "enum": ["post_child_execution", "final_aggregate"] },
+        "aggregateValidationCommands": { "$ref": "#/$defs/stringArray", "minItems": 1 },
+        "aggregateValidationCommandsValue": { "type": "string", "minLength": 1 }
+      },
+      "allOf": [{
+        "if": { "properties": { "executionClass": { "const": "aggregate_only" } } },
+        "then": {
+          "required": ["aggregateGatePhase", "aggregateValidationCommands"],
+          "properties": { "ownedProductionPaths": { "enum": ["none", "`none`"] } }
+        }
+      }]
     },
     "nullableString": {
       "type": [
@@ -207,9 +253,39 @@
         "polarity": {
           "enum": [
             "positive",
-            "negative"
+            "negative", "required", "forbidden", "permitted", "preserve", "mixed", "descriptive"
           ]
         },
+        "sourceRootId": { "type": "string", "minLength": 1 },
+        "normativeStrength": { "enum": ["must", "should", "may", "mixed", "descriptive"] },
+        "required": { "type": "boolean" },
+        "applicabilityState": { "enum": ["applicable", "conditional"] },
+        "executionRole": { "enum": ["action", "requirement", "acceptance", "binding", "definition", "boundary", "guidance"] },
+        "taskExecution": { "$ref": "#/$defs/taskExecution" },
+        "conditions": { "type": "array", "items": { "type": "object", "required": ["text", "state", "sourceRefs"], "properties": {
+          "text": { "type": "string", "minLength": 1 }, "state": { "const": "unevaluated" }, "sourceRefs": { "$ref": "#/$defs/stringArray", "minItems": 1 }
+        } } },
+        "applicability": { "type": "object", "required": ["scope", "sourceRefs"], "properties": {
+          "scope": { "enum": ["obligations", "source_scope"] }, "sourceRefs": { "$ref": "#/$defs/stringArray", "minItems": 1 },
+          "obligationRefs": { "$ref": "#/$defs/stringArray", "minItems": 1 }, "sourceScope": { "type": "object" }
+        }, "allOf": [
+          { "if": { "properties": { "scope": { "const": "obligations" } } }, "then": { "required": ["obligationRefs"] } },
+          { "if": { "properties": { "scope": { "const": "source_scope" } } }, "then": { "required": ["sourceScope"] } }
+        ] },
+        "normativeClauses": { "type": "array", "items": { "type": "object" } },
+        "commandDeclarations": { "type": "array", "items": { "type": "object", "required": ["id", "invocation", "sourceRef", "executionStatus"], "properties": {
+          "id": { "type": "string", "minLength": 1 }, "invocation": { "type": "string", "minLength": 1 },
+          "sourceRef": { "type": "object" }, "executionStatus": { "const": "source_declared_not_executed" }
+        } } },
+        "provenanceRefs": { "$ref": "#/$defs/stringArray" },
+        "sourceBlockRefs": { "$ref": "#/$defs/stringArray" },
+        "clauseRefs": { "$ref": "#/$defs/stringArray" },
+        "typedRefs": { "type": "array", "items": { "type": "object" } },
+        "taskRefs": { "$ref": "#/$defs/stringArray" },
+        "acceptanceRefs": { "$ref": "#/$defs/stringArray" },
+        "commandRefs": { "$ref": "#/$defs/stringArray" },
+        "evidenceRefs": { "$ref": "#/$defs/stringArray" },
+        "atomicGroupRefs": { "$ref": "#/$defs/stringArray" },
         "subject": {
           "type": "string",
           "minLength": 1
@@ -220,7 +296,7 @@
         },
         "target": {
           "type": "string",
-          "minLength": 1
+          "minLength": 0
         },
         "applicabilityCondition": {
           "type": "string",
@@ -365,7 +441,7 @@
       ],
       "properties": {
         "compilerVersion": {
-          "const": "goal-contract-canonical-intent-compiler/v1"
+          "enum": ["goal-contract-canonical-intent-compiler/v1", "goal-contract-canonical-intent-compiler/v2"]
         },
         "schemaArtifactHashes": {
           "type": "array",

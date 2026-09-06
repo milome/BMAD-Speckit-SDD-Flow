@@ -61,7 +61,6 @@ import {
   sourceDocumentHashFor,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-implementation-confirmation-codec';
 import { prepareAuditDispatchRuntime } from './helpers/prompt-transaction-audit-dispatch-fixture';
-import type { ConfirmedRequirementsAuthorityProjection } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-confirmed-authority-projection';
 import { compiledPromptRunnerFor } from './helpers/prompt-transaction-compiled-runner-fixture';
 import {
   materializePromptPublicationFixture,

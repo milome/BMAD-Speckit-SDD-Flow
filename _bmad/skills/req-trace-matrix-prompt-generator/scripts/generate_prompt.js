@@ -14,7 +14,8 @@ const {
   PROJECTION_REFRESH_REQUIRED,
 } = require('../../requirements-contract-authoring/scripts/confirmation_drift_classifier');
 
-const { safeWriteJson, safeWriteText } = requireLargeDocumentWriter();
+const { safeWriteJson, safeWriteText, stableStringify: serializeArtifactJson } = requireLargeDocumentWriter();
+const { publishArtifactSet } = require('./publish-artifact-set');
 
 const SKILL_LINE = '$executing-plans $verification-before-completion';
 const COMMAND_PREFIXES = [
@@ -258,6 +259,33 @@ function writeJson(file, value) {
 function writeText(file, value) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   safeWriteText(file, value, { mode: 'upsert' });
+}
+
+function publishBlockedReceipt(outDir, receipt) {
+  const hasPriorArtifacts = ['model_packet.json', 'human_prompt.txt', 'audit_receipt.json', GOAL_DOCUMENT_FILENAME]
+    .some((name) => fs.existsSync(path.join(outDir, name)));
+  const hasPendingPublication = fs.existsSync(path.join(outDir, '.compiler-publication.lock'));
+  const target = hasPriorArtifacts || hasPendingPublication
+    ? path.join(outDir, '.compiler-rejections', `${receipt.receiptHash.slice(7)}.json`)
+    : path.join(outDir, 'audit_receipt.json');
+  writeJson(target, receipt);
+  return normalizePathSafe(target);
+}
+
+function checkArtifactBudgets(artifacts, context) {
+  const { measureJudgePayload } = requireBmadSpeckit(
+    'dist/main-agent/source-authority/scripts/requirements-contract-judge-payload-budget.js'
+  );
+  return Object.entries(artifacts).map(([name, content]) => {
+    try {
+      const measured = measureJudgePayload({ serializedPayload: content,
+        stage: `req_trace_artifact:${path.basename(name)}`, sourceHash: context.sourceDocumentHash });
+      return { artifact: path.basename(name), bytes: measured.serializedPayloadBytes,
+        hash: measured.serializedPayloadHash, limit: measured.transportByteLimit, unit: 'utf8_bytes' };
+    } catch (error) {
+      throw error;
+    }
+  });
 }
 
 function displayPath(file) {
@@ -560,16 +588,14 @@ function latestConfirmationEvent(record) {
       'requirement-record.json must contain confirmationHistory[] before generating an implementation prompt.'
     );
   }
-  const confirmations = history.filter(
-    (item) => item && typeof item === 'object' && item.eventType === 'confirmation_recorded'
-  );
-  if (confirmations.length === 0) {
+  const event = history.at(-1);
+  if (!event || typeof event !== 'object' || event.eventType !== 'confirmation_recorded') {
     throw new BlockedInput(
       'BLOCK: CONFIRMATION_RECORD_REQUIRED',
-      'requirement-record.json confirmationHistory[] has no confirmation_recorded event.'
+      'The latest requirement-record.json confirmationHistory[] event must be confirmation_recorded.'
     );
   }
-  return confirmations.at(-1);
+  return event;
 }
 
 function validateRequirementRecord(args, sourceText, blockText, confirmation) {
@@ -590,11 +616,10 @@ function validateRequirementRecord(args, sourceText, blockText, confirmation) {
     if (event.implementationConfirmationHash !== candidateConfirmationHash) {
       mismatches.push('implementationConfirmationHash');
     }
-    if (record.sourceDocumentHash && record.sourceDocumentHash !== candidateSourceHash) {
+    if (record.sourceDocumentHash !== candidateSourceHash) {
       mismatches.push('record.sourceDocumentHash');
     }
     if (
-      record.implementationConfirmationHash &&
       record.implementationConfirmationHash !== candidateConfirmationHash
     ) {
       mismatches.push('record.implementationConfirmationHash');
@@ -651,6 +676,86 @@ function ids(items) {
   return new Set(items.filter((item) => item && item.id).map((item) => String(item.id)));
 }
 
+function typedSourceRuntime() {
+  return requireBmadSpeckit(
+    'dist/main-agent/source-authority/scripts/requirements-contract-typed-source-semantics.js'
+  );
+}
+
+function typedPacketValidation(packet, receipt, confirmation) {
+  return requireBmadSpeckit(
+    'dist/main-agent/source-authority/scripts/requirements-contract-typed-model-packet.js'
+  ).validateTypedModelPacket(packet, receipt, confirmation);
+}
+
+function typedPacketProjectionRuntime() {
+  return requireBmadSpeckit(
+    'dist/main-agent/source-authority/scripts/requirements-contract-typed-packet-projection.js'
+  );
+}
+
+function packetRequiredCommands(packet) {
+  return typedPacketProjectionRuntime().requiredCommandsFromTypedModelPacket(packet);
+}
+
+function packetErrorCaseCoverage(packet) {
+  return typedPacketProjectionRuntime().errorCaseCoverageFromTypedModelPacket(packet);
+}
+
+function typedPacketPublicationOracle(packet, receipt, confirmation) {
+  return requireBmadSpeckit(
+    'dist/main-agent/source-authority/scripts/requirements-contract-typed-model-packet.js'
+  ).validateTypedModelPacketPublication(packet, receipt, confirmation);
+}
+
+function validateTypedSourceFormat(sourceText, confirmation) {
+  if (!confirmation?.typedSourceAuthority) return;
+  try {
+    const { extractRequirementsContractImplementationConfirmation } = requireBmadSpeckit(
+      'dist/main-agent/source-authority/scripts/requirements-contract-implementation-confirmation-codec.js'
+    );
+    const extracted = extractRequirementsContractImplementationConfirmation(sourceText);
+    if (stableStringify(extracted.value.typedSourceAuthority) !== stableStringify(confirmation.typedSourceAuthority)) {
+      throw new Error('typed_source_parse_mismatch');
+    }
+  } catch (error) {
+    throw new BlockedInput('BLOCK: TYPED_SOURCE_AUTHORITY_INVALID',
+      `Typed source requires canonical inline confirmation: ${String(error.message).slice(0, 200)}`);
+  }
+}
+
+function validateConfirmedTypedSource(confirmation) {
+  if (confirmation.typedSourceAuthority === undefined && confirmation.typedCoverage === undefined) return;
+  try {
+    const runtime = typedSourceRuntime();
+    runtime.resolveTypedSourceAuthority(confirmation.typedSourceAuthority);
+    runtime.assertTypedConfirmationProjection(confirmation);
+  } catch (error) {
+    throw new BlockedInput('BLOCK: TYPED_SOURCE_AUTHORITY_INVALID',
+      `Confirmed typed source validation failed: ${String(error.message).slice(0, 240)}`);
+  }
+}
+
+function projectTypedConfirmationTasks(confirmation) {
+  if (!confirmation.typedSourceAuthority) return confirmation;
+  const tasks = objects(confirmation.implementationTasks);
+  const projection = {
+    atomicImplementationTaskList: tasks,
+    mustToAtomicTaskMap: Object.fromEntries(objects(confirmation.must).map((row) => [
+      String(row.id), tasks.filter((task) => strings(task.requirementRefs).includes(String(row.id)))
+        .map((task) => String(task.id)),
+    ])),
+    atomicTaskToTraceMap: Object.fromEntries(tasks.map((task) => [String(task.id), strings(task.traceRefs)])),
+  };
+  for (const [key, value] of Object.entries(projection)) {
+    if (confirmation[key] !== undefined && stableStringify(confirmation[key]) !== stableStringify(value)) {
+      throw new BlockedInput('BLOCK: TYPED_SOURCE_TASK_PROJECTION_CONFLICT',
+        `Confirmed ${key} conflicts with implementationTasks.`);
+    }
+  }
+  return { ...confirmation, ...projection };
+}
+
 function validateConfirmation(parsed, driftClassification = null) {
   const confirmation = parsed.implementationConfirmation;
   if (!confirmation || typeof confirmation !== 'object') {
@@ -687,6 +792,7 @@ function validateConfirmation(parsed, driftClassification = null) {
     );
   }
 
+  validateConfirmedTypedSource(confirmation);
   const mustIds = ids(confirmation.must);
   const notDoneIds = ids(confirmation.notDone);
   const evidenceIds = ids(confirmation.evidence);
@@ -736,7 +842,7 @@ function validateConfirmation(parsed, driftClassification = null) {
     );
   }
 
-  return confirmation;
+  return projectTypedConfirmationTasks(confirmation);
 }
 
 function renderFinalGates(commands) {
@@ -846,10 +952,12 @@ function controlledRequiredCommandDescriptor(confirmation, command, args) {
   const id = commandId(command);
   const text = commandText(command);
   const { traceRefs, rows } = traceRowsForCommand(confirmation, command);
+  const confirmedRequirementIds = ids(confirmation.must);
   const requirementRefs = unique(
     rows
       .flatMap((row) => strings(row.covers))
-      .filter((ref) => ref.startsWith('MUST-'))
+      .filter((ref) => confirmation.typedSourceAuthority
+        ? confirmedRequirementIds.has(ref) : ref.startsWith('MUST-'))
   );
   const acceptanceRefs = unique(
     rows.flatMap((row) => [
@@ -1535,6 +1643,7 @@ function compilerInputContext(args) {
   const blockText = extractConfirmationBlock(sourceText);
   const parsed = parseConfirmation(blockText);
   const confirmationCandidate = parsed.implementationConfirmation;
+  validateTypedSourceFormat(sourceText, confirmationCandidate);
   if (!args.requirementRecord) {
     validateConfirmation(parsed, null);
   }
@@ -1641,14 +1750,19 @@ function validateExecutionDisciplineProfile(profile) {
 function buildTraceSlices(confirmation) {
   const acceptance = objectById(confirmation.acceptanceTests);
   const e2e = objectById(confirmation.e2eSuites);
+  const mustIds = ids(confirmation.must);
+  const notDoneIds = ids(confirmation.notDone);
   return objects(confirmation.traceRows).map((row) => {
     const acceptanceRefs = strings(row.acceptanceRefs);
     const tddRows = acceptanceRefs.map((ref) => acceptance.get(ref) ?? e2e.get(ref)).filter(Boolean);
     return {
+      ...(confirmation.typedSourceAuthority ? row : {}),
       traceId: String(row.id ?? 'TRACE-UNKNOWN'),
       covers: strings(row.covers),
-      requirementRefs: strings(row.covers).filter((id) => String(id).startsWith('MUST-')),
-      negativeRequirementRefs: strings(row.covers).filter((id) => !String(id).startsWith('MUST-')),
+      requirementRefs: strings(row.covers).filter((id) => confirmation.typedSourceAuthority
+        ? mustIds.has(id) : String(id).startsWith('MUST-')),
+      negativeRequirementRefs: strings(row.covers).filter((id) => confirmation.typedSourceAuthority
+        ? notDoneIds.has(id) : !String(id).startsWith('MUST-')),
       taskRefs: strings(row.taskRefs),
       evidenceRefs: strings(row.evidenceRefs),
       acceptanceRefs,
@@ -1770,6 +1884,7 @@ function normalizeHostExecutionHints(rawHints, recordId) {
 
 function buildModelPacket(context, args) {
   const confirmation = context.confirmation;
+  validateConfirmedTypedSource(confirmation);
   const sourceLabel = args.sourceLabel || displayPath(context.sourcePath);
   const manifest = confirmation.aiTddContractExecutionManifestProjection ?? {};
   const recordId = context.record.recordId ?? confirmation.recordId ?? 'unknown';
@@ -1781,7 +1896,8 @@ function buildModelPacket(context, args) {
   const requiredCommands = objects(confirmation.requiredCommands).map((command) =>
     controlledExecutionContext
       ? controlledRequiredCommandDescriptor(confirmation, command, args)
-      : {
+        : {
+          ...(confirmation.typedSourceAuthority ? command : {}),
           id: commandId(command),
           command: commandText(command),
           traceRows: strings(command.traceRows),
@@ -1808,7 +1924,17 @@ function buildModelPacket(context, args) {
     confirmationHashAuthority: context.confirmationHashAuthority,
   });
   return {
-    schemaVersion: 'req-trace-ai-tdd-model-packet/v1',
+    schemaVersion: confirmation.typedSourceAuthority
+      ? 'req-trace-ai-tdd-model-packet/v2' : 'req-trace-ai-tdd-model-packet/v1',
+    ...(confirmation.typedSourceAuthority ? {
+      typedSourceAuthority: confirmation.typedSourceAuthority,
+      typedCoverage: {
+        schemaVersion: 'requirements-contract-typed-source-coverage-ref/v2',
+        graphHash: confirmation.typedCoverage.graphHash,
+        coverageHash: confirmation.typedCoverage.coverageHash,
+      },
+      boundaryViews: objects(confirmation.boundaryViews),
+    } : {}),
     artifactRole: 'execution_authority',
     ...entryMetadata(args),
     recordId,
@@ -1920,6 +2046,20 @@ function buildModelPacket(context, args) {
         'delivery_verification_report',
         'closeout_integrity_report',
       ],
+    },
+  };
+}
+
+function compactTypedPacketForPublication(packet) {
+  if (packet.schemaVersion !== 'req-trace-ai-tdd-model-packet/v2') return packet;
+  const { requiredCommands, errorCaseCoverage, ...compact } = packet;
+  return {
+    ...compact,
+    projectionRefs: {
+      requiredCommands: 'contractExecutionManifest.requiredCommands',
+      errorCaseCoverage: 'contractExecutionManifest.errorCaseCoverage',
+      acceptanceTests: 'contractExecutionManifest.acceptanceTests',
+      e2eSuites: 'contractExecutionManifest.e2eSuites',
     },
   };
 }
@@ -2135,8 +2275,7 @@ function ensureGoalDocumentPrepared(args, promptMeta, packet, artifactPaths, out
   }
   const goalDocumentResult = renderGoalExecutionDocumentFromPacket(packet, artifactPaths, args);
   const goalDocument = goalDocumentResult.document;
-  writeText(artifactPaths.goalDocumentDiskPath, goalDocument);
-  const goalDocumentHash = sha256(readText(artifactPaths.goalDocumentDiskPath));
+  const goalDocumentHash = sha256(goalDocument);
   promptMeta.hostDirective.goalCommand.documentHash = goalDocumentHash;
   promptMeta.hostDirective.goalCommand.taskReportPath = packet.executionHandoff?.taskReportPath || null;
   promptMeta.hostDirective.goalCommand.packetId = packet.packetId;
@@ -2151,6 +2290,7 @@ function ensureGoalDocumentPrepared(args, promptMeta, packet, artifactPaths, out
   promptMeta.goalContractTemplate = goalDocumentResult.audit;
   outputs.goalDocument = artifactPaths.goalDocument;
   outputHashes.goalDocumentHash = goalDocumentHash;
+  return goalDocument;
 }
 
 function renderTraceSliceRows(packet) {
@@ -2178,8 +2318,9 @@ function renderAtomicRows(packet) {
 }
 
 function renderPacketRequiredCommands(packet) {
-  if (!packet.requiredCommands.length) return '(none)';
-  return packet.requiredCommands
+  const requiredCommands = packetRequiredCommands(packet);
+  if (!requiredCommands.length) return '(none)';
+  return requiredCommands
     .map(
       (command) => `${command.id}:
 ${command.command}
@@ -2197,7 +2338,7 @@ function renderGoalNativeTaskReportHandoff(packet) {
     : [];
   const requiredValidationCommandRefs = strings(handoff.requiredValidationCommandRefs);
   const requiredCommandById = new Map(
-    objects(packet.requiredCommands).map((command) => [commandId(command), command])
+    objects(packetRequiredCommands(packet)).map((command) => [commandId(command), command])
   );
   const requiredValidationCommands =
     requiredValidationCommandRefs.length > 0
@@ -2395,7 +2536,7 @@ ${renderExecutionDisciplineProfile(packet.executionDisciplineProfile)}
 Only ${sourceAuthority} is authoritative. model_packet.json is the machine-readable execution authority.
 Human prompt role: projection-only over model_packet.json. Do not introduce requirements absent from the packet.
 Trace order: ${packet.traceOrder.join(' -> ')}
-Required commands: ${packet.requiredCommands.map((command) => command.id).join(', ') || '(none)'}
+Required commands: ${packetRequiredCommands(packet).map((command) => command.id).join(', ') || '(none)'}
 confirmed source traceRows are contract projection only.
 Runtime closure authority is the requirement-record/control store.
 PASS requires evidence for covered must, notDone, and evidence IDs.
@@ -2454,7 +2595,7 @@ Authoritative artifacts:
 - goal_execution.md: ${artifactPaths.goalDocument}
 
 Runtime closure authority is the requirement-record/control store.
-Confirmed source traceRows.status must not be rewritten as runtime PASS or MISSING_EVIDENCE.`;
+Confirmed source traceRows.status must not be rewritten as runtime PASS or MISSING_EVIDENCE.${renderTypedSourceAuthorityProtocol(packet)}`;
 }
 
 function renderGoalRootCause(packet) {
@@ -2581,7 +2722,7 @@ ${traceTasks}`;
 
 function renderCommandsForRefs(packet, refs) {
   const refSet = new Set(refs.filter(Boolean));
-  const commands = packet.requiredCommands.filter((command) => refSet.has(command.id));
+  const commands = packetRequiredCommands(packet).filter((command) => refSet.has(command.id));
   if (commands.length === 0) return '```powershell\n# No command refs declared for this slice; use required final commands from model_packet.json.\n```';
   return commands
     .map((command) => `\`\`\`powershell\n${command.command}\n\`\`\``)
@@ -2611,7 +2752,7 @@ ${rows}`;
 }
 
 function renderGoalRequiredCommands(packet) {
-  return packet.requiredCommands
+  return packetRequiredCommands(packet)
     .map((command) => `\`\`\`powershell\n${command.command}\n\`\`\``)
     .join('\n\n');
 }
@@ -2700,12 +2841,26 @@ function renderHumanPromptFromPacket(packet, args, context) {
   const language = resolvePromptLanguage(context.confirmation, args);
   const hostDirective = buildHostContinuationDirective(packet, args, context.artifactPaths);
   const profile = args.humanPromptProfile || 'full';
-  const prompt =
+  const prompt = (
     profile === 'compact'
       ? renderCompactHumanPromptFromPacket(packet, args, hostDirective, language)
-      : renderFullHumanPromptFromPacket(packet, args, hostDirective, language);
+      : renderFullHumanPromptFromPacket(packet, args, hostDirective, language)
+  ) + renderTypedSourceAuthorityProtocol(packet);
   const audit = auditHumanPrompt(prompt, packet.sourceDocument, profile);
   return { prompt, language, profile, hostDirective, audit };
+}
+
+function renderTypedSourceAuthorityProtocol(packet) {
+  if (!packet.typedSourceAuthority) return '';
+  const { GOAL_SEMANTIC_DICTIONARY_PROTOCOL } = requireBmadSpeckit(
+    'dist/utils/goal-contract/control-plane/goal-semantic-dictionary.js'
+  );
+  return `\n\nTyped source authority:\nRead model_packet.json#/typedSourceAuthority in full; graphHash=${packet.typedSourceAuthority.graphHash}.
+Resolve model_packet.json#/typedCoverage from the complete typedSourceAuthority graph and verify coverageHash=${packet.typedCoverage.coverageHash}.
+The complete decoded source graph is confirmed authority, including every non-action requirement, boundary, condition, scope and relation.
+Do not treat the legacy action list as the full requirement set or turn non-action nodes into invented tasks.
+Typed authority or coverage changes require reconfirm_required; unsupported v2 readers must stop.
+${GOAL_SEMANTIC_DICTIONARY_PROTOCOL}\n`;
 }
 
 function receiptHashFor(receipt) {
@@ -2720,6 +2875,7 @@ function manifestAliasBlockingReasons(packet) {
 
 function buildPassReceipt(args, context, packet, outputHashes, outputs, promptMeta) {
   const validationReasons = [
+    ...typedPacketValidation(packet, undefined, context.confirmation),
     ...validateCompilerContract(context.confirmation, context.record, {
       criticalAuditorReceiptRefs: context.criticalAuditorReceiptRefs,
     }),
@@ -2729,7 +2885,12 @@ function buildPassReceipt(args, context, packet, outputHashes, outputs, promptMe
     ),
   ];
   const receipt = {
-    schemaVersion: 'req-trace-ai-tdd-compiler-audit-receipt/v1',
+    schemaVersion: packet.typedSourceAuthority
+      ? 'req-trace-ai-tdd-compiler-audit-receipt/v2' : 'req-trace-ai-tdd-compiler-audit-receipt/v1',
+    ...(packet.typedSourceAuthority ? {
+      typedSourceAuthorityHash: packet.typedSourceAuthority.graphHash,
+      typedCoverageHash: packet.typedCoverage.coverageHash,
+    } : {}),
     ...entryMetadata(args),
     recordId: packet.recordId,
     decision: validationReasons.length === 0 ? 'pass' : 'blocked',
@@ -2879,14 +3040,14 @@ function compileArtifacts(args) {
         blockingReasons,
         'Compiler contract validation failed before writing execution packet artifacts.'
       );
-      writeJson(path.join(outDir, 'audit_receipt.json'), receipt);
+      const auditReceipt = publishBlockedReceipt(outDir, receipt);
       return {
         status: 3,
         summary: {
           decision: 'blocked',
           blockingReasons,
-          outputs: { auditReceipt: normalizePathSafe(path.join(outDir, 'audit_receipt.json')) },
-          outputHashes: { auditReceiptHash: sha256(stableStringify(receipt)) },
+          outputs: { auditReceipt },
+          outputHashes: { auditReceiptHash: sha256(serializeArtifactJson(receipt)) },
         },
       };
     }
@@ -2905,14 +3066,14 @@ function compileArtifacts(args) {
           },
         }
       );
-      writeJson(path.join(outDir, 'audit_receipt.json'), receipt);
+      const auditReceipt = publishBlockedReceipt(outDir, receipt);
       return {
         status: 3,
         summary: {
           decision: 'blocked',
           blockingReasons: receipt.blockingReasons,
-          outputs: { auditReceipt: normalizePathSafe(path.join(outDir, 'audit_receipt.json')) },
-          outputHashes: { auditReceiptHash: sha256(stableStringify(receipt)) },
+          outputs: { auditReceipt },
+          outputHashes: { auditReceiptHash: sha256(serializeArtifactJson(receipt)) },
         },
       };
     }
@@ -2928,22 +3089,20 @@ function compileArtifacts(args) {
       goalDocument: normalizePathSafe(goalDocumentPath),
       goalDocumentDiskPath: goalDocumentPath,
     };
-    writeJson(packetPath, packet);
-    const modelPacketHash = sha256(readText(packetPath));
-
     const promptMeta = renderHumanPromptFromPacket(packet, args, context);
-    writeText(promptPath, promptMeta.prompt);
-    const humanPromptHash = sha256(readText(promptPath));
 
     const outputs = {
       modelPacket: normalizePathSafe(packetPath),
       humanPrompt: normalizePathSafe(promptPath),
       auditReceipt: normalizePathSafe(receiptPath),
     };
-    const outputHashes = { modelPacketHash, humanPromptHash };
-    ensureGoalDocumentPrepared(args, promptMeta, packet, context.artifactPaths, outputs, outputHashes);
-    writeJson(packetPath, packet);
-    outputHashes.modelPacketHash = sha256(readText(packetPath));
+    const outputHashes = { humanPromptHash: sha256(promptMeta.prompt) };
+    const goalDocument = ensureGoalDocumentPrepared(
+      args, promptMeta, packet, context.artifactPaths, outputs, outputHashes
+    );
+    const publishedPacket = compactTypedPacketForPublication(packet);
+    const packetContent = `${stableStringify(publishedPacket)}\n`;
+    outputHashes.modelPacketHash = sha256(packetContent);
     if (
       promptMeta.hostDirective.goalCommand?.mode === 'native_goal_document_ref' &&
       !outputHashes.goalDocumentHash
@@ -2953,28 +3112,68 @@ function compileArtifacts(args) {
         'goal_execution.md was generated without binding goalExecutionHash to audit_receipt.json.'
       );
     }
-    const receipt = buildPassReceipt(args, context, packet, outputHashes, outputs, promptMeta);
-    writeJson(receiptPath, receipt);
-    outputHashes.auditReceiptHash = sha256(readText(receiptPath));
+    const receipt = buildPassReceipt(args, context, publishedPacket, outputHashes, outputs, promptMeta);
+    if (receipt.decision !== 'pass') {
+      const auditReceipt = publishBlockedReceipt(outDir, buildBlockedReceipt(
+        args, context, receipt.blockingReasons, 'Rendered artifact validation failed before publication.'
+      ));
+      return { status: 3, summary: { decision: 'blocked', blockingReasons: receipt.blockingReasons,
+        outputs: { auditReceipt }, outputHashes: { auditReceiptHash: sha256(readText(auditReceipt)) } } };
+    }
+    const artifacts = {
+      ...(goalDocument === undefined ? {} : { [goalDocumentPath]: goalDocument }),
+      [promptPath]: promptMeta.prompt,
+      [packetPath]: packetContent,
+    };
+    receipt.payloadBudgets = checkArtifactBudgets({ ...artifacts,
+      'contract_execution_manifest.json': serializeArtifactJson(packet.contractExecutionManifest) }, context);
+    receipt.sourceMeasurement = { bytes: Buffer.byteLength(context.sourceText, 'utf8'),
+      rawTextHash: sha256(context.sourceText), unit: 'utf8_bytes' };
+    receipt.receiptHash = receiptHashFor(receipt);
+    const receiptContent = serializeArtifactJson(receipt);
+    artifacts[receiptPath] = receiptContent;
+    const payloadBudgets = checkArtifactBudgets(artifacts, context);
+    const publicationIssues = typedPacketPublicationOracle(
+      publishedPacket,
+      JSON.parse(receiptContent),
+      context.confirmation
+    );
+    if (publicationIssues.length > 0) {
+      throw new BlockedInput(
+        'BLOCK: TYPED_SOURCE_PUBLICATION_ORACLE_FAILED',
+        JSON.stringify({ issues: publicationIssues.slice(0, 50), sourceHash: context.sourceDocumentHash })
+      );
+    }
+    try {
+      publishArtifactSet(outDir, artifacts);
+    } catch (error) {
+      if (!String(error.code).startsWith('REQ_TRACE_PUBLICATION_')) throw error;
+      throw new BlockedInput(`BLOCK: ${error.code}`, JSON.stringify({
+        stage: 'artifact_publication', journalPath: error.journalPath ?? null,
+        sourceHash: context.sourceDocumentHash,
+      }));
+    }
+    outputHashes.auditReceiptHash = sha256(receiptContent);
     const summary = {
       decision: receipt.decision,
       blockingReasons: receipt.blockingReasons,
       ...entryMetadata(args),
       outputs,
       outputHashes,
+      payloadBudgets,
     };
     return { status: receipt.decision === 'pass' ? 0 : 3, summary };
   } catch (error) {
     if (!(error instanceof BlockedInput)) throw error;
     const receipt = buildBlockedReceipt(args, context, [error.code.replace(/^BLOCK:\s*/u, '')], error.message);
-    writeJson(path.join(outDir, 'audit_receipt.json'), receipt);
+    const auditReceipt = publishBlockedReceipt(outDir, receipt);
     return {
       status: 3,
       summary: {
         decision: 'blocked',
         blockingReasons: receipt.blockingReasons,
-        outputs: { auditReceipt: normalizePathSafe(path.join(outDir, 'audit_receipt.json')) },
-        outputHashes: { auditReceiptHash: sha256(stableStringify(receipt)) },
+        outputs: { auditReceipt },
+        outputHashes: { auditReceiptHash: sha256(serializeArtifactJson(receipt)) },
       },
     };
   }
@@ -2994,6 +3193,7 @@ function buildPrompt(args) {
   const blockText = extractConfirmationBlock(sourceText);
   const parsed = parseConfirmation(blockText);
   const confirmationCandidate = parsed.implementationConfirmation;
+  validateTypedSourceFormat(sourceText, confirmationCandidate);
   if (!args.requirementRecord) {
     validateConfirmation(parsed, null);
   }

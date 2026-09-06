@@ -1,12 +1,18 @@
 import { createHash } from 'node:crypto';
 import { readRequirementsContractJudgeCredentialSecret } from './requirements-contract-judge-credential-resolver';
+import {
+  assertJudgePayloadBudget,
+  assertJudgePayloadUnchanged,
+  type JudgePayloadPreflight,
+} from './requirements-contract-judge-payload-budget';
 
 type JsonRecord = Record<string, unknown>;
 
 interface AdapterInput {
   providerRef?: string;
   provider: JsonRecord;
-  credential: unknown;
+  credential?: unknown;
+  expectedPreflight?: JudgePayloadPreflight;
   body?: unknown;
   payload?: unknown;
   fetch?: typeof fetch;
@@ -106,7 +112,28 @@ function requestBody(input: AdapterInput, provider: JsonRecord): unknown {
   };
 }
 
+function serializeRequest(input: AdapterInput): string {
+  return JSON.stringify(
+    requestBody(input, record(input.provider, 'judge_adapter_provider_invalid'))
+  );
+}
+
+function preflight(input: AdapterInput): JudgePayloadPreflight {
+  return assertJudgePayloadBudget({
+    serializedPayload: serializeRequest(input),
+    provider: input.provider,
+    stage: 'adapter_body',
+  });
+}
+
 function buildRequest(input: AdapterInput): AdapterRequest {
+  const serializedBody = serializeRequest(input);
+  const assessment = assertJudgePayloadBudget({
+    serializedPayload: serializedBody,
+    provider: input.provider,
+    stage: 'adapter_body',
+  });
+  assertJudgePayloadUnchanged(input.expectedPreflight, assessment);
   const provider = record(input.provider, 'judge_adapter_provider_invalid');
   const endpoint = record(provider.endpoint, 'judge_adapter_endpoint_invalid');
   if (provider.transport !== 'anthropic-compatible' || provider.apiStyle !== 'messages') {
@@ -138,9 +165,7 @@ function buildRequest(input: AdapterInput): AdapterRequest {
   if (authentication.type === 'api_key') headers['x-api-key'] = apiKey;
   else if (authentication.type === 'bearer') headers.authorization = `Bearer ${apiKey}`;
   else throw new Error('judge_adapter_authentication_invalid');
-  const body = requestBody(input, provider);
   const requestPolicy = record(provider.requestPolicy, 'judge_adapter_request_policy_invalid');
-  const serializedBody = JSON.stringify(body);
   return {
     url: new URL('/messages', baseUrl).toString(),
     method: 'POST',
@@ -273,4 +298,4 @@ async function judge(input: AdapterInput): Promise<unknown> {
   };
 }
 
-export const AnthropicCompatibleJudgeAdapter = { probe, judge, buildRequest } as const;
+export const AnthropicCompatibleJudgeAdapter = { probe, judge, buildRequest, preflight } as const;

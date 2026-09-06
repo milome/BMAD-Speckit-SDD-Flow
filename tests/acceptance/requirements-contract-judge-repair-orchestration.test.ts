@@ -21,6 +21,7 @@ import {
 import * as judgeLifecycle from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-lifecycle';
 import { runRequirementsContractProductionJudgePipeline } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-production-judge-pipeline';
 import type { PreparedRequirementsContractJudgeInvocation } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-invocation';
+import { assertJudgePayloadBudget } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-payload-budget';
 
 const HASH = (digit: string) => `sha256:${digit.repeat(64)}`;
 
@@ -158,6 +159,9 @@ describe('requirements contract deterministic Judge repair orchestration', () =>
         providerRegistryHash: HASH('9'),
         credentialProviderRef: 'deterministic-test-judge',
         credentialRevision: 1,
+        preflight: ({ request }) => assertJudgePayloadBudget({
+          serializedPayload: JSON.stringify(request), provider, stage: 'test-only-preflight',
+        }),
         invoke,
       } as PreparedRequirementsContractJudgeInvocation;
       const judged = await runRequirementsContractProductionJudgePipeline({

@@ -3,10 +3,6 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import {
-  architectureConfirmationHashFor,
-  resolveArchitectureConfirmationHashRecipe,
-} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/architecture-confirmation-hash-recipe';
 
 const ROOT = process.cwd();
 const SCRIPT = path.join(
@@ -17,7 +13,7 @@ const SCRIPT = path.join(
   'scripts',
   'generate-architecture-confirmation-artifact.ts'
 );
-const RENDERER = path.join(
+const _RENDERER = path.join(
   ROOT,
   '_bmad',
   'skills',
@@ -43,7 +39,7 @@ function runNode(script: string, args: string[]) {
   });
 }
 
-function expectedTargetRef(targetPath: string): string {
+function _expectedTargetRef(targetPath: string): string {
   const resolved = path.resolve(targetPath);
   const relative = path.relative(ROOT, resolved);
   const isRepoRelative =
@@ -51,7 +47,7 @@ function expectedTargetRef(targetPath: string): string {
   return path.normalize(isRepoRelative ? relative : resolved);
 }
 
-function writeProductSourceFixture() {
+function _writeProductSourceFixture() {
   const sourceDir = path.join(tempDir, 'product-src');
   fs.mkdirSync(sourceDir, { recursive: true });
   const hostPath = path.join(sourceDir, 'product_host.py');
@@ -167,7 +163,7 @@ def show_display_settings_dialog(current_settings=None, parent=None, on_apply=No
   return { hostPath, widgetPath, dialogPath };
 }
 
-function writeFixture(options: { includePreConfirmationDrilldown?: boolean } = {}) {
+function _writeFixture(options: { includePreConfirmationDrilldown?: boolean } = {}) {
   const source = path.join(tempDir, 'source.md');
   const record = path.join(
     tempDir,
@@ -307,23 +303,23 @@ ${options.includePreConfirmationDrilldown ? `  preConfirmationDrilldown:
   return { source, record };
 }
 
-const targetPaths = JSON.stringify([
+const _targetPaths = JSON.stringify([
   'src/product/display_settings_widget.py',
   'src/product/display_settings_dialog.py',
   'tests/product/test_display_settings_batch_and_rollback.py',
   'docs/plans/display_settings_requirements.md',
 ]);
-const consumerImpactScan = JSON.stringify([
+const _consumerImpactScan = JSON.stringify([
   { category: 'data_model', status: 'triggered', summary: 'fixture' },
 ]);
-const governanceImpactScan = JSON.stringify([
+const _governanceImpactScan = JSON.stringify([
   {
     category: 'orchestration_hook_gate_ingest_rerun_closeout',
     status: 'triggered',
     summary: 'fixture',
   },
 ]);
-const triggerMatrix = JSON.stringify([
+const _triggerMatrix = JSON.stringify([
   { trigger: 'shared_schema_or_contract_changed', decision: 'triggered', reason: 'fixture' },
 ]);
 const requiredArchitectureDiagramTypes = [
@@ -336,7 +332,7 @@ const requiredArchitectureDiagramTypes = [
   'activity',
 ];
 
-function writeZhLocalizationBundle(): string {
+function _writeZhLocalizationBundle(): string {
   const file = path.join(tempDir, 'architecture-localization.zh-CN.json');
   const mermaidFor = (type: string, scope: 'business' | 'governance') => {
     const noun = scope === 'business' ? '业务' : '治理';

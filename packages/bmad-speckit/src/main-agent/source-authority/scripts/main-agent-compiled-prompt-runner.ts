@@ -3,6 +3,8 @@ import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { resolvePackageMainAgentModulePath } from '../../runtime/package-bmad-root';
+import { extractRequirementsContractImplementationConfirmation } from './requirements-contract-implementation-confirmation-codec';
+import { validateTypedModelPacket } from './requirements-contract-typed-model-packet';
 import type {
   CompiledPromptRef,
   ExecutionDisciplineProfile,
@@ -148,15 +150,14 @@ function defaultTaskReportPath(projectRoot: string, sessionId: string, packetId:
 
 function hasControlledConfirmation(record: Record<string, unknown>): boolean {
   const history = Array.isArray(record.confirmationHistory) ? record.confirmationHistory : [];
-  return history.some((item) => {
-    if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
-    const event = item as Record<string, unknown>;
-    return (
-      text(event.eventType) === 'confirmation_recorded' &&
-      text(event.sourceDocumentHash) === text(record.sourceDocumentHash) &&
-      text(event.implementationConfirmationHash) === text(record.implementationConfirmationHash)
-    );
-  });
+  const item = history.at(-1);
+  if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
+  const event = item as Record<string, unknown>;
+  return text(event.eventType) === 'confirmation_recorded' &&
+    /^sha256:[a-f0-9]{64}$/u.test(text(record.sourceDocumentHash)) &&
+    /^sha256:[a-f0-9]{64}$/u.test(text(record.implementationConfirmationHash)) &&
+    text(event.sourceDocumentHash) === text(record.sourceDocumentHash) &&
+    text(event.implementationConfirmationHash) === text(record.implementationConfirmationHash);
 }
 
 export function resolveConfirmedSource(input: {
@@ -175,18 +176,10 @@ export function resolveConfirmedSource(input: {
   if (isRuntimeRegistryBridge && !hasInlineConfirmedImplementation) {
     return { status: 'no_confirmed_source', reason: 'runtime_registry_bridge_no_confirmed_source' };
   }
-  if (
-    text(record.status) !== 'user_confirmed' &&
-    !hasControlledConfirmation(record) &&
-    !hasInlineConfirmedImplementation
-  ) {
-    return { status: 'no_confirmed_source', reason: 'no_confirmed_source' };
-  }
-  if (
-    text(record.status) === 'user_confirmed' &&
-    !hasControlledConfirmation(record) &&
-    !hasInlineConfirmedImplementation
-  ) {
+  if (!hasControlledConfirmation(record)) {
+    if (text(record.status) !== 'user_confirmed' && !hasInlineConfirmedImplementation) {
+      return { status: 'no_confirmed_source', reason: 'no_confirmed_source' };
+    }
     return {
       status: 'confirmed_source_unresolvable',
       reason: 'confirmed_source_unresolvable',
@@ -416,6 +409,17 @@ export function runMainAgentCompiledPrompt(input: {
 
   const receipt = readJson(auditReceiptPath);
   const packet = readJson(modelPacketPath);
+  let sourceConfirmation: Record<string, unknown> | undefined;
+  try {
+    sourceConfirmation = extractRequirementsContractImplementationConfirmation(
+      fs.readFileSync(confirmedSource.sourcePath, 'utf8')
+    ).value;
+  } catch {
+    if (packet.typedSourceAuthority || packet.schemaVersion === 'req-trace-ai-tdd-model-packet/v2') {
+      blockingReasons.push('typed_packet_confirmed_source_invalid');
+    }
+  }
+  blockingReasons.push(...validateTypedModelPacket(packet, receipt, sourceConfirmation));
   const goalExecutionPath = path.join(outDir, 'goal_execution.md');
   const goalMode = text((receipt.goalCommand as Record<string, unknown> | undefined)?.mode);
   const receiptDecision = text(receipt.decision);

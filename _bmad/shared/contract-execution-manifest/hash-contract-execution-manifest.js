@@ -154,6 +154,8 @@ function canonicalManifestCore(manifest) {
   const core = {};
   for (const [key, value] of Object.entries(manifest)) {
     if (CANONICAL_AUTHORITY_KEYS.has(key)) core[key] = canonicalizeAuthorityValue(key, value);
+    if (manifest.schemaVersion === 'contract-execution-manifest/v2' &&
+      ['typedSourceAuthorityRef', 'typedCoverageRef', 'traceRows'].includes(key)) core[key] = value;
   }
   return core;
 }

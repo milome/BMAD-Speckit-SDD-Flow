@@ -550,9 +550,9 @@ describe('Codex CLI Judge adapter', () => {
     expect(invocationCount).toBe(0);
   });
 
-  it.runIf(codexCliAvailable())(
-    'sends the production schema through a real Codex CLI to a local Responses server',
-    async () => {
+  it.runIf(codexCliAvailable()).each(['default', 'native-requirements'] as const)(
+    'sends the %s production schema through a real Codex CLI to a local Responses server',
+    async (mode) => {
       const loaded = await loadAdapter();
       if (!loaded) return;
       const createAdapter = loaded.createCodexCliJudgeAdapter as CodexAdapterFactory | undefined;
@@ -560,7 +560,18 @@ describe('Codex CLI Judge adapter', () => {
       if (!createAdapter) return;
 
       const requests: Array<{ url: string; authorization: string; body: JsonRecord }> = [];
-      const responseText = JSON.stringify({
+      const nativeSchema = JSON.parse(readFileSync(path.resolve(
+        'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-response.schema.json'), 'utf8'));
+      const nativeResponse = { schemaVersion: 'requirements-contract-judge-response/v2',
+        judgeRequestHash: `sha256:${'2'.repeat(64)}`, verdict: 'fail', findings: [],
+        advisoryObservations: [{ arbitraryNestedRecord: { text: 'Test-only native advisory.', original: [false, 2, null] } }],
+        checkedDimensionIds: [], dimensionResults: [], reviewedArtifactRefs: [], reviewedMustRefs: [],
+        insufficientAuditReasons: ['Synthetic transport data, not a real audit.'] };
+      const responseText = JSON.stringify(mode === 'native-requirements' ? {
+        schemaVersion: 'requirements-contract-judge-json-response-envelope/v1',
+        nativeSchemaHash: `sha256:${createHash('sha256').update(JSON.stringify(nativeSchema)).digest('hex')}`,
+        responseJson: JSON.stringify(nativeResponse),
+      } : {
         decision: 'pass',
         findings: [],
         challengeRequests: [],
@@ -641,10 +652,12 @@ describe('Codex CLI Judge adapter', () => {
           payload: {
             systemPrompt: 'Return pass after inspecting the allowlisted evidence.',
             request,
+            ...(mode === 'native-requirements' ? { structuredOutputSchema: nativeSchema } : {}),
             executionContext: { projectRoot: root, requestPath, outputDir },
           },
         });
-        expect(result).toMatchObject({ decision: 'pass' });
+        if (mode === 'native-requirements') expect(result).toEqual(nativeResponse);
+        else expect(result).toMatchObject({ decision: 'pass' });
         expect(requests).toHaveLength(1);
         expect(requests[0]?.url).toBe('/responses');
         expect(requests[0]?.authorization).toBe('Bearer local-mock-secret');

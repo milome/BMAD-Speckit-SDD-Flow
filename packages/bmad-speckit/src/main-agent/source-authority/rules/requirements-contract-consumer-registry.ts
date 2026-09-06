@@ -378,6 +378,28 @@ export const REQUIREMENTS_CONTRACT_SIX_MODEL_CONSUMER_DEFINITIONS: readonly SixM
 
 const CONSUMER_DEFINITIONS: readonly ConsumerDefinition[] = [
   {
+    consumerId: 'native-cp05-cp08-typed-source-projection',
+    fileName: 'requirements-contract-cp05-cp08.ts',
+    inputRole: 'frozen_semantic_ir_source_projection',
+    supportedModes: ['draft', 'confirmation-ready'],
+    parserRef: 'not_applicable',
+    validatorRef: 'self',
+    readFacadeRef: 'not_applicable',
+    adapterRef: 'not_applicable',
+    sourceFormatVersion: 'v1_or_v2',
+  },
+  {
+    consumerId: 'full-typed-source-candidate-compiler',
+    fileName: 'requirements-contract-typed-source-compiler.ts',
+    inputRole: 'complete_typed_source_authority',
+    supportedModes: ['draft'],
+    parserRef: 'not_applicable',
+    validatorRef: 'self',
+    readFacadeRef: 'not_applicable',
+    adapterRef: 'not_applicable',
+    sourceFormatVersion: 'v2',
+  },
+  {
     consumerId: 'canonical-markdown-parser',
     path: '_bmad/shared/requirements-contract/markdown-source-parser.js',
     inputRole: 'source_markdown',
@@ -728,9 +750,7 @@ export const REQUIREMENTS_CONTRACT_PRODUCTION_SEMANTIC_SOURCE_PATHS = [
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/strict-command-resolution-preflight.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/trace-closure-matrix.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-requirements-contract-source-writes.ts',
-  'packages/bmad-speckit/src/utils/goal-contract/control-plane/standalone-goal-authoring-judge.ts',
   'packages/bmad-speckit/src/utils/goal-contract/control-plane/standalone-goal-authority.ts',
-  'packages/bmad-speckit/dist/utils/goal-contract/control-plane/standalone-goal-authoring-judge.js',
   'packages/bmad-speckit/dist/utils/goal-contract/control-plane/standalone-goal-authority.js',
 ] as const;
 

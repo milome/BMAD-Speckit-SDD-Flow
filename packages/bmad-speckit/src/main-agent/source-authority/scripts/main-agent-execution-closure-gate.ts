@@ -17,6 +17,7 @@ import {
   type RuntimeStatusProjectionUpdate,
 } from './requirements-contract-runtime-status-decision-receipt';
 import { validateSourcePrdLintTransitionFromFiles } from './requirements-contract-validation-facade';
+import { requiredCommandsFromTypedModelPacket } from './requirements-contract-typed-packet-projection';
 
 type JsonObject = Record<string, unknown>;
 type ExecutionClosureDecision = 'pass' | 'blocked';
@@ -177,7 +178,7 @@ function commandSummaryCheck(
     };
   }
   const commandRuns = readJsonArray(summaryPath);
-  const requiredCommands = objects(modelPacket.requiredCommands);
+  const requiredCommands = objects(requiredCommandsFromTypedModelPacket(modelPacket));
   const failedCommands = commandRuns
     .filter((run) => run.exitCode !== 0)
     .map((run) => text(run.commandId) || '<missing>');
@@ -378,7 +379,7 @@ function evaluate(input: {
   const evidence = implementationEvidenceCheck(input.evidencePath, {
     record: input.record,
     attemptId: input.attemptId,
-    commandCount: objects(modelPacket.requiredCommands).length,
+    commandCount: requiredCommandsFromTypedModelPacket(modelPacket).length,
   });
   checks.push(evidence.check);
   blockingReasons.push(...evidence.blockingReasons);

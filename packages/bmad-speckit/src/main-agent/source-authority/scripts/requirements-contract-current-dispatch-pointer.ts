@@ -11,6 +11,10 @@ import {
   writeGovernedJson,
   type GovernedReadbackRef,
 } from './requirements-contract-governed-write';
+import {
+  errorCaseCoverageFromTypedModelPacket,
+  requiredCommandsFromTypedModelPacket,
+} from './requirements-contract-typed-packet-projection';
 
 // AJV validates these schema-driven records before governed publication and replay.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -401,9 +405,9 @@ function assertModelPacketBindings(input: {
     ['mustToAtomicTaskMap', modelPacket.mustToAtomicTaskMap, 'object'],
     ['atomicTaskToTraceMap', modelPacket.atomicTaskToTraceMap, 'object'],
     ['requirements', modelPacket.requirements, 'object'],
-    ['errorCaseCoverage', modelPacket.errorCaseCoverage, 'object'],
+    ['errorCaseCoverage', errorCaseCoverageFromTypedModelPacket(modelPacket), 'object'],
     ['executionHandoff', modelPacket.executionHandoff, 'object'],
-    ['requiredCommands', modelPacket.requiredCommands, 'array'],
+    ['requiredCommands', requiredCommandsFromTypedModelPacket(modelPacket), 'array'],
     ['contractExecutionManifest', modelPacket.contractExecutionManifest, 'object'],
   ];
   if (
