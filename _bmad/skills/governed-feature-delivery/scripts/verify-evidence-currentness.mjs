@@ -7,6 +7,7 @@ import {
   emit,
   fail,
   git,
+  listWorktreePaths,
   parseArgs,
   readJson,
   required,
@@ -29,7 +30,8 @@ function normalizedCommand(value) {
 function evidenceKey(repo, value) {
   const absolute = resolveRepoPath(repo, value, `evidence input ${value}`);
   const relative = path.relative(repo, absolute);
-  return (relative.startsWith('..') ? absolute : relative).replaceAll(path.sep, '/');
+  const outside = path.isAbsolute(relative) || relative === '..' || relative.startsWith(`..${path.sep}`);
+  return (outside ? absolute : relative).replaceAll(path.sep, '/');
 }
 
 try {
@@ -41,7 +43,7 @@ try {
   const repo = path.resolve(options.repo ?? process.cwd());
   const checkpointPath = resolveRepoPath(repo, required(options, 'checkpoint'), '--checkpoint');
   const validator = fileURLToPath(new URL('./validate-execution-checkpoint.mjs', import.meta.url));
-  execFileSync(process.execPath, [validator, '--checkpoint', path.relative(repo, checkpointPath), '--repo', repo], { stdio: 'pipe' });
+  execFileSync(process.execPath, [validator, '--checkpoint', path.relative(repo, checkpointPath), '--repo', repo, '--enforce-source-baseline', 'true'], { stdio: 'pipe' });
   const checkpoint = readJson(checkpointPath);
   const evidenceId = required(options, 'evidence');
   if (checkpoint.schemaVersion !== SCHEMA_VERSION || !Array.isArray(checkpoint.stopGateEvidence)) {
@@ -58,7 +60,7 @@ try {
   if (checkpoint.headSha !== currentHead) reasons.push('checkpoint_head_changed');
   if (evidence.headSha !== currentHead) reasons.push('evidence_head_changed');
   if (checkpoint.branch !== currentBranch) reasons.push('branch_changed');
-  if (git(repo, ['status', '--porcelain'])) reasons.push('worktree_dirty');
+if (listWorktreePaths(repo).length) reasons.push('worktree_dirty');
   if (!['pass', 'confirmed'].includes(evidence.status)) reasons.push('evidence_not_passing');
 
   if (!evidence.command || !evidence.commandHash) reasons.push('command_binding_missing');

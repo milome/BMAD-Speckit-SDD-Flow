@@ -10,6 +10,7 @@ import {
   emit,
   fail,
   isIsoDateTime,
+  legacyProgress,
   normalizeScope,
   objectHash,
   parseArgs,
@@ -41,7 +42,7 @@ try {
   const output = resolveRepoPath(repo, required(options, 'out'), '--out', { output: true });
   const target = required(options, 'to-state');
   const validator = fileURLToPath(new URL('./validate-execution-checkpoint.mjs', import.meta.url));
-  execFileSync(process.execPath, [validator, '--checkpoint', artifactPath(repo, parentPath), '--repo', repo], { stdio: 'pipe' });
+  execFileSync(process.execPath, [validator, '--checkpoint', artifactPath(repo, parentPath), '--repo', repo, '--enforce-source-baseline', 'true'], { stdio: 'pipe' });
   const parent = readJson(parentPath);
   if (!((parent.state === 'DISCOVERED' && target === 'SPEC_FROZEN') || (parent.state === 'SPEC_FROZEN' && target === 'PHASE_PLANNED'))) {
     throw new Error(`invalid preparation transition: ${parent.state} -> ${target}`);
@@ -94,9 +95,9 @@ try {
   next.nextExactAction = NEXT_ACTION_TEXT[next.nextActionCode];
   next.currentStep = next.nextExactAction;
   writeValidatedExclusiveJson(output, next, (candidate) => {
-    execFileSync(process.execPath, [validator, '--checkpoint', artifactPath(repo, candidate), '--repo', repo], { stdio: 'pipe' });
-  });
-  emit({ ok: true, checkpoint: artifactPath(repo, output), state: target, revision: next.checkpointRevision });
+    execFileSync(process.execPath, [validator, '--checkpoint', artifactPath(repo, candidate), '--repo', repo, '--enforce-source-baseline', 'true'], { stdio: 'pipe' });
+  }, repo);
+emit({ ok: true, checkpoint: artifactPath(repo, output), state: target, revision: next.checkpointRevision, progress: legacyProgress(next) });
 } catch (error) {
   fail(error, 'governed_feature_checkpoint_prepare_failed');
 }

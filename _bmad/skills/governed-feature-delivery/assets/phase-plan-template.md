@@ -4,13 +4,17 @@
 
 <One independently reviewable result.>
 
-## Frozen Inputs
+## Mode And Continuation
 
-- Design spec: `<path>` / `<sha256>`
-- Successor policy: `<path>` / `<sha256>`
-- Authority policy: `<path>` / `<sha256>`
-- Design freeze receipt: `<path>` / `<sha256>`
-- Prior checkpoint: `<path>` / `<sha256 or none>`
+- Mode: `<phase | strict>` (`fast` does not require a stored phase plan)
+- Continuation: `<commit | merge | pause>`
+- Risk policy: `<path or built-in defaults>`
+
+## Inputs
+
+- Plan: `<path>` / `<sha256>`
+- Prior phase receipt: `<path>` / `<sha256 or none>`
+- Strict-only design, successor, authority, and freeze inputs: `<paths/hashes or not applicable>`
 
 ## Authorized Scope
 
@@ -21,22 +25,22 @@
 
 - <Later phase or unrelated work excluded from this PR.>
 
-## RED Acceptance
+## Acceptance
 
 - WHEN `<condition>` THEN `<observable result>`.
-- Command: `<focused failing test command>`
+- RED command: `<focused failing test command or not required>`
 
 ## Implementation Steps
 
 1. <Minimal implementation step and owned files.>
 2. <Next dependent step.>
 
-## Stop Gate
+## Verification
 
 - Commands: `<exact phase tests, build, lint, consumer checks>`
-- Evidence inputs: `<exact manifest entries for each gate kind>`
+- Expected result: `<observable pass condition>`
 - Receipt directory: `<repository-approved, repository-relative directory>`
-- Expected terminal state: `<pre-next-phase state>`
+- Expected terminal state: `<COMMITTED | MERGED | PAUSED>`
 
 ## Review And PR Boundary
 
@@ -46,4 +50,4 @@
 
 ## Next Exact Action
 
-Use the `nextActionCode` and derived `nextExactAction` in the validated checkpoint.
+Use the v2 receipt's `progress.next`. Strict v1 delivery uses `nextActionCode` and `nextExactAction`.

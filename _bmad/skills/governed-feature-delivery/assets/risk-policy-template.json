@@ -1,0 +1,12 @@
+{
+  "strictPaths": [
+    ".github/**",
+    "contracts/**",
+    "db/migrations/**",
+    "schema/**",
+    "security/**",
+    "deploy/**"
+  ],
+  "integrationRefs": [],
+  "requirePullRequest": false
+}

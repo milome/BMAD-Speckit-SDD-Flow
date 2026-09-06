@@ -10,6 +10,8 @@ import {
   emit,
   fail,
   git,
+  listWorktreePaths,
+  legacyProgress,
   parseArgs,
   readJson,
   required,
@@ -37,13 +39,13 @@ try {
   const parentPath = resolveRepoPath(repo, required(options, 'checkpoint'), '--checkpoint');
   const output = resolveRepoPath(repo, required(options, 'out'), '--out', { output: true });
   const validator = fileURLToPath(new URL('./validate-execution-checkpoint.mjs', import.meta.url));
-  execFileSync(process.execPath, [validator, '--checkpoint', artifactPath(repo, parentPath), '--repo', repo, '--historical', 'true'], { stdio: 'pipe' });
+  execFileSync(process.execPath, [validator, '--checkpoint', artifactPath(repo, parentPath), '--repo', repo, '--historical', 'true', '--enforce-source-baseline', 'true'], { stdio: 'pipe' });
   const parent = readJson(parentPath);
   if (!RESETTABLE.has(parent.state)) throw new Error(`gate replay cannot reset state ${parent.state}`);
 
   const currentHead = git(repo, ['rev-parse', 'HEAD']).toLowerCase();
   const currentBranch = git(repo, ['branch', '--show-current']) || 'DETACHED';
-  if (git(repo, ['status', '--porcelain'])) throw new Error('gate replay reset requires a clean worktree');
+if (listWorktreePaths(repo).length) throw new Error('gate replay reset requires a clean worktree outside managed artifacts');
   if (currentBranch !== parent.branch) throw new Error('gate replay reset must remain on the checkpoint branch');
   if (currentHead === parent.headSha) throw new Error('gate replay reset requires a new committed HEAD');
   try { git(repo, ['merge-base', '--is-ancestor', parent.headSha, currentHead]); }
@@ -69,9 +71,9 @@ try {
   next.currentStep = next.nextExactAction;
 
   writeValidatedExclusiveJson(output, next, (candidate) => {
-    execFileSync(process.execPath, [validator, '--checkpoint', artifactPath(repo, candidate), '--repo', repo], { stdio: 'pipe' });
-  });
-  emit({ ok: true, checkpoint: artifactPath(repo, output), state: next.state, headSha: next.headSha, revision: next.checkpointRevision });
+    execFileSync(process.execPath, [validator, '--checkpoint', artifactPath(repo, candidate), '--repo', repo, '--enforce-source-baseline', 'true'], { stdio: 'pipe' });
+  }, repo);
+emit({ ok: true, checkpoint: artifactPath(repo, output), state: next.state, headSha: next.headSha, revision: next.checkpointRevision, progress: legacyProgress(next) });
 } catch (error) {
   fail(error, 'governed_feature_gate_replay_reset_failed');
 }

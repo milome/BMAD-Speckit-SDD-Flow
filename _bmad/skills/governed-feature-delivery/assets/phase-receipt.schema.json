@@ -1,0 +1,205 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "GovernedFeatureDeliveryPhaseReceipt/v2",
+  "title": "Governed Feature Delivery lightweight phase receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "featureId", "phaseId", "mode", "continuation", "state",
+    "baseSha", "headSha", "planHash", "scopeHash", "riskPolicyHash", "baseline", "verification",
+    "commit", "pullRequest", "merge", "successor", "risk", "strictBoundary", "progress", "warnings", "artifacts", "previousReceiptPath", "previousReceiptHash", "updatedAt"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "GovernedFeatureDeliveryPhaseReceipt/v2" },
+    "featureId": { "type": "string", "minLength": 1 },
+    "phaseId": { "type": "string", "minLength": 1 },
+    "mode": { "enum": ["fast", "phase", "strict"] },
+    "continuation": { "enum": ["commit", "merge", "pause"] },
+    "state": { "enum": ["BASELINE", "IMPLEMENTING", "VERIFIED", "COMMITTED", "PR_GREEN", "MERGED", "NEXT_PHASE", "PAUSED", "STRICT_REQUIRED"] },
+    "baseSha": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" },
+    "headSha": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" },
+    "planHash": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "scopeHash": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "riskPolicyHash": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "baseline": {
+      "type": "object", "additionalProperties": false,
+      "required": ["branch", "headSha", "worktree", "statusHash", "changedPaths", "fileHashes", "capturedAt"],
+      "properties": {
+        "branch": { "type": "string", "minLength": 1 },
+        "headSha": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" },
+        "worktree": { "enum": ["clean", "dirty"] },
+        "statusHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "changedPaths": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "fileHashes": { "type": "object", "additionalProperties": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" } },
+        "treeModes": { "type": "object", "additionalProperties": { "type": ["string", "null"], "pattern": "^(100644|100755|120000|160000)$" } },
+        "ignoredGoverned": {
+          "type": "object", "additionalProperties": false, "required": ["entries", "hash"],
+          "properties": {
+            "entries": {
+              "type": "array", "maxItems": 2048,
+              "items": {
+                "type": "object", "additionalProperties": false, "required": ["path", "hash", "type", "mode", "size"],
+                "properties": {
+                  "path": { "type": "string", "minLength": 1, "maxLength": 1024 },
+                  "hash": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+                  "type": { "enum": ["file", "directory", "symlink", "other"] },
+                  "mode": { "type": "string", "pattern": "^[0-7]+$" },
+                  "size": { "type": "integer", "minimum": 0 }
+                }
+              }
+            },
+            "hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+          }
+        },
+        "capturedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "scopeExtensions": {
+      "type": "array", "maxItems": 128,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["path", "rationale", "recordedAt"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1, "maxLength": 1024 },
+          "rationale": { "type": "string", "minLength": 1, "maxLength": 2048 },
+          "recordedAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "verification": {
+      "type": "array", "maxItems": 32,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "allOf": [
+          { "if": { "required": ["outputPath"], "properties": { "outputPath": { "type": "string" } } }, "then": { "required": ["outputHash"], "properties": { "outputHash": { "type": "string" } } } },
+          { "if": { "required": ["outputHash"], "properties": { "outputHash": { "type": "string" } } }, "then": { "required": ["outputPath"], "properties": { "outputPath": { "type": "string" } } } }
+        ],
+        "required": ["command", "commandHash", "status", "headSha", "treeHash", "changedPaths", "blobHashes", "inputHashes", "completedAt"],
+        "properties": {
+          "command": { "type": "string", "minLength": 1 },
+          "commandHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "status": { "enum": ["pass", "fail"] },
+          "headSha": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" },
+          "treeHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "changedPaths": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+          "blobHashes": { "type": "object", "additionalProperties": { "type": ["string", "null"], "pattern": "^[a-f0-9]{40,64}$" } },
+          "treeModes": { "type": "object", "additionalProperties": { "type": ["string", "null"], "pattern": "^(100644|100755|120000|160000)$" } },
+          "inputHashes": { "type": "object", "additionalProperties": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" } },
+          "completedAt": { "type": "string", "format": "date-time" },
+          "outputPath": { "type": ["string", "null"], "minLength": 1 },
+          "outputHash": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" }
+        }
+      }
+    },
+    "commit": {
+      "type": ["object", "null"], "additionalProperties": false,
+      "required": ["sha", "headSha", "scopeHash", "verificationCount", "verificationTreeHash", "createdAt"],
+      "properties": {
+        "sha": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" },
+        "headSha": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" },
+        "scopeHash": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+        "scopeExtensionsHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "verificationCount": { "type": "integer", "minimum": 1 },
+        "verificationTreeHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "risk": {
+      "type": "object", "additionalProperties": false,
+      "required": ["reasons", "strict", "classifiedAt"],
+      "properties": {
+        "reasons": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "strict": { "type": "boolean" },
+        "integrationRefs": { "type": "array", "items": { "type": "string", "pattern": "^refs/(heads|remotes)/" }, "uniqueItems": true },
+        "classifiedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "strictBoundary": {
+      "type": ["object", "null"], "additionalProperties": false,
+      "required": ["branch", "headSha", "treeHash", "capturedAt"],
+      "properties": {
+        "branch": { "type": "string", "minLength": 1 },
+        "headSha": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" },
+        "treeHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "capturedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "progress": {
+      "type": "object", "additionalProperties": false,
+      "required": ["stage", "completed", "next", "warnings", "updatedAt"],
+      "properties": {
+        "stage": { "enum": ["Plan", "Baseline", "Implement", "Verify", "Commit", "Next"] },
+        "completed": { "type": "array", "items": { "type": "string" } },
+        "next": { "type": "string", "minLength": 1 },
+        "warnings": { "type": "array", "items": { "type": "string" } },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "previousReceiptPath": { "type": ["string", "null"] },
+    "previousReceiptHash": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "artifacts": { "type": "object", "additionalProperties": false, "required": ["planPath", "scopePath", "riskPolicyPath"], "properties": { "planPath": { "type": ["string", "null"] }, "scopePath": { "type": ["string", "null"] }, "riskPolicyPath": { "type": ["string", "null"] } } },
+    "pullRequest": { "type": ["object", "null"], "additionalProperties": false, "required": ["url", "headSha", "status", "recordedAt"], "properties": { "url": { "type": "string", "minLength": 1 }, "headSha": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" }, "status": { "const": "green" }, "recordedAt": { "type": "string", "format": "date-time" } } },
+    "merge": { "type": ["object", "null"], "additionalProperties": false, "required": ["sha", "ref", "containsCommitSha", "mergedAt"], "properties": { "sha": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" }, "ref": { "type": "string", "minLength": 1 }, "containsCommitSha": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" }, "mergedAt": { "type": "string", "format": "date-time" } } },
+    "successor": { "type": ["object", "null"], "additionalProperties": false, "required": ["target", "baseSha", "createdAt"], "properties": { "target": { "type": "string", "minLength": 1 }, "baseSha": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" }, "createdAt": { "type": "string", "format": "date-time" } } },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "state": { "enum": ["BASELINE", "IMPLEMENTING", "VERIFIED", "STRICT_REQUIRED"] } } },
+      "then": { "properties": { "commit": { "type": "null" } } }
+    },
+    {
+      "if": { "properties": { "state": { "enum": ["BASELINE", "IMPLEMENTING", "VERIFIED", "COMMITTED", "PAUSED", "STRICT_REQUIRED"] } } },
+      "then": { "properties": { "pullRequest": { "type": "null" } } }
+    },
+    {
+      "if": { "properties": { "state": { "enum": ["BASELINE", "IMPLEMENTING", "VERIFIED", "COMMITTED", "PR_GREEN", "PAUSED", "STRICT_REQUIRED"] } } },
+      "then": { "properties": { "merge": { "type": "null" } } }
+    },
+    {
+      "if": { "properties": { "state": { "enum": ["BASELINE", "IMPLEMENTING", "VERIFIED", "COMMITTED", "PR_GREEN", "MERGED", "PAUSED", "STRICT_REQUIRED"] } } },
+      "then": { "properties": { "successor": { "type": "null" } } }
+    },
+    {
+      "if": { "properties": { "state": { "const": "NEXT_PHASE" }, "continuation": { "enum": ["commit", "pause"] } } },
+      "then": { "properties": { "pullRequest": { "type": "null" }, "merge": { "type": "null" } } }
+    },
+    {
+      "if": { "properties": { "state": { "enum": ["COMMITTED", "PR_GREEN", "MERGED", "NEXT_PHASE", "PAUSED"] } } },
+      "then": { "properties": { "commit": { "type": "object" } } }
+    },
+    {
+      "if": { "properties": { "state": { "enum": ["PR_GREEN", "MERGED"] } } },
+      "then": { "properties": { "continuation": { "const": "merge" }, "pullRequest": { "type": "object" } } }
+    },
+    {
+      "if": { "properties": { "state": { "const": "MERGED" } } },
+      "then": { "properties": { "merge": { "type": "object" } } }
+    },
+    {
+      "if": { "properties": { "state": { "const": "NEXT_PHASE" } } },
+      "then": { "properties": { "successor": { "type": "object" } } }
+    },
+    {
+      "if": { "properties": { "state": { "const": "STRICT_REQUIRED" } } },
+      "then": { "properties": { "mode": { "const": "strict" }, "risk": { "properties": { "strict": { "const": true } } }, "strictBoundary": { "type": "object" } } }
+    },
+    {
+      "if": { "properties": { "mode": { "const": "fast" } } },
+      "then": { "properties": { "continuation": { "const": "commit" }, "state": { "enum": ["BASELINE", "IMPLEMENTING", "VERIFIED", "COMMITTED"] }, "strictBoundary": { "type": "null" } } }
+    },
+    {
+      "if": { "properties": { "continuation": { "const": "commit" } } },
+      "then": { "properties": { "state": { "enum": ["BASELINE", "IMPLEMENTING", "VERIFIED", "COMMITTED", "NEXT_PHASE", "STRICT_REQUIRED"] } } }
+    },
+    {
+      "if": { "properties": { "continuation": { "const": "merge" } } },
+      "then": { "properties": { "state": { "enum": ["BASELINE", "IMPLEMENTING", "VERIFIED", "COMMITTED", "PR_GREEN", "MERGED", "NEXT_PHASE", "STRICT_REQUIRED"] } } }
+    },
+    {
+      "if": { "properties": { "continuation": { "const": "pause" } } },
+      "then": { "properties": { "state": { "enum": ["BASELINE", "IMPLEMENTING", "VERIFIED", "COMMITTED", "PAUSED", "NEXT_PHASE", "STRICT_REQUIRED"] } } }
+    }
+  ]
+}

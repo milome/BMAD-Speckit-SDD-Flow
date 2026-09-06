@@ -2,6 +2,7 @@
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertJsonSchema } from './json-schema-lite.mjs';
 import {
   SCHEMA_VERSION,
   STATES,
@@ -10,6 +11,7 @@ import {
   fail,
   git,
   isIsoDateTime,
+  legacyProgress,
   normalizeScope,
   parseArgs,
   readJson,
@@ -31,9 +33,23 @@ const HELP = `Initialize a phase-scoped governed feature checkpoint without over
 Required: --out FILE --feature-id ID --phase-id ID
 Optional: --repo DIR --spec FILE --freeze-receipt FILE --plan FILE --scope FILE
           --successor-policy FILE --authority-policy FILE --previous FILE
-          --recovery-receipt FILE
+          --recovery-receipt FILE --source-phase-receipt FILE
+          --confirmed-continuation merge
 
-For a next phase, --previous must name a NEXT_PHASE checkpoint and --plan/--scope are required.`;
+For a next phase, --previous must name a NEXT_PHASE checkpoint and --plan/--scope are required.
+The source-phase options are an internal strict bridge; prefer run-phase.mjs --action strict-init.`;
+const PHASE_RECEIPT_SCHEMA = readJson(fileURLToPath(new URL('../assets/phase-receipt.schema.json', import.meta.url)));
+
+function assertSourcePhaseLineage(repo, receiptPath) {
+  const runner = fileURLToPath(new URL('./run-phase.mjs', import.meta.url));
+  try {
+    const output = execFileSync(process.execPath, [runner, '--action', 'phase-lineage', '--receipt', artifactPath(repo, receiptPath), '--repo', repo], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 4 * 1024 * 1024 });
+    const result = JSON.parse(output);
+    if (!result.ok || !Number.isInteger(result.lineage?.records) || !Number.isInteger(result.lineage?.bytes)) throw new Error('source status did not return lineage metadata');
+  } catch (error) {
+    throw new Error(`source phase receipt lineage is invalid: ${error.stdout?.toString().trim() || error.stderr?.toString().trim() || error.message}`);
+  }
+}
 
 function stateFor(specHash, planHash, scopePath) {
   if (specHash && planHash && scopePath) return 'PHASE_PLANNED';
@@ -47,13 +63,14 @@ function historyFor(state, at, fromPrevious) {
 }
 
 try {
-  const options = parseArgs(process.argv.slice(2), new Set(), new Set(['out', 'feature-id', 'phase-id', 'repo', 'spec', 'freeze-receipt', 'plan', 'scope', 'successor-policy', 'authority-policy', 'previous', 'recovery-receipt']));
+  const options = parseArgs(process.argv.slice(2), new Set(), new Set(['out', 'feature-id', 'phase-id', 'repo', 'spec', 'freeze-receipt', 'plan', 'scope', 'successor-policy', 'authority-policy', 'previous', 'recovery-receipt', 'source-phase-receipt', 'confirmed-continuation']));
   if (options.help) {
     process.stdout.write(`${HELP}\n`);
     process.exit(0);
   }
   const repo = path.resolve(options.repo ?? process.cwd());
   const currentHeadSha = git(repo, ['rev-parse', 'HEAD']).toLowerCase();
+  const currentBranch = git(repo, ['branch', '--show-current']) || 'DETACHED';
   const output = resolveRepoPath(repo, required(options, 'out'), '--out', { output: true });
   const featureId = required(options, 'feature-id');
   const currentPhase = required(options, 'phase-id');
@@ -71,8 +88,9 @@ try {
     }
     if (previous.featureId !== featureId) throw new Error('--previous belongs to a different feature');
     if (previous.currentPhase === currentPhase) throw new Error('next checkpoint must use a new phase id');
-    try { git(repo, ['merge-base', '--is-ancestor', previous.merge.commitSha, currentHeadSha]); }
-    catch { throw new Error('next-phase initialization requires HEAD to contain the previous phase merge commit'); }
+    const previousMergeSha = (previous.merge.sha ?? previous.merge.commitSha).toLowerCase();
+    if (currentHeadSha !== previousMergeSha) throw new Error('next-phase initialization requires HEAD to equal the previous phase merge commit');
+    if (currentBranch === 'DETACHED' || currentBranch === previous.branch) throw new Error('next-phase initialization requires a new branch distinct from the previous phase branch');
   }
   if (previous && (!options.plan || !options.scope)) {
     throw new Error('next-phase initialization requires --plan and --scope');
@@ -92,6 +110,9 @@ try {
   const phasePlanHash = planPath ? sha256File(planPath) : null;
   if (planPath && !specHash) throw new Error('--plan requires a frozen --spec or --previous');
   const authorizedScope = normalizeScope(scopePath ? readJson(scopePath) : null);
+  for (const input of Object.values(authorizedScope.evidenceInputs).flat()) {
+    resolveRepoPath(repo, input, `evidence input ${input}`, { allowMissing: true });
+  }
   const successorPolicy = options['successor-policy']
     ? readJson(resolveRepoPath(repo, options['successor-policy'], '--successor-policy'))
     : (previous?.successorPolicy ?? { allowedCodes: {} });
@@ -127,8 +148,19 @@ try {
 
   const state = stateFor(specHash, phasePlanHash, scopePath);
   const at = new Date().toISOString();
-  const branch = git(repo, ['branch', '--show-current']) || 'DETACHED';
+  const branch = currentBranch;
   const headSha = currentHeadSha;
+  const sourcePhaseReceiptPath = options['source-phase-receipt'] ? resolveRepoPath(repo, options['source-phase-receipt'], '--source-phase-receipt') : null;
+  if (sourcePhaseReceiptPath) assertSourcePhaseLineage(repo, sourcePhaseReceiptPath);
+  const sourcePhase = sourcePhaseReceiptPath ? readJson(sourcePhaseReceiptPath) : null;
+  if (sourcePhase) assertJsonSchema(sourcePhase, PHASE_RECEIPT_SCHEMA, 'source phase receipt');
+  if (sourcePhase && (previous || recoveryReceipt || sourcePhase.schemaVersion !== 'GovernedFeatureDeliveryPhaseReceipt/v2' || sourcePhase.state !== 'STRICT_REQUIRED' || sourcePhase.featureId !== featureId || sourcePhase.phaseId !== currentPhase || options['confirmed-continuation'] !== 'merge')) throw new Error('source phase receipt must be a matching STRICT_REQUIRED v2 handoff confirmed for merge');
+  if (sourcePhase && (sourcePhase.strictBoundary?.branch !== branch || sourcePhase.strictBoundary?.headSha !== headSha || (sourcePhase.planHash !== null && sourcePhase.planHash !== phasePlanHash) || (sourcePhase.scopeHash !== null && sourcePhase.scopeHash !== scopeHash(authorizedScope)))) throw new Error('source phase receipt does not bind the strict checkpoint baseline and inputs');
+  const sourcePhaseReceipt = sourcePhase ? {
+    receiptPath: artifactPath(repo, sourcePhaseReceiptPath), receiptHash: sha256File(sourcePhaseReceiptPath), confirmedContinuation: 'merge', phaseId: sourcePhase.phaseId,
+    branch, headSha, treeHash: sourcePhase.strictBoundary.treeHash, planHash: phasePlanHash, scopeHash: scopeHash(authorizedScope),
+    riskPolicyHash: sourcePhase.riskPolicyHash, linkedAt: at,
+  } : (previous?.sourcePhaseReceipt ?? null);
   const checkpoint = {
     schemaVersion: SCHEMA_VERSION,
     checkpointGeneration: (previous?.checkpointGeneration ?? 0) + 1,
@@ -172,6 +204,7 @@ try {
       authorityPolicyPath: authorityPolicyPath ? artifactPath(repo, authorityPolicyPath) : (previous?.artifacts?.authorityPolicyPath ?? null),
     },
     recoveryReceipt,
+    sourcePhaseReceipt,
     previousCheckpointPath: previousPath ? path.relative(path.dirname(output), previousPath).replaceAll(path.sep, '/') : null,
     previousCheckpointHash: previousPath ? sha256File(previousPath) : null,
     pullRequest: null,
@@ -194,8 +227,8 @@ try {
   const validator = fileURLToPath(new URL('./validate-execution-checkpoint.mjs', import.meta.url));
   writeValidatedExclusiveJson(output, checkpoint, (candidate) => {
     execFileSync(process.execPath, [validator, '--checkpoint', artifactPath(repo, candidate), '--repo', repo], { stdio: 'pipe' });
-  });
-  emit({ ok: true, checkpoint: artifactPath(repo, output), state, headSha: checkpoint.headSha });
+  }, repo);
+emit({ ok: true, checkpoint: artifactPath(repo, output), state, headSha: checkpoint.headSha, progress: legacyProgress(checkpoint) });
 } catch (error) {
   fail(error, 'governed_feature_checkpoint_init_failed');
 }
