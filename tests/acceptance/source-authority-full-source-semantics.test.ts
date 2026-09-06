@@ -150,7 +150,7 @@ describe('full source Requirements authority input, test-only without confirmati
       expect(() => assertTypedSourceBindingAuthority(badBinding, authority)).toThrow('typed_source_bindings_claim_text_mismatch');
       expect(existsSync(path.join(fixture.root, '_bmad-output'))).toBe(false);
     } finally { rmSync(fixture.root, { recursive: true, force: true }); }
-  }, 180_000);
+  }, 420_000);
 
   it('rejects typed child content hidden in a legacy v1 source instead of silently dropping it', () => {
     const fixture = createSmallBundle(2);

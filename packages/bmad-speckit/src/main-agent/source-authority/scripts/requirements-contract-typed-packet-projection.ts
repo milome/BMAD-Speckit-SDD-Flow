@@ -58,6 +58,7 @@ export function resolveTypedModelPacketProjection(
 
 export function requiredCommandsFromTypedModelPacket(packet: JsonRecord): unknown[] {
   const value = resolveTypedModelPacketProjection(packet, 'requiredCommands');
+  if (value === undefined && !isTypedV2(packet)) return [];
   if (!Array.isArray(value)) throw new Error('typed_packet_projection_invalid:requiredCommands');
   return value;
 }

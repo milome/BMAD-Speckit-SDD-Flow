@@ -773,7 +773,9 @@ function selectFrozenGoalPartition(input: {
     : truncated
       ? 'partition_search_inconclusive'
       : 'partition_no_valid_solution';
-  const policies = partitionPolicyIdentity(String(ir.schemaVersion));
+  const policies = partitionPolicyIdentity(
+    typeof ir.schemaVersion === 'string' ? ir.schemaVersion : undefined
+  );
   const groups = bestGroups ?? [];
   const selectionIdentityHash = hashControlPlaneValue({
     schemaVersion: 'FrozenGoalPartitionSelectionIdentity/v1',

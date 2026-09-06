@@ -7,6 +7,7 @@ const refs = (value: unknown): string[] => Array.isArray(value) ? value.filter((
 const equal = (left: unknown, right: unknown) => stableStringify(left) === stableStringify(right);
 
 function typedPacketRuntime() {
+  if (__filename.endsWith('.ts')) require('tsx/cjs');
   const semantics = require(__filename.endsWith('.ts')
     ? './requirements-contract-typed-source-semantics.ts'
     : './requirements-contract-typed-source-semantics') as {

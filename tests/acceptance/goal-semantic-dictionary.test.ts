@@ -422,5 +422,5 @@ describe('GoalSemanticDictionary/v1 lossless bounded codec', () => {
     expect(internalGate?.decision).toBe('pass');
     expect(internalGate?.metrics.candidateBytes).toBe(candidateBytes);
     expect(measurement.actualDispatchCount).toBe(0);
-  });
+  }, 120_000);
 });

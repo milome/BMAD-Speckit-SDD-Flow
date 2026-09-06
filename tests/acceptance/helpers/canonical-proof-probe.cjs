@@ -222,7 +222,8 @@ if (request.operation === 'baseline-schema-hash') {
       sourceSha256: frozenFixtureHash, schemaVersion: bundle.schemaVersion, recordCount: bundle.canonicalIntentIR.length,
       executionTaskIds: registries.tasks, semanticOnlyCount: bundle.canonicalIntentIR.filter((row) => row.executionRole !== 'action').length,
       missingSemantics: bundle.canonicalIntentIR.filter((row) => !row.executionRole || !row.applicability || !Array.isArray(row.normativeClauses)).length,
-      commandIds: registries.commands, commandDeclarationCount: bundle.canonicalIntentIR.reduce((sum, row) => sum + row.commandDeclarations.length, 0),
+      commandIds: registries.commands, commandDeclarationCount: new Set(bundle.canonicalIntentIR.flatMap((row) =>
+        row.commandDeclarations.map((declaration) => declaration.id))).size,
       fixtureOracleAccepted: false, judgeDispatchCount: 0 }));
     return;
   }

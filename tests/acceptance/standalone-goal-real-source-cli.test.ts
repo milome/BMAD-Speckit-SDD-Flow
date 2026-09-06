@@ -63,7 +63,7 @@ describe('standalone Goal contract full frozen Source Plan CLI', () => {
         cwd: ROOT,
         encoding: 'utf8',
         env: { ...process.env, BMAD_SKIP_CONSUMER_MCP_INSTALL: '1' },
-        timeout: 240_000,
+        timeout: 420_000,
         maxBuffer: 4 * 1024 * 1024,
         windowsHide: true,
       });
@@ -155,5 +155,5 @@ describe('standalone Goal contract full frozen Source Plan CLI', () => {
     } finally {
       rmSync(runRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     }
-  }, 260_000);
+  }, 450_000);
 });

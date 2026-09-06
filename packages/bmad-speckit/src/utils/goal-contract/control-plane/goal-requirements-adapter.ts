@@ -508,7 +508,10 @@ function resolveCurrentArchitectureContext(input: { projectRoot: string; request
     ) {
       throw error;
     }
-    if (issue.startsWith('architecture_confirmation_semantic_ir_invalid:')) {
+    if (
+      issue.startsWith('architecture_confirmation_semantic_ir_invalid:') ||
+      issue.startsWith('semantic_ir_')
+    ) {
       throw new Error('requirements_successor_required:semantic_authority');
     }
     if (issue.startsWith('architecture_confirmation_source_binding_invalid:')) {

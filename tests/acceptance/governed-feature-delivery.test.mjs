@@ -2,15 +2,21 @@ import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import Ajv2020 from 'ajv/dist/2020.js';
-import { policyHash, scopeHash, sha256File } from '../checkpoint-core.mjs';
+import { afterEach, test } from 'vitest';
+import { policyHash, scopeHash, sha256File } from '../../_bmad/skills/governed-feature-delivery/scripts/checkpoint-core.mjs';
 
-const scripts = path.dirname(fileURLToPath(new URL('../checkpoint-core.mjs', import.meta.url)));
+const scripts = path.dirname(fileURLToPath(new URL('../../_bmad/skills/governed-feature-delivery/scripts/checkpoint-core.mjs', import.meta.url)));
 const workspace = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
 const schema = JSON.parse(readFileSync(path.join(scripts, '../assets/execution-checkpoint.schema.json'), 'utf8'));
 const validateSchema = new Ajv2020({ allErrors: true, strict: false, formats: { 'date-time': true } }).compile(schema);
+let work = '';
+
+afterEach(() => {
+  if (work) rmSync(work, { recursive: true, force: true });
+  work = '';
+});
 
 function json(file, value) {
   writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
@@ -22,10 +28,9 @@ function run(script, args, expected = 0) {
   return result.stdout.trim() ? JSON.parse(result.stdout.trim()) : null;
 }
 
-test('immutable checkpoint workflow closes a phase and starts the signaled next phase', (t) => {
+test('immutable checkpoint workflow closes a phase and starts the signaled next phase', () => {
   mkdirSync(path.join(workspace, '.tmp'), { recursive: true });
-  const work = mkdtempSync(path.join(workspace, '.tmp', 'gfd-test-'));
-  t.after(() => rmSync(work, { recursive: true, force: true }));
+  work = mkdtempSync(path.join(workspace, '.tmp', 'gfd-test-'));
   const repo = work;
   execFileSync('git', ['init', '-q', repo]);
   execFileSync('git', ['-C', repo, 'config', 'user.email', 'test@example.invalid']);
