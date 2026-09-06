@@ -21,7 +21,7 @@
     "resultHash"
   ],
   "properties": {
-    "schemaVersion": { "const": "requirements-contract-technical-planning-capability/v1" },
+    "schemaVersion": { "enum": ["requirements-contract-technical-planning-capability/v1", "requirements-contract-technical-planning-capability/v2"] },
     "authoringRequestId": { "$ref": "#/$defs/nonEmpty" },
     "authoringAttemptId": { "$ref": "#/$defs/nonEmpty" },
     "checkpointId": { "enum": ["cp02", "g02"] },
@@ -47,6 +47,11 @@
     },
     "resultHash": { "$ref": "#/$defs/hash" }
   },
+  "allOf": [{
+    "if": { "properties": { "schemaVersion": { "const": "requirements-contract-technical-planning-capability/v2" } } },
+    "then": { "properties": { "executionRegistry": { "properties": { "schemaVersion": { "const": "requirements-contract-typed-execution-registry/v2" } } } } },
+    "else": { "properties": { "executionRegistry": { "properties": { "schemaVersion": { "const": "requirements-contract-typed-execution-registry/v1" } } } } }
+  }],
   "$defs": {
     "nonEmpty": { "type": "string", "minLength": 1 },
     "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
@@ -57,18 +62,32 @@
       "properties": {
         "kind": { "enum": ["ART", "CMD", "CTM", "EVDREQ", "PATH", "STOP"] },
         "id": { "$ref": "#/$defs/nonEmpty" },
-        "value": { "$ref": "#/$defs/nonEmpty" }
+        "value": { "$ref": "#/$defs/nonEmpty" },
+        "authorityKind": { "enum": ["source_declared", "derived"] },
+        "applicableSourceRefs": { "$ref": "#/$defs/refs" },
+        "premiseRefs": { "$ref": "#/$defs/refs" },
+        "derivationReceiptRefs": { "$ref": "#/$defs/refs" },
+        "sourceDeclarationRefs": { "$ref": "#/$defs/refs" },
+        "conditions": { "type": "array" },
+        "scope": { "type": "object" },
+        "modality": { "enum": ["required", "suggested", "prohibited", "template", "context"] }
       }
     },
+    "refs": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/nonEmpty" } },
     "executionRegistry": {
       "type": "object",
       "additionalProperties": false,
       "required": ["schemaVersion", "entries", "registryHash"],
       "properties": {
-        "schemaVersion": { "const": "requirements-contract-typed-execution-registry/v1" },
+        "schemaVersion": { "enum": ["requirements-contract-typed-execution-registry/v1", "requirements-contract-typed-execution-registry/v2"] },
         "entries": { "type": "array", "items": { "$ref": "#/$defs/entry" } },
         "registryHash": { "$ref": "#/$defs/hash" }
-      }
+      },
+      "allOf": [{
+        "if": { "properties": { "schemaVersion": { "const": "requirements-contract-typed-execution-registry/v2" } } },
+        "then": { "properties": { "entries": { "items": { "required": ["authorityKind", "applicableSourceRefs", "premiseRefs", "derivationReceiptRefs", "conditions", "scope"] } } } },
+        "else": { "properties": { "entries": { "items": { "not": { "anyOf": [{ "required": ["authorityKind"] }, { "required": ["applicableSourceRefs"] }, { "required": ["premiseRefs"] }, { "required": ["derivationReceiptRefs"] }, { "required": ["conditions"] }, { "required": ["scope"] }, { "required": ["modality"] }, { "required": ["sourceDeclarationRefs"] }] } } } } }
+      }]
     }
   }
 }

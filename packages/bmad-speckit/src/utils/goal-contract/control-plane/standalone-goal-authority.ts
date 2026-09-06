@@ -7,11 +7,10 @@ import {
 } from '../../../main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 import { probeGoalContractRenderability } from './goal-contract-renderability-probe';
 import { validateGoalContractSchema } from './schema-registry';
-import {
-  runStandaloneGoalAuthoringJudge,
-  type StandaloneGoalAuthoringJudgeDependencies,
-} from './standalone-goal-authoring-judge';
 import { compileStandaloneGoalExecution } from './standalone-goal-semantic-ir';
+import { standaloneTechnicalSnapshot } from './standalone-goal-technical-snapshot';
+import { normalizeGoalExecutionAuthority } from './goal-execution-authority';
+import { renderNormativeDetails } from './goal-normative-renderer';
 
 type JsonObject = Record<string, unknown>;
 
@@ -85,24 +84,6 @@ function publishActiveAuthority(targetPath: string, value: JsonObject): boolean 
   return true;
 }
 
-function commandInvocation(value: string): string {
-  return value
-    .split(/\r?\n/gu)
-    .filter((line) => !/^\s*(?:```|~~~)/u.test(line))
-    .join('\n')
-    .replace(/^\s*(?:[-*]\s+)?(?:Run\s+)?/iu, '')
-    .trim();
-}
-
-function logicalPaths(rows: JsonObject[]): string[] {
-  return sortedUnique(
-    rows
-      .flatMap((row) => [...text(row.exactText).matchAll(/`([^`]+)`/gu)].map((match) => match[1]))
-      .filter((value) => /(?:^|\/)[^/]+\.[A-Za-z0-9]+$/u.test(value.replace(/\\/gu, '/')))
-      .map((value) => value.replace(/\\/gu, '/'))
-  );
-}
-
 function renderParentGoal(ir: JsonObject): string {
   return [
     '# Goal Execution Contract',
@@ -112,8 +93,9 @@ function renderParentGoal(ir: JsonObject): string {
     '',
     '## Obligations',
     '',
-    ...objects(ir.obligations).map(
-      (row) => `- ${text(row.kind)} ${text(row.obligationId)}: ${text(row.text)}`
+    ...objects(ir.obligations).flatMap(
+      (row) => [`- ${text(row.kind)} ${text(row.obligationId)}: ${text(row.text)}`,
+        ...(ir.schemaVersion === 'GoalExecutionIR/v2' ? renderNormativeDetails(row) : [])]
     ),
     '',
     '## Atomic Tasks',
@@ -132,8 +114,7 @@ export async function publishStandaloneGoalAuthority(
     canonicalIntentBundle: JsonObject;
     goalContractPath: string;
     projectRoot?: string;
-  },
-  dependencies: StandaloneGoalAuthoringJudgeDependencies = {}
+  }
 ) {
   const rawRows = objects(input.source.sourceObligations);
   const rawById = new Map(rawRows.map((row) => [text(row.id), row]));
@@ -150,7 +131,7 @@ export async function publishStandaloneGoalAuthority(
   const canonicalRecords = objects(input.canonicalIntentBundle.canonicalIntentIR).filter(
     (row) => text(row.ownership) === 'owned_obligation'
   );
-  const semanticRows = canonicalRecords.map((canonical) => {
+  const rawSemanticRows = canonicalRecords.map((canonical) => {
     const declaredSourceId = text(canonical.declaredSourceId);
     const spanMatches = strings(canonical.specSpanRefs).flatMap((specSpanRef) => {
       const span = canonicalSpanById.get(specSpanRef);
@@ -172,25 +153,53 @@ export async function publishStandaloneGoalAuthority(
       classification: text(canonical.classification) || 'positive',
       exactText: text(row.exactText) || text(row.text),
       requiredOutcome: text(canonical.requiredOutcome) || text(row.exactText) || text(row.text),
+      headingPath: strings(row.headingPath),
       specSpanRefs: sortedUnique(strings(canonical.specSpanRefs)),
+      sourceBlockRefs: strings(row.sourceBlockRefs),
+      clauseRefs: strings(row.clauseRefs),
+      typedRefs: objects(row.typedRefs),
+      normativeStrength: row.normativeStrength,
+      polarity: row.polarity,
+      executionRole: row.executionRole,
+      ...(row.taskExecution ? { taskExecution: structuredClone(row.taskExecution) } : {}),
+      conditions: row.conditions,
+      applicability: row.applicability,
+      normativeClauses: row.normativeClauses,
+      provenanceRefs: row.provenanceRefs,
+      applicabilityState: row.applicabilityState,
+      taskRefs: strings(row.taskRefs),
+      acceptanceRefs: strings(row.acceptanceRefs),
+      commandRefs: strings(row.commandRefs),
+      evidenceRefs: strings(row.evidenceRefs),
+      dependencyRefs: strings(row.dependencyRefs),
+      atomicGroupRefs: strings(row.atomicGroupRefs),
     };
   });
-  const targetPaths = logicalPaths(rawRows);
-  if (targetPaths.length === 0) {
-    throw new Error('standalone_goal_successor_required:logical_target_paths');
+  const semanticIds = new Set(rawSemanticRows.map((row) => text(row.id)));
+  const declaredScopeMembers = new Map<string, Set<string>>();
+  for (const row of rawSemanticRows) {
+    for (const heading of strings(row.headingPath)) {
+      const declaredId = /^([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+)\b/u.exec(heading)?.[1];
+      if (!declaredId) continue;
+      const members = declaredScopeMembers.get(declaredId) ?? new Set<string>();
+      members.add(text(row.id));
+      declaredScopeMembers.set(declaredId, members);
+    }
   }
-  const commandRows = rawRows.filter((row) =>
-    ['command_block', 'verification_command'].includes(text(row.kind))
-  );
-  const commandRecords = commandRows
-    .map((row, index) => ({
-      commandId: strings(row.commandRefs)[0] || `CMD-standalone-${index + 1}`,
-      invocation: commandInvocation(text(row.exactText) || text(row.text)),
-    }))
-    .filter((row) => row.invocation);
-  if (commandRecords.length === 0) {
-    throw new Error('standalone_goal_successor_required:commands');
-  }
+  const semanticRows = rawSemanticRows.map((row) => {
+    const applicability = row.applicability && typeof row.applicability === 'object'
+      ? structuredClone(row.applicability) as JsonObject : {};
+    if (applicability.scope !== 'obligations') return row;
+    const declaredRefs = strings(applicability.obligationRefs);
+    const obligationRefs = sortedUnique(declaredRefs.flatMap((ref) =>
+      semanticIds.has(ref) ? [ref] : [...(declaredScopeMembers.get(ref) ?? [])]
+    ));
+    if (declaredRefs.length === 0 || obligationRefs.length === 0) {
+      throw new Error('standalone_goal_applicability_reference_unresolved');
+    }
+    return { ...row, applicability: { ...applicability, obligationRefs } };
+  });
+  const technicalSnapshot = standaloneTechnicalSnapshot(input.source, semanticRows);
   const logicalSpecSpans = semanticRows.flatMap((row) =>
     row.specSpanRefs.map((specSpanId) => ({
       specSpanId,
@@ -199,39 +208,13 @@ export async function publishStandaloneGoalAuthority(
     }))
   );
   const authorityRoot = path.resolve(`${input.goalContractPath}.authority`);
-  const compiled = await compileStandaloneGoalExecution(
-    {
-      sourcePlanHash: text(input.source.sourcePlanHash),
-      sourceSnapshotHash: text(input.source.sourceSnapshotHash),
-      sourceObligations: semanticRows,
-      logicalSpecSpans,
-      technicalSnapshot: {
-        targetPaths,
-        commandRecords,
-        artifactRecords: targetPaths.map((logicalPath, index) => ({
-          artifactId: `ART-standalone-${index + 1}`,
-          logicalPath,
-        })),
-        evidenceRecords: commandRecords.map((command, index) => ({
-          evidenceContractId: `EVDREQ-standalone-${index + 1}`,
-          requirement: `Observed RED/GREEN evidence for ${command.commandId}`,
-        })),
-        forbiddenPaths: ['.git/**'],
-        isolationMode: 'consumer_worktree',
-      },
-    },
-    {
-      authoringJudge: async (request) =>
-        runStandaloneGoalAuthoringJudge(
-          {
-            projectRoot: input.projectRoot ?? process.cwd(),
-            authorityRoot,
-            standaloneGoalSemanticIr: request.candidate,
-          },
-          dependencies
-        ),
-    }
-  );
+  const compiled = await compileStandaloneGoalExecution({
+    sourcePlanHash: text(input.source.sourcePlanHash),
+    sourceSnapshotHash: text(input.source.sourceSnapshotHash),
+    sourceObligations: semanticRows,
+    logicalSpecSpans,
+    technicalSnapshot,
+  });
   const hashId = compiled.goalExecutionIr.goalExecutionIRHash.slice('sha256:'.length);
   const semanticPath = path.join(
     authorityRoot,
@@ -240,13 +223,13 @@ export async function publishStandaloneGoalAuthority(
     compiled.standaloneGoalSemanticIr.standaloneGoalSemanticIRHash.slice(7),
     'standalone-goal-semantic-ir.json'
   );
-  const passPath = path.join(
+  const internalGatePath = path.join(
     authorityRoot,
     'goal',
     'standalone-semantic',
     compiled.standaloneGoalSemanticIr.standaloneGoalSemanticIRHash.slice(7),
-    'authoring-judge',
-    'authoring-effective-pass.json'
+    'internal-semantic-gate',
+    'semantic-gate.json'
   );
   const irPath = path.join(authorityRoot, 'goal', 'ir', hashId, 'goal-execution-ir.json');
   const closurePath = path.join(
@@ -281,6 +264,7 @@ export async function publishStandaloneGoalAuthority(
     ...sourceBindingPayload,
     goalSourceBindingHash: sha256Stable(sourceBindingPayload),
   };
+  const specSpanIds = new Set(compiled.goalExecutionIr.logicalSpecSpans.map((span) => text(span.specSpanId)));
   const bindingPath = path.join(
     authorityRoot,
     'goal',
@@ -296,7 +280,8 @@ export async function publishStandaloneGoalAuthority(
     resolutions: compiled.goalExecutionIr.obligations.map((obligation) => ({
       goalObligationId: obligation.obligationId,
       logicalSpecSpanRefs: obligation.sourceRefs.filter(
-        (ref) => ref.startsWith('spec-span-') || ref.startsWith('SPAN-')
+        (ref) => compiled.goalExecutionIr.schemaVersion === 'GoalExecutionIR/v2' ? specSpanIds.has(ref)
+          : ref.startsWith('spec-span-') || ref.startsWith('SPAN-')
       ),
       evidenceClaimRefs: obligation.evidenceClaimRefs,
     })),
@@ -327,9 +312,9 @@ export async function publishStandaloneGoalAuthority(
       path: path.relative(authorityRoot, semanticPath).replace(/\\/gu, '/'),
       hash: compiled.standaloneGoalSemanticIr.standaloneGoalSemanticIRHash,
     },
-    standaloneAuthoringEffectivePassRef: {
-      path: path.relative(authorityRoot, passPath).replace(/\\/gu, '/'),
-      hash: compiled.authoringEffectivePass.authoringEffectivePassHash,
+    standaloneInternalSemanticGateRef: {
+      path: path.relative(authorityRoot, internalGatePath).replace(/\\/gu, '/'),
+      hash: compiled.internalSemanticGate.gateHash,
     },
     goalExecutionIrRef: {
       path: path.relative(authorityRoot, irPath).replace(/\\/gu, '/'),
@@ -366,17 +351,19 @@ export async function publishStandaloneGoalAuthority(
   const active = { ...activePayload, activeAuthorityHash: sha256Stable(activePayload) };
   validateGoalContractSchema('goal-contract-active-authority.schema.json', active);
   const artifacts: Array<[string, Buffer]> = [
-    [irPath, canonicalBytes(compiled.goalExecutionIr)],
+    [semanticPath, canonicalBytes(compiled.standaloneGoalSemanticIr)],
+    [irPath, canonicalBytes(normalizeGoalExecutionAuthority(compiled.goalExecutionIr))],
     [closurePath, canonicalBytes(compiled.closure)],
     [bindingPath, canonicalBytes(sourceBinding)],
     [evidencePath, canonicalBytes(evidenceIndex)],
     [projectionPath, Buffer.from(parentProjection, 'utf8')],
     [renderabilityPath, renderabilityBytes],
   ];
-  let writeCount = compiled.authoringJudge.writeCount ?? 0;
+  let writeCount = 0;
   for (const [artifactPath, bytes] of artifacts) {
     if (publishImmutable(artifactPath, bytes)) writeCount += 1;
   }
+  if (publishImmutable(internalGatePath, canonicalBytes(compiled.internalSemanticGate))) writeCount += 1;
   if (publishActiveAuthority(activePath, active)) writeCount += 1;
   return Object.freeze({
     goalRunRoot: authorityRoot,
@@ -384,15 +371,8 @@ export async function publishStandaloneGoalAuthority(
     publicationStatus: writeCount === 0 ? 'reused' : 'published',
     writeCount,
     goalExecutionIRHash: compiled.goalExecutionIr.goalExecutionIRHash,
-    providerSelectionRef: compiled.authoringJudge.refs?.providerSelectionRef,
-    authoringJudgeRequestRef: compiled.authoringJudge.refs?.requestRef,
-    authoringJudgeResponseRef: compiled.authoringJudge.refs?.responseRef,
-    authoringJudgeAggregateRef: compiled.authoringJudge.refs?.aggregateRef,
+    internalSemanticGateRef: { path: internalGatePath, hash: refs.standaloneInternalSemanticGateRef.hash },
     standaloneGoalSemanticIrRef: { path: semanticPath, hash: refs.standaloneSemanticIrRef.hash },
-    standaloneAuthoringEffectivePassRef: {
-      path: passPath,
-      hash: refs.standaloneAuthoringEffectivePassRef.hash,
-    },
     goalExecutionIrRef: { path: irPath, hash: refs.goalExecutionIrRef.hash },
     sourceBindingRef: { path: bindingPath, hash: refs.sourceBindingRef.hash },
     resolvedEvidenceIndexRef: { path: evidencePath, hash: refs.resolvedEvidenceIndexRef.hash },

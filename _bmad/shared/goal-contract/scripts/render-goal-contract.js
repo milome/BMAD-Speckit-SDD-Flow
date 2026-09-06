@@ -152,6 +152,54 @@ function auditRenderedDocument(document, profile, slotInfo, templateText) {
   };
 }
 
+function coverageMatrixIds(document) {
+  let active = false, sectionCount = 0, tableCount = 0, pendingHeader = false, inTable = false;
+  let fence = null, comment = false;
+  const ids = [];
+  for (const line of document.split(/\r?\n/u)) {
+    const marker = /^ {0,3}(`{3,}|~{3,})/u.exec(line);
+    if (fence) {
+      if (marker && marker[1][0] === fence[0] && marker[1].length >= fence.length &&
+        !line.slice(marker[0].length).trim()) fence = null;
+      continue;
+    }
+    if (comment || line.includes('<!--')) {
+      comment = !line.includes('-->');
+      continue;
+    }
+    if (marker) { fence = marker[1]; continue; }
+    if (/^ {0,3}#{1,2}[\t ]/u.test(line)) {
+      active = /^ {0,3}##[\t ]+Source Coverage Matrix(?:[\t ]+#+)?[\t ]*$/u.test(line);
+      if (active) sectionCount++;
+      pendingHeader = false;
+      inTable = false;
+      continue;
+    }
+    if (!active) continue;
+    if (!/^ {0,3}\|/u.test(line) || !line.trimEnd().endsWith('|')) {
+      pendingHeader = false;
+      inTable = false;
+      continue;
+    }
+    const cells = line.trim().slice(1, -1).split('|').map(cell => cell.trim());
+    if (cells[0] === 'Source ID') { pendingHeader = true; inTable = false; continue; }
+    if (pendingHeader) {
+      inTable = cells.length > 1 && cells.every(cell => /^:?-{3,}:?$/u.test(cell));
+      if (inTable) tableCount++;
+      pendingHeader = false;
+      continue;
+    }
+    if (inTable) ids.push(cells[0]);
+  }
+  if (sectionCount > 1 || tableCount > 1) {
+    throw block('GOAL_CONTRACT_COVERAGE_REF_INVALID', 'Source Coverage Matrix must identify one unambiguous table');
+  }
+  if (sectionCount !== 1 || tableCount !== 1 || ids.length === 0) {
+    throw block('GOAL_CONTRACT_COVERAGE_MATRIX_MISSING', 'Source Coverage Matrix rows are required');
+  }
+  return ids;
+}
+
 function validateCoverage({ document, coverageReceipt, generationMode }) {
   if (generationMode !== 'source_plan_strict') return null;
   if (!coverageReceipt) {
@@ -164,11 +212,13 @@ function validateCoverage({ document, coverageReceipt, generationMode }) {
   if (coverageReceipt.sourcePlanHash && renderedSourceHash && coverageReceipt.sourcePlanHash !== renderedSourceHash) {
     throw block('GOAL_CONTRACT_SOURCE_HASH_MISMATCH', `${coverageReceipt.sourcePlanHash} !== ${renderedSourceHash}`);
   }
-  if (!document.includes('## Source Coverage Matrix')) {
-    throw block('GOAL_CONTRACT_COVERAGE_MATRIX_MISSING', 'Source Coverage Matrix section is required');
-  }
-  if (!/\|\s*SRC\d{3}\s*\|/u.test(document)) {
-    throw block('GOAL_CONTRACT_COVERAGE_MATRIX_MISSING', 'Source Coverage Matrix rows are required');
+  const renderedIds = coverageMatrixIds(document);
+  const sourceIds = coverageReceipt.sourceObligations.map(obligation => obligation?.id);
+  const expectedIds = new Set(sourceIds);
+  if (sourceIds.some(id => typeof id !== 'string' || !id.trim() || id !== id.trim()) ||
+    expectedIds.size !== sourceIds.length || new Set(renderedIds).size !== renderedIds.length ||
+    renderedIds.length !== sourceIds.length || renderedIds.some(id => !expectedIds.has(id))) {
+    throw block('GOAL_CONTRACT_COVERAGE_REF_INVALID', 'Source Coverage Matrix IDs must exactly match the complete receipt');
   }
   const unmapped = coverageReceipt.unmappedSourceObligations ?? [];
   if (unmapped.length > 0) {

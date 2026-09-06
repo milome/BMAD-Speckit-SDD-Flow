@@ -20,6 +20,7 @@ const {
 const {
   hashControlPlaneValue,
 } = require('../src/utils/goal-contract/control-plane/canonical-hash.ts');
+const { extractSourceObligations } = require('../src/utils/goal-contract/source-obligation-extractor.ts');
 const {
   authorityRecord,
   readFixtureMetadata,
@@ -34,7 +35,8 @@ function rehashCanonicalBundle(bundle) {
   const rehashed = structuredClone(bundle);
   rehashed.sourceObligationGraphHash = hashControlPlaneValue(rehashed.sourceObligationGraph);
   rehashed.canonicalIntentSemanticHash = hashControlPlaneValue({
-    schemaVersion: 'goal-contract-canonical-intent-semantics/v1',
+    schemaVersion: rehashed.schemaVersion === 'goal-contract-canonical-intent-bundle/v2'
+      ? 'goal-contract-canonical-intent-semantics/v2' : 'goal-contract-canonical-intent-semantics/v1',
     sourceCompositionPolicyHash: rehashed.sourceCompositionPolicyHash,
     orderedSourceSnapshotSetHash: rehashed.orderedSourceSnapshotSetHash,
     sourceAuthorityBundleHash: rehashed.sourceAuthorityBundleHash,
@@ -91,7 +93,7 @@ function buildInputs({
     '## Dependencies',
     `- Dependencies: ${primaryReferences[0]}.`,
     '## Applicability',
-    '- Applicability: core-only when sequence mode is disabled.',
+    '- MUST apply only to core mode when sequence mode is disabled.',
   ];
   const sources = [
     {
@@ -368,7 +370,7 @@ describe('goal-contract canonical intent compiler', () => {
     }
   });
 
-  it('retains repeated structural quote spans as non-owning context', () => {
+  it('retains repeated empty quote source blocks without promoting layout into canonical obligations', () => {
     const input = buildInputs({
       primaryAdditionalLines: ['>', '>'],
     });
@@ -378,16 +380,17 @@ describe('goal-contract canonical intent compiler', () => {
       compositeSourceAuthorityBundle: input.compositeSourceAuthorityBundle,
       authorityState: 'candidate_only',
     });
-    const contextRecords = result.canonicalIntentIR.filter(
-      (record) => record.classification === 'context'
-    );
-
-    assert.equal(contextRecords.length, 2);
-    assert.equal(
-      contextRecords.every((record) => record.specSpanRefs.length === 1),
-      true
-    );
-    assert.equal(new Set(contextRecords.flatMap((record) => record.specSpanRefs)).size, 2);
+    const snapshot = input.orderedSourceSnapshotSet.sourceSnapshots[0];
+    const source = extractSourceObligations({ snapshot });
+    const quoteBlocks = source.sourceBlocks.filter((block) => block.kind === 'blockquote' && block.text.trim() === '>');
+    assert.equal(quoteBlocks.length, 2);
+    assert.equal(new Set(quoteBlocks.map((block) => block.sourceRef.startByte)).size, 2);
+    for (const block of quoteBlocks) {
+      assert.equal(block.disposition, 'structure');
+      const frozenBytes = Buffer.from(snapshot.frozenBytesBase64, 'base64');
+      assert.equal(frozenBytes.subarray(block.sourceRef.startByte, block.sourceRef.endByteExclusive).toString('utf8'), block.text);
+      assert.ok(!result.canonicalIntentIR.some((record) => record.sourceBlockRefs.includes(block.id)));
+    }
   });
 
   it('rejects duplicate and conflicting typed semantic ownership', () => {

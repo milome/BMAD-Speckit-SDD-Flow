@@ -2,7 +2,7 @@ import type { RequirementContractSemanticNodeType } from './requirements-contrac
 import { sha256Stable } from './requirements-contract-semantic-resolver';
 
 export const SOURCE_ROOT_CLASS_REGISTRY_VERSION =
-  'requirements-contract-source-root-class-registry/v2' as const;
+  'requirements-contract-source-root-class-registry/v3' as const;
 
 export interface SourceRootFieldMapping {
   bodyField: string;
@@ -41,6 +41,19 @@ const refs = (
 ): SourceRootReferenceMapping => ({ relation, sourceColumns });
 
 export const REQUIREMENTS_CONTRACT_SOURCE_ROOT_CLASS_REGISTRY = [
+  {
+    registryId: 'typed-source-node',
+    rootClass: 'typed_source_node',
+    sourceSection: 'Typed Source Authority',
+    sourceIdPrefix: 'SOURCE',
+    rootIdPrefix: 'SOURCE',
+    nodeType: 'requirement',
+    bodySchemaVersion: 'requirements-contract-source-node/v2',
+    projectionKind: 'generic',
+    fields: [field('text', ['Text']), field('executionRole', ['Execution role']),
+      field('polarity', ['Polarity']), field('normativeStrength', ['Normative strength'])],
+    relatedRefColumns: [],
+  },
   {
     registryId: 'success-criterion',
     rootClass: 'goal_outcome',

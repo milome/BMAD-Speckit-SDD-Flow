@@ -2,6 +2,10 @@ import * as fs from 'node:fs';
 import yaml from 'js-yaml';
 import { requiredCommandExecutionDescriptorsFromModelPacket } from './requirements-contract-command-execution-receipt';
 import { canonicalJson } from './requirements-contract-governed-write';
+import {
+  errorCaseCoverageFromTypedModelPacket,
+  requiredCommandsFromTypedModelPacket,
+} from './requirements-contract-typed-packet-projection';
 
 // Runtime source and packet documents are schema-governed dynamic records.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -137,7 +141,7 @@ function sourceManifestCommandProjection(confirmation: JsonRecord): JsonRecord[]
 }
 
 function packetManifestCommandProjection(packet: JsonRecord): JsonRecord[] {
-  return records(record(packet.contractExecutionManifest).requiredCommands).map((command) => ({
+  return records(requiredCommandsFromTypedModelPacket(packet)).map((command) => ({
     id: text(command.id ?? command.commandId),
     command: text(command.command),
     traceRefs: unique([...strings(command.traceRows), ...strings(command.traceRefs)]),
@@ -283,13 +287,13 @@ export function auditModelPacketParity(input: {
     acceptanceMismatches,
     'acceptanceTests',
     records(confirmation.acceptanceTests),
-    records(record(packet.errorCaseCoverage).acceptanceTests)
+    records(errorCaseCoverageFromTypedModelPacket(packet).acceptanceTests)
   );
   compare(
     acceptanceMismatches,
     'e2eSuites',
     records(confirmation.e2eSuites),
-    records(record(packet.errorCaseCoverage).e2eSuites)
+    records(errorCaseCoverageFromTypedModelPacket(packet).e2eSuites)
   );
 
   const packetRequirements = record(packet.requirements);
@@ -321,13 +325,13 @@ export function auditModelPacketParity(input: {
     sourceObligationMismatches,
     'failurePaths',
     records(confirmation.failurePaths),
-    records(record(packet.errorCaseCoverage).failurePaths)
+    records(errorCaseCoverageFromTypedModelPacket(packet).failurePaths)
   );
   compare(
     sourceObligationMismatches,
     'edgeCases',
     records(confirmation.edgeCases),
-    records(record(packet.errorCaseCoverage).edgeCases)
+    records(errorCaseCoverageFromTypedModelPacket(packet).edgeCases)
   );
   compare(
     sourceObligationMismatches,

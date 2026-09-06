@@ -36,6 +36,11 @@ const { validateGoalContractSchema } = require(
     ? './control-plane/schema-registry.ts'
     : './control-plane/schema-registry'
 );
+const { validateGoalContractSourceCoverageArtifact } = require(
+  __filename.endsWith('.ts')
+    ? './control-plane/goal-contract-compiler.ts'
+    : './control-plane/goal-contract-compiler'
+);
 const { semanticPartitionManifestHash } = require(
   __filename.endsWith('.ts')
     ? './control-plane/partition-output-paths.ts'
@@ -458,10 +463,21 @@ function checkGoalContractReleaseGate({ source, goal, coverage, generation }) {
 
   const sourceHash = source && fs.existsSync(source) ? sha256File(source) : null;
   const goalHash = goal && fs.existsSync(goal) ? sha256File(goal) : null;
+  const coverageHash = coverage && fs.existsSync(coverage) ? sha256File(coverage) : null;
 
   if (coverageReceipt) {
+    if (coverageReceipt.schemaVersion === 'goal-contract-source-coverage-receipt/v2') {
+      try {
+        validateGoalContractSourceCoverageArtifact(coverageReceipt);
+      } catch {
+        blockingReasons.push('coverage_receipt_schema_invalid');
+      }
+    }
     if (sourceHash && coverageReceipt.sourcePlanHash !== sourceHash) blockingReasons.push('source_hash_mismatch');
-    if (goalHash && coverageReceipt.goalContractHash !== goalHash) blockingReasons.push('goal_contract_hash_mismatch');
+    const coverageGoalHash = coverageReceipt.schemaVersion === 'goal-contract-source-coverage-receipt/v2'
+      ? coverageReceipt.goalContractDocumentHash
+      : coverageReceipt.goalContractHash;
+    if (goalHash && coverageGoalHash !== goalHash) blockingReasons.push('goal_contract_hash_mismatch');
     const unmappedSourceObligations = checkArrayField(
       coverageReceipt.unmappedSourceObligations,
       'coverage_unmapped_source_obligations',
@@ -492,11 +508,18 @@ function checkGoalContractReleaseGate({ source, goal, coverage, generation }) {
   if (generationReceipt) {
     if (generationReceipt.ok !== true) blockingReasons.push('generation_receipt_not_ok');
     if (sourceHash && generationReceipt.sourcePlanHash !== sourceHash) blockingReasons.push('generation_source_hash_mismatch');
-    if (goalHash && generationReceipt.goalContractHash !== goalHash) blockingReasons.push('generation_goal_hash_mismatch');
+    const generationGoalHash = coverageReceipt?.schemaVersion === 'goal-contract-source-coverage-receipt/v2'
+      ? generationReceipt.goalContractDocumentHash
+      : generationReceipt.goalContractHash;
+    if (goalHash && generationGoalHash !== goalHash) blockingReasons.push('generation_goal_hash_mismatch');
     if (generationReceipt.unmappedSourceObligations !== 0) {
       blockingReasons.push('generation_unmapped_source_obligations');
     }
     if (!generationReceipt.coverageReceiptPath) blockingReasons.push('generation_coverage_receipt_path_missing');
+    if (coverageReceipt?.schemaVersion === 'goal-contract-source-coverage-receipt/v2' &&
+      generationReceipt.coverageReceiptHash !== coverageHash) {
+      blockingReasons.push('generation_coverage_receipt_hash_mismatch');
+    }
   }
 
   return {

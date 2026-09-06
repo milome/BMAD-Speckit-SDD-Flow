@@ -1,0 +1,10 @@
+{
+  "allowedPaths": ["src/active-phase/**"],
+  "protectedPaths": ["src/later-phase/**"],
+  "forbiddenWork": ["src/later-phase/**"],
+  "evidenceInputs": {
+    "acceptance-red": ["design.md", "phase-plan.md"],
+    "implementation-green": ["design.md", "phase-plan.md", "src/active-phase/example.ts"],
+    "stop-gate": ["design.md", "phase-plan.md", "package.json"]
+  }
+}

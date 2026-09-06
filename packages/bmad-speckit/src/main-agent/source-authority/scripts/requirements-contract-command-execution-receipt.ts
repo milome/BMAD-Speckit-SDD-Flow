@@ -4,6 +4,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import Ajv2020, { type ValidateFunction } from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
+import { requiredCommandsFromTypedModelPacket } from './requirements-contract-typed-packet-projection';
 
 type JsonRecord = Record<string, unknown>;
 
@@ -429,7 +430,7 @@ function requiredCommandRowsAndValidationRefs(modelPacket: JsonRecord): {
     : {};
   return {
     commandRows: [
-      ...records(modelPacket.requiredCommands),
+      ...records(requiredCommandsFromTypedModelPacket(modelPacket)),
       ...records(executionHandoff.requiredValidationCommands),
     ],
     validationRefs: strings(executionHandoff.requiredValidationCommandRefs),

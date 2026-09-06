@@ -133,8 +133,10 @@ function normalizeContractExecutionManifest(input) {
   const commandTargetCollection = normalizeCommandTargets(base, audit);
   const normalized = {
     ...base,
-    schemaVersion: CANONICAL_SCHEMA_VERSION,
-    builderVersion: input.builderVersion ?? CANONICAL_BUILDER_VERSION,
+    schemaVersion: base.typedSourceAuthorityRef
+      ? 'contract-execution-manifest/v2' : CANONICAL_SCHEMA_VERSION,
+    builderVersion: input.builderVersion ?? (base.typedSourceAuthorityRef
+      ? 'contract-execution-manifest-builder/v2' : CANONICAL_BUILDER_VERSION),
     requiredSections: strings(base.requiredSections),
     requiredCommands: normalizeRequiredCommands(base, confirmation),
   };

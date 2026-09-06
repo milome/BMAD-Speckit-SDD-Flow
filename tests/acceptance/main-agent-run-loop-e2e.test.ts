@@ -807,7 +807,7 @@ describe('main-agent automatic run-loop', () => {
       });
     const root = fixture.root;
     try {
-      const compiled = prepareNativeGoalImportFixture(fixture);
+      prepareNativeGoalImportFixture(fixture);
       const taskReportPath = compiled.packet.compiledPromptRef.taskReportPath!;
       writeImportTaskReport(taskReportPath, compiled.packet.packetId);
       refreshNativeGoalImportProvenance(fixture, compiled, taskReportPath);
@@ -905,7 +905,7 @@ describe('main-agent automatic run-loop', () => {
       });
     const root = fixture.root;
     try {
-      const compiled = prepareNativeGoalImportFixture(fixture);
+      prepareNativeGoalImportFixture(fixture);
 
       const surface = resolveMainAgentOrchestrationSurface({
         ...runLoopArgs(fixture),

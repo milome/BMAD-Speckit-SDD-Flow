@@ -25,7 +25,7 @@ describe('Goal parent renderability probe', () => {
   it('blocks a projection that drops negative evidence or renders undefined data', () => {
     const missing = probeGoalContractRenderability({
       goalExecutionIr: ir,
-      markdown: `# Goal\n\n${HASH}\n\nMUST-001\nTASK-001\nTASK-002\nundefined\n`,
+      markdown: `# Goal\n\nGoal Execution IR: ${HASH}\n\nMUST-001\nTASK-001\nTASK-002\n  Strength: undefined; polarity: required; execution role: action.\n`,
     });
 
     expect(missing.decision).toBe('block');
@@ -34,6 +34,16 @@ describe('Goal parent renderability probe', () => {
       'goal_parent_projection_obligation_missing',
       'goal_parent_projection_undefined_value',
     ]);
+  });
+
+  it('allows undefined-like tokens when they are literal source requirements', () => {
+    const report = probeGoalContractRenderability({
+      goalExecutionIr: ir,
+      markdown: `# Goal\n\n${HASH}\n\nMUST-001: Reject NaN and null values.\nNEG-001\nTASK-001\nTASK-002\n`,
+    });
+
+    expect(report.decision).toBe('pass');
+    expect(report.issueCodes).not.toContain('goal_parent_projection_undefined_value');
   });
 
   it('validates reports with a closed canonical schema before promotion', () => {

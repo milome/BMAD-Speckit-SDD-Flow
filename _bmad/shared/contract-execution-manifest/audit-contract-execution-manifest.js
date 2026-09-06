@@ -90,7 +90,9 @@ function auditContractExecutionManifest(input) {
       blockingReasons.push(`CLOSEOUT_REQUIRED_COMMAND_MISSING:${commandId}`);
     }
   }
-  if (text(canonical.schemaVersion) !== 'contract-execution-manifest/v1') {
+  const expectedVersion = canonical.typedSourceAuthorityRef
+    ? 'contract-execution-manifest/v2' : 'contract-execution-manifest/v1';
+  if (text(canonical.schemaVersion) !== expectedVersion) {
     blockingReasons.push('MANIFEST_SCHEMA_VERSION_MISSING_OR_INVALID');
   }
   if (!text(canonical.manifestHash)) {

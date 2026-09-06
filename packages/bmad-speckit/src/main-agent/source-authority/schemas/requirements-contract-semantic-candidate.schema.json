@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-semantic-candidate.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "semanticRevisionId", "scopeSemanticHash", "semanticIr", "candidateHash"],
+  "properties": {
+    "schemaVersion": { "const": "RequirementsSemanticCandidate/v2" },
+    "semanticRevisionId": { "type": "string", "pattern": "^SEMREV-[A-F0-9]{64}$" },
+    "scopeSemanticHash": { "$ref": "#/$defs/hash" },
+    "candidateHash": { "$ref": "#/$defs/hash" },
+    "semanticIr": { "$ref": "requirements-contract-source-node.schema.json#/$defs/dictionary" }
+  },
+  "$defs": { "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" } }
+}

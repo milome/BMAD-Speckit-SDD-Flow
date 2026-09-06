@@ -10,18 +10,7 @@ const TSX = join(ROOT, 'node_modules', 'tsx', 'dist', 'cli.mjs');
 const SOURCE_COMMAND = join(ROOT, 'packages', 'bmad-speckit', 'src', 'commands', 'goal-contract.ts');
 const SOURCE_RUNNER = [
   'const { goalContractCommand } = require(process.argv[1]);',
-  'const hash=(digit)=>`sha256:${digit.repeat(64)}`;',
-  'const prepareStandaloneGoalJudgeInvocation=async()=>({',
-  "configPath:'test',judgeRuntime:{},providerRef:'test-goal-judge',",
-  "provider:{transport:'openai-compatible',apiStyle:'responses',model:'test-model',requestPolicy:{}},",
-  "providerRegistryHash:hash('7'),credentialProviderRef:'test-goal-judge',credentialRevision:1,",
-  'invoke:async({request})=>({',
-  "schemaVersion:'requirements-contract-normalized-judge-response/v1',",
-  "providerRef:'test-goal-judge',transport:'openai-compatible',configuredModel:'test-model',returnedModel:'test-model',",
-  "decision:'pass',findings:[],challengeRequests:[],evidenceRefs:request.requiredCoverageRefs,",
-  "providerRequestId:'request-1',requestHash:hash('8'),responseHash:hash('9'),",
-  '}),});',
-  'Promise.resolve(goalContractCommand({prepareStandaloneGoalJudgeInvocation}, process.argv.slice(2)))',
+  'Promise.resolve(goalContractCommand({}, process.argv.slice(2)))',
   '.then((code)=>{process.exitCode=code;})',
   '.catch((error)=>{console.error(error);process.exitCode=2;});',
 ].join('');

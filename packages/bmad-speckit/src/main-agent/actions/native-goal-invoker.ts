@@ -185,6 +185,8 @@ function nativeGoalBridgeResult(value: unknown): NativeGoalControlledExecutorRes
 /**
  * Formal host entry for CLI run-loop. The host-specific bridge is configured by
  * environment, while the request and child authorization protocol stay shared.
+ * @param {NativeGoalHostBridgeOptions} options Host bridge configuration and environment overrides.
+ * @returns {NativeGoalControlledExecutor} A controlled native-goal executor bound to the configured host bridge.
  */
 export function createNativeGoalHostExecutor(
   options: NativeGoalHostBridgeOptions = {}

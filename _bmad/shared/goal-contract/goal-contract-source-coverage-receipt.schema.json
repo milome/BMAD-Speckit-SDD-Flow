@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "goal-contract-source-coverage-receipt.schema.json",
+  "title": "Goal Contract Source Coverage Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "projectionMode",
+    "entryScenario",
+    "sourcePlanPath",
+    "sourcePlanHash",
+    "sourceBytes",
+    "sourceLines",
+    "goalContractPath",
+    "goalContractHash",
+    "goalContractDocumentHash",
+    "canonicalIntentBundleHash",
+    "sourceAuthorityBundleHash",
+    "sourceObligationCount",
+    "sourceObligationSetHash",
+    "coverageRowsHash",
+    "sourceObligations",
+    "sourceClauseCoverage",
+    "unmappedSourceObligations",
+    "orphanGeneratedRefs",
+    "blockingReasons",
+    "evidenceClassification",
+    "runtimeEvidenceAuthority",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "goal-contract-source-coverage-receipt/v2" },
+    "projectionMode": { "const": "minimal_hash_bound" },
+    "entryScenario": { "const": "standalone_goal_contract" },
+    "sourcePlanPath": { "type": "string", "minLength": 1 },
+    "sourcePlanHash": { "$ref": "#/$defs/hash" },
+    "sourceBytes": { "type": "integer", "minimum": 1 },
+    "sourceLines": { "type": "integer", "minimum": 1 },
+    "goalContractPath": { "type": "string", "minLength": 1 },
+    "goalContractHash": { "$ref": "#/$defs/hash" },
+    "goalContractDocumentHash": { "$ref": "#/$defs/hash" },
+    "canonicalIntentBundleHash": { "$ref": "#/$defs/hash" },
+    "sourceAuthorityBundleHash": { "$ref": "#/$defs/hash" },
+    "sourceObligationCount": { "type": "integer", "minimum": 1 },
+    "sourceObligationSetHash": { "$ref": "#/$defs/hash" },
+    "coverageRowsHash": { "$ref": "#/$defs/hash" },
+    "sourceObligations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/coverageRow" }
+    },
+    "sourceClauseCoverage": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/sourceClauseCoverage" }
+    },
+    "unmappedSourceObligations": { "$ref": "#/$defs/emptyArray" },
+    "orphanGeneratedRefs": { "$ref": "#/$defs/emptyArray" },
+    "blockingReasons": { "$ref": "#/$defs/emptyArray" },
+    "evidenceClassification": { "const": "coverage_only" },
+    "runtimeEvidenceAuthority": { "const": false },
+    "decision": { "const": "pass" }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "emptyArray": {
+      "type": "array",
+      "maxItems": 0
+    },
+    "refs": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "coverageRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "declaredSourceId",
+        "kind",
+        "executionRole",
+        "normativeStrength",
+        "polarity",
+        "required",
+        "sourceArtifactId",
+        "lineStart",
+        "lineEnd",
+        "sourceTextHash",
+        "clauseCount",
+        "clauseSetHash",
+        "conditionCount",
+        "conditionSetHash",
+        "applicabilityHash",
+        "semanticRowHash",
+        "goalTaskRefs",
+        "acceptanceRefs",
+        "commandRefs",
+        "evidenceRefs",
+        "stopConditionRefs"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "declaredSourceId": { "type": ["string", "null"], "minLength": 1 },
+        "kind": { "type": "string", "minLength": 1 },
+        "executionRole": {
+          "enum": ["action", "requirement", "acceptance", "binding", "definition", "boundary", "guidance"]
+        },
+        "normativeStrength": {
+          "enum": ["must", "should", "may", "mixed", "descriptive"]
+        },
+        "polarity": {
+          "enum": ["required", "forbidden", "permitted", "preserve", "mixed", "descriptive"]
+        },
+        "required": { "type": "boolean" },
+        "sourceArtifactId": { "type": "string", "minLength": 1 },
+        "lineStart": { "type": "integer", "minimum": 1 },
+        "lineEnd": { "type": "integer", "minimum": 1 },
+        "sourceTextHash": { "$ref": "#/$defs/hash" },
+        "clauseCount": { "type": "integer", "minimum": 0 },
+        "clauseSetHash": { "$ref": "#/$defs/hash" },
+        "conditionCount": { "type": "integer", "minimum": 0 },
+        "conditionSetHash": { "$ref": "#/$defs/hash" },
+        "applicabilityHash": { "$ref": "#/$defs/hash" },
+        "semanticRowHash": { "$ref": "#/$defs/hash" },
+        "goalTaskRefs": { "$ref": "#/$defs/refs" },
+        "acceptanceRefs": { "$ref": "#/$defs/refs" },
+        "commandRefs": { "$ref": "#/$defs/refs" },
+        "evidenceRefs": { "$ref": "#/$defs/refs" },
+        "stopConditionRefs": { "$ref": "#/$defs/refs" }
+      }
+    },
+    "sourceClauseCoverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceArtifactId",
+        "sourceSnapshotHash",
+        "clauseCount",
+        "clauseSetHash",
+        "sourceClauseCoverageSummaryHash"
+      ],
+      "properties": {
+        "sourceArtifactId": { "type": "string", "minLength": 1 },
+        "sourceSnapshotHash": { "$ref": "#/$defs/hash" },
+        "clauseCount": { "type": "integer", "minimum": 0 },
+        "clauseSetHash": { "$ref": "#/$defs/hash" },
+        "sourceClauseCoverageSummaryHash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

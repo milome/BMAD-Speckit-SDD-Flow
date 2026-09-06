@@ -8,7 +8,6 @@ import {
   writeUserStoryMappingIndex,
   type UserStoryMappingIndex,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/user-story-mapping';
-import { writeMinimalRequirementRecordContext } from '../helpers/runtime-registry-fixture';
 import { publishImplementationPromptFixture } from './helpers/prompt-transaction-implementation-publication-fixture';
 
 function bootstrapProject(root: string, index: UserStoryMappingIndex): void {

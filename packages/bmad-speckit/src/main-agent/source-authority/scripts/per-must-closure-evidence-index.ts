@@ -2,6 +2,7 @@
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { requiredCommandsFromTypedModelPacket } from './requirements-contract-typed-packet-projection';
 
 type JsonObject = Record<string, unknown>;
 type Decision = 'pass' | 'blocked';
@@ -126,7 +127,7 @@ function commandRowsForMust(
       ...strings(trace.deliveryCommandRefs),
     ]),
   ]);
-  const commands = objects(modelPacket.requiredCommands);
+  const commands = objects(requiredCommandsFromTypedModelPacket(modelPacket));
   const directlyMapped = commands.filter((command) => {
     const commandId = text(command.id ?? command.commandId);
     if (commandId && commandRefs.has(commandId)) return true;

@@ -4,10 +4,6 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { describe, expect, it } from 'vitest';
-import {
-  materializeStandaloneGoalJudgeHttpFixture,
-  type StandaloneGoalJudgeHttpFixture,
-} from '../helpers/standalone-goal-judge-http-fixture';
 
 const ROOT = process.cwd();
 const CLI = join(ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
@@ -44,9 +40,7 @@ function largeSourcePlan(): string {
 describe('goal-contract generate Windows command length regression', () => {
   it('uses path-only CLI arguments for large source documents', async () => {
     const root = mkdtempSync(join(tmpdir(), 'goal-contract-long-command-'));
-    let judge: StandaloneGoalJudgeHttpFixture | undefined;
     try {
-      judge = await materializeStandaloneGoalJudgeHttpFixture(root);
       const source = join(root, 'large-source-plan.md');
       const out = join(root, 'large-goal-execution-plan.md');
       writeFileSync(source, largeSourcePlan(), 'utf8');
@@ -83,10 +77,9 @@ describe('goal-contract generate Windows command length regression', () => {
       expect(generationReceipt.writeReceipt.finalHash).toBe(
         generationReceipt.goalContractDocumentHash
       );
-      expect(payload.goalJudgeDispatchCount).toBe(1);
-      expect(judge.requests).toBe(1);
+      expect(payload.goalJudgeDispatchCount).toBe(0);
+      expect(existsSync(payload.internalSemanticGateRef.path)).toBe(true);
     } finally {
-      if (judge) await judge.close();
       rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
     }
   }, 120_000);

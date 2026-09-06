@@ -78,7 +78,8 @@ describe('goal-contract source obligation extractor', () => {
       assert.doesNotMatch(obligation.summary, /\boptional\b|可选|或/u);
       assert.ok(obligation.lineStart >= 1);
       assert.ok(obligation.lineEnd >= obligation.lineStart);
-      assert.equal(obligation.required, true);
+      assert.equal(typeof obligation.required, 'boolean');
+      if (obligation.applicabilityState !== 'applicable' || obligation.normativeStrength !== 'must') assert.equal(obligation.required, false);
     }
   });
 
@@ -157,11 +158,11 @@ describe('goal-contract source obligation extractor', () => {
     const singleLine = result.sourceObligations.find((item) =>
       item.exactText.startsWith('Single-line')
     );
-    const heading = result.sourceObligations.find(
-      (item) => item.exactText === 'Acceptance Criteria'
+    const heading = result.sourceBlocks.find(
+      (item) => item.kind === 'heading' && item.text.trim() === '## Acceptance Criteria'
     );
     const fence = result.sourceObligations.find(
-      (item) => item.kind === 'command_block'
+      (item) => item.kind === 'normative_content'
     );
 
     assert.equal(
@@ -191,7 +192,7 @@ describe('goal-contract source obligation extractor', () => {
     assert.equal(acceptance.lineStart, 10);
     assert.equal(acceptance.lineEnd, 11);
     assert.equal(singleLine.lineStart, singleLine.lineEnd);
-    assert.equal(heading.lineStart, heading.lineEnd);
+    assert.equal(heading.sourceRef.lineStart, heading.sourceRef.lineEnd);
     assert.equal(fence.lineStart, 15);
     assert.equal(fence.lineEnd, 17);
   });
@@ -246,7 +247,7 @@ describe('goal-contract source obligation extractor', () => {
       }),
     });
     const heading = result.sourceObligations.find((item) => item.id === 'P04-T04');
-    const codeBlock = result.sourceObligations.find((item) => item.kind === 'command_block');
+    const codeBlock = result.sourceObligations.find((item) => item.kind === 'normative_content');
     const dependentTask = result.sourceObligations.find((item) => item.id === 'P05-T01');
 
     assert.equal(heading.declaredId, true);
@@ -286,7 +287,7 @@ describe('goal-contract source obligation extractor', () => {
         .map((item) => [item.id, item.dependencyRefs])
     );
     const codeBlock = result.sourceObligations.find(
-      (item) => item.kind === 'command_block'
+      (item) => item.kind === 'normative_content'
     );
 
     assert.deepEqual(dependencies, {
@@ -397,7 +398,7 @@ describe('goal-contract source obligation extractor', () => {
     );
 
     assert.ok(dependency);
-    assert.deepEqual(dependency.dependencyRefs, []);
+    assert.deepEqual(dependency.dependencyRefs, ['C00-T01']);
     assert.deepEqual(dependency.headingPath, ['Plan', 'Tasks', 'J01-T01：实现受治理入口']);
   });
 
@@ -463,10 +464,11 @@ describe('goal-contract source obligation extractor', () => {
       }),
     });
 
-    assert.equal(
-      result.sourceObligations.some((obligation) => obligation.exactText === prose),
-      false
-    );
+    const permission = result.sourceObligations.find((obligation) => obligation.exactText === prose);
+    assert.ok(permission);
+    assert.equal(permission.normativeStrength, 'may');
+    assert.equal(permission.required, false);
+    assert.equal(permission.declaredId, false);
   });
 
   it('fails closed on duplicate IDs, unknown dependencies, and ambiguous execution prose', () => {
@@ -557,7 +559,6 @@ describe('goal-contract source obligation extractor', () => {
       ),
       new Set([
         'declared_execution_task',
-        'completion_criteria',
         'acceptance_condition',
         'verification_command',
         'evidence_contract',
@@ -566,8 +567,7 @@ describe('goal-contract source obligation extractor', () => {
     const dependentTask = extracted.sourceObligations.find(
       (item) => item.id === declaredIds.dependentTask
     );
-    assert.equal(dependentTask.kind, 'completion_criteria');
-    assert.notEqual(dependentTask.kind, 'declared_execution_task');
+    assert.equal(dependentTask.kind, 'declared_execution_task');
 
     const reordered = extracted.sourceObligations.map((item) => ({
       ...item,
@@ -583,6 +583,8 @@ describe('goal-contract source obligation extractor', () => {
         canonicalSourceObligationGraph({
           sourceSnapshotHash: extracted.sourceSnapshotHash,
           sourceObligations: reordered,
+          sourceCoverage: extracted.sourceCoverage,
+          sourceRelations: extracted.sourceRelations,
         })
       ),
       extracted.sourceObligationGraphHash

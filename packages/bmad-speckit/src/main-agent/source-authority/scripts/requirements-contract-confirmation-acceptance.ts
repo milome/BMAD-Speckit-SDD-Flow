@@ -32,7 +32,11 @@ import { artifactBytesHash, canonicalRequirementsJson } from './requirements-con
 import { atomicNoClobberPublish } from './requirements-contract-atomic-no-clobber-publisher';
 import { validateRequirementsContractBuildManifest } from './requirements-contract-authoring-manifest';
 import { validateRequirementsActiveAuthorityTuple } from './requirements-contract-authority-publication-committer';
-import { validateRequirementsContractSemanticIr } from './requirements-contract-semantic-ir';
+import {
+  validateRequirementsContractSemanticIr,
+  type RequirementsContractSemanticIr,
+} from './requirements-contract-semantic-ir';
+import { readRequirementsContractSemanticIrAuthority } from './requirements-contract-semantic-ir-reader';
 import { validateRequirementsContractSourceBindingCapsule } from './requirements-contract-source-binding-capsule';
 import { resolveEvidenceClaimAuthority } from './requirements-contract-span-registry';
 import { sha256Stable } from './requirements-contract-semantic-resolver';
@@ -77,7 +81,7 @@ interface ConfirmationInput {
 type RequirementsFinalRenderInput = {
   requestId: string;
   confirmationLanguage: string;
-  semanticIr: JsonObject;
+  semanticIr: RequirementsContractSemanticIr;
   resolvedEvidenceIndex: JsonObject;
   effectivePass: JsonObject;
   bindingRefresh?: {
@@ -479,7 +483,7 @@ export function stageRequirementsContractConfirmationBindingRefresh(input: {
   const activeAuthority = object(record.activeAuthority);
   const tupleValidation = validateRequirementsActiveAuthorityTuple(activeAuthority);
   if (tupleValidation.decision === 'block') throw new Error(tupleValidation.issueCodes[0]);
-  const semanticIr = readJson(
+  const semanticIr = readRequirementsContractSemanticIrAuthority(
     confinedRecordArtifact(recordRoot, text(activeAuthority.activeSemanticIrPath))
   );
   const sourceBinding = readJson(
@@ -591,7 +595,7 @@ export function refreshRequirementsContractConfirmationBinding(input: {
   const activeAuthority = object(record.activeAuthority);
   const tupleValidation = validateRequirementsActiveAuthorityTuple(activeAuthority);
   if (tupleValidation.decision === 'block') throw new Error(tupleValidation.issueCodes[0]);
-  const semanticIr = readJson(
+  const semanticIr = readRequirementsContractSemanticIrAuthority(
     confinedRecordArtifact(recordRoot, text(activeAuthority.activeSemanticIrPath))
   );
   const sourceBinding = readJson(
@@ -781,7 +785,7 @@ export function renderAndPromoteRequirementsContractConfirmation(input: {
   if (buildManifest.buildManifestHash !== activeAuthority.activeBuildManifestHash) {
     throw new Error('requirements_final_render_build_manifest_stale');
   }
-  const semanticIr = readJson(
+  const semanticIr = readRequirementsContractSemanticIrAuthority(
     confinedRecordArtifact(recordRoot, text(activeAuthority.activeSemanticIrPath))
   );
   const sourceBinding = readJson(

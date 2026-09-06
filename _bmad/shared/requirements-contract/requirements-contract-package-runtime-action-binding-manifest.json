@@ -199,7 +199,7 @@
         {
           "role": "controlled-command-producer",
           "packagePath": "dist/main-agent/source-authority/scripts/requirements-contract-command-execution-receipt.js",
-          "hash": "sha256:18c0d05af87ea69dfd425539b4d0856a99574dd3efcffbc1fffb454ca39ef2b5"
+          "hash": "sha256:cd13af6294499177e2137651509a2a048ec96ad2d762ee9099c152f32dacf4fd"
         },
         {
           "role": "runtime-build-authority-validator",
@@ -218,11 +218,11 @@
       "actionId": "requirements-contract-command-execution-producer",
       "sourceHandlerRef": {
         "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-command-execution-receipt.ts",
-        "hash": "sha256:ff8fba6ffac627e89057a5fd832fdbdd89d98e5168cba8e0874c83661e413f34"
+        "hash": "sha256:43ba0718246b0cf98e68f60c3815f355bb043c9445e548a6919c2124b17280ab"
       },
       "distHandlerRef": {
         "path": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/requirements-contract-command-execution-receipt.js",
-        "hash": "sha256:18c0d05af87ea69dfd425539b4d0856a99574dd3efcffbc1fffb454ca39ef2b5"
+        "hash": "sha256:cd13af6294499177e2137651509a2a048ec96ad2d762ee9099c152f32dacf4fd"
       },
       "semanticGate": {
         "gateId": "requirements-contract-command-execution-producer:semantic-gate",
@@ -249,12 +249,12 @@
       ],
       "packageDistRef": {
         "path": "dist/main-agent/source-authority/scripts/requirements-contract-command-execution-receipt.js",
-        "hash": "sha256:18c0d05af87ea69dfd425539b4d0856a99574dd3efcffbc1fffb454ca39ef2b5"
+        "hash": "sha256:cd13af6294499177e2137651509a2a048ec96ad2d762ee9099c152f32dacf4fd"
       },
       "installedSurfaceRefs": [
         {
           "path": "dist/main-agent/source-authority/scripts/requirements-contract-command-execution-receipt.js",
-          "hash": "sha256:18c0d05af87ea69dfd425539b4d0856a99574dd3efcffbc1fffb454ca39ef2b5"
+          "hash": "sha256:cd13af6294499177e2137651509a2a048ec96ad2d762ee9099c152f32dacf4fd"
         }
       ],
       "runtimeRefs": [],
@@ -290,7 +290,7 @@
       "behaviorTestRefs": [
         {
           "path": "tests/acceptance/requirements-contract-prompt-transaction-production-publication.test.ts",
-          "hash": "sha256:d18849b1181504db89a011fcadbec4f0a466cf38a622f13ef099355ec6e2391c"
+          "hash": "sha256:8bd017dbb534e8fc1e5d258ea0a79188fb892d570eb8cf09e149409c6b375187"
         }
       ],
       "packageDistRef": {
@@ -725,22 +725,22 @@
         {
           "role": "openai-compatible-judge-adapter",
           "packagePath": "dist/main-agent/source-authority/scripts/requirements-contract-openai-compatible-judge-adapter.js",
-          "hash": "sha256:3e4a920ddd27f5297037b8337b2ec94e1844812c1d35999da7e88a47a572dcbf"
+          "hash": "sha256:3ca5be2e803c7ba0f4318e7c316cccc1a6a98028bd663f1c5d6719e3327b87de"
         },
         {
           "role": "anthropic-compatible-judge-adapter",
           "packagePath": "dist/main-agent/source-authority/scripts/requirements-contract-anthropic-compatible-judge-adapter.js",
-          "hash": "sha256:3d9f4a75a8dbe9050080e7533572ef384fdd1838f618ef376b7d461d03e190f4"
+          "hash": "sha256:899617139fd52a8e980352837c196c1ce032767996b5f937739e9abebb145ec6"
         },
         {
           "role": "claude-code-cli-judge-adapter",
           "packagePath": "dist/main-agent/source-authority/scripts/requirements-contract-claude-code-cli-judge-adapter.js",
-          "hash": "sha256:d914e53ea6885c97ff93127a2e7beec0e0c80bcb3d357996f0cb6013c1b742be"
+          "hash": "sha256:ecf29715782bb61eb8f7c35e7170d012dfe3e854e86a8567640ed177202905e8"
         },
         {
           "role": "codex-cli-judge-adapter",
           "packagePath": "dist/main-agent/source-authority/scripts/requirements-contract-codex-cli-judge-adapter.js",
-          "hash": "sha256:8c7c020e50e2b4f8464ee66e9305aa4e717efca8e17e7036df620c95b7631280"
+          "hash": "sha256:af10c2622b503b9d3a2e40cfe8ea898418a18b2f38d22dcb347aeb5b40fd477b"
         }
       ],
       "routingOnly": false
@@ -904,11 +904,11 @@
       "capabilityActionId": "requirements-contract-consumer-cli-capability-observe",
       "sourceHandlerRef": {
         "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher.ts",
-        "hash": "sha256:491cc7087bcbdd26aff43112ac3c606b226d40bda33cbaa923b2956f3c4cb48e"
+        "hash": "sha256:6962d2c18b909fcd7fcc2cab3051f8abf8f50e0a2f1fa09a269a61f5eabf6ee2"
       },
       "distHandlerRef": {
         "path": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher.js",
-        "hash": "sha256:144739e58c3c182529f8d039edd1dcc9c1786059d2dfb58bc9e33f190ef05e12"
+        "hash": "sha256:8a5fd77a84e610e3d867b098f980d5e64b9179c88e69ea06a9a13a654126e1e6"
       },
       "semanticGate": {
         "gateId": "requirements-contract-prompt-transaction-publish:semantic-gate",
@@ -942,17 +942,17 @@
       "behaviorTestRefs": [
         {
           "path": "tests/acceptance/requirements-contract-prompt-transaction-production-publication.test.ts",
-          "hash": "sha256:d18849b1181504db89a011fcadbec4f0a466cf38a622f13ef099355ec6e2391c"
+          "hash": "sha256:8bd017dbb534e8fc1e5d258ea0a79188fb892d570eb8cf09e149409c6b375187"
         }
       ],
       "packageDistRef": {
         "path": "dist/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher.js",
-        "hash": "sha256:144739e58c3c182529f8d039edd1dcc9c1786059d2dfb58bc9e33f190ef05e12"
+        "hash": "sha256:8a5fd77a84e610e3d867b098f980d5e64b9179c88e69ea06a9a13a654126e1e6"
       },
       "installedSurfaceRefs": [
         {
           "path": "dist/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher.js",
-          "hash": "sha256:144739e58c3c182529f8d039edd1dcc9c1786059d2dfb58bc9e33f190ef05e12"
+          "hash": "sha256:8a5fd77a84e610e3d867b098f980d5e64b9179c88e69ea06a9a13a654126e1e6"
         }
       ],
       "runtimeRefs": [
@@ -964,7 +964,7 @@
         {
           "role": "installed-generator",
           "packagePath": "_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js",
-          "hash": "sha256:e754d1c1048d9f65c93f53bce3f1daacc83256d6bcf12e60a94dcb181d7fa97a"
+          "hash": "sha256:ca6a2e3f10e3b000c1ddc3e870f43530916c708ef42af05d6f5f1458ada3f35a"
         },
         {
           "role": "installed-stage-registry",
@@ -974,7 +974,7 @@
         {
           "role": "installed-runner",
           "packagePath": "dist/main-agent/source-authority/scripts/main-agent-compiled-prompt-runner.js",
-          "hash": "sha256:e355a13df23ad24d3a2601c54267b73375e009e7490a84d8c90e48a3aab4b68c"
+          "hash": "sha256:d495067e2e04607c216abdc274a4e1e5b50fe793f1ae96442c49079af13d3bba"
         }
       ],
       "routingOnly": false
@@ -1245,22 +1245,22 @@
         {
           "role": "openai-compatible-judge-adapter",
           "packagePath": "dist/main-agent/source-authority/scripts/requirements-contract-openai-compatible-judge-adapter.js",
-          "hash": "sha256:3e4a920ddd27f5297037b8337b2ec94e1844812c1d35999da7e88a47a572dcbf"
+          "hash": "sha256:3ca5be2e803c7ba0f4318e7c316cccc1a6a98028bd663f1c5d6719e3327b87de"
         },
         {
           "role": "anthropic-compatible-judge-adapter",
           "packagePath": "dist/main-agent/source-authority/scripts/requirements-contract-anthropic-compatible-judge-adapter.js",
-          "hash": "sha256:3d9f4a75a8dbe9050080e7533572ef384fdd1838f618ef376b7d461d03e190f4"
+          "hash": "sha256:899617139fd52a8e980352837c196c1ce032767996b5f937739e9abebb145ec6"
         },
         {
           "role": "claude-code-cli-judge-adapter",
           "packagePath": "dist/main-agent/source-authority/scripts/requirements-contract-claude-code-cli-judge-adapter.js",
-          "hash": "sha256:d914e53ea6885c97ff93127a2e7beec0e0c80bcb3d357996f0cb6013c1b742be"
+          "hash": "sha256:ecf29715782bb61eb8f7c35e7170d012dfe3e854e86a8567640ed177202905e8"
         },
         {
           "role": "codex-cli-judge-adapter",
           "packagePath": "dist/main-agent/source-authority/scripts/requirements-contract-codex-cli-judge-adapter.js",
-          "hash": "sha256:8c7c020e50e2b4f8464ee66e9305aa4e717efca8e17e7036df620c95b7631280"
+          "hash": "sha256:af10c2622b503b9d3a2e40cfe8ea898418a18b2f38d22dcb347aeb5b40fd477b"
         },
         {
           "role": "judge-provider-registry-projection",

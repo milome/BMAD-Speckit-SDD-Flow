@@ -82,9 +82,11 @@ export interface RequirementsContractAtomicMust {
 
 export interface RequirementsContractCp02AtomicClosureInput {
   atoms: RequirementsContractAtomicMust[];
+  typedSourceIds?: string[];
   decisions: Array<{
     decisionId: string;
     affectedAtomIds: string[];
+    affectedSourceRefs?: string[];
     authorityPremiseHashes: string[];
   }>;
   executionRegistry: {
@@ -188,6 +190,8 @@ export function validateRequirementsContractCp02AtomicClosure(
   } else {
     const atomIds = new Set((input.atoms ?? []).map((atom) => atom.atomId));
     const decisionIds = new Set<string>();
+    const sourceIds = input.typedSourceIds ? new Set(input.typedSourceIds) : null;
+    if (input.typedSourceIds && !nonEmptySet(input.typedSourceIds)) issueCodes.push('requirements_cp02_typed_source_registry_invalid');
     for (const decision of input.decisions) {
       if (!nonEmpty(decision?.decisionId) || decisionIds.has(decision.decisionId)) {
         issueCodes.push('requirements_cp02_decision_identity_invalid');
@@ -195,10 +199,17 @@ export function validateRequirementsContractCp02AtomicClosure(
         decisionIds.add(decision.decisionId);
       }
       if (
-        !nonEmptySet(decision?.affectedAtomIds) ||
+        !(sourceIds ? uniqueNonEmpty(decision?.affectedAtomIds) : nonEmptySet(decision?.affectedAtomIds)) ||
         decision.affectedAtomIds.some((atomId) => !atomIds.has(atomId))
       ) {
         issueCodes.push('requirements_cp02_decision_atom_binding_invalid');
+      }
+      if (sourceIds) {
+        if (!nonEmptySet(decision.affectedSourceRefs) || decision.affectedSourceRefs.some((ref) => !sourceIds.has(ref))) {
+          issueCodes.push('requirements_cp02_decision_source_binding_invalid');
+        }
+      } else if (decision.affectedSourceRefs !== undefined) {
+        issueCodes.push('requirements_cp02_typed_decision_version_required');
       }
       if (
         !nonEmptySet(decision?.authorityPremiseHashes) ||

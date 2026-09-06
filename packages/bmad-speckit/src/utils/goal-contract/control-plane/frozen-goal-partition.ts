@@ -5,6 +5,12 @@ const { hashControlPlaneValue, stableControlPlaneStringify } = require(
 const { validateGoalContractSchema } = require(
   __filename.endsWith('.ts') ? './schema-registry.ts' : './schema-registry'
 );
+const { renderNormativeDetails } = require(
+  __filename.endsWith('.ts') ? './goal-normative-renderer.ts' : './goal-normative-renderer'
+);
+const { resolveRequirementsSpecSpanSourceNodeIds } = require(__filename.endsWith('.ts')
+  ? '../../../main-agent/source-authority/scripts/requirements-contract-span-registry.ts'
+  : '../../../main-agent/source-authority/scripts/requirements-contract-span-registry');
 
 export type FrozenGoalPartitionModule = never;
 
@@ -91,18 +97,24 @@ function withoutHash(value: JsonObject, hashField: string): JsonObject {
   return payload;
 }
 
-function partitionPolicyIdentity() {
+function partitionPolicyIdentity(version = 'GoalExecutionIR/v1') {
+  if (!['GoalExecutionIR/v1', 'GoalExecutionIR/v2', 'GoalContractPartitionManifest/v1', 'GoalContractPartitionManifest/v2'].includes(version)) {
+    throw failure('goal_partition_policy_version_unsupported');
+  }
+  const typed = version === 'GoalExecutionIR/v2' || version === 'GoalContractPartitionManifest/v2';
+  const hardPolicy = typed ? { ...PARTITION_HARD_POLICY, schemaVersion: 'PartitionHardCompatibilityPolicy/v2',
+    nonActionConservation: 'source_scoped_inheritance', sharedReferences: 'declared_applicability' } : PARTITION_HARD_POLICY;
   return {
-    hardPolicy: PARTITION_HARD_POLICY,
+    hardPolicy,
     selectorPolicy: PARTITION_SELECTOR_POLICY,
-    hardCompatibilityPolicyHash: hashControlPlaneValue(PARTITION_HARD_POLICY),
+    hardCompatibilityPolicyHash: hashControlPlaneValue(hardPolicy),
     selectorPolicyHash: hashControlPlaneValue(PARTITION_SELECTOR_POLICY),
   };
 }
 
 function componentOwnedPaths(ir: JsonObject, component: JsonObject): string[] {
   const frozenOwnedPaths = unique(strings(component.ownedPaths));
-  if (frozenOwnedPaths.length > 0) return frozenOwnedPaths;
+  if (frozenOwnedPaths.length > 0 || ir.schemaVersion === 'GoalExecutionIR/v2') return frozenOwnedPaths;
   const domainRefs = new Set(strings(component.executionDomainRefs));
   return unique(
     objects(ir.executionDomains)
@@ -132,12 +144,33 @@ function materializePartitionGroup(ir: JsonObject, components: JsonObject[]): Js
   };
 }
 
-function specSpanObligationRefs(span: JsonObject): string[] {
+function specSpanObligationRefs(span: JsonObject, ir: JsonObject): string[] {
+  if (span.boundTypedSourceGraphHash !== undefined) {
+    if (ir.schemaVersion !== 'GoalExecutionIR/v2' || ir.profile !== 'requirements_backed') throw failure('goal_partition_spec_span_binding_invalid');
+    return resolveRequirementsSpecSpanSourceNodeIds(span, object(ir.semanticSource).typedSourceAuthority);
+  }
   return unique([
     ...strings(span.boundObligationIds),
     ...strings(span.obligationRefs),
     ...(typeof span.obligationRef === 'string' ? [span.obligationRef] : []),
   ]);
+}
+
+function standaloneExecutionConstraints(ir: JsonObject): JsonObject[] | null {
+  return ir.schemaVersion === 'GoalExecutionIR/v2' && ir.profile === 'standalone' &&
+    Array.isArray(object(ir.semanticSource).typedExecutionConstraints) ? objects(object(ir.semanticSource).typedExecutionConstraints) : null;
+}
+
+function parentOnlyDeclarationRefs(ir: JsonObject): { constraints: Set<string>; obligations: Set<string> } {
+  const declarations = (standaloneExecutionConstraints(ir) ?? []).filter((row) => row.coverageRole === 'non_action_declaration' &&
+    ['authoring_command', 'example_command', 'source_reference', 'unselected_option'].includes(String(row.declarationRole)) &&
+    row.scope !== 'global' && !strings(row.applicableAtomRefs).length);
+  const constraints = new Set(declarations.map((row) => String(row.constraintId)));
+  const declarationOwners = new Set(declarations.flatMap((row) => strings(row.applicableMustRefs)));
+  const obligations = new Set(objects(ir.obligations).filter((row) => row.executionRole !== 'action' &&
+    object(row.applicability).scope !== 'global' && (row.executionRole === 'definition' || declarationOwners.has(String(row.obligationId))))
+    .map((row) => String(row.obligationId)));
+  return { constraints, obligations };
 }
 
 function deriveGroupAuthorityRefs(ir: JsonObject, group: JsonObject): JsonObject {
@@ -147,7 +180,18 @@ function deriveGroupAuthorityRefs(ir: JsonObject, group: JsonObject): JsonObject
   const traces = objects(ir.traceSlices).filter((trace) =>
     traceRefs.has(String(trace.traceSliceId))
   );
-  const obligationRefs = unique(traces.flatMap((trace) => strings(trace.obligationRefs)));
+  const actionRefs = unique(traces.flatMap((trace) => strings(trace.obligationRefs)));
+  const constraints = standaloneExecutionConstraints(ir);
+  const selectedConstraints = (constraints ?? []).filter((row) => row.scope === 'global' ||
+    strings(row.applicableMustRefs).some((ref) => actionRefs.includes(ref)));
+  const constraintObligations = new Set(selectedConstraints.flatMap((row) => strings(row.applicableMustRefs)));
+  const inheritedObligationRefs = ir.schemaVersion === 'GoalExecutionIR/v2' ? objects(ir.obligations)
+    .filter((row) => row.executionRole !== 'action' && (object(row.applicability).scope === 'global' ||
+      (ir.profile === 'requirements_backed' && object(row.applicability).scope === 'source_scope') ||
+      strings(object(row.applicability).obligationRefs).some((ref) => actionRefs.includes(ref)) ||
+      constraintObligations.has(String(row.obligationId))))
+    .map((row) => String(row.obligationId)) : [];
+  const obligationRefs = unique([...actionRefs, ...inheritedObligationRefs]);
   const obligationRefSet = new Set(obligationRefs);
   const atomRefSet = new Set(tasks.flatMap((task) => strings(task.atomRefs)));
   const commandRefs = unique(traces.flatMap((trace) => strings(trace.commandRefs)));
@@ -157,7 +201,7 @@ function deriveGroupAuthorityRefs(ir: JsonObject, group: JsonObject): JsonObject
   const logicalSpecSpanRefs = unique(
     objects(ir.logicalSpecSpans)
       .filter((span) =>
-        specSpanObligationRefs(span).some((obligationRef) => obligationRefSet.has(obligationRef))
+        specSpanObligationRefs(span, ir).some((obligationRef) => obligationRefSet.has(obligationRef))
       )
       .map((span) => String(span.specSpanId))
   );
@@ -174,6 +218,8 @@ function deriveGroupAuthorityRefs(ir: JsonObject, group: JsonObject): JsonObject
     taskRefs: unique([...taskRefs]),
     traceSliceRefs: unique([...traceRefs]),
     obligationRefs,
+    ...(ir.schemaVersion === 'GoalExecutionIR/v2' ? { inheritedObligationRefs: unique(inheritedObligationRefs) } : {}),
+    ...(constraints ? { executionConstraintRefs: unique(selectedConstraints.map((row) => String(row.constraintId))) } : {}),
     logicalSpecSpanRefs,
     commandRefs,
     evidenceContractRefs,
@@ -189,6 +235,90 @@ function hasExactUniqueAssignment(parentRefs: string[], assignedRefs: string[][]
     assigned.length === new Set(assigned).size &&
     JSON.stringify(unique(assigned)) === JSON.stringify(expected)
   );
+}
+
+function validateTypedPartitionChild(ir: JsonObject, components: JsonObject[], row: JsonObject, child: JsonObject): void {
+  if (ir.schemaVersion !== 'GoalExecutionIR/v2') return;
+  const componentRefs = strings(row.componentRefs);
+  const selected = components.filter((component) => componentRefs.includes(String(component.componentId)));
+  if (!componentRefs.length || selected.length !== componentRefs.length) {
+    throw failure('goal_partition_child_authority_mismatch', { field: 'componentRefs' });
+  }
+  const group = materializePartitionGroup(ir, selected);
+  const expected = deriveGroupAuthorityRefs(ir, group);
+  const same = (left: unknown, right: unknown) => stableControlPlaneStringify(left) === stableControlPlaneStringify(right);
+  for (const field of ['componentRefs', 'taskRefs', 'traceSliceRefs']) {
+    if (!same(row[field], group[field]) || !same(child[field], group[field])) {
+      throw failure('goal_partition_child_authority_mismatch', { field });
+    }
+  }
+  for (const field of ['obligationRefs', 'inheritedObligationRefs']) {
+    if (!same(row[field], expected[field]) || !same(child[field], expected[field])) {
+      throw failure('goal_partition_child_authority_mismatch', { field });
+    }
+  }
+  if (standaloneExecutionConstraints(ir)) {
+    if (!same(row.executionConstraintRefs, expected.executionConstraintRefs) || !same(child.executionConstraintRefs, expected.executionConstraintRefs) ||
+      !same(child.executionConstraints, standaloneExecutionConstraints(ir)!.filter((constraint) => strings(expected.executionConstraintRefs).includes(String(constraint.constraintId))))) {
+      throw failure('goal_partition_child_authority_mismatch', { field: 'executionConstraints' });
+    }
+  }
+  const collections = [['obligations', 'obligationId', 'obligationRefs'], ['atomicTasks', 'taskId', 'taskRefs'],
+    ['traceSlices', 'traceSliceId', 'traceSliceRefs'], ['logicalSpecSpans', 'specSpanId', 'logicalSpecSpanRefs'],
+    ['commands', 'commandId', 'commandRefs'], ['evidenceContracts', 'evidenceContractId', 'evidenceContractRefs'],
+    ['artifacts', 'artifactId', 'artifactRefs']] as const;
+  for (const [field, idField, refsField] of collections) {
+    const refs = new Set(strings(expected[refsField]));
+    if (!same(child[field], objects(ir[field]).filter((item) => refs.has(String(item[idField]))))) {
+      throw failure('goal_partition_child_authority_mismatch', { field });
+    }
+  }
+  const scopes = scopedPartitionLogicalScopes(ir, group, expected);
+  if (!same(child.logicalScopes, scopes) || !same(row.ownedPaths, scopes.ownedPaths) ||
+    !same(row.forbiddenPaths, scopes.forbiddenPaths)) {
+    throw failure('goal_partition_child_authority_mismatch', { field: 'logicalScopes' });
+  }
+  const tasks = new Set(strings(group.taskRefs));
+  const extraCollections = {
+    executionDomains: scopedPartitionDomains(ir, group, expected),
+    dependencies: objects(ir.dependencies).filter((edge) => tasks.has(String(edge.from)) && tasks.has(String(edge.to))),
+    coExecutionConstraints: objects(ir.coExecutionConstraints).filter((constraint) => strings(constraint.taskRefs).some((ref) => tasks.has(ref))),
+  };
+  for (const [field, values] of Object.entries(extraCollections)) {
+    if (!same(child[field], values)) throw failure('goal_partition_child_authority_mismatch', { field });
+  }
+  for (const field of ['expectedEffortMinutes', 'upperBoundEffortMinutes']) {
+    if (row[field] !== group[field] || child[field] !== group[field]) {
+      throw failure('goal_partition_child_authority_mismatch', { field });
+    }
+  }
+}
+
+function scopedPartitionDomains(ir: JsonObject, group: JsonObject, authorityRefs: JsonObject): JsonObject[] {
+  const domainRefs = new Set(strings(group.executionDomainRefs));
+  const paths = new Set(strings(group.ownedPaths));
+  const commands = new Set(strings(authorityRefs.commandRefs));
+  return objects(ir.executionDomains).filter((domain) => domainRefs.has(String(domain.executionDomainId))).map((domain) => (
+    ir.schemaVersion !== 'GoalExecutionIR/v2' ? domain : { ...domain,
+      ownership: objects(domain.ownership).filter((owner) => paths.has(String(owner.targetPath))),
+      logicalTargetPaths: strings(domain.logicalTargetPaths).filter((target) => paths.has(target)),
+      commandRefs: strings(domain.commandRefs).filter((command) => commands.has(command)),
+    }
+  ));
+}
+
+function scopedPartitionLogicalScopes(ir: JsonObject, group: JsonObject, authorityRefs: JsonObject): JsonObject {
+  const parentScope = object(ir.logicalScopes);
+  if (ir.schemaVersion !== 'GoalExecutionIR/v2') return {
+    ownedPaths: unique(strings(group.ownedPaths)), forbiddenPaths: unique(strings(parentScope.forbiddenPaths)),
+  };
+  const refs = new Set(strings(authorityRefs.obligationRefs));
+  const pathRestrictions = objects(parentScope.pathRestrictions).filter((restriction) =>
+    restriction.scope === 'global' || strings(restriction.applicableMustRefs).some((ref) => refs.has(ref)));
+  return { ownedPaths: unique(strings(group.ownedPaths)),
+    forbiddenPaths: unique(pathRestrictions.map((restriction) => String(restriction.canonicalValue))), pathRestrictions,
+    ...(Array.isArray(parentScope.stopConditions) ? { stopConditions: objects(parentScope.stopConditions).filter((condition) =>
+      object(condition.scope).kind === 'global' || strings(condition.applicableMustRefs).some((ref) => refs.has(ref))) } : {}) };
 }
 
 function groupsHaveCompatibleIsolation(ir: JsonObject, groups: JsonObject[]): boolean {
@@ -219,6 +349,28 @@ function groupsHaveCompatibleIsolation(ir: JsonObject, groups: JsonObject[]): bo
 function partitionAuthorityConserved(ir: JsonObject, groups: JsonObject[]): boolean {
   if (!groupsHaveCompatibleIsolation(ir, groups)) return false;
   const assignments = groups.map((group) => deriveGroupAuthorityRefs(ir, group));
+  if (ir.schemaVersion === 'GoalExecutionIR/v2') {
+    const uniqueChecks = [[objects(ir.atomicTasks), 'taskId', 'taskRefs'],
+      [objects(ir.traceSlices), 'traceSliceId', 'traceSliceRefs']] as const;
+    if (!uniqueChecks.every(([rows, id, ref]) => hasExactUniqueAssignment(rows.map((row) => String(row[id])),
+      assignments.map((assignment) => strings(assignment[ref]))))) return false;
+    const actionIds = new Set(objects(ir.obligations).filter((row) => row.executionRole === 'action').map((row) => String(row.obligationId)));
+    if (!hasExactUniqueAssignment([...actionIds], assignments.map((assignment) => strings(assignment.obligationRefs)
+      .filter((ref) => actionIds.has(ref))))) return false;
+    const parentOnly = standaloneExecutionConstraints(ir) ? parentOnlyDeclarationRefs(ir) : { constraints: new Set<string>(), obligations: new Set<string>() };
+    const inheritedObligations = objects(ir.obligations).filter((row) => !parentOnly.obligations.has(String(row.obligationId)) ||
+      assignments.some((assignment) => strings(assignment.obligationRefs).includes(String(row.obligationId))));
+    const inheritedIds = new Set(inheritedObligations.map((row) => String(row.obligationId)));
+    const constraints = standaloneExecutionConstraints(ir);
+    if (constraints && constraints.some((constraint) => !parentOnly.constraints.has(String(constraint.constraintId)) &&
+      !assignments.some((assignment) => strings(assignment.executionConstraintRefs).includes(String(constraint.constraintId))))) return false;
+    const inheritedChecks = [[inheritedObligations, 'obligationId', 'obligationRefs'],
+      [constraints ? objects(ir.logicalSpecSpans).filter((span) => specSpanObligationRefs(span, ir).some((ref) => inheritedIds.has(ref))) : objects(ir.logicalSpecSpans), 'specSpanId', 'logicalSpecSpanRefs'],
+      [objects(ir.commands), 'commandId', 'commandRefs'], [objects(ir.evidenceContracts), 'evidenceContractId', 'evidenceContractRefs'],
+      [objects(ir.artifacts), 'artifactId', 'artifactRefs']] as const;
+    return inheritedChecks.every(([rows, id, ref]) => JSON.stringify(unique(rows.map((row) => String(row[id])))) ===
+      JSON.stringify(unique(assignments.flatMap((assignment) => strings(assignment[ref])))));
+  }
   const checks: Array<[JsonObject[], string, string]> = [
     [objects(ir.atomicTasks), 'taskId', 'taskRefs'],
     [objects(ir.traceSlices), 'traceSliceId', 'traceSliceRefs'],
@@ -241,8 +393,16 @@ function hardValidExecutionGroups(ir: JsonObject, groups: JsonObject[][]): JsonO
   const materialized = groups.map((group) => materializePartitionGroup(ir, group));
   if (
     materialized.some(
-      (group) =>
-        Number(group.upperBoundEffortMinutes) > 240 || strings(group.ownedPaths).length === 0
+      (group) => {
+        const refs = new Set(strings(group.taskRefs));
+        const tasks = objects(ir.atomicTasks).filter((task) => refs.has(String(task.taskId)));
+        const aggregates = tasks.filter((task) => object(task.taskExecution).executionClass === 'aggregate_only');
+        const aggregateOnly = ir.schemaVersion === 'GoalExecutionIR/v2' && tasks.length > 0 && aggregates.length === tasks.length;
+        return Number(group.upperBoundEffortMinutes) > 240 ||
+          (aggregates.length > 0 && !aggregateOnly) ||
+          (aggregateOnly && (strings(group.ownedPaths).length > 0 || new Set(aggregates.map((task) => object(task.taskExecution).aggregateGatePhase)).size !== 1)) ||
+          (!aggregateOnly && strings(group.ownedPaths).length === 0);
+      }
     )
   ) {
     return null;
@@ -400,6 +560,9 @@ function renderChildPrompt(child: JsonObject): string {
     '',
     'Execute only this immutable child authority and its declared logical scope.',
     '',
+    ...(child.schemaVersion === 'GoalChildExecutionContract/v2' ? ['## Obligations',
+      ...objects(child.obligations).flatMap((row) => [`- ${String(row.kind)} ${String(row.obligationId)}: ${String(row.text)}`,
+        ...renderNormativeDetails(row)]), ''] : []),
     '## Tasks',
     ...objects(child.atomicTasks).map((task) => `- ${String(task.taskId)}: ${String(task.title)}`),
     '',
@@ -420,9 +583,10 @@ function renderChildExecution(child: JsonObject): string {
     `Partition: ${String(child.partitionId)}`,
     '',
     '## Obligations',
-    ...objects(child.obligations).map(
+    ...objects(child.obligations).flatMap(
       (obligation) =>
-        `- ${String(obligation.kind)} ${String(obligation.obligationId)}: ${String(obligation.text)}`
+        [`- ${String(obligation.kind)} ${String(obligation.obligationId)}: ${String(obligation.text)}`,
+          ...(child.schemaVersion === 'GoalChildExecutionContract/v2' ? renderNormativeDetails(obligation) : [])]
     ),
     '',
     '## Atomic Tasks',
@@ -457,6 +621,8 @@ function compileChildPackage(
     evidenceContracts: child.evidenceContracts,
     artifacts: child.artifacts,
     coExecutionConstraints: child.coExecutionConstraints,
+    ...(child.executionConstraintRefs ? { executionConstraintRefs: child.executionConstraintRefs,
+      executionConstraints: child.executionConstraints } : {}),
   };
   const modelPacket = {
     ...modelPacketPayload,
@@ -607,7 +773,9 @@ function selectFrozenGoalPartition(input: {
     : truncated
       ? 'partition_search_inconclusive'
       : 'partition_no_valid_solution';
-  const policies = partitionPolicyIdentity();
+  const policies = partitionPolicyIdentity(
+    typeof ir.schemaVersion === 'string' ? ir.schemaVersion : undefined
+  );
   const groups = bestGroups ?? [];
   const selectionIdentityHash = hashControlPlaneValue({
     schemaVersion: 'FrozenGoalPartitionSelectionIdentity/v1',
@@ -674,7 +842,6 @@ function compilePartitionFromFrozenGoalAuthority(input: {
       componentByTask.set(taskRef, componentRef);
     }
   }
-  const forbiddenPaths = unique(strings(object(ir.logicalScopes).forbiddenPaths));
   const traceSlices = objects(ir.traceSlices);
   const tasks = objects(ir.atomicTasks);
   const obligations = objects(ir.obligations);
@@ -687,7 +854,6 @@ function compilePartitionFromFrozenGoalAuthority(input: {
   const childPackages: Array<{ partitionId: string; relativePath: string; hash: string }> = [];
   const partitionRows: JsonObject[] = [];
 
-  const executionDomains = objects(ir.executionDomains);
   const coExecutionConstraints = objects(ir.coExecutionConstraints);
   for (const [index, group] of selectedGroups.entries()) {
     const componentRefs = unique(strings(group.componentRefs));
@@ -714,15 +880,17 @@ function compilePartitionFromFrozenGoalAuthority(input: {
         return [partitionIdByComponent.get(prerequisiteComponent)!];
       })
     );
-    const executionDomainRefs = unique(strings(group.executionDomainRefs));
-    const executionDomainRefSet = new Set(executionDomainRefs);
     const ownedPaths = unique(strings(group.ownedPaths));
+    const logicalScopes = scopedPartitionLogicalScopes(ir, group, authorityRefs);
+    const forbiddenPaths = strings(logicalScopes.forbiddenPaths);
     const partitionMembership = {
       partitionId,
       componentRefs,
       taskRefs,
       traceSliceRefs,
       obligationRefs,
+      ...(ir.schemaVersion === 'GoalExecutionIR/v2' ? { inheritedObligationRefs: authorityRefs.inheritedObligationRefs } : {}),
+      ...(standaloneExecutionConstraints(ir) ? { executionConstraintRefs: authorityRefs.executionConstraintRefs } : {}),
       dependencyPartitionRefs,
       expectedEffortMinutes: Number(group.expectedEffortMinutes),
       upperBoundEffortMinutes: Number(group.upperBoundEffortMinutes),
@@ -734,7 +902,7 @@ function compilePartitionFromFrozenGoalAuthority(input: {
       .slice('sha256:'.length, 'sha256:'.length + 16)
       .toUpperCase()}`;
     const childPayload = {
-      schemaVersion: 'GoalChildExecutionContract/v1',
+      schemaVersion: ir.schemaVersion === 'GoalExecutionIR/v2' ? 'GoalChildExecutionContract/v2' : 'GoalChildExecutionContract/v1',
       childContractId,
       partitionId,
       profile: ir.profile,
@@ -745,17 +913,18 @@ function compilePartitionFromFrozenGoalAuthority(input: {
       taskRefs: partitionMembership.taskRefs,
       traceSliceRefs: partitionMembership.traceSliceRefs,
       obligationRefs: partitionMembership.obligationRefs,
+      ...(ir.schemaVersion === 'GoalExecutionIR/v2' ? { inheritedObligationRefs: partitionMembership.inheritedObligationRefs } : {}),
+      ...(standaloneExecutionConstraints(ir) ? { executionConstraintRefs: partitionMembership.executionConstraintRefs,
+        executionConstraints: standaloneExecutionConstraints(ir)!.filter((row) => strings(partitionMembership.executionConstraintRefs).includes(String(row.constraintId))) } : {}),
       dependencyPartitionRefs: partitionMembership.dependencyPartitionRefs,
       expectedEffortMinutes: partitionMembership.expectedEffortMinutes,
       upperBoundEffortMinutes: partitionMembership.upperBoundEffortMinutes,
-      logicalScopes: { ownedPaths, forbiddenPaths },
+      logicalScopes,
       obligations: obligations.filter((obligation) =>
         obligationRefSet.has(String(obligation.obligationId))
       ),
       logicalSpecSpans: spans.filter((span) => spanRefSet.has(String(span.specSpanId))),
-      executionDomains: executionDomains.filter((domain) =>
-        executionDomainRefSet.has(String(domain.executionDomainId))
-      ),
+      executionDomains: scopedPartitionDomains(ir, group, authorityRefs),
       traceSlices: selectedTraces,
       atomicTasks: selectByIds(tasks, 'taskId', taskRefSet),
       dependencies: dependencies.filter(
@@ -775,6 +944,7 @@ function compilePartitionFromFrozenGoalAuthority(input: {
       ...childPayload,
       childContractHash: hashControlPlaneValue(childPayload),
     };
+    validateTypedPartitionChild(ir, components, partitionMembership, childContract);
     validateGoalContractSchema(CHILD_SCHEMA, childContract);
     const packaged = compileChildPackage(childContract, input.executionAdapterRef);
     const childRoot = `partition/children/${partitionId}`;
@@ -815,7 +985,7 @@ function compilePartitionFromFrozenGoalAuthority(input: {
   };
   validateGoalContractSchema(ELIGIBILITY_SCHEMA, finalizedEligibility);
   const manifestPayload = {
-    schemaVersion: 'GoalContractPartitionManifest/v1',
+    schemaVersion: ir.schemaVersion === 'GoalExecutionIR/v2' ? 'GoalContractPartitionManifest/v2' : 'GoalContractPartitionManifest/v1',
     profile: ir.profile,
     goalId: ir.goalId,
     goalExecutionIRHash: ir.goalExecutionIRHash,
@@ -845,5 +1015,6 @@ module.exports = {
   compilePartitionFromFrozenGoalAuthority,
   directGoalExecutionTopologyAdmissible,
   partitionPolicyIdentity,
+  validateTypedPartitionChild,
   selectFrozenGoalPartition,
 };

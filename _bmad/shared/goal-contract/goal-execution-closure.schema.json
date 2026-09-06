@@ -6,7 +6,7 @@
   "additionalProperties": false,
   "required": ["schemaVersion", "goalExecutionIRHash", "profile", "coverage", "decision", "issueCodes", "goalExecutionClosureHash"],
   "properties": {
-    "schemaVersion": { "const": "GoalExecutionClosure/v1" },
+    "schemaVersion": { "enum": ["GoalExecutionClosure/v1", "GoalExecutionClosure/v2"] },
     "goalExecutionIRHash": { "$ref": "#/$defs/hash" },
     "profile": { "enum": ["requirements_backed", "standalone"] },
     "coverage": {
@@ -18,13 +18,20 @@
         "traceSliceIds": { "$ref": "#/$defs/ids" },
         "taskIds": { "$ref": "#/$defs/ids" },
         "commandIds": { "$ref": "#/$defs/ids" },
-        "evidenceContractIds": { "$ref": "#/$defs/ids" }
+        "evidenceContractIds": { "$ref": "#/$defs/ids" },
+        "nonActionObligationIds": { "$ref": "#/$defs/ids" },
+        "nonActionConstraintIds": { "$ref": "#/$defs/ids" }
       }
     },
     "decision": { "const": "pass" },
     "issueCodes": { "type": "array", "maxItems": 0 },
     "goalExecutionClosureHash": { "$ref": "#/$defs/hash" }
   },
+  "allOf": [
+    { "if": { "properties": { "schemaVersion": { "const": "GoalExecutionClosure/v2" } } }, "then": { "properties": {
+      "coverage": { "required": ["nonActionObligationIds"] }
+    } }, "else": { "properties": { "coverage": { "not": { "required": ["nonActionObligationIds"] } } } } }
+  ],
   "$defs": {
     "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
     "ids": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }

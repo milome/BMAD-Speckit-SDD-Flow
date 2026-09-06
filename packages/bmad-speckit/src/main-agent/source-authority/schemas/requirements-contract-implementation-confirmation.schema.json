@@ -47,8 +47,34 @@
     "implementationTasks",
     "closeoutReadinessPreview"
   ],
+  "allOf": [
+    {
+      "if": { "properties": { "contractSchemaVersion": { "const": 2 } } },
+      "then": { "required": ["typedSourceAuthority", "typedCoverage"] },
+      "else": { "not": { "anyOf": [{ "required": ["typedSourceAuthority"] }, { "required": ["typedCoverage"] }] } }
+    }
+  ],
   "properties": {
-    "contractSchemaVersion": { "const": 1 },
+    "contractSchemaVersion": { "enum": [1, 2] },
+    "typedSourceAuthority": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "graph", "graphHash"],
+      "properties": {
+        "schemaVersion": { "const": "requirements-contract-typed-source-authority/v2" },
+        "graph": { "type": "object", "additionalProperties": true },
+        "graphHash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "typedCoverage": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "graphHash", "coverage", "coverageHash"],
+      "properties": {
+        "schemaVersion": { "const": "requirements-contract-typed-source-coverage/v2" },
+        "graphHash": { "$ref": "#/$defs/sha256" },
+        "coverage": { "type": "object", "additionalProperties": true },
+        "coverageHash": { "$ref": "#/$defs/sha256" }
+      }
+    },
     "status": {
       "enum": [
         "draft",
@@ -969,12 +995,27 @@
       "required": ["id", "title", "requirementRefs", "targetPaths", "traceRefs", "evidenceRefs"],
       "properties": {
         "id": { "$ref": "#/$defs/nonEmpty" },
+        "taskExecution": { "$ref": "#/$defs/taskExecution" },
         "title": { "$ref": "#/$defs/nonEmpty" },
         "requirementRefs": { "$ref": "#/$defs/stringRefs" },
         "targetPaths": { "$ref": "#/$defs/stringRefs" },
         "traceRefs": { "$ref": "#/$defs/stringRefs" },
         "evidenceRefs": { "$ref": "#/$defs/stringRefs" }
       }
+    },
+    "taskExecution": {
+      "type": "object", "additionalProperties": false,
+      "required": ["executionClass", "ownedProductionPaths", "sourceRefs"],
+      "properties": {
+        "executionClass": { "enum": ["executable_child", "aggregate_only"] },
+        "ownedProductionPaths": { "type": "string", "minLength": 1 },
+        "aggregateGatePhase": { "enum": ["post_child_execution", "final_aggregate"] },
+        "aggregateValidationCommandsValue": { "type": "string", "minLength": 1 },
+        "aggregateValidationCommands": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "sourceRefs": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+      },
+      "allOf": [{ "if": { "properties": { "executionClass": { "const": "aggregate_only" } } },
+        "then": { "required": ["aggregateGatePhase", "aggregateValidationCommandsValue", "aggregateValidationCommands"] } }]
     },
     "closeoutPreview": {
       "type": "object",

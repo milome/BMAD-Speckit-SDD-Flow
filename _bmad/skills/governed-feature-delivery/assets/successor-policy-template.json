@@ -1,0 +1,6 @@
+{
+  "allowedCodes": {
+    "advance-to-phase-2": "phase-2",
+    "release-feature": "RELEASED"
+  }
+}

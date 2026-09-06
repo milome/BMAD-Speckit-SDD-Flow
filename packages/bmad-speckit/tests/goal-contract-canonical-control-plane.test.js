@@ -60,6 +60,9 @@ function sourceLines(fixture, binding) {
       ' and '
     )} MUST remain governed by ${parentTaskRef}.`,
     '- PRIMARY-BOUNDARY: MUST NOT expand subordinate ownership.',
+    `- AC-${parentTaskRef}-01: Primary authority preserves the declared ownership boundaries.`,
+    `- EVD-${parentTaskRef}-01: Preserve primary authority compilation proof.`,
+    `- CMD-${parentTaskRef}-01: Run \`node --test packages/bmad-speckit/tests/goal-contract-canonical-control-plane.test.js\`.`,
     '## Completion Evidence',
     '- PRIMARY-EVIDENCE: MUST record deterministic compilation evidence.',
   ];
@@ -71,7 +74,12 @@ function subordinateLines(binding) {
     ...binding.requiredRequirementIds.map(
       (id) => `- ${id}: MUST preserve ${id} ownership in ${binding.namespace}.`
     ),
-    ...binding.requiredTaskIds.map((id) => `- ${id}: MUST preserve ${id} component scope.`),
+    ...binding.requiredTaskIds.flatMap((id) => [
+      `## Task ${id}: MUST preserve ${id} component scope.`,
+      `- AC-${id}-01: ${id} preserves its component scope.`,
+      `- EVD-${id}-01: Preserve ${id} compilation proof.`,
+      `- CMD-${id}-01: Run \`node --test packages/bmad-speckit/tests/goal-contract-canonical-control-plane.test.js\`.`,
+    ]),
   ];
 }
 

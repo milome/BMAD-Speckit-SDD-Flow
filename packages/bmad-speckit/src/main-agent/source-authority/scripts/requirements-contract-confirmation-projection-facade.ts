@@ -8,7 +8,10 @@ import {
   CONDITIONAL_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS,
   projectRequirementsContractImplementationConfirmation,
   REQUIRED_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS,
+  TYPED_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS,
 } from './requirements-contract-implementation-confirmation-projector';
+import { resolveTypedSourceAuthority, assertTypedConfirmationProjection } from './requirements-contract-typed-source-semantics';
+import { resolveRequirementsContractSemanticIrAuthority } from './requirements-contract-semantic-ir';
 import { validateRequirementsContractImplementationConfirmation } from './requirements-contract-implementation-confirmation-validator';
 import {
   sha256Stable,
@@ -44,6 +47,7 @@ const STAGING_ONLY_FIELDS = new Set([
 const CANONICAL_FIELDS = new Set<string>([
   ...REQUIRED_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS,
   ...CONDITIONAL_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS,
+  ...TYPED_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS,
 ]);
 const CONFIRMATION_SCHEMA =
   require('../schemas/requirements-contract-implementation-confirmation.schema.json') as Record<
@@ -98,6 +102,9 @@ const FROZEN_CONFIRMATION_SEMANTIC_FIELDS = new Set<string>([
   'implementationTasks',
   'closeoutReadinessPreview',
   ...CONDITIONAL_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS,
+  ...TYPED_IMPLEMENTATION_CONFIRMATION_SEMANTIC_FIELDS,
+  'typedSourceAuthorityRef',
+  'typedCoverageRef',
 ]);
 const LOCALIZED_VIEW_FIELDS = /(?:Zh|localized)$/u;
 
@@ -216,6 +223,9 @@ function assertFrozenProjectionContext(
     context.readbackVerified !== true
   ) {
     throw new Error('requirements_projection_cp04_frozen_ir_required');
+  }
+  if (context.frozenSemanticIr.schemaVersion === 'requirements-contract-semantic-ir/v2') {
+    throw new Error('requirements_projection_typed_candidate_required');
   }
   if (
     !text(context.semanticIdentity.semanticRevisionId) ||
@@ -657,7 +667,9 @@ function projectConfirmationToCanonicalSchema(
 function frozenImplementationConfirmation(
   context: ProductionImplementationConfirmationProjectionInput['frozenProjectionContext']
 ): ImplementationConfirmation {
-  const semanticPayload = recordObject(context.frozenSemanticIr.semanticPayload);
+  const model = context.frozenSemanticIr.schemaVersion === 'RequirementsSemanticCandidate/v2'
+    ? resolveRequirementsContractSemanticIrAuthority(context.frozenSemanticIr) : context.frozenSemanticIr;
+  const semanticPayload = recordObject(model.semanticPayload);
   const semantics = recordObject(semanticPayload.semantics);
   const frozen = recordObject(semantics.implementationConfirmation);
   if (Object.keys(frozen).length === 0) {
@@ -668,7 +680,29 @@ function frozenImplementationConfirmation(
       throw new Error(`requirements_projection_frozen_confirmation_field_invalid:${fieldRef}`);
     }
   }
-  return normalizeStagingConfirmation(frozen);
+  const hydrated = structuredClone(frozen);
+  if (semantics.schemaVersion === 'requirements-contract-typed-source-semantics/v2') {
+    const authority = recordObject(semantics.typedSourceAuthority);
+    resolveTypedSourceAuthority(authority);
+    const ref = recordObject(hydrated.typedSourceAuthorityRef);
+    if (ref.schemaVersion !== 'requirements-contract-typed-source-authority-ref/v2' || ref.graphHash !== authority.graphHash ||
+      Object.keys(ref).some((key) => !['schemaVersion', 'graphHash'].includes(key)) || hydrated.typedSourceAuthority) {
+      throw new Error('requirements_projection_typed_authority_reference_invalid');
+    }
+    delete hydrated.typedSourceAuthorityRef;
+    hydrated.typedSourceAuthority = authority;
+    const coverage = recordObject(semantics.typedCoverage);
+    const coverageRef = recordObject(hydrated.typedCoverageRef);
+    if (coverageRef.schemaVersion !== 'requirements-contract-typed-source-coverage-ref/v2' ||
+      coverageRef.graphHash !== authority.graphHash || coverageRef.coverageHash !== coverage.coverageHash ||
+      Object.keys(coverageRef).some((key) => !['schemaVersion', 'graphHash', 'coverageHash'].includes(key)) || hydrated.typedCoverage) {
+      throw new Error('requirements_projection_typed_coverage_reference_invalid');
+    }
+    delete hydrated.typedCoverageRef;
+    hydrated.typedCoverage = coverage;
+    assertTypedConfirmationProjection(hydrated);
+  }
+  return normalizeStagingConfirmation(hydrated);
 }
 
 export function selectRequirementsContractFrozenConfirmationSemantics(

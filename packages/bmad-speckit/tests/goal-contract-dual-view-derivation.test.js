@@ -76,9 +76,9 @@ describe('goal-contract dual-view derivation', () => {
       /goal-contract generate --entry standalone_goal_contract/u
     );
     assert.match(skill, /immutable `SourceSnapshot`/u);
-    assert.match(skill, /StandaloneGoalSemanticIR\/v1/u);
-    assert.match(skill, /goal_full/u);
-    assert.match(skill, /StandaloneGoalAuthoringEffectivePass\/v1/u);
+    assert.match(skill, /supported `StandaloneGoalSemanticIR` version/u);
+    assert.match(skill, /goalJudgeDispatchCount=0/u);
+    assert.match(skill, /StandaloneGoalInternalSemanticGate\/v1/u);
   });
 
   it('builds an immutable source-plan snapshot from exact raw bytes', () => {

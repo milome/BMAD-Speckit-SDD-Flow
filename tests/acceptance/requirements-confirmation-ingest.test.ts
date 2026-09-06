@@ -8,7 +8,6 @@ import {
   extractRequirementsContractImplementationConfirmation,
   implementationConfirmationHashFor,
   implementationConfirmationHashFor as packageImplementationConfirmationHashFor,
-  sourceDocumentHashFor,
   sourceDocumentHashFor as packageSourceDocumentHashFor,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-implementation-confirmation-codec';
 import { materializeRequirementsEffectivePassFixture } from '../helpers/requirements-effective-pass-fixture';
@@ -569,7 +568,7 @@ function directReqTraceEntry(): string {
   return matches[0][0];
 }
 
-function writeValidDrilldownGateReport(source: string): string {
+function writeValidDrilldownGateReport(_source: string): string {
   const reportPath = path.join(tempDir, 'pre-render-must-decomposition-gate-report.json');
   fs.writeFileSync(
     reportPath,

@@ -40,6 +40,23 @@ const TASK_IDS = Array.from(
   { length: 11 },
   (_, index) => `GH-T${String(index + 1).padStart(2, '0')}`
 );
+const DECLARED_TASK_AUTHORITY = {
+  'GH-R01': ['GH-T01', 'GH-T02'], 'GH-R02': ['GH-T03'], 'GH-R03': ['GH-T04'],
+  'GH-R04': ['GH-T05'], 'GH-R05': ['GH-T05'], 'GH-R06': ['GH-T09'],
+  'GH-R07': ['GH-T06'], 'GH-R08': ['GH-T07', 'GH-T08'], 'GH-R09': ['GH-T08'],
+  'GH-R10': ['GH-T08', 'GH-T10'], 'GH-R11': ['GH-T10', 'GH-T11'],
+  'ER-GH-001': ['GH-T05'], 'ER-GH-002': ['GH-T09'],
+  'ER-GH-003': ['GH-T06', 'GH-T07'], 'ER-GH-004': ['GH-T08'],
+};
+const PROOF_COMMAND = 'node --test packages/bmad-speckit/tests/goal-contract-effective-revision-source-coverage.test.js';
+function declaredBindings(id) {
+  const tasks = DECLARED_TASK_AUTHORITY[id];
+  return [
+    `Tasks: ${tasks.join(', ')}. Acceptance: ${tasks.map(task => `AC-${task}-01`).join(', ')}.`,
+    `Evidence: ${tasks.map(task => `EVD-${task}-01`).join(', ')}. Verification command: \`${PROOF_COMMAND}\`.`,
+    '', `- STOP-${id}: When proof for ${id} fails, MUST NOT publish the generated contract.`, '',
+  ];
+}
 const SOURCE_TEXT = [
   '# Goal Contract Generator Hardening Effective Revision',
   '',
@@ -50,6 +67,7 @@ const SOURCE_TEXT = [
     '',
     `${id} MUST retain deterministic task, acceptance, command, evidence, and stop authority.`,
     '',
+    ...declaredBindings(id),
   ]),
   '## Effective Corrections',
   '',
@@ -58,6 +76,7 @@ const SOURCE_TEXT = [
     '',
     `${id} MUST remain a distinct governed correction.`,
     '',
+    ...declaredBindings(id),
   ]),
   '## Task Dependency Chain',
   '',
@@ -89,6 +108,10 @@ const SOURCE_TEXT = [
           '',
           `Acceptance: ${id} preserves acceptance, command, and evidence coverage.`,
         ]),
+    '',
+    `- AC-${id}-01: ${id} preserves its declared behavior and source ownership.`,
+    `- EVD-${id}-01: Preserve ${id} proof output.`,
+    `- CMD-${id}-01: Run \`${PROOF_COMMAND}\`.`,
     '',
   ]),
 ].join('\n');
@@ -227,7 +250,7 @@ describe('generator hardening effective revision source coverage', () => {
     );
   });
 
-  it('maps every GH-R and ER obligation to task, acceptance, command, evidence, and stop authority', () => {
+  it('conserves every declared GH-R and ER relation and source-bound stop condition', () => {
     const sourceBytes = SOURCE_BYTES;
     const sourceHash = sha256(sourceBytes);
     const extracted = extractSourceObligations({
@@ -283,11 +306,28 @@ describe('generator hardening effective revision source coverage', () => {
         'acceptanceRefs',
         'commandRefs',
         'evidenceRefs',
-        'stopConditionRefs',
       ]) {
         assert.ok(row[field].length > 0, `${row.id} missing ${field}`);
       }
+      assert.deepEqual(row.stopConditionRefs, [], `${row.id} must not receive a phantom STOP002`);
+      const boundary = extracted.sourceObligations.find(item => item.id === `STOP-${row.id}`);
+      assert.ok(boundary, `${row.id} must retain its explicitly declared stop boundary`);
+      assert.equal(boundary.executionRole, 'boundary');
+      assert.equal(boundary.polarity, 'forbidden');
+      assert.equal(boundary.normativeStrength, 'must');
+      assert.ok(boundary.conditions.some(condition => condition.text.includes(`proof for ${row.id} fails`)));
+      assert.equal(boundary.applicability.scope, 'obligations');
+      assert.deepEqual(boundary.applicability.obligationRefs, [boundary.id]);
+      assert.equal(boundary.applicability.sourceScope.ownerId, boundary.id);
+      const boundaryBlock = extracted.sourceBlocks.find(block => boundary.sourceBlockRefs.includes(block.id));
+      assert.ok(boundaryBlock.parentBlockRefs.some(id => row.sourceBlockRefs.includes(id)));
     }
+  });
+
+  it('retains v1 mapping and STOP defaults only for an explicitly untyped legacy API input', () => {
+    const [legacy] = normalizeGoalContractSourceCoverageMappings([{ id: 'GH-R01', goalTaskRefs: [] }]);
+    assert.deepEqual(legacy.goalTaskRefs, ['GH-T01', 'GH-T02']);
+    assert.deepEqual(legacy.stopConditionRefs, ['STOP002']);
   });
 
   it('binds predecessor, merge-plan, baseline commit, and Judge boundary provenance', () => {

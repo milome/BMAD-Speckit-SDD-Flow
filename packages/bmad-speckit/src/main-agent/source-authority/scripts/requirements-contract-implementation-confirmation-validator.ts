@@ -1,4 +1,5 @@
 import Ajv2020, { type AnySchema } from 'ajv/dist/2020.js';
+import { assertTypedConfirmationProjection } from './requirements-contract-typed-source-semantics';
 import {
   implementationConfirmationHashFor,
   type ImplementationConfirmation,
@@ -124,6 +125,11 @@ function semanticDecision(
   }
   const current = context as unknown as ConfirmationValidationContext;
   const issues: string[] = [];
+
+  if (confirmation.contractSchemaVersion === 2) {
+    try { assertTypedConfirmationProjection(confirmation); }
+    catch (error) { issues.push(error instanceof Error ? error.message : 'requirements_typed_confirmation_invalid'); }
+  }
 
   if (confirmation.sourceDocumentHash !== current.sourceDocumentHash) {
     issues.push('source_document_hash_mismatch');

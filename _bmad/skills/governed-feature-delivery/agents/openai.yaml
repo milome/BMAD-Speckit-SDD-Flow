@@ -1,0 +1,4 @@
+interface:
+  display_name: "Governed Feature Delivery"
+  short_description: "Resume-safe phased feature delivery"
+  default_prompt: "Use $governed-feature-delivery to plan or resume this multi-phase feature with current evidence and strict PR boundaries."

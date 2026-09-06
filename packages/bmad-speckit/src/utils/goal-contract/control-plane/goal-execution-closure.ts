@@ -4,7 +4,7 @@ import { sha256Stable } from '../../../main-agent/source-authority/scripts/requi
 import { validateGoalContractSchema } from './schema-registry';
 
 export interface GoalExecutionClosure {
-  schemaVersion: 'GoalExecutionClosure/v1';
+  schemaVersion: 'GoalExecutionClosure/v1' | 'GoalExecutionClosure/v2';
   goalExecutionIRHash: string;
   profile: 'requirements_backed' | 'standalone';
   coverage: {
@@ -13,6 +13,8 @@ export interface GoalExecutionClosure {
     taskIds: string[];
     commandIds: string[];
     evidenceContractIds: string[];
+    nonActionObligationIds?: string[];
+    nonActionConstraintIds?: string[];
   };
   decision: 'pass';
   issueCodes: [];
@@ -53,6 +55,13 @@ export function compileGoalExecutionClosure(ir: GoalExecutionIR): GoalExecutionC
   assertUniqueIds(rawCommandIds, 'goal_execution_command_id_duplicate');
   assertUniqueIds(rawEvidenceContractIds, 'goal_execution_evidence_id_duplicate');
   const obligationIds = sortedUnique(rawObligationIds);
+  const typed = ir.schemaVersion === 'GoalExecutionIR/v2';
+  const nonActionObligationIds = typed ? sortedUnique(ir.obligations.filter((row) => row.executionRole !== 'action')
+    .map((row) => row.obligationId)) : [];
+  const actionObligationIds = obligationIds.filter((id) => !nonActionObligationIds.includes(id));
+  if (typed && ir.atomicTasks.some((task) => strings(task.obligationRefs).some((id) => !actionObligationIds.includes(id)))) {
+    fail('goal_execution_nonaction_task_invented');
+  }
   const taskIds = sortedUnique(rawTaskIds);
   const traceSliceIds = sortedUnique(rawTraceSliceIds);
   const commandIds = sortedUnique(rawCommandIds);
@@ -79,7 +88,7 @@ export function compileGoalExecutionClosure(ir: GoalExecutionIR): GoalExecutionC
   );
   if (JSON.stringify(traceTaskRefs) !== JSON.stringify(taskIds))
     fail('goal_execution_task_coverage_incomplete');
-  if (JSON.stringify(traceObligationRefs) !== JSON.stringify(obligationIds))
+  if (JSON.stringify(traceObligationRefs) !== JSON.stringify(actionObligationIds))
     fail('goal_execution_obligation_coverage_incomplete');
   const traceCommandRefs = sortedUnique(
     ir.traceSlices.flatMap((row) =>
@@ -229,9 +238,13 @@ export function compileGoalExecutionClosure(ir: GoalExecutionIR): GoalExecutionC
     taskIds,
     commandIds,
     evidenceContractIds,
+    ...(typed ? { nonActionObligationIds } : {}),
+    ...(typed && ir.profile === 'standalone' && Array.isArray(ir.semanticSource.typedExecutionConstraints)
+      ? { nonActionConstraintIds: sortedUnique((ir.semanticSource.typedExecutionConstraints as Record<string, unknown>[])
+        .filter((row) => row.coverageRole === 'non_action_declaration').map((row) => String(row.constraintId))) } : {}),
   };
   const payload = {
-    schemaVersion: 'GoalExecutionClosure/v1' as const,
+    schemaVersion: typed ? 'GoalExecutionClosure/v2' as const : 'GoalExecutionClosure/v1' as const,
     goalExecutionIRHash: ir.goalExecutionIRHash,
     profile: ir.profile,
     coverage,

@@ -44,6 +44,19 @@ function includesId(markdown: string, id: string): boolean {
   return new RegExp(`(?:^|[^A-Za-z0-9_.-])${escaped}(?:$|[^A-Za-z0-9_.-])`, 'mu').test(markdown);
 }
 
+function hasInvalidGeneratedValue(markdown: string): boolean {
+  return [
+    /^Goal Execution IR:\s*(?:undefined|null|NaN)\s*$/mu,
+    /^\s*Strength:\s*(?:undefined|null|NaN)(?:;|\.)/mu,
+    /;\s*polarity:\s*(?:undefined|null|NaN)(?:;|\.)/mu,
+    /;\s*execution role:\s*(?:undefined|null|NaN)\./mu,
+    /^\s*Applicability:\s*(?:undefined|null|NaN)(?:\s|;|\.)/mu,
+    /(?:^|;)\s*source:\s*(?:undefined|null|NaN)(?:\s|;|\.|$)/mu,
+    /\((?:undefined|null|NaN)m expected,\s*(?:undefined|null|NaN|\d+)m max\)/mu,
+    /\(\d+m expected,\s*(?:undefined|null|NaN)m max\)/mu,
+  ].some((pattern) => pattern.test(markdown));
+}
+
 export function probeGoalContractRenderability(input: {
   goalExecutionIr: JsonObject;
   markdown: string;
@@ -67,7 +80,7 @@ export function probeGoalContractRenderability(input: {
     ...(unexpectedObligationIds.length > 0 ? ['goal_parent_projection_obligation_unexpected'] : []),
     ...(missingTaskIds.length > 0 ? ['goal_parent_projection_task_missing'] : []),
     ...(unexpectedTaskIds.length > 0 ? ['goal_parent_projection_task_unexpected'] : []),
-    ...(/\b(?:undefined|null|NaN)\b/u.test(input.markdown)
+    ...(hasInvalidGeneratedValue(input.markdown)
       ? ['goal_parent_projection_undefined_value']
       : []),
     ...(!input.markdown.includes(text(input.goalExecutionIr.goalExecutionIRHash))
