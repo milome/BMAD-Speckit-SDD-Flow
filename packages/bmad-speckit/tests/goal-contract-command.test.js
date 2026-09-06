@@ -293,6 +293,44 @@ describe('typed goal registry projection', () => {
   });
 });
 
+describe('semantic command ownership', () => {
+  it('preserves explicit command-owner modality regardless of binding order', () => {
+    const commandDeclaration = {
+      id: 'source-command-owner-priority',
+      invocation: 'node --version',
+      authorization: 'not_granted_by_source_declaration',
+      polarity: 'source_declared',
+    };
+    const binding = {
+      id: 'TASK-001',
+      kind: 'declared_execution_task',
+      executionRole: 'action',
+      normativeStrength: 'must',
+      polarity: 'required',
+      commandDeclarations: [commandDeclaration],
+    };
+    const optionalOwner = {
+      id: 'CMD-001',
+      kind: 'verification_command',
+      executionRole: 'requirement',
+      normativeStrength: 'may',
+      polarity: 'permitted',
+      commandDeclarations: [commandDeclaration],
+    };
+
+    for (const obligations of [
+      [binding, optionalOwner],
+      [optionalOwner, binding],
+    ]) {
+      const registries = makeRegistries(obligations);
+      assert.equal(registries.commandRecords.length, 1);
+      assert.equal(registries.commandRecords[0].sourceRootId, 'CMD-001');
+      assert.equal(registries.commandRecords[0].normativeStrength, 'may');
+      assert.equal(registries.commandRecords[0].polarity, 'permitted');
+    }
+  });
+});
+
 describe('partition Sequence release authority', () => {
   it('allows explicit disabled core-only authority while blocking unresolved active modes', () => {
     const cases = [

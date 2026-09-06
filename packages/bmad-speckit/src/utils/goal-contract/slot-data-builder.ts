@@ -204,16 +204,25 @@ function makeSemanticRegistries(obligations) {
 }
 
 function semanticCommandRecords(obligations) {
-  const seen = new Set();
-  return obligations.flatMap((row) => (row.commandDeclarations || []).flatMap((declaration) => {
-    if (seen.has(declaration.id)) return [];
-    seen.add(declaration.id);
-    return [{
+  const recordsById = new Map();
+  for (const row of obligations) {
+    for (const declaration of row.commandDeclarations || []) {
+      const candidate = {
       ...row, id: declaration.id, declaredSourceId: declaration.id,
       invocation: declaration.invocation, commandDeclaration: structuredClone(declaration),
       sourceRootId: row.id, kind: 'verification_command', executionRole: 'binding',
-    }];
-  }));
+      };
+      const current = recordsById.get(declaration.id);
+      const candidateAdmissible = isAdmissibleProofCommand(candidate);
+      const candidateOwnsCommand = row.kind === 'verification_command';
+      const currentAdmissible = current && isAdmissibleProofCommand(current.record);
+      if (!current || (candidateOwnsCommand && !current.ownsCommand) ||
+        (candidateOwnsCommand === current.ownsCommand && candidateAdmissible && !currentAdmissible)) {
+        recordsById.set(declaration.id, { record: candidate, ownsCommand: candidateOwnsCommand });
+      }
+    }
+  }
+  return [...recordsById.values()].map(({ record }) => record);
 }
 
 function isAdmissibleProofCommand(command) {
