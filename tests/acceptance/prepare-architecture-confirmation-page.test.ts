@@ -322,7 +322,7 @@ describe('prepare-architecture-confirmation-page', () => {
       '--request-id',
       'REQ-PREPARE',
       '--target-paths',
-      targetPaths,
+      'src/**',
       '--json',
     ]);
 

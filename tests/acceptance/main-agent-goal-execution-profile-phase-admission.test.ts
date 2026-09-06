@@ -98,7 +98,7 @@ function materializeStandaloneAuthority() {
       '',
       '## File Map',
       '',
-      '- Modify `src/refund-worker.cjs`.',
+      '- Modify `src/refund-worker.cjs`. Acceptance: AC-001. Command: CMD-001. Evidence: EVD-001.',
       '',
       '## Implementation Task Breakdown',
       '',
