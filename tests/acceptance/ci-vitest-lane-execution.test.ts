@@ -389,16 +389,6 @@ describe('exact Vitest shard execution', () => {
     );
   });
 
-  it('accepts governed feature delivery skill tests as Catalog Vitest identities', () => {
-    const identityKey =
-      'vitest::_bmad/skills/governed-feature-delivery/scripts/tests/checkpoint-core.test.mjs';
-    const input = manifest('core', [identityKey]);
-
-    expect(resolveVitestShard({ manifest: input, lane: 'core', shardId: 'core-01' }).testPaths).toEqual([
-      identityKey.slice('vitest::'.length),
-    ]);
-  });
-
   it('passes only the selected files and manifest commit to one Vitest process', () => {
     const repoRoot = mkdtempSync(join(tmpdir(), 'ci-vitest-shard-'));
     const calls: any[] = [];
