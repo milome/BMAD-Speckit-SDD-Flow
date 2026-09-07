@@ -17,6 +17,11 @@ const { validateRunManifest } = require('./write-ci-run-manifest.cjs');
 
 const PARALLEL_LANES = new Set(['core', 'product_survival', 'feature']);
 const VITEST_TEST_PATH = /\.(?:test|spec)\.(?:[cm]?[jt]s|[jt]sx)$/iu;
+const ALLOWED_VITEST_TEST_ROOTS = Object.freeze([
+  'tests/',
+  'packages/',
+  '_bmad/skills/governed-feature-delivery/scripts/tests/',
+]);
 
 function canonicalFsPath(value) {
   const resolved = path.resolve(value);
@@ -66,7 +71,7 @@ function normalizeVitestIdentity(identityKey) {
   const normalized = path.posix.normalize(testPath.replace(/\\/g, '/'));
   if (normalized !== testPath) fail('CI_SHARD_PATH_INVALID', { identityKey });
   if (
-    (!testPath.startsWith('tests/') && !testPath.startsWith('packages/')) ||
+    !ALLOWED_VITEST_TEST_ROOTS.some((prefix) => testPath.startsWith(prefix)) ||
     !VITEST_TEST_PATH.test(testPath)
   ) {
     fail('CI_SHARD_PATH_INVALID', { identityKey });
