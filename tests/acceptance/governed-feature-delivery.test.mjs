@@ -188,15 +188,24 @@ test('immutable checkpoint workflow closes a phase and starts the signaled next 
   run('advance-execution-checkpoint.mjs', ['--checkpoint', relative(replayStop), '--out', relative(replayReviewed), '--to-state', 'REVIEWED', '--scope-attestation', relative(replayAttestation), '--reviewer', relative(replayReviewer), '--repo', repo]);
   checkpoints[4] = replayReviewed;
   transition(4, 5, 'PR_GREEN', '--pull-request', { url: 'https://example.invalid/pr/1', headSha, status: 'green' });
-  transition(5, 6, 'MERGED', '--merge', { commitSha: headSha, mergedAt: new Date().toISOString() });
+  execFileSync('git', ['-C', repo, 'branch', 'integration', initialBaseSha]);
+  execFileSync('git', ['-C', repo, 'switch', '-q', 'integration']);
+  execFileSync('git', ['-C', repo, 'merge', '--no-ff', '-qm', 'merge phase one', phaseBranch]);
+  const mergeSha = execFileSync('git', ['-C', repo, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim().toLowerCase();
+  transition(5, 6, 'MERGED', '--merge', {
+    sha: mergeSha,
+    ref: 'refs/heads/integration',
+    containsReviewedSha: headSha,
+    mergedAt: new Date().toISOString(),
+  });
 
   const invalidMerge = JSON.parse(readFileSync(checkpoints[6], 'utf8'));
-  invalidMerge.merge.commitSha = 'f'.repeat(40);
+  invalidMerge.merge.sha = 'f'.repeat(40);
   const invalidMergeFile = path.join(work, '.artifacts', 'invalid-merge.json');
   json(invalidMergeFile, invalidMerge);
   run('validate-execution-checkpoint.mjs', ['--checkpoint', relative(invalidMergeFile), '--repo', repo, '--historical', 'true'], 2);
   const unrelatedMerge = JSON.parse(readFileSync(checkpoints[6], 'utf8'));
-  unrelatedMerge.merge.commitSha = initialBaseSha;
+  unrelatedMerge.merge.sha = initialBaseSha;
   const unrelatedMergeFile = path.join(work, '.artifacts', 'unrelated-merge.json');
   json(unrelatedMergeFile, unrelatedMerge);
   run('validate-execution-checkpoint.mjs', ['--checkpoint', relative(unrelatedMergeFile), '--repo', repo, '--historical', 'true'], 2);

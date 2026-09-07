@@ -250,6 +250,7 @@ function indexModes(repo, files) {
 function workingTreeModes(repo, files) {
   const sorted = [...files].sort();
   const indexed = indexModes(repo, sorted);
+  const headEntries = commitTreeEntries(repo, sorted, currentHead(repo));
   const respectsFileMode = git(repo, ['config', '--bool', 'core.filemode']) === 'true';
   return Object.fromEntries(sorted.map((file) => {
     const absolute = path.resolve(repo, file);
@@ -262,7 +263,14 @@ function workingTreeModes(repo, files) {
     if (stats.isSymbolicLink()) return [file, '120000'];
     const indexMode = indexed.get(file) ?? null;
     if (stats.isDirectory()) return [file, indexMode === '160000' ? indexMode : null];
-    if (respectsFileMode) return [file, (stats.mode & 0o111) === 0 ? '100644' : '100755'];
+    if (respectsFileMode) {
+      const filesystemMode = (stats.mode & 0o111) === 0 ? '100644' : '100755';
+      const headMode = headEntries.get(file)?.mode ?? null;
+      // A staged mode-only change is authoritative when the worktree still
+      // has the old mode; otherwise retain the physical worktree mode.
+      if (indexMode !== null && indexMode !== headMode) return [file, indexMode];
+      return [file, filesystemMode];
+    }
     return [file, indexMode === '100755' ? indexMode : '100644'];
   }));
 }

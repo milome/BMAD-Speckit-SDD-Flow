@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -48,6 +48,11 @@ function read(repo, relative) {
 
 function json(repo, relative, value) {
   writeFileSync(path.join(repo, relative), `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+function writeExecutable(file, contents) {
+  writeFileSync(file, contents, 'utf8');
+  chmodSync(file, 0o755);
 }
 
 function assertProgress(receipt, stage, completed, next) {
@@ -723,7 +728,7 @@ test('preflight rejects a target through a symlink or junction before editing', 
   const repo = createRepo(t);
   const outside = mkdtempSync(path.join(os.tmpdir(), 'gfd-outside-'));
   t.after(() => rmSync(outside, { recursive: true, force: true }));
-  writeFileSync(path.join(repo, '.gitignore'), 'alias/\n', 'utf8');
+  writeFileSync(path.join(repo, '.gitignore'), 'alias\n', 'utf8');
   execFileSync('git', ['-C', repo, 'add', '.gitignore']);
   execFileSync('git', ['-C', repo, 'commit', '-qm', 'ignore linked target']);
   try {
@@ -1334,7 +1339,7 @@ test('commit recovery completes a receipt after a post-commit ledger failure', (
   writeFileSync(path.join(repo, 'feature.txt'), 'implemented\n', 'utf8');
   run(repo, ['--action', 'verify', '--receipt', baseline, '--out', verified, '--verify-command', 'node -e "process.exit(0)"']);
   const hook = path.join(repo, '.git', 'hooks', 'post-commit');
-  writeFileSync(hook, `#!/bin/sh\nmkdir -p ${blocked}\n`, 'utf8');
+  writeExecutable(hook, `#!/bin/sh\nmkdir -p ${blocked}\n`);
   run(repo, ['--action', 'commit', '--receipt', verified, '--out', blocked, '--commit-message', 'feat: recover boundary'], 2);
   const pending = path.join(repo, `${verified}.commit-pending.json`);
   assert.equal(existsSync(pending), true);
@@ -1353,7 +1358,7 @@ test('commit recovery rejects an intent missing current verification tree modes'
   run(repo, ['--action', 'start', '--out', baseline, '--feature-id', 'feature', '--phase-id', 'phase-1']);
   writeFileSync(path.join(repo, 'feature.txt'), 'implemented\n', 'utf8');
   run(repo, ['--action', 'verify', '--receipt', baseline, '--out', verified, '--verify-command', 'node -e "process.exit(0)"']);
-  writeFileSync(path.join(repo, '.git', 'hooks', 'post-commit'), `#!/bin/sh\nmkdir -p ${blocked}\n`, 'utf8');
+  writeExecutable(path.join(repo, '.git', 'hooks', 'post-commit'), `#!/bin/sh\nmkdir -p ${blocked}\n`);
   run(repo, ['--action', 'commit', '--receipt', verified, '--out', blocked, '--commit-message', 'feat: bind recovered modes'], 2);
   const pendingPath = `${verified}.commit-pending.json`;
   const pending = read(repo, pendingPath);
@@ -1401,7 +1406,7 @@ test('commit refuses hook-mutated content that was not verified', (t) => {
   run(repo, ['--action', 'start', '--out', baseline, '--feature-id', 'feature', '--phase-id', 'phase-1']);
   writeFileSync(path.join(repo, 'feature.txt'), 'verified-content\n', 'utf8');
   run(repo, ['--action', 'verify', '--receipt', baseline, '--out', verified, '--verify-command', 'node -e "process.exit(0)"']);
-  writeFileSync(path.join(repo, '.git', 'hooks', 'pre-commit'), '#!/bin/sh\nprintf "hook-mutated\\n" > feature.txt\ngit add feature.txt\n', 'utf8');
+  writeExecutable(path.join(repo, '.git', 'hooks', 'pre-commit'), '#!/bin/sh\nprintf "hook-mutated\\n" > feature.txt\ngit add feature.txt\n');
   run(repo, ['--action', 'commit', '--receipt', verified, '--out', committed, '--commit-message', 'feat: reject hook mutation'], 2);
   assert.equal(existsSync(path.join(repo, committed)), false);
   assert.equal(execFileSync('git', ['-C', repo, 'show', 'HEAD:feature.txt'], { encoding: 'utf8' }), 'hook-mutated\n');
@@ -1418,7 +1423,7 @@ test('commit and recovery reject ignored governed side effects left by hooks', (
   run(repo, ['--action', 'start', '--out', baseline, '--feature-id', 'feature', '--phase-id', 'phase-1']);
   writeFileSync(path.join(repo, 'feature.txt'), 'verified-content\n', 'utf8');
   run(repo, ['--action', 'verify', '--receipt', baseline, '--out', verified, '--verify-command', 'node -e "process.exit(0)"']);
-  writeFileSync(path.join(repo, '.git', 'hooks', 'pre-commit'), '#!/bin/sh\nmkdir -p security\nprintf "unsafe\\n" > security/runtime.txt\n', 'utf8');
+  writeExecutable(path.join(repo, '.git', 'hooks', 'pre-commit'), '#!/bin/sh\nmkdir -p security\nprintf "unsafe\\n" > security/runtime.txt\n');
   const blocked = run(repo, ['--action', 'commit', '--receipt', verified, '--out', committed, '--commit-message', 'feat: reject ignored hook output'], 2);
   assert.match(blocked.message, /ignored governed risk/u);
   assert.equal(existsSync(path.join(repo, committed)), false);
