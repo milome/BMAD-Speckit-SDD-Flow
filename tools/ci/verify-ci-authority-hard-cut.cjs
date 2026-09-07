@@ -7,7 +7,13 @@ const { load } = require('js-yaml');
 const { fail } = require('./canonical-artifact.cjs');
 const { verifyReleaseWorkflowAuthority } = require('./verify-release-evidence-parity.cjs');
 
-const EXPECTED_JOB_IDS = Object.freeze(['classify', 'execute-shard', 'evidence-join', 'ci-result']);
+const EXPECTED_JOB_IDS = Object.freeze([
+  'classify',
+  'execute-shard',
+  'governed-feature-delivery-skill-tests',
+  'evidence-join',
+  'ci-result',
+]);
 const EXECUTION_ALLOWED_OUTPUT = '${{ steps.selection-gate.outputs.execution_allowed }}';
 const EXECUTION_ALLOWED_IF = "needs.classify.outputs.execution_allowed == 'true'";
 const EVIDENCE_JOIN_IF = `always() && ${EXECUTION_ALLOWED_IF}`;
@@ -169,6 +175,15 @@ function verifyCiAuthorityHardCut({ ciSource, releaseSource, publishSource, pack
   if (jobs['execute-shard']?.if !== EXECUTION_ALLOWED_IF) {
     fail('CI_SHARD_EXECUTION_GATE_INVALID');
   }
+  const skillTests = jobs['governed-feature-delivery-skill-tests'];
+  if (
+    !skillTests ||
+    skillTests.needs !== 'classify' ||
+    skillTests.if !== EXECUTION_ALLOWED_IF ||
+    !runText(skillTests).includes('node --test')
+  ) {
+    fail('CI_GOVERNED_SKILL_TEST_AUTHORITY_INVALID');
+  }
   if (jobs['evidence-join']?.if !== EVIDENCE_JOIN_IF) fail('CI_EVIDENCE_JOIN_NOT_ALWAYS');
   const joinNeeds = jobs['evidence-join']?.needs;
   if (
@@ -182,9 +197,10 @@ function verifyCiAuthorityHardCut({ ciSource, releaseSource, publishSource, pack
   const resultNeeds = jobs['ci-result']?.needs;
   if (
     !Array.isArray(resultNeeds) ||
-    resultNeeds.length !== 2 ||
+    resultNeeds.length !== 3 ||
     resultNeeds[0] !== 'classify' ||
-    resultNeeds[1] !== 'evidence-join'
+    resultNeeds[1] !== 'evidence-join' ||
+    resultNeeds[2] !== 'governed-feature-delivery-skill-tests'
   ) {
     fail('CI_RESULT_AUTHORITY_INVALID');
   }

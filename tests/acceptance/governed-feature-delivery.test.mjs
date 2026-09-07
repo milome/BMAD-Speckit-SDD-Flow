@@ -227,7 +227,7 @@ test('immutable checkpoint workflow closes a phase and starts the signaled next 
   const changedPlan = path.join(work, '.artifacts', 'phase-2-plan-v2.md');
   const changedScopeFile = path.join(work, '.artifacts', 'scope-v2.json');
   writeFileSync(changedPlan, '# Phase 2 revised\n', 'utf8');
-  const changedInputs = ['design.md', relative(changedPlan), 'src/phase-1/example.ts'];
+  const changedInputs = [...inputs, relative(changedPlan), 'src/phase-1/example.ts'];
   const changedScope = {
     ...scope,
     allowedPaths: ['src/phase-1/**', 'src/shared/**'],
