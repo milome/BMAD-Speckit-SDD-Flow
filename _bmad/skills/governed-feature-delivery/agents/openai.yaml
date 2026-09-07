@@ -1,4 +1,4 @@
 interface:
   display_name: "Governed Feature Delivery"
-  short_description: "Resume-safe phased feature delivery"
-  default_prompt: "Use $governed-feature-delivery to plan or resume this multi-phase feature with current evidence and strict PR boundaries."
+  short_description: "Lightweight phased delivery with risk-based strict gates"
+  default_prompt: "Use $governed-feature-delivery with a lightweight baseline by default, automatic strict risk escalation, and the selected commit, merge, or pause continuation."

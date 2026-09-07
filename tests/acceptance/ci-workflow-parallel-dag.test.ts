@@ -74,6 +74,7 @@ describe('governed CI workflow DAG', () => {
     expect(Object.keys(workflow.jobs)).toEqual([
       'classify',
       'execute-shard',
+      'governed-feature-delivery-skill-tests',
       'evidence-join',
       'ci-result',
     ]);
@@ -89,11 +90,22 @@ describe('governed CI workflow DAG', () => {
     expect(workflow.jobs['execute-shard'].if).toBe(
       "needs.classify.outputs.execution_allowed == 'true'"
     );
+    expect(workflow.jobs['governed-feature-delivery-skill-tests'].needs).toBe('classify');
+    expect(workflow.jobs['governed-feature-delivery-skill-tests'].if).toBe(
+      "needs.classify.outputs.execution_allowed == 'true'"
+    );
+    expect(workflow.jobs['governed-feature-delivery-skill-tests'].steps.at(-1).run).toContain(
+      'node --test'
+    );
     expect(workflow.jobs['evidence-join'].needs).toEqual(['classify', 'execute-shard']);
     expect(workflow.jobs['evidence-join'].if).toBe(
       "always() && needs.classify.outputs.execution_allowed == 'true'"
     );
-    expect(workflow.jobs['ci-result'].needs).toEqual(['classify', 'evidence-join']);
+    expect(workflow.jobs['ci-result'].needs).toEqual([
+      'classify',
+      'evidence-join',
+      'governed-feature-delivery-skill-tests',
+    ]);
     expect(workflow.jobs['ci-result'].name).toBe('CI required');
 
     const selectionGate = workflow.jobs.classify.steps.find(

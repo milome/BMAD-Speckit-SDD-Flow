@@ -1,6 +1,10 @@
 #!/usr/bin/env node
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { existsSync, realpathSync, statSync } from 'node:fs';
+import { validateJsonSchema } from './json-schema-lite.mjs';
 import {
   GATE_REPLAY_REASON,
   MAX_JSON_BYTES,
@@ -9,10 +13,14 @@ import {
   MAX_EVIDENCE_ENTRIES,
   SCHEMA_VERSION,
   STATES,
+  artifactPath,
+  assertMonotonicScopeDelta,
   emit,
   fail,
   parseArgs,
   readJson,
+  repositoryCaseSemantics,
+  repositoryPathKey,
   required,
   resolveRepoPath,
   sha256File,
@@ -24,21 +32,32 @@ import {
   authorityAllowed,
   objectHash,
   validateAuthorityPolicy,
+  validateStrongMerge,
   canonicalJson,
+  changedIgnoredGovernedPaths,
   git,
+  gitNullPaths,
+  governedIgnoredFingerprint,
+  listWorktreePaths,
   isIsoDateTime,
+  normalizeScope,
 } from './checkpoint-core.mjs';
 
 const HELP = `Validate checkpoint shape, state history, successor signals, and state-dependent evidence.
 
 Required: --checkpoint FILE
-Optional: --repo DIR --historical true`;
+Optional: --repo DIR --historical true --enforce-source-baseline true --enforce-merge-ref true`;
 const SHA256 = /^[a-f0-9]{64}$/u;
 const GIT_SHA = /^[a-f0-9]{40,64}$/u;
 const MAX_LINEAGE_BYTES = 64 * 1024 * 1024;
 const MAX_LINEAGE_RECORDS = 64;
 const MAX_VALIDATION_ARTIFACT_BYTES = 256 * 1024 * 1024;
 const MAX_VALIDATION_ARTIFACT_FILES = 2048;
+const MAX_REPORTED_ISSUES = 20;
+const MAX_REPORTED_ISSUE_BYTES = 384;
+const MAX_REPORTED_ISSUES_BYTES = 1536;
+const PHASE_RECEIPT_SCHEMA = readJson(new URL('../assets/phase-receipt.schema.json', import.meta.url));
+const EXECUTION_CHECKPOINT_SCHEMA = readJson(new URL('../assets/execution-checkpoint.schema.json', import.meta.url));
 const SCOPE_DELTA_FROM = new Set(['PHASE_PLANNED', 'RED_CONFIRMED', 'GREEN_CONFIRMED', 'STOP_GATE_GREEN']);
 const REQUIRED = [
   'schemaVersion', 'checkpointGeneration', 'checkpointRevision', 'featureId', 'currentPhase', 'state',
@@ -48,7 +67,7 @@ const REQUIRED = [
 ];
 const ALLOWED = new Set([
   ...REQUIRED, 'lastSuccessorSignal', 'previousCheckpointHash',
-  'recoveryReceipt', 'previousCheckpointPath',
+  'recoveryReceipt', 'sourcePhaseReceipt', 'previousCheckpointPath',
   'pullRequest', 'merge', 'release',
 ]);
 const NEXT = {
@@ -62,6 +81,11 @@ function string(value) {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
+function sameRepositoryPath(repo, left, right) {
+  const semantics = repositoryCaseSemantics(repo);
+  return repositoryPathKey(left, semantics) === repositoryPathKey(right, semantics);
+}
+
 function hasOnlyKeys(value, keys) {
   return value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).every((key) => keys.includes(key));
 }
@@ -71,8 +95,42 @@ function evidenceMatches(checkpoint, kind, status) {
     item.kind === kind && item.status === status && item.headSha === checkpoint.headSha);
 }
 
+function truncateUtf8(value, maxBytes) {
+  if (Buffer.byteLength(value, 'utf8') <= maxBytes) return value;
+  const suffix = '...[truncated]';
+  const contentLimit = Math.max(0, maxBytes - Buffer.byteLength(suffix, 'utf8'));
+  let result = '';
+  let bytes = 0;
+  for (const character of value) {
+    const characterBytes = Buffer.byteLength(character, 'utf8');
+    if (bytes + characterBytes > contentLimit) break;
+    result += character;
+    bytes += characterBytes;
+  }
+  return `${result}${suffix}`;
+}
+
+function summarizeIssues(issues) {
+  const issueBytes = issues.reduce((total, issue) => total + Buffer.byteLength(issue, 'utf8'), 0);
+  const reported = [];
+  let reportedIssueBytes = 0;
+  for (const issue of issues.slice(0, MAX_REPORTED_ISSUES)) {
+    const remaining = MAX_REPORTED_ISSUES_BYTES - reportedIssueBytes;
+    if (remaining <= Buffer.byteLength('...[truncated]', 'utf8')) break;
+    const bounded = truncateUtf8(issue, Math.min(MAX_REPORTED_ISSUE_BYTES, remaining));
+    reported.push(bounded);
+    reportedIssueBytes += Buffer.byteLength(bounded, 'utf8');
+  }
+  return {
+    issueBytes,
+    issues: reported,
+    issuesTruncated: reported.length < issues.length || reportedIssueBytes < issueBytes,
+    reportedIssueBytes,
+  };
+}
+
 function hashArtifact(filePath, context) {
-  const canonicalPath = canonicalRealPath(filePath);
+  const canonicalPath = canonicalRealPath(filePath, context.caseSemantics);
   const cached = context.hashCache.get(canonicalPath);
   if (cached) return cached;
   const size = statSync(filePath).size;
@@ -86,7 +144,7 @@ function hashArtifact(filePath, context) {
 }
 
 function readArtifactJson(filePath, context) {
-  const canonicalPath = canonicalRealPath(filePath);
+  const canonicalPath = canonicalRealPath(filePath, context.caseSemantics);
   const cached = context.jsonCache.get(canonicalPath);
   if (cached) return cached;
   const size = statSync(filePath).size;
@@ -97,6 +155,81 @@ function readArtifactJson(filePath, context) {
   context.artifactReads += 1;
   context.artifactBytes += size;
   return value;
+}
+
+function canonicalGitArtifactPath(value, label) {
+  if (!string(value) || path.isAbsolute(value) || /^[a-z]:[\\/]/iu.test(value) || value.includes('\0') || value.split(/[\\/]/u).includes('..') || value.startsWith(':')) {
+    throw new Error(`${label} must be a repository-relative Git path`);
+  }
+  const normalized = path.posix.normalize(value.replaceAll('\\', '/'));
+  if (normalized === '.' || normalized.startsWith('../')) throw new Error(`${label} escapes the repository`);
+  return normalized;
+}
+
+function readGitArtifact(repo, commitSha, value, label, context) {
+  const relativePath = canonicalGitArtifactPath(value, label);
+  const cacheKey = `${commitSha}:${relativePath}`;
+  const cached = context.gitBlobCache.get(cacheKey);
+  if (cached) return cached;
+  if (context.artifactReads >= MAX_VALIDATION_ARTIFACT_FILES) throw new Error(`validation artifact read budget exceeds ${MAX_VALIDATION_ARTIFACT_FILES}`);
+  const remaining = MAX_VALIDATION_ARTIFACT_BYTES - context.artifactBytes;
+  if (remaining <= 0) throw new Error(`validation artifact byte budget exceeds ${MAX_VALIDATION_ARTIFACT_BYTES}`);
+  const valueBuffer = execFileSync('git', ['-C', repo, 'cat-file', 'blob', `${commitSha}:${relativePath}`], {
+    encoding: 'buffer',
+    maxBuffer: remaining + 1,
+  });
+  if (valueBuffer.length > remaining) throw new Error(`validation artifact byte budget exceeds ${MAX_VALIDATION_ARTIFACT_BYTES}`);
+  context.gitBlobCache.set(cacheKey, valueBuffer);
+  context.artifactReads += 1;
+  context.artifactBytes += valueBuffer.length;
+  return valueBuffer;
+}
+
+function hashGitArtifact(repo, commitSha, value, label, context) {
+  return createHash('sha256').update(readGitArtifact(repo, commitSha, value, label, context)).digest('hex');
+}
+
+function readGitArtifactJson(repo, commitSha, value, label, context) {
+  const relativePath = canonicalGitArtifactPath(value, label);
+  const cacheKey = `${commitSha}:${relativePath}`;
+  const cached = context.gitJsonCache.get(cacheKey);
+  if (cached) return cached;
+  const source = new TextDecoder('utf-8', { fatal: true }).decode(readGitArtifact(repo, commitSha, relativePath, label, context));
+  const parsed = JSON.parse(source);
+  context.gitJsonCache.set(cacheKey, parsed);
+  return parsed;
+}
+
+function hashCheckpointArtifact(repo, checkpoint, value, label, context, stableArtifacts) {
+  if (stableArtifacts) {
+    try { return hashGitArtifact(repo, checkpoint.headSha, value, label, context); }
+    catch (error) {
+      if (error.status !== 128 || STATES.indexOf(checkpoint.state) >= STATES.indexOf('MERGED') || context.sealedLineageArtifacts) throw error;
+    }
+  }
+  return hashArtifact(resolveRepoPath(repo, value, label), context);
+}
+
+function readCheckpointArtifactJson(repo, checkpoint, value, label, context, stableArtifacts) {
+  if (stableArtifacts) {
+    try { return readGitArtifactJson(repo, checkpoint.headSha, value, label, context); }
+    catch (error) {
+      if (error.status !== 128 || STATES.indexOf(checkpoint.state) >= STATES.indexOf('MERGED') || context.sealedLineageArtifacts) throw error;
+    }
+  }
+  return readArtifactJson(resolveRepoPath(repo, value, label), context);
+}
+
+function validateSourcePhaseLineage(repo, sourcePath, context) {
+  const canonicalPath = canonicalRealPath(sourcePath, context.caseSemantics);
+  if (context.sourceLineages.has(canonicalPath)) return;
+  const runner = fileURLToPath(new URL('./run-phase.mjs', import.meta.url));
+  const output = execFileSync(process.execPath, [runner, '--action', 'phase-lineage', '--receipt', artifactPath(repo, sourcePath), '--repo', repo], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 4 * 1024 * 1024 });
+  const result = JSON.parse(output);
+  if (!result.ok || !Number.isInteger(result.lineage?.records) || !Number.isInteger(result.lineage?.bytes)) throw new Error('source status did not return lineage metadata');
+  context.sourceLineages.add(canonicalPath);
+  context.sourceLineageRecords += result.lineage.records;
+  context.sourceLineageBytes += result.lineage.bytes;
 }
 
 function validateEvidence(item, checkpoint, repo, current, issues, context) {
@@ -143,10 +276,7 @@ function same(left, right) {
 }
 
 function changedPaths(repo, baseSha, headSha, pathspecs = []) {
-  const args = ['diff', '--name-only', '--diff-filter=ACDMRTUXB', baseSha, headSha, '--'];
-  args.push(...pathspecs);
-  const output = git(repo, args);
-  return output ? output.split(/\r?\n/u).filter(Boolean).map((entry) => entry.replaceAll('\\', '/')) : [];
+  return gitNullPaths(repo, ['diff', '--no-renames', '--name-only', '-z', '--diff-filter=ACDMRTUXB', baseSha, headSha, '--', ...pathspecs]);
 }
 
 function validateScopeAttestation(checkpoint, repo, issues) {
@@ -164,7 +294,7 @@ function validateScopeAttestation(checkpoint, repo, issues) {
     git(repo, ['merge-base', '--is-ancestor', checkpoint.baseSha, checkpoint.headSha]);
     const changed = changedPaths(repo, checkpoint.baseSha, checkpoint.headSha).sort();
     const allowed = new Set(changedPaths(repo, checkpoint.baseSha, checkpoint.headSha, checkpoint.authorizedScope.allowedPaths));
-    const protectedChanged = changedPaths(repo, checkpoint.baseSha, checkpoint.headSha, checkpoint.authorizedScope.protectedPaths);
+    const protectedChanged = changedPaths(repo, checkpoint.baseSha, checkpoint.headSha, checkpoint.authorizedScope.protectedPaths).filter((entry) => !allowed.has(entry));
     const forbiddenChanged = changedPaths(repo, checkpoint.baseSha, checkpoint.headSha, checkpoint.authorizedScope.forbiddenWork);
     if (!same(changed, [...attestation.changedPaths].sort()) || changed.some((entry) => !allowed.has(entry)) || protectedChanged.length || forbiddenChanged.length) issues.push('scopeAttestation does not prove the committed Git diff is authorized');
   } catch { issues.push('scopeAttestation requires an ancestral, verifiable Git diff'); }
@@ -172,7 +302,7 @@ function validateScopeAttestation(checkpoint, repo, issues) {
 
 function validateParentSemantics(parent, child, issues) {
   if (parent.checkpointGeneration + 1 === child.checkpointGeneration) {
-    for (const key of ['featureId', 'specHash', 'successorPolicyHash', 'authorityPolicyHash', 'successorPolicy', 'designFreezeReceipt']) {
+    for (const key of ['featureId', 'specHash', 'successorPolicyHash', 'authorityPolicyHash', 'successorPolicy', 'designFreezeReceipt', 'sourcePhaseReceipt']) {
       if (!same(parent[key], child[key])) issues.push(`next phase changed frozen field: ${key}`);
     }
     for (const key of ['specPath', 'successorPolicyPath', 'authorityPolicyPath']) {
@@ -184,7 +314,7 @@ function validateParentSemantics(parent, child, issues) {
   const scopeDelta = child.state === 'PHASE_PLANNED' && SCOPE_DELTA_FROM.has(parent.state) && child.stateHistory.at(-1)?.reason === 'approved scope delta requires gate replay';
   const gateReplay = child.state === 'PHASE_PLANNED' && ['GREEN_CONFIRMED', 'STOP_GATE_GREEN', 'REVIEWED', 'PR_GREEN'].includes(parent.state) && child.stateHistory.at(-1)?.reason === GATE_REPLAY_REASON;
   if (STATES.indexOf(parent.state) >= 1) {
-    for (const key of ['specHash', 'successorPolicyHash', 'authorityPolicyHash', 'successorPolicy', 'designFreezeReceipt']) {
+    for (const key of ['specHash', 'successorPolicyHash', 'authorityPolicyHash', 'successorPolicy', 'designFreezeReceipt', 'sourcePhaseReceipt']) {
       if (!same(parent[key], child[key])) issues.push(`checkpoint revision changed frozen field: ${key}`);
     }
     for (const key of ['specPath', 'successorPolicyPath', 'authorityPolicyPath']) {
@@ -205,6 +335,10 @@ function validateParentSemantics(parent, child, issues) {
     if (!allowed.has(key) && !same(parent[key], child[key])) issues.push(`checkpoint revision changed immutable field: ${key}`);
   }
   if (!parent.stateHistory.every((entry, index) => same(entry, child.stateHistory[index]))) issues.push('stateHistory is not append-only');
+  if (scopeDelta) {
+    try { assertMonotonicScopeDelta(parent.authorizedScope, child.authorizedScope); }
+    catch (error) { issues.push(error.message); }
+  }
   if (child.stateHistory.length !== parent.stateHistory.length + 1) issues.push('checkpoint revision must append exactly one stateHistory entry');
   if (parent.state === 'GREEN_CONFIRMED' && child.state === 'STOP_GATE_GREEN' && child.headSha !== parent.headSha) issues.push('GREEN_CONFIRMED with a changed HEAD requires gate replay before STOP_GATE_GREEN');
   if (!scopeDelta && !parent.scopeDeltas.every((entry, index) => same(entry, child.scopeDeltas[index]))) issues.push('scopeDeltas is not append-only');
@@ -222,12 +356,15 @@ function readCheckpoint(checkpointPath) {
   return readJson(checkpointPath);
 }
 
-function validateCheckpointFile(checkpointPath, repo, historical, context) {
+function validateCheckpointFile(checkpointPath, repo, historical, enforceSourceBaseline, enforceMergeRef, context) {
   const checkpoint = readJson(checkpointPath);
-  const issues = [];
+  const issues = validateJsonSchema(checkpoint, EXECUTION_CHECKPOINT_SCHEMA).map((issue) => `schema: ${issue}`);
   let authorityPolicy = null;
   let lineageParentPath = null;
+  let sourcePhaseReceipt = null;
   const stage = STATES.indexOf(checkpoint.state);
+  if (context.lineageIndex === 0 && stage >= STATES.indexOf('MERGED')) context.sealedLineageArtifacts = true;
+  const stableArtifacts = context.stableHistoricalArtifacts || context.sealedLineageArtifacts || stage >= STATES.indexOf('MERGED');
   for (const key of REQUIRED) if (!Object.hasOwn(checkpoint, key)) issues.push(`missing field: ${key}`);
   for (const key of Object.keys(checkpoint)) if (!ALLOWED.has(key)) issues.push(`unknown field: ${key}`);
   if (!hasOnlyKeys(checkpoint.artifacts, ['specPath', 'phasePlanPath', 'scopePath', 'successorPolicyPath', 'authorityPolicyPath']) || Object.values(checkpoint.artifacts ?? {}).some((value) => value !== null && !string(value))) issues.push('artifacts must be a strict path object');
@@ -238,14 +375,73 @@ function validateCheckpointFile(checkpointPath, repo, historical, context) {
     if (!string(checkpoint[key])) issues.push(`invalid ${key}`);
   }
   if (!STATES.includes(checkpoint.state)) issues.push('invalid state');
+  if (checkpoint.sourcePhaseReceipt !== undefined && checkpoint.sourcePhaseReceipt !== null) {
+    const source = checkpoint.sourcePhaseReceipt;
+    if (!hasOnlyKeys(source, ['receiptPath', 'receiptHash', 'confirmedContinuation', 'phaseId', 'branch', 'headSha', 'treeHash', 'planHash', 'scopeHash', 'riskPolicyHash', 'linkedAt']) || source.confirmedContinuation !== 'merge' || !string(source.phaseId) || !SHA256.test(source.receiptHash ?? '') || !SHA256.test(source.treeHash ?? '') || !isIsoDateTime(source.linkedAt)) issues.push('sourcePhaseReceipt has invalid bridge metadata');
+    try {
+      const sourcePath = resolveRepoPath(repo, source.receiptPath, 'source phase receipt');
+      validateSourcePhaseLineage(repo, sourcePath, context);
+      const sourceReceipt = readArtifactJson(sourcePath, context);
+      sourcePhaseReceipt = sourceReceipt;
+      for (const extension of sourceReceipt.scopeExtensions ?? []) resolveRepoPath(repo, extension.path, 'source phase scope extension', { allowMissing: true });
+      const initialBridge = checkpoint.checkpointGeneration === 1 && checkpoint.checkpointRevision === 1 && checkpoint.previousCheckpointPath === null;
+      const sourceBindingInvalid = validateJsonSchema(sourceReceipt, PHASE_RECEIPT_SCHEMA).length
+        || hashArtifact(sourcePath, context) !== source.receiptHash
+        || sourceReceipt.schemaVersion !== 'GovernedFeatureDeliveryPhaseReceipt/v2'
+        || sourceReceipt.state !== 'STRICT_REQUIRED'
+        || sourceReceipt.featureId !== checkpoint.featureId
+        || sourceReceipt.phaseId !== source.phaseId
+        || sourceReceipt.strictBoundary?.branch !== source.branch
+        || sourceReceipt.strictBoundary?.headSha !== source.headSha
+        || sourceReceipt.strictBoundary?.treeHash !== source.treeHash
+        || (sourceReceipt.planHash !== null && sourceReceipt.planHash !== source.planHash)
+        || (sourceReceipt.scopeHash !== null && sourceReceipt.scopeHash !== source.scopeHash)
+        || sourceReceipt.riskPolicyHash !== source.riskPolicyHash;
+      const initialCheckpointInvalid = initialBridge && (checkpoint.currentPhase !== source.phaseId || checkpoint.baseSha !== source.headSha || checkpoint.branch !== source.branch || checkpoint.phasePlanHash !== source.planHash || checkpoint.scopeHash !== source.scopeHash);
+      if (sourceBindingInvalid || initialCheckpointInvalid) issues.push('sourcePhaseReceipt bridge binding is invalid');
+      if (sourceReceipt.artifacts?.riskPolicyPath) {
+        const actualRiskPolicyHash = stableArtifacts
+          ? hashGitArtifact(repo, sourceReceipt.headSha, sourceReceipt.artifacts.riskPolicyPath, 'source risk policy', context)
+          : hashArtifact(resolveRepoPath(repo, sourceReceipt.artifacts.riskPolicyPath, 'source risk policy'), context);
+        if (actualRiskPolicyHash !== sourceReceipt.riskPolicyHash) issues.push('sourcePhaseReceipt risk policy binding is invalid');
+      }
+      if (enforceSourceBaseline && stage <= STATES.indexOf('PR_GREEN')) {
+        if (!sourceReceipt.baseline?.ignoredGoverned) {
+          issues.push('sourcePhaseReceipt lacks an ignored governed baseline; establish a new strict baseline');
+        } else {
+          const declared = [];
+          if (sourceReceipt.artifacts?.scopePath) {
+            const sourceScopePath = resolveRepoPath(repo, sourceReceipt.artifacts.scopePath, 'source phase scope');
+            const sourceScope = normalizeScope(readArtifactJson(sourceScopePath, context));
+            declared.push(...sourceScope.protectedPaths, ...sourceScope.forbiddenWork);
+          }
+          if (sourceReceipt.artifacts?.riskPolicyPath) {
+            const policy = readArtifactJson(resolveRepoPath(repo, sourceReceipt.artifacts.riskPolicyPath, 'source risk policy'), context);
+            if (Array.isArray(policy.strictPaths)) declared.push(...policy.strictPaths);
+          }
+          const liveIgnored = governedIgnoredFingerprint(repo, declared);
+          const changedIgnored = changedIgnoredGovernedPaths(sourceReceipt.baseline.ignoredGoverned, liveIgnored);
+          if (changedIgnored.length) issues.push(`sourcePhaseReceipt ignored governed risk changed since baseline: ${changedIgnored.join(', ')}`);
+        }
+      }
+    } catch (error) { issues.push(`sourcePhaseReceipt artifact binding is invalid: ${error.message}`); }
+  }
   if (!GIT_SHA.test(checkpoint.baseSha ?? '')) issues.push('invalid baseSha');
   if (!GIT_SHA.test(checkpoint.headSha ?? '')) issues.push('invalid headSha');
   if (!historical && stage >= 0 && stage <= 7) {
     try {
       if (git(repo, ['rev-parse', 'HEAD']).toLowerCase() !== checkpoint.headSha) issues.push('checkpoint head is not the current Git HEAD');
       if ((git(repo, ['branch', '--show-current']) || 'DETACHED') !== checkpoint.branch) issues.push('checkpoint branch is not the current Git branch');
-      if (stage >= 6 && git(repo, ['status', '--porcelain'])) issues.push('review and PR states require a clean worktree');
+      if (stage >= 6 && listWorktreePaths(repo).length) issues.push('review and PR states require a clean worktree outside managed artifacts');
     } catch { issues.push('current Git worktree identity cannot be verified'); }
+  }
+  if (!historical && checkpoint.state === 'NEXT_PHASE') {
+    try {
+      if (git(repo, ['rev-parse', 'HEAD']).toLowerCase() !== checkpoint.merge?.sha) issues.push('next phase HEAD is not the recorded successor base');
+      const branch = git(repo, ['branch', '--show-current']) || 'DETACHED';
+      if (branch === 'DETACHED') issues.push('next phase requires a named branch');
+      if (branch === checkpoint.branch) issues.push('next phase must use a different branch from the completed phase');
+    } catch { issues.push('next phase Git worktree identity cannot be verified'); }
   }
   for (const key of ['allowedPaths', 'protectedPaths', 'forbiddenWork']) {
     const values = checkpoint.authorizedScope?.[key];
@@ -255,10 +451,13 @@ function validateCheckpointFile(checkpointPath, repo, historical, context) {
     const values = checkpoint.authorizedScope?.evidenceInputs?.[kind];
     if (!Array.isArray(values) || values.some((entry) => !string(entry))) issues.push(`invalid authorizedScope.evidenceInputs.${kind}`);
   }
+  if (stage >= 3 && sourcePhaseReceipt?.scopeExtensions?.some((extension) => !(checkpoint.authorizedScope?.allowedPaths ?? []).some((allowed) => sameRepositoryPath(repo, extension.path, allowed)))) {
+    issues.push('source phase scope extensions require an approved strict scope delta before RED');
+  }
   if (!Array.isArray(checkpoint.stopGateEvidence)) issues.push('stopGateEvidence must be an array');
   else {
     if (checkpoint.stopGateEvidence.length > MAX_EVIDENCE_ENTRIES) issues.push(`stopGateEvidence exceeds maximum entry count ${MAX_EVIDENCE_ENTRIES}`);
-    const currentKind = stage === 3 ? 'acceptance-red' : stage === 4 ? 'implementation-green' : stage >= 5 ? 'stop-gate' : null;
+    const currentKind = stage === 3 ? 'acceptance-red' : stage === 4 ? 'implementation-green' : stage >= 5 && stage <= 7 ? 'stop-gate' : null;
     checkpoint.stopGateEvidence.forEach((item) => validateEvidence(item, checkpoint, repo, !historical && item.kind === currentKind && item.headSha === checkpoint.headSha, issues, context));
     const ids = checkpoint.stopGateEvidence.map((item) => item.id);
     if (new Set(ids).size !== ids.length) issues.push('evidence ids must be unique');
@@ -296,7 +495,7 @@ function validateCheckpointFile(checkpointPath, repo, historical, context) {
   } catch { issues.push('invalid scopeHash'); }
   if (checkpoint.authorityPolicyHash !== null || stage >= 1 || checkpoint.recoveryReceipt) {
     try {
-      authorityPolicy = validateAuthorityPolicy(readArtifactJson(resolveRepoPath(repo, checkpoint.artifacts?.authorityPolicyPath, 'authority policy'), context));
+      authorityPolicy = validateAuthorityPolicy(readCheckpointArtifactJson(repo, checkpoint, checkpoint.artifacts?.authorityPolicyPath, 'authority policy', context, stableArtifacts));
       if (objectHash(authorityPolicy) !== checkpoint.authorityPolicyHash) issues.push('authority policy artifact hash does not match');
     } catch { issues.push('authority policy artifact is missing or invalid'); }
   }
@@ -327,26 +526,32 @@ function validateCheckpointFile(checkpointPath, repo, historical, context) {
         try { if (hashArtifact(resolveRepoPath(repo, source, `recovery source ${source}`), context) !== expectedHash) issues.push(`recovery source hash mismatch: ${source}`); }
         catch { issues.push(`recovery source is missing: ${source}`); }
       }
-      for (const field of requiredFields) {
-        const source = recovery.fieldSources[field];
-        if (!Object.hasOwn(recovery.sourceHashes, source)) issues.push(`recovery field source is not hash-bound: ${field}`);
-        else {
-          try { if (readArtifactJson(resolveRepoPath(repo, source, `recovery field source ${field}`), context)[field] !== checkpoint[field]) issues.push(`recovery source does not prove field: ${field}`); }
-          catch { issues.push(`recovery field source is unreadable: ${field}`); }
+      // The recovery source establishes the identity of the recovery origin.
+      // Later immutable revisions may legitimately advance headSha while their
+      // parent hash, receipt hash, and lineage provide the continuity proof.
+      const isRecoveryOrigin = checkpoint.checkpointGeneration === 1 && checkpoint.checkpointRevision === 1;
+      if (isRecoveryOrigin) {
+        for (const field of requiredFields) {
+          const source = recovery.fieldSources[field];
+          if (!Object.hasOwn(recovery.sourceHashes, source)) issues.push(`recovery field source is not hash-bound: ${field}`);
+          else {
+            try { if (readArtifactJson(resolveRepoPath(repo, source, `recovery field source ${field}`), context)[field] !== checkpoint[field]) issues.push(`recovery source does not prove field: ${field}`); }
+            catch { issues.push(`recovery field source is unreadable: ${field}`); }
+          }
         }
       }
     }
   }
   if (stage >= 1) {
-    try { if (hashArtifact(resolveRepoPath(repo, checkpoint.artifacts?.specPath, 'spec artifact'), context) !== checkpoint.specHash) issues.push('spec artifact hash does not match'); }
+    try { if (hashCheckpointArtifact(repo, checkpoint, checkpoint.artifacts?.specPath, 'spec artifact', context, stableArtifacts) !== checkpoint.specHash) issues.push('spec artifact hash does not match'); }
     catch { issues.push('spec artifact is missing'); }
-    try { if (policyHash(readArtifactJson(resolveRepoPath(repo, checkpoint.artifacts?.successorPolicyPath, 'successor policy artifact'), context)) !== checkpoint.successorPolicyHash) issues.push('successor policy artifact hash does not match'); }
+    try { if (policyHash(readCheckpointArtifactJson(repo, checkpoint, checkpoint.artifacts?.successorPolicyPath, 'successor policy artifact', context, stableArtifacts)) !== checkpoint.successorPolicyHash) issues.push('successor policy artifact hash does not match'); }
     catch { issues.push('successor policy artifact is missing or invalid'); }
   }
   if (stage >= 2) {
-    try { if (hashArtifact(resolveRepoPath(repo, checkpoint.artifacts?.phasePlanPath, 'phase plan artifact'), context) !== checkpoint.phasePlanHash) issues.push('phase plan artifact hash does not match'); }
+    try { if (hashCheckpointArtifact(repo, checkpoint, checkpoint.artifacts?.phasePlanPath, 'phase plan artifact', context, stableArtifacts) !== checkpoint.phasePlanHash) issues.push('phase plan artifact hash does not match'); }
     catch { issues.push('phase plan artifact is missing'); }
-    try { if (scopeHash(readArtifactJson(resolveRepoPath(repo, checkpoint.artifacts?.scopePath, 'scope artifact'), context)) !== checkpoint.scopeHash) issues.push('scope artifact hash does not match'); }
+    try { if (scopeHash(readCheckpointArtifactJson(repo, checkpoint, checkpoint.artifacts?.scopePath, 'scope artifact', context, stableArtifacts)) !== checkpoint.scopeHash) issues.push('scope artifact hash does not match'); }
     catch { issues.push('scope artifact is missing or invalid'); }
   }
   if (!Array.isArray(checkpoint.stateHistory) || checkpoint.stateHistory.length === 0) issues.push('stateHistory must not be empty');
@@ -414,13 +619,31 @@ function validateCheckpointFile(checkpointPath, repo, historical, context) {
   if (stage >= 6 && (!authorityPolicy || !authorityAllowed(authorityPolicy, 'review', checkpoint.reviewer?.authority))) issues.push('reviewer is not allowed by authority policy');
   if (stage >= 7 && !(checkpoint.pullRequest?.headSha === checkpoint.headSha && checkpoint.pullRequest?.status === 'green' && string(checkpoint.pullRequest?.url))) issues.push('PR_GREEN requires current green PR evidence');
   if (stage >= 7 && !hasOnlyKeys(checkpoint.pullRequest, ['url', 'headSha', 'status'])) issues.push('pullRequest contains unknown fields');
-  if (stage >= 8 && !(GIT_SHA.test(checkpoint.merge?.commitSha ?? '') && isIsoDateTime(checkpoint.merge?.mergedAt))) issues.push('MERGED requires merge commit and timestamp');
-  if (stage >= 8 && !hasOnlyKeys(checkpoint.merge, ['commitSha', 'mergedAt'])) issues.push('merge contains unknown fields');
-  if (stage >= 8 && GIT_SHA.test(checkpoint.merge?.commitSha ?? '')) {
-    try {
-      git(repo, ['cat-file', '-e', `${checkpoint.merge.commitSha}^{commit}`]);
-      git(repo, ['merge-base', '--is-ancestor', checkpoint.headSha, checkpoint.merge.commitSha]);
-    } catch { issues.push('merge commit does not contain the reviewed head'); }
+  if (stage >= 8) {
+    const legacyMerge = hasOnlyKeys(checkpoint.merge, ['commitSha', 'mergedAt']) && GIT_SHA.test(checkpoint.merge?.commitSha ?? '') && isIsoDateTime(checkpoint.merge?.mergedAt);
+    const strongMerge = hasOnlyKeys(checkpoint.merge, ['sha', 'ref', 'containsReviewedSha', 'mergedAt']) && GIT_SHA.test(checkpoint.merge?.sha ?? '') && /^refs\/(heads|remotes)\//u.test(checkpoint.merge?.ref ?? '') && checkpoint.merge?.containsReviewedSha === checkpoint.headSha && isIsoDateTime(checkpoint.merge?.mergedAt);
+    if (!strongMerge && (enforceMergeRef || !(historical && legacyMerge))) issues.push('MERGED requires a full integration ref and a distinct merge commit');
+    if (strongMerge) {
+      try {
+        let integrationRefs = [];
+        if (checkpoint.sourcePhaseReceipt?.receiptPath) {
+          const sourceReceipt = readArtifactJson(resolveRepoPath(repo, checkpoint.sourcePhaseReceipt.receiptPath, 'source phase receipt'), context);
+          integrationRefs = sourceReceipt.risk?.integrationRefs ?? [];
+          if (!Array.isArray(sourceReceipt.risk?.integrationRefs) && sourceReceipt.artifacts?.riskPolicyPath) {
+            const sourceRiskPolicy = readGitArtifactJson(repo, sourceReceipt.headSha, sourceReceipt.artifacts.riskPolicyPath, 'source risk policy', context);
+            if (hashGitArtifact(repo, sourceReceipt.headSha, sourceReceipt.artifacts.riskPolicyPath, 'source risk policy', context) !== sourceReceipt.riskPolicyHash) throw new Error('source risk policy hash mismatch');
+            integrationRefs = sourceRiskPolicy.integrationRefs ?? [];
+          }
+        }
+        validateStrongMerge(repo, {
+          phaseBranch: checkpoint.branch,
+          reviewedSha: checkpoint.headSha,
+          merge: checkpoint.merge,
+          integrationRefs,
+          requireLiveRef: !historical || enforceMergeRef,
+        });
+      } catch { issues.push('merge commit does not prove integration of the reviewed head'); }
+    }
   }
   if (stage >= 9 && checkpoint.completedPhase !== checkpoint.currentPhase) issues.push('terminal phase state requires completedPhase=currentPhase');
   if (checkpoint.state === 'NEXT_PHASE' || checkpoint.state === 'RELEASED') {
@@ -444,13 +667,13 @@ function validateCheckpointFile(checkpointPath, repo, historical, context) {
   return { checkpoint, issues, lineageParentPath };
 }
 
-function canonicalRealPath(filePath) {
+function canonicalRealPath(filePath, caseSemantics) {
   const resolved = realpathSync.native(filePath);
-  return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
+  return repositoryPathKey(resolved, caseSemantics);
 }
 
 try {
-  const options = parseArgs(process.argv.slice(2), new Set(), new Set(['checkpoint', 'repo', 'historical']));
+  const options = parseArgs(process.argv.slice(2), new Set(), new Set(['checkpoint', 'repo', 'historical', 'enforce-source-baseline', 'enforce-merge-ref']));
   if (options.help) {
     process.stdout.write(`${HELP}\n`);
     process.exit(0);
@@ -458,9 +681,18 @@ try {
   const repo = path.resolve(options.repo ?? process.cwd());
   const checkpointPath = resolveRepoPath(repo, required(options, 'checkpoint'), '--checkpoint');
   if (options.historical !== undefined && !['true', 'false'].includes(options.historical)) throw new Error('--historical must be true or false');
+  if (options['enforce-source-baseline'] !== undefined && !['true', 'false'].includes(options['enforce-source-baseline'])) throw new Error('--enforce-source-baseline must be true or false');
+  if (options['enforce-merge-ref'] !== undefined && !['true', 'false'].includes(options['enforce-merge-ref'])) throw new Error('--enforce-merge-ref must be true or false');
   const historical = options.historical === 'true';
+  const enforceSourceBaseline = options['enforce-source-baseline'] === 'true' || !historical;
+  const enforceMergeRef = options['enforce-merge-ref'] === 'true';
   const visited = new Set();
-  const context = { hashCache: new Map(), jsonCache: new Map(), artifactBytes: 0, artifactReads: 0 };
+  const context = {
+    hashCache: new Map(), jsonCache: new Map(), gitBlobCache: new Map(), gitJsonCache: new Map(),
+    artifactBytes: 0, artifactReads: 0, sourceLineages: new Set(), sourceLineageRecords: 0, sourceLineageBytes: 0,
+    caseSemantics: repositoryCaseSemantics(repo), stableHistoricalArtifacts: historical && !enforceSourceBaseline,
+    sealedLineageArtifacts: false, lineageIndex: 0,
+  };
   const issues = [];
   let currentPath = checkpointPath;
   let lineageBytes = 0;
@@ -468,6 +700,10 @@ try {
   let rootState = null;
 
   while (currentPath) {
+    if (lineageRecords + context.sourceLineageRecords >= MAX_LINEAGE_RECORDS) {
+      issues.push(`combined checkpoint lineage exceeds maximum record count ${MAX_LINEAGE_RECORDS}`);
+      break;
+    }
     if (lineageRecords >= MAX_LINEAGE_RECORDS) {
       issues.push(`checkpoint lineage exceeds maximum record count ${MAX_LINEAGE_RECORDS}`);
       break;
@@ -475,7 +711,7 @@ try {
     let canonicalPath;
     let size;
     try {
-      canonicalPath = canonicalRealPath(currentPath);
+      canonicalPath = canonicalRealPath(currentPath, context.caseSemantics);
       size = statSync(currentPath).size;
     } catch {
       issues.push(`${lineageRecords === 0 ? 'checkpoint' : 'ancestor checkpoint'} is missing or unreadable`);
@@ -491,13 +727,14 @@ try {
       break;
     }
     lineageBytes += size;
-    if (lineageBytes > MAX_LINEAGE_BYTES) {
+    if (lineageBytes + context.sourceLineageBytes > MAX_LINEAGE_BYTES) {
       issues.push(`checkpoint lineage exceeds cumulative byte limit ${MAX_LINEAGE_BYTES}`);
       break;
     }
 
     try {
-      const result = validateCheckpointFile(currentPath, repo, historical || lineageRecords > 0, context);
+      context.lineageIndex = lineageRecords;
+      const result = validateCheckpointFile(currentPath, repo, historical || lineageRecords > 0, enforceSourceBaseline && lineageRecords === 0, enforceMergeRef && lineageRecords === 0, context);
       if (lineageRecords === 0) rootState = result.checkpoint.state;
       const prefix = lineageRecords === 0 ? '' : `ancestor ${path.relative(repo, currentPath).replaceAll(path.sep, '/')}: `;
       issues.push(...result.issues.map((issue) => `${prefix}${issue}`));
@@ -510,14 +747,24 @@ try {
     }
   }
 
+  if (lineageRecords + context.sourceLineageRecords > MAX_LINEAGE_RECORDS && !issues.some((issue) => issue.includes('maximum record count'))) {
+    issues.push(`combined checkpoint lineage exceeds maximum record count ${MAX_LINEAGE_RECORDS}`);
+  }
+  if (lineageBytes + context.sourceLineageBytes > MAX_LINEAGE_BYTES && !issues.some((issue) => issue.includes('cumulative byte limit'))) {
+    issues.push(`combined checkpoint lineage exceeds cumulative byte limit ${MAX_LINEAGE_BYTES}`);
+  }
+
+  const issueSummary = summarizeIssues(issues);
   emit({
     ok: issues.length === 0,
     checkpoint: checkpointPath,
     state: rootState,
     lineageRecords,
     lineageBytes,
+    sourceLineageRecords: context.sourceLineageRecords,
+    sourceLineageBytes: context.sourceLineageBytes,
     issueCount: issues.length,
-    issues: issues.slice(0, 20),
+    ...issueSummary,
   }, issues.length === 0 ? 0 : 2);
 } catch (error) {
   fail(error, 'governed_feature_checkpoint_validation_failed');

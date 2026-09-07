@@ -1,22 +1,17 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import Ajv2020 from 'ajv/dist/2020.js';
-import { afterEach, test } from 'vitest';
-import { policyHash, scopeHash, sha256File } from '../../_bmad/skills/governed-feature-delivery/scripts/checkpoint-core.mjs';
+import { policyHash, scopeHash, sha256File } from '../checkpoint-core.mjs';
+import { validateJsonSchema } from '../json-schema-lite.mjs';
 
-const scripts = path.dirname(fileURLToPath(new URL('../../_bmad/skills/governed-feature-delivery/scripts/checkpoint-core.mjs', import.meta.url)));
-const workspace = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
+const scripts = path.dirname(fileURLToPath(new URL('../checkpoint-core.mjs', import.meta.url)));
+const workspace = os.tmpdir();
 const schema = JSON.parse(readFileSync(path.join(scripts, '../assets/execution-checkpoint.schema.json'), 'utf8'));
-const validateSchema = new Ajv2020({ allErrors: true, strict: false, formats: { 'date-time': true } }).compile(schema);
-let work = '';
-
-afterEach(() => {
-  if (work) rmSync(work, { recursive: true, force: true });
-  work = '';
-});
+const legacyMergeEvidence = JSON.parse(readFileSync(new URL('./fixtures/legacy-v1-merge-evidence.json', import.meta.url), 'utf8'));
 
 function json(file, value) {
   writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
@@ -28,9 +23,10 @@ function run(script, args, expected = 0) {
   return result.stdout.trim() ? JSON.parse(result.stdout.trim()) : null;
 }
 
-test('immutable checkpoint workflow closes a phase and starts the signaled next phase', () => {
+test('immutable checkpoint workflow closes a phase and starts the signaled next phase', (t) => {
   mkdirSync(path.join(workspace, '.tmp'), { recursive: true });
-  work = mkdtempSync(path.join(workspace, '.tmp', 'gfd-test-'));
+  const work = mkdtempSync(path.join(workspace, '.tmp', 'gfd-test-'));
+  t.after(() => rmSync(work, { recursive: true, force: true }));
   const repo = work;
   execFileSync('git', ['init', '-q', repo]);
   execFileSync('git', ['-C', repo, 'config', 'user.email', 'test@example.invalid']);
@@ -43,19 +39,23 @@ test('immutable checkpoint workflow closes a phase and starts the signaled next 
   const policyFile = path.join(work, 'policy.json');
   const freezeFile = path.join(work, 'freeze.json');
   const authorityFile = path.join(work, 'authority.json');
+  const riskFile = path.join(work, 'risk.json');
   writeFileSync(spec, '# Stable design\n', 'utf8');
   writeFileSync(plan, '# Phase 1\n', 'utf8');
   const policy = { allowedCodes: { 'advance-phase-2': 'phase-2', release: 'RELEASED' } };
-  json(policyFile, policy);
-  json(authorityFile, {
+  const authority = {
     designFreeze: ['design-owner'], recovery: ['recovery-owner'], scopeDelta: ['scope-owner'],
     review: ['reviewer'], successor: ['product-owner'], release: ['release-owner'],
-  });
+  };
+  const riskPolicy = { strictPaths: [], requirePullRequest: false, integrationRefs: ['refs/heads/integration'] };
+  json(policyFile, policy);
+  json(authorityFile, authority);
+  json(riskFile, riskPolicy);
   const inputs = ['design.md', 'phase-plan.md'];
   const scope = {
     allowedPaths: ['src/phase-1/**'],
     protectedPaths: ['src/phase-2/**'],
-    forbiddenWork: ['phase 2 entry point'],
+    forbiddenWork: ['src/phase-1/forbidden/**'],
     evidenceInputs: {
       'acceptance-red': inputs,
       'implementation-green': [...inputs, 'src/phase-1/example.ts'],
@@ -69,6 +69,8 @@ test('immutable checkpoint workflow closes a phase and starts the signaled next 
     specHash: sha256File(spec),
     successorPolicyHash: policyHash(policy),
   });
+  mkdirSync(path.join(repo, 'outside'), { recursive: true });
+  writeFileSync(path.join(repo, 'outside', 'tracked.txt'), 'outside baseline\n', 'utf8');
   execFileSync('git', ['-C', repo, 'add', '.']);
   execFileSync('git', ['-C', repo, 'commit', '-qm', 'fixture']);
   let headSha = execFileSync('git', ['-C', repo, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim().toLowerCase();
@@ -77,13 +79,80 @@ test('immutable checkpoint workflow closes a phase and starts the signaled next 
   const relative = (file) => path.relative(repo, file).replaceAll(path.sep, '/');
 
   const checkpoints = Array.from({ length: 8 }, (_, index) => path.join(work, '.artifacts', `checkpoint-r${index + 1}.json`));
-  run('init-execution-checkpoint.mjs', [
-    '--out', relative(checkpoints[0]), '--feature-id', 'feature-1', '--phase-id', 'phase-1',
-    '--spec', relative(spec), '--freeze-receipt', relative(freezeFile), '--plan', relative(plan), '--scope', relative(scopeFile),
-    '--successor-policy', relative(policyFile), '--repo', repo,
-    '--authority-policy', relative(authorityFile),
+  checkpoints[0] = path.join(work, '.artifacts', 'governed-feature-delivery', 'checkpoint-r1.json');
+  const strictRequired = path.join(work, '.artifacts', 'governed-feature-delivery', 'strict-required.json');
+  run('run-phase.mjs', [
+    '--action', 'start', '--out', relative(strictRequired), '--feature-id', 'feature-1', '--phase-id', 'phase-1',
+    '--mode', 'strict', '--continuation', 'merge', '--plan', relative(plan), '--scope', relative(scopeFile),
+    '--risk-policy', relative(riskFile), '--repo', repo,
   ]);
-  assert.equal(validateSchema(JSON.parse(readFileSync(checkpoints[0], 'utf8'))), true, JSON.stringify(validateSchema.errors));
+  run('run-phase.mjs', [
+    '--action', 'strict-init', '--receipt', relative(strictRequired), '--out', relative(checkpoints[0]),
+    '--spec', relative(spec), '--freeze-receipt', relative(freezeFile), '--plan', relative(plan), '--scope', relative(scopeFile),
+    '--successor-policy', relative(policyFile), '--authority-policy', relative(authorityFile), '--repo', repo,
+  ]);
+  const initialCheckpoint = JSON.parse(readFileSync(checkpoints[0], 'utf8'));
+  assert.deepEqual(validateJsonSchema(initialCheckpoint, schema), []);
+  assert.equal(initialCheckpoint.sourcePhaseReceipt.receiptHash, sha256File(strictRequired));
+  assert.equal(initialCheckpoint.sourcePhaseReceipt.phaseId, 'phase-1');
+  assert.match(validateJsonSchema({ ...initialCheckpoint, unexpected: true }, schema).join('\n'), /unexpected/u);
+  const invalidCompletedPhase = structuredClone(initialCheckpoint);
+  invalidCompletedPhase.completedPhase = {};
+  const invalidCompletedPhaseFile = path.join(work, '.artifacts', 'invalid-completed-phase.json');
+  json(invalidCompletedPhaseFile, invalidCompletedPhase);
+  const invalidCompletedPhaseResult = run('validate-execution-checkpoint.mjs', ['--checkpoint', relative(invalidCompletedPhaseFile), '--repo', repo], 2);
+  assert.match(invalidCompletedPhaseResult.issues.join('\n'), /completedPhase must have type string\|null/u);
+
+  const oversizedIssueCheckpoint = structuredClone(initialCheckpoint);
+  oversizedIssueCheckpoint[`unknown-${'x'.repeat(512 * 1024)}`] = true;
+  const oversizedIssueFile = path.join(work, '.artifacts', 'oversized-validator-issue.json');
+  json(oversizedIssueFile, oversizedIssueCheckpoint);
+  const oversizedIssueResult = spawnSync(process.execPath, [path.join(scripts, 'validate-execution-checkpoint.mjs'), '--checkpoint', relative(oversizedIssueFile), '--repo', repo], {
+    cwd: workspace,
+    encoding: 'utf8',
+    maxBuffer: 8 * 1024 * 1024,
+  });
+  assert.equal(oversizedIssueResult.status, 2);
+  assert.ok(Buffer.byteLength(oversizedIssueResult.stdout, 'utf8') < 4096);
+  const oversizedIssueOutput = JSON.parse(oversizedIssueResult.stdout);
+  assert.ok(oversizedIssueOutput.issueCount > 0);
+  assert.equal(oversizedIssueOutput.issuesTruncated, true);
+  assert.ok(oversizedIssueOutput.issueBytes > oversizedIssueOutput.reportedIssueBytes);
+
+  const probeCheckpointPath = path.join(work, '.artifacts', 'probe-checkpoint.json');
+  run('init-execution-checkpoint.mjs', [
+    '--out', relative(probeCheckpointPath), '--feature-id', 'probe-feature', '--phase-id', 'phase-1',
+    '--spec', relative(spec), '--freeze-receipt', relative(freezeFile), '--plan', relative(plan), '--scope', relative(scopeFile),
+    '--successor-policy', relative(policyFile), '--authority-policy', relative(authorityFile), '--repo', repo,
+  ]);
+  const probeCheckpoint = JSON.parse(readFileSync(probeCheckpointPath, 'utf8'));
+
+  execFileSync('git', ['-C', repo, 'switch', '-qc', 'rename-scope-test']);
+  mkdirSync(path.join(repo, 'src', 'phase-1'), { recursive: true });
+  execFileSync('git', ['-C', repo, 'mv', 'outside/tracked.txt', 'src/phase-1/moved.txt']);
+  execFileSync('git', ['-C', repo, 'commit', '-qm', 'rename into allowed scope']);
+  const renameCheckpoint = structuredClone(probeCheckpoint);
+  renameCheckpoint.branch = 'rename-scope-test';
+  renameCheckpoint.headSha = execFileSync('git', ['-C', repo, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim().toLowerCase();
+  renameCheckpoint.updatedAt = new Date().toISOString();
+  const renameCheckpointPath = path.join(work, '.artifacts', 'rename-checkpoint.json');
+  json(renameCheckpointPath, renameCheckpoint);
+  run('attest-scope.mjs', ['--checkpoint', relative(renameCheckpointPath), '--out', '.artifacts/rename-attestation.json', '--repo', repo], 2);
+  execFileSync('git', ['-C', repo, 'switch', '-q', phaseBranch]);
+
+  execFileSync('git', ['-C', repo, 'switch', '-qc', 'forbidden-scope-test']);
+  mkdirSync(path.join(repo, 'src', 'phase-1', 'forbidden'), { recursive: true });
+  writeFileSync(path.join(repo, 'src', 'phase-1', 'forbidden', 'blocked.ts'), 'export const blocked = true;\n', 'utf8');
+  execFileSync('git', ['-C', repo, 'add', 'src/phase-1/forbidden/blocked.ts']);
+  execFileSync('git', ['-C', repo, 'commit', '-qm', 'forbidden overlap probe']);
+  const forbiddenCheckpoint = structuredClone(probeCheckpoint);
+  forbiddenCheckpoint.branch = 'forbidden-scope-test';
+  forbiddenCheckpoint.headSha = execFileSync('git', ['-C', repo, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim().toLowerCase();
+  forbiddenCheckpoint.updatedAt = new Date().toISOString();
+  const forbiddenCheckpointPath = path.join(work, '.artifacts', 'forbidden-checkpoint.json');
+  json(forbiddenCheckpointPath, forbiddenCheckpoint);
+  run('attest-scope.mjs', ['--checkpoint', relative(forbiddenCheckpointPath), '--out', '.artifacts/forbidden-attestation.json', '--repo', repo], 2);
+  execFileSync('git', ['-C', repo, 'switch', '-q', phaseBranch]);
 
   const unsafeScopeFile = path.join(work, '.artifacts', 'unsafe-scope.json');
   json(unsafeScopeFile, {
@@ -103,10 +172,13 @@ test('immutable checkpoint workflow closes a phase and starts the signaled next 
   const transition = (from, to, state, option, payload) => {
     const payloadFile = path.join(work, '.artifacts', `${state.toLowerCase()}.json`);
     json(payloadFile, payload);
-    run('advance-execution-checkpoint.mjs', [
+    const result = run('advance-execution-checkpoint.mjs', [
       '--checkpoint', relative(checkpoints[from]), '--out', relative(checkpoints[to]), '--to-state', state,
       option, relative(payloadFile), '--repo', repo,
     ]);
+    const expectedStage = { RED_CONFIRMED: 'Implement', GREEN_CONFIRMED: 'Verify', STOP_GATE_GREEN: 'Verify', REVIEWED: 'Commit', PR_GREEN: 'Commit', MERGED: 'Next', NEXT_PHASE: 'Next' }[state];
+    assert.equal(result.progress.stage, expectedStage, state);
+    return result;
   };
   const evidence = (checkpoint, name, kind, status, command = `npm test -- ${name}`) => {
     const receipt = path.join(work, '.artifacts', `${name}.log`);
@@ -120,6 +192,10 @@ test('immutable checkpoint workflow closes a phase and starts the signaled next 
   };
 
   const red = evidence(checkpoints[0], 'red-1', 'acceptance-red', 'confirmed');
+  run('record-gate-evidence.mjs', [
+    '--checkpoint', relative(checkpoints[0]), '--out', '.artifacts/blank-command.json', '--id', 'blank-command', '--kind', 'acceptance-red',
+    '--status', 'confirmed', '--command', '   ', '--receipt', relative(path.join(work, '.artifacts', 'red-1.log')), '--repo', repo,
+  ], 2);
   const spacedCommandEvidence = evidence(checkpoints[0], 'red-spaced-command', 'acceptance-red', 'confirmed', 'node -e "console.log(\'a  b\')"');
   assert.equal(JSON.parse(readFileSync(spacedCommandEvidence, 'utf8')).command, 'node -e "console.log(\'a  b\')"');
   writeFileSync(spec, '# Dirty design\n', 'utf8');
@@ -128,7 +204,13 @@ test('immutable checkpoint workflow closes a phase and starts the signaled next 
     '--status', 'confirmed', '--command', 'npm test -- dirty', '--receipt', relative(path.join(work, '.artifacts', 'red-1.log')), '--repo', repo,
   ], 2);
   writeFileSync(spec, '# Stable design\n', 'utf8');
-  run('advance-execution-checkpoint.mjs', ['--checkpoint', relative(checkpoints[0]), '--out', relative(checkpoints[1]), '--to-state', 'RED_CONFIRMED', '--evidence', relative(red), '--repo', repo]);
+  const redTransition = run('advance-execution-checkpoint.mjs', ['--checkpoint', relative(checkpoints[0]), '--out', relative(checkpoints[1]), '--to-state', 'RED_CONFIRMED', '--evidence', relative(red), '--repo', repo]);
+  assert.equal(redTransition.progress.stage, 'Implement');
+  const missingBridge = JSON.parse(readFileSync(checkpoints[1], 'utf8'));
+  delete missingBridge.sourcePhaseReceipt;
+  const missingBridgeFile = path.join(work, '.artifacts', 'missing-source-bridge.json');
+  json(missingBridgeFile, missingBridge);
+  run('validate-execution-checkpoint.mjs', ['--checkpoint', relative(missingBridgeFile), '--repo', repo], 2);
   mkdirSync(path.join(repo, 'src', 'phase-1'), { recursive: true });
   writeFileSync(path.join(repo, 'src', 'phase-1', 'example.ts'), 'export const implemented = true;\n', 'utf8');
   execFileSync('git', ['-C', repo, 'add', 'src/phase-1/example.ts']);
@@ -170,7 +252,7 @@ test('immutable checkpoint workflow closes a phase and starts the signaled next 
   const replayPlanned = path.join(work, '.artifacts', 'replay-planned.json');
   run('reset-execution-gates.mjs', ['--checkpoint', relative(checkpoints[4]), '--out', relative(replayPlanned), '--repo', repo]);
   assert.equal(JSON.parse(readFileSync(replayPlanned, 'utf8')).state, 'PHASE_PLANNED');
-  assert.equal(validateSchema(JSON.parse(readFileSync(replayPlanned, 'utf8'))), true, JSON.stringify(validateSchema.errors));
+  assert.deepEqual(validateJsonSchema(JSON.parse(readFileSync(replayPlanned, 'utf8')), schema), []);
   const replayRedEvidence = evidence(replayPlanned, 'red-replay', 'acceptance-red', 'confirmed');
   const replayRed = path.join(work, '.artifacts', 'replay-red.json');
   run('advance-execution-checkpoint.mjs', ['--checkpoint', relative(replayPlanned), '--out', relative(replayRed), '--to-state', 'RED_CONFIRMED', '--evidence', relative(replayRedEvidence), '--repo', repo]);
@@ -192,12 +274,53 @@ test('immutable checkpoint workflow closes a phase and starts the signaled next 
   execFileSync('git', ['-C', repo, 'switch', '-q', 'integration']);
   execFileSync('git', ['-C', repo, 'merge', '--no-ff', '-qm', 'merge phase one', phaseBranch]);
   const mergeSha = execFileSync('git', ['-C', repo, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim().toLowerCase();
-  transition(5, 6, 'MERGED', '--merge', {
-    sha: mergeSha,
-    ref: 'refs/heads/integration',
-    containsReviewedSha: headSha,
-    mergedAt: new Date().toISOString(),
-  });
+  execFileSync('git', ['-C', repo, 'branch', '-f', phaseBranch, mergeSha]);
+  const phaseRefMerge = path.join(work, '.artifacts', 'phase-ref-merge.json');
+  json(phaseRefMerge, { sha: mergeSha, ref: `refs/heads/${phaseBranch}`, containsReviewedSha: headSha, mergedAt: new Date().toISOString() });
+  run('advance-execution-checkpoint.mjs', ['--checkpoint', relative(checkpoints[5]), '--out', '.artifacts/phase-ref-merged.json', '--to-state', 'MERGED', '--merge', relative(phaseRefMerge), '--repo', repo], 2);
+  execFileSync('git', ['-C', repo, 'branch', '-f', phaseBranch, headSha]);
+  transition(5, 6, 'MERGED', '--merge', { sha: mergeSha, ref: 'refs/heads/integration', containsReviewedSha: headSha, mergedAt: new Date().toISOString() });
+  const mergedStatus = run('run-phase.mjs', ['--action', 'status', '--receipt', relative(checkpoints[6]), '--repo', repo]);
+  assert.equal(mergedStatus.current.receiptCurrent, true, JSON.stringify(mergedStatus.warnings));
+
+  writeFileSync(spec, '# Integration checkout drift\n', 'utf8');
+  writeFileSync(plan, '# Integration checkout plan drift\n', 'utf8');
+  json(scopeFile, { ...scope, allowedPaths: ['outside/**'] });
+  json(policyFile, { allowedCodes: { stop: 'STOP' } });
+  json(authorityFile, { ...authority, review: ['other-reviewer'] });
+  json(riskFile, { ...riskPolicy, integrationRefs: ['refs/heads/unrelated'] });
+  const sealedStatus = run('run-phase.mjs', ['--action', 'status', '--receipt', relative(checkpoints[6]), '--repo', repo]);
+  assert.equal(sealedStatus.current.receiptCurrent, true, JSON.stringify(sealedStatus.warnings));
+  writeFileSync(spec, '# Stable design\n', 'utf8');
+  writeFileSync(plan, '# Phase 1\n', 'utf8');
+  json(scopeFile, scope);
+  json(policyFile, policy);
+  json(authorityFile, authority);
+  json(riskFile, riskPolicy);
+
+  const legacyMergeCheckpoint = JSON.parse(readFileSync(checkpoints[6], 'utf8'));
+  legacyMergeCheckpoint.merge = legacyMergeEvidence;
+  const legacyMergeFile = path.join(work, '.artifacts', 'legacy-v1-merge.json');
+  json(legacyMergeFile, legacyMergeCheckpoint);
+  run('validate-execution-checkpoint.mjs', ['--checkpoint', relative(legacyMergeFile), '--repo', repo, '--historical', 'true']);
+  run('validate-execution-checkpoint.mjs', ['--checkpoint', relative(legacyMergeFile), '--repo', repo, '--historical', 'true', '--enforce-merge-ref', 'true'], 2);
+  run('validate-execution-checkpoint.mjs', ['--checkpoint', relative(legacyMergeFile), '--repo', repo], 2);
+  const legacySignal = path.join(work, '.artifacts', 'legacy-successor.json');
+  json(legacySignal, { code: 'advance-phase-2', target: 'phase-2', authority: 'product-owner', signedAt: new Date().toISOString() });
+  run('advance-execution-checkpoint.mjs', [
+    '--checkpoint', relative(legacyMergeFile), '--out', '.artifacts/legacy-next.json', '--to-state', 'NEXT_PHASE',
+    '--successor-signal', relative(legacySignal), '--repo', repo,
+  ], 2);
+
+  const standaloneLegacy = structuredClone(legacyMergeCheckpoint);
+  delete standaloneLegacy.sourcePhaseReceipt;
+  standaloneLegacy.checkpointRevision = 1;
+  standaloneLegacy.previousCheckpointPath = null;
+  standaloneLegacy.previousCheckpointHash = null;
+  const standaloneLegacyFile = path.join(work, '.artifacts', 'standalone-legacy-v1-merged.json');
+  json(standaloneLegacyFile, standaloneLegacy);
+  run('validate-execution-checkpoint.mjs', ['--checkpoint', relative(standaloneLegacyFile), '--repo', repo, '--historical', 'true']);
+  run('run-phase.mjs', ['--action', 'status', '--receipt', relative(standaloneLegacyFile), '--repo', repo]);
 
   const invalidMerge = JSON.parse(readFileSync(checkpoints[6], 'utf8'));
   invalidMerge.merge.sha = 'f'.repeat(40);
@@ -209,9 +332,45 @@ test('immutable checkpoint workflow closes a phase and starts the signaled next 
   const unrelatedMergeFile = path.join(work, '.artifacts', 'unrelated-merge.json');
   json(unrelatedMergeFile, unrelatedMerge);
   run('validate-execution-checkpoint.mjs', ['--checkpoint', relative(unrelatedMergeFile), '--repo', repo, '--historical', 'true'], 2);
+  execFileSync('git', ['-C', repo, 'switch', '-q', phaseBranch]);
+  execFileSync('git', ['-C', repo, 'branch', '-f', 'integration', initialBaseSha]);
+  const movedRefSignal = path.join(work, '.artifacts', 'moved-ref-successor.json');
+  json(movedRefSignal, { code: 'advance-phase-2', target: 'phase-2', authority: 'product-owner', signedAt: new Date().toISOString() });
+  run('advance-execution-checkpoint.mjs', [
+    '--checkpoint', relative(checkpoints[6]), '--out', '.artifacts/moved-ref-next.json', '--to-state', 'NEXT_PHASE',
+    '--successor-signal', relative(movedRefSignal), '--repo', repo,
+  ], 2);
+  execFileSync('git', ['-C', repo, 'branch', '-f', 'integration', mergeSha]);
+  execFileSync('git', ['-C', repo, 'switch', '-q', 'integration']);
   transition(6, 7, 'NEXT_PHASE', '--successor-signal', { code: 'advance-phase-2', target: 'phase-2', authority: 'product-owner', signedAt: new Date().toISOString() });
+  const nextPhaseStatus = run('run-phase.mjs', ['--action', 'status', '--receipt', relative(checkpoints[7]), '--repo', repo]);
+  assert.equal(nextPhaseStatus.current.receiptCurrent, true, JSON.stringify(nextPhaseStatus.warnings));
+  const nextPhaseValidation = run('validate-execution-checkpoint.mjs', ['--checkpoint', relative(checkpoints[7]), '--repo', repo]);
+  assert.equal(nextPhaseValidation.ok, true, JSON.stringify(nextPhaseValidation.issues));
+  execFileSync('git', ['-C', repo, 'switch', '-qc', 'wrong-next-checkout', initialBaseSha]);
+  run('validate-execution-checkpoint.mjs', ['--checkpoint', relative(checkpoints[7]), '--repo', repo], 2);
+  execFileSync('git', ['-C', repo, 'switch', '-q', 'integration']);
 
   run('init-execution-checkpoint.mjs', ['--out', '.artifacts/override-next-phase.json', '--feature-id', 'feature-1', '--phase-id', 'phase-2', '--previous', relative(checkpoints[7]), '--plan', relative(plan), '--scope', relative(scopeFile), '--successor-policy', relative(policyFile), '--repo', repo], 2);
+
+  execFileSync('git', ['-C', repo, 'switch', '-qc', 'phase-2-descendant', mergeSha]);
+  writeFileSync(path.join(repo, 'extra-baseline.txt'), 'extra\n', 'utf8');
+  execFileSync('git', ['-C', repo, 'add', 'extra-baseline.txt']);
+  execFileSync('git', ['-C', repo, 'commit', '-qm', 'extra successor commit']);
+  run('init-execution-checkpoint.mjs', [
+    '--out', '.artifacts/descendant-next-phase.json', '--feature-id', 'feature-1', '--phase-id', 'phase-2', '--previous', relative(checkpoints[7]),
+    '--plan', relative(plan), '--scope', relative(scopeFile), '--repo', repo,
+  ], 2);
+  execFileSync('git', ['-C', repo, 'switch', '-q', 'integration']);
+  execFileSync('git', ['-C', repo, 'branch', '-f', phaseBranch, mergeSha]);
+  execFileSync('git', ['-C', repo, 'switch', '-q', phaseBranch]);
+  run('init-execution-checkpoint.mjs', [
+    '--out', '.artifacts/reused-branch-next-phase.json', '--feature-id', 'feature-1', '--phase-id', 'phase-2', '--previous', relative(checkpoints[7]),
+    '--plan', relative(plan), '--scope', relative(scopeFile), '--repo', repo,
+  ], 2);
+  execFileSync('git', ['-C', repo, 'switch', '-q', 'integration']);
+  execFileSync('git', ['-C', repo, 'branch', '-f', phaseBranch, headSha]);
+  execFileSync('git', ['-C', repo, 'switch', '-qc', 'phase-2', mergeSha]);
 
   const phase2 = path.join(work, '.artifacts', 'phase-2-r1.json');
   run('init-execution-checkpoint.mjs', [
@@ -219,15 +378,28 @@ test('immutable checkpoint workflow closes a phase and starts the signaled next 
     '--plan', relative(plan), '--scope', relative(scopeFile), '--repo', repo,
   ]);
   const phase2Checkpoint = JSON.parse(readFileSync(phase2, 'utf8'));
-  assert.equal(validateSchema(phase2Checkpoint), true, JSON.stringify(validateSchema.errors));
+  assert.deepEqual(validateJsonSchema(phase2Checkpoint, schema), []);
   assert.equal(phase2Checkpoint.checkpointGeneration, 2);
   assert.equal(phase2Checkpoint.checkpointRevision, 1);
   assert.equal(phase2Checkpoint.state, 'PHASE_PLANNED');
+  assert.deepEqual(phase2Checkpoint.sourcePhaseReceipt, initialCheckpoint.sourcePhaseReceipt);
 
   const changedPlan = path.join(work, '.artifacts', 'phase-2-plan-v2.md');
   const changedScopeFile = path.join(work, '.artifacts', 'scope-v2.json');
   writeFileSync(changedPlan, '# Phase 2 revised\n', 'utf8');
-  const changedInputs = [...inputs, relative(changedPlan), 'src/phase-1/example.ts'];
+  const rejectedScopes = [
+    ['removed-forbidden', { ...scope, forbiddenWork: [] }],
+    ['removed-protected', { ...scope, protectedPaths: [] }],
+    ['reduced-evidence', { ...scope, evidenceInputs: { 'acceptance-red': ['design.md'], 'implementation-green': ['design.md'], 'stop-gate': ['design.md'] } }],
+  ];
+  for (const [name, candidateScope] of rejectedScopes) {
+    const candidateScopeFile = path.join(work, '.artifacts', 'governed-feature-delivery', `${name}-scope.json`);
+    const candidateDeltaFile = path.join(work, '.artifacts', 'governed-feature-delivery', `${name}-delta.json`);
+    json(candidateScopeFile, candidateScope);
+    json(candidateDeltaFile, { id: name, decision: 'approved', beforeScopeHash: phase2Checkpoint.scopeHash, afterScopeHash: scopeHash(candidateScope), phasePlanHash: sha256File(changedPlan), authority: 'scope-owner', decidedAt: new Date().toISOString() });
+    run('apply-scope-delta.mjs', ['--checkpoint', relative(phase2), '--out', `.artifacts/${name}-checkpoint.json`, '--scope', relative(candidateScopeFile), '--plan', relative(changedPlan), '--delta', relative(candidateDeltaFile), '--repo', repo], 2);
+  }
+  const changedInputs = [...new Set([...scope.evidenceInputs['stop-gate'], relative(changedPlan)])];
   const changedScope = {
     ...scope,
     allowedPaths: ['src/phase-1/**', 'src/shared/**'],
@@ -247,7 +419,7 @@ test('immutable checkpoint workflow closes a phase and starts the signaled next 
   const phase2Delta = path.join(work, '.artifacts', 'phase-2-r2.json');
   run('apply-scope-delta.mjs', ['--checkpoint', relative(phase2), '--out', relative(phase2Delta), '--scope', relative(changedScopeFile), '--plan', relative(changedPlan), '--delta', relative(deltaFile), '--repo', repo]);
   run('validate-execution-checkpoint.mjs', ['--checkpoint', relative(phase2Delta), '--repo', repo]);
-  assert.equal(validateSchema(JSON.parse(readFileSync(phase2Delta, 'utf8'))), true, JSON.stringify(validateSchema.errors));
+  assert.deepEqual(validateJsonSchema(JSON.parse(readFileSync(phase2Delta, 'utf8')), schema), []);
 
   mkdirSync(path.join(repo, 'src', 'phase-2'), { recursive: true });
   writeFileSync(path.join(repo, 'src', 'phase-2', 'blocked.ts'), 'export const blocked = true;\n', 'utf8');
@@ -263,7 +435,7 @@ test('immutable checkpoint workflow closes a phase and starts the signaled next 
     '--plan', relative(plan), '--scope', relative(scopeFile), '--repo', repo,
   ], 2);
   assert.match(wrongBaseResult.message, /equal the previous phase merge commit/u);
-  execFileSync('git', ['-C', repo, 'switch', '-q', 'integration']);
+  execFileSync('git', ['-C', repo, 'switch', '-q', phase2Checkpoint.branch]);
   const illegalRed = evidence(phase2Delta, 'illegal-red', 'acceptance-red', 'confirmed');
   const illegalRedCheckpoint = path.join(work, '.artifacts', 'illegal-red-checkpoint.json');
   run('advance-execution-checkpoint.mjs', ['--checkpoint', relative(phase2Delta), '--out', relative(illegalRedCheckpoint), '--to-state', 'RED_CONFIRMED', '--evidence', relative(illegalRed), '--repo', repo]);
@@ -305,7 +477,7 @@ test('immutable checkpoint workflow closes a phase and starts the signaled next 
   const changedHeadStopFile = path.join(work, '.artifacts', 'changed-head-stop.json');
   json(changedHeadStopFile, changedHeadStop);
   const changedHeadResult = run('validate-execution-checkpoint.mjs', ['--checkpoint', relative(changedHeadStopFile), '--repo', repo, '--historical', 'true'], 2);
-  assert.ok(changedHeadResult.issues.some((issue) => issue.includes('changed HEAD requires gate replay')));
+  assert.ok(changedHeadResult.issues.some((issue) => issue.includes('changed HEAD requires gate replay')), JSON.stringify(changedHeadResult.issues));
 
   const reviewedScopeDelta = JSON.parse(readFileSync(checkpoints[4], 'utf8'));
   reviewedScopeDelta.checkpointRevision += 1;
@@ -386,7 +558,7 @@ test('immutable checkpoint workflow closes a phase and starts the signaled next 
   delete missingArtifacts.artifacts;
   const missingArtifactsFile = path.join(work, '.artifacts', 'missing-artifacts.json');
   json(missingArtifactsFile, missingArtifacts);
-  assert.equal(validateSchema(missingArtifacts), false);
+  assert.notDeepEqual(validateJsonSchema(missingArtifacts, schema), []);
   run('validate-execution-checkpoint.mjs', ['--checkpoint', relative(missingArtifactsFile), '--repo', repo, '--historical', 'true'], 2);
   const frozen = path.join(work, '.artifacts', 'frozen.json');
   run('prepare-execution-checkpoint.mjs', ['--checkpoint', relative(discovered), '--out', relative(frozen), '--to-state', 'SPEC_FROZEN', '--spec', relative(spec), '--successor-policy', relative(policyFile), '--freeze-receipt', relative(freezeFile), '--authority-policy', relative(authorityFile), '--repo', repo]);

@@ -7,6 +7,7 @@ import {
   emit,
   fail,
   git,
+  listWorktreePaths,
   parseArgs,
   readJson,
   required,
@@ -31,14 +32,15 @@ try {
   const repo = path.resolve(options.repo ?? process.cwd());
   const checkpointPath = resolveRepoPath(repo, required(options, 'checkpoint'), '--checkpoint');
   const validator = fileURLToPath(new URL('./validate-execution-checkpoint.mjs', import.meta.url));
-  execFileSync(process.execPath, [validator, '--checkpoint', artifactPath(repo, checkpointPath), '--repo', repo, '--historical', 'true'], { stdio: 'pipe' });
+  execFileSync(process.execPath, [validator, '--checkpoint', artifactPath(repo, checkpointPath), '--repo', repo, '--historical', 'true', '--enforce-source-baseline', 'true'], { stdio: 'pipe' });
   const checkpoint = readJson(checkpointPath);
-  if (git(repo, ['status', '--porcelain'])) throw new Error('gate evidence requires a clean worktree');
+if (listWorktreePaths(repo).length) throw new Error('gate evidence requires a clean worktree outside managed artifacts');
   const kind = required(options, 'kind');
   const inputs = checkpoint.authorizedScope.evidenceInputs[kind];
   if (!Array.isArray(inputs) || inputs.length === 0) throw new Error(`checkpoint has no authorized inputs for ${kind}`);
   const inputHashes = Object.fromEntries(inputs.map((input) => [input, sha256File(resolveRepoPath(repo, input, `evidence input ${input}`))]));
   const command = required(options, 'command').trim();
+  if (!command) throw new Error('--command must not be blank');
   const receiptPath = resolveRepoPath(repo, required(options, 'receipt'), '--receipt');
   const output = resolveRepoPath(repo, required(options, 'out'), '--out', { output: true });
   const evidence = {
@@ -53,7 +55,7 @@ try {
     receiptHash: sha256File(receiptPath),
     completedAt: new Date().toISOString(),
   };
-  writeExclusiveJson(output, evidence);
+  writeExclusiveJson(output, evidence, repo);
   emit({ ok: true, evidence: artifactPath(repo, output), id: evidence.id, kind });
 } catch (error) {
   fail(error, 'governed_feature_evidence_record_failed');

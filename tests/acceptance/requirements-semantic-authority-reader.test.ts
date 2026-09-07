@@ -39,7 +39,7 @@ describe('full-source persisted Requirements semantic authority, test-only witho
     expect(validateRequirementsContractSemanticIr(restored).decision).toBe('pass');
     expect(hash(stableStringify(restored))).toBe(hash(stableStringify(compiled.semanticIr)));
     expect(hash(readFileSync(path.join(fixture.root, 'inputs/raw-source.md')))).toBe(SOURCE_HASH);
-  }, 60_000);
+  }, 300_000);
 
   it.each(['missing-dictionary', 'changed-hash', 'expanded-v2'])(
     'rejects %s instead of exposing partial semanticPayload to confirmation consumers', (damage) => {

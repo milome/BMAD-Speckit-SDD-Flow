@@ -9,11 +9,13 @@ import {
   emit,
   fail,
   git,
+  legacyProgress,
   parseArgs,
   readJson,
   required,
   resolveRepoPath,
   sha256File,
+  validateStrongMerge,
   writeValidatedExclusiveJson,
 } from './checkpoint-core.mjs';
 
@@ -49,8 +51,9 @@ try {
   const output = resolveRepoPath(repo, required(options, 'out'), '--out', { output: true });
   const target = required(options, 'to-state');
   const validator = fileURLToPath(new URL('./validate-execution-checkpoint.mjs', import.meta.url));
-  const parentValidationArgs = [validator, '--checkpoint', artifactPath(repo, parentPath), '--repo', repo];
-  if (REQUIRED_EVIDENCE[target]) parentValidationArgs.push('--historical', 'true');
+  const parentValidationArgs = [validator, '--checkpoint', artifactPath(repo, parentPath), '--repo', repo, '--enforce-source-baseline', 'true'];
+  if (REQUIRED_EVIDENCE[target] || ['MERGED', 'NEXT_PHASE', 'RELEASED'].includes(target)) parentValidationArgs.push('--historical', 'true');
+  if (['NEXT_PHASE', 'RELEASED'].includes(target)) parentValidationArgs.push('--enforce-merge-ref', 'true');
   execFileSync(process.execPath, parentValidationArgs, { stdio: 'pipe' });
   const parent = readJson(parentPath);
   const expected = NEXT[parent.state];
@@ -86,7 +89,10 @@ try {
   if (target === 'PR_GREEN') {
     next.pullRequest = readJson(resolveRepoPath(repo, required(options, 'pull-request'), '--pull-request'));
   }
-  if (target === 'MERGED') next.merge = readJson(resolveRepoPath(repo, required(options, 'merge'), '--merge'));
+  if (target === 'MERGED') {
+    const merge = readJson(resolveRepoPath(repo, required(options, 'merge'), '--merge'));
+    next.merge = validateStrongMerge(repo, { phaseBranch: parent.branch, reviewedSha: parent.headSha, merge });
+  }
   if (target === 'NEXT_PHASE' || target === 'RELEASED') {
     next.lastSuccessorSignal = readJson(resolveRepoPath(repo, required(options, 'successor-signal'), '--successor-signal'));
     next.completedPhase = next.currentPhase;
@@ -98,12 +104,15 @@ try {
 
   try {
     writeValidatedExclusiveJson(output, next, (candidate) => {
-      execFileSync(process.execPath, [validator, '--checkpoint', artifactPath(repo, candidate), '--repo', repo], { stdio: 'pipe' });
-    });
+      const args = [validator, '--checkpoint', artifactPath(repo, candidate), '--repo', repo, '--enforce-source-baseline', 'true'];
+      if (['MERGED', 'NEXT_PHASE', 'RELEASED'].includes(target)) args.push('--historical', 'true');
+      if (['NEXT_PHASE', 'RELEASED'].includes(target)) args.push('--enforce-merge-ref', 'true');
+      execFileSync(process.execPath, args, { stdio: 'pipe' });
+    }, repo);
   } catch (error) {
-    throw new Error(`advanced checkpoint failed validation: ${error.stderr?.toString().trim() || error.message}`);
+    throw new Error(`advanced checkpoint failed validation: ${error.stdout?.toString().trim() || error.stderr?.toString().trim() || error.message}`);
   }
-  emit({ ok: true, checkpoint: artifactPath(repo, output), state: target, revision: next.checkpointRevision });
+emit({ ok: true, checkpoint: artifactPath(repo, output), state: target, revision: next.checkpointRevision, progress: legacyProgress(next) });
 } catch (error) {
   fail(error, 'governed_feature_checkpoint_advance_failed');
 }
