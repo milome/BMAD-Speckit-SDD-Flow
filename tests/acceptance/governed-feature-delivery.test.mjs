@@ -263,7 +263,7 @@ test('immutable checkpoint workflow closes a phase and starts the signaled next 
     '--plan', relative(plan), '--scope', relative(scopeFile), '--repo', repo,
   ], 2);
   assert.match(wrongBaseResult.message, /equal the previous phase merge commit/u);
-  execFileSync('git', ['-C', repo, 'switch', '-q', phaseBranch]);
+  execFileSync('git', ['-C', repo, 'switch', '-q', 'integration']);
   const illegalRed = evidence(phase2Delta, 'illegal-red', 'acceptance-red', 'confirmed');
   const illegalRedCheckpoint = path.join(work, '.artifacts', 'illegal-red-checkpoint.json');
   run('advance-execution-checkpoint.mjs', ['--checkpoint', relative(phase2Delta), '--out', relative(illegalRedCheckpoint), '--to-state', 'RED_CONFIRMED', '--evidence', relative(illegalRed), '--repo', repo]);
