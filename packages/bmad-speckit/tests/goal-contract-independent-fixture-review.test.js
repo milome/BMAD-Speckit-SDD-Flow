@@ -264,14 +264,13 @@ describe('independent fixture review binding', () => {
     assert.throws(() => bind(stale), /independent_fixture_disposition_report_binding_stale/u);
   });
 
-  function assertMissingControlledProvenanceRejected() {
+  it('fails closed when controlled provenance is missing', () => {
     const value = fixture();
     delete value.provenance;
     assert.throws(() => bind(value), /independent_fixture_provenance_missing/u);
-  }
+  });
 
-  it('fails closed for missing or duplicate producer provenance and event ids', () => {
-    assertMissingControlledProvenanceRejected();
+  it('fails closed for duplicate producer identities and event ids', () => {
     const value = fixture();
     const duplicateOwner = fixture();
     buildControlledProvenance(duplicateOwner, { producerIds: ['same', 'same', 'same'] });
@@ -280,7 +279,7 @@ describe('independent fixture review binding', () => {
     assert.throws(() => bind(value), /independent_fixture_provenance_event_duplicate/u);
   });
 
-  it('fails closed for receipt, journal, artifact-set, and disposition provenance drift', () => {
+  it('fails closed for receipt swaps, journal chain breaks, and stale artifact sets', () => {
     const swapped = fixture();
     const receiptA = path.join(swapped.projectRoot, swapped.provenance.receiptDir, 'report-1.json');
     const receiptB = path.join(swapped.projectRoot, swapped.provenance.receiptDir, 'report-2.json');
@@ -300,10 +299,9 @@ describe('independent fixture review binding', () => {
     staleEvents[0].payload.artifactSetHash = `sha256:${'0'.repeat(64)}`;
     fs.writeFileSync(staleJournal, `${staleEvents.map((event) => JSON.stringify(event)).join('\n')}\n`, 'utf8');
     assert.throws(() => bind(stale), /independent_fixture_provenance_event_hash_invalid|independent_fixture_provenance_payload_binding_stale/u);
-    assertDispositionProvenanceDriftRejected();
   });
 
-  function assertDispositionProvenanceDriftRejected() {
+  it('fails closed when disposition provenance self-ingests or swaps report receipt hashes', () => {
     const selfIngest = fixture();
     const journalPath = path.join(selfIngest.projectRoot, selfIngest.provenance.eventLogPath);
     const events = fs.readFileSync(journalPath, 'utf8').trim().split(/\r?\n/u).map(JSON.parse);
@@ -316,5 +314,5 @@ describe('independent fixture review binding', () => {
     swappedEvents[3].payload.reportReceiptBindings.reverse();
     fs.writeFileSync(swappedPath, `${swappedEvents.map((event) => JSON.stringify(event)).join('\n')}\n`, 'utf8');
     assert.throws(() => bind(swapped), /independent_fixture_provenance_event_hash_invalid|independent_fixture_provenance_disposition_report_binding_stale/u);
-  }
+  });
 });

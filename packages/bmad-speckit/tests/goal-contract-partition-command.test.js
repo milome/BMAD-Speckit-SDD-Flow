@@ -2584,7 +2584,7 @@ describe('bmad-speckit goal-contract partition command', () => {
     );
   });
 
-  it('commits governed RequirementRecord runs and closes the full canonical fixture', () => {
+  it('commits a governed RequirementRecord-scoped partition run through the controlled writer', () => {
     const root = tempRoot();
     const source = writeSourcePlan(root);
     const frozen = writeFrozenSuccessorContract(root, source);
@@ -2635,10 +2635,9 @@ describe('bmad-speckit goal-contract partition command', () => {
       ),
       false
     );
-    assertFullCanonicalFixturePartition();
   });
 
-  function assertFullCanonicalFixturePartition() {
+  it('closes full canonical fixture diagnostics, standalone bootstrap, and controlled RequirementRecord activation', () => {
     const root = tempRoot();
     const impactRoot = path.join(root, 'empty-consumer');
     fs.mkdirSync(impactRoot, { recursive: true });
@@ -2858,7 +2857,7 @@ describe('bmad-speckit goal-contract partition command', () => {
       fs.readFileSync(standalonePayload.activePointerPath, 'utf8'),
       standalonePointerBeforeScoped
     );
-  }
+  });
   it('rejects an unauthorized RequirementRecord before writing partition run bytes', () => {
     const root = tempRoot();
     const source = writeSourcePlan(root);
