@@ -37,6 +37,8 @@ export interface RequirementsExecutionConstraint {
   scope?: Record<string, unknown>;
   modality?: 'required' | 'suggested' | 'prohibited' | 'template' | 'context';
   sourceDeclarationRefs?: string[];
+  coverageRole?: 'action_trace' | 'non_action_declaration';
+  declarationRole?: string;
 }
 
 export interface RequirementsEvidenceClaim {
@@ -121,6 +123,18 @@ function sortedUnique(values: readonly string[]): string[] {
   return [...new Set(values)].sort((left, right) => left.localeCompare(right));
 }
 
+function stringRefs(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === 'string' && entry.length > 0)
+    : [];
+}
+
+function hasScopeOwner(scope: Record<string, unknown>): boolean {
+  return ['owner', 'ownerId', 'authorityRef'].some((key) =>
+    typeof scope[key] === 'string' && String(scope[key]).length > 0
+  );
+}
+
 function assertTypedSourceClaimConservation(semantics: Record<string, unknown>, claims: RequirementsEvidenceClaim[], spans: RequirementsSpecSpan[]): void {
   const authority = semantics.typedSourceAuthority as RequirementsTypedSourceAuthority | undefined;
   if (!authority) {
@@ -174,7 +188,16 @@ export function createExecutionConstraintRegistry(
 function assertTypedExecutionProofs(semantics: Record<string, unknown>, constraints: RequirementsExecutionConstraint[]): void {
   const authority = semantics.typedSourceAuthority as RequirementsTypedSourceAuthority;
   resolveTypedSourceCoverage(semantics.typedCoverage, authority);
-  const expected = resolveTypedTechnicalDeclarations(authority);
+  const commandConstraints = constraints.filter((constraint) => constraint.kind === 'CMD');
+  const stampedCommands = commandConstraints.filter(
+    (constraint) => constraint.coverageRole !== undefined && constraint.declarationRole !== undefined
+  );
+  if (stampedCommands.length !== 0 && stampedCommands.length !== commandConstraints.length) {
+    throw new Error('requirements_typed_constraint_role_profile_mixed');
+  }
+  const expected = resolveTypedTechnicalDeclarations(authority, {
+    commandSemantics: stampedCommands.length === 0 ? 'legacy_v2' : 'normalized',
+  });
   const byId = new Map(expected.map((entry) => [entry.id, entry]));
   if (constraints.length !== expected.length) throw new Error('requirements_typed_constraint_source_set_mismatch');
   for (const constraint of constraints) {
@@ -187,7 +210,12 @@ function assertTypedExecutionProofs(semantics: Record<string, unknown>, constrai
       premiseRefs: constraint.premiseRefs, derivationReceiptRefs: constraint.derivationReceiptRefs,
       conditions: constraint.conditions, scope: constraint.scope, modality: constraint.modality,
       sourceDeclarationRefs: constraint.sourceDeclarationRefs };
-    if (stableStringify(actual) !== stableStringify(entry) ||
+    const { coverageRole, declarationRole, ...expectedProof } = entry;
+    const optionalRolesMismatch =
+      (constraint.coverageRole !== undefined && constraint.coverageRole !== coverageRole) ||
+      (constraint.declarationRole !== undefined && constraint.declarationRole !== declarationRole);
+    // Older confirmed v2 candidates omit these derivable roles; new producers persist and prove them.
+    if (stableStringify(actual) !== stableStringify(expectedProof) || optionalRolesMismatch ||
       stableStringify(sortedUnique(constraint.applicableMustRefs)) !== stableStringify(entry.applicableSourceRefs) ||
       stableStringify(sortedUnique(constraint.applicableAtomRefs)) !== stableStringify(entry.applicableSourceRefs!.map((id) => `${id}-A1`).sort())) {
       throw new Error('requirements_typed_constraint_source_proof_mismatch');
@@ -206,9 +234,6 @@ export function validateExecutionConstraintRegistry(value: unknown) {
     : [];
   if (!Array.isArray(registry.executionConstraints)) issueCodes.push('execution_constraint_registry_invalid');
   const ids = new Set<string>();
-  let referenceCount = 0;
-  const nonGlobalObligationUniverse = new Set<string>();
-  const nonGlobalConstraints: Array<Record<string, unknown>> = [];
   for (const constraint of constraints) {
     const id = String(constraint.constraintId ?? '');
     const kind = String(constraint.kind ?? '');
@@ -217,16 +242,38 @@ export function validateExecutionConstraintRegistry(value: unknown) {
     }
     if (ids.has(id)) issueCodes.push('execution_constraint_identity_duplicate');
     ids.add(id);
-    const mustRefs = Array.isArray(constraint.applicableMustRefs)
-      ? constraint.applicableMustRefs.filter((ref): ref is string => typeof ref === 'string') : [];
-    const atomRefs = Array.isArray(constraint.applicableAtomRefs)
-      ? constraint.applicableAtomRefs.filter((ref): ref is string => typeof ref === 'string') : [];
-    const premiseRefs = Array.isArray(constraint.premiseRefs)
-      ? constraint.premiseRefs.filter((ref): ref is string => typeof ref === 'string') : [];
-    referenceCount += mustRefs.length + atomRefs.length + premiseRefs.length;
-    if ((constraint.scope as Record<string, unknown> | undefined)?.kind !== 'global') {
-      nonGlobalConstraints.push(constraint);
-      mustRefs.forEach((ref) => nonGlobalObligationUniverse.add(ref));
+    const mustRefs = stringRefs(constraint.applicableMustRefs);
+    const scope = constraint.scope && typeof constraint.scope === 'object' && !Array.isArray(constraint.scope)
+      ? constraint.scope as Record<string, unknown>
+      : {};
+    const typedConstraint = constraint.authorityKind === 'source_declared' ||
+      constraint.authorityKind === 'derived';
+    if (typedConstraint) {
+      const sourceDeclarationRefs = stringRefs(constraint.sourceDeclarationRefs);
+      const premiseRefs = new Set(stringRefs(constraint.premiseRefs));
+      if (sourceDeclarationRefs.length === 0 ||
+        sourceDeclarationRefs.some((ref) => !premiseRefs.has(ref))) {
+        issueCodes.push('execution_constraint_source_declaration_missing');
+      }
+      const applicableSourceRefs = stringRefs(constraint.applicableSourceRefs);
+      const sourceRefSet = new Set(applicableSourceRefs);
+      if (mustRefs.some((ref) => !sourceRefSet.has(ref))) {
+        issueCodes.push('execution_constraint_applicability_ref_invalid');
+      }
+      if (constraint.coverageRole === 'action_trace') {
+        const expectedAtomRefs = applicableSourceRefs.map((ref) => `${ref}-A1`).sort();
+        if (stableStringify(sortedUnique(stringRefs(constraint.applicableAtomRefs))) !==
+          stableStringify(expectedAtomRefs)) {
+          issueCodes.push('execution_constraint_applicability_ref_invalid');
+        }
+      }
+      if (typeof scope.kind !== 'string' || scope.kind.length === 0 || !hasScopeOwner(scope)) {
+        issueCodes.push('execution_constraint_scope_owner_missing');
+      }
+    }
+    if (scope.kind === 'global' &&
+      (typeof scope.authorityRef !== 'string' || scope.authorityRef.length === 0)) {
+      issueCodes.push('execution_constraint_global_authority_missing');
     }
     if ('observedEvidenceRefs' in constraint) {
       issueCodes.push('execution_constraint_observed_evidence_forbidden');
@@ -242,13 +289,6 @@ export function validateExecutionConstraintRegistry(value: unknown) {
       issueCodes.push('execution_constraint_proven_derivation_missing');
     }
   }
-  const edgeBudget = Math.max(100_000, constraints.length * 128);
-  if (referenceCount > edgeBudget) issueCodes.push('execution_constraint_relation_edge_budget_exceeded');
-  if (nonGlobalObligationUniverse.size > 0 && nonGlobalConstraints.some((constraint) => {
-    const refs = Array.isArray(constraint.applicableMustRefs)
-      ? constraint.applicableMustRefs.filter((ref): ref is string => typeof ref === 'string') : [];
-    return refs.length >= 128 && refs.length * 2 > nonGlobalObligationUniverse.size;
-  })) issueCodes.push('execution_constraint_non_global_fanout_excessive');
   const expected = createExecutionConstraintRegistry(
     constraints as unknown as RequirementsExecutionConstraint[]
   ).executionConstraintRegistryHash;

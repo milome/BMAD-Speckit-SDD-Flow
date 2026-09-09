@@ -10,8 +10,8 @@ const { hashControlPlaneValue } = require('./canonical-hash.ts');
 const { verifyIntentAuthorityEnvelope } = require('./intent-authority.ts');
 const { verifyOrderedSourceSnapshotSet } = require('./source-snapshot.ts');
 const { verifySourceCompositionPolicy } = require('./source-composition-policy.ts');
-const { compileSpecSpanRegistry, resolveSpecSpan } = require('./spec-span-registry.ts');
-const { extractSourceObligations } = require('../source-obligation-extractor.ts');
+const { compileSpecSpanRegistry, resolveSpecSpans } = require('./spec-span-registry.ts');
+const { extractGoalContractSourceModel } = require('../source-plan/source-model.ts');
 
 export type GoalContractCanonicalIntentCompilerModule = never;
 
@@ -285,6 +285,19 @@ function sourceBackedSemanticFields(obligation, classification) {
       executionRole: obligation.executionRole, required: obligation.required }) };
 }
 
+const SNAPSHOT_MODEL_CACHE_LIMIT = 4;
+const snapshotModelCache = new Map<string, ReturnType<typeof extractGoalContractSourceModel>>();
+
+function snapshotModelCacheKey(snapshot) {
+  return [
+    snapshot.sourceSnapshotHash,
+    snapshot.sourceArtifactId,
+    snapshot.sourceRole,
+    snapshot.namespace,
+    snapshot.sourceOrder,
+  ].join(':');
+}
+
 function extractSnapshotModel(snapshot) {
   const extractorSnapshot =
     snapshot.sourceOrder === 0
@@ -293,9 +306,23 @@ function extractSnapshotModel(snapshot) {
           ...snapshot,
           sourceOrder: 0,
         };
-  return extractSourceObligations({
+  const cacheKey = snapshotModelCacheKey(extractorSnapshot);
+  const cached = snapshotModelCache.get(cacheKey);
+  if (cached) {
+    snapshotModelCache.delete(cacheKey);
+    snapshotModelCache.set(cacheKey, cached);
+    return cached;
+  }
+  const extracted = extractGoalContractSourceModel({
     snapshot: extractorSnapshot,
   });
+  snapshotModelCache.set(cacheKey, extracted);
+  while (snapshotModelCache.size > SNAPSHOT_MODEL_CACHE_LIMIT) {
+    const oldestKey = snapshotModelCache.keys().next().value;
+    if (typeof oldestKey !== 'string') break;
+    snapshotModelCache.delete(oldestKey);
+  }
+  return extracted;
 }
 
 function extractSnapshotObligations(snapshot) {
@@ -813,6 +840,7 @@ function verifyCanonicalIntentBundle(bundle: CanonicalIntentBundleShape) {
     throw failure('canonical_intent_semantic_hash_mismatch');
   }
   const spanIds = new Set(bundle.specSpanRegistry.specSpans.map(({ specSpanId }) => specSpanId));
+  const referencedSpanIds = [];
   for (const record of bundle.canonicalIntentIR) {
     for (const specSpanId of record.specSpanRefs) {
       if (!spanIds.has(specSpanId)) {
@@ -820,12 +848,13 @@ function verifyCanonicalIntentBundle(bundle: CanonicalIntentBundleShape) {
           sourceObligationId: record.intentRecordId,
         });
       }
-      resolveSpecSpan({
-        registry: bundle.specSpanRegistry,
-        specSpanId,
-      });
+      referencedSpanIds.push(specSpanId);
     }
   }
+  resolveSpecSpans({
+    registry: bundle.specSpanRegistry,
+    specSpanIds: [...new Set(referencedSpanIds)],
+  });
   const ownedRecords = bundle.canonicalIntentIR.filter(
     ({ ownership }) => ownership === 'owned_obligation'
   );

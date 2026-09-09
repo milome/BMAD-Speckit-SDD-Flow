@@ -1,5 +1,5 @@
 import { compileGoalExecutionClosure } from './goal-execution-closure';
-import { compileGoalExecutionIR, type GoalExecutionObligation } from './goal-execution-ir';
+import { compileGoalExecutionIR, type GoalExecutionObligation, type GoalExecutionSourceLineage } from './goal-execution-ir';
 import { validateGoalContractSchema } from './schema-registry';
 import { declaredConstraintBuilder, preflightStandaloneRelationGraph, type StandaloneGoalConstraintBinding } from './standalone-goal-constraint-bindings';
 import { runStandaloneGoalInternalSemanticGate } from './standalone-goal-internal-semantic-gate';
@@ -22,12 +22,16 @@ export interface StandaloneGoalSemanticInput {
   sourcePlanHash: string;
   sourceSnapshotHash: string;
   sourceObligations: JsonObject[];
+  canonicalRequirementGraph?: JsonObject;
   logicalSpecSpans: JsonObject[];
+  sourceLineage?: GoalExecutionSourceLineage;
   technicalSnapshot: {
     targetPaths: string[];
+    pathRecords?: Array<{ pathId: string; logicalPath: string }>;
     commandRecords: Array<{ commandId: string; invocation: string }>;
     artifactRecords: Array<{ artifactId: string; logicalPath: string }>;
     evidenceRecords: Array<{ evidenceContractId: string; requirement: string }>;
+    stopRecords?: Array<{ stopId: string; trigger: string }>;
     forbiddenPaths: string[];
     isolationMode: string;
     constraintBindings?: StandaloneGoalConstraintBinding[];
@@ -100,9 +104,19 @@ function semanticPayload(input: StandaloneGoalSemanticInput) {
     ...(typed ? { dependencies: dependenciesFor(obligation.obligationId) } : {}),
   }));
   const technical = input.technicalSnapshot;
+  const pathRecords = technical.pathRecords
+    ? [...technical.pathRecords].sort((left, right) => left.pathId.localeCompare(right.pathId))
+    : sortedUnique(technical.targetPaths).map((logicalPath, index) => ({
+      pathId: `PATH-standalone-${index + 1}`,
+      logicalPath,
+    }));
+  const declaredPaths = sortedUnique(pathRecords.map((record) => record.logicalPath));
   if (
-    (atoms.length > 0 && technical.targetPaths.length === 0) ||
+    (atoms.length > 0 && pathRecords.length === 0) ||
     (atoms.length > 0 && technical.commandRecords.length === 0) ||
+    pathRecords.some((record) => !record.pathId || !record.logicalPath) ||
+    new Set(pathRecords.map((record) => record.pathId)).size !== pathRecords.length ||
+    JSON.stringify(declaredPaths) !== JSON.stringify(sortedUnique(technical.targetPaths)) ||
     !technical.isolationMode
   ) {
     throw new Error('standalone_goal_successor_required:technical_snapshot');
@@ -110,8 +124,8 @@ function semanticPayload(input: StandaloneGoalSemanticInput) {
   const bindings = declaredConstraintBuilder(input, obligations);
   const base = bindings.make;
   const executionConstraints = [
-    ...sortedUnique(technical.targetPaths).map((targetPath, index) =>
-      base(`PATH-standalone-${index + 1}`, 'PATH', targetPath)
+    ...pathRecords.map((record) =>
+      base(record.pathId, 'PATH', record.logicalPath)
     ),
     ...[...technical.commandRecords]
       .sort((left, right) => left.commandId.localeCompare(right.commandId))
@@ -125,16 +139,17 @@ function semanticPayload(input: StandaloneGoalSemanticInput) {
     ...sortedUnique(technical.forbiddenPaths).map((forbiddenPath, index) =>
       base(`STOP-standalone-${index + 1}`, 'STOP', forbiddenPath)
     ),
+    ...[...(technical.stopRecords ?? [])]
+      .sort((left, right) => left.stopId.localeCompare(right.stopId))
+      .map((record) => base(record.stopId, 'STOP', record.trigger)),
   ];
   bindings.finish();
-  const pathConstraints = new Map(executionConstraints.filter((row) => row.kind === 'PATH')
-    .map((row) => [row.canonicalValue, row]));
-  const ownership = sortedUnique(technical.targetPaths).map((targetPath) => ({
-    targetPath,
+  const ownership = executionConstraints.filter((row) => row.kind === 'PATH').map((constraint) => ({
+    targetPath: constraint.canonicalValue,
     owner: 'standalone_goal_executor',
-    basisRefs: [pathConstraints.get(targetPath)!.constraintId],
-    ...(typed ? { obligationRefs: pathConstraints.get(targetPath)!.applicableMustRefs,
-      atomRefs: pathConstraints.get(targetPath)!.applicableAtomRefs, sourceRefs: pathConstraints.get(targetPath)!.sourceRefs } : {}),
+    basisRefs: [constraint.constraintId],
+    ...(typed ? { obligationRefs: constraint.applicableMustRefs,
+      atomRefs: constraint.applicableAtomRefs, sourceRefs: constraint.sourceRefs } : {}),
   }));
   const architecture = {
     isolation: { mode: technical.isolationMode, forbiddenPaths: typed
@@ -209,7 +224,11 @@ export function compileStandaloneGoalExecution(input: StandaloneGoalSemanticInpu
     },
     obligations: payload.obligations,
     atoms: payload.atoms,
+    ...(input.canonicalRequirementGraph
+      ? { canonicalRequirementGraph: input.canonicalRequirementGraph }
+      : {}),
     logicalSpecSpans: payload.logicalSpecSpans,
+    sourceLineage: input.sourceLineage,
     executionConstraints: payload.executionConstraints,
     architecture: payload.architecture,
   });

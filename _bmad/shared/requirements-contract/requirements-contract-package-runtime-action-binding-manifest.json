@@ -740,7 +740,7 @@
         {
           "role": "codex-cli-judge-adapter",
           "packagePath": "dist/main-agent/source-authority/scripts/requirements-contract-codex-cli-judge-adapter.js",
-          "hash": "sha256:af10c2622b503b9d3a2e40cfe8ea898418a18b2f38d22dcb347aeb5b40fd477b"
+          "hash": "sha256:cbb0250c54db61458b6313ba24291774d6a4665dd3eddf39baf81109c0dfc3db"
         }
       ],
       "routingOnly": false
@@ -964,7 +964,7 @@
         {
           "role": "installed-generator",
           "packagePath": "_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js",
-          "hash": "sha256:ca6a2e3f10e3b000c1ddc3e870f43530916c708ef42af05d6f5f1458ada3f35a"
+          "hash": "sha256:4d20edfd78de61bb626d7c49b7de3eb964683c52e3f1ffd4497dbfc82c2537db"
         },
         {
           "role": "installed-stage-registry",
@@ -974,7 +974,7 @@
         {
           "role": "installed-runner",
           "packagePath": "dist/main-agent/source-authority/scripts/main-agent-compiled-prompt-runner.js",
-          "hash": "sha256:d495067e2e04607c216abdc274a4e1e5b50fe793f1ae96442c49079af13d3bba"
+          "hash": "sha256:25dc9d80a648c577dc2bd356c3daf5743ccb755e3aacf93ca4a447f3fe1093e7"
         }
       ],
       "routingOnly": false
@@ -1260,7 +1260,7 @@
         {
           "role": "codex-cli-judge-adapter",
           "packagePath": "dist/main-agent/source-authority/scripts/requirements-contract-codex-cli-judge-adapter.js",
-          "hash": "sha256:af10c2622b503b9d3a2e40cfe8ea898418a18b2f38d22dcb347aeb5b40fd477b"
+          "hash": "sha256:cbb0250c54db61458b6313ba24291774d6a4665dd3eddf39baf81109c0dfc3db"
         },
         {
           "role": "judge-provider-registry-projection",

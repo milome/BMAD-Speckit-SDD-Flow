@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { compileStandaloneGoalSemanticIR, type StandaloneGoalSemanticInput } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/standalone-goal-semantic-ir';
+import {
+  compileGoalExecutionIR,
+  type GoalExecutionCompilerInput,
+} from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-execution-ir';
 
 function input(): StandaloneGoalSemanticInput {
   const sourceObligations = ['alpha', 'beta'].map((name) => ({
@@ -31,6 +35,85 @@ function input(): StandaloneGoalSemanticInput {
   };
 }
 
+function sharedCompilerInput(count: number, dense = false): GoalExecutionCompilerInput {
+  const ids = Array.from({ length: count }, (_, index) => String(index).padStart(4, '0'));
+  const obligations = ids.map((id) => ({
+    obligationId: `MUST-${id}`,
+    kind: 'MUST' as const,
+    text: `Implement ${id}.`,
+    oracle: `Output ${id} matches its oracle.`,
+    sourceRefs: [`SPAN-${id}`],
+    atomRefs: [`MUST-${id}-A1`],
+    evidenceClaimRefs: [],
+  }));
+  const allObligationRefs = obligations.map((row) => row.obligationId);
+  const allAtomRefs = obligations.flatMap((row) => row.atomRefs);
+  const executionConstraints = obligations.flatMap((row, index) => [
+    {
+      constraintId: `PATH-${index + 1}`,
+      kind: 'PATH',
+      canonicalValue: `src/${ids[index]}.ts`,
+      applicableMustRefs: dense ? allObligationRefs : [row.obligationId],
+      applicableAtomRefs: dense ? allAtomRefs : row.atomRefs,
+      sourceRefs: row.sourceRefs,
+      premiseRefs: row.sourceRefs,
+    },
+    {
+      constraintId: `CMD-${index + 1}`,
+      kind: 'CMD',
+      canonicalValue: `npm test -- ${ids[index]}`,
+      applicableMustRefs: dense ? allObligationRefs : [row.obligationId],
+      applicableAtomRefs: dense ? allAtomRefs : row.atomRefs,
+      sourceRefs: row.sourceRefs,
+      premiseRefs: row.sourceRefs,
+    },
+    {
+      constraintId: `ART-${index + 1}`,
+      kind: 'ART',
+      canonicalValue: `reports/${ids[index]}.json`,
+      applicableMustRefs: dense ? allObligationRefs : [row.obligationId],
+      applicableAtomRefs: dense ? allAtomRefs : row.atomRefs,
+      sourceRefs: row.sourceRefs,
+      premiseRefs: row.sourceRefs,
+    },
+    {
+      constraintId: `EVD-${index + 1}`,
+      kind: 'EVDREQ',
+      canonicalValue: `Output ${ids[index]} matches its oracle.`,
+      applicableMustRefs: dense ? allObligationRefs : [row.obligationId],
+      applicableAtomRefs: dense ? allAtomRefs : row.atomRefs,
+      sourceRefs: row.sourceRefs,
+      premiseRefs: row.sourceRefs,
+    },
+  ]);
+  return {
+    profile: 'standalone',
+    standaloneLineage: { sourcePlanHash: `sha256:${'1'.repeat(64)}`, internalSemanticGateHash: `sha256:${'2'.repeat(64)}` },
+    semanticSource: { kind: 'legacy_source' },
+    technicalAuthority: { internalSemanticGateHash: `sha256:${'2'.repeat(64)}` },
+    obligations,
+    atoms: obligations.map((row) => ({
+      id: row.atomRefs[0],
+      requirementRef: row.obligationId,
+      action: row.text,
+      oracle: row.oracle,
+    })),
+    logicalSpecSpans: obligations.map((row) => ({
+      specSpanId: row.sourceRefs[0],
+      boundObligationIds: [row.obligationId],
+    })),
+    executionConstraints,
+    architecture: {
+      isolation: { mode: 'consumer_worktree' },
+      ownership: obligations.map((row, index) => ({
+        targetPath: `src/${ids[index]}.ts`,
+        owner: row.obligationId,
+        basisRefs: row.sourceRefs,
+      })),
+    },
+  };
+}
+
 describe('standalone sparse declared bindings', () => {
   it('retains exact applicability and provenance without pretending declarations are execution proof', () => {
     const ir = compileStandaloneGoalSemanticIR(input());
@@ -52,7 +135,11 @@ describe('standalone sparse declared bindings', () => {
     'rejects dangling %s', (field) => {
       const value = input();
       value.technicalSnapshot.constraintBindings![0][field] = ['UNKNOWN'];
-      expect(() => compileStandaloneGoalSemanticIR(value)).toThrow('standalone_goal_constraint_binding_invalid');
+      expect(() => compileStandaloneGoalSemanticIR(value)).toThrow(
+        field === 'applicableMustRefs' || field === 'applicableAtomRefs'
+          ? 'standalone_goal_constraint_applicability_invalid'
+          : 'standalone_goal_constraint_binding_invalid'
+      );
     });
 
   it('rejects duplicate and unused bindings', () => {
@@ -142,6 +229,58 @@ describe('standalone sparse declared bindings', () => {
       constraintId: `PATH-standalone-${index + 1}`,
       sourceRefs: [`SPAN-${id}`], applicableMustRefs: all, premiseRefs: [`SPAN-${id}`],
     }));
-    expect(() => compileStandaloneGoalSemanticIR(value)).toThrow('standalone_relation_graph_edge_budget_exceeded');
+    expect(() => compileStandaloneGoalSemanticIR(value)).toThrow(
+      'standalone_goal_constraint_applicability_invalid'
+    );
+  });
+
+  it('keeps shared GoalExecutionIR fixed-density families linear and allows sparse IR above 1 MiB', () => {
+    const measurements = [25, 50, 100].map((count) => {
+      const value = sharedCompilerInput(count);
+      const ir = compileGoalExecutionIR(value);
+      const referenceEdges = value.executionConstraints.reduce(
+        (total, row) => total + ['applicableMustRefs', 'applicableAtomRefs', 'sourceRefs', 'premiseRefs']
+          .reduce((subtotal, field) => subtotal + ((row[field] as string[] | undefined)?.length ?? 0), 0),
+        0
+      );
+      expect(value.executionConstraints.every((row) =>
+        (row.applicableMustRefs as string[]).length === 1 &&
+        (row.applicableAtomRefs as string[]).length === 1
+      )).toBe(true);
+      return {
+        bytes: Buffer.byteLength(JSON.stringify(ir), 'utf8'),
+        referenceEdges,
+      };
+    });
+    expect(measurements.map((row) => row.referenceEdges)).toEqual([400, 800, 1600]);
+    for (let index = 1; index < measurements.length; index += 1) {
+      expect(measurements[index].bytes / measurements[index - 1].bytes).toBeLessThan(2.2);
+    }
+
+    const large = sharedCompilerInput(1);
+    large.obligations[0].text = `Implement a legitimate sparse requirement with ${'detail '.repeat(180000)}.`;
+    large.atoms[0].action = large.obligations[0].text;
+    const largeIr = compileGoalExecutionIR(large);
+    expect(Buffer.byteLength(JSON.stringify(largeIr), 'utf8')).toBeGreaterThan(1_048_576);
+  });
+
+  it('rejects a pathological full relation graph at the shared GoalExecutionIR boundary', () => {
+    expect(() => compileGoalExecutionIR(sharedCompilerInput(200, true))).toThrow(
+      'goal_execution_constraint_applicability_invalid'
+    );
+
+    const explicitlyGlobal = sharedCompilerInput(200, true);
+    for (const constraint of explicitlyGlobal.executionConstraints) constraint.scope = 'global';
+    expect(() => compileGoalExecutionIR(explicitlyGlobal)).not.toThrow();
+
+    const ungroundedGlobal = sharedCompilerInput(2, true);
+    for (const constraint of ungroundedGlobal.executionConstraints) {
+      constraint.scope = 'global';
+      constraint.sourceRefs = ['SPAN-UNBOUND'];
+      constraint.premiseRefs = ['SPAN-UNBOUND'];
+    }
+    expect(() => compileGoalExecutionIR(ungroundedGlobal)).toThrow(
+      'goal_execution_constraint_semantic_owner_missing'
+    );
   });
 });

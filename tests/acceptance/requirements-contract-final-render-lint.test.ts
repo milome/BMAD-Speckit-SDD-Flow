@@ -238,14 +238,18 @@ describe('Requirements final render lint', () => {
     );
     expect(pages.html).toContain('系统 MUST NOT 把未验证的退款批次标记为完成。');
     expect(pages.html.match(/data-requirement-classification/gu)).toHaveLength(3);
-    expect(pages.html).toContain('<strong>Requirement kind:</strong> negative');
-    expect(pages.html).toContain('<strong>Polarity:</strong> negative');
+    expect(pages.html).toContain('<title>需求合同</title>');
+    expect(pages.html).toContain('<h1>需求合同</h1>');
+    expect(pages.html).toContain('<section id="requirements"><h2>需求</h2>');
+    expect(pages.html).toContain('<strong>需求类型:</strong> negative');
+    expect(pages.html).toContain('<strong>极性:</strong> negative');
     expect(pages.html).toContain(
-      '<strong>Negative assertion:</strong> 未验证批次必须保持非完成状态。'
+      '<strong>负向断言:</strong> 未验证批次必须保持非完成状态。'
     );
     expect(pages.html).toContain(
-      '<strong>Blocks completion when:</strong> 未验证批次被标记为完成。'
+      '<strong>阻断完成条件:</strong> 未验证批次被标记为完成。'
     );
+    expect(pages.html).toContain('<section id="confirmation"><h2>确认</h2>');
     expect(pages.html.match(/未验证批次必须保持非完成状态。/gu)).toHaveLength(1);
     expect(pages.html.match(/未验证批次被标记为完成。/gu)).toHaveLength(1);
     expect(JSON.stringify(pages)).not.toMatch(

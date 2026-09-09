@@ -28,7 +28,7 @@ describe('Goal active authority publication', () => {
       produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
       const input = {
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot: path.join(fixture.root, 'goal-run'),
       };
       const compile = vi.fn(compileGoalExecutionIR);
@@ -55,7 +55,7 @@ describe('Goal active authority publication', () => {
       produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
       const input = {
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot: path.join(fixture.root, 'goal-run'),
       };
       const compile = vi.fn(compileGoalExecutionIR);

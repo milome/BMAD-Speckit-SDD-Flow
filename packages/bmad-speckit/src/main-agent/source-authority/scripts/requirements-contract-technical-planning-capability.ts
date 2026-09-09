@@ -25,6 +25,8 @@ export interface RequirementsTechnicalExecutionEntry {
   scope?: Record<string, unknown>;
   modality?: 'required' | 'suggested' | 'prohibited' | 'template' | 'context';
   sourceDeclarationRefs?: string[];
+  coverageRole?: 'action_trace' | 'non_action_declaration';
+  declarationRole?: string;
 }
 
 export interface RequirementsTechnicalPlanningCapabilityInput {
@@ -109,7 +111,8 @@ function canonicalEntries(
       refs[key] = [...new Set(entry[key])].sort();
     }
     if (Object.keys(entry).some((key) => !['kind', 'id', 'value', 'authorityKind',
-      'applicableSourceRefs', 'premiseRefs', 'derivationReceiptRefs', 'conditions', 'scope', 'modality', 'sourceDeclarationRefs'].includes(key))) {
+      'applicableSourceRefs', 'premiseRefs', 'derivationReceiptRefs', 'conditions', 'scope', 'modality', 'sourceDeclarationRefs',
+      'coverageRole', 'declarationRole'].includes(key))) {
       throw new Error('requirements_technical_typed_entry_field_unknown');
     }
     if (entry.modality !== undefined && !['required', 'suggested', 'prohibited', 'template', 'context'].includes(entry.modality)) {
@@ -120,10 +123,20 @@ function canonicalEntries(
       new Set(entry.sourceDeclarationRefs).size !== entry.sourceDeclarationRefs.length)) {
       throw new Error('requirements_technical_typed_entry_declaration_refs_invalid');
     }
+    if (entry.coverageRole !== undefined &&
+      !['action_trace', 'non_action_declaration'].includes(entry.coverageRole)) {
+      throw new Error('requirements_technical_typed_entry_coverage_role_invalid');
+    }
+    if (entry.declarationRole !== undefined &&
+      (typeof entry.declarationRole !== 'string' || entry.declarationRole.length === 0)) {
+      throw new Error('requirements_technical_typed_entry_declaration_role_invalid');
+    }
     return { ...canonical, authorityKind: entry.authorityKind, ...refs,
       conditions: structuredClone(entry.conditions), scope: structuredClone(entry.scope),
       ...(entry.modality === undefined ? {} : { modality: entry.modality }),
-      ...(entry.sourceDeclarationRefs === undefined ? {} : { sourceDeclarationRefs: [...entry.sourceDeclarationRefs].sort() }) };
+      ...(entry.sourceDeclarationRefs === undefined ? {} : { sourceDeclarationRefs: [...entry.sourceDeclarationRefs].sort() }),
+      ...(entry.coverageRole === undefined ? {} : { coverageRole: entry.coverageRole }),
+      ...(entry.declarationRole === undefined ? {} : { declarationRole: entry.declarationRole }) };
   });
   normalizedEntries.sort(
     (left, right) => left.kind.localeCompare(right.kind) || left.id.localeCompare(right.id)
@@ -263,17 +276,22 @@ export function resolveRequirementsProductionTechnicalPlanningCapability(input: 
   });
 }
 
-export function resolveTypedTechnicalDeclarations(authority: RequirementsTypedSourceAuthority): RequirementsTechnicalExecutionEntry[] {
+export function resolveTypedTechnicalDeclarations(
+  authority: RequirementsTypedSourceAuthority,
+  options: { commandSemantics?: 'normalized' | 'legacy_v2' } = {}
+): RequirementsTechnicalExecutionEntry[] {
   const graph = resolveTypedSourceAuthority(authority);
+  const commandSemantics = options.commandSemantics ?? 'normalized';
   const actions = new Set(graph.sourceNodes.filter((node) => node.executionRole === 'action').map((node) => node.sourceRootId));
   const entries: RequirementsTechnicalExecutionEntry[] = [];
   const add = (kind: RequirementsTechnicalExecutionKind, key: string, value: string, owners: string[], declarationRefs: string[],
-    scope: Record<string, unknown>, conditions: unknown[] = [], modality: RequirementsTechnicalExecutionEntry['modality'] = 'required') => {
+    scope: Record<string, unknown>, conditions: unknown[] = [], modality: RequirementsTechnicalExecutionEntry['modality'] = 'required',
+    declaration?: Pick<RequirementsTechnicalExecutionEntry, 'coverageRole' | 'declarationRole'>) => {
     if (!value.trim()) throw new Error('requirements_technical_source_declaration_value_missing');
     entries.push({ kind, id: `${kind}-${sha256Stable({ key, value }).slice(7, 31)}`, value,
       authorityKind: 'source_declared', applicableSourceRefs: [...new Set(owners)].sort(),
       premiseRefs: [...declarationRefs].sort(), derivationReceiptRefs: [], conditions, scope, modality,
-      sourceDeclarationRefs: [...declarationRefs].sort() });
+      sourceDeclarationRefs: [...declarationRefs].sort(), ...declaration });
   };
   const commandOwners = new Map<string, Set<string>>();
   const includedCommands = new Map<string, string[]>();
@@ -309,24 +327,79 @@ export function resolveTypedTechnicalDeclarations(authority: RequirementsTypedSo
       for (const command of Array.isArray(scenario.commandIds) ? scenario.commandIds : []) bindCommand(String(command), String(owner));
     }
   }
-  const runnableRoles = new Set(['global_verification_command', 'green_command', 'red_command', 'regression_command', 'verification_command']);
+  const legacyRunnableRoles = new Set([
+    'global_verification_command',
+    'green_command',
+    'red_command',
+    'regression_command',
+    'verification_command',
+  ]);
   const blocks = new Map(graph.sourceBlocks.map((block) => [String(block.id), block]));
+  const nodeById = new Map(graph.sourceNodes.map((node) => [node.sourceRootId, node]));
   for (const command of graph.commandDeclarations) {
     const id = String(command.id);
-    const role = String(command.role);
-    if (!runnableRoles.has(role)) continue;
+    if (commandSemantics === 'legacy_v2') {
+      const role = String(command.role);
+      if (!legacyRunnableRoles.has(role)) continue;
+      const owners = [...(commandOwners.get(id) ?? [])];
+      if (actions.has(String(command.owner))) owners.push(String(command.owner));
+      const block = blocks.get(String(command.blockId));
+      const blockScope = block?.scope as Record<string, unknown> | undefined;
+      const scopeRelations = blockScope ? graph.sourceRelations.filter((relation) =>
+        ['dirty_worktree_protection', 'quality_gate', 'real_verification_requirements'].includes(relation.kind) &&
+        relation.to === blockScope.owner && actions.has(relation.from)) : [];
+      owners.push(...scopeRelations.map((relation) => relation.from));
+      add('CMD', id, String(command.expression ?? ''), owners,
+        [id, ...scopeRelations.map((relation) => relation.relationId)],
+        { kind: 'source_command', owner: command.owner,
+          ...(scopeRelations.length ? { inheritedScope: blockScope } : {}) },
+        [{ role, worktree: command.worktree ?? null, expectedExit: command.expectedExit ?? null,
+          declaredContext: command.declaredContext ?? '', authorization: command.authorization ?? null }]);
+      continue;
+    }
+    const sourceNode = nodeById.get(id);
+    const projection = sourceNode?.typedReferences && typeof sourceNode.typedReferences === 'object'
+      ? (sourceNode.typedReferences as Record<string, unknown>).canonicalProjection
+      : null;
+    const canonical = projection && typeof projection === 'object' && !Array.isArray(projection)
+      ? projection as Record<string, unknown>
+      : {};
+    const attributes = canonical.attributes && typeof canonical.attributes === 'object' && !Array.isArray(canonical.attributes)
+      ? canonical.attributes as Record<string, unknown>
+      : {};
+    const declarationClass = String(attributes.commandDeclarationClass ?? '');
+    if (['source_command_set', 'conditional_selector'].includes(declarationClass)) continue;
+    const role = String(attributes.commandRole ?? command.role ?? 'verification_command');
+    const executionMode = String(attributes.executionMode ?? 'executable');
     const owners = [...(commandOwners.get(id) ?? [])];
     if (actions.has(String(command.owner))) owners.push(String(command.owner));
+    const global = canonical.scope === 'global' || sourceNode?.scope?.kind === 'global';
+    if (global) owners.push(...actions);
     const block = blocks.get(String(command.blockId));
     const blockScope = block?.scope as Record<string, unknown> | undefined;
     const scopeRelations = blockScope ? graph.sourceRelations.filter((relation) =>
       ['dirty_worktree_protection', 'quality_gate', 'real_verification_requirements'].includes(relation.kind) &&
       relation.to === blockScope.owner && actions.has(relation.from)) : [];
     owners.push(...scopeRelations.map((relation) => relation.from));
-    add('CMD', id, String(command.expression ?? ''), owners, [id, ...scopeRelations.map((relation) => relation.relationId)],
-      { kind: 'source_command', owner: command.owner, ...(scopeRelations.length ? { inheritedScope: blockScope } : {}) },
+    const actionOwners = [...new Set(owners)].filter((owner) => actions.has(owner)).sort();
+    const coverageRole = executionMode !== 'template' && executionMode !== 'prohibited' && actionOwners.length > 0
+      ? 'action_trace' as const
+      : 'non_action_declaration' as const;
+    const modality = executionMode === 'template'
+      ? 'template' as const
+      : executionMode === 'prohibited'
+        ? 'prohibited' as const
+        : 'required' as const;
+    add('CMD', id, String(command.expression ?? ''), actionOwners, [id, ...scopeRelations.map((relation) => relation.relationId)],
+      global
+        ? { kind: 'global_source_command', owner: command.owner }
+        : { kind: 'source_command', owner: command.owner, ...(scopeRelations.length ? { inheritedScope: blockScope } : {}) },
       [{ role, worktree: command.worktree ?? null, expectedExit: command.expectedExit ?? null,
-        declaredContext: command.declaredContext ?? '', authorization: command.authorization ?? null }]);
+        declaredContext: command.declaredContext ?? '', authorization: command.authorization ?? null }],
+      modality,
+      { coverageRole, declarationRole: coverageRole === 'action_trace'
+        ? global ? 'global_verification_command' : 'verification_command'
+        : role });
   }
   for (const relation of graph.sourceRelations.filter((relation) => ['work_evidence', 'scenario_evidence'].includes(relation.kind))) {
     const owners = actions.has(relation.from) ? [relation.from]

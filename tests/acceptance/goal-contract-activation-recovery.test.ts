@@ -240,7 +240,7 @@ describe('goal-contract activation recovery', () => {
       produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
       const compiled = compileRequirementsBackedGoal({
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot: path.join(fixture.root, 'goal-run'),
       });
       const first = activate(fixture.root, compiled.activeAuthorityRef.path);
@@ -276,7 +276,7 @@ describe('goal-contract activation recovery', () => {
       produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
       const compiled = compileRequirementsBackedGoal({
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot: path.join(fixture.root, 'goal-run'),
       });
       const pointerPath = path.join(fixture.root, 'goal-run', 'goal', 'runtime', 'active-run.json');
@@ -312,7 +312,7 @@ describe('goal-contract activation recovery', () => {
       produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
       const compiled = compileRequirementsBackedGoal({
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot: path.join(fixture.root, 'goal-run'),
       });
       const pointerPath = path.join(fixture.root, 'goal-run', 'goal', 'runtime', 'active-run.json');
@@ -347,7 +347,7 @@ describe('goal-contract activation recovery', () => {
       produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
       const compiled = compileRequirementsBackedGoal({
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot: path.join(fixture.root, 'goal-run'),
       });
       const pointerPath = path.join(fixture.root, 'goal-run', 'goal', 'runtime', 'active-run.json');
@@ -387,7 +387,7 @@ describe('goal-contract activation recovery', () => {
       produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
       const compiled = compileRequirementsBackedGoal({
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot: path.join(fixture.root, 'goal-run'),
       });
       const pointerPath = path.join(fixture.root, 'goal-run', 'goal', 'runtime', 'active-run.json');
@@ -425,7 +425,7 @@ describe('goal-contract activation recovery', () => {
       produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
       const compiled = compileRequirementsBackedGoal({
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot: path.join(fixture.root, 'goal-run'),
       });
       const pointerPath = path.join(fixture.root, 'goal-run', 'goal', 'runtime', 'active-run.json');
@@ -461,7 +461,7 @@ describe('goal-contract activation recovery', () => {
       produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
       const compiled = compileRequirementsBackedGoal({
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot: path.join(fixture.root, 'goal-run'),
       });
       const pointerPath = path.join(fixture.root, 'goal-run', 'goal', 'runtime', 'active-run.json');
@@ -506,7 +506,7 @@ describe('goal-contract activation recovery', () => {
       produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
       const compiled = compileRequirementsBackedGoal({
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot: path.join(fixture.root, 'goal-run'),
       });
       const first = activate(fixture.root, compiled.activeAuthorityRef.path);
@@ -538,7 +538,7 @@ describe('goal-contract activation recovery', () => {
       produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
       const compiled = compileRequirementsBackedGoal({
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot: path.join(fixture.root, 'goal-run'),
       });
       const first = activate(fixture.root, compiled.activeAuthorityRef.path);
@@ -596,7 +596,7 @@ describe('goal-contract activation recovery', () => {
         produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
         const compiled = compileRequirementsBackedGoal({
           projectRoot: fixture.root,
-          requirementRecordPath: fixture.runtimeRecordPath,
+          requirementRecordPath: fixture.authorityRecordPath,
           outRoot: path.join(fixture.root, 'goal-run'),
         });
         const first = activate(fixture.root, compiled.activeAuthorityRef.path);
@@ -626,7 +626,7 @@ describe('goal-contract activation recovery', () => {
       produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
       const compiled = compileRequirementsBackedGoal({
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot: path.join(fixture.root, 'goal-run'),
       });
       const first = activate(fixture.root, compiled.activeAuthorityRef.path);
@@ -666,7 +666,7 @@ describe('goal-contract activation recovery', () => {
         produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
         const compiled = compileRequirementsBackedGoal({
           projectRoot: fixture.root,
-          requirementRecordPath: fixture.runtimeRecordPath,
+          requirementRecordPath: fixture.authorityRecordPath,
           outRoot: path.join(fixture.root, 'goal-run'),
         });
         const pointerPath = path.join(

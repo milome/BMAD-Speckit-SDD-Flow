@@ -30,7 +30,8 @@ export function deriveRequirementsTypedSourceConfirmationSemantics(authority: Re
   const works = new Map(graph.workDeclarations.map((work) => [String(work.id), work]));
   const actions = graph.sourceNodes.filter((node) => node.executionRole === 'action');
   const declarations = resolveTypedTechnicalDeclarations(authority);
-  const requiredDeclarations = declarations.filter((entry) => entry.kind === 'CMD' && entry.modality === 'required' && entry.applicableSourceRefs!.length > 0);
+  const requiredDeclarations = declarations.filter((entry) => entry.kind === 'CMD' && entry.modality === 'required' &&
+    (entry.coverageRole === 'action_trace' || (entry.coverageRole === undefined && entry.applicableSourceRefs!.length > 0)));
   const commandsFor = (id: string) => requiredDeclarations.filter((entry) => entry.applicableSourceRefs!.includes(id)).map((entry) => entry.id);
   const evidence = actions.flatMap((node) => {
     const work = works.get(node.sourceRootId)!;
@@ -109,6 +110,8 @@ export function createTypedRequirementsSemanticIr(input: CandidateInput): Requir
     premiseRefs: entry.premiseRefs!, derivationReceiptRefs: entry.derivationReceiptRefs!,
     disposition: 'proven' as const, authorityKind: entry.authorityKind!, applicableSourceRefs: entry.applicableSourceRefs!,
     conditions: entry.conditions!, scope: entry.scope!, modality: entry.modality!, sourceDeclarationRefs: entry.sourceDeclarationRefs!,
+    ...(entry.coverageRole ? { coverageRole: entry.coverageRole } : {}),
+    ...(entry.declarationRole ? { declarationRole: entry.declarationRole } : {}),
   }));
   const constraintIds = new Map(input.capability.executionRegistry.entries.map((entry) => [`${entry.kind}:${entry.id}`, entry.id]));
   const atoms = input.cp02Candidate.atoms.map((atom) => ({ id: atom.atomId, action: atom.action, oracle: atom.oracle,

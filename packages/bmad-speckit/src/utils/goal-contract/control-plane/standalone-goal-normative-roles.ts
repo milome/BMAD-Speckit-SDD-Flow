@@ -38,6 +38,12 @@ export function validateTypedObligationSources(obligations: GoalExecutionObligat
   const sourceRefs = new Set(obligations.flatMap((row) => row.sourceRefs));
   const boundSources = (value: unknown) => Array.isArray(value) && value.length > 0 &&
     strings(value).length === value.length && strings(value).every((ref) => sourceRefs.has(ref));
+  const fail = (row: GoalExecutionObligation, reason: string): never => {
+    throw Object.assign(new Error('standalone_goal_normative_source_binding_invalid'), {
+      obligationId: row.obligationId,
+      reason,
+    });
+  };
   for (const row of obligations) {
     if (row.taskExecution !== undefined) {
       const task = object(row.taskExecution);
@@ -45,19 +51,32 @@ export function validateTypedObligationSources(obligations: GoalExecutionObligat
       if (row.executionRole !== 'action' || !['executable_child', 'aggregate_only'].includes(String(task.executionClass)) ||
         !boundSources(task.sourceRefs) || (task.executionClass === 'aggregate_only' && (owned.toLowerCase() !== 'none' ||
           !['post_child_execution', 'final_aggregate'].includes(String(task.aggregateGatePhase)) || !strings(task.aggregateValidationCommands).length))) {
-        throw new Error('standalone_goal_task_execution_invalid');
+        throw Object.assign(new Error('standalone_goal_task_execution_invalid'), {
+          obligationId: row.obligationId,
+          reason: 'task_execution_binding_invalid',
+        });
       }
     }
     const applicability = object(row.applicability);
-    if (!Array.isArray(row.conditions) || !boundSources(applicability.sourceRefs) ||
-      !['global', 'obligations', 'source_scope'].includes(String(applicability.scope)) ||
-      (applicability.scope === 'source_scope' && (!object(applicability.sourceScope).kind ||
+    if (!Array.isArray(row.conditions)) fail(row, 'conditions_invalid');
+    if (!boundSources(applicability.sourceRefs)) fail(row, 'applicability_source_refs_invalid');
+    if (!['global', 'obligations', 'source_scope'].includes(String(applicability.scope))) {
+      fail(row, 'applicability_scope_invalid');
+    }
+    if (applicability.scope === 'source_scope' &&
+      (!object(applicability.sourceScope).kind ||
         !Array.isArray(object(applicability.sourceScope).ownerBlockRefs) ||
-        strings(object(applicability.sourceScope).ownerBlockRefs).some((ref) => !sourceRefs.has(ref)))) ||
-      (applicability.scope === 'obligations' && (!Array.isArray(applicability.obligationRefs) ||
-        !applicability.obligationRefs.length || strings(applicability.obligationRefs).some((ref) => !known.has(ref)))) ||
-      row.conditions.some((value) => { const condition = object(value);
-        return typeof condition.text !== 'string' || !condition.text.trim() || condition.state !== 'unevaluated' || !boundSources(condition.sourceRefs);
-      })) throw new Error('standalone_goal_normative_source_binding_invalid');
+        strings(object(applicability.sourceScope).ownerBlockRefs).some((ref) => !sourceRefs.has(ref)))) {
+      fail(row, 'applicability_source_scope_invalid');
+    }
+    if (applicability.scope === 'obligations' &&
+      (!Array.isArray(applicability.obligationRefs) || !applicability.obligationRefs.length ||
+        strings(applicability.obligationRefs).some((ref) => !known.has(ref)))) {
+      fail(row, 'applicability_obligation_refs_invalid');
+    }
+    if (row.conditions.some((value) => { const condition = object(value);
+      return typeof condition.text !== 'string' || !condition.text.trim() ||
+        condition.state !== 'unevaluated' || !boundSources(condition.sourceRefs);
+    })) fail(row, 'condition_source_refs_invalid');
   }
 }

@@ -37,7 +37,7 @@ const {
     : './source-composition-policy'
 );
 const {
-  resolveSpecSpan,
+  resolveSpecSpans,
 } = require(
   __filename.endsWith('.ts')
     ? './spec-span-registry.ts'
@@ -52,10 +52,10 @@ const {
       ? '../slot-data-builder.ts'
       : '../slot-data-builder'
 );
-const { extractSourceObligations } = require(
+const { extractGoalContractSourceModel } = require(
   __filename.endsWith('.ts')
-    ? '../source-obligation-extractor.ts'
-    : '../source-obligation-extractor'
+    ? '../source-plan/source-model.ts'
+    : '../source-plan/source-model'
 );
 const { validateSourceCoverage } = require(
   __filename.endsWith('.ts') ? '../source-coverage-matrix.ts' : '../source-coverage-matrix'
@@ -348,6 +348,13 @@ function sourceDescriptor(bundle, record) {
 
 function canonicalSourceProjection(canonicalBundle, authorityBundle) {
   const registry = canonicalBundle.specSpanRegistry;
+  const referencedSpanIds = [...new Set(canonicalBundle.canonicalIntentIR.flatMap(
+    (record) => Array.isArray(record.specSpanRefs) ? record.specSpanRefs : []
+  ))];
+  const citationsById = new Map(
+    resolveSpecSpans({ registry, specSpanIds: referencedSpanIds })
+      .map((citation) => [citation.specSpanId, citation])
+  );
   const rows = canonicalBundle.canonicalIntentIR
     .map((record) => {
       if (!Array.isArray(record.specSpanRefs) || record.specSpanRefs.length === 0) {
@@ -355,14 +362,13 @@ function canonicalSourceProjection(canonicalBundle, authorityBundle) {
           intentRecordId: record.intentRecordId,
         });
       }
-      const citations = record.specSpanRefs.map((specSpanId) =>
-        resolveSpecSpan({ registry, specSpanId })
-      );
+      const citations = record.specSpanRefs.map((specSpanId) => citationsById.get(specSpanId));
       const descriptor = sourceDescriptor(authorityBundle, record);
       if (
         !descriptor ||
         citations.some(
           (citation) =>
+            !citation ||
             citation.sourceArtifactId !== record.sourceArtifactId ||
             citation.namespace !== record.namespace
         )
@@ -372,6 +378,11 @@ function canonicalSourceProjection(canonicalBundle, authorityBundle) {
         });
       }
       const firstCitation = citations[0];
+      if (!firstCitation) {
+        throw failure('source_specific_spec_span_missing', {
+          intentRecordId: record.intentRecordId,
+        });
+      }
       const sourceSnapshot = registry.sourceSnapshots.find(
         ({ sourceArtifactId }) =>
           sourceArtifactId === record.sourceArtifactId
@@ -400,7 +411,9 @@ function canonicalSourceProjection(canonicalBundle, authorityBundle) {
     ) => ({
       id: record.executionRole === undefined ? `SRC${String(index + 1).padStart(3, '0')}` : record.sourceRootId,
       kind: record.sourceKind,
-      text: firstCitation.exactText,
+      text: /^(?:REQ|NFR|NEG|OUT|TASK|AC)$/u.test(String(record.sourceKind))
+        ? record.requiredOutcome
+        : firstCitation.exactText,
       summary: record.requiredOutcome,
       headingPath:
         registry.specSpans.find(
@@ -440,7 +453,7 @@ function canonicalSourceProjection(canonicalBundle, authorityBundle) {
       sourceArtifactId === authorityBundle.primarySource.sourceArtifactId
   );
   const sourceClauseCoverageSummaries = registry.sourceSnapshots.map((snapshot) =>
-    extractSourceObligations({ snapshot: { ...snapshot, sourceOrder: 0 } }).sourceClauseCoverageSummary
+    extractGoalContractSourceModel({ snapshot: { ...snapshot, sourceOrder: 0 } }).sourceClauseCoverageSummary
   );
   return {
     sourcePlanPath: primarySnapshot.pathOrSegmentId,

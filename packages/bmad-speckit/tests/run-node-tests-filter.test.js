@@ -6,6 +6,16 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const runnerSource = path.resolve(__dirname, '..', 'scripts', 'run-node-tests.cjs');
+const registerSource = path.resolve(__dirname, 'register-ts-source.cjs');
+const canonicalGraphSource = path.resolve(
+  __dirname,
+  '..',
+  'src',
+  'utils',
+  'goal-contract',
+  'control-plane',
+  'canonical-requirement-graph.ts',
+);
 
 function writeFile(filePath, content) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -20,6 +30,24 @@ function createFixtureProject() {
 }
 
 describe('run-node-tests.cjs filters', () => {
+  it('preloads package TypeScript source with extensionless imports on the supported Node runtime', () => {
+    const result = spawnSync(
+      process.execPath,
+      [
+        '-r',
+        registerSource,
+        '-e',
+        `const loaded = require(${JSON.stringify(canonicalGraphSource)}); if (typeof loaded.lintCanonicalRequirementGraph !== 'function') process.exit(2);`,
+      ],
+      {
+        cwd: path.resolve(__dirname, '..'),
+        encoding: 'utf8',
+      },
+    );
+
+    assert.strictEqual(result.status, 0, `${result.stderr}\n${result.stdout}`);
+  });
+
   it('runs only the basename-matched test file', () => {
     const root = createFixtureProject();
     try {

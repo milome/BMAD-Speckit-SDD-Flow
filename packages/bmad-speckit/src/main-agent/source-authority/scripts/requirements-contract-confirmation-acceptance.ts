@@ -196,6 +196,35 @@ function requirementsConfirmationText(input: RequirementsFinalRenderInput): stri
   ].join('\n');
 }
 
+function confirmationHtmlLabels(language: string) {
+  if (language === 'zh-CN') {
+    return {
+      title: '需求合同',
+      requirements: '需求',
+      requirementKind: '需求类型',
+      polarity: '极性',
+      negativeAssertion: '负向断言',
+      acceptanceOracle: '验收判据',
+      blocksCompletionWhen: '阻断完成条件',
+      confirmedDecisions: '已确认决策',
+      authorityCitations: '权威引用',
+      confirmation: '确认',
+    };
+  }
+  return {
+    title: 'Requirements Contract',
+    requirements: 'Requirements',
+    requirementKind: 'Requirement kind',
+    polarity: 'Polarity',
+    negativeAssertion: 'Negative assertion',
+    acceptanceOracle: 'Acceptance oracle',
+    blocksCompletionWhen: 'Blocks completion when',
+    confirmedDecisions: 'Confirmed Decisions',
+    authorityCitations: 'Authority Citations',
+    confirmation: 'Confirmation',
+  };
+}
+
 export function projectRequirementsContractFinalPages(
   input: RequirementsFinalRenderInput
 ): RequirementsFinalPages {
@@ -205,6 +234,7 @@ export function projectRequirementsContractFinalPages(
   const decisions = records(object(semantics).decisions);
   const claims = records(object(input.semanticIr.semanticPayload).evidenceClaims);
   const exactConfirmationText = requirementsConfirmationText(input);
+  const htmlLabels = confirmationHtmlLabels(input.confirmationLanguage);
   const markdown = [
     '# Requirements Contract',
     '',
@@ -267,29 +297,29 @@ export function projectRequirementsContractFinalPages(
   const html = [
     '<!doctype html>',
     `<html lang="${htmlEscape(input.confirmationLanguage)}">`,
-    '<head><meta charset="utf-8"><title>Requirements Contract</title></head>',
+    `<head><meta charset="utf-8"><title>${htmlLabels.title}</title></head>`,
     '<body>',
     `<main data-request-id="${htmlEscape(input.requestId)}" data-semantic-revision-id="${htmlEscape(input.semanticIr.semanticRevisionId)}">`,
-    '<h1>Requirements Contract</h1>',
-    '<section id="requirements"><h2>Requirements</h2>',
+    `<h1>${htmlLabels.title}</h1>`,
+    `<section id="requirements"><h2>${htmlLabels.requirements}</h2>`,
     ...requirements.map(
       (requirement) =>
-        `<article data-requirement-id="${htmlEscape(requirement.id)}" data-requirement-kind="${htmlEscape(requirement.requirementKind)}" data-requirement-polarity="${htmlEscape(requirement.polarity)}"><h3>${htmlEscape(requirement.id)}</h3><p data-requirement-classification><strong>Requirement kind:</strong> ${htmlEscape(requirement.requirementKind)} <strong>Polarity:</strong> ${htmlEscape(requirement.polarity)}</p><p data-requirement-text>${htmlEscape(requirement.text)}</p><p data-requirement-oracle${requirement.requirementKind === 'negative' ? ' data-negative-assertion' : ''}><strong>${requirement.requirementKind === 'negative' ? 'Negative assertion' : 'Acceptance oracle'}:</strong> ${htmlEscape(requirement.oracle)}</p>${requirement.requirementKind === 'negative' ? `<p data-blocking-condition><strong>Blocks completion when:</strong> ${htmlEscape(requirement.blockingCondition ?? requirement.oracle)}</p>` : ''}</article>`
+        `<article data-requirement-id="${htmlEscape(requirement.id)}" data-requirement-kind="${htmlEscape(requirement.requirementKind)}" data-requirement-polarity="${htmlEscape(requirement.polarity)}"><h3>${htmlEscape(requirement.id)}</h3><p data-requirement-classification><strong>${htmlLabels.requirementKind}:</strong> ${htmlEscape(requirement.requirementKind)} <strong>${htmlLabels.polarity}:</strong> ${htmlEscape(requirement.polarity)}</p><p data-requirement-text>${htmlEscape(requirement.text)}</p><p data-requirement-oracle${requirement.requirementKind === 'negative' ? ' data-negative-assertion' : ''}><strong>${requirement.requirementKind === 'negative' ? htmlLabels.negativeAssertion : htmlLabels.acceptanceOracle}:</strong> ${htmlEscape(requirement.oracle)}</p>${requirement.requirementKind === 'negative' ? `<p data-blocking-condition><strong>${htmlLabels.blocksCompletionWhen}:</strong> ${htmlEscape(requirement.blockingCondition ?? requirement.oracle)}</p>` : ''}</article>`
     ),
     '</section>',
-    '<section id="confirmed-decisions"><h2>Confirmed Decisions</h2>',
+    `<section id="confirmed-decisions"><h2>${htmlLabels.confirmedDecisions}</h2>`,
     ...decisions.map(
       (decision) =>
         `<article data-decision-receipt="${htmlEscape(decision.decisionReceiptRef)}"><h3>${htmlEscape(decision.questionId)}</h3><p>${htmlEscape(decision.question)}</p><p>${htmlEscape(strings(decision.affectedFieldIds).join(', '))}</p><pre>${htmlEscape(displayValue(decision.answerValue))}</pre></article>`
     ),
     '</section>',
-    '<section id="authority-citations"><h2>Authority Citations</h2><ul>',
+    `<section id="authority-citations"><h2>${htmlLabels.authorityCitations}</h2><ul>`,
     ...claims.map(
       (claim) =>
         `<li data-evidence-claim="${htmlEscape(claim.evidenceClaimId)}">${htmlEscape(claim.evidenceClaimId)}: ${htmlEscape(claim.authorityClass)}</li>`
     ),
     '</ul></section>',
-    `<section id="confirmation"><h2>Confirmation</h2><pre>${htmlEscape(exactConfirmationText)}</pre></section>`,
+    `<section id="confirmation"><h2>${htmlLabels.confirmation}</h2><pre>${htmlEscape(exactConfirmationText)}</pre></section>`,
     '</main>',
     '</body></html>',
     '',

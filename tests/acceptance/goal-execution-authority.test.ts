@@ -32,11 +32,24 @@ function requirementsIr() {
     sourceBlocks: [], sourceRelations: [], commandDeclarations: [], scenarioDeclarations: [], fixDeclarations: [], sections: [],
     workDeclarations: raw.obligations.map((row) => ({ id: row.obligationId, text: row.text, pass: [{ text: row.oracle }] })) });
   const semanticIr = { schemaVersion: 'requirements-contract-semantic-ir/v2', semanticRevisionId: hash, scopeSemanticHash: hash,
-    semanticPayload: { semantics: { typedSourceAuthority: authority, atoms: raw.atoms }, specSpanRegistry: [], executionConstraints: raw.executionConstraints } };
+    semanticPayload: { semantics: { typedSourceAuthority: authority, atoms: raw.atoms }, specSpanRegistry: [],
+      executionConstraints: raw.executionConstraints, semanticProvenance: { typedSourceGraph: authority.graphHash } } };
   const semanticSource = requirementsTypedSemanticSource(semanticIr);
+  const obligationIds = raw.obligations.map((row) => row.obligationId);
+  const logicalSpecSpans = [{
+    specSpanId: 'SPEC-SPAN-TYPED-GRAPH',
+    authorityClass: 'source_grounded',
+    normalizedClaimHash: authority.graphHash,
+    boundTypedSourceGraphHash: authority.graphHash,
+    boundSemanticNodeIds: [...obligationIds, ...obligationIds.map((id) => `${id}-A1`)],
+    boundObligationIds: obligationIds,
+    evidenceClaimRefs: [],
+  }];
   const { standaloneLineage: _standaloneLineage, ...base } = raw;
   return compileGoalExecutionIR({ ...base, profile: 'requirements_backed', requirementsLineage: { semanticRevisionId: hash, scopeSemanticHash: hash },
-    semanticSource, obligations: projectRequirementsTypedGoalObligations(semanticSource, []) });
+    semanticSource, logicalSpecSpans,
+    executionConstraints: semanticSource.typedExecutionConstraints as GoalExecutionCompilerInput['executionConstraints'],
+    obligations: projectRequirementsTypedGoalObligations(semanticSource, logicalSpecSpans) });
 }
 
 function rewrite(authority: any, mutate: (projection: any) => void) {

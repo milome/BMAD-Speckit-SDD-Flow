@@ -9,8 +9,13 @@ import { probeGoalContractRenderability } from './goal-contract-renderability-pr
 import { validateGoalContractSchema } from './schema-registry';
 import { compileStandaloneGoalExecution } from './standalone-goal-semantic-ir';
 import { standaloneTechnicalSnapshot } from './standalone-goal-technical-snapshot';
+import { canonicalSourcePlanTechnicalSnapshot } from '../source-plan/canonical-source-adapter';
 import { normalizeGoalExecutionAuthority } from './goal-execution-authority';
 import { renderNormativeDetails } from './goal-normative-renderer';
+import {
+  normalizeCanonicalRequirementGraph,
+  type CanonicalRequirementGraphV2,
+} from './canonical-requirement-graph';
 
 type JsonObject = Record<string, unknown>;
 
@@ -95,7 +100,7 @@ function renderParentGoal(ir: JsonObject): string {
     '',
     ...objects(ir.obligations).flatMap(
       (row) => [`- ${text(row.kind)} ${text(row.obligationId)}: ${text(row.text)}`,
-        ...(ir.schemaVersion === 'GoalExecutionIR/v2' ? renderNormativeDetails(row) : [])]
+        ...(['GoalExecutionIR/v2', 'GoalExecutionIR/v3'].includes(text(ir.schemaVersion)) ? renderNormativeDetails(row) : [])]
     ),
     '',
     '## Atomic Tasks',
@@ -199,20 +204,137 @@ export async function publishStandaloneGoalAuthority(
     }
     return { ...row, applicability: { ...applicability, obligationRefs } };
   });
-  const technicalSnapshot = standaloneTechnicalSnapshot(input.source, semanticRows);
-  const logicalSpecSpans = semanticRows.flatMap((row) =>
-    row.specSpanRefs.map((specSpanId) => ({
-      specSpanId,
-      boundObligationIds: [row.id],
-      evidenceClaimRefs: [],
-    }))
+  const technicalSnapshot = input.source.canonicalRequirementGraph
+    ? canonicalSourcePlanTechnicalSnapshot(input.source, semanticRows)
+    : standaloneTechnicalSnapshot(input.source, semanticRows);
+  const documentGraph = input.source.sourceDocumentGraph && typeof input.source.sourceDocumentGraph === 'object'
+    ? input.source.sourceDocumentGraph as JsonObject : undefined;
+  const sourceCanonicalGraph = input.source.canonicalRequirementGraph &&
+    typeof input.source.canonicalRequirementGraph === 'object'
+    ? input.source.canonicalRequirementGraph as JsonObject
+    : undefined;
+  const normalizedCanonicalGraph: CanonicalRequirementGraphV2 | undefined = sourceCanonicalGraph
+    ? normalizeCanonicalRequirementGraph({
+        sourceAuthority: {
+          kind: 'standalone_source_plan',
+          schemaVersion: text(sourceCanonicalGraph.sourcePlanVersion),
+          authorityId: text(sourceCanonicalGraph.sourcePlanId),
+          authorityHash: text(input.source.sourceSnapshotHash),
+        },
+        standaloneGraph: sourceCanonicalGraph,
+      })
+    : undefined;
+  const documentSpans = objects(documentGraph?.spans);
+  const spanByRef = new Map<string, JsonObject>();
+  for (const span of documentSpans) {
+    const id = text(span.id);
+    const sourceBlockId = text(span.sourceBlockId);
+    if (id) spanByRef.set(id, span);
+    if (sourceBlockId) spanByRef.set(sourceBlockId, span);
+  }
+  for (const sourceBlock of objects(input.source.sourceBlocks)) {
+    const sourceBlockId = text(sourceBlock.id);
+    const sourceRef = sourceBlock.sourceRef && typeof sourceBlock.sourceRef === 'object'
+      ? sourceBlock.sourceRef as JsonObject
+      : undefined;
+    if (sourceBlockId && sourceRef) {
+      spanByRef.set(sourceBlockId, {
+        ...sourceRef,
+        id: sourceBlockId,
+        sourceBlockId,
+      });
+    }
+  }
+  const canonicalSpanRows = objects(
+    (input.canonicalIntentBundle.specSpanRegistry as JsonObject | undefined)?.specSpans
   );
+  for (const span of canonicalSpanRows) {
+    const specSpanId = text(span.specSpanId);
+    if (!specSpanId) continue;
+    const physical = documentSpans.find((candidate) =>
+      Number(candidate.startByte) === Number(span.startByte) &&
+      Number(candidate.endByteExclusive) === Number(span.endByteExclusive)
+    );
+    spanByRef.set(specSpanId, physical ? { ...physical, ...span } : span);
+  }
+  const logicalSpecSpanById = new Map<string, JsonObject>();
+  const addPhysicalSpan = (specSpanId: string, boundRefs: string[], canonicalNodeRefs: string[]) => {
+    const physical = spanByRef.get(specSpanId);
+    if (!physical) throw new Error('standalone_goal_source_span_missing');
+    const current = logicalSpecSpanById.get(specSpanId);
+    const boundObligationIds = sortedUnique([...(current ? strings(current.boundObligationIds) : []), ...boundRefs]);
+    if (boundObligationIds.length === 0) throw new Error('standalone_goal_source_span_owner_missing');
+    logicalSpecSpanById.set(specSpanId, {
+      ...(current ?? {}),
+      specSpanId,
+      sourceArtifactId: text(input.source.sourceArtifactId),
+      sourceSnapshotHash: text(input.source.sourceSnapshotHash),
+      startByte: Number(physical.startByte),
+      endByteExclusive: Number(physical.endByteExclusive),
+      lineStart: Number(physical.lineStart ?? physical.startLine),
+      lineEnd: Number(physical.lineEnd ?? physical.endLine),
+      exactTextHash: text(physical.exactTextHash ?? physical.expectedExactTextHash),
+      boundObligationIds,
+      canonicalNodeRefs: sortedUnique([...(current ? strings(current.canonicalNodeRefs) : []), ...canonicalNodeRefs]),
+      ...(documentGraph?.graphHash ? { sourceDocumentGraphHash: text(documentGraph.graphHash) } : {}),
+      ...(normalizedCanonicalGraph
+        ? { canonicalRequirementGraphHash: normalizedCanonicalGraph.graphHash } : {}),
+      evidenceClaimRefs: [],
+    });
+  };
+  for (const row of semanticRows) {
+    const authoritativeRefs = sortedUnique([
+      ...strings(row.specSpanRefs),
+      ...strings(row.provenanceRefs),
+      ...strings(row.sourceBlockRefs),
+    ]).filter((ref) => spanByRef.has(ref));
+    for (const specSpanId of authoritativeRefs) {
+      addPhysicalSpan(specSpanId, [text(row.id)], [text(row.id)]);
+    }
+  }
+  for (const binding of technicalSnapshot.constraintBindings ?? []) {
+    const declarationRefs = strings(binding.sourceRefs).filter((ref) => spanByRef.has(ref));
+    if (declarationRefs.length === 0) throw new Error('standalone_goal_constraint_source_span_missing');
+    const sourceBlockRefs = strings(binding.sourceDeclarationRefs).filter((ref) => spanByRef.has(ref));
+    for (const ref of sortedUnique([...declarationRefs, ...sourceBlockRefs])) {
+      addPhysicalSpan(ref, strings(binding.applicableMustRefs), [text(binding.constraintId)]);
+    }
+  }
+  const logicalSpecSpans = [...logicalSpecSpanById.values()].sort((left, right) =>
+    text(left.specSpanId).localeCompare(text(right.specSpanId))
+  );
+  const sourceLineageBase = {
+    schemaVersion: 'GoalExecutionSourceLineage/v1',
+    authorities: [{
+      authorityKind: 'standalone_source_document' as const,
+      authorityId: text(input.source.sourceArtifactId),
+      authorityHash: text(input.source.sourceSnapshotHash),
+      sourceSnapshotHash: text(input.source.sourceSnapshotHash),
+      ...(documentGraph?.graphHash ? { sourceDocumentGraphHash: text(documentGraph.graphHash) } : {}),
+      ...(normalizedCanonicalGraph
+        ? {
+            canonicalRequirementGraphHash: normalizedCanonicalGraph.graphHash,
+            canonicalSemanticHash: normalizedCanonicalGraph.semanticHash,
+            upstreamCanonicalRequirementGraphHash:
+              normalizedCanonicalGraph.upstreamCanonicalRequirementGraphHash,
+          }
+        : {}),
+      logicalSpecSpanRefs: logicalSpecSpans.map((span) => text(span.specSpanId)),
+    }],
+    logicalSpecSpanRefs: logicalSpecSpans.map((span) => text(span.specSpanId)),
+    logicalSpecSpanSetHash: sha256Stable(logicalSpecSpans),
+  };
+  const sourceLineage = { ...sourceLineageBase, lineageHash: sha256Stable(sourceLineageBase) };
   const authorityRoot = path.resolve(`${input.goalContractPath}.authority`);
   const compiled = await compileStandaloneGoalExecution({
     sourcePlanHash: text(input.source.sourcePlanHash),
     sourceSnapshotHash: text(input.source.sourceSnapshotHash),
     sourceObligations: semanticRows,
+    ...(normalizedCanonicalGraph
+      ? { canonicalRequirementGraph: normalizedCanonicalGraph }
+      : {}),
     logicalSpecSpans,
+    sourceLineage,
     technicalSnapshot,
   });
   const hashId = compiled.goalExecutionIr.goalExecutionIRHash.slice('sha256:'.length);
@@ -280,7 +402,7 @@ export async function publishStandaloneGoalAuthority(
     resolutions: compiled.goalExecutionIr.obligations.map((obligation) => ({
       goalObligationId: obligation.obligationId,
       logicalSpecSpanRefs: obligation.sourceRefs.filter(
-        (ref) => compiled.goalExecutionIr.schemaVersion === 'GoalExecutionIR/v2' ? specSpanIds.has(ref)
+        (ref) => ['GoalExecutionIR/v2', 'GoalExecutionIR/v3'].includes(compiled.goalExecutionIr.schemaVersion) ? specSpanIds.has(ref)
           : ref.startsWith('spec-span-') || ref.startsWith('SPAN-')
       ),
       evidenceClaimRefs: obligation.evidenceClaimRefs,

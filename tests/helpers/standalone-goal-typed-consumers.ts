@@ -3,7 +3,49 @@ import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { compileStandaloneGoalExecution } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/standalone-goal-semantic-ir';
+import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 import { normativeRoleInput } from './standalone-goal-normative-roles';
+
+function attachCanonicalRequirementGraph(value: ReturnType<typeof normativeRoleInput>) {
+  const nodes = value.sourceObligations.map((row) => {
+    const applicability = row.applicability as Record<string, unknown> | undefined;
+    return {
+      id: String(row.id),
+      kind: row.executionRole === 'action' ? 'TASK' : row.polarity === 'forbidden' ? 'NEG' : 'REQ',
+      title: String(row.id),
+      statement: String(row.exactText),
+      normativeStrength: String(row.normativeStrength).toUpperCase(),
+      polarity: row.polarity,
+      applicability: { mode: Array.isArray(row.conditions) && row.conditions.length > 0 ? 'conditional' : 'always' },
+      scope: applicability?.scope === 'global' ? 'global' : 'local',
+      aliases: [],
+      ownerRef: null,
+      references: {},
+      attributes: { executionRole: row.executionRole },
+      sourceSpanRefs: row.specSpanRefs,
+    };
+  });
+  const graph = {
+    schemaVersion: 'CanonicalRequirementGraph/v1',
+    sourcePlanId: 'PLAN-STANDALONE-TYPED-CONSUMERS',
+    sourcePlanVersion: 'standalone-source-plan/v1',
+    goal: 'Exercise typed standalone Goal consumers.',
+    scope: value.technicalSnapshot.targetPaths,
+    nonGoals: value.technicalSnapshot.forbiddenPaths,
+    nodes,
+    relations: [],
+    aliases: [],
+    graphHash: '',
+  };
+  const { graphHash: _graphHash, ...payload } = graph;
+  graph.graphHash = sha256Stable({
+    ...payload,
+    nodes: nodes.map(({ sourceSpanRefs: _sourceSpanRefs, ...node }) => node),
+    relations: [],
+    aliases: [],
+  });
+  value.canonicalRequirementGraph = graph;
+}
 
 export async function typedTwoActionExecution(options: { localBoundary?: boolean } = {}) {
   const value = normativeRoleInput();
@@ -11,7 +53,18 @@ export async function typedTwoActionExecution(options: { localBoundary?: boolean
     exactText: 'Implement a separate import.', requiredOutcome: 'Import preserves every CSV row.',
     specSpanRefs: ['SPAN-MUST-002'], applicability: { scope: 'global', sourceRefs: ['SPAN-MUST-002'] } });
   value.sourceObligations[2].applicability = { scope: 'obligations', obligationRefs: ['MUST-001'], sourceRefs: ['SPAN-GUIDE-001'] };
-  value.logicalSpecSpans.push({ specSpanId: 'SPAN-MUST-002', boundObligationIds: ['MUST-002'], evidenceClaimRefs: [] });
+  value.logicalSpecSpans.push({
+    specSpanId: 'SPAN-MUST-002',
+    sourceArtifactId: 'fixture:standalone-normative-roles',
+    sourceSnapshotHash: value.sourceSnapshotHash,
+    startByte: 80,
+    endByteExclusive: 88,
+    lineStart: 6,
+    lineEnd: 6,
+    exactTextHash: `sha256:${'7'.repeat(64)}`,
+    boundObligationIds: ['MUST-002'],
+    evidenceClaimRefs: [],
+  });
   value.technicalSnapshot.targetPaths = ['src/export.ts', 'src/import.ts'];
   value.technicalSnapshot.commandRecords.push({ commandId: 'CMD-import', invocation: 'npm test -- import' });
   value.technicalSnapshot.artifactRecords = [];
@@ -22,6 +75,7 @@ export async function typedTwoActionExecution(options: { localBoundary?: boolean
     value.sourceObligations[1].applicability = { scope: 'obligations', obligationRefs: ['MUST-001'], sourceRefs: ['SPAN-NEG-001'] };
     value.technicalSnapshot.constraintBindings.find((row) => row.constraintId === 'STOP-standalone-1')!.scope = 'declared';
   }
+  attachCanonicalRequirementGraph(value);
   return compileStandaloneGoalExecution(value);
 }
 
@@ -41,11 +95,23 @@ export async function typedAggregateExecution() {
       specSpanRefs: [`SPAN-${id}`], applicability: { scope: 'global', sourceRefs: [`SPAN-${id}`] },
       taskExecution: { executionClass: 'aggregate_only', ownedProductionPaths: '`none`', aggregateGatePhase: phase,
         aggregateValidationCommands: [commandId], sourceRefs: [`SPAN-${id}`] } });
-    value.logicalSpecSpans.push({ specSpanId: `SPAN-${id}`, boundObligationIds: [id], evidenceClaimRefs: [] });
+    value.logicalSpecSpans.push({
+      specSpanId: `SPAN-${id}`,
+      sourceArtifactId: 'fixture:standalone-normative-roles',
+      sourceSnapshotHash: value.sourceSnapshotHash,
+      startByte: 96 + index * 16,
+      endByteExclusive: 104 + index * 16,
+      lineStart: 7 + index,
+      lineEnd: 7 + index,
+      exactTextHash: `sha256:${String(index + 8).repeat(64)}`,
+      boundObligationIds: [id],
+      evidenceClaimRefs: [],
+    });
     value.technicalSnapshot.commandRecords.push({ commandId, invocation: `node -e "process.exit(0)"` });
     value.technicalSnapshot.constraintBindings.push({ constraintId: commandId, sourceRefs: [`SPAN-${id}`],
       applicableMustRefs: [id], applicableAtomRefs: [`${id}-A1`], premiseRefs: [`SPAN-${id}`] });
   }
+  attachCanonicalRequirementGraph(value);
   return compileStandaloneGoalExecution(value);
 }
 

@@ -73,7 +73,7 @@ function materializeRequirementsAuthority() {
   produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
   const generated = compileRequirementsBackedGoal({
     projectRoot: fixture.root,
-    requirementRecordPath: fixture.runtimeRecordPath,
+    requirementRecordPath: fixture.authorityRecordPath,
     outRoot: path.join(fixture.root, 'goal-run'),
   });
   return { fixture, generated };

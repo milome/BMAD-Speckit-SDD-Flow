@@ -25,6 +25,7 @@ import {
   activeAuthoringAttemptPointerHash,
   type ActiveAuthoringAttemptPointer,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-active-authoring-attempt-pointer';
+import { createSmallBundle } from '../helpers/source-authority-full-source';
 
 function readJson<T>(filePath: string): T {
   return JSON.parse(readFileSync(filePath, 'utf8')) as T;
@@ -353,6 +354,75 @@ describe('requirements contract source binding refresh', () => {
       expect(refreshedPointer.attemptManifestHash).toBe(firstPointer.attemptManifestHash);
     } finally {
       rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('resolves a compressed typed semantic candidate during locator-only resume', () => {
+    const fixture = createSmallBundle(2);
+    try {
+      const targetPath = path.join(fixture.root, 'requirements.md');
+      const authorityPath = path.join(fixture.root, 'inputs', 'authority.json');
+      const authority = readJson<Record<string, any>>(authorityPath);
+      authority.workDeclarations = [{
+        id: authority.sourceRoots[0].sourceRootId,
+        dependencies: [],
+        pass: [{ text: 'The action remains bound to the same semantic requirement.' }],
+        productPaths: ['src/typed-source.ts'],
+      }];
+      writeFileSync(authorityPath, JSON.stringify(authority), 'utf8');
+      const runAction = (action: string, args: string[]) => spawnSync(process.execPath, [
+        path.resolve('packages/bmad-speckit/bin/bmad-speckit.js'),
+        'main-agent',
+        action,
+        '--cwd',
+        fixture.root,
+        ...args,
+        '--json',
+      ], { cwd: process.cwd(), encoding: 'utf8', windowsHide: true });
+      const author = runAction('author-confirmation-ready-source', [
+        '--intake-source', fixture.intakeSource,
+        '--target-source', targetPath,
+        '--confirmation-language', 'zh-CN',
+      ]);
+      expect(author.status, author.stderr || author.stdout).toBe(0);
+      const firstEnvelope = JSON.parse(author.stdout) as Record<string, any>;
+      expect(firstEnvelope.data, author.stdout).toMatchObject({ status: 'audit_pending' });
+      const requestId = firstEnvelope.data.authoringRequestId as string;
+      const attemptId = firstEnvelope.data.authoringAttemptId as string;
+      const recordRoot = path.join(
+        fixture.root,
+        '_bmad-output',
+        'runtime',
+        'requirement-records',
+        requestId
+      );
+      const requirementRecord = readJson<Record<string, any>>(
+        path.join(recordRoot, 'record', 'requirement-record.json')
+      );
+      const semanticPath = path.join(
+        recordRoot,
+        ...String(requirementRecord.activeAuthority.activeSemanticIrPath).split('/')
+      );
+      expect(readJson<Record<string, unknown>>(semanticPath).schemaVersion)
+        .toBe('RequirementsSemanticCandidate/v2');
+
+      writeFileSync(
+        authorityPath,
+        `${JSON.stringify(readJson<Record<string, unknown>>(authorityPath), null, 2)}\n`,
+        'utf8'
+      );
+      const resume = runAction('resume-author-confirmation-ready-source', [
+        '--request-id', requestId,
+        '--authoring-attempt-id', attemptId,
+      ]);
+
+      expect(resume.status, resume.stderr || resume.stdout).toBe(0);
+      expect(JSON.parse(resume.stdout).data).toMatchObject({
+        status: 'audit_pending',
+        authoringRequestId: requestId,
+      });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
     }
   });
 

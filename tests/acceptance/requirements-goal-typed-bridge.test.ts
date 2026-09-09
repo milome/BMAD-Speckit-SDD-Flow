@@ -44,14 +44,22 @@ const fixture = (aggregate = false) => {
     action: work.text, oracle: work.pass.map((row) => row.text).join('\n'), dependencies: [] }));
   const spans = nodes.map((node) => ({ specSpanId: `SPAN-${node.sourceRootId}`, boundObligationIds: [node.sourceRootId], evidenceClaimRefs: [] }));
   const semanticIr = { schemaVersion: 'requirements-contract-semantic-ir/v2', semanticRevisionId: 'REV-1', scopeSemanticHash: hash('1'),
-    semanticPayload: { semantics: { requirements: [], atoms, typedSourceAuthority: authority }, specSpanRegistry: spans, executionConstraints: constraints } };
-  const input = (): GoalExecutionCompilerInput => ({ profile: 'requirements_backed',
-    semanticSource: requirementsTypedSemanticSource(semanticIr),
-    requirementsLineage: { semanticRevisionId: 'REV-1', scopeSemanticHash: hash('1') }, technicalAuthority: {},
-    obligations: projectRequirementsToGoalObligations(semanticIr), atoms, logicalSpecSpans: spans, executionConstraints: constraints,
-    architecture: { isolation: { mode: 'consumer_worktree' }, ownership: works.filter((work) => !aggregate || work.id !== 'WORK-beta').map((work, index) => ({ targetPath: `src/${index}.ts`,
-      owner: work.id, basisRefs: [`PATH-${work.id}`], obligationRefs: [work.id], atomRefs: [`${work.id}-A1`], sourceRefs: [work.id] })) } });
-  return { semanticIr, authority, nodes, input };
+    semanticPayload: { semantics: { requirements: [], atoms, typedSourceAuthority: authority }, specSpanRegistry: spans,
+      executionConstraints: constraints, semanticProvenance: { typedSourceGraph: authority.graphHash } } };
+  const input = (): GoalExecutionCompilerInput => {
+    const semanticSource = requirementsTypedSemanticSource(semanticIr);
+    return { profile: 'requirements_backed', semanticSource,
+      requirementsLineage: { semanticRevisionId: 'REV-1', scopeSemanticHash: hash('1') }, technicalAuthority: {},
+      obligations: projectRequirementsToGoalObligations(semanticIr), atoms, logicalSpecSpans: spans,
+      executionConstraints: semanticSource.typedExecutionConstraints as GoalExecutionCompilerInput['executionConstraints'],
+      architecture: { isolation: { mode: 'consumer_worktree' }, ownership: works.filter((work) => !aggregate || work.id !== 'WORK-beta').map((work, index) => ({ targetPath: `src/${index}.ts`,
+        owner: work.id, basisRefs: [`PATH-${work.id}`], obligationRefs: [work.id], atomRefs: [`${work.id}-A1`], sourceRefs: [work.id] })) } };
+  };
+  const replaceTypedAuthority = (nextAuthority: ReturnType<typeof createTypedSourceAuthority>) => {
+    semanticIr.semanticPayload.semantics.typedSourceAuthority = nextAuthority;
+    semanticIr.semanticPayload.semanticProvenance.typedSourceGraph = nextAuthority.graphHash;
+  };
+  return { semanticIr, authority, nodes, constraints, input, replaceTypedAuthority };
 };
 
 describe('Requirements typed authority to Goal bridge', () => {
@@ -117,7 +125,7 @@ describe('Requirements typed authority to Goal bridge', () => {
   it('compiles and closes requirements v2 with an explicit empty co-execution set', () => {
     const { input, authority } = fixture();
     const ir = compileGoalExecutionIR(input());
-    expect(ir.schemaVersion).toBe('GoalExecutionIR/v2');
+    expect(ir.schemaVersion).toBe('GoalExecutionIR/v3');
     expect(ir.atomicTasks).toHaveLength(2);
     expect(ir.coExecutionConstraints).toEqual([]);
     expect(ir.semanticSource.typedSourceAuthority).toEqual(authority);
@@ -147,7 +155,7 @@ describe('Requirements typed authority to Goal bridge', () => {
     const changed = fixture();
     const graph = resolveTypedSourceAuthority(changed.authority);
     graph.sourceNodes.find((node) => node.sourceRootId === 'BOUND-alpha')!.conditions = [];
-    changed.semanticIr.semanticPayload.semantics.typedSourceAuthority = createTypedSourceAuthority(graph);
+    changed.replaceTypedAuthority(createTypedSourceAuthority(graph));
     const ir = compileGoalExecutionIR(changed.input());
     expect(validateGoalExecutionIR(ir).decision).toBe('pass');
     expect(() => assertRequirementsTypedAuthorityMatchesGoal(original.semanticIr, ir)).toThrow(/external_authority_mismatch/);
@@ -159,7 +167,7 @@ describe('Requirements typed authority to Goal bridge', () => {
     const boundary = graph.sourceNodes.find((node) => node.sourceRootId === 'BOUND-alpha')!;
     boundary.conditions = [{ kind: 'when', text: 'When alpha is enabled.', sourceRefs: ['DECLARED-condition'] }];
     boundary.scope = { kind: 'section', owner: 'GUIDE-section' };
-    value.semanticIr.semanticPayload.semantics.typedSourceAuthority = createTypedSourceAuthority(graph);
+    value.replaceTypedAuthority(createTypedSourceAuthority(graph));
     const ir = compileGoalExecutionIR(value.input());
     const obligation = ir.obligations.find((row) => row.obligationId === 'BOUND-alpha')!;
     expect(obligation.conditions).toEqual([expect.objectContaining({ sourceRefs: expect.arrayContaining(['DECLARED-condition']) })]);
@@ -193,6 +201,41 @@ describe('Requirements typed authority to Goal bridge', () => {
       expect(validateGoalExecutionIR(ir).decision).toBe('block');
     });
 
+  it.each([
+    'sourceRefs',
+    'applicableSourceRefs',
+    'premiseRefs',
+    'sourceDeclarationRefs',
+  ])('rejects an unknown ref mixed into constraint %s', (field) => {
+    const value = fixture();
+    const sourceConstraint = (
+      value.semanticIr.semanticPayload.executionConstraints as Array<Record<string, unknown>>
+    )[0];
+    sourceConstraint[field] = Array.isArray(sourceConstraint[field])
+      ? sourceConstraint[field]
+      : ['WORK-alpha'];
+    const ir = structuredClone(compileGoalExecutionIR(value.input()));
+    const constraint = (
+      ir.semanticSource.typedExecutionConstraints as Array<Record<string, unknown>>
+    ).find((row) => row.constraintId === sourceConstraint.constraintId)!;
+    constraint[field] = [...(constraint[field] as string[]), 'SPAN-UNKNOWN'];
+    ir.goalExecutionIRHash = goalExecutionIRHash(ir);
+
+    expect(validateGoalExecutionIR(ir).issueCodes).toContain(
+      'goal_execution_source_lineage_invalid'
+    );
+  });
+
+  it('rejects an unknown ref mixed into an obligation source binding', () => {
+    const ir = structuredClone(compileGoalExecutionIR(fixture().input()));
+    ir.obligations[0].sourceRefs = [...ir.obligations[0].sourceRefs, 'SPAN-UNKNOWN'];
+    ir.goalExecutionIRHash = goalExecutionIRHash(ir);
+
+    expect(validateGoalExecutionIR(ir).issueCodes).toContain(
+      'goal_execution_source_lineage_invalid'
+    );
+  });
+
   it('preserves scoped conditional command provenance and excludes non-required invocations', () => {
     const value = fixture();
     const constraints = value.semanticIr.semanticPayload.executionConstraints as Array<Record<string, unknown>>;
@@ -216,7 +259,7 @@ describe('Requirements typed authority to Goal bridge', () => {
     const value = fixture();
     const declared = { constraintId: 'CTM-declared', kind: 'CTM', canonicalValue: 'alpha and beta must execute together',
       applicableMustRefs: ['WORK-alpha', 'WORK-beta'], applicableAtomRefs: ['WORK-alpha-A1', 'WORK-beta-A1'],
-      premiseRefs: ['WORK-alpha'], sourceRefs: ['WORK-alpha'], disposition: 'source_declared', scope: 'declared', declarationStatus: 'source_declared_not_executed' };
+      premiseRefs: ['WORK-alpha', 'WORK-beta'], sourceRefs: ['WORK-alpha', 'WORK-beta'], disposition: 'source_declared', scope: 'declared', declarationStatus: 'source_declared_not_executed' };
     const input = value.input();
     input.executionConstraints = [...input.executionConstraints, declared];
     expect(() => compileGoalExecutionIR(input)).toThrow(/constraint_projection_mismatch/);
@@ -236,7 +279,7 @@ describe('Requirements typed authority to Goal bridge', () => {
       sourceBlocks: [], commandDeclarations: [], workDeclarations: [{ id: 'WORK-alpha', text: 'Implement alpha.', pass: [] },
         { id: 'WORK-beta', text: 'Implement beta.', pass: [{ text: 'Beta preserves the result.' }] }],
       scenarioDeclarations: [], fixDeclarations: [], sections: [] };
-    value.semanticIr.semanticPayload.semantics.typedSourceAuthority = createTypedSourceAuthority(graph);
+    value.replaceTypedAuthority(createTypedSourceAuthority(graph));
     expect(() => projectRequirementsToGoalObligations(value.semanticIr)).toThrow(/oracle|pass/);
   });
 
@@ -244,7 +287,7 @@ describe('Requirements typed authority to Goal bridge', () => {
     const value = fixture();
     const graph = resolveTypedSourceAuthority(value.authority);
     graph.workDeclarations[0].pass = [{ text: '  First source check.  ' }, { text: 'Second source check.' }];
-    value.semanticIr.semanticPayload.semantics.typedSourceAuthority = createTypedSourceAuthority(graph);
+    value.replaceTypedAuthority(createTypedSourceAuthority(graph));
     value.semanticIr.semanticPayload.semantics.atoms[0].oracle = '  First source check.  \nSecond source check.';
     const ir = compileGoalExecutionIR(value.input());
     expect(ir.atomicTasks[0].oracle).toBe('  First source check.  \nSecond source check.');
@@ -278,9 +321,10 @@ describe('Requirements typed authority to Goal bridge', () => {
   });
 
   it('captures the pre-change v1 hash without relaxing its nonempty CTM rule', () => {
-    const { input } = fixture();
+    const { input, constraints } = fixture();
     const legacy = input();
     legacy.semanticSource = { kind: 'requirements_semantic_ir', semanticRevisionId: 'REV-legacy', scopeSemanticHash: hash('2') };
+    legacy.executionConstraints = structuredClone(constraints);
     legacy.obligations = legacy.atoms.map((atom) => ({ obligationId: String(atom.requirementRef), kind: 'MUST', text: String(atom.action),
       oracle: String(atom.oracle), sourceRefs: [String(atom.requirementRef)], atomRefs: [String(atom.id)], evidenceClaimRefs: [] }));
     legacy.executionConstraints.push({ constraintId: 'CTM-legacy', kind: 'CTM', canonicalValue: 'declared legacy grouping',

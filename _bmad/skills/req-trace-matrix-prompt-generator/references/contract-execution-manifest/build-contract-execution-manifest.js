@@ -1,6 +1,4 @@
 const {
-  CANONICAL_BUILDER_VERSION,
-  CANONICAL_SCHEMA_VERSION,
   normalizeContractExecutionManifest,
 } = require('./normalize-contract-execution-manifest');
 const {
@@ -717,6 +715,18 @@ function buildDerivedContractExecutionManifest(input) {
   const rawManifest = {
     ...projection,
     ...overrides,
+    ...(confirmation.typedSourceAuthority ? {
+      typedSourceAuthorityRef: {
+        schemaVersion: confirmation.typedSourceAuthority.schemaVersion,
+        graphHash: confirmation.typedSourceAuthority.graphHash,
+        authorityPath: 'model_packet.json#/typedSourceAuthority',
+      },
+      typedCoverageRef: {
+        schemaVersion: confirmation.typedCoverage?.schemaVersion,
+        coverageHash: confirmation.typedCoverage?.coverageHash,
+        authorityPath: 'model_packet.json#/typedCoverage',
+      },
+    } : {}),
     requirements: requirementRows(confirmation),
     evidence: objects(confirmation.evidence).map((row) => ({
       id: text(row.id),
@@ -727,6 +737,7 @@ function buildDerivedContractExecutionManifest(input) {
       artifactRefs: idRefs(row, ['artifactRefs']),
     })),
     traceRows: objects(confirmation.traceRows).map((row) => ({
+      ...(confirmation.typedSourceAuthority ? row : {}),
       id: text(row.id),
       covers: strings(row.covers),
       evidenceRefs: strings(row.evidenceRefs),
@@ -739,6 +750,7 @@ function buildDerivedContractExecutionManifest(input) {
       status: text(row.status),
     })),
     requiredCommands: objects(confirmation.requiredCommands).map((row) => ({
+      ...(confirmation.typedSourceAuthority ? row : {}),
       id: commandId(row),
       command: text(row.command),
       role: text(row.role) || text(row.commandRole) || text(row.gate),
@@ -804,13 +816,13 @@ function buildContractExecutionManifest(input) {
   const normalized = normalizeContractExecutionManifest({
     confirmation,
     manifest: input.manifest,
-    builderVersion: input.builderVersion ?? CANONICAL_BUILDER_VERSION,
+    builderVersion: input.builderVersion,
     sourceFormatVersion: input.sourceFormatVersion,
   });
   const manifest = {
     ...normalized.manifest,
-    schemaVersion: CANONICAL_SCHEMA_VERSION,
-    builderVersion: input.builderVersion ?? CANONICAL_BUILDER_VERSION,
+    schemaVersion: normalized.manifest.schemaVersion,
+    builderVersion: normalized.manifest.builderVersion,
     sourcePath: input.sourcePath ?? normalized.manifest.sourcePath,
     recordPath: input.recordPath ?? normalized.manifest.recordPath,
     currentAttemptId: input.attemptId ?? normalized.manifest.currentAttemptId,

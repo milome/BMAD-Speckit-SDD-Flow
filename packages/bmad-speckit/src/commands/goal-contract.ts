@@ -49,8 +49,11 @@ function loadPartitionModule(relativePath) {
 
 function loadWholeSourceDependencies() {
   const { safeWriteText, sha256File } = loadDistModule('utils/large-document-writer');
-  const { extractSourceObligations } = loadDistModule(
-    'utils/goal-contract/source-obligation-extractor'
+  const { extractGoalContractSourceModel } = loadPartitionModule(
+    'utils/goal-contract/source-plan/source-model'
+  );
+  const { lintStandaloneSourcePlan } = loadPartitionModule(
+    'utils/goal-contract/source-plan/standalone-source-plan'
   );
   const { buildSourceSnapshot } = loadPartitionModule('utils/goal-contract/dual-view-derivation');
   const { resolveEntryScenario, validateEntryAuthority } = loadPartitionModule(
@@ -99,7 +102,8 @@ function loadWholeSourceDependencies() {
     createGoalContractSourceCoverageArtifact,
     createGoalContractCompilationReceipt,
     defaultReceiptPaths,
-    extractSourceObligations,
+    lintStandaloneSourcePlan,
+    extractGoalContractSourceModel,
     goalContractCompilerIdentity,
     hashControlPlaneValue,
     resolveAuditProfile,
@@ -394,6 +398,11 @@ function failurePayload(failureClass, error, extra = {}) {
     'sourceArtifactId',
     'sourceSnapshotHash',
     'sourceId',
+    'obligationId',
+    'reason',
+    'causeCode',
+    'missingCommandRefs',
+    'ownedPaths',
     'lineStart',
     'lineEnd',
     'matchedPhrase',
@@ -469,7 +478,8 @@ async function generateWholeSource(args, _commandOptions = {}) {
     createGoalContractSourceCoverageArtifact,
     createGoalContractCompilationReceipt,
     defaultReceiptPaths,
-    extractSourceObligations,
+    extractGoalContractSourceModel,
+    lintStandaloneSourcePlan,
     resolveAuditProfile,
     resolveEntryScenario,
     runStandaloneDeterministicPreflight,
@@ -511,13 +521,26 @@ async function generateWholeSource(args, _commandOptions = {}) {
   const generationReceiptPath = path.resolve(
     take(args, '--generation-receipt', receipts.generationReceiptPath)
   );
-  const sourceText = fs.readFileSync(sourcePath, 'utf8');
+  const rawSourceBytes = fs.readFileSync(sourcePath);
+  const sourceLint = lintStandaloneSourcePlan({
+    sourcePath: normalize(sourcePath),
+    rawBytes: rawSourceBytes,
+  });
+  if (!sourceLint.ok) {
+    const firstIssue = sourceLint.issues[0];
+    throw Object.assign(new Error(firstIssue?.failureClass || 'source_plan_lint_failed'), {
+      ...firstIssue,
+      failureClass: firstIssue?.failureClass || 'source_plan_lint_failed',
+      sourcePlanLint: sourceLint,
+    });
+  }
+  const sourceText = rawSourceBytes.toString('utf8');
   const sourceSnapshot = buildSourceSnapshot({
     sourceType: 'source_plan',
     sourcePath: normalize(sourcePath),
-    rawBytes: Buffer.from(sourceText, 'utf8'),
+    rawBytes: rawSourceBytes,
   });
-  const source = extractSourceObligations({ snapshot: sourceSnapshot });
+  const source = extractGoalContractSourceModel({ snapshot: sourceSnapshot });
   const profilePath = firstExistingPath([
     path.join(SOURCE_ROOT, '_bmad', 'shared', 'goal-contract', 'goal-contract-profile.json'),
     path.join(PACKAGE_ROOT, '_bmad', 'shared', 'goal-contract', 'goal-contract-profile.json'),
@@ -1185,6 +1208,34 @@ async function generate(args, commandOptions = {}) {
     return generatePartitionBound(args);
   }
   return generateWholeSource(args, commandOptions);
+}
+
+function lintSource(args) {
+  const allowedFlags = new Set(['--entry', '--source', '--json']);
+  const forbidden = args.filter((value) => value.startsWith('--') && !allowedFlags.has(value));
+  if (forbidden.length > 0) {
+    const failureClass = `source_plan_lint_argument_forbidden:${forbidden[0].slice(2)}`;
+    throw Object.assign(new Error(failureClass), { failureClass });
+  }
+  if (countFlag(args, '--entry') !== 1 || countFlag(args, '--source') !== 1) {
+    throw Object.assign(new Error('source_plan_lint_argument_invalid'), {
+      failureClass: 'source_plan_lint_argument_invalid',
+    });
+  }
+  const { resolveEntryScenario } = loadPartitionModule('utils/goal-contract/entry-scenarios');
+  const entry = resolveEntryScenario(takeAll(args, '--entry'));
+  if (entry.entryScenario !== 'standalone_goal_contract') {
+    throw Object.assign(new Error('entry_route_mismatch'), {
+      failureClass: 'entry_route_mismatch',
+      entryScenario: entry.entryScenario,
+      expectedEntryScenario: 'standalone_goal_contract',
+    });
+  }
+  const sourcePath = requireExistingSource(args);
+  const { lintStandaloneSourcePlanFile } = loadPartitionModule(
+    'utils/goal-contract/source-plan/standalone-source-plan'
+  );
+  return lintStandaloneSourcePlanFile(sourcePath);
 }
 
 function assertNoForbiddenPartitionAuthorityArgs(args) {
@@ -4085,6 +4136,12 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
   const subcommand = args.shift();
   const json = has(args, '--json') || _opts.json;
   try {
+    if (subcommand === 'lint-source') {
+      const result = lintSource(args);
+      if (json) emitJson(result);
+      else process.stdout.write(`${result.ok ? 'PASS' : 'FAIL'} ${result.sourcePath}\n`);
+      return result.ok ? 0 : 1;
+    }
     if (subcommand === 'release-gate') {
       const { goalContractReleaseGateCommand, parseGoalContractBinding } = loadPartitionModule(
         'utils/goal-contract/release-gate'
@@ -4201,7 +4258,7 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
     if (!['generate', 'partition', 'supersede-authority'].includes(subcommand)) {
       throw Object.assign(
         new Error(
-          'Usage: bmad-speckit goal-contract generate --entry <standalone_goal_contract|requirements_backed_goal> (--source <plan.md> | --requirements-record <record.json>) --out <artifact-or-run-root> --json'
+          'Usage: bmad-speckit goal-contract <lint-source|generate|partition|supersede-authority> --entry <standalone_goal_contract|requirements_backed_goal> (--source <plan.md> | --requirements-record <record.json>) --out <artifact-or-run-root> --json'
         ),
         {
           failureClass: 'invalid_subcommand',
@@ -4247,6 +4304,13 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
       ...(error.deterministicPreflight
         ? { deterministicPreflight: error.deterministicPreflight }
         : {}),
+      ...(error.sourcePlanLint ? { sourcePlanLint: error.sourcePlanLint } : {}),
+      ...(error.sourceId ? { sourceId: error.sourceId } : {}),
+      ...(error.matchedPhrase ? { matchedPhrase: error.matchedPhrase } : {}),
+      ...(Number.isInteger(error.lineStart) ? { lineStart: error.lineStart } : {}),
+      ...(Number.isInteger(error.lineEnd) ? { lineEnd: error.lineEnd } : {}),
+      ...(error.sourceExcerpt ? { sourceExcerpt: error.sourceExcerpt } : {}),
+      ...(error.repairHint ? { repairHint: error.repairHint } : {}),
       ...(error.auditMetrics ? { auditMetrics: error.auditMetrics } : {}),
       ...(error.forbidden ? { forbidden: error.forbidden } : {}),
       ...(error.mismatchedFields ? { mismatchedFields: error.mismatchedFields } : {}),

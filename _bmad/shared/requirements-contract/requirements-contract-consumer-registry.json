@@ -2,9 +2,9 @@
   "schemaVersion": "requirements-contract-consumer-registry/v2",
   "owner": {
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-consumer-registry.ts",
-    "hash": "sha256:666d76b6020c0fcf795a15cfe1560791dd60aed41661a6c1408b530ba42e533f"
+    "hash": "sha256:b47954674d39d0dcd04287978039f1d99c25524603e16b4500858f709b581229"
   },
-  "registryHash": "sha256:9d3e9cb72d04149f74e6aabc1da0f6db861f5c53bfc6be60ec3aee03859dbd15",
+  "registryHash": "sha256:f8dfa51ef04e0e13d3fc47e194ce3e9d1d30e9140c75a8c919a4ff21e39dd6ed",
   "validationModes": [
     "draft",
     "confirmation-ready",
@@ -63,7 +63,7 @@
     {
       "consumerId": "full-typed-source-candidate-compiler",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-typed-source-compiler.ts",
-      "pathHash": "sha256:36f4feb0c2054fd259c55e0fe60845b3c36b8012c6ffae8c629c2161fbe8491b",
+      "pathHash": "sha256:4129437806fb1de7c062ca1e0fdb1e2e760509a58f533e439ab6c8a7e914bf5c",
       "inputRole": "complete_typed_source_authority",
       "parserRef": "not_applicable",
       "schemaRef": "typed_semantic_ir_schema",
@@ -536,7 +536,7 @@
     {
       "consumerId": "main-agent-compiled-prompt-runner",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-compiled-prompt-runner.ts",
-      "pathHash": "sha256:8c563b5fca785ba1866a2dd925af92a28f92c28355453e55131cc8d2992105ce",
+      "pathHash": "sha256:b55e19521d8d9ee2cde5de3437945ad6b46ea3c8c131d295cb21ea5d4b71a8a8",
       "inputRole": "canonical_prompt_transaction",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -1021,7 +1021,7 @@
     {
       "consumerId": "codex-cli-judge-adapter",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-codex-cli-judge-adapter.ts",
-      "pathHash": "sha256:d61541925e0e93c714753b37a2190b1e1d27fc2443755938b21c962cead30d94",
+      "pathHash": "sha256:513a6eebab45a7d7043ca567349fa4f8333d6777f49d21e19706aa7aaba7c793",
       "inputRole": "frozen_local_judge_evidence_snapshot",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",

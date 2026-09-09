@@ -48,7 +48,7 @@ describe('goal-contract activation admission currentness', () => {
       const outRoot = path.join(first.root, 'goal-run');
       const original = compileRequirementsBackedGoal({
         projectRoot: first.root,
-        requirementRecordPath: first.runtimeRecordPath,
+        requirementRecordPath: first.authorityRecordPath,
         outRoot,
       });
       const prepared = validateAdmission({
@@ -69,7 +69,7 @@ describe('goal-contract activation admission currentness', () => {
       });
       compileRequirementsBackedGoal({
         projectRoot: successor.root,
-        requirementRecordPath: successor.runtimeRecordPath,
+        requirementRecordPath: successor.authorityRecordPath,
         outRoot,
       });
 

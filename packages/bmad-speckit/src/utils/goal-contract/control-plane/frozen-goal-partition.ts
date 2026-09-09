@@ -83,6 +83,10 @@ function unique(values: string[]): string[] {
   return [...new Set(values.filter(Boolean))].sort();
 }
 
+function isTypedGoalExecutionIr(value: unknown): boolean {
+  return ['GoalExecutionIR/v2', 'GoalExecutionIR/v3'].includes(String(value));
+}
+
 function canonicalBytes(value: unknown): Buffer {
   return Buffer.from(`${stableControlPlaneStringify(value)}\n`, 'utf8');
 }
@@ -98,10 +102,10 @@ function withoutHash(value: JsonObject, hashField: string): JsonObject {
 }
 
 function partitionPolicyIdentity(version = 'GoalExecutionIR/v1') {
-  if (!['GoalExecutionIR/v1', 'GoalExecutionIR/v2', 'GoalContractPartitionManifest/v1', 'GoalContractPartitionManifest/v2'].includes(version)) {
+  if (!['GoalExecutionIR/v1', 'GoalExecutionIR/v2', 'GoalExecutionIR/v3', 'GoalContractPartitionManifest/v1', 'GoalContractPartitionManifest/v2'].includes(version)) {
     throw failure('goal_partition_policy_version_unsupported');
   }
-  const typed = version === 'GoalExecutionIR/v2' || version === 'GoalContractPartitionManifest/v2';
+  const typed = isTypedGoalExecutionIr(version) || version === 'GoalContractPartitionManifest/v2';
   const hardPolicy = typed ? { ...PARTITION_HARD_POLICY, schemaVersion: 'PartitionHardCompatibilityPolicy/v2',
     nonActionConservation: 'source_scoped_inheritance', sharedReferences: 'declared_applicability' } : PARTITION_HARD_POLICY;
   return {
@@ -114,7 +118,7 @@ function partitionPolicyIdentity(version = 'GoalExecutionIR/v1') {
 
 function componentOwnedPaths(ir: JsonObject, component: JsonObject): string[] {
   const frozenOwnedPaths = unique(strings(component.ownedPaths));
-  if (frozenOwnedPaths.length > 0 || ir.schemaVersion === 'GoalExecutionIR/v2') return frozenOwnedPaths;
+  if (frozenOwnedPaths.length > 0 || isTypedGoalExecutionIr(ir.schemaVersion)) return frozenOwnedPaths;
   const domainRefs = new Set(strings(component.executionDomainRefs));
   return unique(
     objects(ir.executionDomains)
@@ -146,7 +150,7 @@ function materializePartitionGroup(ir: JsonObject, components: JsonObject[]): Js
 
 function specSpanObligationRefs(span: JsonObject, ir: JsonObject): string[] {
   if (span.boundTypedSourceGraphHash !== undefined) {
-    if (ir.schemaVersion !== 'GoalExecutionIR/v2' || ir.profile !== 'requirements_backed') throw failure('goal_partition_spec_span_binding_invalid');
+    if (!isTypedGoalExecutionIr(ir.schemaVersion) || ir.profile !== 'requirements_backed') throw failure('goal_partition_spec_span_binding_invalid');
     return resolveRequirementsSpecSpanSourceNodeIds(span, object(ir.semanticSource).typedSourceAuthority);
   }
   return unique([
@@ -157,7 +161,7 @@ function specSpanObligationRefs(span: JsonObject, ir: JsonObject): string[] {
 }
 
 function standaloneExecutionConstraints(ir: JsonObject): JsonObject[] | null {
-  return ir.schemaVersion === 'GoalExecutionIR/v2' && ir.profile === 'standalone' &&
+  return isTypedGoalExecutionIr(ir.schemaVersion) && ir.profile === 'standalone' &&
     Array.isArray(object(ir.semanticSource).typedExecutionConstraints) ? objects(object(ir.semanticSource).typedExecutionConstraints) : null;
 }
 
@@ -185,7 +189,7 @@ function deriveGroupAuthorityRefs(ir: JsonObject, group: JsonObject): JsonObject
   const selectedConstraints = (constraints ?? []).filter((row) => row.scope === 'global' ||
     strings(row.applicableMustRefs).some((ref) => actionRefs.includes(ref)));
   const constraintObligations = new Set(selectedConstraints.flatMap((row) => strings(row.applicableMustRefs)));
-  const inheritedObligationRefs = ir.schemaVersion === 'GoalExecutionIR/v2' ? objects(ir.obligations)
+  const inheritedObligationRefs = isTypedGoalExecutionIr(ir.schemaVersion) ? objects(ir.obligations)
     .filter((row) => row.executionRole !== 'action' && (object(row.applicability).scope === 'global' ||
       (ir.profile === 'requirements_backed' && object(row.applicability).scope === 'source_scope') ||
       strings(object(row.applicability).obligationRefs).some((ref) => actionRefs.includes(ref)) ||
@@ -218,7 +222,7 @@ function deriveGroupAuthorityRefs(ir: JsonObject, group: JsonObject): JsonObject
     taskRefs: unique([...taskRefs]),
     traceSliceRefs: unique([...traceRefs]),
     obligationRefs,
-    ...(ir.schemaVersion === 'GoalExecutionIR/v2' ? { inheritedObligationRefs: unique(inheritedObligationRefs) } : {}),
+    ...(isTypedGoalExecutionIr(ir.schemaVersion) ? { inheritedObligationRefs: unique(inheritedObligationRefs) } : {}),
     ...(constraints ? { executionConstraintRefs: unique(selectedConstraints.map((row) => String(row.constraintId))) } : {}),
     logicalSpecSpanRefs,
     commandRefs,
@@ -238,7 +242,7 @@ function hasExactUniqueAssignment(parentRefs: string[], assignedRefs: string[][]
 }
 
 function validateTypedPartitionChild(ir: JsonObject, components: JsonObject[], row: JsonObject, child: JsonObject): void {
-  if (ir.schemaVersion !== 'GoalExecutionIR/v2') return;
+  if (!isTypedGoalExecutionIr(ir.schemaVersion)) return;
   const componentRefs = strings(row.componentRefs);
   const selected = components.filter((component) => componentRefs.includes(String(component.componentId)));
   if (!componentRefs.length || selected.length !== componentRefs.length) {
@@ -299,7 +303,7 @@ function scopedPartitionDomains(ir: JsonObject, group: JsonObject, authorityRefs
   const paths = new Set(strings(group.ownedPaths));
   const commands = new Set(strings(authorityRefs.commandRefs));
   return objects(ir.executionDomains).filter((domain) => domainRefs.has(String(domain.executionDomainId))).map((domain) => (
-    ir.schemaVersion !== 'GoalExecutionIR/v2' ? domain : { ...domain,
+    !isTypedGoalExecutionIr(ir.schemaVersion) ? domain : { ...domain,
       ownership: objects(domain.ownership).filter((owner) => paths.has(String(owner.targetPath))),
       logicalTargetPaths: strings(domain.logicalTargetPaths).filter((target) => paths.has(target)),
       commandRefs: strings(domain.commandRefs).filter((command) => commands.has(command)),
@@ -309,7 +313,7 @@ function scopedPartitionDomains(ir: JsonObject, group: JsonObject, authorityRefs
 
 function scopedPartitionLogicalScopes(ir: JsonObject, group: JsonObject, authorityRefs: JsonObject): JsonObject {
   const parentScope = object(ir.logicalScopes);
-  if (ir.schemaVersion !== 'GoalExecutionIR/v2') return {
+  if (!isTypedGoalExecutionIr(ir.schemaVersion)) return {
     ownedPaths: unique(strings(group.ownedPaths)), forbiddenPaths: unique(strings(parentScope.forbiddenPaths)),
   };
   const refs = new Set(strings(authorityRefs.obligationRefs));
@@ -349,7 +353,7 @@ function groupsHaveCompatibleIsolation(ir: JsonObject, groups: JsonObject[]): bo
 function partitionAuthorityConserved(ir: JsonObject, groups: JsonObject[]): boolean {
   if (!groupsHaveCompatibleIsolation(ir, groups)) return false;
   const assignments = groups.map((group) => deriveGroupAuthorityRefs(ir, group));
-  if (ir.schemaVersion === 'GoalExecutionIR/v2') {
+  if (isTypedGoalExecutionIr(ir.schemaVersion)) {
     const uniqueChecks = [[objects(ir.atomicTasks), 'taskId', 'taskRefs'],
       [objects(ir.traceSlices), 'traceSliceId', 'traceSliceRefs']] as const;
     if (!uniqueChecks.every(([rows, id, ref]) => hasExactUniqueAssignment(rows.map((row) => String(row[id])),
@@ -397,7 +401,7 @@ function hardValidExecutionGroups(ir: JsonObject, groups: JsonObject[][]): JsonO
         const refs = new Set(strings(group.taskRefs));
         const tasks = objects(ir.atomicTasks).filter((task) => refs.has(String(task.taskId)));
         const aggregates = tasks.filter((task) => object(task.taskExecution).executionClass === 'aggregate_only');
-        const aggregateOnly = ir.schemaVersion === 'GoalExecutionIR/v2' && tasks.length > 0 && aggregates.length === tasks.length;
+        const aggregateOnly = isTypedGoalExecutionIr(ir.schemaVersion) && tasks.length > 0 && aggregates.length === tasks.length;
         return Number(group.upperBoundEffortMinutes) > 240 ||
           (aggregates.length > 0 && !aggregateOnly) ||
           (aggregateOnly && (strings(group.ownedPaths).length > 0 || new Set(aggregates.map((task) => object(task.taskExecution).aggregateGatePhase)).size !== 1)) ||
@@ -889,7 +893,7 @@ function compilePartitionFromFrozenGoalAuthority(input: {
       taskRefs,
       traceSliceRefs,
       obligationRefs,
-      ...(ir.schemaVersion === 'GoalExecutionIR/v2' ? { inheritedObligationRefs: authorityRefs.inheritedObligationRefs } : {}),
+      ...(isTypedGoalExecutionIr(ir.schemaVersion) ? { inheritedObligationRefs: authorityRefs.inheritedObligationRefs } : {}),
       ...(standaloneExecutionConstraints(ir) ? { executionConstraintRefs: authorityRefs.executionConstraintRefs } : {}),
       dependencyPartitionRefs,
       expectedEffortMinutes: Number(group.expectedEffortMinutes),
@@ -902,7 +906,7 @@ function compilePartitionFromFrozenGoalAuthority(input: {
       .slice('sha256:'.length, 'sha256:'.length + 16)
       .toUpperCase()}`;
     const childPayload = {
-      schemaVersion: ir.schemaVersion === 'GoalExecutionIR/v2' ? 'GoalChildExecutionContract/v2' : 'GoalChildExecutionContract/v1',
+      schemaVersion: isTypedGoalExecutionIr(ir.schemaVersion) ? 'GoalChildExecutionContract/v2' : 'GoalChildExecutionContract/v1',
       childContractId,
       partitionId,
       profile: ir.profile,
@@ -913,7 +917,7 @@ function compilePartitionFromFrozenGoalAuthority(input: {
       taskRefs: partitionMembership.taskRefs,
       traceSliceRefs: partitionMembership.traceSliceRefs,
       obligationRefs: partitionMembership.obligationRefs,
-      ...(ir.schemaVersion === 'GoalExecutionIR/v2' ? { inheritedObligationRefs: partitionMembership.inheritedObligationRefs } : {}),
+      ...(isTypedGoalExecutionIr(ir.schemaVersion) ? { inheritedObligationRefs: partitionMembership.inheritedObligationRefs } : {}),
       ...(standaloneExecutionConstraints(ir) ? { executionConstraintRefs: partitionMembership.executionConstraintRefs,
         executionConstraints: standaloneExecutionConstraints(ir)!.filter((row) => strings(partitionMembership.executionConstraintRefs).includes(String(row.constraintId))) } : {}),
       dependencyPartitionRefs: partitionMembership.dependencyPartitionRefs,
@@ -985,7 +989,7 @@ function compilePartitionFromFrozenGoalAuthority(input: {
   };
   validateGoalContractSchema(ELIGIBILITY_SCHEMA, finalizedEligibility);
   const manifestPayload = {
-    schemaVersion: ir.schemaVersion === 'GoalExecutionIR/v2' ? 'GoalContractPartitionManifest/v2' : 'GoalContractPartitionManifest/v1',
+    schemaVersion: isTypedGoalExecutionIr(ir.schemaVersion) ? 'GoalContractPartitionManifest/v2' : 'GoalContractPartitionManifest/v1',
     profile: ir.profile,
     goalId: ir.goalId,
     goalExecutionIRHash: ir.goalExecutionIRHash,

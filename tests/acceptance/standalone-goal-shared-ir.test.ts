@@ -112,7 +112,7 @@ describe('standalone Goal shared execution IR', () => {
       expect(result).not.toHaveProperty('authoringJudgeAggregateRef');
       expect(existsSync(result.internalSemanticGateRef.path)).toBe(true);
       expect(semanticIr.schemaVersion).toBe('StandaloneGoalSemanticIR/v2');
-      expect(executionIr.schemaVersion).toBe('GoalExecutionIR/v2');
+      expect(executionIr.schemaVersion).toBe('GoalExecutionIR/v3');
       expect(executionIr.profile).toBe('standalone');
       expect(active).toMatchObject({
         schemaVersion: 'GoalContractActiveAuthority/v1',

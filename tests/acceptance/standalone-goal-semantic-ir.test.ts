@@ -29,8 +29,12 @@ function input(): StandaloneGoalSemanticInput {
       },
     ],
     logicalSpecSpans: [
-      { specSpanId: 'SPAN-001', boundObligationIds: ['MUST-001'], evidenceClaimRefs: [] },
-      { specSpanId: 'SPAN-002', boundObligationIds: ['NEG-001'], evidenceClaimRefs: [] },
+      { specSpanId: 'SPAN-001', sourceArtifactId: 'fixture:standalone-semantic-ir', sourceSnapshotHash: hash('2'),
+        startByte: 0, endByteExclusive: 10, lineStart: 1, lineEnd: 1, exactTextHash: hash('3'),
+        boundObligationIds: ['MUST-001'], evidenceClaimRefs: [] },
+      { specSpanId: 'SPAN-002', sourceArtifactId: 'fixture:standalone-semantic-ir', sourceSnapshotHash: hash('2'),
+        startByte: 10, endByteExclusive: 20, lineStart: 2, lineEnd: 2, exactTextHash: hash('4'),
+        boundObligationIds: ['NEG-001'], evidenceClaimRefs: [] },
     ],
     technicalSnapshot: {
       targetPaths: ['src/export.ts'],
@@ -67,7 +71,7 @@ describe('standalone Goal semantic front-end', () => {
       .toBe(result.internalSemanticGate.gateHash);
     expect(result.goalExecutionIr.standaloneLineage).not.toHaveProperty('authoringEffectivePassHash');
     expect(result.goalExecutionIr.technicalAuthority).not.toHaveProperty('authoringEffectivePassHash');
-    expect(result.goalExecutionIr.schemaVersion).toBe('GoalExecutionIR/v2');
+    expect(result.goalExecutionIr.schemaVersion).toBe('GoalExecutionIR/v3');
     expect(result.goalExecutionIr.profile).toBe('standalone');
     expect(result.goalExecutionIr).not.toHaveProperty('requirementsLineage');
     expect(result.goalExecutionIr.obligations.find((row) => row.obligationId === 'NEG-001'))

@@ -744,7 +744,7 @@ describe('bmad-speckit goal-contract command', () => {
       const activeAuthority = JSON.parse(fs.readFileSync(payload.activeAuthorityRef.path, 'utf8'));
       assert.equal(payload.goalJudgeDispatchCount, 0);
       assert.equal(executionAuthority.schemaVersion, 'GoalExecutionAuthority/v2');
-      assert.equal(executionIR.schemaVersion, 'GoalExecutionIR/v2');
+      assert.equal(executionIR.schemaVersion, 'GoalExecutionIR/v3');
       assert.equal(executionIR.profile, 'standalone');
       assert.equal(activeAuthority.schemaVersion, 'GoalContractActiveAuthority/v1');
       assert.equal(activeAuthority.goalExecutionIRHash, executionIR.goalExecutionIRHash);

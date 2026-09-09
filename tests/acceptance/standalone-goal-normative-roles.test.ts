@@ -11,9 +11,9 @@ describe('standalone typed normative roles', () => {
       value.technicalSnapshot.constraintBindings = value.technicalSnapshot.constraintBindings!.slice(0, 4);
       Object.assign(row, { executionRole, normativeStrength: executionRole === 'definition' ? 'descriptive' : 'must',
         polarity: executionRole === 'definition' ? 'descriptive' : 'required',
-        provenanceRefs: ['source-block-section'],
+        provenanceRefs: ['SPAN-NEG-001'],
         applicability: { scope: 'source_scope', sourceRefs: ['SPAN-NEG-001'],
-          sourceScope: { kind: 'source_section', ownerId: null, ownerBlockRefs: ['source-block-section'] } } });
+          sourceScope: { kind: 'source_section', ownerId: null, ownerBlockRefs: ['SPAN-NEG-001'] } } });
       const result = compileStandaloneGoalExecution(value);
       expect(result.goalExecutionIr.obligations.find((item) => item.obligationId === row.id))
         .toMatchObject({ executionRole, polarity: row.polarity, applicability: row.applicability, atomRefs: [] });
@@ -38,10 +38,14 @@ describe('standalone typed normative roles', () => {
     const value = normativeRoleInput();
     value.sourceObligations.push({ ...structuredClone(value.sourceObligations[0]), id: 'MUST-002',
       specSpanRefs: ['SPAN-MUST-002'], dependencyRefs: ['MUST-001'] });
-    value.logicalSpecSpans.push({ specSpanId: 'SPAN-MUST-002', boundObligationIds: ['MUST-002'], evidenceClaimRefs: [] });
+    value.logicalSpecSpans.push({ specSpanId: 'SPAN-MUST-002', sourceArtifactId: 'fixture:standalone-normative-roles',
+      sourceSnapshotHash: value.sourceSnapshotHash, startByte: 64, endByteExclusive: 72, lineStart: 5, lineEnd: 5,
+      exactTextHash: `sha256:${'7'.repeat(64)}`, boundObligationIds: ['MUST-002'], evidenceClaimRefs: [] });
     for (const binding of value.technicalSnapshot.constraintBindings!.slice(0, 4)) {
       binding.applicableMustRefs.push('MUST-002');
       binding.applicableAtomRefs!.push('MUST-002-A1');
+      binding.sourceRefs.push('SPAN-MUST-002');
+      binding.premiseRefs!.push('SPAN-MUST-002');
     }
     const result = compileStandaloneGoalExecution(value);
     expect(result.goalExecutionIr.dependencies).toHaveLength(1);
@@ -83,7 +87,7 @@ describe('standalone typed normative roles', () => {
   it('creates only the declared action task and retains non-action coverage in closure', async () => {
     const result = compileStandaloneGoalExecution(normativeRoleInput());
     expect(result.goalJudgeDispatchCount).toBe(0);
-    expect(result.goalExecutionIr.schemaVersion).toBe('GoalExecutionIR/v2');
+    expect(result.goalExecutionIr.schemaVersion).toBe('GoalExecutionIR/v3');
     expect(result.goalExecutionIr.atomicTasks.map((row) => row.obligationRefs)).toEqual([['MUST-001']]);
     expect(result.goalExecutionIr.traceSlices.flatMap((row) => row.obligationRefs)).toEqual(['MUST-001']);
     expect(result.goalExecutionIr.obligations).toHaveLength(4);

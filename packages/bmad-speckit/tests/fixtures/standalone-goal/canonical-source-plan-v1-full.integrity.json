@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "canonical-source-plan-integrity/v1",
+  "artifacts": {
+    "legacySource": {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.md",
+      "byteCount": 214296,
+      "sha256": "sha256:06f1c8f44fdfea09fb0f12832cd0a319c7938c79aac91aae48f44b54dc731d4a"
+    },
+    "independentOracle": {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.json",
+      "byteCount": 7144217,
+      "sha256": "sha256:ed319186e6d12ed7fbfa8c94aaf807cbb432733f677c5af0dcc07ae3faea0f86"
+    },
+    "canonicalSource": {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full.md",
+      "byteCount": 2579033,
+      "sha256": "sha256:d0aa0be0d8773e8029724c2dd4027578bfdf614870c93332cc082fb54890f74a"
+    },
+    "derivationManifest": {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full.derivation-manifest.json",
+      "byteCount": 1698800,
+      "sha256": "sha256:172b7c413d180a62bbfe7694875b2c44623c8ccf77659047322b5ff92fe6bfcf"
+    },
+    "expectedGraph": {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full.expected-graph.json",
+      "byteCount": 6598317,
+      "sha256": "sha256:c9471e0197aff6dd6e2b1e6bff7e7003e0471b13e9998daa1b010458be588537"
+    },
+    "fixtureReview": {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full.fixture-review.json",
+      "byteCount": 10454,
+      "sha256": "sha256:ad1acab89d6cd46657d3eb05b195795f6d6e58512ec2973bc7ac8661a7a3121a"
+    },
+    "profile": {
+      "path": "_bmad/shared/goal-contract/standalone-source-plan-profile.json",
+      "byteCount": 4599,
+      "sha256": "sha256:78e8812f85cdedf5b76c3cd76c9efa46d158a138637e00e227f0283e054c9adc"
+    }
+  },
+  "semanticBindings": {
+    "manifestHash": "sha256:b86f23c082795dee2b9340435ea774b3732c39b825c371d9390c2084109f3bc8",
+    "expectedDocumentHash": "sha256:50d4d205a7324e7d32152c3c2aac8a2f83bc4a5f0619e337b5baf9aaf3404f85",
+    "canonicalRequirementGraphHash": "sha256:e3e3d3e5944ec94cbf6a8ca7c9b7ce6daf235ee593e4277a9b632e8f8a51ce08",
+    "fixtureReviewHash": "sha256:fd921812ee0e41270ff0c983e1f4ed6d2ca1a249a00e3a1490abcae8d80e90b7",
+    "profileHash": "sha256:7039f71986f2b43eca5ac0eebe4fab4ff65b70f7d0cbf476dbee80345f57e7fb"
+  },
+  "completeness": {
+    "sourceSpanCount": 2506,
+    "sourceBlockCount": 2486,
+    "canonicalNodeCount": 825,
+    "mappedSourceSpans": 2506,
+    "unmappedSourceSpans": 0,
+    "unmappedNormativeSpans": 0,
+    "orphanSemanticNodes": 0,
+    "supersededSpanCount": 2,
+    "supersededCanonicalObligationCount": 0
+  },
+  "derivationAssurances": {
+    "canonicalFixtureSelfContained": true,
+    "productionExtractorOutputUsedToDefineExpected": false,
+    "productionGoalExecutionIrUsedToDefineExpected": false,
+    "productionGoalContractUsedToDefineExpected": false,
+    "sourceBytesRewritten": false,
+    "standaloneImplementationConfirmationInjected": false
+  },
+  "reviewStatus": "confirmed",
+  "readyForConfirmedRequirementsDerivation": true,
+  "integrityHash": "sha256:4720992cfc6b0d92c180606dd68746454b07a30915cb2a7ea329a586b498e86d"
+}

@@ -241,7 +241,7 @@ function materializeActiveRun(
   produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
   const generated = compileRequirementsBackedGoal({
     projectRoot: fixture.root,
-    requirementRecordPath: fixture.runtimeRecordPath,
+    requirementRecordPath: fixture.authorityRecordPath,
     outRoot: path.join(fixture.root, 'goal-run'),
   });
   const activationCall = callActivationRuntime<{
@@ -482,7 +482,7 @@ describe('goal execution admission and committed active-run resolution', () => {
       const generated = compileRequirementsBackedGoal(
         {
           projectRoot: fixture.root,
-          requirementRecordPath: fixture.runtimeRecordPath,
+          requirementRecordPath: fixture.authorityRecordPath,
           outRoot: path.join(fixture.root, 'goal-run'),
         },
         { compileGoalExecutionIR: compilePartitionFixtureIr }
@@ -747,7 +747,7 @@ describe('goal execution admission and committed active-run resolution', () => {
       produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
       const successor = compileRequirementsBackedGoal({
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot: path.join(fixture.root, 'goal-run'),
       });
 
@@ -785,7 +785,7 @@ describe('goal execution admission and committed active-run resolution', () => {
       produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
       const successor = compileRequirementsBackedGoal({
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot: path.join(fixture.root, 'goal-run'),
       });
 
@@ -832,7 +832,7 @@ describe('goal execution admission and committed active-run resolution', () => {
       produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
       const successor = compileRequirementsBackedGoal({
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot: path.join(fixture.root, 'goal-run'),
       });
       const activated = callActivationRuntime('activateFrozenGoalAuthority', {
@@ -876,7 +876,7 @@ describe('goal execution admission and committed active-run resolution', () => {
       produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
       const successor = compileRequirementsBackedGoal({
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot: path.join(fixture.root, 'goal-run'),
       });
       const activated = callActivationRuntime('activateFrozenGoalAuthority', {
@@ -919,7 +919,7 @@ describe('goal execution admission and committed active-run resolution', () => {
       produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
       const successor = compileRequirementsBackedGoal({
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot: path.join(fixture.root, 'goal-run'),
       });
       const activated = callActivationRuntime('activateFrozenGoalAuthority', {
@@ -994,7 +994,7 @@ describe('goal execution admission and committed active-run resolution', () => {
       produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
       const successor = compileRequirementsBackedGoal({
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot: path.join(fixture.root, 'goal-run'),
       });
       const previousPointer = JSON.parse(readFileSync(activeRunPointerPath, 'utf8'));

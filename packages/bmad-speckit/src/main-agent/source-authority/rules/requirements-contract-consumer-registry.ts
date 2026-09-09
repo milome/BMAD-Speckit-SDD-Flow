@@ -276,6 +276,12 @@ export const REQUIREMENTS_CONTRACT_SIX_MODEL_CONSUMER_DEFINITIONS: readonly SixM
       verifiedFacadeRequired: true,
     },
     {
+      consumerId: 'six-model-goal-requirements-typed-bridge',
+      canonicalPath:
+        'packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-requirements-typed-bridge.ts',
+      roles: ['projection_reader'],
+    },
+    {
       consumerId: 'six-model-frozen-goal-activation',
       canonicalPath:
         'packages/bmad-speckit/src/utils/goal-contract/control-plane/frozen-goal-activation.ts',
@@ -734,6 +740,7 @@ export const REQUIREMENTS_CONTRACT_PRODUCTION_SEMANTIC_SOURCE_PATHS = [
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-authority-publication-committer.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-canonical-compiler-input.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-confirmation-projection-facade.ts',
+  'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-confirmed-authority-adapter.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-direct-confirmation-read-bypass-audit.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-direct-parser-bypass-audit.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-hash-domains.ts',
@@ -750,6 +757,7 @@ export const REQUIREMENTS_CONTRACT_PRODUCTION_SEMANTIC_SOURCE_PATHS = [
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/strict-command-resolution-preflight.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/trace-closure-matrix.ts',
   'packages/bmad-speckit/src/main-agent/source-authority/scripts/verify-requirements-contract-source-writes.ts',
+  'packages/bmad-speckit/dist/utils/goal-contract/control-plane/goal-requirements-typed-bridge.js',
   'packages/bmad-speckit/src/utils/goal-contract/control-plane/standalone-goal-authority.ts',
   'packages/bmad-speckit/dist/utils/goal-contract/control-plane/standalone-goal-authority.js',
 ] as const;

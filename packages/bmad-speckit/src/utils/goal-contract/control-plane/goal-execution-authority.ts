@@ -57,7 +57,7 @@ export function resolveGoalExecutionAuthority(value: unknown): GoalExecutionIR {
   const { goalExecutionAuthorityHash, ...payload } = authority;
   if (goalExecutionAuthorityHash !== sha256Stable(payload)) fail('hash_mismatch');
   const expanded = record(decodeGoalSemanticDictionary(authority.goal));
-  if (expanded.schemaVersion !== 'GoalExecutionIR/v2') fail('version_invalid');
+  if (!['GoalExecutionIR/v2', 'GoalExecutionIR/v3'].includes(String(expanded.schemaVersion))) fail('version_invalid');
   if (authority.projectionRecipe === 'requirements_typed_obligations/v1') {
     if (expanded.profile !== 'requirements_backed' || expanded.aliases !== undefined || !Array.isArray(expanded.obligations)) fail('projection_invalid');
     const expected = projectRequirementsTypedGoalObligations(record(expanded.semanticSource), expanded.logicalSpecSpans as Row[]);

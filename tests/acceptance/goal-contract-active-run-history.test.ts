@@ -58,7 +58,7 @@ describe('goal-contract active-run history', () => {
       const outRoot = path.join(firstFixture.root, 'goal-run');
       const firstGoal = compileRequirementsBackedGoal({
         projectRoot: firstFixture.root,
-        requirementRecordPath: firstFixture.runtimeRecordPath,
+        requirementRecordPath: firstFixture.authorityRecordPath,
         outRoot,
       });
       materializeGoalRunExecutionAdapter(outRoot);
@@ -83,7 +83,7 @@ describe('goal-contract active-run history', () => {
       });
       const successorGoal = compileRequirementsBackedGoal({
         projectRoot: successorFixture.root,
-        requirementRecordPath: successorFixture.runtimeRecordPath,
+        requirementRecordPath: successorFixture.authorityRecordPath,
         outRoot,
       });
       const successorActivation = activate(

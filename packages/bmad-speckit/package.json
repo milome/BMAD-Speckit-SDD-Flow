@@ -12,6 +12,8 @@
     "bin/",
     "dist/",
     "_bmad/",
+    "!_bmad/.*",
+    "!_bmad/**/.*",
     "node_modules/@bmad-speckit/"
   ],
   "scripts": {

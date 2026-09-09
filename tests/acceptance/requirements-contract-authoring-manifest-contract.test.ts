@@ -14,9 +14,16 @@ import {
   commitRequirementsContractAuthorityPublication,
   type RequirementsActiveAuthorityTuple,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-authority-publication-committer';
-import { createRequirementsContractSemanticIr } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-ir';
+import {
+  createRequirementsContractSemanticIr,
+  normalizeRequirementsContractSemanticIrAuthority,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-ir';
 import { createRequirementsContractSourceBindingCapsule } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-source-binding-capsule';
 import { requirementsContractDomainHash } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-hash-domains';
+import {
+  createTypedSourceAuthority,
+  createTypedSourceCoverage,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-typed-source-semantics';
 
 const hash = (digit: string) => `sha256:${digit.repeat(64)}`;
 const artifact = { role: 'semantic_ir' as const, schemaVersion: 'requirements-contract-semantic-ir/v1', artifactId: 'SEM-001', recordRelativePath: 'authoring/semantic-revisions/SEM-001/semantic-ir.json', artifactHash: hash('1') };
@@ -223,13 +230,40 @@ describe('authoring checkpoint and build manifests', () => {
     expect(() => assertRequirementsAuthorityRouteTransition({ route: 'semantic_repair', current, next: { ...current, activeSemanticRevisionId: 'SEM-002', activeSemanticIrPath: 'authoring/semantic-revisions/SEM-002/semantic-ir.json' } })).toThrow('requirements_semantic_repair_requires_full_replacement');
   });
 
-  it('readbacks all authority groups before publishing the build tuple', () => {
+  it('resolves dictionary-backed semantic candidates before publishing the build tuple', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'requirements-authority-commit-'));
     try {
+      const typedSourceAuthority = createTypedSourceAuthority({
+        schemaVersion: 'requirements-contract-typed-source-graph/v2',
+        sourceNodes: [], sourceRelations: [], sourceBlocks: [], commandDeclarations: [],
+        workDeclarations: [], scenarioDeclarations: [], fixDeclarations: [], sections: [],
+      });
+      const sourceClaim = {
+        evidenceClaimId: 'EVIDENCE-CLAIM-TYPED-SOURCE-GRAPH',
+        authorityClass: 'source_grounded' as const,
+        normalizedClaimHash: typedSourceAuthority.graphHash,
+        sourceEvidenceRequired: true,
+        decisionReceiptRefs: [], premiseRefs: [], derivationReceiptRefs: [],
+      };
       const semantic = createRequirementsContractSemanticIr({
         recordId: 'REQ-001', requestId: 'REQUEST-001', parentSemanticRevisionId: null,
-        compilerVersion: 'compiler-v1', semantics: { title: 'One' }, evidenceClaims: [],
-        specSpanRegistry: [], executionConstraints: [], semanticProvenance: {},
+        compilerVersion: 'compiler-v2',
+        semantics: {
+          schemaVersion: 'requirements-contract-typed-source-semantics/v2',
+          typedSourceAuthority,
+          typedCoverage: createTypedSourceCoverage(typedSourceAuthority),
+          requirements: [], atoms: [], decisions: [],
+        },
+        evidenceClaims: [sourceClaim],
+        specSpanRegistry: [{
+          authorityClass: 'source_grounded',
+          normalizedClaimHash: typedSourceAuthority.graphHash,
+          boundSemanticNodeIds: [], boundObligationIds: [],
+          boundTypedSourceGraphHash: typedSourceAuthority.graphHash,
+          evidenceClaimRefs: [sourceClaim.evidenceClaimId],
+          decisionReceiptRefs: [], derivationReceiptRefs: [],
+        }],
+        executionConstraints: [], semanticProvenance: { typedSourceGraph: typedSourceAuthority.graphHash },
       });
       const binding = createRequirementsContractSourceBindingCapsule({
         recordId: 'REQ-001', semanticRevisionId: semantic.semanticRevisionId,
@@ -247,23 +281,49 @@ describe('authoring checkpoint and build manifests', () => {
         ...authorityTuple(semantic.semanticRevisionId, semantic.scopeSemanticHash, binding.bindingRevisionId, binding.sourceBindingHash),
         activeBuildManifestHash: build.buildManifestHash,
       };
-      for (const [relativePath, value] of [[next.activeSemanticIrPath, semantic], [next.activeSourceBindingPath, binding]] as const) {
+      const semanticCandidate = normalizeRequirementsContractSemanticIrAuthority(semantic);
+      expect(semanticCandidate.schemaVersion).toBe('RequirementsSemanticCandidate/v2');
+      for (const [relativePath, value] of [[next.activeSemanticIrPath, semanticCandidate], [next.activeSourceBindingPath, binding]] as const) {
         const absolutePath = path.join(root, ...relativePath.split('/'));
         fs.mkdirSync(path.dirname(absolutePath), { recursive: true });
         fs.writeFileSync(absolutePath, JSON.stringify(value));
       }
       const targetPath = path.join(root, ...next.activeBuildManifestPath.split('/'));
+      let compareAndSwapCalls = 0;
       expect(commitRequirementsContractAuthorityPublication({
         route: 'initial', current: null, next, recordRootPath: root,
         buildManifestTargetPath: targetPath, buildManifest: build,
-        compareAndSwapAuthorityTuple: () => true,
+        compareAndSwapAuthorityTuple: () => { compareAndSwapCalls += 1; return true; },
       }).activeAuthority).toEqual(next);
-      fs.writeFileSync(path.join(root, ...next.activeSemanticIrPath.split('/')), JSON.stringify({ ...semantic, scopeSemanticHash: hash('7') }));
+      expect(compareAndSwapCalls).toBe(1);
+      fs.writeFileSync(path.join(root, ...next.activeSemanticIrPath.split('/')), JSON.stringify({
+        ...semanticCandidate,
+        candidateHash: hash('7'),
+      }));
       expect(() => commitRequirementsContractAuthorityPublication({
         route: 'initial', current: null, next, recordRootPath: root,
         buildManifestTargetPath: targetPath, buildManifest: build,
-        compareAndSwapAuthorityTuple: () => true,
-      })).toThrow();
+        compareAndSwapAuthorityTuple: () => { compareAndSwapCalls += 1; return true; },
+      })).toThrow('requirements_semantic_candidate_hash_mismatch');
+      expect(compareAndSwapCalls).toBe(1);
+      const { candidateHash: _candidateHash, ...candidatePayload } = semanticCandidate;
+      const identityMismatchPayload = {
+        ...candidatePayload,
+        semanticRevisionId: 'semantic-revision-tampered',
+      };
+      fs.writeFileSync(path.join(root, ...next.activeSemanticIrPath.split('/')), JSON.stringify({
+        ...identityMismatchPayload,
+        candidateHash: requirementsContractDomainHash(
+          'requirements-semantic-candidate/v2',
+          identityMismatchPayload
+        ),
+      }));
+      expect(() => commitRequirementsContractAuthorityPublication({
+        route: 'initial', current: null, next, recordRootPath: root,
+        buildManifestTargetPath: targetPath, buildManifest: build,
+        compareAndSwapAuthorityTuple: () => { compareAndSwapCalls += 1; return true; },
+      })).toThrow('requirements_semantic_candidate_identity_mismatch');
+      expect(compareAndSwapCalls).toBe(1);
       expect(() => commitRequirementsContractAuthorityPublication({
         route: 'initial', current: null, next, recordRootPath: root,
         buildManifestTargetPath: path.join(root, 'wrong.json'), buildManifest: build,

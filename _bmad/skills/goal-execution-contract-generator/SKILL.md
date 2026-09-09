@@ -16,6 +16,9 @@ Create a frozen `/goal` execution authority and projection. This skill compiles 
    - Default: `docs/plans/YYYY-MM-DD-<slug>-goal-execution-plan.md`.
    - Use the user-provided path if present.
 3. For source-plan goal contracts, use the first-class package CLI:
+   - When authoring a new standalone source, start from `references/standalone-source-plan-template.md` and its machine contract `references/standalone-source-plan-profile.json`. Do not improvise a new parser-facing format for each run.
+   - Run `bmad-speckit goal-contract lint-source --entry standalone_goal_contract --source <path> --json` before generation. `goal-contract generate` runs the same validator again against the exact source bytes before obligation or constraint allocation.
+   - A canonical v1 source uses explicit `standalone-source-plan` metadata and `standalone-source-plan-node` fenced YAML blocks. Human heading text and section order are not parser authority.
    - Run `bmad-speckit goal-contract generate --entry standalone_goal_contract --source <path> --out <path> --json`.
    - Build one immutable `SourceSnapshot` from the exact Source Plan bytes or LF-normalized ordered conversation segments.
    - Freeze the supported `StandaloneGoalSemanticIR` version, run the internal Source Oracle and deterministic semantic validator, and require a hash-bound `StandaloneGoalInternalSemanticGate/v1` pass before execution compilation. Pure generation does not dispatch an external Judge or emit authoring Judge request, response, aggregate, or EffectivePass compatibility artifacts.
@@ -27,6 +30,7 @@ Create a frozen `/goal` execution authority and projection. This skill compiles 
    - In this repository, the canonical assets live under `_bmad/shared/goal-contract/`.
    - In an installed skill, use the skill-local projections under `references/`.
    - Resolve `references/goal-execution-contract-template.md` and `references/goal-contract-profile.json` relative to this skill directory.
+   - Resolve the Source Plan producer assets `references/standalone-source-plan-template.md` and `references/standalone-source-plan-profile.json` relative to this skill directory.
    - If the template is missing, stop with `goal_contract_template_missing`.
    - If the profile is missing, continue only for manual contract authoring, and report `goal_contract_profile_missing` as a packaging defect.
 5. Run docs-review dependency adaptation only for a non-standalone compatibility workflow that explicitly retains docs-review:
@@ -58,6 +62,10 @@ Create a frozen `/goal` execution authority and projection. This skill compiles 
   - `executionMode: execute_only`
 - Do not leave placeholders such as `<...>`, `[TODO]`, `TBD`, or empty hash fields unless the field explicitly allows `none`.
 - Convert implementation obligations into atomic `G00...GNN` tasks with source-grounded file scopes, steps, validations, and acceptance. Preserve acceptance, conditions and pure boundaries in their own roles; do not invent implementation tasks or commands for every source clause.
+- Canonical Source Plan IDs use `REQ|NFR|NEG|OUT|TASK|AC|CMD|EVD|ART|PATH|DEP|STOP-<DOMAIN>-NNN`; only AC may add `-SNN`. `MUST|SHOULD|MAY` are modality values, `NOT DONE` is an OUT projection, and `SRC-*|SPAN-*|source-block-*|clause-*` are provenance only.
+- Require explicit `ownerRef` and `requirementRefs` for typed children. A missing or ambiguous PASS/FAIL/BLOCKED/CMD/EVD/ART/PATH/DEP/STOP owner fails with `source_semantic_owner_missing`; adjacency must not create an owner or a synthetic requirement.
+- Reject a source prohibition against its authorized Goal contract production as `source_plan_purpose_conflict`. Preserve legitimate business, path, validation, architecture, and conditional prohibitions.
+- Standalone Source Plans do not carry `implementationConfirmation`. Six-state and req-trace confirmed-source adapters keep their native confirmation and readiness gates, then deterministically adapt the confirmed typed authority to `CanonicalRequirementGraph/v1`, pass the same canonical graph lint, and invoke the same Goal Execution IR, closure, and projection compiler. They must not parse confirmed-source prose with the standalone fence parser or maintain an entry-local semantic compiler.
 - Include direct evidence expectations for every acceptance item.
 - Include required commands in executable order.
 - Include stop conditions that force `/goal` to stop instead of rewriting the contract.
@@ -179,13 +187,17 @@ Inside this repository:
 
 - `_bmad/shared/goal-contract/goal-execution-contract-template.md` is the canonical Markdown template.
 - `_bmad/shared/goal-contract/goal-contract-profile.json` is the canonical machine-readable profile.
+- `_bmad/shared/goal-contract/standalone-source-plan-template.md` is the canonical standalone Source Plan producer template.
+- `_bmad/shared/goal-contract/standalone-source-plan-profile.json` is its machine-readable parser and binding profile.
 - `_bmad/shared/goal-contract/scripts/render-goal-contract.js` is the deterministic renderer used by req-trace.
 - `_bmad/shared/goal-contract/scripts/verify-goal-contract-profile.js` validates template/profile/lock/reference consistency.
+- `_bmad/shared/goal-contract/scripts/verify-standalone-source-plan-profile.js` validates Source Plan schemas, semantic hashes, and installed projection byte equality.
 
 Inside installed skill surfaces:
 
 - `references/goal-execution-contract-template.md` is a projection of the shared canonical template.
 - `references/goal-contract-profile.json` is a projection of the shared canonical profile.
+- `references/standalone-source-plan-template.md` and `references/standalone-source-plan-profile.json` are byte-identical generated projections of their shared canonical assets.
 - The skill may use these local projections when `_bmad/shared/goal-contract` is unavailable.
 
 If the shared canonical template changes, update the skill references from the shared assets and rerun the shared verifier before packaging or installing surfaces.

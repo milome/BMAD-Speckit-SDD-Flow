@@ -18,23 +18,52 @@ export interface StandaloneGoalConstraintBinding {
 const unique = (values: string[]) => [...new Set(values)].sort((a, b) => a.localeCompare(b));
 
 export function preflightStandaloneRelationGraph(input: StandaloneGoalSemanticInput): void {
-  let referenceCount = 0;
-  for (const binding of input.technicalSnapshot.constraintBindings ?? []) {
-    for (const field of ['sourceRefs', 'applicableMustRefs', 'applicableAtomRefs', 'premiseRefs'] as const) {
-      for (const ref of binding[field] ?? []) {
-        referenceCount += 1;
-      }
+  const ownersBySourceRef = new Map<string, Set<string>>();
+  const addOwner = (sourceRef: string, obligationRef: string) => {
+    if (!sourceRef || !obligationRef) return;
+    const owners = ownersBySourceRef.get(sourceRef) ?? new Set<string>();
+    owners.add(obligationRef);
+    ownersBySourceRef.set(sourceRef, owners);
+  };
+  for (const obligation of input.sourceObligations) {
+    const obligationRef = String(obligation.id ?? '');
+    for (const sourceRef of (obligation.specSpanRefs as string[] | undefined) ?? []) {
+      addOwner(sourceRef, obligationRef);
     }
   }
-  // Bound pathological relation graphs by structural complexity, not external transport size.
-  const nodeCount = input.sourceObligations.length + (input.technicalSnapshot.constraintBindings?.length ?? 0);
-  const edgeBudget = Math.max(100_000, nodeCount * 64);
-  if (referenceCount > edgeBudget) {
-    throw Object.assign(new Error('standalone_relation_graph_edge_budget_exceeded'), {
-      failureClass: 'standalone_relation_graph_edge_budget_exceeded',
-      sourceHash: input.sourcePlanHash, referenceCount, edgeBudget, dispatchState: 'not_dispatched',
-      goalJudgeDispatchCount: 0,
-    });
+  for (const span of input.logicalSpecSpans) {
+    const sourceRef = String(span.specSpanId ?? span.sourceSpanId ?? '');
+    for (const obligationRef of [
+      ...((span.boundObligationIds as string[] | undefined) ?? []),
+      ...((span.sourceObligationIds as string[] | undefined) ?? []),
+    ]) {
+      addOwner(sourceRef, obligationRef);
+    }
+  }
+  for (const binding of input.technicalSnapshot.constraintBindings ?? []) {
+    const allowedOwners = new Set<string>();
+    for (const sourceRef of [...binding.sourceRefs, ...binding.premiseRefs]) {
+      for (const owner of ownersBySourceRef.get(sourceRef) ?? []) allowedOwners.add(owner);
+    }
+    if (allowedOwners.size === 0 && binding.applicableMustRefs.length > 0) {
+      throw Object.assign(new Error('standalone_goal_constraint_semantic_owner_missing'), {
+        failureClass: 'standalone_goal_constraint_semantic_owner_missing',
+        constraintId: binding.constraintId,
+      });
+    }
+    if (binding.scope === 'global') continue;
+    if (
+      binding.applicableMustRefs.some((ref) => !allowedOwners.has(ref)) ||
+      (binding.applicableAtomRefs ?? []).some((ref) => {
+        const ownerRef = ref.endsWith('-A1') ? ref.slice(0, -3) : '';
+        return !allowedOwners.has(ownerRef);
+      })
+    ) {
+      throw Object.assign(new Error('standalone_goal_constraint_applicability_invalid'), {
+        failureClass: 'standalone_goal_constraint_applicability_invalid',
+        constraintId: binding.constraintId,
+      });
+    }
   }
 }
 
@@ -71,8 +100,9 @@ export function declaredConstraintBuilder(input: StandaloneGoalSemanticInput, ob
       premiseRefs: unique(binding.premiseRefs), sourceRefs: unique(binding.sourceRefs),
       ...(binding.sourceDeclarationRefs ? { sourceDeclarationRefs: unique(binding.sourceDeclarationRefs) } : {}),
       ...(binding.declarationSource ? { declarationSource: structuredClone(binding.declarationSource) } : {}),
-      ...(binding.coverageRole ? { coverageRole: binding.coverageRole, declarationRole: binding.declarationRole,
+      ...(binding.coverageRole ? { coverageRole: binding.coverageRole,
         sourceDeclarationRefs: unique(binding.sourceDeclarationRefs ?? [constraintId]) } : {}),
+      ...(binding.declarationRole ? { declarationRole: binding.declarationRole } : {}),
       scope: binding.scope ?? 'declared', disposition: 'source_declared',
       declarationStatus: 'source_declared_not_executed' };
   };

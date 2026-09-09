@@ -1,8 +1,12 @@
 import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { renderNormativeDetails } from './goal-normative-renderer';
 import { REQUIREMENTS_TYPED_SEMANTIC_VERSION, requirementsTypedSemanticSource, projectRequirementsTypedGoalObligations, assertRequirementsTypedAuthorityMatchesGoal } from './goal-requirements-typed-bridge';
+import { resolveConfirmedRequirementsAuthority } from '../../../main-agent/source-authority/scripts/requirements-contract-confirmed-authority-adapter';
+import {
+  compileConfirmedRequirementsGoalSemantics,
+  renderConfirmedRequirementsGoalProjection,
+} from './confirmed-requirements-goal-compiler';
 import {
   collectReadinessStructuredInputArtifacts,
   computeCurrentReadinessScopedInputDigest,
@@ -114,6 +118,27 @@ function readJson(filePath: string): JsonObject {
     throw new Error('requirements_backed_json_object_required');
   }
   return value as JsonObject;
+}
+
+function readRequirementsBackedRuntimeRecord(input: {
+  recordRoot: string;
+  requestId: string;
+}): JsonObject {
+  const recordRoot = path.resolve(input.recordRoot);
+  const runtimeRecordPath = path.join(recordRoot, 'requirement-record.json');
+  if (!fs.existsSync(runtimeRecordPath) || !fs.statSync(runtimeRecordPath).isFile()) {
+    throw new Error('requirements_backed_runtime_record_invalid');
+  }
+  const realRecordRoot = fs.realpathSync(recordRoot);
+  const realRuntimeRecordPath = fs.realpathSync(runtimeRecordPath);
+  if (!realRuntimeRecordPath.startsWith(`${realRecordRoot}${path.sep}`)) {
+    throw new Error('requirements_backed_runtime_record_invalid');
+  }
+  const runtimeRecord = readJson(runtimeRecordPath);
+  if (text(runtimeRecord.recordId) !== input.requestId) {
+    throw new Error('requirements_backed_runtime_record_identity_mismatch');
+  }
+  return runtimeRecord;
 }
 
 function confined(root: string, relativePath: string): string {
@@ -794,10 +819,14 @@ function assertAdmissionStillCurrent(input: {
   expectedGoalExecutionIr?: JsonObject;
   phase?: 'activation' | 'execution_start' | 'execution_resume';
   authorizedOwnedPaths?: readonly string[];
+  compileGoalExecutionIR?: typeof compileGoalExecutionIR;
 }): VerifiedRequirementsReadinessView {
-  const runtimeRecord = readJson(input.requirementRecordPath);
   const context = resolveCurrentArchitectureContext({
     projectRoot: input.projectRoot,
+    requestId: input.requestId,
+  });
+  const runtimeRecord = readRequirementsBackedRuntimeRecord({
+    recordRoot: context.recordRoot,
     requestId: input.requestId,
   });
   const architecture = deriveArchitectureConfirmationCandidate(context);
@@ -886,23 +915,27 @@ function assertAdmissionStillCurrent(input: {
     if (residualIssue) throw new Error(residualIssue);
   }
   const candidateHash = text(readiness.candidate.implementationReadinessCandidateHash);
-  if (String(context.semanticIr.schemaVersion) === REQUIREMENTS_TYPED_SEMANTIC_VERSION || input.expectedGoalExecutionIr?.schemaVersion === 'GoalExecutionIR/v2') {
+  if (String(context.semanticIr.schemaVersion) === REQUIREMENTS_TYPED_SEMANTIC_VERSION ||
+    ['GoalExecutionIR/v2', 'GoalExecutionIR/v3'].includes(text(input.expectedGoalExecutionIr?.schemaVersion))) {
     assertRequirementsTypedAuthorityMatchesGoal(context.semanticIr as unknown as JsonObject, input.expectedGoalExecutionIr ?? {});
-    const semanticSource = requirementsTypedSemanticSource(context.semanticIr as unknown as JsonObject);
-    const reconstructed = compileGoalExecutionIR({
-      profile: 'requirements_backed', semanticSource, requirementsLineage: expected,
-      technicalAuthority: {
-        executionConstraintRegistryHash: context.semanticIr.semanticPayload.executionConstraintRegistryHash,
-        architectureConfirmationCandidateHash: architecture.architectureConfirmationCandidateHash,
-        implementationReadinessCandidateHash: candidateHash,
-        readinessScopedInputDigest: text(readiness.candidate.readinessScopedInputDigest),
-      },
-      obligations: projectRequirementsToGoalObligations(context.semanticIr as unknown as JsonObject),
-      atoms: objects(context.semanticIr.semanticPayload.semantics.atoms),
-      logicalSpecSpans: context.semanticIr.semanticPayload.specSpanRegistry as unknown as JsonObject[],
-      executionConstraints: context.semanticIr.semanticPayload.executionConstraints as unknown as JsonObject[],
-      architecture, readiness: readiness.candidate,
+    const authority = resolveConfirmedRequirementsAuthority({
+      projectRoot: input.projectRoot,
+      requirementRecordPath: input.requirementRecordPath,
     });
+    const reconstructed = compileConfirmedRequirementsGoalSemantics(
+      {
+        authority,
+        sixStateContext: {
+          architecture,
+          readiness: readiness.candidate,
+          architectureConfirmationCandidateHash:
+            architecture.architectureConfirmationCandidateHash,
+          implementationReadinessCandidateHash: candidateHash,
+          readinessScopedInputDigest: text(readiness.candidate.readinessScopedInputDigest),
+        },
+      },
+      { compileGoalExecutionIR: input.compileGoalExecutionIR }
+    ).goalExecutionIr;
     if (!input.expectedGoalExecutionIr || reconstructed.goalExecutionIRHash !== input.expectedGoalExecutionIr.goalExecutionIRHash) {
       throw new Error('requirements_successor_required:goal_compilation_equivalence');
     }
@@ -933,30 +966,6 @@ export function validateRequirementsBackedGoalAdmissionCurrent(input: {
   return assertAdmissionStillCurrent(input);
 }
 
-function renderParentGoal(ir: JsonObject): string {
-  const obligations = objects(ir.obligations);
-  const tasks = objects(ir.atomicTasks);
-  return [
-    '# Goal Execution Contract',
-    '',
-    `Goal Execution IR: ${text(ir.goalExecutionIRHash)}`,
-    `Profile: ${text(ir.profile)}`,
-    '',
-    '## Obligations',
-    '',
-    ...obligations.flatMap((row) => [`- ${text(row.kind)} ${text(row.obligationId)}: ${text(row.text)}`,
-      ...(ir.schemaVersion === 'GoalExecutionIR/v2' ? renderNormativeDetails(row) : [])]),
-    '',
-    '## Atomic Tasks',
-    '',
-    ...tasks.map(
-      (row) =>
-        `- ${text(row.taskId)}: ${text(row.title)} (${String(row.expectedEffortMinutes)}m expected, ${String(row.upperBoundEffortMinutes)}m max)`
-    ),
-    '',
-  ].join('\n');
-}
-
 export function compileRequirementsBackedGoal(
   input: RequirementsBackedGoalInput,
   dependencies: RequirementsBackedGoalDependencies = {}
@@ -968,20 +977,39 @@ export function compileRequirementsBackedGoal(
   const expectedActiveAuthorityHash =
     text(readVerifiedActiveAuthority(activePath)?.activeAuthorityHash) || null;
   const requirementRecordPath = path.resolve(projectRoot, input.requirementRecordPath);
-  const runtimeRecord = readJson(requirementRecordPath);
-  const requestId = text(runtimeRecord.recordId);
+  const recordsRoot = path.join(
+    projectRoot,
+    '_bmad-output',
+    'runtime',
+    'requirement-records'
+  );
+  if (
+    !fs.existsSync(requirementRecordPath) ||
+    !fs.statSync(requirementRecordPath).isFile() ||
+    !requirementRecordPath.startsWith(`${recordsRoot}${path.sep}`) ||
+    !fs.realpathSync(requirementRecordPath).startsWith(`${fs.realpathSync(projectRoot)}${path.sep}`)
+  ) {
+    throw new Error('requirements_backed_requirement_record_invalid');
+  }
+  const authorityRecord = readJson(requirementRecordPath);
+  const requestId = text(authorityRecord.recordId);
   const expectedRecordPath = path.join(
     projectRoot,
     '_bmad-output',
     'runtime',
     'requirement-records',
     requestId,
+    'record',
     'requirement-record.json'
   );
   if (!requestId || requirementRecordPath !== expectedRecordPath) {
     throw new Error('requirements_backed_requirement_record_invalid');
   }
   const context = resolveCurrentArchitectureContext({ projectRoot, requestId });
+  const runtimeRecord = readRequirementsBackedRuntimeRecord({
+    recordRoot: context.recordRoot,
+    requestId,
+  });
   const architecture = deriveArchitectureConfirmationCandidate(context);
   const architectureAcceptance = readCurrentArchitectureConfirmationAcceptance({
     context,
@@ -1041,6 +1069,7 @@ export function compileRequirementsBackedGoal(
     scopeSemanticHash: context.semanticIr.scopeSemanticHash,
     executionConstraintRegistryHash:
       context.semanticIr.semanticPayload.executionConstraintRegistryHash,
+    sourceBindingHash: context.sourceBinding.sourceBindingHash,
     architectureConfirmationCandidateHash: architecture.architectureConfirmationCandidateHash,
     implementationReadinessCandidateHash: text(
       readiness.candidate.implementationReadinessCandidateHash
@@ -1113,11 +1142,34 @@ export function compileRequirementsBackedGoal(
     atoms: objects(context.semanticIr.semanticPayload.semantics.atoms),
     logicalSpecSpans: context.semanticIr.semanticPayload
       .specSpanRegistry as unknown as JsonObject[],
-    executionConstraints: context.semanticIr.semanticPayload
-      .executionConstraints as unknown as JsonObject[],
+    executionConstraints: objects(semanticSource.typedExecutionConstraints).length > 0
+      ? objects(semanticSource.typedExecutionConstraints)
+      : context.semanticIr.semanticPayload.executionConstraints as unknown as JsonObject[],
     architecture,
     readiness: readiness.candidate,
   };
+  const sharedCompilation =
+    String(context.semanticIr.schemaVersion) === REQUIREMENTS_TYPED_SEMANTIC_VERSION
+      ? compileConfirmedRequirementsGoalSemantics(
+          {
+            authority: resolveConfirmedRequirementsAuthority({
+              projectRoot,
+              requirementRecordPath,
+            }),
+            sixStateContext: {
+              architecture,
+              readiness: readiness.candidate,
+              architectureConfirmationCandidateHash:
+                architecture.architectureConfirmationCandidateHash,
+              implementationReadinessCandidateHash: text(
+                readiness.candidate.implementationReadinessCandidateHash
+              ),
+              readinessScopedInputDigest: text(readiness.candidate.readinessScopedInputDigest),
+            },
+          },
+          { compileGoalExecutionIR: dependencies.compileGoalExecutionIR }
+        )
+      : null;
   const ir =
     readReusableRequirementsBackedIr({
       outRoot,
@@ -1125,15 +1177,18 @@ export function compileRequirementsBackedGoal(
       semanticSource,
       requirementsLineage,
       technicalAuthority,
-    }) ?? (dependencies.compileGoalExecutionIR ?? compileGoalExecutionIR)(compilerInput);
+    }) ??
+    sharedCompilation?.goalExecutionIr ??
+    (dependencies.compileGoalExecutionIR ?? compileGoalExecutionIR)(compilerInput);
   assertAdmissionStillCurrent({
     projectRoot,
     requestId,
     requirementRecordPath,
     expectedRequirementsLineage: requirementsLineage,
     expectedGoalExecutionIr: ir,
+    compileGoalExecutionIR: dependencies.compileGoalExecutionIR,
   });
-  const closure = compileGoalExecutionClosure(ir);
+  const closure = sharedCompilation?.closure ?? compileGoalExecutionClosure(ir);
   const sourceBindingPayload = {
     schemaVersion: 'GoalSourceBinding/v1',
     profile: 'requirements_backed',
@@ -1227,7 +1282,10 @@ export function compileRequirementsBackedGoal(
     ir.goalExecutionIRHash.slice(7),
     'renderability-report.json'
   );
-  const parentBytes = Buffer.from(renderParentGoal(ir), 'utf8');
+  const parentBytes = Buffer.from(
+    sharedCompilation?.projection.markdown ?? renderConfirmedRequirementsGoalProjection(ir),
+    'utf8'
+  );
   const renderabilityReport = probeGoalContractRenderability({
     goalExecutionIr: ir,
     markdown: parentBytes.toString('utf8'),
@@ -1313,6 +1371,7 @@ export function compileRequirementsBackedGoal(
             requestId,
             requirementRecordPath,
             expectedRequirementsLineage: requirementsLineage,
+            compileGoalExecutionIR: dependencies.compileGoalExecutionIR,
           });
         },
       });
@@ -1332,6 +1391,7 @@ export function compileRequirementsBackedGoal(
         requestId,
         requirementRecordPath,
         expectedRequirementsLineage: requirementsLineage,
+        compileGoalExecutionIR: dependencies.compileGoalExecutionIR,
       });
     })
   )

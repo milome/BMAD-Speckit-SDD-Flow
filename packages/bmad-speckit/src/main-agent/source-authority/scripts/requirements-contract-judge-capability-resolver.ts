@@ -146,11 +146,30 @@ function payloadOrContextRejection(error: unknown): boolean {
 }
 
 function transportFailure(error: unknown): boolean {
-  const candidate = error as { name?: unknown; code?: unknown; message?: unknown };
+  const candidate = error as {
+    name?: unknown;
+    code?: unknown;
+    message?: unknown;
+    issueCode?: unknown;
+    orphanRecoveryEvidence?: unknown;
+  };
   const name = String(candidate?.name ?? '');
   const code = String(candidate?.code ?? '').toUpperCase();
   const message = String(candidate?.message ?? '').toLowerCase();
+  const evidence = candidate?.orphanRecoveryEvidence as JsonRecord | undefined;
+  const typedOrphanFailure =
+    name === 'CodexCliJudgeOrphanTransportFailure' &&
+    code === 'CODEX_CLI_JUDGE_ORPHAN_TRANSPORT_FAILURE' &&
+    candidate?.issueCode === 'judge_provider_transport_failed' &&
+    evidence !== undefined &&
+    Number.isSafeInteger(evidence.stdoutBytes) &&
+    Number(evidence.stdoutBytes) >= 0 &&
+    Number.isSafeInteger(evidence.stderrBytes) &&
+    Number(evidence.stderrBytes) >= 0 &&
+    /^sha256:[a-f0-9]{64}$/u.test(String(evidence.stdoutHash ?? '')) &&
+    /^sha256:[a-f0-9]{64}$/u.test(String(evidence.stderrHash ?? ''));
   return (
+    typedOrphanFailure ||
     name === 'AbortError' ||
     ['ECONNRESET', 'ECONNREFUSED', 'EPIPE', 'ETIMEDOUT', 'UND_ERR_CONNECT_TIMEOUT'].includes(code) ||
     /connection reset|connection refused|network error|request timeout|socket hang up/u.test(message)

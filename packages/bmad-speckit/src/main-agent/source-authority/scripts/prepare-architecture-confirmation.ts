@@ -31,6 +31,10 @@ import {
   type RequirementsContractSourceBindingCapsule,
 } from './requirements-contract-source-binding-capsule';
 import { validateRuntimeStatusDecisionReceipt } from './requirements-contract-runtime-status-decision-receipt';
+import {
+  REQUIREMENTS_TYPED_SEMANTIC_VERSION,
+  requirementsTypedSemanticSource,
+} from '../../../utils/goal-contract/control-plane/goal-requirements-typed-bridge';
 
 type JsonObject = Record<string, unknown>;
 
@@ -62,6 +66,10 @@ export interface ArchitectureConfirmationContext {
 
 const SAFE_REQUEST_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/u;
 const HASH = /^sha256:[a-f0-9]{64}$/u;
+const EXECUTION_MANIFEST_SCHEMA_VERSIONS = new Set([
+  'requirements-contract-execution-manifest/v1',
+  'requirements-contract-execution-manifest/v2',
+]);
 const ARCHITECTURE_CONFIRMATION_BLOCK_ISSUE_CODES = [
   'requirements_confirmation_record_missing',
   'requirements_confirmation_required',
@@ -279,7 +287,7 @@ function resolveBuildArtifactEntry(input: {
         input.buildManifest.authoringAttemptId
       )}/cp06/execution-manifest.json`;
       if (
-        text(entry.schemaVersion) !== 'requirements-contract-execution-manifest/v1' ||
+        !EXECUTION_MANIFEST_SCHEMA_VERSIONS.has(text(entry.schemaVersion)) ||
         text(entry.artifactId) !== 'execution-manifest' ||
         text(entry.recordRelativePath) !== expectedPath
       ) {
@@ -511,11 +519,23 @@ export function resolveArchitectureConfirmationContext(input: {
   if (text(executionEntry.artifactHash) !== sha256Stable(executionManifest)) {
     throw new Error('architecture_confirmation_execution_manifest_hash_mismatch');
   }
+  const expectedExecutionManifestVersion =
+    semanticIr.schemaVersion === 'requirements-contract-semantic-ir/v2'
+      ? 'requirements-contract-execution-manifest/v2'
+      : 'requirements-contract-execution-manifest/v1';
+  if (
+    text(executionEntry.schemaVersion) !== expectedExecutionManifestVersion ||
+    text(executionManifest.schemaVersion) !== expectedExecutionManifestVersion
+  ) {
+    throw new Error('architecture_confirmation_execution_manifest_version_mismatch');
+  }
+  if (!Array.isArray(executionManifest.constraints)) {
+    throw new Error('architecture_confirmation_execution_manifest_invalid');
+  }
   const executionConstraints = objects(executionManifest.constraints);
   const semanticConstraints = semanticIr.semanticPayload.executionConstraints;
   requireCurrent(
-    executionManifest.schemaVersion === 'requirements-contract-execution-manifest/v1' &&
-      text(executionManifest.semanticRevisionId) === semanticIr.semanticRevisionId &&
+    text(executionManifest.semanticRevisionId) === semanticIr.semanticRevisionId &&
       text(executionManifest.scopeSemanticHash) === semanticIr.scopeSemanticHash &&
       canonicalRequirementsJson(executionConstraints) ===
         canonicalRequirementsJson(semanticConstraints) &&
@@ -665,11 +685,21 @@ export function resolveArchitectureConfirmationContext(input: {
   };
 }
 
+function architectureExecutionConstraints(
+  context: ArchitectureConfirmationContext
+): RequirementsExecutionConstraint[] {
+  if (context.semanticIr.schemaVersion !== REQUIREMENTS_TYPED_SEMANTIC_VERSION) {
+    return context.semanticIr.semanticPayload.executionConstraints;
+  }
+  const source = requirementsTypedSemanticSource(context.semanticIr as unknown as JsonObject);
+  return objects(source.typedExecutionConstraints) as unknown as RequirementsExecutionConstraint[];
+}
+
 function constraintsOfKind(
-  context: ArchitectureConfirmationContext,
+  constraints: RequirementsExecutionConstraint[],
   kind: RequirementsExecutionConstraint['kind']
 ): RequirementsExecutionConstraint[] {
-  return context.semanticIr.semanticPayload.executionConstraints
+  return constraints
     .filter((constraint) => constraint.kind === kind)
     .sort((left, right) => left.constraintId.localeCompare(right.constraintId));
 }
@@ -777,11 +807,12 @@ function projectTriggerRules(
 export function deriveArchitectureConfirmationCandidate(
   context: ArchitectureConfirmationContext
 ): ArchitectureConfirmationCandidate {
-  const paths = constraintsOfKind(context, 'PATH');
-  const commands = constraintsOfKind(context, 'CMD');
-  const artifacts = constraintsOfKind(context, 'ART');
-  const evidence = constraintsOfKind(context, 'EVDREQ');
-  const structure = constraintsOfKind(context, 'CTM');
+  const executionConstraints = architectureExecutionConstraints(context);
+  const paths = constraintsOfKind(executionConstraints, 'PATH');
+  const commands = constraintsOfKind(executionConstraints, 'CMD');
+  const artifacts = constraintsOfKind(executionConstraints, 'ART');
+  const evidence = constraintsOfKind(executionConstraints, 'EVDREQ');
+  const structure = constraintsOfKind(executionConstraints, 'CTM');
   if (
     paths.length === 0 ||
     paths.some((constraint) => !isConcreteArchitectureTargetPath(constraint.canonicalValue))
@@ -805,7 +836,7 @@ export function deriveArchitectureConfirmationCandidate(
     authorities = resolveArchitecturePremiseAuthorities({
       projectRoot: context.projectRoot,
       sourceArtifacts: context.sourceBinding.sourceArtifacts,
-      constraints: context.semanticIr.semanticPayload.executionConstraints,
+      constraints: executionConstraints,
     });
   } catch (error) {
     if (error instanceof ArchitecturePremiseAuthorityBlock) {

@@ -174,6 +174,8 @@ function semanticRecordId(obligation) {
 function makeSemanticRegistries(obligations) {
   const tasks = obligations.filter((row) => row.executionRole === 'action');
   const recordIds = (kind) => obligations.filter((row) => row.kind === kind).map(semanticRecordId);
+  const commandRecords = semanticCommandRecords(obligations);
+  const commandIds = new Set(commandRecords.map((command) => command.id));
   const sourceIds = new Set(obligations.map(semanticRecordId));
   // Acceptance criteria may be source declarations (for example FIX-* headings)
   // that are intentionally excluded from the semantic obligation view. Their
@@ -185,6 +187,12 @@ function makeSemanticRegistries(obligations) {
       .filter((ref) => ref.kind === 'acceptance' && ref.sourceBlockRefs?.length)
       .map((ref) => ref.targetId),
   ]);
+  const declaredEvidenceContracts = obligations.flatMap((row) => [
+    ...(row.evidenceRefs || []),
+    ...(row.typedRefs || [])
+      .filter((ref) => ref.kind === 'evidenced_by' && ref.sourceBlockRefs?.length)
+      .map((ref) => ref.targetId),
+  ]);
   return {
     projectionMode: 'semantic',
     sourceObligations: obligations.map((row) => ({
@@ -192,14 +200,14 @@ function makeSemanticRegistries(obligations) {
       goalTaskRefs: [...new Set([...(row.taskRefs || []), ...(row.goalTaskRefs || []),
         ...(row.executionRole === 'action' ? [semanticRecordId(row)] : [])])],
       acceptanceRefs: [...(row.acceptanceRefs || [])],
-      commandRefs: [...(row.commandRefs || [])],
+      commandRefs: [...new Set(row.commandRefs || [])].filter((ref) => commandIds.has(ref)),
       evidenceRefs: [...(row.evidenceRefs || [])],
     })),
     tasks: tasks.map(semanticRecordId),
     acceptance: [...new Set([...recordIds('acceptance_condition'), ...declaredAcceptanceCriteria])],
-    commands: [...new Set(semanticCommandRecords(obligations).map((command) => command.id))],
-    commandRecords: semanticCommandRecords(obligations),
-    evidence: recordIds('evidence_contract'),
+    commands: [...commandIds],
+    commandRecords,
+    evidence: [...new Set([...recordIds('evidence_contract'), ...declaredEvidenceContracts])],
   };
 }
 
@@ -928,7 +936,12 @@ function buildSlotData({
     registries,
   });
   if (coverageAudit.decision !== 'pass') {
-    const error = new Error('source_coverage_unmapped') as GoalContractBuilderError;
+    const reasons = Array.isArray(coverageAudit.blockingReasons)
+      ? coverageAudit.blockingReasons.join('|')
+      : '';
+    const error = new Error(
+      reasons ? `source_coverage_unmapped:${reasons}` : 'source_coverage_unmapped'
+    ) as GoalContractBuilderError;
     error.code = 'source_coverage_unmapped';
     error.coverageAudit = coverageAudit;
     throw error;

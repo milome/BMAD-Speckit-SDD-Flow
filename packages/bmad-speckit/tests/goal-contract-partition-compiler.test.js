@@ -346,7 +346,14 @@ function roleAwareGraph() {
 }
 
 function expectedSubordinateIds(input) {
-  return [...input.binding.requiredRequirementIds, ...input.binding.requiredTaskIds].sort();
+  return input.canonicalIntentBundle.canonicalIntentIR
+    .filter((record) =>
+      record.sourceArtifactId === input.binding.sourceArtifactId &&
+      record.ownership === 'owned_obligation' &&
+      typeof record.declaredSourceId === 'string'
+    )
+    .map((record) => record.declaredSourceId)
+    .sort();
 }
 
 function parentSelection(plan, parentTaskRef) {

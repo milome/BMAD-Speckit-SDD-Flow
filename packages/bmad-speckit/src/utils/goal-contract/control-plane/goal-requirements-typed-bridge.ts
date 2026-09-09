@@ -10,6 +10,11 @@ import {
   type RequirementsSpecSpan,
 } from '../../../main-agent/source-authority/scripts/requirements-contract-span-registry';
 import type { GoalExecutionObligation } from './goal-execution-ir';
+import {
+  canonicalRequirementGraphRef,
+  normalizeCanonicalRequirementGraph,
+  type CanonicalRequirementGraphV2,
+} from './canonical-requirement-graph';
 
 type Row = Record<string, unknown>;
 export const REQUIREMENTS_TYPED_SEMANTIC_VERSION = 'requirements-contract-semantic-ir/v2';
@@ -25,10 +30,244 @@ export function requirementsTypedSemanticSource(semanticIr: Row): Row {
   const authority = record(semantics.typedSourceAuthority);
   if (semanticIr.schemaVersion !== REQUIREMENTS_TYPED_SEMANTIC_VERSION) fail('version_invalid');
   resolveTypedSourceAuthority(authority);
+  const confirmationRef = record(
+    record(semantics.implementationConfirmation).typedSourceAuthorityRef
+  );
+  const semanticProvenance = record(payload.semanticProvenance);
+  const anchorHashes = unique([
+    String(confirmationRef.graphHash ?? ''),
+    String(semanticProvenance.typedSourceGraph ?? ''),
+  ]);
+  if (anchorHashes.length !== 1 || anchorHashes[0] !== authority.graphHash) {
+    fail('typed_source_graph_anchor_mismatch');
+  }
+  const canonicalGraph = normalizeCanonicalRequirementGraph({
+    sourceAuthority: {
+      kind: 'requirements_semantic_ir',
+      schemaVersion: REQUIREMENTS_TYPED_SEMANTIC_VERSION,
+      authorityId: String(semanticIr.semanticRevisionId),
+      authorityHash: String(semanticIr.scopeSemanticHash),
+    },
+    typedSourceAuthority: authority as unknown as RequirementsTypedSourceAuthority,
+    expectedTypedSourceGraphHash: anchorHashes[0],
+  });
+  const typedExecutionConstraints = normalizeRequirementsTypedExecutionConstraints({
+    constraints: rows(payload.executionConstraints),
+    canonicalGraph,
+    typedSourceAuthority: authority as unknown as RequirementsTypedSourceAuthority,
+  });
   return { kind: 'requirements_semantic_ir', schemaVersion: REQUIREMENTS_TYPED_SEMANTIC_VERSION,
     semanticRevisionId: semanticIr.semanticRevisionId, scopeSemanticHash: semanticIr.scopeSemanticHash,
     typedSourceAuthority: structuredClone(authority), typedSourceGraphHash: authority.graphHash,
-    typedAtoms: structuredClone(rows(semantics.atoms)), typedExecutionConstraints: structuredClone(rows(payload.executionConstraints)) };
+    canonicalRequirementGraphRef: canonicalRequirementGraphRef(canonicalGraph),
+    typedAtoms: structuredClone(rows(semantics.atoms)), typedExecutionConstraints };
+}
+
+function canonicalOwnerClosure(node: Row, nodeById: Map<string, Row>): string[] {
+  const result: string[] = [];
+  const visited = new Set<string>();
+  let owner = typeof node.ownerRef === 'string' ? node.ownerRef : '';
+  while (owner && !visited.has(owner)) {
+    visited.add(owner);
+    result.push(owner);
+    const ownerNode = nodeById.get(owner);
+    owner = ownerNode && typeof ownerNode.ownerRef === 'string' ? ownerNode.ownerRef : '';
+  }
+  return unique(result);
+}
+
+const CANONICAL_CONSTRAINT_KINDS = new Map<string, string>([
+  ['ART', 'ART'],
+  ['EVD', 'EVDREQ'],
+  ['DEP', 'CTM'],
+  ['STOP', 'STOP'],
+  ['PATH', 'PATH'],
+] as const);
+
+function actionRefsForCanonicalDeclaration(input: {
+  node: Row;
+  nodeById: Map<string, Row>;
+  relations: Row[];
+  actionIds: string[];
+  actionIdSet: Set<string>;
+}): string[] {
+  const refs = new Set<string>();
+  const addRef = (ref: string) => {
+    if (input.actionIdSet.has(ref)) refs.add(ref);
+    const node = input.nodeById.get(ref);
+    if (node) {
+      for (const owner of canonicalOwnerClosure(node, input.nodeById)) {
+        if (input.actionIdSet.has(owner)) refs.add(owner);
+      }
+    }
+  };
+  for (const owner of canonicalOwnerClosure(input.node, input.nodeById)) addRef(owner);
+  const nodeId = String(input.node.id);
+  for (const relation of input.relations) {
+    if (relation.toRef === nodeId) addRef(String(relation.fromRef));
+    if (relation.fromRef === nodeId && relation.type === 'consumed_by') {
+      addRef(String(relation.toRef));
+    }
+  }
+  const dependency = String(record(input.node.attributes).dependency ?? '');
+  if (dependency) addRef(dependency);
+  return input.node.scope === 'global' ? input.actionIds : unique([...refs]);
+}
+
+function canonicalConstraintValue(node: Row, kind: string): string {
+  const attributes = record(node.attributes);
+  const value = kind === 'ART'
+    ? attributes.path
+    : kind === 'PATH'
+      ? attributes.path
+      : kind === 'EVDREQ'
+        ? node.statement ?? attributes.requiredState ?? attributes.evidenceStatus
+        : kind === 'CTM'
+          ? attributes.requiredState ?? node.statement ?? attributes.dependency
+          : attributes.trigger ?? node.statement ?? attributes.requiredState;
+  const normalized = typeof value === 'string' ? value.trim() : '';
+  if (!normalized) fail('canonical_constraint_value_missing');
+  return normalized;
+}
+
+function canonicalConstraintId(nodeId: string, kind: string): string {
+  if (kind === 'EVDREQ') return `EVDREQ-${nodeId.replace(/^EVD-/u, '')}`;
+  if (kind === 'CTM') return `CTM-${nodeId.replace(/^DEP-/u, '')}`;
+  return nodeId;
+}
+
+function synthesizeCanonicalExecutionConstraints(input: {
+  constraints: Row[];
+  canonicalGraph: CanonicalRequirementGraphV2;
+  nodeById: Map<string, Row>;
+  actionIds: string[];
+  actionIdSet: Set<string>;
+}): Row[] {
+  const canonicalNodes = rows(input.canonicalGraph.nodes);
+  const relations = rows(input.canonicalGraph.relations);
+  const hasCanonicalPaths = canonicalNodes.some((node) => node.kind === 'PATH');
+  const constraints = input.constraints.filter(
+    (constraint) => !(hasCanonicalPaths && constraint.kind === 'PATH')
+  );
+  const declared = new Set(
+    constraints.flatMap((constraint) => strings(constraint.sourceDeclarationRefs))
+  );
+  for (const node of canonicalNodes) {
+    const sourceKind = String(node.kind);
+    const kind = CANONICAL_CONSTRAINT_KINDS.get(sourceKind);
+    const nodeId = String(node.id);
+    if (!kind || declared.has(nodeId)) continue;
+    const actionRefs = actionRefsForCanonicalDeclaration({
+      node,
+      nodeById: input.nodeById,
+      relations,
+      actionIds: input.actionIds,
+      actionIdSet: input.actionIdSet,
+    });
+    const relationRefs = relations
+      .filter((relation) => relation.fromRef === nodeId || relation.toRef === nodeId)
+      .map((relation) => String(relation.id));
+    const ownerRefs = canonicalOwnerClosure(node, input.nodeById);
+    constraints.push({
+      constraintId: canonicalConstraintId(nodeId, kind),
+      kind,
+      canonicalValue: canonicalConstraintValue(node, kind),
+      applicableMustRefs: unique([...ownerRefs, ...actionRefs]),
+      applicableAtomRefs: actionRefs.map((ref) => `${ref}-A1`),
+      applicableSourceRefs: actionRefs,
+      premiseRefs: unique([nodeId, ...relationRefs]),
+      sourceDeclarationRefs: [nodeId],
+      sourceRefs: unique([nodeId, ...relationRefs]),
+      derivationReceiptRefs: [],
+      disposition: 'proven',
+      authorityKind: 'source_declared',
+      modality: 'required',
+      conditions: sourceKind === 'STOP'
+        ? [{ trigger: record(node.attributes).trigger ?? node.statement }]
+        : [],
+      scope: {
+        kind: sourceKind === 'STOP' ? 'stop_condition' : 'canonical_declaration',
+        owner: node.ownerRef ?? null,
+      },
+      coverageRole: actionRefs.length > 0 ? 'action_trace' : 'non_action_declaration',
+      declarationRole: sourceKind === 'ART'
+        ? 'artifact_contract'
+        : sourceKind === 'EVD'
+          ? 'evidence_contract'
+          : sourceKind === 'DEP'
+            ? 'dependency_constraint'
+            : sourceKind === 'STOP'
+              ? 'stop_condition'
+              : 'path_constraint',
+    });
+    declared.add(nodeId);
+  }
+  return constraints;
+}
+
+export function normalizeRequirementsTypedExecutionConstraints(input: {
+  constraints: Row[];
+  canonicalGraph: CanonicalRequirementGraphV2;
+  typedSourceAuthority: RequirementsTypedSourceAuthority;
+}): Row[] {
+  const typedGraph = resolveTypedSourceAuthority(input.typedSourceAuthority);
+  const actionIds = unique(typedGraph.sourceNodes
+    .filter((node) => node.executionRole === 'action')
+    .map((node) => node.sourceRootId));
+  const actionIdSet = new Set(actionIds);
+  const canonicalNodes = rows(input.canonicalGraph.nodes);
+  const nodeById = new Map(canonicalNodes.map((node) => [String(node.id), node]));
+
+  const normalized = input.constraints.map((constraint) => {
+    if (constraint.kind !== 'CMD') return structuredClone(constraint);
+    const declaration = strings(constraint.sourceDeclarationRefs)
+      .map((ref) => nodeById.get(ref))
+      .find((node) => node?.kind === 'CMD');
+    if (!declaration) return structuredClone(constraint);
+
+    const attributes = record(declaration.attributes);
+    const executionMode = String(attributes.executionMode ?? '');
+    const declaredRole = String(attributes.commandRole ?? 'verification_command');
+    const ownerRefs = canonicalOwnerClosure(declaration, nodeById);
+    const existingActionRefs = unique([
+      ...strings(constraint.applicableMustRefs),
+      ...strings(constraint.applicableSourceRefs),
+    ].filter((ref) => actionIdSet.has(ref)));
+    const ownerActionRefs = ownerRefs.filter((ref) => actionIdSet.has(ref));
+    const global = declaration.scope === 'global';
+    const actionRefs = unique(global ? actionIds : [...existingActionRefs, ...ownerActionRefs]);
+    const executable = executionMode !== 'template' && executionMode !== 'prohibited';
+    const coverageRole = executable && actionRefs.length > 0
+      ? 'action_trace'
+      : 'non_action_declaration';
+    const modality = executionMode === 'template'
+      ? 'template'
+      : executionMode === 'prohibited'
+        ? 'prohibited'
+        : constraint.modality;
+
+    return {
+      ...structuredClone(constraint),
+      applicableMustRefs: unique([...ownerRefs, ...actionRefs]),
+      applicableAtomRefs: actionRefs.map((ref) => `${ref}-A1`),
+      applicableSourceRefs: actionRefs,
+      coverageRole,
+      declarationRole: coverageRole === 'action_trace'
+        ? global ? 'global_verification_command' : 'verification_command'
+        : declaredRole,
+      ...(modality === undefined ? {} : { modality }),
+      scope: global
+        ? { kind: 'global_source_command', owner: declaration.ownerRef }
+        : structuredClone(record(constraint.scope)),
+    };
+  });
+  return synthesizeCanonicalExecutionConstraints({
+    constraints: normalized,
+    canonicalGraph: input.canonicalGraph,
+    nodeById,
+    actionIds,
+    actionIdSet,
+  }).sort((left, right) => String(left.constraintId).localeCompare(String(right.constraintId)));
 }
 
 function graphOf(source: Row) {
@@ -53,11 +292,21 @@ function obligationKind(node: RequirementsTypedSourceNode): GoalExecutionObligat
 export function projectRequirementsTypedGoalObligations(source: Row, spans: Row[]): GoalExecutionObligation[] {
   const graph = graphOf(source);
   const actionIds = new Set(graph.sourceNodes.filter((node) => node.executionRole === 'action').map((node) => node.sourceRootId));
-  const spanBindings = spans.map((span) => ({ span, ids: new Set(resolveRequirementsSpecSpanSourceNodeIds(
-    span as unknown as RequirementsSpecSpan, source.typedSourceAuthority as RequirementsTypedSourceAuthority)) }));
+  const spansByNodeId = new Map<string, Row[]>();
+  for (const span of spans) {
+    for (const nodeId of resolveRequirementsSpecSpanSourceNodeIds(
+      span as unknown as RequirementsSpecSpan,
+      source.typedSourceAuthority as RequirementsTypedSourceAuthority,
+      graph
+    )) {
+      const bindings = spansByNodeId.get(nodeId) ?? [];
+      bindings.push(span);
+      spansByNodeId.set(nodeId, bindings);
+    }
+  }
   return graph.sourceNodes.map((node) => {
     const id = node.sourceRootId;
-    const matchedSpans = spanBindings.filter((binding) => binding.ids.has(id)).map((binding) => binding.span);
+    const matchedSpans = spansByNodeId.get(id) ?? [];
     const sourceRefs = unique([id, ...node.declaredIds, ...[node.sourceBlockId, node.sourceClauseId].filter((value): value is string => typeof value === 'string'),
       ...matchedSpans.map((span) => String(span.specSpanId))]);
     const owner = node.scope.ownerId ?? node.scope.owner;
@@ -97,7 +346,7 @@ export function assertRequirementsTypedProjection(input: { semanticSource: Row; 
 
 export function requirementsTypedConstraintMetadata(constraint: Row): Row {
   const fields = ['conditions', 'scope', 'disposition', 'authorityKind', 'applicableSourceRefs', 'sourceRefs', 'premiseRefs',
-    'derivationReceiptRefs', 'declarationStatus', 'modality', 'sourceDeclarationRefs'];
+    'derivationReceiptRefs', 'declarationStatus', 'modality', 'sourceDeclarationRefs', 'coverageRole', 'declarationRole'];
   return Object.fromEntries(fields.filter((field) => constraint[field] !== undefined).map((field) => [field, structuredClone(constraint[field])]));
 }
 
@@ -106,7 +355,8 @@ function validateConstraintProjections(ir: Row): void {
   const sorted = (values: Row[], key: string) => [...values].sort((a, b) => String(a[key]).localeCompare(String(b[key])));
   for (const [kind, collection, id, value] of [['CMD', 'commands', 'commandId', 'invocation'], ['ART', 'artifacts', 'artifactId', 'logicalPath'],
     ['EVDREQ', 'evidenceContracts', 'evidenceContractId', 'requirement'], ['CTM', 'coExecutionConstraints', 'constraintId', '']] as const) {
-    const expected = constraints.filter((row) => row.kind === kind && (kind !== 'CMD' || row.modality === undefined || row.modality === 'required')).map((row) => ({
+    const expected = constraints.filter((row) => row.kind === kind &&
+      (kind !== 'CMD' || ((row.modality === undefined || row.modality === 'required') && row.coverageRole !== 'non_action_declaration'))).map((row) => ({
       [id]: row.constraintId, ...requirementsTypedConstraintMetadata(row),
       ...(kind === 'CTM' ? { kind: 'must_link', taskRefs: rows(ir.atomicTasks).filter((task) =>
         strings(row.applicableAtomRefs).some((ref) => strings(task.atomRefs).includes(ref))).map((task) => task.taskId) }
@@ -139,6 +389,6 @@ export function validateRequirementsTypedGoalIr(ir: Row): void {
 
 export function assertRequirementsTypedAuthorityMatchesGoal(semanticIr: Row, goalExecutionIr: Row): void {
   const expectedSource = requirementsTypedSemanticSource(semanticIr);
-  if (goalExecutionIr.schemaVersion !== 'GoalExecutionIR/v2' || goalExecutionIr.profile !== 'requirements_backed' ||
+  if (!['GoalExecutionIR/v2', 'GoalExecutionIR/v3'].includes(String(goalExecutionIr.schemaVersion)) || goalExecutionIr.profile !== 'requirements_backed' ||
     sha256Stable(expectedSource) !== sha256Stable(goalExecutionIr.semanticSource)) fail('external_authority_mismatch');
 }

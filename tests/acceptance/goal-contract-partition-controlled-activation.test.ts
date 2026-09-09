@@ -274,7 +274,7 @@ describe('goal-contract partition controlled activation', () => {
       const generated = compileRequirementsBackedGoal(
         {
           projectRoot: fixture.root,
-          requirementRecordPath: fixture.runtimeRecordPath,
+          requirementRecordPath: fixture.authorityRecordPath,
           outRoot,
         },
         { compileGoalExecutionIR: compilePartitionFixtureIr }
@@ -392,7 +392,7 @@ describe('goal-contract partition controlled activation', () => {
       const generated = compileRequirementsBackedGoal(
         {
           projectRoot: fixture.root,
-          requirementRecordPath: fixture.runtimeRecordPath,
+          requirementRecordPath: fixture.authorityRecordPath,
           outRoot,
         },
         { compileGoalExecutionIR: compilePartitionFixtureIr }
@@ -498,7 +498,7 @@ describe('goal-contract partition controlled activation', () => {
       const generated = compileRequirementsBackedGoal(
         {
           projectRoot: fixture.root,
-          requirementRecordPath: fixture.runtimeRecordPath,
+          requirementRecordPath: fixture.authorityRecordPath,
           outRoot: path.join(fixture.root, 'goal-run'),
         },
         { compileGoalExecutionIR: compilePartitionFixtureIr }
@@ -533,7 +533,7 @@ describe('goal-contract partition controlled activation', () => {
       const generated = compileRequirementsBackedGoal(
         {
           projectRoot: fixture.root,
-          requirementRecordPath: fixture.runtimeRecordPath,
+          requirementRecordPath: fixture.authorityRecordPath,
           outRoot: path.join(fixture.root, 'goal-run'),
         },
         { compileGoalExecutionIR: compilePartitionFixtureIr }
@@ -603,7 +603,7 @@ describe('goal-contract partition controlled activation', () => {
       const generated = compileRequirementsBackedGoal(
         {
           projectRoot: fixture.root,
-          requirementRecordPath: fixture.runtimeRecordPath,
+          requirementRecordPath: fixture.authorityRecordPath,
           outRoot: path.join(fixture.root, 'goal-run'),
         },
         { compileGoalExecutionIR: compilePartitionFixtureIr }

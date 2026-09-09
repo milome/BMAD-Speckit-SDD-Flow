@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/independent-fixture-audit.schema.json",
+  "title": "IndependentFixtureAudit/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "perspective",
+    "auditorRole",
+    "auditedAt",
+    "subject",
+    "checks",
+    "blockerCount",
+    "importantFindingCount",
+    "verdict",
+    "conclusion"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "IndependentFixtureAudit/v1" },
+    "perspective": {
+      "enum": ["source_coverage", "semantic_mapping", "executable_verification"]
+    },
+    "auditorRole": {
+      "enum": [
+        "independent_source_coverage_auditor",
+        "independent_semantic_mapping_auditor",
+        "independent_executable_verification_auditor"
+      ]
+    },
+    "auditedAt": { "type": "string", "minLength": 1 },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reviewEpoch", "artifactSetHash", "artifacts"],
+      "properties": {
+        "reviewEpoch": { "type": "string", "minLength": 1 },
+        "artifactSetHash": { "$ref": "#/$defs/sha256" },
+        "artifacts": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/fileIdentity" }
+        }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "status", "evidence"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["PASS", "FAIL"] },
+          "evidence": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "blockerCount": { "type": "integer", "minimum": 0 },
+    "importantFindingCount": { "type": "integer", "minimum": 0 },
+    "verdict": { "enum": ["PASS", "FAIL"] },
+    "conclusion": { "type": "string", "minLength": 1 }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "fileIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "bytes", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "bytes": { "type": "integer", "minimum": 0 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  }
+}
