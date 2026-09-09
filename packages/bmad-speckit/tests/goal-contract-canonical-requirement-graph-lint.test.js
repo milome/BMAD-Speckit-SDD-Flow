@@ -14,6 +14,12 @@ const {
   lintStandaloneSourcePlan,
 } = require('../src/utils/goal-contract/source-plan/standalone-source-plan.ts');
 
+require('./goal-contract-canonical-source-plan-minimal.cases.js');
+require('./goal-contract-canonical-source-plan-proof-assets.cases.js');
+require('./goal-contract-independent-fixture-review.cases.js');
+require('./goal-contract-source-plan-lint.cases.js');
+require('./goal-contract-source-plan-profile.cases.js');
+
 const REAL_LEGACY = path.join(
   __dirname,
   'fixtures',
