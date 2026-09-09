@@ -211,7 +211,7 @@ describe('goal-contract Execution Projection', () => {
     );
   });
 
-  it('compiles one deterministic task universe with complete source coverage', () => {
+  it('compiles one deterministic task universe with complete source coverage and budget bounds', () => {
     const projection = compileExecutionProjection(makeInput());
     assert.equal(projection.schemaVersion, 'goal-contract-execution-projection/v1');
     for (const field of ['executionProjectionHash', 'taskDagHash', 'integrationJoinGraphHash']) {
@@ -233,9 +233,10 @@ describe('goal-contract Execution Projection', () => {
       assert.ok(projection.traceSlices.some((slice) => slice.sourceIds.includes(sourceId)));
       assert.ok(projection.completionPredicates.some((item) => item.sourceIds.includes(sourceId)));
     }
+    assertDeclaredClosureBudget();
   });
 
-  it('preserves a declared closure budget and rejects the four-hour boundary', () => {
+  function assertDeclaredClosureBudget() {
     const graph = makeGraph();
     graph.tasks[0].estimatedClosureMinutes = 180;
     const projection = compileExecutionProjection(makeInput({ reconciledGraph: graph }));
@@ -252,7 +253,7 @@ describe('goal-contract Execution Projection', () => {
             finding.keyword === 'maximum'
         )
     );
-  });
+  }
   it('is byte-stable under graph, task and slice permutation for every mode', () => {
     for (const sequenceMode of ['auto', 'required', 'disabled']) {
       const overrides = {

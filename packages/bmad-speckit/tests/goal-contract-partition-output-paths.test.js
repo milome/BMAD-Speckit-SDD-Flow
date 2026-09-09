@@ -235,7 +235,7 @@ describe('goal contract partition output authority paths', () => {
     );
   });
 
-  it('preflights the exact RequirementRecord writer binding without writing output bytes', () => {
+  it('preflights the exact direct RequirementRecord writer binding and rejects nested records', () => {
     const repositoryRoot = fs.mkdtempSync(
       path.join(os.tmpdir(), 'partition-output-authority-')
     );
@@ -254,9 +254,10 @@ describe('goal contract partition output authority paths', () => {
 
     assert.equal(result.recordPath.replace(/\\/gu, '/'), recordPath.replace(/\\/gu, '/'));
     assert.equal(fs.existsSync(result.authorityRoot), false);
+    assertNestedRequirementRecordRejected();
   });
 
-  it('rejects a nested requirements-contract authoring record as runtime RequirementRecord authority', () => {
+  function assertNestedRequirementRecordRejected() {
     const repositoryRoot = fs.mkdtempSync(
       path.join(os.tmpdir(), 'partition-output-authority-')
     );
@@ -279,7 +280,7 @@ describe('goal contract partition output authority paths', () => {
         }),
       (error) => error.failureClass === 'partition_requirement_record_path_invalid'
     );
-  });
+  }
 
   it('rejects caller-selected roots and path escapes in governed mode', () => {
     const repositoryRoot = path.resolve('C:/workspace/repository');
