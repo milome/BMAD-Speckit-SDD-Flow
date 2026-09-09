@@ -47,8 +47,12 @@ function input(): StandaloneGoalSemanticInput {
         ...['PATH-standalone-1', 'CMD-export', 'ART-export', 'EVDREQ-export'].map((constraintId) => ({
           constraintId, sourceRefs: ['SPAN-001'], applicableMustRefs: ['MUST-001'], premiseRefs: ['SPAN-001'],
         })),
-        { constraintId: 'STOP-standalone-1', sourceRefs: ['SPAN-002'],
-          applicableMustRefs: ['MUST-001'], premiseRefs: ['SPAN-002'] },
+        {
+          constraintId: 'STOP-standalone-1',
+          sourceRefs: ['SPAN-002'],
+          applicableMustRefs: ['MUST-001'],
+          premiseRefs: ['SPAN-001', 'SPAN-002'],
+        },
       ],
     },
   };

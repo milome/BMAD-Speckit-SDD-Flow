@@ -9,7 +9,8 @@ import { createTypedSourceAuthority } from '../../packages/bmad-speckit/src/main
 import { requirementsTypedSemanticSource, projectRequirementsTypedGoalObligations } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-requirements-typed-bridge';
 import { sha256Stable, stableStringify } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 import { decodeGoalSemanticDictionary, encodeGoalSemanticDictionary } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-semantic-dictionary';
-import { typedTwoActionIR } from '../helpers/standalone-goal-typed-consumers';
+import { compileStandaloneGoalExecution } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/standalone-goal-semantic-ir';
+import { normativeRoleInput } from '../helpers/standalone-goal-normative-roles';
 
 const hash = `sha256:${'1'.repeat(64)}`;
 function input(): GoalExecutionCompilerInput {
@@ -24,11 +25,25 @@ function input(): GoalExecutionCompilerInput {
     architecture: { isolation: { mode: 'consumer_worktree' }, ownership: obligations.map((row, index) => ({ targetPath: `src/${index}.ts`, owner: row.obligationId, basisRefs: [row.obligationId] })) } };
 }
 
+function standaloneIr() {
+  const source = normativeRoleInput();
+  const graph = { schemaVersion: 'CanonicalRequirementGraph/v1', sourcePlanId: 'PLAN-AUTHORITY-001', sourcePlanVersion: 'standalone-source-plan/v1',
+    goal: 'Exercise standalone Goal authority persistence.', scope: ['tests/acceptance/goal-execution-authority.test.ts'], nonGoals: [],
+    nodes: [{ id: 'REQ-AUTHORITY-001', kind: 'REQ', title: 'Standalone authority persistence',
+      statement: 'The standalone authority MUST preserve its frozen execution IR.', normativeStrength: 'MUST', polarity: 'required',
+      applicability: { mode: 'always' }, scope: 'local', aliases: [], ownerRef: null, references: {}, attributes: {} }],
+    relations: [], aliases: [], graphHash: '' };
+  const { graphHash: _graphHash, ...payload } = graph;
+  graph.graphHash = sha256Stable(payload);
+  source.canonicalRequirementGraph = graph;
+  return compileStandaloneGoalExecution(source).goalExecutionIr;
+}
+
 function requirementsIr() {
   const raw = input();
   const authority = createTypedSourceAuthority({ schemaVersion: 'requirements-contract-typed-source-graph/v2',
     sourceNodes: raw.obligations.map((row) => ({ sourceRootId: row.obligationId, text: row.text, executionRole: 'action',
-      normativeStrength: 'must', polarity: 'required', conditions: [], scope: { kind: 'work', ownerId: row.obligationId }, declaredIds: [row.obligationId] })),
+      normativeStrength: 'must', polarity: 'required', conditions: [], scope: { kind: 'work' }, declaredIds: [row.obligationId] })),
     sourceBlocks: [], sourceRelations: [], commandDeclarations: [], scenarioDeclarations: [], fixDeclarations: [], sections: [],
     workDeclarations: raw.obligations.map((row) => ({ id: row.obligationId, text: row.text, pass: [{ text: row.oracle }] })) });
   const semanticIr = { schemaVersion: 'requirements-contract-semantic-ir/v2', semanticRevisionId: hash, scopeSemanticHash: hash,
@@ -90,8 +105,8 @@ describe('versioned Goal execution authority persistence', () => {
     expect(() => resolveGoalExecutionAuthority(changed)).toThrow('goal_execution_authority_source_node_refs_invalid');
   });
 
-  it('preserves standalone v2 without applying Requirements-only reference derivation', async () => {
-    const ir = await typedTwoActionIR();
+  it('preserves standalone v2 without applying Requirements-only reference derivation', () => {
+    const ir = standaloneIr();
     const authority: any = normalizeGoalExecutionAuthority(ir);
     expect(authority.projectionRecipe).toBe('standalone_obligation_aliases/v1');
     expect(resolveGoalExecutionAuthority(authority)).toEqual(ir);
