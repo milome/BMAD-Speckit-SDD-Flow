@@ -532,7 +532,7 @@ describe('requirements-backed Goal source-to-closeout production chain', () => {
         '--entry',
         'requirements_backed_goal',
         '--requirements-record',
-        path.relative(root, runtimeRecordPath).replaceAll('\\', '/'),
+        path.relative(root, sourceRecordPath).replaceAll('\\', '/'),
         '--out',
         'goal-run',
         '--json',

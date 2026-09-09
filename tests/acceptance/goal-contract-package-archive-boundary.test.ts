@@ -6,7 +6,8 @@ import { describe, expect, it } from 'vitest';
 const ROOT = join(import.meta.dirname, '..', '..');
 
 function packMembers(): string[] {
-  const output = execSync('npm.cmd pack --dry-run --json --ignore-scripts', {
+  const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  const output = execSync(`${npmCommand} pack --dry-run --json --ignore-scripts`, {
     cwd: ROOT,
     encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024,
