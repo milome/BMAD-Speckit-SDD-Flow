@@ -7,24 +7,104 @@ import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-
 import { normativeRoleInput } from './standalone-goal-normative-roles';
 
 function attachCanonicalRequirementGraph(value: ReturnType<typeof normativeRoleInput>) {
-  const nodes = value.sourceObligations.map((row) => {
-    const applicability = row.applicability as Record<string, unknown> | undefined;
+  const sourceRows = value.sourceObligations.map((row, index) => {
+    const sequence = String(index + 1).padStart(3, '0');
+    const primaryId = row.executionRole === 'action'
+      ? `TASK-STANDALONE-${sequence}`
+      : row.polarity === 'forbidden'
+        ? `NEG-STANDALONE-${sequence}`
+        : `REQ-STANDALONE-${sequence}`;
     return {
-      id: String(row.id),
-      kind: row.executionRole === 'action' ? 'TASK' : row.polarity === 'forbidden' ? 'NEG' : 'REQ',
-      title: String(row.id),
-      statement: String(row.exactText),
-      normativeStrength: String(row.normativeStrength).toUpperCase(),
-      polarity: row.polarity,
-      applicability: { mode: Array.isArray(row.conditions) && row.conditions.length > 0 ? 'conditional' : 'always' },
-      scope: applicability?.scope === 'global' ? 'global' : 'local',
-      aliases: [],
-      ownerRef: null,
-      references: {},
-      attributes: { executionRole: row.executionRole },
-      sourceSpanRefs: row.specSpanRefs,
+      row,
+      primaryId,
+      ownerId: row.executionRole === 'action' ? `REQ-STANDALONE-${sequence}` : primaryId,
+      sourceSpanRef: `SPAN-${sha256Stable(String(row.id)).slice(7, 23).toUpperCase()}`,
     };
   });
+  const canonicalRefBySourceId = new Map(sourceRows.map(({ row, ownerId }) => [String(row.id), ownerId]));
+  const relation = (type: string, fromRef: string, toRef: string, scope: string, sourceSpanRef: string) => ({
+    id: `REL-${sha256Stable({ type, fromRef, toRef, scope }).slice(7, 23).toUpperCase()}`,
+    type,
+    fromRef,
+    toRef,
+    scope,
+    sourceSpanRefs: [sourceSpanRef],
+  });
+  const applicabilityFor = (conditions: unknown) => {
+    if (!Array.isArray(conditions) || conditions.length === 0) return { mode: 'always' };
+    return {
+      mode: 'conditional',
+      condition: conditions.map((condition) => {
+        if (typeof condition === 'string') return condition;
+        if (condition && typeof condition === 'object' && typeof (condition as Record<string, unknown>).text === 'string') {
+          return String((condition as Record<string, unknown>).text);
+        }
+        return JSON.stringify(condition);
+      }).join(' AND '),
+    };
+  };
+  const nodes = sourceRows.flatMap(({ row, primaryId, ownerId, sourceSpanRef }) => {
+    const sourceApplicability = row.applicability as Record<string, unknown> | undefined;
+    const scope = sourceApplicability?.scope === 'global' ? 'global' : 'local';
+    const common = {
+      title: String(row.id),
+      normativeStrength: String(row.normativeStrength).toUpperCase(),
+      polarity: row.polarity,
+      applicability: applicabilityFor(row.conditions),
+      scope,
+      references: {},
+      sourceSpanRefs: [sourceSpanRef],
+    };
+    const primary = {
+      ...common,
+      id: primaryId,
+      kind: row.executionRole === 'action' ? 'TASK' : row.polarity === 'forbidden' ? 'NEG' : 'REQ',
+      statement: String(row.exactText),
+      aliases: [String(row.id)],
+      ownerRef: row.executionRole === 'action' ? ownerId : null,
+      attributes: { executionRole: row.executionRole },
+    };
+    if (row.executionRole !== 'action') return [primary];
+    return [{
+      ...common,
+      id: ownerId,
+      kind: 'REQ',
+      statement: String(row.requiredOutcome),
+      aliases: [],
+      ownerRef: null,
+      attributes: { executionRole: 'requirement' },
+    }, primary];
+  });
+  const relations = sourceRows.flatMap(({ row, primaryId, ownerId, sourceSpanRef }) => {
+    const sourceApplicability = row.applicability as Record<string, unknown> | undefined;
+    const scope = sourceApplicability?.scope === 'global' ? 'global' : 'local';
+    const rows = row.executionRole === 'action' ? [
+      relation('owned_by', primaryId, ownerId, scope, sourceSpanRef),
+      relation('implemented_by', ownerId, primaryId, scope, sourceSpanRef),
+    ] : [];
+    const obligationRefs = Array.isArray(sourceApplicability?.obligationRefs)
+      ? sourceApplicability.obligationRefs.map(String)
+      : [];
+    rows.push(...obligationRefs.map((sourceRef) => relation(
+      'applies_to_requirement',
+      primaryId,
+      canonicalRefBySourceId.get(sourceRef) ?? sourceRef,
+      scope,
+      sourceSpanRef
+    )));
+    if (scope === 'global') {
+      rows.push(relation('globally_authorized_by', primaryId, ownerId, scope, sourceSpanRef));
+      if (primaryId !== ownerId) {
+        rows.push(relation('globally_authorized_by', ownerId, ownerId, scope, sourceSpanRef));
+      }
+    }
+    return rows;
+  });
+  const aliases = sourceRows.map(({ row, primaryId, sourceSpanRef }) => ({
+    alias: String(row.id),
+    canonicalRef: primaryId,
+    sourceSpanRefs: [sourceSpanRef],
+  }));
   const graph = {
     schemaVersion: 'CanonicalRequirementGraph/v1',
     sourcePlanId: 'PLAN-STANDALONE-TYPED-CONSUMERS',
@@ -33,16 +113,16 @@ function attachCanonicalRequirementGraph(value: ReturnType<typeof normativeRoleI
     scope: value.technicalSnapshot.targetPaths,
     nonGoals: value.technicalSnapshot.forbiddenPaths,
     nodes,
-    relations: [],
-    aliases: [],
+    relations,
+    aliases,
     graphHash: '',
   };
   const { graphHash: _graphHash, ...payload } = graph;
   graph.graphHash = sha256Stable({
     ...payload,
     nodes: nodes.map(({ sourceSpanRefs: _sourceSpanRefs, ...node }) => node),
-    relations: [],
-    aliases: [],
+    relations: relations.map(({ sourceSpanRefs: _sourceSpanRefs, ...row }) => row),
+    aliases: aliases.map(({ sourceSpanRefs: _sourceSpanRefs, ...row }) => row),
   });
   value.canonicalRequirementGraph = graph;
 }
