@@ -4,7 +4,7 @@
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-canonical-assets-manifest.ts",
     "hash": "sha256:2bf1a50ff5336144d8f6dd7de063e73221a1bc680034b0505ab2bdde618c25b4"
   },
-  "manifestHash": "sha256:4695c45cbdfe1c81e22e2e21fab364126d5b248db303b62267d04e6d7da13248",
+  "manifestHash": "sha256:56da521c0cf8ee3638fe39d22b758906ca86073006f0f345ab5f1f0957d5e9aa",
   "assets": [
     {
       "assetId": "semantic_ir_schema",
@@ -270,7 +270,7 @@
       "role": "goal_contract_execution_projection_schema",
       "assetKind": "schema",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:670a4c671ac0f7aff3122ee76dcf15d5a3ab5d8b7576304be347f7ba09888749"
+      "sha256": "sha256:825fd76e3e1757833173450b85adf79f7e3540edcfe027286f4734cb96e49b0e"
     },
     {
       "assetId": "goal_contract_partition_policy",
@@ -279,7 +279,7 @@
       "role": "goal_contract_partition_policy",
       "assetKind": "profile",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:6285b799c127a4baa9bf0a93143c4f5213b23eb757c476a835de13aa250e6a79"
+      "sha256": "sha256:0db643c1d3b797be491e53d752aaed6f371f48fc0bfc82edb3ccfe95b2c8ba4d"
     },
     {
       "assetId": "goal_contract_partition_policy_schema",
@@ -405,7 +405,7 @@
       "role": "goal_contract_partition_child_coverage_receipt_schema",
       "assetKind": "schema",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:c54283e1977123cbd7ec68ea0bcd0ac57474a6a71a607bc5e8088c1c4b34005c"
+      "sha256": "sha256:dc34deba83c7e0b903b902370dbc0f260099ed62f40cd4878fae86ceadf19ce7"
     },
     {
       "assetId": "goal_contract_partition_child_generation_receipt_schema",
@@ -414,7 +414,7 @@
       "role": "goal_contract_partition_child_generation_receipt_schema",
       "assetKind": "schema",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:d82f5a29afca00537d4bc11105afefc5ad816c6cb874fa6d4e29b884e51b73ba"
+      "sha256": "sha256:1539c48d07b85b458cac524139277ce9667bfb2136a76eecc4f94937e492a019"
     },
     {
       "assetId": "goal_contract_partition_plan_schema",

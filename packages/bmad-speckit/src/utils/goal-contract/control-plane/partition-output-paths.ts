@@ -1345,6 +1345,14 @@ function validateImmutablePartitionAuthorityUnit(
         `${partitionId}.${field}`
       );
     }
+    if (
+      compilation.estimatedClosureMinutes !== undefined &&
+      compilation.estimatedClosureMinutes !== partition.estimatedClosureMinutes
+    ) {
+      throw failure('partition_child_compilation_binding_mismatch', {
+        field: `${partitionId}.estimatedClosureMinutes`,
+      });
+    }
 
     const coveragePath =
       `receipts/children/${partitionId}.coverage.json`;
@@ -1379,6 +1387,14 @@ function validateImmutablePartitionAuthorityUnit(
         'partition_child_coverage_binding_mismatch',
         `${partitionId}.${field}`
       );
+    }
+    if (
+      coverage.estimatedClosureMinutes !== undefined &&
+      coverage.estimatedClosureMinutes !== partition.estimatedClosureMinutes
+    ) {
+      throw failure('partition_child_coverage_binding_mismatch', {
+        field: `${partitionId}.estimatedClosureMinutes`,
+      });
     }
 
     const generationPath =
@@ -1418,6 +1434,14 @@ function validateImmutablePartitionAuthorityUnit(
         'partition_child_generation_binding_mismatch',
         `${partitionId}.${field}`
       );
+    }
+    if (
+      generation.estimatedClosureMinutes !== undefined &&
+      generation.estimatedClosureMinutes !== partition.estimatedClosureMinutes
+    ) {
+      throw failure('partition_child_generation_binding_mismatch', {
+        field: `${partitionId}.estimatedClosureMinutes`,
+      });
     }
 
     const membershipPath =

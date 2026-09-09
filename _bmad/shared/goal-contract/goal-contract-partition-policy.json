@@ -1,13 +1,13 @@
 {
   "schemaVersion": "goal-contract-partition-policy/v1",
   "policyId": "goal-contract-partition-default",
-  "policyVersion": "1.1.0",
+  "policyVersion": "1.2.0",
   "limits": {
     "targetClosureMinutesPerPartition": {
       "min": 120,
       "max": 180
     },
-    "maxClosureMinutesPerPartition": 240,
+    "maxClosureMinutesPerPartition": 239,
     "maxPrimaryWriteScopeOwnersPerPartition": 8,
     "maxCrossPartitionDependencies": 32,
     "maxCandidateFrontiers": 256,

@@ -1523,13 +1523,13 @@ describe('goal-contract partition optimizer', () => {
     const graph = makeGraph({
       components: [
         makeComponent('oversized', {
-          estimatedClosureMinutes: 241,
+          estimatedClosureMinutes: 240,
           closureMinuteBreakdown: {
-            declaredTaskMinutes: 241,
+            declaredTaskMinutes: 240,
             derivedTaskMinutes: 0,
             verificationMinutes: 0,
             coordinationMinutes: 0,
-            totalMinutes: 241,
+            totalMinutes: 240,
           },
         }),
       ],

@@ -2215,30 +2215,23 @@ function validatePlanSchema(plan) {
 }
 
 function compilePartitionBundle(request, authority) {
-  const taskFileScopeAuthority =
-    compileTaskFileScopeAuthority({
-      orderedSourceSnapshotSet: authority.snapshotSet,
-      reconciledGraph: request.reconciledGraph,
-      sourceSnapshot: request.sourceSnapshot,
-    });
-  const taskExecutionRoleAuthority =
-    compileTaskExecutionRoleAuthority({
-      orderedSourceSnapshotSet: authority.snapshotSet,
-      reconciledGraph: request.reconciledGraph,
-      sourceSnapshot: request.sourceSnapshot,
-    });
-  const executableReconciledGraph =
-    projectExecutableReconciledGraph(
-      request.reconciledGraph,
-      taskExecutionRoleAuthority
-    );
+  const taskFileScopeAuthority = compileTaskFileScopeAuthority({
+    orderedSourceSnapshotSet: authority.snapshotSet,
+    reconciledGraph: request.reconciledGraph,
+    sourceSnapshot: request.sourceSnapshot,
+  });
+  const taskExecutionRoleAuthority = compileTaskExecutionRoleAuthority({
+    orderedSourceSnapshotSet: authority.snapshotSet,
+    reconciledGraph: request.reconciledGraph,
+    sourceSnapshot: request.sourceSnapshot,
+  });
+  const executableReconciledGraph = projectExecutableReconciledGraph(
+    request.reconciledGraph,
+    taskExecutionRoleAuthority
+  );
   const authorityProjection = sourceAuthorityProjection(authority);
-  const reconciledGraphHash = canonicalGraphHash(
-    executableReconciledGraph
-  );
-  const commandAuthority = typedCommandAuthority(
-    executableReconciledGraph
-  );
+  const reconciledGraphHash = canonicalGraphHash(executableReconciledGraph);
+  const commandAuthority = typedCommandAuthority(executableReconciledGraph);
   const projectionAuthority = {
     ...authorityProjection,
     sourceSnapshotHash: authority.snapshotSet.orderedSourceSnapshotSetHash,
@@ -2253,6 +2246,7 @@ function compilePartitionBundle(request, authority) {
     sequenceApplicabilityReceipt: request.sequenceApplicabilityReceipt,
     sequenceConstraintInput: request.sequenceConstraintInput,
     sequenceExecutionState: request.sequenceExecutionState,
+    inheritedConstraints: executableReconciledGraph.inheritedConstraints || [],
   };
   const executionProjection = compileExecutionProjection(projectionAuthority);
   const partitionPolicyBinding = assertCurrentPartitionPolicyBinding({
@@ -2275,10 +2269,8 @@ function compilePartitionBundle(request, authority) {
     taskExecutionRoleAuthority.mode === 'explicit'
       ? selectExecutableTaskBoundaryCandidate({
           optimization: optimizerResult,
-          executableTaskIds:
-            taskExecutionRoleAuthority.executableTaskIds,
-          taskExecutionRoleAuthorityHash:
-            taskExecutionRoleAuthority.taskExecutionRoleAuthorityHash,
+          executableTaskIds: taskExecutionRoleAuthority.executableTaskIds,
+          taskExecutionRoleAuthorityHash: taskExecutionRoleAuthority.taskExecutionRoleAuthorityHash,
           taskExecutionRoleAuthority,
         })
       : optimizerResult;
@@ -2292,10 +2284,8 @@ function compilePartitionBundle(request, authority) {
   if (taskExecutionRoleAuthority.mode === 'explicit') {
     validateExecutablePartitionReadiness({
       partitions,
-      executableTaskIds:
-        taskExecutionRoleAuthority.executableTaskIds,
-      aggregateTaskIds:
-        taskExecutionRoleAuthority.aggregateTaskIds,
+      executableTaskIds: taskExecutionRoleAuthority.executableTaskIds,
+      aggregateTaskIds: taskExecutionRoleAuthority.aggregateTaskIds,
     });
   }
   const obligations = subordinateObligations(authority);
@@ -2330,11 +2320,8 @@ function compilePartitionBundle(request, authority) {
     childContractAuthority: executionProjection.sequenceConstraintBinding.childContractAuthority,
     ...(taskExecutionRoleAuthority.mode === 'explicit'
       ? {
-          taskExecutionRoleAuthorityHash:
-            taskExecutionRoleAuthority
-              .taskExecutionRoleAuthorityHash,
-          aggregateValidation:
-            taskExecutionRoleAuthority.aggregateValidation,
+          taskExecutionRoleAuthorityHash: taskExecutionRoleAuthority.taskExecutionRoleAuthorityHash,
+          aggregateValidation: taskExecutionRoleAuthority.aggregateValidation,
         }
       : {}),
     namespaceOwnership: namespaceOwnership(authority),
@@ -2369,9 +2356,7 @@ function compilePartitionBundle(request, authority) {
     schemaVersion: 'goal-contract-partition-bundle/v1',
     executionProjection,
     projectionAuthority,
-    reconciledGraphAuthority: canonicalizeSets(
-      executableReconciledGraph
-    ),
+    reconciledGraphAuthority: canonicalizeSets(executableReconciledGraph),
     componentGraph,
     optimization,
     partitionPolicyBinding,

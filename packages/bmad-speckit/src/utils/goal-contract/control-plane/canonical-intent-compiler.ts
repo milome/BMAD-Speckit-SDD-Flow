@@ -11,8 +11,20 @@ const { verifyIntentAuthorityEnvelope } = require('./intent-authority.ts');
 const { verifyOrderedSourceSnapshotSet } = require('./source-snapshot.ts');
 const { verifySourceCompositionPolicy } = require('./source-composition-policy.ts');
 const { compileSpecSpanRegistry, resolveSpecSpans } = require('./spec-span-registry.ts');
-const { extractGoalContractSourceModel } = require('../source-plan/source-model.ts');
 
+
+function extractGoalContractSourceModel(input) {
+  const frozenBytes = Buffer.from(input?.snapshot?.frozenBytesBase64 || '', 'base64');
+  const canonical = frozenBytes.includes(
+    Buffer.from('sourcePlanVersion: standalone-source-plan/', 'utf8')
+  );
+  const module = canonical
+    ? require('../source-plan/source-model.ts')
+    : require('../source-obligation-extractor.ts');
+  return canonical
+    ? module.extractGoalContractSourceModel(input)
+    : module.extractSourceObligations(input);
+}
 export type GoalContractCanonicalIntentCompilerModule = never;
 
 interface CanonicalIntentRecordShape {
@@ -262,27 +274,55 @@ function canonicalIntentSemanticsProjection(record) {
 }
 
 function sourceBackedSemanticFields(obligation, classification) {
-  const sourceOutcome = stripDeclaredPrefix(obligation.exactText, obligation.declaredSourceId)
-    .replace(/^(?:MUST\s+NOT|SHALL\s+NOT|MUST|SHALL|SHOULD|MAY)\b\s*/iu, '');
-  const requiredOutcome = normalizedSemanticToken(sourceOutcome,
-    `${obligation.namespace}:${classification}`);
+  const sourceOutcome = stripDeclaredPrefix(
+    obligation.exactText,
+    obligation.declaredSourceId
+  ).replace(/^(?:MUST\s+NOT|SHALL\s+NOT|MUST|SHALL|SHOULD|MAY)\b\s*/iu, '');
+  const requiredOutcome = normalizedSemanticToken(
+    sourceOutcome,
+    `${obligation.namespace}:${classification}`
+  );
   const [action, ...targetTokens] = requiredOutcome.split(' ');
-  const subject = normalizedSemanticToken(obligation.headingPath.at(-1), obligation.namespace.toLowerCase());
-  const scopeIdentity = (ref) => ref === obligation.sourceRootId ? 'self' : ref;
-  const semanticApplicability = { scope: obligation.applicability.scope,
-    ...(obligation.applicability.obligationRefs ? { obligationRefs: obligation.applicability.obligationRefs.map(scopeIdentity) } : {}),
-    ...(obligation.applicability.sourceScope ? { sourceScope: {
-      kind: obligation.applicability.sourceScope.kind, ownerId: scopeIdentity(obligation.applicability.sourceScope.ownerId),
-    } } : {}) };
+  const subject = normalizedSemanticToken(
+    obligation.headingPath.at(-1),
+    obligation.namespace.toLowerCase()
+  );
+  const scopeIdentity = (ref) => (ref === obligation.sourceRootId ? 'self' : ref);
+  const semanticApplicability = {
+    scope: obligation.applicability.scope,
+    ...(obligation.applicability.obligationRefs
+      ? { obligationRefs: obligation.applicability.obligationRefs.map(scopeIdentity) }
+      : {}),
+    ...(obligation.applicability.sourceScope
+      ? {
+          sourceScope: {
+            kind: obligation.applicability.sourceScope.kind,
+            ownerId: scopeIdentity(obligation.applicability.sourceScope.ownerId),
+          },
+        }
+      : {}),
+  };
   const conditions = obligation.conditions.map(({ text, state, kind }) => ({ text, state, kind }));
-  const applicabilityCondition = JSON.stringify({ applicability: semanticApplicability, conditions });
+  const applicabilityCondition = JSON.stringify({
+    applicability: semanticApplicability,
+    conditions,
+  });
   const coordinate = { subject, action, target: targetTokens.join(' '), applicabilityCondition };
   const semantics = canonicalIntentSemanticsProjection(obligation);
-  return { ...coordinate, ...semantics, requiredOutcome,
+  return {
+    ...coordinate,
+    ...semantics,
+    requiredOutcome,
     semanticCoordinateKey: hashControlPlaneValue(coordinate),
-    semanticOwnershipKey: hashControlPlaneValue({ ...coordinate, requiredOutcome,
-      normativeStrength: obligation.normativeStrength, polarity: obligation.polarity,
-      executionRole: obligation.executionRole, required: obligation.required }) };
+    semanticOwnershipKey: hashControlPlaneValue({
+      ...coordinate,
+      requiredOutcome,
+      normativeStrength: obligation.normativeStrength,
+      polarity: obligation.polarity,
+      executionRole: obligation.executionRole,
+      required: obligation.required,
+    }),
+  };
 }
 
 const SNAPSHOT_MODEL_CACHE_LIMIT = 4;

@@ -230,6 +230,11 @@
         "ownerSliceId": { "$ref": "#/$defs/id" },
         "dependencyIds": { "$ref": "#/$defs/idArray" },
         "atomicGroupRefs": { "$ref": "#/$defs/idArray" },
+        "estimatedClosureMinutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 239
+        },
         "sequenceConstraintIds": { "$ref": "#/$defs/idArray" }
       }
     },

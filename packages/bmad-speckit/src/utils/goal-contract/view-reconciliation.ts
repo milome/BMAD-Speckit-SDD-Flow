@@ -142,7 +142,7 @@ function collectSourceBoundIssues({
     });
   const applicableSources = new Set(
     sourceObligations
-      .filter((item) => item.applicabilityState === 'applicable')
+      .filter((item) => item.applicabilityState !== 'not_applicable')
       .map((item) => item.id)
   );
   const referencedSources = new Set();
@@ -263,6 +263,7 @@ function reconcileGoalContractViews({
     commitPolicy: implementationView.commitPolicy,
     closeConditions: implementationView.closeConditions,
     synchronizationObligations: implementationView.synchronizationObligations,
+    inheritedConstraints: implementationView.inheritedConstraints || [],
     acceptanceItems: acceptanceEvidenceView.acceptanceItems,
     negativeControls: acceptanceEvidenceView.negativeControls,
     productionEntryPoints: acceptanceEvidenceView.productionEntryPoints,

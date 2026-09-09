@@ -176,7 +176,6 @@ function makeSemanticRegistries(obligations) {
   const recordIds = (kind) => obligations.filter((row) => row.kind === kind).map(semanticRecordId);
   const commandRecords = semanticCommandRecords(obligations);
   const commandIds = new Set(commandRecords.map((command) => command.id));
-  const sourceIds = new Set(obligations.map(semanticRecordId));
   // Acceptance criteria may be source declarations (for example FIX-* headings)
   // that are intentionally excluded from the semantic obligation view. Their
   // IDs remain valid registry targets when a source-backed action references
@@ -234,18 +233,23 @@ function semanticCommandRecords(obligations) {
 }
 
 function isAdmissibleProofCommand(command) {
-  return typeof command.invocation === 'string' && command.invocation.trim().length > 0 &&
+  return (
+    typeof command.invocation === 'string' &&
+    command.invocation.trim().length > 0 &&
     !['may', 'should', 'descriptive'].includes(command.normativeStrength) &&
     command.commandDeclaration?.polarity !== 'forbidden' &&
     command.commandDeclaration?.authorization !== 'prohibited' &&
-    command.evidenceClassification !== 'coverage_only';
+    command.evidenceClassification !== 'coverage_only'
+  );
 }
 
 function requiresImplementationProof(obligation) {
   if (obligation.executionRole === undefined) return true;
-  return obligation.executionRole === 'action' &&
+  return (
+    obligation.executionRole === 'action' &&
     (obligation.normativeStrength === 'must' || obligation.normativeStrength === 'mixed') &&
-    !['forbidden', 'permitted', 'descriptive'].includes(obligation.polarity);
+    !['forbidden', 'permitted', 'descriptive'].includes(obligation.polarity)
+  );
 }
 
 function isCodeObligation(obligation) {
@@ -405,12 +409,16 @@ function semanticNormativeMetadata(row) {
     `- Source: \`${row.id}\`; role: \`${row.executionRole}\`; strength: \`${row.normativeStrength}\`; polarity: \`${row.polarity}\`.`,
     `- Source text hash: \`sourceTextHash=${row.textHash}\`.`,
     `- Provenance: \`${(row.provenanceRefs || []).join(', ')}\`; clauses: \`${(row.clauseRefs || []).join(', ')}\`.`,
-    ...((row.conditions || []).map((condition) => [
-      '- Condition (unevaluated):',
-      '',
-      ...String(condition.text).split(/\r?\n/u).map((line) => `  > ${line}`),
-      '',
-    ].join('\n'))),
+    ...(row.conditions || []).map((condition) =>
+      [
+        '- Condition (unevaluated):',
+        '',
+        ...String(condition.text)
+          .split(/\r?\n/u)
+          .map((line) => `  > ${line}`),
+        '',
+      ].join('\n')
+    ),
   ].join('\n');
 }
 
@@ -1362,6 +1370,9 @@ function partitionFrontMatter({
     `partitionSetHash: ${bindings.partitionSetHash}`,
     `partitionId: ${partition.partitionId}`,
     `partitionRole: ${partition.partitionRole}`,
+    ...(Number.isInteger(partition.estimatedClosureMinutes)
+      ? [`estimatedClosureMinutes: ${partition.estimatedClosureMinutes}`]
+      : []),
     `selectionSetHash: ${partition.selectionSetHash || bindings.selectionSetHash}`,
     `dependencyPartitionIds: ${JSON.stringify(partition.dependencyPartitionIds || [])}`,
     ...selectionAuthorityLines,
@@ -1462,10 +1473,17 @@ function buildPartitionSlotData({
     selectedScope.inheritedConstraints.length === 0
       ? '- None.'
       : selectedScope.inheritedConstraints
-          .map(
-            (constraint) =>
-              `- \`${constraint.constraintId}\`: non-executable inherited constraint from the validated Execution Projection.`
-          )
+          .map((constraint) => {
+            const rule = String(
+              constraint.semantic?.canonicalValue ||
+                constraint.semantic?.requiredOutcome ||
+                constraint.semantic?.statement ||
+                ''
+            ).trim();
+            return `- \`${constraint.constraintId}\`: non-executable inherited constraint from the validated Execution Projection${
+              rule ? `: ${rule}` : '.'
+            }`;
+          })
           .join('\n');
   const completionEvidencePacket = bindings.partitionPlanHash
     ? [
