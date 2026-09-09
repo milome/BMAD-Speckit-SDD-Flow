@@ -2,10 +2,8 @@ const { createHash } = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const modulePath = (relativePath: string): string =>
-  `${relativePath}${__filename.endsWith('.ts') ? '.ts' : ''}`;
-const { hashReceiptPayload } = require(modulePath('../control-plane/canonical-hash'));
-const { validateGoalContractSchema } = require(modulePath('../control-plane/schema-registry'));
+const { hashReceiptPayload } = require('../control-plane/canonical-hash.ts');
+const { validateGoalContractSchema } = require('../control-plane/schema-registry.ts');
 
 interface StandaloneSourcePlanProfile extends Record<string, unknown> {
   schemaVersion: 'StandaloneSourcePlanProfile/v1';
