@@ -19,6 +19,16 @@ function withTemporarilyMovedPath(targetPath: string, callback: () => void): voi
   }
 }
 
+function expectStandaloneBundles(packageRoot: string): void {
+  for (const fileName of ['emit-runtime-policy.cjs', 'resolve-for-session.cjs']) {
+    const bundle = fs.readFileSync(path.join(packageRoot, 'dist', fileName), 'utf8');
+    expect(bundle).not.toContain('require(modulePath(');
+    expect(bundle).not.toMatch(
+      /require\(["']\.\.\/control-plane\/(?:canonical-hash|schema-registry)/u
+    );
+  }
+}
+
 describe('runtime-emit pack contract', () => {
   it('builds during clean install before the package _bmad mirror exists', () => {
     const repoRoot = process.cwd();
@@ -32,6 +42,7 @@ describe('runtime-emit pack contract', () => {
     expect(
       fs.existsSync(path.join(packageRoot, 'dist', 'run-auditor-host.cjs'))
     ).toBe(true);
+    expectStandaloneBundles(packageRoot);
   }, 120_000);
 
   it('cleans stale dist files before build and packs only manifest-listed bundles', () => {
