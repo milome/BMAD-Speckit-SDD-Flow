@@ -1846,10 +1846,12 @@ async function resumeAuthorConfirmationReadySourceAction(context) {
                 'utf8'
               )
             );
-            const semanticIr = JSON.parse(
-              fs.readFileSync(
-                path.join(recordRoot, ...currentAuthority.activeSemanticIrPath.split('/')),
-                'utf8'
+            const semanticIr = resolveRequirementsContractSemanticIrAuthority(
+              JSON.parse(
+                fs.readFileSync(
+                  path.join(recordRoot, ...currentAuthority.activeSemanticIrPath.split('/')),
+                  'utf8'
+                )
               )
             );
             const nextBinding = canonicalBindingFromClosure({

@@ -66,6 +66,7 @@ export interface ImplementationReadinessFixture {
   requestId: string;
   recordRoot: string;
   recordPath: string;
+  authorityRecordPath: string;
   runtimeRecordPath: string;
   targetPath: string;
   testPath: string;
@@ -75,6 +76,7 @@ export interface ImplementationReadinessFixture {
   oracle: string;
   semanticRevisionId: string;
   scopeSemanticHash: string;
+  sourceBindingHash: string;
   requirementsConfirmationPath: string;
   architectureCandidateHash: string;
   architectureEventPath: string;
@@ -527,6 +529,7 @@ export function materializeImplementationReadinessFixture(
     requestId,
     recordRoot,
     recordPath,
+    authorityRecordPath: recordPath,
     runtimeRecordPath: path.join(recordRoot, 'requirement-record.json'),
     targetPath,
     testPath,
@@ -536,6 +539,7 @@ export function materializeImplementationReadinessFixture(
     oracle: ORACLE,
     semanticRevisionId: semanticIr.semanticRevisionId,
     scopeSemanticHash: semanticIr.scopeSemanticHash,
+    sourceBindingHash: sourceBinding.sourceBindingHash,
     requirementsConfirmationPath: confirmationTarget,
     architectureCandidateHash: prepared.result.architectureConfirmationCandidateHash,
     architectureEventPath: path.join(recordRoot, ...ingested.result.eventRef.path.split('/')),
