@@ -2,10 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import path from 'node:path';
-import yaml from 'js-yaml';
 import { resolveExecutionDisciplineProfile } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/execution-discipline-profiles';
-import { extractRequirementsContractImplementationConfirmation, implementationConfirmationHashFor,
-  sourceDocumentHashFor } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-implementation-confirmation-codec';
 import type { MaterializedReqTraceFixture } from './requirement-fixture-runtime';
 
 export const QUARTET = [
@@ -23,28 +20,8 @@ const EVIDENCE = path.resolve(
 const SCRIPT = path.resolve(
   '_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js'
 );
-const BOOKKEEPING = new Set([
-  'status',
-  'confirmedAt',
-  'confirmedBy',
-  'sourceDocumentHash',
-  'implementationConfirmationHash',
-  'reconfirmationRequest',
-  'confirmationRender',
-]);
-
 export function hash(bytes: string | Buffer): string {
   return `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
-}
-
-function stable(value: unknown): string {
-  if (value === null || typeof value !== 'object') return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(stable).join(',')}]`;
-  const object = value as Record<string, unknown>;
-  return `{${Object.keys(object)
-    .sort()
-    .map((key) => `${JSON.stringify(key)}:${stable(object[key])}`)
-    .join(',')}}`;
 }
 
 export function artifactHashes(outDir: string): Record<string, string> {
@@ -53,53 +30,21 @@ export function artifactHashes(outDir: string): Record<string, string> {
   );
 }
 
+export function generatorTimeoutMs(sourceBytes: number): number {
+  if (!Number.isFinite(sourceBytes) || sourceBytes < 0) {
+    throw new Error('req_trace_source_bytes_invalid');
+  }
+  return Math.max(120_000, Math.ceil(sourceBytes / (1024 * 1024)) * 120_000);
+}
+
 export function growSyntheticConfirmation(
   fixture: MaterializedReqTraceFixture, paddingBytes = 650 * 1024
 ): void {
-  rewriteSyntheticConfirmation(fixture, (confirmation) => {
-    const must = confirmation.must as Array<{ text: string }>;
-    must[0].text = `TEST-ONLY BUDGET PADDING ${'x'.repeat(paddingBytes)}`;
-  });
-}
-
-export function rewriteSyntheticConfirmation(
-  fixture: MaterializedReqTraceFixture,
-  mutate: (confirmation: Record<string, unknown>) => void
-): void {
-  const source = fs.readFileSync(fixture.sourcePath, 'utf8');
-  const fencedBlock = source.match(/```yaml\r?\n([\s\S]*?)\r?\n```/u);
-  const originalBlock = fencedBlock?.[1];
-  if (!originalBlock) throw new Error('test_only_confirmation_fixture_missing');
-  const parsed = yaml.load(originalBlock) as {
-    implementationConfirmation: Record<string, unknown>;
-  };
-  const confirmation = parsed.implementationConfirmation;
-  // This isolated test record is never evidence of human confirmation.
-  mutate(confirmation);
-  const block = yaml.dump(parsed, { lineWidth: -1 }).trimEnd();
-  const nextSource = source.replace(confirmation.typedSourceAuthority ? fencedBlock![0] : originalBlock, block);
-  const semantic = Object.fromEntries(
-    Object.entries(confirmation).filter(([key]) => !BOOKKEEPING.has(key))
+  fs.appendFileSync(
+    fixture.sourcePath,
+    `\n<!-- test-only non-authoritative presentation padding ${'x'.repeat(paddingBytes)} -->\n`,
+    'utf8'
   );
-  const canonical = confirmation.typedSourceAuthority
-    ? extractRequirementsContractImplementationConfirmation(nextSource) : null;
-  const hashes = canonical ? {
-    sourceDocumentHash: sourceDocumentHashFor(nextSource, canonical.blockText, canonical.value),
-    implementationConfirmationHash: implementationConfirmationHashFor(canonical.value),
-  } : {
-    sourceDocumentHash: hash(
-      nextSource.replace(block, `implementationConfirmation:${stable(semantic)}`)
-    ),
-    implementationConfirmationHash: hash(stable(semantic)),
-  };
-  const record = JSON.parse(fs.readFileSync(fixture.recordPath, 'utf8'));
-  Object.assign(record, hashes);
-  record.confirmationHistory = record.confirmationHistory.map((event: Record<string, unknown>) => ({
-    ...event,
-    ...hashes,
-  }));
-  fs.writeFileSync(fixture.sourcePath, nextSource, 'utf8');
-  fs.writeFileSync(fixture.recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
 }
 
 export function runGenerator(input: {
@@ -113,6 +58,7 @@ export function runGenerator(input: {
   contender?: boolean;
 }) {
   const sourcePath = input.sourcePath ?? input.fixture!.sourcePath;
+  const sourceBytes = fs.statSync(sourcePath).size;
   const args = [
     ...(input.preload ? ['--require', input.preload] : []),
     ...(input.crashPoint ? ['--require', path.resolve('tests/helpers/req-trace-publication-crash-worker.cjs')] : []),
@@ -146,9 +92,9 @@ export function runGenerator(input: {
     );
   }
   const result = spawnSync(process.execPath, args, {
-    cwd: process.cwd(),
+    cwd: input.fixture?.root ?? process.cwd(),
     encoding: 'utf8',
-    timeout: 30_000,
+    timeout: generatorTimeoutMs(sourceBytes),
     maxBuffer: 4 * 1024 * 1024,
     windowsHide: true,
     env: { ...process.env, REQ_TRACE_CRASH_ROOT: input.outDir,

@@ -7,6 +7,7 @@ import { sha256Stable, stableStringify } from '../../packages/bmad-speckit/src/m
 import {
   decodeGoalSemanticDictionary as decode,
   encodeGoalSemanticDictionary as encode,
+  encodeGoalSemanticDictionaryForEncoding as encodeForEncoding,
   GOAL_SEMANTIC_DICTIONARY_PROTOCOL,
   GOAL_DICTIONARY_MAX_DEPTH as MAX_DEPTH,
   GOAL_DICTIONARY_MAX_EXPANDED_BYTES as MAX_BYTES,
@@ -46,6 +47,23 @@ const depthValue = (depth: number) => {
 };
 
 describe('GoalSemanticDictionary/v1 lossless bounded codec', () => {
+  it.each([
+    [undefined, undefined],
+    ['GoalDictionaryNodes/base36-v1', 'GoalDictionaryNodes/base36-v1'],
+    ['GoalDictionaryNodes/base36-run-v2', 'GoalDictionaryNodes/base36-run-v2'],
+  ] as const)('canonically re-encodes the requested node encoding %s', (encoding, expected) => {
+    const value = Array.from({ length: 40 }, (_, index) => ({ index, values: [index, index + 1] }));
+    const dictionary = encodeForEncoding(value, encoding);
+    expect(dictionary.nodeEncoding).toBe(expected);
+    expect(decode(dictionary)).toEqual(value);
+    expect(encodeForEncoding(decode(dictionary), encoding)).toEqual(dictionary);
+  });
+
+  it('fails closed instead of falling back from an unknown requested node encoding', () => {
+    expect(() => encodeForEncoding([], 'GoalDictionaryNodes/unknown-v999' as never))
+      .toThrow('goal_semantic_dictionary_node_encoding');
+  });
+
   it.each([null, false, true, 0, -0, 1.25, '', 'ASCII', '\u4e2d\u6587 \u{1f680}', '\ud800'])(
     'round-trips a JSON scalar %# with canonical hash identity', (value) => {
       const dictionary = encode(value);

@@ -70,8 +70,6 @@ import { materializeControlledCloseoutConfirmationPage } from './controlled-clos
 import { applyLongRunPolicyToState } from './long-run-runtime-policy';
 import { getReviewerConsumerByAuditStage, isReviewerAuditEntryStage } from './reviewer-registry';
 import {
-  createNativeReviewerTransport,
-  createNativeReviewerHostBridge,
   type NativeReviewerDispatch,
   type NativeReviewerTransport,
 } from './requirements-contract-native-reviewer-transport';
@@ -264,8 +262,11 @@ import {
 } from '../../actions/native-goal-invoker';
 import {
   executeMainAgentExecutionFinalJudgeCampaign,
+  validateMainAgentExecutionActorIsolationReceipt,
+  type ExecutionFinalFinding,
   type MainAgentExecutionFinalJudgeProducedResult,
 } from './main-agent-execution-final-judge-campaign';
+import { createGoalFinalizationActorResolver } from './main-agent-goal-finalization-actor-resolver';
 import {
   compileMainAgentExecutionFinalJudgeCampaignInput,
   type MainAgentExecutionFinalJudgeCampaignInput,
@@ -274,10 +275,6 @@ import {
   confirmMainAgentControlledCloseout,
   confirmMainAgentRecordBackedCloseout,
 } from './main-agent-controlled-closeout-confirmation';
-import {
-  prepareRequirementsContractJudgeInvocation,
-  type RequirementsContractJudgeJsonRecord,
-} from './requirements-contract-judge-invocation';
 import type {
   ClaudeCodeCliCommandInvocation,
   ClaudeCodeCliCommandResult,
@@ -5574,6 +5571,18 @@ interface CriticalAuditorRoundResult {
     receiptHash: string;
   };
   judgeAdapterHostExecution?: Record<string, unknown>;
+}
+
+function criticalAuditorProviderInvocationReceiptRef(
+  value: unknown
+): CriticalAuditorRoundResult['providerInvocationReceiptRef'] {
+  const ref = recordObject(value);
+  const path = normalizeText(ref.path);
+  const contentHash = normalizeText(ref.contentHash);
+  const receiptHash = normalizeText(ref.receiptHash);
+  return path && contentHash && receiptHash
+    ? { path, contentHash, receiptHash }
+    : undefined;
 }
 
 type AuditReviewEffectiveVerdict =
@@ -14546,9 +14555,10 @@ function buildPreConfirmationImplementationConfirmationDraft(input: {
           failurePathRefs: row.failurePathRefs,
           edgeCaseRefs: [row.edgeId],
           expectedPreImplementationState: 'expected_red',
-          redProofPlan: `Before implementation, ${row.negId} acceptance must fail while the forbidden behavior remains possible.`,
-          oracle: row.negativeAssertion,
-          positiveControl: true,
+           redProofPlan: `Before implementation, ${row.negId} acceptance must fail while the forbidden behavior remains possible.`,
+           oracle: row.negativeAssertion,
+           perMustAssertions: perMustAssertionsForProjection('acceptanceId', row.acceptanceId),
+           positiveControl: true,
           negativeControls: [row.negId],
           mockOnly: false,
           ...projectionBackRef(input.packetHash, row.negId),
@@ -24801,9 +24811,9 @@ function pendingFinalCriticalAuditorDraftText(input: {
     Number(criticalAuditor.consecutiveNoNewGapRounds ?? 0) >= 3 &&
     normalizeText(criticalAuditor.convergenceVerdict) === 'bounded_no_new_gap';
   const requestMatchesFinalDraft =
-    Boolean(request) &&
+    request !== null &&
     criticalAuditorRoundRequestHashMatchesContent(request) &&
-    normalizeText(request?.schemaVersion) === 'critical-auditor-round-request/v1' &&
+    normalizeText(request.schemaVersion) === 'critical-auditor-round-request/v1' &&
     Number(request.roundIndex) === 1 &&
     normalizeText(request.recordId) === input.recordId &&
     normalizeText(request.transactionId) === input.transaction.transactionId &&
@@ -25773,7 +25783,9 @@ function validateCriticalAuditorResponse(input: {
       independentProviderEvidence: isNoNewGapVerdict(verdict)
         ? (parsed.independentProviderEvidence as CriticalAuditorIndependentProviderEvidence)
         : undefined,
-      providerInvocationReceiptRef: recordObject(parsed.providerInvocationReceiptRef),
+      providerInvocationReceiptRef: criticalAuditorProviderInvocationReceiptRef(
+        parsed.providerInvocationReceiptRef
+      ),
       judgeAdapterHostExecution: recordObject(parsed.judgeAdapterHostExecution),
       rationale: normalizeText(parsed.rationale),
     },
@@ -34834,6 +34846,7 @@ function recordNativeGoalHandoff(input: {
   taskReportCandidatePath?: string;
   taskReportArtifactHash?: string;
   controlledCloseoutIngested?: boolean;
+  controlledCloseout?: NativeGoalInvocationResult['controlledCloseout'];
 }): Record<string, unknown> | null {
   if (!input.recordPath || !fs.existsSync(input.recordPath)) return null;
   if (!('taskType' in input.packet) || input.packet.taskType !== 'implement') return null;
@@ -40104,7 +40117,7 @@ export function mainMainAgentOrchestration(argv: string[]): number {
               }
             : undefined,
         nativeGoalExecutor:
-          host === 'codex' || host === 'claude-code-cli'
+          host === 'codex' || host === 'claude'
             ? createNativeGoalHostExecutor()
             : undefined,
       });
@@ -40192,7 +40205,7 @@ export async function mainMainAgentOrchestrationAsync(argv: string[]): Promise<n
             }
           : undefined,
       nativeGoalExecutor:
-        host === 'codex' || host === 'claude-code-cli' ? createNativeGoalHostExecutor() : undefined,
+        host === 'codex' || host === 'claude' ? createNativeGoalHostExecutor() : undefined,
     });
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return mainAgentRunLoopExitCode(result.status);
@@ -40494,8 +40507,10 @@ export interface MainAgentControlledCloseoutInput {
     systemPrompt: string;
     structuredOutputSchema?: Record<string, unknown>;
   };
-  /** Backward-compatible direct bridge; production callers should use nativeReviewerTransport. */
+  /** Test-only direct bridge; production callers use the goal finalization actor resolver. */
   invokeReviewer?: MainAgentControlledCloseoutCampaignDependencies['invokeReviewer'];
+  /** Test-only direct bridge; production callers use the goal finalization actor resolver. */
+  invokeFinalJudge?: MainAgentControlledCloseoutCampaignDependencies['invokeFinalJudge'];
   nativeReviewerTransport?: NativeReviewerTransport;
   nativeReviewerHost?: string;
   nativeReviewerTimeoutMs?: number;
@@ -40528,7 +40543,7 @@ export interface MainAgentControlledCloseoutResult {
 
 export type MainAgentNativeHostCloseoutInput = Omit<
   MainAgentControlledCloseoutInput,
-  'invokeReviewer' | 'nativeReviewerTransport' | 'dispatchNativeReviewer'
+  'invokeReviewer' | 'invokeFinalJudge' | 'nativeReviewerTransport' | 'dispatchNativeReviewer'
 > & {
   nativeReviewerHost?: string;
   nativeReviewerDispatch?: NativeReviewerDispatch;
@@ -40546,24 +40561,7 @@ export type MainAgentNativeHostCloseoutInput = Omit<
 export function runMainAgentControlledCloseoutFromNativeHost(
   input: MainAgentNativeHostCloseoutInput
 ): Promise<MainAgentControlledCloseoutResult> {
-  const dispatch =
-    input.nativeReviewerDispatch ??
-    createNativeReviewerHostBridge({ timeoutMs: input.nativeReviewerTimeoutMs });
-  const nativeReviewerTransport = createNativeReviewerTransport({
-    projectRoot: input.projectRoot,
-    outputRoot: input.outputRoot,
-    host: input.nativeReviewerHost,
-    evidencePaths: [input.contextPath, input.closureReceiptPath],
-    timeoutMs: input.nativeReviewerTimeoutMs,
-    dispatch,
-  });
-  return runMainAgentControlledCloseout({
-    ...input,
-    invokeReviewer: undefined,
-    nativeReviewerTransport,
-    nativeReviewerHost: input.nativeReviewerHost,
-    dispatchNativeReviewer: undefined,
-  });
+  return runMainAgentControlledCloseout(input);
 }
 
 export interface MainAgentControlledCloseoutCliDependencies {
@@ -40924,44 +40922,6 @@ function validateMainAgentCloseoutSource(input: {
   };
 }
 
-function mapMainAgentNormalizedFinalJudgeResponse(response: RequirementsContractJudgeJsonRecord) {
-  const sourceLedgerHash = requireMainAgentCloseoutHash(
-    response.responseHash,
-    'judge_review_campaign_final_judge_response_invalid'
-  );
-  const findingIds = Array.isArray(response.findings)
-    ? response.findings
-        .map((finding) =>
-          finding && typeof finding === 'object' && !Array.isArray(finding)
-            ? normalizeText((finding as Record<string, unknown>).id)
-            : ''
-        )
-        .filter(Boolean)
-    : [];
-  if (response.decision === 'pass') {
-    return {
-      sourceLedgerHash,
-      auditDecision: 'pass' as const,
-      verdict: 'coverage_satisfied' as const,
-      findingIds,
-    };
-  }
-  if (response.decision === 'block') {
-    return {
-      sourceLedgerHash,
-      auditDecision: 'fail' as const,
-      verdict: 'findings_present' as const,
-      findingIds,
-    };
-  }
-  return {
-    sourceLedgerHash,
-    auditDecision: 'fail' as const,
-    verdict: 'blocked' as const,
-    findingIds,
-  };
-}
-
 function mainAgentCloseoutProviderErrorCode(error: unknown): string {
   const source = recordObject(error);
   const status = Number(source.statusCode ?? source.status);
@@ -40988,14 +40948,15 @@ function mainAgentCloseoutProviderErrorCode(error: unknown): string {
 
 function writeMainAgentControlledCloseoutReceipt(
   targetPath: string,
-  payload: Record<string, unknown>
+  payload: object
 ): Record<string, unknown> {
+  const recordPayload = Object.fromEntries(Object.entries(payload));
   writeJsonCreateOnlyOrEqual(
     targetPath,
-    payload,
+    recordPayload,
     'main_agent_goal_task_report_provenance_mismatch'
   );
-  return payload;
+  return recordPayload;
 }
 
 export function materializeMainAgentControlledCloseoutAcceptanceRequest(input: {
@@ -41111,28 +41072,210 @@ export function materializeMainAgentControlledCloseoutAcceptanceRequest(input: {
   return request;
 }
 
-function readReusableFinalJudgeResult(value: unknown): MainAgentExecutionFinalJudgeProducedResult {
+function requiredMainAgentCloseoutRecord(
+  value: unknown,
+  code = 'main_agent_goal_task_report_provenance_mismatch'
+): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(code);
+  return recordObject(value);
+}
+
+function nullableMainAgentCloseoutRecord(
+  value: unknown
+): Record<string, unknown> | null {
+  return value === null
+    ? null
+    : requiredMainAgentCloseoutRecord(value);
+}
+
+function optionalMainAgentCloseoutStringArray(value: unknown): string[] | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value)) throw new Error('main_agent_goal_task_report_provenance_mismatch');
+  const items = value.map((item) => (typeof item === 'string' ? item.trim() : ''));
+  if (items.some((item) => !item) || new Set(items).size !== items.length) {
+    throw new Error('main_agent_goal_task_report_provenance_mismatch');
+  }
+  return items;
+}
+
+function isExecutionFinalFinding(value: unknown): value is ExecutionFinalFinding {
+  const finding = recordObject(value);
+  return (
+    normalizeText(finding.findingId) !== '' &&
+    ['critical', 'high', 'medium', 'low'].includes(normalizeText(finding.severity)) &&
+    normalizeText(finding.dimensionId) !== '' &&
+    [
+      'dimension',
+      'artifact',
+      'obligation',
+      'execution_result',
+      'command',
+      'evidence',
+      'delivery_claim',
+    ].includes(normalizeText(finding.subjectKind)) &&
+    normalizeText(finding.subjectId) !== '' &&
+    Array.isArray(finding.evidenceRefs) &&
+    finding.evidenceRefs.every((item) => typeof item === 'string' && item.trim() !== '') &&
+    normalizeText(finding.issueCode) !== '' &&
+    [
+      'requirements_successor',
+      'architecture_successor',
+      'readiness_recheck',
+      'execution_authority',
+      'campaign_closure',
+      'delivery_claim',
+    ].includes(normalizeText(finding.remediationOwner))
+  );
+}
+
+function optionalExecutionFinalFindings(value: unknown): ExecutionFinalFinding[] | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value) || !value.every(isExecutionFinalFinding)) {
+    throw new Error('main_agent_goal_task_report_provenance_mismatch');
+  }
+  return value;
+}
+
+function readMainAgentControlledCloseoutResult(value: unknown): MainAgentControlledCloseoutResult {
+  const result = requiredMainAgentCloseoutRecord(value);
+  const status = result.status;
+  if (!['awaiting_user_acceptance', 'not_produced', 'blocked'].includes(String(status))) {
+    throw new Error('main_agent_goal_task_report_provenance_mismatch');
+  }
+  const closeoutAttemptId = normalizeText(result.closeoutAttemptId);
+  const contextHash = requireMainAgentCloseoutHash(
+    result.contextHash,
+    'main_agent_goal_task_report_provenance_mismatch'
+  );
+  const candidateBytesHash = requireMainAgentCloseoutHash(
+    result.candidateBytesHash,
+    'main_agent_goal_task_report_provenance_mismatch'
+  );
+  const receiptPathsSource = requiredMainAgentCloseoutRecord(result.receiptPaths);
+  const receiptPaths = Object.fromEntries(
+    Object.entries(receiptPathsSource).map(([key, item]) => {
+      const receiptPath = normalizeText(item);
+      if (!key || !receiptPath) throw new Error('main_agent_goal_task_report_provenance_mismatch');
+      return [key, receiptPath];
+    })
+  );
+  if (!closeoutAttemptId || Object.keys(receiptPaths).length === 0) {
+    throw new Error('main_agent_goal_task_report_provenance_mismatch');
+  }
+  const normalizedStatus: MainAgentControlledCloseoutResult['status'] =
+    status === 'awaiting_user_acceptance'
+      ? 'awaiting_user_acceptance'
+      : status === 'not_produced'
+        ? 'not_produced'
+        : 'blocked';
+  return {
+    status: normalizedStatus,
+    closeoutAttemptId,
+    contextHash,
+    candidateBytesHash,
+    producerReceipt: requiredMainAgentCloseoutRecord(result.producerReceipt),
+    executionFinalJudgeCampaign: nullableMainAgentCloseoutRecord(
+      result.executionFinalJudgeCampaign
+    ),
+    effectivePassReceipt: nullableMainAgentCloseoutRecord(result.effectivePassReceipt),
+    deliveryGateReceipt: nullableMainAgentCloseoutRecord(result.deliveryGateReceipt),
+    judgeStageStatusReceipt: nullableMainAgentCloseoutRecord(result.judgeStageStatusReceipt),
+    ...(result.reviewerStageStatusReceipt === undefined
+      ? {}
+      : {
+          reviewerStageStatusReceipt: nullableMainAgentCloseoutRecord(
+            result.reviewerStageStatusReceipt
+          ),
+        }),
+    ...(result.finalJudgeReused === undefined
+      ? {}
+      : typeof result.finalJudgeReused === 'boolean'
+        ? { finalJudgeReused: result.finalJudgeReused }
+        : (() => {
+            throw new Error('main_agent_goal_task_report_provenance_mismatch');
+          })()),
+    receiptPaths,
+  };
+}
+
+function readReusableFinalJudgeResult(
+  value: unknown,
+  receiptValue: unknown
+): MainAgentExecutionFinalJudgeProducedResult {
   const result = recordObject(value);
+  const receipt = requiredMainAgentCloseoutRecord(receiptValue);
   const sourceLedgerHash = normalizeText(result.sourceLedgerHash);
   const auditDecision = normalizeText(result.auditDecision);
   const verdict = normalizeText(result.verdict);
-  const findingIds = Array.isArray(result.findingIds)
-    ? result.findingIds.map((item) => normalizeText(item)).filter(Boolean)
-    : [];
+  const findingIds = optionalMainAgentCloseoutStringArray(result.findingIds) ?? [];
+  const dispatchGroupId = requireMainAgentCloseoutHash(
+    receipt.dispatchGroupId,
+    'main_agent_goal_task_report_provenance_mismatch'
+  );
+  const actorIsolationReceipt = validateMainAgentExecutionActorIsolationReceipt(
+    { actorClass: 'final_acceptance_judge', dispatchGroupId },
+    result.actorIsolationReceipt
+  );
   if (
     !/^sha256:[a-f0-9]{64}$/u.test(sourceLedgerHash) ||
     !['pass', 'fail'].includes(auditDecision) ||
     !['coverage_satisfied', 'findings_present', 'insufficient_evidence', 'blocked'].includes(
       verdict
-    )
+    ) ||
+    receipt.actorClass !== 'final_acceptance_judge' ||
+    normalizeText(receipt.sourceLedgerHash) !== sourceLedgerHash ||
+    normalizeText(receipt.actorIsolationReceiptHash) !==
+      actorIsolationReceipt.isolationReceiptHash
   ) {
     throw new Error('main_agent_goal_task_report_provenance_mismatch');
   }
   return {
     sourceLedgerHash,
-    auditDecision: auditDecision as 'pass' | 'fail',
-    verdict: verdict as MainAgentExecutionFinalJudgeProducedResult['verdict'],
+    actorIsolationReceipt,
+    auditDecision: auditDecision === 'pass' ? 'pass' : 'fail',
+    verdict:
+      verdict === 'coverage_satisfied'
+        ? 'coverage_satisfied'
+        : verdict === 'findings_present'
+          ? 'findings_present'
+          : verdict === 'insufficient_evidence'
+            ? 'insufficient_evidence'
+            : 'blocked',
     findingIds,
+    ...(optionalMainAgentCloseoutStringArray(result.coveredDimensionIds) === undefined
+      ? {}
+      : { coveredDimensionIds: optionalMainAgentCloseoutStringArray(result.coveredDimensionIds) }),
+    ...(optionalMainAgentCloseoutStringArray(result.coveredArtifactIds) === undefined
+      ? {}
+      : { coveredArtifactIds: optionalMainAgentCloseoutStringArray(result.coveredArtifactIds) }),
+    ...(optionalMainAgentCloseoutStringArray(result.coveredObligationIds) === undefined
+      ? {}
+      : {
+          coveredObligationIds: optionalMainAgentCloseoutStringArray(result.coveredObligationIds),
+        }),
+    ...(optionalMainAgentCloseoutStringArray(result.coveredExecutionResultIds) === undefined
+      ? {}
+      : {
+          coveredExecutionResultIds: optionalMainAgentCloseoutStringArray(
+            result.coveredExecutionResultIds
+          ),
+        }),
+    ...(optionalMainAgentCloseoutStringArray(result.coveredCommandIds) === undefined
+      ? {}
+      : { coveredCommandIds: optionalMainAgentCloseoutStringArray(result.coveredCommandIds) }),
+    ...(optionalMainAgentCloseoutStringArray(result.coveredEvidenceIds) === undefined
+      ? {}
+      : { coveredEvidenceIds: optionalMainAgentCloseoutStringArray(result.coveredEvidenceIds) }),
+    ...(optionalMainAgentCloseoutStringArray(result.coveredDeliveryClaimIds) === undefined
+      ? {}
+      : {
+          coveredDeliveryClaimIds: optionalMainAgentCloseoutStringArray(
+            result.coveredDeliveryClaimIds
+          ),
+        }),
+    ...(optionalExecutionFinalFindings(result.findings) === undefined
+      ? {}
+      : { findings: optionalExecutionFinalFindings(result.findings) }),
   };
 }
 
@@ -41182,10 +41325,12 @@ export async function runMainAgentControlledCloseout(
   };
   if (!closeoutAttemptId) throw new Error('campaign_closeout_context_mismatch');
   if (fs.existsSync(receiptPaths.marker)) {
-    const existing = readMainAgentCloseoutJson(
-      receiptPaths.marker,
-      'main_agent_goal_task_report_provenance_mismatch'
-    ) as MainAgentControlledCloseoutResult;
+    const existing = readMainAgentControlledCloseoutResult(
+      readMainAgentCloseoutJson(
+        receiptPaths.marker,
+        'main_agent_goal_task_report_provenance_mismatch'
+      )
+    );
     if (
       existing.status === 'awaiting_user_acceptance' &&
       existing.closeoutAttemptId === closeoutAttemptId &&
@@ -41244,7 +41389,7 @@ export async function runMainAgentControlledCloseout(
       throw new Error('main_agent_goal_task_report_provenance_mismatch');
     }
     reusedFinalJudge = {
-      result: readReusableFinalJudgeResult(binding.result),
+      result: readReusableFinalJudgeResult(binding.result, binding.receipt),
       receipt: recordObject(binding.receipt),
     };
   } else if (input.resumeFrom) {
@@ -41270,14 +41415,17 @@ export async function runMainAgentControlledCloseout(
   ) {
     throw new Error('main_agent_goal_task_report_provenance_mismatch');
   }
-  let prepared: Awaited<ReturnType<typeof prepareRequirementsContractJudgeInvocation>>;
-  try {
-    prepared = await prepareRequirementsContractJudgeInvocation({
-      projectRoot,
-      config: input.judgeConfigPath,
+  const actorResolver = createGoalFinalizationActorResolver(
+    { projectRoot, config: input.judgeConfigPath },
+    {
+      readConfig: () => configured,
       executeClaudeCodeCliCommand: input.executeClaudeCodeCliCommand,
       executeCodexCliCommand: input.executeCodexCliCommand,
-    });
+    }
+  );
+  let providerRef: string;
+  try {
+    providerRef = actorResolver.resolveProviderRef();
   } catch (error) {
     const stage = createJudgeStageStatusReceipt({
       closeoutAttemptId,
@@ -41306,51 +41454,7 @@ export async function runMainAgentControlledCloseout(
     return blocked;
   }
 
-  let invokeReviewer = input.invokeReviewer;
-  if (!invokeReviewer) {
-    try {
-      if (!input.nativeReviewerTransport && !input.dispatchNativeReviewer) {
-        throw new Error('native_reviewer_transport_not_configured');
-      }
-      const transport =
-        input.nativeReviewerTransport ??
-        createNativeReviewerTransport({
-          projectRoot,
-          outputRoot,
-          host: input.nativeReviewerHost,
-          timeoutMs: input.nativeReviewerTimeoutMs,
-          dispatch: input.dispatchNativeReviewer,
-        });
-      invokeReviewer = (intent) => transport.invoke({ intent });
-    } catch (error) {
-      const stage = createJudgeStageStatusReceipt({
-        closeoutAttemptId,
-        providerRef: prepared.providerRef,
-        actorClass: 'bounded_code_reviewer',
-        logicalAttemptOrdinal,
-        maxAttempts,
-        sourceErrorCode: mainAgentCloseoutProviderErrorCode(error),
-        resumeFrom,
-      });
-      writeMainAgentControlledCloseoutReceipt(receiptPaths.reviewerStageStatus, stage);
-      const blocked: MainAgentControlledCloseoutResult = {
-        status: 'not_produced',
-        closeoutAttemptId,
-        contextHash: source.contextHash,
-        candidateBytesHash: source.candidateBytesHash,
-        producerReceipt: source.closureReceipt,
-        executionFinalJudgeCampaign: null,
-        effectivePassReceipt: null,
-        deliveryGateReceipt: null,
-        reviewerStageStatusReceipt: stage,
-        judgeStageStatusReceipt: null,
-        finalJudgeReused: false,
-        receiptPaths,
-      };
-      writeMainAgentControlledCloseoutReceipt(receiptPaths.marker, blocked);
-      return blocked;
-    }
-  }
+  const invokeReviewer = input.invokeReviewer ?? actorResolver.invokeReviewer;
 
   const campaignInput = compileMainAgentExecutionFinalJudgeCampaignInput({
     campaignId: source.campaignId,
@@ -41362,19 +41466,13 @@ export async function runMainAgentControlledCloseout(
     initialReviewAttemptKey: controlledHash(
       controlledStableJson({ closeoutAttemptId, contextHash: source.contextHash })
     ),
-    providerRef: prepared.providerRef,
+    providerRef,
   });
   writeMainAgentControlledCloseoutReceipt(
     receiptPaths.input,
     campaignInput as unknown as Record<string, unknown>
   );
   const requestPath = path.join(outputRoot, 'final-judge-request.json');
-  const finalJudgeOutputRoot = path.join(
-    outputRoot,
-    'judge',
-    'final-acceptance-judge',
-    `attempt-${logicalAttemptOrdinal}`
-  );
   const request = {
     schemaVersion: 'main-agent-controlled-closeout-judge-request/v1',
     role: 'final_acceptance_judge',
@@ -41409,23 +41507,10 @@ export async function runMainAgentControlledCloseout(
     ].map((value) => path.relative(projectRoot, value).replace(/\\/gu, '/')),
   };
   writeMainAgentControlledCloseoutReceipt(requestPath, request);
+  const invokeFinalJudgeActor = input.invokeFinalJudge ?? actorResolver.invokeFinalJudge;
   const invokeFinalJudge = async (
     intent: Parameters<MainAgentControlledCloseoutCampaignDependencies['invokeFinalJudge']>[0]
-  ) => {
-    const response = await prepared.invoke({
-      systemPrompt: input.judgePrompt.systemPrompt,
-      request: { ...request, intent },
-      executionContext: {
-        projectRoot,
-        requestPath: path.relative(projectRoot, requestPath).replace(/\\/gu, '/'),
-        outputDir: path.relative(projectRoot, finalJudgeOutputRoot).replace(/\\/gu, '/'),
-      },
-      ...(input.judgePrompt.structuredOutputSchema
-        ? { structuredOutputSchema: input.judgePrompt.structuredOutputSchema }
-        : {}),
-    });
-    return mapMainAgentNormalizedFinalJudgeResponse(response);
-  };
+  ) => invokeFinalJudgeActor(intent);
   let campaignResult: Awaited<ReturnType<typeof runMainAgentExecutionFinalJudgeCampaign>>;
   try {
     campaignResult = await runMainAgentExecutionFinalJudgeCampaign(
@@ -41438,14 +41523,14 @@ export async function runMainAgentControlledCloseout(
         ...(reusedFinalJudge ? { reusedFinalJudge } : {}),
       },
       {
-        invokeReviewer: invokeReviewer!,
+        invokeReviewer,
         invokeFinalJudge,
       }
     );
   } catch (error) {
     const stage = createJudgeStageStatusReceipt({
       closeoutAttemptId,
-      providerRef: prepared.providerRef,
+      providerRef,
       logicalAttemptOrdinal,
       maxAttempts,
       sourceErrorCode: mainAgentCloseoutProviderErrorCode(error),
@@ -41475,7 +41560,7 @@ export async function runMainAgentControlledCloseout(
       judgeStage ??
       createJudgeStageStatusReceipt({
         closeoutAttemptId,
-        providerRef: prepared.providerRef,
+        providerRef,
         logicalAttemptOrdinal,
         maxAttempts,
         sourceErrorCode: 'PROVIDER_EXECUTION_ERROR',

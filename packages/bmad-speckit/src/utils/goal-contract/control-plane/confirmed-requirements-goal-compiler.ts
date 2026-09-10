@@ -105,6 +105,11 @@ export function renderConfirmedRequirementsGoalProjection(ir: GoalExecutionIR): 
     `Goal Execution IR: ${ir.goalExecutionIRHash}`,
     `Profile: ${ir.profile}`,
     '',
+    '## Source Authority',
+    '',
+    `- Typed Source Graph: ${text(ir.requirementsLineage?.typedSourceGraphHash)}`,
+    `- Canonical Requirement Graph: ${text(ir.requirementsLineage?.canonicalRequirementGraphHash)}`,
+    '',
     '## Obligations',
     '',
     ...ir.obligations.flatMap((row) => [

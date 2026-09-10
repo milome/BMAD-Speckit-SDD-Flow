@@ -1,10 +1,20 @@
 import assert from 'node:assert/strict';
 import * as fs from 'node:fs';
 import path from 'node:path';
-import yaml from 'js-yaml';
-import { materializeAiTddManifestCloseoutRunnerFixture } from './requirement-fixture-runtime';
-import { extractRequirementsContractImplementationConfirmation, implementationConfirmationHashFor,
-  sourceDocumentHashFor } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-implementation-confirmation-codec';
+import { createRequirementsContractBuildManifest,
+  createRequirementsContractCheckpointManifest } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-authoring-manifest';
+import { confirmRequirementsContractIrScope,
+  renderAndPromoteRequirementsContractConfirmation } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-confirmation-acceptance';
+import { resolveConfirmedRequirementsAuthority } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-confirmed-authority-adapter';
+import { prepareRequirementsContractCp05Cp08Projection,
+  REQUIREMENTS_CONTRACT_PROJECTION_CHECKPOINT_PROFILES } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-cp05-cp08';
+import { extractRequirementsContractImplementationConfirmation,
+  serializeRequirementsContractImplementationConfirmation } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-implementation-confirmation-codec';
+import { compileRequirementsEffectivePassReceiptV2 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-requirements-effective-pass-gate';
+import { sha256Stable,
+  sha256Text } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
+import { compileRequirementsTypedSourceCandidate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-typed-source-compiler';
+import type { scanRequirementsContractConsumerAuthority } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-consumer-authority-scanner';
 
 type JsonObject = Record<string, unknown>;
 const objects = (value: unknown): JsonObject[] => Array.isArray(value) ? value.filter((entry): entry is JsonObject => !!entry && typeof entry === 'object' && !Array.isArray(entry)) : [];
@@ -24,14 +34,10 @@ const sourcePointer = (work: JsonObject, field: string, fallback: string): strin
 
 export function materializeFullSourceReqTraceFixture(
   root: string,
+  scanned: ReturnType<typeof scanRequirementsContractConsumerAuthority>,
   projection: JsonObject,
   independentExpected: JsonObject
 ) {
-  const fixture = materializeAiTddManifestCloseoutRunnerFixture({ root: path.join(root, 'test-only-consumer') });
-  const originalSource = fs.readFileSync(fixture.sourcePath, 'utf8');
-  const fencedYaml = /```yaml\r?\n([\s\S]*?)\r?\n```/u.exec(originalSource)?.[1];
-  assert.ok(fencedYaml, 'The isolated legacy test template must contain its known YAML block');
-  const original = (yaml.load(fencedYaml) as { implementationConfirmation: Record<string, unknown> }).implementationConfirmation;
   const works = objects(independentExpected.sections).flatMap((section) => objects(section.works));
   const projectedTraces = objects(projection.traceRows);
   const traceByWork = new Map(projectedTraces.flatMap((trace) => refs(trace.covers).map((id) => [id, trace] as const)));
@@ -82,7 +88,7 @@ export function materializeFullSourceReqTraceFixture(
     expectedPreImplementationState: 'expected_red',
     redProofPlan: sourcePointer(aggregate, 'red', 'WORK-16 must retain the final RED proof plan'),
     oracle: sourcePointer(aggregate, 'pass', 'WORK-16 must retain the final PASS oracle') }];
-  const confirmation = { ...original, ...projection, traceRows: boundTraces, acceptanceTests, e2eSuites,
+  const confirmation = { ...projection, traceRows: boundTraces, acceptanceTests, e2eSuites,
     notDone, failurePaths, edgeCases, mustNot: [], confirmedBy: 'fixture',
     evidenceClass: 'test-only-complete-source-confirmation-replay-not-human-approval' };
   delete (confirmation as Record<string, unknown>).atomicImplementationTaskList;
@@ -91,22 +97,157 @@ export function materializeFullSourceReqTraceFixture(
   if (!(projection as Record<string, unknown>).closeoutReadinessPreview) {
     delete (confirmation as Record<string, unknown>).closeoutReadinessPreview;
   }
-  const source = '# Test-Only Complete Real-Source Req-Trace Fixture\n\n' +
-    'This isolated automatic-test confirmation record is not human confirmation or governed acceptance evidence.\n\n' +
-    yaml.dump({ implementationConfirmation: confirmation }, { lineWidth: -1, noRefs: true });
+  const projectRoot = path.join(root, 'test-only-consumer');
+  const graphHash = String(scanned.typedSourceAuthority?.graphHash ?? '');
+  assert.match(graphHash, /^sha256:[a-f0-9]{64}$/u);
+  const requestId = `REQ-TRACE-FULL-${graphHash.slice(7, 23).toUpperCase()}`;
+  const attemptId = `ATTEMPT-${requestId}`;
+  const recordRoot = path.join(projectRoot, '_bmad-output', 'runtime', 'requirement-records', requestId);
+  const compiled = compileRequirementsTypedSourceCandidate({
+    scan: scanned,
+    authoringRequestId: requestId,
+    authoringAttemptId: attemptId,
+    confirmationSemantics: confirmation,
+  });
+  const writeJson = (relativePath: string, value: unknown) => {
+    const target = path.join(recordRoot, ...relativePath.split('/'));
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+  };
+  const semanticPath = `authoring/semantic-revisions/${compiled.semanticIr.semanticRevisionId}/semantic-ir.json`;
+  const bindingPath = `authoring/source-bindings/${compiled.sourceBinding.bindingRevisionId}/source-binding.json`;
+  const resolvedEvidencePath = `authoring/source-bindings/${compiled.sourceBinding.bindingRevisionId}/resolved-evidence-index.json`;
+  writeJson(semanticPath, compiled.semanticIrAuthority);
+  writeJson(bindingPath, compiled.sourceBinding);
+  writeJson(resolvedEvidencePath, compiled.resolvedEvidenceIndex);
+
+  const prepared = prepareRequirementsContractCp05Cp08Projection({
+    semanticIr: compiled.semanticIr,
+    resolvedEvidenceIndex: compiled.resolvedEvidenceIndex,
+  });
+  const cp05ProjectionPath = `authoring/staging/${attemptId}/cp05/confirmation-projection.json`;
+  const cp05MarkdownPath = `authoring/staging/${attemptId}/cp05/final-source.md`;
+  const cp06ExecutionPath = `authoring/staging/${attemptId}/cp06/execution-manifest.json`;
+  writeJson(cp05ProjectionPath, prepared.cp05Projection);
+  const cp05MarkdownTarget = path.join(recordRoot, ...cp05MarkdownPath.split('/'));
+  fs.mkdirSync(path.dirname(cp05MarkdownTarget), { recursive: true });
+  fs.writeFileSync(cp05MarkdownTarget, prepared.markdown, 'utf8');
+  writeJson(cp06ExecutionPath, prepared.cp06Execution.executionManifest);
+
+  const inputManifestHash = sha256Stable({ testOnly: true, requestId, graphHash });
+  const coreProfiles = [
+    'requirements-contract-cp00-cp04-compiler/v1',
+    'requirements-contract-cp00-cp04-compiler/v1',
+    'requirements-contract-cp00-cp04-compiler/v1',
+    'requirements-contract-cp00-cp04-compiler/v1',
+    'requirements-contract-cp02-compiler/v1',
+  ];
+  let previousRef: { checkpointId: string; checkpointOrdinal: number; path: string; hash: string } | null = null;
+  for (let ordinal = 0; ordinal <= 8; ordinal += 1) {
+    const checkpointId = `cp${String(ordinal).padStart(2, '0')}`;
+    const artifactEntries = ordinal === 5 ? [
+      { role: 'confirmation_projection', schemaVersion: String(prepared.cp05Projection.schemaVersion),
+        artifactId: 'confirmation-projection', recordRelativePath: cp05ProjectionPath,
+        artifactHash: sha256Stable(prepared.cp05Projection) },
+      { role: 'final_markdown', schemaVersion: 'text/markdown', artifactId: 'final-markdown',
+        recordRelativePath: cp05MarkdownPath, artifactHash: sha256Text(prepared.markdown) },
+    ] : ordinal === 6 ? [
+      { role: 'execution_manifest', schemaVersion: String(prepared.cp06Execution.executionManifest.schemaVersion),
+        artifactId: 'execution-manifest', recordRelativePath: cp06ExecutionPath,
+        artifactHash: sha256Stable(prepared.cp06Execution.executionManifest) },
+    ] : [];
+    const compilerIdentity = ordinal < 5 ? coreProfiles[ordinal] :
+      REQUIREMENTS_CONTRACT_PROJECTION_CHECKPOINT_PROFILES[checkpointId as 'cp05'].profileId;
+    const manifest = createRequirementsContractCheckpointManifest({
+      authoringRequestId: requestId,
+      authoringAttemptId: attemptId,
+      checkpointId,
+      checkpointOrdinal: ordinal,
+      stage: checkpointId,
+      status: 'passed',
+      inputManifestHash,
+      previousCheckpointManifestRef: previousRef,
+      latestValidPredecessorCheckpoint: previousRef?.checkpointId ?? null,
+      compilerIdentity,
+      artifactEntries,
+      decisionReceiptRefs: [],
+      baseAuthorityRef: null,
+    } as Parameters<typeof createRequirementsContractCheckpointManifest>[0]);
+    const manifestPath = `authoring/staging/${attemptId}/manifests/${ordinal}-${checkpointId}.json`;
+    writeJson(manifestPath, manifest);
+    previousRef = { checkpointId, checkpointOrdinal: ordinal, path: manifestPath,
+      hash: manifest.checkpointManifestHash };
+  }
+  assert.ok(previousRef);
+  const auditPacketPath = `authoring/staging/${attemptId}/judge-audit-packet.json`;
+  writeJson(auditPacketPath, prepared.auditPacket);
+  const buildManifest = createRequirementsContractBuildManifest({
+    authoringRequestId: requestId,
+    authoringAttemptId: attemptId,
+    inputManifestHash,
+    terminalCheckpointManifestRef: previousRef,
+    semanticAuthorityRef: { semanticRevisionId: compiled.semanticIr.semanticRevisionId,
+      path: semanticPath, hash: compiled.semanticIr.scopeSemanticHash },
+    bindingAuthorityRef: { bindingRevisionId: compiled.sourceBinding.bindingRevisionId,
+      path: bindingPath, hash: compiled.sourceBinding.sourceBindingHash },
+    artifactEntries: [],
+    decisionReceiptRefs: [],
+    auditPacketRef: { artifactId: 'judge-audit-packet', path: auditPacketPath,
+      hash: sha256Stable(prepared.auditPacket) },
+    projectionReportRefs: [],
+  });
+  const buildPath = `authoring/staging/${attemptId}/contract-build-manifest.json`;
+  writeJson(buildPath, buildManifest);
+  const activeAuthority = {
+    activeSemanticRevisionId: compiled.semanticIr.semanticRevisionId,
+    activeSemanticIrPath: semanticPath,
+    activeScopeSemanticHash: compiled.semanticIr.scopeSemanticHash,
+    activeBindingRevisionId: compiled.sourceBinding.bindingRevisionId,
+    activeSourceBindingPath: bindingPath,
+    activeSourceBindingHash: compiled.sourceBinding.sourceBindingHash,
+    activeAuthoringAttemptId: attemptId,
+    activeBuildManifestPath: buildPath,
+    activeBuildManifestHash: buildManifest.buildManifestHash,
+  };
+  const evidenceHash = (role: string) => sha256Stable({ testOnly: true, role, requestId });
+  const effectivePass = compileRequirementsEffectivePassReceiptV2({
+    activeAuthority,
+    aggregate: { schemaVersion: 'requirements-contract-requirements-audit-aggregate/v2',
+      semanticRevisionId: compiled.semanticIr.semanticRevisionId,
+      scopeSemanticHash: compiled.semanticIr.scopeSemanticHash,
+      sourceBindingHash: compiled.sourceBinding.sourceBindingHash,
+      buildManifestHash: buildManifest.buildManifestHash,
+      providerSelectionHash: evidenceHash('provider-selection'), judgeRequestHash: evidenceHash('judge-request'),
+      judgeResponseHash: evidenceHash('judge-response'), requirementsAuditAggregateHash: evidenceHash('aggregate'),
+      validatedDimensionIds: ['authority'], reviewedArtifactRefs: ['judge-audit-packet'],
+      reviewedMustRefs: (confirmation.must as Array<{ id: string }>).map((row) => row.id),
+      findings: [], issueCodes: [], decision: 'pass' },
+  });
+  writeJson('quality/requirements-effective-pass-receipt.json', effectivePass);
+  const recordPath = path.join(recordRoot, 'record', 'requirement-record.json');
+  writeJson('record/requirement-record.json', { schemaVersion: 'requirements-contract-record/v1',
+    recordId: requestId, lifecycle: 'audit_pending', confirmedScopeSemanticHash: null, activeAuthority });
+  writeJson(`authoring/staging/${attemptId}/authoring-context.json`, {
+    schemaVersion: 'requirements-authoring-continuation-context/v1', authoringRequestId: requestId,
+    authoringAttemptId: attemptId, confirmationLanguage: 'en-US', intakeSource: 'test-only-full-source',
+    targetSource: 'docs/test-only-full-source-confirmed.md', authoritySourceListHash: inputManifestHash,
+  });
+  const rendered = renderAndPromoteRequirementsContractConfirmation({ projectRoot, requestId });
+  confirmRequirementsContractIrScope({ projectRoot, requestId,
+    exactConfirmationText: rendered.confirmation.exactConfirmationText });
+  const sourcePath = path.join(projectRoot, ...rendered.confirmation.markdownPath.split('/'));
+  const source = fs.readFileSync(sourcePath, 'utf8');
+  const authority = resolveConfirmedRequirementsAuthority({ projectRoot, requirementRecordPath: recordPath });
+  const parsed = extractRequirementsContractImplementationConfirmation(
+    serializeRequirementsContractImplementationConfirmation(authority.implementationConfirmation)
+  );
   const sourceBytes = Buffer.byteLength(source, 'utf8');
   assert.ok(sourceBytes < 8 * 1024 * 1024, 'Test-only confirmation must stay inside the approved fixture I/O envelope');
-  const parsed = extractRequirementsContractImplementationConfirmation(source);
-  const hashes = { sourceDocumentHash: sourceDocumentHashFor(source, parsed.blockText, parsed.value),
-    implementationConfirmationHash: implementationConfirmationHashFor(parsed.value) };
-  const record = JSON.parse(fs.readFileSync(fixture.recordPath, 'utf8'));
-  Object.assign(record, hashes);
-  record.confirmationHistory = record.confirmationHistory.map((event: Record<string, unknown>) => ({
-    ...event, ...hashes, confirmedBy: 'fixture', confirmationText: 'TEST-ONLY complete-source synthetic confirmation; not human evidence.',
-  }));
-  fs.writeFileSync(fixture.sourcePath, source, 'utf8');
-  fs.writeFileSync(fixture.recordPath, `${JSON.stringify(record)}\n`, 'utf8');
-  return { fixture: { ...fixture, ...hashes }, confirmed: parsed.value, sourceBytes };
+  return { fixture: { root: projectRoot, fixtureId: requestId, sourcePath,
+    sourceDocumentHash: authority.lineage.finalMarkdownHash,
+    implementationConfirmationHash: authority.lineage.implementationConfirmationHash,
+    recordPath, recordId: requestId, requirementSetId: requestId },
+  confirmed: parsed.value, sourceBytes };
 }
 
 export function stripOracleLocations(value: unknown): unknown {

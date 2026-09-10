@@ -93,7 +93,12 @@ describe('complete frozen real-source req-trace authority', () => {
   });
 
   it.each(['req_trace_direct', 'main_agent_compile'])('%s preserves the complete confirmed graph without graph fanout', (entry) => {
-    fullConfirmation ??= materializeFullSourceReqTraceFixture(fixture.root, confirmation, fixture.expected);
+    fullConfirmation ??= materializeFullSourceReqTraceFixture(
+      fixture.root,
+      scanned,
+      confirmation,
+      fixture.expected
+    );
     const outDir = path.join(fixture.root, `test-only-${entry}`);
     const childIoPath = path.join(fixture.root, `${entry}-io.json`);
     const savedReceipt = process.env.REQ_TRACE_FULL_IO_RECEIPT;

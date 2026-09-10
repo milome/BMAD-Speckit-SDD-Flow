@@ -13,6 +13,7 @@ export interface GoalSemanticDictionary {
   expandedBytes: number;
   expandedHash: string;
 }
+export type GoalDictionaryNodeEncoding = NonNullable<GoalSemanticDictionary['nodeEncoding']>;
 interface GoalDictionaryDerivedString {
   value: string;
   preimage: string;
@@ -341,10 +342,24 @@ function frontCodeStrings(original: GoalDictionaryNode[], root: number) {
 }
 
 export function encodeGoalSemanticDictionary(value: unknown): GoalSemanticDictionary {
-  return encodeValue(value);
+  return encodeValue(value, undefined, 'smallest');
 }
 
-function encodeValue(value: unknown, derivedStrings?: GoalDictionaryDerivedString[]): GoalSemanticDictionary {
+export function encodeGoalSemanticDictionaryForEncoding(
+  value: unknown,
+  nodeEncoding: GoalSemanticDictionary['nodeEncoding'],
+): GoalSemanticDictionary {
+  if (nodeEncoding !== undefined && !['GoalDictionaryNodes/base36-v1', RUN_ENCODING].includes(nodeEncoding)) {
+    fail('node_encoding');
+  }
+  return encodeValue(value, undefined, nodeEncoding);
+}
+
+function encodeValue(
+  value: unknown,
+  derivedStrings: GoalDictionaryDerivedString[] | undefined,
+  requestedEncoding: 'smallest' | GoalSemanticDictionary['nodeEncoding'],
+): GoalSemanticDictionary {
   const retainObjectEntries = objectEntryBudget();
   const nodes: GoalDictionaryNode[] = [];
   const sizes: number[] = [];
@@ -440,21 +455,26 @@ function encodeValue(value: unknown, derivedStrings?: GoalDictionaryDerivedStrin
       const preimage = hashes.get(digest);
       return preimage !== undefined ? [{ value: literal, preimage, prefix: literal.slice(0, -64) }] : [];
     });
-    if (automatic.length) return encodeValue(value, automatic);
+    if (automatic.length) return encodeValue(value, automatic, requestedEncoding);
   }
   const v1 = frontCodeStrings(nodes, root);
-  const candidates: Array<Pick<GoalSemanticDictionary, 'nodeEncoding' | 'nodes' | 'root'>> = [v1];
-  if (isGoalDictionaryRunV2Eligible(v1.nodes.length)) candidates.push(
+  const legacy: Pick<GoalSemanticDictionary, 'nodes' | 'root'> = { nodes, root };
+  const v2Candidates: Array<Pick<GoalSemanticDictionary, 'nodeEncoding' | 'nodes' | 'root'>> = [];
+  if (isGoalDictionaryRunV2Eligible(v1.nodes.length)) v2Candidates.push(
     { nodeEncoding: RUN_ENCODING, nodes: packNodeRuns(v1.nodes), root: v1.root },
     { nodeEncoding: RUN_ENCODING, nodes: packNodeRuns(compactShaNodes(v1.nodes)), root: v1.root },
   );
+  if (requestedEncoding === RUN_ENCODING && v2Candidates.length === 0) fail('logical_nodes_exceeded');
+  const candidates = requestedEncoding === 'smallest' ? [v1, ...v2Candidates]
+    : requestedEncoding === 'GoalDictionaryNodes/base36-v1' ? [v1]
+      : requestedEncoding === RUN_ENCODING ? v2Candidates : [legacy];
   const candidateSizes = candidates.map(bytes);
   let smallestIndex = 0;
   for (let index = 1; index < candidates.length; index += 1) {
     if (candidateSizes[index] < candidateSizes[smallestIndex]) smallestIndex = index;
   }
   const physical = candidates[smallestIndex];
-  const dictionary = { schemaVersion: VERSION, ...physical,
+  const dictionary: GoalSemanticDictionary = { schemaVersion: VERSION, ...physical,
     expandedBytes: sizes[root], expandedHash: sha256Stable(value) };
   decodeGoalSemanticDictionary(dictionary);
   return dictionary;
@@ -500,9 +520,9 @@ export function decodeGoalSemanticDictionary(input: unknown): GoalDictionaryValu
     let entriesReserved = false;
     if (dictionary.nodeEncoding === RUN_ENCODING && typeof node === 'string' && node.startsWith('~H')) {
       const hash = /^~H([A-Za-z0-9_-]{43})$/u.exec(node);
-      if (!hash) fail('hash_shape');
-      const digest = Buffer.from(hash[1], 'base64url');
-      if (digest.length !== 32 || digest.toString('base64url') !== hash[1]) fail('hash_encoding');
+      const digestToken = hash?.[1] ?? fail('hash_shape');
+      const digest = Buffer.from(digestToken, 'base64url');
+      if (digest.length !== 32 || digest.toString('base64url') !== digestToken) fail('hash_encoding');
       node = `sha256:${digest.toString('hex')}`;
       nodes[index] = node;
     } else if (dictionary.nodeEncoding && typeof node === 'string' && Object.hasOwn(TUPLE_MARKERS, node[0])) {

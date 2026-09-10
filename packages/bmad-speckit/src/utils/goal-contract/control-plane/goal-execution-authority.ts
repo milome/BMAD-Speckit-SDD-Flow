@@ -1,7 +1,12 @@
 import type { GoalExecutionIR } from './goal-execution-ir';
 import { sha256Stable, stableStringify } from '../../../main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 import { assertJudgePayloadBudget } from '../../../main-agent/source-authority/scripts/requirements-contract-judge-payload-budget';
-import { decodeGoalSemanticDictionary, encodeGoalSemanticDictionary } from './goal-semantic-dictionary';
+import {
+  decodeGoalSemanticDictionary,
+  encodeGoalSemanticDictionary,
+  encodeGoalSemanticDictionaryForEncoding,
+  type GoalSemanticDictionary,
+} from './goal-semantic-dictionary';
 import { validateGoalExecutionIR } from './goal-execution-ir';
 import { projectRequirementsTypedGoalObligations } from './goal-requirements-typed-bridge';
 import { validateGoalContractSchema } from './schema-registry';
@@ -16,7 +21,11 @@ function validateExpanded(value: unknown): GoalExecutionIR {
   return value as GoalExecutionIR;
 }
 
-function buildAuthority(ir: GoalExecutionIR, recipe = ir.profile === 'requirements_backed' ? 'requirements_typed_obligations/v1' : 'standalone_obligation_aliases/v1'): Row {
+function buildAuthority(
+  ir: GoalExecutionIR,
+  recipe = ir.profile === 'requirements_backed' ? 'requirements_typed_obligations/v1' : 'standalone_obligation_aliases/v1',
+  encodingSource?: GoalSemanticDictionary,
+): Row {
   const projection = structuredClone(ir) as Row;
   const aliases = ir.obligations.map((obligation) => ({ aliasId: `${ir.profile}:${obligation.obligationId}`,
     obligationId: obligation.obligationId, sourceRefs: obligation.sourceRefs }));
@@ -29,8 +38,11 @@ function buildAuthority(ir: GoalExecutionIR, recipe = ir.profile === 'requiremen
     if (sha256Stable(ir.obligations) !== sha256Stable(expected)) fail('projection_invalid');
     projection.obligations = ir.obligations.map((obligation) => ({ typedSourceNodeRef: obligation.obligationId }));
   }
+  const goal = encodingSource === undefined
+    ? encodeGoalSemanticDictionary(projection)
+    : encodeGoalSemanticDictionaryForEncoding(projection, encodingSource.nodeEncoding);
   const payload = { schemaVersion: VERSION, projectionRecipe: recipe,
-    goalExecutionIRHash: ir.goalExecutionIRHash, goal: encodeGoalSemanticDictionary(projection) };
+    goalExecutionIRHash: ir.goalExecutionIRHash, goal };
   return { ...payload, goalExecutionAuthorityHash: sha256Stable(payload) };
 }
 
@@ -76,6 +88,6 @@ export function resolveGoalExecutionAuthority(value: unknown): GoalExecutionIR {
   }
   const ir = validateExpanded(expanded);
   if (ir.goalExecutionIRHash !== authority.goalExecutionIRHash) fail('semantic_hash_mismatch');
-  if (sha256Stable(buildAuthority(ir, String(authority.projectionRecipe))) !== sha256Stable(authority)) fail('canonical_projection_mismatch');
+  if (sha256Stable(buildAuthority(ir, String(authority.projectionRecipe), authority.goal as GoalSemanticDictionary)) !== sha256Stable(authority)) fail('canonical_projection_mismatch');
   return ir;
 }

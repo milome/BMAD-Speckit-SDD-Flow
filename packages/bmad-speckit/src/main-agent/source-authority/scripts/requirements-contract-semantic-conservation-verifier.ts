@@ -107,9 +107,10 @@ export function verifyRequirementsContractCoreArtifactReadback(input: {
   freeze: unknown;
   artifact: unknown;
 }): input is { freeze: RequirementsContractCoreArtifactFreeze; artifact: unknown } {
+  const freeze = input.freeze;
   if (
-    !isRecord(input.freeze) ||
-    !exactKeys(input.freeze, [
+    !isRecord(freeze) ||
+    !exactKeys(freeze, [
       'schemaVersion',
       'checkpointId',
       'profileId',
@@ -117,25 +118,25 @@ export function verifyRequirementsContractCoreArtifactReadback(input: {
       'artifactHash',
       'freezeHash',
     ]) ||
-    input.freeze.schemaVersion !== 'requirements-contract-core-artifact-freeze/v1' ||
-    typeof input.freeze.checkpointId !== 'string' ||
-    typeof input.freeze.profileId !== 'string' ||
-    typeof input.freeze.artifactRole !== 'string' ||
-    typeof input.freeze.artifactHash !== 'string' ||
-    !HASH_PATTERN.test(input.freeze.artifactHash) ||
-    typeof input.freeze.freezeHash !== 'string' ||
-    !HASH_PATTERN.test(input.freeze.freezeHash)
+    freeze.schemaVersion !== 'requirements-contract-core-artifact-freeze/v1' ||
+    typeof freeze.checkpointId !== 'string' ||
+    typeof freeze.profileId !== 'string' ||
+    typeof freeze.artifactRole !== 'string' ||
+    typeof freeze.artifactHash !== 'string' ||
+    !HASH_PATTERN.test(freeze.artifactHash) ||
+    typeof freeze.freezeHash !== 'string' ||
+    !HASH_PATTERN.test(freeze.freezeHash)
   ) {
     return false;
   }
   const stage = CORE_CHECKPOINT_STAGES.find((candidate) =>
-    requirementsContractCoreCheckpointProfile(candidate).checkpointId === input.freeze.checkpointId
+    requirementsContractCoreCheckpointProfile(candidate).checkpointId === freeze.checkpointId
   );
   if (!stage) return false;
   const profile = requirementsContractCoreCheckpointProfile(stage);
-  const artifactRole = input.freeze.artifactRole as RequirementsContractCoreArtifactRole;
+  const artifactRole = freeze.artifactRole as RequirementsContractCoreArtifactRole;
   if (
-    input.freeze.profileId !== profile.profileId ||
+    freeze.profileId !== profile.profileId ||
     !requirementsContractCoreProfileAllowsArtifact(stage, artifactRole)
   ) {
     return false;
@@ -146,7 +147,7 @@ export function verifyRequirementsContractCoreArtifactReadback(input: {
       artifactRole,
       artifact: input.artifact,
     });
-    return Object.entries(expected).every(([key, value]) => input.freeze[key] === value);
+    return Object.entries(expected).every(([key, value]) => freeze[key] === value);
   } catch {
     return false;
   }

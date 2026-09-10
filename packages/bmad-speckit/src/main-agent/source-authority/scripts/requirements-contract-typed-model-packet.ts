@@ -13,6 +13,7 @@ function typedPacketRuntime() {
     : './requirements-contract-typed-source-semantics') as {
     assertTypedConfirmationProjection: (projection: JsonObject) => void;
     createTypedSourceCoverage: (authority: RequirementsTypedSourceAuthority) => unknown;
+    resolveTypedSourceCoverage: (value: unknown, authority: RequirementsTypedSourceAuthority) => unknown;
   };
   const resolver = require(__filename.endsWith('.ts')
     ? './requirements-contract-semantic-resolver.ts'
@@ -96,6 +97,25 @@ function resolvePacketCoverage(authority: JsonObject, value: unknown): JsonObjec
   return expected;
 }
 
+function matchesConfirmedCoverage(
+  authority: JsonObject | undefined,
+  resolvedCoverage: JsonObject | undefined,
+  confirmedCoverage: unknown,
+): boolean {
+  if (!authority || !resolvedCoverage || !object(confirmedCoverage)) return false;
+  try {
+    typedPacketRuntime().resolveTypedSourceCoverage(
+      confirmedCoverage,
+      authority as unknown as RequirementsTypedSourceAuthority,
+    );
+  } catch {
+    return false;
+  }
+  return confirmedCoverage.schemaVersion === resolvedCoverage.schemaVersion &&
+    confirmedCoverage.graphHash === resolvedCoverage.graphHash &&
+    confirmedCoverage.coverageHash === resolvedCoverage.coverageHash;
+}
+
 function matchesConfirmedProjection(packet: JsonObject, confirmation: JsonObject, manifest: JsonObject | undefined,
   resolvedCoverage: JsonObject | undefined): boolean {
   const requirements = object(packet.requirements) ? packet.requirements : {};
@@ -104,7 +124,11 @@ function matchesConfirmedProjection(packet: JsonObject, confirmation: JsonObject
   const preservedTraces = traces.length === confirmedTraces.length && traces.every((trace, index) =>
     Object.entries(confirmedTraces[index]).every(([key, value]) => equal(trace[key], value)));
   return equal(packet.typedSourceAuthority, confirmation.typedSourceAuthority) &&
-    equal(resolvedCoverage, confirmation.typedCoverage) &&
+    matchesConfirmedCoverage(
+      object(packet.typedSourceAuthority) ? packet.typedSourceAuthority : undefined,
+      resolvedCoverage,
+      confirmation.typedCoverage,
+    ) &&
     equal(rows(packet.atomicImplementationTaskList), rows(confirmation.implementationTasks)) &&
     preservedTraces &&
     equal(rows(packet.boundaryViews), rows(confirmation.boundaryViews)) &&

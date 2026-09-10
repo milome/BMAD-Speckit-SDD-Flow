@@ -332,7 +332,7 @@ function compileActorIsolationReceipt(
   host: ActorHost,
   snapshotHash: string
 ): MainAgentExecutionActorIsolationReceipt {
-  const enforcement =
+  const enforcement: MainAgentExecutionActorIsolationReceipt['enforcement'] =
     host === 'codex' ? 'codex_permission_profile' : 'claude_tool_free_inline_evidence';
   const policyHash = computeMainAgentExecutionActorIsolationPolicyHash(enforcement);
   const payload = {

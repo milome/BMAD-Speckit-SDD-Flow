@@ -4,7 +4,7 @@
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-consumer-registry.ts",
     "hash": "sha256:b47954674d39d0dcd04287978039f1d99c25524603e16b4500858f709b581229"
   },
-  "registryHash": "sha256:f8dfa51ef04e0e13d3fc47e194ce3e9d1d30e9140c75a8c919a4ff21e39dd6ed",
+  "registryHash": "sha256:4e8f7ba67b3c92ccaaae16e01aa2101a548a97027f69bbdcfa9f9d9461804870",
   "validationModes": [
     "draft",
     "confirmation-ready",
@@ -113,7 +113,7 @@
     {
       "consumerId": "direct-main-session-requirement-authoring",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
-      "pathHash": "sha256:f2cdc037c71d4d9b41e23887cba1ff03d1cf5dd0c5f1f74293e5a08f2c842662",
+      "pathHash": "sha256:168de11aedb450f1f2efaca1df191a94ad70dc4f8d37de3806a70d2a861738d0",
       "inputRole": "authoring_request",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -616,7 +616,7 @@
     {
       "consumerId": "main-agent-delivery-closeout-gate",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-delivery-closeout-gate.ts",
-      "pathHash": "sha256:6aa683d124363feb95307e91f750533cf390aca14a060d1f68032c32d5d6552f",
+      "pathHash": "sha256:b29133782b276ca63d7982fa71003251bbd36d8ec4e0ec60da498d7f108707f0",
       "inputRole": "canonical_delivery_closeout",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",

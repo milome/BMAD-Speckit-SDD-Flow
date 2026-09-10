@@ -25,6 +25,7 @@ import {
   runtimeStatusProjectionArtifactWrites,
   validateRuntimeStatusDecisionReceipt,
   runtimeStatusProjectionRecordPatch,
+  type RequirementsContractRuntimeStatusDecisionReceipt,
   type RuntimeStatusProjectionUpdate,
 } from './requirements-contract-runtime-status-decision-receipt';
 import {
@@ -184,7 +185,7 @@ interface ExistingReadinessBundle {
   result: JsonObject;
   candidate: ReadinessCandidate;
   receiptPath: string;
-  receipt: JsonObject;
+  receipt: RequirementsContractRuntimeStatusDecisionReceipt;
   projectionCurrent: boolean;
 }
 
@@ -1101,7 +1102,7 @@ function logicalInputPath(token: string): string | null {
   return null;
 }
 
-function nodeArgs(command: NormalizedCommand): string[] | null {
+function nodeArgs(command: ReadinessStructuredDependencyCommand): string[] | null {
   if (command.executable === 'node') return command.args;
   if (command.executable !== 'npx') return null;
   if (command.args[0]?.toLowerCase() === 'node') return command.args.slice(1);
@@ -1139,7 +1140,7 @@ function localNodeInputPath(
 }
 
 function collectNodeRuntimeInputs(
-  command: NormalizedCommand,
+  command: ReadinessStructuredDependencyCommand,
   projectRoot: string,
   add: (role: InputArtifact['role'], logicalPath: string) => void
 ): void {
@@ -1192,7 +1193,7 @@ function collectNodeRuntimeInputs(
   }
 }
 
-function changesCommandScope(command: NormalizedCommand): boolean {
+function changesCommandScope(command: ReadinessStructuredDependencyCommand): boolean {
   const nestedNode = nodeArgs(command) !== null;
   return command.args.some((argument) => {
     if (
@@ -1252,7 +1253,7 @@ export function collectReadinessStructuredInputArtifacts(input: {
       throw new Error('implementation_readiness_command_scope_unclosed');
     }
     const allowBunBuiltins = command.executable === 'bun';
-    collectNodeRuntimeInputs(command as NormalizedCommand, input.projectRoot, (role, logicalPath) =>
+    collectNodeRuntimeInputs(command, input.projectRoot, (role, logicalPath) =>
       addDependencySeed(role, logicalPath, allowBunBuiltins)
     );
     for (const argument of command.args) {
@@ -1628,11 +1629,15 @@ function runAndValidate(
   const fail = (issueCode: string): never => {
     throw new ImplementationReadinessFailure(issueCode, executionCount);
   };
-  if (result.errorCode || result.signal || result.status === null) {
+  const exitCode = result.status;
+  if (result.errorCode || result.signal || exitCode === null) {
     fail(
       `implementation_readiness_runner_failed:${command.commandIds[0]}:${result.errorCode ?? result.signal ?? 'unknown'}`
     );
   }
+  const completedExitCode = exitCode ?? fail(
+    `implementation_readiness_runner_failed:${command.commandIds[0]}:unknown`
+  );
   if (Buffer.byteLength(output, 'utf8') > POLICY.maxOutputBytes) {
     fail(`implementation_readiness_output_bound_exceeded:${command.commandIds[0]}`);
   }
@@ -1640,13 +1645,13 @@ function runAndValidate(
     fail(`implementation_readiness_environment_failure:${command.commandIds[0]}`);
   }
   const failures = tapFailures(output);
-  if (result.status === 0) {
+  if (completedExitCode === 0) {
     throw new ImplementationReadinessBlock(
       `red_proof_not_observed:${command.commandIds[0]}`,
       executionCount
     );
   }
-  if (result.status !== 1 || failures.length === 0) {
+  if (completedExitCode !== 1 || failures.length === 0) {
     fail(`implementation_readiness_red_output_invalid:${command.commandIds[0]}`);
   }
   const failedTestIds = command.expectedTestIds.filter((id) =>
@@ -1674,14 +1679,14 @@ function runAndValidate(
       normalizedCommandHash: command.normalizedCommandHash,
       commandIds: command.commandIds,
       status: 'expected_red_observed',
-      exitCode: result.status,
+      exitCode: completedExitCode,
       failedTestIds: sortedUnique(failedTestIds),
       expectedFailureSignaturesObserved,
       unrelatedFailureIds: unrelatedFailureIds.map((failure) => failure.name),
       negativeControl: {
         runnerCompleted: true,
         tapFailuresObserved: true,
-        noUnrelatedFailures: unrelatedFailureIds.length === 0,
+        noUnrelatedFailures: true,
         environmentFailure: false,
       },
     },
@@ -1691,7 +1696,7 @@ function runAndValidate(
         commandIds: command.commandIds,
         stdout: result.stdout,
         stderr: result.stderr,
-        exitCode: result.status,
+        exitCode: completedExitCode,
       },
       null,
       2
@@ -1842,7 +1847,7 @@ function readinessRuntimePublication(input: {
   context: ArchitectureConfirmationContext;
   candidate: ReadinessCandidate;
   receiptPath: string;
-  receipt: JsonObject;
+  receipt: RequirementsContractRuntimeStatusDecisionReceipt;
 }): {
   runtimeRecordPath: string;
   record: JsonObject;
@@ -2009,7 +2014,7 @@ function isPublishedReadinessRuntimeProjection(input: {
   context: ArchitectureConfirmationContext;
   candidate: ReadinessCandidate;
   receiptPath: string;
-  receipt: JsonObject;
+  receipt: RequirementsContractRuntimeStatusDecisionReceipt;
 }): boolean {
   const { record } = readValidReadinessRuntimeRecord(
     input.context,

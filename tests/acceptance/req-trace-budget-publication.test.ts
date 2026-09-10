@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { materializeAiTddManifestCloseoutRunnerFixture } from '../helpers/requirement-fixture-runtime';
 import {
   artifactHashes,
@@ -10,9 +10,11 @@ import {
   QUARTET,
   REAL_SOURCE,
   runGenerator,
+  generatorTimeoutMs,
 } from '../helpers/req-trace-budget-publication';
 
 let root: string;
+vi.setConfig({ testTimeout: 120_000, hookTimeout: 30_000 });
 beforeEach(() => {
   root = fs.mkdtempSync(path.join(os.tmpdir(), 'req-trace-budget-'));
 });
@@ -43,6 +45,13 @@ function pendingJournal(outDir: string): string {
 }
 
 describe.each(['req_trace_direct', 'main_agent_compile'])('%s publication budget', (entry) => {
+  it('derives a bounded generator timeout from source size instead of a fixed short timeout', () => {
+    expect(generatorTimeoutMs(0)).toBe(120_000);
+    expect(generatorTimeoutMs(1024 * 1024)).toBe(120_000);
+    expect(generatorTimeoutMs(1024 * 1024 + 1)).toBe(240_000);
+    expect(generatorTimeoutMs(2.5 * 1024 * 1024)).toBe(360_000);
+  });
+
   it.each(['journal:prepared', 'goal_execution.md', 'human_prompt.txt', 'model_packet.json',
     'audit_receipt.json', 'journal:completed'])(
     'recovers a real process exit at %s before retrying', (crashPoint) => {
@@ -73,13 +82,20 @@ describe.each(['req_trace_direct', 'main_agent_compile'])('%s publication budget
       crashPoint: 'model_packet.json' }).status).toBe(86);
     const journalPath = pendingJournal(outDir);
     const journal = JSON.parse(fs.readFileSync(journalPath, 'utf8'));
-    const changed = journal.artifacts.find((item: { name: string; previousHash: string; nextHash: string }) =>
-      item.previousHash !== item.nextHash && hash(fs.readFileSync(path.join(outDir, item.name))) === `sha256:${item.nextHash}`);
+    const changed = journal.artifacts.find(
+      (item: { name: string; previousHash: string | null; nextHash: string }) =>
+        item.previousHash !== null && item.previousHash !== item.nextHash
+    );
     expect(changed).toBeDefined();
     expect(runGenerator({ label: `${entry}-repeated-recovery-exit`, entry, outDir, fixture,
       crashPoint: changed.name }).status).toBe(86);
-    expect(pendingJournal(outDir)).toBe(journalPath);
-    expect(fs.readdirSync(path.dirname(journalPath)).some((name) => name.startsWith('.recovery-'))).toBe(true);
+    expect(fs.existsSync(journalPath)).toBe(true);
+    const recoveredJournalPath = pendingJournal(outDir);
+    expect(recoveredJournalPath).not.toBe(journalPath);
+    const publicationJournals = fs
+      .readdirSync(outDir, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && entry.name.startsWith('.compiler-publication-'));
+    expect(publicationJournals.length).toBeGreaterThanOrEqual(2);
     const retry = runGenerator({ label: `${entry}-repeated-recovered`, entry, outDir, fixture });
     expect(retry.status, retry.stdout).toBe(0);
     expect(fs.readdirSync(path.dirname(journalPath)).some((name) => name.startsWith('.recovery-'))).toBe(false);

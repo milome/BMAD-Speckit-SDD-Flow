@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { encodeGoalSemanticDictionary, decodeGoalSemanticDictionary } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-semantic-dictionary';
+import { encodeGoalSemanticDictionary, encodeGoalSemanticDictionaryForEncoding,
+  decodeGoalSemanticDictionary } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-semantic-dictionary';
 import { expandRequirementsTypedDictionaries, restoreRequirementsTypedDictionaries } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-typed-dictionary-expansion';
 import { buildRequirementsContractJudgeAuditPacket, resolveRequirementsContractJudgeAuditPacket,
   transformRequirementsAuditSourceSpanReferences } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-audit-packet';
+import { canonicalJson, sha256 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-governed-write';
 
 function sample() {
   return {
@@ -14,7 +16,65 @@ function sample() {
   };
 }
 
+function sampleWithEncoding(nodeEncoding?: 'GoalDictionaryNodes/base36-v1' | 'GoalDictionaryNodes/base36-run-v2') {
+  return {
+    typedSourceAuthority: { schemaVersion: 'requirements-contract-typed-source-authority/v2',
+      graph: encodeGoalSemanticDictionaryForEncoding({ sourceNodes: Array.from({ length: 40 }, (_, index) => ({
+        id: `BOUNDARY-${index}`, text: `Preserve complete source ${index}.`, polarity: 'forbidden',
+        conditions: ['when the configured Judge is unavailable'],
+      })) }, nodeEncoding) },
+  };
+}
+
 describe('Requirements nested typed dictionaries retain complete audit semantics in transport', () => {
+  it.each([
+    [undefined, null],
+    ['GoalDictionaryNodes/base36-v1', 'GoalDictionaryNodes/base36-v1'],
+    ['GoalDictionaryNodes/base36-run-v2', 'GoalDictionaryNodes/base36-run-v2'],
+  ] as const)('binds and restores canonical %s dictionaries without changing their bytes', (nodeEncoding, recipeEncoding) => {
+    const original = sampleWithEncoding(nodeEncoding);
+    const expanded = expandRequirementsTypedDictionaries(original) as any;
+    expect(expanded.typedSourceAuthority.graph.nodeEncoding).toBe(recipeEncoding);
+    expect(restoreRequirementsTypedDictionaries(expanded)).toEqual(original);
+  });
+
+  it('restores a frozen three-field v1 recipe produced before encoding was explicitly bound', () => {
+    const original = sampleWithEncoding('GoalDictionaryNodes/base36-v1');
+    const expanded = expandRequirementsTypedDictionaries(original) as any;
+    delete expanded.typedSourceAuthority.graph.nodeEncoding;
+    expect(restoreRequirementsTypedDictionaries(expanded)).toEqual(original);
+  });
+
+  it('rejects a canonical hash substituted from another node encoding', () => {
+    const original = sampleWithEncoding('GoalDictionaryNodes/base36-v1');
+    const expanded = expandRequirementsTypedDictionaries(original) as any;
+    const semanticValue = expanded.typedSourceAuthority.graph.semanticValue;
+    const v2 = encodeGoalSemanticDictionaryForEncoding(semanticValue, 'GoalDictionaryNodes/base36-run-v2');
+    expanded.typedSourceAuthority.graph.dictionaryHash = sha256(canonicalJson(v2));
+    expect(() => restoreRequirementsTypedDictionaries(expanded))
+      .toThrow('requirements_typed_dictionary_expansion_dictionary_hash_mismatch');
+  });
+
+  it.each([
+    'GoalDictionaryNodes/base36-v1',
+    'GoalDictionaryNodes/base36-run-v2',
+  ] as const)('does not convert a valid noncanonical %s dictionary into a recipe', (nodeEncoding) => {
+    const semanticValue = [{ preserved: true }];
+    const raw = encodeGoalSemanticDictionaryForEncoding(semanticValue, undefined);
+    const noncanonical = { ...raw, nodeEncoding };
+    expect(decodeGoalSemanticDictionary(noncanonical)).toEqual(semanticValue);
+    const original = { typedSourceAuthority: {
+      schemaVersion: 'requirements-contract-typed-source-authority/v2', graph: noncanonical } };
+    expect(expandRequirementsTypedDictionaries(original)).toEqual(original);
+  });
+
+  it('rejects an unknown encoding bound to a restoration recipe', () => {
+    const expanded = expandRequirementsTypedDictionaries(sampleWithEncoding('GoalDictionaryNodes/base36-v1')) as any;
+    expanded.typedSourceAuthority.graph.nodeEncoding = 'GoalDictionaryNodes/unknown-v999';
+    expect(() => restoreRequirementsTypedDictionaries(expanded))
+      .toThrow('requirements_typed_dictionary_expansion_node_encoding_unknown');
+  });
+
   it('restores the original canonical dictionaries and every readable source field after outer dictionary decoding', () => {
     const original = sample();
     const expanded = expandRequirementsTypedDictionaries(original) as any;

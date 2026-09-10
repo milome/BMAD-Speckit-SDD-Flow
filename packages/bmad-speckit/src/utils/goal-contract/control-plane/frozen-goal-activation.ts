@@ -383,7 +383,7 @@ function resolveFrozenGoalAuthority(input: { projectRoot: string; goalAuthorityP
   };
 }
 
-export function validateGoalExecutionAdmission(input: {
+type GoalExecutionAdmissionInput = {
   phase: 'activation_prepare' | 'activation_commit' | 'execution_start_or_resume' | 'closeout';
   projectRoot: string;
   goalAuthorityPath?: string;
@@ -392,7 +392,40 @@ export function validateGoalExecutionAdmission(input: {
   activeRunPointerPath?: string;
   requestId?: string;
   requirementRecordPath?: string;
-}) {
+};
+
+type FrozenGoalActivationAdmission = Readonly<
+  ReturnType<typeof resolveFrozenGoalAuthority> & {
+    phase: 'activation_prepare' | 'activation_commit';
+    requirementsReadiness: SchemaRecord | null;
+  }
+>;
+
+type FrozenGoalExecutionAdmission = Readonly<
+  ReturnType<typeof resolveCommittedActiveRun> & {
+    phase: 'execution_start_or_resume';
+  }
+>;
+
+type FrozenGoalCloseoutAdmission = Readonly<{
+  phase: 'closeout';
+  projectRoot: string;
+  requirementRecordPath: string;
+  requirementRecord: SchemaRecord;
+  currentRequest: SchemaRecord;
+  replayState: 'accepted' | 'rejected' | null;
+}>;
+
+export function validateGoalExecutionAdmission(
+  input: GoalExecutionAdmissionInput & { phase: 'activation_prepare' | 'activation_commit' }
+): FrozenGoalActivationAdmission;
+export function validateGoalExecutionAdmission(
+  input: GoalExecutionAdmissionInput & { phase: 'execution_start_or_resume' }
+): FrozenGoalExecutionAdmission;
+export function validateGoalExecutionAdmission(
+  input: GoalExecutionAdmissionInput & { phase: 'closeout' }
+): FrozenGoalCloseoutAdmission;
+export function validateGoalExecutionAdmission(input: GoalExecutionAdmissionInput) {
   if (
     !['activation_prepare', 'activation_commit', 'execution_start_or_resume', 'closeout'].includes(
       input.phase
@@ -1050,7 +1083,7 @@ function activeRunPointerMatches(
   pointer: SchemaRecord | null,
   activationRecordRef: string,
   activationRecordHash: string
-): pointer is SchemaRecord {
+): boolean {
   return (
     pointer?.activationRecordHash === activationRecordHash &&
     pointer?.activationRecordRef === activationRecordRef
@@ -1269,6 +1302,7 @@ function commitActiveRunPointerUnderControl(input: {
     }
   }
   if (
+    alreadyCommitted &&
     activeRunPointerMatches(alreadyCommitted, input.activationRecordRef, input.activationRecordHash)
   ) {
     return { pointer: alreadyCommitted, reused: true };
@@ -1320,7 +1354,10 @@ function commitActiveRunPointerUnderControl(input: {
   let temporaryPath = '';
   try {
     const current = readActiveRunPointer(input.pointerPath);
-    if (activeRunPointerMatches(current, input.activationRecordRef, input.activationRecordHash)) {
+    if (
+      current &&
+      activeRunPointerMatches(current, input.activationRecordRef, input.activationRecordHash)
+    ) {
       return { pointer: current, reused: true };
     }
     const observedBeforeHash = current?.activeRunPointerHash ?? ACTIVE_RUN_ZERO_HASH;
@@ -1455,7 +1492,9 @@ function compilePartitionFromFrozenGoalAuthority(input: {
   goalExecutionIr: SchemaRecord;
   eligibility: SchemaRecord;
   executionAdapterRef: { path: string; hash: string };
-}) {
+}): ReturnType<
+  typeof import('./frozen-goal-partition').compilePartitionFromFrozenGoalAuthority
+> {
   const { compilePartitionFromFrozenGoalAuthority: compile } = require(
     __filename.endsWith('.ts') ? './frozen-goal-partition.ts' : './frozen-goal-partition'
   );
@@ -1904,13 +1943,19 @@ function assertExecutionIdentity(
   }
 }
 
+interface ResolvedExecutionAuthority extends SchemaRecord {
+  executionAuthorityId: string;
+  ownedPaths: string[];
+  dependencyExecutionAuthorityIds: string[];
+}
+
 function resolveDirectExecutionAuthority(input: {
   outRoot: string;
   runRoot: string;
   candidateRun: SchemaRecord;
   eligibility: SchemaRecord;
   goalExecutionIr: SchemaRecord;
-}) {
+}): Readonly<ResolvedExecutionAuthority>[] {
   const packageRefs = Array.isArray(input.candidateRun.executionPackageRefs)
     ? input.candidateRun.executionPackageRefs.filter(isRecord)
     : [];
@@ -1997,7 +2042,7 @@ function resolvePartitionedExecutionAuthorities(input: {
   candidateRun: SchemaRecord;
   eligibility: SchemaRecord;
   goalExecutionIr: SchemaRecord;
-}) {
+}): Readonly<ResolvedExecutionAuthority>[] {
   const manifestRef = readHashReferencedRecord({
     outRoot: input.runRoot,
     ref: input.candidateRun.selectedPartitionManifestRef,
@@ -2228,9 +2273,11 @@ function resolvePartitionedExecutionAuthorities(input: {
       String(authority.executionAuthorityId),
     ])
   );
-  return ordered.map((authority) =>
+  return ordered.map((authority): Readonly<ResolvedExecutionAuthority> =>
     Object.freeze({
       ...authority,
+      executionAuthorityId: String(authority.executionAuthorityId),
+      ownedPaths: sortedUniqueText(authority.ownedPaths),
       dependencyExecutionAuthorityIds: (Array.isArray(authority.dependencyPartitionRefs)
         ? authority.dependencyPartitionRefs.map(String)
         : []
@@ -2434,7 +2481,7 @@ export function resolveCommittedActiveRun(input: {
 }
 
 function activationResultFromRun(input: {
-  prepared: ReturnType<typeof validateGoalExecutionAdmission>;
+  prepared: FrozenGoalActivationAdmission;
   pointerPath: string;
   committed: { pointer: SchemaRecord; reused: boolean };
   runRoot: string;

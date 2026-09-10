@@ -572,8 +572,8 @@ export function stageRequirementsContractConfirmationBindingRefresh(input: {
     resolvedEvidenceIndex,
     effectivePass,
     bindingRefresh: {
-      auditedSourceBindingHash: promotion.sourceBindingHash,
-      currentSourceBindingHash: sourceBinding.sourceBindingHash,
+      auditedSourceBindingHash: text(promotion.sourceBindingHash),
+      currentSourceBindingHash: text(sourceBinding.sourceBindingHash),
     },
   };
   const pages = projectRequirementsContractFinalPages(renderInput);
@@ -584,7 +584,7 @@ export function stageRequirementsContractConfirmationBindingRefresh(input: {
     'confirmation',
     'staging',
     'binding-refresh',
-    sourceBinding.bindingRevisionId
+    text(sourceBinding.bindingRevisionId)
   );
   const stagedMarkdown = atomicNoClobberPublish({
     targetPath: path.join(stagingRoot, 'requirements.md'),
@@ -674,7 +674,7 @@ export function refreshRequirementsContractConfirmationBinding(input: {
     'confirmation',
     'staging',
     'binding-refresh',
-    sourceBinding.bindingRevisionId
+    text(sourceBinding.bindingRevisionId)
   );
   const stagedMarkdownPath = path.join(stagingRoot, 'requirements.md');
   const stagedHtmlPath = path.join(stagingRoot, 'requirements.html');
@@ -712,15 +712,15 @@ export function refreshRequirementsContractConfirmationBinding(input: {
   const refreshReceipt = createRequirementsContractSourceBindingRefreshReceipt({
     semanticRevisionId: semanticIr.semanticRevisionId,
     scopeSemanticHash: semanticIr.scopeSemanticHash,
-    fromBindingRevisionId: parentBinding.bindingRevisionId,
-    toBindingRevisionId: sourceBinding.bindingRevisionId,
-    fromSourceBindingHash: parentBinding.sourceBindingHash,
-    toSourceBindingHash: sourceBinding.sourceBindingHash,
+    fromBindingRevisionId: text(parentBinding.bindingRevisionId),
+    toBindingRevisionId: text(sourceBinding.bindingRevisionId),
+    fromSourceBindingHash: text(parentBinding.sourceBindingHash),
+    toSourceBindingHash: text(sourceBinding.sourceBindingHash),
     fromSnapshotSetHash: sha256Stable(parentBinding.sourceArtifacts),
     toSnapshotSetHash: sha256Stable(sourceBinding.sourceArtifacts),
-    fromSourceSpanRegistryHash: parentBinding.sourceSpanRegistryHash,
-    toSourceSpanRegistryHash: sourceBinding.sourceSpanRegistryHash,
-    evidenceClaimRegistryHash: sourceBinding.evidenceClaimBindingRegistryHash,
+    fromSourceSpanRegistryHash: text(parentBinding.sourceSpanRegistryHash),
+    toSourceSpanRegistryHash: text(sourceBinding.sourceSpanRegistryHash),
+    evidenceClaimRegistryHash: text(sourceBinding.evidenceClaimBindingRegistryHash),
     pageEvidence: {
       confirmationPromotionReceiptRef: {
         path: 'confirmation/confirmation-promotion-receipt.json',
@@ -734,7 +734,7 @@ export function refreshRequirementsContractConfirmationBinding(input: {
     recordRoot,
     'authoring',
     'source-bindings',
-    sourceBinding.bindingRevisionId,
+    text(sourceBinding.bindingRevisionId),
     'source-binding-refresh-receipt.json'
   );
   const receiptPublication = atomicNoClobberPublish({
@@ -1147,9 +1147,9 @@ export function confirmRequirementsContractIrScope(input: {
     refreshReceipt.scopeSemanticHash === activeAuthority.activeScopeSemanticHash &&
     refreshReceipt.toBindingRevisionId === activeAuthority.activeBindingRevisionId &&
     refreshReceipt.toSourceBindingHash === activeAuthority.activeSourceBindingHash &&
-    refreshReceipt.confirmationPromotionReceiptRef?.path ===
+    object(refreshReceipt.confirmationPromotionReceiptRef).path ===
       'confirmation/confirmation-promotion-receipt.json' &&
-    refreshReceipt.confirmationPromotionReceiptRef?.hash ===
+    object(refreshReceipt.confirmationPromotionReceiptRef).hash ===
       artifactBytesHash({
         role: 'promotion_receipt',
         mediaType: 'application/json',
@@ -1249,7 +1249,7 @@ export function confirmRequirementsContractIrScope(input: {
   return {
     ok: true,
     action: 'confirm-scope' as const,
-    status: record.lifecycle === 'user_confirmed' ? 'confirmation_reused' : 'user_confirmed',
+    status: 'user_confirmed' as const,
     exitCode: 0,
     authority: 'main-agent-controlled-requirements-confirmation' as const,
     requestId: input.requestId,

@@ -737,8 +737,10 @@ function selectFrozenGoalPartition(input: {
   );
   let searchedStateCount = 0;
   let truncated = false;
-  let bestGroups: JsonObject[] | null = null;
-  let bestRank = '';
+  const best: { groups: JsonObject[] | null; rank: string } = {
+    groups: null,
+    rank: '',
+  };
 
   const evaluate = (groups: JsonObject[][]): void => {
     if (searchedStateCount >= maxSearchStates) {
@@ -749,9 +751,9 @@ function selectFrozenGoalPartition(input: {
     const materialized = hardValidPartitionGroups(ir, groups);
     if (!materialized) return;
     const rank = partitionSelectorRank(ir, groups, materialized);
-    if (bestGroups === null || rank < bestRank) {
-      bestGroups = materialized;
-      bestRank = rank;
+    if (best.groups === null || rank < best.rank) {
+      best.groups = materialized;
+      best.rank = rank;
     }
   };
 
@@ -773,7 +775,8 @@ function selectFrozenGoalPartition(input: {
   if (components.length > 0) {
     search(1, [[components[0]]]);
   }
-  const partitionOutcome = bestGroups
+  const selectedGroups = (() : JsonObject[] | null => best.groups)();
+  const partitionOutcome = selectedGroups
     ? truncated
       ? 'bounded_valid'
       : 'complete_valid'
@@ -783,7 +786,7 @@ function selectFrozenGoalPartition(input: {
   const policies = partitionPolicyIdentity(
     typeof ir.schemaVersion === 'string' ? ir.schemaVersion : undefined
   );
-  const groups = bestGroups ?? [];
+  const groups = selectedGroups ?? [];
   const selectionIdentityHash = hashControlPlaneValue({
     schemaVersion: 'FrozenGoalPartitionSelectionIdentity/v1',
     goalExecutionIRHash: String(ir.goalExecutionIRHash ?? ''),
@@ -1017,6 +1020,14 @@ function compilePartitionFromFrozenGoalAuthority(input: {
     selectionIdentityHash: String(selection.selectionIdentityHash),
   };
 }
+
+export {
+  compilePartitionFromFrozenGoalAuthority,
+  directGoalExecutionTopologyAdmissible,
+  partitionPolicyIdentity,
+  validateTypedPartitionChild,
+  selectFrozenGoalPartition,
+};
 
 module.exports = {
   compilePartitionFromFrozenGoalAuthority,

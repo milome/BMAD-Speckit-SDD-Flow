@@ -208,6 +208,36 @@ describe('goal finalization production actor resolver', () => {
     expect(reads).toBe(1);
   });
 
+  it('uses the caller-supplied config path for provider and credential resolution', async () => {
+    const projectRoot = projectFixture();
+    const configPath = 'config/custom-governance-remediation.yaml';
+    const observed: string[] = [];
+    const resolver = createGoalFinalizationActorResolver(
+      { projectRoot, config: configPath },
+      {
+        readConfig(_root, configRef) {
+          observed.push(`config:${configRef}`);
+          return config(projectRoot);
+        },
+        async resolveCredential(input) {
+          observed.push(`credential:${input.config}`);
+          return credential();
+        },
+        readCredentialSecret: () => 'test-secret',
+        async executeCodexCliCommand() {
+          return {
+            exitCode: 0,
+            stdout: codexTranscript(reviewerResult),
+            stderr: '',
+          };
+        },
+      }
+    );
+
+    await resolver.invokeReviewer(actorIntent(projectRoot, 'bounded_code_reviewer'));
+    expect(observed).toEqual([`config:${configPath}`, `credential:${configPath}`]);
+  });
+
   it('binds both actors to one registry-selected Codex command and isolated snapshot', async () => {
     const projectRoot = projectFixture();
     const current = config(projectRoot);

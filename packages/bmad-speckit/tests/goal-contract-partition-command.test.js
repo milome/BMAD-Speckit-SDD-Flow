@@ -2705,7 +2705,28 @@ describe('bmad-speckit goal-contract partition command', () => {
     const goalExecutionIr = resolveGoalExecutionAuthority(
       JSON.parse(fs.readFileSync(generation.goalExecutionIrRef.path, 'utf8'))
     );
-    assert.equal(goalExecutionIr.goalExecutionIRHash, stableGoalExecutionIr.goalExecutionIRHash);
+    assert.equal(generation.sourcePlanHash, stableGenerationReceipt.sourcePlanHash);
+    assert.deepEqual(goalExecutionIr.obligations, stableGoalExecutionIr.obligations);
+    assert.deepEqual(
+      goalExecutionIr.semanticSource.typedExecutionConstraints,
+      stableGoalExecutionIr.semanticSource.typedExecutionConstraints
+    );
+    const successorSpans = new Map(
+      goalExecutionIr.logicalSpecSpans.map((row) => [row.specSpanId, row])
+    );
+    assert.equal(successorSpans.size, stableGoalExecutionIr.logicalSpecSpans.length);
+    for (const stableSpan of stableGoalExecutionIr.logicalSpecSpans) {
+      const successorSpan = successorSpans.get(stableSpan.specSpanId);
+      assert.ok(successorSpan, stableSpan.specSpanId);
+      assert.deepEqual(
+        { ...successorSpan, canonicalNodeRefs: stableSpan.canonicalNodeRefs },
+        stableSpan
+      );
+      assert.equal(
+        stableSpan.canonicalNodeRefs.every((ref) => successorSpan.canonicalNodeRefs.includes(ref)),
+        true
+      );
+    }
 
     const diagnosticOut = path.join(root, 'diagnostic', 'partition-manifest.json');
     const diagnostic = runRegisteredSourceCommand(

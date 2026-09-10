@@ -21,24 +21,26 @@ describe.each(['req_trace_direct', 'main_agent_compile'])('%s confirmation chain
       expect(Object.keys(before).sort()).toEqual([...QUARTET].sort());
       const sourceBefore = fs.readFileSync(fixture.sourcePath);
       const record = JSON.parse(fs.readFileSync(fixture.recordPath, 'utf8'));
-      expect(record.confirmationHistory.at(-1).eventType).toBe('confirmation_recorded');
-      expect(record.sourceDocumentHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
-      expect(record.implementationConfirmationHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
+      expect(record.lifecycle).toBe('user_confirmed');
+      expect(record.confirmationEventRef.artifactBytesHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
+      expect(record.currentPromotionEvidence.artifactBytesHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
 
-      // Only the isolated synthetic test record changes; no human confirmation is produced.
+      // Only the isolated canonical authority changes; no human confirmation is produced.
       if (damage === 'reconfirmation_requested') {
-        record.confirmationHistory.push({ eventType: 'reconfirmation_requested', recordId: record.recordId,
-          requirementSetId: record.requirementSetId, requestedAt: '2026-05-26T17:22:58.718Z',
-          requestedBy: 'test-only-fixture', reason: 'Test-only confirmation authority invalidation' });
+        record.lifecycle = 'reconfirmation_required';
+        fs.writeFileSync(fixture.recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
       } else {
-        delete record[damage];
+        const recordRoot = path.dirname(path.dirname(fixture.recordPath));
+        const attemptId = record.activeAuthority.activeAuthoringAttemptId;
+        const artifactPath = damage === 'sourceDocumentHash'
+          ? path.join(recordRoot, 'authoring', 'staging', attemptId, 'cp05', 'final-source.md')
+          : path.join(recordRoot, 'authoring', 'staging', attemptId, 'cp05', 'confirmation-projection.json');
+        fs.appendFileSync(artifactPath, '\nTEST-ONLY authority drift\n', 'utf8');
       }
-      fs.writeFileSync(fixture.recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
       const rejected = runGenerator({ label: `${label}-reject`, entry, outDir, fixture });
       expect.soft(rejected.status, rejected.stdout || rejected.stderr).toBe(3);
-      expect.soft(JSON.parse(rejected.stdout).blockingReasons).toContain(damage === 'reconfirmation_requested'
-        ? 'CONFIRMATION_RECORD_REQUIRED' : 'CONFIRMATION_RECORD_HASH_MISMATCH');
+      expect.soft(JSON.parse(rejected.stdout).blockingReasons).toContain('CONFIRMED_AUTHORITY_INVALID');
       expect(artifactHashes(outDir)).toEqual(before);
       expect(fs.readFileSync(fixture.sourcePath)).toEqual(sourceBefore);
-    });
+    }, 120_000);
 });

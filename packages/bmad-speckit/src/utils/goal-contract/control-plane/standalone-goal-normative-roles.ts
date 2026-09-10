@@ -58,7 +58,9 @@ export function validateTypedObligationSources(obligations: GoalExecutionObligat
       }
     }
     const applicability = object(row.applicability);
-    if (!Array.isArray(row.conditions)) fail(row, 'conditions_invalid');
+    const conditions = Array.isArray(row.conditions)
+      ? row.conditions
+      : fail(row, 'conditions_invalid');
     if (!boundSources(applicability.sourceRefs)) fail(row, 'applicability_source_refs_invalid');
     if (!['global', 'obligations', 'source_scope'].includes(String(applicability.scope))) {
       fail(row, 'applicability_scope_invalid');
@@ -74,7 +76,7 @@ export function validateTypedObligationSources(obligations: GoalExecutionObligat
         strings(applicability.obligationRefs).some((ref) => !known.has(ref)))) {
       fail(row, 'applicability_obligation_refs_invalid');
     }
-    if (row.conditions.some((value) => { const condition = object(value);
+    if (conditions.some((value) => { const condition = object(value);
       return typeof condition.text !== 'string' || !condition.text.trim() ||
         condition.state !== 'unevaluated' || !boundSources(condition.sourceRefs);
     })) fail(row, 'condition_source_refs_invalid');

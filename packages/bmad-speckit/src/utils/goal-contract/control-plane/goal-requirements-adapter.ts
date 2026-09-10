@@ -154,7 +154,7 @@ function confined(root: string, relativePath: string): string {
 
 function assertInput(input: RequirementsBackedGoalInput): void {
   const allowed = new Set(['projectRoot', 'requirementRecordPath', 'outRoot']);
-  const forbidden = Object.keys(input as JsonObject).find((key) => !allowed.has(key));
+  const forbidden = Object.keys(input).find((key) => !allowed.has(key));
   if (forbidden) throw new Error(`requirements_backed_caller_derived_input_forbidden:${forbidden}`);
   if (!input.projectRoot || !input.requirementRecordPath || !input.outRoot) {
     throw new Error('requirements_backed_input_incomplete');
