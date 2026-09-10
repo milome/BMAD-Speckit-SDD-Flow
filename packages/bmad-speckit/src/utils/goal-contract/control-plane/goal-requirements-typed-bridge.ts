@@ -5,6 +5,7 @@ import {
   type RequirementsTypedSourceNode,
   type RequirementsTypedSourceAuthority,
 } from '../../../main-agent/source-authority/scripts/requirements-contract-typed-source-semantics';
+import { resolveTypedTechnicalDeclarations } from '../../../main-agent/source-authority/scripts/requirements-contract-technical-planning-capability';
 import {
   resolveRequirementsSpecSpanSourceNodeIds,
   type RequirementsSpecSpan,
@@ -23,6 +24,228 @@ const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : 
 const strings = (value: unknown): string[] => Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : [];
 const unique = (value: string[]) => [...new Set(value.filter(Boolean))].sort((a, b) => a.localeCompare(b));
 const fail = (code: string): never => { throw new Error(`requirements_goal_typed_${code}`); };
+const failRelationProjection = (relationId: string, relationKind: string): never => {
+  throw new Error(`requirements_goal_typed_relation_projection_missing:${relationId}:${relationKind}`);
+};
+
+export type RequirementsTypedRelationDisposition =
+  | 'canonical_relation'
+  | 'obligation_projection'
+  | 'execution_projection'
+  | 'authority_only';
+
+export interface RequirementsTypedRelationProjection extends Row {
+  relationId: string;
+  relationKind: string;
+  fromRef: string;
+  toRef: string;
+  mandatory: boolean;
+  disposition: RequirementsTypedRelationDisposition;
+  carrierRefs: string[];
+}
+
+const KNOWN_TYPED_RELATION_KINDS = new Set([
+  'accepted_by', 'allows_product_file', 'allows_test_file', 'applies_to',
+  'applies_to_requirement', 'audit_declared_binding', 'authority_precedence',
+  'closed_comparison_field_set', 'command_selects_test', 'command_set_includes',
+  'conditional_authoring_prohibition', 'conditional_command_selection',
+  'consumed_by', 'declares_command', 'defines', 'depends_on',
+  'dirty_worktree_protection', 'effective_fix_boundary', 'elaborates',
+  'evidenced_by', 'fix_facet', 'fixture_required_coverage_point',
+  'global_boundary', 'globally_authorized_by', 'guarded_by', 'implemented_by',
+  'includes_command', 'legacy_contract_required_field', 'non_goals',
+  'optimization_allowlist_member', 'ordered_ingress_step', 'owned_by',
+  'pending_human_review', 'pending_source_confirmation',
+  'precontract_fixture_gate', 'preserve_user_semantics', 'produced_by',
+  'produces_artifact', 'prohibited_architecture_alternative', 'quality_gate',
+  'real_verification_requirements', 'refresh_when_trigger_occurs',
+  'repair_target', 'required_architecture_choice', 'requires_scenario_state',
+  'same_command_as', 'same_source_boundary', 'scenario_cross_reference',
+  'scenario_evidence', 'scenario_implemented_by', 'scenario_product_file',
+  'scenario_test_nodeid', 'source_mentions', 'uses_path', 'validated_by',
+  'work_evidence', 'work_scope_declaration',
+]);
+
+const CONSTRAINT_RELATION_KINDS = new Set([
+  'allows_product_file', 'allows_test_file', 'command_selects_test',
+  'command_set_includes', 'conditional_command_selection', 'declares_command',
+  'same_command_as', 'scenario_evidence', 'scenario_product_file',
+  'scenario_test_nodeid', 'work_evidence',
+]);
+
+const AUTHORITY_ONLY_RELATION_FIELDS = new Map<string, Set<string>>([
+  ['defines', new Set(['relationId', 'kind', 'from', 'to', 'blockId'])],
+  ['elaborates', new Set(['relationId', 'kind', 'from', 'to', 'blockId'])],
+  ['fix_facet', new Set(['relationId', 'kind', 'from', 'to', 'blockId', 'facet'])],
+  ['source_mentions', new Set(['relationId', 'kind', 'from', 'to', 'blockId'])],
+  ['same_source_boundary', new Set([
+    'relationId', 'kind', 'from', 'to', 'blockId', 'relatedSourceLine', 'relationshipBasis',
+  ])],
+]);
+
+function addIndex(index: Map<string, Set<string>>, key: unknown, refs: string[]): void {
+  const normalized = typeof key === 'string' ? key.trim() : '';
+  if (!normalized || refs.length === 0) return;
+  const values = index.get(normalized) ?? new Set<string>();
+  refs.forEach((ref) => values.add(ref));
+  index.set(normalized, values);
+}
+
+function relationNodeIndex(graph: ReturnType<typeof resolveTypedSourceAuthority>): Map<string, Set<string>> {
+  const index = new Map<string, Set<string>>();
+  const known = new Set(graph.sourceNodes.map((node) => node.sourceRootId));
+  for (const node of graph.sourceNodes) {
+    addIndex(index, node.sourceRootId, [node.sourceRootId]);
+    addIndex(index, node.sourceBlockId, [node.sourceRootId]);
+    addIndex(index, node.sourceClauseId, [node.sourceRootId]);
+    for (const declaredId of node.declaredIds) {
+      addIndex(index, declaredId, [known.has(declaredId) ? declaredId : node.sourceRootId]);
+    }
+  }
+  for (const work of graph.workDeclarations) {
+    const id = String(work.id);
+    if (known.has(id)) addIndex(index, id, [id]);
+  }
+  for (const scenario of graph.scenarioDeclarations) {
+    addIndex(index, scenario.id, strings(scenario.works).filter((ref) => known.has(ref)));
+  }
+  for (const command of graph.commandDeclarations) {
+    const owner = String(command.owner ?? '');
+    if (known.has(owner)) addIndex(index, command.id, [owner]);
+  }
+  return index;
+}
+
+function independentlyDerivedExecutionConstraints(input: {
+  authority: RequirementsTypedSourceAuthority;
+  canonicalGraph: CanonicalRequirementGraphV2;
+}): Row[] {
+  const constraints = resolveTypedTechnicalDeclarations(input.authority).map((entry) => ({
+    constraintId: entry.id,
+    kind: entry.kind,
+    canonicalValue: entry.value,
+    applicableMustRefs: entry.applicableSourceRefs ?? [],
+    applicableAtomRefs: (entry.applicableSourceRefs ?? []).map((id) => `${id}-A1`),
+    premiseRefs: entry.premiseRefs ?? [],
+    derivationReceiptRefs: entry.derivationReceiptRefs ?? [],
+    disposition: 'proven',
+    authorityKind: entry.authorityKind,
+    applicableSourceRefs: entry.applicableSourceRefs ?? [],
+    conditions: entry.conditions ?? [],
+    scope: entry.scope ?? {},
+    modality: entry.modality,
+    sourceDeclarationRefs: entry.sourceDeclarationRefs ?? [],
+    ...(entry.coverageRole ? { coverageRole: entry.coverageRole } : {}),
+    ...(entry.declarationRole ? { declarationRole: entry.declarationRole } : {}),
+  }));
+  return normalizeRequirementsTypedExecutionConstraints({
+    constraints,
+    canonicalGraph: input.canonicalGraph,
+    typedSourceAuthority: input.authority,
+  });
+}
+
+function constraintAuthoritySignature(constraint: Row): Row {
+  const fields = [
+    'constraintId', 'kind', 'canonicalValue', 'applicableMustRefs',
+    'applicableAtomRefs', 'applicableSourceRefs', 'premiseRefs',
+    'sourceDeclarationRefs', 'derivationReceiptRefs', 'conditions', 'scope',
+    'modality', 'coverageRole', 'declarationRole', 'authorityKind', 'disposition',
+  ];
+  return Object.fromEntries(
+    fields
+      .filter((field) => constraint[field] !== undefined)
+      .map((field) => [field, structuredClone(constraint[field])])
+  );
+}
+
+function projectRequirementsTypedRelations(input: {
+  graph: ReturnType<typeof resolveTypedSourceAuthority>;
+  canonicalGraph: CanonicalRequirementGraphV2;
+  constraints: Row[];
+  typedSourceAuthority: RequirementsTypedSourceAuthority;
+}): { projections: RequirementsTypedRelationProjection[]; constraints: Row[] } {
+  const constraints = input.constraints.map((constraint) => structuredClone(constraint));
+  const canonicalRelationIds = new Set(rows(input.canonicalGraph.relations).map((relation) => String(relation.id)));
+  const independentlyDerived = input.graph.sourceRelations.some((relation) =>
+    CONSTRAINT_RELATION_KINDS.has(relation.kind) && !canonicalRelationIds.has(relation.relationId))
+    ? independentlyDerivedExecutionConstraints({
+        authority: input.typedSourceAuthority,
+        canonicalGraph: input.canonicalGraph,
+      })
+    : [];
+  const derivedConstraintsByRelation = new Map<string, Row[]>();
+  for (const constraint of independentlyDerived) {
+    for (const relationId of unique([
+      ...strings(constraint.premiseRefs),
+      ...strings(constraint.sourceDeclarationRefs),
+    ])) {
+      const carriers = derivedConstraintsByRelation.get(relationId) ?? [];
+      carriers.push(constraint);
+      derivedConstraintsByRelation.set(relationId, carriers);
+    }
+  }
+  const constraintsById = new Map(
+    constraints.map((constraint) => [String(constraint.constraintId), constraint])
+  );
+  const nodeIndex = relationNodeIndex(input.graph);
+  const actionIds = unique(input.graph.sourceNodes.filter((node) => node.executionRole === 'action')
+    .map((node) => node.sourceRootId));
+  const projections = input.graph.sourceRelations.map((relation): RequirementsTypedRelationProjection => {
+    const relationId = relation.relationId;
+    const relationKind = relation.kind;
+    if (!KNOWN_TYPED_RELATION_KINDS.has(relationKind)) failRelationProjection(relationId, relationKind);
+    const nodeRefs = unique([
+      ...(nodeIndex.get(relation.from) ?? []),
+      ...(nodeIndex.get(relation.to) ?? []),
+      ...(nodeIndex.get(relation.blockId) ?? []),
+      ...(relationKind === 'global_boundary' ? actionIds : []),
+    ]);
+    const base = {
+      relationId,
+      relationKind,
+      fromRef: relation.from,
+      toRef: relation.to,
+      ...(relation.sourceCondition === undefined
+        ? {}
+        : { sourceCondition: structuredClone(relation.sourceCondition) }),
+    };
+    if (canonicalRelationIds.has(relationId)) {
+      return { ...base, mandatory: true, disposition: 'canonical_relation',
+        carrierRefs: unique([`canonical_relation:${relationId}`, ...nodeRefs.map((ref) => `obligation:${ref}`)]) };
+    }
+    if (relationKind === 'depends_on') {
+      const work = input.graph.workDeclarations.find((entry) => entry.id === relation.from);
+      if (!work || !strings(work.dependencies).includes(relation.to)) failRelationProjection(relationId, relationKind);
+      return { ...base, mandatory: true, disposition: 'execution_projection',
+        carrierRefs: [`dependency:${relation.from}->${relation.to}`] };
+    }
+    if (CONSTRAINT_RELATION_KINDS.has(relationKind)) {
+      const expectedCarriers = derivedConstraintsByRelation.get(relationId) ?? [];
+      if (expectedCarriers.length === 0) failRelationProjection(relationId, relationKind);
+      for (const expected of expectedCarriers) {
+        const actual = constraintsById.get(String(expected.constraintId));
+        if (!actual || sha256Stable(constraintAuthoritySignature(actual)) !==
+          sha256Stable(constraintAuthoritySignature(expected))) {
+          failRelationProjection(relationId, relationKind);
+        }
+      }
+      return { ...base, mandatory: true, disposition: 'execution_projection',
+        carrierRefs: unique(expectedCarriers.map((constraint) => `constraint:${String(constraint.constraintId)}`)) };
+    }
+    const authorityOnlyFields = AUTHORITY_ONLY_RELATION_FIELDS.get(relationKind);
+    if (!authorityOnlyFields) {
+      if (nodeRefs.length === 0) failRelationProjection(relationId, relationKind);
+      return { ...base, mandatory: true, disposition: 'obligation_projection',
+        carrierRefs: nodeRefs.map((ref) => `obligation:${ref}`) };
+    }
+    if (Object.keys(relation).some((field) => !authorityOnlyFields.has(field))) {
+      failRelationProjection(relationId, relationKind);
+    }
+    return { ...base, mandatory: false, disposition: 'authority_only', carrierRefs: [] };
+  }).sort((left, right) => left.relationId.localeCompare(right.relationId));
+  return { projections, constraints };
+}
 
 export function requirementsTypedSemanticSource(semanticIr: Row): Row {
   const payload = record(semanticIr.semanticPayload);
@@ -51,16 +274,24 @@ export function requirementsTypedSemanticSource(semanticIr: Row): Row {
     typedSourceAuthority: authority as unknown as RequirementsTypedSourceAuthority,
     expectedTypedSourceGraphHash: anchorHashes[0],
   });
-  const typedExecutionConstraints = normalizeRequirementsTypedExecutionConstraints({
+  const normalizedConstraints = normalizeRequirementsTypedExecutionConstraints({
     constraints: rows(payload.executionConstraints),
     canonicalGraph,
+    typedSourceAuthority: authority as unknown as RequirementsTypedSourceAuthority,
+  });
+  const relationProjection = projectRequirementsTypedRelations({
+    graph: resolveTypedSourceAuthority(authority),
+    canonicalGraph,
+    constraints: normalizedConstraints,
     typedSourceAuthority: authority as unknown as RequirementsTypedSourceAuthority,
   });
   return { kind: 'requirements_semantic_ir', schemaVersion: REQUIREMENTS_TYPED_SEMANTIC_VERSION,
     semanticRevisionId: semanticIr.semanticRevisionId, scopeSemanticHash: semanticIr.scopeSemanticHash,
     typedSourceAuthority: structuredClone(authority), typedSourceGraphHash: authority.graphHash,
     canonicalRequirementGraphRef: canonicalRequirementGraphRef(canonicalGraph),
-    typedAtoms: structuredClone(rows(semantics.atoms)), typedExecutionConstraints };
+    typedAtoms: structuredClone(rows(semantics.atoms)),
+    typedExecutionConstraints: relationProjection.constraints,
+    typedRelationProjections: relationProjection.projections };
 }
 
 function canonicalOwnerClosure(node: Row, nodeById: Map<string, Row>): string[] {
@@ -276,7 +507,57 @@ function graphOf(source: Row) {
   const authority = record(source.typedSourceAuthority);
   const graph = resolveTypedSourceAuthority(authority);
   if (source.typedSourceGraphHash !== authority.graphHash) fail('graph_hash_mismatch');
+  const canonicalGraph = normalizeCanonicalRequirementGraph({
+    sourceAuthority: {
+      kind: 'requirements_semantic_ir',
+      schemaVersion: REQUIREMENTS_TYPED_SEMANTIC_VERSION,
+      authorityId: String(source.semanticRevisionId),
+      authorityHash: String(source.scopeSemanticHash),
+    },
+    typedSourceAuthority: authority as unknown as RequirementsTypedSourceAuthority,
+    expectedTypedSourceGraphHash: String(source.typedSourceGraphHash),
+  });
+  if (sha256Stable(source.canonicalRequirementGraphRef) !==
+    sha256Stable(canonicalRequirementGraphRef(canonicalGraph))) {
+    fail('semantic_source_projection_mismatch');
+  }
+  const projections = rows(source.typedRelationProjections);
+  const expectedProjection = projectRequirementsTypedRelations({
+    graph,
+    canonicalGraph,
+    constraints: rows(source.typedExecutionConstraints),
+    typedSourceAuthority: authority as unknown as RequirementsTypedSourceAuthority,
+  });
+  if (sha256Stable(projections) !== sha256Stable(expectedProjection.projections) ||
+    sha256Stable(source.typedExecutionConstraints) !== sha256Stable(expectedProjection.constraints)) {
+    fail('relation_projection_mismatch');
+  }
+  const projectionById = new Map(projections.map((projection) => [String(projection.relationId), projection]));
+  if (projections.length !== graph.sourceRelations.length || projectionById.size !== projections.length ||
+    graph.sourceRelations.some((relation) => {
+      const projection = projectionById.get(relation.relationId);
+      if (!KNOWN_TYPED_RELATION_KINDS.has(relation.kind)) return true;
+      const disposition = String(projection?.disposition);
+      const expectedMandatory = !AUTHORITY_ONLY_RELATION_FIELDS.has(relation.kind);
+      return !projection || projection.relationKind !== relation.kind || projection.fromRef !== relation.from ||
+        projection.toRef !== relation.to || !['canonical_relation', 'obligation_projection', 'execution_projection', 'authority_only']
+          .includes(disposition) || projection.mandatory !== expectedMandatory || !Array.isArray(projection.carrierRefs) ||
+        (projection.mandatory === true && (projection.disposition === 'authority_only' || projection.carrierRefs.length === 0));
+    }) || projections.some((projection) => strings(projection.carrierRefs).some((carrier) => {
+      if (!carrier.startsWith('constraint:')) return false;
+      const constraint = rows(source.typedExecutionConstraints).find((row) =>
+        String(row.constraintId) === carrier.slice('constraint:'.length));
+      return !constraint || !strings(constraint.premiseRefs).includes(String(projection.relationId)) ||
+        !strings(constraint.sourceDeclarationRefs).includes(String(projection.relationId));
+    }))) fail('relation_projection_missing');
   return graph;
+}
+
+export function requirementsTypedDependencyRelationRefs(source: Row, from: string, to: string): string[] {
+  const carrier = `dependency:${from}->${to}`;
+  return unique(rows(source.typedRelationProjections)
+    .filter((projection) => strings(projection.carrierRefs).includes(carrier))
+    .map((projection) => String(projection.relationId)));
 }
 
 function obligationKind(node: RequirementsTypedSourceNode): GoalExecutionObligation['kind'] {
@@ -307,7 +588,11 @@ export function projectRequirementsTypedGoalObligations(source: Row, spans: Row[
   return graph.sourceNodes.map((node) => {
     const id = node.sourceRootId;
     const matchedSpans = spansByNodeId.get(id) ?? [];
-    const sourceRefs = unique([id, ...node.declaredIds, ...[node.sourceBlockId, node.sourceClauseId].filter((value): value is string => typeof value === 'string'),
+    const relationRefs = rows(source.typedRelationProjections)
+      .filter((projection) => strings(projection.carrierRefs).includes(`obligation:${id}`))
+      .map((projection) => String(projection.relationId));
+    const sourceRefs = unique([id, ...node.declaredIds, ...relationRefs,
+      ...[node.sourceBlockId, node.sourceClauseId].filter((value): value is string => typeof value === 'string'),
       ...matchedSpans.map((span) => String(span.specSpanId))]);
     const owner = node.scope.ownerId ?? node.scope.owner;
     const applicability = node.scope.kind === 'global' ? { scope: 'global', sourceRefs }
@@ -384,6 +669,19 @@ export function validateRequirementsTypedGoalIr(ir: Row): void {
     const matches = tasks.filter((task) => strings(task.obligationRefs).includes(String(row.obligationId)));
     return matches.length !== 1 || sha256Stable(matches[0].atomRefs) !== sha256Stable(row.atomRefs) || matches[0].oracle !== row.oracle;
   })) fail('task_projection_mismatch');
+  const taskByObligation = new Map(tasks.flatMap((task) =>
+    strings(task.obligationRefs).map((ref) => [ref, String(task.taskId)] as const)));
+  for (const projection of rows(source.typedRelationProjections).filter((row) =>
+    strings(row.carrierRefs).some((carrier) => carrier.startsWith('dependency:')))) {
+    const carrier = strings(projection.carrierRefs).find((ref) => ref.startsWith('dependency:'))!;
+    const [from, to] = carrier.slice('dependency:'.length).split('->');
+    const fromTask = taskByObligation.get(from);
+    const toTask = taskByObligation.get(to);
+    const dependency = rows(ir.dependencies).find((row) => row.from === fromTask && row.to === toTask);
+    if (!dependency || !strings(dependency.basisRefs).includes(String(projection.relationId))) {
+      fail('relation_projection_missing');
+    }
+  }
   validateConstraintProjections(ir);
 }
 

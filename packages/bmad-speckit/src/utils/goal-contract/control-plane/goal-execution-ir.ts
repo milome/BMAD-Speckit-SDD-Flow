@@ -9,6 +9,7 @@ import {
   REQUIREMENTS_TYPED_SEMANTIC_VERSION,
   assertRequirementsTypedProjection,
   requirementsTypedConstraintMetadata,
+  requirementsTypedDependencyRelationRefs,
   validateRequirementsTypedGoalIr,
 } from './goal-requirements-typed-bridge';
 import {
@@ -420,7 +421,15 @@ function taskRows(input: GoalExecutionCompilerInput, obligations: GoalExecutionO
         return {
           from: tasks[index].taskId,
           to: dependsOnTaskId,
-          basisRefs: sortedUnique([dependencyAtomRef, unit.unitId]),
+          basisRefs: sortedUnique([
+            dependencyAtomRef,
+            unit.unitId,
+            ...(typed ? requirementsTypedDependencyRelationRefs(
+              input.semanticSource,
+              unit.obligationId,
+              dependencyAtomRef.replace(/-A1$/u, '')
+            ) : []),
+          ]),
         };
       })
     )

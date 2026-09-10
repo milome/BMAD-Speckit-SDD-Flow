@@ -96,7 +96,9 @@
         "conditions": { "type": "array" },
         "scope": { "type": "object" },
         "modality": { "enum": ["required", "suggested", "prohibited", "template", "context"] },
-        "sourceDeclarationRefs": { "$ref": "#/$defs/idSet" }
+        "sourceDeclarationRefs": { "$ref": "#/$defs/idSet" },
+        "coverageRole": { "enum": ["action_trace", "non_action_declaration"] },
+        "declarationRole": { "$ref": "#/$defs/nonEmpty" }
       }
     }
   }

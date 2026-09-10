@@ -1,5 +1,12 @@
 import { sha256Stable } from './requirements-contract-semantic-resolver';
-import { resolveTypedSourceAuthority, type RequirementsTypedSourceAuthority } from './requirements-contract-typed-source-semantics';
+import {
+  resolveTypedSourceAuthority,
+  TYPED_SOURCE_COMMAND_DECLARATION_CLASSES,
+  TYPED_SOURCE_COMMAND_EXECUTION_MODES,
+  TYPED_SOURCE_COMMAND_ROLES,
+  type RequirementsTypedSourceAuthority,
+  type RequirementsTypedSourceRelation,
+} from './requirements-contract-typed-source-semantics';
 
 export const REQUIREMENTS_TECHNICAL_EXECUTION_KINDS = [
   'ART',
@@ -71,8 +78,72 @@ export interface RequirementsProductionTechnicalAuthorityCandidate {
   semanticBody: Record<string, unknown>;
 }
 
+export interface RequirementsTypedTechnicalRelationIndex {
+  relationCount: number;
+  buildVisitCount: number;
+  indexedReferenceCount: number;
+  byKind: (kind: string) => RequirementsTypedSourceRelation[];
+  byKindFromTo: (kind: string, from: string, to: string) => RequirementsTypedSourceRelation[];
+  byKindsTo: (kinds: readonly string[], to: string) => RequirementsTypedSourceRelation[];
+  byKindsIncident: (kinds: readonly string[], nodeId: string) => RequirementsTypedSourceRelation[];
+}
+
 const SHA256 = /^sha256:[a-f0-9]{64}$/u;
 const executionKinds = new Set<string>(REQUIREMENTS_TECHNICAL_EXECUTION_KINDS);
+
+const relationKey = (...parts: string[]) => parts.join('\u0000');
+
+export function indexTypedTechnicalRelations(
+  relations: RequirementsTypedSourceRelation[]
+): RequirementsTypedTechnicalRelationIndex {
+  const byKind = new Map<string, RequirementsTypedSourceRelation[]>();
+  const byKindFrom = new Map<string, RequirementsTypedSourceRelation[]>();
+  const byKindTo = new Map<string, RequirementsTypedSourceRelation[]>();
+  const byKindFromTo = new Map<string, RequirementsTypedSourceRelation[]>();
+  const sourceOrder = new Map<string, number>();
+  const add = (
+    index: Map<string, RequirementsTypedSourceRelation[]>,
+    key: string,
+    relation: RequirementsTypedSourceRelation
+  ) => {
+    const bucket = index.get(key) ?? [];
+    bucket.push(relation);
+    index.set(key, bucket);
+  };
+  let buildVisitCount = 0;
+  for (const relation of relations) {
+    buildVisitCount += 1;
+    sourceOrder.set(relation.relationId, buildVisitCount - 1);
+    add(byKind, relation.kind, relation);
+    add(byKindFrom, relationKey(relation.kind, relation.from), relation);
+    add(byKindTo, relationKey(relation.kind, relation.to), relation);
+    add(byKindFromTo, relationKey(relation.kind, relation.from, relation.to), relation);
+  }
+  const orderedUnique = (values: RequirementsTypedSourceRelation[]) =>
+    [...new Map(values.map((relation) => [relation.relationId, relation])).values()]
+      .sort((left, right) =>
+        (sourceOrder.get(left.relationId) ?? 0) - (sourceOrder.get(right.relationId) ?? 0));
+  const indexedReferenceCount = [...byKind.values(), ...byKindFrom.values(),
+    ...byKindTo.values(), ...byKindFromTo.values()]
+    .reduce((count, bucket) => count + bucket.length, 0);
+  return Object.freeze({
+    relationCount: relations.length,
+    buildVisitCount,
+    indexedReferenceCount,
+    byKind: (kind: string) => [...(byKind.get(kind) ?? [])],
+    byKindFromTo: (kind: string, from: string, to: string) =>
+      [...(byKindFromTo.get(relationKey(kind, from, to)) ?? [])],
+    byKindsTo: (kinds: readonly string[], to: string) => orderedUnique(
+      kinds.flatMap((kind) => byKindTo.get(relationKey(kind, to)) ?? [])
+    ),
+    byKindsIncident: (kinds: readonly string[], nodeId: string) => orderedUnique(
+      kinds.flatMap((kind) => [
+        ...(byKindFrom.get(relationKey(kind, nodeId)) ?? []),
+        ...(byKindTo.get(relationKey(kind, nodeId)) ?? []),
+      ])
+    ),
+  });
+}
 
 function normalized(value: string, issueCode: string): string {
   if (typeof value !== 'string' || value.trim().length === 0) throw new Error(issueCode);
@@ -295,7 +366,8 @@ export function resolveTypedTechnicalDeclarations(
   };
   const commandOwners = new Map<string, Set<string>>();
   const includedCommands = new Map<string, string[]>();
-  for (const relation of graph.sourceRelations.filter((relation) => relation.kind === 'command_set_includes')) {
+  const relationIndex = indexTypedTechnicalRelations(graph.sourceRelations);
+  for (const relation of relationIndex.byKind('command_set_includes')) {
     const children = includedCommands.get(relation.from) ?? []; children.push(relation.to); includedCommands.set(relation.from, children);
   }
   const bindCommand = (id: string, owner: string, visited = new Set<string>()) => {
@@ -313,7 +385,10 @@ export function resolveTypedTechnicalDeclarations(
         const value = typeof target === 'string' ? target : target && typeof target === 'object' &&
           typeof target.raw === 'string' && typeof target.resolved === 'string' ? target.resolved : null;
         if (!value) throw new Error('requirements_technical_source_path_invalid');
-        add('PATH', `${owner}:${field}:${value}`, value, [owner], [owner], { kind: 'work', owner },
+        const relationKind = field === 'productPaths' ? 'allows_product_file' : 'allows_test_file';
+        const relationRefs = relationIndex.byKindFromTo(relationKind, owner, value)
+          .map((relation) => relation.relationId);
+        add('PATH', `${owner}:${field}:${value}`, value, [owner], [owner, ...relationRefs], { kind: 'work', owner },
           typeof target === 'string' ? [] : [{ kind: 'source_declared_path', declaration: structuredClone(target) }]);
       }
     }
@@ -322,9 +397,29 @@ export function resolveTypedTechnicalDeclarations(
     }
   }
   for (const scenario of graph.scenarioDeclarations) {
-    for (const owner of Array.isArray(scenario.works) ? scenario.works : []) {
+    const scenarioOwners = (Array.isArray(scenario.works) ? scenario.works : []).map(String);
+    for (const owner of scenarioOwners) {
       if (!actions.has(String(owner))) throw new Error('requirements_technical_scenario_action_unknown');
       for (const command of Array.isArray(scenario.commandIds) ? scenario.commandIds : []) bindCommand(String(command), String(owner));
+    }
+    for (const [field, relationKind] of [['productPaths', 'scenario_product_file']] as const) {
+      for (const target of Array.isArray(scenario[field]) ? scenario[field] : []) {
+        const value = typeof target === 'string' ? target : target && typeof target === 'object' &&
+          typeof target.raw === 'string' && typeof target.resolved === 'string' ? target.resolved : null;
+        if (!value) throw new Error('requirements_technical_source_path_invalid');
+        const relationRefs = relationIndex.byKindFromTo(relationKind, String(scenario.id), value)
+          .map((relation) => relation.relationId);
+        add('PATH', `${String(scenario.id)}:${field}:${value}`, value, scenarioOwners, relationRefs,
+          { kind: 'scenario', owner: scenario.id }, typeof target === 'string' ? [] :
+            [{ kind: 'source_declared_path', declaration: structuredClone(target) }]);
+      }
+    }
+    const nodeid = String(scenario.nodeid ?? '').trim();
+    if (nodeid) {
+      const relationRefs = relationIndex.byKindFromTo('scenario_test_nodeid', String(scenario.id), nodeid)
+        .map((relation) => relation.relationId);
+      add('PATH', `${String(scenario.id)}:nodeid:${nodeid}`, nodeid, scenarioOwners, relationRefs,
+        { kind: 'scenario_test', owner: scenario.id });
     }
   }
   const legacyRunnableRoles = new Set([
@@ -338,6 +433,8 @@ export function resolveTypedTechnicalDeclarations(
   const nodeById = new Map(graph.sourceNodes.map((node) => [node.sourceRootId, node]));
   for (const command of graph.commandDeclarations) {
     const id = String(command.id);
+    const sourceOwner = String(command.owner ?? '').trim();
+    if (!sourceOwner) throw new Error('requirements_technical_source_declaration_owner_missing');
     if (commandSemantics === 'legacy_v2') {
       const role = String(command.role);
       if (!legacyRunnableRoles.has(role)) continue;
@@ -345,9 +442,10 @@ export function resolveTypedTechnicalDeclarations(
       if (actions.has(String(command.owner))) owners.push(String(command.owner));
       const block = blocks.get(String(command.blockId));
       const blockScope = block?.scope as Record<string, unknown> | undefined;
-      const scopeRelations = blockScope ? graph.sourceRelations.filter((relation) =>
-        ['dirty_worktree_protection', 'quality_gate', 'real_verification_requirements'].includes(relation.kind) &&
-        relation.to === blockScope.owner && actions.has(relation.from)) : [];
+      const scopeRelations = blockScope ? relationIndex.byKindsTo(
+        ['dirty_worktree_protection', 'quality_gate', 'real_verification_requirements'],
+        String(blockScope.owner)
+      ).filter((relation) => actions.has(relation.from)) : [];
       owners.push(...scopeRelations.map((relation) => relation.from));
       add('CMD', id, String(command.expression ?? ''), owners,
         [id, ...scopeRelations.map((relation) => relation.relationId)],
@@ -364,22 +462,81 @@ export function resolveTypedTechnicalDeclarations(
     const canonical = projection && typeof projection === 'object' && !Array.isArray(projection)
       ? projection as Record<string, unknown>
       : {};
-    const attributes = canonical.attributes && typeof canonical.attributes === 'object' && !Array.isArray(canonical.attributes)
+    const canonicalAttributes = canonical.attributes && typeof canonical.attributes === 'object' && !Array.isArray(canonical.attributes)
       ? canonical.attributes as Record<string, unknown>
       : {};
-    const declarationClass = String(attributes.commandDeclarationClass ?? '');
-    if (['source_command_set', 'conditional_selector'].includes(declarationClass)) continue;
-    const role = String(attributes.commandRole ?? command.role ?? 'verification_command');
-    const executionMode = String(attributes.executionMode ?? 'executable');
+    const hasCanonicalProjection = Object.keys(canonical).length > 0;
+    const attributes = hasCanonicalProjection ? canonicalAttributes : command;
+    const metadataFields = ['commandDeclarationClass', 'commandRole', 'executionMode'] as const;
+    const metadataCount = metadataFields.filter((field) =>
+      typeof attributes[field] === 'string' && String(attributes[field]).trim().length > 0).length;
+    const legacyRole = String(command.role ?? '');
+    const legacyExpression = String(command.expression ?? '').trim();
+    if (metadataCount > 0 && metadataCount < metadataFields.length) {
+      throw new Error('requirements_technical_source_declaration_metadata_partial');
+    }
+    if (metadataCount === 0 && hasCanonicalProjection) {
+      throw new Error('requirements_technical_source_declaration_class_missing');
+    }
+    if (metadataCount === 0 && !TYPED_SOURCE_COMMAND_ROLES.includes(
+      legacyRole as typeof TYPED_SOURCE_COMMAND_ROLES[number])) {
+      throw new Error('requirements_technical_source_declaration_role_invalid');
+    }
+    if (metadataCount === 0 && legacyRole === 'source_command_set') {
+      throw new Error('requirements_technical_source_declaration_metadata_required');
+    }
+    if (metadataCount === 0 && !legacyExpression) {
+      throw new Error('requirements_technical_source_declaration_value_missing');
+    }
+    const declarationClass = metadataCount === 0
+      ? 'executable_expression'
+      : String(attributes.commandDeclarationClass);
+    if (!TYPED_SOURCE_COMMAND_DECLARATION_CLASSES.includes(
+      declarationClass as typeof TYPED_SOURCE_COMMAND_DECLARATION_CLASSES[number])) {
+      throw new Error('requirements_technical_source_declaration_class_invalid');
+    }
+    const role = metadataCount === 0 ? legacyRole : String(attributes.commandRole);
+    if (!TYPED_SOURCE_COMMAND_ROLES.includes(role as typeof TYPED_SOURCE_COMMAND_ROLES[number])) {
+      throw new Error('requirements_technical_source_declaration_role_invalid');
+    }
+    const executionMode = metadataCount === 0
+      ? role === 'command_template'
+        ? 'template'
+        : role === 'prohibited_command'
+          ? 'prohibited'
+          : 'executable'
+      : String(attributes.executionMode);
+    if (!TYPED_SOURCE_COMMAND_EXECUTION_MODES.includes(
+      executionMode as typeof TYPED_SOURCE_COMMAND_EXECUTION_MODES[number])) {
+      throw new Error('requirements_technical_source_declaration_execution_mode_invalid');
+    }
+    const commandRelations = relationIndex.byKindsIncident(
+      ['declares_command', 'command_set_includes', 'conditional_command_selection', 'command_selects_test', 'same_command_as'],
+      id
+    );
+    if (['source_command_set', 'conditional_selector'].includes(declarationClass)) {
+      const sourceCondition = commandRelations.find((relation) =>
+        relation.kind === 'conditional_command_selection')?.sourceCondition;
+      const value = declarationClass === 'conditional_selector'
+        ? String(sourceCondition ?? '')
+        : commandRelations.filter((relation) => relation.kind === 'command_set_includes')
+          .map((relation) => relation.to).sort().join('\n');
+      add('CMD', id, value, [], [id, ...commandRelations.map((relation) => relation.relationId)],
+        { kind: 'source_command_declaration', owner: sourceOwner },
+        sourceCondition === undefined ? [] : [{ kind: 'source_condition', sourceCondition }], 'context',
+        { coverageRole: 'non_action_declaration', declarationRole: declarationClass });
+      continue;
+    }
     const owners = [...(commandOwners.get(id) ?? [])];
     if (actions.has(String(command.owner))) owners.push(String(command.owner));
     const global = canonical.scope === 'global' || sourceNode?.scope?.kind === 'global';
     if (global) owners.push(...actions);
     const block = blocks.get(String(command.blockId));
     const blockScope = block?.scope as Record<string, unknown> | undefined;
-    const scopeRelations = blockScope ? graph.sourceRelations.filter((relation) =>
-      ['dirty_worktree_protection', 'quality_gate', 'real_verification_requirements'].includes(relation.kind) &&
-      relation.to === blockScope.owner && actions.has(relation.from)) : [];
+    const scopeRelations = blockScope ? relationIndex.byKindsTo(
+      ['dirty_worktree_protection', 'quality_gate', 'real_verification_requirements'],
+      String(blockScope.owner)
+    ).filter((relation) => actions.has(relation.from)) : [];
     owners.push(...scopeRelations.map((relation) => relation.from));
     const actionOwners = [...new Set(owners)].filter((owner) => actions.has(owner)).sort();
     const coverageRole = executionMode !== 'template' && executionMode !== 'prohibited' && actionOwners.length > 0
@@ -390,10 +547,11 @@ export function resolveTypedTechnicalDeclarations(
       : executionMode === 'prohibited'
         ? 'prohibited' as const
         : 'required' as const;
-    add('CMD', id, String(command.expression ?? ''), actionOwners, [id, ...scopeRelations.map((relation) => relation.relationId)],
+    add('CMD', id, String(canonicalAttributes.command ?? command.expression ?? ''), actionOwners,
+      [id, ...commandRelations.map((relation) => relation.relationId), ...scopeRelations.map((relation) => relation.relationId)],
       global
-        ? { kind: 'global_source_command', owner: command.owner }
-        : { kind: 'source_command', owner: command.owner, ...(scopeRelations.length ? { inheritedScope: blockScope } : {}) },
+        ? { kind: 'global_source_command', owner: sourceOwner }
+        : { kind: 'source_command', owner: sourceOwner, ...(scopeRelations.length ? { inheritedScope: blockScope } : {}) },
       [{ role, worktree: command.worktree ?? null, expectedExit: command.expectedExit ?? null,
         declaredContext: command.declaredContext ?? '', authorization: command.authorization ?? null }],
       modality,
@@ -401,9 +559,13 @@ export function resolveTypedTechnicalDeclarations(
         ? global ? 'global_verification_command' : 'verification_command'
         : role });
   }
-  for (const relation of graph.sourceRelations.filter((relation) => ['work_evidence', 'scenario_evidence'].includes(relation.kind))) {
+  const scenarioById = new Map(graph.scenarioDeclarations.map((scenario) => [String(scenario.id), scenario]));
+  for (const relation of [
+    ...relationIndex.byKind('work_evidence'),
+    ...relationIndex.byKind('scenario_evidence'),
+  ]) {
     const owners = actions.has(relation.from) ? [relation.from]
-      : (graph.scenarioDeclarations.find((scenario) => scenario.id === relation.from)?.works ?? []) as string[];
+      : (scenarioById.get(relation.from)?.works ?? []) as string[];
     const scope = { kind: relation.kind === 'work_evidence' ? 'work' : 'scenario', owner: relation.from };
     add('ART', relation.relationId, relation.to, owners, [relation.relationId], scope);
     add('EVDREQ', relation.relationId, relation.to, owners, [relation.relationId], scope);

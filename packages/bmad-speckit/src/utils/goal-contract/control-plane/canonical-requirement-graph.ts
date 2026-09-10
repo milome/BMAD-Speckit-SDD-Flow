@@ -242,13 +242,30 @@ function canonicalKind(node: RequirementsTypedSourceNode): string {
   return 'REQ';
 }
 
-function genericCanonicalNode(node: RequirementsTypedSourceNode): JsonObject {
-  const owner = text(node.scope.ownerId ?? node.scope.owner);
-  const aliases = unique(node.declaredIds.filter((id) => id !== node.sourceRootId));
+function genericCanonicalNodes(nodes: RequirementsTypedSourceNode[]): JsonObject[] {
+  const known = new Set(nodes.map((node) => node.sourceRootId));
+  const kindById = new Map(nodes.map((node) => [node.sourceRootId, canonicalKind(node)]));
+  const { profile } = loadStandaloneSourcePlanProfile();
+  const ownerRules = profile.ownerRules as Record<string, string[]>;
+  const requirementOwnerKinds = new Set(profile.requirementOwnerKinds);
+  return nodes.map((node) => {
+    const kind = canonicalKind(node);
+    const candidateOwner = text(node.scope.ownerId ?? node.scope.owner);
+    const allowedOwnerKinds = new Set(
+      ownerRules[kind] ?? (kind === 'TASK' ? [...requirementOwnerKinds] : [])
+    );
+    const ownerKind = kindById.get(candidateOwner);
+    const owner = candidateOwner !== node.sourceRootId && known.has(candidateOwner) &&
+      (!allowedOwnerKinds.size || (ownerKind && allowedOwnerKinds.has(ownerKind)))
+      ? candidateOwner
+      : '';
+    const aliases = unique(node.declaredIds.filter(
+      (id) => id !== node.sourceRootId && !known.has(id)
+    ));
   const conditions = objects(node.conditions);
-  return {
+    return {
     id: node.sourceRootId,
-    kind: canonicalKind(node),
+    kind,
     title: node.sourceRootId,
     statement: node.text,
     normativeStrength: text(node.normativeStrength).toUpperCase(),
@@ -264,6 +281,7 @@ function genericCanonicalNode(node: RequirementsTypedSourceNode): JsonObject {
       compatibilityIdentity: 'requirements_typed_source_id',
     },
   };
+  });
 }
 
 function canonicalAttestations(
@@ -281,7 +299,7 @@ function canonicalAttestations(
   const hasAttestation = references.some((value) =>
     CANONICAL_ATTESTATION_KEYS.some((key) => value[key] !== undefined)
   );
-  if (!hasAttestation) return { nodes: nodes.map(genericCanonicalNode) };
+  if (!hasAttestation) return { nodes: genericCanonicalNodes(nodes) };
   if (
     !SHA256.test(text(anchor.expectedTypedSourceGraphHash)) ||
     anchor.expectedTypedSourceGraphHash !== anchor.actualTypedSourceGraphHash
@@ -346,13 +364,18 @@ function canonicalRelations(input: {
     ['applies_to', 'applies_to_requirement'],
     ['command_set_includes', 'includes_command'],
   ]);
-  return input.sourceRelations.map((relation) => ({
-    id: text(relation.relationId),
-    type: relationTypes.get(text(relation.kind)) ?? text(relation.kind),
-    fromRef: text(relation.from),
-    toRef: text(relation.to),
-    scope: text(nodeById.get(text(relation.from))?.scope) === 'global' ? 'global' : 'local',
-  }));
+  return input.sourceRelations.flatMap((relation) => {
+    const candidate = {
+      id: text(relation.relationId),
+      type: relationTypes.get(text(relation.kind)) ?? text(relation.kind),
+      fromRef: text(relation.from),
+      toRef: text(relation.to),
+      scope: text(nodeById.get(text(relation.from))?.scope) === 'global' ? 'global' : 'local',
+    };
+    if (!nodeById.has(candidate.fromRef) || !nodeById.has(candidate.toRef) ||
+      !relationEndpointsValid(candidate, nodeById)) return [];
+    return [candidate];
+  });
 }
 
 function aliasesFromNodes(nodes: JsonObject[]): JsonObject[] {

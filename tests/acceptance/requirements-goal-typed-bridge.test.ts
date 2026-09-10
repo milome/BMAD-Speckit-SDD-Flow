@@ -8,6 +8,10 @@ import { compileGoalExecutionClosure } from '../../packages/bmad-speckit/src/uti
 import { assertRequirementsTypedAuthorityMatchesGoal, requirementsTypedSemanticSource } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-requirements-typed-bridge';
 import { typedConsumerProbe } from '../helpers/standalone-goal-typed-consumers';
 import { validateGoalContractSchema } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/schema-registry';
+import { compileStandaloneGoalExecution } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/standalone-goal-semantic-ir';
+import { normativeRoleInput } from '../helpers/standalone-goal-normative-roles';
+import { resolveTypedTechnicalDeclarations } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-technical-planning-capability';
+import './canonical-requirement-graph-normalization.cases';
 
 const hash = (value: string) => `sha256:${value.repeat(64)}`;
 const fixture = (aggregate = false) => {
@@ -132,6 +136,235 @@ describe('Requirements typed authority to Goal bridge', () => {
     expect(ir.semanticSource.typedSourceAuthority).toEqual(authority);
     expect(compileGoalExecutionClosure(ir)).toMatchObject({ schemaVersion: 'GoalExecutionClosure/v2', decision: 'pass',
       coverage: { nonActionObligationIds: ['BOUND-alpha', 'GUIDE-section'] } });
+  });
+
+  it('projects every typed relation through an explicit lossless carrier disposition', () => {
+    const value = fixture();
+    const graph = resolveTypedSourceAuthority(value.authority);
+    graph.workDeclarations[0].dependencies = [];
+    graph.workDeclarations[1].dependencies = ['WORK-alpha'];
+    graph.sourceRelations.push(
+      { relationId: 'REL-DEPENDS', kind: 'depends_on', from: 'WORK-beta', to: 'WORK-alpha', blockId: 'alpha-section' },
+      { relationId: 'REL-MENTION', kind: 'source_mentions', from: 'GUIDE-section', to: 'BOUND-alpha', blockId: 'alpha-section' },
+    );
+    value.semanticIr.semanticPayload.semantics.atoms[1].dependencies = ['WORK-alpha-A1'];
+    value.replaceTypedAuthority(createTypedSourceAuthority(graph));
+
+    const semanticSource = requirementsTypedSemanticSource(value.semanticIr);
+    expect(semanticSource.typedRelationProjections).toEqual([
+      expect.objectContaining({
+        relationId: 'REL-1',
+        relationKind: 'owned_by',
+        mandatory: true,
+        disposition: 'canonical_relation',
+      }),
+      expect.objectContaining({
+        relationId: 'REL-DEPENDS',
+        relationKind: 'depends_on',
+        mandatory: true,
+        disposition: 'execution_projection',
+        carrierRefs: ['dependency:WORK-beta->WORK-alpha'],
+      }),
+      expect.objectContaining({
+        relationId: 'REL-MENTION',
+        relationKind: 'source_mentions',
+        mandatory: false,
+        disposition: 'authority_only',
+      }),
+    ]);
+
+    const ir = compileGoalExecutionIR(value.input());
+    expect(ir.dependencies).toEqual([
+      expect.objectContaining({ basisRefs: expect.arrayContaining(['REL-DEPENDS']) }),
+    ]);
+    const damaged = structuredClone(ir);
+    damaged.dependencies[0].basisRefs = damaged.dependencies[0].basisRefs
+      .filter((ref: string) => ref !== 'REL-DEPENDS');
+    damaged.goalExecutionIRHash = goalExecutionIRHash(damaged);
+    const validation = validateGoalExecutionIR(damaged);
+    expect(validation.issueCodes).toContain('goal_execution_normative_source_binding_invalid');
+    expect(validation.issueDetails).toEqual(expect.arrayContaining([
+      expect.objectContaining({ causeCode: 'requirements_goal_typed_relation_projection_missing' }),
+    ]));
+  });
+
+  it('fails closed when a typed relation has no declared projection semantics', () => {
+    const value = fixture();
+    const graph = resolveTypedSourceAuthority(value.authority);
+    graph.sourceRelations.push({
+      relationId: 'REL-UNKNOWN',
+      kind: 'future_relation_without_carrier',
+      from: 'WORK-alpha',
+      to: 'WORK-beta',
+      blockId: 'alpha-section',
+    });
+    value.replaceTypedAuthority(createTypedSourceAuthority(graph));
+
+    expect(() => requirementsTypedSemanticSource(value.semanticIr)).toThrow(
+      'requirements_goal_typed_relation_projection_missing'
+    );
+  });
+
+  it('rejects mandatory semantics added to an authority-only relation kind', () => {
+    const value = fixture();
+    const graph = resolveTypedSourceAuthority(value.authority);
+    graph.sourceRelations.push({
+      relationId: 'REL-MENTION-REQUIRED',
+      kind: 'source_mentions',
+      from: 'GUIDE-section',
+      to: 'BOUND-alpha',
+      blockId: 'alpha-section',
+      mandatory: true,
+    });
+    value.replaceTypedAuthority(createTypedSourceAuthority(graph));
+
+    expect(() => requirementsTypedSemanticSource(value.semanticIr)).toThrow(
+      'requirements_goal_typed_relation_projection_missing:REL-MENTION-REQUIRED:source_mentions'
+    );
+  });
+
+  it.each(['disposition', 'sourceCondition', 'carrierRefs', 'carrierRefs_replace', 'canonicalRequirementGraphRef'] as const)(
+    'rejects a rehashed Goal IR after typed relation projection %s mutation',
+    (mutation) => {
+      const ir = structuredClone(compileGoalExecutionIR(fixture().input()));
+      const projection = (ir.semanticSource.typedRelationProjections as Array<Record<string, unknown>>)
+        .find((row) => row.relationId === 'REL-1')!;
+      if (mutation === 'disposition') projection.disposition = 'authority_only';
+      if (mutation === 'sourceCondition') projection.sourceCondition = 'tampered condition';
+      if (mutation === 'carrierRefs') projection.carrierRefs = [];
+      if (mutation === 'carrierRefs_replace') projection.carrierRefs = ['obligation:WORK-beta'];
+      if (mutation === 'canonicalRequirementGraphRef') {
+        (ir.semanticSource.canonicalRequirementGraphRef as Record<string, unknown>).graphHash = hash('8');
+      }
+      ir.goalExecutionIRHash = goalExecutionIRHash(ir);
+
+      const validation = validateGoalExecutionIR(ir);
+      expect(validation.issueCodes).toContain('goal_execution_normative_source_binding_invalid');
+      expect(validation.issueDetails).toEqual(expect.arrayContaining([
+        expect.objectContaining({ causeCode: expect.stringMatching(/relation_projection|semantic_source/u) }),
+      ]));
+    }
+  );
+
+  it('rejects a paired constraint-carrier forgery after recomputing the Goal hash', () => {
+    const value = fixture();
+    const graph = resolveTypedSourceAuthority(value.authority);
+    const relationId = 'REL-CMD-ALPHA';
+    graph.commandDeclarations = graph.commandDeclarations.map((command, index) => ({
+      ...command,
+      blockId: 'alpha-section',
+      owner: index === 0 ? 'WORK-alpha' : 'WORK-beta',
+      role: 'verification_command',
+      expression: `node tests/${index}.test.js`,
+      commandDeclarationClass: 'executable_expression',
+      commandRole: 'verification_command',
+      executionMode: 'executable',
+    }));
+    graph.sourceRelations.push({
+      relationId,
+      kind: 'declares_command',
+      from: 'WORK-alpha',
+      to: 'CMD-WORK-alpha',
+      blockId: 'alpha-section',
+    });
+    const authority = createTypedSourceAuthority(graph);
+    value.replaceTypedAuthority(authority);
+    const declaration = resolveTypedTechnicalDeclarations(authority)
+      .find((entry) => entry.kind === 'CMD' && entry.value === 'node tests/0.test.js')!;
+    const sourceConstraints = value.semanticIr.semanticPayload.executionConstraints as Array<Record<string, unknown>>;
+    const sourceCarrier = sourceConstraints.find((row) => row.constraintId === 'CMD-WORK-alpha')!;
+    Object.assign(sourceCarrier, {
+      constraintId: declaration.id,
+      canonicalValue: declaration.value,
+      applicableMustRefs: declaration.applicableSourceRefs,
+      applicableAtomRefs: declaration.applicableSourceRefs!.map((id) => `${id}-A1`),
+      applicableSourceRefs: declaration.applicableSourceRefs,
+      premiseRefs: declaration.premiseRefs,
+      sourceDeclarationRefs: declaration.sourceDeclarationRefs,
+      derivationReceiptRefs: declaration.derivationReceiptRefs,
+      conditions: declaration.conditions,
+      scope: declaration.scope,
+      modality: declaration.modality,
+      coverageRole: declaration.coverageRole,
+      declarationRole: declaration.declarationRole,
+      authorityKind: declaration.authorityKind,
+      disposition: 'proven',
+    });
+
+    const forged = structuredClone(compileGoalExecutionIR(value.input()));
+    const projection = (forged.semanticSource.typedRelationProjections as Array<Record<string, unknown>>)
+      .find((row) => row.relationId === relationId)!;
+    expect(projection.carrierRefs).toEqual([`constraint:${declaration.id}`]);
+    projection.carrierRefs = ['constraint:CMD-WORK-beta'];
+
+    const moveRelationRef = (rows: Array<Record<string, unknown>>, idField: string, fromId: string, toId: string) => {
+      const from = rows.find((row) => row[idField] === fromId)!;
+      const to = rows.find((row) => row[idField] === toId)!;
+      for (const field of ['premiseRefs', 'sourceDeclarationRefs']) {
+        const fromRefs = Array.isArray(from[field]) ? from[field] as string[] : [];
+        const toRefs = Array.isArray(to[field]) ? to[field] as string[] : [];
+        from[field] = fromRefs.filter((ref) => ref !== relationId);
+        to[field] = [...new Set([...toRefs, relationId])].sort();
+      }
+      if (idField === 'commandId') {
+        from.basisRefs = (from.basisRefs as string[]).filter((ref) => ref !== relationId);
+        to.basisRefs = [...new Set([...(to.basisRefs as string[]), relationId])].sort();
+      }
+    };
+    moveRelationRef(
+      forged.semanticSource.typedExecutionConstraints as Array<Record<string, unknown>>,
+      'constraintId',
+      declaration.id,
+      'CMD-WORK-beta'
+    );
+    moveRelationRef(
+      forged.commands as unknown as Array<Record<string, unknown>>,
+      'commandId',
+      declaration.id,
+      'CMD-WORK-beta'
+    );
+    forged.goalExecutionIRHash = goalExecutionIRHash(forged);
+
+    expect(validateGoalExecutionIR(forged).decision).toBe('block');
+  });
+
+  it('keeps Goal IR schema and runtime parity for typed relation projections', () => {
+    const requirements = structuredClone(compileGoalExecutionIR(fixture().input()));
+    expect(() => validateGoalContractSchema('goal-execution-ir.schema.json', requirements)).not.toThrow();
+
+    const missing = structuredClone(requirements);
+    delete missing.semanticSource.typedRelationProjections;
+    expect(() => validateGoalContractSchema('goal-execution-ir.schema.json', missing))
+      .toThrow('canonical_schema_invalid');
+    const invalidRows = [
+      (row: Record<string, unknown>) => { delete row.carrierRefs; },
+      (row: Record<string, unknown>) => { row.disposition = 'silent_drop'; },
+      (row: Record<string, unknown>) => { row.sourceCondition = 42; },
+    ];
+    for (const mutate of invalidRows) {
+      const invalid = structuredClone(requirements);
+      mutate((invalid.semanticSource.typedRelationProjections as Array<Record<string, unknown>>)[0]);
+      expect(() => validateGoalContractSchema('goal-execution-ir.schema.json', invalid))
+        .toThrow('canonical_schema_invalid');
+    }
+
+    const emptyValue = fixture();
+    const emptyGraph = resolveTypedSourceAuthority(emptyValue.authority);
+    emptyGraph.sourceRelations = [];
+    emptyValue.replaceTypedAuthority(createTypedSourceAuthority(emptyGraph));
+    const empty = compileGoalExecutionIR(emptyValue.input());
+    expect(empty.semanticSource.typedRelationProjections).toEqual([]);
+    expect(validateGoalExecutionIR(empty)).toEqual({ decision: 'pass', issueCodes: [] });
+    expect(() => validateGoalContractSchema('goal-execution-ir.schema.json', empty)).not.toThrow();
+
+    const standalone = compileStandaloneGoalExecution(normativeRoleInput()).goalExecutionIr;
+    expect(standalone.semanticSource.typedRelationProjections).toBeUndefined();
+    expect(() => validateGoalContractSchema('goal-execution-ir.schema.json', standalone)).not.toThrow();
+
+    const legacy = structuredClone(requirements);
+    legacy.schemaVersion = 'GoalExecutionIR/v2';
+    delete legacy.semanticSource.typedRelationProjections;
+    expect(() => validateGoalContractSchema('goal-execution-ir.schema.json', legacy)).not.toThrow();
   });
 
   it('rejects deleted or changed typed projections even after recomputing the Goal hash', () => {

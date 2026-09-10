@@ -68,6 +68,30 @@ function clauseRole(block: Json, clause: Json): string {
   return 'requirement';
 }
 
+function withTechnicalDeclarationMetadata(command: Json, relations: Json[]): Json {
+  const conditional = relations.some((relation) =>
+    relation.kind === 'conditional_command_selection' && relation.from === command.id);
+  const commandRole = String(command.role);
+  const commandDeclarationClass = commandRole === 'source_command_set'
+    ? conditional ? 'conditional_selector' : 'source_command_set'
+    : 'executable_expression';
+  const executionMode = commandDeclarationClass === 'conditional_selector'
+    ? 'conditional_selection'
+    : commandDeclarationClass === 'source_command_set'
+      ? 'declaration_set'
+      : commandRole === 'command_template'
+        ? 'template'
+        : commandRole === 'prohibited_command'
+          ? 'prohibited'
+          : 'executable';
+  return {
+    ...command,
+    commandDeclarationClass,
+    commandRole,
+    executionMode,
+  };
+}
+
 function separatePhysical(value: unknown, fieldRef: string, bindings: Json[]): unknown {
   if (Array.isArray(value)) return value.map((child, index) => separatePhysical(child, `${fieldRef}/${index}`, bindings));
   if (!value || typeof value !== 'object') return value;
@@ -101,6 +125,8 @@ export function createFullSourceBundle() {
   const fileBytes: number[] = [];
   for (const [sectionIndex, section] of expected.sections.entries()) {
     const roots: Json[] = [];
+    section.commands = section.commands.map((command: Json) =>
+      withTechnicalDeclarationMetadata(command, section.relations));
     for (const work of section.works) {
       const heading = section.blocks.find((block: Json) => block.source.lineStart === work.start && block.kind === 'heading');
       assert.ok(heading, 'Each independent WORK declaration must bind to its original source heading');

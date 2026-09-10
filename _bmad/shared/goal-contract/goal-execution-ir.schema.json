@@ -64,7 +64,15 @@
       }
     } },
     { "if": { "properties": { "profile": { "const": "requirements_backed" }, "schemaVersion": { "const": "GoalExecutionIR/v3" } } }, "then": {
-      "properties": { "semanticSource": { "required": ["canonicalRequirementGraphRef"] } }
+      "properties": { "semanticSource": {
+        "required": ["canonicalRequirementGraphRef", "typedRelationProjections"],
+        "properties": {
+          "typedRelationProjections": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/typedRelationProjection" }
+          }
+        }
+      } }
     } },
     { "if": { "properties": { "profile": { "const": "standalone" } } }, "then": {
       "required": ["standaloneLineage"],
@@ -76,6 +84,25 @@
   ],
   "$defs": {
     "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "typedRelationProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["relationId", "relationKind", "fromRef", "toRef", "mandatory", "disposition", "carrierRefs"],
+      "properties": {
+        "relationId": { "type": "string", "minLength": 1 },
+        "relationKind": { "type": "string", "minLength": 1 },
+        "fromRef": { "type": "string", "minLength": 1 },
+        "toRef": { "type": "string", "minLength": 1 },
+        "mandatory": { "type": "boolean" },
+        "disposition": { "enum": ["canonical_relation", "obligation_projection", "execution_projection", "authority_only"] },
+        "carrierRefs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "sourceCondition": { "type": "string", "minLength": 1 }
+      }
+    },
     "canonicalRequirementGraphRef": {
       "type": "object",
       "additionalProperties": false,

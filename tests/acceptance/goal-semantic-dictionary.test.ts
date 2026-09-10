@@ -11,6 +11,8 @@ import {
   GOAL_DICTIONARY_MAX_DEPTH as MAX_DEPTH,
   GOAL_DICTIONARY_MAX_EXPANDED_BYTES as MAX_BYTES,
   GOAL_DICTIONARY_MAX_OBJECT_ENTRIES as MAX_ENTRIES,
+  GOAL_DICTIONARY_MAX_LOGICAL_NODES as MAX_LOGICAL_NODES,
+  isGoalDictionaryRunV2Eligible,
 } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-semantic-dictionary';
 const require = createRequire(import.meta.url);
 require('ts-node').register({ transpileOnly: true, compilerOptions: { module: 'CommonJS' } });
@@ -25,6 +27,17 @@ const commonCodec = require('../../packages/bmad-speckit/src/utils/goal-contract
 const raw = (nodes: unknown[], root = nodes.length - 1) => ({
   schemaVersion: 'GoalSemanticDictionary/v1', nodes, root,
   expandedBytes: 2, expandedHash: sha256Stable([]),
+});
+const packedRun = (nodes: string[]) => `~R${nodes.length.toString(36)}:${nodes
+  .map((node) => `${node.length.toString(36)}:${node}`)
+  .join('')}`;
+const runV2 = (nodes: unknown[], root: number, value: unknown) => ({
+  schemaVersion: 'GoalSemanticDictionary/v1',
+  nodeEncoding: 'GoalDictionaryNodes/base36-run-v2',
+  nodes,
+  root,
+  expandedBytes: Buffer.byteLength(stableStringify(value)),
+  expandedHash: sha256Stable(value),
 });
 const depthValue = (depth: number) => {
   let value: unknown = [];
@@ -79,7 +92,8 @@ describe('GoalSemanticDictionary/v1 lossless bounded codec', () => {
       condition: `condition-${index}`, effect: `effect-${index}`, proof: `proof-${index}`, source: `source-${index}`,
     }));
     const dictionary = encode(value);
-    expect(dictionary.nodes.some((node) => Array.isArray(node) ? node[0] === 3 : typeof node === 'string' && /^(?:~3[.:]|#)/u.test(node))).toBe(true);
+    expect(dictionary.nodes.some((node) => Array.isArray(node) ? node[0] === 3 :
+      typeof node === 'string' && (/^(?:~3[.:]|#)/u.test(node) || node.startsWith('~R') && node.includes('#')))).toBe(true);
     expect(decode(dictionary)).toEqual(value);
     expect(encode(decode(dictionary))).toEqual(dictionary);
   });
@@ -90,7 +104,8 @@ describe('GoalSemanticDictionary/v1 lossless bounded codec', () => {
     }));
     const dictionary = encode(value);
     expect(dictionary.nodes.some((node) => Array.isArray(node) ? [4, 8].includes(node[0] as number)
-      : typeof node === 'string' && /^(?:~[48][.:]|[%^])/u.test(node))).toBe(true);
+      : typeof node === 'string' && (/^(?:~[48][.:]|[%^])/u.test(node) ||
+        node.startsWith('~R') && /[%^]/u.test(node)))).toBe(true);
     expect(decode(dictionary)).toEqual(value);
     expect(encode(decode(dictionary))).toEqual(dictionary);
   });
@@ -128,6 +143,7 @@ describe('GoalSemanticDictionary/v1 lossless bounded codec', () => {
   it('uses versioned base36 integer tuples without interpreting literal strings', () => {
     const value = Array.from({ length: 3000 }, (_, index) => ({ index, values: [index, index + 1, index + 2, index + 3] }));
     const dictionary = encode(value);
+    expect(dictionary.nodeEncoding).toBe('GoalDictionaryNodes/base36-v1');
     expect(dictionary.nodes.some((node) => typeof node === 'string' && /^[!@#%^]/u.test(node))).toBe(true);
     expect(decode(dictionary)).toEqual(value);
     expect(decode(encode('b36v1:0.0'))).toBe('b36v1:0.0');
@@ -139,6 +155,107 @@ describe('GoalSemanticDictionary/v1 lossless bounded codec', () => {
     for (const node of ['~0:0', '~0:-1', '~0:01', '~0.0', '~2.0', '~0.zzzzzzzzzzzzzzzz']) {
       expect(() => decode({ ...raw([node]), nodeEncoding: dictionary.nodeEncoding })).toThrow(/reference|compact/);
     }
+  });
+
+  it('decodes canonical v1 and length-prefixed v2 runs to identical logical nodes', () => {
+    const value = [[true], [false]];
+    const logicalNodes = [true, false, '!0', '!1', '!2.3'];
+    const v1 = { ...runV2(logicalNodes, 4, value), nodeEncoding: 'GoalDictionaryNodes/base36-v1' };
+    const v2 = runV2([true, false, packedRun(logicalNodes.slice(2) as string[])], 4, value);
+    expect(decode(v1)).toEqual(value);
+    expect(decode(v2)).toEqual(value);
+    expect(stableStringify(decode(v2))).toBe(stableStringify(decode(v1)));
+    expect(GOAL_SEMANTIC_DICTIONARY_PROTOCOL).toContain('GoalDictionaryNodes/base36-run-v2');
+    expect(GOAL_SEMANTIC_DICTIONARY_PROTOCOL).toContain('at most 1048576 logical nodes');
+    expect(GOAL_SEMANTIC_DICTIONARY_PROTOCOL).toContain('after run expansion');
+    expect(GOAL_SEMANTIC_DICTIONARY_PROTOCOL).toContain('retaining the compatible v1 encoding');
+  });
+
+  it.each([
+    ['~R3:2:!02:!1', 'packed_run_truncated'],
+    ['~R0:', 'packed_run_count'],
+    ['~R01:2:!0', 'packed_run_count'],
+    ['~R1:0:', 'packed_run_length'],
+    ['~R1:01:!', 'packed_run_length'],
+    ['~R1:7:literal', 'packed_run_node'],
+    ['~Rzzzzzzzzzzzzzzzz:', 'packed_run_count'],
+  ])('rejects malformed v2 packed run %s', (run, code) => {
+    expect(() => decode(runV2([true, run], 1, true))).toThrow(`goal_semantic_dictionary_${code}`);
+  });
+
+  it('applies reference, logical-count, depth and expanded-byte gates after unpacking v2 runs', () => {
+    expect(() => decode(runV2([true, false, packedRun(['!3'])], 2, []))).toThrow(/reference/);
+    const excessiveCount = (MAX_ENTRIES + 1).toString(36);
+    expect(() => decode(runV2([`~R${excessiveCount}:`], 0, []))).toThrow(/logical_nodes_exceeded/);
+    const depthRun = Array.from({ length: MAX_DEPTH + 1 }, (_, index) => `!${index.toString(36)}`);
+    expect(() => decode(runV2([true, packedRun(depthRun)], MAX_DEPTH + 1, []))).toThrow(/max_depth_exceeded/);
+    const growthRun = Array.from({ length: 25 }, (_, index) => {
+      const ref = index.toString(36);
+      return `!${ref}.${ref}`;
+    });
+    expect(() => decode(runV2(['x', packedRun(growthRun)], 25, []))).toThrow(/expanded_bytes_exceeded/);
+  });
+
+  it('keeps v2 encoding eligibility within the logical-node limit', () => {
+    expect(isGoalDictionaryRunV2Eligible(MAX_LOGICAL_NODES - 1)).toBe(true);
+    expect(isGoalDictionaryRunV2Eligible(MAX_LOGICAL_NODES)).toBe(true);
+    expect(isGoalDictionaryRunV2Eligible(MAX_LOGICAL_NODES + 1)).toBe(false);
+  });
+
+  it('applies the object-entry budget to packed overlay runs before expansion', () => {
+    const width = 1024;
+    const count = MAX_ENTRIES / width;
+    const keys = Array.from({ length: width }, (_, index) => `k${String(index).padStart(4, '0')}`);
+    const falseRef = keys.length;
+    const baseRef = falseRef + 1;
+    const base = [1, ...keys.flatMap((_, index) => [index, falseRef])];
+    const overlays = Array.from({ length: count }, () =>
+      `%${baseRef.toString(36)}.0.${falseRef.toString(36)}`
+    );
+    expect(() => decode(runV2([...keys, false, base, packedRun(overlays)],
+      baseRef + count, []))).toThrow(/object_entries_exceeded/);
+  });
+
+  it('fails the expanded hash after a one-byte packed payload tamper', () => {
+    const value = [[true], [false]];
+    const dictionary = runV2([true, false, packedRun(['!0', '!1', '!2.3'])], 4, value);
+    const changed = structuredClone(dictionary);
+    changed.nodes[2] = String(changed.nodes[2]).replace('!2.3', '!3.2');
+    expect(() => decode(changed)).toThrow(/hash_mismatch/);
+  });
+
+  it('round-trips strict v2 SHA-256 tokens without colliding with reserved literals', () => {
+    const hex = 'a1'.repeat(32);
+    const digest = Buffer.from(hex, 'hex').toString('base64url');
+    const hashValue = `sha256:${hex}`;
+    expect(decode(runV2([`~H${digest}`], 0, hashValue))).toBe(hashValue);
+    const literals = [`~H${digest}`, '~Hliteral', '~Rliteral'];
+    expect(decode(encode(literals))).toEqual(literals);
+    const hashes = encode(Array.from({ length: 1000 }, (_, index) =>
+      `sha256:${index.toString(16).padStart(64, '0')}`));
+    expect(hashes.nodeEncoding).toBe('GoalDictionaryNodes/base36-run-v2');
+    expect(hashes.nodes.filter((node) => typeof node === 'string' && node.startsWith('~H'))).toHaveLength(999);
+    expect(decode(hashes)).toEqual(Array.from({ length: 1000 }, (_, index) =>
+      `sha256:${index.toString(16).padStart(64, '0')}`));
+    expect(encode(decode(hashes))).toEqual(hashes);
+  });
+
+  it.each([
+    ['~Hshort', 'hash_shape'],
+    [`~H${'!'.repeat(43)}`, 'hash_shape'],
+    [`~H${'A'.repeat(42)}B`, 'hash_encoding'],
+  ])('rejects malformed v2 SHA token %s', (token, code) => {
+    expect(() => decode(runV2([token], 0, 'sha256:' + '0'.repeat(64))))
+      .toThrow(`goal_semantic_dictionary_${code}`);
+  });
+
+  it('fails the expanded hash after a one-byte SHA token tamper', () => {
+    const hex = 'a1'.repeat(32);
+    const digest = Buffer.from(hex, 'hex').toString('base64url');
+    const dictionary = runV2([`~H${digest}`], 0, `sha256:${hex}`);
+    const changed = structuredClone(dictionary);
+    changed.nodes[0] = `${String(changed.nodes[0]).slice(0, -1)}A`;
+    expect(() => decode(changed)).toThrow(/hash_mismatch/);
   });
 
   it('compresses identity digests without changing ordinary text or accepting noncanonical base64url', () => {
@@ -350,10 +467,41 @@ describe('GoalSemanticDictionary/v1 lossless bounded codec', () => {
       metrics: { candidateBytes: number; [key: string]: unknown };
     } | undefined;
     const rows = value.map((row: Record<string, unknown>) => ({ ...row, requiredOutcome: row.exactText }));
+    const technicalSnapshot = standaloneTechnicalSnapshot(extracted, rows);
+    const sourceRefsById = new Map(rows.map((row: Record<string, unknown>) =>
+      [String(row.id), row.specSpanRefs as string[]]));
+    for (const binding of technicalSnapshot.constraintBindings ?? []) {
+      binding.premiseRefs = [...new Set([
+        ...binding.premiseRefs,
+        ...binding.applicableMustRefs.flatMap((ref: string) => sourceRefsById.get(ref) ?? []),
+      ])].sort();
+    }
+    const provenanceRefsBySpan = new Map<string, Set<string>>();
+    for (const row of rows) {
+      for (const specSpanId of row.specSpanRefs as string[]) {
+        const refs = provenanceRefsBySpan.get(specSpanId) ?? new Set<string>();
+        for (const ref of (row.provenanceRefs as string[] | undefined) ?? []) refs.add(ref);
+        provenanceRefsBySpan.set(specSpanId, refs);
+      }
+    }
+    const logicalSpecSpans = extracted.specSpanRegistry.specSpans.map((span: Record<string, unknown>) => ({
+      specSpanId: span.specSpanId,
+      sourceArtifactId: span.sourceArtifactId,
+      sourceSnapshotHash: span.sourceSnapshotHash,
+      startByte: span.startByte,
+      endByteExclusive: span.endByteExclusive,
+      lineStart: span.startLine,
+      lineEnd: span.endLine,
+      exactTextHash: span.exactTextHash,
+      boundObligationIds: span.sourceObligationIds,
+      canonicalNodeRefs: [...new Set([
+        ...(provenanceRefsBySpan.get(String(span.specSpanId)) ?? []),
+      ])].sort(),
+      evidenceClaimRefs: [],
+    }));
     const semanticInput = { sourcePlanHash: extracted.sourcePlanHash,
       sourceSnapshotHash: extracted.sourceSnapshotHash, sourceObligations: rows,
-      technicalSnapshot: standaloneTechnicalSnapshot(extracted, rows), logicalSpecSpans: rows.flatMap((row: Record<string, unknown>) =>
-        (row.specSpanRefs as string[]).map((specSpanId) => ({ specSpanId, boundObligationIds: [row.id], evidenceClaimRefs: [] }))) };
+      technicalSnapshot, logicalSpecSpans };
     try {
       const candidate = compileStandaloneGoalSemanticIR(semanticInput);
       candidateBytes = Buffer.byteLength(`${stableStringify(candidate)}\n`);
@@ -367,8 +515,8 @@ describe('GoalSemanticDictionary/v1 lossless bounded codec', () => {
     } finally {
       observer.mockRestore();
     }
-    expect(fullPayload).toBeDefined();
-    expect(fullDictionary).toBeDefined();
+    expect(fullPayload, candidateIssue ?? 'standalone compiler did not invoke the dictionary').toBeDefined();
+    expect(fullDictionary, candidateIssue ?? 'standalone compiler did not invoke the dictionary').toBeDefined();
     expect(sha256Stable(decode(fullDictionary))).toBe(sha256Stable(fullPayload));
     const payloadCosts = Object.fromEntries(Object.entries(fullPayload!).map(([key, item]) => {
       const encoded = encode(item);
@@ -406,6 +554,11 @@ describe('GoalSemanticDictionary/v1 lossless bounded codec', () => {
       internalGateDecision: internalGate?.decision ?? null,
       internalGateHash: internalGate?.gateHash ?? null,
       internalGateMetrics: internalGate?.metrics ?? null,
+      candidateNodeEncoding: fullDictionary!.nodeEncoding ?? null,
+      candidateShaTokenCount: fullDictionary!.nodes.filter((node) =>
+        typeof node === 'string' && node.startsWith('~H')).length,
+      candidateRunNodeCount: fullDictionary!.nodes.filter((node) =>
+        typeof node === 'string' && node.startsWith('~R')).length,
       candidateNodeCosts: nodeCosts(fullDictionary!.nodes), candidateExpandedHash: fullDictionary!.expandedHash,
       candidateDictionaryHash: sha256Stable(fullDictionary),
       largestUniqueStringFields: Object.entries(stringFields).sort((left, right) => right[1].bytes - left[1].bytes).slice(0, 15),
@@ -421,6 +574,8 @@ describe('GoalSemanticDictionary/v1 lossless bounded codec', () => {
     expect(candidateBytes).toBeLessThanOrEqual(1_048_576);
     expect(internalGate?.decision).toBe('pass');
     expect(internalGate?.metrics.candidateBytes).toBe(candidateBytes);
+    expect(measurement.candidateNodeEncoding).toBe('GoalDictionaryNodes/base36-run-v2');
+    expect(measurement.candidateShaTokenCount).toBe(0);
     expect(measurement.actualDispatchCount).toBe(0);
   }, 120_000);
 });

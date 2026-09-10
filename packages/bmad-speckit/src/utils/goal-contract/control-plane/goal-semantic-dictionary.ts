@@ -7,7 +7,7 @@ export type GoalDictionaryValue = JsonScalar | GoalDictionaryValue[] | { [key: s
 export type GoalDictionaryNode = JsonScalar | Array<number | string>;
 export interface GoalSemanticDictionary {
   schemaVersion: 'GoalSemanticDictionary/v1';
-  nodeEncoding?: 'GoalDictionaryNodes/base36-v1';
+  nodeEncoding?: 'GoalDictionaryNodes/base36-v1' | 'GoalDictionaryNodes/base36-run-v2';
   nodes: GoalDictionaryNode[];
   root: number;
   expandedBytes: number;
@@ -22,6 +22,12 @@ interface GoalDictionaryDerivedString {
 export const GOAL_DICTIONARY_MAX_EXPANDED_BYTES = 16 * 1024 * 1024;
 export const GOAL_DICTIONARY_MAX_DEPTH = 128;
 export const GOAL_DICTIONARY_MAX_OBJECT_ENTRIES = 1_048_576;
+export const GOAL_DICTIONARY_MAX_LOGICAL_NODES = 1_048_576;
+
+export function isGoalDictionaryRunV2Eligible(logicalNodeCount: number): boolean {
+  return Number.isSafeInteger(logicalNodeCount) && logicalNodeCount >= 0
+    && logicalNodeCount <= GOAL_DICTIONARY_MAX_LOGICAL_NODES;
+}
 export const GOAL_SEMANTIC_DICTIONARY_PROTOCOL = 'GoalSemanticDictionary/v1 is a lossless JSON DAG, not a semantic summary. '
   + 'Decode nodes in array order; every reference is a zero-based earlier node index. Scalars decode unchanged. '
   + '[0,...refs] is an array. [1,keyRef,valueRef,...] is an object. '
@@ -44,6 +50,12 @@ export const GOAL_SEMANTIC_DICTIONARY_PROTOCOL = 'GoalSemanticDictionary/v1 is a
   + 'In tag 8, keySlot tokens remain absolute slot numbers even in backward-distance tuples. '
   + 'The same nodeEncoding also permits concise tuple markers: ! means tag0, @ tag1, # tag3, ^ tag4, % tag8; '
   + 'the marker is followed by dot-delimited absolute base36 operands, or : followed by backward-distance operands. '
+  + 'GoalDictionaryNodes/base36-run-v2 retains the v1 logical encoding and may replace consecutive marker nodes '
+  + 'with ~R<count>:<length>:<node> runs. Count and lengths are canonical lowercase base36; lengths count UTF-16 '
+  + 'code units. Expand runs before resolving references, limits, depth, bytes, or the root logical node index. '
+  + 'A v2 run expands to at most 1048576 logical nodes; this limit counts logical nodes after run expansion. '
+  + 'The encoder excludes v2 candidates above that limit while retaining the compatible v1 encoding. '
+  + '~H followed by a canonical 43-character unpadded base64url digest restores sha256: followed by 64 lowercase hex digits. '
   + '$prefixRef.base64urlDigest is the concise tag9 form (prefixRef is absolute base36). '
   + '&stringRef:prefix is tag6, with an absolute base36 reference and all text after the first colon as prefix. '
   + '&stringRef.prefixRef is tag6 with two absolute base36 string references. '
@@ -58,6 +70,8 @@ const VERSION = 'GoalSemanticDictionary/v1';
 const UNSAFE_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
 const TUPLE_MARKERS: Record<string, number> = { '!': 0, '@': 1, '#': 3, '^': 4, '%': 8 };
 const LITERAL_MARKERS = new Set(['~', ...Object.keys(TUPLE_MARKERS), '$', '&', '=']);
+const RUN_ENCODING = 'GoalDictionaryNodes/base36-run-v2';
+const RUN_NODE = /^[!@#%^$&=]/u;
 const fail = (code: string): never => { throw new Error(`goal_semantic_dictionary_${code}`); };
 const bytes = (value: unknown): number => Buffer.byteLength(JSON.stringify(value), 'utf8');
 const scalar = (value: unknown): value is JsonScalar => value === null || typeof value === 'string'
@@ -106,6 +120,85 @@ function packNode(node: GoalDictionaryNode, index: number): GoalDictionaryNode {
   return bytes(compact) < bytes(node) ? compact : node;
 }
 
+function packNodeRuns(nodes: GoalDictionaryNode[]): GoalDictionaryNode[] {
+  const packed: GoalDictionaryNode[] = [];
+  for (let index = 0; index < nodes.length;) {
+    if (typeof nodes[index] !== 'string' || !RUN_NODE.test(nodes[index] as string)) {
+      packed.push(nodes[index]);
+      index += 1;
+      continue;
+    }
+    let end = index;
+    const run: string[] = [];
+    while (end < nodes.length && typeof nodes[end] === 'string' && RUN_NODE.test(nodes[end] as string)) {
+      run.push(nodes[end] as string);
+      end += 1;
+    }
+    const encoded = `~R${run.length.toString(36)}:${run
+      .map((node) => `${node.length.toString(36)}:${node}`)
+      .join('')}`;
+    if (bytes(encoded) < bytes(run)) packed.push(encoded);
+    else packed.push(...run);
+    index = end;
+  }
+  return packed;
+}
+
+function compactShaNodes(nodes: GoalDictionaryNode[]): GoalDictionaryNode[] {
+  const retainedPrefixes = new Set<number>();
+  return nodes.map((node) => {
+    if (typeof node !== 'string' || !node.startsWith('$')) return node;
+    const identity = /^\$(0|[1-9a-z][0-9a-z]*)\.([A-Za-z0-9_-]{43})$/u.exec(node);
+    if (!identity) return node;
+    const prefixRef = Number.parseInt(identity[1], 36);
+    if (nodes[prefixRef] !== 'sha256:') return node;
+    if (!retainedPrefixes.has(prefixRef)) {
+      retainedPrefixes.add(prefixRef);
+      return node;
+    }
+    return `~H${identity[2]}`;
+  });
+}
+
+function canonicalBase36(token: string, code: string): number {
+  if (!/^(?:0|[1-9a-z][0-9a-z]*)$/u.test(token)) fail(code);
+  const value = Number.parseInt(token, 36);
+  if (!Number.isSafeInteger(value) || value.toString(36) !== token) fail(code);
+  return value;
+}
+
+function unpackNodeRuns(encodedNodes: GoalDictionaryNode[]): GoalDictionaryNode[] {
+  const nodes: GoalDictionaryNode[] = [];
+  for (const encoded of encodedNodes) {
+    if (typeof encoded !== 'string' || !encoded.startsWith('~R')) {
+      nodes.push(encoded);
+      if (nodes.length > GOAL_DICTIONARY_MAX_LOGICAL_NODES) fail('logical_nodes_exceeded');
+      continue;
+    }
+    const countEnd = encoded.indexOf(':', 2);
+    if (countEnd < 0) fail('packed_run_count');
+    const count = canonicalBase36(encoded.slice(2, countEnd), 'packed_run_count');
+    if (count < 1) fail('packed_run_count');
+    if (count > GOAL_DICTIONARY_MAX_LOGICAL_NODES - nodes.length) fail('logical_nodes_exceeded');
+    let cursor = countEnd + 1;
+    for (let offset = 0; offset < count; offset += 1) {
+      if (cursor >= encoded.length) fail('packed_run_truncated');
+      const lengthEnd = encoded.indexOf(':', cursor);
+      if (lengthEnd < 0) fail('packed_run_truncated');
+      const length = canonicalBase36(encoded.slice(cursor, lengthEnd), 'packed_run_length');
+      if (length < 1) fail('packed_run_length');
+      cursor = lengthEnd + 1;
+      if (length > encoded.length - cursor) fail('packed_run_truncated');
+      const node = encoded.slice(cursor, cursor + length);
+      if (!RUN_NODE.test(node)) fail('packed_run_node');
+      nodes.push(node);
+      cursor += length;
+    }
+    if (cursor !== encoded.length) fail('packed_run_trailing');
+  }
+  return nodes;
+}
+
 function frontCodeStrings(original: GoalDictionaryNode[], root: number) {
   const nodes: GoalDictionaryNode[] = [];
   const remap = new Map<number, number>();
@@ -132,8 +225,8 @@ function frontCodeStrings(original: GoalDictionaryNode[], root: number) {
   }
   // Keep ubiquitous keys and empty values at short indexes before inserting long source strings.
   for (const [index, node] of [...original.entries()].sort((left, right) => (uses.get(right[0]) ?? 0) - (uses.get(left[0]) ?? 0) || left[0] - right[0])) {
-    if (objectKeys.has(index) || node === null || typeof node === 'boolean' || (Array.isArray(node) && node.length === 1)
-      || (scalar(node) && (uses.get(index) ?? 0) >= 8)) {
+    if (objectKeys.has(index) || node === null || typeof node === 'boolean' ||
+      (Array.isArray(node) && node.length === 1) || (scalar(node) && (uses.get(index) ?? 0) >= 8)) {
       remap.set(index, append(node));
     }
   }
@@ -349,8 +442,22 @@ function encodeValue(value: unknown, derivedStrings?: GoalDictionaryDerivedStrin
     });
     if (automatic.length) return encodeValue(value, automatic);
   }
-  return { schemaVersion: VERSION, ...frontCodeStrings(nodes, root),
+  const v1 = frontCodeStrings(nodes, root);
+  const candidates: Array<Pick<GoalSemanticDictionary, 'nodeEncoding' | 'nodes' | 'root'>> = [v1];
+  if (isGoalDictionaryRunV2Eligible(v1.nodes.length)) candidates.push(
+    { nodeEncoding: RUN_ENCODING, nodes: packNodeRuns(v1.nodes), root: v1.root },
+    { nodeEncoding: RUN_ENCODING, nodes: packNodeRuns(compactShaNodes(v1.nodes)), root: v1.root },
+  );
+  const candidateSizes = candidates.map(bytes);
+  let smallestIndex = 0;
+  for (let index = 1; index < candidates.length; index += 1) {
+    if (candidateSizes[index] < candidateSizes[smallestIndex]) smallestIndex = index;
+  }
+  const physical = candidates[smallestIndex];
+  const dictionary = { schemaVersion: VERSION, ...physical,
     expandedBytes: sizes[root], expandedHash: sha256Stable(value) };
+  decodeGoalSemanticDictionary(dictionary);
+  return dictionary;
 }
 
 export function decodeGoalSemanticDictionary(input: unknown): GoalDictionaryValue {
@@ -360,12 +467,13 @@ export function decodeGoalSemanticDictionary(input: unknown): GoalDictionaryValu
   if (!['expandedBytes,expandedHash,nodes,root,schemaVersion', 'expandedBytes,expandedHash,nodeEncoding,nodes,root,schemaVersion'].includes(keys.join(','))) fail('shape');
   const dictionary = input as GoalSemanticDictionary;
   if (dictionary.schemaVersion !== VERSION) fail('version');
-  if (Object.hasOwn(dictionary, 'nodeEncoding') && dictionary.nodeEncoding !== 'GoalDictionaryNodes/base36-v1') fail('node_encoding');
+  if (Object.hasOwn(dictionary, 'nodeEncoding') &&
+    !['GoalDictionaryNodes/base36-v1', RUN_ENCODING].includes(String(dictionary.nodeEncoding))) fail('node_encoding');
   const { nodes: encodedNodes, root } = dictionary;
   if (types.isProxy(encodedNodes)) fail('non_json');
   if (!Array.isArray(encodedNodes) || encodedNodes.length === 0) fail('nodes');
   ownKeys(encodedNodes, true);
-  const nodes = [...encodedNodes];
+  const nodes = dictionary.nodeEncoding === RUN_ENCODING ? unpackNodeRuns(encodedNodes) : [...encodedNodes];
   if (!Number.isSafeInteger(root) || root < 0 || root >= nodes.length) fail('root');
   const sizes: number[] = [];
   const depths: number[] = [];
@@ -390,7 +498,14 @@ export function decodeGoalSemanticDictionary(input: unknown): GoalDictionaryValu
     let node = originalNode;
     if (types.isProxy(node)) fail('non_json');
     let entriesReserved = false;
-    if (dictionary.nodeEncoding && typeof node === 'string' && Object.hasOwn(TUPLE_MARKERS, node[0])) {
+    if (dictionary.nodeEncoding === RUN_ENCODING && typeof node === 'string' && node.startsWith('~H')) {
+      const hash = /^~H([A-Za-z0-9_-]{43})$/u.exec(node);
+      if (!hash) fail('hash_shape');
+      const digest = Buffer.from(hash[1], 'base64url');
+      if (digest.length !== 32 || digest.toString('base64url') !== hash[1]) fail('hash_encoding');
+      node = `sha256:${digest.toString('hex')}`;
+      nodes[index] = node;
+    } else if (dictionary.nodeEncoding && typeof node === 'string' && Object.hasOwn(TUPLE_MARKERS, node[0])) {
       const tag = TUPLE_MARKERS[node[0]];
       node = `~${tag}${node[1] === ':' ? ':' + node.slice(2) : '.' + node.slice(1)}`;
     } else if (dictionary.nodeEncoding && typeof node === 'string' && node.startsWith('$')) {

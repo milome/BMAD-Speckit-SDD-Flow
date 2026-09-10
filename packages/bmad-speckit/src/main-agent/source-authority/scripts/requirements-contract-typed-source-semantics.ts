@@ -5,6 +5,10 @@ import { attachTypedSourceTaskExecutions, assertTypedSourceTaskExecutions } from
 export const TYPED_SOURCE_AUTHORITY_VERSION = 'requirements-contract-typed-source-authority/v2' as const;
 export const TYPED_SOURCE_GRAPH_VERSION = 'requirements-contract-typed-source-graph/v2' as const;
 export const TYPED_SOURCE_ROLES = ['action', 'requirement', 'boundary', 'acceptance', 'guidance', 'binding', 'definition'] as const;
+export const TYPED_SOURCE_COMMAND_DECLARATION_CLASSES = ['executable_expression', 'source_command_set', 'conditional_selector'] as const;
+export const TYPED_SOURCE_COMMAND_ROLES = ['authoring_command', 'command_template', 'environment_setting', 'global_verification_command',
+  'green_command', 'prohibited_command', 'red_command', 'regression_command', 'source_command_set', 'verification_command'] as const;
+export const TYPED_SOURCE_COMMAND_EXECUTION_MODES = ['executable', 'template', 'prohibited', 'declaration_set', 'conditional_selection'] as const;
 export type RequirementsSourceRole = (typeof TYPED_SOURCE_ROLES)[number];
 export interface RequirementsTypedSourceNode {
   sourceRootId: string;
@@ -117,6 +121,35 @@ export function validateTypedSourceGraph(value: unknown, complete = false): asse
       const validId = nonempty(declaration.id) || (key === 'sections' && Number.isSafeInteger(declaration.id) && Number(declaration.id) >= 0);
       if (!validId || declarationIds.has(String(declaration.id))) fail('declaration_identity_invalid');
       declarationIds.add(String(declaration.id));
+    }
+  }
+  const commandMetadataFields = ['commandDeclarationClass', 'commandRole', 'executionMode'] as const;
+  for (const command of value.commandDeclarations as Record<string, unknown>[]) {
+    if (!commandMetadataFields.some((field) => command[field] !== undefined)) continue;
+    if (!commandMetadataFields.every((field) => nonempty(command[field])) ||
+      !TYPED_SOURCE_COMMAND_DECLARATION_CLASSES.includes(command.commandDeclarationClass as typeof TYPED_SOURCE_COMMAND_DECLARATION_CLASSES[number]) ||
+      !TYPED_SOURCE_COMMAND_ROLES.includes(command.commandRole as typeof TYPED_SOURCE_COMMAND_ROLES[number]) ||
+      !TYPED_SOURCE_COMMAND_EXECUTION_MODES.includes(command.executionMode as typeof TYPED_SOURCE_COMMAND_EXECUTION_MODES[number]) ||
+      !nonempty(command.owner) || !nonempty(command.blockId)) {
+      fail('command_declaration_metadata_invalid');
+    }
+    const declarationClass = String(command.commandDeclarationClass);
+    const executionMode = String(command.executionMode);
+    const expression = typeof command.expression === 'string' ? command.expression.trim() : '';
+    const validCombination = declarationClass === 'source_command_set'
+      ? command.commandRole === 'source_command_set' && executionMode === 'declaration_set' && !expression
+      : declarationClass === 'conditional_selector'
+        ? command.commandRole === 'source_command_set' && executionMode === 'conditional_selection' && !expression
+        : ['executable', 'template', 'prohibited'].includes(executionMode) && Boolean(expression);
+    if (!validCombination) fail('command_declaration_metadata_invalid');
+    const relationKind = declarationClass === 'source_command_set'
+      ? 'command_set_includes'
+      : declarationClass === 'conditional_selector'
+        ? 'conditional_command_selection'
+        : null;
+    if (relationKind && !(value.sourceRelations as Record<string, unknown>[]).some((relation) =>
+      relation.kind === relationKind && relation.from === command.id)) {
+      fail('command_declaration_metadata_invalid');
     }
   }
   if (complete) {

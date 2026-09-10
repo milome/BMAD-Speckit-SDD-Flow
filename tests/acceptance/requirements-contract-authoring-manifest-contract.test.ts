@@ -235,7 +235,13 @@ describe('authoring checkpoint and build manifests', () => {
     try {
       const typedSourceAuthority = createTypedSourceAuthority({
         schemaVersion: 'requirements-contract-typed-source-graph/v2',
-        sourceNodes: [], sourceRelations: [], sourceBlocks: [], commandDeclarations: [],
+        sourceNodes: [{
+          sourceRootId: 'REQ-SOURCE-001', executionRole: 'requirement',
+          text: 'Preserve the source-grounded publication authority.',
+          polarity: 'required', normativeStrength: 'must', conditions: [],
+          scope: { kind: 'global' }, declaredIds: [],
+        }],
+        sourceRelations: [], sourceBlocks: [], commandDeclarations: [],
         workDeclarations: [], scenarioDeclarations: [], fixDeclarations: [], sections: [],
       });
       const sourceClaim = {
@@ -258,7 +264,7 @@ describe('authoring checkpoint and build manifests', () => {
         specSpanRegistry: [{
           authorityClass: 'source_grounded',
           normalizedClaimHash: typedSourceAuthority.graphHash,
-          boundSemanticNodeIds: [], boundObligationIds: [],
+          boundSemanticNodeIds: ['REQ-SOURCE-001'], boundObligationIds: ['REQ-SOURCE-001'],
           boundTypedSourceGraphHash: typedSourceAuthority.graphHash,
           evidenceClaimRefs: [sourceClaim.evidenceClaimId],
           decisionReceiptRefs: [], derivationReceiptRefs: [],
