@@ -1,7 +1,10 @@
 import { sha256Stable } from '../../../main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 import { validateGoalContractSchema } from './schema-registry';
 import { validateTypedObligationSources } from './standalone-goal-normative-roles';
-import { validateStandaloneExecutionDeclarations } from './standalone-goal-constraint-bindings';
+import {
+  validateStandaloneDeclarationSpecSpans,
+  validateStandaloneExecutionDeclarations,
+} from './standalone-goal-constraint-bindings';
 import {
   REQUIREMENTS_TYPED_SEMANTIC_VERSION,
   assertRequirementsTypedProjection,
@@ -53,6 +56,7 @@ export interface GoalExecutionObligation extends JsonObject {
 export interface GoalExecutionLogicalSpecSpan extends JsonObject {
   specSpanId: string;
   boundObligationIds: string[];
+  boundDeclarationIds?: string[];
   authorityClass?: string;
   normalizedClaimHash?: string;
   boundTypedSourceGraphHash?: string;
@@ -200,6 +204,14 @@ function constraintsOfKind(input: GoalExecutionCompilerInput, kind: string): Jso
 }
 
 function preflightGoalExecutionRelationGraph(input: GoalExecutionCompilerInput): void {
+  if (input.profile === 'standalone') {
+    validateStandaloneDeclarationSpecSpans(
+      input.logicalSpecSpans,
+      input.executionConstraints,
+      text(object(input.standaloneLineage).sourceSnapshotHash),
+      'goal_execution_declaration_span_invalid',
+    );
+  }
   const ownersBySourceRef = new Map<string, Set<string>>();
   const addOwner = (sourceRef: string, obligationRef: string) => {
     if (!sourceRef || !obligationRef) return;
@@ -530,13 +542,15 @@ function normalizeLogicalSpecSpan(value: JsonObject): GoalExecutionLogicalSpecSp
     ...strings(value.boundObligationIds),
     ...strings(value.sourceObligationIds),
   ]);
-  if (!specSpanId || boundObligationIds.length === 0) {
+  const boundDeclarationIds = sortedUnique(strings(value.boundDeclarationIds));
+  if (!specSpanId || (boundObligationIds.length === 0) === (boundDeclarationIds.length === 0)) {
     throw new Error('goal_execution_source_span_invalid');
   }
   const common = {
     ...value,
     specSpanId,
     boundObligationIds,
+    ...(boundDeclarationIds.length ? { boundDeclarationIds } : {}),
     ...(strings(value.canonicalNodeRefs).length
       ? { canonicalNodeRefs: sortedUnique(strings(value.canonicalNodeRefs)) }
       : {}),
@@ -733,6 +747,7 @@ function sourceLineageFailureReason(ir: Partial<GoalExecutionIR>): string | null
   const resolvableRefs = new Set(spans.flatMap((span) => [
     span!.specSpanId,
     ...span!.boundObligationIds,
+    ...strings(span!.boundDeclarationIds),
     ...strings(span!.canonicalNodeRefs),
   ]));
   if (sha256Stable(sortedUnique(strings(lineage.logicalSpecSpanRefs))) !== sha256Stable(sortedUnique([...spanIds]))) return 'logical_spec_span_refs';

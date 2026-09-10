@@ -153,6 +153,9 @@ function specSpanObligationRefs(span: JsonObject, ir: JsonObject): string[] {
     if (!isTypedGoalExecutionIr(ir.schemaVersion) || ir.profile !== 'requirements_backed') throw failure('goal_partition_spec_span_binding_invalid');
     return resolveRequirementsSpecSpanSourceNodeIds(span, object(ir.semanticSource).typedSourceAuthority);
   }
+  if (isTypedGoalExecutionIr(ir.schemaVersion) && ir.profile === 'standalone') {
+    return unique(strings(span.boundObligationIds));
+  }
   return unique([
     ...strings(span.boundObligationIds),
     ...strings(span.obligationRefs),

@@ -107,11 +107,24 @@
         "lineStart": { "type": "integer", "minimum": 1 },
         "lineEnd": { "type": "integer", "minimum": 1 },
         "exactTextHash": { "$ref": "#/$defs/hash" },
-        "boundObligationIds": { "$ref": "#/$defs/strings", "minItems": 1 },
+        "boundObligationIds": { "$ref": "#/$defs/strings" },
+        "boundDeclarationIds": { "$ref": "#/$defs/strings", "minItems": 1 },
         "canonicalNodeRefs": { "$ref": "#/$defs/strings" },
         "sourceDocumentGraphHash": { "$ref": "#/$defs/hash" },
         "canonicalRequirementGraphHash": { "$ref": "#/$defs/hash" }
       },
+      "allOf": [
+        { "oneOf": [
+          { "properties": {
+            "boundObligationIds": { "minItems": 1 },
+            "boundDeclarationIds": { "maxItems": 0 }
+          } },
+          { "required": ["boundDeclarationIds"], "properties": {
+            "boundObligationIds": { "maxItems": 0 },
+            "boundDeclarationIds": { "minItems": 1 }
+          } }
+        ] }
+      ],
       "oneOf": [
         { "required": ["sourceArtifactId", "sourceSnapshotHash", "startByte", "endByteExclusive", "lineStart", "lineEnd", "exactTextHash"] },
         { "not": { "anyOf": [

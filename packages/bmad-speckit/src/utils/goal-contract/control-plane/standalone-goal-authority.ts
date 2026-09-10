@@ -244,6 +244,19 @@ export async function publishStandaloneGoalAuthority(
         sourceBlockId,
       });
     }
+    for (const declaration of objects(sourceBlock.commandDeclarations)) {
+      const declarationId = text(declaration.id);
+      const declarationSource = declaration.sourceRef && typeof declaration.sourceRef === 'object'
+        ? declaration.sourceRef as JsonObject
+        : undefined;
+      if (declarationId && declarationSource) {
+        spanByRef.set(declarationId, {
+          ...declarationSource,
+          id: declarationId,
+          sourceBlockId,
+        });
+      }
+    }
   }
   const canonicalSpanRows = objects(
     (input.canonicalIntentBundle.specSpanRegistry as JsonObject | undefined)?.specSpans
@@ -258,12 +271,20 @@ export async function publishStandaloneGoalAuthority(
     spanByRef.set(specSpanId, physical ? { ...physical, ...span } : span);
   }
   const logicalSpecSpanById = new Map<string, JsonObject>();
-  const addPhysicalSpan = (specSpanId: string, boundRefs: string[], canonicalNodeRefs: string[]) => {
+  const addPhysicalSpan = (
+    specSpanId: string,
+    boundRefs: string[],
+    canonicalNodeRefs: string[],
+    declarationRefs: string[] = [],
+  ) => {
     const physical = spanByRef.get(specSpanId);
     if (!physical) throw new Error('standalone_goal_source_span_missing');
     const current = logicalSpecSpanById.get(specSpanId);
     const boundObligationIds = sortedUnique([...(current ? strings(current.boundObligationIds) : []), ...boundRefs]);
-    if (boundObligationIds.length === 0) throw new Error('standalone_goal_source_span_owner_missing');
+    const boundDeclarationIds = sortedUnique([...(current ? strings(current.boundDeclarationIds) : []), ...declarationRefs]);
+    if ((boundObligationIds.length === 0) === (boundDeclarationIds.length === 0)) {
+      throw new Error('standalone_goal_source_span_owner_missing');
+    }
     logicalSpecSpanById.set(specSpanId, {
       ...(current ?? {}),
       specSpanId,
@@ -275,6 +296,7 @@ export async function publishStandaloneGoalAuthority(
       lineEnd: Number(physical.lineEnd ?? physical.endLine),
       exactTextHash: text(physical.exactTextHash ?? physical.expectedExactTextHash),
       boundObligationIds,
+      ...(boundDeclarationIds.length ? { boundDeclarationIds } : {}),
       canonicalNodeRefs: sortedUnique([...(current ? strings(current.canonicalNodeRefs) : []), ...canonicalNodeRefs]),
       ...(documentGraph?.graphHash ? { sourceDocumentGraphHash: text(documentGraph.graphHash) } : {}),
       ...(normalizedCanonicalGraph
@@ -296,8 +318,19 @@ export async function publishStandaloneGoalAuthority(
     const declarationRefs = strings(binding.sourceRefs).filter((ref) => spanByRef.has(ref));
     if (declarationRefs.length === 0) throw new Error('standalone_goal_constraint_source_span_missing');
     const sourceBlockRefs = strings(binding.sourceDeclarationRefs).filter((ref) => spanByRef.has(ref));
-    for (const ref of sortedUnique([...declarationRefs, ...sourceBlockRefs])) {
-      addPhysicalSpan(ref, strings(binding.applicableMustRefs), [text(binding.constraintId)]);
+    const declarationOnly = binding.coverageRole === 'non_action_declaration' &&
+      strings(binding.applicableMustRefs).length === 0;
+    const physicalRefs = declarationOnly
+      ? (spanByRef.has(text(binding.constraintId)) ? [text(binding.constraintId)] : [])
+      : sortedUnique([...declarationRefs, ...sourceBlockRefs]);
+    if (physicalRefs.length === 0) throw new Error('standalone_goal_constraint_source_span_missing');
+    for (const ref of physicalRefs) {
+      addPhysicalSpan(
+        ref,
+        declarationOnly ? [] : strings(binding.applicableMustRefs),
+        [text(binding.constraintId), ...sourceBlockRefs],
+        declarationOnly ? [text(binding.constraintId)] : [],
+      );
     }
   }
   const logicalSpecSpans = [...logicalSpecSpanById.values()].sort((left, right) =>

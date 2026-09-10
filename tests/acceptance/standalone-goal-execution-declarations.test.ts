@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { standaloneTechnicalSnapshot } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/standalone-goal-technical-snapshot';
 import { compileStandaloneGoalSemanticIR } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/standalone-goal-semantic-ir';
@@ -5,9 +6,34 @@ import { resolveStandaloneGoalSemanticPayload } from '../../packages/bmad-specki
 import { compileGoalExecutionIR, goalExecutionIRHash } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-execution-ir';
 import { compileGoalExecutionClosure } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-execution-closure';
 import { runStandaloneGoalInternalSemanticGate } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/standalone-goal-internal-semantic-gate';
+import { validateGoalContractSchema } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/schema-registry';
 import { typedConsumerProbe } from '../helpers/standalone-goal-typed-consumers';
 
 const hash = `sha256:${'1'.repeat(64)}`;
+const sourceArtifactId = 'fixture:standalone-execution-declarations';
+
+function sha256Bytes(value: string | Buffer): string {
+  return `sha256:${createHash('sha256').update(value).digest('hex')}`;
+}
+
+function physicalSourceRef(sourceText: string, exactText: string) {
+  const characterOffset = sourceText.indexOf(exactText);
+  if (characterOffset < 0) throw new Error(`fixture_source_text_missing:${exactText}`);
+  const prefix = sourceText.slice(0, characterOffset);
+  const startByte = Buffer.byteLength(prefix, 'utf8');
+  const exactBytes = Buffer.from(exactText, 'utf8');
+  const lineStart = prefix.split('\n').length;
+  return {
+    sourceArtifactId,
+    sourceSnapshotHash: sha256Bytes(Buffer.from(sourceText, 'utf8')),
+    startByte,
+    endByteExclusive: startByte + exactBytes.byteLength,
+    lineStart,
+    lineEnd: lineStart + (exactText.match(/\n/gu)?.length ?? 0),
+    exactTextHash: sha256Bytes(exactBytes),
+  };
+}
+
 function fixture() {
   const row = (id: string, executionRole: string) => ({ id, executionRole, text: id, exactText: id,
     requiredOutcome: 'The recorded output equals the independently specified expected output.',
@@ -27,18 +53,58 @@ function fixture() {
     edge('WORK-01', 'path', 'src/one.ts', { toType: 'path', pathRole: 'owned' }),
     edge('WORK-02', 'path', 'src/two.ts', { toType: 'path', pathRole: 'owned' }),
     edge('WORK-01', 'command', 'CMD-1', { toType: 'command' }), edge('WORK-02', 'command', 'CMD-2', { toType: 'command' })];
-  return { source: { sourceBlocks: blocks, sourceRelations: relations }, rows, blocks, relations };
+  return { source: { sourceBlocks: blocks, sourceRelations: relations }, rows, blocks, relations,
+    sourceText: `${rows.map((value) => value.id).join('\n')}\n` };
 }
 
-function compile(source: ReturnType<typeof fixture>) {
-  const semantic = compileStandaloneGoalSemanticIR({ sourcePlanHash: hash, sourceSnapshotHash: hash,
-    sourceObligations: source.rows, logicalSpecSpans: [], technicalSnapshot: standaloneTechnicalSnapshot(source.source, source.rows) });
+function compile(
+  source: ReturnType<typeof fixture>,
+  declarationIdOverride?: string,
+  declarationSpanPatch: Record<string, unknown> = {},
+  duplicateOrdinaryConstraint = false,
+) {
+  const sourceSnapshotHash = sha256Bytes(Buffer.from(source.sourceText, 'utf8'));
   const technicalSnapshot = standaloneTechnicalSnapshot(source.source, source.rows);
-  const gate = runStandaloneGoalInternalSemanticGate({ sourcePlanHash: hash, sourceSnapshotHash: hash,
-    sourceObligations: source.rows, logicalSpecSpans: [], technicalSnapshot }, semantic);
+  if (duplicateOrdinaryConstraint) {
+    technicalSnapshot.constraintBindings!.push(structuredClone(technicalSnapshot.constraintBindings![0]));
+  }
+  const sourceRefsById = new Map(source.rows.map((row) => [String(row.id), row.specSpanRefs as string[]]));
+  for (const binding of technicalSnapshot.constraintBindings ?? []) {
+    binding.premiseRefs = [...new Set([
+      ...binding.premiseRefs,
+      ...binding.applicableMustRefs.flatMap((ref) => sourceRefsById.get(ref) ?? []),
+    ])].sort();
+  }
+  const logicalSpecSpans = source.rows.map((row) => ({
+    specSpanId: row.specSpanRefs[0],
+    ...physicalSourceRef(source.sourceText, row.id),
+    boundObligationIds: [row.id],
+    canonicalNodeRefs: row.provenanceRefs,
+    evidenceClaimRefs: [],
+  }));
+  const externalDeclarationSpans = source.blocks.flatMap((block) =>
+    (block.commandDeclarations ?? []).flatMap((command: any) => command.sourceRef ? [{
+      specSpanId: `SPAN-${command.id}`,
+      sourceArtifactId: command.sourceRef.sourceArtifactId,
+      sourceSnapshotHash: command.sourceRef.sourceSnapshotHash,
+      startByte: command.sourceRef.startByte,
+      endByteExclusive: command.sourceRef.endByteExclusive,
+      lineStart: command.sourceRef.lineStart,
+      lineEnd: command.sourceRef.lineEnd,
+      exactTextHash: command.sourceRef.exactTextHash,
+      boundObligationIds: [],
+      boundDeclarationIds: [declarationIdOverride ?? command.id],
+      canonicalNodeRefs: [block.id, command.id],
+      evidenceClaimRefs: [],
+      ...declarationSpanPatch,
+    }] : []));
+  const semanticInput = { sourcePlanHash: hash, sourceSnapshotHash,
+    sourceObligations: source.rows, logicalSpecSpans: [...logicalSpecSpans, ...externalDeclarationSpans], technicalSnapshot };
+  const semantic = compileStandaloneGoalSemanticIR(semanticInput);
+  const gate = runStandaloneGoalInternalSemanticGate(semanticInput, semantic);
   const payload: any = resolveStandaloneGoalSemanticPayload(semantic);
   return compileGoalExecutionIR({ profile: 'standalone', semanticSource: { schemaVersion: semantic.schemaVersion },
-    standaloneLineage: { sourcePlanHash: hash, sourceSnapshotHash: hash, standaloneGoalSemanticIRHash: semantic.standaloneGoalSemanticIRHash,
+    standaloneLineage: { sourcePlanHash: hash, sourceSnapshotHash, standaloneGoalSemanticIRHash: semantic.standaloneGoalSemanticIRHash,
       internalSemanticGateHash: gate.gateHash },
     technicalAuthority: { internalSemanticGateHash: gate.gateHash }, ...payload });
 }
@@ -73,12 +139,82 @@ describe('standalone source declaration coverage', () => {
 
   it('preserves an example outside the obligation set through exact source provenance', () => {
     const value = fixture();
-    value.blocks.push({ id: 'BLOCK-EXAMPLE', disposition: 'example', text: 'npm test -- example', commandDeclarations: [
-      { id: 'CMD-EXAMPLE', invocation: 'npm test -- example', sourceRef: { sourceSnapshotHash: hash, startByte: 10, endByteExclusive: 28, exactTextHash: hash } },
+    value.rows[3].executionRole = 'definition';
+    const invocation = 'npm test -- example';
+    const blockText = `Example command: ${invocation} (not executable)`;
+    value.sourceText += `${blockText}\n`;
+    const blockSourceRef = physicalSourceRef(value.sourceText, blockText);
+    const sourceRef = physicalSourceRef(value.sourceText, invocation);
+    value.blocks.push({ id: 'BLOCK-EXAMPLE', disposition: 'example', text: blockText, sourceRef: blockSourceRef, commandDeclarations: [
+      { id: 'CMD-EXAMPLE', invocation, sourceRef },
     ] });
+    expect(blockSourceRef.startByte).toBeLessThan(sourceRef.startByte);
+    expect(blockSourceRef.endByteExclusive).toBeGreaterThan(sourceRef.endByteExclusive);
     const ir = compile(value);
+    const constraint = (ir.semanticSource.typedExecutionConstraints as any[])
+      .find((row) => row.constraintId === 'CMD-EXAMPLE');
+    const span = ir.logicalSpecSpans.find((row) => row.specSpanId === 'SPAN-CMD-EXAMPLE');
+    const sourceBytes = Buffer.from(value.sourceText, 'utf8');
+    expect(constraint).toMatchObject({
+      coverageRole: 'non_action_declaration',
+      applicableMustRefs: [],
+      applicableAtomRefs: [],
+      declarationSource: sourceRef,
+    });
+    expect(span).toMatchObject({
+      boundObligationIds: [],
+      boundDeclarationIds: ['CMD-EXAMPLE'],
+      canonicalNodeRefs: ['BLOCK-EXAMPLE', 'CMD-EXAMPLE'],
+      ...sourceRef,
+    });
+    expect(sourceBytes.subarray(span!.startByte, span!.endByteExclusive).toString('utf8')).toBe(invocation);
+    expect(sha256Bytes(sourceBytes)).toBe(span!.sourceSnapshotHash);
+    expect(sha256Bytes(sourceBytes.subarray(span!.startByte, span!.endByteExclusive))).toBe(span!.exactTextHash);
     expect(compileGoalExecutionClosure(ir).coverage.nonActionConstraintIds).toContain('CMD-EXAMPLE');
     expect(ir.atomicTasks).toHaveLength(2);
+    const result = typedConsumerProbe(ir);
+    expect(result.error).toBeUndefined();
+    expect(result.children.every((child: any) =>
+      child.logicalSpecSpans.every((childSpan: any) => childSpan.specSpanId !== 'SPAN-CMD-EXAMPLE'))).toBe(true);
+  }, 120000);
+
+  it('rejects a forged declaration-only spec span reference', () => {
+    const value = fixture();
+    const invocation = 'npm test -- example';
+    value.sourceText += `${invocation}\n`;
+    value.blocks.push({ id: 'BLOCK-EXAMPLE', disposition: 'example', text: invocation, commandDeclarations: [
+      { id: 'CMD-EXAMPLE', invocation, sourceRef: physicalSourceRef(value.sourceText, invocation) },
+    ] });
+    expect(() => compile(value, 'CMD-FORGED')).toThrow('standalone_goal_declaration_span_invalid');
+  });
+
+  it('rejects declaration-only spec span range drift from its exact declaration source', () => {
+    const value = fixture();
+    const invocation = 'npm test -- example';
+    value.sourceText += `${invocation}\n`;
+    const sourceRef = physicalSourceRef(value.sourceText, invocation);
+    value.blocks.push({ id: 'BLOCK-EXAMPLE', disposition: 'example', text: invocation, commandDeclarations: [
+      { id: 'CMD-EXAMPLE', invocation, sourceRef },
+    ] });
+    expect(() => compile(value, undefined, { endByteExclusive: sourceRef.endByteExclusive + 1 }))
+      .toThrow('standalone_goal_declaration_span_invalid');
+  });
+
+  it('rejects mixed obligation and declaration owners at the Goal IR schema boundary', () => {
+    const value = fixture();
+    value.rows[3].executionRole = 'definition';
+    const invocation = 'npm test -- example';
+    value.sourceText += `${invocation}\n`;
+    value.blocks.push({ id: 'BLOCK-EXAMPLE', disposition: 'example', text: invocation, commandDeclarations: [
+      { id: 'CMD-EXAMPLE', invocation, sourceRef: physicalSourceRef(value.sourceText, invocation) },
+    ] });
+    const mixed = structuredClone(compile(value));
+    mixed.logicalSpecSpans.find((span) => span.specSpanId === 'SPAN-CMD-EXAMPLE')!.boundObligationIds = ['WORK-01'];
+    expect(() => validateGoalContractSchema('goal-execution-ir.schema.json', mixed)).toThrow('canonical_schema_invalid');
+  });
+
+  it('preserves the ordinary duplicate constraint binding failure classification', () => {
+    expect(() => compile(fixture(), undefined, {}, true)).toThrow('standalone_goal_constraint_binding_invalid');
   });
 
   it('inherits an explicitly global verification requirement to both actions', () => {
