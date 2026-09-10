@@ -163,7 +163,7 @@ describe('requirements contract model diversity gate', () => {
         providerRef: campaignInput.providerRef,
         actorBindingHash: campaignInput.actorBindingHash,
       })
-    ).toBe(campaignInput);
+    ).toEqual(campaignInput);
     expect(() =>
       validateMainAgentExecutionFinalJudgeCampaignInput(
         { ...campaignInput, candidateBytesHash: hash('tamper') },
