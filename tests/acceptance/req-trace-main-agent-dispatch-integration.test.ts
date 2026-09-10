@@ -287,7 +287,7 @@ describe('req-trace main-agent dispatch integration', () => {
   });
 
   it('blocks the repository compiler journey without canonical confirmed authority', () => {
-    const fixture = materializeAiTddManifestCloseoutRunnerFixture();
+    const fixture = materializeAiTddManifestCloseoutRunnerFixture({ authorityMode: 'legacy' });
     try {
       const projectRoot = path.resolve('.');
       const generatorPath = path.join(
@@ -317,9 +317,7 @@ describe('req-trace main-agent dispatch integration', () => {
       expect(result.productionArgv).toEqual(
         expect.arrayContaining(['--entry', 'main_agent_compile'])
       );
-      const receipt = JSON.parse(
-        readFileSync(result.auditReceiptPath!, 'utf8')
-      );
+      const receipt = JSON.parse(readFileSync(result.auditReceiptPath!, 'utf8'));
       expect(receipt.decision).toBe('blocked');
       expect(receipt.blockingReasons).toContain('CANONICAL_CONFIRMED_AUTHORITY_REQUIRED');
     } finally {
