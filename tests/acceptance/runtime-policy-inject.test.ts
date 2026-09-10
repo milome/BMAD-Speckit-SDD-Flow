@@ -60,6 +60,17 @@ function makeEmitRootWithoutLanguageResolver(): string {
     ),
     path.join(tempRoot, '.claude', 'hooks', 'emit-runtime-policy.cjs')
   );
+  fs.mkdirSync(path.join(tempRoot, '.claude', 'schemas'), { recursive: true });
+  fs.copyFileSync(
+    path.join(
+      repoRoot,
+      'packages',
+      'runtime-emit',
+      'schemas',
+      'main-agent-execution-final-judge-result.schema.json'
+    ),
+    path.join(tempRoot, '.claude', 'schemas', 'main-agent-execution-final-judge-result.schema.json')
+  );
   writeMinimalRegistryAndProjectContext(tempRoot, { flow: 'story', stage: 'specify' });
   return tempRoot;
 }
