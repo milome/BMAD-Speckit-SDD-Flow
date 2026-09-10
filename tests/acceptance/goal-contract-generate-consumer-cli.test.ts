@@ -1,12 +1,29 @@
 import { exec, execSync } from 'node:child_process';
 import { promisify } from 'node:util';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
 const execAsync = promisify(exec);
+const CANONICAL_SOURCE = join(
+  ROOT,
+  'packages',
+  'bmad-speckit',
+  'tests',
+  'fixtures',
+  'standalone-goal',
+  'canonical-source-plan-v1-minimal.md'
+);
 
 async function runAsync(command: string, cwd: string) {
   try {
@@ -41,36 +58,9 @@ function run(command: string, cwd: string): string {
 function writeSourcePlan(root: string): string {
   const source = join(root, 'fixtures', 'goal-contract', 'source-plan.md');
   mkdirSync(join(root, 'fixtures', 'goal-contract'), { recursive: true });
-  writeFileSync(
-    source,
-    [
-      '# Consumer Source Plan',
-      '',
-      '## File Map',
-      '',
-      '- Create `generated/goal-execution-plan.md`.',
-      '',
-      '## Implementation Task Breakdown',
-      '',
-      '### Task CONSUMER-T01: Generate a source-covered goal contract',
-      '',
-      '- Acceptance: AC-CONSUMER.',
-      '- EVD-CONSUMER-T01-01: Preserve the installed CLI proof output.',
-      '- CMD-CONSUMER-T01-01: Run `node --version`.',
-      '',
-      '- [ ] TASK-CONSUMER: MUST generate a source-covered goal contract.',
-      '',
-      '```powershell',
-      'npx --no-install bmad-speckit goal-contract generate --entry standalone_goal_contract --source fixtures/goal-contract/source-plan.md --out generated/goal-execution-plan.md --json',
-      '```',
-      '',
-      '## Acceptance Criteria',
-      '',
-      '- [ ] AC-CONSUMER: MUST prove that coverage and generation receipts exist.',
-      '',
-    ].join('\n'),
-    'utf8'
-  );
+  const canonicalSourceBytes = readFileSync(CANONICAL_SOURCE);
+  copyFileSync(CANONICAL_SOURCE, source);
+  expect(readFileSync(source)).toEqual(canonicalSourceBytes);
   return source;
 }
 
