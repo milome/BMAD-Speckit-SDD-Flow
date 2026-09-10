@@ -343,7 +343,9 @@ function resolveFrozenGoalAuthority(input: { projectRoot: string; goalAuthorityP
       const reconstructed = compileGoalExecutionIR({
         profile: 'standalone', semanticSource: { kind: 'standalone_goal_semantic_ir', schemaVersion: 'StandaloneGoalSemanticIR/v2',
           standaloneGoalSemanticIRHash: standaloneSemanticIrHash,
-          canonicalRequirementGraphRef: goalExecutionIr.semanticSource?.canonicalRequirementGraphRef },
+          ...(goalExecutionIr.semanticSource?.canonicalRequirementGraphRef
+            ? { canonicalRequirementGraphRef: goalExecutionIr.semanticSource.canonicalRequirementGraphRef }
+            : {}) },
         standaloneLineage: { sourcePlanHash: standaloneSemanticIr.sourcePlanHash, sourceSnapshotHash: standaloneSemanticIr.sourceSnapshotHash,
           standaloneGoalSemanticIRHash: standaloneSemanticIrHash, internalSemanticGateHash: internalGate.hash },
         technicalAuthority: { standaloneGoalSemanticIRHash: standaloneSemanticIrHash, internalSemanticGateHash: internalGate.hash },

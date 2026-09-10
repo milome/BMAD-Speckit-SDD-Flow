@@ -15,7 +15,7 @@ const fixture = (aggregate = false) => {
     pass: [{ text: `${name} matches its declared result.` }] }));
   const nodes = [
     ...works.map((work) => ({ sourceRootId: work.id, executionRole: 'action' as const, text: work.text,
-      polarity: 'required', normativeStrength: 'must', conditions: [], scope: { kind: 'work', ownerId: work.id }, declaredIds: [work.id] })),
+      polarity: 'required', normativeStrength: 'must', conditions: [], scope: { kind: 'work' }, declaredIds: [work.id] })),
     { sourceRootId: 'BOUND-alpha', executionRole: 'boundary' as const, text: 'Do not touch the alpha cache.',
       polarity: 'forbidden', normativeStrength: 'must', conditions: [{ kind: 'when', text: 'When alpha is enabled.' }],
       scope: { kind: 'work', ownerId: 'WORK-alpha' }, declaredIds: [], priority: { rank: 1, basis: 'source_order' } },
@@ -31,7 +31,7 @@ const fixture = (aggregate = false) => {
     ...(aggregate && index === 1 && kind === 'CMD' ? { sourceDeclarationRefs: ['SOURCE-CMD-beta'] } : {}),
   })));
   const authority = createTypedSourceAuthority({ schemaVersion: 'requirements-contract-typed-source-graph/v2', sourceNodes: nodes,
-    sourceRelations: [{ relationId: 'REL-1', kind: 'applies_to', from: 'BOUND-alpha', to: 'WORK-alpha', blockId: 'alpha-section' }],
+    sourceRelations: [{ relationId: 'REL-1', kind: 'owned_by', from: 'BOUND-alpha', to: 'WORK-alpha', blockId: 'alpha-section' }],
     sourceBlocks: [{ id: 'alpha-section' }, ...(aggregate ? [
       { id: 'B-beta', text: 'Execution Class: aggregate_only\nOwned Production Paths: none\nAggregate Gate Phase: final_aggregate\nAggregate Validation Commands: `VERIFY-BETA`',
         disposition: 'requirement', scope: { kind: 'work', owner: 'WORK-beta' } },
@@ -83,9 +83,10 @@ describe('Requirements typed authority to Goal bridge', () => {
     const value = fixture();
     const spans = value.semanticIr.semanticPayload.specSpanRegistry as any[];
     const actionIds = value.nodes.filter((node) => node.executionRole === 'action').map((node) => node.sourceRootId);
+    const obligationIds = value.nodes.map((node) => node.sourceRootId);
     spans.splice(0, spans.length, { specSpanId: 'SPEC-SPAN-GROUP', authorityClass: 'source_grounded',
       normalizedClaimHash: value.authority.graphHash, boundTypedSourceGraphHash: value.authority.graphHash,
-      boundObligationIds: actionIds, boundSemanticNodeIds: [...actionIds, ...actionIds.map((id) => `${id}-A1`)], evidenceClaimRefs: [] });
+      boundObligationIds: obligationIds, boundSemanticNodeIds: [...obligationIds, ...actionIds.map((id) => `${id}-A1`)], evidenceClaimRefs: [] });
     const ir = compileGoalExecutionIR(value.input());
     expect(ir.obligations.every((row) => row.sourceRefs.includes('SPEC-SPAN-GROUP'))).toBe(true);
     const result = typedConsumerProbe(ir);
@@ -167,6 +168,7 @@ describe('Requirements typed authority to Goal bridge', () => {
     const boundary = graph.sourceNodes.find((node) => node.sourceRootId === 'BOUND-alpha')!;
     boundary.conditions = [{ kind: 'when', text: 'When alpha is enabled.', sourceRefs: ['DECLARED-condition'] }];
     boundary.scope = { kind: 'section', owner: 'GUIDE-section' };
+    graph.sourceRelations.find((relation) => relation.relationId === 'REL-1')!.to = 'GUIDE-section';
     value.replaceTypedAuthority(createTypedSourceAuthority(graph));
     const ir = compileGoalExecutionIR(value.input());
     const obligation = ir.obligations.find((row) => row.obligationId === 'BOUND-alpha')!;

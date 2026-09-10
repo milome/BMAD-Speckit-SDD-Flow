@@ -15,7 +15,10 @@ async function fixture() {
       requiredOutcome: `Operation ${name} succeeds.`, specSpanRefs: [`SPAN-${id}`],
       normativeStrength: 'must', polarity: 'required', executionRole: 'action', conditions: [],
       applicability: { scope: 'obligations', obligationRefs: [id], sourceRefs: [`SPAN-${id}`] } })),
-    logicalSpecSpans: operations.map(({ id }) => ({ specSpanId: `SPAN-${id}`,
+    logicalSpecSpans: operations.map(({ id }, index) => ({ specSpanId: `SPAN-${id}`,
+      sourceArtifactId: 'fixture:standalone-empty-coexecution', sourceSnapshotHash: hash('2'),
+      startByte: index * 16, endByteExclusive: index * 16 + 8,
+      lineStart: index + 1, lineEnd: index + 1, exactTextHash: hash(String(index + 3)),
       boundObligationIds: [id], evidenceClaimRefs: [] })),
     technicalSnapshot: {
       targetPaths: operations.map(({ name }) => `src/${name}.ts`),
