@@ -2,7 +2,9 @@ const { describe, it } = require('node:test');
 const assert = require('node:assert');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
+const { x: extractTar } = require('tar');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const REPO_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
@@ -21,9 +23,14 @@ const {
 } = require(path.join(PACKAGE_ROOT, 'dist', 'main-agent', 'source-authority', 'scripts',
   'requirements-contract-typed-source-compiler.js'));
 const {
+  requirementsTypedSemanticSource,
   projectRequirementsTypedGoalObligations,
 } = require(path.join(PACKAGE_ROOT, 'dist', 'utils', 'goal-contract', 'control-plane',
   'goal-requirements-typed-bridge.js'));
+const {
+  resolveConfirmedRequirementsAuthority,
+} = require(path.join(PACKAGE_ROOT, 'dist', 'main-agent', 'source-authority', 'scripts',
+  'requirements-contract-confirmed-authority-adapter.js'));
 const {
   verifyBoundIndependentFixtureReview,
 } = require(path.join(REPO_ROOT, '_bmad', 'shared', 'goal-contract', 'scripts',
@@ -34,6 +41,8 @@ const paths = {
   expected: path.join(FIXTURE_ROOT, 'canonical-source-plan-v1-full.expected-graph.json'),
   review: path.join(FIXTURE_ROOT, 'canonical-source-plan-v1-full.fixture-review.json'),
   integrity: path.join(FIXTURE_ROOT, 'canonical-source-plan-v1-full.integrity.json'),
+  confirmedAuthorityArchive: path.join(FIXTURE_ROOT,
+    'canonical-source-plan-v1-full.confirmed-authority.tar.gz'),
   requirementsIntake: path.join(FIXTURE_ROOT,
     '.canonical-source-plan-v1-full.confirmed-requirements.authoring-input', 'intake.json'),
 };
@@ -210,7 +219,18 @@ describe('canonical Source Plan v1 full independent proof assets', () => {
       /integrity_semantic_node_orphan/u);
   });
 
-  it('adapts canonical nodes for native typed-source admission without changing their authority', (t) => {
+  it('adapts canonical nodes for native typed-source admission without changing their authority', async (t) => {
+    const confirmedProjectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'canonical-proof-authority-'));
+    t.after(() => fs.rmSync(confirmedProjectRoot, { recursive: true, force: true }));
+    await extractTar({ file: paths.confirmedAuthorityArchive, cwd: confirmedProjectRoot, strict: true });
+    const recordsRoot = path.join(confirmedProjectRoot, '_bmad-output', 'runtime', 'requirement-records');
+    const requestId = fs.readdirSync(recordsRoot).find((entry) =>
+      fs.statSync(path.join(recordsRoot, entry)).isDirectory());
+    assert.ok(requestId);
+    const confirmedAuthority = resolveConfirmedRequirementsAuthority({
+      projectRoot: confirmedProjectRoot,
+      requirementRecordPath: path.join(recordsRoot, requestId, 'record', 'requirement-record.json'),
+    });
     const intake = readJson(paths.requirementsIntake);
     const proof = loadProofAssets();
     const scan = scanRequirementsContractConsumerAuthority({
@@ -311,14 +331,8 @@ describe('canonical Source Plan v1 full independent proof assets', () => {
       assert.strictEqual(node.normativeStrength, String(canonical.normativeStrength).toLowerCase());
     }
 
-    const semanticSource = {
-      kind: 'requirements_semantic_ir',
-      schemaVersion: 'requirements-contract-semantic-ir/v2',
-      typedSourceAuthority: authority,
-      typedSourceGraphHash: authority.graphHash,
-      typedAtoms: [],
-      typedExecutionConstraints: [],
-    };
+    const semanticSource = requirementsTypedSemanticSource(confirmedAuthority.semanticIr);
+    assert.strictEqual(semanticSource.typedSourceGraphHash, authority.graphHash);
     const obligations = projectRequirementsTypedGoalObligations(semanticSource, []);
     const projectedOut = obligations.filter((row) => outNodes.some((node) =>
       node.sourceRootId === row.obligationId));
