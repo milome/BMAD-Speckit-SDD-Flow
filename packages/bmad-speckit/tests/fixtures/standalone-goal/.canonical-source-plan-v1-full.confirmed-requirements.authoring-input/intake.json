@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "requirements-contract-authoring-intake/v1",
+  "evidenceClass": "reviewed-independent-canonical-derivation",
+  "derivationBindings": {
+    "canonicalSource": {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full.md",
+      "byteCount": 2579033,
+      "sha256": "sha256:d0aa0be0d8773e8029724c2dd4027578bfdf614870c93332cc082fb54890f74a"
+    },
+    "derivationManifest": {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full.derivation-manifest.json",
+      "byteCount": 1698800,
+      "sha256": "sha256:172b7c413d180a62bbfe7694875b2c44623c8ccf77659047322b5ff92fe6bfcf"
+    },
+    "expectedGraph": {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full.expected-graph.json",
+      "byteCount": 6598317,
+      "sha256": "sha256:c9471e0197aff6dd6e2b1e6bff7e7003e0471b13e9998daa1b010458be588537"
+    },
+    "integrity": {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full.integrity.json",
+      "byteCount": 3238,
+      "sha256": "sha256:83c129472d91b873506579f969e166d6f8dcf0b292483f6b10ddd9aa4410b99d"
+    },
+    "manifestHash": "sha256:b86f23c082795dee2b9340435ea774b3732c39b825c371d9390c2084109f3bc8",
+    "expectedDocumentHash": "sha256:50d4d205a7324e7d32152c3c2aac8a2f83bc4a5f0619e337b5baf9aaf3404f85",
+    "canonicalRequirementGraphHash": "sha256:e3e3d3e5944ec94cbf6a8ca7c9b7ce6daf235ee593e4277a9b632e8f8a51ce08",
+    "integrityHash": "sha256:f48faa54993245ad03995b0d79d24916c139c39279a5c589cf36655558ca7733"
+  },
+  "authoritySources": [
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/.canonical-source-plan-v1-full.confirmed-requirements.authoring-input/authority-bundle.json",
+      "rootClass": "source_bundle",
+      "proposedAuthorityClass": "source_authority",
+      "bodySchemaVersion": "requirements-contract-authority-bundle/v2"
+    }
+  ]
+}
