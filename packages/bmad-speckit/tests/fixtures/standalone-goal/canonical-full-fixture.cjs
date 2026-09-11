@@ -89,7 +89,8 @@ function materializeFullFixture({ root = null, copyOracleHelpers = false } = {})
     const source = path.join(FIXTURE_ROOT, '..', '..', '..', '..', '..', relative);
     const target = path.join(materializedRoot, relative);
     fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.copyFileSync(source, target);
+    if (fs.existsSync(source)) fs.copyFileSync(source, target);
+    if (!fs.existsSync(target)) throw new Error(`canonical_full_fixture_overlay_missing:${relative}`);
   }
   if (copyOracleHelpers) {
     for (const entry of manifest.files) {

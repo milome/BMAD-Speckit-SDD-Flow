@@ -232,7 +232,9 @@ function requirementsParentOnlyObligationRefs(ir: JsonObject): Set<string> {
     objects(ir.obligations)
       .filter(
         (row) =>
-          row.executionRole !== 'action' && object(row.applicability).scope === 'source_scope'
+          row.executionRole !== 'action' &&
+          !['guidance', 'acceptance'].includes(String(row.executionRole)) &&
+          object(row.applicability).scope === 'source_scope'
       )
       .map((row) => String(row.obligationId))
   );
@@ -259,6 +261,9 @@ function deriveGroupAuthorityRefs(ir: JsonObject, group: JsonObject): JsonObject
   );
   const actionRefs = unique(traces.flatMap((trace) => strings(trace.obligationRefs)));
   const constraints = standaloneExecutionConstraints(ir);
+  const parentOnlyObligationRefs = isTypedGoalExecutionIr(ir.schemaVersion)
+    ? requirementsParentOnlyObligationRefs(ir)
+    : new Set<string>();
   const selectedConstraints = (constraints ?? []).filter(
     (row) =>
       row.scope === 'global' ||
@@ -276,6 +281,9 @@ function deriveGroupAuthorityRefs(ir: JsonObject, group: JsonObject): JsonObject
               strings(object(row.applicability).obligationRefs).some((ref) =>
                 actionRefs.includes(ref)
               ) ||
+              (ir.profile === 'requirements_backed' &&
+                object(row.applicability).scope === 'source_scope' &&
+                !parentOnlyObligationRefs.has(String(row.obligationId))) ||
               constraintObligations.has(String(row.obligationId)))
         )
         .map((row) => String(row.obligationId))

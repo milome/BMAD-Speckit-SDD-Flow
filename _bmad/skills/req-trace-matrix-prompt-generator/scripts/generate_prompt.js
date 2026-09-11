@@ -759,7 +759,10 @@ function compileSharedConfirmedRequirementsGoal(context, args) {
 function resolveCanonicalConfirmedContext(args, sourcePath) {
   if (!args.requirementRecord) return null;
   const record = readJson(args.requirementRecord);
-  if (record.schemaVersion !== 'requirements-contract-record/v1') return null;
+  if (
+    record.schemaVersion !== 'requirements-contract-record/v1' ||
+    record.lifecycle !== 'user_confirmed'
+  ) return null;
   let authority;
   try {
     authority = confirmedAuthorityRuntime().resolveConfirmedRequirementsAuthority({
@@ -2070,7 +2073,10 @@ function buildModelPacket(context, args) {
       auditReceiptRole: 'generator_self_audit_only_not_delivery_proof',
       sourceTraceMutationPolicy: 'confirmed_source_traceRows_status_must_not_be_rewritten',
     },
-    sharedGoalCompilation: context.sharedGoalCompilation,
+    ...(context.sharedGoalCompilation ? { sharedGoalCompilation: context.sharedGoalCompilation } : {}),
+    ...(context.legacyCompatibilityRoute
+      ? { legacyCompatibilityRoute: context.legacyCompatibilityRoute }
+      : {}),
     executionDisciplineProfile: context.executionDisciplineProfile,
     traceOrder: objects(confirmation.traceRows).map((row) => String(row.id)),
     traceSlices: buildTraceSlices(confirmation),
@@ -2384,7 +2390,7 @@ function enforceNoOutDirGoalLength(args, confirmation) {
   );
 }
 
-function renderSharedGoalExecutionDocument(packet, artifactPaths, sharedGoalProjection) {
+function renderGoalExecutionDocument(packet, artifactPaths, sharedGoalProjection, contractBodyKind) {
   const markdown = sharedGoalProjection?.markdown;
   const contractBodyHash = sharedGoalProjection?.bytesHash;
   if (
@@ -2401,7 +2407,7 @@ function renderSharedGoalExecutionDocument(packet, artifactPaths, sharedGoalProj
   const envelopePayload = {
     schemaVersion: 'goal-execution-projection-envelope/v1',
     contractBodyRef: {
-      kind: 'shared_confirmed_requirements_goal_projection',
+       kind: contractBodyKind,
       hash: contractBodyHash,
       lengthBytes: contractBodyLengthBytes,
     },
@@ -2442,6 +2448,63 @@ function renderSharedGoalExecutionDocument(packet, artifactPaths, sharedGoalProj
   };
 }
 
+function renderSharedGoalExecutionDocument(packet, artifactPaths, sharedGoalProjection) {
+  return renderGoalExecutionDocument(
+    packet,
+    artifactPaths,
+    sharedGoalProjection,
+    'shared_confirmed_requirements_goal_projection'
+  );
+}
+
+function renderLegacyGoalExecutionDocument(packet, artifactPaths) {
+  const taskReportPath = packet.executionHandoff?.taskReportPath || '(required TaskReport path)';
+  const markdown = `# Goal Execution Contract
+
+Goal Execution IR:
+- schemaVersion: legacy_compiler_contract/v1
+- sourceDocumentHash: ${packet.sourceDocumentHash}
+
+## Obligations
+${[...(packet.requirements?.must || []), ...(packet.requirements?.notDone || []), ...(packet.requirements?.mustNot || [])]
+  .map((row) => `- ${row.id || row.obligationId || row.text}`)
+  .join('\n') || '- implementationConfirmation obligations'}
+
+## Atomic Tasks
+${(packet.atomicImplementationTaskList || [])
+  .map((row) => `- ${row.id || row.taskId || row.text}`)
+  .join('\n') || '- implementationConfirmation atomic task list'}
+
+AI-TDD protocol:
+- Packet ID: ${packet.packetId}
+- TaskReport path: ${taskReportPath}
+- TaskReport schema: { packetId, status, filesChanged, validationsRun, evidence, downstreamContext, driftFlags? }
+
+Allowed write scope:
+${(packet.runtimeWritePolicy?.allowedWriteScope || []).map((value) => `- ${value}`).join('\n') || '- compiler-contract declared scope'}
+
+Required validation commands:
+${packet.requirements?.evidence?.map((row) => `- ${row.gate || row.command || row.text || row.id}`).join('\n') || '- implementationConfirmation.requiredCommands'}
+
+Completion evidence fields:
+- status
+- filesChanged
+- validationsRun
+- evidence
+- downstreamContext
+
+Stop conditions:
+- finalGateMatrix_allows_closeout
+- reconfirm_required on semantic gaps
+`;
+  return renderGoalExecutionDocument(
+    packet,
+    artifactPaths,
+    { markdown, bytesHash: sha256(markdown) },
+    'legacy_compiler_contract_projection'
+  );
+}
+
 function ensureGoalDocumentPrepared(
   args,
   promptMeta,
@@ -2456,11 +2519,9 @@ function ensureGoalDocumentPrepared(
     promptMeta.goalContractTemplate = null;
     return;
   }
-  const goalDocumentResult = renderSharedGoalExecutionDocument(
-    packet,
-    artifactPaths,
-    sharedGoalProjection
-  );
+  const goalDocumentResult = packet.legacyCompatibilityRoute
+    ? renderLegacyGoalExecutionDocument(packet, artifactPaths)
+    : renderSharedGoalExecutionDocument(packet, artifactPaths, sharedGoalProjection);
   const goalDocument = goalDocumentResult.document;
   const goalDocumentHash = goalDocumentResult.binding.documentHash;
   packet.sharedGoalCompilation = Object.freeze({
@@ -2949,7 +3010,15 @@ function compileArtifacts(args) {
       };
     }
 
-    context.sharedGoalCompilation = compileSharedConfirmedRequirementsGoal(context, args);
+    if (context.authority) {
+      context.sharedGoalCompilation = compileSharedConfirmedRequirementsGoal(context, args);
+    } else {
+      context.legacyCompatibilityRoute = {
+        schemaVersion: 'req-trace-legacy-compatibility-route/v1',
+        route: 'compiler_contract_only',
+        authority: 'implementationConfirmation_plus_requirementRecord',
+      };
+    }
     const packet = buildModelPacket(context, args);
     const aliasBlockingReasons = manifestAliasBlockingReasons(packet);
     if (aliasBlockingReasons.length > 0) {

@@ -802,21 +802,24 @@ export function projectRequirementsTypedGoalObligations(
         : text(executionAttributes.ownedProductionPaths);
       const aggregateGatePhase = text(executionAttributes.aggregateGatePhase);
       const aggregateValidationCommands = strings(executionAttributes.aggregateValidationCommands);
+      const declaredTaskExecution = record(node).taskExecution;
       const taskExecution =
-        executionClass && ownedProductionPaths
-          ? {
-              executionClass,
-              ownedProductionPaths,
-              sourceRefs: unique([
-                id,
-                ...[node.sourceBlockId].filter(
-                  (value): value is string => typeof value === 'string'
-                ),
-              ]),
-              ...(aggregateGatePhase ? { aggregateGatePhase } : {}),
-              ...(aggregateValidationCommands.length > 0 ? { aggregateValidationCommands } : {}),
-            }
-          : undefined;
+        declaredTaskExecution !== undefined
+          ? structuredClone(declaredTaskExecution)
+          : executionClass && ownedProductionPaths
+            ? {
+                executionClass,
+                ownedProductionPaths,
+                sourceRefs: unique([
+                  id,
+                  ...[node.sourceBlockId].filter(
+                    (value): value is string => typeof value === 'string'
+                  ),
+                ]),
+                ...(aggregateGatePhase ? { aggregateGatePhase } : {}),
+                ...(aggregateValidationCommands.length > 0 ? { aggregateValidationCommands } : {}),
+              }
+            : undefined;
       return {
         obligationId: id,
         kind: obligationKind(node),

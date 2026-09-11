@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
@@ -169,7 +169,7 @@ export function createFullSourceBundle() {
   const expected = JSON.parse(expectedBytes.toString('utf8'));
   const root = mkdtempSync(path.join(os.tmpdir(), 'test-only-full-source-bundle-'));
   mkdirSync(path.join(root, 'inputs'), { recursive: true });
-  copyFileSync(`${prefix}.md`, path.join(root, 'inputs/raw-source.md'));
+  writeFileSync(path.join(root, 'inputs/raw-source.md'), raw);
   const authoritySources: ReturnType<typeof bundleEntry>[] = [];
   const sourceRoots: Json[] = [];
   const sourceRelations: Json[] = [];

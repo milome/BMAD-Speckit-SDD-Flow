@@ -1,11 +1,23 @@
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const sourcePath = path.resolve('packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.md');
-const expectedPath = sourcePath.replace(/\.md$/u, '.expected.json');
+const fixtureTools = createRequire(import.meta.url)(
+  '../../packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-full-fixture.cjs'
+);
+const materializedFixture = fixtureTools.materializeFullFixture();
+process.on('exit', () => {
+  try {
+    rmSync(materializedFixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  } catch {
+    // Best-effort cleanup for the process-scoped fixture workspace.
+  }
+});
+const sourcePath = materializedFixture.legacySourcePath;
+const expectedPath = materializedFixture.expectedOraclePath;
 const probe = `
 const fs=require('node:fs'),path=require('node:path');
 const base=path.resolve('packages/bmad-speckit/src/utils/goal-contract');
