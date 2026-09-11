@@ -7,6 +7,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const Ajv2020 = require('ajv/dist/2020');
 const addFormats = require('ajv-formats');
+const { x: extractTar } = require('tar');
 const { materializeFullFixture } = require('./fixtures/standalone-goal/canonical-full-fixture.cjs');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
@@ -18,6 +19,13 @@ const SOURCE_OBLIGATION_EXTRACTOR = path.join(
   'utils',
   'goal-contract',
   'source-obligation-extractor.ts'
+);
+const CONFIRMED_AUTHORITY_ARCHIVE = path.join(
+  PACKAGE_ROOT,
+  'tests',
+  'fixtures',
+  'standalone-goal',
+  'canonical-source-plan-v1-full.confirmed-authority.tar.gz'
 );
 const SOURCE_RUNNER = [
   'const { goalContractCommand } = require(process.argv[1]);',
@@ -4196,5 +4204,110 @@ describe('goal-contract task file-scope authority', () => {
     assert.equal(payload.lineEnd, payload.lineStart);
     assert.equal(payload.substitutePath, undefined);
     assert.equal(fs.existsSync(out), false);
+  });
+
+  it('partitions confirmed Requirements after six-state readiness without expanding child scope', async () => {
+    const root = tempRoot();
+    try {
+      await extractTar({ file: CONFIRMED_AUTHORITY_ARCHIVE, cwd: root, strict: true });
+      const recordsRoot = path.join(root, '_bmad-output', 'runtime', 'requirement-records');
+      const requestId = fs.readdirSync(recordsRoot).find((entry) =>
+        fs.statSync(path.join(recordsRoot, entry)).isDirectory()
+      );
+      assert.ok(requestId);
+      const requirementRecordPath = path.join(
+        recordsRoot,
+        requestId,
+        'record',
+        'requirement-record.json'
+      );
+      const { resolveConfirmedRequirementsAuthority } = require(
+        '../src/main-agent/source-authority/scripts/requirements-contract-confirmed-authority-adapter.ts'
+      );
+      const { compileConfirmedRequirementsGoalSemantics } = require(
+        '../src/utils/goal-contract/control-plane/confirmed-requirements-goal-compiler.ts'
+      );
+      const {
+        compileFrozenGoalExecutionEligibility,
+        compilePartitionFromFrozenGoalAuthority,
+      } = require('../src/utils/goal-contract/control-plane/frozen-goal-activation.ts');
+      const authority = resolveConfirmedRequirementsAuthority({
+        projectRoot: root,
+        requirementRecordPath,
+      });
+      const base = compileConfirmedRequirementsGoalSemantics({ authority });
+      const typedConstraints = base.goalExecutionIr.semanticSource.typedExecutionConstraints
+        .filter((constraint) => constraint.kind === 'PATH');
+      const architectureHash = hash('confirmed-six-state-architecture');
+      const readinessHash = hash('confirmed-six-state-readiness');
+      const readinessDigest = hash('confirmed-six-state-input');
+      const sixState = compileConfirmedRequirementsGoalSemantics({
+        authority,
+        sixStateContext: {
+          architecture: {
+            architectureConfirmationCandidateHash: architectureHash,
+            isolation: { mode: 'canonical_requirement_graph' },
+            ownership: typedConstraints.map((constraint) => ({
+              targetPath: constraint.canonicalValue,
+              owner: constraint.applicableSourceRefs?.[0] ?? constraint.scope?.owner ?? constraint.constraintId,
+              basisRefs: [constraint.constraintId],
+              obligationRefs: constraint.applicableMustRefs ?? [],
+              atomRefs: constraint.applicableAtomRefs ?? [],
+              sourceRefs: constraint.sourceRefs ?? [constraint.constraintId],
+            })),
+            architectureDecisions: [],
+            logicalScope: { forbiddenPaths: [] },
+          },
+          readiness: {
+            implementationReadinessCandidateHash: readinessHash,
+            readinessScopedInputDigest: readinessDigest,
+            normalizedCommands: [],
+            inputArtifacts: [],
+            redOutcomes: [],
+          },
+          architectureConfirmationCandidateHash: architectureHash,
+          implementationReadinessCandidateHash: readinessHash,
+          readinessScopedInputDigest: readinessDigest,
+        },
+      });
+      const eligibility = compileFrozenGoalExecutionEligibility(sixState.goalExecutionIr);
+      assert.deepEqual(
+        { decision: eligibility.decision, executionMode: eligibility.executionMode, componentCount: eligibility.componentCount },
+        { decision: 'pass', executionMode: 'partitioned_goal', componentCount: 16 }
+      );
+      const partition = compilePartitionFromFrozenGoalAuthority({
+        goalExecutionIr: sixState.goalExecutionIr,
+        eligibility,
+        executionAdapterRef: {
+          path: 'adapter/authority.json',
+          hash: hash('confirmed-six-state-execution-adapter'),
+        },
+      });
+      assert.equal(partition.manifest.partitionOutcome, 'complete_valid');
+      assert.equal(partition.manifest.partitionCount, 16);
+      const childContracts = partition.manifest.partitions.map((row) => {
+        const bytes = partition.files.get(
+          `partition/children/${row.partitionId}/child-execution-contract.json`
+        );
+        assert.ok(Buffer.isBuffer(bytes));
+        return JSON.parse(bytes.toString('utf8'));
+      });
+      assert.equal(new Set(childContracts.flatMap((child) => child.taskRefs)).size, 16);
+      assert.equal(
+        new Set(childContracts.flatMap((child) => child.traceSliceRefs)).size,
+        sixState.goalExecutionIr.traceSlices.length
+      );
+      const obligationCount = childContracts.reduce(
+        (total, child) => total + child.obligations.length,
+        0
+      );
+      assert.ok(obligationCount < 500, `child obligation expansion: ${obligationCount}`);
+      assert.ok(
+        Math.max(...childContracts.map((child) => child.obligations.length)) < 120,
+        'one child inherited an unbounded source-scope obligation set'
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 });
