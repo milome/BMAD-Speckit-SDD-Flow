@@ -3007,7 +3007,7 @@ function compileArtifacts(args) {
       };
     }
 
-    if (context.authority) {
+    if (context.authority || args.entry === 'main_agent_compile') {
       context.sharedGoalCompilation = compileSharedConfirmedRequirementsGoal(context, args);
     } else {
       context.legacyCompatibilityRoute = {
