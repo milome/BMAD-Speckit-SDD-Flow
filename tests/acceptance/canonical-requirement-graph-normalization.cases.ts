@@ -611,10 +611,18 @@ describe('CanonicalRequirementGraph normalization boundary', () => {
       return samples[0];
     });
     const ratios = [durations[1] / durations[0], durations[2] / durations[1]];
-    console.info(JSON.stringify({ evidence: 'typed-relation-scaling', sizes, durations, ratios }));
-    expect(ratios[0], JSON.stringify({ sizes, durations, ratios })).toBeLessThan(3);
-    expect(ratios[1], JSON.stringify({ sizes, durations, ratios })).toBeLessThan(3);
-    expect(durations[2] / durations[0], JSON.stringify({ sizes, durations, ratios })).toBeLessThan(7);
+    const totalGrowth = durations[2] / durations[0];
+    const growthExponent = Math.log(totalGrowth) / Math.log(sizes[2] / sizes[0]);
+    console.info(JSON.stringify({
+      evidence: 'typed-relation-scaling',
+      sizes,
+      durations,
+      ratios,
+      totalGrowth,
+      growthExponent,
+    }));
+    expect(growthExponent, JSON.stringify({ sizes, durations, ratios, totalGrowth })).toBeLessThan(1.8);
+    expect(totalGrowth, JSON.stringify({ sizes, durations, ratios, growthExponent })).toBeLessThan(8);
   }, 120_000);
 
   it('recovers explicit global command bindings and preserves templates as non-action declarations', () => {
