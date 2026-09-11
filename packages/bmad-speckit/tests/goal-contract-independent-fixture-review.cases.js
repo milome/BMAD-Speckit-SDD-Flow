@@ -9,6 +9,7 @@ const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
 const {
   bindIndependentFixtureReview,
   canonicalHash,
+  resolveProvenancePath,
 } = require(path.join(
   REPO_ROOT,
   '_bmad',
@@ -222,6 +223,18 @@ function buildControlledProvenance(value, options = {}) {
 }
 
 describe('independent fixture review binding', () => {
+  it('anchors Windows absolute artifact paths to the project root on every host', () => {
+    const value = fixture();
+    const resolved = resolveProvenancePath(
+      value.projectRoot,
+      'D:/historical-run/.artifacts/controlled/control-events.jsonl'
+    );
+    assert.equal(
+      resolved,
+      path.join(value.projectRoot, '.artifacts', 'controlled', 'control-events.jsonl')
+    );
+  });
+
   it('confirms only three exact latest-hash PASS reports plus an independent disposition', () => {
     const value = fixture();
     const review = bind(value);

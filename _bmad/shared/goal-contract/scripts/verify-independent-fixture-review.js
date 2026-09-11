@@ -108,8 +108,9 @@ function readProvenanceFile(projectRoot, relativePath) {
 
 function resolveProvenancePath(projectRoot, value) {
   const candidate = String(value || '');
-  if (!path.isAbsolute(candidate)) return path.resolve(projectRoot, candidate);
   const normalized = candidate.replace(/\\/gu, '/');
+  const windowsAbsolute = /^[A-Za-z]:\//u.test(normalized) || normalized.startsWith('//');
+  if (!path.isAbsolute(candidate) && !windowsAbsolute) return path.resolve(projectRoot, candidate);
   const marker = '/.artifacts/';
   const markerIndex = normalized.indexOf(marker);
   if (markerIndex < 0) return path.resolve(projectRoot, candidate);
@@ -376,5 +377,6 @@ function verifyBoundIndependentFixtureReview(input) {
 module.exports = {
   bindIndependentFixtureReview,
   canonicalHash,
+  resolveProvenancePath,
   verifyBoundIndependentFixtureReview,
 };
