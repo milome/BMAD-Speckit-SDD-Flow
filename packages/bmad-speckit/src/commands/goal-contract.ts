@@ -537,7 +537,19 @@ async function generateWholeSource(args, _commandOptions = {}) {
     sourcePath: normalize(sourcePath),
     rawBytes: rawSourceBytes,
   });
-  if (!sourceLint.ok) {
+  const legacyCompatibilityRequested = has(args, '--legacy-compatibility');
+  const legacyCompatibilityIssueClasses = new Set([
+    'legacy_source_plan_authority_missing',
+    'legacy_source_evidence_closure_missing',
+    'legacy_source_requirement_orphaned',
+    'source_semantic_owner_missing',
+  ]);
+  const legacyCompatibilityEligible =
+    legacyCompatibilityRequested &&
+    sourceLint.detectedSourcePlanVersion === 'legacy/unversioned' &&
+    sourceLint.issues.length > 0 &&
+    sourceLint.issues.every((issue) => legacyCompatibilityIssueClasses.has(issue.failureClass));
+  if (!sourceLint.ok && !legacyCompatibilityEligible) {
     const firstIssue = sourceLint.issues[0];
     throw Object.assign(new Error(firstIssue?.failureClass || 'source_plan_lint_failed'), {
       ...firstIssue,

@@ -64,7 +64,13 @@ function runBuiltCommand(args) {
 }
 
 function standaloneGenerateArgs(args) {
-  return ['generate', '--entry', 'standalone_goal_contract', ...args];
+  return [
+    'generate',
+    '--entry',
+    'standalone_goal_contract',
+    '--legacy-compatibility',
+    ...args,
+  ];
 }
 
 describe('partition compiler identity', () => {
@@ -643,7 +649,7 @@ describe('bmad-speckit goal-contract command', () => {
     const goalText = fs.readFileSync(out, 'utf8');
     assert.match(goalText, /sourceBytes: \d+/u);
     assert.match(goalText, /sourceLines: \d+/u);
-    assert.match(goalText, /goalContractProfileVersion: 3\.0\.0/u);
+    assert.match(goalText, /goalContractProfileVersion: 3\.1\.0/u);
     assert.match(goalText, /entryScenario: standalone_goal_contract/u);
     assert.match(goalText, /finalArtifactAuthority: goal_active_execution_authority_tuple/u);
     assert.match(goalText, /coverageReceiptPath:/u);
