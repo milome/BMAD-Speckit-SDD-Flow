@@ -154,7 +154,7 @@ function semanticConfirmationForHash(
   return semantic;
 }
 
-function confirmationHashes(sourceText: string): {
+export function confirmationHashes(sourceText: string): {
   sourceDocumentHash: string;
   implementationConfirmationHash: string;
 } {
@@ -164,8 +164,9 @@ function confirmationHashes(sourceText: string): {
   if (!confirmation) throw new Error('missing parsed implementationConfirmation');
   const semantic = semanticConfirmationForHash(confirmation);
   const normalizedBlock = `implementationConfirmation:${stableStringify(semantic)}`;
+  const normalizedSourceText = sourceText.replace(/\r\n/gu, '\n');
   return {
-    sourceDocumentHash: sha256Text(sourceText.replace(blockText, normalizedBlock)),
+    sourceDocumentHash: sha256Text(normalizedSourceText.replace(blockText, normalizedBlock)),
     implementationConfirmationHash: sha256Text(stableStringify(semantic)),
   };
 }

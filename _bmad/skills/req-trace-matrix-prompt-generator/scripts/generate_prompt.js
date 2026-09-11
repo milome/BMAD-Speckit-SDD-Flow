@@ -350,6 +350,11 @@ function sha256(content) {
   return `sha256:${crypto.createHash('sha256').update(content, 'utf8').digest('hex')}`;
 }
 
+function artifactBytesHash(role, mediaType, bytes) {
+  const prefix = Buffer.from(`artifactBytesHash/v1\n${role}\n${mediaType}\n`, 'utf8');
+  return `sha256:${crypto.createHash('sha256').update(prefix).update(bytes).digest('hex')}`;
+}
+
 function normalizeTextForHash(value) {
   const text = String(value);
   const withoutBom = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
@@ -554,10 +559,46 @@ function implementationConfirmationHashFor(confirmation) {
 function legacyProjectionInclusiveHashesFor(sourceText, blockText, confirmation) {
   const semantic = legacyProjectionInclusiveConfirmationForHash(confirmation);
   const normalizedBlock = `implementationConfirmation:${stableStringify(semantic)}`;
+  const normalizedSourceText = normalizeTextForHash(sourceText);
+  const normalizedOriginalBlock = normalizeTextForHash(blockText);
   return {
-    sourceDocumentHash: sha256(sourceText.replace(blockText, normalizedBlock)),
+    sourceDocumentHash: sha256(normalizedSourceText.replace(normalizedOriginalBlock, normalizedBlock)),
     implementationConfirmationHash: sha256(stableStringify(semantic)),
   };
+}
+
+function canonicalPresentationArtifactHash(bytes) {
+  const withoutComments = bytes
+    .toString('utf8')
+    .replace(/(?:\r?\n)+[ \t]*<!--[\s\S]*?-->[ \t]*(?=\r?\n|$)/gu, '')
+    .replace(/\r\n?/gu, '\n');
+  return artifactBytesHash('final_markdown', 'text/markdown', Buffer.from(withoutComments, 'utf8'));
+}
+
+function verifyCanonicalPresentationBinding(authority, projectRoot, sourcePath) {
+  const record = authority?.architectureContext?.record;
+  const promotionRef = record?.currentPromotionEvidence;
+  const promotionPath = promotionRef?.path;
+  if (typeof promotionPath !== 'string' || promotionPath.trim() === '') return;
+  const promotionFile = path.resolve(authority.recordRoot, promotionPath);
+  if (!fs.existsSync(promotionFile)) return;
+  const promotion = readJson(promotionFile);
+  const relativeSourcePath = normalizePathSafe(path.relative(projectRoot, path.resolve(sourcePath)));
+  const artifact = Array.isArray(promotion.artifacts)
+    ? promotion.artifacts.find((candidate) =>
+      candidate && candidate.role === 'final_markdown' &&
+      normalizePathSafe(candidate.targetPath) === relativeSourcePath)
+    : null;
+  if (!artifact || typeof artifact.artifactBytesHash !== 'string') return;
+  const bytes = fs.readFileSync(sourcePath);
+  const actual = artifactBytesHash('final_markdown', 'text/markdown', bytes);
+  const commentTolerant = canonicalPresentationArtifactHash(bytes);
+  if (actual !== artifact.artifactBytesHash && commentTolerant !== artifact.artifactBytesHash) {
+    throw new BlockedInput(
+      'BLOCK: SOURCE_PRESENTATION_HASH_MISMATCH',
+      'The confirmed Requirements source presentation no longer matches its promotion artifact.'
+    );
+  }
 }
 
 function extractConfirmationBlock(text) {
@@ -792,6 +833,11 @@ function resolveCanonicalConfirmedContext(args, sourcePath) {
   }
   const sourceDocumentHash = authority.lineage.finalMarkdownHash;
   const implementationConfirmationHash = authority.lineage.implementationConfirmationHash;
+  verifyCanonicalPresentationBinding(
+    authority,
+    projectRootForRequirementRecord(args.requirementRecord),
+    sourcePath
+  );
   return {
     authorityMode: 'canonical_record',
     authority,
