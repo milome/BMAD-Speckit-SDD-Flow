@@ -3,11 +3,17 @@ const fs = require('node:fs');
 const path = require('node:path');
 const yaml = require('js-yaml');
 
+const { materializeFullFixture } = require('./canonical-full-fixture.cjs');
+
 const fixtureRoot = __dirname;
 const repoRoot = path.resolve(fixtureRoot, '..', '..', '..', '..', '..');
-const legacyPath = path.join(fixtureRoot, 'real-source-plan-20260904.md');
-const oraclePath = path.join(fixtureRoot, 'real-source-plan-20260904.expected.json');
-const canonicalPath = path.join(fixtureRoot, 'canonical-source-plan-v1-full.md');
+const materializedFixture = materializeFullFixture({ copyOracleHelpers: true });
+process.on('exit', () => {
+  try { fs.rmSync(materializedFixture.root, { recursive: true, force: true }); } catch { /* best effort */ }
+});
+const legacyPath = materializedFixture.legacySourcePath;
+const oraclePath = materializedFixture.expectedOraclePath;
+const canonicalPath = materializedFixture.canonicalSourcePath;
 const profilePath = path.join(repoRoot, '_bmad', 'shared', 'goal-contract', 'standalone-source-plan-profile.json');
 const manifestSession = path.join(fixtureRoot, '.canonical-source-plan-v1-full.derivation-manifest.json.draft');
 const graphSession = path.join(fixtureRoot, '.canonical-source-plan-v1-full.expected-graph.json.draft');
@@ -72,6 +78,10 @@ function selfHash(document, field) {
 }
 
 function projectPath(value) {
+  const materializedRelative = path.relative(materializedFixture.root, value);
+  if (materializedRelative && !materializedRelative.startsWith('..') && !path.isAbsolute(materializedRelative)) {
+    return materializedRelative.replaceAll('\\', '/');
+  }
   return path.relative(repoRoot, value).replaceAll('\\', '/');
 }
 

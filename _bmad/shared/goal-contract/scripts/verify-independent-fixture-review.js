@@ -106,6 +106,16 @@ function readProvenanceFile(projectRoot, relativePath) {
   return { path: safe.normalized, resolved: safe.resolved };
 }
 
+function resolveProvenancePath(projectRoot, value) {
+  const candidate = String(value || '');
+  if (!path.isAbsolute(candidate)) return path.resolve(projectRoot, candidate);
+  const normalized = candidate.replace(/\\/gu, '/');
+  const marker = '/.artifacts/';
+  const markerIndex = normalized.indexOf(marker);
+  if (markerIndex < 0) return path.resolve(projectRoot, candidate);
+  return path.resolve(projectRoot, normalized.slice(markerIndex + 1));
+}
+
 function readControlEvents(eventLogPath) {
   invariant(fs.existsSync(eventLogPath), 'independent_fixture_provenance_journal_missing');
   const content = fs.readFileSync(eventLogPath, 'utf8').trim();
@@ -138,7 +148,7 @@ function verifyControlledProvenance(input, reportIdentities, dispositionIdentity
   }
   const controlStore = record && typeof record.controlStore === 'object' ? record.controlStore : {};
   const recordEventLog = typeof controlStore.eventLogPath === 'string'
-    ? path.resolve(input.projectRoot, controlStore.eventLogPath)
+    ? resolveProvenancePath(input.projectRoot, controlStore.eventLogPath)
     : '';
   const recordHead = record.eventChainHead ?? controlStore.eventChainHead;
   const recordCount = record.eventCount ?? controlStore.eventCount;
@@ -168,7 +178,7 @@ function verifyControlledProvenance(input, reportIdentities, dispositionIdentity
       receipt.eventHash === event.eventHash && receipt.eventType === event.eventType &&
       receipt.writerId === event.writerId && receipt.recordId === event.recordId &&
       receipt.requirementSetId === event.requirementSetId &&
-      path.resolve(input.projectRoot, String(receipt.eventLogPath)) === journal.resolved &&
+      resolveProvenancePath(input.projectRoot, String(receipt.eventLogPath)) === journal.resolved &&
       receipt.beforeRecordHash === event.beforeRecordHash && receipt.afterRecordHash === event.afterRecordHash,
     'independent_fixture_provenance_receipt_binding_invalid');
     return { path: path.relative(input.projectRoot, receiptPath).replace(/\\/gu, '/'), hash: sha256(bytes), eventHash: event.eventHash };

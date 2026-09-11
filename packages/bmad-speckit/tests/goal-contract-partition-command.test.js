@@ -7,6 +7,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const Ajv2020 = require('ajv/dist/2020');
 const addFormats = require('ajv-formats');
+const { materializeFullFixture } = require('./fixtures/standalone-goal/canonical-full-fixture.cjs');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const REPO_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
@@ -2641,18 +2642,10 @@ describe('bmad-speckit goal-contract partition command', () => {
     const root = tempRoot();
     const impactRoot = path.join(root, 'empty-consumer');
     fs.mkdirSync(impactRoot, { recursive: true });
-    const source = path.join(
-      PACKAGE_ROOT,
-      'tests',
-      'fixtures',
-      'standalone-goal',
-      'canonical-source-plan-v1-full.md'
-    );
+    const fullFixture = materializeFullFixture({ root });
+    const source = fullFixture.canonicalSourcePath;
     const stableGoal = path.join(
-      PACKAGE_ROOT,
-      'tests',
-      'fixtures',
-      'standalone-goal',
+      fullFixture.fixtureRoot,
       'canonical-source-plan-v1-full-goal-execution-plan.md'
     );
     const stableCoverage = path.join(
@@ -2718,9 +2711,15 @@ describe('bmad-speckit goal-contract partition command', () => {
     for (const stableSpan of stableGoalExecutionIr.logicalSpecSpans) {
       const successorSpan = successorSpans.get(stableSpan.specSpanId);
       assert.ok(successorSpan, stableSpan.specSpanId);
+      const normalizeMaterializedPath = (value) =>
+        typeof value === 'string' ? path.basename(value) : value;
       assert.deepEqual(
-        { ...successorSpan, canonicalNodeRefs: stableSpan.canonicalNodeRefs },
-        stableSpan
+        {
+          ...successorSpan,
+          sourceArtifactId: normalizeMaterializedPath(successorSpan.sourceArtifactId),
+          canonicalNodeRefs: stableSpan.canonicalNodeRefs,
+        },
+        { ...stableSpan, sourceArtifactId: normalizeMaterializedPath(stableSpan.sourceArtifactId) }
       );
       assert.equal(
         stableSpan.canonicalNodeRefs.every((ref) => successorSpan.canonicalNodeRefs.includes(ref)),

@@ -1,8 +1,0 @@
-{
-  "schemaVersion": "large-document-writer-validation-receipt/v1",
-  "ok": true,
-  "assemblyPath": "D:\\Dev\\BMAD-Speckit-SDD-Flow\\packages\\bmad-speckit\\tests\\fixtures\\standalone-goal\\.real-source-plan-20260904.expected.json.draft\\assembled.md",
-  "assemblyHash": "sha256:76020e69684d68e21c43187ff03d07e9fe312a17b6a535181b0da216691627f0",
-  "issues": [],
-  "validatedAt": "2026-09-05T14:21:52.959Z"
-}

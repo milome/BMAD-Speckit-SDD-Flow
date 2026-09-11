@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
@@ -9,14 +10,8 @@ import { describe, expect, it } from 'vitest';
 const ROOT = process.cwd();
 const CLI = join(ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
 const execFileAsync = promisify(execFile);
-const CANONICAL_FULL_SOURCE = join(
-  ROOT,
-  'packages',
-  'bmad-speckit',
-  'tests',
-  'fixtures',
-  'standalone-goal',
-  'canonical-source-plan-v1-full.md'
+const fixtureTools = createRequire(import.meta.url)(
+  '../../packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-full-fixture.cjs'
 );
 const CANONICAL_LONG_IDENTIFIER = 'CORRESPONDING_AC_BEFORE_EACH_BYPASS_REMOVAL';
 const CANONICAL_BODY_SENTINEL =
@@ -32,9 +27,10 @@ describe('goal-contract generate Windows command length regression', () => {
     try {
       const source = join(root, 'large-source-plan.md');
       const out = join(root, 'large-goal-execution-plan.md');
-      const canonicalSourceBytes = readFileSync(CANONICAL_FULL_SOURCE);
+      const fixture = fixtureTools.materializeFullFixture({ root });
+      const canonicalSourceBytes = readFileSync(fixture.canonicalSourcePath);
       expect(canonicalSourceBytes.byteLength).toBeGreaterThanOrEqual(2_500_000);
-      copyFileSync(CANONICAL_FULL_SOURCE, source);
+      copyFileSync(fixture.canonicalSourcePath, source);
       const copiedSourceBytes = readFileSync(source);
       expect(copiedSourceBytes).toEqual(canonicalSourceBytes);
       expect(sha256(copiedSourceBytes)).toBe(sha256(canonicalSourceBytes));

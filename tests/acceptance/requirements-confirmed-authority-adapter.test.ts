@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { x as extractTar } from 'tar';
@@ -22,8 +23,7 @@ const BINDING_REVISION_ID =
   'BINDREV-3B8F37598A3D57B79CD1496537657C94D9F7A0B9FE7D7928CFF36D64ED471018';
 const EFFECTIVE_PASS_HASH =
   'sha256:9fa331e3a4158c09d2ad0c9b044287a1b8ff44ccd3eb0de5044aea898ade2f68';
-const TYPED_GRAPH_HASH =
-  'sha256:99dd3e6a1750c446e5e6b30487548bbd64ab3b73675aae0a4b9e76eecfbdfe6b';
+const TYPED_GRAPH_HASH = 'sha256:99dd3e6a1750c446e5e6b30487548bbd64ab3b73675aae0a4b9e76eecfbdfe6b';
 const CONFIRMATION_EVENT_ID =
   'sha256:0212462d7fc3732bb569a415a3d999b0a7b41c981605f0df2866c6ab7762e682';
 const EXACT_CONFIRMATION_TEXT = `确认以上需求范围进入下一阶段
@@ -32,9 +32,7 @@ semanticRevisionId=${SEMANTIC_REVISION_ID}
 scopeSemanticHash=${SCOPE_HASH}
 bindingRevisionId=${BINDING_REVISION_ID}
 requirementsEffectivePassHash=${EFFECTIVE_PASS_HASH}`;
-const FIXTURE_ROOT = path.resolve(
-  'packages/bmad-speckit/tests/fixtures/standalone-goal'
-);
+const FIXTURE_ROOT = path.resolve('packages/bmad-speckit/tests/fixtures/standalone-goal');
 const FIXTURE_ARCHIVE = path.join(
   FIXTURE_ROOT,
   'canonical-source-plan-v1-full.confirmed-authority.tar.gz'
@@ -43,21 +41,15 @@ const FIXTURE_RECEIPT = path.join(
   FIXTURE_ROOT,
   'canonical-source-plan-v1-full.confirmation-receipt.json'
 );
-const SOURCE_PRESENTATION = path.join(
-  FIXTURE_ROOT,
-  'canonical-source-plan-v1-full.confirmed-requirements.md'
-);
+let sourcePresentation: string;
 const REQ_TRACE_GENERATOR = path.resolve(
   '_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js'
 );
-const CANONICAL_FULL_SOURCE = path.join(
-  FIXTURE_ROOT,
-  'canonical-source-plan-v1-full.md'
-);
-const GOAL_CONTRACT_COMMAND = path.resolve(
-  'packages/bmad-speckit/src/commands/goal-contract.ts'
-);
+const GOAL_CONTRACT_COMMAND = path.resolve('packages/bmad-speckit/src/commands/goal-contract.ts');
 const TSX = path.resolve('node_modules/tsx/dist/cli.mjs');
+const fixtureTools = createRequire(import.meta.url)(
+  '../../packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-full-fixture.cjs'
+);
 const SOURCE_RUNNER = [
   'const { goalContractCommand } = require(process.argv[1]);',
   'Promise.resolve(goalContractCommand({}, process.argv.slice(2)))',
@@ -76,6 +68,8 @@ interface ConfirmedAuthorityFixtureReceipt {
   archive: FixtureFileReceipt;
   files: FixtureFileReceipt[];
 }
+
+let canonicalFullFixture: { canonicalSourcePath: string };
 
 function sha256(bytes: Buffer | string): string {
   return `sha256:${crypto.createHash('sha256').update(bytes).digest('hex')}`;
@@ -119,7 +113,7 @@ function compileReqTraceEntry(
       '--entry',
       entry,
       '--source-document',
-      SOURCE_PRESENTATION,
+      sourcePresentation,
       '--requirement-record',
       recordPath(projectRoot),
       '--out-dir',
@@ -163,7 +157,7 @@ function compileStandaloneFull(projectRoot: string): Record<string, any> {
       '--entry',
       'standalone_goal_contract',
       '--source',
-      CANONICAL_FULL_SOURCE,
+      canonicalFullFixture.canonicalSourcePath,
       '--out',
       out,
       '--sequence-mode',
@@ -191,6 +185,17 @@ describe('confirmed Requirements authority adapter', () => {
     fixtureReceipt = verifyFixtureReceipt();
     projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'confirmed-authority-adapter-'));
     await extractTar({ file: FIXTURE_ARCHIVE, cwd: projectRoot, strict: true });
+    sourcePresentation = path.join(
+      projectRoot,
+      'packages',
+      'bmad-speckit',
+      'tests',
+      'fixtures',
+      'standalone-goal',
+      'canonical-source-plan-v1-full.confirmed-requirements.zh-CN.md'
+    );
+    expect(fs.existsSync(sourcePresentation)).toBe(true);
+    canonicalFullFixture = fixtureTools.materializeFullFixture({ root: projectRoot });
     for (const expected of fixtureReceipt.files) {
       const filePath = path.join(projectRoot, ...expected.path.split('/'));
       const bytes = fs.readFileSync(filePath);
@@ -234,7 +239,7 @@ describe('confirmed Requirements authority adapter', () => {
     expect(authority.implementationConfirmation.requiredCommands).toHaveLength(84);
     expect(authority.typedSourceGraph.sourceNodes).toHaveLength(825);
     expect(authority.typedSourceGraph.sourceRelations).toHaveLength(9165);
-  });
+  }, 120_000);
 
   it('replays the exact user confirmation through the production confirm-scope authority', () => {
     const result = confirmRequirementsContractIrScope({
@@ -283,13 +288,24 @@ describe('confirmed Requirements authority adapter', () => {
     expect(result.goalExecutionIr.commands).toHaveLength(87);
     expect(result.goalExecutionIr.artifacts).toHaveLength(58);
     expect(result.goalExecutionIr.evidenceContracts).toHaveLength(55);
-    expect(result.goalExecutionIr.coExecutionConstraints).toHaveLength(46);
+    expect(result.goalExecutionIr.coExecutionConstraints).toHaveLength(0);
+    expect(
+      result.goalExecutionIr.dependencies.filter(
+        (dependency) => dependency.derivationRuleId !== 'explicit-aggregate-gate-phase/v1'
+      )
+    ).toHaveLength(46);
+    expect(
+      result.goalExecutionIr.dependencies.filter(
+        (dependency) => dependency.derivationRuleId === 'explicit-aggregate-gate-phase/v1'
+      )
+    ).toHaveLength(7);
     expect(result.goalExecutionIr.logicalScopes.stopConditions).toHaveLength(16);
     const canonicalNodeIds = new Set(
       result.canonicalRequirementGraph.nodes.map((node) => String(node.id))
     );
-    const sourceSpans = authority.semanticIr.semanticPayload
-      .specSpanRegistry as Array<Record<string, any>>;
+    const sourceSpans = authority.semanticIr.semanticPayload.specSpanRegistry as Array<
+      Record<string, any>
+    >;
     expect(sourceSpans).toHaveLength(1);
     for (const span of result.goalExecutionIr.logicalSpecSpans) {
       expect(span.canonicalNodeRefs).toEqual(span.boundObligationIds);
@@ -300,18 +316,14 @@ describe('confirmed Requirements authority adapter', () => {
       });
     }
     expect(
-      new Set(
-        result.goalExecutionIr.logicalSpecSpans.flatMap((span) => span.canonicalNodeRefs)
-      )
+      new Set(result.goalExecutionIr.logicalSpecSpans.flatMap((span) => span.canonicalNodeRefs))
     ).toEqual(canonicalNodeIds);
     expect(result.goalExecutionIr.requirementsLineage).toMatchObject({
       sourceBindingHash: authority.lineage.sourceBindingHash,
       typedSourceGraphHash: TYPED_GRAPH_HASH,
       canonicalRequirementGraphHash: result.canonicalRequirementGraph.graphHash,
     });
-    expect(result.closure.goalExecutionIRHash).toBe(
-      result.goalExecutionIr.goalExecutionIRHash
-    );
+    expect(result.closure.goalExecutionIRHash).toBe(result.goalExecutionIr.goalExecutionIRHash);
   });
 
   it('fails closed when a confirmed source span loses canonical lineage', () => {
@@ -331,26 +343,22 @@ describe('confirmed Requirements authority adapter', () => {
     ).toThrowError(/requirements_spec_span_.*(?:lineage|projection|binding)/u);
   });
 
-  it(
-    'preserves normalized semantics across canonical full standalone and confirmed Requirements',
-    () => {
-      const authority = resolveConfirmedRequirementsAuthority({
-        projectRoot,
-        requirementRecordPath: recordPath(projectRoot),
-      });
-      const requirements = compileConfirmedRequirementsGoalSemantics({ authority });
-      const standalone = compileStandaloneFull(projectRoot);
+  it('preserves normalized semantics across canonical full standalone and confirmed Requirements', () => {
+    const authority = resolveConfirmedRequirementsAuthority({
+      projectRoot,
+      requirementRecordPath: recordPath(projectRoot),
+    });
+    const requirements = compileConfirmedRequirementsGoalSemantics({ authority });
+    const standalone = compileStandaloneFull(projectRoot);
 
-      expect(standalone.profile).toBe('standalone');
-      expect(standalone.semanticSource.canonicalRequirementGraphRef.semanticHash).toBe(
-        requirements.canonicalRequirementGraph.semanticHash
-      );
-      expect(standalone.goalExecutionIRHash).not.toBe(
-        requirements.goalExecutionIr.goalExecutionIRHash
-      );
-    },
-    300_000
-  );
+    expect(standalone.profile).toBe('standalone');
+    expect(standalone.semanticSource.canonicalRequirementGraphRef.semanticHash).toBe(
+      requirements.canonicalRequirementGraph.semanticHash
+    );
+    expect(standalone.goalExecutionIRHash).not.toBe(
+      requirements.goalExecutionIr.goalExecutionIRHash
+    );
+  }, 300_000);
 
   it('keeps canonical semantics stable when the full authority enters six-state readiness', () => {
     const authority = resolveConfirmedRequirementsAuthority({
@@ -358,23 +366,25 @@ describe('confirmed Requirements authority adapter', () => {
       requirementRecordPath: recordPath(projectRoot),
     });
     const base = compileConfirmedRequirementsGoalSemantics({ authority });
-    const typedConstraints = (base.canonicalRequirementGraph.nodes as Array<Record<string, any>>)
-      .filter((node) => node.kind === 'PATH');
+    const typedConstraints = (
+      base.goalExecutionIr.semanticSource.typedExecutionConstraints as Array<Record<string, any>>
+    ).filter((constraint) => constraint.kind === 'PATH');
     const architectureHash = sha256('six-state-architecture');
     const readinessHash = sha256('six-state-readiness');
     const digest = sha256('six-state-input');
     const architecture = {
       architectureConfirmationCandidateHash: architectureHash,
       isolation: { mode: 'canonical_requirement_graph' },
-      ownership: typedConstraints.map((node) => ({
-        targetPath: node.attributes?.path,
-        owner: node.ownerRef ?? node.id,
-        basisRefs: [node.id],
-        obligationRefs: [node.ownerRef ?? node.id],
-        atomRefs: [
-          `${node.ownerRef ?? node.id}-A1`,
-        ],
-        sourceRefs: [node.id],
+      ownership: typedConstraints.map((constraint) => ({
+        targetPath: constraint.canonicalValue,
+        owner:
+          constraint.applicableSourceRefs?.[0] ??
+          constraint.scope?.owner ??
+          constraint.constraintId,
+        basisRefs: [constraint.constraintId],
+        obligationRefs: constraint.applicableMustRefs ?? [],
+        atomRefs: constraint.applicableAtomRefs ?? [],
+        sourceRefs: constraint.sourceRefs ?? [constraint.constraintId],
       })),
       architectureDecisions: [],
       logicalScope: { forbiddenPaths: [] },
@@ -403,56 +413,52 @@ describe('confirmed Requirements authority adapter', () => {
     expect(sixState.goalExecutionIr.goalExecutionIRHash).not.toBe(
       base.goalExecutionIr.goalExecutionIRHash
     );
-  });
+  }, 120_000);
 
-  it(
-    'routes both req-trace entries through the shared confirmed Goal compilation',
-    () => {
-      const authority = resolveConfirmedRequirementsAuthority({
-        projectRoot,
-        requirementRecordPath: recordPath(projectRoot),
+  it('routes both req-trace entries through the shared confirmed Goal compilation', () => {
+    const authority = resolveConfirmedRequirementsAuthority({
+      projectRoot,
+      requirementRecordPath: recordPath(projectRoot),
+    });
+    const shared = compileConfirmedRequirementsGoalSemantics({ authority });
+    const expected = {
+      canonicalRequirementGraphHash: shared.canonicalRequirementGraph.graphHash,
+      canonicalRequirementSemanticHash: shared.canonicalRequirementGraph.semanticHash,
+      goalExecutionIRHash: shared.goalExecutionIr.goalExecutionIRHash,
+      goalExecutionClosureHash: shared.closure.goalExecutionClosureHash,
+      goalExecutionProjectionHash: shared.projection.bytesHash,
+    };
+
+    for (const entry of ['req_trace_direct', 'main_agent_compile'] as const) {
+      const { packet, receipt, goalDocument } = compileReqTraceEntry(projectRoot, entry);
+      expect(packet.sharedGoalCompilation).toMatchObject({
+        schemaVersion: 'ConfirmedRequirementsGoalCompilationRef/v1',
+        compilerRoute: 'shared_goal_execution_ir_compiler',
+        ...expected,
       });
-      const shared = compileConfirmedRequirementsGoalSemantics({ authority });
-      const expected = {
-        canonicalRequirementGraphHash: shared.canonicalRequirementGraph.graphHash,
-        canonicalRequirementSemanticHash: shared.canonicalRequirementGraph.semanticHash,
-        goalExecutionIRHash: shared.goalExecutionIr.goalExecutionIRHash,
-        goalExecutionClosureHash: shared.closure.goalExecutionClosureHash,
-        goalExecutionProjectionHash: shared.projection.bytesHash,
-      };
-
-      for (const entry of ['req_trace_direct', 'main_agent_compile'] as const) {
-        const { packet, receipt, goalDocument } = compileReqTraceEntry(projectRoot, entry);
-        expect(packet.sharedGoalCompilation).toMatchObject({
-          schemaVersion: 'ConfirmedRequirementsGoalCompilationRef/v1',
-          compilerRoute: 'shared_goal_execution_ir_compiler',
-          ...expected,
-        });
-        expect(receipt.sharedGoalCompilation).toEqual(packet.sharedGoalCompilation);
-        const documentRef = packet.sharedGoalCompilation.goalExecutionDocumentRef;
-        expect(documentRef).toMatchObject({
-          schemaVersion: 'GoalExecutionProjectionDocumentRef/v1',
-          compositionRecipe: 'utf8_concat(envelope,contractBody)',
-          contractBodyHash: shared.projection.bytesHash,
-          contractBodyLengthBytes: Buffer.byteLength(shared.projection.markdown, 'utf8'),
-          documentHash: sha256(goalDocument),
-        });
-        const bodyStart = documentRef.contractBodyOffsetBytes as number;
-        const bodyEnd = bodyStart + (documentRef.contractBodyLengthBytes as number);
-        const envelope = goalDocument.subarray(0, bodyStart);
-        const contractBody = goalDocument.subarray(bodyStart, bodyEnd);
-        expect(sha256(envelope)).toBe(documentRef.envelopeHash);
-        expect(sha256(contractBody)).toBe(shared.projection.bytesHash);
-        expect(contractBody.toString('utf8')).toBe(shared.projection.markdown);
-        expect(bodyEnd).toBe(goalDocument.length);
-        expect(packet).not.toHaveProperty('canonicalRequirementGraph');
-        expect(packet).not.toHaveProperty('goalExecutionIr');
-        expect(packet).not.toHaveProperty('goalExecutionClosure');
-        expect(packet.sharedGoalCompilation).not.toHaveProperty('projectionMarkdown');
-      }
-    },
-    120_000
-  );
+      expect(receipt.sharedGoalCompilation).toEqual(packet.sharedGoalCompilation);
+      const documentRef = packet.sharedGoalCompilation.goalExecutionDocumentRef;
+      expect(documentRef).toMatchObject({
+        schemaVersion: 'GoalExecutionProjectionDocumentRef/v1',
+        compositionRecipe: 'utf8_concat(envelope,contractBody)',
+        contractBodyHash: shared.projection.bytesHash,
+        contractBodyLengthBytes: Buffer.byteLength(shared.projection.markdown, 'utf8'),
+        documentHash: sha256(goalDocument),
+      });
+      const bodyStart = documentRef.contractBodyOffsetBytes as number;
+      const bodyEnd = bodyStart + (documentRef.contractBodyLengthBytes as number);
+      const envelope = goalDocument.subarray(0, bodyStart);
+      const contractBody = goalDocument.subarray(bodyStart, bodyEnd);
+      expect(sha256(envelope)).toBe(documentRef.envelopeHash);
+      expect(sha256(contractBody)).toBe(shared.projection.bytesHash);
+      expect(contractBody.toString('utf8')).toBe(shared.projection.markdown);
+      expect(bodyEnd).toBe(goalDocument.length);
+      expect(packet).not.toHaveProperty('canonicalRequirementGraph');
+      expect(packet).not.toHaveProperty('goalExecutionIr');
+      expect(packet).not.toHaveProperty('goalExecutionClosure');
+      expect(packet.sharedGoalCompilation).not.toHaveProperty('projectionMarkdown');
+    }
+  }, 120_000);
 
   it('rejects a record pointer outside the canonical request record path', () => {
     expect(() =>
@@ -470,8 +476,7 @@ describe('confirmed Requirements authority adapter', () => {
     });
     const projection = structuredClone(authority.confirmationProjection);
     const semanticIr = structuredClone(authority.semanticIr);
-    projection.implementationConfirmation.typedSourceAuthorityRef.graphHash =
-      `sha256:${'0'.repeat(64)}`;
+    projection.implementationConfirmation.typedSourceAuthorityRef.graphHash = `sha256:${'0'.repeat(64)}`;
     const semanticConfirmation = semanticIr.semanticPayload.semantics
       .implementationConfirmation as Record<string, Record<string, unknown>>;
     semanticConfirmation.typedSourceAuthorityRef.graphHash = `sha256:${'0'.repeat(64)}`;

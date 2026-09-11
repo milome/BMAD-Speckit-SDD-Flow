@@ -35,16 +35,27 @@ const {
   verifyBoundIndependentFixtureReview,
 } = require(path.join(REPO_ROOT, '_bmad', 'shared', 'goal-contract', 'scripts',
   'verify-independent-fixture-review.js'));
+const { materializeFullFixture } = require(path.join(
+  FIXTURE_ROOT,
+  'canonical-full-fixture.cjs'
+));
+const materializedFixture = materializeFullFixture();
+process.on('exit', () => {
+  try {
+    fs.rmSync(materializedFixture.root, { recursive: true, force: true });
+  } catch {
+    // Best-effort cleanup for the process-scoped fixture workspace.
+  }
+});
 const paths = {
-  legacy: path.join(FIXTURE_ROOT, 'real-source-plan-20260904.md'),
-  manifest: path.join(FIXTURE_ROOT, 'canonical-source-plan-v1-full.derivation-manifest.json'),
-  expected: path.join(FIXTURE_ROOT, 'canonical-source-plan-v1-full.expected-graph.json'),
-  review: path.join(FIXTURE_ROOT, 'canonical-source-plan-v1-full.fixture-review.json'),
-  integrity: path.join(FIXTURE_ROOT, 'canonical-source-plan-v1-full.integrity.json'),
+  legacy: materializedFixture.legacySourcePath,
+  manifest: materializedFixture.derivationManifestPath,
+  expected: materializedFixture.expectedGraphPath,
+  review: materializedFixture.reviewPath,
+  integrity: materializedFixture.integrityPath,
   confirmedAuthorityArchive: path.join(FIXTURE_ROOT,
     'canonical-source-plan-v1-full.confirmed-authority.tar.gz'),
-  requirementsIntake: path.join(FIXTURE_ROOT,
-    '.canonical-source-plan-v1-full.confirmed-requirements.authoring-input', 'intake.json'),
+  requirementsIntake: materializedFixture.requirementsIntakePath,
 };
 
 function hash(value) {
@@ -82,8 +93,14 @@ function identity(value) {
   return { byteCount: bytes.length, sha256: hash(bytes) };
 }
 
-function verifyArtifactBinding(binding, code) {
-  const actual = identity(path.join(REPO_ROOT, binding.path));
+function verifyArtifactBinding(binding, code, materializedRoot = null) {
+  const candidates = [
+    ...(materializedRoot ? [path.join(materializedRoot, binding.path)] : []),
+    path.join(REPO_ROOT, binding.path),
+  ];
+  const candidate = candidates.find((value) => fs.existsSync(value));
+  fail(candidate, code);
+  const actual = identity(candidate);
   fail(binding.byteCount === actual.byteCount && binding.sha256 === actual.sha256, code);
 }
 
@@ -123,7 +140,10 @@ function verifyProofAssets(input, options = {}) {
   fail(review.schemaVersion === 'StandaloneSourcePlanFixtureReview/v1' && review.reviewStatus === 'confirmed',
     'fixture_review_not_confirmed');
   if (options.requireIndependentReview !== false) {
-    verifyBoundIndependentFixtureReview({ projectRoot: REPO_ROOT, review });
+    verifyBoundIndependentFixtureReview({
+      projectRoot: options.materializedRoot || REPO_ROOT,
+      review,
+    });
   }
   fail(review.perspectives.length === 3 && review.perspectives.every((row) =>
     row.verdict === 'PASS' && row.blockerCount === 0 && row.importantFindingCount === 0),
@@ -133,8 +153,9 @@ function verifyProofAssets(input, options = {}) {
     'review_expected_binding_stale');
   fail(review.bindings.canonicalRequirementGraphHash === expected.expectedGraph.graphHash,
     'review_graph_binding_stale');
+  const artifactRoot = options.materializedRoot || materializedFixture.root;
   for (const binding of Object.values(review.bindings).filter((value) => value && value.path)) {
-    verifyArtifactBinding(binding, 'review_artifact_binding_stale');
+    verifyArtifactBinding(binding, 'review_artifact_binding_stale', artifactRoot);
   }
 
   fail(integrity.reviewStatus === 'confirmed', 'integrity_review_not_confirmed');
@@ -151,7 +172,7 @@ function verifyProofAssets(input, options = {}) {
   fail(integrity.completeness.orphanSemanticNodes === 0,
     'integrity_semantic_node_orphan');
   for (const binding of Object.values(integrity.artifacts)) {
-    verifyArtifactBinding(binding, 'integrity_artifact_binding_stale');
+    verifyArtifactBinding(binding, 'integrity_artifact_binding_stale', artifactRoot);
   }
 }
 
@@ -167,14 +188,14 @@ function loadProofAssets() {
 describe('canonical Source Plan v1 full independent proof assets', () => {
   it('accepts the current v3 review with controlled provenance and disposition', () => {
     const proof = loadProofAssets();
-    verifyProofAssets(proof);
+    verifyProofAssets(proof, { materializedRoot: materializedFixture.root });
     assert.equal(proof.review.reviewEpoch, 'phase6-canonical-full-independent-v3-final');
     assert.equal(
       proof.review.artifactSet.artifactSetHash,
-      'sha256:2ceda58e520d384a7c54517a65ee1e418a422614afbe0a01577eae76c4031a56'
+      'sha256:12a35abc3a22954323bf8bfc43d63cd33dfb613dab10db188f8dc037d63c184d'
     );
-    assert.equal(proof.review.reviewHash, 'sha256:fd921812ee0e41270ff0c983e1f4ed6d2ca1a249a00e3a1490abcae8d80e90b7');
-    assert.equal(proof.integrity.integrityHash, 'sha256:4720992cfc6b0d92c180606dd68746454b07a30915cb2a7ea329a586b498e86d');
+    assert.equal(proof.review.reviewHash, 'sha256:88be067b9fda3d470b3d766847366d336e03a90c306b590fb59f3ae76220f612');
+    assert.equal(proof.integrity.integrityHash, 'sha256:35f08abe9be3e394d0ce4c1de211c5f35c5a56f37b2ed48eb88291d8f6f6d126');
     assert.equal(proof.review.provenance.reportEvents.length, 3);
     assert.equal(proof.review.provenance.dispositionEvent.producerExecutionIdentity.executionId,
       'main-session-disposition-producer-v3-final');
@@ -234,7 +255,7 @@ describe('canonical Source Plan v1 full independent proof assets', () => {
     const intake = readJson(paths.requirementsIntake);
     const proof = loadProofAssets();
     const scan = scanRequirementsContractConsumerAuthority({
-      cwd: REPO_ROOT,
+      cwd: materializedFixture.root,
       intakeSource: paths.requirementsIntake,
       authoritySources: readRequirementsContractDeclaredAuthoritySources(paths.requirementsIntake),
     });

@@ -167,7 +167,10 @@ function sortedObjects(values: JsonObject[], idField: string): JsonObject[] {
     .sort((left, right) => text(left[idField]).localeCompare(text(right[idField])));
 }
 
-function traceReferenceIndex(rows: JsonObject[], idField: string): {
+function traceReferenceIndex(
+  rows: JsonObject[],
+  idField: string
+): {
   byObligation: Map<string, Set<string>>;
   byAtom: Map<string, Set<string>>;
 } {
@@ -210,7 +213,7 @@ function preflightGoalExecutionRelationGraph(input: GoalExecutionCompilerInput):
       input.logicalSpecSpans,
       input.executionConstraints,
       text(object(input.standaloneLineage).sourceSnapshotHash),
-      'goal_execution_declaration_span_invalid',
+      'goal_execution_declaration_span_invalid'
     );
   }
   const ownersBySourceRef = new Map<string, Set<string>>();
@@ -287,9 +290,13 @@ function preflightGoalExecutionRelationGraph(input: GoalExecutionCompilerInput):
         atomOwnerRefs.length === normalizedObligationRefs.length &&
         atomOwnerRefs.every((ref, index) => ref === normalizedObligationRefs[index]);
       const legacyUntyped = typedProfile(input.semanticSource) === null;
-      const legacySingleOwner = legacyUntyped && normalizedObligationRefs.length === 1 && exactLegacyAtomOwners;
-      const legacyExplicitCoExecution = legacyUntyped && text(constraint.kind) === 'CTM' &&
-        normalizedObligationRefs.length > 1 && exactLegacyAtomOwners;
+      const legacySingleOwner =
+        legacyUntyped && normalizedObligationRefs.length === 1 && exactLegacyAtomOwners;
+      const legacyExplicitCoExecution =
+        legacyUntyped &&
+        text(constraint.kind) === 'CTM' &&
+        normalizedObligationRefs.length > 1 &&
+        exactLegacyAtomOwners;
       if (legacySingleOwner || legacyExplicitCoExecution) continue;
       throw Object.assign(new Error('goal_execution_constraint_semantic_owner_missing'), {
         failureClass: 'goal_execution_constraint_semantic_owner_missing',
@@ -318,8 +325,18 @@ function preflightGoalExecutionRelationGraph(input: GoalExecutionCompilerInput):
 function typedProfile(source: JsonObject): GoalExecutionProfile | null {
   if (source.schemaVersion === 'StandaloneGoalSemanticIR/v2') return 'standalone';
   if (source.schemaVersion === REQUIREMENTS_TYPED_SEMANTIC_VERSION) return 'requirements_backed';
-  if (['typedSourceAuthority', 'typedSourceGraphHash', 'typedAtoms', 'typedExecutionConstraints'].some((field) => source[field] !== undefined) || (source.schemaVersion !== undefined &&
-    !['StandaloneGoalSemanticIR/v1', 'requirements-contract-semantic-ir/v1'].includes(String(source.schemaVersion)))) {
+  if (
+    [
+      'typedSourceAuthority',
+      'typedSourceGraphHash',
+      'typedAtoms',
+      'typedExecutionConstraints',
+    ].some((field) => source[field] !== undefined) ||
+    (source.schemaVersion !== undefined &&
+      !['StandaloneGoalSemanticIR/v1', 'requirements-contract-semantic-ir/v1'].includes(
+        String(source.schemaVersion)
+      ))
+  ) {
     throw new Error('goal_execution_typed_version_invalid');
   }
   return null;
@@ -365,7 +382,10 @@ function taskRows(input: GoalExecutionCompilerInput, obligations: GoalExecutionO
     unitId: text(atom.atomId) || text(atom.id),
     obligationId: text(atom.coverageSeed) || text(atom.requirementRef),
     action: text(atom.action) || text(atom.text),
-    oracle: sourceProfile === 'requirements_backed' && typeof atom.oracle === 'string' ? atom.oracle : text(atom.oracle),
+    oracle:
+      sourceProfile === 'requirements_backed' && typeof atom.oracle === 'string'
+        ? atom.oracle
+        : text(atom.oracle),
     dependencyAtomRefs: sortedUnique(strings(atom.dependencies)),
   }));
   const coveredObligationIds = new Set(atomUnits.map((unit) => unit.obligationId));
@@ -379,8 +399,14 @@ function taskRows(input: GoalExecutionCompilerInput, obligations: GoalExecutionO
       dependencyAtomRefs: [],
     }));
   const units = [...atomUnits, ...fallbackUnits];
-  if (typed && (obligations.some((obligation) => obligation.executionRole === 'action' && !coveredObligationIds.has(obligation.obligationId)) ||
-    units.some((unit) => obligationById.get(unit.obligationId)?.executionRole !== 'action'))) {
+  if (
+    typed &&
+    (obligations.some(
+      (obligation) =>
+        obligation.executionRole === 'action' && !coveredObligationIds.has(obligation.obligationId)
+    ) ||
+      units.some((unit) => obligationById.get(unit.obligationId)?.executionRole !== 'action'))
+  ) {
     throw new Error('goal_execution_action_membership_invalid');
   }
   const structureBasisRefs = constraintsOfKind(input, 'CTM').map((row) => text(row.constraintId));
@@ -405,7 +431,9 @@ function taskRows(input: GoalExecutionCompilerInput, obligations: GoalExecutionO
         ...structureBasisRefs,
       ]),
       oracle: unit.oracle || obligation.oracle,
-      ...(typed && obligation.taskExecution ? { taskExecution: structuredClone(obligation.taskExecution) } : {}),
+      ...(typed && obligation.taskExecution
+        ? { taskExecution: structuredClone(obligation.taskExecution) }
+        : {}),
     };
   });
   const taskIdByAtomRef = new Map(
@@ -424,11 +452,13 @@ function taskRows(input: GoalExecutionCompilerInput, obligations: GoalExecutionO
           basisRefs: sortedUnique([
             dependencyAtomRef,
             unit.unitId,
-            ...(typed ? requirementsTypedDependencyRelationRefs(
-              input.semanticSource,
-              unit.obligationId,
-              dependencyAtomRef.replace(/-A1$/u, '')
-            ) : []),
+            ...(typed
+              ? requirementsTypedDependencyRelationRefs(
+                  input.semanticSource,
+                  unit.obligationId,
+                  dependencyAtomRef.replace(/-A1$/u, '')
+                )
+              : []),
           ]),
         };
       })
@@ -438,10 +468,14 @@ function taskRows(input: GoalExecutionCompilerInput, obligations: GoalExecutionO
       return rows.findIndex((row) => `${row.from}:${row.to}` === key) === index;
     })
     .sort((left, right) => left.from.localeCompare(right.from) || left.to.localeCompare(right.to));
-  for (const dependency of aggregatePhaseDependencies(tasks)) {
-    if (!dependencies.some((row) => row.from === dependency.from && row.to === dependency.to)) dependencies.push(dependency);
+  for (const dependency of aggregatePhaseDependencies(tasks, dependencies)) {
+    if (!dependencies.some((row) => row.from === dependency.from && row.to === dependency.to))
+      dependencies.push(dependency);
   }
-  dependencies.sort((left, right) => text(left.from).localeCompare(text(right.from)) || text(left.to).localeCompare(text(right.to)));
+  dependencies.sort(
+    (left, right) =>
+      text(left.from).localeCompare(text(right.from)) || text(left.to).localeCompare(text(right.to))
+  );
   if (
     !dependencyDagIsValid(
       tasks.map((task) => task.taskId),
@@ -453,23 +487,61 @@ function taskRows(input: GoalExecutionCompilerInput, obligations: GoalExecutionO
   return { tasks, dependencies };
 }
 
-function aggregatePhaseDependencies(tasks: JsonObject[]): JsonObject[] {
+function aggregatePhaseDependencies(
+  tasks: JsonObject[],
+  existingDependencies: JsonObject[] = []
+): JsonObject[] {
+  const dependsOn = new Map<string, Set<string>>();
+  for (const dependency of existingDependencies) {
+    const from = text(dependency.from);
+    const to = text(dependency.to);
+    if (!from || !to) continue;
+    dependsOn.set(from, new Set([...(dependsOn.get(from) ?? []), to]));
+  }
+  const reaches = (from: string, target: string): boolean => {
+    const visited = new Set<string>();
+    const visit = (current: string): boolean => {
+      if (current === target) return true;
+      if (visited.has(current)) return false;
+      visited.add(current);
+      return [...(dependsOn.get(current) ?? [])].some(visit);
+    };
+    return visit(from);
+  };
   return tasks.flatMap((task) => {
     const execution = object(task.taskExecution);
     if (execution.executionClass !== 'aggregate_only') return [];
-    return tasks.filter((prerequisite) => prerequisite !== task &&
-      (object(prerequisite.taskExecution).executionClass !== 'aggregate_only' ||
-        (execution.aggregateGatePhase === 'final_aggregate' && object(prerequisite.taskExecution).aggregateGatePhase === 'post_child_execution')))
-      .map((prerequisite) => ({ from: task.taskId, to: prerequisite.taskId, basisRefs: strings(execution.sourceRefs),
-        derivationRuleId: 'explicit-aggregate-gate-phase/v1' }));
+    return tasks
+      .filter(
+        (prerequisite) =>
+          prerequisite !== task &&
+          !reaches(String(prerequisite.taskId), String(task.taskId)) &&
+          (object(prerequisite.taskExecution).executionClass !== 'aggregate_only' ||
+            (execution.aggregateGatePhase === 'final_aggregate' &&
+              object(prerequisite.taskExecution).aggregateGatePhase === 'post_child_execution'))
+      )
+      .map((prerequisite) => ({
+        from: task.taskId,
+        to: prerequisite.taskId,
+        basisRefs: strings(execution.sourceRefs),
+        derivationRuleId: 'explicit-aggregate-gate-phase/v1',
+      }));
   });
 }
 
 function validateTaskExecutionProjection(ir: Partial<GoalExecutionIR>): void {
   const tasks = ir.atomicTasks ?? [];
   for (const obligation of ir.obligations ?? []) {
-    const ownedTasks = tasks.filter((task) => strings(task.obligationRefs).includes(obligation.obligationId));
-    if (ownedTasks.some((task) => sha256Stable(task.taskExecution ?? null) !== sha256Stable(obligation.taskExecution ?? null))) {
+    const ownedTasks = tasks.filter((task) =>
+      strings(task.obligationRefs).includes(obligation.obligationId)
+    );
+    if (
+      ownedTasks.some(
+        (task) =>
+          sha256Stable(task.taskExecution ?? null) !==
+          sha256Stable(obligation.taskExecution ?? null)
+      )
+    ) {
       throw new Error('goal_execution_task_execution_projection_invalid');
     }
     const execution = object(obligation.taskExecution);
@@ -482,28 +554,38 @@ function validateTaskExecutionProjection(ir: Partial<GoalExecutionIR>): void {
     );
     const commandIds = new Set(
       (ir.traceSlices ?? [])
-        .filter((trace) =>
-          strings(trace.obligationRefs).includes(obligation.obligationId) ||
-          strings(trace.taskRefs).some((taskRef) => prerequisiteTaskIds.has(taskRef))
+        .filter(
+          (trace) =>
+            strings(trace.obligationRefs).includes(obligation.obligationId) ||
+            strings(trace.taskRefs).some((taskRef) => prerequisiteTaskIds.has(taskRef))
         )
         .flatMap((trace) => strings(trace.commandRefs))
     );
-    const commands = new Set((ir.commands ?? []).filter((command) => commandIds.has(String(command.commandId)))
-      .flatMap((command) => [String(command.commandId), ...strings(command.sourceDeclarationRefs)]));
-    const missingCommandRefs = strings(execution.aggregateValidationCommands)
-      .filter((ref) => !commands.has(ref));
+    const commands = new Set(
+      (ir.commands ?? [])
+        .filter((command) => commandIds.has(String(command.commandId)))
+        .flatMap((command) => [
+          String(command.commandId),
+          ...strings(command.sourceDeclarationRefs),
+        ])
+    );
+    const missingCommandRefs = strings(execution.aggregateValidationCommands).filter(
+      (ref) => !commands.has(ref)
+    );
     const invalidOwners = (ir.executionDomains ?? [])
       .flatMap((domain) => objects(domain.ownership))
-      .filter((owner) =>
-        strings(owner.obligationRefs).includes(obligation.obligationId) ||
-        strings(owner.atomRefs).some((ref) => obligation.atomRefs.includes(ref))
+      .filter(
+        (owner) =>
+          strings(owner.obligationRefs).includes(obligation.obligationId) ||
+          strings(owner.atomRefs).some((ref) => obligation.atomRefs.includes(ref))
       );
     if (missingCommandRefs.length > 0 || invalidOwners.length > 0) {
       throw Object.assign(new Error('goal_execution_aggregate_authority_invalid'), {
         obligationId: obligation.obligationId,
-        reason: missingCommandRefs.length > 0
-          ? 'aggregate_command_unbound'
-          : 'aggregate_owns_execution_path',
+        reason:
+          missingCommandRefs.length > 0
+            ? 'aggregate_command_unbound'
+            : 'aggregate_owns_execution_path',
         ...(missingCommandRefs.length > 0 ? { missingCommandRefs } : {}),
         ...(invalidOwners.length > 0
           ? { ownedPaths: sortedUnique(invalidOwners.map((owner) => text(owner.targetPath))) }
@@ -511,7 +593,12 @@ function validateTaskExecutionProjection(ir: Partial<GoalExecutionIR>): void {
       });
     }
   }
-  if (aggregatePhaseDependencies(tasks).some((expected) => !(ir.dependencies ?? []).some((row) => row.from === expected.from && row.to === expected.to))) {
+  if (
+    aggregatePhaseDependencies(tasks, ir.dependencies ?? []).some(
+      (expected) =>
+        !(ir.dependencies ?? []).some((row) => row.from === expected.from && row.to === expected.to)
+    )
+  ) {
     throw new Error('goal_execution_aggregate_phase_invalid');
   }
 }
@@ -531,15 +618,25 @@ function typedPathRestrictionsValid(ir: Partial<GoalExecutionIR>): boolean {
   const sources = new Set([...obligations.values()].flatMap((row) => row.sourceRefs));
   const ids = restrictions.map((row) => text(row.constraintId));
   if (new Set(ids).size !== ids.length) return false;
-  if (JSON.stringify(sortedUnique(restrictions.map((row) => text(row.canonicalValue)))) !==
-    JSON.stringify(strings(object(ir.logicalScopes).forbiddenPaths))) return false;
+  if (
+    JSON.stringify(sortedUnique(restrictions.map((row) => text(row.canonicalValue)))) !==
+    JSON.stringify(strings(object(ir.logicalScopes).forbiddenPaths))
+  )
+    return false;
   return restrictions.every((row) => {
     const refs = strings(row.applicableMustRefs);
-    if (!refs.length || refs.some((ref) => !obligations.has(ref)) ||
-      [...strings(row.sourceRefs), ...strings(row.premiseRefs)].some((ref) => !sources.has(ref))) return false;
+    if (
+      !refs.length ||
+      refs.some((ref) => !obligations.has(ref)) ||
+      [...strings(row.sourceRefs), ...strings(row.premiseRefs)].some((ref) => !sources.has(ref))
+    )
+      return false;
     const atoms = new Set(refs.flatMap((ref) => obligations.get(ref)!.atomRefs));
     if (strings(row.applicableAtomRefs).some((ref) => !atoms.has(ref))) return false;
-    return row.scope !== 'global' || refs.every((ref) => object(obligations.get(ref)!.applicability).scope === 'global');
+    return (
+      row.scope !== 'global' ||
+      refs.every((ref) => object(obligations.get(ref)!.applicability).scope === 'global')
+    );
   });
 }
 
@@ -563,16 +660,16 @@ function normalizeLogicalSpecSpan(value: JsonObject): GoalExecutionLogicalSpecSp
     ...(strings(value.canonicalNodeRefs).length
       ? { canonicalNodeRefs: sortedUnique(strings(value.canonicalNodeRefs)) }
       : {}),
-    ...(text(value.originSpecSpanRef)
-      ? { originSpecSpanRef: text(value.originSpecSpanRef) }
-      : {}),
+    ...(text(value.originSpecSpanRef) ? { originSpecSpanRef: text(value.originSpecSpanRef) } : {}),
   };
   const physical = value.sourceArtifactId !== undefined || value.startByte !== undefined;
   if (!physical) {
     const normalizedClaimHash = text(value.normalizedClaimHash);
     const boundTypedSourceGraphHash = text(value.boundTypedSourceGraphHash);
-    if ((normalizedClaimHash && !SHA256_PATTERN.test(normalizedClaimHash)) ||
-      (boundTypedSourceGraphHash && !SHA256_PATTERN.test(boundTypedSourceGraphHash))) {
+    if (
+      (normalizedClaimHash && !SHA256_PATTERN.test(normalizedClaimHash)) ||
+      (boundTypedSourceGraphHash && !SHA256_PATTERN.test(boundTypedSourceGraphHash))
+    ) {
       throw new Error('goal_execution_spec_span_invalid');
     }
     if (text(value.authorityClass) === 'derived' && !text(value.originSpecSpanRef)) {
@@ -592,10 +689,19 @@ function normalizeLogicalSpecSpan(value: JsonObject): GoalExecutionLogicalSpecSp
   const lineStart = Number(value.lineStart ?? value.startLine);
   const lineEnd = Number(value.lineEnd ?? value.endLine);
   const exactTextHash = text(value.exactTextHash);
-  if (!sourceArtifactId || !SHA256_PATTERN.test(sourceSnapshotHash) ||
-    !Number.isInteger(startByte) || startByte < 0 || !Number.isInteger(endByteExclusive) ||
-    endByteExclusive <= startByte || !Number.isInteger(lineStart) || lineStart < 1 ||
-    !Number.isInteger(lineEnd) || lineEnd < lineStart || !SHA256_PATTERN.test(exactTextHash)) {
+  if (
+    !sourceArtifactId ||
+    !SHA256_PATTERN.test(sourceSnapshotHash) ||
+    !Number.isInteger(startByte) ||
+    startByte < 0 ||
+    !Number.isInteger(endByteExclusive) ||
+    endByteExclusive <= startByte ||
+    !Number.isInteger(lineStart) ||
+    lineStart < 1 ||
+    !Number.isInteger(lineEnd) ||
+    lineEnd < lineStart ||
+    !SHA256_PATTERN.test(exactTextHash)
+  ) {
     throw new Error('goal_execution_source_span_invalid');
   }
   return {
@@ -616,42 +722,52 @@ function normalizeLogicalSpecSpan(value: JsonObject): GoalExecutionLogicalSpecSp
   };
 }
 
-function sourceLineagePayload(lineage: GoalExecutionSourceLineage): Omit<GoalExecutionSourceLineage, 'lineageHash'> {
+function sourceLineagePayload(
+  lineage: GoalExecutionSourceLineage
+): Omit<GoalExecutionSourceLineage, 'lineageHash'> {
   const { lineageHash: _hash, ...payload } = lineage;
   return payload;
 }
 
 function buildSourceLineage(
   input: GoalExecutionCompilerInput,
-  logicalSpecSpans: JsonObject[],
+  logicalSpecSpans: JsonObject[]
 ): { spans: GoalExecutionLogicalSpecSpan[]; lineage?: GoalExecutionSourceLineage } {
   const typed = typedProfile(input.semanticSource) !== null;
   if (!typed) return { spans: logicalSpecSpans as GoalExecutionLogicalSpecSpan[] };
-  const canonicalNodeIds = new Set(objects(object(input.canonicalRequirementGraph).nodes)
-    .map((node) => text(node.id))
-    .filter(Boolean));
-  const requirementsAuthority = object(input.semanticSource).typedSourceAuthority as unknown as RequirementsTypedSourceAuthority;
-  const requirementsGraph = input.profile === 'requirements_backed'
-    ? resolveTypedSourceAuthority(requirementsAuthority)
-    : undefined;
-  const spans = logicalSpecSpans.map((span) => {
-    const resolvedCanonicalRefs = input.profile === 'requirements_backed'
-      ? resolveRequirementsSpecSpanSourceNodeIds(
-        span as unknown as RequirementsSpecSpan,
-        requirementsAuthority,
-        requirementsGraph
-      ).filter((ref) => canonicalNodeIds.has(ref))
-      : [];
-    return normalizeLogicalSpecSpan({
-      ...span,
-      ...(resolvedCanonicalRefs.length > 0 || strings(span.canonicalNodeRefs).length > 0
-        ? { canonicalNodeRefs: sortedUnique([
-          ...strings(span.canonicalNodeRefs),
-          ...resolvedCanonicalRefs,
-        ]) }
-        : {}),
-    });
-  })
+  const canonicalNodeIds = new Set(
+    objects(object(input.canonicalRequirementGraph).nodes)
+      .map((node) => text(node.id))
+      .filter(Boolean)
+  );
+  const requirementsAuthority = object(input.semanticSource)
+    .typedSourceAuthority as unknown as RequirementsTypedSourceAuthority;
+  const requirementsGraph =
+    input.profile === 'requirements_backed'
+      ? resolveTypedSourceAuthority(requirementsAuthority)
+      : undefined;
+  const spans = logicalSpecSpans
+    .map((span) => {
+      const resolvedCanonicalRefs =
+        input.profile === 'requirements_backed'
+          ? resolveRequirementsSpecSpanSourceNodeIds(
+              span as unknown as RequirementsSpecSpan,
+              requirementsAuthority,
+              requirementsGraph
+            ).filter((ref) => canonicalNodeIds.has(ref))
+          : [];
+      return normalizeLogicalSpecSpan({
+        ...span,
+        ...(resolvedCanonicalRefs.length > 0 || strings(span.canonicalNodeRefs).length > 0
+          ? {
+              canonicalNodeRefs: sortedUnique([
+                ...strings(span.canonicalNodeRefs),
+                ...resolvedCanonicalRefs,
+              ]),
+            }
+          : {}),
+      });
+    })
     .sort((left, right) => left.specSpanId.localeCompare(right.specSpanId));
   if (new Set(spans.map((span) => span.specSpanId)).size !== spans.length) {
     throw new Error('goal_execution_source_span_duplicate');
@@ -666,46 +782,73 @@ function buildSourceLineage(
     canonicalRef.upstreamCanonicalRequirementGraphHash
   );
   const sourceBindingHash = text(object(input.requirementsLineage).sourceBindingHash);
-  const authorities = input.profile === 'requirements_backed'
-    ? [{
-      authorityKind: 'requirements_semantic_ir' as const,
-      authorityId: text(semanticSource.semanticRevisionId),
-      authorityHash: text(semanticSource.scopeSemanticHash),
-      typedSourceGraphHash,
-      canonicalRequirementGraphHash,
-      canonicalSemanticHash,
-      ...(sourceBindingHash ? { sourceBindingHash } : {}),
-      ...(upstreamCanonicalRequirementGraphHash
-        ? { upstreamCanonicalRequirementGraphHash }
-        : {}),
-      logicalSpecSpanRefs: spans.map((span) => span.specSpanId),
-    }]
-    : [...new Map(spans.map((span) => {
-      const key = `${span.sourceArtifactId}:${span.sourceSnapshotHash}`;
-       return [key, {
-         authorityKind: 'standalone_source_document' as const,
-         authorityId: text(span.sourceArtifactId),
-         authorityHash: text(span.sourceSnapshotHash),
-         sourceSnapshotHash: text(span.sourceSnapshotHash),
-         ...(span.sourceDocumentGraphHash ? { sourceDocumentGraphHash: span.sourceDocumentGraphHash } : {}),
-         ...(canonicalRequirementGraphHash
-           ? { canonicalRequirementGraphHash, canonicalSemanticHash }
-           : span.canonicalRequirementGraphHash
-             ? { canonicalRequirementGraphHash: span.canonicalRequirementGraphHash }
-             : {}),
-         ...(upstreamCanonicalRequirementGraphHash
-           ? { upstreamCanonicalRequirementGraphHash }
-           : {}),
-         logicalSpecSpanRefs: spans.filter((candidate) =>
-          candidate.sourceArtifactId === span.sourceArtifactId && candidate.sourceSnapshotHash === span.sourceSnapshotHash
-        ).map((candidate) => candidate.specSpanId),
-      }];
-    })).values()].sort((left, right) => `${left.authorityId}:${left.authorityHash}`.localeCompare(`${right.authorityId}:${right.authorityHash}`));
-  if (authorities.some((authority) => !authority.authorityId || !SHA256_PATTERN.test(authority.authorityHash))) {
+  const authorities =
+    input.profile === 'requirements_backed'
+      ? [
+          {
+            authorityKind: 'requirements_semantic_ir' as const,
+            authorityId: text(semanticSource.semanticRevisionId),
+            authorityHash: text(semanticSource.scopeSemanticHash),
+            typedSourceGraphHash,
+            canonicalRequirementGraphHash,
+            canonicalSemanticHash,
+            ...(sourceBindingHash ? { sourceBindingHash } : {}),
+            ...(upstreamCanonicalRequirementGraphHash
+              ? { upstreamCanonicalRequirementGraphHash }
+              : {}),
+            logicalSpecSpanRefs: spans.map((span) => span.specSpanId),
+          },
+        ]
+      : [
+          ...new Map(
+            spans.map((span) => {
+              const key = `${span.sourceArtifactId}:${span.sourceSnapshotHash}`;
+              return [
+                key,
+                {
+                  authorityKind: 'standalone_source_document' as const,
+                  authorityId: text(span.sourceArtifactId),
+                  authorityHash: text(span.sourceSnapshotHash),
+                  sourceSnapshotHash: text(span.sourceSnapshotHash),
+                  ...(span.sourceDocumentGraphHash
+                    ? { sourceDocumentGraphHash: span.sourceDocumentGraphHash }
+                    : {}),
+                  ...(canonicalRequirementGraphHash
+                    ? { canonicalRequirementGraphHash, canonicalSemanticHash }
+                    : span.canonicalRequirementGraphHash
+                      ? { canonicalRequirementGraphHash: span.canonicalRequirementGraphHash }
+                      : {}),
+                  ...(upstreamCanonicalRequirementGraphHash
+                    ? { upstreamCanonicalRequirementGraphHash }
+                    : {}),
+                  logicalSpecSpanRefs: spans
+                    .filter(
+                      (candidate) =>
+                        candidate.sourceArtifactId === span.sourceArtifactId &&
+                        candidate.sourceSnapshotHash === span.sourceSnapshotHash
+                    )
+                    .map((candidate) => candidate.specSpanId),
+                },
+              ];
+            })
+          ).values(),
+        ].sort((left, right) =>
+          `${left.authorityId}:${left.authorityHash}`.localeCompare(
+            `${right.authorityId}:${right.authorityHash}`
+          )
+        );
+  if (
+    authorities.some(
+      (authority) => !authority.authorityId || !SHA256_PATTERN.test(authority.authorityHash)
+    )
+  ) {
     throw new Error('goal_execution_source_lineage_invalid');
   }
-  if (input.profile === 'requirements_backed' && (!SHA256_PATTERN.test(canonicalRequirementGraphHash) ||
-    !SHA256_PATTERN.test(canonicalSemanticHash))) {
+  if (
+    input.profile === 'requirements_backed' &&
+    (!SHA256_PATTERN.test(canonicalRequirementGraphHash) ||
+      !SHA256_PATTERN.test(canonicalSemanticHash))
+  ) {
     throw new Error('goal_execution_canonical_requirement_graph_missing');
   }
   const lineageBase = {
@@ -716,24 +859,26 @@ function buildSourceLineage(
   };
   const lineage = provided
     ? {
-      ...lineageBase,
-      ...provided,
-      authorities: provided.authorities,
-      logicalSpecSpanRefs: provided.logicalSpecSpanRefs,
-      lineageHash: provided.lineageHash,
-    }
+        ...lineageBase,
+        ...provided,
+        authorities: provided.authorities,
+        logicalSpecSpanRefs: provided.logicalSpecSpanRefs,
+        lineageHash: provided.lineageHash,
+      }
     : { ...lineageBase, lineageHash: sha256Stable(lineageBase) };
-  const lineageFailureReason = lineage.schemaVersion !== 'GoalExecutionSourceLineage/v1'
-    ? 'schema_version'
-    : !SHA256_PATTERN.test(lineage.lineageHash)
-      ? 'lineage_hash_format'
-      : sha256Stable(sourceLineagePayload(lineage)) !== lineage.lineageHash
-        ? 'lineage_hash'
-        : sha256Stable(lineage.logicalSpecSpanRefs) !== sha256Stable(spans.map((span) => span.specSpanId))
-          ? 'logical_spec_span_refs'
-          : sha256Stable(lineage.authorities) !== sha256Stable(authorities)
-            ? 'authorities'
-            : null;
+  const lineageFailureReason =
+    lineage.schemaVersion !== 'GoalExecutionSourceLineage/v1'
+      ? 'schema_version'
+      : !SHA256_PATTERN.test(lineage.lineageHash)
+        ? 'lineage_hash_format'
+        : sha256Stable(sourceLineagePayload(lineage)) !== lineage.lineageHash
+          ? 'lineage_hash'
+          : sha256Stable(lineage.logicalSpecSpanRefs) !==
+              sha256Stable(spans.map((span) => span.specSpanId))
+            ? 'logical_spec_span_refs'
+            : sha256Stable(lineage.authorities) !== sha256Stable(authorities)
+              ? 'authorities'
+              : null;
   if (lineageFailureReason) {
     throw Object.assign(new Error('goal_execution_source_lineage_invalid'), {
       failureClass: 'goal_execution_source_lineage_invalid',
@@ -746,43 +891,91 @@ function buildSourceLineage(
 function sourceLineageFailureReason(ir: Partial<GoalExecutionIR>): string | null {
   if (ir.schemaVersion !== 'GoalExecutionIR/v3') return null;
   const spans = objects(ir.logicalSpecSpans).map((span) => {
-    try { return normalizeLogicalSpecSpan(span); } catch { return null; }
+    try {
+      return normalizeLogicalSpecSpan(span);
+    } catch {
+      return null;
+    }
   });
   if (spans.some((span) => span === null) || spans.length === 0) return 'logical_spec_spans';
   const lineage = object(ir.sourceLineage) as Partial<GoalExecutionSourceLineage>;
-  if (lineage.schemaVersion !== 'GoalExecutionSourceLineage/v1' || !SHA256_PATTERN.test(text(lineage.lineageHash))) return 'lineage_identity';
-  if (sha256Stable(sourceLineagePayload(lineage as GoalExecutionSourceLineage)) !== lineage.lineageHash) return 'lineage_hash';
+  if (
+    lineage.schemaVersion !== 'GoalExecutionSourceLineage/v1' ||
+    !SHA256_PATTERN.test(text(lineage.lineageHash))
+  )
+    return 'lineage_identity';
+  if (
+    sha256Stable(sourceLineagePayload(lineage as GoalExecutionSourceLineage)) !==
+    lineage.lineageHash
+  )
+    return 'lineage_hash';
   const spanIds = new Set(spans.map((span) => span!.specSpanId));
-  const resolvableRefs = new Set(spans.flatMap((span) => [
-    span!.specSpanId,
-    ...span!.boundObligationIds,
-    ...strings(span!.boundDeclarationIds),
-    ...strings(span!.canonicalNodeRefs),
-  ]));
-  if (sha256Stable(sortedUnique(strings(lineage.logicalSpecSpanRefs))) !== sha256Stable(sortedUnique([...spanIds]))) return 'logical_spec_span_refs';
-  if (text(lineage.logicalSpecSpanSetHash) !== sha256Stable(spans)) return 'logical_spec_span_set_hash';
+  const resolvableRefs = new Set(
+    spans.flatMap((span) => [
+      span!.specSpanId,
+      ...span!.boundObligationIds,
+      ...strings(span!.boundDeclarationIds),
+      ...strings(span!.canonicalNodeRefs),
+    ])
+  );
+  if (
+    sha256Stable(sortedUnique(strings(lineage.logicalSpecSpanRefs))) !==
+    sha256Stable(sortedUnique([...spanIds]))
+  )
+    return 'logical_spec_span_refs';
+  if (text(lineage.logicalSpecSpanSetHash) !== sha256Stable(spans))
+    return 'logical_spec_span_set_hash';
   const authorities = objects(lineage.authorities);
-  if (authorities.length === 0 || authorities.some((authority) =>
-    !['standalone_source_document', 'requirements_semantic_ir'].includes(text(authority.authorityKind)) ||
-    !text(authority.authorityId) || !SHA256_PATTERN.test(text(authority.authorityHash)) ||
-    strings(authority.logicalSpecSpanRefs).some((ref) => !spanIds.has(ref)))) return 'authority_identity';
-  const authoritySpanIds = sortedUnique(authorities.flatMap((authority) => strings(authority.logicalSpecSpanRefs)));
-  if (sha256Stable(authoritySpanIds) !== sha256Stable(sortedUnique([...spanIds]))) return 'authority_span_coverage';
-  if (ir.profile === 'standalone' && spans.some((span) =>
-    !authorities.some((authority) => authority.authorityKind === 'standalone_source_document' &&
-      authority.authorityId === span!.sourceArtifactId && authority.authorityHash === span!.sourceSnapshotHash))) return 'standalone_authority_binding';
+  if (
+    authorities.length === 0 ||
+    authorities.some(
+      (authority) =>
+        !['standalone_source_document', 'requirements_semantic_ir'].includes(
+          text(authority.authorityKind)
+        ) ||
+        !text(authority.authorityId) ||
+        !SHA256_PATTERN.test(text(authority.authorityHash)) ||
+        strings(authority.logicalSpecSpanRefs).some((ref) => !spanIds.has(ref))
+    )
+  )
+    return 'authority_identity';
+  const authoritySpanIds = sortedUnique(
+    authorities.flatMap((authority) => strings(authority.logicalSpecSpanRefs))
+  );
+  if (sha256Stable(authoritySpanIds) !== sha256Stable(sortedUnique([...spanIds])))
+    return 'authority_span_coverage';
+  if (
+    ir.profile === 'standalone' &&
+    spans.some(
+      (span) =>
+        !authorities.some(
+          (authority) =>
+            authority.authorityKind === 'standalone_source_document' &&
+            authority.authorityId === span!.sourceArtifactId &&
+            authority.authorityHash === span!.sourceSnapshotHash
+        )
+    )
+  )
+    return 'standalone_authority_binding';
   if (ir.profile === 'requirements_backed') {
     const semantic = object(ir.semanticSource);
     const canonicalRef = object(semantic.canonicalRequirementGraphRef);
     const requirementsLineage = object(ir.requirementsLineage);
-    if (!authorities.some((authority) => authority.authorityKind === 'requirements_semantic_ir' &&
-      authority.authorityId === semantic.semanticRevisionId && authority.authorityHash === semantic.scopeSemanticHash &&
-      authority.typedSourceGraphHash === semantic.typedSourceGraphHash &&
-      authority.canonicalRequirementGraphHash === canonicalRef.graphHash &&
-      authority.canonicalSemanticHash === canonicalRef.semanticHash &&
-      (!requirementsLineage.sourceBindingHash ||
-        authority.sourceBindingHash === requirementsLineage.sourceBindingHash) &&
-       canonicalRef.typedSourceGraphHash === semantic.typedSourceGraphHash)) return 'requirements_authority_binding';
+    if (
+      !authorities.some(
+        (authority) =>
+          authority.authorityKind === 'requirements_semantic_ir' &&
+          authority.authorityId === semantic.semanticRevisionId &&
+          authority.authorityHash === semantic.scopeSemanticHash &&
+          authority.typedSourceGraphHash === semantic.typedSourceGraphHash &&
+          authority.canonicalRequirementGraphHash === canonicalRef.graphHash &&
+          authority.canonicalSemanticHash === canonicalRef.semanticHash &&
+          (!requirementsLineage.sourceBindingHash ||
+            authority.sourceBindingHash === requirementsLineage.sourceBindingHash) &&
+          canonicalRef.typedSourceGraphHash === semantic.typedSourceGraphHash
+      )
+    )
+      return 'requirements_authority_binding';
     try {
       const graph = resolveTypedSourceAuthority(
         semantic.typedSourceAuthority as unknown as RequirementsTypedSourceAuthority
@@ -812,10 +1005,16 @@ function sourceLineageFailureReason(ir: Partial<GoalExecutionIR>): string | null
   }
   if (ir.profile === 'standalone') {
     const canonicalRef = object(object(ir.semanticSource).canonicalRequirementGraphRef);
-    if (Object.keys(canonicalRef).length > 0 && !authorities.some((authority) =>
-      authority.authorityKind === 'standalone_source_document' &&
-      authority.canonicalRequirementGraphHash === canonicalRef.graphHash &&
-      authority.canonicalSemanticHash === canonicalRef.semanticHash)) return 'standalone_canonical_graph_binding';
+    if (
+      Object.keys(canonicalRef).length > 0 &&
+      !authorities.some(
+        (authority) =>
+          authority.authorityKind === 'standalone_source_document' &&
+          authority.canonicalRequirementGraphHash === canonicalRef.graphHash &&
+          authority.canonicalSemanticHash === canonicalRef.semanticHash
+      )
+    )
+      return 'standalone_canonical_graph_binding';
   }
   for (const obligation of ir.obligations ?? []) {
     const refs = strings(obligation.sourceRefs);
@@ -832,35 +1031,48 @@ function sourceLineageFailureReason(ir: Partial<GoalExecutionIR>): string | null
       strings(constraint.premiseRefs),
       strings(constraint.sourceDeclarationRefs),
     ];
-    return !referenceSets.some((refs) => refs.length > 0) ||
-      !referenceSets.every((refs) => refs.every((ref) => resolvableRefs.has(ref)));
+    return (
+      !referenceSets.some((refs) => refs.length > 0) ||
+      !referenceSets.every((refs) => refs.every((ref) => resolvableRefs.has(ref)))
+    );
   });
-  return invalidConstraint ? `constraint_source_refs:${text(invalidConstraint.constraintId)}` : null;
+  return invalidConstraint
+    ? `constraint_source_refs:${text(invalidConstraint.constraintId)}`
+    : null;
 }
 
 function sourceLineageValid(ir: Partial<GoalExecutionIR>): boolean {
   return sourceLineageFailureReason(ir) === null;
 }
 
-function standaloneAuthorityLineageValid(ir: Partial<GoalExecutionIR> | GoalExecutionCompilerInput): boolean {
+function standaloneAuthorityLineageValid(
+  ir: Partial<GoalExecutionIR> | GoalExecutionCompilerInput
+): boolean {
   if (ir.profile !== 'standalone') return true;
   const lineage = object(ir.standaloneLineage);
   const technical = object(ir.technicalAuthority);
   const internalGateHash = text(lineage.internalSemanticGateHash);
-  return SHA256_PATTERN.test(internalGateHash) &&
-    text(technical.internalSemanticGateHash) === internalGateHash;
+  return (
+    SHA256_PATTERN.test(internalGateHash) &&
+    text(technical.internalSemanticGateHash) === internalGateHash
+  );
 }
 
-function resolvedCanonicalGraph(input: GoalExecutionCompilerInput): CanonicalRequirementGraphV2 | null {
+function resolvedCanonicalGraph(
+  input: GoalExecutionCompilerInput
+): CanonicalRequirementGraphV2 | null {
   const semanticSource = object(input.semanticSource);
   const provided = object(input.canonicalRequirementGraph);
   if (provided.schemaVersion === 'CanonicalRequirementGraph/v2') {
     const graph = provided as unknown as CanonicalRequirementGraphV2;
     const lint = lintCanonicalRequirementGraph(graph);
-    if (lint.decision !== 'pass') throw new Error(`canonical_requirement_graph_${lint.issueCodes[0]}`);
-    if (input.profile === 'requirements_backed' &&
+    if (lint.decision !== 'pass')
+      throw new Error(`canonical_requirement_graph_${lint.issueCodes[0]}`);
+    if (
+      input.profile === 'requirements_backed' &&
       (graph.sourceAuthority.kind !== 'requirements_semantic_ir' ||
-        graph.typedSourceGraphHash !== text(semanticSource.typedSourceGraphHash))) {
+        graph.typedSourceGraphHash !== text(semanticSource.typedSourceGraphHash))
+    ) {
       throw new Error('canonical_requirement_graph_source_authority_mismatch');
     }
     return graph;
@@ -877,8 +1089,10 @@ function resolvedCanonicalGraph(input: GoalExecutionCompilerInput): CanonicalReq
       standaloneGraph: provided,
     });
   }
-  if (input.profile === 'requirements_backed' &&
-    semanticSource.schemaVersion === REQUIREMENTS_TYPED_SEMANTIC_VERSION) {
+  if (
+    input.profile === 'requirements_backed' &&
+    semanticSource.schemaVersion === REQUIREMENTS_TYPED_SEMANTIC_VERSION
+  ) {
     return normalizeCanonicalRequirementGraph({
       sourceAuthority: {
         kind: 'requirements_semantic_ir',
@@ -898,7 +1112,10 @@ export function compileGoalExecutionIR(input: GoalExecutionCompilerInput): GoalE
   if (canonicalGraph) {
     const graphRef = canonicalRequirementGraphRef(canonicalGraph);
     const suppliedRef = object(input.semanticSource.canonicalRequirementGraphRef);
-    if (Object.keys(suppliedRef).length > 0 && sha256Stable(suppliedRef) !== sha256Stable(graphRef)) {
+    if (
+      Object.keys(suppliedRef).length > 0 &&
+      sha256Stable(suppliedRef) !== sha256Stable(graphRef)
+    ) {
       throw new Error('canonical_requirement_graph_ref_mismatch');
     }
     input = {
@@ -921,8 +1138,14 @@ export function compileGoalExecutionIR(input: GoalExecutionCompilerInput): GoalE
   if (!standaloneAuthorityLineageValid(input)) {
     throw new Error('goal_execution_standalone_authority_lineage_invalid');
   }
-  if (typed && input.profile !== sourceProfile) throw new Error('goal_execution_profile_lineage_invalid');
-  if (!typed && input.obligations.some((row) => row.executionRole !== undefined || row.typedSourceNode !== undefined)) {
+  if (typed && input.profile !== sourceProfile)
+    throw new Error('goal_execution_profile_lineage_invalid');
+  if (
+    !typed &&
+    input.obligations.some(
+      (row) => row.executionRole !== undefined || row.typedSourceNode !== undefined
+    )
+  ) {
     throw new Error('goal_execution_typed_version_invalid');
   }
   preflightGoalExecutionRelationGraph(input);
@@ -941,7 +1164,8 @@ export function compileGoalExecutionIR(input: GoalExecutionCompilerInput): GoalE
     throw new Error('goal_execution_obligation_set_invalid');
   }
   if (sourceProfile === 'standalone') validateTypedObligationSources(obligations);
-  if (sourceProfile === 'requirements_backed') assertRequirementsTypedProjection({ ...input, obligations });
+  if (sourceProfile === 'requirements_backed')
+    assertRequirementsTypedProjection({ ...input, obligations });
   const sourceSpanResult = buildSourceLineage(input, input.logicalSpecSpans);
   const { tasks, dependencies } = taskRows(input, obligations);
   const taskByObligation = new Map<string, string[]>();
@@ -952,23 +1176,30 @@ export function compileGoalExecutionIR(input: GoalExecutionCompilerInput): GoalE
         ...(taskByObligation.get(obligationRef) ?? []),
         task.taskId,
       ]);
-      atomRefsByObligation.set(obligationRef, sortedUnique([
-        ...(atomRefsByObligation.get(obligationRef) ?? []),
-        ...task.atomRefs,
-      ]));
+      atomRefsByObligation.set(
+        obligationRef,
+        sortedUnique([...(atomRefsByObligation.get(obligationRef) ?? []), ...task.atomRefs])
+      );
     }
   }
   const commands = constraintsOfKind(input, 'CMD')
     .filter((constraint) => constraint.coverageRole !== 'non_action_declaration')
-    .filter((constraint) => sourceProfile !== 'requirements_backed' || constraint.modality === undefined || constraint.modality === 'required')
+    .filter(
+      (constraint) =>
+        sourceProfile !== 'requirements_backed' ||
+        constraint.modality === undefined ||
+        constraint.modality === 'required'
+    )
     .map((constraint) => ({
-    ...(sourceProfile === 'requirements_backed' ? requirementsTypedConstraintMetadata(constraint) : {}),
-    commandId: text(constraint.constraintId),
-    invocation: text(constraint.canonicalValue),
-    obligationRefs: sortedUnique(strings(constraint.applicableMustRefs)),
-    atomRefs: sortedUnique(strings(constraint.applicableAtomRefs)),
-    basisRefs: sortedUnique([text(constraint.constraintId), ...strings(constraint.premiseRefs)]),
-  }));
+      ...(sourceProfile === 'requirements_backed'
+        ? requirementsTypedConstraintMetadata(constraint)
+        : {}),
+      commandId: text(constraint.constraintId),
+      invocation: text(constraint.canonicalValue),
+      obligationRefs: sortedUnique(strings(constraint.applicableMustRefs)),
+      atomRefs: sortedUnique(strings(constraint.applicableAtomRefs)),
+      basisRefs: sortedUnique([text(constraint.constraintId), ...strings(constraint.premiseRefs)]),
+    }));
   const targetConstraints = constraintsOfKind(input, 'PATH');
   const stopConstraints = constraintsOfKind(input, 'STOP');
   const stopConditions = stopConstraints.filter((row) =>
@@ -978,19 +1209,29 @@ export function compileGoalExecutionIR(input: GoalExecutionCompilerInput): GoalE
   );
   const pathRestrictions = stopConstraints.filter((row) => !stopConditions.includes(row));
   const evidenceContracts = constraintsOfKind(input, 'EVDREQ')
-    .filter((constraint) => sourceProfile !== 'standalone' || constraint.coverageRole !== 'non_action_declaration').map((constraint) => ({
-    ...(sourceProfile === 'requirements_backed' ? requirementsTypedConstraintMetadata(constraint) : {}),
-    evidenceContractId: text(constraint.constraintId),
-    requirement: text(constraint.canonicalValue),
-    obligationRefs: sortedUnique(strings(constraint.applicableMustRefs)),
-    atomRefs: sortedUnique(strings(constraint.applicableAtomRefs)),
-    basisRefs: sortedUnique([text(constraint.constraintId), ...strings(constraint.premiseRefs)]),
-  }));
+    .filter(
+      (constraint) =>
+        sourceProfile !== 'standalone' || constraint.coverageRole !== 'non_action_declaration'
+    )
+    .map((constraint) => ({
+      ...(sourceProfile === 'requirements_backed'
+        ? requirementsTypedConstraintMetadata(constraint)
+        : {}),
+      evidenceContractId: text(constraint.constraintId),
+      requirement: text(constraint.canonicalValue),
+      obligationRefs: sortedUnique(strings(constraint.applicableMustRefs)),
+      atomRefs: sortedUnique(strings(constraint.applicableAtomRefs)),
+      basisRefs: sortedUnique([text(constraint.constraintId), ...strings(constraint.premiseRefs)]),
+    }));
   const commandTraceIndex = traceReferenceIndex(commands, 'commandId');
   const evidenceTraceIndex = traceReferenceIndex(evidenceContracts, 'evidenceContractId');
   const artifacts = constraintsOfKind(input, 'ART').map((constraint) => ({
-    ...(sourceProfile === 'requirements_backed' ? { ...requirementsTypedConstraintMetadata(constraint),
-      atomRefs: sortedUnique(strings(constraint.applicableAtomRefs)) } : {}),
+    ...(sourceProfile === 'requirements_backed'
+      ? {
+          ...requirementsTypedConstraintMetadata(constraint),
+          atomRefs: sortedUnique(strings(constraint.applicableAtomRefs)),
+        }
+      : {}),
     artifactId: text(constraint.constraintId),
     logicalPath: text(constraint.canonicalValue),
     obligationRefs: sortedUnique(strings(constraint.applicableMustRefs)),
@@ -1018,8 +1259,13 @@ export function compileGoalExecutionIR(input: GoalExecutionCompilerInput): GoalE
           targetPath: text(row.targetPath),
           owner: text(row.owner),
           basisRefs: sortedUnique(strings(row.basisRefs)),
-          ...(typed ? { obligationRefs: sortedUnique(strings(row.obligationRefs)),
-            atomRefs: sortedUnique(strings(row.atomRefs)), sourceRefs: sortedUnique(strings(row.sourceRefs)) } : {}),
+          ...(typed
+            ? {
+                obligationRefs: sortedUnique(strings(row.obligationRefs)),
+                atomRefs: sortedUnique(strings(row.atomRefs)),
+                sourceRefs: sortedUnique(strings(row.sourceRefs)),
+              }
+            : {}),
         }))
         .sort(
           (left, right) =>
@@ -1030,48 +1276,58 @@ export function compileGoalExecutionIR(input: GoalExecutionCompilerInput): GoalE
       basisRefs: domainBasisRefs,
     },
   ];
-  const traceSlices = obligations.filter((obligation) => !typed || obligation.executionRole === 'action').map((obligation, index) => {
-    const traceAtomRefs = atomRefsByObligation.get(obligation.obligationId) ?? [];
-    return {
-      traceSliceId: `TRACE-${String(index + 1).padStart(3, '0')}`,
-      executionDomainRef: 'DOMAIN-001',
-      obligationRefs: [obligation.obligationId],
-      taskRefs: sortedUnique(taskByObligation.get(obligation.obligationId) ?? []),
-      commandRefs: indexedTraceRefs(
-        commandTraceIndex,
-        obligation.obligationId,
-        traceAtomRefs
-      ),
-      evidenceContractRefs: indexedTraceRefs(
-        evidenceTraceIndex,
-        obligation.obligationId,
-        traceAtomRefs
-      ),
-      basisRefs: sortedUnique([obligation.obligationId, ...obligation.sourceRefs]),
-    };
-  });
-  const coExecutionConstraints = constraintsOfKind(input, 'CTM').map((constraint) => ({
-    ...(sourceProfile === 'requirements_backed' ? requirementsTypedConstraintMetadata(constraint) : {}),
-    constraintId: text(constraint.constraintId),
-    kind: 'must_link',
-    taskRefs: tasks
-      .filter((task) =>
-        strings(constraint.applicableAtomRefs).some((ref) => task.atomRefs.includes(ref))
-      )
-      .map((task) => task.taskId),
-    basisRefs: sortedUnique([text(constraint.constraintId), ...strings(constraint.premiseRefs)]),
-  }));
+  const traceSlices = obligations
+    .filter((obligation) => !typed || obligation.executionRole === 'action')
+    .map((obligation, index) => {
+      const traceAtomRefs = atomRefsByObligation.get(obligation.obligationId) ?? [];
+      return {
+        traceSliceId: `TRACE-${String(index + 1).padStart(3, '0')}`,
+        executionDomainRef: 'DOMAIN-001',
+        obligationRefs: [obligation.obligationId],
+        taskRefs: sortedUnique(taskByObligation.get(obligation.obligationId) ?? []),
+        commandRefs: indexedTraceRefs(commandTraceIndex, obligation.obligationId, traceAtomRefs),
+        evidenceContractRefs: indexedTraceRefs(
+          evidenceTraceIndex,
+          obligation.obligationId,
+          traceAtomRefs
+        ),
+        basisRefs: sortedUnique([obligation.obligationId, ...obligation.sourceRefs]),
+      };
+    });
+  const coExecutionConstraints = constraintsOfKind(input, 'CTM')
+    .filter((constraint) => constraint.declarationRole !== 'dependency_constraint')
+    .map((constraint) => ({
+      ...(sourceProfile === 'requirements_backed'
+        ? requirementsTypedConstraintMetadata(constraint)
+        : {}),
+      constraintId: text(constraint.constraintId),
+      kind: 'must_link',
+      taskRefs: tasks
+        .filter((task) =>
+          strings(constraint.applicableAtomRefs).some((ref) => task.atomRefs.includes(ref))
+        )
+        .map((task) => task.taskId),
+      basisRefs: sortedUnique([text(constraint.constraintId), ...strings(constraint.premiseRefs)]),
+    }));
   const goalIdentity = sha256Stable({
     profile: input.profile,
     semanticSource: input.semanticSource,
     technicalAuthority: input.technicalAuthority,
   }).slice('sha256:'.length, 'sha256:'.length + 16);
   const draft = {
-    schemaVersion: typed ? 'GoalExecutionIR/v3' as const : 'GoalExecutionIR/v1' as const,
+    schemaVersion: typed ? ('GoalExecutionIR/v3' as const) : ('GoalExecutionIR/v1' as const),
     profile: input.profile,
     goalId: `GOAL-${goalIdentity.toUpperCase()}`,
-    semanticSource: { ...input.semanticSource, ...(sourceProfile === 'standalone' && input.executionConstraints.some((row) => row.coverageRole !== undefined)
-      ? { typedExecutionConstraints: structuredClone(input.executionConstraints), typedExecutionConstraintsHash: sha256Stable(input.executionConstraints) } : {}) },
+    semanticSource: {
+      ...input.semanticSource,
+      ...(sourceProfile === 'standalone' &&
+      input.executionConstraints.some((row) => row.coverageRole !== undefined)
+        ? {
+            typedExecutionConstraints: structuredClone(input.executionConstraints),
+            typedExecutionConstraintsHash: sha256Stable(input.executionConstraints),
+          }
+        : {}),
+    },
     ...(input.requirementsLineage ? { requirementsLineage: input.requirementsLineage } : {}),
     ...(input.standaloneLineage ? { standaloneLineage: input.standaloneLineage } : {}),
     technicalAuthority: input.technicalAuthority,
@@ -1083,7 +1339,7 @@ export function compileGoalExecutionIR(input: GoalExecutionCompilerInput): GoalE
     })),
     logicalSpecSpans: sourceSpanResult.lineage
       ? sourceSpanResult.spans
-      : sortedObjects(input.logicalSpecSpans, 'specSpanId') as GoalExecutionLogicalSpecSpan[],
+      : (sortedObjects(input.logicalSpecSpans, 'specSpanId') as GoalExecutionLogicalSpecSpan[]),
     ...(sourceSpanResult.lineage ? { sourceLineage: sourceSpanResult.lineage } : {}),
     executionDomains,
     traceSlices,
@@ -1091,10 +1347,12 @@ export function compileGoalExecutionIR(input: GoalExecutionCompilerInput): GoalE
     dependencies,
     logicalScopes: {
       ownedPaths: sortedUnique(targetConstraints.map((row) => text(row.canonicalValue))),
-      forbiddenPaths: typed ? sortedUnique(pathRestrictions.map((row) => text(row.canonicalValue))) : sortedUnique([
-        ...strings(architectureLogicalScope.forbiddenPaths),
-        ...strings(isolation.forbiddenPaths),
-      ]),
+      forbiddenPaths: typed
+        ? sortedUnique(pathRestrictions.map((row) => text(row.canonicalValue)))
+        : sortedUnique([
+            ...strings(architectureLogicalScope.forbiddenPaths),
+            ...strings(isolation.forbiddenPaths),
+          ]),
       ...(typed ? { pathRestrictions: structuredClone(pathRestrictions) } : {}),
       ...(stopConditions.length ? { stopConditions: structuredClone(stopConditions) } : {}),
     },
@@ -1130,8 +1388,16 @@ export function validateGoalExecutionIR(value: unknown): {
   } catch {
     issues.push('goal_execution_ir_schema_invalid');
   }
-  if (!['GoalExecutionIR/v1', 'GoalExecutionIR/v2', 'GoalExecutionIR/v3'].includes(String(ir.schemaVersion))) issues.push('goal_execution_ir_schema_invalid');
-  if (['GoalExecutionIR/v2', 'GoalExecutionIR/v3'].includes(String(ir.schemaVersion)) && Array.isArray(ir.obligations)) {
+  if (
+    !['GoalExecutionIR/v1', 'GoalExecutionIR/v2', 'GoalExecutionIR/v3'].includes(
+      String(ir.schemaVersion)
+    )
+  )
+    issues.push('goal_execution_ir_schema_invalid');
+  if (
+    ['GoalExecutionIR/v2', 'GoalExecutionIR/v3'].includes(String(ir.schemaVersion)) &&
+    Array.isArray(ir.obligations)
+  ) {
     try {
       const profile = typedProfile(object(ir.semanticSource));
       if (profile !== ir.profile) throw new Error('profile_mismatch');
@@ -1160,11 +1426,21 @@ export function validateGoalExecutionIR(value: unknown): {
           : {}),
       });
     }
-    if (!typedPathRestrictionsValid(ir)) issues.push('goal_execution_path_restriction_binding_invalid');
+    if (!typedPathRestrictionsValid(ir))
+      issues.push('goal_execution_path_restriction_binding_invalid');
   }
   if (ir.schemaVersion === 'GoalExecutionIR/v1') {
-    try { if (typedProfile(object(ir.semanticSource)) || (ir.obligations ?? []).some((row) => row.executionRole !== undefined || row.typedSourceNode !== undefined)) issues.push('goal_execution_typed_version_invalid'); }
-    catch { issues.push('goal_execution_typed_version_invalid'); }
+    try {
+      if (
+        typedProfile(object(ir.semanticSource)) ||
+        (ir.obligations ?? []).some(
+          (row) => row.executionRole !== undefined || row.typedSourceNode !== undefined
+        )
+      )
+        issues.push('goal_execution_typed_version_invalid');
+    } catch {
+      issues.push('goal_execution_typed_version_invalid');
+    }
   }
   if (!['requirements_backed', 'standalone'].includes(String(ir.profile)))
     issues.push('goal_execution_ir_profile_invalid');

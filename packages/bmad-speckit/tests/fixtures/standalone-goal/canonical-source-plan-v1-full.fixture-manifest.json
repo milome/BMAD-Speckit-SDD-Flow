@@ -1,0 +1,553 @@
+{
+  "schemaVersion": "standalone-goal-full-fixture-manifest/v1",
+  "fixtureId": "canonical-source-plan-v1-full",
+  "legacySource": {
+    "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.md",
+    "bytes": 214296,
+    "sha256": "sha256:06f1c8f44fdfea09fb0f12832cd0a319c7938c79aac91aae48f44b54dc731d4a"
+  },
+  "archive": {
+    "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full.fixture.tar.gz",
+    "bytes": 3240233,
+    "sha256": "sha256:87fd6c81d056a18f265be6fb37aa37b8575e0ec0c8442e95168f08676cf0b13b"
+  },
+  "fileCount": 105,
+  "totalUncompressedBytes": 23460506,
+  "files": [
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/executable-verification-audit.json",
+      "bytes": 7950,
+      "sha256": "sha256:b10880641cade7648670551bd8d3eb9da1716f082d0ed844d18243399047ab0c"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/main-session-disposition.json",
+      "bytes": 1541,
+      "sha256": "sha256:150a86a51f0798ef8c813f279ec8735ef632aad510a595e4a4cb41dbf3bc8ce0"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/control-events.jsonl",
+      "bytes": 6747,
+      "sha256": "sha256:f0b6cb48ea623b9d783ee8be715c021b0fb0942f42d96d9755a1902052ec41bd"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/control-store/current-commit.json",
+      "bytes": 647,
+      "sha256": "sha256:b7f669bfe3f3ef4cc2a2eb52a0b2991300cae3fd734aa75c9b3443cf234d194e"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/control-store/transactions/CTRL-1d497c6f0a5ed44b922421b9/commit-receipt.json",
+      "bytes": 1035,
+      "sha256": "sha256:bfcb2487fda5070937ab16422ef90dd3d6de1ea7de47072a8deef49c271975f6"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/control-store/transactions/CTRL-1d497c6f0a5ed44b922421b9/control-events.jsonl",
+      "bytes": 4920,
+      "sha256": "sha256:401c50c273fd6db07ee2d9300f0e34d82cd9638484d8ee35692380b152f2ac45"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/control-store/transactions/CTRL-1d497c6f0a5ed44b922421b9/previous/control-events.jsonl",
+      "bytes": 3245,
+      "sha256": "sha256:2e3fd92172c0eb012bdf2bbc030685ebb57e02426fc571386217711ef618992f"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/control-store/transactions/CTRL-1d497c6f0a5ed44b922421b9/previous/requirement-record.json",
+      "bytes": 3432,
+      "sha256": "sha256:d7c3d388d6a5cfac633d5b9515032e92aef2cc7f4319844d46e9b8ba6fffb441"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/control-store/transactions/CTRL-1d497c6f0a5ed44b922421b9/requirement-record.json",
+      "bytes": 3446,
+      "sha256": "sha256:9601f39d00e3aaa3b6e8d8b2409ac755407f00db45b5984599d0f26b63176c5f"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/control-store/transactions/CTRL-1d497c6f0a5ed44b922421b9/transaction-manifest.json",
+      "bytes": 1893,
+      "sha256": "sha256:6dd63891c338a60fbbeef5ee4d563942ea79bfca63bb1339fe8517e576d224f7"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/control-store/transactions/CTRL-4085177eeb53325ddb894928/commit-receipt.json",
+      "bytes": 1028,
+      "sha256": "sha256:bc78bc7a6ea4438a80fcc4fe42b82c79c43ee1b78a38f17b00c78c36feaa9934"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/control-store/transactions/CTRL-4085177eeb53325ddb894928/control-events.jsonl",
+      "bytes": 3245,
+      "sha256": "sha256:2e3fd92172c0eb012bdf2bbc030685ebb57e02426fc571386217711ef618992f"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/control-store/transactions/CTRL-4085177eeb53325ddb894928/previous/control-events.jsonl",
+      "bytes": 1619,
+      "sha256": "sha256:e2980a5576c84c07a19a4de10817e1b73b4f40aed812f490834425a21206d99c"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/control-store/transactions/CTRL-4085177eeb53325ddb894928/previous/requirement-record.json",
+      "bytes": 3430,
+      "sha256": "sha256:876bf659bee93e966501149d331654de77021e161496877bd80499171e10d701"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/control-store/transactions/CTRL-4085177eeb53325ddb894928/requirement-record.json",
+      "bytes": 3432,
+      "sha256": "sha256:d7c3d388d6a5cfac633d5b9515032e92aef2cc7f4319844d46e9b8ba6fffb441"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/control-store/transactions/CTRL-4085177eeb53325ddb894928/transaction-manifest.json",
+      "bytes": 1879,
+      "sha256": "sha256:a7d9e623487a52cb0326ddd385595f707d525ec9095e0471ccef2c55528c85e3"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/control-store/transactions/CTRL-744f7b4e67e30cad85dffd9c/commit-receipt.json",
+      "bytes": 1027,
+      "sha256": "sha256:9cfed3b4252511a5cbb6cad1249e3bef8807a5dbd3c29957d68009de7ce256c0"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/control-store/transactions/CTRL-744f7b4e67e30cad85dffd9c/control-events.jsonl",
+      "bytes": 1619,
+      "sha256": "sha256:e2980a5576c84c07a19a4de10817e1b73b4f40aed812f490834425a21206d99c"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/control-store/transactions/CTRL-744f7b4e67e30cad85dffd9c/previous/requirement-record.json",
+      "bytes": 1676,
+      "sha256": "sha256:5f471978e3375ce227a5892fad2720d8e5cd6bedfb8fb49d2d5e75bc78fc72f0"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/control-store/transactions/CTRL-744f7b4e67e30cad85dffd9c/requirement-record.json",
+      "bytes": 3430,
+      "sha256": "sha256:876bf659bee93e966501149d331654de77021e161496877bd80499171e10d701"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/control-store/transactions/CTRL-744f7b4e67e30cad85dffd9c/transaction-manifest.json",
+      "bytes": 1809,
+      "sha256": "sha256:57ab201932d6e28e82a138e0f036d057a67cef746cc7befe1be55d2b7cef6a71"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/control-store/transactions/CTRL-9332fa774810932bccbad23d/commit-receipt.json",
+      "bytes": 1041,
+      "sha256": "sha256:95aec44fc750f1654fc3cde82c0e176fa13ca2cacdadc21a4228f10ce917887d"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/control-store/transactions/CTRL-9332fa774810932bccbad23d/control-events.jsonl",
+      "bytes": 6747,
+      "sha256": "sha256:26b576167ddf4c4b192592edad06b5df0fd8851f661ee788c2daf40a78197472"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/control-store/transactions/CTRL-9332fa774810932bccbad23d/previous/control-events.jsonl",
+      "bytes": 4920,
+      "sha256": "sha256:401c50c273fd6db07ee2d9300f0e34d82cd9638484d8ee35692380b152f2ac45"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/control-store/transactions/CTRL-9332fa774810932bccbad23d/previous/requirement-record.json",
+      "bytes": 3446,
+      "sha256": "sha256:9601f39d00e3aaa3b6e8d8b2409ac755407f00db45b5984599d0f26b63176c5f"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/control-store/transactions/CTRL-9332fa774810932bccbad23d/requirement-record.json",
+      "bytes": 3448,
+      "sha256": "sha256:72b75866d9be6da4e9f2c2545297d34b585b582006ae662f701ed2f91c601e24"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/control-store/transactions/CTRL-9332fa774810932bccbad23d/transaction-manifest.json",
+      "bytes": 1900,
+      "sha256": "sha256:2ec73833012ca8693f4f545aaa0caf38535a4e8e54944011608c39d729553d64"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/receipts/audit-v3-final-executable-verification-20260909.json",
+      "bytes": 1035,
+      "sha256": "sha256:16d66781c5e2a7ae8acb113ed07311b0b66688b8f668c2fc4c6da17c589dfdc6"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/receipts/audit-v3-final-main-session-disposition-20260909.json",
+      "bytes": 1041,
+      "sha256": "sha256:aff832afd8cdfef20c642ff050705e6fa9cdd0d7bab8abdfb8e461a8a9b442c4"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/receipts/audit-v3-final-semantic-mapping-20260909.json",
+      "bytes": 1028,
+      "sha256": "sha256:ed0c33e6d10401b085fa8e495b6d9dcaca55bb3d3c9f16097b2d5548fda71b17"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/events/receipts/audit-v3-final-source-coverage-20260909.json",
+      "bytes": 1027,
+      "sha256": "sha256:f3d8e7824ec05c79b37825f6c8c70b1a9f894d7021c7a01e4d57569bf4d2912d"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/provenance/requirement-record.json",
+      "bytes": 3448,
+      "sha256": "sha256:7e9879828dd4d82617a31386341085b5133c33dd685c6c81ad2473b325698f83"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/semantic-mapping-audit.json",
+      "bytes": 7095,
+      "sha256": "sha256:2cba6a36369718b981b1f3a438a360858819f894c21f3ac66b7827930013b651"
+    },
+    {
+      "path": ".artifacts/goal-source-contract-normalization/phase-6/20260909T-independent-review-v3-final/source-coverage-audit.json",
+      "bytes": 5787,
+      "sha256": "sha256:300c55964d8f708ab3b498e6908b873de61eaad0e233c5a1d58eed6a6b04bc82"
+    },
+    {
+      "path": "_bmad/shared/goal-contract/standalone-source-plan-profile.json",
+      "bytes": 4599,
+      "sha256": "sha256:78e8812f85cdedf5b76c3cd76c9efa46d158a138637e00e227f0283e054c9adc"
+    },
+    {
+      "path": "docs/plans/BUGFIX-2026-09-07-goal-source-contract-normalization.md",
+      "bytes": 48232,
+      "sha256": "sha256:0e6ccf919d86305c034b4aeb0b39473d4c9a6b1250e5e1b9e644cf4958ad079c"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/.canonical-source-plan-v1-full-goal-execution-plan.coverage.json",
+      "bytes": 521721,
+      "sha256": "sha256:a361d753195b3dc7947c867db36916aca594f10ed3a3492dab782f931e5e08c5"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/.canonical-source-plan-v1-full-goal-execution-plan.generation.json",
+      "bytes": 11638,
+      "sha256": "sha256:703e34c1d3b745f86bebb2f28df81016a7d816dda2754b05013c7535d1b6a34a"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/.canonical-source-plan-v1-full.confirmed-requirements.authoring-input/authority-bundle.json",
+      "bytes": 849988,
+      "sha256": "sha256:4ce25233a71c5da4a18747a135feb1be21fdd80b959c357514d1d8e8d78fd8fb"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/.canonical-source-plan-v1-full.confirmed-requirements.authoring-input/intake.json",
+      "bytes": 1984,
+      "sha256": "sha256:0c86033c5b42a98d3b4aa1af306a18bc221ffe23dba3fa58dd82a0fc48aa929c"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full-goal-execution-plan.md",
+      "bytes": 688935,
+      "sha256": "sha256:c4cbf0dc942de3f9089d321c0e17975f7c31038f457dc0105bf5b67f2e0e0782"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full-goal-execution-plan.md.authority/goal/active-authority.json",
+      "bytes": 2121,
+      "sha256": "sha256:2a66b6cbefcbbacce7fb3c5ec9cad346552f97bec89f5cf6309c4123b456477c"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full-goal-execution-plan.md.authority/goal/bindings/9106af5ddecaa206fa3560ad2d503994e9b8d5e97b821e4926ff0ffa527c6a77/goal-source-binding.json",
+      "bytes": 444,
+      "sha256": "sha256:6fbe4c0832d8a4afb1a6dbcea9b99dfe7bc454b42b07c34f1aa9b5996133c9a5"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full-goal-execution-plan.md.authority/goal/bindings/9106af5ddecaa206fa3560ad2d503994e9b8d5e97b821e4926ff0ffa527c6a77/resolved-evidence-index.json",
+      "bytes": 67375,
+      "sha256": "sha256:45e426a4969a08278de56b8a575970e4ef7194620ede265b76d5f878943d1b90"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full-goal-execution-plan.md.authority/goal/closures/7b6825928d0efd2c9fd351df342462c9c9c5461f6f5fd3c8dae7fbfa3b75fecb/goal-execution-closure.json",
+      "bytes": 19374,
+      "sha256": "sha256:8f1b2e768eadc3416194473d485b531b0e7e8a43946617c06693777714e068a2"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full-goal-execution-plan.md.authority/goal/ir/7b6825928d0efd2c9fd351df342462c9c9c5461f6f5fd3c8dae7fbfa3b75fecb/goal-execution-ir.json",
+      "bytes": 1190494,
+      "sha256": "sha256:8799d44ae13341c2cea83940544781111f0cadc4de7bb52442d61445b141233c"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full-goal-execution-plan.md.authority/goal/projections/7b6825928d0efd2c9fd351df342462c9c9c5461f6f5fd3c8dae7fbfa3b75fecb/goal-execution-contract.md",
+      "bytes": 178196,
+      "sha256": "sha256:e78838613440c39985d4ab90cbd76d83a0aa73bfddede1956a4ee24c1859ed36"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full-goal-execution-plan.md.authority/goal/projections/7b6825928d0efd2c9fd351df342462c9c9c5461f6f5fd3c8dae7fbfa3b75fecb/renderability-report.json",
+      "bytes": 16392,
+      "sha256": "sha256:10824dde1240fb1b9cca2d0b180bf013886f674765932bb059d38b01fc65e47d"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full-goal-execution-plan.md.authority/goal/standalone-semantic/8056fb460aa8434250759f9a977dfd7d2320cc8e4b03d7d8ccfe587c1d2855fa/internal-semantic-gate/semantic-gate.json",
+      "bytes": 758,
+      "sha256": "sha256:1796ad716bd0af07c167dd94c07d83dc1d2ff28584f9efb42e45ae3b0e56be14"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full-goal-execution-plan.md.authority/goal/standalone-semantic/8056fb460aa8434250759f9a977dfd7d2320cc8e4b03d7d8ccfe587c1d2855fa/standalone-goal-semantic-ir.json",
+      "bytes": 1124104,
+      "sha256": "sha256:8ca0e70a8400746314f60c8e079fcf96009538ae85a85ecb31bc7728c839218f"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full.derivation-manifest.json",
+      "bytes": 1698800,
+      "sha256": "sha256:172b7c413d180a62bbfe7694875b2c44623c8ccf77659047322b5ff92fe6bfcf"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full.expected-graph.json",
+      "bytes": 6598317,
+      "sha256": "sha256:c9471e0197aff6dd6e2b1e6bff7e7003e0471b13e9998daa1b010458be588537"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full.fixture-review.json",
+      "bytes": 10454,
+      "sha256": "sha256:4f3be5ac193be3e8e568ac6268ae96266ec33c3da79298b8db341c0404567959"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full.integrity.json",
+      "bytes": 3239,
+      "sha256": "sha256:c4f60202627e2c2afd1736bcfc74bdee3e15e4c3a3b23d37b6350c98d6fe6b89"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full.md",
+      "bytes": 2579033,
+      "sha256": "sha256:d0aa0be0d8773e8029724c2dd4027578bfdf614870c93332cc082fb54890f74a"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full.proof-generator.cjs",
+      "bytes": 44924,
+      "sha256": "sha256:7acc7b6e8c7f61d8df9d3cd9ef27bc4e29964dd1c9b1e58fc625437c079a4374"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.blocks.mjs",
+      "bytes": 16221,
+      "sha256": "sha256:f830cab758421decf489decd835b30a6b06378ea25660486c3f3216712b72445"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.integrity.mjs",
+      "bytes": 7376,
+      "sha256": "sha256:313b9011724381b7c3240d3982e533ef807fb2d310e7e764a0e3c033638e9424"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.json",
+      "bytes": 7144217,
+      "sha256": "sha256:ed319186e6d12ed7fbfa8c94aaf807cbb432733f677c5af0dcc07ae3faea0f86"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.oracle.mjs",
+      "bytes": 15677,
+      "sha256": "sha256:fa8348778b0ed8aac0adfa40fa0556c0ef2d884c5750bc06191755a0597e5913"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.oracle.test.mjs",
+      "bytes": 17023,
+      "sha256": "sha256:b9aebbe35fdfb02517c881ba66820eaaad7f0356940d9630de7c0e35cfd04701"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.profile.mjs",
+      "bytes": 15415,
+      "sha256": "sha256:23b0b54ad6724b8fd4865aea3bcb9ebce5adeceaa73e6b6f0d5107fd76873637"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.relations.mjs",
+      "bytes": 14926,
+      "sha256": "sha256:293f2a37b82ce92cf40161da15a3804f4b70a11411770ef1b16e5cdc7f560aae"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-amendment.mjs",
+      "bytes": 5491,
+      "sha256": "sha256:df0bd4ce9878df6f38fc1a3af1c8759603098dc57db521d80900e8b19e1cadbb"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.clauses.01.json",
+      "bytes": 7032,
+      "sha256": "sha256:0aefc63002bb2da5ea395c9ef4873f98cee38d43ceccaf7429460c3a9b7a0a86"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.clauses.02.json",
+      "bytes": 7001,
+      "sha256": "sha256:3610cd476e24f8353a26ea3c884a20e8df24daabb40d5f144a3c918f3cbb571b"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.clauses.03.json",
+      "bytes": 7074,
+      "sha256": "sha256:2fc6c25eadce75a04c2fa9687fabd02ad3196895fb9325ebaa46f64b7725c98f"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.clauses.04.json",
+      "bytes": 7187,
+      "sha256": "sha256:7b7ca76e04684b5042a80bd69c8283c280bf50f6f32737124d1ee4fd865d5921"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.clauses.05.json",
+      "bytes": 6998,
+      "sha256": "sha256:6e864f2ef54c6b1debaede432b8432b94097d0ca17b3c18f6a1023510c6d591b"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.clauses.06.json",
+      "bytes": 6631,
+      "sha256": "sha256:492789c6c5340b9106762d85e4cedbd80baf3e26612e8a1e50bda058a15c656b"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.clauses.07.json",
+      "bytes": 6559,
+      "sha256": "sha256:637c090e5587a584c97ce036d59bd51be2ff2e08d1fd8998b6e325392d6d91ce"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.clauses.08.json",
+      "bytes": 6703,
+      "sha256": "sha256:d67c9421168004d9118ee96f4614a3c6b02fa003c1a946b3e78397b27d887cc5"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.clauses.09.json",
+      "bytes": 7169,
+      "sha256": "sha256:906fbf1d32aa673f8e634c3a2a447ad391191563fbb1a2224e7075a5c095d5d0"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.clauses.10.json",
+      "bytes": 6827,
+      "sha256": "sha256:70bb96ba022d8bb031599f6916b92fabcf721f1baa6911ebb735b46432f1d327"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.clauses.11.json",
+      "bytes": 6795,
+      "sha256": "sha256:13a2c29d71be3e903d4fd8583607115a83d6e975041f2086df6967aa2eee7cac"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.clauses.12.json",
+      "bytes": 6718,
+      "sha256": "sha256:c994e09040b33d23a78788b6b255acfadf656f7b9d5d16bb5ba23906d459f88b"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.clauses.13.json",
+      "bytes": 7118,
+      "sha256": "sha256:69c2ffcf3fa1f62f3b7586701b3c88a9420640fcaab5d95d0ac43332a4705643"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.clauses.14.json",
+      "bytes": 7242,
+      "sha256": "sha256:5d7060faae1fbda213319d7a44ccd75f36db0ee5344e1307072abcf8c54833eb"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.clauses.15.json",
+      "bytes": 6881,
+      "sha256": "sha256:45d4b04095835931070a54ae3f2a0001fd09496584f4420a228d4608acd3cbb3"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.clauses.16.json",
+      "bytes": 7152,
+      "sha256": "sha256:4c83ef304d290a92198f653e7abc039a2e04c15716f6c74eaa9d01d51f88d1f7"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.clauses.17.json",
+      "bytes": 6728,
+      "sha256": "sha256:a61ed4ab644a100d4739289808b8b5c6df8764a7cfd9e217f35a7e786d9384f8"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.clauses.18.json",
+      "bytes": 6995,
+      "sha256": "sha256:40069c2031e228d6f46b175cea762d355d1a0d8b202f5d81be4f186c966f97ad"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.clauses.19.json",
+      "bytes": 6523,
+      "sha256": "sha256:86aa83d82460655ec117777db0bdc15ca638c139e3b805cdf6eda0bff4fe124e"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.clauses.20.json",
+      "bytes": 7232,
+      "sha256": "sha256:49e506699d7fed907397e75d59e7062e3da40e4272612028656c14c6159d6562"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.clauses.21.json",
+      "bytes": 7146,
+      "sha256": "sha256:ac0d0a794b448f7bf61057c61344140c99ba1cf99957a53aa3598b334146fe02"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.clauses.22.json",
+      "bytes": 6859,
+      "sha256": "sha256:77c9738df75307ebceeb808ff032f7671e428f63e57cbbc709962d6d1281bdad"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.clauses.23.json",
+      "bytes": 3315,
+      "sha256": "sha256:30265ff2520c5bb7a1dad04041fc95f320abffcf97bcdbcf5e5ee54983e48dfc"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.index.json",
+      "bytes": 6554,
+      "sha256": "sha256:ee17ed0783be329dddb33d5676a7cc1139d3aa2823253896048388ee4c966831"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.integrity.mjs",
+      "bytes": 4018,
+      "sha256": "sha256:389cc624cc9f574441d1e5b38fa74d000f2d5f5568128cb9f9b6e414cde88e31"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.mjs",
+      "bytes": 5141,
+      "sha256": "sha256:6354f0d7e4b96a9b6da69337616b1942311c9cbe1ef5f957100ba33546652a47"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.publish.mjs",
+      "bytes": 6012,
+      "sha256": "sha256:65686674ddf6b0411d87fa6485acc347b8048acd7acd473bc9c9b5bd7e9c07c3"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.structure.01.json",
+      "bytes": 6959,
+      "sha256": "sha256:bcd7ed994d718939dc410f95d71762722136aa9918ff6c4e10fa94eeb620c5ec"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.structure.02.json",
+      "bytes": 7125,
+      "sha256": "sha256:9b5f44ac2469fcec5f09c03205e6d3c6f67dd1363182431d8e74e0ab42229654"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.structure.03.json",
+      "bytes": 7125,
+      "sha256": "sha256:8d94a3c0abfbc22c64e9a985ccbfe6e3a436bba096025cd3a665cd966053f620"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.structure.04.json",
+      "bytes": 7095,
+      "sha256": "sha256:600880b6d501333d8148b18374b87c4a9bc1d7aed3330ff9a26ad2c3fb140e88"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.structure.05.json",
+      "bytes": 6895,
+      "sha256": "sha256:52325ebafc6251647836a9c29eab17f2dccae330dbea6b985ba853ce2c0d107e"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.structure.06.json",
+      "bytes": 6895,
+      "sha256": "sha256:bfbec10b4796080d45d4c9b0f570a39e81d040e70e431da5f840cbf410b267e0"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.structure.07.json",
+      "bytes": 4526,
+      "sha256": "sha256:ed887645532a0b994add302a7195272a6835c1ddb232a971bf18a3170cee86f0"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.test.mjs",
+      "bytes": 6663,
+      "sha256": "sha256:831447e2305875c9429026c7b8d79f32e0750eb4a0f49837ea1b5cdaa5f3ff05"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v2.writer.mjs",
+      "bytes": 5947,
+      "sha256": "sha256:fa1a0c753f9609f6111da3c161d874574dd7878925498147a6f23bcfed13adba"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v3.integrity.mjs",
+      "bytes": 4315,
+      "sha256": "sha256:246f5a593ad4e9820ba947f4ce0cd0d4b92212eeb6192b8e62575846072780eb"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v3.mjs",
+      "bytes": 3001,
+      "sha256": "sha256:88b9bfc80f7c12df2388170701d09b637897b42797a5b812791aef3e13bef0c2"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.review-v3.test.mjs",
+      "bytes": 3164,
+      "sha256": "sha256:39146ed562c56c12a96bc9d45a358292d8661c4d932a1f77d36fca5422edee1c"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.validation.receipt.json",
+      "bytes": 409,
+      "sha256": "sha256:7730a0de991430c395c86f28e1d239eabb441ba34bed32b16f540713b647a026"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.md",
+      "bytes": 214296,
+      "sha256": "sha256:06f1c8f44fdfea09fb0f12832cd0a319c7938c79aac91aae48f44b54dc731d4a"
+    }
+  ],
+  "roles": {
+    "canonicalSource": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full.md",
+    "expectedGraph": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full.expected-graph.json",
+    "derivationManifest": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full.derivation-manifest.json",
+    "independentOracle": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.expected.json",
+    "requirementsIntake": "packages/bmad-speckit/tests/fixtures/standalone-goal/.canonical-source-plan-v1-full.confirmed-requirements.authoring-input/intake.json",
+    "authorityBundle": "packages/bmad-speckit/tests/fixtures/standalone-goal/.canonical-source-plan-v1-full.confirmed-requirements.authoring-input/authority-bundle.json",
+    "generator": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full.proof-generator.cjs"
+  },
+  "manifestHash": "sha256:9259c00c858a5eb95c7308566ad417c8e3d555f1b70250aaa435c164d5b8e0ee"
+}

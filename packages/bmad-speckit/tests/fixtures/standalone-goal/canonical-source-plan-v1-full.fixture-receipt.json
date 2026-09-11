@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "standalone-goal-full-fixture-receipt/v1",
+  "fixtureId": "canonical-source-plan-v1-full",
+  "manifestPath": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full.fixture-manifest.json",
+  "manifestHash": "sha256:9259c00c858a5eb95c7308566ad417c8e3d555f1b70250aaa435c164d5b8e0ee",
+  "archive": {
+    "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full.fixture.tar.gz",
+    "bytes": 3240233,
+    "sha256": "sha256:87fd6c81d056a18f265be6fb37aa37b8575e0ec0c8442e95168f08676cf0b13b"
+  },
+  "fileCount": 105,
+  "totalUncompressedBytes": 23460506,
+  "legacySource": {
+    "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/real-source-plan-20260904.md",
+    "bytes": 214296,
+    "sha256": "sha256:06f1c8f44fdfea09fb0f12832cd0a319c7938c79aac91aae48f44b54dc731d4a"
+  },
+  "canonicalNodeCount": 825,
+  "canonicalRelationCount": 9165,
+  "canonicalAliasCount": 446,
+  "sourceBlockCount": 2486,
+  "sourceSpanCount": 2506,
+  "receiptHash": "sha256:9630b2567be141e0ab4427c74c91e8c5584d17189f8275d38fa665284607b9f5"
+}
