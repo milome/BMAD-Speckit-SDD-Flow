@@ -4,7 +4,7 @@
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-canonical-assets-manifest.ts",
     "hash": "sha256:2bf1a50ff5336144d8f6dd7de063e73221a1bc680034b0505ab2bdde618c25b4"
   },
-  "manifestHash": "sha256:8d38f55eef5148980774e43cf59f86f94b9d5fbc1a14b019eaea9eae013460ce",
+  "manifestHash": "sha256:de782b72ec5a25df91f180b4f2d57bb74d5fdb5223dddd103a2562fce6d2f68a",
   "assets": [
     {
       "assetId": "semantic_ir_schema",
@@ -49,7 +49,7 @@
       "role": "projection_registry",
       "assetKind": "registry",
       "authorityClass": "deterministic_contract",
-      "sha256": "sha256:961e2b7b70d04d1a20039b19bbcb82be94c14c7cffe68f89a384f29e52aae132"
+      "sha256": "sha256:771d3b0ad9634fa70a6c6fb7af95c6d8c4c893d226a67b61de7dd78d36781052"
     },
     {
       "assetId": "consumer_registry",
