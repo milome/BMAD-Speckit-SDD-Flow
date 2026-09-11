@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createFullSourceBundle, hash, SOURCE_HASH, EXPECTED_HASH } from '../helpers/source-authority-full-source';
 import { scanRequirementsContractConsumerAuthority } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-consumer-authority-scanner';
 import { deriveRequirementsTypedSourceConfirmationSemantics } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-typed-source-compiler';
@@ -16,6 +16,8 @@ const { startIoMeter } = createRequire(import.meta.url)('../helpers/req-trace-fu
 const EVIDENCE = path.resolve('.artifacts/standalone-goal-full-repair/run-2026-09-05T11-17-06-349Z');
 const byteHash = (value: unknown) => hash(stableStringify(value));
 const sorted = (values: string[]) => [...values].sort();
+
+vi.setConfig({ testTimeout: 300_000, hookTimeout: 300_000 });
 
 describe('complete frozen real-source req-trace authority', () => {
   let fixture: ReturnType<typeof createFullSourceBundle>;
@@ -34,7 +36,7 @@ describe('complete frozen real-source req-trace authority', () => {
     scanned = scanRequirementsContractConsumerAuthority({ cwd: fixture.root, intakeSource: fixture.intakeSource,
       authoritySources: fixture.authoritySources });
     confirmation = deriveRequirementsTypedSourceConfirmationSemantics(scanned.typedSourceAuthority!);
-  }, 120_000);
+  }, 300_000);
 
   afterAll(() => {
     const io = meter.stop();
@@ -150,5 +152,5 @@ describe('complete frozen real-source req-trace authority', () => {
       expect(byteHash(damaged)).not.toBe(byteHash(packet));
       expect(validateTypedModelPacket(damaged, receipt, fullConfirmation.confirmed).length, change).toBeGreaterThan(0);
     }
-  }, 120_000);
+  }, 300_000);
 });

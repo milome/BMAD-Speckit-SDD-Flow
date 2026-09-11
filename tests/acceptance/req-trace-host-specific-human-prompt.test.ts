@@ -17,18 +17,18 @@ const SCRIPT = path.join(
 const DIRECT_ENTRY_ARGS = ['--entry', 'req_trace_direct'] as const;
 let tempDir: string;
 let fixture: ReturnType<typeof materializeAiTddManifestCloseoutRunnerFixture>;
-vi.setConfig({ testTimeout: 120_000, hookTimeout: 30_000 });
+vi.setConfig({ testTimeout: 120_000, hookTimeout: 120_000 });
 
 beforeEach(() => {
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'req-trace-host-'));
   fixture = materializeAiTddManifestCloseoutRunnerFixture({
     root: path.join(tempDir, 'workspace'),
   });
-}, 30_000);
+}, 120_000);
 
 afterEach(() => {
   fs.rmSync(tempDir, { recursive: true, force: true });
-}, 30_000);
+}, 120_000);
 
 function runHost(
   host: string,

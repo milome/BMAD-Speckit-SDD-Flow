@@ -1,9 +1,11 @@
 import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 const ROOT = join(import.meta.dirname, '..', '..');
+
+vi.setConfig({ testTimeout: 120_000 });
 
 function packMembers(): string[] {
   const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';

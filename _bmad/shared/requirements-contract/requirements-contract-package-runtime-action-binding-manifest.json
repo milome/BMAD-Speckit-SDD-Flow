@@ -964,7 +964,7 @@
         {
           "role": "installed-generator",
           "packagePath": "_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js",
-          "hash": "sha256:4d20edfd78de61bb626d7c49b7de3eb964683c52e3f1ffd4497dbfc82c2537db"
+          "hash": "sha256:13a4ccfd2fbd9d428271052d0b5a666642222fc0c921fc97528eaa435114389e"
         },
         {
           "role": "installed-stage-registry",

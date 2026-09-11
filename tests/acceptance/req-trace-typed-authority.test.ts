@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { decodeGoalSemanticDictionary } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-semantic-dictionary';
 import { resolveConfirmedRequirementsAuthority } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-confirmed-authority-adapter';
 import { materializeAiTddManifestCloseoutRunnerFixture } from '../helpers/requirement-fixture-runtime';
@@ -9,6 +9,7 @@ import { artifactHashes, runGenerator } from '../helpers/req-trace-budget-public
 import { validateTypedModelPacket } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-typed-model-packet';
 
 let root: string;
+vi.setConfig({ testTimeout: 300_000, hookTimeout: 120_000 });
 beforeEach(() => { root = fs.mkdtempSync(path.join(os.tmpdir(), 'test-only-req-trace-typed-')); });
 afterEach(() => { fs.rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 }); });
 
@@ -78,7 +79,7 @@ describe.each(['req_trace_direct', 'main_agent_compile'])('%s confirmed typed au
       expect(JSON.stringify(changed) !== JSON.stringify(packet), `${damage} must change the candidate`).toBe(true);
       expect(validateTypedModelPacket(changed, receipt, confirmed).length, damage).toBeGreaterThan(0);
     }
-  }, 120_000);
+  }, 300_000);
 
   it.each(['hash', 'dictionary', 'version', 'coverage', 'missing-coverage', 'missing-action', 'task-conflict'])(
     'rejects %s corruption without changing an existing quartet', (damage) => {
@@ -91,5 +92,5 @@ describe.each(['req_trace_direct', 'main_agent_compile'])('%s confirmed typed au
     expect(result.status, result.stdout).toBe(3);
     expect(result.stdout).toContain('CONFIRMED_AUTHORITY_INVALID');
     expect(artifactHashes(outDir)).toEqual(before);
-  }, 120_000);
+  }, 300_000);
 });

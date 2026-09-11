@@ -380,7 +380,8 @@ function compilerIdentity() {
 
 function resolveCompilerEntryProfile(args) {
   const profile = readGoalContractProfile(args);
-  const entryProfile = profile.entryProfiles?.[args.entry];
+  const validatedProfile = validateGoalContractProfile(profile);
+  const entryProfile = validatedProfile.entryProfiles?.[args.entry];
   if (
     !entryProfile ||
     entryProfile.compilerRoute !== 'shared_goal_execution_ir_compiler' ||
@@ -400,7 +401,7 @@ function resolveCompilerEntryProfile(args) {
       `Entry ${args.entry} rejects semantic derivation payloads: ${forbiddenSemanticInputs.join(', ')}`
     );
   }
-  args.resolvedGoalContractProfile = profile;
+  args.resolvedGoalContractProfile = validatedProfile;
   args.resolvedEntryProfile = entryProfile;
 }
 
@@ -430,6 +431,11 @@ function entryMetadata(args) {
 function profileHashFor(profile) {
   const clone = { ...(profile ?? {}) };
   delete clone.profileHash;
+  return sha256(stableStringify(clone));
+}
+
+function goalContractProfileHashFor(profile) {
+  const clone = { ...(profile ?? {}), profileHash: null };
   return sha256(stableStringify(clone));
 }
 
@@ -763,7 +769,7 @@ function resolveCanonicalConfirmedContext(args, sourcePath) {
   let authority;
   try {
     authority = confirmedAuthorityRuntime().resolveConfirmedRequirementsAuthority({
-      projectRoot: process.cwd(),
+      projectRoot: projectRootForRequirementRecord(args.requirementRecord),
       requirementRecordPath: path.resolve(args.requirementRecord),
     });
   } catch (error) {
@@ -815,6 +821,13 @@ function resolveCanonicalConfirmedContext(args, sourcePath) {
     },
     criticalAuditorReceiptRefs: [],
   };
+}
+
+function projectRootForRequirementRecord(requirementRecordPath) {
+  const absolutePath = path.resolve(requirementRecordPath);
+  const marker = `${path.sep}_bmad-output${path.sep}`;
+  const markerIndex = absolutePath.lastIndexOf(marker);
+  return markerIndex > 0 ? absolutePath.slice(0, markerIndex) : process.cwd();
 }
 
 function typedPacketValidation(packet, receipt, confirmation) {
@@ -1326,6 +1339,17 @@ function auditGoalDocument(documentText) {
 }
 
 function repoRoot() {
+  const packageRoot = String(process.env.BMAD_SPECKIT_PACKAGE_ROOT ?? '').trim();
+  if (packageRoot) {
+    const packageCandidate = path.resolve(packageRoot, '..', '..');
+    if (fs.existsSync(path.join(packageCandidate, '_bmad', 'shared', 'goal-contract', 'goal-execution-contract-template.md'))) {
+      return packageCandidate;
+    }
+  }
+  const cwdCandidate = path.resolve(process.cwd());
+  if (fs.existsSync(path.join(cwdCandidate, '_bmad', 'shared', 'goal-contract', 'goal-execution-contract-template.md'))) {
+    return cwdCandidate;
+  }
   return path.resolve(__dirname, '..', '..', '..', '..');
 }
 
@@ -1344,6 +1368,81 @@ function readGoalContractProfile(args = {}) {
     );
   }
   return readJson(profilePath);
+}
+
+function goalContractProfileTools() {
+  return require(path.resolve(
+    repoRoot(),
+    '_bmad',
+    'shared',
+    'goal-contract',
+    'scripts',
+    'extract-goal-contract-profile.js'
+  ));
+}
+
+function validateGoalContractProfile(profile) {
+  const tools = goalContractProfileTools();
+  const major = Number(String(profile.profileVersion ?? '0.0.0').split('.')[0]);
+  if (!(profile.compatibility?.supportedMajorVersions ?? []).includes(major)) {
+    throw new BlockedInput(
+      'BLOCK: GOAL_CONTRACT_PROFILE_UNSUPPORTED',
+      `profileVersion=${profile.profileVersion}`
+    );
+  }
+  if (String(profile.profileHash ?? '') !== goalContractProfileHashFor(profile)) {
+    throw new BlockedInput(
+      'BLOCK: GOAL_CONTRACT_PROFILE_HASH_MISMATCH',
+      'profileHash'
+    );
+  }
+  const templatePath = path.resolve(repoRoot(), profile.templatePath);
+  if (!fs.existsSync(templatePath)) {
+    throw new BlockedInput(
+      'BLOCK: GOAL_CONTRACT_PROFILE_MISSING',
+      `${normalizePathSafe(templatePath)} is required for native /goal document rendering.`
+    );
+  }
+  const templateText = fs.readFileSync(templatePath, 'utf8');
+  const templateProfile = tools.extractTemplateProfile(templateText);
+  if (profile.templateHash !== templateProfile.templateHash) {
+    throw new BlockedInput(
+      'BLOCK: GOAL_CONTRACT_PROFILE_HASH_MISMATCH',
+      'templateHash'
+    );
+  }
+  const availableSlots = new Set(templateProfile.slots.map((slot) => slot.name));
+  const missingRequiredSlots = (profile.requiredSlots ?? []).filter(
+    (slot) => !availableSlots.has(slot)
+  );
+  if (missingRequiredSlots.length > 0) {
+    throw new BlockedInput(
+      'BLOCK: GOAL_CONTRACT_INCOMPLETE',
+      `missing required slots: ${missingRequiredSlots.join(', ')}`
+    );
+  }
+  const renderableInvariantFragments = new Set([
+    'model_packet.json is the machine-readable execution authority',
+    'goal_execution.md is not execution authority',
+    '/goal completion is not closeout proof',
+    'sourcePlanHash',
+    'coverageReceiptPath',
+    'unmappedSourceObligations: 0',
+  ]);
+  const missingInvariantFragments = (profile.invariantFragments ?? []).filter(
+    (fragment) => !renderableInvariantFragments.has(fragment)
+  );
+  if (missingInvariantFragments.length > 0) {
+    throw new BlockedInput(
+      'BLOCK: GOAL_CONTRACT_INCOMPLETE',
+      `missing invariant fragments: ${missingInvariantFragments.join(', ')}`
+    );
+  }
+  return Object.freeze({
+    ...profile,
+    templateHash: templateProfile.templateHash,
+    templatePath: tools.normalizeRepoPath(templatePath),
+  });
 }
 
 function objectById(items) {
@@ -2387,7 +2486,13 @@ function enforceNoOutDirGoalLength(args, confirmation) {
   );
 }
 
-function renderGoalExecutionDocument(packet, artifactPaths, sharedGoalProjection, contractBodyKind) {
+function renderGoalExecutionDocument(
+  packet,
+  artifactPaths,
+  sharedGoalProjection,
+  contractBodyKind,
+  goalContractProfile = null
+) {
   const markdown = sharedGoalProjection?.markdown;
   const contractBodyHash = sharedGoalProjection?.bytesHash;
   if (
@@ -2401,6 +2506,7 @@ function renderGoalExecutionDocument(packet, artifactPaths, sharedGoalProjection
     );
   }
   const contractBodyLengthBytes = Buffer.byteLength(markdown, 'utf8');
+  const taskReportPath = normalizePathSafe(packet.executionHandoff?.taskReportPath || '');
   const envelopePayload = {
     schemaVersion: 'goal-execution-projection-envelope/v1',
     contractBodyRef: {
@@ -2409,15 +2515,28 @@ function renderGoalExecutionDocument(packet, artifactPaths, sharedGoalProjection
       lengthBytes: contractBodyLengthBytes,
     },
     modelPacketRef: { path: artifactPaths.modelPacket },
-    taskReportRef: { path: packet.executionHandoff?.taskReportPath || null },
+    taskReportRef: { path: taskReportPath || null },
     sourceAuthorityRef: {
       recordId: packet.recordId,
       sourceDocumentHash: packet.sourceDocumentHash,
     },
   };
+  const profileMetadata = goalContractProfile
+    ? [
+        `TaskReport path: ${taskReportPath}`,
+        `goalContractProfileVersion: ${goalContractProfile.profileVersion}`,
+        `goalContractProfileHash: ${goalContractProfile.profileHash}`,
+        'model_packet.json is the machine-readable execution authority',
+        'goal_execution.md is not execution authority',
+        '/goal completion is not closeout proof',
+        `sourcePlanHash: ${packet.sourceDocumentHash}`,
+        'coverageReceiptPath: canonical_confirmed_requirements',
+        'unmappedSourceObligations: 0',
+      ]
+    : [];
   const envelope = `<!-- goal-execution-projection-envelope/v1\n${stableStringify(
     envelopePayload
-  )}\n-->\n`;
+  )}${profileMetadata.length > 0 ? `\n${profileMetadata.join('\n')}` : ''}\n-->\n`;
   const document = `${envelope}${markdown}`;
   const contractBodyOffsetBytes = Buffer.byteLength(envelope, 'utf8');
   const documentBytes = Buffer.from(document, 'utf8');
@@ -2445,16 +2564,22 @@ function renderGoalExecutionDocument(packet, artifactPaths, sharedGoalProjection
   };
 }
 
-function renderSharedGoalExecutionDocument(packet, artifactPaths, sharedGoalProjection) {
+function renderSharedGoalExecutionDocument(
+  packet,
+  artifactPaths,
+  sharedGoalProjection,
+  goalContractProfile
+) {
   return renderGoalExecutionDocument(
     packet,
     artifactPaths,
     sharedGoalProjection,
-    'shared_confirmed_requirements_goal_projection'
+    'shared_confirmed_requirements_goal_projection',
+    goalContractProfile
   );
 }
 
-function renderLegacyGoalExecutionDocument(packet, artifactPaths) {
+function renderLegacyGoalExecutionDocument(packet, artifactPaths, goalContractProfile) {
   const taskReportPath = packet.executionHandoff?.taskReportPath || '(required TaskReport path)';
   const markdown = `# Goal Execution Contract
 
@@ -2498,7 +2623,8 @@ Stop conditions:
     packet,
     artifactPaths,
     { markdown, bytesHash: sha256(markdown) },
-    'legacy_compiler_contract_projection'
+    'legacy_compiler_contract_projection',
+    goalContractProfile
   );
 }
 
@@ -2517,8 +2643,17 @@ function ensureGoalDocumentPrepared(
     return;
   }
   const goalDocumentResult = packet.legacyCompatibilityRoute
-    ? renderLegacyGoalExecutionDocument(packet, artifactPaths)
-    : renderSharedGoalExecutionDocument(packet, artifactPaths, sharedGoalProjection);
+    ? renderLegacyGoalExecutionDocument(
+        packet,
+        artifactPaths,
+        args.resolvedGoalContractProfile
+      )
+    : renderSharedGoalExecutionDocument(
+        packet,
+        artifactPaths,
+        sharedGoalProjection,
+        args.resolvedGoalContractProfile
+      );
   const goalDocument = goalDocumentResult.document;
   const goalDocumentHash = goalDocumentResult.binding.documentHash;
   packet.sharedGoalCompilation = Object.freeze({
@@ -2536,9 +2671,43 @@ function ensureGoalDocumentPrepared(
   packet.executionHandoff.resumeAction = 'import-native-goal-task-report';
   packet.executionHandoff.ingestPolicy = 'strict_task_report_controlled_ingest';
   promptMeta.goalDocumentAudit = auditGoalDocument(goalDocument);
+  const profile = args.resolvedGoalContractProfile;
+  const templateTools = goalContractProfileTools();
+  const templatePath = path.resolve(repoRoot(), profile.templatePath);
+  const templateProfile = templateTools.extractTemplateProfile(
+    fs.readFileSync(templatePath, 'utf8')
+  );
+  const requiredSections = profile.requiredSections ?? [];
+  const missingRequiredSections = requiredSections.filter(
+    (section) => !templateProfile.sections.includes(section)
+  );
+  const missingInvariantFragments = (profile.invariantFragments ?? []).filter(
+    (fragment) => !goalDocument.includes(fragment)
+  );
+  const requiredSlots = profile.requiredSlots ?? [];
+  const missingRequiredSlots = requiredSlots.filter(
+    (slot) => !templateProfile.slots.some((candidate) => candidate.name === slot)
+  );
   promptMeta.goalContractTemplate = {
+    templatePath: templateTools.normalizeRepoPath(templatePath),
+    templateHash: templateProfile.templateHash,
+    profileVersion: profile.profileVersion,
+    profileHash: profile.profileHash,
+    rendererVersion: 'req-trace-goal-contract-renderer/v1',
     schemaVersion: 'GoalExecutionProjectionEnvelopeAudit/v1',
-    compatibilityDecision: promptMeta.goalDocumentAudit.passed ? 'pass' : 'blocked',
+    compatibilityDecision:
+      promptMeta.goalDocumentAudit.passed &&
+      missingRequiredSections.length === 0 &&
+      missingInvariantFragments.length === 0 &&
+      missingRequiredSlots.length === 0
+        ? 'pass'
+        : 'blocked',
+    requiredSlotsPassed: missingRequiredSlots.length === 0,
+    missingRequiredSlots,
+    requiredSectionsPassed: missingRequiredSections.length === 0,
+    missingRequiredSections,
+    invariantFragmentsPassed: missingInvariantFragments.length === 0,
+    missingInvariantFragments,
     sharedProjectionHash: goalDocumentResult.binding.contractBodyHash,
     envelopeHash: goalDocumentResult.binding.envelopeHash,
     documentHash: goalDocumentHash,

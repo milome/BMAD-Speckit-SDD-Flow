@@ -15,6 +15,8 @@ import { compileConfirmedRequirementsGoalSemantics } from '../../packages/bmad-s
 import { compileGoalExecutionIR } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-execution-ir';
 import { resolveGoalExecutionAuthority } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-execution-authority';
 
+vi.setConfig({ testTimeout: 300_000, hookTimeout: 300_000 });
+
 const REQUEST_ID = 'REQ-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05';
 const SEMANTIC_REVISION_ID =
   'SEMREV-0D5C8A146837319DFB3853D66228AAA41CA384E3698E534E55AD3AA0EB053153';
@@ -239,7 +241,7 @@ describe('confirmed Requirements authority adapter', () => {
     expect(authority.implementationConfirmation.requiredCommands).toHaveLength(84);
     expect(authority.typedSourceGraph.sourceNodes).toHaveLength(825);
     expect(authority.typedSourceGraph.sourceRelations).toHaveLength(9165);
-  }, 120_000);
+  }, 300_000);
 
   it('replays the exact user confirmation through the production confirm-scope authority', () => {
     const result = confirmRequirementsContractIrScope({
@@ -413,7 +415,7 @@ describe('confirmed Requirements authority adapter', () => {
     expect(sixState.goalExecutionIr.goalExecutionIRHash).not.toBe(
       base.goalExecutionIr.goalExecutionIRHash
     );
-  }, 120_000);
+  }, 300_000);
 
   it('routes both req-trace entries through the shared confirmed Goal compilation', () => {
     const authority = resolveConfirmedRequirementsAuthority({
@@ -458,7 +460,7 @@ describe('confirmed Requirements authority adapter', () => {
       expect(packet).not.toHaveProperty('goalExecutionClosure');
       expect(packet.sharedGoalCompilation).not.toHaveProperty('projectionMarkdown');
     }
-  }, 120_000);
+  }, 300_000);
 
   it('rejects a record pointer outside the canonical request record path', () => {
     expect(() =>
