@@ -759,10 +759,7 @@ function compileSharedConfirmedRequirementsGoal(context, args) {
 function resolveCanonicalConfirmedContext(args, sourcePath) {
   if (!args.requirementRecord) return null;
   const record = readJson(args.requirementRecord);
-  if (
-    record.schemaVersion !== 'requirements-contract-record/v1' ||
-    record.lifecycle !== 'user_confirmed'
-  ) return null;
+  if (record.schemaVersion !== 'requirements-contract-record/v1') return null;
   let authority;
   try {
     authority = confirmedAuthorityRuntime().resolveConfirmedRequirementsAuthority({
