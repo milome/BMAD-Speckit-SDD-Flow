@@ -8,6 +8,7 @@ const {
 const {
   compileSpecSpanRegistry,
   resolveSpecSpan,
+  resolveSpecSpans,
 } = require('../src/utils/goal-contract/control-plane/spec-span-registry.ts');
 const {
   stableControlPlaneStringify,
@@ -161,6 +162,43 @@ describe('goal-contract unified SpecSpan registry', () => {
     assert.equal(chinese.stale, false);
     assert.equal(chinese.staleSourceArtifactId, null);
     assert.equal(ascii.exactText, 'adversarial review');
+  });
+
+  it('bulk-resolves spans with the same fail-closed source and currentness checks', () => {
+    const snapshotSet = fixture();
+    const primary = snapshotById(snapshotSet, 'primary-plan');
+    const bcr = snapshotById(snapshotSet, 'bounded-reviewer-design');
+    const registry = compileSpecSpanRegistry({
+      orderedSourceSnapshotSet: snapshotSet,
+      spans: [
+        spanRequest(primary, 'MUST keep 字节。', ['CK02-AC02']),
+        spanRequest(bcr, 'adversarial review', ['BCR-C01']),
+      ],
+    });
+    const specSpanIds = registry.specSpans.map((span) => span.specSpanId);
+    const currentSources = registry.sourceSnapshots.map((source) => ({
+      sourceArtifactId: source.sourceArtifactId,
+      rawBytes: Buffer.from(source.frozenBytesBase64, 'base64'),
+    }));
+    const bulk = resolveSpecSpans({ registry, specSpanIds, currentSources });
+    const singles = specSpanIds.map((specSpanId) =>
+      resolveSpecSpan({ registry, specSpanId, currentSources })
+    );
+    assert.deepEqual(bulk, singles);
+
+    const changedSources = currentSources.map((source, index) =>
+      index === 0 ? { ...source, rawBytes: Buffer.from('changed\n', 'utf8') } : source
+    );
+    const stale = resolveSpecSpans({ registry, specSpanIds, currentSources: changedSources });
+    assert.equal(stale.find((row) => row.sourceArtifactId === primary.sourceArtifactId).stale, true);
+    assert.equal(stale.find((row) => row.sourceArtifactId === bcr.sourceArtifactId).stale, false);
+
+    const tampered = structuredClone(registry);
+    delete tampered.sourceSnapshots[0].frozenBytesBase64;
+    expectFailure(
+      () => resolveSpecSpans({ registry: tampered, specSpanIds }),
+      'spec_span_frozen_bytes_missing'
+    );
   });
 
   it('returns frozen original text and identifies the exact stale source', () => {

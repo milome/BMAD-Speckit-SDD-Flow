@@ -352,6 +352,16 @@ function normalizedTasks(graph) {
       sourceIds,
       title: task.title || task.summary || 'Untitled task',
     });
+    const estimatedClosureMinutes = Number(task.estimatedClosureMinutes);
+    if (
+      task.estimatedClosureMinutes !== undefined &&
+      (!Number.isInteger(estimatedClosureMinutes) || estimatedClosureMinutes < 1)
+    ) {
+      throw failure('execution_projection_closure_budget_invalid', {
+        taskId,
+        estimatedClosureMinutes: task.estimatedClosureMinutes,
+      });
+    }
     return {
       taskId,
       title: String(task.title || task.summary || taskId),
@@ -359,6 +369,7 @@ function normalizedTasks(graph) {
       dependencyIds: unique(task.dependencies || task.dependencyIds),
       atomicGroupRefs: unique(task.atomicGroupRefs),
       sequenceConstraintIds: [],
+      ...(task.estimatedClosureMinutes !== undefined ? { estimatedClosureMinutes } : {}),
     };
   });
   assertUniqueIds(tasks, 'taskId', 'execution_projection_task_id_duplicate');
@@ -554,35 +565,20 @@ function normalizeSequence({ input, tasks, slices }) {
       sequenceApplicability: receipt.decision,
       producerAvailable: Boolean(sequenceInput),
     });
-  if (
-    ![
-      'required',
-      'not_applicable_with_proof',
-      'unresolved',
-    ].includes(receipt.decision)
-  ) {
+  if (!['required', 'not_applicable_with_proof', 'unresolved'].includes(receipt.decision)) {
     throw failure('execution_projection_sequence_applicability_invalid', {
       decision: receipt.decision || null,
     });
   }
-  if (
-    receipt.decision === 'unresolved' &&
-    executionState.sequenceMode === 'auto'
-  ) {
+  if (receipt.decision === 'unresolved' && executionState.sequenceMode === 'auto') {
     throw failure('execution_projection_sequence_applicability_invalid', {
       decision: receipt.decision,
     });
   }
-  if (
-    executionState.shouldResolveProducer === true &&
-    !sequenceInput
-  ) {
+  if (executionState.shouldResolveProducer === true && !sequenceInput) {
     throw failure('execution_projection_sequence_constraints_missing');
   }
-  if (
-    executionState.shouldResolveProducer !== true &&
-    sequenceInput
-  ) {
+  if (executionState.shouldResolveProducer !== true && sequenceInput) {
     throw failure('execution_projection_sequence_constraints_unexpected');
   }
   if (sequenceInput) {
@@ -651,6 +647,28 @@ function normalizeSequence({ input, tasks, slices }) {
         taskMap.get(taskId).sequenceConstraintIds.push(constraintId);
       }
     }
+  }
+  for (const raw of asArray(input.inheritedConstraints)) {
+    const constraintId = deriveId(raw.constraintId, 'constraint', canonicalize(raw));
+    const constraintType = String(raw.constraintType || 'parent_rule');
+    const taskIds = unique(raw.taskIds);
+    for (const taskId of taskIds) {
+      if (!taskMap.has(taskId)) {
+        throw failure('execution_projection_sequence_task_unknown', {
+          constraintType,
+          taskId,
+        });
+      }
+      const sliceId = taskMap.get(taskId).ownerSliceId;
+      taskMap.get(taskId).sequenceConstraintIds.push(constraintId);
+      sliceMap.get(sliceId).sequenceConstraintIds.push(constraintId);
+    }
+    constraints.push({
+      constraintId,
+      constraintType,
+      taskIds,
+      semantic: canonicalize(raw.semantic || {}),
+    });
   }
   assertUniqueIds(
     constraints,

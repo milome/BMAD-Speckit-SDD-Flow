@@ -13,7 +13,7 @@ import { resolveTypedSourceBindings, validateRequirementsContractSourceBindingCa
 import { buildCanonicalFrozenRequirementsCompilerInput } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-canonical-compiler-input';
 import { prepareRequirementsContractCp05Cp08Projection, projectRequirementsContractCp06ExecutionManifest } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-cp05-cp08';
 import { resolveRequirementsContractJudgeAuditPacket, validateRequirementsContractJudgeAuditPacketCoverage } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-audit-packet';
-import { createSourceSpanRegistry, resolveRequirementsSpecSpanSourceNodeIds } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-span-registry';
+import { createSourceSpanRegistry, expandRequirementsTypedSpecSpans, resolveRequirementsSpecSpanSourceNodeIds } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-span-registry';
 import { prepareRequirementsContractCp04FreezeStage } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-production-semantic-pipeline';
 import Ajv2020 from 'ajv/dist/2020.js';
 import { validateRequirementsContractCp02AtomicClosure } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-cp00-cp04';
@@ -76,7 +76,13 @@ describe('full source Requirements authority input, test-only without confirmati
       expect(graph.sourceRelations).toHaveLength(2778);
       expect(graph.commandDeclarations).toHaveLength(97);
       const sourceGroup = compiled.semanticIr.semanticPayload.specSpanRegistry.find((span) => span.boundTypedSourceGraphHash)!;
-      expect(resolveRequirementsSpecSpanSourceNodeIds(sourceGroup, authority)).toEqual(graph.sourceNodes.map((node) => node.sourceRootId));
+      const actionNodeIds = graph.sourceNodes.filter((node) => node.executionRole === 'action').map((node) => node.sourceRootId);
+      expect(resolveRequirementsSpecSpanSourceNodeIds(sourceGroup, authority)).toEqual(actionNodeIds);
+      const expandedSourceGroups = expandRequirementsTypedSpecSpans([sourceGroup], authority);
+      expect(expandedSourceGroups).toHaveLength(graph.sourceNodes.length);
+      expect(expandedSourceGroups.every((span) => span.originSpecSpanRef === sourceGroup.specSpanId)).toBe(true);
+      expect(expandedSourceGroups.flatMap((span) => resolveRequirementsSpecSpanSourceNodeIds(span, authority, graph)).sort())
+        .toEqual(graph.sourceNodes.map((node) => node.sourceRootId).sort());
       expect(() => resolveRequirementsSpecSpanSourceNodeIds(sourceGroup)).toThrow('requirements_spec_span_typed_graph_binding_invalid');
       expect(() => resolveRequirementsSpecSpanSourceNodeIds({ ...sourceGroup, boundObligationIds: ['WORK-01'] }, authority))
         .toThrow('requirements_spec_span_typed_direct_projection_mismatch');

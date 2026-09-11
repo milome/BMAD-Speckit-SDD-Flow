@@ -2,9 +2,7 @@ const Module = require('node:module');
 const fs = require('node:fs');
 const path = require('node:path');
 
-if (!process.features?.typescript) {
-  require('ts-node/register/transpile-only');
-}
+require('tsx/cjs');
 
 const packageRoot = path.resolve(__dirname, '..');
 const originalResolveFilename = Module._resolveFilename;

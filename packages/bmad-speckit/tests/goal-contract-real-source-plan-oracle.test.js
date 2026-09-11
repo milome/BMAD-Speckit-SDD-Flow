@@ -1,10 +1,20 @@
 const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
-const { join } = require('node:path');
 const test = require('node:test');
+const fs = require('node:fs');
+const { materializeFullFixture } = require('./fixtures/standalone-goal/canonical-full-fixture.cjs');
+
+const materializedFixture = materializeFullFixture({ copyOracleHelpers: true });
+process.on('exit', () => {
+  try {
+    fs.rmSync(materializedFixture.root, { recursive: true, force: true });
+  } catch {
+    // Best-effort cleanup for the process-scoped fixture workspace.
+  }
+});
 
 test('real source plan independent semantic oracle is included in default package discovery', () => {
-  const suite = join(__dirname, 'fixtures', 'standalone-goal', 'real-source-plan-20260904.expected.oracle.test.mjs');
+  const suite = materializedFixture.oracleTestPath;
   const env = { ...process.env };
   delete env.NODE_TEST_CONTEXT;
   const result = spawnSync(process.execPath, ['--test', '--test-reporter=tap', suite], {

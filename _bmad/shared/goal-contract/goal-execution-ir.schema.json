@@ -6,10 +6,12 @@
   "additionalProperties": false,
   "required": ["schemaVersion", "profile", "goalId", "semanticSource", "technicalAuthority", "obligations", "aliases", "logicalSpecSpans", "executionDomains", "traceSlices", "atomicTasks", "dependencies", "logicalScopes", "commands", "evidenceContracts", "artifacts", "coExecutionConstraints", "goalExecutionIRHash"],
   "properties": {
-    "schemaVersion": { "enum": ["GoalExecutionIR/v1", "GoalExecutionIR/v2"] },
+    "schemaVersion": { "enum": ["GoalExecutionIR/v1", "GoalExecutionIR/v2", "GoalExecutionIR/v3"] },
     "profile": { "enum": ["requirements_backed", "standalone"] },
     "goalId": { "type": "string", "pattern": "^GOAL-[A-F0-9]{16}$" },
-    "semanticSource": { "type": "object" },
+    "semanticSource": { "type": "object", "properties": {
+      "canonicalRequirementGraphRef": { "$ref": "#/$defs/canonicalRequirementGraphRef" }
+    } },
     "requirementsLineage": { "type": "object" },
     "standaloneLineage": {
       "type": "object",
@@ -18,6 +20,7 @@
         "internalSemanticGateHash": { "$ref": "#/$defs/hash" }
       }
     },
+    "sourceLineage": { "$ref": "#/$defs/sourceLineage" },
     "technicalAuthority": { "type": "object" },
     "obligations": { "type": "array", "minItems": 1, "items": { "type": "object" } },
     "aliases": { "type": "array", "minItems": 1, "items": { "type": "object" } },
@@ -38,22 +41,39 @@
       "obligations": { "items": { "$ref": "#/$defs/obligation" } }, "evidenceContracts": { "minItems": 1 }, "artifacts": { "minItems": 1 },
       "atomicTasks": { "items": { "properties": { "taskId": { "pattern": "^TASK-[0-9]{3}$" } } } }
     } } },
-    { "if": { "properties": { "schemaVersion": { "const": "GoalExecutionIR/v2" } } }, "then": { "properties": {
+    { "if": { "properties": { "schemaVersion": { "enum": ["GoalExecutionIR/v2", "GoalExecutionIR/v3"] } } }, "then": { "properties": {
       "obligations": { "items": { "$ref": "#/$defs/typedObligation" } },
       "logicalScopes": { "required": ["pathRestrictions"], "properties": { "pathRestrictions": { "type": "array", "items": { "$ref": "#/$defs/pathRestriction" } } } },
       "semanticSource": { "required": ["schemaVersion"], "properties": { "schemaVersion": { "enum": ["StandaloneGoalSemanticIR/v2", "requirements-contract-semantic-ir/v2"] } } }
     } } },
     { "if": { "properties": { "profile": { "const": "requirements_backed" } } }, "then": { "required": ["requirementsLineage"], "not": { "required": ["standaloneLineage"] } } },
     { "if": { "properties": { "profile": { "const": "requirements_backed" }, "schemaVersion": { "const": "GoalExecutionIR/v1" } } }, "then": { "properties": { "coExecutionConstraints": { "minItems": 1 } } } },
-    { "if": { "properties": { "profile": { "const": "requirements_backed" }, "schemaVersion": { "const": "GoalExecutionIR/v2" } } }, "then": { "properties": { "semanticSource": {
+    { "if": { "properties": { "profile": { "const": "requirements_backed" }, "schemaVersion": { "enum": ["GoalExecutionIR/v2", "GoalExecutionIR/v3"] } } }, "then": { "properties": { "semanticSource": {
       "required": ["schemaVersion", "typedSourceAuthority", "typedSourceGraphHash"], "properties": { "schemaVersion": { "const": "requirements-contract-semantic-ir/v2" }, "typedSourceGraphHash": { "$ref": "#/$defs/hash" } }
     } } } },
-    { "if": { "properties": { "profile": { "const": "standalone" }, "schemaVersion": { "const": "GoalExecutionIR/v2" } } }, "then": { "properties": {
+    { "if": { "properties": { "profile": { "const": "standalone" }, "schemaVersion": { "enum": ["GoalExecutionIR/v2", "GoalExecutionIR/v3"] } } }, "then": { "properties": {
       "semanticSource": { "properties": { "schemaVersion": { "const": "StandaloneGoalSemanticIR/v2" } } },
       "technicalAuthority": { "required": ["internalSemanticGateHash"], "properties": {
         "internalSemanticGateHash": { "$ref": "#/$defs/hash" }
       } }
     } } },
+    { "if": { "properties": { "schemaVersion": { "const": "GoalExecutionIR/v3" } } }, "then": {
+      "required": ["sourceLineage"],
+      "properties": {
+        "logicalSpecSpans": { "minItems": 1, "items": { "$ref": "#/$defs/logicalSpecSpan" } }
+      }
+    } },
+    { "if": { "properties": { "profile": { "const": "requirements_backed" }, "schemaVersion": { "const": "GoalExecutionIR/v3" } } }, "then": {
+      "properties": { "semanticSource": {
+        "required": ["canonicalRequirementGraphRef", "typedRelationProjections"],
+        "properties": {
+          "typedRelationProjections": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/typedRelationProjection" }
+          }
+        }
+      } }
+    } },
     { "if": { "properties": { "profile": { "const": "standalone" } } }, "then": {
       "required": ["standaloneLineage"],
       "not": { "required": ["requirementsLineage"] },
@@ -64,6 +84,118 @@
   ],
   "$defs": {
     "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "typedRelationProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["relationId", "relationKind", "fromRef", "toRef", "mandatory", "disposition", "carrierRefs"],
+      "properties": {
+        "relationId": { "type": "string", "minLength": 1 },
+        "relationKind": { "type": "string", "minLength": 1 },
+        "fromRef": { "type": "string", "minLength": 1 },
+        "toRef": { "type": "string", "minLength": 1 },
+        "mandatory": { "type": "boolean" },
+        "disposition": { "enum": ["canonical_relation", "obligation_projection", "execution_projection", "authority_only"] },
+        "carrierRefs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "sourceCondition": { "type": "string", "minLength": 1 }
+      }
+    },
+    "canonicalRequirementGraphRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "graphSchemaVersion", "graphHash", "semanticHash", "sourceAuthorityHash", "lintReceiptHash"],
+      "properties": {
+        "schemaVersion": { "const": "CanonicalRequirementGraphRef/v1" },
+        "graphSchemaVersion": { "const": "CanonicalRequirementGraph/v2" },
+        "graphHash": { "$ref": "#/$defs/hash" },
+        "semanticHash": { "$ref": "#/$defs/hash" },
+        "sourceAuthorityHash": { "$ref": "#/$defs/hash" },
+        "lintReceiptHash": { "$ref": "#/$defs/hash" },
+        "typedSourceGraphHash": { "$ref": "#/$defs/hash" },
+        "upstreamCanonicalRequirementGraphHash": { "$ref": "#/$defs/hash" },
+        "derivationManifestHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "logicalSpecSpan": {
+      "type": "object",
+      "required": ["specSpanId", "boundObligationIds"],
+      "properties": {
+        "specSpanId": { "type": "string", "minLength": 1 },
+        "authorityClass": { "type": "string", "minLength": 1 },
+        "normalizedClaimHash": { "$ref": "#/$defs/hash" },
+        "boundTypedSourceGraphHash": { "$ref": "#/$defs/hash" },
+        "sourceArtifactId": { "type": "string", "minLength": 1 },
+        "sourceSnapshotHash": { "$ref": "#/$defs/hash" },
+        "startByte": { "type": "integer", "minimum": 0 },
+        "endByteExclusive": { "type": "integer", "minimum": 1 },
+        "lineStart": { "type": "integer", "minimum": 1 },
+        "lineEnd": { "type": "integer", "minimum": 1 },
+        "exactTextHash": { "$ref": "#/$defs/hash" },
+        "boundObligationIds": { "$ref": "#/$defs/strings" },
+        "boundDeclarationIds": { "$ref": "#/$defs/strings", "minItems": 1 },
+        "canonicalNodeRefs": { "$ref": "#/$defs/strings" },
+        "sourceDocumentGraphHash": { "$ref": "#/$defs/hash" },
+        "canonicalRequirementGraphHash": { "$ref": "#/$defs/hash" }
+      },
+      "allOf": [
+        { "oneOf": [
+          { "properties": {
+            "boundObligationIds": { "minItems": 1 },
+            "boundDeclarationIds": { "maxItems": 0 }
+          } },
+          { "required": ["boundDeclarationIds"], "properties": {
+            "boundObligationIds": { "maxItems": 0 },
+            "boundDeclarationIds": { "minItems": 1 }
+          } }
+        ] }
+      ],
+      "oneOf": [
+        { "required": ["sourceArtifactId", "sourceSnapshotHash", "startByte", "endByteExclusive", "lineStart", "lineEnd", "exactTextHash"] },
+        { "not": { "anyOf": [
+          { "required": ["sourceArtifactId"] }, { "required": ["sourceSnapshotHash"] },
+          { "required": ["startByte"] }, { "required": ["endByteExclusive"] },
+          { "required": ["exactTextHash"] }
+        ] } }
+      ]
+    },
+    "sourceLineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "authorities", "logicalSpecSpanRefs", "logicalSpecSpanSetHash", "lineageHash"],
+      "properties": {
+        "schemaVersion": { "const": "GoalExecutionSourceLineage/v1" },
+        "authorities": { "type": "array", "minItems": 1, "items": {
+          "type": "object", "additionalProperties": false,
+          "required": ["authorityKind", "authorityId", "authorityHash", "logicalSpecSpanRefs"],
+          "properties": {
+            "authorityKind": { "enum": ["standalone_source_document", "requirements_semantic_ir"] },
+            "authorityId": { "type": "string", "minLength": 1 },
+            "authorityHash": { "$ref": "#/$defs/hash" },
+            "sourceSnapshotHash": { "$ref": "#/$defs/hash" },
+            "sourceDocumentGraphHash": { "$ref": "#/$defs/hash" },
+            "canonicalRequirementGraphHash": { "$ref": "#/$defs/hash" },
+            "canonicalSemanticHash": { "$ref": "#/$defs/hash" },
+            "typedSourceGraphHash": { "$ref": "#/$defs/hash" },
+            "sourceBindingHash": { "$ref": "#/$defs/hash" },
+            "upstreamCanonicalRequirementGraphHash": { "$ref": "#/$defs/hash" },
+            "logicalSpecSpanRefs": { "$ref": "#/$defs/strings", "minItems": 1 }
+          },
+          "allOf": [
+            { "if": { "properties": { "authorityKind": { "const": "requirements_semantic_ir" } } }, "then": { "required": ["typedSourceGraphHash", "canonicalRequirementGraphHash", "canonicalSemanticHash"] } },
+            { "if": { "properties": { "authorityKind": { "const": "standalone_source_document" } }, "anyOf": [
+              { "required": ["canonicalRequirementGraphHash"] },
+              { "required": ["canonicalSemanticHash"] }
+            ] }, "then": { "required": ["canonicalRequirementGraphHash", "canonicalSemanticHash"] } }
+          ]
+        } },
+        "logicalSpecSpanRefs": { "$ref": "#/$defs/strings", "minItems": 1 },
+        "logicalSpecSpanSetHash": { "$ref": "#/$defs/hash" },
+        "lineageHash": { "$ref": "#/$defs/hash" }
+      }
+    },
     "strings": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
     "taskExecution": {
       "type": "object", "additionalProperties": false,

@@ -2,7 +2,9 @@ import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { x as extractTar } from 'tar';
 import yaml from 'js-yaml';
+import { resolveConfirmedRequirementsAuthority } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-confirmed-authority-adapter';
 import { resolveExecutionDisciplineProfile } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/execution-discipline-profiles';
 import type {
   CompiledPromptRef,
@@ -27,6 +29,21 @@ import { writePassingSourcePrdLintReport } from './source-prd-lint-fixture';
 export const SIX_MODEL_HARDENING_FIXTURE_ID =
   'REQ-2026-05-29-MAIN-AGENT-SIX-MENTAL-MODEL-PRODUCTION-ORCHESTRATION-HARDENING';
 export const AI_TDD_MANIFEST_CLOSEOUT_RUNNER_FIXTURE_ID = 'REQ-AI-TDD-MANIFEST-CLOSEOUT-RUNNER';
+const CANONICAL_CONFIRMED_REQUIREMENTS_FIXTURE_ID =
+  'REQ-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05';
+const CANONICAL_CONFIRMED_REQUIREMENTS_FIXTURE_ROOT = path.join(
+  'packages',
+  'bmad-speckit',
+  'tests',
+  'fixtures',
+  'standalone-goal'
+);
+const CANONICAL_CONFIRMED_REQUIREMENTS_ARCHIVE =
+  'canonical-source-plan-v1-full.confirmed-authority.tar.gz';
+const CANONICAL_CONFIRMED_REQUIREMENTS_RECEIPT =
+  'canonical-source-plan-v1-full.confirmation-receipt.json';
+const CANONICAL_CONFIRMED_REQUIREMENTS_PRESENTATION =
+  'canonical-source-plan-v1-full.confirmed-requirements.zh-CN.md';
 
 export interface MaterializedRequirementFixture {
   root: string;
@@ -137,7 +154,7 @@ function semanticConfirmationForHash(
   return semantic;
 }
 
-function confirmationHashes(sourceText: string): {
+export function confirmationHashes(sourceText: string): {
   sourceDocumentHash: string;
   implementationConfirmationHash: string;
 } {
@@ -147,8 +164,9 @@ function confirmationHashes(sourceText: string): {
   if (!confirmation) throw new Error('missing parsed implementationConfirmation');
   const semantic = semanticConfirmationForHash(confirmation);
   const normalizedBlock = `implementationConfirmation:${stableStringify(semantic)}`;
+  const normalizedSourceText = sourceText.replace(/\r\n/gu, '\n');
   return {
-    sourceDocumentHash: sha256Text(sourceText.replace(blockText, normalizedBlock)),
+    sourceDocumentHash: sha256Text(normalizedSourceText.replace(blockText, normalizedBlock)),
     implementationConfirmationHash: sha256Text(stableStringify(semantic)),
   };
 }
@@ -226,9 +244,9 @@ export function expandSixModelAuthority(input: {
             ? 'stale'
             : status === 'not_established'
               ? 'not_established'
-            : status === 'awaiting_user_acceptance'
-              ? 'awaiting_user_acceptance'
-              : 'blocked';
+              : status === 'awaiting_user_acceptance'
+                ? 'awaiting_user_acceptance'
+                : 'blocked';
       const receiptPath = `runtime/status-decisions/${model}.json`;
       const receipt = createRuntimeStatusDecisionReceipt({
         recordId: input.recordId,
@@ -650,11 +668,57 @@ export function materializeRequirementFixture(
   };
 }
 
-export function materializeAiTddManifestCloseoutRunnerFixture(
-  input: { root?: string } = {}
-): MaterializedReqTraceFixture {
+function materializeCanonicalReqTraceFixture(root: string): MaterializedReqTraceFixture {
+  const fixtureRoot = path.join(repoRoot(), CANONICAL_CONFIRMED_REQUIREMENTS_FIXTURE_ROOT);
+  const archivePath = path.join(fixtureRoot, CANONICAL_CONFIRMED_REQUIREMENTS_ARCHIVE);
+  const receipt = readJson(path.join(fixtureRoot, CANONICAL_CONFIRMED_REQUIREMENTS_RECEIPT));
+  const archiveReceipt = objectRecord(receipt.archive);
+  if (
+    receipt.requestId !== CANONICAL_CONFIRMED_REQUIREMENTS_FIXTURE_ID ||
+    archiveReceipt.sha256 !== sha256File(archivePath)
+  ) {
+    throw new Error('canonical confirmed Requirements fixture receipt mismatch');
+  }
+
+  fs.mkdirSync(root, { recursive: true });
+  extractTar({ file: archivePath, cwd: root, sync: true, strict: true });
+  const recordId = CANONICAL_CONFIRMED_REQUIREMENTS_FIXTURE_ID;
+  const recordPath = path.join(
+    root,
+    '_bmad-output',
+    'runtime',
+    'requirement-records',
+    recordId,
+    'record',
+    'requirement-record.json'
+  );
+  const authority = resolveConfirmedRequirementsAuthority({
+    projectRoot: root,
+    requirementRecordPath: recordPath,
+  });
+  const sourcePath = path.join(
+    root,
+    CANONICAL_CONFIRMED_REQUIREMENTS_FIXTURE_ROOT,
+    CANONICAL_CONFIRMED_REQUIREMENTS_PRESENTATION
+  );
+  if (!fs.existsSync(sourcePath)) {
+    throw new Error('canonical confirmed Requirements source presentation missing');
+  }
+
+  return {
+    root,
+    fixtureId: recordId,
+    sourcePath,
+    sourceDocumentHash: authority.lineage.finalMarkdownHash,
+    implementationConfirmationHash: authority.lineage.implementationConfirmationHash,
+    recordPath,
+    recordId,
+    requirementSetId: recordId,
+  };
+}
+
+function materializeLegacyReqTraceFixture(root: string): MaterializedReqTraceFixture {
   const fixtureId = AI_TDD_MANIFEST_CLOSEOUT_RUNNER_FIXTURE_ID;
-  const root = input.root ?? createTempRequirementWorkspace(`fixture-${safeSegment(fixtureId)}-`);
   const fixtureRoot = path.join(repoRoot(), 'tests', 'fixtures', 'requirements', fixtureId);
   const manifest = readJson(path.join(fixtureRoot, 'fixture-manifest.json'));
   const recordId = String(manifest.recordId);
@@ -732,6 +796,20 @@ export function materializeAiTddManifestCloseoutRunnerFixture(
     recordId,
     requirementSetId,
   };
+}
+
+export function materializeAiTddManifestCloseoutRunnerFixture(
+  input: { root?: string; authorityMode?: 'canonical' | 'legacy' } = {}
+): MaterializedReqTraceFixture {
+  const authorityMode = input.authorityMode ?? 'canonical';
+  const fixtureId =
+    authorityMode === 'canonical'
+      ? CANONICAL_CONFIRMED_REQUIREMENTS_FIXTURE_ID
+      : AI_TDD_MANIFEST_CLOSEOUT_RUNNER_FIXTURE_ID;
+  const root = input.root ?? createTempRequirementWorkspace(`fixture-${safeSegment(fixtureId)}-`);
+  return authorityMode === 'canonical'
+    ? materializeCanonicalReqTraceFixture(root)
+    : materializeLegacyReqTraceFixture(root);
 }
 
 export function writeFakeReqTraceSkill(

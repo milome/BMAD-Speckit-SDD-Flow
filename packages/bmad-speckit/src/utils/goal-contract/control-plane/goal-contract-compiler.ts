@@ -37,7 +37,7 @@ const {
     : './source-composition-policy'
 );
 const {
-  resolveSpecSpan,
+  resolveSpecSpans,
 } = require(
   __filename.endsWith('.ts')
     ? './spec-span-registry.ts'
@@ -52,11 +52,7 @@ const {
       ? '../slot-data-builder.ts'
       : '../slot-data-builder'
 );
-const { extractSourceObligations } = require(
-  __filename.endsWith('.ts')
-    ? '../source-obligation-extractor.ts'
-    : '../source-obligation-extractor'
-);
+
 const { validateSourceCoverage } = require(
   __filename.endsWith('.ts') ? '../source-coverage-matrix.ts' : '../source-coverage-matrix'
 );
@@ -347,7 +343,38 @@ function sourceDescriptor(bundle, record) {
 }
 
 function canonicalSourceProjection(canonicalBundle, authorityBundle) {
+  const extractGoalContractSourceModel = ({ snapshot }) => {
+    const frozenBytes = Buffer.from(snapshot?.frozenBytesBase64 || '', 'base64');
+    const canonical = frozenBytes.includes(
+      Buffer.from('sourcePlanVersion: standalone-source-plan/', 'utf8')
+    );
+    const module = require(
+      __filename.endsWith('.ts')
+        ? canonical
+          ? '../source-plan/source-model.ts'
+          : '../source-obligation-extractor.ts'
+        : canonical
+          ? '../source-plan/source-model'
+          : '../source-obligation-extractor'
+    );
+    return canonical
+      ? module.extractGoalContractSourceModel({ snapshot })
+      : module.extractSourceObligations({ snapshot });
+  };
   const registry = canonicalBundle.specSpanRegistry;
+  const referencedSpanIds = [
+    ...new Set(
+      canonicalBundle.canonicalIntentIR.flatMap((record) =>
+        Array.isArray(record.specSpanRefs) ? record.specSpanRefs : []
+      )
+    ),
+  ];
+  const citationsById = new Map(
+    resolveSpecSpans({ registry, specSpanIds: referencedSpanIds }).map((citation) => [
+      citation.specSpanId,
+      citation,
+    ])
+  );
   const rows = canonicalBundle.canonicalIntentIR
     .map((record) => {
       if (!Array.isArray(record.specSpanRefs) || record.specSpanRefs.length === 0) {
@@ -355,14 +382,13 @@ function canonicalSourceProjection(canonicalBundle, authorityBundle) {
           intentRecordId: record.intentRecordId,
         });
       }
-      const citations = record.specSpanRefs.map((specSpanId) =>
-        resolveSpecSpan({ registry, specSpanId })
-      );
+      const citations = record.specSpanRefs.map((specSpanId) => citationsById.get(specSpanId));
       const descriptor = sourceDescriptor(authorityBundle, record);
       if (
         !descriptor ||
         citations.some(
           (citation) =>
+            !citation ||
             citation.sourceArtifactId !== record.sourceArtifactId ||
             citation.namespace !== record.namespace
         )
@@ -372,9 +398,13 @@ function canonicalSourceProjection(canonicalBundle, authorityBundle) {
         });
       }
       const firstCitation = citations[0];
+      if (!firstCitation) {
+        throw failure('source_specific_spec_span_missing', {
+          intentRecordId: record.intentRecordId,
+        });
+      }
       const sourceSnapshot = registry.sourceSnapshots.find(
-        ({ sourceArtifactId }) =>
-          sourceArtifactId === record.sourceArtifactId
+        ({ sourceArtifactId }) => sourceArtifactId === record.sourceArtifactId
       );
       return {
         record,
@@ -388,34 +418,30 @@ function canonicalSourceProjection(canonicalBundle, authorityBundle) {
       (left, right) =>
         left.record.sourceOrder - right.record.sourceOrder ||
         left.firstCitation.startByte - right.firstCitation.startByte ||
-        left.record.intentRecordId.localeCompare(
-          right.record.intentRecordId,
-          'en'
-        )
+        left.record.intentRecordId.localeCompare(right.record.intentRecordId, 'en')
     );
   const sourceObligations = rows.map(
-    (
-      { record, descriptor, citations, sourceSnapshot, firstCitation },
-      index
-    ) => ({
-      id: record.executionRole === undefined ? `SRC${String(index + 1).padStart(3, '0')}` : record.sourceRootId,
+    ({ record, descriptor, citations, sourceSnapshot, firstCitation }, index) => ({
+      id:
+        record.executionRole === undefined
+          ? `SRC${String(index + 1).padStart(3, '0')}`
+          : record.sourceRootId,
       kind: record.sourceKind,
-      text: firstCitation.exactText,
+      text: /^(?:REQ|NFR|NEG|OUT|TASK|AC)$/u.test(String(record.sourceKind))
+        ? record.requiredOutcome
+        : firstCitation.exactText,
       summary: record.requiredOutcome,
       headingPath:
-        registry.specSpans.find(
-          ({ specSpanId }) => specSpanId === record.specSpanRefs[0]
-        )?.headingPath || [],
+        registry.specSpans.find(({ specSpanId }) => specSpanId === record.specSpanRefs[0])
+          ?.headingPath || [],
       sourcePlanPath: sourceSnapshot.pathOrSegmentId,
       sourcePlanHash: record.sourceSnapshotHash,
       lineStart:
-        registry.specSpans.find(
-          ({ specSpanId }) => specSpanId === record.specSpanRefs[0]
-        )?.startLine || 1,
+        registry.specSpans.find(({ specSpanId }) => specSpanId === record.specSpanRefs[0])
+          ?.startLine || 1,
       lineEnd:
-        registry.specSpans.find(
-          ({ specSpanId }) => specSpanId === record.specSpanRefs[0]
-        )?.endLine || 1,
+        registry.specSpans.find(({ specSpanId }) => specSpanId === record.specSpanRefs[0])
+          ?.endLine || 1,
       textHash: firstCitation.exactTextHash,
       canonicalIntentRecordId: record.intentRecordId,
       declaredSourceId: record.declaredSourceId,
@@ -436,11 +462,12 @@ function canonicalSourceProjection(canonicalBundle, authorityBundle) {
     })
   );
   const primarySnapshot = registry.sourceSnapshots.find(
-    ({ sourceArtifactId }) =>
-      sourceArtifactId === authorityBundle.primarySource.sourceArtifactId
+    ({ sourceArtifactId }) => sourceArtifactId === authorityBundle.primarySource.sourceArtifactId
   );
-  const sourceClauseCoverageSummaries = registry.sourceSnapshots.map((snapshot) =>
-    extractSourceObligations({ snapshot: { ...snapshot, sourceOrder: 0 } }).sourceClauseCoverageSummary
+  const sourceClauseCoverageSummaries = registry.sourceSnapshots.map(
+    (snapshot) =>
+      extractGoalContractSourceModel({ snapshot: { ...snapshot, sourceOrder: 0 } })
+        .sourceClauseCoverageSummary
   );
   return {
     sourcePlanPath: primarySnapshot.pathOrSegmentId,
@@ -690,35 +717,51 @@ function validateGoalContractSourceCoverageArtifact(value, options = {}) {
       cause: error,
     });
   }
-  if (artifact.sourceObligationCount !== artifact.sourceObligations.length ||
+  if (
+    artifact.sourceObligationCount !== artifact.sourceObligations.length ||
     artifact.coverageRowsHash !== hashControlPlaneValue(artifact.sourceObligations) ||
-    new Set(artifact.sourceObligations.map((row) => row.id)).size !== artifact.sourceObligations.length ||
+    new Set(artifact.sourceObligations.map((row) => row.id)).size !==
+      artifact.sourceObligations.length ||
     new Set(artifact.sourceClauseCoverage.map((row) => row.sourceArtifactId)).size !==
-      artifact.sourceClauseCoverage.length) {
-    throw failure('source_coverage_receipt_invalid', { reason: 'coverage_projection_hash_mismatch' });
+      artifact.sourceClauseCoverage.length
+  ) {
+    throw failure('source_coverage_receipt_invalid', {
+      reason: 'coverage_projection_hash_mismatch',
+    });
   }
   if (options.semanticRows !== undefined) {
-    if (!Array.isArray(options.semanticRows) ||
+    if (
+      !Array.isArray(options.semanticRows) ||
       artifact.sourceObligationSetHash !== hashControlPlaneValue(options.semanticRows) ||
       options.semanticRows.length !== artifact.sourceObligations.length ||
-      options.semanticRows.some((row, index) =>
-        artifact.sourceObligations[index].id !== row?.id ||
-        artifact.sourceObligations[index].semanticRowHash !== hashControlPlaneValue(row))) {
+      options.semanticRows.some(
+        (row, index) =>
+          artifact.sourceObligations[index].id !== row?.id ||
+          artifact.sourceObligations[index].semanticRowHash !== hashControlPlaneValue(row)
+      )
+    ) {
       throw failure('source_coverage_receipt_invalid', { reason: 'semantic_round_trip_mismatch' });
     }
   }
   if (options.sourceClauseCoverageSummaries !== undefined) {
     const summaries = options.sourceClauseCoverageSummaries;
-    if (!Array.isArray(summaries) || summaries.length !== artifact.sourceClauseCoverage.length ||
+    if (
+      !Array.isArray(summaries) ||
+      summaries.length !== artifact.sourceClauseCoverage.length ||
       summaries.some((summary, index) => {
         const projected = artifact.sourceClauseCoverage[index];
-        return projected.sourceArtifactId !== summary?.sourceArtifactId ||
+        return (
+          projected.sourceArtifactId !== summary?.sourceArtifactId ||
           projected.sourceSnapshotHash !== summary?.sourceSnapshotHash ||
           projected.clauseCount !== summary?.clauseCount ||
           projected.clauseSetHash !== summary?.clauseSetHash ||
-          projected.sourceClauseCoverageSummaryHash !== hashControlPlaneValue(summary);
-      })) {
-      throw failure('source_coverage_receipt_invalid', { reason: 'source_clause_round_trip_mismatch' });
+          projected.sourceClauseCoverageSummaryHash !== hashControlPlaneValue(summary)
+        );
+      })
+    ) {
+      throw failure('source_coverage_receipt_invalid', {
+        reason: 'source_clause_round_trip_mismatch',
+      });
     }
   }
   return artifact;

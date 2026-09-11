@@ -839,7 +839,7 @@ describe('req trace generator confirmation block gate', () => {
         '--json',
       ]);
 
-      expect(result.status, result.stdout).toBe(0);
+      expect(result.status).toBe(0);
       const prompt = fs.readFileSync(path.join(outDir, 'human_prompt.txt'), 'utf8');
       expect(prompt).toContain('不要自动提交；只有用户明确要求提交时才提交，并且禁止 push。');
       expect(prompt).not.toContain('改为 PASS 后立即本地提交一次');
@@ -878,7 +878,7 @@ describe('req trace generator confirmation block gate', () => {
         '--json',
       ]);
 
-      expect(result.status, result.stdout).toBe(0);
+      expect(result.status).toBe(0);
       const prompt = fs.readFileSync(path.join(outDir, 'human_prompt.txt'), 'utf8');
       expect(prompt).toContain('改为 PASS 后立即本地提交一次');
       expect(prompt).not.toContain('不要自动提交；只有用户明确要求提交时才提交，并且禁止 push。');
@@ -1346,7 +1346,7 @@ describe('req trace generator confirmation block gate', () => {
       '--json',
     ]);
 
-    expect(result.status).toBe(0);
+    expect(result.status, result.stdout).toBe(0);
     const prompt = fs.readFileSync(path.join(outDir, 'human_prompt.txt'), 'utf8');
     const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
     expect(prompt).toContain('/goal Execute REQ-TRACE-001 by following');
@@ -1417,7 +1417,7 @@ describe('req trace generator confirmation block gate', () => {
       '--json',
     ]);
 
-    expect(result.status).toBe(0);
+    expect(result.status, result.stdout).toBe(0);
     expect(fs.existsSync(path.join(outDir, 'goal_execution.md'))).toBe(true);
     const receipt = readJson<Record<string, any>>(path.join(outDir, 'audit_receipt.json'));
     expect(receipt.goalCommand.mode).toBe('native_goal_document_ref');

@@ -34,9 +34,7 @@ const COMMAND_PREFIXES = [
 const GOAL_COMMAND_MAX_CHARS = 4000;
 const GOAL_COMMAND_SAFE_MAX_CHARS = 3800;
 const GOAL_DOCUMENT_FILENAME = 'goal_execution.md';
-const GOAL_CONTRACT_TEMPLATE_PATH = '_bmad/shared/goal-contract/goal-execution-contract-template.md';
 const GOAL_CONTRACT_PROFILE_PATH = '_bmad/shared/goal-contract/goal-contract-profile.json';
-const GOAL_CONTRACT_RENDERER_PATH = '_bmad/shared/goal-contract/scripts/render-goal-contract.js';
 const FORBIDDEN_SEMANTIC_INPUT_KEYS = [
   'dualViewPayload',
   'implementationView',
@@ -334,16 +332,27 @@ const BOOKKEEPING_FIELDS = new Set([
 ]);
 
 function stableStringify(value) {
+  if (value === undefined) return undefined;
   if (value === null || typeof value !== 'object') return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item) ?? 'null').join(',')}]`;
+  }
   return `{${Object.keys(value)
     .sort()
-    .map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`)
+    .flatMap((key) => {
+      const serialized = stableStringify(value[key]);
+      return serialized === undefined ? [] : [`${JSON.stringify(key)}:${serialized}`];
+    })
     .join(',')}}`;
 }
 
 function sha256(content) {
   return `sha256:${crypto.createHash('sha256').update(content, 'utf8').digest('hex')}`;
+}
+
+function artifactBytesHash(role, mediaType, bytes) {
+  const prefix = Buffer.from(`artifactBytesHash/v1\n${role}\n${mediaType}\n`, 'utf8');
+  return `sha256:${crypto.createHash('sha256').update(prefix).update(bytes).digest('hex')}`;
 }
 
 function normalizeTextForHash(value) {
@@ -376,10 +385,11 @@ function compilerIdentity() {
 
 function resolveCompilerEntryProfile(args) {
   const profile = readGoalContractProfile(args);
-  const entryProfile = profile.entryProfiles?.[args.entry];
+  const validatedProfile = validateGoalContractProfile(profile);
+  const entryProfile = validatedProfile.entryProfiles?.[args.entry];
   if (
     !entryProfile ||
-    entryProfile.compilerRoute !== 'shared_requirement_trace_compiler' ||
+    entryProfile.compilerRoute !== 'shared_goal_execution_ir_compiler' ||
     entryProfile.dualViewPolicy !== 'forbidden'
   ) {
     throw new BlockedInput(
@@ -396,7 +406,7 @@ function resolveCompilerEntryProfile(args) {
       `Entry ${args.entry} rejects semantic derivation payloads: ${forbiddenSemanticInputs.join(', ')}`
     );
   }
-  args.resolvedGoalContractProfile = profile;
+  args.resolvedGoalContractProfile = validatedProfile;
   args.resolvedEntryProfile = entryProfile;
 }
 
@@ -426,6 +436,11 @@ function entryMetadata(args) {
 function profileHashFor(profile) {
   const clone = { ...(profile ?? {}) };
   delete clone.profileHash;
+  return sha256(stableStringify(clone));
+}
+
+function goalContractProfileHashFor(profile) {
+  const clone = { ...(profile ?? {}), profileHash: null };
   return sha256(stableStringify(clone));
 }
 
@@ -544,10 +559,46 @@ function implementationConfirmationHashFor(confirmation) {
 function legacyProjectionInclusiveHashesFor(sourceText, blockText, confirmation) {
   const semantic = legacyProjectionInclusiveConfirmationForHash(confirmation);
   const normalizedBlock = `implementationConfirmation:${stableStringify(semantic)}`;
+  const normalizedSourceText = normalizeTextForHash(sourceText);
+  const normalizedOriginalBlock = normalizeTextForHash(blockText);
   return {
-    sourceDocumentHash: sha256(sourceText.replace(blockText, normalizedBlock)),
+    sourceDocumentHash: sha256(normalizedSourceText.replace(normalizedOriginalBlock, normalizedBlock)),
     implementationConfirmationHash: sha256(stableStringify(semantic)),
   };
+}
+
+function canonicalPresentationArtifactHash(bytes) {
+  const withoutComments = bytes
+    .toString('utf8')
+    .replace(/(?:\r?\n)+[ \t]*<!--[\s\S]*?-->[ \t]*(?=\r?\n|$)/gu, '')
+    .replace(/\r\n?/gu, '\n');
+  return artifactBytesHash('final_markdown', 'text/markdown', Buffer.from(withoutComments, 'utf8'));
+}
+
+function verifyCanonicalPresentationBinding(authority, projectRoot, sourcePath) {
+  const record = authority?.architectureContext?.record;
+  const promotionRef = record?.currentPromotionEvidence;
+  const promotionPath = promotionRef?.path;
+  if (typeof promotionPath !== 'string' || promotionPath.trim() === '') return;
+  const promotionFile = path.resolve(authority.recordRoot, promotionPath);
+  if (!fs.existsSync(promotionFile)) return;
+  const promotion = readJson(promotionFile);
+  const relativeSourcePath = normalizePathSafe(path.relative(projectRoot, path.resolve(sourcePath)));
+  const artifact = Array.isArray(promotion.artifacts)
+    ? promotion.artifacts.find((candidate) =>
+      candidate && candidate.role === 'final_markdown' &&
+      normalizePathSafe(candidate.targetPath) === relativeSourcePath)
+    : null;
+  if (!artifact || typeof artifact.artifactBytesHash !== 'string') return;
+  const bytes = fs.readFileSync(sourcePath);
+  const actual = artifactBytesHash('final_markdown', 'text/markdown', bytes);
+  const commentTolerant = canonicalPresentationArtifactHash(bytes);
+  if (actual !== artifact.artifactBytesHash && commentTolerant !== artifact.artifactBytesHash) {
+    throw new BlockedInput(
+      'BLOCK: SOURCE_PRESENTATION_HASH_MISMATCH',
+      'The confirmed Requirements source presentation no longer matches its promotion artifact.'
+    );
+  }
 }
 
 function extractConfirmationBlock(text) {
@@ -680,6 +731,149 @@ function typedSourceRuntime() {
   return requireBmadSpeckit(
     'dist/main-agent/source-authority/scripts/requirements-contract-typed-source-semantics.js'
   );
+}
+
+function confirmedAuthorityRuntime() {
+  return requireBmadSpeckit(
+    'dist/main-agent/source-authority/scripts/requirements-contract-confirmed-authority-adapter.js'
+  );
+}
+
+function confirmedRequirementsGoalCompilerRuntime() {
+  return requireBmadSpeckit(
+    'dist/utils/goal-contract/control-plane/confirmed-requirements-goal-compiler.js'
+  );
+}
+
+function compileSharedConfirmedRequirementsGoal(context, args) {
+  if (!['req_trace_direct', 'main_agent_compile'].includes(args.entry)) {
+    throw new BlockedInput(
+      'BLOCK: ENTRY_ROUTE_MISMATCH',
+      `Entry ${args.entry} cannot invoke the confirmed Requirements Goal compiler.`
+    );
+  }
+  if (!context.authority) {
+    throw new BlockedInput(
+      'BLOCK: CANONICAL_CONFIRMED_AUTHORITY_REQUIRED',
+      `Entry ${args.entry} requires a resolved canonical confirmed Requirements authority.`
+    );
+  }
+  const compilation =
+    confirmedRequirementsGoalCompilerRuntime().compileConfirmedRequirementsGoalSemantics({
+      authority: context.authority,
+    });
+  if (sha256(compilation.projection.markdown) !== compilation.projection.bytesHash) {
+    throw new BlockedInput(
+      'BLOCK: SHARED_GOAL_PROJECTION_HASH_MISMATCH',
+      'The shared confirmed Requirements Goal projection failed its byte-hash binding.'
+    );
+  }
+  context.sharedGoalProjection = Object.freeze({
+    markdown: compilation.projection.markdown,
+    bytesHash: compilation.projection.bytesHash,
+  });
+  return Object.freeze({
+    schemaVersion: 'ConfirmedRequirementsGoalCompilationRef/v1',
+    compilerRoute: 'shared_goal_execution_ir_compiler',
+    compilerModule:
+      'dist/utils/goal-contract/control-plane/confirmed-requirements-goal-compiler.js',
+    canonicalRequirementGraphRef: Object.freeze({
+      schemaVersion: compilation.canonicalRequirementGraph.schemaVersion,
+      graphHash: compilation.canonicalRequirementGraph.graphHash,
+      semanticHash: compilation.canonicalRequirementGraph.semanticHash,
+    }),
+    canonicalRequirementGraphHash: compilation.canonicalRequirementGraph.graphHash,
+    canonicalRequirementSemanticHash: compilation.canonicalRequirementGraph.semanticHash,
+    canonicalGraphLintHash: compilation.canonicalGraphLint.receiptHash,
+    goalExecutionIrRef: Object.freeze({
+      schemaVersion: compilation.goalExecutionIr.schemaVersion,
+      hash: compilation.goalExecutionIr.goalExecutionIRHash,
+    }),
+    goalExecutionIRHash: compilation.goalExecutionIr.goalExecutionIRHash,
+    goalExecutionClosureRef: Object.freeze({
+      schemaVersion: compilation.closure.schemaVersion,
+      hash: compilation.closure.goalExecutionClosureHash,
+    }),
+    goalExecutionClosureHash: compilation.closure.goalExecutionClosureHash,
+    goalExecutionProjectionRef: Object.freeze({
+      kind: 'deterministic_markdown',
+      hash: compilation.projection.bytesHash,
+    }),
+    goalExecutionProjectionHash: compilation.projection.bytesHash,
+  });
+}
+
+function resolveCanonicalConfirmedContext(args, sourcePath) {
+  if (!args.requirementRecord) return null;
+  const record = readJson(args.requirementRecord);
+  if (record.schemaVersion !== 'requirements-contract-record/v1') return null;
+  let authority;
+  try {
+    authority = confirmedAuthorityRuntime().resolveConfirmedRequirementsAuthority({
+      projectRoot: projectRootForRequirementRecord(args.requirementRecord),
+      requirementRecordPath: path.resolve(args.requirementRecord),
+    });
+  } catch (error) {
+    throw new BlockedInput(
+      'BLOCK: CONFIRMED_AUTHORITY_INVALID',
+      `Canonical confirmed Requirements authority failed validation: ${String(error.message).slice(0, 300)}`
+    );
+  }
+  const sourceText = readText(sourcePath);
+  const identityValues = [
+    authority.requestId,
+    authority.semanticIr.semanticRevisionId,
+    authority.semanticIr.scopeSemanticHash,
+  ];
+  if (identityValues.some((value) => !sourceText.includes(value))) {
+    throw new BlockedInput(
+      'BLOCK: SOURCE_PRESENTATION_IDENTITY_MISMATCH',
+      'The source presentation does not identify the confirmed record, semantic revision, and scope hash.'
+    );
+  }
+  const sourceDocumentHash = authority.lineage.finalMarkdownHash;
+  const implementationConfirmationHash = authority.lineage.implementationConfirmationHash;
+  verifyCanonicalPresentationBinding(
+    authority,
+    projectRootForRequirementRecord(args.requirementRecord),
+    sourcePath
+  );
+  return {
+    authorityMode: 'canonical_record',
+    authority,
+    sourcePath: authority.sourceDocumentPath,
+    sourcePresentationPath: sourcePath,
+    sourceText,
+    blockText: '',
+    confirmation: authority.implementationConfirmation,
+    record: {
+      ...authority.architectureContext.record,
+      status: 'user_confirmed',
+      sourceDocumentHash,
+      implementationConfirmationHash,
+    },
+    latestConfirmationEvent: {
+      ...authority.architectureContext.confirmationEvent,
+      eventType: 'confirmation_recorded',
+      confirmedAt: null,
+      confirmationPageHash: authority.lineage.finalMarkdownHash,
+    },
+    sourceDocumentHash,
+    implementationConfirmationHash,
+    confirmationHashAuthority: {
+      recipe: 'canonical_confirmed_requirements_authority/v1',
+      compatibilityDecision: 'validated_cp08_to_cp05_lineage',
+      ...authority.lineage,
+    },
+    criticalAuditorReceiptRefs: [],
+  };
+}
+
+function projectRootForRequirementRecord(requirementRecordPath) {
+  const absolutePath = path.resolve(requirementRecordPath);
+  const marker = `${path.sep}_bmad-output${path.sep}`;
+  const markerIndex = absolutePath.lastIndexOf(marker);
+  return markerIndex > 0 ? absolutePath.slice(0, markerIndex) : process.cwd();
 }
 
 function typedPacketValidation(packet, receipt, confirmation) {
@@ -1174,49 +1368,39 @@ function auditHumanPrompt(prompt, sourceDocument, profile) {
   return { fragments, missing, passed: missing.length === 0 };
 }
 
-function goalDocumentAuditFragments(sourceDocument) {
+function goalDocumentAuditFragments() {
   return [
-    SKILL_LINE,
-    `Only ${sourceDocument}#implementationConfirmation is authoritative`,
-    'goalContractVersion: goal-execution-contract/v1',
-    'goalContractProfileVersion:',
-    'goalContractProfileHash:',
-    'model_packet.json is the machine-readable execution authority',
-    'goal_execution.md is not execution authority',
-    '/goal completion is not closeout proof',
-    'Trace order:',
-    'Acceptance Traceability Matrix',
-    'Required Test Commands',
-    'Runtime write targets:',
-    'reconfirm_required',
-    'Strict Acceptance Checklist',
-    'Completion Evidence Packet',
+    'goal-execution-projection-envelope/v1',
+    '# Goal Execution Contract',
+    'Goal Execution IR:',
+    '## Obligations',
+    '## Atomic Tasks',
   ];
 }
 
-function auditGoalDocument(documentText, sourceDocument) {
-  const fragments = goalDocumentAuditFragments(sourceDocument);
+function auditGoalDocument(documentText) {
+  const fragments = goalDocumentAuditFragments();
   const missing = fragments.filter((fragment) => !documentText.includes(fragment));
   return { fragments, missing, passed: missing.length === 0 };
 }
 
 function repoRoot() {
+  const packageRoot = String(process.env.BMAD_SPECKIT_PACKAGE_ROOT ?? '').trim();
+  if (packageRoot) {
+    const packageCandidate = path.resolve(packageRoot, '..', '..');
+    if (fs.existsSync(path.join(packageCandidate, '_bmad', 'shared', 'goal-contract', 'goal-execution-contract-template.md'))) {
+      return packageCandidate;
+    }
+  }
+  const cwdCandidate = path.resolve(process.cwd());
+  if (fs.existsSync(path.join(cwdCandidate, '_bmad', 'shared', 'goal-contract', 'goal-execution-contract-template.md'))) {
+    return cwdCandidate;
+  }
   return path.resolve(__dirname, '..', '..', '..', '..');
 }
 
 function repoPath(relativePath) {
   return path.join(repoRoot(), ...relativePath.split('/'));
-}
-
-function readGoalContractTemplate() {
-  const templatePath = repoPath(GOAL_CONTRACT_TEMPLATE_PATH);
-  if (!fs.existsSync(templatePath)) {
-    throw new BlockedInput(
-      'BLOCK: GOAL_CONTRACT_PROFILE_MISSING',
-      `${GOAL_CONTRACT_TEMPLATE_PATH} is required for native /goal document rendering.`
-    );
-  }
-  return readText(templatePath);
 }
 
 function readGoalContractProfile(args = {}) {
@@ -1232,28 +1416,79 @@ function readGoalContractProfile(args = {}) {
   return readJson(profilePath);
 }
 
-function loadGoalContractRenderer() {
-  const localRendererPath = path.resolve(__dirname, '..', '..', '..', 'shared', 'goal-contract', 'scripts', 'render-goal-contract.js');
-  const repoRendererPath = repoPath(GOAL_CONTRACT_RENDERER_PATH);
-  const rendererPath = fs.existsSync(localRendererPath) ? localRendererPath : repoRendererPath;
-  if (!fs.existsSync(rendererPath)) {
-    throw new BlockedInput(
-      'BLOCK: GOAL_CONTRACT_PROFILE_MISSING',
-      `${GOAL_CONTRACT_RENDERER_PATH} is required for native /goal document rendering.`
-    );
-  }
-  return require(rendererPath);
+function goalContractProfileTools() {
+  return require(path.resolve(
+    repoRoot(),
+    '_bmad',
+    'shared',
+    'goal-contract',
+    'scripts',
+    'extract-goal-contract-profile.js'
+  ));
 }
 
-function mapGoalContractError(error) {
-  const code = String(error?.code ?? '');
-  if (code === 'GOAL_CONTRACT_PROFILE_MISSING') return code;
-  if (code === 'GOAL_CONTRACT_PROFILE_HASH_MISMATCH') return code;
-  if (code === 'GOAL_CONTRACT_PROFILE_UNSUPPORTED') return code;
-  if (code === 'GOAL_CONTRACT_INCOMPLETE') return code;
-  if (/GOAL_CONTRACT_PROFILE_HASH_MISMATCH/u.test(error?.message ?? '')) return 'GOAL_CONTRACT_PROFILE_HASH_MISMATCH';
-  if (/GOAL_CONTRACT_PROFILE_UNSUPPORTED/u.test(error?.message ?? '')) return 'GOAL_CONTRACT_PROFILE_UNSUPPORTED';
-  return 'GOAL_CONTRACT_INCOMPLETE';
+function validateGoalContractProfile(profile) {
+  const tools = goalContractProfileTools();
+  const major = Number(String(profile.profileVersion ?? '0.0.0').split('.')[0]);
+  if (!(profile.compatibility?.supportedMajorVersions ?? []).includes(major)) {
+    throw new BlockedInput(
+      'BLOCK: GOAL_CONTRACT_PROFILE_UNSUPPORTED',
+      `profileVersion=${profile.profileVersion}`
+    );
+  }
+  if (String(profile.profileHash ?? '') !== goalContractProfileHashFor(profile)) {
+    throw new BlockedInput(
+      'BLOCK: GOAL_CONTRACT_PROFILE_HASH_MISMATCH',
+      'profileHash'
+    );
+  }
+  const templatePath = path.resolve(repoRoot(), profile.templatePath);
+  if (!fs.existsSync(templatePath)) {
+    throw new BlockedInput(
+      'BLOCK: GOAL_CONTRACT_PROFILE_MISSING',
+      `${normalizePathSafe(templatePath)} is required for native /goal document rendering.`
+    );
+  }
+  const templateText = fs.readFileSync(templatePath, 'utf8');
+  const templateProfile = tools.extractTemplateProfile(templateText);
+  if (profile.templateHash !== templateProfile.templateHash) {
+    throw new BlockedInput(
+      'BLOCK: GOAL_CONTRACT_PROFILE_HASH_MISMATCH',
+      'templateHash'
+    );
+  }
+  const availableSlots = new Set(templateProfile.slots.map((slot) => slot.name));
+  const missingRequiredSlots = (profile.requiredSlots ?? []).filter(
+    (slot) => !availableSlots.has(slot)
+  );
+  if (missingRequiredSlots.length > 0) {
+    throw new BlockedInput(
+      'BLOCK: GOAL_CONTRACT_INCOMPLETE',
+      `missing required slots: ${missingRequiredSlots.join(', ')}`
+    );
+  }
+  const renderableInvariantFragments = new Set([
+    'model_packet.json is the machine-readable execution authority',
+    'goal_execution.md is not execution authority',
+    '/goal completion is not closeout proof',
+    'sourcePlanHash',
+    'coverageReceiptPath',
+    'unmappedSourceObligations: 0',
+  ]);
+  const missingInvariantFragments = (profile.invariantFragments ?? []).filter(
+    (fragment) => !renderableInvariantFragments.has(fragment)
+  );
+  if (missingInvariantFragments.length > 0) {
+    throw new BlockedInput(
+      'BLOCK: GOAL_CONTRACT_INCOMPLETE',
+      `missing invariant fragments: ${missingInvariantFragments.join(', ')}`
+    );
+  }
+  return Object.freeze({
+    ...profile,
+    templateHash: templateProfile.templateHash,
+    templatePath: tools.normalizeRepoPath(templatePath),
+  });
 }
 
 function objectById(items) {
@@ -1639,6 +1874,32 @@ function compilerInputContext(args) {
     );
   }
   const sourcePath = args.sourceDocument || args.contract;
+  const canonicalContext = resolveCanonicalConfirmedContext(args, sourcePath);
+  if (canonicalContext) {
+    const confirmation = validateConfirmation({
+      implementationConfirmation: canonicalContext.confirmation,
+    });
+    enforceNoOutDirGoalLength(args, confirmation);
+    validateRequiredCommandDefinitions(confirmation);
+    const registry = commandRegistry(confirmation);
+    validateCommandReferences(confirmation, registry);
+    const gates = parseCommands(confirmation, args.finalGate, registry);
+    if (gates.length === 0) {
+      throw new BlockedInput(
+        'BLOCK: FINAL_GATES_REQUIRED',
+        'Final gate commands must be derived from confirmed requiredCommands or --final-gate before PASS.'
+      );
+    }
+    return {
+      ...canonicalContext,
+      confirmation,
+      registry,
+      gates,
+      executionDisciplineProfile: validateExecutionDisciplineProfile(
+        readOptionalJson(args.executionDisciplineProfileRef)
+      ),
+    };
+  }
   const sourceText = readText(sourcePath);
   const blockText = extractConfirmationBlock(sourceText);
   const parsed = parseConfirmation(blockText);
@@ -1954,6 +2215,10 @@ function buildModelPacket(context, args) {
       auditReceiptRole: 'generator_self_audit_only_not_delivery_proof',
       sourceTraceMutationPolicy: 'confirmed_source_traceRows_status_must_not_be_rewritten',
     },
+    ...(context.sharedGoalCompilation ? { sharedGoalCompilation: context.sharedGoalCompilation } : {}),
+    ...(context.legacyCompatibilityRoute
+      ? { legacyCompatibilityRoute: context.legacyCompatibilityRoute }
+      : {}),
     executionDisciplineProfile: context.executionDisciplineProfile,
     traceOrder: objects(confirmation.traceRows).map((row) => String(row.id)),
     traceSlices: buildTraceSlices(confirmation),
@@ -2267,15 +2532,180 @@ function enforceNoOutDirGoalLength(args, confirmation) {
   );
 }
 
-function ensureGoalDocumentPrepared(args, promptMeta, packet, artifactPaths, outputs, outputHashes) {
+function renderGoalExecutionDocument(
+  packet,
+  artifactPaths,
+  sharedGoalProjection,
+  contractBodyKind,
+  goalContractProfile = null
+) {
+  const markdown = sharedGoalProjection?.markdown;
+  const contractBodyHash = sharedGoalProjection?.bytesHash;
+  if (
+    typeof markdown !== 'string' ||
+    !SHA256_REF_PATTERN.test(String(contractBodyHash)) ||
+    sha256(markdown) !== contractBodyHash
+  ) {
+    throw new BlockedInput(
+      'BLOCK: SHARED_GOAL_PROJECTION_HASH_MISMATCH',
+      'Native goal rendering requires the exact hash-bound shared compiler projection.'
+    );
+  }
+  const contractBodyLengthBytes = Buffer.byteLength(markdown, 'utf8');
+  const taskReportPath = normalizePathSafe(packet.executionHandoff?.taskReportPath || '');
+  const envelopePayload = {
+    schemaVersion: 'goal-execution-projection-envelope/v1',
+    contractBodyRef: {
+       kind: contractBodyKind,
+      hash: contractBodyHash,
+      lengthBytes: contractBodyLengthBytes,
+    },
+    modelPacketRef: { path: artifactPaths.modelPacket },
+    taskReportRef: { path: taskReportPath || null },
+    sourceAuthorityRef: {
+      recordId: packet.recordId,
+      sourceDocumentHash: packet.sourceDocumentHash,
+    },
+  };
+  const profileMetadata = goalContractProfile
+    ? [
+        `TaskReport path: ${taskReportPath}`,
+        `goalContractProfileVersion: ${goalContractProfile.profileVersion}`,
+        `goalContractProfileHash: ${goalContractProfile.profileHash}`,
+        'model_packet.json is the machine-readable execution authority',
+        'goal_execution.md is not execution authority',
+        '/goal completion is not closeout proof',
+        `sourcePlanHash: ${packet.sourceDocumentHash}`,
+        'coverageReceiptPath: canonical_confirmed_requirements',
+        'unmappedSourceObligations: 0',
+      ]
+    : [];
+  const envelope = `<!-- goal-execution-projection-envelope/v1\n${stableStringify(
+    envelopePayload
+  )}${profileMetadata.length > 0 ? `\n${profileMetadata.join('\n')}` : ''}\n-->\n`;
+  const document = `${envelope}${markdown}`;
+  const contractBodyOffsetBytes = Buffer.byteLength(envelope, 'utf8');
+  const documentBytes = Buffer.from(document, 'utf8');
+  const bodyBytes = documentBytes.subarray(
+    contractBodyOffsetBytes,
+    contractBodyOffsetBytes + contractBodyLengthBytes
+  );
+  if (sha256(bodyBytes) !== contractBodyHash || bodyBytes.toString('utf8') !== markdown) {
+    throw new BlockedInput(
+      'BLOCK: SHARED_GOAL_PROJECTION_COMPOSITION_MISMATCH',
+      'The emitted native goal document does not preserve the shared projection as its only contract body.'
+    );
+  }
+  return {
+    document,
+    binding: Object.freeze({
+      schemaVersion: 'GoalExecutionProjectionDocumentRef/v1',
+      compositionRecipe: 'utf8_concat(envelope,contractBody)',
+      contractBodyHash,
+      contractBodyOffsetBytes,
+      contractBodyLengthBytes,
+      envelopeHash: sha256(envelope),
+      documentHash: sha256(documentBytes),
+    }),
+  };
+}
+
+function renderSharedGoalExecutionDocument(
+  packet,
+  artifactPaths,
+  sharedGoalProjection,
+  goalContractProfile
+) {
+  return renderGoalExecutionDocument(
+    packet,
+    artifactPaths,
+    sharedGoalProjection,
+    'shared_confirmed_requirements_goal_projection',
+    goalContractProfile
+  );
+}
+
+function renderLegacyGoalExecutionDocument(packet, artifactPaths, goalContractProfile) {
+  const taskReportPath = packet.executionHandoff?.taskReportPath || '(required TaskReport path)';
+  const markdown = `# Goal Execution Contract
+
+Goal Execution IR:
+- schemaVersion: legacy_compiler_contract/v1
+- sourceDocumentHash: ${packet.sourceDocumentHash}
+
+## Obligations
+${[...(packet.requirements?.must || []), ...(packet.requirements?.notDone || []), ...(packet.requirements?.mustNot || [])]
+  .map((row) => `- ${row.id || row.obligationId || row.text}`)
+  .join('\n') || '- implementationConfirmation obligations'}
+
+## Atomic Tasks
+${(packet.atomicImplementationTaskList || [])
+  .map((row) => `- ${row.id || row.taskId || row.text}`)
+  .join('\n') || '- implementationConfirmation atomic task list'}
+
+AI-TDD protocol:
+- Packet ID: ${packet.packetId}
+- TaskReport path: ${taskReportPath}
+- TaskReport schema: { packetId, status, filesChanged, validationsRun, evidence, downstreamContext, driftFlags? }
+
+Allowed write scope:
+${(packet.runtimeWritePolicy?.allowedWriteScope || []).map((value) => `- ${value}`).join('\n') || '- compiler-contract declared scope'}
+
+Required validation commands:
+${packet.requirements?.evidence?.map((row) => `- ${row.gate || row.command || row.text || row.id}`).join('\n') || '- implementationConfirmation.requiredCommands'}
+
+Completion evidence fields:
+- status
+- filesChanged
+- validationsRun
+- evidence
+- downstreamContext
+
+Stop conditions:
+- finalGateMatrix_allows_closeout
+- reconfirm_required on semantic gaps
+`;
+  return renderGoalExecutionDocument(
+    packet,
+    artifactPaths,
+    { markdown, bytesHash: sha256(markdown) },
+    'legacy_compiler_contract_projection',
+    goalContractProfile
+  );
+}
+
+function ensureGoalDocumentPrepared(
+  args,
+  promptMeta,
+  packet,
+  artifactPaths,
+  outputs,
+  outputHashes,
+  sharedGoalProjection
+) {
   if (promptMeta.hostDirective.goalCommand?.mode !== 'native_goal_document_ref') {
     promptMeta.goalDocumentAudit = { fragments: [], missing: [], passed: true };
     promptMeta.goalContractTemplate = null;
     return;
   }
-  const goalDocumentResult = renderGoalExecutionDocumentFromPacket(packet, artifactPaths, args);
+  const goalDocumentResult = packet.legacyCompatibilityRoute
+    ? renderLegacyGoalExecutionDocument(
+        packet,
+        artifactPaths,
+        args.resolvedGoalContractProfile
+      )
+    : renderSharedGoalExecutionDocument(
+        packet,
+        artifactPaths,
+        sharedGoalProjection,
+        args.resolvedGoalContractProfile
+      );
   const goalDocument = goalDocumentResult.document;
-  const goalDocumentHash = sha256(goalDocument);
+  const goalDocumentHash = goalDocumentResult.binding.documentHash;
+  packet.sharedGoalCompilation = Object.freeze({
+    ...packet.sharedGoalCompilation,
+    goalExecutionDocumentRef: goalDocumentResult.binding,
+  });
   promptMeta.hostDirective.goalCommand.documentHash = goalDocumentHash;
   promptMeta.hostDirective.goalCommand.taskReportPath = packet.executionHandoff?.taskReportPath || null;
   promptMeta.hostDirective.goalCommand.packetId = packet.packetId;
@@ -2286,9 +2716,51 @@ function ensureGoalDocumentPrepared(args, promptMeta, packet, artifactPaths, out
   packet.executionHandoff.returnAction = 'import-native-goal-task-report';
   packet.executionHandoff.resumeAction = 'import-native-goal-task-report';
   packet.executionHandoff.ingestPolicy = 'strict_task_report_controlled_ingest';
-  promptMeta.goalDocumentAudit = auditGoalDocument(goalDocument, packet.sourceDocument);
-  promptMeta.goalContractTemplate = goalDocumentResult.audit;
+  promptMeta.goalDocumentAudit = auditGoalDocument(goalDocument);
+  const profile = args.resolvedGoalContractProfile;
+  const templateTools = goalContractProfileTools();
+  const templatePath = path.resolve(repoRoot(), profile.templatePath);
+  const templateProfile = templateTools.extractTemplateProfile(
+    fs.readFileSync(templatePath, 'utf8')
+  );
+  const requiredSections = profile.requiredSections ?? [];
+  const missingRequiredSections = requiredSections.filter(
+    (section) => !templateProfile.sections.includes(section)
+  );
+  const missingInvariantFragments = (profile.invariantFragments ?? []).filter(
+    (fragment) => !goalDocument.includes(fragment)
+  );
+  const requiredSlots = profile.requiredSlots ?? [];
+  const missingRequiredSlots = requiredSlots.filter(
+    (slot) => !templateProfile.slots.some((candidate) => candidate.name === slot)
+  );
+  promptMeta.goalContractTemplate = {
+    templatePath: templateTools.normalizeRepoPath(templatePath),
+    templateHash: templateProfile.templateHash,
+    profileVersion: profile.profileVersion,
+    profileHash: profile.profileHash,
+    rendererVersion: 'req-trace-goal-contract-renderer/v1',
+    schemaVersion: 'GoalExecutionProjectionEnvelopeAudit/v1',
+    compatibilityDecision:
+      promptMeta.goalDocumentAudit.passed &&
+      missingRequiredSections.length === 0 &&
+      missingInvariantFragments.length === 0 &&
+      missingRequiredSlots.length === 0
+        ? 'pass'
+        : 'blocked',
+    requiredSlotsPassed: missingRequiredSlots.length === 0,
+    missingRequiredSlots,
+    requiredSectionsPassed: missingRequiredSections.length === 0,
+    missingRequiredSections,
+    invariantFragmentsPassed: missingInvariantFragments.length === 0,
+    missingInvariantFragments,
+    sharedProjectionHash: goalDocumentResult.binding.contractBodyHash,
+    envelopeHash: goalDocumentResult.binding.envelopeHash,
+    documentHash: goalDocumentHash,
+  };
   outputs.goalDocument = artifactPaths.goalDocument;
+  outputHashes.sharedGoalProjectionHash = goalDocumentResult.binding.contractBodyHash;
+  outputHashes.goalDocumentEnvelopeHash = goalDocumentResult.binding.envelopeHash;
   outputHashes.goalDocumentHash = goalDocumentHash;
   return goalDocument;
 }
@@ -2329,45 +2801,6 @@ evidenceRefs: ${command.evidenceRefs.join(', ') || '(none)'}
 oracle: ${command.oracle || '(none)'}`
     )
     .join('\n\n');
-}
-
-function renderGoalNativeTaskReportHandoff(packet) {
-  const handoff = packet.executionHandoff ?? {};
-  const allowedWriteScope = Array.isArray(handoff.allowedWriteScope)
-    ? handoff.allowedWriteScope
-    : [];
-  const requiredValidationCommandRefs = strings(handoff.requiredValidationCommandRefs);
-  const requiredCommandById = new Map(
-    objects(packetRequiredCommands(packet)).map((command) => [commandId(command), command])
-  );
-  const requiredValidationCommands =
-    requiredValidationCommandRefs.length > 0
-      ? requiredValidationCommandRefs
-          .map((ref) => requiredCommandById.get(ref))
-          .filter(Boolean)
-      : Array.isArray(handoff.requiredValidationCommands)
-        ? handoff.requiredValidationCommands
-        : [];
-  const completionEvidenceFields = Array.isArray(handoff.completionEvidenceFields)
-    ? handoff.completionEvidenceFields
-    : [];
-  const stopConditions = Array.isArray(handoff.stopConditions) ? handoff.stopConditions : [];
-  return `### Native Goal TaskReport Handoff
-
-- Packet ID: ${handoff.packetId || packet.packetId || packet.recordId}
-- TaskReport path: ${handoff.taskReportPath}
-- TaskReport schema: { packetId, status, filesChanged, validationsRun, evidence, downstreamContext, driftFlags? }
-- Allowed write scope: ${allowedWriteScope.join(', ') || '(not declared)'}
-- Required validation commands: ${
-    requiredValidationCommands
-      .map((command) => `${command.id || '<missing>'}: ${command.command || '<missing>'}`)
-      .join(' | ') || '(none)'
-  }
-- Completion evidence fields: ${completionEvidenceFields.join(', ') || '(none)'}
-- Stop conditions: ${stopConditions.join(', ') || '(none)'}
-
-Before returning control to main-agent, write strict JSON to the exact TaskReport path above.
-TaskReport.status must be done only after required validations and governed evidence pass.`;
 }
 
 function renderHostDirectiveText(directive) {
@@ -2548,295 +2981,6 @@ Full details are in model_packet.json.
 `;
 }
 
-function renderGoalFrontMatter(packet, profile, artifactPaths) {
-  const sourcePlanHash = packet.sourceDocumentHash || 'sha256:0000000000000000000000000000000000000000000000000000000000000000';
-  return `\`\`\`yaml
-goalContractVersion: ${profile.contractVersion}
-goalContractProfileVersion: ${profile.profileVersion}
-goalContractProfileHash: ${profile.profileHash}
-contractMode: frozen
-rewritePolicy: forbidden
-executionMode: execute_only
-sourcePlanPath: ${artifactPaths.modelPacket}
-sourcePlanHash: ${sourcePlanHash}
-runtimeRecordId: ${packet.recordId}
-entryFlow: req_trace_compiled_execution
-taskRange: G00-G${String(packet.traceSlices.length + 1).padStart(2, '0')}
-acceptanceRange: AC-01-AC-${String(Math.max(packet.traceSlices.length, 1)).padStart(2, '0')}
-completionGate: required
-repairPolicy: fix_in_place
-stopPolicy: stop_only_on_success_or_true_blocker
-generatedBy: req-trace-matrix-prompt-generator
-generatedAt: ${new Date().toISOString()}
-\`\`\``;
-}
-
-function renderGoalEntry(packet, artifactPaths) {
-  return `\`\`\`text
-/goal Execute ${packet.recordId} by following ${artifactPaths.goalDocument}; use ${artifactPaths.modelPacket} as authority; stop only on final pass or reconfirm_required.
-\`\`\``;
-}
-
-function renderGoalAuthorityModel(packet, artifactPaths) {
-  const sourceAuthority = `${packet.sourceDocument}#implementationConfirmation`;
-  return `${SKILL_LINE}
-
-Source of authority:
-Only ${sourceAuthority} is authoritative.
-model_packet.json is the machine-readable execution authority.
-goal_execution.md is not execution authority.
-human_prompt.txt is a host-specific projection only.
-audit_receipt.json is generator self-audit only and not delivery proof.
-
-Authoritative artifacts:
-- model_packet.json: ${artifactPaths.modelPacket}
-- human_prompt.txt: ${artifactPaths.humanPrompt}
-- audit_receipt.json: ${artifactPaths.auditReceipt}
-- goal_execution.md: ${artifactPaths.goalDocument}
-
-Runtime closure authority is the requirement-record/control store.
-Confirmed source traceRows.status must not be rewritten as runtime PASS or MISSING_EVIDENCE.${renderTypedSourceAuthorityProtocol(packet)}`;
-}
-
-function renderGoalRootCause(packet) {
-  return `Current behavior to avoid:
-- Prompt-only or goal-document-only execution can drift from the synchronized model packet.
-- Generated entry text can be mistaken for closeout proof.
-
-Required behavior:
-- Execute only trace rows and IDs present in model_packet.json.
-- Keep semantic gaps as reconfirm_required.
-- Repair non-semantic execution gaps and rerun the same trace slice.
-
-Failure mode to prevent:
-- Do not treat goal_execution.md, human_prompt.txt, audit_receipt.json, stdout, exitCode=0, or /goal completion as delivery or closeout proof.`;
-}
-
-function renderGoalDomainAddenda(packet) {
-  return `### Req-Trace Compiled Execution Contract
-
-- Record ID: ${packet.recordId}
-- Trace order: ${packet.traceOrder.join(' -> ')}
-- Required manifest sections: ${packet.contractExecutionManifest.requiredSections.join(', ') || '(none)'}
-- Runtime write targets: ${packet.runtimeWritePolicy.allowedRuntimeWriteTargets.join(', ')}
-- Missing evidence behavior: ${packet.runtimeWritePolicy.missingEvidenceBehavior}
-- Semantic gap action: reconfirm_required
-- Non-semantic gap action: repair_and_rerun_same_trace_slice
-
-${renderGoalNativeTaskReportHandoff(packet)}
-
-### Execution Discipline Profile
-
-${renderExecutionDisciplineProfile(packet.executionDisciplineProfile)}
-
-AI-TDD protocol:
-Use RED -> GREEN -> REFACTOR -> CLOSEOUT per trace slice. RED proof must precede GREEN when expectedPreImplementationState is expected_red. Unexpected GREEN must be blocked and investigated before closeout.
-
-Runtime write policy:
-Allowed runtime write targets: ${packet.runtimeWritePolicy.allowedRuntimeWriteTargets.join(', ')}.
-Source traceRows writable: ${packet.runtimeWritePolicy.sourceTraceRowsWritable}.
-Missing evidence behavior: ${packet.runtimeWritePolicy.missingEvidenceBehavior}.
-
-Strict final acceptance checklist:
-1. Execute only trace rows and IDs present in model_packet.json.
-2. Do not shrink, reinterpret, or replace confirmed source scope.
-3. Run required commands for every covered trace slice.
-4. PASS requires evidence for covered must, notDone, and evidence IDs.
-5. Missing evidence remains open/PENDING or records MISSING_EVIDENCE.
-6. Write runtime closure evidence only to the requirement-record/control store or governed equivalent fields.
-7. Do not rewrite confirmed source traceRows.status as runtime PASS or MISSING_EVIDENCE.
-8. Final closeout requires deterministic current-attempt gate evidence.
-
-### Proof Boundary
-
-- /goal completion is not closeout proof.
-- Not delivery proof: ${packet.proofBoundary.notDeliveryProof.join(', ')}.
-- Closeout authorities: ${packet.proofBoundary.closeoutAuthorities.join(', ')}.`;
-}
-
-function renderGoalImplementationTasks(packet) {
-  const traceTasks = packet.traceSlices
-    .map((row, index) => {
-      const taskId = `G${String(index + 1).padStart(2, '0')}`;
-      return `### ${taskId} Execute ${row.traceId}
-
-**Purpose:** Implement and close the confirmed trace slice without changing requirement semantics.
-
-**Files:**
-
-- Modify: only files required by model_packet.json trace and target bindings.
-- Evidence: requirement-record/control store or governed equivalent runtime fields.
-
-**Steps:**
-
-1. Read ${row.traceId} from model_packet.json.
-2. Implement only covered IDs: ${row.covers.join(', ') || '(none)'}.
-3. Produce evidence for evidenceRefs: ${row.evidenceRefs.join(', ') || '(none)'}.
-4. Run contract and delivery commands for this slice.
-5. Record runtime closure evidence without rewriting confirmed source traceRows.status.
-
-**Validation:**
-
-${renderCommandsForRefs(packet, [...row.commandRefs, ...row.deliveryCommandRefs])}
-
-**Acceptance:**
-
-- PASS requires evidence for covered must, notDone, and evidence IDs.
-- Semantic gaps stop as reconfirm_required.
-- Mapped acceptance: \`AC-${String(index + 1).padStart(2, '0')}\`.`;
-    })
-    .join('\n\n');
-  return `### G00 Baseline Packet Audit
-
-**Purpose:** Confirm the synchronized execution packet and proof boundary before implementation.
-
-**Files:**
-
-- Read: model_packet.json
-- Read: goal_execution.md
-- Read: human_prompt.txt
-- Read: audit_receipt.json
-- Modify: none
-
-**Steps:**
-
-1. Confirm model_packet.json is present.
-2. Confirm trace order is ${packet.traceOrder.join(' -> ')}.
-3. Confirm goal_execution.md is not execution authority.
-4. Confirm audit_receipt.json is generator self-audit only.
-
-**Validation:**
-
-\`\`\`powershell
-Get-Content ${packet.recordId ? 'model_packet.json' : 'model_packet.json'}
-\`\`\`
-
-**Acceptance:**
-
-- model_packet.json is the machine-readable execution authority.
-- /goal completion is not closeout proof.
-- Mapped acceptance: \`AC-01\`.
-
-${traceTasks}`;
-}
-
-function renderCommandsForRefs(packet, refs) {
-  const refSet = new Set(refs.filter(Boolean));
-  const commands = packetRequiredCommands(packet).filter((command) => refSet.has(command.id));
-  if (commands.length === 0) return '```powershell\n# No command refs declared for this slice; use required final commands from model_packet.json.\n```';
-  return commands
-    .map((command) => `\`\`\`powershell\n${command.command}\n\`\`\``)
-    .join('\n\n');
-}
-
-function renderGoalAcceptanceChecklist(packet) {
-  return packet.traceSlices
-    .map((row, index) => {
-      const acId = `AC-${String(index + 1).padStart(2, '0')}`;
-      return `- [ ] \`${acId}\` ${row.traceId} has governed evidence for covers ${row.covers.join(', ') || '(none)'} and evidenceRefs ${row.evidenceRefs.join(', ') || '(none)'}.`;
-    })
-    .join('\n');
-}
-
-function renderGoalAcceptanceMatrix(packet) {
-  const rows = packet.traceSlices
-    .map((row, index) => {
-      const acId = `AC-${String(index + 1).padStart(2, '0')}`;
-      const commands = [...row.commandRefs, ...row.deliveryCommandRefs].join(', ') || '(none)';
-      return `| ${acId} | Close ${row.traceId} with trace, evidence, runtime write policy, and closeout authority respected. | G${String(index + 1).padStart(2, '0')} | \`${commands}\` |`;
-    })
-    .join('\n');
-  return `| AC ID | Requirement | Owning Task | Evidence Command |
-| --- | --- | --- | --- |
-${rows}`;
-}
-
-function renderGoalRequiredCommands(packet) {
-  return packetRequiredCommands(packet)
-    .map((command) => `\`\`\`powershell\n${command.command}\n\`\`\``)
-    .join('\n\n');
-}
-
-function renderGoalManualScenarios(packet) {
-  return `### Scenario A: Confirmed Packet Happy Path
-
-- Setup: Valid model_packet.json for ${packet.recordId}.
-- Expected: Execute every trace row and required command until final gates pass.
-- Forbidden: Treat goal_execution.md as machine-readable execution authority.
-
-### Scenario B: Semantic Gap
-
-- Setup: Implementation requires changing confirmed must/notDone/mustNot/evidence/traceRows semantics.
-- Expected: Stop with reconfirm_required.
-- Forbidden: Shrink or reinterpret confirmed source scope.
-
-### Scenario C: Non-Semantic Execution Gap
-
-- Setup: A test, build, audit, or delivery command fails without changing semantics.
-- Expected: Repair and rerun the same trace slice.
-- Forbidden: Stop solely because a declared validation command failed.`;
-}
-
-function renderGoalCompletionEvidencePacket(packet) {
-  return `artifactRole: ${packet.completionEvidencePacketSchema.artifactRole}
-requiredFields: ${packet.completionEvidencePacketSchema.requiredFields.join(', ')}
-forbiddenAuthorities: ${packet.completionEvidencePacketSchema.forbiddenAuthorities.join(', ') || '(none)'}
-
-Final evidence must include closed IDs, open IDs, command results, E2E evidence, audit evidence, residual risks, and scope changes.`;
-}
-
-function renderGoalStopConditions(packet) {
-  return `Stop and ask the user only if:
-
-- A required semantic decision cannot be derived from ${packet.sourceDocument}#implementationConfirmation.
-- The required write scope must expand outside model_packet.json.
-- A destructive Git or filesystem operation is required.
-- A shared contract/schema migration is unavoidable and has multiple valid incompatible designs.
-- A required validation command is unavailable and no equivalent command exists in model_packet.json.
-
-Do not stop merely because:
-
-- Existing implementation is partial.
-- Tests need fixtures.
-- Generated artifacts are stale.
-- A validation command fails inside declared scope.
-- Non-semantic execution gaps require repair and rerun.
-
-In those cases, repair inside the declared scope and rerun the same validation command.`;
-}
-
-function buildGoalSlotData(packet, artifactPaths, profile) {
-  return {
-    frontMatter: renderGoalFrontMatter(packet, profile, artifactPaths),
-    goalEntry: renderGoalEntry(packet, artifactPaths),
-    authorityModel: renderGoalAuthorityModel(packet, artifactPaths),
-    rootCause: renderGoalRootCause(packet),
-    domainAddenda: renderGoalDomainAddenda(packet),
-    implementationTasks: renderGoalImplementationTasks(packet),
-    strictAcceptanceChecklist: renderGoalAcceptanceChecklist(packet),
-    acceptanceTraceabilityMatrix: renderGoalAcceptanceMatrix(packet),
-    requiredTestCommands: renderGoalRequiredCommands(packet),
-    manualVerificationScenarios: renderGoalManualScenarios(packet),
-    completionEvidencePacket: renderGoalCompletionEvidencePacket(packet),
-    stopConditions: renderGoalStopConditions(packet),
-  };
-}
-
-function renderGoalExecutionDocumentFromPacket(packet, artifactPaths, args = {}) {
-  const templateText = readGoalContractTemplate();
-  const profile = readGoalContractProfile(args);
-  try {
-    const { renderGoalContract } = loadGoalContractRenderer();
-    return renderGoalContract({
-      templateText,
-      profile,
-      slotData: buildGoalSlotData(packet, artifactPaths, profile),
-    });
-  } catch (error) {
-    throw new BlockedInput(`BLOCK: ${mapGoalContractError(error)}`, error.message);
-  }
-}
-
 function renderHumanPromptFromPacket(packet, args, context) {
   const language = resolvePromptLanguage(context.confirmation, args);
   const hostDirective = buildHostContinuationDirective(packet, args, context.artifactPaths);
@@ -2873,12 +3017,35 @@ function manifestAliasBlockingReasons(packet) {
   return strings(packet?.contractExecutionManifest?.aliasAudit?.blockingReasons);
 }
 
+function validateCanonicalAuthorityContext(context) {
+  const reasons = [];
+  const authority = context.confirmationHashAuthority ?? {};
+  if (authority.recipe !== 'canonical_confirmed_requirements_authority/v1') {
+    reasons.push('CANONICAL_CONFIRMED_AUTHORITY_REQUIRED');
+  }
+  if (context.record?.lifecycle !== 'user_confirmed') {
+    reasons.push('CANONICAL_CONFIRMED_LIFECYCLE_INVALID');
+  }
+  if (context.latestConfirmationEvent?.eventType !== 'confirmation_recorded') {
+    reasons.push('CANONICAL_CONFIRMATION_EVENT_INVALID');
+  }
+  if (
+    authority.finalMarkdownHash !== context.sourceDocumentHash ||
+    authority.implementationConfirmationHash !== context.implementationConfirmationHash
+  ) {
+    reasons.push('CANONICAL_CONFIRMED_HASH_BINDING_INVALID');
+  }
+  return reasons;
+}
+
 function buildPassReceipt(args, context, packet, outputHashes, outputs, promptMeta) {
   const validationReasons = [
     ...typedPacketValidation(packet, undefined, context.confirmation),
-    ...validateCompilerContract(context.confirmation, context.record, {
-      criticalAuditorReceiptRefs: context.criticalAuditorReceiptRefs,
-    }),
+    ...(context.authorityMode === 'canonical_record'
+      ? validateCanonicalAuthorityContext(context)
+      : validateCompilerContract(context.confirmation, context.record, {
+          criticalAuditorReceiptRefs: context.criticalAuditorReceiptRefs,
+        })),
     ...promptMeta.audit.missing.map((fragment) => `HUMAN_PROMPT_REQUIRED_FRAGMENT_MISSING:${fragment}`),
     ...(promptMeta.goalDocumentAudit?.missing ?? []).map(
       (fragment) => `GOAL_DOCUMENT_REQUIRED_FRAGMENT_MISSING:${fragment}`
@@ -2981,6 +3148,7 @@ function buildPassReceipt(args, context, packet, outputHashes, outputs, promptMe
       sourceProjectionHash: packet.contractExecutionManifest.sourceProjectionHash,
       aliasAudit: packet.contractExecutionManifest.aliasAudit,
     },
+    sharedGoalCompilation: packet.sharedGoalCompilation,
     outputs,
     outputHashes,
     proofBoundary: packet.proofBoundary,
@@ -3030,9 +3198,11 @@ function compileArtifacts(args) {
   try {
     resolveCompilerEntryProfile(args);
     context = compilerInputContext(args);
-    const blockingReasons = validateCompilerContract(context.confirmation, context.record, {
-      criticalAuditorReceiptRefs: context.criticalAuditorReceiptRefs,
-    });
+    const blockingReasons = context.authorityMode === 'canonical_record'
+      ? validateCanonicalAuthorityContext(context)
+      : validateCompilerContract(context.confirmation, context.record, {
+          criticalAuditorReceiptRefs: context.criticalAuditorReceiptRefs,
+        });
     if (blockingReasons.length > 0) {
       const receipt = buildBlockedReceipt(
         args,
@@ -3052,6 +3222,15 @@ function compileArtifacts(args) {
       };
     }
 
+    if (context.authority || args.entry === 'main_agent_compile') {
+      context.sharedGoalCompilation = compileSharedConfirmedRequirementsGoal(context, args);
+    } else {
+      context.legacyCompatibilityRoute = {
+        schemaVersion: 'req-trace-legacy-compatibility-route/v1',
+        route: 'compiler_contract_only',
+        authority: 'implementationConfirmation_plus_requirementRecord',
+      };
+    }
     const packet = buildModelPacket(context, args);
     const aliasBlockingReasons = manifestAliasBlockingReasons(packet);
     if (aliasBlockingReasons.length > 0) {
@@ -3098,7 +3277,13 @@ function compileArtifacts(args) {
     };
     const outputHashes = { humanPromptHash: sha256(promptMeta.prompt) };
     const goalDocument = ensureGoalDocumentPrepared(
-      args, promptMeta, packet, context.artifactPaths, outputs, outputHashes
+      args,
+      promptMeta,
+      packet,
+      context.artifactPaths,
+      outputs,
+      outputHashes,
+      context.sharedGoalProjection
     );
     const publishedPacket = compactTypedPacketForPublication(packet);
     const packetContent = `${stableStringify(publishedPacket)}\n`;
@@ -3187,44 +3372,17 @@ function buildPrompt(args) {
     );
   }
   resolveCompilerEntryProfile(args);
-
-  const sourcePath = args.sourceDocument || args.contract;
-  const sourceText = readText(sourcePath);
-  const blockText = extractConfirmationBlock(sourceText);
-  const parsed = parseConfirmation(blockText);
-  const confirmationCandidate = parsed.implementationConfirmation;
-  validateTypedSourceFormat(sourceText, confirmationCandidate);
-  if (!args.requirementRecord) {
-    validateConfirmation(parsed, null);
-  }
-  const recordValidation = validateRequirementRecord(args, sourceText, blockText, confirmationCandidate);
-  enforceNoOutDirGoalLength(args, confirmationCandidate);
-  const driftClassification = classifyConfirmationDrift({
-    confirmation: confirmationCandidate,
-    requirementRecord: recordValidation.record,
-    renderReport: null,
-    currentHashes: {
-      sourceDocumentHash: recordValidation.sourceDocumentHash,
-      implementationConfirmationHash: recordValidation.implementationConfirmationHash,
-    },
-  });
-  const confirmation = validateConfirmation(parsed, driftClassification);
-  const sourceLabel = args.sourceLabel || displayPath(sourcePath);
-  const sourceAuthority = `${sourceLabel}#implementationConfirmation`;
+  const context = compilerInputContext(args);
+  const confirmation = context.confirmation;
+  const sourceLabel = args.sourceLabel || displayPath(context.sourcePath);
+  const sourceAuthority = context.authorityMode === 'canonical_record'
+    ? `${sourceLabel} (confirmed semantic authority ${context.confirmationHashAuthority.semanticRevisionId})`
+    : `${sourceLabel}#implementationConfirmation`;
 
   const traceRows = Array.isArray(confirmation.traceRows) ? confirmation.traceRows : [];
   const traceIds = traceRows.filter((row) => row?.id).map((row) => String(row.id));
   const traceText = traceIds.join(' -> ');
-  validateRequiredCommandDefinitions(confirmation);
-  const registry = commandRegistry(confirmation);
-  validateCommandReferences(confirmation, registry);
-  const gates = parseCommands(confirmation, args.finalGate, registry);
-  if (gates.length === 0) {
-    throw new BlockedInput(
-      'BLOCK: FINAL_GATES_REQUIRED',
-      'Final gate commands must be derived from implementationConfirmation.requiredCommands, closeoutReadinessPreview.requiredCommands, evidence, or --final-gate before PASS.'
-    );
-  }
+  const gates = context.gates;
   const prompt = `${SKILL_LINE}
 
 continue nonstop

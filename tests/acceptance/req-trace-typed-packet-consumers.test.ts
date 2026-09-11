@@ -1,7 +1,10 @@
 import { createRequire } from 'node:module';
 import { describe, expect, it } from 'vitest';
 import { createTypedSourceAuthority, createTypedSourceCoverage } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-typed-source-semantics';
-import { decodeGoalSemanticDictionary } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-semantic-dictionary';
+import {
+  decodeGoalSemanticDictionary,
+  encodeGoalSemanticDictionaryForEncoding,
+} from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-semantic-dictionary';
 import { validateTypedModelPacket } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-typed-model-packet';
 import {
   errorCaseCoverageFromTypedModelPacket,
@@ -94,6 +97,19 @@ describe('typed packet consumer protocol', () => {
     expect(validateTypedModelPacket(packet, receipt, confirmation)).toEqual([]);
     packet.typedCoverage.coverageHash = 'wrong';
     expect(validateTypedModelPacket(packet, receipt, confirmation)).toContain('typed_packet_authority_invalid');
+  });
+  it('accepts a compact coverage ref when confirmed coverage uses another canonical node encoding', () => {
+    const { packet, receipt, confirmation } = fixture();
+    const semanticCoverage = decodeGoalSemanticDictionary(confirmation.typedCoverage.coverage);
+    const alternateEncoding = confirmation.typedCoverage.coverage.nodeEncoding === 'GoalDictionaryNodes/base36-v1'
+      ? 'GoalDictionaryNodes/base36-run-v2' : 'GoalDictionaryNodes/base36-v1';
+    const alternateCoverage = encodeGoalSemanticDictionaryForEncoding(semanticCoverage, alternateEncoding);
+    expect(alternateCoverage.expandedHash).toBe(confirmation.typedCoverage.coverageHash);
+    expect(alternateCoverage).not.toEqual(confirmation.typedCoverage.coverage);
+    confirmation.typedCoverage.coverage = alternateCoverage;
+    packet.typedCoverage = { schemaVersion: 'requirements-contract-typed-source-coverage-ref/v2',
+      graphHash: packet.typedSourceAuthority.graphHash, coverageHash: packet.typedCoverage.coverageHash };
+    expect(validateTypedModelPacket(packet, receipt, confirmation)).toEqual([]);
   });
   it('accepts manifest-backed typed projections and rejects a broken projection ref', () => {
     const { packet, receipt } = fixture();

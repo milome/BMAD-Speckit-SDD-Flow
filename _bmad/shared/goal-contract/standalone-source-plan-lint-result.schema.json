@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/standalone-source-plan-lint-result.schema.json",
+  "title": "StandaloneSourcePlanLintResult/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "ok", "entryScenario", "sourcePath", "sourceBytes", "sourceHash", "sourceArtifactId", "detectedSourcePlanVersion", "normalizationState", "profileHash", "templateHash", "nodeCount", "relationCount", "issueCount", "issues", "canonicalGraphHash", "canonicalGraph"],
+  "properties": {
+    "schemaVersion": { "const": "StandaloneSourcePlanLintResult/v1" },
+    "ok": { "type": "boolean" },
+    "entryScenario": { "const": "standalone_goal_contract" },
+    "sourcePath": { "type": "string", "minLength": 1 },
+    "sourceBytes": { "type": "integer", "minimum": 0 },
+    "sourceHash": { "$ref": "#/$defs/hash" },
+    "sourceArtifactId": { "type": "string", "minLength": 1 },
+    "detectedSourcePlanVersion": { "enum": ["standalone-source-plan/v1", "legacy/unversioned", "unsupported"] },
+    "normalizationState": { "enum": ["canonical_graph_ready", "legacy_normalized", "rejected"] },
+    "profileHash": { "$ref": "#/$defs/hash" },
+    "templateHash": { "$ref": "#/$defs/hash" },
+    "nodeCount": { "type": "integer", "minimum": 0 },
+    "relationCount": { "type": "integer", "minimum": 0 },
+    "issueCount": { "type": "integer", "minimum": 0 },
+    "issues": { "type": "array", "items": { "$ref": "#/$defs/issue" } },
+    "canonicalGraphHash": { "type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$" },
+    "canonicalGraph": { "type": ["object", "null"] }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "issue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["failureClass", "sourceArtifactId", "sourceSnapshotHash", "lineStart", "lineEnd", "startByte", "endByteExclusive", "excerptHash", "repairHint"],
+      "properties": {
+        "failureClass": { "type": "string", "minLength": 1 },
+        "sourceArtifactId": { "type": "string", "minLength": 1 },
+        "sourceSnapshotHash": { "$ref": "#/$defs/hash" },
+        "lineStart": { "type": "integer", "minimum": 1 },
+        "lineEnd": { "type": "integer", "minimum": 1 },
+        "startByte": { "type": "integer", "minimum": 0 },
+        "endByteExclusive": { "type": "integer", "minimum": 0 },
+        "excerptHash": { "$ref": "#/$defs/hash" },
+        "offendingId": { "type": "string" },
+        "field": { "type": "string" },
+        "sourceId": { "type": "string", "minLength": 1 },
+        "matchedPhrase": { "type": "string", "minLength": 1 },
+        "sourceExcerpt": { "type": "string", "minLength": 1 },
+        "repairHint": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

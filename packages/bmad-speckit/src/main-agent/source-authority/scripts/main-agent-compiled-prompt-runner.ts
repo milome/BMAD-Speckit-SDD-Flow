@@ -4,6 +4,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { resolvePackageMainAgentModulePath } from '../../runtime/package-bmad-root';
 import { extractRequirementsContractImplementationConfirmation } from './requirements-contract-implementation-confirmation-codec';
+import { resolveConfirmedRequirementsAuthority } from './requirements-contract-confirmed-authority-adapter';
 import { validateTypedModelPacket } from './requirements-contract-typed-model-packet';
 import type {
   CompiledPromptRef,
@@ -169,6 +170,40 @@ export function resolveConfirmedSource(input: {
     return { status: 'no_confirmed_source', reason: 'record_path_missing' };
   }
   const record = readJson(input.recordPath);
+  if (text(record.schemaVersion) === 'requirements-contract-record/v1') {
+    try {
+      const authority = resolveConfirmedRequirementsAuthority({
+        projectRoot: input.projectRoot,
+        requirementRecordPath: path.resolve(input.recordPath),
+      });
+      const sourcePath = input.sourcePath
+        ? path.resolve(input.projectRoot, input.sourcePath)
+        : authority.sourceDocumentPath;
+      if (!fs.existsSync(sourcePath)) {
+        return {
+          status: 'confirmed_source_unresolvable',
+          reason: 'confirmed_source_unresolvable',
+          blockingReasons: ['source_path_missing'],
+        };
+      }
+      return {
+        status: 'confirmed',
+        recordPath: authority.recordPath,
+        sourcePath,
+        sourceDocumentHash: authority.lineage.finalMarkdownHash,
+        implementationConfirmationHash:
+          authority.lineage.implementationConfirmationHash,
+      };
+    } catch (error) {
+      return {
+        status: 'confirmed_source_unresolvable',
+        reason: 'confirmed_source_unresolvable',
+        blockingReasons: [
+          error instanceof Error ? error.message : 'requirements_confirmed_authority_invalid',
+        ],
+      };
+    }
+  }
   const hasInlineConfirmedImplementation =
     text((record.implementationConfirmation as Record<string, unknown> | undefined)?.status) ===
     'user_confirmed';

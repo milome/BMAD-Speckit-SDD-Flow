@@ -16,7 +16,7 @@
     "metrics": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["sourceObligationCount", "candidateObligationCount", "actionCount", "atomCount", "constraintCount", "referenceCount", "candidateBytes", "edgeBudget", "nonGlobalObligationUniverseCount"],
+      "required": ["sourceObligationCount", "candidateObligationCount", "actionCount", "atomCount", "constraintCount", "referenceCount", "candidateBytes", "nonGlobalObligationUniverseCount"],
       "properties": {
         "sourceObligationCount": { "type": "integer", "minimum": 0 },
         "candidateObligationCount": { "type": "integer", "minimum": 0 },
@@ -25,7 +25,6 @@
         "constraintCount": { "type": "integer", "minimum": 0 },
         "referenceCount": { "type": "integer", "minimum": 0 },
         "candidateBytes": { "type": "integer", "minimum": 1 },
-        "edgeBudget": { "type": "integer", "minimum": 1 },
         "nonGlobalObligationUniverseCount": { "type": "integer", "minimum": 0 }
       }
     },

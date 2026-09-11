@@ -91,6 +91,7 @@ describe('partition-bound goal contract generation', () => {
     assert.ok(fs.existsSync(receipt.coverageReceiptPath));
     assert.ok(fs.existsSync(receipt.generationReceiptPath));
     const generationReceipt = JSON.parse(fs.readFileSync(receipt.generationReceiptPath, 'utf8'));
+    const coverageReceipt = JSON.parse(fs.readFileSync(receipt.coverageReceiptPath, 'utf8'));
     const text = fs.readFileSync(child, 'utf8');
     for (const field of [
       'masterSourcePath',
@@ -108,6 +109,7 @@ describe('partition-bound goal contract generation', () => {
       'partitionSetHash',
       'partitionId',
       'partitionRole',
+      'estimatedClosureMinutes',
       'selectionReceiptPath',
       'selectionReceiptHash',
       'selectionSetHash',
@@ -116,6 +118,8 @@ describe('partition-bound goal contract generation', () => {
       'globalCoverageReceiptHash',
     ])
       assert.match(text, new RegExp(`^${field}:`, 'mu'));
+    assert.equal(coverageReceipt.estimatedClosureMinutes, partition.estimatedClosureMinutes);
+    assert.equal(generationReceipt.estimatedClosureMinutes, partition.estimatedClosureMinutes);
     for (const field of [
       'sequenceMode',
       'sequenceApplicability',

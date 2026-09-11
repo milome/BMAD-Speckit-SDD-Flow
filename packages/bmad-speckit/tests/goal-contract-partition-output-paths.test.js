@@ -256,6 +256,31 @@ describe('goal contract partition output authority paths', () => {
     assert.equal(fs.existsSync(result.authorityRoot), false);
   });
 
+  it('rejects a nested requirements-contract authoring record as runtime RequirementRecord authority', () => {
+    const repositoryRoot = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'partition-output-authority-')
+    );
+    const directRecordPath = writeAuthorizedRequirementRecord(
+      repositoryRoot,
+      'REQ-GH-004',
+      HASHES.sourceHash
+    );
+    const nestedRecordPath = path.join(path.dirname(directRecordPath), 'record', 'requirement-record.json');
+    fs.mkdirSync(path.dirname(nestedRecordPath), { recursive: true });
+    fs.copyFileSync(directRecordPath, nestedRecordPath);
+
+    assert.throws(
+      () =>
+        preflightRequirementRecordPartitionAuthoritySupersession({
+          repositoryRoot,
+          recordPath: nestedRecordPath,
+          requirementSetId: 'REQ-GH-004',
+          sourceHash: HASHES.sourceHash,
+        }),
+      (error) => error.failureClass === 'partition_requirement_record_path_invalid'
+    );
+  });
+
   it('rejects caller-selected roots and path escapes in governed mode', () => {
     const repositoryRoot = path.resolve('C:/workspace/repository');
     const canonical = resolveCanonicalPartitionOutputPaths({

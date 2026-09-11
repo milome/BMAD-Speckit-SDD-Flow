@@ -28,6 +28,7 @@
     "partitionManifestHash": { "$ref": "#/$defs/hash" },
     "selectionReceiptHash": { "$ref": "#/$defs/hash" },
     "globalCoverageReceiptHash": { "$ref": "#/$defs/hash" },
+    "estimatedClosureMinutes": { "type": "integer", "minimum": 1, "maximum": 239 },
     "selectedPrimaryObligationIds": { "$ref": "#/$defs/ids" },
     "inheritedConstraintIds": { "$ref": "#/$defs/ids" },
     "excludedObligationIds": { "$ref": "#/$defs/ids" },

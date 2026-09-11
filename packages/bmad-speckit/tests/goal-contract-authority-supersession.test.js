@@ -406,6 +406,7 @@ function coverageRecord({
     sharedArtifactDependencies: [],
     compatibilityReceiptRequirements: [],
     partitionRole: 'implementation',
+    estimatedClosureMinutes: 10,
     specSpanRefs: [],
     subordinateCoverageReceiptHashes: [],
   };

@@ -2,7 +2,7 @@ import {
   canonicalRequirementsJson,
   requirementsContractDomainHash,
 } from './requirements-contract-hash-domains';
-import { resolveTypedSourceAuthority, type RequirementsTypedSourceAuthority } from './requirements-contract-typed-source-semantics';
+import { resolveTypedSourceAuthority, type RequirementsTypedSourceAuthority, type RequirementsTypedSourceGraph } from './requirements-contract-typed-source-semantics';
 
 export type RequirementsAuthorityClass = 'source_grounded' | 'human_confirmed' | 'derived';
 
@@ -16,6 +16,7 @@ export interface RequirementsSpecSpan {
   decisionReceiptRefs: string[];
   derivationReceiptRefs: string[];
   boundTypedSourceGraphHash?: string;
+  originSpecSpanRef?: string;
 }
 
 export interface RequirementsSourceSpan {
@@ -58,20 +59,84 @@ export function canonicalSpecSpanId(input: {
   });
 }
 
-export function resolveRequirementsSpecSpanSourceNodeIds(span: RequirementsSpecSpan, authority?: RequirementsTypedSourceAuthority): string[] {
+export function resolveRequirementsSpecSpanSourceNodeIds(
+  span: RequirementsSpecSpan,
+  authority?: RequirementsTypedSourceAuthority,
+  resolvedGraph?: RequirementsTypedSourceGraph
+): string[] {
   if (span.boundTypedSourceGraphHash === undefined) return [...span.boundObligationIds];
   if (!authority || !SHA256.test(span.boundTypedSourceGraphHash) || span.boundTypedSourceGraphHash !== authority.graphHash ||
-    span.normalizedClaimHash !== authority.graphHash || span.authorityClass !== 'source_grounded') {
+    span.normalizedClaimHash !== authority.graphHash ||
+    (span.authorityClass !== 'source_grounded' &&
+      (span.authorityClass !== 'derived' || !span.originSpecSpanRef))) {
     throw new Error('requirements_spec_span_typed_graph_binding_invalid');
   }
-  const graph = resolveTypedSourceAuthority(authority);
-  const actionIds = graph.sourceNodes.filter((node) => node.executionRole === 'action').map((node) => node.sourceRootId);
+  const graph = resolvedGraph ?? resolveTypedSourceAuthority(authority);
+  const nodesById = new Map(graph.sourceNodes.map((node) => [node.sourceRootId, node]));
   const sameSet = (left: string[], right: string[]) => canonicalRequirementsJson(sortedUnique(left)) === canonicalRequirementsJson(sortedUnique(right));
-  if (!sameSet(span.boundObligationIds, actionIds) ||
-    !sameSet(span.boundSemanticNodeIds, [...actionIds, ...actionIds.map((id) => `${id}-A1`)])) {
+  const nodeIds = sortedUnique(span.boundObligationIds);
+  if (nodeIds.length === 0 || nodeIds.some((id) => !nodesById.has(id))) {
     throw new Error('requirements_spec_span_typed_direct_projection_mismatch');
   }
-  return graph.sourceNodes.map((node) => node.sourceRootId);
+  const semanticNodeIds = nodeIds.flatMap((id) => [
+    id,
+    ...(nodesById.get(id)?.executionRole === 'action' ? [`${id}-A1`] : []),
+  ]);
+  if (!sameSet(span.boundSemanticNodeIds, semanticNodeIds)) {
+    throw new Error('requirements_spec_span_typed_direct_projection_mismatch');
+  }
+  return nodeIds;
+}
+
+export function expandRequirementsTypedSpecSpans(
+  spans: RequirementsSpecSpan[],
+  authority: RequirementsTypedSourceAuthority
+): RequirementsSpecSpan[] {
+  const graph = resolveTypedSourceAuthority(authority);
+  const actionIds = graph.sourceNodes
+    .filter((node) => node.executionRole === 'action')
+    .map((node) => node.sourceRootId);
+  const legacyAggregate = spans.length === 1 &&
+    canonicalRequirementsJson(sortedUnique(spans[0].boundObligationIds)) ===
+      canonicalRequirementsJson(sortedUnique(actionIds)) &&
+    canonicalRequirementsJson(sortedUnique(spans[0].boundSemanticNodeIds)) ===
+      canonicalRequirementsJson(sortedUnique([
+        ...actionIds,
+        ...actionIds.map((id) => `${id}-A1`),
+      ]));
+  const expanded = legacyAggregate
+    ? graph.sourceNodes.map((node) => ({
+        specSpanId: canonicalSpecSpanId({
+          normalizedClaimHash: authority.graphHash,
+          obligationIds: [node.sourceRootId],
+          boundTypedSourceGraphHash: authority.graphHash,
+        }),
+        authorityClass: 'derived' as const,
+        normalizedClaimHash: spans[0].normalizedClaimHash,
+        boundTypedSourceGraphHash: spans[0].boundTypedSourceGraphHash,
+        originSpecSpanRef: spans[0].specSpanId,
+        boundObligationIds: [node.sourceRootId],
+        boundSemanticNodeIds: [
+          node.sourceRootId,
+          ...(node.executionRole === 'action' ? [`${node.sourceRootId}-A1`] : []),
+        ],
+        evidenceClaimRefs: [...spans[0].evidenceClaimRefs],
+        decisionReceiptRefs: [...spans[0].decisionReceiptRefs],
+        derivationReceiptRefs: [...spans[0].derivationReceiptRefs],
+      }))
+    : spans.map((span) => structuredClone(span));
+  const coveredNodeIds = expanded.flatMap((span) =>
+    resolveRequirementsSpecSpanSourceNodeIds(span, authority, graph)
+  );
+  const expectedNodeIds = graph.sourceNodes.map((node) => node.sourceRootId);
+  if (
+    coveredNodeIds.length !== new Set(coveredNodeIds).size ||
+    canonicalRequirementsJson(sortedUnique(coveredNodeIds)) !==
+      canonicalRequirementsJson(sortedUnique(expectedNodeIds))
+  ) {
+    throw new Error('requirements_spec_span_typed_lineage_incomplete');
+  }
+  return expanded.sort((left, right) => left.specSpanId.localeCompare(right.specSpanId));
 }
 
 export function canonicalSourceSpanId(input: {

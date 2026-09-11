@@ -42,9 +42,10 @@ function generationPayload(result) {
 
 function proofDeclarations(taskId) {
   return [
-    `- AC-${taskId}-01: The implementation proof audit rejects coverage-only code evidence.`,
-    `- EVD-${taskId}-01: Preserve the implementation proof test output.`,
-    `- CMD-${taskId}-01: Run \`node --test packages/bmad-speckit/tests/goal-contract-implementation-proof.test.js\`.`,
+    `- REQ-${taskId}: ${taskId} MUST emit a deterministic implementation proof audit; Acceptance AC-${taskId}-01; Command CMD-${taskId}-01.`,
+    `- AC-${taskId}-01: ${taskId} MUST reject coverage-only code evidence for REQ-${taskId}.`,
+    `- EVD-${taskId}-01: ${taskId} MUST preserve the implementation proof test output.`,
+    `- CMD-${taskId}-01: ${taskId} MUST run \`node --test packages/bmad-speckit/tests/goal-contract-implementation-proof.test.js\`.`,
     '',
   ];
 }
@@ -66,7 +67,7 @@ describe('goal-contract implementation proof audit', () => {
 
     assert.notEqual(result.status, 0);
     assert.equal(payload.ok, false);
-    assert.equal(payload.failureClass, 'GOAL_CONTRACT_INCOMPLETE');
+    assert.equal(payload.failureClass, 'legacy_source_plan_authority_missing');
     const extracted = extractSourceObligations({ snapshot: buildSourceSnapshot({ sourceType: 'source_plan',
       sourcePath: source, rawBytes: fs.readFileSync(source) }) });
     assert.equal(extracted.sourceObligations.length, 1);
@@ -137,9 +138,9 @@ describe('goal-contract implementation proof audit', () => {
       '',
       '## Implementation Task Breakdown',
       '',
-      '### Task PROOF-T01: Add implementation proof audit',
+      '### Task TASK-PROOF-T01: Add implementation proof audit',
       '',
-      ...proofDeclarations('PROOF-T01'),
+      ...proofDeclarations('TASK-PROOF-T01'),
       '- MUST emit `implementationProofAudit.decision === "pass"` for deterministic code obligations.',
       '',
       'Run:',
@@ -172,9 +173,9 @@ describe('goal-contract implementation proof audit', () => {
       '',
       '## Implementation Task Breakdown',
       '',
-      '### Task PROOF-T01: Add nondeterministic phrase detection',
+      '### Task TASK-PROOF-T01: Add nondeterministic phrase detection',
       '',
-      ...proofDeclarations('PROOF-T01'),
+      ...proofDeclarations('TASK-PROOF-T01'),
       '- Detect nondeterministic source wording that includes `optional`, `allowed`, `if refactoring`, `may`, `might`, `should`, `can`, `as needed`, `where appropriate`, and ambiguous `where applicable` cases without an explicit condition.',
       '',
       'Run:',
@@ -207,9 +208,9 @@ describe('goal-contract implementation proof audit', () => {
       '',
       '## Implementation Task Breakdown',
       '',
-      '### Task PROOF-T01: Add implementation proof audit',
+      '### Task TASK-PROOF-T01: Add implementation proof audit',
       '',
-      ...proofDeclarations('PROOF-T01'),
+      ...proofDeclarations('TASK-PROOF-T01'),
       '- MUST emit `implementationProofAudit.decision === "pass"` for deterministic code obligations.',
       '',
       'Run:',

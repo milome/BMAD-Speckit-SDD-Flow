@@ -26,6 +26,20 @@ export type MainAgentExecutionFinalJudgeActorIntent = {
   invocationIntentHash: string;
 };
 
+export type MainAgentExecutionReviewerActorIntent = Omit<
+  MainAgentExecutionFinalJudgeActorIntent,
+  'actorClass'
+> & {
+  actorClass: 'bounded_code_reviewer';
+};
+
+export type MainAgentExecutionFinalAcceptanceJudgeActorIntent = Omit<
+  MainAgentExecutionFinalJudgeActorIntent,
+  'actorClass'
+> & {
+  actorClass: 'final_acceptance_judge';
+};
+
 export type MainAgentExecutionActorIsolationReceipt = {
   schemaVersion: 'GoalFinalizationActorIsolationReceipt/v1';
   actorClass: MainAgentExecutionFinalJudgeActorIntent['actorClass'];
@@ -335,6 +349,16 @@ function campaignBlindInput(input: MainAgentExecutionFinalJudgeCampaignInput) {
 }
 
 function actorIntent(
+  actorClass: 'bounded_code_reviewer',
+  dispatchGroupId: string,
+  blindInput: Record<string, unknown>
+): MainAgentExecutionReviewerActorIntent;
+function actorIntent(
+  actorClass: 'final_acceptance_judge',
+  dispatchGroupId: string,
+  blindInput: Record<string, unknown>
+): MainAgentExecutionFinalAcceptanceJudgeActorIntent;
+function actorIntent(
   actorClass: MainAgentExecutionFinalJudgeActorIntent['actorClass'],
   dispatchGroupId: string,
   blindInput: Record<string, unknown>
@@ -386,7 +410,7 @@ function actorReceipt(
 }
 
 export function validateMainAgentExecutionActorIsolationReceipt(
-  intent: MainAgentExecutionFinalJudgeActorIntent,
+  intent: Pick<MainAgentExecutionFinalJudgeActorIntent, 'actorClass' | 'dispatchGroupId'>,
   value: unknown
 ): MainAgentExecutionActorIsolationReceipt {
   const isolation = isRecord(value)
@@ -551,6 +575,20 @@ export function mergeMainAgentExecutionFinalJudgeCampaign(input: {
   status: 'not_produced' | 'blocked' | 'remediation_required' | 'effective_pass_ready';
 } {
   if (input.finalJudge.auditDecision === 'not_produced') return { status: 'not_produced' };
+  return mergeProducedMainAgentExecutionFinalJudgeCampaign({
+    candidate: input.candidate,
+    reviewer: input.reviewer,
+    finalJudge: input.finalJudge,
+  });
+}
+
+function mergeProducedMainAgentExecutionFinalJudgeCampaign(input: {
+  candidate?: ExecutionFinalCandidateCoverage;
+  reviewer: MainAgentExecutionReviewerResult;
+  finalJudge: MainAgentExecutionFinalJudgeProducedResult;
+}): {
+  status: 'blocked' | 'remediation_required' | 'effective_pass_ready';
+} {
   if (
     input.candidate &&
     (!coverageIsExact(input.candidate, input.finalJudge) ||
@@ -686,7 +724,7 @@ export function validateMainAgentExecutionFinalJudgeCampaignArtifacts(input: {
     input.finalJudge,
     finalJudgeTerminalOutcome(input.finalJudge.verdict)
   );
-  const merge = mergeMainAgentExecutionFinalJudgeCampaign({
+  const merge = mergeProducedMainAgentExecutionFinalJudgeCampaign({
     candidate,
     reviewer: input.reviewer,
     finalJudge: input.finalJudge,
@@ -726,10 +764,10 @@ export async function executeMainAgentExecutionFinalJudgeCampaign(
   },
   dependencies: {
     invokeReviewer: (
-      intent: MainAgentExecutionFinalJudgeActorIntent
+      intent: MainAgentExecutionReviewerActorIntent
     ) => Promise<MainAgentExecutionReviewerResult>;
     invokeFinalJudge: (
-      intent: MainAgentExecutionFinalJudgeActorIntent
+      intent: MainAgentExecutionFinalAcceptanceJudgeActorIntent
     ) => Promise<MainAgentExecutionFinalJudgeResult>;
   }
 ) {

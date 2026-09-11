@@ -802,12 +802,12 @@ describe('main-agent automatic run-loop', () => {
   });
 
   it('imports a valid native goal TaskReport as an untrusted execution claim', async () => {
-      const fixture = await materializeRunLoopFixture({
-        goalMode: 'native_goal_document_ref',
-      });
+    const fixture = await materializeRunLoopFixture({
+      goalMode: 'native_goal_document_ref',
+    });
     const root = fixture.root;
     try {
-      prepareNativeGoalImportFixture(fixture);
+      const compiled = prepareNativeGoalImportFixture(fixture);
       const taskReportPath = compiled.packet.compiledPromptRef.taskReportPath!;
       writeImportTaskReport(taskReportPath, compiled.packet.packetId);
       refreshNativeGoalImportProvenance(fixture, compiled, taskReportPath);

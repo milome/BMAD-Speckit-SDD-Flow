@@ -1,0 +1,18 @@
+# Keep workspace drafts, backups, archives and evidence out of the root release tarball.
+**/.draft/
+**/*.draft/
+**/*.draft/**
+**/.archive-*/
+**/*.archive-*/
+**/*.archive-*/**
+**/.backup-*/
+**/*.backup-*/
+**/*.backup-*/**
+**/.superseded-*/
+**/*.superseded-*/
+**/*.superseded-*/**
+**/.obsidian/
+**/.artifacts/
+console.log
+console.log.*
+{console.log*

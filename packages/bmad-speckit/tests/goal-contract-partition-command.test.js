@@ -7,6 +7,8 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const Ajv2020 = require('ajv/dist/2020');
 const addFormats = require('ajv-formats');
+const { x: extractTar } = require('tar');
+const { materializeFullFixture } = require('./fixtures/standalone-goal/canonical-full-fixture.cjs');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const REPO_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
@@ -17,6 +19,13 @@ const SOURCE_OBLIGATION_EXTRACTOR = path.join(
   'utils',
   'goal-contract',
   'source-obligation-extractor.ts'
+);
+const CONFIRMED_AUTHORITY_ARCHIVE = path.join(
+  PACKAGE_ROOT,
+  'tests',
+  'fixtures',
+  'standalone-goal',
+  'canonical-source-plan-v1-full.confirmed-authority.tar.gz'
 );
 const SOURCE_RUNNER = [
   'const { goalContractCommand } = require(process.argv[1]);',
@@ -59,6 +68,9 @@ const {
   compileTaskFileScopeAuthority,
   validateTaskFileScopeCells,
 } = require('../src/utils/goal-contract/control-plane/partition-compiler.ts');
+const {
+  resolveGoalExecutionAuthority,
+} = require('../src/utils/goal-contract/control-plane/goal-execution-authority.ts');
 const {
   buildPartitionPlanGlobalCoverageReceipt,
   buildPartitionPlanSelectionReceipt,
@@ -633,6 +645,20 @@ function runSourceCommand(args, options = {}) {
   });
 }
 
+function runRegisteredSourceCommand(args, options = {}) {
+  const sourceCommand = options.sourceCommand || SOURCE_COMMAND;
+  const register = path.join(PACKAGE_ROOT, 'tests', 'register-ts-source.cjs');
+  return spawnSync(
+    process.execPath,
+    ['--require', register, '-e', SOURCE_RUNNER, sourceCommand, ...args],
+    {
+      cwd: options.cwd || PACKAGE_ROOT,
+      encoding: 'utf8',
+      maxBuffer: 20 * 1024 * 1024,
+      env: { ...process.env, ...(options.env || {}) },
+    }
+  );
+}
 function hash(value) {
   return `sha256:${createHash('sha256').update(value).digest('hex')}`;
 }
@@ -2620,6 +2646,246 @@ describe('bmad-speckit goal-contract partition command', () => {
     );
   });
 
+  it('closes full canonical fixture diagnostics, standalone bootstrap, and controlled RequirementRecord activation', () => {
+    const root = tempRoot();
+    const impactRoot = path.join(root, 'empty-consumer');
+    fs.mkdirSync(impactRoot, { recursive: true });
+    const fullFixture = materializeFullFixture({ root });
+    const source = fullFixture.canonicalSourcePath;
+    const stableGoal = path.join(
+      fullFixture.fixtureRoot,
+      'canonical-source-plan-v1-full-goal-execution-plan.md'
+    );
+    const stableCoverage = path.join(
+      path.dirname(stableGoal),
+      '.canonical-source-plan-v1-full-goal-execution-plan.coverage.json'
+    );
+    const stableGeneration = path.join(
+      path.dirname(stableGoal),
+      '.canonical-source-plan-v1-full-goal-execution-plan.generation.json'
+    );
+    assert.equal(
+      hash(fs.readFileSync(source)),
+      'sha256:d0aa0be0d8773e8029724c2dd4027578bfdf614870c93332cc082fb54890f74a'
+    );
+    assert.match(fs.readFileSync(stableGoal, 'utf8'), /contractMode: frozen/u);
+    assert.equal(JSON.parse(fs.readFileSync(stableCoverage, 'utf8')).decision, 'pass');
+    const stableGenerationReceipt = JSON.parse(fs.readFileSync(stableGeneration, 'utf8'));
+    assert.equal(stableGenerationReceipt.goalContractDocumentHash, hash(fs.readFileSync(stableGoal)));
+    const stableGoalExecutionIrPath = path.join(
+      `${stableGoal}.authority`,
+      'goal',
+      'ir',
+      stableGenerationReceipt.goalExecutionIrRef.hash.slice('sha256:'.length),
+      'goal-execution-ir.json'
+    );
+    const stableGoalExecutionIr = resolveGoalExecutionAuthority(
+      JSON.parse(fs.readFileSync(stableGoalExecutionIrPath, 'utf8'))
+    );
+    assert.equal(
+      stableGoalExecutionIr.goalExecutionIRHash,
+      stableGenerationReceipt.goalExecutionIrRef.hash
+    );
+
+    const goalContractPath = path.join(root, 'canonical-full-goal-execution-plan.md');
+    const generated = runRegisteredSourceCommand(
+      [
+        'generate',
+        '--entry',
+        'standalone_goal_contract',
+        '--source',
+        source,
+        '--out',
+        goalContractPath,
+        '--json',
+      ],
+      { cwd: root }
+    );
+    assert.equal(generated.status, 0, generated.stderr || generated.stdout);
+    const generation = parsePayload(generated);
+    const goalExecutionIr = resolveGoalExecutionAuthority(
+      JSON.parse(fs.readFileSync(generation.goalExecutionIrRef.path, 'utf8'))
+    );
+    assert.equal(generation.sourcePlanHash, stableGenerationReceipt.sourcePlanHash);
+    assert.deepEqual(goalExecutionIr.obligations, stableGoalExecutionIr.obligations);
+    assert.deepEqual(
+      goalExecutionIr.semanticSource.typedExecutionConstraints,
+      stableGoalExecutionIr.semanticSource.typedExecutionConstraints
+    );
+    const successorSpans = new Map(
+      goalExecutionIr.logicalSpecSpans.map((row) => [row.specSpanId, row])
+    );
+    assert.equal(successorSpans.size, stableGoalExecutionIr.logicalSpecSpans.length);
+    for (const stableSpan of stableGoalExecutionIr.logicalSpecSpans) {
+      const successorSpan = successorSpans.get(stableSpan.specSpanId);
+      assert.ok(successorSpan, stableSpan.specSpanId);
+      const normalizeMaterializedPath = (value) =>
+        typeof value === 'string' ? path.basename(value) : value;
+      assert.deepEqual(
+        {
+          ...successorSpan,
+          sourceArtifactId: normalizeMaterializedPath(successorSpan.sourceArtifactId),
+          canonicalNodeRefs: stableSpan.canonicalNodeRefs,
+        },
+        { ...stableSpan, sourceArtifactId: normalizeMaterializedPath(stableSpan.sourceArtifactId) }
+      );
+      assert.equal(
+        stableSpan.canonicalNodeRefs.every((ref) => successorSpan.canonicalNodeRefs.includes(ref)),
+        true
+      );
+    }
+
+    const diagnosticOut = path.join(root, 'diagnostic', 'partition-manifest.json');
+    const diagnostic = runRegisteredSourceCommand(
+      [
+        'partition',
+        '--entry',
+        'standalone_goal_contract',
+        '--source',
+        source,
+        '--goal-contract',
+        goalContractPath,
+        '--out',
+        diagnosticOut,
+        '--json',
+      ],
+      { cwd: root }
+    );
+    assert.equal(diagnostic.status, 0, diagnostic.stderr || diagnostic.stdout);
+    const diagnosticPayload = parsePayload(diagnostic);
+    const diagnosticManifest = JSON.parse(
+      fs.readFileSync(diagnosticPayload.partitionManifestPath, 'utf8')
+    );
+    assert.equal(diagnosticPayload.authorityMode, 'raw_non_authoritative');
+    assert.equal(diagnosticPayload.partitionCount, 16);
+    assert.equal(diagnosticPayload.globalCoverageDecision, 'pass');
+
+    const governedArgs = [
+      'partition',
+      '--governed',
+      '--entry',
+      'standalone_goal_contract',
+      '--source',
+      source,
+      '--goal-contract',
+      goalContractPath,
+      '--impact-repository-root',
+      impactRoot,
+      '--json',
+    ];
+    const standalone = runRegisteredSourceCommand(governedArgs, { cwd: root });
+    assert.equal(standalone.status, 0, standalone.stderr || standalone.stdout);
+    const standalonePayload = parsePayload(standalone);
+    const standaloneManifest = standalonePayload.partitionManifest;
+    assert.equal(standalonePayload.authorityMode, 'standalone_bootstrap');
+    assert.equal(standaloneManifest.schemaVersion, 'goal-contract-partition-manifest/v2');
+    assert.equal(standaloneManifest.partitionCount, 16);
+    assert.equal(
+      standaloneManifest.partitions.every((row) => row.estimatedClosureMinutes === 180),
+      true
+    );
+    assert.equal(
+      standaloneManifest.partitions.every((row) => row.estimatedClosureMinutes < 240),
+      true
+    );
+    const primaryIds = standaloneManifest.partitions.flatMap(
+      (row) => row.primarySourceObligationIds
+    );
+    assert.equal(primaryIds.length, 350);
+    assert.equal(new Set(primaryIds).size, 350);
+    const inheritedIds = new Set(
+      standaloneManifest.partitions.flatMap((row) => row.inheritedConstraintIds)
+    );
+    assert.equal(inheritedIds.size, 425);
+    const constraintById = new Map(
+      goalExecutionIr.semanticSource.typedExecutionConstraints.map((row) => [row.constraintId, row])
+    );
+    assert.deepEqual([...inheritedIds].sort(), [...constraintById.keys()].sort());
+    for (const partition of standaloneManifest.partitions) {
+      const child = fs.readFileSync(path.join(root, partition.childContractPath), 'utf8');
+      assert.match(child, /^estimatedClosureMinutes: 180$/mu);
+      const receiptRoot = path.join(standalonePayload.unitRoot, 'receipts', 'children');
+      const compilationReceipt = JSON.parse(
+        fs.readFileSync(path.join(receiptRoot, `${partition.partitionId}.compilation.json`), 'utf8')
+      );
+      const coverageReceipt = JSON.parse(
+        fs.readFileSync(path.join(receiptRoot, `${partition.partitionId}.coverage.json`), 'utf8')
+      );
+      const generationReceipt = JSON.parse(
+        fs.readFileSync(path.join(receiptRoot, `${partition.partitionId}.generation.json`), 'utf8')
+      );
+      assert.equal(compilationReceipt.estimatedClosureMinutes, 180);
+      assert.equal(coverageReceipt.estimatedClosureMinutes, 180);
+      assert.equal(generationReceipt.estimatedClosureMinutes, 180);
+      for (const constraintId of partition.inheritedConstraintIds) {
+        assert.ok(child.includes('`' + constraintId + '`'));
+        assert.ok(child.includes(constraintById.get(constraintId).canonicalValue));
+      }
+    }
+    assert.equal(fs.existsSync(standalonePayload.activePointerPath), true);
+    const standalonePointerBeforeScoped = fs.readFileSync(
+      standalonePayload.activePointerPath,
+      'utf8'
+    );
+    const semanticSignature = (manifest) =>
+      manifest.partitions.map((row) => ({
+        displayOrdinal: row.displayOrdinal,
+        primaryTaskIds: row.primaryTaskIds,
+        primarySourceObligationIds: row.primarySourceObligationIds,
+        inheritedConstraintIds: row.inheritedConstraintIds,
+        dependencyPartitionIds: row.dependencyPartitionIds,
+        estimatedClosureMinutes: row.estimatedClosureMinutes,
+      }));
+    assert.deepEqual(semanticSignature(diagnosticManifest), semanticSignature(standaloneManifest));
+
+    const recordPath = writeRequirementRecord(root, generation.sourcePlanHash);
+    const scoped = runRegisteredSourceCommand(
+      [...governedArgs.slice(0, -1), '--requirement-record', recordPath, '--json'],
+      { cwd: root }
+    );
+    assert.equal(scoped.status, 0, scoped.stderr || scoped.stdout);
+    const scopedPayload = parsePayload(scoped);
+    const record = JSON.parse(fs.readFileSync(recordPath, 'utf8'));
+    const pointer = JSON.parse(fs.readFileSync(scopedPayload.activePointerPath, 'utf8'));
+    assert.equal(scopedPayload.authorityMode, 'requirement_record');
+    assert.equal(scopedPayload.partitionManifest.partitionCount, 16);
+    assert.equal(
+      scopedPayload.partitionManifest.partitions.every(
+        (row) => row.estimatedClosureMinutes === 180
+      ),
+      true
+    );
+    assert.deepEqual(
+      semanticSignature(scopedPayload.partitionManifest),
+      semanticSignature(standaloneManifest)
+    );
+    assert.equal(record.schemaVersion, 'requirement-record/v1');
+    assert.equal(record.lastEventType, 'goal_contract_partition_authority_superseded');
+    assert.equal(
+      record.nativeGoalHandoff.goalContractPartitionAuthority.partitionRunId,
+      scopedPayload.partitionManifest.partitionRunId
+    );
+    assert.equal(fs.existsSync(scopedPayload.activePointerPath), true);
+    assert.equal(pointer.recordPath, recordPath.replace(/\\/gu, '/'));
+    assert.equal(pointer.recordHash, record.recordHash);
+    assert.equal(pointer.recordRevision, record.recordRevision);
+    assert.equal(pointer.eventChainHead, record.eventChainHead);
+    assert.equal(pointer.eventId, record.lastAppliedEventId);
+    assert.equal(pointer.partitionRunId, scopedPayload.partitionManifest.partitionRunId);
+    const eventLogPath = path.join(path.dirname(recordPath), 'events', 'control-events.jsonl');
+    const events = fs
+      .readFileSync(eventLogPath, 'utf8')
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line));
+    assert.equal(events.length, 1);
+    assert.equal(events[0].eventType, 'goal_contract_partition_authority_superseded');
+    assert.equal(events[0].eventHash, pointer.eventChainHead);
+    assert.equal(
+      fs.readFileSync(standalonePayload.activePointerPath, 'utf8'),
+      standalonePointerBeforeScoped
+    );
+  });
   it('rejects an unauthorized RequirementRecord before writing partition run bytes', () => {
     const root = tempRoot();
     const source = writeSourcePlan(root);
@@ -3938,5 +4204,110 @@ describe('goal-contract task file-scope authority', () => {
     assert.equal(payload.lineEnd, payload.lineStart);
     assert.equal(payload.substitutePath, undefined);
     assert.equal(fs.existsSync(out), false);
+  });
+
+  it('partitions confirmed Requirements after six-state readiness without expanding child scope', async () => {
+    const root = tempRoot();
+    try {
+      await extractTar({ file: CONFIRMED_AUTHORITY_ARCHIVE, cwd: root, strict: true });
+      const recordsRoot = path.join(root, '_bmad-output', 'runtime', 'requirement-records');
+      const requestId = fs.readdirSync(recordsRoot).find((entry) =>
+        fs.statSync(path.join(recordsRoot, entry)).isDirectory()
+      );
+      assert.ok(requestId);
+      const requirementRecordPath = path.join(
+        recordsRoot,
+        requestId,
+        'record',
+        'requirement-record.json'
+      );
+      const { resolveConfirmedRequirementsAuthority } = require(
+        '../src/main-agent/source-authority/scripts/requirements-contract-confirmed-authority-adapter.ts'
+      );
+      const { compileConfirmedRequirementsGoalSemantics } = require(
+        '../src/utils/goal-contract/control-plane/confirmed-requirements-goal-compiler.ts'
+      );
+      const {
+        compileFrozenGoalExecutionEligibility,
+        compilePartitionFromFrozenGoalAuthority,
+      } = require('../src/utils/goal-contract/control-plane/frozen-goal-activation.ts');
+      const authority = resolveConfirmedRequirementsAuthority({
+        projectRoot: root,
+        requirementRecordPath,
+      });
+      const base = compileConfirmedRequirementsGoalSemantics({ authority });
+      const typedConstraints = base.goalExecutionIr.semanticSource.typedExecutionConstraints
+        .filter((constraint) => constraint.kind === 'PATH');
+      const architectureHash = hash('confirmed-six-state-architecture');
+      const readinessHash = hash('confirmed-six-state-readiness');
+      const readinessDigest = hash('confirmed-six-state-input');
+      const sixState = compileConfirmedRequirementsGoalSemantics({
+        authority,
+        sixStateContext: {
+          architecture: {
+            architectureConfirmationCandidateHash: architectureHash,
+            isolation: { mode: 'canonical_requirement_graph' },
+            ownership: typedConstraints.map((constraint) => ({
+              targetPath: constraint.canonicalValue,
+              owner: constraint.applicableSourceRefs?.[0] ?? constraint.scope?.owner ?? constraint.constraintId,
+              basisRefs: [constraint.constraintId],
+              obligationRefs: constraint.applicableMustRefs ?? [],
+              atomRefs: constraint.applicableAtomRefs ?? [],
+              sourceRefs: constraint.sourceRefs ?? [constraint.constraintId],
+            })),
+            architectureDecisions: [],
+            logicalScope: { forbiddenPaths: [] },
+          },
+          readiness: {
+            implementationReadinessCandidateHash: readinessHash,
+            readinessScopedInputDigest: readinessDigest,
+            normalizedCommands: [],
+            inputArtifacts: [],
+            redOutcomes: [],
+          },
+          architectureConfirmationCandidateHash: architectureHash,
+          implementationReadinessCandidateHash: readinessHash,
+          readinessScopedInputDigest: readinessDigest,
+        },
+      });
+      const eligibility = compileFrozenGoalExecutionEligibility(sixState.goalExecutionIr);
+      assert.deepEqual(
+        { decision: eligibility.decision, executionMode: eligibility.executionMode, componentCount: eligibility.componentCount },
+        { decision: 'pass', executionMode: 'partitioned_goal', componentCount: 16 }
+      );
+      const partition = compilePartitionFromFrozenGoalAuthority({
+        goalExecutionIr: sixState.goalExecutionIr,
+        eligibility,
+        executionAdapterRef: {
+          path: 'adapter/authority.json',
+          hash: hash('confirmed-six-state-execution-adapter'),
+        },
+      });
+      assert.equal(partition.manifest.partitionOutcome, 'complete_valid');
+      assert.equal(partition.manifest.partitionCount, 16);
+      const childContracts = partition.manifest.partitions.map((row) => {
+        const bytes = partition.files.get(
+          `partition/children/${row.partitionId}/child-execution-contract.json`
+        );
+        assert.ok(Buffer.isBuffer(bytes));
+        return JSON.parse(bytes.toString('utf8'));
+      });
+      assert.equal(new Set(childContracts.flatMap((child) => child.taskRefs)).size, 16);
+      assert.equal(
+        new Set(childContracts.flatMap((child) => child.traceSliceRefs)).size,
+        sixState.goalExecutionIr.traceSlices.length
+      );
+      const obligationCount = childContracts.reduce(
+        (total, child) => total + child.obligations.length,
+        0
+      );
+      assert.ok(obligationCount < 500, `child obligation expansion: ${obligationCount}`);
+      assert.ok(
+        Math.max(...childContracts.map((child) => child.obligations.length)) < 120,
+        'one child inherited an unbounded source-scope obligation set'
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 });

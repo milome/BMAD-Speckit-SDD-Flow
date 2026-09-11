@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { produceImplementationReadiness } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-v2';
@@ -28,6 +28,15 @@ const GOAL_COMMAND = path.join(
   'src',
   'commands',
   'goal-contract.ts'
+);
+const CANONICAL_SOURCE = path.join(
+  ROOT,
+  'packages',
+  'bmad-speckit',
+  'tests',
+  'fixtures',
+  'standalone-goal',
+  'canonical-source-plan-v1-minimal.md'
 );
 const ADMISSION_RUNNER = [
   'const runtime = require(process.argv[1]);',
@@ -73,7 +82,7 @@ function materializeRequirementsAuthority() {
   produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
   const generated = compileRequirementsBackedGoal({
     projectRoot: fixture.root,
-    requirementRecordPath: fixture.runtimeRecordPath,
+    requirementRecordPath: fixture.authorityRecordPath,
     outRoot: path.join(fixture.root, 'goal-run'),
   });
   return { fixture, generated };
@@ -91,37 +100,9 @@ function materializeStandaloneAuthority() {
   const fixture = materializeImplementationReadinessFixture();
   const source = path.join(fixture.root, 'standalone-goal.md');
   const out = path.join(fixture.root, 'standalone-goal-execution-plan.md');
-  writeFileSync(
-    source,
-    [
-      '# Standalone Goal',
-      '',
-      '## File Map',
-      '',
-      '- Modify `src/refund-worker.cjs`. Acceptance: AC-001. Command: CMD-001. Evidence: EVD-001.',
-      '',
-      '## Implementation Task Breakdown',
-      '',
-      '### TASK-001: MUST implement the standalone refund worker. Acceptance: AC-001. Command: CMD-001. Evidence: EVD-001.',
-      '- STOP-001: MUST NOT mutate `.git/**`. Acceptance: AC-002. Command: CMD-001. Evidence: EVD-002.',
-      '',
-      '## Acceptance Criteria',
-      '',
-      '- AC-001: MUST prove the refund worker behavior.',
-      '- AC-002: MUST prove `.git/**` remains unchanged.',
-      '',
-      '## Required Test Commands',
-      '',
-      '- CMD-001: Run `node --test tests/refund-worker.test.cjs`.',
-      '',
-      '## Completion Evidence Packet',
-      '',
-      '- EVD-001: MUST preserve RED/GREEN output for CMD-001.',
-      '- EVD-002: MUST preserve the clean `.git/**` scope proof for CMD-001.',
-      '',
-    ].join('\n'),
-    'utf8'
-  );
+  const canonicalSourceBytes = readFileSync(CANONICAL_SOURCE);
+  copyFileSync(CANONICAL_SOURCE, source);
+  expect(readFileSync(source)).toEqual(canonicalSourceBytes);
   const completed = spawnSync(
     process.execPath,
     [
@@ -144,7 +125,10 @@ function materializeStandaloneAuthority() {
     fixture.cleanup();
     throw new Error(completed.stderr || completed.stdout);
   }
-  return { fixture, generated: JSON.parse(completed.stdout) as Record<string, any> };
+  const generated = JSON.parse(completed.stdout) as Record<string, any>;
+  const frozenAuthority = JSON.parse(readFileSync(generated.activeAuthorityRef.path, 'utf8'));
+  expect(frozenAuthority).not.toHaveProperty('requirementsLineage');
+  return { fixture, generated };
 }
 
 describe('main-agent Goal execution profile-phase admission', () => {

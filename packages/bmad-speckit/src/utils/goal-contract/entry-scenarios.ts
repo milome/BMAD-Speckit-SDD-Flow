@@ -12,6 +12,9 @@ const FOUR_ARTIFACT_ROLES = Object.freeze({
   'goal_execution.md': 'projection',
 });
 
+const CONFIRMED_GOAL_COMPILER_ROUTE = 'shared_goal_execution_ir_compiler';
+const GOAL_CONTRACT_PROFILE_VERSION = '3.1.0';
+
 const ENTRY_SCENARIOS = Object.freeze({
   req_trace_direct: Object.freeze({
     entryId: 'ENTRY-01',
@@ -19,7 +22,7 @@ const ENTRY_SCENARIOS = Object.freeze({
     sourceAuthority: 'confirmed_implementation_confirmation_and_requirement_record',
     requiredOutputs: FOUR_ARTIFACTS,
     finalArtifactAuthority: 'model_packet.json',
-    compilerRoute: 'shared_requirement_trace_compiler',
+    compilerRoute: CONFIRMED_GOAL_COMPILER_ROUTE,
     dualViewPolicy: 'forbidden',
     artifactRoles: FOUR_ARTIFACT_ROLES,
   }),
@@ -30,7 +33,7 @@ const ENTRY_SCENARIOS = Object.freeze({
       'confirmed_implementation_confirmation_and_execution_discipline_profile',
     requiredOutputs: FOUR_ARTIFACTS,
     finalArtifactAuthority: 'model_packet.json',
-    compilerRoute: 'shared_requirement_trace_compiler',
+    compilerRoute: CONFIRMED_GOAL_COMPILER_ROUTE,
     dualViewPolicy: 'forbidden',
     artifactRoles: FOUR_ARTIFACT_ROLES,
   }),
@@ -40,7 +43,7 @@ const ENTRY_SCENARIOS = Object.freeze({
     sourceAuthority: 'confirmed_requirements_architecture_and_readiness_authorities',
     requiredOutputs: Object.freeze(['goal-run-root']),
     finalArtifactAuthority: 'goal_active_execution_authority_tuple',
-    compilerRoute: 'shared_goal_execution_ir_compiler',
+    compilerRoute: CONFIRMED_GOAL_COMPILER_ROUTE,
     dualViewPolicy: 'forbidden',
     artifactRoles: Object.freeze({
       'goal-run-root': 'authority_bundle',
@@ -172,7 +175,7 @@ function validateEntryProfile(profile, entryScenario) {
   if (!scenario) {
     return validationBlock('entry_profile_unknown_entry', { entryScenario });
   }
-  if (profile?.profileVersion !== '3.0.0') {
+  if (profile?.profileVersion !== GOAL_CONTRACT_PROFILE_VERSION) {
     return validationBlock('entry_profile_version_unsupported', {
       profileVersion: profile?.profileVersion ?? null,
     });

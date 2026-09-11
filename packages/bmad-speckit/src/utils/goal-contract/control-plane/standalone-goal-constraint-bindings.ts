@@ -16,25 +16,122 @@ export interface StandaloneGoalConstraintBinding {
 }
 
 const unique = (values: string[]) => [...new Set(values)].sort((a, b) => a.localeCompare(b));
+const refs = (value: unknown): string[] => Array.isArray(value)
+  ? value.filter((item): item is string => typeof item === 'string' && item.length > 0)
+  : [];
 
-export function preflightStandaloneRelationGraph(input: StandaloneGoalSemanticInput): void {
-  let referenceCount = 0;
-  for (const binding of input.technicalSnapshot.constraintBindings ?? []) {
-    for (const field of ['sourceRefs', 'applicableMustRefs', 'applicableAtomRefs', 'premiseRefs'] as const) {
-      for (const ref of binding[field] ?? []) {
-        referenceCount += 1;
-      }
+export function validateStandaloneDeclarationSpecSpans(
+  logicalSpecSpans: Record<string, unknown>[],
+  constraints: Array<StandaloneGoalConstraintBinding | Record<string, unknown>>,
+  sourceSnapshotHash: string,
+  failureClass = 'standalone_goal_declaration_span_invalid',
+): void {
+  const fail = (declarationId?: string): never => {
+    throw Object.assign(new Error(failureClass), {
+      failureClass,
+      ...(declarationId ? { declarationId } : {}),
+    });
+  };
+  const declarations = new Map<string, Record<string, unknown>>();
+  for (const candidate of constraints) {
+    const constraint = candidate as Record<string, unknown>;
+    if (constraint.coverageRole !== 'non_action_declaration' ||
+      refs(constraint.applicableMustRefs).length > 0 || refs(constraint.applicableAtomRefs).length > 0) continue;
+    const declarationId = String(constraint.constraintId ?? '');
+    if (!declarationId || declarations.has(declarationId)) fail(declarationId);
+    declarations.set(declarationId, constraint);
+  }
+  const bound = new Set<string>();
+  for (const span of logicalSpecSpans) {
+    const declarationIds = refs(span.boundDeclarationIds);
+    if (declarationIds.length === 0) continue;
+    if (declarationIds.length !== new Set(declarationIds).size || refs(span.boundObligationIds).length > 0) fail();
+    const spanStart = Number(span.startByte);
+    const spanEnd = Number(span.endByteExclusive);
+    const canonicalNodeRefs = new Set(refs(span.canonicalNodeRefs));
+    for (const declarationId of declarationIds) {
+      const declaration = declarations.get(declarationId);
+      const declarationSource = declaration?.declarationSource as Record<string, unknown> | undefined;
+      const declarationStart = Number(declarationSource?.startByte);
+      const declarationEnd = Number(declarationSource?.endByteExclusive);
+      const declarationLineStart = Number(declarationSource?.lineStart);
+      const declarationLineEnd = Number(declarationSource?.lineEnd);
+      const sourceBlockRefs = unique([
+        ...refs(declaration?.sourceDeclarationRefs),
+        ...refs(declarationSource?.sourceBlockRefs),
+      ]);
+      if (!declaration || bound.has(declarationId) || declaration.coverageRole !== 'non_action_declaration' ||
+        refs(declaration.applicableMustRefs).length > 0 || refs(declaration.applicableAtomRefs).length > 0 ||
+        !declarationSource || declarationSource.sourceArtifactId !== span.sourceArtifactId ||
+        declarationSource.sourceSnapshotHash !== sourceSnapshotHash || span.sourceSnapshotHash !== sourceSnapshotHash ||
+        declarationSource.exactTextHash !== span.exactTextHash ||
+        !Number.isInteger(spanStart) || !Number.isInteger(spanEnd) ||
+        !Number.isInteger(declarationStart) || !Number.isInteger(declarationEnd) ||
+        spanStart !== declarationStart || spanEnd !== declarationEnd ||
+        !Number.isInteger(declarationLineStart) || !Number.isInteger(declarationLineEnd) ||
+        Number(span.lineStart) !== declarationLineStart || Number(span.lineEnd) !== declarationLineEnd ||
+        !canonicalNodeRefs.has(declarationId) ||
+        sourceBlockRefs.length === 0 || sourceBlockRefs.some((ref) => !canonicalNodeRefs.has(ref))) fail(declarationId);
+      bound.add(declarationId);
     }
   }
-  // Bound pathological relation graphs by structural complexity, not external transport size.
-  const nodeCount = input.sourceObligations.length + (input.technicalSnapshot.constraintBindings?.length ?? 0);
-  const edgeBudget = Math.max(100_000, nodeCount * 64);
-  if (referenceCount > edgeBudget) {
-    throw Object.assign(new Error('standalone_relation_graph_edge_budget_exceeded'), {
-      failureClass: 'standalone_relation_graph_edge_budget_exceeded',
-      sourceHash: input.sourcePlanHash, referenceCount, edgeBudget, dispatchState: 'not_dispatched',
-      goalJudgeDispatchCount: 0,
-    });
+  for (const declarationId of declarations.keys()) {
+    if (!bound.has(declarationId)) fail(declarationId);
+  }
+}
+
+export function preflightStandaloneRelationGraph(input: StandaloneGoalSemanticInput): void {
+  validateStandaloneDeclarationSpecSpans(
+    input.logicalSpecSpans,
+    input.technicalSnapshot.constraintBindings ?? [],
+    input.sourceSnapshotHash,
+  );
+  const ownersBySourceRef = new Map<string, Set<string>>();
+  const addOwner = (sourceRef: string, obligationRef: string) => {
+    if (!sourceRef || !obligationRef) return;
+    const owners = ownersBySourceRef.get(sourceRef) ?? new Set<string>();
+    owners.add(obligationRef);
+    ownersBySourceRef.set(sourceRef, owners);
+  };
+  for (const obligation of input.sourceObligations) {
+    const obligationRef = String(obligation.id ?? '');
+    for (const sourceRef of (obligation.specSpanRefs as string[] | undefined) ?? []) {
+      addOwner(sourceRef, obligationRef);
+    }
+  }
+  for (const span of input.logicalSpecSpans) {
+    const sourceRef = String(span.specSpanId ?? span.sourceSpanId ?? '');
+    for (const obligationRef of [
+      ...((span.boundObligationIds as string[] | undefined) ?? []),
+      ...((span.sourceObligationIds as string[] | undefined) ?? []),
+    ]) {
+      addOwner(sourceRef, obligationRef);
+    }
+  }
+  for (const binding of input.technicalSnapshot.constraintBindings ?? []) {
+    const allowedOwners = new Set<string>();
+    for (const sourceRef of [...binding.sourceRefs, ...binding.premiseRefs]) {
+      for (const owner of ownersBySourceRef.get(sourceRef) ?? []) allowedOwners.add(owner);
+    }
+    if (allowedOwners.size === 0 && binding.applicableMustRefs.length > 0) {
+      throw Object.assign(new Error('standalone_goal_constraint_semantic_owner_missing'), {
+        failureClass: 'standalone_goal_constraint_semantic_owner_missing',
+        constraintId: binding.constraintId,
+      });
+    }
+    if (binding.scope === 'global') continue;
+    if (
+      binding.applicableMustRefs.some((ref) => !allowedOwners.has(ref)) ||
+      (binding.applicableAtomRefs ?? []).some((ref) => {
+        const ownerRef = ref.endsWith('-A1') ? ref.slice(0, -3) : '';
+        return !allowedOwners.has(ownerRef);
+      })
+    ) {
+      throw Object.assign(new Error('standalone_goal_constraint_applicability_invalid'), {
+        failureClass: 'standalone_goal_constraint_applicability_invalid',
+        constraintId: binding.constraintId,
+      });
+    }
   }
 }
 
@@ -71,8 +168,9 @@ export function declaredConstraintBuilder(input: StandaloneGoalSemanticInput, ob
       premiseRefs: unique(binding.premiseRefs), sourceRefs: unique(binding.sourceRefs),
       ...(binding.sourceDeclarationRefs ? { sourceDeclarationRefs: unique(binding.sourceDeclarationRefs) } : {}),
       ...(binding.declarationSource ? { declarationSource: structuredClone(binding.declarationSource) } : {}),
-      ...(binding.coverageRole ? { coverageRole: binding.coverageRole, declarationRole: binding.declarationRole,
+      ...(binding.coverageRole ? { coverageRole: binding.coverageRole,
         sourceDeclarationRefs: unique(binding.sourceDeclarationRefs ?? [constraintId]) } : {}),
+      ...(binding.declarationRole ? { declarationRole: binding.declarationRole } : {}),
       scope: binding.scope ?? 'declared', disposition: 'source_declared',
       declarationStatus: 'source_declared_not_executed' };
   };
@@ -87,8 +185,13 @@ export function validateStandaloneExecutionDeclarations(ir: Record<string, unkno
   const known = new Set(obligations.map((row) => row.obligationId));
   const sources = new Set(obligations.flatMap((row) => row.sourceRefs));
   const actions = new Set(obligations.filter((row) => row.executionRole === 'action').map((row) => row.obligationId));
-  const refs = (value: unknown): string[] => Array.isArray(value) ? value as string[] : [];
   const fail = (): never => { throw new Error('goal_execution_declaration_binding_invalid'); };
+  validateStandaloneDeclarationSpecSpans(
+    ir.logicalSpecSpans as Record<string, unknown>[],
+    constraints,
+    String((ir.standaloneLineage as Record<string, unknown>).sourceSnapshotHash ?? ''),
+    'goal_execution_declaration_span_invalid',
+  );
   if (semanticSource.typedExecutionConstraintsHash !== sha256Stable(constraints)) fail();
   const ids = constraints.map((row) => row.constraintId);
   if (new Set(ids).size !== ids.length) fail();

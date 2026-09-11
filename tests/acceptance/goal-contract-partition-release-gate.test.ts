@@ -1,13 +1,30 @@
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
 const CLI = join(ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
 const TSX = join(ROOT, 'node_modules', 'tsx', 'dist', 'cli.mjs');
 const SOURCE_COMMAND = join(ROOT, 'packages', 'bmad-speckit', 'src', 'commands', 'goal-contract.ts');
+const CANONICAL_SOURCE = join(
+  ROOT,
+  'packages',
+  'bmad-speckit',
+  'tests',
+  'fixtures',
+  'standalone-goal',
+  'canonical-source-plan-v1-minimal.md'
+);
 const SOURCE_RUNNER = [
   'const { goalContractCommand } = require(process.argv[1]);',
   'Promise.resolve(goalContractCommand({}, process.argv.slice(2)))',
@@ -16,16 +33,16 @@ const SOURCE_RUNNER = [
 ].join('');
 const fakePartitionId = `partition-${'f'.repeat(64)}`;
 
-function run(args: string[]) {
+function run(args: string[], cwd = ROOT) {
   return spawnSync(process.execPath, [CLI, 'goal-contract', ...args], {
-    cwd: ROOT,
+    cwd,
     encoding: 'utf8',
   });
 }
 
-function runSource(args: string[]) {
+function runSource(args: string[], cwd = ROOT) {
   return spawnSync(process.execPath, [TSX, '-e', SOURCE_RUNNER, SOURCE_COMMAND, ...args], {
-    cwd: ROOT,
+    cwd,
     encoding: 'utf8',
   });
 }
@@ -65,21 +82,19 @@ function replaceCanonicalField(
 
 function prepare() {
   const root = mkdtempSync(join(tmpdir(), 'partition-release-'));
+  const impactRoot = join(root, 'empty-consumer');
   const source = join(root, 'source.md');
   const frozenGoal = join(root, 'frozen-goal-execution-plan.md');
-  writeFileSync(source, [
-    '# Plan', '', `Fixture root: ${root}`, '', '## File Map', '',
-    '- Modify `src/partition-target.ts`.', '', '## Implementation Task Breakdown', '',
-    '- [ ] TASK-1: MUST compile one selected child.', '',
-    '## Acceptance Criteria', '', '- [ ] AC-1: MUST pass.', '',
-    '## Required Test Commands', '', '- [ ] CMD-1: Run node --version.', '',
-    '## Completion Evidence Packet', '', '- [ ] EVD-1: MUST bind current bytes.', '',
-  ].join('\n'), 'utf8');
+  mkdirSync(impactRoot, { recursive: true });
+  const canonicalSourceBytes = readFileSync(CANONICAL_SOURCE);
+  copyFileSync(CANONICAL_SOURCE, source);
+  expect(readFileSync(source)).toEqual(canonicalSourceBytes);
   const frozen = runSource(['generate', '--entry', 'standalone_goal_contract',
-    '--source', source, '--out', frozenGoal, '--json']);
+    '--source', source, '--out', frozenGoal, '--json'], root);
   expect(frozen.status, frozen.stderr || frozen.stdout).toBe(0);
   const governed = run(['partition', '--governed', '--entry', 'standalone_goal_contract',
-    '--source', source, '--goal-contract', frozenGoal, '--json']);
+    '--source', source, '--goal-contract', frozenGoal,
+    '--impact-repository-root', impactRoot, '--json'], root);
   expect(governed.status, governed.stderr || governed.stdout).toBe(0);
   const governedPayload = JSON.parse(governed.stdout);
   const manifest = governedPayload.partitionManifestPath;
@@ -88,7 +103,7 @@ function prepare() {
   const partition = manifestObject.partitions.find(
     (candidate: { partitionId: string }) => candidate.partitionId === partitionId
   );
-  const child = join(ROOT, partition.childContractPath);
+  const child = join(root, partition.childContractPath);
   return {
     root,
     source,
@@ -96,6 +111,7 @@ function prepare() {
     child,
     partitionId,
     authorityRoot: governedPayload.authorityRoot,
+    impactRoot,
     selectionReceiptPath: join(
       governedPayload.unitRoot,
       partition.selectionReceiptPath
@@ -115,26 +131,53 @@ function prepare() {
   };
 }
 
+function assertCleanupDescendant(root: string, candidate: string) {
+  const resolvedRoot = resolve(root);
+  const resolvedCandidate = resolve(candidate);
+  const relativePath = relative(resolvedRoot, resolvedCandidate);
+  if (
+    relativePath === '' ||
+    relativePath === '..' ||
+    relativePath.startsWith(`..${sep}`) ||
+    isAbsolute(relativePath)
+  ) {
+    throw new Error('partition release cleanup path escaped state root');
+  }
+}
+
 function cleanup(state: ReturnType<typeof prepare>) {
-  rmSync(state.root, { recursive: true, force: true });
-  rmSync(state.authorityRoot, { recursive: true, force: true });
+  const resolvedRoot = resolve(state.root);
+  assertCleanupDescendant(resolvedRoot, state.authorityRoot);
+  assertCleanupDescendant(resolvedRoot, state.impactRoot);
+  rmSync(resolvedRoot, { recursive: true, force: true });
 }
 
 function gate(runState: ReturnType<typeof prepare>) {
   return run(['release-gate', '--source', runState.source, '--goal', runState.child,
     '--coverage', runState.coverageReceiptPath, '--generation',
     runState.generationReceiptPath, '--partition-manifest', runState.manifest, '--release-receipt',
-    join(runState.root, 'release.receipt.json'), '--json']);
+    join(runState.root, 'release.receipt.json'), '--json'], runState.root);
 }
 
 describe('partition-aware public release gate', () => {
   it('passes a current child and auto-routes it away from whole-source validation', () => {
     const state = prepare();
+    const escapedRoot = mkdtempSync(join(tmpdir(), 'partition-release-escaped-'));
+    const escapedSentinel = join(escapedRoot, 'sentinel.txt');
+    writeFileSync(escapedSentinel, 'preserve', 'utf8');
     try {
       const result = gate(state);
       expect(result.status, result.stderr || result.stdout).toBe(0);
       expect(JSON.parse(result.stdout).decision).toBe('pass');
+      for (const escapedField of ['authorityRoot', 'impactRoot'] as const) {
+        expect(() => cleanup({ ...state, [escapedField]: escapedRoot })).toThrow(
+          'partition release cleanup path escaped state root'
+        );
+        expect(existsSync(escapedSentinel)).toBe(true);
+        expect(existsSync(state.root)).toBe(true);
+      }
     } finally {
+      rmSync(escapedRoot, { recursive: true, force: true });
       cleanup(state);
     }
   }, 60_000);

@@ -5,8 +5,17 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { buildSourceSnapshot } = require('../src/utils/goal-contract/dual-view-derivation.ts');
 const { extractSourceObligations } = require('../src/utils/goal-contract/source-obligation-extractor.ts');
+const { materializeFullFixture } = require('./fixtures/standalone-goal/canonical-full-fixture.cjs');
 
-const fixture = path.join(__dirname, 'fixtures/standalone-goal/real-source-plan-20260904');
+const materializedFixture = materializeFullFixture({ copyOracleHelpers: true });
+process.on('exit', () => {
+  try {
+    fs.rmSync(materializedFixture.root, { recursive: true, force: true });
+  } catch {
+    // Best-effort cleanup for the process-scoped fixture workspace.
+  }
+});
+const fixture = path.join(materializedFixture.fixtureRoot, 'real-source-plan-20260904');
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const key = (start, end) => `${start}:${end}`;
 let expected;

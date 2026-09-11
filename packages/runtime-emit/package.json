@@ -15,6 +15,7 @@
   },
   "files": [
     "dist",
+    "schemas",
     "write-runtime-context.cjs"
   ],
   "scripts": {

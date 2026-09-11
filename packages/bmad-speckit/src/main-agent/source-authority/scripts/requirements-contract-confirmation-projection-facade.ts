@@ -17,6 +17,7 @@ import {
   sha256Stable,
   sha256Text,
   stableStringify,
+  type RequirementsContractCoreArtifactFreeze,
 } from './requirements-contract-semantic-resolver';
 import { verifyRequirementsContractCoreArtifactReadback } from './requirements-contract-semantic-conservation-verifier';
 
@@ -144,7 +145,7 @@ export interface ProductionImplementationConfirmationProjectionInput {
       semanticRevisionId: string;
     };
     frozenSemanticIr: Record<string, unknown>;
-    semanticIrFreeze: Record<string, unknown>;
+    semanticIrFreeze: RequirementsContractCoreArtifactFreeze;
     readbackVerified: true;
   };
 }

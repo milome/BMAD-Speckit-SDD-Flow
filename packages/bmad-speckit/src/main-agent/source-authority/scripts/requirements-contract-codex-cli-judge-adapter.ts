@@ -83,6 +83,23 @@ interface CodexCliLaunch {
   launchEntryPath: string | null;
 }
 
+export interface CodexCliJudgeOrphanRecoveryEvidence {
+  stdoutBytes: number;
+  stdoutHash: string;
+  stderrBytes: number;
+  stderrHash: string;
+}
+
+export class CodexCliJudgeOrphanTransportFailure extends Error {
+  readonly code = 'CODEX_CLI_JUDGE_ORPHAN_TRANSPORT_FAILURE';
+  readonly issueCode = 'judge_provider_transport_failed';
+
+  constructor(readonly orphanRecoveryEvidence: CodexCliJudgeOrphanRecoveryEvidence) {
+    super('codex_cli_judge_orphan_transport_failure');
+    this.name = 'CodexCliJudgeOrphanTransportFailure';
+  }
+}
+
 const HASH_PREFIX = 'sha256:';
 const MAX_STDOUT_BYTES = 32 * 1024 * 1024;
 const MAX_STDERR_BYTES = 4 * 1024 * 1024;
@@ -943,6 +960,156 @@ function parseTranscript(stdout: string): JsonRecord[] {
   });
 }
 
+const RECOVERY_ARTIFACT_NAMES = new Set([
+  'cli-judge-execution-receipt.json',
+  'codex-cli-stderr.log',
+  'codex-cli-stdout.jsonl',
+  'codex-cli-transcript.jsonl',
+  'codex-home',
+  'evidence-snapshot',
+  'judge-invocation-receipt.json',
+  'structured-output.json',
+  'structured-output.schema.json',
+]);
+
+const TRANSPORT_FAILURE_MESSAGE =
+  /(?:servers? overloaded|server overload|stream (?:disconnected|closed)|connection (?:reset|refused)|network error|request timeout|socket hang up|timed out|temporarily unavailable|service unavailable)/iu;
+
+function recoveryStateInvalid(): never {
+  throw new Error('codex_cli_judge_orphan_recovery_state_invalid');
+}
+
+function readRecoveryFile(filePath: string, maximumBytes: number): Buffer {
+  if (!fs.existsSync(filePath)) recoveryStateInvalid();
+  const status = fs.lstatSync(filePath);
+  if (!status.isFile() || status.isSymbolicLink() || status.size > maximumBytes) {
+    recoveryStateInvalid();
+  }
+  return fs.readFileSync(filePath);
+}
+
+function parseRecoveryReceipt(filePath: string): JsonRecord {
+  try {
+    return record(JSON.parse(readRecoveryFile(filePath, MAX_STDERR_BYTES).toString('utf8')), 'invalid');
+  } catch {
+    return recoveryStateInvalid();
+  }
+}
+
+function assertReceiptPathsWithinRoot(receipt: JsonRecord, root: string): void {
+  for (const key of [
+    'stdoutPath',
+    'stderrPath',
+    'transcriptPath',
+    'outputPath',
+    'structuredOutputSchemaPath',
+    'snapshotManifestPath',
+    'runtimeHomePath',
+  ]) {
+    const value = receipt[key];
+    if (value === undefined || value === null) continue;
+    if (typeof value !== 'string' || !value.trim() || !isWithin(root, path.resolve(root, value))) {
+      recoveryStateInvalid();
+    }
+  }
+}
+
+function assertCompletedAttemptReceipts(outputDir: string, root: string): void {
+  const invocationPath = path.join(outputDir, 'judge-invocation-receipt.json');
+  const executionPath = path.join(outputDir, 'cli-judge-execution-receipt.json');
+  if (!fs.existsSync(invocationPath) || !fs.existsSync(executionPath)) recoveryStateInvalid();
+  const invocation = parseRecoveryReceipt(invocationPath);
+  const execution = parseRecoveryReceipt(executionPath);
+  try {
+    validateInvocationReceipt(invocation);
+    assertReceiptPathsWithinRoot(execution, root);
+    validateExecutionReceipt(execution);
+    if (invocation.transportEvidenceHash !== sha256(stableStringify(execution))) {
+      recoveryStateInvalid();
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message === 'codex_cli_judge_orphan_recovery_state_invalid') {
+      throw error;
+    }
+    recoveryStateInvalid();
+  }
+}
+
+function terminalTransportMessage(event: JsonRecord): string {
+  const direct = typeof event.message === 'string' ? event.message : '';
+  const nested =
+    event.error && typeof event.error === 'object' && !Array.isArray(event.error)
+      ? (event.error as JsonRecord)
+      : null;
+  const nestedMessage = nested && typeof nested.message === 'string' ? nested.message : '';
+  return `${direct}\n${nestedMessage}`.trim();
+}
+
+function recoverExistingOutputDirectory(root: string, outputDir: string): never {
+  const rootRealPath = fs.realpathSync(root);
+  const outputRealPath = fs.realpathSync(outputDir);
+  if (!isWithin(rootRealPath, outputRealPath) || !fs.statSync(outputRealPath).isDirectory()) {
+    recoveryStateInvalid();
+  }
+  const names = fs.readdirSync(outputRealPath);
+  if (!names.some((name) => RECOVERY_ARTIFACT_NAMES.has(name))) {
+    throw new Error('codex_cli_judge_output_dir_already_exists');
+  }
+
+  const hasInvocationReceipt = names.includes('judge-invocation-receipt.json');
+  const hasExecutionReceipt = names.includes('cli-judge-execution-receipt.json');
+  if (hasInvocationReceipt || hasExecutionReceipt) {
+    assertCompletedAttemptReceipts(outputRealPath, rootRealPath);
+    throw new Error('codex_cli_judge_output_dir_already_exists');
+  }
+  if (names.includes('structured-output.json')) recoveryStateInvalid();
+  if (!names.includes('codex-cli-stdout.jsonl') || !names.includes('codex-cli-stderr.log')) {
+    throw new Error('codex_cli_judge_interrupted_unknown_outcome');
+  }
+
+  const stdout = readRecoveryFile(
+    path.join(outputRealPath, 'codex-cli-stdout.jsonl'),
+    MAX_STDOUT_BYTES
+  );
+  const stderr = readRecoveryFile(
+    path.join(outputRealPath, 'codex-cli-stderr.log'),
+    MAX_STDERR_BYTES
+  );
+  let events: JsonRecord[];
+  try {
+    events = parseTranscript(stdout.toString('utf8'));
+  } catch {
+    return recoveryStateInvalid();
+  }
+  if (names.includes('codex-cli-transcript.jsonl')) {
+    const transcript = readRecoveryFile(
+      path.join(outputRealPath, 'codex-cli-transcript.jsonl'),
+      MAX_STDOUT_BYTES
+    );
+    if (!transcript.equals(stdout)) recoveryStateInvalid();
+  }
+
+  const terminal = events.at(-1);
+  const errorEvents = events.filter((event) => event.type === 'error');
+  const unambiguousTerminalFailure =
+    events.filter((event) => event.type === 'thread.started').length === 1 &&
+    events.some((event) => event.type === 'turn.started') &&
+    !events.some((event) => event.type === 'turn.completed') &&
+    errorEvents.length >= 1 &&
+    terminal?.type === 'turn.failed' &&
+    TRANSPORT_FAILURE_MESSAGE.test(terminalTransportMessage(terminal)) &&
+    errorEvents.every((event) => TRANSPORT_FAILURE_MESSAGE.test(terminalTransportMessage(event)));
+  if (!unambiguousTerminalFailure) {
+    throw new Error('codex_cli_judge_interrupted_unknown_outcome');
+  }
+  throw new CodexCliJudgeOrphanTransportFailure({
+    stdoutBytes: stdout.byteLength,
+    stdoutHash: sha256(stdout),
+    stderrBytes: stderr.byteLength,
+    stderrHash: sha256(stderr),
+  });
+}
+
 function providerRequestId(events: JsonRecord[]): string {
   const ids = events
     .filter((event) => event.type === 'thread.started')
@@ -1048,7 +1215,7 @@ export function createCodexCliJudgeAdapter(dependencies: CodexCliJudgeAdapterDep
         'codex_cli_judge_output_path_escape'
       );
       if (fs.existsSync(outputDir)) {
-        throw new Error('codex_cli_judge_output_dir_already_exists');
+        recoverExistingOutputDirectory(root, outputDir);
       }
       fs.mkdirSync(outputDir, { recursive: true });
       const snapshot = materializeEvidenceSnapshot({ context, request, files });

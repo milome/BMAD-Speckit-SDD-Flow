@@ -324,117 +324,110 @@ function verifySpanAgainstSource(span, source) {
   }
 }
 
-function resolveSpecSpan(request = {}) {
+function resolveSpecSpans(request = {}) {
   const registry = request.registry;
   if (
     !registry ||
     !Array.isArray(registry.specSpans) ||
-    !Array.isArray(registry.sourceSnapshots)
+    !Array.isArray(registry.sourceSnapshots) ||
+    !Array.isArray(request.specSpanIds)
   ) {
     throw failure('spec_span_registry_invalid');
   }
-  const span = registry.specSpans.find(
-    (candidate) => candidate.specSpanId === request.specSpanId
+  const spansById = new Map(registry.specSpans.map((span) => [span.specSpanId, span]));
+  const sourcesById = new Map(
+    registry.sourceSnapshots.map((source) => [source.sourceArtifactId, source])
   );
-  if (!span) throw failure('spec_span_not_found');
-  const source = registry.sourceSnapshots.find(
-    (candidate) => candidate.sourceArtifactId === span.sourceArtifactId
-  );
-  if (!source) {
-    throw failure('spec_span_source_identity_mismatch', {
-      sourceArtifactId: span.sourceArtifactId,
-    });
+  const bytesBySourceId = new Map();
+  for (const source of registry.sourceSnapshots) {
+    const bytes = sourceBytes(source);
+    if (sha256(bytes) !== source.sourceSnapshotHash || bytes.length !== source.sourceBytes) {
+      throw failure('source_snapshot_hash_mismatch', { sourceArtifactId: source.sourceArtifactId });
+    }
+    bytesBySourceId.set(source.sourceArtifactId, bytes);
   }
-  const bytes = sourceBytes(source);
-  verifySpanAgainstSource(span, source);
-  if (
-    sha256(bytes) !== source.sourceSnapshotHash ||
-    bytes.length !== source.sourceBytes
-  ) {
-    throw failure('source_snapshot_hash_mismatch', {
-      sourceArtifactId: source.sourceArtifactId,
-    });
-  }
-  if (
-    !Number.isInteger(span.startByte) ||
-    !Number.isInteger(span.endByteExclusive) ||
-    span.startByte < 0 ||
-    span.endByteExclusive <= span.startByte ||
-    span.endByteExclusive > bytes.length
-  ) {
-    throw failure('spec_span_range_invalid');
-  }
-  const exactBytes = bytes.subarray(span.startByte, span.endByteExclusive);
-  const exactText = decodeExactUtf8(exactBytes);
-  if (sha256(exactBytes) !== span.exactTextHash) {
-    throw failure('spec_span_exact_hash_mismatch');
-  }
-  if (
-    sha256(Buffer.from(normalizeLineEndings(exactText), 'utf8')) !==
-    span.normalizedTextHash
-  ) {
-    throw failure('spec_span_normalized_hash_mismatch');
-  }
-  if (
-    `spec-span-${hashControlPlaneValue(
-      specSpanIdentityPayload(span)
-    ).slice(7)}` !== span.specSpanId ||
-    hashControlPlaneValue(specSpanProvenancePayload(span)) !==
-      span.compilerProvenanceHash
-  ) {
-    throw failure('spec_span_provenance_invalid');
+  for (const specSpanId of request.specSpanIds) {
+    const span = spansById.get(specSpanId);
+    if (!span) throw failure('spec_span_not_found');
+    const source = sourcesById.get(span.sourceArtifactId);
+    if (!source) {
+      throw failure('spec_span_source_identity_mismatch', { sourceArtifactId: span.sourceArtifactId });
+    }
+    verifySpanAgainstSource(span, source);
   }
   const payload = {
     schemaVersion: registry.schemaVersion,
-    orderedSourceSnapshotSetHash:
-      registry.orderedSourceSnapshotSetHash,
+    orderedSourceSnapshotSetHash: registry.orderedSourceSnapshotSetHash,
     sourceSnapshots: registry.sourceSnapshots,
     specSpans: registry.specSpans,
   };
   if (hashControlPlaneValue(payload) !== registry.specSpanRegistryHash) {
     throw failure('spec_span_registry_hash_mismatch');
   }
-
-  let stale = false;
+  const currentSourcesById = new Map();
   if (request.currentSources !== undefined) {
     if (!Array.isArray(request.currentSources)) {
       throw failure('spec_span_current_sources_invalid');
     }
-    const matches = request.currentSources.filter(
-      (candidate) => candidate.sourceArtifactId === source.sourceArtifactId
-    );
-    if (matches.length > 1) {
-      throw failure('spec_span_current_sources_invalid', {
-        reason: 'duplicate_source_artifact_id',
-      });
-    }
-    if (matches.length === 1) {
-      if (!Buffer.isBuffer(matches[0].rawBytes)) {
+    for (const source of request.currentSources) {
+      if (!source || typeof source.sourceArtifactId !== 'string' ||
+        currentSourcesById.has(source.sourceArtifactId)) {
+        throw failure('spec_span_current_sources_invalid', { reason: 'duplicate_source_artifact_id' });
+      }
+      if (!Buffer.isBuffer(source.rawBytes)) {
         throw failure('spec_span_current_sources_invalid', {
           reason: 'raw_bytes_missing',
         });
       }
-      stale = sha256(matches[0].rawBytes) !== source.sourceSnapshotHash;
+      currentSourcesById.set(source.sourceArtifactId, source);
     }
   }
-  return deepFreeze({
-    schemaVersion: 'goal-contract-resolved-source-citation/v1',
-    specSpanId: span.specSpanId,
-    sourceArtifactId: source.sourceArtifactId,
-    sourceSnapshotHash: source.sourceSnapshotHash,
-    sourceRole: source.sourceRole,
-    namespace: source.namespace,
-    startByte: span.startByte,
-    endByteExclusive: span.endByteExclusive,
-    exactText,
-    exactTextHash: span.exactTextHash,
-    normalizedTextHash: span.normalizedTextHash,
-    stale,
-    staleSourceArtifactId: stale ? source.sourceArtifactId : null,
+  return request.specSpanIds.map((specSpanId) => {
+    const span = spansById.get(specSpanId);
+    if (!span) throw failure('spec_span_not_found');
+    const source = sourcesById.get(span.sourceArtifactId);
+    if (!source) {
+      throw failure('spec_span_source_identity_mismatch', { sourceArtifactId: span.sourceArtifactId });
+    }
+    const bytes = bytesBySourceId.get(source.sourceArtifactId);
+    if (!Number.isInteger(span.startByte) || !Number.isInteger(span.endByteExclusive) ||
+      span.startByte < 0 || span.endByteExclusive <= span.startByte ||
+      span.endByteExclusive > bytes.length) throw failure('spec_span_range_invalid');
+    const exactBytes = bytes.subarray(span.startByte, span.endByteExclusive);
+    const exactText = decodeExactUtf8(exactBytes);
+    if (sha256(exactBytes) !== span.exactTextHash) throw failure('spec_span_exact_hash_mismatch');
+    if (sha256(Buffer.from(normalizeLineEndings(exactText), 'utf8')) !== span.normalizedTextHash) {
+      throw failure('spec_span_normalized_hash_mismatch');
+    }
+    if (`spec-span-${hashControlPlaneValue(specSpanIdentityPayload(span)).slice(7)}` !==
+      span.specSpanId || hashControlPlaneValue(specSpanProvenancePayload(span)) !==
+      span.compilerProvenanceHash) throw failure('spec_span_provenance_invalid');
+    const currentSource = currentSourcesById.get(source.sourceArtifactId);
+    const stale = currentSource ? sha256(currentSource.rawBytes) !== source.sourceSnapshotHash : false;
+    return deepFreeze({
+      schemaVersion: 'goal-contract-resolved-source-citation/v1',
+      specSpanId: span.specSpanId,
+      sourceArtifactId: source.sourceArtifactId,
+      sourceSnapshotHash: source.sourceSnapshotHash,
+      sourceRole: source.sourceRole,
+      namespace: source.namespace,
+      startByte: span.startByte,
+      endByteExclusive: span.endByteExclusive,
+      exactText,
+      exactTextHash: span.exactTextHash,
+      normalizedTextHash: span.normalizedTextHash,
+      stale,
+      staleSourceArtifactId: stale ? source.sourceArtifactId : null,
+    });
   });
+}
+
+function resolveSpecSpan(request = {}) {
+  return resolveSpecSpans({ ...request, specSpanIds: [request.specSpanId] })[0];
 }
 
 module.exports = {
   compileSpecSpanRegistry,
   resolveSpecSpan,
+  resolveSpecSpans,
 };

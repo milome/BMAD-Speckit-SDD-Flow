@@ -80,6 +80,7 @@
     "partitionSetHash": { "$ref": "#/$defs/hash" },
     "partitionId": { "$ref": "#/$defs/partitionId" },
     "partitionRole": { "type": "string", "minLength": 1 },
+    "estimatedClosureMinutes": { "type": "integer", "minimum": 1, "maximum": 239 },
     "selectionReceiptPath": { "$ref": "#/$defs/path" },
     "selectionReceiptHash": { "$ref": "#/$defs/hash" },
     "selectionSetHash": { "$ref": "#/$defs/hash" },

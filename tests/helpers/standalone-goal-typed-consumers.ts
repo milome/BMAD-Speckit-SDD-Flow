@@ -3,7 +3,129 @@ import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { compileStandaloneGoalExecution } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/standalone-goal-semantic-ir';
+import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 import { normativeRoleInput } from './standalone-goal-normative-roles';
+
+function attachCanonicalRequirementGraph(value: ReturnType<typeof normativeRoleInput>) {
+  const sourceRows = value.sourceObligations.map((row, index) => {
+    const sequence = String(index + 1).padStart(3, '0');
+    const primaryId = row.executionRole === 'action'
+      ? `TASK-STANDALONE-${sequence}`
+      : row.polarity === 'forbidden'
+        ? `NEG-STANDALONE-${sequence}`
+        : `REQ-STANDALONE-${sequence}`;
+    return {
+      row,
+      primaryId,
+      ownerId: row.executionRole === 'action' ? `REQ-STANDALONE-${sequence}` : primaryId,
+      sourceSpanRef: `SPAN-${sha256Stable(String(row.id)).slice(7, 23).toUpperCase()}`,
+    };
+  });
+  const canonicalRefBySourceId = new Map(sourceRows.map(({ row, ownerId }) => [String(row.id), ownerId]));
+  const relation = (type: string, fromRef: string, toRef: string, scope: string, sourceSpanRef: string) => ({
+    id: `REL-${sha256Stable({ type, fromRef, toRef, scope }).slice(7, 23).toUpperCase()}`,
+    type,
+    fromRef,
+    toRef,
+    scope,
+    sourceSpanRefs: [sourceSpanRef],
+  });
+  const applicabilityFor = (conditions: unknown) => {
+    if (!Array.isArray(conditions) || conditions.length === 0) return { mode: 'always' };
+    return {
+      mode: 'conditional',
+      condition: conditions.map((condition) => {
+        if (typeof condition === 'string') return condition;
+        if (condition && typeof condition === 'object' && typeof (condition as Record<string, unknown>).text === 'string') {
+          return String((condition as Record<string, unknown>).text);
+        }
+        return JSON.stringify(condition);
+      }).join(' AND '),
+    };
+  };
+  const nodes = sourceRows.flatMap(({ row, primaryId, ownerId, sourceSpanRef }) => {
+    const sourceApplicability = row.applicability as Record<string, unknown> | undefined;
+    const scope = sourceApplicability?.scope === 'global' ? 'global' : 'local';
+    const common = {
+      title: String(row.id),
+      normativeStrength: String(row.normativeStrength).toUpperCase(),
+      polarity: row.polarity,
+      applicability: applicabilityFor(row.conditions),
+      scope,
+      references: {},
+      sourceSpanRefs: [sourceSpanRef],
+    };
+    const primary = {
+      ...common,
+      id: primaryId,
+      kind: row.executionRole === 'action' ? 'TASK' : row.polarity === 'forbidden' ? 'NEG' : 'REQ',
+      statement: String(row.exactText),
+      aliases: [String(row.id)],
+      ownerRef: row.executionRole === 'action' ? ownerId : null,
+      attributes: { executionRole: row.executionRole },
+    };
+    if (row.executionRole !== 'action') return [primary];
+    return [{
+      ...common,
+      id: ownerId,
+      kind: 'REQ',
+      statement: String(row.requiredOutcome),
+      aliases: [],
+      ownerRef: null,
+      attributes: { executionRole: 'requirement' },
+    }, primary];
+  });
+  const relations = sourceRows.flatMap(({ row, primaryId, ownerId, sourceSpanRef }) => {
+    const sourceApplicability = row.applicability as Record<string, unknown> | undefined;
+    const scope = sourceApplicability?.scope === 'global' ? 'global' : 'local';
+    const rows = row.executionRole === 'action' ? [
+      relation('owned_by', primaryId, ownerId, scope, sourceSpanRef),
+      relation('implemented_by', ownerId, primaryId, scope, sourceSpanRef),
+    ] : [];
+    const obligationRefs = Array.isArray(sourceApplicability?.obligationRefs)
+      ? sourceApplicability.obligationRefs.map(String)
+      : [];
+    rows.push(...obligationRefs.map((sourceRef) => relation(
+      'applies_to_requirement',
+      primaryId,
+      canonicalRefBySourceId.get(sourceRef) ?? sourceRef,
+      scope,
+      sourceSpanRef
+    )));
+    if (scope === 'global') {
+      rows.push(relation('globally_authorized_by', primaryId, ownerId, scope, sourceSpanRef));
+      if (primaryId !== ownerId) {
+        rows.push(relation('globally_authorized_by', ownerId, ownerId, scope, sourceSpanRef));
+      }
+    }
+    return rows;
+  });
+  const aliases = sourceRows.map(({ row, primaryId, sourceSpanRef }) => ({
+    alias: String(row.id),
+    canonicalRef: primaryId,
+    sourceSpanRefs: [sourceSpanRef],
+  }));
+  const graph = {
+    schemaVersion: 'CanonicalRequirementGraph/v1',
+    sourcePlanId: 'PLAN-STANDALONE-TYPED-CONSUMERS',
+    sourcePlanVersion: 'standalone-source-plan/v1',
+    goal: 'Exercise typed standalone Goal consumers.',
+    scope: value.technicalSnapshot.targetPaths,
+    nonGoals: value.technicalSnapshot.forbiddenPaths,
+    nodes,
+    relations,
+    aliases,
+    graphHash: '',
+  };
+  const { graphHash: _graphHash, ...payload } = graph;
+  graph.graphHash = sha256Stable({
+    ...payload,
+    nodes: nodes.map(({ sourceSpanRefs: _sourceSpanRefs, ...node }) => node),
+    relations: relations.map(({ sourceSpanRefs: _sourceSpanRefs, ...row }) => row),
+    aliases: aliases.map(({ sourceSpanRefs: _sourceSpanRefs, ...row }) => row),
+  });
+  value.canonicalRequirementGraph = graph;
+}
 
 export async function typedTwoActionExecution(options: { localBoundary?: boolean } = {}) {
   const value = normativeRoleInput();
@@ -11,7 +133,18 @@ export async function typedTwoActionExecution(options: { localBoundary?: boolean
     exactText: 'Implement a separate import.', requiredOutcome: 'Import preserves every CSV row.',
     specSpanRefs: ['SPAN-MUST-002'], applicability: { scope: 'global', sourceRefs: ['SPAN-MUST-002'] } });
   value.sourceObligations[2].applicability = { scope: 'obligations', obligationRefs: ['MUST-001'], sourceRefs: ['SPAN-GUIDE-001'] };
-  value.logicalSpecSpans.push({ specSpanId: 'SPAN-MUST-002', boundObligationIds: ['MUST-002'], evidenceClaimRefs: [] });
+  value.logicalSpecSpans.push({
+    specSpanId: 'SPAN-MUST-002',
+    sourceArtifactId: 'fixture:standalone-normative-roles',
+    sourceSnapshotHash: value.sourceSnapshotHash,
+    startByte: 80,
+    endByteExclusive: 88,
+    lineStart: 6,
+    lineEnd: 6,
+    exactTextHash: `sha256:${'7'.repeat(64)}`,
+    boundObligationIds: ['MUST-002'],
+    evidenceClaimRefs: [],
+  });
   value.technicalSnapshot.targetPaths = ['src/export.ts', 'src/import.ts'];
   value.technicalSnapshot.commandRecords.push({ commandId: 'CMD-import', invocation: 'npm test -- import' });
   value.technicalSnapshot.artifactRecords = [];
@@ -22,6 +155,7 @@ export async function typedTwoActionExecution(options: { localBoundary?: boolean
     value.sourceObligations[1].applicability = { scope: 'obligations', obligationRefs: ['MUST-001'], sourceRefs: ['SPAN-NEG-001'] };
     value.technicalSnapshot.constraintBindings.find((row) => row.constraintId === 'STOP-standalone-1')!.scope = 'declared';
   }
+  attachCanonicalRequirementGraph(value);
   return compileStandaloneGoalExecution(value);
 }
 
@@ -41,11 +175,23 @@ export async function typedAggregateExecution() {
       specSpanRefs: [`SPAN-${id}`], applicability: { scope: 'global', sourceRefs: [`SPAN-${id}`] },
       taskExecution: { executionClass: 'aggregate_only', ownedProductionPaths: '`none`', aggregateGatePhase: phase,
         aggregateValidationCommands: [commandId], sourceRefs: [`SPAN-${id}`] } });
-    value.logicalSpecSpans.push({ specSpanId: `SPAN-${id}`, boundObligationIds: [id], evidenceClaimRefs: [] });
+    value.logicalSpecSpans.push({
+      specSpanId: `SPAN-${id}`,
+      sourceArtifactId: 'fixture:standalone-normative-roles',
+      sourceSnapshotHash: value.sourceSnapshotHash,
+      startByte: 96 + index * 16,
+      endByteExclusive: 104 + index * 16,
+      lineStart: 7 + index,
+      lineEnd: 7 + index,
+      exactTextHash: `sha256:${String(index + 8).repeat(64)}`,
+      boundObligationIds: [id],
+      evidenceClaimRefs: [],
+    });
     value.technicalSnapshot.commandRecords.push({ commandId, invocation: `node -e "process.exit(0)"` });
     value.technicalSnapshot.constraintBindings.push({ constraintId: commandId, sourceRefs: [`SPAN-${id}`],
       applicableMustRefs: [id], applicableAtomRefs: [`${id}-A1`], premiseRefs: [`SPAN-${id}`] });
   }
+  attachCanonicalRequirementGraph(value);
   return compileStandaloneGoalExecution(value);
 }
 

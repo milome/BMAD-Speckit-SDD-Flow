@@ -1,12 +1,20 @@
 const { describe, it, before } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { buildSourceSnapshot } = require('../src/utils/goal-contract/dual-view-derivation.ts');
 const { extractSourceObligations } = require('../src/utils/goal-contract/source-obligation-extractor.ts');
+const { materializeFullFixture } = require('./fixtures/standalone-goal/canonical-full-fixture.cjs');
 
-const fixturePath = path.join(__dirname, 'fixtures/standalone-goal/real-source-plan-20260904.md');
+const materializedFixture = materializeFullFixture();
+process.on('exit', () => {
+  try {
+    fs.rmSync(materializedFixture.root, { recursive: true, force: true });
+  } catch {
+    // Best-effort cleanup for the process-scoped fixture workspace.
+  }
+});
+const fixturePath = materializedFixture.legacySourcePath;
 const sourceHash = '06f1c8f44fdfea09fb0f12832cd0a319c7938c79aac91aae48f44b54dc731d4a';
 
 // Source-reviewed facts, not a complete semantic oracle or a compiler-generated golden.

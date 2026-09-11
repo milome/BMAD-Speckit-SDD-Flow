@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/canonical-requirement-graph-v2.schema.json",
+  "title": "CanonicalRequirementGraph/v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "sourceAuthority", "nodes", "relations", "aliases", "semanticHash", "graphHash"],
+  "properties": {
+    "schemaVersion": { "const": "CanonicalRequirementGraph/v2" },
+    "sourceAuthority": { "$ref": "#/$defs/sourceAuthority" },
+    "nodes": { "type": "array", "items": { "$ref": "#/$defs/node" } },
+    "relations": { "type": "array", "items": { "$ref": "#/$defs/relation" } },
+    "aliases": { "type": "array", "items": { "$ref": "#/$defs/alias" } },
+    "semanticHash": { "$ref": "#/$defs/hash" },
+    "graphHash": { "$ref": "#/$defs/hash" },
+    "typedSourceGraphHash": { "$ref": "#/$defs/hash" },
+    "upstreamCanonicalRequirementGraphHash": { "$ref": "#/$defs/hash" },
+    "derivationManifestHash": { "$ref": "#/$defs/hash" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "sourceAuthority": {
+            "properties": { "kind": { "const": "requirements_semantic_ir" } },
+            "required": ["kind"]
+          }
+        }
+      },
+      "then": { "required": ["typedSourceGraphHash"] }
+    }
+  ],
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "strings": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "sourceAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "schemaVersion", "authorityId", "authorityHash"],
+      "properties": {
+        "kind": { "enum": ["standalone_source_plan", "requirements_semantic_ir"] },
+        "schemaVersion": { "type": "string", "minLength": 1 },
+        "authorityId": { "type": "string", "minLength": 1 },
+        "authorityHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "kind": {
+      "enum": ["REQ", "NFR", "NEG", "OUT", "TASK", "AC", "PATH", "CMD", "EVD", "ART", "DEP", "STOP"]
+    },
+    "canonicalId": {
+      "type": "string",
+      "pattern": "^(?:(?:REQ|NFR|NEG|OUT|TASK|CMD|EVD|ART|PATH|DEP|STOP)-[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-[0-9]{3}|AC-[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-[0-9]{3}(?:-S[0-9]{2})?)$"
+    },
+    "applicability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": { "enum": ["always", "conditional"] },
+        "condition": { "type": "string", "minLength": 1 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "mode": { "const": "conditional" } } },
+          "then": { "required": ["condition"] }
+        }
+      ]
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "title", "statement", "normativeStrength", "polarity", "applicability", "scope", "aliases", "ownerRef", "attributes"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": { "$ref": "#/$defs/kind" },
+        "title": { "type": "string", "minLength": 1 },
+        "statement": { "type": "string", "minLength": 1 },
+        "normativeStrength": { "enum": ["MUST", "SHOULD", "MAY", "DESCRIPTIVE"] },
+        "polarity": { "enum": ["required", "forbidden", "excluded", "permitted", "descriptive", "preserve", "mixed"] },
+        "applicability": { "$ref": "#/$defs/applicability" },
+        "scope": { "enum": ["local", "global"] },
+        "aliases": { "$ref": "#/$defs/strings" },
+        "ownerRef": { "type": ["string", "null"] },
+        "attributes": { "type": "object" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "attributes": {
+                "properties": {
+                  "compatibilityIdentity": { "const": "requirements_typed_source_id" }
+                },
+                "required": ["compatibilityIdentity"]
+              }
+            },
+            "required": ["attributes"]
+          },
+          "else": { "properties": { "id": { "$ref": "#/$defs/canonicalId" } } }
+        }
+      ]
+    },
+    "relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "fromRef", "toRef", "scope"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "enum": ["owned_by", "applies_to_requirement", "implemented_by", "accepted_by", "uses_path", "validated_by", "evidenced_by", "produces_artifact", "depends_on", "guarded_by", "produced_by", "consumed_by", "includes_command", "globally_authorized_by"] },
+        "fromRef": { "type": "string", "minLength": 1 },
+        "toRef": { "type": "string", "minLength": 1 },
+        "scope": { "enum": ["local", "global"] }
+      }
+    },
+    "alias": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["alias", "canonicalRef"],
+      "properties": {
+        "alias": { "type": "string", "minLength": 1 },
+        "canonicalRef": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

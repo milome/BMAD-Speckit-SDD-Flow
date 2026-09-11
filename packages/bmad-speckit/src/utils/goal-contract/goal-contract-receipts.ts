@@ -58,6 +58,7 @@ function buildPartitionChildCoverageReceipt({
   partitionManifestHash,
   selectionReceiptHash,
   globalCoverageReceiptHash,
+  estimatedClosureMinutes,
   selectedPrimaryObligationIds,
   inheritedConstraintIds,
   excludedObligationIds,
@@ -69,6 +70,11 @@ function buildPartitionChildCoverageReceipt({
   const orphanTasks = uniqueStrings(orphanGeneratedTaskIds);
   const orphanAcceptance = uniqueStrings(orphanGeneratedAcceptanceIds);
   const blockingReasons = [
+    ...(!Number.isInteger(estimatedClosureMinutes) ||
+    estimatedClosureMinutes < 1 ||
+    estimatedClosureMinutes >= 240
+      ? ['partition_child_closure_budget_invalid']
+      : []),
     ...(unmapped.length > 0 ? ['partition_child_selected_obligation_unmapped'] : []),
     ...(orphanTasks.length > 0 ? ['partition_child_generated_task_orphaned'] : []),
     ...(orphanAcceptance.length > 0
@@ -81,6 +87,7 @@ function buildPartitionChildCoverageReceipt({
     partitionManifestHash,
     selectionReceiptHash,
     globalCoverageReceiptHash,
+    estimatedClosureMinutes,
     selectedPrimaryObligationIds: uniqueStrings(
       selectedPrimaryObligationIds
     ),
@@ -129,6 +136,7 @@ function buildPartitionChildGenerationReceipt({
   partitionSetHash,
   partitionId,
   partitionRole,
+  estimatedClosureMinutes,
   selectionReceiptPath,
   selectionReceiptHash,
   selectionSetHash,
@@ -159,6 +167,13 @@ function buildPartitionChildGenerationReceipt({
     }
   }
   const blockingReasons = [];
+  if (
+    !Number.isInteger(estimatedClosureMinutes) ||
+    estimatedClosureMinutes < 1 ||
+    estimatedClosureMinutes >= 240
+  ) {
+    blockingReasons.push('partition_child_closure_budget_invalid');
+  }
   if (
     rendererAudit?.requiredSlotsPassed !== true ||
     rendererAudit?.requiredSectionsPassed !== true ||
@@ -203,6 +218,7 @@ function buildPartitionChildGenerationReceipt({
     partitionSetHash,
     partitionId,
     partitionRole,
+    estimatedClosureMinutes,
     selectionReceiptPath,
     selectionReceiptHash,
     selectionSetHash,

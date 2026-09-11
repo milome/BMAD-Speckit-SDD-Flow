@@ -70,7 +70,9 @@
         "sourceDeclarationRefs": { "$ref": "#/$defs/refs" },
         "conditions": { "type": "array" },
         "scope": { "type": "object" },
-        "modality": { "enum": ["required", "suggested", "prohibited", "template", "context"] }
+        "modality": { "enum": ["required", "suggested", "prohibited", "template", "context"] },
+        "coverageRole": { "enum": ["action_trace", "non_action_declaration"] },
+        "declarationRole": { "$ref": "#/$defs/nonEmpty" }
       }
     },
     "refs": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/nonEmpty" } },
@@ -86,7 +88,7 @@
       "allOf": [{
         "if": { "properties": { "schemaVersion": { "const": "requirements-contract-typed-execution-registry/v2" } } },
         "then": { "properties": { "entries": { "items": { "required": ["authorityKind", "applicableSourceRefs", "premiseRefs", "derivationReceiptRefs", "conditions", "scope"] } } } },
-        "else": { "properties": { "entries": { "items": { "not": { "anyOf": [{ "required": ["authorityKind"] }, { "required": ["applicableSourceRefs"] }, { "required": ["premiseRefs"] }, { "required": ["derivationReceiptRefs"] }, { "required": ["conditions"] }, { "required": ["scope"] }, { "required": ["modality"] }, { "required": ["sourceDeclarationRefs"] }] } } } } }
+        "else": { "properties": { "entries": { "items": { "not": { "anyOf": [{ "required": ["authorityKind"] }, { "required": ["applicableSourceRefs"] }, { "required": ["premiseRefs"] }, { "required": ["derivationReceiptRefs"] }, { "required": ["conditions"] }, { "required": ["scope"] }, { "required": ["modality"] }, { "required": ["sourceDeclarationRefs"] }, { "required": ["coverageRole"] }, { "required": ["declarationRole"] }] } } } } }
       }]
     }
   }

@@ -22,7 +22,6 @@ export interface StandaloneGoalInternalSemanticGate {
     constraintCount: number;
     referenceCount: number;
     candidateBytes: number;
-    edgeBudget: number;
     nonGlobalObligationUniverseCount: number;
   };
   gateHash: string;
@@ -72,10 +71,12 @@ function validateRelations(input: StandaloneGoalSemanticInput, candidate: Standa
     if (obligation.executionRole !== 'action' && strings(obligation.atomRefs).length > 0) issue(`non_action_atom_invented:${id}`, issues);
   }
   const atomByRequirement = new Map(atoms.map((atom) => [text(atom.requirementRef), atom]));
+  const obligationById = new Map(obligations.map((obligation) => [text(obligation.obligationId), obligation]));
+  const sourceObligationById = new Map(input.sourceObligations.map((obligation) => [text(obligation.id), obligation]));
   if (JSON.stringify(sorted(atoms.map((atom) => text(atom.requirementRef)))) !== JSON.stringify(oracle.actionIds)) issue('action_atom_conservation_failed', issues);
   for (const actionId of oracle.actionIds) {
     const atom = atomByRequirement.get(actionId);
-    if (!atom || text(atom.id) !== `${actionId}-A1` || text(atom.action) !== text(input.sourceObligations.find((row) => text(row.id) === actionId)?.exactText)) issue(`action_atom_semantics_mismatch:${actionId}`, issues);
+    if (!atom || text(atom.id) !== `${actionId}-A1` || text(atom.action) !== text(sourceObligationById.get(actionId)?.exactText)) issue(`action_atom_semantics_mismatch:${actionId}`, issues);
     const expectedDeps = sorted((oracle.dependencyMap.get(actionId) ?? []).map((ref) => `${ref}-A1`));
     if (JSON.stringify(sorted(strings(atom?.dependencies))) !== JSON.stringify(expectedDeps)) issue(`action_dependency_mismatch:${actionId}`, issues);
   }
@@ -93,7 +94,7 @@ function validateRelations(input: StandaloneGoalSemanticInput, candidate: Standa
     referenceCount += mustRefs.length + atomRefs.length + premiseRefs.length + sourceRefs.length;
     if (mustRefs.some((ref) => !allObligationIds.has(ref))) issue(`constraint_obligation_ref_invalid:${text(constraint.constraintId)}`, issues);
     const expectedAtoms = constraint.coverageRole === 'non_action_declaration' ? [] : sorted(mustRefs.flatMap((ref) => {
-      const row = obligations.find((candidateRow) => text(candidateRow.obligationId) === ref);
+      const row = obligationById.get(ref);
       return strings(row?.atomRefs);
     }));
     if (JSON.stringify(sorted(atomRefs)) !== JSON.stringify(expectedAtoms)) issue(`constraint_atom_ref_invalid:${text(constraint.constraintId)}`, issues);
@@ -123,9 +124,6 @@ export function runStandaloneGoalInternalSemanticGate(input: StandaloneGoalSeman
   const constraints = rows(payload.executionConstraints);
   const nonGlobalConstraints = constraints.filter((constraint) => text(constraint.scope) !== 'global');
   const nonGlobalObligationUniverse = new Set(nonGlobalConstraints.flatMap((constraint) => strings(constraint.applicableMustRefs)));
-  // Resource guard for pathological relation graphs; this is independent of transport bytes.
-  const edgeBudget = Math.max(100_000, (obligations.length + constraints.length + atoms.length) * 64);
-  if (referenceCount > edgeBudget) issue('semantic_relation_edge_budget_exceeded', issues);
   const metrics = {
     sourceObligationCount: input.sourceObligations.length,
     candidateObligationCount: rows(payload.obligations).length,
@@ -134,7 +132,6 @@ export function runStandaloneGoalInternalSemanticGate(input: StandaloneGoalSeman
     constraintCount: rows(payload.executionConstraints).length,
     referenceCount,
     candidateBytes,
-    edgeBudget,
     nonGlobalObligationUniverseCount: nonGlobalObligationUniverse.size,
   };
   const preimage = {

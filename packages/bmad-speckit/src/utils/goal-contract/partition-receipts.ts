@@ -88,6 +88,15 @@ function createPendingChildCompilationReceipt({
   ) {
     throw failure('partition_child_compilation_input_invalid');
   }
+  const partition = (partitionPlan.partitions || []).find(
+    (record) => record.partitionId === childProjectionInput.partitionId
+  );
+  if (!partition) {
+    throw failure('partition_child_projection_mismatch', {
+      reason: 'partition_record_missing',
+      partitionId: childProjectionInput.partitionId,
+    });
+  }
   const expectedPartitionId =
     partitionPlan.topologicalOrder?.[displayOrdinal - 1];
   if (expectedPartitionId !== childProjectionInput.partitionId) {
@@ -123,6 +132,7 @@ function createPendingChildCompilationReceipt({
     membershipStatus: 'pending',
     displayOrdinal,
     partitionId: childProjectionInput.partitionId,
+    estimatedClosureMinutes: partition.estimatedClosureMinutes,
     childContractPath: String(childContractPath).replace(/\\/gu, '/'),
     childContractHash: `sha256:${createHash('sha256')
       .update(bytes)

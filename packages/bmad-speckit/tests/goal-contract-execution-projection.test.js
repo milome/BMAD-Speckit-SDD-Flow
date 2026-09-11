@@ -235,6 +235,24 @@ describe('goal-contract Execution Projection', () => {
     }
   });
 
+  it('preserves a declared closure budget and rejects the four-hour boundary', () => {
+    const graph = makeGraph();
+    graph.tasks[0].estimatedClosureMinutes = 180;
+    const projection = compileExecutionProjection(makeInput({ reconciledGraph: graph }));
+    assert.equal(projection.atomicTasks[0].estimatedClosureMinutes, 180);
+
+    graph.tasks[0].estimatedClosureMinutes = 240;
+    assert.throws(
+      () => compileExecutionProjection(makeInput({ reconciledGraph: graph })),
+      (error) =>
+        error.failureClass === 'execution_projection_schema_invalid' &&
+        error.validationErrors.some(
+          (finding) =>
+            finding.instancePath === '/atomicTasks/0/estimatedClosureMinutes' &&
+            finding.keyword === 'maximum'
+        )
+    );
+  });
   it('is byte-stable under graph, task and slice permutation for every mode', () => {
     for (const sequenceMode of ['auto', 'required', 'disabled']) {
       const overrides = {

@@ -1,4 +1,4 @@
-const { createHash } = require('node:crypto');
+import { createHash } from 'node:crypto';
 
 type CanonicalControlPlaneValue =
   | null
@@ -259,7 +259,7 @@ function verifyReceiptSelfHash(
   return actualHash === hashReceiptPayload(receipt, normalizedOptions);
 }
 
-module.exports = {
+export {
   canonicalizeControlPlaneValue,
   hashControlPlaneValue,
   hashReceiptPayload,

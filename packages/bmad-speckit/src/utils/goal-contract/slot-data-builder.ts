@@ -174,7 +174,8 @@ function semanticRecordId(obligation) {
 function makeSemanticRegistries(obligations) {
   const tasks = obligations.filter((row) => row.executionRole === 'action');
   const recordIds = (kind) => obligations.filter((row) => row.kind === kind).map(semanticRecordId);
-  const sourceIds = new Set(obligations.map(semanticRecordId));
+  const commandRecords = semanticCommandRecords(obligations);
+  const commandIds = new Set(commandRecords.map((command) => command.id));
   // Acceptance criteria may be source declarations (for example FIX-* headings)
   // that are intentionally excluded from the semantic obligation view. Their
   // IDs remain valid registry targets when a source-backed action references
@@ -185,6 +186,12 @@ function makeSemanticRegistries(obligations) {
       .filter((ref) => ref.kind === 'acceptance' && ref.sourceBlockRefs?.length)
       .map((ref) => ref.targetId),
   ]);
+  const declaredEvidenceContracts = obligations.flatMap((row) => [
+    ...(row.evidenceRefs || []),
+    ...(row.typedRefs || [])
+      .filter((ref) => ref.kind === 'evidenced_by' && ref.sourceBlockRefs?.length)
+      .map((ref) => ref.targetId),
+  ]);
   return {
     projectionMode: 'semantic',
     sourceObligations: obligations.map((row) => ({
@@ -192,14 +199,14 @@ function makeSemanticRegistries(obligations) {
       goalTaskRefs: [...new Set([...(row.taskRefs || []), ...(row.goalTaskRefs || []),
         ...(row.executionRole === 'action' ? [semanticRecordId(row)] : [])])],
       acceptanceRefs: [...(row.acceptanceRefs || [])],
-      commandRefs: [...(row.commandRefs || [])],
+      commandRefs: [...new Set(row.commandRefs || [])].filter((ref) => commandIds.has(ref)),
       evidenceRefs: [...(row.evidenceRefs || [])],
     })),
     tasks: tasks.map(semanticRecordId),
     acceptance: [...new Set([...recordIds('acceptance_condition'), ...declaredAcceptanceCriteria])],
-    commands: [...new Set(semanticCommandRecords(obligations).map((command) => command.id))],
-    commandRecords: semanticCommandRecords(obligations),
-    evidence: recordIds('evidence_contract'),
+    commands: [...commandIds],
+    commandRecords,
+    evidence: [...new Set([...recordIds('evidence_contract'), ...declaredEvidenceContracts])],
   };
 }
 
@@ -226,18 +233,23 @@ function semanticCommandRecords(obligations) {
 }
 
 function isAdmissibleProofCommand(command) {
-  return typeof command.invocation === 'string' && command.invocation.trim().length > 0 &&
+  return (
+    typeof command.invocation === 'string' &&
+    command.invocation.trim().length > 0 &&
     !['may', 'should', 'descriptive'].includes(command.normativeStrength) &&
     command.commandDeclaration?.polarity !== 'forbidden' &&
     command.commandDeclaration?.authorization !== 'prohibited' &&
-    command.evidenceClassification !== 'coverage_only';
+    command.evidenceClassification !== 'coverage_only'
+  );
 }
 
 function requiresImplementationProof(obligation) {
   if (obligation.executionRole === undefined) return true;
-  return obligation.executionRole === 'action' &&
+  return (
+    obligation.executionRole === 'action' &&
     (obligation.normativeStrength === 'must' || obligation.normativeStrength === 'mixed') &&
-    !['forbidden', 'permitted', 'descriptive'].includes(obligation.polarity);
+    !['forbidden', 'permitted', 'descriptive'].includes(obligation.polarity)
+  );
 }
 
 function isCodeObligation(obligation) {
@@ -397,12 +409,16 @@ function semanticNormativeMetadata(row) {
     `- Source: \`${row.id}\`; role: \`${row.executionRole}\`; strength: \`${row.normativeStrength}\`; polarity: \`${row.polarity}\`.`,
     `- Source text hash: \`sourceTextHash=${row.textHash}\`.`,
     `- Provenance: \`${(row.provenanceRefs || []).join(', ')}\`; clauses: \`${(row.clauseRefs || []).join(', ')}\`.`,
-    ...((row.conditions || []).map((condition) => [
-      '- Condition (unevaluated):',
-      '',
-      ...String(condition.text).split(/\r?\n/u).map((line) => `  > ${line}`),
-      '',
-    ].join('\n'))),
+    ...(row.conditions || []).map((condition) =>
+      [
+        '- Condition (unevaluated):',
+        '',
+        ...String(condition.text)
+          .split(/\r?\n/u)
+          .map((line) => `  > ${line}`),
+        '',
+      ].join('\n')
+    ),
   ].join('\n');
 }
 
@@ -928,7 +944,12 @@ function buildSlotData({
     registries,
   });
   if (coverageAudit.decision !== 'pass') {
-    const error = new Error('source_coverage_unmapped') as GoalContractBuilderError;
+    const reasons = Array.isArray(coverageAudit.blockingReasons)
+      ? coverageAudit.blockingReasons.join('|')
+      : '';
+    const error = new Error(
+      reasons ? `source_coverage_unmapped:${reasons}` : 'source_coverage_unmapped'
+    ) as GoalContractBuilderError;
     error.code = 'source_coverage_unmapped';
     error.coverageAudit = coverageAudit;
     throw error;
@@ -1349,6 +1370,9 @@ function partitionFrontMatter({
     `partitionSetHash: ${bindings.partitionSetHash}`,
     `partitionId: ${partition.partitionId}`,
     `partitionRole: ${partition.partitionRole}`,
+    ...(Number.isInteger(partition.estimatedClosureMinutes)
+      ? [`estimatedClosureMinutes: ${partition.estimatedClosureMinutes}`]
+      : []),
     `selectionSetHash: ${partition.selectionSetHash || bindings.selectionSetHash}`,
     `dependencyPartitionIds: ${JSON.stringify(partition.dependencyPartitionIds || [])}`,
     ...selectionAuthorityLines,
@@ -1449,10 +1473,17 @@ function buildPartitionSlotData({
     selectedScope.inheritedConstraints.length === 0
       ? '- None.'
       : selectedScope.inheritedConstraints
-          .map(
-            (constraint) =>
-              `- \`${constraint.constraintId}\`: non-executable inherited constraint from the validated Execution Projection.`
-          )
+          .map((constraint) => {
+            const rule = String(
+              constraint.semantic?.canonicalValue ||
+                constraint.semantic?.requiredOutcome ||
+                constraint.semantic?.statement ||
+                ''
+            ).trim();
+            return `- \`${constraint.constraintId}\`: non-executable inherited constraint from the validated Execution Projection${
+              rule ? `: ${rule}` : '.'
+            }`;
+          })
           .join('\n');
   const completionEvidencePacket = bindings.partitionPlanHash
     ? [

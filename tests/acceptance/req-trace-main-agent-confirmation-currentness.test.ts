@@ -6,18 +6,27 @@ import { resolveConfirmedSource } from '../../packages/bmad-speckit/src/main-age
 import { materializeAiTddManifestCloseoutRunnerFixture } from '../helpers/requirement-fixture-runtime';
 
 let root: string;
-beforeEach(() => { root = fs.mkdtempSync(path.join(os.tmpdir(), 'test-only-main-agent-confirmation-')); });
-afterEach(() => { fs.rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 }); });
+beforeEach(() => {
+  root = fs.mkdtempSync(path.join(os.tmpdir(), 'test-only-main-agent-confirmation-'));
+});
+afterEach(() => {
+  fs.rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+});
 
 describe('Main Agent confirmed source routing', () => {
   it.each(['latest-event', 'missing-history', 'missing-source-hash', 'missing-confirmation-hash'])(
-    'does not trust inline user_confirmed after %s invalidation', (damage) => {
-      const fixture = materializeAiTddManifestCloseoutRunnerFixture({ root });
+    'does not trust inline user_confirmed after %s invalidation',
+    (damage) => {
+      const fixture = materializeAiTddManifestCloseoutRunnerFixture({
+        root,
+        authorityMode: 'legacy',
+      });
       const input = { projectRoot: root, recordPath: fixture.recordPath };
       expect(resolveConfirmedSource(input).status).toBe('confirmed');
       const record = JSON.parse(fs.readFileSync(fixture.recordPath, 'utf8'));
       record.implementationConfirmation = { status: 'user_confirmed' };
-      if (damage === 'latest-event') record.confirmationHistory.push({ eventType: 'reconfirm_required' });
+      if (damage === 'latest-event')
+        record.confirmationHistory.push({ eventType: 'reconfirm_required' });
       if (damage === 'missing-history') delete record.confirmationHistory;
       if (damage === 'missing-source-hash') delete record.sourceDocumentHash;
       if (damage === 'missing-confirmation-hash') delete record.implementationConfirmationHash;
@@ -25,5 +34,6 @@ describe('Main Agent confirmed source routing', () => {
       const result = resolveConfirmedSource(input);
       expect(result.status).toBe('confirmed_source_unresolvable');
       expect(result.blockingReasons).toContain('controlled_confirmation_event_missing');
-    });
+    }
+  );
 });

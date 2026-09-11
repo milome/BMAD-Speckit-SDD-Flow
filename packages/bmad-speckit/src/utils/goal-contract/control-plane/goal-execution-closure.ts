@@ -41,7 +41,15 @@ function assertUniqueIds(values: string[], issueCode: string): void {
 
 export function compileGoalExecutionClosure(ir: GoalExecutionIR): GoalExecutionClosure {
   const validation = validateGoalExecutionIR(ir);
-  if (validation.decision !== 'pass') fail(validation.issueCodes[0]);
+  if (validation.decision !== 'pass') {
+    const detail = validation.issueDetails?.find(
+      (entry) => entry.issueCode === validation.issueCodes[0]
+    );
+    throw Object.assign(new Error(validation.issueCodes[0]), {
+      issueCode: validation.issueCodes[0],
+      ...(detail ?? {}),
+    });
+  }
   const rawObligationIds = ir.obligations.map((row) => row.obligationId);
   const rawTaskIds = ir.atomicTasks.map((row) => String(row.taskId || ''));
   const rawTraceSliceIds = ir.traceSlices.map((row) => String(row.traceSliceId || ''));
@@ -55,7 +63,7 @@ export function compileGoalExecutionClosure(ir: GoalExecutionIR): GoalExecutionC
   assertUniqueIds(rawCommandIds, 'goal_execution_command_id_duplicate');
   assertUniqueIds(rawEvidenceContractIds, 'goal_execution_evidence_id_duplicate');
   const obligationIds = sortedUnique(rawObligationIds);
-  const typed = ir.schemaVersion === 'GoalExecutionIR/v2';
+  const typed = ['GoalExecutionIR/v2', 'GoalExecutionIR/v3'].includes(ir.schemaVersion);
   const nonActionObligationIds = typed ? sortedUnique(ir.obligations.filter((row) => row.executionRole !== 'action')
     .map((row) => row.obligationId)) : [];
   const actionObligationIds = obligationIds.filter((id) => !nonActionObligationIds.includes(id));
@@ -239,7 +247,7 @@ export function compileGoalExecutionClosure(ir: GoalExecutionIR): GoalExecutionC
     commandIds,
     evidenceContractIds,
     ...(typed ? { nonActionObligationIds } : {}),
-    ...(typed && ir.profile === 'standalone' && Array.isArray(ir.semanticSource.typedExecutionConstraints)
+    ...(typed && Array.isArray(ir.semanticSource.typedExecutionConstraints)
       ? { nonActionConstraintIds: sortedUnique((ir.semanticSource.typedExecutionConstraints as Record<string, unknown>[])
         .filter((row) => row.coverageRole === 'non_action_declaration').map((row) => String(row.constraintId))) } : {}),
   };

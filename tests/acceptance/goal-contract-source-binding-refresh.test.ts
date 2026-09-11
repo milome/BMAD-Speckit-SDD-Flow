@@ -64,7 +64,7 @@ describe('Goal source binding-only refresh', () => {
       const outRoot = path.join(fixture.root, 'goal-run-active-run-currentness');
       const compiled = compileRequirementsBackedGoal({
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot,
       });
       materializeGoalRunExecutionAdapter(outRoot);
@@ -132,7 +132,7 @@ describe('Goal source binding-only refresh', () => {
       const outRoot = path.join(fixture.root, 'goal-run');
       const compiled = compileRequirementsBackedGoal({
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot,
       });
       const binding = JSON.parse(readFileSync(compiled.sourceBindingRef.path, 'utf8'));
@@ -178,7 +178,7 @@ describe('Goal source binding-only refresh', () => {
       const outRoot = path.join(fixture.root, 'goal-run');
       const compiled = compileRequirementsBackedGoal({
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot,
       });
       const irBytesBefore = readFileSync(compiled.goalExecutionIrRef.path);
@@ -243,7 +243,7 @@ describe('Goal source binding-only refresh', () => {
       const outRoot = path.join(fixture.root, 'goal-run-currentness');
       const compiled = compileRequirementsBackedGoal({
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot,
       });
       const activeBytes = readFileSync(compiled.activeAuthorityRef.path);

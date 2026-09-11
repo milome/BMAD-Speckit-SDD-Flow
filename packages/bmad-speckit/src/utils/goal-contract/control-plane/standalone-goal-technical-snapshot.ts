@@ -83,12 +83,31 @@ export function standaloneTechnicalSnapshot(source: JsonObject, semanticRows: Js
       declarationRefs.push(explicitDeclarationSource);
     }
     const declarationHashes = unique(declarationRefs.map((ref) => text(ref.sourceSnapshotHash)));
+    const exactDeclarationRef = explicitDeclarationSource &&
+      text(explicitDeclarationSource.sourceArtifactId) &&
+      Number.isInteger(explicitDeclarationSource.startByte) &&
+      Number.isInteger(explicitDeclarationSource.endByteExclusive) &&
+      Number.isInteger(explicitDeclarationSource.lineStart ?? explicitDeclarationSource.startLine) &&
+      Number.isInteger(explicitDeclarationSource.lineEnd ?? explicitDeclarationSource.endLine) &&
+      text(explicitDeclarationSource.exactTextHash ?? explicitDeclarationSource.expectedExactTextHash)
+      ? explicitDeclarationSource
+      : undefined;
     const declarationSource = declarationRefs.length > 0 && declarationHashes.length === 1 ? {
       schemaVersion: 'standalone-source-declaration-set/v1',
       sourceSnapshotHash: declarationHashes[0],
       sourceBlockRefs: unique(blockRefs),
-      startByte: Math.min(...declarationRefs.map((ref) => Number(ref.startByte))),
-      endByteExclusive: Math.max(...declarationRefs.map((ref) => Number(ref.endByteExclusive))),
+      startByte: exactDeclarationRef
+        ? Number(exactDeclarationRef.startByte)
+        : Math.min(...declarationRefs.map((ref) => Number(ref.startByte))),
+      endByteExclusive: exactDeclarationRef
+        ? Number(exactDeclarationRef.endByteExclusive)
+        : Math.max(...declarationRefs.map((ref) => Number(ref.endByteExclusive))),
+      ...(exactDeclarationRef ? {
+        sourceArtifactId: text(exactDeclarationRef.sourceArtifactId),
+        lineStart: Number(exactDeclarationRef.lineStart ?? exactDeclarationRef.startLine),
+        lineEnd: Number(exactDeclarationRef.lineEnd ?? exactDeclarationRef.endLine),
+        exactTextHash: text(exactDeclarationRef.exactTextHash ?? exactDeclarationRef.expectedExactTextHash),
+      } : {}),
     } : undefined;
     const sourceRows = declaringRows.length > 0 ? declaringRows : ownerRows;
     const unownedDeclaration = sourceRows.length === 0 && role && declarationSource;

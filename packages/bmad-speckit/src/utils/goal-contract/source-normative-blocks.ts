@@ -5,9 +5,9 @@ const { sha256Text, stableStringify } = require(
 export type GoalSourceNormativeBlocksModule = never;
 
 const ID_PATTERN = /\b[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+\b/gu;
-const STRONG_PROHIBITION = /不得|禁止|不能证明|不可作为|\b(?:must not|shall not|forbidden|prohibited|cannot prove)\b/iu;
+const STRONG_PROHIBITION = /不得|禁止|不能证明|不可作为|\b(?:must not|shall not|forbidden|prohibit(?:ed)?|cannot prove)\b|\bno\s+executable\s+requirements?\b/iu;
 const RELEASE_BLOCKING = /\b(?:blocks?|prohibits?|prevents?)\s+(?:release|publication|deployment)\s+(?:until|unless|before)\b/iu;
-const NEGATION = /不得|禁止|不(?:再|直接|自行|自动|额外|重复|独立)?(?:能|可|应|得|使用|修改|新增|增加|添加|创建|建立|让|执行|生成|运行|订阅|恢复|提交|实现|保存|保留|依赖|触发|等待|重启|引入|按|把|写|补写|补造|改变|改|阻塞|删除|重算|清空|停止|复制|伪造|虚构|触碰|连接|覆盖|使|因为|暂存|提供|扩大|裁剪|认为|接受|替换|省略|越过|重新|作为|为|参与|携带|进入|读取|读|轮询|经过|通过|与|以|由|在|包含|做|计算|持久化|推进|递增|发布|调用|换|猜测|纳入|计入|混用|用于|用|嵌套|封存)|不\s+(?:monkeypatch|patch)\b|\b(?:must not|shall not|do not|never|forbidden|prohibited|cannot)\b/iu;
+const NEGATION = /不得|禁止|不(?:再|直接|自行|自动|额外|重复|独立)?(?:能|可|应|得|使用|修改|新增|增加|添加|创建|建立|让|执行|生成|运行|订阅|恢复|提交|实现|保存|保留|依赖|触发|等待|重启|引入|按|把|写|补写|补造|改变|改|阻塞|删除|重算|清空|停止|复制|伪造|虚构|触碰|连接|覆盖|使|因为|暂存|提供|扩大|裁剪|认为|接受|替换|省略|越过|重新|作为|为|参与|携带|进入|读取|读|轮询|经过|通过|与|以|由|在|包含|做|计算|持久化|推进|递增|发布|调用|换|猜测|纳入|计入|混用|用于|用|嵌套|封存)|不\s+(?:monkeypatch|patch)\b|\b(?:must not|shall not|do not|never|forbidden|prohibit(?:ed)?|cannot)\b|\bno\s+executable\s+requirements?\b/iu;
 const REQUIRED = /必须|应当|只能|一律|保持|保留|继续|等于|统一|\b(?:must|shall|required|retain|preserve)\b/iu;
 const REQUIRED_PREDICATE = /使用|复用|沿用|接收|维护|发布|生成|保存|传递|串行|携带|标记|标为|返回|拒绝|释放|重建|读取|检查|重验|核对|断言|进入|只送|只计算|只提供|只加载|只结束|只适配|交给|交由|转交|追加|写入|迁到|改为|仍存在|始终有|重新请求|再次请求|建立|减去|删除|设置|运行|执行|调用|关闭|合并|加载|插入|重发|发出|去重|隔离|分配|切换|重评|记录|计数|驱动|停止|提交|提供|暂存|判(?:FAIL|BLOCKED)|只用|(?<!不)发恢复|插断点|交(?=[A-Z])|是[“"]|(?:^|后)用|\b(?:release|retain|reuse|return|assert|verify|publish|send|append|reject)\b/iu;
 const PERMITTED = /可(?:在|以|用于|由|继续|限制|作为|使用|复用|合并|读取|检查|选择|保留|运行|执行|创建|发送|提供)|\b(?:may|permitted)\b/iu;

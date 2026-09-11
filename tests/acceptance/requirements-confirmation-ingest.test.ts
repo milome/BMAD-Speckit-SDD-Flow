@@ -558,7 +558,7 @@ function directReqTraceEntry(): string {
   };
   const matches = Object.entries(profile.entryProfiles ?? {}).filter(
     ([, entry]) =>
-      entry.compilerRoute === 'shared_requirement_trace_compiler' &&
+      entry.compilerRoute === 'shared_goal_execution_ir_compiler' &&
       entry.dualViewPolicy === 'forbidden' &&
       entry.sourceAuthority === 'confirmed_implementation_confirmation_and_requirement_record'
   );

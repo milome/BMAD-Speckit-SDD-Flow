@@ -23,6 +23,8 @@ import {
   createRuntimeStatusProjectionUpdate,
   runtimeStatusProjectionArtifactWrites,
   runtimeStatusProjectionRecordPatch,
+  REQUIREMENTS_CONTRACT_SIX_MODEL_IDS,
+  type RequirementsContractSixModelId,
   type RuntimeStatusProjectionUpdate,
 } from './requirements-contract-runtime-status-decision-receipt';
 import {
@@ -35,7 +37,10 @@ import {
   type NativeGoalInvocationReceipt,
   validateNativeGoalInvocationReceipt,
 } from './host-runtime-mode';
-import { validateExecutionFinalCandidate } from './main-agent-execution-final-candidate';
+import {
+  validateExecutionFinalCandidate,
+  type ExecutionFinalCandidate,
+} from './main-agent-execution-final-candidate';
 import { canonicalGoalExecutionBytes } from './subcontract-evidence';
 import { stableHash } from './requirements-contract-verification-evidence-normalizer';
 
@@ -196,9 +201,15 @@ function verifiedSixModelStatusProofs(
   candidate: ExecutionFinalCandidate,
   currentImplementationAttemptId: string
 ): VerifiedSixModelStatus[] {
-  const requiredModelIds = candidate.requiredDimensionIds.filter(
-    (modelId) => modelId !== 'delivery_confirmation'
-  );
+  const sixModelIds = new Set<string>(REQUIREMENTS_CONTRACT_SIX_MODEL_IDS);
+  const requiredModelIds: RequirementsContractSixModelId[] = candidate.requiredDimensionIds
+    .filter((modelId) => modelId !== 'delivery_confirmation')
+    .map((modelId) => {
+      if (!sixModelIds.has(modelId)) {
+        throw new Error('main_agent_goal_six_model_proof_invalid');
+      }
+      return modelId as RequirementsContractSixModelId;
+    });
   const expectedKeys = [
     'schemaVersion',
     'recordId',
@@ -264,13 +275,13 @@ function verifiedSixModelStatusProofs(
       controlledCloseoutArtifactRoot(decisionReceiptRef);
     }
     return {
-      schemaVersion: status.schemaVersion,
+      schemaVersion: 'requirements-contract-verified-six-model-status/v1' as const,
       recordId: text(status.recordId),
       requirementSetId: text(status.requirementSetId),
-      modelId: status.modelId,
-      effectiveStatus: status.effectiveStatus,
+      modelId,
+      effectiveStatus: 'pass' as const,
       projectionStatus: text(status.projectionStatus),
-      projectionIntegrity: status.projectionIntegrity,
+      projectionIntegrity: 'valid' as const,
       authorityClass: text(status.authorityClass),
       decisionReceiptRef: typeof decisionReceiptRef === 'string' ? decisionReceiptRef : null,
       decisionReceiptHash: typeof decisionReceiptHash === 'string' ? decisionReceiptHash : null,

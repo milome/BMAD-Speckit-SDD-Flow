@@ -1,5 +1,6 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
+const fs = require('node:fs');
 const path = require('node:path');
 
 const PROFILE = require(path.resolve(
@@ -49,7 +50,7 @@ describe('goal-contract entry scenarios', () => {
       const entry = ENTRY_SCENARIOS[entryId];
       assert.deepEqual(entry.requiredOutputs, FOUR_ARTIFACTS);
       assert.equal(entry.finalArtifactAuthority, 'model_packet.json');
-      assert.equal(entry.compilerRoute, 'shared_requirement_trace_compiler');
+      assert.equal(entry.compilerRoute, 'shared_goal_execution_ir_compiler');
       assert.equal(entry.dualViewPolicy, 'forbidden');
       assert.equal(entry.artifactRoles['human_prompt.txt'], 'projection');
       assert.equal(entry.artifactRoles['audit_receipt.json'], 'receipt');
@@ -90,7 +91,7 @@ describe('goal-contract entry scenarios', () => {
     );
 
     assert.equal(validation.decision, 'pass');
-    assert.equal(PROFILE.profileVersion, '3.0.0');
+    assert.equal(PROFILE.profileVersion, '3.1.0');
     assert.equal(resolved.entryScenario, 'standalone_goal_contract');
     assert.equal(
       resolved.finalArtifactAuthority,
@@ -130,6 +131,36 @@ describe('goal-contract entry scenarios', () => {
     assert.deepEqual(validation.unsupportedSemantics, [
       'future_semantic_contract',
     ]);
+  });
+
+  it('fails closed on a legacy confirmed-source compiler route', () => {
+    const legacy = structuredClone(PROFILE);
+    legacy.entryProfiles.req_trace_direct.compilerRoute =
+      'shared_requirement_trace_compiler';
+
+    const validation = validateEntryProfile(legacy, 'req_trace_direct');
+
+    assert.equal(validation.decision, 'block');
+    assert.equal(validation.failureClass, 'entry_profile_authority_mismatch');
+    assert.equal(validation.field, 'compilerRoute');
+  });
+
+  it('keeps canonical and installed Goal profile projections byte-identical', () => {
+    const canonical = fs.readFileSync(
+      path.resolve(__dirname, '../../../_bmad/shared/goal-contract/goal-contract-profile.json')
+    );
+    for (const projectedPath of [
+      path.resolve(
+        __dirname,
+        '../../../_bmad/skills/goal-execution-contract-generator/references/goal-contract-profile.json'
+      ),
+      path.resolve(
+        __dirname,
+        '../../../.codex/skills/goal-execution-contract-generator/references/goal-contract-profile.json'
+      ),
+    ]) {
+      assert.ok(fs.readFileSync(projectedPath).equals(canonical));
+    }
   });
 
   it('requires one exact normalized entry token', () => {

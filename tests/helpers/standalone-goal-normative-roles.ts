@@ -1,6 +1,7 @@
 import type { StandaloneGoalSemanticInput } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/standalone-goal-semantic-ir';
 
 export function normativeRoleInput(): StandaloneGoalSemanticInput {
+  const sourceSnapshotHash = `sha256:${'2'.repeat(64)}`;
   const sourceObligations = [
     { id: 'MUST-001', exactText: 'Implement export.', requiredOutcome: 'Export matches the frozen CSV.',
       normativeStrength: 'must', polarity: 'required', executionRole: 'action' },
@@ -12,9 +13,11 @@ export function normativeRoleInput(): StandaloneGoalSemanticInput {
       polarity: 'permitted', executionRole: 'guidance' },
   ].map((row) => ({ ...row, specSpanRefs: [`SPAN-${row.id}`], conditions: [],
     applicability: { scope: 'global', sourceRefs: [`SPAN-${row.id}`] } }));
-  return { sourcePlanHash: `sha256:${'1'.repeat(64)}`, sourceSnapshotHash: `sha256:${'2'.repeat(64)}`,
-    sourceObligations, logicalSpecSpans: sourceObligations.map((row) => ({ specSpanId: row.specSpanRefs[0],
-      boundObligationIds: [row.id], evidenceClaimRefs: [] })),
+  return { sourcePlanHash: `sha256:${'1'.repeat(64)}`, sourceSnapshotHash,
+    sourceObligations, logicalSpecSpans: sourceObligations.map((row, index) => ({ specSpanId: row.specSpanRefs[0],
+      sourceArtifactId: 'fixture:standalone-normative-roles', sourceSnapshotHash,
+      startByte: index * 16, endByteExclusive: index * 16 + 8, lineStart: index + 1, lineEnd: index + 1,
+      exactTextHash: `sha256:${String(index + 3).repeat(64)}`, boundObligationIds: [row.id], evidenceClaimRefs: [] })),
     technicalSnapshot: { targetPaths: ['src/export.ts'],
       commandRecords: [{ commandId: 'CMD-export', invocation: 'npm test -- export' }],
       artifactRecords: [{ artifactId: 'ART-export', logicalPath: 'out/export.json' }],

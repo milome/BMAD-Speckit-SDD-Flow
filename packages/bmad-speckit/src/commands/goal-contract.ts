@@ -49,8 +49,8 @@ function loadPartitionModule(relativePath) {
 
 function loadWholeSourceDependencies() {
   const { safeWriteText, sha256File } = loadDistModule('utils/large-document-writer');
-  const { extractSourceObligations } = loadDistModule(
-    'utils/goal-contract/source-obligation-extractor'
+  const { lintStandaloneSourcePlan } = loadPartitionModule(
+    'utils/goal-contract/source-plan/standalone-source-plan'
   );
   const { buildSourceSnapshot } = loadPartitionModule('utils/goal-contract/dual-view-derivation');
   const { resolveEntryScenario, validateEntryAuthority } = loadPartitionModule(
@@ -87,6 +87,20 @@ function loadWholeSourceDependencies() {
   const { resolveAuditProfile, runStandaloneDeterministicPreflight } = loadDistModule(
     'utils/goal-contract/standalone-audit-controller'
   );
+  const extractGoalContractSourceModel = ({ snapshot }) => {
+    const frozenBytes = Buffer.from(snapshot.frozenBytesBase64 || '', 'base64');
+    const canonical = frozenBytes.includes(
+      Buffer.from('sourcePlanVersion: standalone-source-plan/', 'utf8')
+    );
+    const module = loadPartitionModule(
+      canonical
+        ? 'utils/goal-contract/source-plan/source-model'
+        : 'utils/goal-contract/source-obligation-extractor'
+    );
+    return canonical
+      ? module.extractGoalContractSourceModel({ snapshot })
+      : module.extractSourceObligations({ snapshot });
+  };
   return {
     buildSourceSnapshot,
     compileCanonicalIntent,
@@ -99,7 +113,8 @@ function loadWholeSourceDependencies() {
     createGoalContractSourceCoverageArtifact,
     createGoalContractCompilationReceipt,
     defaultReceiptPaths,
-    extractSourceObligations,
+    lintStandaloneSourcePlan,
+    extractGoalContractSourceModel,
     goalContractCompilerIdentity,
     hashControlPlaneValue,
     resolveAuditProfile,
@@ -394,6 +409,11 @@ function failurePayload(failureClass, error, extra = {}) {
     'sourceArtifactId',
     'sourceSnapshotHash',
     'sourceId',
+    'obligationId',
+    'reason',
+    'causeCode',
+    'missingCommandRefs',
+    'ownedPaths',
     'lineStart',
     'lineEnd',
     'matchedPhrase',
@@ -469,7 +489,8 @@ async function generateWholeSource(args, _commandOptions = {}) {
     createGoalContractSourceCoverageArtifact,
     createGoalContractCompilationReceipt,
     defaultReceiptPaths,
-    extractSourceObligations,
+    extractGoalContractSourceModel,
+    lintStandaloneSourcePlan,
     resolveAuditProfile,
     resolveEntryScenario,
     runStandaloneDeterministicPreflight,
@@ -511,13 +532,38 @@ async function generateWholeSource(args, _commandOptions = {}) {
   const generationReceiptPath = path.resolve(
     take(args, '--generation-receipt', receipts.generationReceiptPath)
   );
-  const sourceText = fs.readFileSync(sourcePath, 'utf8');
+  const rawSourceBytes = fs.readFileSync(sourcePath);
+  const sourceLint = lintStandaloneSourcePlan({
+    sourcePath: normalize(sourcePath),
+    rawBytes: rawSourceBytes,
+  });
+  const legacyCompatibilityRequested = has(args, '--legacy-compatibility');
+  const legacyCompatibilityIssueClasses = new Set([
+    'legacy_source_plan_authority_missing',
+    'legacy_source_evidence_closure_missing',
+    'legacy_source_requirement_orphaned',
+    'source_semantic_owner_missing',
+  ]);
+  const legacyCompatibilityEligible =
+    legacyCompatibilityRequested &&
+    sourceLint.detectedSourcePlanVersion === 'legacy/unversioned' &&
+    sourceLint.issues.length > 0 &&
+    sourceLint.issues.every((issue) => legacyCompatibilityIssueClasses.has(issue.failureClass));
+  if (!sourceLint.ok && !legacyCompatibilityEligible) {
+    const firstIssue = sourceLint.issues[0];
+    throw Object.assign(new Error(firstIssue?.failureClass || 'source_plan_lint_failed'), {
+      ...firstIssue,
+      failureClass: firstIssue?.failureClass || 'source_plan_lint_failed',
+      sourcePlanLint: sourceLint,
+    });
+  }
+  const sourceText = rawSourceBytes.toString('utf8');
   const sourceSnapshot = buildSourceSnapshot({
     sourceType: 'source_plan',
     sourcePath: normalize(sourcePath),
-    rawBytes: Buffer.from(sourceText, 'utf8'),
+    rawBytes: rawSourceBytes,
   });
-  const source = extractSourceObligations({ snapshot: sourceSnapshot });
+  const source = extractGoalContractSourceModel({ snapshot: sourceSnapshot });
   const profilePath = firstExistingPath([
     path.join(SOURCE_ROOT, '_bmad', 'shared', 'goal-contract', 'goal-contract-profile.json'),
     path.join(PACKAGE_ROOT, '_bmad', 'shared', 'goal-contract', 'goal-contract-profile.json'),
@@ -807,7 +853,7 @@ async function generatePartitionBound(args) {
   const { resolveAuditProfile, runStandaloneDeterministicPreflight } = loadPartitionModule(
     'utils/goal-contract/standalone-audit-controller'
   );
-  const { safeWriteText, sha256File } = loadWholeSourceDependencies();
+  const { safeWriteText, sha256File } = loadDistModule('utils/large-document-writer');
 
   const entry = resolveEntryScenario(takeAll(args, '--entry'));
   if (entry.entryScenario !== 'standalone_goal_contract') {
@@ -1053,6 +1099,7 @@ async function generatePartitionBound(args) {
     partitionManifestHash: authority.compiled.partitionManifestHash,
     selectionReceiptHash,
     globalCoverageReceiptHash,
+    estimatedClosureMinutes: partition.estimatedClosureMinutes,
     selectedPrimaryObligationIds: selectionReceipt.selectedPrimarySourceObligationIds,
     inheritedConstraintIds: selectionReceipt.inheritedConstraintIds,
     excludedObligationIds: uniqueStrings([
@@ -1098,6 +1145,7 @@ async function generatePartitionBound(args) {
     partitionSetHash: manifest.partitionSetHash,
     partitionId,
     partitionRole: partition.partitionRole,
+    estimatedClosureMinutes: partition.estimatedClosureMinutes,
     selectionReceiptPath: normalize(selectionReceiptPath),
     selectionReceiptHash,
     selectionSetHash: partition.selectionSetHash,
@@ -1185,6 +1233,34 @@ async function generate(args, commandOptions = {}) {
     return generatePartitionBound(args);
   }
   return generateWholeSource(args, commandOptions);
+}
+
+function lintSource(args) {
+  const allowedFlags = new Set(['--entry', '--source', '--json']);
+  const forbidden = args.filter((value) => value.startsWith('--') && !allowedFlags.has(value));
+  if (forbidden.length > 0) {
+    const failureClass = `source_plan_lint_argument_forbidden:${forbidden[0].slice(2)}`;
+    throw Object.assign(new Error(failureClass), { failureClass });
+  }
+  if (countFlag(args, '--entry') !== 1 || countFlag(args, '--source') !== 1) {
+    throw Object.assign(new Error('source_plan_lint_argument_invalid'), {
+      failureClass: 'source_plan_lint_argument_invalid',
+    });
+  }
+  const { resolveEntryScenario } = loadPartitionModule('utils/goal-contract/entry-scenarios');
+  const entry = resolveEntryScenario(takeAll(args, '--entry'));
+  if (entry.entryScenario !== 'standalone_goal_contract') {
+    throw Object.assign(new Error('entry_route_mismatch'), {
+      failureClass: 'entry_route_mismatch',
+      entryScenario: entry.entryScenario,
+      expectedEntryScenario: 'standalone_goal_contract',
+    });
+  }
+  const sourcePath = requireExistingSource(args);
+  const { lintStandaloneSourcePlanFile } = loadPartitionModule(
+    'utils/goal-contract/source-plan/standalone-source-plan'
+  );
+  return lintStandaloneSourcePlanFile(sourcePath);
 }
 
 function assertNoForbiddenPartitionAuthorityArgs(args) {
@@ -1626,7 +1702,21 @@ function writePathsFromObligations(obligations) {
   );
 }
 
-function deriveStructuredWritePathObligations(scopedObligations, taskId) {
+function sourcePathMarkerBeforeObligation(snapshot, obligation) {
+  const lines = String(snapshot?.segments?.[0]?.content || '')
+    .replace(/\r\n/gu, '\n')
+    .replace(/\r/gu, '\n')
+    .split('\n');
+  for (let index = Number(obligation.lineStart) - 2; index >= 0; index -= 1) {
+    const line = lines[index].trim();
+    if (!line || isStructuredWritePathListObligation({ exactText: line })) continue;
+    if (isStructuredWriteMarker({ exactText: line })) return 'write';
+    if (isStructuredReadOnlyMarker({ exactText: line })) return 'read_only';
+    return null;
+  }
+  return null;
+}
+function deriveStructuredWritePathObligations(scopedObligations, taskId, snapshot) {
   const writePathObligations = [];
   const readOnlyPathIds = new Set();
   let pathMarker = null;
@@ -1664,10 +1754,17 @@ function deriveStructuredWritePathObligations(scopedObligations, taskId) {
       !writePathIds.has(obligation.id) &&
       !readOnlyPathIds.has(obligation.id)
   );
-  if (unboundPathObligations.length > 0) {
+  const recoveredWritePaths = unboundPathObligations.filter(
+    (obligation) => sourcePathMarkerBeforeObligation(snapshot, obligation) === 'write'
+  );
+  writePathObligations.push(...recoveredWritePaths);
+  const stillUnbound = unboundPathObligations.filter(
+    (obligation) => sourcePathMarkerBeforeObligation(snapshot, obligation) === null
+  );
+  if (stillUnbound.length > 0) {
     throw partitionFailure('source_obligation_write_scope_unbound', {
       taskId,
-      sourceIds: unboundPathObligations.map((obligation) => obligation.id),
+      sourceIds: stillUnbound.map((obligation) => obligation.id),
     });
   }
   return writePathObligations;
@@ -1708,6 +1805,7 @@ function hasStructuredNoSplitAuthority(scopedObligations) {
 }
 
 function deriveStructuredAtomicTasks({
+  snapshot,
   declaredTasks,
   scopedObligationsByTask,
   sourceTaskDependenciesByTaskId,
@@ -1716,7 +1814,11 @@ function deriveStructuredAtomicTasks({
 }) {
   const blueprints = declaredTasks.map((task) => {
     const scopedObligations = scopedObligationsByTask.get(task.id) || [];
-    const writePathObligations = deriveStructuredWritePathObligations(scopedObligations, task.id);
+    const writePathObligations = deriveStructuredWritePathObligations(
+      scopedObligations,
+      task.id,
+      snapshot
+    );
     const writePathCount = uniqueStrings(writePathsFromObligations(writePathObligations)).length;
     const noSplitAuthority = hasStructuredNoSplitAuthority(scopedObligations);
     const atomicGroupRefs = uniqueStrings([
@@ -2003,7 +2105,7 @@ function extractCommandSourceObligations({
 
 function selectCommandStructuredBindings(sourceObligations) {
   const applicable = sourceObligations.filter(
-    (obligation) => obligation.applicabilityState === 'applicable'
+    (obligation) => obligation.applicabilityState !== 'not_applicable'
   );
   const tasks = applicable.filter((obligation) => obligation.kind === 'declared_execution_task');
   const select = (primaryKind, fallbackKind) => {
@@ -2035,6 +2137,322 @@ function selectCommandStructuredBindings(sourceObligations) {
   };
 }
 
+function canonicalFrozenTaskAuthorityRefs(goalExecutionIr, task, trace) {
+  const actionRefs = uniqueStrings(trace.obligationRefs || []);
+  const atomRefs = new Set(task.atomRefs || []);
+  const constraints = Array.isArray(goalExecutionIr?.semanticSource?.typedExecutionConstraints)
+    ? goalExecutionIr.semanticSource.typedExecutionConstraints
+    : [];
+  const selectedConstraints = constraints.filter(
+    (constraint) =>
+      constraint.scope === 'global' ||
+      (constraint.applicableMustRefs || []).some((ref) => actionRefs.includes(ref)) ||
+      (constraint.applicableAtomRefs || []).some((ref) => atomRefs.has(ref))
+  );
+  const constraintObligationRefs = new Set(
+    selectedConstraints.flatMap((constraint) => constraint.applicableMustRefs || [])
+  );
+  const inheritedRefs = (goalExecutionIr.obligations || [])
+    .filter(
+      (obligation) =>
+        obligation.executionRole !== 'action' &&
+        (obligation.applicability?.scope === 'global' ||
+          (obligation.applicability?.obligationRefs || []).some((ref) =>
+            actionRefs.includes(ref)
+          ) ||
+          constraintObligationRefs.has(obligation.obligationId))
+    )
+    .map((obligation) => obligation.obligationId);
+  return Object.freeze({
+    obligationRefs: uniqueStrings([...actionRefs, ...inheritedRefs]),
+    executionConstraintRefs: uniqueStrings(
+      selectedConstraints.map((constraint) => constraint.constraintId)
+    ),
+  });
+}
+function canonicalFrozenExecutionConstraintRefs(goalExecutionIr, task, obligationRefs) {
+  const obligationRefSet = new Set(obligationRefs || []);
+  const atomRefs = new Set(task.atomRefs || []);
+  const constraints = Array.isArray(goalExecutionIr?.semanticSource?.typedExecutionConstraints)
+    ? goalExecutionIr.semanticSource.typedExecutionConstraints
+    : [];
+  return uniqueStrings(
+    constraints
+      .filter(
+        (constraint) =>
+          constraint.scope === 'global' ||
+          (constraint.applicableMustRefs || []).some((ref) => obligationRefSet.has(ref)) ||
+          (constraint.applicableAtomRefs || []).some((ref) => atomRefs.has(ref))
+      )
+      .map((constraint) => constraint.constraintId)
+  );
+}
+function frozenGoalTaskPaths(task) {
+  const value = String(task?.taskExecution?.ownedProductionPaths || '').trim();
+  if (!value || value.toLowerCase() === 'none') return [];
+  return uniqueStrings(
+    value
+      .split(/[,，]/u)
+      .map((entry) => entry.trim())
+      .filter(Boolean)
+  );
+}
+function deriveCanonicalFrozenViews({ snapshot, extracted, goalExecutionIr, validators }) {
+  const applicableSourceIds = new Set(
+    (extracted.sourceObligations || [])
+      .filter((obligation) => obligation.applicabilityState !== 'not_applicable')
+      .map((obligation) => obligation.id)
+  );
+  const taskById = new Map((goalExecutionIr.atomicTasks || []).map((task) => [task.taskId, task]));
+  const dependenciesByTaskId = new Map(
+    (goalExecutionIr.atomicTasks || []).map((task) => [task.taskId, []])
+  );
+  for (const edge of goalExecutionIr.dependencies || []) {
+    if (dependenciesByTaskId.has(edge.from) && taskById.has(edge.to)) {
+      dependenciesByTaskId.get(edge.from).push(edge.to);
+    }
+  }
+  const authorityByTaskId = new Map();
+  for (const trace of goalExecutionIr.traceSlices || []) {
+    for (const taskId of trace.taskRefs || []) {
+      const task = taskById.get(taskId);
+      if (!task) {
+        throw partitionFailure('partition_frozen_goal_task_unknown', { taskId });
+      }
+      authorityByTaskId.set(
+        taskId,
+        (() => {
+          const authority = canonicalFrozenTaskAuthorityRefs(goalExecutionIr, task, trace);
+          return {
+            ...authority,
+            obligationRefs: authority.obligationRefs.filter((ref) => applicableSourceIds.has(ref)),
+          };
+        })()
+      );
+    }
+  }
+  const assignedSourceIds = new Set(
+    [...authorityByTaskId.values()].flatMap((authority) => authority.obligationRefs)
+  );
+  const parentOnlySourceIds = (extracted.sourceObligations || [])
+    .filter((obligation) => obligation.applicabilityState !== 'not_applicable')
+    .map((obligation) => obligation.id)
+    .filter((sourceId) => !assignedSourceIds.has(sourceId));
+  const firstTaskId = goalExecutionIr.atomicTasks?.[0]?.taskId;
+  if (firstTaskId && parentOnlySourceIds.length > 0) {
+    const authority = authorityByTaskId.get(firstTaskId);
+    authorityByTaskId.set(firstTaskId, {
+      ...authority,
+      obligationRefs: uniqueStrings([...(authority?.obligationRefs || []), ...parentOnlySourceIds]),
+    });
+  }
+  for (const task of goalExecutionIr.atomicTasks || []) {
+    const authority = authorityByTaskId.get(task.taskId);
+    if (!authority) continue;
+    authorityByTaskId.set(task.taskId, {
+      ...authority,
+      executionConstraintRefs: canonicalFrozenExecutionConstraintRefs(
+        goalExecutionIr,
+        task,
+        authority.obligationRefs
+      ),
+    });
+  }
+  const taskOrder = (goalExecutionIr.atomicTasks || []).map((task) => task.taskId);
+  const primarySourceIdsByTaskId = new Map(taskOrder.map((taskId) => [taskId, []]));
+  for (const sourceId of applicableSourceIds) {
+    const ownerTaskId =
+      taskOrder.find((taskId) =>
+        (authorityByTaskId.get(taskId)?.obligationRefs || []).includes(sourceId)
+      ) || firstTaskId;
+    if (!ownerTaskId) {
+      throw partitionFailure('partition_frozen_goal_source_owner_missing', { sourceId });
+    }
+    primarySourceIdsByTaskId.get(ownerTaskId).push(sourceId);
+  }
+  const tasks = (goalExecutionIr.atomicTasks || []).map((task) => ({
+    id: task.taskId,
+    title: task.title,
+    sourceIds: uniqueStrings(primarySourceIdsByTaskId.get(task.taskId) || []),
+    dependencies: uniqueStrings(dependenciesByTaskId.get(task.taskId) || []),
+    atomicGroupRefs: uniqueStrings(task.atomRefs || []),
+    estimatedClosureMinutes: Number(task.upperBoundEffortMinutes),
+  }));
+  const traceSlices = (goalExecutionIr.traceSlices || []).map((trace) => {
+    const taskId = trace.taskRefs?.[0];
+    const task = taskById.get(taskId);
+    const allowedPaths = frozenGoalTaskPaths(task);
+    const evidenceOnly =
+      task?.taskExecution?.executionClass === 'aggregate_only' || allowedPaths.length === 0;
+    return {
+      id: trace.traceSliceId,
+      goalIds: uniqueStrings(trace.taskRefs || []),
+      sourceIds: uniqueStrings(primarySourceIdsByTaskId.get(taskId) || []),
+      acceptanceIds: [],
+      evidenceIds: uniqueStrings(trace.evidenceContractRefs || []),
+      classification: evidenceOnly ? 'evidence_only' : 'code_bearing',
+      verificationOnly: evidenceOnly,
+      productionSymbols: ['goalContractCommand'],
+      allowedPaths,
+      directCommands: uniqueStrings(trace.commandRefs || []),
+      impactedCommands: uniqueStrings(trace.commandRefs || []),
+      integrationCommands: uniqueStrings(trace.commandRefs || []),
+      regressionCommands: uniqueStrings(trace.commandRefs || []),
+      dependencies: uniqueStrings(dependenciesByTaskId.get(taskId) || []),
+      commitPolicy: 'exactly_one_atomic_commit',
+      closeCondition: task?.oracle || `Complete ${taskId}`,
+      executionConstraintRefs: authorityByTaskId.get(taskId)?.executionConstraintRefs || [],
+    };
+  });
+  const acceptanceItems = traceSlices.map((trace) => ({
+    id: `ACCEPT-${trace.goalIds[0]}`,
+    statement: trace.closeCondition,
+    sourceIds: trace.sourceIds,
+    goalIds: trace.goalIds,
+    traceIds: [trace.id],
+    requiredCommands: trace.directCommands,
+    expectedEvidenceIds: trace.evidenceIds,
+    requiredEvidenceStrength: 'behavior',
+    passCondition: trace.closeCondition,
+  }));
+  const logicalSpanById = new Map(
+    (goalExecutionIr.logicalSpecSpans || []).map((span) => [span.specSpanId, span])
+  );
+  const commands = (goalExecutionIr.commands || []).map((command) => {
+    const sourceSpans = uniqueStrings(command.basisRefs || [])
+      .map((ref) => logicalSpanById.get(ref))
+      .filter(Boolean);
+    const sourceSpan = sourceSpans[0];
+    if (!sourceSpan) {
+      throw partitionFailure('partition_frozen_goal_command_source_missing', {
+        commandId: command.commandId,
+      });
+    }
+    return {
+      id: command.commandId,
+      literal: command.invocation,
+      commandTextHash: sha256Text(command.invocation),
+      workingDirectory: command.workingDirectory || '.',
+      shell: command.shell || 'host_shell',
+      runtime: commandRuntime(command.invocation),
+      sourceBinding: {
+        sourcePlanPath: snapshot.sourcePath,
+        lineStart: sourceSpan.lineStart,
+        lineEnd: sourceSpan.lineEnd,
+        textHash: sourceSpan.exactTextHash,
+        specSpanRefs: sourceSpans.map((span) => span.specSpanId),
+      },
+      expectedExitBehavior: 'exits with the parent-declared expected status',
+      productionEntryPoint: 'goalContractCommand',
+      evidenceType: 'behavior',
+      provenanceFields: ['argv', 'cwd', 'exitCode'],
+      freshnessRule: 'current frozen parent authority',
+    };
+  });
+  const expectedEvidence = (goalExecutionIr.evidenceContracts || []).map((evidence) => ({
+    id: evidence.evidenceContractId,
+    sourceIds: uniqueStrings(evidence.obligationRefs || []),
+    producerTaskIds: uniqueStrings(evidence.producerTaskIds || []),
+    admissibleTypes: uniqueStrings(evidence.admissibleTypes || ['behavior']),
+    requiredProvenanceFields: ['taskId', 'sourceSnapshotHash'],
+    freshnessRule: evidence.freshnessRule || 'current source roots',
+    expectedResult: evidence.requirement || `Produce ${evidence.evidenceContractId}`,
+  }));
+  const implementationView = {
+    tasks,
+    traceSlices,
+    productionSymbols: ['goalContractCommand'],
+    allowedPaths: uniqueStrings(traceSlices.flatMap((trace) => trace.allowedPaths)),
+    commands: Object.fromEntries(
+      ['direct', 'impacted', 'integration', 'regression'].map((kind) => [
+        kind,
+        commands.map((command) => ({ ...command })),
+      ])
+    ),
+    dependencies: (goalExecutionIr.dependencies || []).map((edge) => ({
+      from: edge.from,
+      to: edge.to,
+    })),
+    commitPolicy: 'exactly_one_atomic_commit',
+    closeConditions: ['Every inherited parent obligation and task oracle is closed.'],
+    synchronizationObligations: ['frozen-parent-goal-execution-ir', 'partition-child-membership'],
+    commandEvidenceStrength: Object.fromEntries(
+      commands.map((command) => [command.id, 'behavior'])
+    ),
+    inheritedConstraints: (goalExecutionIr.semanticSource?.typedExecutionConstraints || []).map(
+      (constraint) => ({
+        constraintId: constraint.constraintId,
+        constraintType: constraint.kind || 'parent_rule',
+        taskIds: taskOrder.filter((taskId) =>
+          (authorityByTaskId.get(taskId)?.executionConstraintRefs || []).includes(
+            constraint.constraintId
+          )
+        ),
+        semantic: structuredClone(constraint),
+      })
+    ),
+  };
+  const acceptanceEvidenceView = {
+    acceptanceItems,
+    negativeControls: ['Missing parent obligation, constraint, or evidence fails closed.'],
+    productionEntryPoints: ['goalContractCommand'],
+    manualScenarios: [
+      {
+        id: 'MV-FROZEN-GOAL-PARTITION-001',
+        title: 'Validate the selected child against its frozen parent authority.',
+        steps: ['Resolve the child membership and verify every inherited obligation and hash.'],
+        commandIds: commands.map((command) => command.id),
+        evidenceIds: expectedEvidence.map((evidence) => evidence.id),
+        productionEntryPoints: ['goalContractCommand'],
+        expectedResult: 'The child remains a strict projection of the frozen parent Goal.',
+      },
+    ],
+    expectedEvidence,
+    antiCheatRules: ['Child contracts cannot weaken or rewrite inherited parent Goal rules.'],
+    stopConditions: (goalExecutionIr.logicalScopes?.stopConditions || []).map((condition) => ({
+      id: condition.constraintId,
+      condition: condition.canonicalValue,
+      failureClass: 'BLOCKED_CONTRACT',
+      sourceIds: uniqueStrings(condition.applicableMustRefs || []),
+      traceIds: traceSlices
+        .filter((trace) =>
+          (condition.applicableMustRefs || []).some((ref) => trace.sourceIds.includes(ref))
+        )
+        .map((trace) => trace.id),
+    })),
+  };
+  const implementationValidation = assertValidDerivedView(
+    implementationView,
+    validators.validateImplementationView
+  );
+  const acceptanceValidation = assertValidDerivedView(
+    acceptanceEvidenceView,
+    validators.validateAcceptanceEvidenceView
+  );
+  const receipt = (viewType, validation) => ({
+    schemaVersion: 'goal-contract-frozen-ir-view-receipt/v1',
+    viewType,
+    inputHash: snapshot.aggregateHash,
+    sourceSnapshotHash: snapshot.aggregateHash,
+    goalExecutionIRHash: goalExecutionIr.goalExecutionIRHash,
+    sessionIdentity: `frozen-ir:${viewType}:${goalExecutionIr.goalExecutionIRHash}`,
+    persistedViewAuthorityFiles: 0,
+    validation,
+  });
+  return Object.freeze({
+    mode: 'structured_fast_path',
+    implementation: Object.freeze({
+      view: Object.freeze(implementationView),
+      validation: implementationValidation,
+      receipt: receipt('implementation', implementationValidation),
+    }),
+    acceptanceEvidence: Object.freeze({
+      view: Object.freeze(acceptanceEvidenceView),
+      validation: acceptanceValidation,
+      receipt: receipt('acceptance_evidence', acceptanceValidation),
+    }),
+  });
+}
 function deriveStructuredViews({
   snapshot,
   extracted,
@@ -2044,7 +2462,7 @@ function deriveStructuredViews({
   validators,
 }) {
   const applicable = extracted.sourceObligations.filter(
-    (obligation) => obligation.applicabilityState === 'applicable'
+    (obligation) => obligation.applicabilityState !== 'not_applicable'
   );
   const sourceIds = uniqueStrings(applicable.map((obligation) => obligation.id));
   const declaredTasks = structuredBindings.tasks;
@@ -2072,6 +2490,7 @@ function deriveStructuredViews({
   });
   const { tasks, allowedPathsByTaskId, sourceTaskIdByAtomicTaskId, terminalTaskIdBySourceTask } =
     deriveStructuredAtomicTasks({
+      snapshot,
       declaredTasks,
       scopedObligationsByTask,
       sourceTaskDependenciesByTaskId,
@@ -2515,13 +2934,27 @@ async function compilePartitionAuthority(args, { canonicalSourceAuthority = null
     packageRoot: PARTITION_ASSET_ROOT,
     policyPath: take(args, '--policy', null),
   });
-  const extracted = extractCommandSourceObligations({
-    snapshot,
-    extractSourceObligations,
-    canonicalSourceObligationGraph,
-    hashSourceObligationGraph,
-    findNonDeterministicPhrase,
-  });
+  const extracted = canonicalSourceAuthority?.partitionSource
+    ? {
+        ...canonicalSourceAuthority.partitionSource,
+        sourceObligationGraph: {
+          schemaVersion: 'goal-contract-frozen-ir-source-obligation-graph/v1',
+          sourceSnapshotHash: snapshot.aggregateHash,
+          obligations: canonicalSourceAuthority.partitionSource.sourceObligations.map(
+            (obligation) =>
+              obligation.applicabilityState === 'not_applicable'
+                ? obligation
+                : { ...obligation, applicabilityState: 'applicable' }
+          ),
+        },
+      }
+    : extractCommandSourceObligations({
+        snapshot,
+        extractSourceObligations,
+        canonicalSourceObligationGraph,
+        hashSourceObligationGraph,
+        findNonDeterministicPhrase,
+      });
   const repositoryFactsPath = take(args, '--repository-facts', null);
   const repositoryFacts = loadRepositoryFacts({
     factsPath: repositoryFactsPath,
@@ -2530,44 +2963,62 @@ async function compilePartitionAuthority(args, { canonicalSourceAuthority = null
       : sha256Text('repository-facts:not-provided'),
     allowlistedAnalyzers: ['repository-analyzer@1.0.0'],
   });
-  const structuredBindings = selectCommandStructuredBindings(extracted.sourceObligations);
-  const hasCompleteStructuredBindings = Object.values(structuredBindings).every(
-    (bindings) => bindings.length > 0
-  );
-  const derivationMode = hasCompleteStructuredBindings
-    ? Object.freeze({
-        mode: 'structured_fast_path',
-        sourceSnapshotHash: snapshot.aggregateHash,
-        semanticProviderCallCount: 0,
-        missingStructuredBindings: [],
-      })
-    : selectSemanticDerivationMode({
-        sourceSnapshot: snapshot,
-        sourceObligations: extracted.sourceObligations,
-        semanticDerivationAllowed: policyBinding.policy.semanticDerivationAllowance,
-      });
   const validators = {
     validateAcceptanceEvidenceView,
     validateImplementationView,
   };
-  const derivation =
-    derivationMode.mode === 'structured_fast_path'
-      ? deriveStructuredViews({
-          snapshot,
-          extracted,
-          repositoryFacts,
-          structuredBindings,
-          partitionLimits: policyBinding.policy.limits,
-          validators,
+  let derivationMode;
+  let derivation;
+  if (canonicalSourceAuthority?.goalExecutionIr) {
+    derivationMode = Object.freeze({
+      mode: 'structured_fast_path',
+      sourceSnapshotHash: snapshot.aggregateHash,
+      semanticProviderCallCount: 0,
+      missingStructuredBindings: [],
+      frozenGoalExecutionIRHash: canonicalSourceAuthority.goalExecutionIr.goalExecutionIRHash,
+    });
+    derivation = deriveCanonicalFrozenViews({
+      snapshot,
+      extracted,
+      goalExecutionIr: canonicalSourceAuthority.goalExecutionIr,
+      validators,
+    });
+  } else {
+    const structuredBindings = selectCommandStructuredBindings(extracted.sourceObligations);
+    const hasCompleteStructuredBindings = Object.values(structuredBindings).every(
+      (bindings) => bindings.length > 0
+    );
+    derivationMode = hasCompleteStructuredBindings
+      ? Object.freeze({
+          mode: 'structured_fast_path',
+          sourceSnapshotHash: snapshot.aggregateHash,
+          semanticProviderCallCount: 0,
+          missingStructuredBindings: [],
         })
-      : await deriveSemanticViews({
-          snapshot,
-          extracted,
-          methodology,
-          repositoryFacts,
-          providerFactory: createGoalContractSemanticProvider,
-          validators,
+      : selectSemanticDerivationMode({
+          sourceSnapshot: snapshot,
+          sourceObligations: extracted.sourceObligations,
+          semanticDerivationAllowed: policyBinding.policy.semanticDerivationAllowance,
         });
+    derivation =
+      derivationMode.mode === 'structured_fast_path'
+        ? deriveStructuredViews({
+            snapshot,
+            extracted,
+            repositoryFacts,
+            structuredBindings,
+            partitionLimits: policyBinding.policy.limits,
+            validators,
+          })
+        : await deriveSemanticViews({
+            snapshot,
+            extracted,
+            methodology,
+            repositoryFacts,
+            providerFactory: createGoalContractSemanticProvider,
+            validators,
+          });
+  }
   const semantic = buildCanonicalSemanticModel({
     sourceObligationGraphHash: extracted.sourceObligationGraphHash,
     methodologyProfileHash: methodology.methodologyProfileHash,
@@ -2671,7 +3122,12 @@ async function compilePartitionAuthority(args, { canonicalSourceAuthority = null
     };
     partitionBundle = canonicalSourceAuthority
       ? compilePartitions({
-          ...canonicalSourceAuthority,
+          sourceCompositionPolicy: canonicalSourceAuthority.sourceCompositionPolicy,
+          orderedSourceSnapshotSet: canonicalSourceAuthority.orderedSourceSnapshotSet,
+          compositeSourceAuthorityBundle: canonicalSourceAuthority.compositeSourceAuthorityBundle,
+          canonicalIntentBundle: canonicalSourceAuthority.canonicalIntentBundle,
+          goalContractBundle: canonicalSourceAuthority.goalContractBundle,
+          subordinateCoverageReceipts: canonicalSourceAuthority.subordinateCoverageReceipts,
           ...partitionRequest,
         })
       : compileLegacySingleSourcePartitions({
@@ -2924,6 +3380,11 @@ function readFrozenSuccessorAuthority({ goalContractPath, sourcePath }) {
   });
 }
 
+function isCanonicalFrozenSource(frozen) {
+  return fs
+    .readFileSync(path.resolve(frozen.fields.sourcePlanPath))
+    .includes(Buffer.from('sourcePlanVersion: standalone-source-plan/', 'utf8'));
+}
 function goalContractRendererAssets() {
   const profilePath = firstExistingPath([
     path.join(SOURCE_ROOT, '_bmad', 'shared', 'goal-contract', 'goal-contract-profile.json'),
@@ -2964,7 +3425,7 @@ function compileFrozenSuccessorSourceAuthority({ frozen, assets }) {
     sourcePath: normalize(sourcePath),
     rawBytes: Buffer.from(sourceText, 'utf8'),
   });
-  const source = dependencies.extractSourceObligations({
+  const source = dependencies.extractGoalContractSourceModel({
     snapshot: sourceSnapshot,
   });
   const compiled = compileStandaloneGoalContract({
@@ -2994,6 +3455,31 @@ function compileFrozenSuccessorSourceAuthority({ frozen, assets }) {
       });
     }
   }
+  const goalExecutionIrRef = generationReceipt.goalExecutionIrRef;
+  let goalExecutionIr = null;
+  if (source.canonicalRequirementGraph) {
+    if (
+      !goalExecutionIrRef?.path ||
+      !goalExecutionIrRef?.hash ||
+      goalExecutionIrRef.hash !== generationReceipt.goalExecutionIRHash ||
+      !fs.existsSync(path.resolve(goalExecutionIrRef.path))
+    ) {
+      throw partitionFailure('blocked_by_frozen_successor_goal_contract', {
+        field: 'goalExecutionIrRef',
+      });
+    }
+    const { resolveGoalExecutionAuthority } = loadPartitionModule(
+      'utils/goal-contract/control-plane/goal-execution-authority'
+    );
+    goalExecutionIr = resolveGoalExecutionAuthority(
+      JSON.parse(fs.readFileSync(path.resolve(goalExecutionIrRef.path), 'utf8'))
+    );
+    if (goalExecutionIr.goalExecutionIRHash !== goalExecutionIrRef.hash) {
+      throw partitionFailure('blocked_by_frozen_successor_goal_contract', {
+        field: 'goalExecutionIRHash',
+      });
+    }
+  }
   return Object.freeze({
     sourceCompositionPolicy: compiled.sourceCompositionPolicy,
     orderedSourceSnapshotSet: compiled.orderedSourceSnapshotSet,
@@ -3001,6 +3487,7 @@ function compileFrozenSuccessorSourceAuthority({ frozen, assets }) {
     canonicalIntentBundle: compiled.canonicalIntentBundle,
     goalContractBundle: compiled.bundle,
     subordinateCoverageReceipts: compiled.subordinateCoverageReceipts,
+    ...(goalExecutionIr ? { partitionSource: source, goalExecutionIr } : {}),
   });
 }
 
@@ -3574,7 +4061,24 @@ async function partition(args) {
     outRoot: take(args, '--out-root', null),
     receiptsDir: take(args, '--receipts-dir', null),
   });
-  const authority = await compilePartitionAuthority(args);
+  const goalContractPath = take(args, '--goal-contract', null);
+  let canonicalSourceAuthority = null;
+  if (goalContractPath) {
+    const sourcePath = requireExistingSource(args);
+    const frozen = readFrozenSuccessorAuthority({
+      goalContractPath,
+      sourcePath,
+    });
+    canonicalSourceAuthority = isCanonicalFrozenSource(frozen)
+      ? compileFrozenSuccessorSourceAuthority({
+          frozen,
+          assets: goalContractRendererAssets(),
+        })
+      : null;
+  }
+  const authority = await compilePartitionAuthority(args, {
+    canonicalSourceAuthority,
+  });
   const { projection, compiled } = authority;
   const { stagePartitionSolution } = loadPartitionModule('utils/goal-contract/partition-manifest');
   const { buildGlobalPartitionCoverageReceipt, selectPartitionScope } = loadPartitionModule(
@@ -3674,16 +4178,24 @@ async function governedPartition(args) {
   }
   const requirementRecordPath = take(args, '--requirement-record', null);
   const authorityRootOverride = take(args, '--authority-root', null);
+  const impactRepositoryRoot = path.resolve(take(args, '--impact-repository-root', process.cwd()));
+  if (!fs.existsSync(impactRepositoryRoot) || !fs.statSync(impactRepositoryRoot).isDirectory()) {
+    throw partitionFailure('partition_impact_repository_root_invalid', {
+      path: normalize(impactRepositoryRoot),
+    });
+  }
   const sourcePath = requireExistingSource(args);
   const frozen = readFrozenSuccessorAuthority({
     goalContractPath,
     sourcePath,
   });
   const assets = goalContractRendererAssets();
-  const canonicalSourceAuthority = compileFrozenSuccessorSourceAuthority({
-    frozen,
-    assets,
-  });
+  const canonicalSourceAuthority = isCanonicalFrozenSource(frozen)
+    ? compileFrozenSuccessorSourceAuthority({
+        frozen,
+        assets,
+      })
+    : null;
   const coreAuthority = await compilePartitionAuthority(args, {
     canonicalSourceAuthority,
   });
@@ -3691,7 +4203,7 @@ async function governedPartition(args) {
     'utils/goal-contract/control-plane/partition-compiler'
   );
   const partitionImpactAuthority = compilePartitionImpactAuthority({
-    repositoryRoot: process.cwd(),
+    repositoryRoot: impactRepositoryRoot,
     packageRoot: PARTITION_ASSET_ROOT,
     partitionPlan: coreAuthority.partitionPlan,
     reconciledGraph: coreAuthority.reconciledGraphAuthority,
@@ -3704,6 +4216,7 @@ async function governedPartition(args) {
     partitionImpactAuthority,
   });
   if (
+    canonicalSourceAuthority &&
     frozen.generationReceipt.sourceCompositionPolicyHash &&
     frozen.generationReceipt.sourceCompositionPolicyHash !==
       authority.partitionPlan.sourceCompositionPolicyHash
@@ -3867,7 +4380,10 @@ async function governedPartition(args) {
   for (const child of projection.childCompilationReceipts) {
     const evidence = renderEvidenceByPartitionId.get(child.partitionId);
     const selectionArtifact = selectionArtifacts.get(child.partitionId);
-    if (!evidence || !selectionArtifact) {
+    const manifestPartition = projection.partitionManifest.partitions.find(
+      (partition) => partition.partitionId === child.partitionId
+    );
+    if (!evidence || !selectionArtifact || !manifestPartition) {
       throw partitionFailure('partition_child_receipt_input_missing', {
         partitionId: child.partitionId,
       });
@@ -3878,6 +4394,7 @@ async function governedPartition(args) {
       partitionManifestHash: projection.partitionManifestDocumentHash,
       selectionReceiptHash: sha256Text(selectionArtifact.bytes),
       globalCoverageReceiptHash: sha256Text(globalCoverageArtifact.bytes),
+      estimatedClosureMinutes: manifestPartition.estimatedClosureMinutes,
       selectedPrimaryObligationIds: evidence.selectedPrimaryObligationIds,
       inheritedConstraintIds: evidence.inheritedConstraintIds,
       excludedObligationIds: evidence.excludedObligationIds,
@@ -3910,16 +4427,13 @@ async function governedPartition(args) {
       partitionManifestHash: projection.partitionManifestDocumentHash,
       partitionAnalysisReceiptHash: projection.partitionManifest.partitionAnalysisReceiptHash,
       partitionImpactGraphHash: projection.partitionManifest.partitionImpactGraphHash,
-      partitionClosureFeasibilityHash: projection.partitionManifest.partitions.find(
-        (partition) => partition.partitionId === child.partitionId
-      ).partitionClosureFeasibilityHash,
+      partitionClosureFeasibilityHash: manifestPartition.partitionClosureFeasibilityHash,
       driftHash: projection.partitionManifest.driftHash,
       partitionSetHash: projection.partitionManifest.partitionSetHash,
       partitionId: child.partitionId,
       partitionRole: evidence.partitionRole,
-      selectionReceiptPath: projection.partitionManifest.partitions.find(
-        (partition) => partition.partitionId === child.partitionId
-      ).selectionReceiptPath,
+      estimatedClosureMinutes: manifestPartition.estimatedClosureMinutes,
+      selectionReceiptPath: manifestPartition.selectionReceiptPath,
       selectionReceiptHash: sha256Text(selectionArtifact.bytes),
       selectionSetHash: child.selectionHash,
       globalCoverageReceiptPath: projection.partitionManifest.globalCoverageReceiptPath,
@@ -4085,6 +4599,12 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
   const subcommand = args.shift();
   const json = has(args, '--json') || _opts.json;
   try {
+    if (subcommand === 'lint-source') {
+      const result = lintSource(args);
+      if (json) emitJson(result);
+      else process.stdout.write(`${result.ok ? 'PASS' : 'FAIL'} ${result.sourcePath}\n`);
+      return result.ok ? 0 : 1;
+    }
     if (subcommand === 'release-gate') {
       const { goalContractReleaseGateCommand, parseGoalContractBinding } = loadPartitionModule(
         'utils/goal-contract/release-gate'
@@ -4201,7 +4721,7 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
     if (!['generate', 'partition', 'supersede-authority'].includes(subcommand)) {
       throw Object.assign(
         new Error(
-          'Usage: bmad-speckit goal-contract generate --entry <standalone_goal_contract|requirements_backed_goal> (--source <plan.md> | --requirements-record <record.json>) --out <artifact-or-run-root> --json'
+          'Usage: bmad-speckit goal-contract <lint-source|generate|partition|supersede-authority> --entry <standalone_goal_contract|requirements_backed_goal> (--source <plan.md> | --requirements-record <record.json>) --out <artifact-or-run-root> --json'
         ),
         {
           failureClass: 'invalid_subcommand',
@@ -4247,6 +4767,14 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
       ...(error.deterministicPreflight
         ? { deterministicPreflight: error.deterministicPreflight }
         : {}),
+      ...(error.sourcePlanLint ? { sourcePlanLint: error.sourcePlanLint } : {}),
+      ...(error.sourceId ? { sourceId: error.sourceId } : {}),
+      ...(error.sourceIds ? { sourceIds: error.sourceIds } : {}),
+      ...(error.matchedPhrase ? { matchedPhrase: error.matchedPhrase } : {}),
+      ...(Number.isInteger(error.lineStart) ? { lineStart: error.lineStart } : {}),
+      ...(Number.isInteger(error.lineEnd) ? { lineEnd: error.lineEnd } : {}),
+      ...(error.sourceExcerpt ? { sourceExcerpt: error.sourceExcerpt } : {}),
+      ...(error.repairHint ? { repairHint: error.repairHint } : {}),
       ...(error.auditMetrics ? { auditMetrics: error.auditMetrics } : {}),
       ...(error.forbidden ? { forbidden: error.forbidden } : {}),
       ...(error.mismatchedFields ? { mismatchedFields: error.mismatchedFields } : {}),
@@ -4364,6 +4892,8 @@ async function goalContractCommand(_opts: { json?: boolean } = {}, forwardedArgs
       ...(error.mismatchedFields ? { mismatchedFields: error.mismatchedFields } : {}),
       ...(error.invalidFields ? { invalidFields: error.invalidFields } : {}),
       ...(error.validationErrors ? { validationErrors: error.validationErrors } : {}),
+      ...(error.blockingReasons ? { blockingReasons: error.blockingReasons } : {}),
+      ...(error.issues ? { issues: error.issues } : {}),
       ...(error.field ? { field: error.field } : {}),
       ...(error.reason ? { reason: error.reason } : {}),
       ...(typeof error.value === 'string' ? { value: error.value } : {}),

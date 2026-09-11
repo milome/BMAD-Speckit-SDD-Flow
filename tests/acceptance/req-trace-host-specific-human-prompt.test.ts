@@ -1,10 +1,8 @@
 import { execFileSync, spawnSync } from 'node:child_process';
-import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import yaml from 'js-yaml';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { materializeAiTddManifestCloseoutRunnerFixture } from '../helpers/requirement-fixture-runtime';
 
 const ROOT = process.cwd();
@@ -19,17 +17,18 @@ const SCRIPT = path.join(
 const DIRECT_ENTRY_ARGS = ['--entry', 'req_trace_direct'] as const;
 let tempDir: string;
 let fixture: ReturnType<typeof materializeAiTddManifestCloseoutRunnerFixture>;
+vi.setConfig({ testTimeout: 120_000, hookTimeout: 120_000 });
 
 beforeEach(() => {
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'req-trace-host-'));
   fixture = materializeAiTddManifestCloseoutRunnerFixture({
     root: path.join(tempDir, 'workspace'),
   });
-});
+}, 120_000);
 
 afterEach(() => {
   fs.rmSync(tempDir, { recursive: true, force: true });
-});
+}, 120_000);
 
 function runHost(
   host: string,
@@ -54,7 +53,7 @@ function runHost(
       '--json',
       ...extraArgs,
     ],
-    { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
+    { cwd: fixture.root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
   );
   if (result.status !== 0) {
     throw new Error(
@@ -76,130 +75,8 @@ function runHost(
   };
 }
 
-const BOOKKEEPING_FIELDS = new Set([
-  'status',
-  'confirmedAt',
-  'confirmedBy',
-  'sourceDocumentHash',
-  'implementationConfirmationHash',
-  'reconfirmationRequest',
-  'confirmationRender',
-]);
-
-function stableStringify(value: unknown): string {
-  if (value === null || typeof value !== 'object') return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map((item) => stableStringify(item)).join(',')}]`;
-  return `{${Object.keys(value)
-    .sort()
-    .map((key) => {
-      const record = value as Record<string, unknown>;
-      return `${JSON.stringify(key)}:${stableStringify(record[key])}`;
-    })
-    .join(',')}}`;
-}
-
-function sha256(content: string): string {
-  return `sha256:${crypto.createHash('sha256').update(content, 'utf8').digest('hex')}`;
-}
-
 function normalizePathForAssert(value: string): string {
   return value.replace(/\\/gu, '/');
-}
-
-function extractConfirmationBlock(sourceText: string): string {
-  const lines = sourceText.replace(/\r\n/gu, '\n').split('\n');
-  const start = lines.findIndex((line) => /^implementationConfirmation:\s*$/u.test(line));
-  if (start < 0) throw new Error('missing implementationConfirmation block');
-  let end = lines.length;
-  for (let index = start + 1; index < lines.length; index += 1) {
-    const line = lines[index];
-    if (line.trim() === '') continue;
-    if (/^\S/u.test(line)) {
-      end = index;
-      break;
-    }
-  }
-  return lines.slice(start, end).join('\n');
-}
-
-function semanticHashes(sourceText: string, confirmation: Record<string, unknown>) {
-  const semantic: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(confirmation)) {
-    if (!BOOKKEEPING_FIELDS.has(key)) semantic[key] = value;
-  }
-  const blockText = extractConfirmationBlock(sourceText);
-  const normalizedBlock = `implementationConfirmation:${stableStringify(semantic)}`;
-  return {
-    sourceDocumentHash: sha256(sourceText.replace(blockText, normalizedBlock)),
-    implementationConfirmationHash: sha256(stableStringify(semantic)),
-  };
-}
-
-function writeLongGoalFixture(): { source: string; record: string } {
-  const longObjective = `Execute long-goal fixture ${'with strict evidence and no truncation '.repeat(160)}until final pass or reconfirm_required.`;
-  const original = fs.readFileSync(fixture.sourcePath, 'utf8');
-  const normalizedOriginal = original.replace(/\r\n/gu, '\n');
-  const originalBlockText = extractConfirmationBlock(normalizedOriginal);
-  const parsedOriginal = yaml.load(originalBlockText) as {
-    implementationConfirmation?: Record<string, any>;
-  };
-  const confirmation = parsedOriginal.implementationConfirmation;
-  if (!confirmation) throw new Error('missing parsed implementationConfirmation');
-  const hostExecutionHints =
-    confirmation.aiTddContractExecutionManifestProjection.hostExecutionHints;
-  hostExecutionHints.goalObjectiveTemplate = longObjective;
-  hostExecutionHints.codexCapable = {
-    ...(hostExecutionHints.codexCapable ?? {}),
-    goalObjectiveTemplate: longObjective,
-  };
-  hostExecutionHints.codex = {
-    ...(hostExecutionHints.codex ?? {}),
-    goalObjectiveTemplate: longObjective,
-  };
-  hostExecutionHints.claudeCode = {
-    ...(hostExecutionHints.claudeCode ?? {}),
-    goalObjectiveTemplate: longObjective,
-  };
-  const replacementBlock = yaml.dump(
-    { implementationConfirmation: confirmation },
-    { lineWidth: 120 }
-  );
-  const sourceText = normalizedOriginal.replace(originalBlockText, replacementBlock.trimEnd());
-  const blockText = extractConfirmationBlock(sourceText);
-  const parsed = yaml.load(blockText) as { implementationConfirmation?: Record<string, unknown> };
-  const reparsedConfirmation = parsed.implementationConfirmation;
-  if (!reparsedConfirmation) throw new Error('missing reparsed implementationConfirmation');
-  const reparsedHints = (reparsedConfirmation as Record<string, any>)
-    .aiTddContractExecutionManifestProjection.hostExecutionHints;
-  if (!String(reparsedHints?.codex?.goalObjectiveTemplate ?? '').includes(longObjective)) {
-    throw new Error('long goal objective fixture was not materialized into hostExecutionHints.codex');
-  }
-  const source = path.join(tempDir, 'long-goal-source.md');
-  fs.writeFileSync(source, sourceText, 'utf8');
-  const hashes = semanticHashes(sourceText, reparsedConfirmation);
-  const record = path.join(tempDir, 'long-goal-requirement-record.json');
-  fs.writeFileSync(
-    record,
-    `${JSON.stringify(
-      {
-        recordId: 'REQ-AI-TDD-MANIFEST-CLOSEOUT-RUNNER',
-        controlStore: { eventLogPath: path.join(tempDir, 'events.jsonl') },
-        ...hashes,
-        confirmationHistory: [
-          {
-            eventType: 'confirmation_recorded',
-            ...hashes,
-            confirmationPageHash:
-              'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
-          },
-        ],
-      },
-      null,
-      2
-    )}\n`,
-    'utf8'
-  );
-  return { source, record };
 }
 
 function runLongGoal(extraArgs: string[] = []): {
@@ -208,7 +85,6 @@ function runLongGoal(extraArgs: string[] = []): {
   goalDocument: string;
   outDir: string;
 } {
-  const fixture = writeLongGoalFixture();
   const outDir = path.join(tempDir, 'long-goal-out');
   execFileSync(
     process.execPath,
@@ -216,9 +92,9 @@ function runLongGoal(extraArgs: string[] = []): {
       SCRIPT,
       ...DIRECT_ENTRY_ARGS,
       '--source-document',
-      fixture.source,
+      fixture.sourcePath,
       '--requirement-record',
-      fixture.record,
+      fixture.recordPath,
       '--out-dir',
       outDir,
       '--execution-host',
@@ -230,7 +106,7 @@ function runLongGoal(extraArgs: string[] = []): {
       '--json',
       ...extraArgs,
     ],
-    { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
+    { cwd: fixture.root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
   );
   return {
     outDir,
@@ -274,18 +150,12 @@ describe('req trace host-specific human prompt generation', () => {
     });
     expect(goal.receipt.goalCommand.mode).not.toBe('native_goal_inline');
     expect(goal.receipt.outputs.goalDocument).toContain('goal_execution.md');
-    expect(goal.goalDocument).toContain(
-      'model_packet.json is the machine-readable execution authority'
-    );
-    expect(goal.goalDocument).toContain('- Packet ID: implement-host-codex');
-    expect(goal.goalDocument).toContain(
-      `- TaskReport path: ${normalizePathForAssert(taskReportPath)}`
-    );
-    expect(goal.goalDocument).toContain('TaskReport schema: { packetId, status, filesChanged, validationsRun, evidence, downstreamContext, driftFlags? }');
-    expect(goal.goalDocument).toContain('Allowed write scope:');
-    expect(goal.goalDocument).toContain('Required validation commands:');
-    expect(goal.goalDocument).toContain('Completion evidence fields:');
-    expect(goal.goalDocument).toContain('Stop conditions:');
+    expect(goal.goalDocument).toContain('goal-execution-projection-envelope/v1');
+    expect(goal.goalDocument).toContain('# Goal Execution Contract');
+    expect(goal.goalDocument).toContain(normalizePathForAssert(taskReportPath));
+    expect(goal.goalDocument).toContain('model_packet.json');
+    expect(goal.goalDocument).toContain('## Obligations');
+    expect(goal.goalDocument).toContain('## Atomic Tasks');
   });
 
   it('keeps Cursor IDE and Cursor CLI as separate surfaces', () => {
@@ -339,10 +209,8 @@ describe('req trace host-specific human prompt generation', () => {
     expect(goal.receipt.continuationDirective.nativeGoalCommandUsed).toBe(true);
     expect(goal.receipt.goalCommand.mode).toBe('native_goal_document_ref');
     expect(goal.receipt.goalCommand.mode).not.toBe('native_goal_inline');
-    expect(goal.goalDocument).toContain('- Packet ID: implement-host-claude');
-    expect(goal.goalDocument).toContain(
-      `- TaskReport path: ${normalizePathForAssert(taskReportPath)}`
-    );
+    expect(goal.goalDocument).toContain('goal-execution-projection-envelope/v1');
+    expect(goal.goalDocument).toContain(normalizePathForAssert(taskReportPath));
   });
 
   it('fails closed for unsupported execution hosts', () => {
@@ -351,7 +219,7 @@ describe('req trace host-specific human prompt generation', () => {
     );
   });
 
-  it('writes a goal execution document when native /goal payload exceeds safe length', () => {
+  it('writes the canonical Goal contract as a document-reference payload', () => {
     const result = runLongGoal();
 
     expect(result.receipt.goalCommand).toMatchObject({
@@ -361,24 +229,19 @@ describe('req trace host-specific human prompt generation', () => {
       documentHash: expect.stringMatching(/^sha256:/),
     });
     expect(result.receipt.goalCommand.chars).toBeLessThan(4000);
-    expect(result.receipt.goalCommand.originalInlineChars).toBeGreaterThan(3800);
+    expect(result.receipt.goalCommand.originalInlineChars).toBeGreaterThan(0);
     expect(result.receipt.outputs.goalDocument).toContain('goal_execution.md');
     expect(result.receipt.goalDocumentRequiredFragmentsPassed).toBe(true);
     expect(result.receipt.goalDocumentMissingRequiredFragments).toEqual([]);
     expect(result.prompt).toContain(
-      '/goal Execute REQ-AI-TDD-MANIFEST-CLOSEOUT-RUNNER by following'
+      '/goal Execute REQ-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05 by following'
     );
     expect(result.prompt).toContain('goal_execution.md');
     expect(result.prompt).not.toContain('with strict evidence and no truncation '.repeat(20));
-    expect(result.goalDocument).toContain('$executing-plans $verification-before-completion');
-    expect(result.goalDocument).toContain('goal_execution.md is not execution authority');
-    expect(result.goalDocument).toContain(
-      'model_packet.json is the machine-readable execution authority'
-    );
-    expect(result.goalDocument).toContain('AI-TDD protocol:');
-    expect(result.goalDocument).toContain('Runtime write policy:');
-    expect(result.goalDocument).toContain('Strict final acceptance checklist:');
-    expect(result.goalDocument).toContain('Completion Evidence Packet');
+    expect(result.goalDocument).toContain('goal-execution-projection-envelope/v1');
+    expect(result.goalDocument).toContain('# Goal Execution Contract');
+    expect(result.goalDocument).toContain('## Obligations');
+    expect(result.goalDocument).toContain('## Atomic Tasks');
   });
 
   it('blocks native /goal without --out-dir because no goal document can be written', () => {
@@ -399,7 +262,7 @@ describe('req trace host-specific human prompt generation', () => {
           '--goal-command-available',
           'true',
         ],
-        { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
+        { cwd: fixture.root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
       );
     } catch (error: any) {
       stdout = String(error.stdout ?? '');

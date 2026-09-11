@@ -79,7 +79,7 @@ describe('goal-contract activation installed runtime', () => {
             '--entry',
             'requirements_backed_goal',
             '--requirements-record',
-            fixture.runtimeRecordPath,
+            fixture.authorityRecordPath,
             '--out',
             outRoot,
             '--json',

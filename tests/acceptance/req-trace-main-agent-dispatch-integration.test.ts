@@ -286,8 +286,8 @@ describe('req-trace main-agent dispatch integration', () => {
     }
   });
 
-  it('uses the repository compiler implementation for the confirmed Main Agent journey', () => {
-    const fixture = materializeAiTddManifestCloseoutRunnerFixture();
+  it('blocks the repository compiler journey without canonical confirmed authority', () => {
+    const fixture = materializeAiTddManifestCloseoutRunnerFixture({ authorityMode: 'legacy' });
     try {
       const projectRoot = path.resolve('.');
       const generatorPath = path.join(
@@ -310,22 +310,16 @@ describe('req-trace main-agent dispatch integration', () => {
         goalCommandAvailable: 'true',
       });
 
-      expect(result.status).toBe('pass');
+      expect(result.status).toBe('blocked');
+      expect(result.blockingReasons).toContain('compiler_exit_3');
       expect(path.normalize(result.generatorRef!.path)).toBe(path.normalize(generatorPath));
       expect(result.generatorRef!.hash).toBe(sha256Text(readFileSync(generatorPath, 'utf8')));
       expect(result.productionArgv).toEqual(
         expect.arrayContaining(['--entry', 'main_agent_compile'])
       );
-      const packet = JSON.parse(readFileSync(result.compiledPromptRef!.modelPacketPath, 'utf8'));
-      const receipt = JSON.parse(
-        readFileSync(result.compiledPromptRef!.auditReceiptPath, 'utf8')
-      );
-      for (const artifact of [packet, receipt]) {
-        expect(artifact.entryScenario).toBe('main_agent_compile');
-        expect(artifact.entryExplicit).toBe(true);
-        expect(path.normalize(artifact.compilerIdentity.path)).toBe(path.normalize(generatorPath));
-        expect(artifact.compilerIdentity.hash).toBe(result.generatorRef!.hash);
-      }
+      const receipt = JSON.parse(readFileSync(result.auditReceiptPath!, 'utf8'));
+      expect(receipt.decision).toBe('blocked');
+      expect(receipt.blockingReasons).toContain('CANONICAL_CONFIRMED_AUTHORITY_REQUIRED');
     } finally {
       cleanupRequirementWorkspace(fixture.root);
     }
