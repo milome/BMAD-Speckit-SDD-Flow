@@ -22,6 +22,10 @@ const EXCLUDED_RUNTIME_PATHS = new Set([
   'dist/main-agent/runtime-build-authority-receipt.json',
 ]);
 
+function isPublishedRuntimePath(relativePath: string): boolean {
+  return !relativePath.split('/').some((segment) => segment.startsWith('.'));
+}
+
 function slash(value: string): string {
   return value.replace(/\\/gu, '/');
 }
@@ -80,6 +84,7 @@ export function createPackageRuntimeIndex(packageRoot: string): PackageRuntimeIn
       };
     })
     .filter((entry): entry is PackageRuntimeIndexEntry => entry !== null)
+    .filter((entry) => isPublishedRuntimePath(entry.path))
     .sort((left, right) => left.path.localeCompare(right.path));
 }
 

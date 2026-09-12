@@ -16,6 +16,17 @@ const PACKAGE_CLI = path.join(PROJECT_ROOT, 'packages', 'bmad-speckit', 'bin', '
 const RAW_RECORD_SENTINEL = 'raw-only-fixture:'.repeat(32768);
 
 function materializePackageMirror() {
+  const build = spawnSync(
+    process.execPath,
+    [path.join(PROJECT_ROOT, 'packages', 'bmad-speckit', 'scripts', 'build-main-agent-dist.cjs')],
+    {
+      cwd: PROJECT_ROOT,
+      env: { ...process.env, BMAD_PREPUBLISH_SILENT: '1' },
+      encoding: 'utf8',
+      windowsHide: true,
+    }
+  );
+  assert.equal(build.status, 0, build.stderr || build.stdout);
   const result = spawnSync('node', ['scripts/prepublish-check.js'], {
     cwd: PROJECT_ROOT,
     env: { ...process.env, BMAD_PREPUBLISH_SILENT: '1' },

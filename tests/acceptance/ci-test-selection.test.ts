@@ -18,7 +18,12 @@ const temporaryRoots: string[] = [];
 
 afterEach(() => {
   for (const root of temporaryRoots.splice(0)) {
-    rmSync(root, { force: true, recursive: true });
+    rmSync(root, {
+      force: true,
+      recursive: true,
+      maxRetries: 5,
+      retryDelay: 100,
+    });
   }
 });
 

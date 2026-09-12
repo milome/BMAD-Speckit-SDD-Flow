@@ -4,7 +4,7 @@
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-projection-registry.ts",
     "hash": "sha256:9f9e3a266040ce296b62e90312b901ed39783340d1f35ce7a6241deb4ad31649"
   },
-  "registryHash": "sha256:b51a6b35f74b421073d5c1e0e5b59118d7b032ecb4feff24bdea72a4334e7946",
+  "registryHash": "sha256:e7fefb929d2c35c40663320302c021c0409c852dfa1048f5463170e4d77a496a",
   "projections": [
     {
       "projectionId": "canonical_markdown_source_parser",
@@ -114,7 +114,7 @@
     {
       "projectionId": "package_runtime_action_binding_manifest",
       "canonicalPath": "_bmad/shared/requirements-contract/requirements-contract-package-runtime-action-binding-manifest.json",
-      "canonicalHash": "sha256:023b91b33b8acee1cdaae7053a65ee96e50bdfa155eb44d3de4717944d520194",
+      "canonicalHash": "sha256:0a835e776ae2d249401af1e02a7ed40fa9747880868ed2908a22649eeb56a102",
       "surfacePaths": [
         "_bmad/shared/requirements-contract/requirements-contract-package-runtime-action-binding-manifest.json",
         ".codex/shared/requirements-contract/requirements-contract-package-runtime-action-binding-manifest.json",
@@ -123,11 +123,11 @@
         "packages/bmad-speckit/_bmad/shared/requirements-contract/requirements-contract-package-runtime-action-binding-manifest.json"
       ],
       "surfaceHashes": {
-        "_bmad/shared/requirements-contract/requirements-contract-package-runtime-action-binding-manifest.json": "sha256:023b91b33b8acee1cdaae7053a65ee96e50bdfa155eb44d3de4717944d520194",
-        ".codex/shared/requirements-contract/requirements-contract-package-runtime-action-binding-manifest.json": "sha256:023b91b33b8acee1cdaae7053a65ee96e50bdfa155eb44d3de4717944d520194",
-        ".cursor/shared/requirements-contract/requirements-contract-package-runtime-action-binding-manifest.json": "sha256:023b91b33b8acee1cdaae7053a65ee96e50bdfa155eb44d3de4717944d520194",
-        ".claude/shared/requirements-contract/requirements-contract-package-runtime-action-binding-manifest.json": "sha256:023b91b33b8acee1cdaae7053a65ee96e50bdfa155eb44d3de4717944d520194",
-        "packages/bmad-speckit/_bmad/shared/requirements-contract/requirements-contract-package-runtime-action-binding-manifest.json": "sha256:023b91b33b8acee1cdaae7053a65ee96e50bdfa155eb44d3de4717944d520194"
+        "_bmad/shared/requirements-contract/requirements-contract-package-runtime-action-binding-manifest.json": "sha256:0a835e776ae2d249401af1e02a7ed40fa9747880868ed2908a22649eeb56a102",
+        ".codex/shared/requirements-contract/requirements-contract-package-runtime-action-binding-manifest.json": "sha256:0a835e776ae2d249401af1e02a7ed40fa9747880868ed2908a22649eeb56a102",
+        ".cursor/shared/requirements-contract/requirements-contract-package-runtime-action-binding-manifest.json": "sha256:0a835e776ae2d249401af1e02a7ed40fa9747880868ed2908a22649eeb56a102",
+        ".claude/shared/requirements-contract/requirements-contract-package-runtime-action-binding-manifest.json": "sha256:0a835e776ae2d249401af1e02a7ed40fa9747880868ed2908a22649eeb56a102",
+        "packages/bmad-speckit/_bmad/shared/requirements-contract/requirements-contract-package-runtime-action-binding-manifest.json": "sha256:0a835e776ae2d249401af1e02a7ed40fa9747880868ed2908a22649eeb56a102"
       },
       "allowedDifferences": [],
       "authority": "none"

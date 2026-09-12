@@ -209,7 +209,7 @@
         {
           "role": "package-runtime-index",
           "packagePath": "dist/main-agent/source-authority/scripts/requirements-contract-package-runtime-index.js",
-          "hash": "sha256:9a7a7769ea406ad0f90b07959df6cf1ba2abb23bb2a0fd8735b04e9caa8c7abb"
+          "hash": "sha256:48a5716222a263c98cdc9c2d137a26eff4083bfdf5b5a57eaea917e9f116f1a3"
         }
       ],
       "routingOnly": false
