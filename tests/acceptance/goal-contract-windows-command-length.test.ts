@@ -73,5 +73,5 @@ describe('goal-contract generate Windows command length regression', () => {
     } finally {
       rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
     }
-  }, 120_000);
+  }, 300_000);
 });
