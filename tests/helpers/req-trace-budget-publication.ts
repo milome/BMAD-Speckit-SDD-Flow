@@ -122,6 +122,7 @@ export function runGenerator(input: {
       REQ_TRACE_CRASH_ROOT: input.outDir,
       REQ_TRACE_CRASH_POINT: input.crashPoint ?? '',
       REQ_TRACE_CRASH_CONTENDER: String(input.contender === true),
+      REQ_TRACE_CONTENDER_TIMEOUT_MS: String(generatorTimeoutMs(sourceBytes)),
     },
   });
   fs.mkdirSync(EVIDENCE, { recursive: true });

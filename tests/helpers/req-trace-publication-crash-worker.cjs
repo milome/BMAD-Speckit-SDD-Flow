@@ -5,6 +5,10 @@ const { spawnSync } = require('node:child_process');
 const rename = fs.renameSync;
 const root = path.resolve(process.env.REQ_TRACE_CRASH_ROOT);
 const point = process.env.REQ_TRACE_CRASH_POINT;
+const contenderTimeoutMs = Number(process.env.REQ_TRACE_CONTENDER_TIMEOUT_MS);
+const boundedContenderTimeoutMs = Number.isFinite(contenderTimeoutMs) && contenderTimeoutMs > 0
+  ? contenderTimeoutMs
+  : 120_000;
 let interrupted = false;
 fs.renameSync = function(from, to, ...rest) {
   const result = rename.call(this, from, to, ...rest);
@@ -21,7 +25,8 @@ fs.renameSync = function(from, to, ...rest) {
       delete env.REQ_TRACE_CRASH_ROOT;
       delete env.REQ_TRACE_CRASH_CONTENDER;
       const contender = spawnSync(process.execPath, process.argv.slice(1), {
-        env, encoding: 'utf8', timeout: 30_000, maxBuffer: 1024 * 1024, windowsHide: true,
+        env, encoding: 'utf8', timeout: boundedContenderTimeoutMs,
+        maxBuffer: 1024 * 1024, windowsHide: true,
       });
       fs.writeSync(1, `${JSON.stringify({ testOnly: true, contenderStatus: contender.status,
         contenderStdout: contender.stdout, contenderStderr: contender.stderr })}\n`);
