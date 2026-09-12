@@ -1000,7 +1000,7 @@ describe('committed goal-run finalizer composition', () => {
       });
       const adapters: LeafAdapters = {
         resolveProviderRef: () => TEST_PROVIDER_REF,
-        claimLeaseMs: 60,
+        claimLeaseMs: 1_000,
         async onStaleClaimObserved() {
           staleObservers += 1;
           if (staleObservers === 2) releaseObservers();
