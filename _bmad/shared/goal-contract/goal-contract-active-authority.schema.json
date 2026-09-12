@@ -12,7 +12,7 @@
     "goalExecutionIRHash": { "$ref": "#/$defs/hash" },
     "goalExecutionIrRef": { "$ref": "#/$defs/hashRef" },
     "standaloneSemanticIrRef": { "$ref": "#/$defs/hashRef" },
-    "standaloneAuthoringEffectivePassRef": { "$ref": "#/$defs/hashRef" },
+    "standaloneInternalSemanticGateRef": { "$ref": "#/$defs/hashRef" },
     "sourceBindingRef": { "$ref": "#/$defs/hashRef" },
     "resolvedEvidenceIndexRef": { "$ref": "#/$defs/hashRef" },
     "closureRef": { "$ref": "#/$defs/hashRef" },
@@ -21,8 +21,8 @@
     "activeAuthorityHash": { "$ref": "#/$defs/hash" }
   },
   "allOf": [
-    { "if": { "properties": { "profile": { "const": "requirements_backed" } } }, "then": { "not": { "anyOf": [{ "required": ["standaloneSemanticIrRef"] }, { "required": ["standaloneAuthoringEffectivePassRef"] }] } } },
-    { "if": { "properties": { "profile": { "const": "standalone" } } }, "then": { "required": ["standaloneSemanticIrRef", "standaloneAuthoringEffectivePassRef"] } }
+    { "if": { "properties": { "profile": { "const": "requirements_backed" } } }, "then": { "not": { "anyOf": [{ "required": ["standaloneSemanticIrRef"] }, { "required": ["standaloneInternalSemanticGateRef"] }] } } },
+    { "if": { "properties": { "profile": { "const": "standalone" } } }, "then": { "required": ["standaloneSemanticIrRef", "standaloneInternalSemanticGateRef"] } }
   ],
   "$defs": {
     "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },

@@ -1,6 +1,6 @@
 {
   "name": "bmad-speckit",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Internal BMAD-Speckit CLI workspace bundled by bmad-speckit-sdd-flow",
   "private": true,
   "bin": {
@@ -12,6 +12,8 @@
     "bin/",
     "dist/",
     "_bmad/",
+    "!_bmad/.*",
+    "!_bmad/**/.*",
     "node_modules/@bmad-speckit/"
   ],
   "scripts": {

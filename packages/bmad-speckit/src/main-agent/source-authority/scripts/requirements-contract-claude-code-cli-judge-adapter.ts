@@ -5,6 +5,11 @@ import { tmpdir } from 'node:os';
 import * as path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
 import { readRequirementsContractJudgeCredentialSecret } from './requirements-contract-judge-credential-resolver';
+import {
+  assertJudgePayloadBudget,
+  assertJudgePayloadUnchanged,
+  type JudgePayloadPreflight,
+} from './requirements-contract-judge-payload-budget';
 
 type JsonRecord = Record<string, unknown>;
 type ClaudeCodeCliExecutorKind = 'native_spawn' | 'injected_test_transport';
@@ -39,12 +44,14 @@ interface AdapterInput {
   provider: JsonRecord;
   credential?: unknown;
   payload?: unknown;
+  expectedPreflight?: JudgePayloadPreflight;
 }
 
 interface ExecutionContext {
   projectRoot: string;
   requestPath: string;
   outputDir: string;
+  requestFileContent?: string;
 }
 
 interface SnapshotEntry {
@@ -323,24 +330,39 @@ function boundedUtf8SegmentEnd(content: Buffer, startByte: number): number {
   return endByte;
 }
 
-function materializeSnapshotFile(input: {
+function planSnapshotFile(input: {
   projectRoot: string;
-  snapshotRoot: string;
   sourcePath: string;
   roles: string[];
-}): { entries: SnapshotEntry[]; readPlan: SnapshotReadPlanEntry } {
-  const projectRealRoot = fs.realpathSync(input.projectRoot);
-  const sourceRealPath = fs.realpathSync(input.sourcePath);
-  if (!isWithin(projectRealRoot, sourceRealPath)) {
-    throw new Error('claude_code_cli_judge_evidence_realpath_escape');
+  plannedContent?: string;
+}): { entries: SnapshotEntry[]; readPlan: SnapshotReadPlanEntry; contents: Buffer[] } {
+  assertWritablePathWithinRoot(
+    input.projectRoot,
+    input.sourcePath,
+    'claude_code_cli_judge_evidence_realpath_escape'
+  );
+  const persistedContent = fs.existsSync(input.sourcePath)
+    ? fs.readFileSync(input.sourcePath)
+    : null;
+  const sourceContent =
+    input.plannedContent === undefined
+      ? persistedContent
+      : Buffer.from(input.plannedContent, 'utf8');
+  if (!sourceContent) throw new Error('claude_code_cli_judge_request_content_missing');
+  if (
+    persistedContent &&
+    input.plannedContent !== undefined &&
+    !persistedContent.equals(sourceContent)
+  ) {
+    throw new Error('claude_code_cli_judge_request_content_changed');
   }
   const relativePath = slash(path.relative(input.projectRoot, input.sourcePath));
-  const sourceContent = fs.readFileSync(input.sourcePath);
   const sourceHash = sha256(sourceContent);
   const sourceRoles = [...new Set(input.roles)].sort();
   const useReadSegments = snapshotPathRequiresSegment(relativePath, sourceContent.byteLength);
   const segments: SnapshotReadSegment[] = [];
   const entries: SnapshotEntry[] = [];
+  const contents: Buffer[] = [];
   let startByte = 0;
   let segmentIndex = 0;
 
@@ -352,13 +374,8 @@ function materializeSnapshotFile(input: {
     const segmentPath = useReadSegments
       ? snapshotSegmentPath(relativePath, segmentIndex)
       : relativePath;
-    const target = path.resolve(input.snapshotRoot, segmentPath);
-    if (!isWithin(input.snapshotRoot, target)) {
-      throw new Error('claude_code_cli_judge_snapshot_path_escape');
-    }
     const segmentContent = sourceContent.subarray(startByte, endByteExclusive);
-    fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.writeFileSync(target, segmentContent);
+    contents.push(segmentContent);
     const segmentHash = sha256(segmentContent);
     entries.push({
       path: segmentPath,
@@ -381,6 +398,7 @@ function materializeSnapshotFile(input: {
 
   return {
     entries,
+    contents,
     readPlan: {
       sourcePath: relativePath,
       sourceHash,
@@ -390,10 +408,7 @@ function materializeSnapshotFile(input: {
   };
 }
 
-function materializeEvidenceSnapshot(input: {
-  context: ExecutionContext;
-  request: JsonRecord;
-}): EvidenceSnapshot {
+function planEvidenceSnapshot(input: { context: ExecutionContext; request: JsonRecord }) {
   const projectRoot = path.resolve(input.context.projectRoot);
   const outputDir = resolveWithin(
     projectRoot,
@@ -410,14 +425,16 @@ function materializeEvidenceSnapshot(input: {
     input.context.requestPath,
     'claude_code_cli_judge_request_path_escape'
   );
-  if (!fs.existsSync(requestPath) || !fs.statSync(requestPath).isFile()) {
+  if (
+    input.context.requestFileContent === undefined &&
+    (!fs.existsSync(requestPath) || !fs.statSync(requestPath).isFile())
+  ) {
     throw new Error('claude_code_cli_judge_request_path_missing');
   }
   const snapshotRoot = path.join(outputDir, 's');
   if (fs.existsSync(snapshotRoot)) {
     throw new Error('claude_code_cli_judge_snapshot_already_exists');
   }
-  fs.mkdirSync(snapshotRoot, { recursive: true });
   assertWritablePathWithinRoot(
     projectRoot,
     snapshotRoot,
@@ -430,11 +447,11 @@ function materializeEvidenceSnapshot(input: {
   const materializedFiles = [...files.entries()]
     .sort(([left], [right]) => slash(left).localeCompare(slash(right)))
     .map(([sourcePath, roles]) =>
-      materializeSnapshotFile({
+      planSnapshotFile({
         projectRoot,
-        snapshotRoot,
         sourcePath,
         roles: [...roles],
+        ...(sourcePath === requestPath ? { plannedContent: input.context.requestFileContent } : {}),
       })
     );
   const entries = materializedFiles.flatMap((materialized) => materialized.entries);
@@ -443,20 +460,51 @@ function materializeEvidenceSnapshot(input: {
   const manifestPath = path.join(snapshotRoot, 'snapshot-manifest.json');
   const requestBinding = {
     requestPath: slash(path.relative(projectRoot, requestPath)),
-    requestContentHash: sha256(fs.readFileSync(requestPath)),
+    requestContentHash: readPlan.find(
+      (entry) => entry.sourcePath === slash(path.relative(projectRoot, requestPath))
+    )!.sourceHash,
     judgeRequestHash: requiredText(
       input.request.judgeRequestHash,
       'claude_code_cli_judge_request_hash_missing'
     ),
   };
-  writeJsonAtomic(manifestPath, {
+  const manifest = {
     schemaVersion: 'requirements-contract-judge-evidence-snapshot/v2',
     entries,
     readPlan,
     requestBinding,
     snapshotHash,
-  });
-  return { snapshotRoot, manifestPath, snapshotHash, entries, readPlan };
+  };
+  return {
+    snapshotRoot,
+    manifestPath,
+    snapshotHash,
+    entries,
+    readPlan,
+    manifest,
+    materializedFiles,
+  };
+}
+
+function materializeEvidenceSnapshot(
+  plan: ReturnType<typeof planEvidenceSnapshot>
+): EvidenceSnapshot {
+  if (fs.existsSync(plan.snapshotRoot))
+    throw new Error('claude_code_cli_judge_snapshot_already_exists');
+  fs.mkdirSync(plan.snapshotRoot, { recursive: true });
+  for (const file of plan.materializedFiles) {
+    file.entries.forEach((entry, index) => {
+      const target = resolveWithin(
+        plan.snapshotRoot,
+        entry.path,
+        'claude_code_cli_judge_snapshot_path_escape'
+      );
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.writeFileSync(target, file.contents[index]);
+    });
+  }
+  writeJsonAtomic(plan.manifestPath, plan.manifest);
+  return plan;
 }
 
 function materializeExecutionSnapshot(snapshot: EvidenceSnapshot): ExecutionSnapshot {
@@ -520,6 +568,9 @@ function executionContext(payload: JsonRecord): ExecutionContext {
     projectRoot: requiredText(context.projectRoot, 'claude_code_cli_judge_project_root_missing'),
     requestPath: requiredText(context.requestPath, 'claude_code_cli_judge_request_path_missing'),
     outputDir: requiredText(context.outputDir, 'claude_code_cli_judge_output_dir_missing'),
+    ...(typeof context.requestFileContent === 'string'
+      ? { requestFileContent: context.requestFileContent }
+      : {}),
   };
 }
 
@@ -738,6 +789,37 @@ export function buildClaudeCodeCliJudgeArgs(input: {
     args.push('--max-budget-usd', String(maxBudgetUsd));
   }
   return args;
+}
+
+function planClaudePayload(input: AdapterInput) {
+  const provider = record(input.provider, 'claude_code_cli_judge_provider_invalid');
+  assertProvider(provider);
+  const payload = record(input.payload, 'claude_code_cli_judge_payload_invalid');
+  const systemPrompt = requiredText(
+    payload.systemPrompt,
+    'claude_code_cli_judge_system_prompt_missing'
+  );
+  const request = record(payload.request, 'claude_code_cli_judge_request_invalid');
+  const structuredOutputSchema =
+    payload.structuredOutputSchema === undefined
+      ? undefined
+      : record(
+          payload.structuredOutputSchema,
+          'claude_code_cli_judge_structured_output_schema_invalid'
+        );
+  const context = executionContext(payload);
+  const snapshotPlan = planEvidenceSnapshot({ context, request });
+  const prompt = buildClaudeCodeCliJudgePrompt(systemPrompt, request, snapshotPlan.readPlan);
+  const args = buildClaudeCodeCliJudgeArgs({ provider, systemPrompt, structuredOutputSchema });
+  const assessment = assertJudgePayloadBudget({
+    serializedPayload: prompt,
+    auxiliaryPayload: JSON.stringify(args),
+    provider,
+    stage: 'adapter_prompt',
+    candidateHash: request.candidateHash,
+  });
+  assertJudgePayloadUnchanged(input.expectedPreflight, assessment);
+  return { snapshotPlan, prompt, args, context, structuredOutputSchema, assessment };
 }
 
 function terminateProcessTree(child: ChildProcessWithoutNullStreams): void {
@@ -1025,6 +1107,7 @@ export function createClaudeCodeCliJudgeAdapter(
   const run = dependencies.executeCommand ?? executeClaudeCodeCliCommand;
   const executorKind = dependencies.executeCommand ? 'injected_test_transport' : 'native_spawn';
   return {
+    preflight: (input: AdapterInput): JudgePayloadPreflight => planClaudePayload(input).assessment,
     judge: async (input: AdapterInput): Promise<JsonRecord> => {
       const provider = record(input.provider, 'claude_code_cli_judge_provider_invalid');
       assertProvider(provider);
@@ -1032,32 +1115,13 @@ export function createClaudeCodeCliJudgeAdapter(
         input.providerRef,
         'claude_code_cli_judge_provider_ref_missing'
       );
+      const { snapshotPlan, prompt, args, context, structuredOutputSchema } = planClaudePayload(input);
       const credential = credentialBinding({
         providerRef,
         provider,
         credential: input.credential,
       });
-      const payload = record(input.payload, 'claude_code_cli_judge_payload_invalid');
-      const systemPrompt = requiredText(
-        payload.systemPrompt,
-        'claude_code_cli_judge_system_prompt_missing'
-      );
-      const request = record(payload.request, 'claude_code_cli_judge_request_invalid');
-      const structuredOutputSchema =
-        payload.structuredOutputSchema === undefined
-          ? undefined
-          : record(
-              payload.structuredOutputSchema,
-              'claude_code_cli_judge_structured_output_schema_invalid'
-            );
-      const context = executionContext(payload);
-      const snapshot = materializeEvidenceSnapshot({ context, request });
-      const prompt = buildClaudeCodeCliJudgePrompt(systemPrompt, request, snapshot.readPlan);
-      const args = buildClaudeCodeCliJudgeArgs({
-        provider,
-        systemPrompt,
-        ...(structuredOutputSchema ? { structuredOutputSchema } : {}),
-      });
+      const snapshot = materializeEvidenceSnapshot(snapshotPlan);
       const requestPolicy = record(
         provider.requestPolicy,
         'claude_code_cli_judge_request_policy_invalid'

@@ -51,6 +51,9 @@ export default defineConfig({
     exclude: [
       ...configDefaults.exclude,
       'packages/bmad-speckit/tests/**/*',
+      // Governed feature delivery ships standalone node:test suites, not Vitest suites.
+      '_bmad/skills/governed-feature-delivery/scripts/tests/**/*',
+      'packages/bmad-speckit/_bmad/skills/governed-feature-delivery/scripts/tests/**/*',
       // Generated dist artifacts are validated by package runtime/replay gates after build.
       // Maintained source under packages/bmad-speckit/src remains linted and must be fixed at source.
       'packages/bmad-speckit/dist/**/*',

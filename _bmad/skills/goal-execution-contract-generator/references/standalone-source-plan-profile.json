@@ -1,0 +1,96 @@
+{
+  "$schema": "./standalone-source-plan-profile.schema.json",
+  "schemaVersion": "StandaloneSourcePlanProfile/v1",
+  "profileId": "standalone-source-plan",
+  "profileVersion": "1.1.0",
+  "sourcePlanVersion": "standalone-source-plan/v1",
+  "templatePath": "_bmad/shared/goal-contract/standalone-source-plan-template.md",
+  "templateHash": "sha256:bb8ba3ca3665a6eac1072753d450f4026303c92b09998a54da60943dc9e9b601",
+  "profileHash": "sha256:7039f71986f2b43eca5ac0eebe4fab4ff65b70f7d0cbf476dbee80345f57e7fb",
+  "metadataRequired": ["sourcePlanVersion", "sourcePlanId", "intendedConsumer", "purpose", "sourceLanguage", "goal", "scope", "nonGoals", "globalBindingsAllowed"],
+  "nodeKinds": ["REQ", "NFR", "NEG", "OUT", "TASK", "AC", "PATH", "CMD", "EVD", "ART", "DEP", "STOP"],
+  "requirementOwnerKinds": ["REQ", "NFR", "NEG", "OUT"],
+  "ownedNodeKinds": ["AC", "PATH", "CMD", "EVD", "ART", "DEP", "STOP"],
+  "identity": {
+    "domainPattern": "[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*",
+    "canonicalPattern": "^(?:(?:REQ|NFR|NEG|OUT|TASK|CMD|EVD|ART|PATH|DEP|STOP)-[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-[0-9]{3}|AC-[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-[0-9]{3}(?:-S[0-9]{2})?)$",
+    "sourcePlanIdPattern": "^PLAN-[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-[0-9]{3}$",
+    "provenanceOnlyPrefixes": ["SRC-", "SPAN-", "source-block-", "clause-"],
+    "legacyAliasPattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$"
+  },
+  "parser": {
+    "metadataFence": "standalone-source-plan",
+    "nodeFence": "standalone-source-plan-node",
+    "headingTextIsSemantic": false,
+    "sectionOrderIsSemantic": false,
+    "explicitFieldsOverrideProse": true
+  },
+  "commonNodeRequiredFields": ["kind", "id", "title", "statement", "normativeStrength", "polarity", "applicability", "scope"],
+  "requiredFieldsByKind": {
+    "TASK": ["requirementRefs", "acceptanceRefs", "commandRefs", "evidenceRefs", "executionClass", "ownedProductionPaths", "steps"],
+    "AC": ["ownerRef", "requirementRefs", "predicate"],
+    "PATH": ["ownerRef", "requirementRefs", "path", "access"],
+    "CMD": ["ownerRef", "requirementRefs", "workingDirectory", "passCriteria"],
+    "EVD": ["ownerRef", "requirementRefs", "producerRef", "expectedFields"],
+    "ART": ["ownerRef", "requirementRefs", "producerRef", "path", "requiredFields"],
+    "DEP": ["ownerRef", "requirementRefs", "dependency", "requiredState"],
+    "STOP": ["ownerRef", "requirementRefs", "trigger", "requiredState"]
+  },
+  "referenceFields": {
+    "ownerRef": ["REQ", "NFR", "TASK", "AC", "CMD"],
+    "requirementRefs": ["REQ", "NFR", "NEG", "OUT"],
+    "taskRefs": ["TASK"],
+    "acceptanceRefs": ["AC"],
+    "pathRefs": ["PATH"],
+    "commandRefs": ["CMD"],
+    "evidenceRefs": ["EVD"],
+    "artifactRefs": ["ART"],
+    "dependencyRefs": ["DEP"],
+    "stopRefs": ["STOP"],
+    "producerRef": ["TASK", "CMD"],
+    "consumerRefs": ["AC", "TASK"],
+    "commandSetRefs": ["CMD"],
+    "globalAuthorityRef": ["REQ", "NFR", "NEG", "OUT"]
+  },
+  "ownerRules": {
+    "AC": ["REQ", "NFR", "TASK"],
+    "PATH": ["REQ", "NFR", "TASK", "AC"],
+    "CMD": ["REQ", "NFR", "TASK", "AC"],
+    "EVD": ["TASK", "AC", "CMD"],
+    "ART": ["TASK", "CMD"],
+    "DEP": ["REQ", "NFR", "TASK"],
+    "STOP": ["REQ", "NFR", "TASK", "AC"]
+  },
+  "globalBinding": {
+    "wildcardRefsForbidden": true,
+    "metadataFlag": "globalBindingsAllowed",
+    "metadataAuthorityRefsField": "globalAuthorityRefs",
+    "nodeAuthorityRefField": "globalAuthorityRef"
+  },
+  "purpose": {
+    "intendedConsumer": "goal-execution-contract-generator",
+    "allowedPurpose": "implementation_execution",
+    "conflictingTargets": ["goal_contract_generation"]
+  },
+  "confirmation": {
+    "implementationConfirmationRequired": false,
+    "confirmedRequirementsRoutesKeepNativeGates": true,
+    "confirmedSourceAdapterTarget": "CanonicalRequirementGraph/v1",
+    "canonicalGraphLintRequired": true,
+    "sharedCompilerStages": ["compileGoalExecutionIR", "compileGoalExecutionClosure", "renderGoalExecutionProjection"]
+  },
+  "normalization": {
+    "normativeStrengthValues": ["MUST", "SHOULD", "MAY"],
+    "polarityValues": ["required", "forbidden", "excluded", "permitted", "descriptive"],
+    "notDoneProjectionKind": "OUT",
+    "unownedSemanticChildFailure": "source_semantic_owner_missing",
+    "purposeConflictFailure": "source_plan_purpose_conflict",
+    "taskExecutionClassValues": ["executable_child", "aggregate_only"],
+    "commandDeclarationClasses": ["executable_expression", "source_command_set", "conditional_selector"]
+  },
+  "hashing": {
+    "algorithm": "sha256",
+    "canonicalizer": "canonical-control-plane/v1",
+    "selfHashField": "profileHash"
+  }
+}

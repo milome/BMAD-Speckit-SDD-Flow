@@ -1,16 +1,47 @@
 import { exec, execSync } from 'node:child_process';
 import { promisify } from 'node:util';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import {
-  materializeStandaloneGoalJudgeHttpFixture,
-  type StandaloneGoalJudgeHttpFixture,
-} from '../helpers/standalone-goal-judge-http-fixture';
 
 const ROOT = process.cwd();
 const execAsync = promisify(exec);
+const CANONICAL_SOURCE = join(
+  ROOT,
+  'packages',
+  'bmad-speckit',
+  'tests',
+  'fixtures',
+  'standalone-goal',
+  'canonical-source-plan-v1-minimal.md'
+);
+
+async function runAsync(command: string, cwd: string) {
+  try {
+    return await execAsync(command, {
+      cwd,
+      encoding: 'utf8',
+      env: { ...process.env, BMAD_SKIP_CONSUMER_MCP_INSTALL: '1' },
+      maxBuffer: 20 * 1024 * 1024,
+    });
+  } catch (error) {
+    const failure = error as { message?: string; stdout?: string; stderr?: string };
+    throw new Error([
+      failure.message,
+      failure.stdout?.slice(0, 1600),
+      failure.stderr?.slice(0, 1600),
+    ].filter(Boolean).join('\n'));
+  }
+}
 
 function run(command: string, cwd: string): string {
   return execSync(command, {
@@ -27,37 +58,15 @@ function run(command: string, cwd: string): string {
 function writeSourcePlan(root: string): string {
   const source = join(root, 'fixtures', 'goal-contract', 'source-plan.md');
   mkdirSync(join(root, 'fixtures', 'goal-contract'), { recursive: true });
-  writeFileSync(
-    source,
-    [
-      '# Consumer Source Plan',
-      '',
-      '## File Map',
-      '',
-      '- Modify `packages/bmad-speckit/src/commands/goal-contract.ts`.',
-      '',
-      '## Implementation Task Breakdown',
-      '',
-      '- Generate a source-covered goal contract.',
-      '',
-      '```powershell',
-      'npx --no-install bmad-speckit goal-contract generate --entry standalone_goal_contract --source fixtures/goal-contract/source-plan.md --out generated/goal-execution-plan.md --json',
-      '```',
-      '',
-      '## Completion Criteria',
-      '',
-      '- Coverage and generation receipts must exist.',
-      '',
-    ].join('\n'),
-    'utf8'
-  );
+  const canonicalSourceBytes = readFileSync(CANONICAL_SOURCE);
+  copyFileSync(CANONICAL_SOURCE, source);
+  expect(readFileSync(source)).toEqual(canonicalSourceBytes);
   return source;
 }
 
 describe('goal-contract generate consumer CLI', () => {
   it('runs from an installed consumer without consumer root scripts', async () => {
     const target = mkdtempSync(join(tmpdir(), 'goal-contract-consumer-'));
-    let judge: StandaloneGoalJudgeHttpFixture | undefined;
     try {
       writeFileSync(
         join(target, 'package.json'),
@@ -66,18 +75,12 @@ describe('goal-contract generate consumer CLI', () => {
       );
       run(`npm install --save-dev "file:${ROOT.replace(/\\/g, '/')}"`, target);
       rmSync(join(target, 'scripts'), { recursive: true, force: true });
-      judge = await materializeStandaloneGoalJudgeHttpFixture(target);
       const source = writeSourcePlan(target);
       const out = join(target, 'generated', 'goal-execution-plan.md');
 
-      const { stdout } = await execAsync(
+      const { stdout } = await runAsync(
         `npx --no-install bmad-speckit goal-contract generate --entry standalone_goal_contract --source "${source}" --out "${out}" --json`,
-        {
-          cwd: target,
-          encoding: 'utf8',
-          env: { ...process.env, BMAD_SKIP_CONSUMER_MCP_INSTALL: '1' },
-          maxBuffer: 20 * 1024 * 1024,
-        }
+        target
       );
       const payload = JSON.parse(stdout);
 
@@ -95,26 +98,19 @@ describe('goal-contract generate consumer CLI', () => {
       expect(coverage.sourcePlanHash).toBe(payload.sourcePlanHash);
       expect(coverage.goalContractHash).toBe(payload.goalContractHash);
       expect(generation.goalContractHash).toBe(payload.goalContractHash);
-      expect(payload.goalJudgeDispatchCount).toBe(1);
-      expect(judge.requests).toBe(1);
+      expect(payload.goalJudgeDispatchCount).toBe(0);
+      expect(existsSync(payload.internalSemanticGateRef.path)).toBe(true);
 
-      const replay = await execAsync(
+      const replay = await runAsync(
         `npx --no-install bmad-speckit goal-contract generate --entry standalone_goal_contract --source "${source}" --out "${out}" --json`,
-        {
-          cwd: target,
-          encoding: 'utf8',
-          env: { ...process.env, BMAD_SKIP_CONSUMER_MCP_INSTALL: '1' },
-          maxBuffer: 20 * 1024 * 1024,
-        }
+        target
       );
       expect(JSON.parse(replay.stdout)).toMatchObject({
         goalJudgeDispatchCount: 0,
         publicationStatus: 'reused',
         writeCount: 0,
       });
-      expect(judge.requests).toBe(1);
     } finally {
-      if (judge) await judge.close();
       rmSync(target, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
     }
   }, 180_000);

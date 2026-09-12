@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "GovernedFeatureDeliveryCheckpoint/v1",
+  "title": "Governed Feature Delivery Checkpoint",
+  "type": "object",
+  "additionalProperties": false,
+  "allOf": [
+    { "properties": {
+      "stopGateEvidence": { "maxItems": 256 },
+      "scopeDeltas": { "maxItems": 256 },
+      "stateHistory": { "maxItems": 128 }
+    } }
+  ],
+  "required": [
+    "schemaVersion", "checkpointGeneration", "checkpointRevision", "featureId", "currentPhase", "state",
+    "specHash", "phasePlanHash", "successorPolicyHash", "authorityPolicyHash", "scopeHash", "authorizedScope", "branch", "baseSha", "headSha",
+    "completedPhase", "currentStep", "stopGateEvidence", "scopeAttestation", "reviewer", "scopeDeltas",
+    "designFreezeReceipt", "nextActionCode", "nextExactAction", "successorPolicy", "stateHistory", "artifacts", "updatedAt"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "GovernedFeatureDeliveryCheckpoint/v1" },
+    "checkpointGeneration": { "type": "integer", "minimum": 1 },
+    "checkpointRevision": { "type": "integer", "minimum": 1 },
+    "featureId": { "type": "string", "minLength": 1 },
+    "currentPhase": { "type": "string", "minLength": 1 },
+    "state": {
+      "enum": ["DISCOVERED", "SPEC_FROZEN", "PHASE_PLANNED", "RED_CONFIRMED", "GREEN_CONFIRMED", "STOP_GATE_GREEN", "REVIEWED", "PR_GREEN", "MERGED", "NEXT_PHASE", "RELEASED"]
+    },
+    "specHash": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "phasePlanHash": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "successorPolicyHash": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "authorityPolicyHash": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "scopeHash": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "designFreezeReceipt": { "type": ["object", "null"], "additionalProperties": false, "required": ["authority", "frozenAt", "specHash", "successorPolicyHash", "receiptPath", "receiptHash"], "properties": { "authority": { "type": "string", "minLength": 1 }, "frozenAt": { "type": "string", "format": "date-time" }, "specHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "successorPolicyHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "receiptPath": { "type": "string", "minLength": 1 }, "receiptHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" } } },
+    "authorizedScope": {
+      "type": "object",
+      "required": ["allowedPaths", "protectedPaths", "forbiddenWork", "evidenceInputs"],
+      "properties": {
+        "allowedPaths": { "type": "array", "maxItems": 256, "items": { "type": "string", "minLength": 1, "maxLength": 1024 }, "uniqueItems": true },
+        "protectedPaths": { "type": "array", "maxItems": 256, "items": { "type": "string", "minLength": 1, "maxLength": 1024 }, "uniqueItems": true },
+        "forbiddenWork": { "type": "array", "maxItems": 256, "items": { "type": "string", "minLength": 1, "maxLength": 1024 }, "uniqueItems": true },
+        "evidenceInputs": { "type": "object", "additionalProperties": false, "required": ["acceptance-red", "implementation-green", "stop-gate"], "properties": { "acceptance-red": { "type": "array", "maxItems": 1024, "items": { "type": "string", "minLength": 1, "maxLength": 1024 }, "uniqueItems": true }, "implementation-green": { "type": "array", "maxItems": 1024, "items": { "type": "string", "minLength": 1, "maxLength": 1024 }, "uniqueItems": true }, "stop-gate": { "type": "array", "maxItems": 1024, "items": { "type": "string", "minLength": 1, "maxLength": 1024 }, "uniqueItems": true } } }
+      },
+      "additionalProperties": false
+    },
+    "branch": { "type": "string", "minLength": 1 },
+    "baseSha": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" },
+    "headSha": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" },
+    "completedPhase": { "type": ["string", "null"] },
+    "currentStep": { "type": "string", "minLength": 1 },
+    "stopGateEvidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "status", "headSha", "command", "commandHash", "inputHashes", "receiptPath", "receiptHash", "completedAt"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "kind": { "enum": ["acceptance-red", "implementation-green", "stop-gate"] },
+          "status": { "enum": ["confirmed", "pass"] },
+          "headSha": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" },
+          "command": { "type": "string", "minLength": 1 },
+          "commandHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "inputHashes": { "type": "object", "minProperties": 1, "additionalProperties": { "type": "string", "pattern": "^[a-f0-9]{64}$" } },
+          "receiptPath": { "type": "string", "minLength": 1 },
+          "receiptHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "completedAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "scopeAttestation": { "type": ["object", "null"], "additionalProperties": false, "required": ["baseSha", "headSha", "scopeHash", "changedPaths", "createdAt"], "properties": { "baseSha": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" }, "headSha": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" }, "scopeHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "changedPaths": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }, "createdAt": { "type": "string", "format": "date-time" } } },
+    "reviewer": { "type": ["object", "null"], "additionalProperties": false, "required": ["headSha", "status", "authority"], "properties": { "headSha": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" }, "status": { "enum": ["approved", "no-findings"] }, "authority": { "type": "string", "minLength": 1 } } },
+    "scopeDeltas": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "decision", "beforeScopeHash", "afterScopeHash", "phasePlanHash", "authority", "decidedAt"], "properties": { "id": { "type": "string", "minLength": 1 }, "decision": { "enum": ["approved", "rejected"] }, "beforeScopeHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "afterScopeHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "phasePlanHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "authority": { "type": "string", "minLength": 1 }, "decidedAt": { "type": "string", "format": "date-time" } } } },
+    "nextActionCode": { "type": "string", "enum": ["FREEZE_SPEC", "WRITE_PHASE_PLAN", "WRITE_RED_ACCEPTANCE", "IMPLEMENT", "RUN_STOP_GATES", "REQUEST_REVIEW", "OPEN_PR", "MERGE_PHASE", "SIGN_SUCCESSOR", "INITIALIZE_NEXT_PHASE", "RECONSTRUCT_FROM_EVIDENCE", "HALT_FOR_DECISION"] },
+    "nextExactAction": { "type": "string", "minLength": 1 },
+    "successorPolicy": {
+      "type": "object",
+      "required": ["allowedCodes"],
+      "properties": { "allowedCodes": { "type": "object", "additionalProperties": { "type": "string", "minLength": 1 } } },
+      "additionalProperties": false
+    },
+    "lastSuccessorSignal": { "type": ["object", "null"], "additionalProperties": false, "required": ["code", "target", "authority", "signedAt"], "properties": { "code": { "type": "string", "minLength": 1 }, "target": { "type": "string", "minLength": 1 }, "authority": { "type": "string", "minLength": 1 }, "signedAt": { "type": "string", "format": "date-time" } } },
+    "stateHistory": { "type": "array", "minItems": 1, "items": { "type": "object", "additionalProperties": false, "required": ["state", "at", "reason"], "properties": { "state": { "enum": ["DISCOVERED", "SPEC_FROZEN", "PHASE_PLANNED", "RED_CONFIRMED", "GREEN_CONFIRMED", "STOP_GATE_GREEN", "REVIEWED", "PR_GREEN", "MERGED", "NEXT_PHASE", "RELEASED"] }, "at": { "type": "string", "format": "date-time" }, "reason": { "type": "string", "minLength": 1 } } } },
+    "artifacts": { "type": "object", "additionalProperties": false, "properties": { "specPath": { "type": ["string", "null"] }, "phasePlanPath": { "type": ["string", "null"] }, "scopePath": { "type": ["string", "null"] }, "successorPolicyPath": { "type": ["string", "null"] }, "authorityPolicyPath": { "type": ["string", "null"] } } },
+    "recoveryReceipt": { "type": ["object", "null"], "additionalProperties": false, "required": ["authority", "decidedAt", "sourceHashes", "fieldSources", "decision", "receiptPath", "receiptHash"], "properties": { "authority": { "type": "string", "minLength": 1 }, "decidedAt": { "type": "string", "format": "date-time" }, "sourceHashes": { "type": "object", "minProperties": 1, "additionalProperties": { "type": "string", "pattern": "^[a-f0-9]{64}$" } }, "fieldSources": { "type": "object", "minProperties": 1, "additionalProperties": { "type": "string", "minLength": 1 } }, "decision": { "enum": ["reconstructed", "halted"] }, "receiptPath": { "type": "string", "minLength": 1 }, "receiptHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" } } },
+    "sourcePhaseReceipt": { "type": ["object", "null"], "additionalProperties": false, "required": ["receiptPath", "receiptHash", "confirmedContinuation", "phaseId", "branch", "headSha", "treeHash", "planHash", "scopeHash", "riskPolicyHash", "linkedAt"], "properties": { "receiptPath": { "type": "string", "minLength": 1 }, "receiptHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "confirmedContinuation": { "const": "merge" }, "phaseId": { "type": "string", "minLength": 1 }, "branch": { "type": "string", "minLength": 1 }, "headSha": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" }, "treeHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "planHash": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" }, "scopeHash": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" }, "riskPolicyHash": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" }, "linkedAt": { "type": "string", "format": "date-time" } } },
+    "previousCheckpointPath": { "type": ["string", "null"] },
+    "previousCheckpointHash": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "pullRequest": { "type": ["object", "null"], "additionalProperties": false, "required": ["url", "headSha", "status"], "properties": { "url": { "type": "string", "minLength": 1 }, "headSha": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" }, "status": { "const": "green" } } },
+    "merge": { "type": ["object", "null"], "additionalProperties": false, "properties": { "sha": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" }, "ref": { "type": "string", "pattern": "^refs/(heads|remotes)/" }, "containsReviewedSha": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" }, "commitSha": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" }, "mergedAt": { "type": "string", "format": "date-time" } }, "allOf": [ { "if": { "type": "object" }, "then": { "oneOf": [ { "required": ["sha", "ref", "containsReviewedSha", "mergedAt"] }, { "required": ["commitSha", "mergedAt"] } ] } } ] },
+    "release": { "type": ["object", "null"], "additionalProperties": false, "required": ["receiptPath", "receiptHash", "releasedAt", "authority"], "properties": { "receiptPath": { "type": "string", "minLength": 1 }, "receiptHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "releasedAt": { "type": "string", "format": "date-time" }, "authority": { "type": "string", "minLength": 1 } } },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}

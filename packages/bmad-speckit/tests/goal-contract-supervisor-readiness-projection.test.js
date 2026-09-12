@@ -154,6 +154,8 @@ function writeStructuredSourcePlan(root) {
         '',
         `Acceptance: ${taskId} produces its declared observable outcome.`,
         '',
+        '- Command: CMD-FIX-001.',
+        '',
       ]),
       '## Completion Evidence Packet',
       '',

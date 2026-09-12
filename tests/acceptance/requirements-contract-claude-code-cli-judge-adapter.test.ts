@@ -5,9 +5,10 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
 import yaml from 'js-yaml';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createClaudeCodeCliJudgeAdapter } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-claude-code-cli-judge-adapter';
 import { prepareRequirementsContractJudgeInvocation } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-invocation';
+import { resolveRequirementsContractJudgeCredential } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-credential-resolver';
 
 type JsonRecord = Record<string, unknown>;
 
@@ -752,9 +753,12 @@ describe('Claude Code CLI Judge adapter', () => {
       challengeRequests: [],
       evidenceRefs: [],
     };
+    const resolveCredential = vi.fn(resolveRequirementsContractJudgeCredential);
     const prepared = await prepareRequirementsContractJudgeInvocation({
       projectRoot: root,
       config: path.relative(root, configPath),
+      deferCredentialResolution: true,
+      resolveCredential,
       executeClaudeCodeCliCommand: async (invocation) => {
         captured = invocation;
         return {
@@ -792,15 +796,20 @@ describe('Claude Code CLI Judge adapter', () => {
         };
       },
     });
-    const normalized = await prepared.invoke({
+    const invocationPayload = {
       systemPrompt: 'Audit only.',
       request,
       executionContext: { projectRoot: root, requestPath, outputDir },
-    });
+    };
+    expect(resolveCredential).not.toHaveBeenCalled();
+    prepared.preflight(invocationPayload);
+    expect(resolveCredential).not.toHaveBeenCalled();
+    const normalized = await prepared.invoke(invocationPayload);
+    expect(resolveCredential).toHaveBeenCalledOnce();
     const capturedInvocation = requireCommandInvocation(captured);
 
     expect(prepared).toMatchObject({ providerRef, credentialProviderRef: providerRef });
-    expect(prepared.credentialRevision).toBe(credentialRevision);
+    expect(prepared.credentialRevision).toBeNull();
     expect(capturedInvocation.env).toMatchObject({
       ANTHROPIC_BASE_URL: baseUrl,
       ANTHROPIC_AUTH_TOKEN: secret,
@@ -819,6 +828,15 @@ describe('Claude Code CLI Judge adapter', () => {
         credentialEnvironmentVariable: 'ANTHROPIC_AUTH_TOKEN',
       },
     });
+
+    const eagerResolveCredential = vi.fn(resolveRequirementsContractJudgeCredential);
+    const eagerPrepared = await prepareRequirementsContractJudgeInvocation({
+      projectRoot: root,
+      config: path.relative(root, configPath),
+      resolveCredential: eagerResolveCredential,
+    });
+    expect(eagerResolveCredential).toHaveBeenCalledOnce();
+    expect(eagerPrepared.credentialRevision).toBe(credentialRevision);
   });
 
   it('rejects a cli-managed provider when its requested model is absent', async () => {

@@ -139,6 +139,12 @@ function nativeGoalBridgeResult(value: unknown): NativeGoalControlledExecutorRes
   ) {
     throw new Error('native_goal_host_bridge_response_invalid');
   }
+  const producerReceipt = nativeGoalBridgeRecord(record.producerReceipt);
+  const executionFinalJudgeCampaign = nativeGoalBridgeRecord(
+    record.executionFinalJudgeCampaign
+  );
+  const effectivePassReceipt = nativeGoalBridgeRecord(record.effectivePassReceipt);
+  const deliveryGateReceipt = nativeGoalBridgeRecord(record.deliveryGateReceipt);
   return {
     exitCode: record.exitCode as number,
     ...(typeof record.stdout === 'string' || Buffer.isBuffer(record.stdout)
@@ -167,24 +173,18 @@ function nativeGoalBridgeResult(value: unknown): NativeGoalControlledExecutorRes
     ...(typeof record.closeoutContextHash === 'string'
       ? { closeoutContextHash: record.closeoutContextHash }
       : {}),
-    ...(nativeGoalBridgeRecord(record.producerReceipt)
-      ? { producerReceipt: record.producerReceipt }
-      : {}),
-    ...(nativeGoalBridgeRecord(record.executionFinalJudgeCampaign)
-      ? { executionFinalJudgeCampaign: record.executionFinalJudgeCampaign }
-      : {}),
-    ...(nativeGoalBridgeRecord(record.effectivePassReceipt)
-      ? { effectivePassReceipt: record.effectivePassReceipt }
-      : {}),
-    ...(nativeGoalBridgeRecord(record.deliveryGateReceipt)
-      ? { deliveryGateReceipt: record.deliveryGateReceipt }
-      : {}),
+    ...(producerReceipt ? { producerReceipt } : {}),
+    ...(executionFinalJudgeCampaign ? { executionFinalJudgeCampaign } : {}),
+    ...(effectivePassReceipt ? { effectivePassReceipt } : {}),
+    ...(deliveryGateReceipt ? { deliveryGateReceipt } : {}),
   };
 }
 
 /**
  * Formal host entry for CLI run-loop. The host-specific bridge is configured by
  * environment, while the request and child authorization protocol stay shared.
+ * @param {NativeGoalHostBridgeOptions} options Host bridge configuration and environment overrides.
+ * @returns {NativeGoalControlledExecutor} A controlled native-goal executor bound to the configured host bridge.
  */
 export function createNativeGoalHostExecutor(
   options: NativeGoalHostBridgeOptions = {}
@@ -368,6 +368,19 @@ function outputText(value: string | Buffer | null | undefined): string {
   return typeof value === 'string' ? value : '';
 }
 
+function isNativeGoalTaskReport(value: unknown, packetId: string): value is NativeGoalTaskReport {
+  const candidate = nativeGoalBridgeRecord(value);
+  return Boolean(
+    candidate &&
+      candidate.packetId === packetId &&
+      ['done', 'blocked', 'partial'].includes(String(candidate.status)) &&
+      Array.isArray(candidate.filesChanged) &&
+      Array.isArray(candidate.validationsRun) &&
+      Array.isArray(candidate.evidence) &&
+      Array.isArray(candidate.downstreamContext)
+  );
+}
+
 function readTaskReport(
   filePath: string,
   packetId: string
@@ -379,16 +392,9 @@ function readTaskReport(
     return { taskReport: null, validationErrors: ['native_goal_task_report_missing'] };
   }
   try {
-    const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8')) as Partial<NativeGoalTaskReport>;
-    const valid =
-      parsed.packetId === packetId &&
-      ['done', 'blocked', 'partial'].includes(String(parsed.status)) &&
-      Array.isArray(parsed.filesChanged) &&
-      Array.isArray(parsed.validationsRun) &&
-      Array.isArray(parsed.evidence) &&
-      Array.isArray(parsed.downstreamContext);
-    return valid
-      ? { taskReport: parsed as NativeGoalTaskReport, validationErrors: [] }
+    const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8')) as unknown;
+    return isNativeGoalTaskReport(parsed, packetId)
+      ? { taskReport: parsed, validationErrors: [] }
       : { taskReport: null, validationErrors: ['native_goal_task_report_invalid'] };
   } catch {
     return { taskReport: null, validationErrors: ['native_goal_task_report_invalid'] };
@@ -627,6 +633,7 @@ export function runNativeGoalInvocation(
       taskReport: null,
     };
   }
+  const executor = input.executor;
 
   if (governedStrategy) {
     if (!input.governedCampaign) {
@@ -645,9 +652,12 @@ export function runNativeGoalInvocation(
         taskReport: null,
       };
     }
+    const governedCampaign = input.governedCampaign;
     const command = 'host-native-goal';
     const startedAt = new Date().toISOString();
-    let governedExecution: NativeGoalControlledExecutorResult | null = null;
+    const governedExecutionState: { current: NativeGoalControlledExecutorResult | null } = {
+      current: null,
+    };
     let exactCommandText = resolvedCommand.commandText;
     try {
       const campaignResult = record(
@@ -656,17 +666,17 @@ export function runNativeGoalInvocation(
           packetId: input.packet.packetId,
           host: canonicalHost,
           taskReportPath: input.taskReportPath,
-          children: input.governedCampaign.children,
-          requirementRecordBinding: input.governedCampaign.requirementRecordBinding,
+          children: governedCampaign.children,
+          requirementRecordBinding: governedCampaign.requirementRecordBinding,
           dependencies: {
-            ...input.governedCampaign.dependencies,
+            ...governedCampaign.dependencies,
             invokeCampaign: (campaignInput: Record<string, unknown>) => {
-              const packageResult = {
+              const packageResult: Record<string, unknown> = {
                 ...record(campaignInput.packageResult),
-                packageRequestPath: input.governedCampaign!.packageRequestRef?.path,
-                packageRequestHash: input.governedCampaign!.packageRequestRef?.hash,
-                partitionManifestPath: input.governedCampaign!.partitionManifestRef?.path,
-                partitionManifestHash: input.governedCampaign!.partitionManifestRef?.hash,
+                packageRequestPath: governedCampaign.packageRequestRef?.path,
+                packageRequestHash: governedCampaign.packageRequestRef?.hash,
+                partitionManifestPath: governedCampaign.partitionManifestRef?.path,
+                partitionManifestHash: governedCampaign.partitionManifestRef?.hash,
               };
               for (const field of [
                 'campaignPromptPath',
@@ -688,7 +698,7 @@ export function runNativeGoalInvocation(
               }
               const authorizedChildInvocations: Array<Record<string, unknown>> = [];
               exactCommandText = governedCommandText(resolvedCommand.commandText, packageResult);
-              governedExecution = input.executor!({
+              const execution = executor({
                 projectRoot: input.projectRoot,
                 host: canonicalHost,
                 commandText: exactCommandText,
@@ -703,7 +713,7 @@ export function runNativeGoalInvocation(
                 packageManifestHash: optionalString(packageResult.packageManifestHash),
                 packageCompileReceiptPath: optionalString(packageResult.packageCompileReceiptPath),
                 packageCompileReceiptHash: optionalString(packageResult.packageCompileReceiptHash),
-                children: input.governedCampaign!.children,
+                children: governedCampaign.children,
                 reportChildResult: (invocation: Record<string, unknown>) => {
                   const decision = record(
                     (onChildInvocation as (value: Record<string, unknown>) => unknown)(invocation)
@@ -712,10 +722,11 @@ export function runNativeGoalInvocation(
                   return decision.authorized === true;
                 },
               });
-              if (governedExecution.exitCode !== 0) {
+              governedExecutionState.current = execution;
+              if (execution.exitCode !== 0) {
                 throw new Error('governed_campaign_executor_failed');
               }
-              const returnedInvocations = childInvocationsFromExecution(governedExecution);
+              const returnedInvocations = childInvocationsFromExecution(execution);
               if (
                 returnedInvocations.length > 0 &&
                 (returnedInvocations.length !== authorizedChildInvocations.length ||
@@ -730,13 +741,13 @@ export function runNativeGoalInvocation(
               return {
                 hostInvocationCount: 1,
                 childInvocations: authorizedChildInvocations,
-                ...(governedExecution.closeoutStatus === 'awaiting_user_acceptance'
+                ...(execution.closeoutStatus === 'awaiting_user_acceptance'
                   ? {
                       controlledCloseout: {
-                        status: governedExecution.closeoutStatus,
-                        closeoutAttemptId: governedExecution.closeoutAttemptId,
-                        taskReportCandidatePath: governedExecution.taskReportCandidatePath,
-                        taskReportArtifactHash: governedExecution.taskReportArtifactHash,
+                        status: execution.closeoutStatus,
+                        closeoutAttemptId: execution.closeoutAttemptId,
+                        taskReportCandidatePath: execution.taskReportCandidatePath,
+                        taskReportArtifactHash: execution.taskReportArtifactHash,
                       },
                     }
                   : {}),
@@ -747,22 +758,25 @@ export function runNativeGoalInvocation(
         })
       );
       if (campaignResult.status === 'awaiting_user_acceptance') {
+        const execution = governedExecutionState.current;
         const controlledCloseoutCandidate = record(campaignResult.controlledCloseout);
         const candidatePath = optionalString(controlledCloseoutCandidate.taskReportCandidatePath);
         const candidateHash = optionalString(controlledCloseoutCandidate.taskReportArtifactHash);
         const candidateValid =
-          Boolean(governedExecution) &&
-          governedExecution!.exitCode === 0 &&
-          Boolean(candidatePath) &&
+          execution !== null &&
+          execution.exitCode === 0 &&
+          typeof candidatePath === 'string' &&
           path.isAbsolute(candidatePath) &&
           fs.existsSync(candidatePath) &&
           fs.statSync(candidatePath).isFile() &&
-          Boolean(candidateHash) &&
+          typeof candidateHash === 'string' &&
           sha256File(candidatePath) === candidateHash;
         if (!candidateValid) {
           throw new Error('main_agent_goal_task_report_provenance_mismatch');
         }
-        const execution = governedExecution!;
+        if (!execution) {
+          throw new Error('main_agent_goal_task_report_provenance_mismatch');
+        }
         const closeoutAttemptId = optionalString(controlledCloseoutCandidate.closeoutAttemptId);
         if (!closeoutAttemptId || !candidatePath || !candidateHash) {
           throw new Error('main_agent_goal_task_report_provenance_mismatch');
@@ -826,10 +840,13 @@ export function runNativeGoalInvocation(
         packetId: input.packet.packetId,
         campaignResult,
         provenance,
-      }) as NativeGoalTaskReport;
+      });
+      if (!isNativeGoalTaskReport(projected, input.packet.packetId)) {
+        throw new Error('native_goal_task_report_invalid');
+      }
       fs.mkdirSync(path.dirname(input.taskReportPath), { recursive: true });
       fs.writeFileSync(input.taskReportPath, `${JSON.stringify(projected, null, 2)}\n`, 'utf8');
-      if (!governedExecution) {
+      if (!governedExecutionState.current) {
         writeLog(stdoutPath, '');
         writeLog(stderrPath, 'governed_campaign_not_invoked');
         return {
@@ -847,11 +864,16 @@ export function runNativeGoalInvocation(
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      const execution = governedExecution ?? { exitCode: 1, stdout: '', stderr: message };
+      const actualExecution = governedExecutionState.current;
+      const execution: NativeGoalControlledExecutorResult = actualExecution ?? {
+        exitCode: 1,
+        stdout: '',
+        stderr: message,
+      };
       writeLog(stdoutPath, outputText(execution.stdout));
       writeLog(stderrPath, [outputText(execution.stderr), message].filter(Boolean).join('\n'));
       const taskReportRead = readTaskReport(input.taskReportPath, input.packet.packetId);
-      const receipt = governedExecution
+      const receipt = actualExecution
         ? writeNativeGoalInvocationReceipt({
             projectRoot: input.projectRoot,
             recordId,
@@ -860,8 +882,8 @@ export function runNativeGoalInvocation(
             host: canonicalHost,
             goalExecutionPath: resolvedCommand.goalExecutionPath,
             goalCommandTextHash: sha256Text(exactCommandText),
-            invokedCommandKind: command,
-            executionSurface: command,
+            invokedCommandKind: 'host_native_goal',
+            executionSurface: 'host_native_goal',
             command,
             args: [exactCommandText],
             taskReportPath: input.taskReportPath,
@@ -891,7 +913,10 @@ export function runNativeGoalInvocation(
         taskReport: null,
       };
     }
-    const execution = governedExecution!;
+    const execution = governedExecutionState.current;
+    if (!execution) {
+      throw new Error('governed_campaign_not_invoked');
+    }
     writeLog(stdoutPath, outputText(execution.stdout));
     writeLog(stderrPath, outputText(execution.stderr));
     const taskReportRead = readTaskReport(input.taskReportPath, input.packet.packetId);

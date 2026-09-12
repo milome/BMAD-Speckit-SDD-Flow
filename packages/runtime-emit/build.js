@@ -84,6 +84,21 @@ const governanceRuntimeConsumerPathPlugin = {
 const pkgDir = __dirname;
 const repoRoot = path.resolve(pkgDir, '../..');
 const outDir = path.join(pkgDir, 'dist');
+const runtimeSchemaDir = path.join(pkgDir, 'schemas');
+const finalJudgeSchemaSource = path.join(
+  repoRoot,
+  'packages',
+  'bmad-speckit',
+  'src',
+  'main-agent',
+  'source-authority',
+  'schemas',
+  'main-agent-execution-final-judge-result.schema.json',
+);
+const finalJudgeSchemaTarget = path.join(
+  runtimeSchemaDir,
+  'main-agent-execution-final-judge-result.schema.json',
+);
 const sourceAuthorityScriptsRoot = path.join(
   repoRoot,
   'packages',
@@ -136,6 +151,7 @@ const bundles = [
 
 fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir, { recursive: true });
+fs.mkdirSync(runtimeSchemaDir, { recursive: true });
 
 async function main() {
   for (const { entry, outfile, label } of bundles) {
@@ -154,6 +170,11 @@ async function main() {
     });
     console.log('runtime-emit: wrote', path.relative(repoRoot, outfile));
   }
+  if (!fs.existsSync(finalJudgeSchemaSource)) {
+    throw new Error(`runtime-emit build: missing final judge schema: ${finalJudgeSchemaSource}`);
+  }
+  fs.copyFileSync(finalJudgeSchemaSource, finalJudgeSchemaTarget);
+  console.log('runtime-emit: copied', path.relative(repoRoot, finalJudgeSchemaTarget));
   const manifest = {
     files: bundles.map((bundle) => path.basename(bundle.outfile)).sort((a, b) => a.localeCompare(b)),
   };

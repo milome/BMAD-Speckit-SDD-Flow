@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+import { once } from 'node:events';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -12,6 +13,7 @@ import {
   writeText,
 } from './helpers/prompt-transaction-publication-fixture';
 import { compiledPromptRunnerFor } from './helpers/prompt-transaction-compiled-runner-fixture';
+import { writePassingSourcePrdLintReport } from '../helpers/source-prd-lint-fixture';
 
 const CLI = path.join(process.cwd(), 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
 const fixtures: Array<ReturnType<typeof materializePromptPublicationFixture>> = [];
@@ -24,6 +26,80 @@ function fixture() {
   const value = materializePromptPublicationFixture();
   fixtures.push(value);
   return value;
+}
+
+function confirmedRunnerFixture() {
+  const value = fixture();
+  const record = JSON.parse(fs.readFileSync(value.paths.recordPath, 'utf8'));
+  writeJson(value.paths.recordPath, { ...record, confirmationHistory: [{
+    eventType: 'confirmation_recorded', sourceDocumentHash: value.identity.sourceDocumentHash,
+    implementationConfirmationHash: value.identity.implementationConfirmationHash,
+  }] });
+  writePassingSourcePrdLintReport({ requirementRecordPath: value.paths.recordPath, sourcePath: value.paths.sourcePath });
+  return value;
+}
+
+async function prepareCrashState(value: ReturnType<typeof confirmedRunnerFixture>) {
+  const publisher = await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher');
+  const rawArtifacts: Record<string, string> = {};
+  expect(await publisher.requirementsContractPromptTransactionPublishCommand(value.options, {
+    runCompiledPrompt: (input) => {
+      const result = compiledPromptRunnerFor(value)(input);
+      for (const name of ['model_packet.json', 'human_prompt.txt', 'audit_receipt.json', 'goal_execution.md']) {
+        rawArtifacts[name] = fs.readFileSync(path.join(String(input.outDir), name), 'utf8');
+      }
+      return result;
+    },
+  })).toBe(0);
+  const previous = [value.options.currentDispatchPointer, value.options.evidenceOut].map(fileHash);
+  const context = JSON.parse(fs.readFileSync(value.paths.attemptContext, 'utf8'));
+  writeJson(value.paths.attemptContext, { ...context, attemptSequence: 2 });
+  const publicationOutDir = `${value.paths.outDir}.publication-2`;
+  const releasePath = path.join(value.root, 'release-control.txt');
+  const statePath = writeJson(path.join(value.root, 'crash-state.json'), {
+    options: value.options, rawArtifacts, publicationOutDir, releasePath,
+    installedGeneratorPath: value.paths.installedGeneratorPath,
+    installedRunnerPath: value.paths.installedRunnerPath,
+    currentDispatchPointer: value.options.currentDispatchPointer, evidenceOut: value.options.evidenceOut,
+  });
+  return { previous, context, publicationOutDir, releasePath, statePath };
+}
+
+function largeArtifactRunner(value: ReturnType<typeof fixture>, part: 'packet' | 'human' | 'audit' | 'goal') {
+  const legacyLimit = 1024 * 1024;
+  const targetBytes = legacyLimit + 4096;
+  const base = compiledPromptRunnerFor(value, {
+    packetTransform: part === 'packet' ? (packet) => {
+      const padded = { ...packet, testOnlyBudgetPadding: '' };
+      const overhead = Buffer.byteLength(`${JSON.stringify(padded, null, 2)}\n`, 'utf8');
+      padded.testOnlyBudgetPadding = 'x'.repeat(targetBytes - overhead);
+      return padded;
+    } : undefined,
+  });
+  return vi.fn((input: Parameters<typeof base>[0]) => {
+    const result = base(input);
+    const ref = { ...result.compiledPromptRef! };
+    if (part === 'human') {
+      const prefix = 'model_packet.json is the machine-readable execution authority.\n';
+      writeText(ref.humanPromptPath, `${prefix}${'x'.repeat(targetBytes - prefix.length)}`);
+      ref.humanPromptHash = fileHash(ref.humanPromptPath);
+    }
+    if (part === 'audit' || part === 'goal') {
+      const receipt = JSON.parse(fs.readFileSync(ref.auditReceiptPath, 'utf8'));
+      if (part === 'audit') {
+        receipt.testOnlyBudgetPadding = '';
+        const overhead = Buffer.byteLength(`${JSON.stringify(receipt, null, 2)}\n`, 'utf8');
+        receipt.testOnlyBudgetPadding = 'x'.repeat(targetBytes - overhead);
+      } else {
+        writeText(ref.goalExecutionPath!, `# Test-only Goal\n${'x'.repeat(targetBytes)}`);
+        ref.goalExecutionHash = fileHash(ref.goalExecutionPath!);
+        receipt.goalCommand.documentHash = ref.goalExecutionHash;
+      }
+      writeJson(ref.auditReceiptPath, receipt);
+      ref.auditReceiptHash = fileHash(ref.auditReceiptPath);
+    }
+    return { ...result, compiledPromptRef: ref };
+  });
 }
 
 const CONTRACT_EVD_09_FIELDS = [
@@ -74,6 +150,319 @@ const CONTRACT_EVD_09_FIELDS = [
 ] as const;
 
 describe('requirements contract prompt transaction production publication', () => {
+  it.each(['packet', 'human', 'audit', 'goal'] as const)(
+    'publishes final %s above the legacy 1 MiB threshold when provider capacity is unspecified', async (part) => {
+      const value = fixture();
+      const module = await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher');
+      const output = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+      try {
+        const code = await module.requirementsContractPromptTransactionPublishCommand(value.options, {
+          runCompiledPrompt: largeArtifactRunner(value, part),
+        });
+        expect.soft(code).toBe(0);
+        expect.soft(output.mock.calls.map(([text]) => String(text)).join(''))
+          .not.toContain('judge_provider_capacity_exceeded');
+        const publishedName = {
+          packet: 'model_packet.json', human: 'human_prompt.txt', audit: 'audit_receipt.json', goal: 'goal_execution.md',
+        }[part];
+        expect.soft(fs.statSync(path.join(value.paths.outDir, publishedName)).size).toBeGreaterThan(1024 * 1024);
+        expect.soft(fs.existsSync(value.options.currentDispatchPointer)).toBe(true);
+        expect.soft(fs.existsSync(value.options.evidenceOut)).toBe(true);
+      } finally {
+        output.mockRestore();
+      }
+    }
+  );
+
+  it('preserves concurrent pointer and evidence updates when final publication loses the CAS race', async () => {
+    const value = fixture();
+    const module = await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher');
+    const output = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    try {
+      expect(await module.requirementsContractPromptTransactionPublishCommand(value.options, {
+        runCompiledPrompt: compiledPromptRunnerFor(value),
+      })).toBe(0);
+      const context = JSON.parse(fs.readFileSync(value.paths.attemptContext, 'utf8'));
+      writeJson(value.paths.attemptContext, { ...context, attemptSequence: 2 });
+      const runner = largeArtifactRunner(value, 'packet');
+      const concurrent = [value.options.currentDispatchPointer, value.options.evidenceOut]
+        .flatMap((file) => [file, `${file}.safe-write-receipt.json`]);
+      let expected: string[] = [];
+      expect(await module.requirementsContractPromptTransactionPublishCommand(value.options, {
+        runCompiledPrompt: vi.fn((input) => {
+          const result = runner(input);
+          for (const file of concurrent) {
+            const prior = JSON.parse(fs.readFileSync(file, 'utf8'));
+            writeJson(file, { ...prior, transactionId: value.authority.lock.liveTransactionId });
+          }
+          expected = concurrent.map(fileHash);
+          return result;
+        }),
+      })).toBe(1);
+      expect(concurrent.map(fileHash)).toEqual(expected);
+    } finally {
+      output.mockRestore();
+    }
+  });
+
+  it.each(['completed', 'rolled_back', 'prepared', 'unexpected-file', 'missing-artifact'])(
+    'validates the exact managed compiler journal for %s', async (state) => {
+      const value = fixture();
+      const module = await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher');
+      const output = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+      try {
+        const base = compiledPromptRunnerFor(value);
+        const code = await module.requirementsContractPromptTransactionPublishCommand(value.options, {
+          runCompiledPrompt: vi.fn((input) => {
+            const result = base(input);
+            const root = fs.mkdtempSync(path.join(value.paths.outDir, '.compiler-publication-'));
+            const names = ['model_packet.json', 'human_prompt.txt', 'goal_execution.md', 'audit_receipt.json']
+              .filter((name) => state !== 'missing-artifact' || name !== 'audit_receipt.json');
+            writeJson(path.join(root, 'journal.json'), {
+              schemaVersion: 'req-trace-publication/v1',
+              state: ['completed', 'rolled_back', 'prepared'].includes(state) ? state : 'completed',
+              artifacts: names.map((name) => ({ name, previousHash: null, backupPath: null,
+                nextHash: fileHash(path.join(value.paths.outDir, name)).replace('sha256:', '') })),
+            });
+            if (state === 'unexpected-file') writeText(path.join(root, 'rogue.txt'), 'unexpected');
+            return result;
+          }),
+        });
+        expect(code).toBe(['completed', 'rolled_back'].includes(state) ? 0 : 1);
+        if (code !== 0) {
+          expect(output.mock.calls.map(([text]) => String(text)).join(''))
+            .toContain('prompt_transaction_output_set_mismatch');
+        }
+      } finally {
+        output.mockRestore();
+      }
+    }
+  );
+
+  it('accepts invocation arguments emitted by the actual compiled prompt runner', async () => {
+    const value = confirmedRunnerFixture();
+    const publisher = await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher');
+    const { runMainAgentCompiledPrompt } = await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-compiled-prompt-runner');
+    const output = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    try {
+      const code = await publisher.requirementsContractPromptTransactionPublishCommand(value.options, {
+        runCompiledPrompt: (input) => {
+          // The actual runner owns argv construction; only generated artifact bodies are fixtures.
+          const actual = runMainAgentCompiledPrompt(input);
+          expect(actual.executionReceipt?.exitCode).toBe(0);
+          expect(actual.productionArgv?.slice(2, 4)).toEqual(['--entry', 'main_agent_compile']);
+          const artifacts = compiledPromptRunnerFor(value)(input);
+          return { ...artifacts, productionArgv: actual.productionArgv,
+            productionArgvHash: actual.productionArgvHash };
+        },
+      });
+      expect(code, output.mock.calls.map(([text]) => String(text)).join('')).toBe(0);
+    } finally {
+      output.mockRestore();
+    }
+  });
+
+  it('supplies a valid discipline profile to the actual compiled prompt runner', async () => {
+    const value = confirmedRunnerFixture();
+    const publisher = await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher');
+    const { runMainAgentCompiledPrompt } = await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-compiled-prompt-runner');
+    const output = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    try {
+      const code = await publisher.requirementsContractPromptTransactionPublishCommand(value.options, {
+        runCompiledPrompt: (input) => {
+          const artifacts = compiledPromptRunnerFor(value)(input);
+          for (const name of ['model_packet.json', 'audit_receipt.json']) {
+            const file = path.join(value.paths.outDir, name);
+            writeJson(file, { ...JSON.parse(fs.readFileSync(file, 'utf8')),
+              entryScenario: 'main_agent_compile', entryExplicit: true,
+              compilerIdentity: { path: value.paths.installedGeneratorPath,
+                hash: fileHash(value.paths.installedGeneratorPath) } });
+          }
+          const actual = runMainAgentCompiledPrompt(input);
+          expect(actual.blockingReasons, JSON.stringify(actual.blockingReasons)).toEqual([]);
+          expect(actual.status).toBe('pass');
+          return { ...actual, runnerRef: artifacts.runnerRef };
+        },
+      });
+      expect(code, output.mock.calls.map(([text]) => String(text)).join('')).toBe(0);
+    } finally {
+      output.mockRestore();
+    }
+  });
+
+  it('publishes a later valid attempt to its derived directory without deleting prior publication evidence', async () => {
+    const value = fixture();
+    const publisher = await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher');
+    const output = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    try {
+      expect(await publisher.requirementsContractPromptTransactionPublishCommand(value.options, {
+        runCompiledPrompt: compiledPromptRunnerFor(value),
+      })).toBe(0);
+      const context = JSON.parse(fs.readFileSync(value.paths.attemptContext, 'utf8'));
+      const previousPacketHash = fileHash(path.join(value.paths.outDir, 'model_packet.json'));
+      writeJson(value.paths.attemptContext, { ...context, attemptSequence: 2 });
+      output.mockClear();
+      const code = await publisher.requirementsContractPromptTransactionPublishCommand(value.options, {
+        runCompiledPrompt: compiledPromptRunnerFor(value),
+      });
+      expect(code, output.mock.calls.map(([text]) => String(text)).join('')).toBe(0);
+      expect(JSON.parse(fs.readFileSync(value.options.currentDispatchPointer, 'utf8')).attemptSequence).toBe(2);
+      expect(fileHash(path.join(value.paths.outDir, 'model_packet.json'))).toBe(previousPacketHash);
+      expect(fs.existsSync(path.join(`${value.paths.outDir}.publication-2`, 'model_packet.json'))).toBe(true);
+    } finally {
+      output.mockRestore();
+    }
+  });
+
+  it('rejects untracked files inside the managed authority input directory', async () => {
+    const value = fixture();
+    const publisher = await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher');
+    const output = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    try {
+      expect(await publisher.requirementsContractPromptTransactionPublishCommand(value.options, {
+        runCompiledPrompt: compiledPromptRunnerFor(value, { extraOutputName: 'authority-inputs/rogue.json' }),
+      })).toBe(1);
+      expect(output.mock.calls.map(([text]) => String(text)).join(''))
+        .toContain('prompt_transaction_output_set_mismatch:authority-inputs');
+    } finally {
+      output.mockRestore();
+    }
+  });
+
+  it.each(['journal', 'model_packet.json', 'human_prompt.txt', 'goal_execution.md',
+    'transaction-manifest.json', 'audit_receipt.json', 'currentDispatchPointer', 'evidenceOut',
+    'committed-journal', 'missing-journal', 'damaged-backup', 'missing-intent', 'concurrent-authority', 'held-control-lock'])(
+    'recovers or fails closed after a process interruption at %s', async (scenario) => {
+    const value = confirmedRunnerFixture();
+    const publisher = await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher');
+    const output = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    try {
+      const { previous, publicationOutDir, statePath } = await prepareCrashState(value);
+      const cut = scenario === 'missing-intent' ? 'currentDispatchPointer' :
+        ['missing-journal', 'damaged-backup', 'concurrent-authority', 'held-control-lock'].includes(scenario)
+          ? 'model_packet.json' : scenario;
+      const child = spawnSync(process.execPath, ['--require', path.resolve('tests/register-package-ts-source.cjs'),
+        path.resolve('tests/acceptance/helpers/prompt-transaction-crash-worker.cjs'), statePath, cut],
+      { cwd: process.cwd(), encoding: 'utf8', timeout: 30000 });
+      expect(child.status, child.stderr || child.stdout).toBe(86);
+      if (!['currentDispatchPointer', 'evidenceOut', 'committed-journal'].includes(cut)) {
+        expect([value.options.currentDispatchPointer, value.options.evidenceOut].map(fileHash)).toEqual(previous);
+      }
+      const journals = fs.readdirSync(publicationOutDir).filter((name) => name.startsWith('.publisher-publication-'));
+      expect(journals).toHaveLength(1);
+      const journalPath = path.join(publicationOutDir, journals[0], 'journal.json');
+      const journal = JSON.parse(fs.readFileSync(journalPath, 'utf8'));
+      expect(journal.state).toBe(scenario === 'committed-journal' ? 'committed' : 'prepared');
+      expect(journal.entries.length).toBeGreaterThanOrEqual(18);
+      expect(journal.controlLockPath).toBe(path.join(path.dirname(value.options.currentDispatchPointer),
+        '.publisher-control', '.prompt-transaction.lock'));
+      const evidenceRoot = path.resolve('.artifacts/standalone-goal-full-repair/run-2026-09-05T11-17-06-349Z',
+        `publisher-crash-${scenario}-${value.identity.transactionId}`);
+      fs.cpSync(path.dirname(journalPath), evidenceRoot, { recursive: true, errorOnExist: true });
+      writeJson(path.join(evidenceRoot, 'process-result.json'), { status: child.status, signal: child.signal,
+        stdout: child.stdout, stderr: child.stderr, scenario });
+      const lock = JSON.parse(fs.readFileSync(path.join(publicationOutDir, '.prompt-transaction.lock'), 'utf8'));
+      if (scenario === 'missing-journal') fs.unlinkSync(journalPath);
+      if (scenario === 'damaged-backup') {
+        writeText(journal.entries.find((entry: { backupPath: string | null }) => entry.backupPath).backupPath, 'corrupted');
+      }
+      if (scenario === 'missing-intent') {
+        for (const entry of journal.entries) {
+          if (entry.sharedTarget) entry.expectedHashes = [];
+        }
+        writeJson(journalPath, journal);
+      }
+      if (scenario === 'concurrent-authority') {
+        for (const file of [value.options.currentDispatchPointer, value.options.evidenceOut]) {
+          writeJson(file, { ...JSON.parse(fs.readFileSync(file, 'utf8')), attemptSequence: 3,
+            transactionId: value.authority.lock.liveTransactionId });
+        }
+      }
+      if (scenario === 'held-control-lock') {
+        writeJson(journal.controlLockPath, { ...JSON.parse(fs.readFileSync(journal.controlLockPath, 'utf8')),
+          processId: process.pid, leaseExpiresAt: new Date(Date.parse(lock.leaseExpiresAt) + 3600000).toISOString() });
+      }
+      const sharedBeforeRecovery = [value.options.currentDispatchPointer, value.options.evidenceOut].map(fileHash);
+      const runner = compiledPromptRunnerFor(value);
+      output.mockClear();
+      const code = await publisher.requirementsContractPromptTransactionPublishCommand(value.options, {
+        runCompiledPrompt: runner,
+        lockDeps: { now: () => new Date(Date.parse(lock.leaseExpiresAt) + 60000) },
+      });
+      if (['missing-journal', 'damaged-backup', 'missing-intent', 'concurrent-authority', 'held-control-lock'].includes(scenario)) {
+        expect(code, output.mock.calls.map(([text]) => String(text)).join('')).toBe(1);
+        expect(runner).not.toHaveBeenCalled();
+        expect([value.options.currentDispatchPointer, value.options.evidenceOut].map(fileHash)).toEqual(sharedBeforeRecovery);
+        return;
+      }
+      expect(code, output.mock.calls.map(([text]) => String(text)).join('')).toBe(0);
+      if (scenario === 'committed-journal') {
+        expect(runner).not.toHaveBeenCalled();
+        expect([value.options.currentDispatchPointer, value.options.evidenceOut].map(fileHash)).toEqual(sharedBeforeRecovery);
+      }
+      const pointer = JSON.parse(fs.readFileSync(value.options.currentDispatchPointer, 'utf8'));
+      for (const key of ['modelPacketRef', 'humanPromptRef', 'goalExecutionRef', 'transactionManifestRef', 'auditReceiptRef']) {
+        expect(fileHash(pointer[key].path)).toBe(pointer[key].hash);
+      }
+    } finally {
+      output.mockRestore();
+    }
+  }, 60000);
+
+  it('serializes two output directories without overwriting the live publisher control lock or authority', async () => {
+    const value = confirmedRunnerFixture();
+    const publisher = await import('../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-prompt-transaction-publisher');
+    const output = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    try {
+      const { previous, context, statePath, releasePath } = await prepareCrashState(value);
+      const child = spawn(process.execPath, ['--require', path.resolve('tests/register-package-ts-source.cjs'),
+        path.resolve('tests/acceptance/helpers/prompt-transaction-crash-worker.cjs'), statePath, 'hold-control'],
+      { cwd: process.cwd(), stdio: ['ignore', 'pipe', 'pipe'] });
+      const exit = once(child, 'close');
+      let stdout = '';
+      let stderr = '';
+      const timer = setTimeout(() => child.kill(), 25000);
+      try {
+        await new Promise<void>((resolve, reject) => {
+          child.on('error', reject);
+          child.on('close', () => reject(new Error(`test_worker_exited_before_control_lock:${stderr}`)));
+          child.stdout.on('data', (chunk) => {
+            stdout += String(chunk);
+            if (stdout.includes('"controlHeld":true')) resolve();
+          });
+          child.stderr.on('data', (chunk) => { stderr += String(chunk); });
+        });
+        const control = path.join(path.dirname(value.options.currentDispatchPointer), '.publisher-control', '.prompt-transaction.lock');
+        const controlHash = fileHash(control);
+        writeJson(value.paths.attemptContext, { ...context, attemptSequence: 3 });
+        output.mockClear();
+        expect(await publisher.requirementsContractPromptTransactionPublishCommand(value.options, {
+          runCompiledPrompt: compiledPromptRunnerFor(value),
+        })).toBe(1);
+        expect(output.mock.calls.map(([text]) => String(text)).join(''))
+          .toContain('prompt_transaction_control_lock_unavailable:prompt_transaction_lock_held');
+        expect(fileHash(control)).toBe(controlHash);
+        expect([value.options.currentDispatchPointer, value.options.evidenceOut].map(fileHash)).toEqual(previous);
+        writeJson(value.paths.attemptContext, { ...context, attemptSequence: 2 });
+        writeText(releasePath, 'release');
+        const [code] = await exit;
+        writeJson(path.resolve('.artifacts/standalone-goal-full-repair/run-2026-09-05T11-17-06-349Z',
+          `publisher-live-control-${value.identity.transactionId}.json`), { code, stdout, stderr });
+        expect(code, stderr || stdout).toBe(0);
+        expect(fs.existsSync(control)).toBe(false);
+        const pointer = JSON.parse(fs.readFileSync(value.options.currentDispatchPointer, 'utf8'));
+        expect(pointer.attemptSequence).toBe(2);
+        expect(fileHash(pointer.modelPacketRef.path)).toBe(pointer.modelPacketRef.hash);
+      } finally {
+        clearTimeout(timer);
+        if (child.exitCode === null && child.signalCode === null) child.kill();
+        await exit;
+      }
+    } finally {
+      output.mockRestore();
+    }
+  }, 60000);
+
   it('registers the contract-owned production publication action and exact inputs', () => {
     const result = spawnSync(
       process.execPath,
@@ -174,6 +563,18 @@ describe('requirements contract prompt transaction production publication', () =
     expect(receipt.promptTransaction.manifestHash).toBe(fileHash(
       path.join(value.paths.outDir, 'transaction-manifest.json')
     ));
+    expect(receipt.finalArtifactBudgets.map((entry: { name: string }) => entry.name)).toEqual([
+      'model_packet.json', 'human_prompt.txt', 'transaction-manifest.json', 'goal_execution.md',
+    ]);
+    for (const measurement of receipt.finalArtifactBudgets) {
+      const artifact = path.join(value.paths.outDir, measurement.name);
+      expect(measurement).toMatchObject({
+        scope: 'publisher-final', unit: 'utf8_bytes',
+        serializedPayloadBytes: fs.statSync(artifact).size,
+        serializedPayloadHash: fileHash(artifact),
+        transportByteLimit: null,
+      });
+    }
     expect(pointer.activationState).toBe('active');
     expect(pointer).toMatchObject({
       attemptContextRef: {

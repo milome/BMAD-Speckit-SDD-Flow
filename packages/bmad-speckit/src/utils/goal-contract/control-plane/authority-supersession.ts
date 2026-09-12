@@ -1714,6 +1714,7 @@ function buildSuccessorFinalizationArtifacts({
       partitionManifestHash: manifestDocumentHash,
       selectionReceiptHash: selectionReceipt.hash,
       globalCoverageReceiptHash: globalReceipt.hash,
+      estimatedClosureMinutes: partition.estimatedClosureMinutes,
       selectedPrimaryObligationIds:
         selection.selectedPrimarySourceObligationIds,
       inheritedConstraintIds: selection.inheritedConstraintIds,
@@ -1768,6 +1769,7 @@ function buildSuccessorFinalizationArtifacts({
         partitionSetHash: manifest.partitionSetHash,
         partitionId: partition.partitionId,
         partitionRole: partition.partitionRole,
+        estimatedClosureMinutes: partition.estimatedClosureMinutes,
         selectionReceiptPath: absoluteFinalPath(
           finalRoot,
           partition.selectionReceiptPath

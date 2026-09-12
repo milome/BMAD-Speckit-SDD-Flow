@@ -196,7 +196,7 @@ describe('main-agent execute-goal-run production action', () => {
   beforeAll(() => {
     fixture = materializeImplementationReadinessFixture();
     produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
-    const activated = activateFixture(fixture.root, fixture.runtimeRecordPath);
+    const activated = activateFixture(fixture.root, fixture.authorityRecordPath);
     activation = activated.activation;
     activeRun = activated.activeRun;
     completed = spawnSync(
@@ -462,7 +462,7 @@ describe('main-agent execute-goal-run production action', () => {
         projectRoot: recoveryFixture.root,
         requestId: recoveryFixture.requestId,
       });
-      const activated = activateFixture(recoveryFixture.root, recoveryFixture.runtimeRecordPath);
+      const activated = activateFixture(recoveryFixture.root, recoveryFixture.authorityRecordPath);
       const execute = () =>
         spawnSync(
           process.execPath,
@@ -616,7 +616,7 @@ describe('main-agent execute-goal-run production action', () => {
     });
     const blockedActivation = activateFixture(
       blockedFixture.root,
-      blockedFixture.runtimeRecordPath,
+      blockedFixture.authorityRecordPath,
       {
         adapterSource: [
           'process.stdin.resume();',
@@ -670,7 +670,7 @@ describe('main-agent execute-goal-run production action', () => {
         projectRoot: deletionFixture.root,
         requestId: deletionFixture.requestId,
       });
-      const activated = activateFixture(deletionFixture.root, deletionFixture.runtimeRecordPath, {
+      const activated = activateFixture(deletionFixture.root, deletionFixture.authorityRecordPath, {
         adapterSource: [
           "const fs = require('node:fs');",
           "const path = require('node:path');",

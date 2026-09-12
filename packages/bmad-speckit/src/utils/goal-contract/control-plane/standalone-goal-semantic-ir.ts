@@ -1,13 +1,19 @@
-import { sha256Stable } from '../../../main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 import { compileGoalExecutionClosure } from './goal-execution-closure';
-import { compileGoalExecutionIR, type GoalExecutionObligation } from './goal-execution-ir';
+import { compileGoalExecutionIR, type GoalExecutionObligation, type GoalExecutionSourceLineage } from './goal-execution-ir';
 import { validateGoalContractSchema } from './schema-registry';
+import { declaredConstraintBuilder, preflightStandaloneRelationGraph, type StandaloneGoalConstraintBinding } from './standalone-goal-constraint-bindings';
+import { runStandaloneGoalInternalSemanticGate } from './standalone-goal-internal-semantic-gate';
+import { typedSourceObligation, validateTypedObligationSources } from './standalone-goal-normative-roles';
+import { standaloneGoalSemanticIRHash } from './standalone-goal-semantic-hash';
+import { normalizeStandaloneGoalSemanticPayload, resolveStandaloneGoalSemanticPayload } from './standalone-goal-semantic-representation';
+export type { StandaloneGoalConstraintBinding } from './standalone-goal-constraint-bindings';
 
 type JsonObject = Record<string, unknown>;
 
 export interface StandaloneGoalSemanticIr extends JsonObject {
-  schemaVersion: 'StandaloneGoalSemanticIR/v1';
+  schemaVersion: 'StandaloneGoalSemanticIR/v1' | 'StandaloneGoalSemanticIR/v2';
   sourcePlanHash: string;
+  sourceSnapshotHash?: string;
   semanticPayload: JsonObject;
   standaloneGoalSemanticIRHash: string;
 }
@@ -16,30 +22,20 @@ export interface StandaloneGoalSemanticInput {
   sourcePlanHash: string;
   sourceSnapshotHash: string;
   sourceObligations: JsonObject[];
+  canonicalRequirementGraph?: JsonObject;
   logicalSpecSpans: JsonObject[];
+  sourceLineage?: GoalExecutionSourceLineage;
   technicalSnapshot: {
     targetPaths: string[];
+    pathRecords?: Array<{ pathId: string; logicalPath: string }>;
     commandRecords: Array<{ commandId: string; invocation: string }>;
     artifactRecords: Array<{ artifactId: string; logicalPath: string }>;
     evidenceRecords: Array<{ evidenceContractId: string; requirement: string }>;
+    stopRecords?: Array<{ stopId: string; trigger: string }>;
     forbiddenPaths: string[];
     isolationMode: string;
+    constraintBindings?: StandaloneGoalConstraintBinding[];
   };
-}
-
-export interface StandaloneGoalAuthoringJudgeRequest {
-  role: 'goal_full';
-  candidate: StandaloneGoalSemanticIr;
-  candidateHash: string;
-}
-
-export interface StandaloneGoalAuthoringJudgeResult {
-  authoringEffectivePass: JsonObject;
-  goalJudgeDispatchCount: 0 | 1;
-  aggregate?: JsonObject;
-  publicationStatus?: string;
-  writeCount?: number;
-  refs?: Record<string, { path: string; hash: unknown }>;
 }
 
 function text(value: unknown): string {
@@ -72,15 +68,16 @@ function semanticPayload(input: StandaloneGoalSemanticInput) {
     text(left.id).localeCompare(text(right.id))
   );
   const ids = sourceRows.map((row) => text(row.id));
+  const typed = sourceRows.some((row) => row.executionRole !== undefined);
   if (
     sourceRows.length === 0 ||
     ids.some((id) => !id) ||
     new Set(ids).size !== ids.length ||
-    sourceRows.some((row) => !text(row.exactText) || !text(row.requiredOutcome))
+    sourceRows.some((row) => !text(row.exactText) || ((!typed || row.executionRole === 'action') && !text(row.requiredOutcome)))
   ) {
     throw new Error('standalone_goal_successor_required:semantic_obligations');
   }
-  const obligations: GoalExecutionObligation[] = sourceRows.map((row) => ({
+  const obligations: GoalExecutionObligation[] = sourceRows.map((row) => typed ? typedSourceObligation(row) : ({
     obligationId: text(row.id),
     kind: obligationKind(row),
     text: text(row.exactText),
@@ -89,38 +86,46 @@ function semanticPayload(input: StandaloneGoalSemanticInput) {
     atomRefs: [`${text(row.id)}-A1`],
     evidenceClaimRefs: [],
   }));
-  const atoms = obligations.map((obligation) => ({
+  if (typed) validateTypedObligationSources(obligations);
+  const sourceById = new Map(sourceRows.map((row) => [text(row.id), row]));
+  const actionIds = new Set(obligations.filter((row) => !typed || row.executionRole === 'action').map((row) => row.obligationId));
+  const dependenciesFor = (obligationId: string) => {
+    const refs = strings(sourceById.get(obligationId)?.dependencyRefs);
+    if (refs.some((ref) => !actionIds.has(ref) || ref === obligationId)) {
+      throw new Error('standalone_goal_action_dependency_invalid');
+    }
+    return sortedUnique(refs.map((ref) => `${ref}-A1`));
+  };
+  const atoms = obligations.filter((obligation) => !typed || obligation.executionRole === 'action').map((obligation) => ({
     id: `${obligation.obligationId}-A1`,
     requirementRef: obligation.obligationId,
     action: obligation.text,
     oracle: obligation.oracle,
+    ...(typed ? { dependencies: dependenciesFor(obligation.obligationId) } : {}),
   }));
   const technical = input.technicalSnapshot;
+  const pathRecords = technical.pathRecords
+    ? [...technical.pathRecords].sort((left, right) => left.pathId.localeCompare(right.pathId))
+    : sortedUnique(technical.targetPaths).map((logicalPath, index) => ({
+      pathId: `PATH-standalone-${index + 1}`,
+      logicalPath,
+    }));
+  const declaredPaths = sortedUnique(pathRecords.map((record) => record.logicalPath));
   if (
-    technical.targetPaths.length === 0 ||
-    technical.commandRecords.length === 0 ||
-    technical.artifactRecords.length === 0 ||
-    technical.evidenceRecords.length === 0 ||
-    technical.forbiddenPaths.length === 0 ||
+    (atoms.length > 0 && pathRecords.length === 0) ||
+    (atoms.length > 0 && technical.commandRecords.length === 0) ||
+    pathRecords.some((record) => !record.pathId || !record.logicalPath) ||
+    new Set(pathRecords.map((record) => record.pathId)).size !== pathRecords.length ||
+    JSON.stringify(declaredPaths) !== JSON.stringify(sortedUnique(technical.targetPaths)) ||
     !technical.isolationMode
   ) {
     throw new Error('standalone_goal_successor_required:technical_snapshot');
   }
-  const obligationRefs = obligations.map((row) => row.obligationId);
-  const atomRefs = atoms.map((row) => row.id);
-  const base = (constraintId: string, kind: string, canonicalValue: string) => ({
-    constraintId,
-    kind,
-    canonicalValue,
-    applicableMustRefs: obligationRefs,
-    applicableAtomRefs: atomRefs,
-    premiseRefs: obligationRefs,
-    derivationReceiptRefs: [],
-    disposition: 'proven',
-  });
+  const bindings = declaredConstraintBuilder(input, obligations);
+  const base = bindings.make;
   const executionConstraints = [
-    ...sortedUnique(technical.targetPaths).map((targetPath, index) =>
-      base(`PATH-standalone-${index + 1}`, 'PATH', targetPath)
+    ...pathRecords.map((record) =>
+      base(record.pathId, 'PATH', record.logicalPath)
     ),
     ...[...technical.commandRecords]
       .sort((left, right) => left.commandId.localeCompare(right.commandId))
@@ -128,32 +133,36 @@ function semanticPayload(input: StandaloneGoalSemanticInput) {
     ...[...technical.artifactRecords]
       .sort((left, right) => left.artifactId.localeCompare(right.artifactId))
       .map((record) => base(record.artifactId, 'ART', record.logicalPath)),
-    base('CTM-standalone-1', 'CTM', 'standalone vertical trace slices'),
     ...[...technical.evidenceRecords]
       .sort((left, right) => left.evidenceContractId.localeCompare(right.evidenceContractId))
       .map((record) => base(record.evidenceContractId, 'EVDREQ', record.requirement)),
     ...sortedUnique(technical.forbiddenPaths).map((forbiddenPath, index) =>
       base(`STOP-standalone-${index + 1}`, 'STOP', forbiddenPath)
     ),
+    ...[...(technical.stopRecords ?? [])]
+      .sort((left, right) => left.stopId.localeCompare(right.stopId))
+      .map((record) => base(record.stopId, 'STOP', record.trigger)),
   ];
-  const ownership = sortedUnique(technical.targetPaths).map((targetPath) => ({
-    targetPath,
+  bindings.finish();
+  const ownership = executionConstraints.filter((row) => row.kind === 'PATH').map((constraint) => ({
+    targetPath: constraint.canonicalValue,
     owner: 'standalone_goal_executor',
-    basisRefs: executionConstraints
-      .filter(
-        (constraint) => constraint.kind === 'PATH' && constraint.canonicalValue === targetPath
-      )
-      .map((constraint) => constraint.constraintId),
+    basisRefs: [constraint.constraintId],
+    ...(typed ? { obligationRefs: constraint.applicableMustRefs,
+      atomRefs: constraint.applicableAtomRefs, sourceRefs: constraint.sourceRefs } : {}),
   }));
   const architecture = {
-    isolation: { mode: technical.isolationMode },
+    isolation: { mode: technical.isolationMode, forbiddenPaths: typed
+      ? sortedUnique(executionConstraints.filter((row) => row.kind === 'STOP' && row.scope === 'global').map((row) => row.canonicalValue))
+      : sortedUnique(technical.forbiddenPaths) },
     ownership,
     architectureDecisions: [
       {
         decisionId: 'ARCH-STANDALONE-ISOLATION-1',
         decisionType: 'isolation',
         selection: technical.isolationMode,
-        basisRefs: executionConstraints
+        ...(typed ? { selectionStatus: 'compiler_default_not_source_derived' } : {}),
+        basisRefs: typed ? [] : executionConstraints
           .filter((constraint) => constraint.kind === 'STOP')
           .map((constraint) => constraint.constraintId),
       },
@@ -170,86 +179,65 @@ function semanticPayload(input: StandaloneGoalSemanticInput) {
   };
 }
 
-export async function compileStandaloneGoalExecution(
-  input: StandaloneGoalSemanticInput,
-  deps: {
-    authoringJudge: (
-      request: StandaloneGoalAuthoringJudgeRequest
-    ) => Promise<StandaloneGoalAuthoringJudgeResult>;
-  }
-) {
+export function compileStandaloneGoalSemanticIR(input: StandaloneGoalSemanticInput): StandaloneGoalSemanticIr {
+  preflightStandaloneRelationGraph(input);
   const payload = semanticPayload(input);
   const semanticCandidate = {
-    schemaVersion: 'StandaloneGoalSemanticIR/v1' as const,
+    schemaVersion: payload.obligations.some((row) => row.executionRole !== undefined)
+      ? 'StandaloneGoalSemanticIR/v2' as const : 'StandaloneGoalSemanticIR/v1' as const,
     sourcePlanHash: input.sourcePlanHash,
-    semanticPayload: payload,
+    ...(payload.obligations.some((row) => row.executionRole !== undefined) ? { sourceSnapshotHash: input.sourceSnapshotHash } : {}),
+    semanticPayload: payload.obligations.some((row) => row.executionRole !== undefined)
+      ? normalizeStandaloneGoalSemanticPayload(payload) : payload,
     standaloneGoalSemanticIRHash: '',
   };
   const standaloneGoalSemanticIr: StandaloneGoalSemanticIr = Object.freeze({
     ...semanticCandidate,
-    standaloneGoalSemanticIRHash: sha256Stable({
-      sourcePlanHash: input.sourcePlanHash,
-      semanticPayload: payload,
-    }),
+    standaloneGoalSemanticIRHash: standaloneGoalSemanticIRHash(semanticCandidate),
   });
   validateGoalContractSchema('standalone-goal-semantic-ir.schema.json', standaloneGoalSemanticIr);
-  const judgeResult = await deps.authoringJudge({
-    role: 'goal_full',
-    candidate: standaloneGoalSemanticIr,
-    candidateHash: standaloneGoalSemanticIr.standaloneGoalSemanticIRHash,
-  });
-  if (
-    !judgeResult ||
-    ![0, 1].includes(judgeResult.goalJudgeDispatchCount) ||
-    !judgeResult.authoringEffectivePass
-  ) {
-    throw new Error('standalone_goal_authoring_judge_response_invalid');
-  }
-  const authoringEffectivePass = judgeResult.authoringEffectivePass;
-  validateGoalContractSchema(
-    'standalone-goal-authoring-effective-pass.schema.json',
-    authoringEffectivePass
-  );
-  const effectivePassPayload = { ...authoringEffectivePass };
-  delete effectivePassPayload.authoringEffectivePassHash;
-  if (
-    authoringEffectivePass.standaloneGoalSemanticIRHash !==
-      standaloneGoalSemanticIr.standaloneGoalSemanticIRHash ||
-    authoringEffectivePass.decision !== 'pass' ||
-    authoringEffectivePass.authoringEffectivePassHash !== sha256Stable(effectivePassPayload)
-  ) {
-    throw new Error('standalone_goal_authoring_effective_pass_invalid');
-  }
+  return standaloneGoalSemanticIr;
+}
+
+export function compileStandaloneGoalExecution(input: StandaloneGoalSemanticInput) {
+  const standaloneGoalSemanticIr = compileStandaloneGoalSemanticIR(input);
+  const payload = resolveStandaloneGoalSemanticPayload(standaloneGoalSemanticIr) as ReturnType<typeof semanticPayload>;
+  if (!payload.atoms.length) throw new Error('standalone_goal_no_executable_actions');
+  const internalSemanticGate = runStandaloneGoalInternalSemanticGate(input, standaloneGoalSemanticIr);
   const standaloneLineage = {
     sourcePlanHash: input.sourcePlanHash,
     sourceSnapshotHash: input.sourceSnapshotHash,
     standaloneGoalSemanticIRHash: standaloneGoalSemanticIr.standaloneGoalSemanticIRHash,
-    authoringEffectivePassHash: authoringEffectivePass.authoringEffectivePassHash,
+    internalSemanticGateHash: internalSemanticGate.gateHash,
   };
   const goalExecutionIr = compileGoalExecutionIR({
     profile: 'standalone',
     semanticSource: {
       kind: 'standalone_goal_semantic_ir',
+      ...(standaloneGoalSemanticIr.schemaVersion === 'StandaloneGoalSemanticIR/v2' ? { schemaVersion: standaloneGoalSemanticIr.schemaVersion } : {}),
       standaloneGoalSemanticIRHash: standaloneGoalSemanticIr.standaloneGoalSemanticIRHash,
     },
     standaloneLineage,
     technicalAuthority: {
       standaloneGoalSemanticIRHash: standaloneGoalSemanticIr.standaloneGoalSemanticIRHash,
-      authoringEffectivePassHash: authoringEffectivePass.authoringEffectivePassHash,
+      internalSemanticGateHash: internalSemanticGate.gateHash,
     },
     obligations: payload.obligations,
     atoms: payload.atoms,
+    ...(input.canonicalRequirementGraph
+      ? { canonicalRequirementGraph: input.canonicalRequirementGraph }
+      : {}),
     logicalSpecSpans: payload.logicalSpecSpans,
+    sourceLineage: input.sourceLineage,
     executionConstraints: payload.executionConstraints,
     architecture: payload.architecture,
   });
   const closure = compileGoalExecutionClosure(goalExecutionIr);
   return Object.freeze({
     standaloneGoalSemanticIr,
-    authoringEffectivePass,
-    authoringJudge: judgeResult,
+    internalSemanticGate,
     goalExecutionIr,
     closure,
-    goalJudgeDispatchCount: judgeResult.goalJudgeDispatchCount,
+    goalJudgeDispatchCount: 0 as const,
   });
 }

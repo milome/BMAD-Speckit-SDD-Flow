@@ -11,12 +11,18 @@ const {
   resolveRequirementsProductionTechnicalPlanningCapability,
 } = require('../source-authority/scripts/requirements-contract-technical-planning-capability');
 const {
+  resolveTypedSourceAuthority,
+} = require('../source-authority/scripts/requirements-contract-typed-source-semantics');
+const { compileTypedSourceAtoms, createTypedRequirementsSemanticIr, createTypedRequirementsSourceBinding,
+} = require('../source-authority/scripts/requirements-contract-typed-source-compiler');
+const {
   prepareRequirementsContractCp02PipelineStage,
   prepareRequirementsContractCp04FreezeStage,
   publishRequirementsContractCp04FreezeStage,
 } = require('../source-authority/scripts/requirements-contract-production-semantic-pipeline');
 const {
   createRequirementsContractSemanticIr,
+  resolveRequirementsContractSemanticIrAuthority,
 } = require('../source-authority/scripts/requirements-contract-semantic-ir');
 const {
   createRequirementsContractSourceBindingCapsule,
@@ -207,6 +213,9 @@ function sourceBindingLocatorHash(sourceBinding) {
 }
 
 function atomicMustsFromScan(scan) {
+  if (scan.typedSourceAuthority) {
+    return compileTypedSourceAtoms(scan);
+  }
   return scan.sourceRootCandidates
     .filter((candidate) =>
       ['functional_requirement', 'non_functional_requirement'].includes(candidate.rootClass)
@@ -232,7 +241,7 @@ function atomicMustsFromScan(scan) {
     });
 }
 
-function confirmedDecisionsFromGrillResolution(resolution, atoms) {
+function confirmedDecisionsFromGrillResolution(resolution, atoms, scan) {
   if (!resolution) return [];
   const atomById = new Map(atoms.map((atom) => [atom.atomId, atom]));
   const atomIdsByAuthorityRef = new Map();
@@ -254,7 +263,12 @@ function confirmedDecisionsFromGrillResolution(resolution, atoms) {
           affectedAtomIds.add(atomId);
         }
       }
-      if (affectedAtomIds.size === 0) {
+      const sourceIds = scan?.typedSourceAuthority ? new Set(scan.sourceRootCandidates.map((entry) => entry.sourceRootId)) : null;
+      const affectedSourceRefs = sourceIds ? [...new Set(receipt.affectedNodeIds.flatMap((id) =>
+        sourceIds.has(id) ? [id] : atomById.get(id)?.authorityRefs ?? []))].sort() : null;
+      if (sourceIds && (affectedSourceRefs.length === 0 || receipt.affectedNodeIds.some((id) =>
+        !sourceIds.has(id) && !atomById.has(id)))) throw new Error('requirements_decision_affected_source_unknown');
+      if (affectedAtomIds.size === 0 && !sourceIds) {
         throw new Error('requirements_decision_affected_node_unknown');
       }
       const sortedAffectedAtomIds = [...affectedAtomIds].sort();
@@ -270,6 +284,7 @@ function confirmedDecisionsFromGrillResolution(resolution, atoms) {
         affectedFieldIds: receipt.affectedFieldIds,
         affectedNodeIds: receipt.affectedNodeIds,
         affectedAtomIds: sortedAffectedAtomIds,
+        ...(affectedSourceRefs ? { affectedSourceRefs } : {}),
         affectedRequirementIds,
         authorityPremiseHashes: receipt.authorityPremiseHashes,
         answerValue: structuredClone(receipt.answerValue),
@@ -279,6 +294,7 @@ function confirmedDecisionsFromGrillResolution(resolution, atoms) {
 }
 
 function canonicalSemanticIrFromClosure(input) {
+  if (input.scan.typedSourceAuthority) return createTypedRequirementsSemanticIr(input);
   const requirements = input.scan.sourceRootCandidates
     .filter((candidate) =>
       ['functional_requirement', 'non_functional_requirement', 'negative_requirement'].includes(
@@ -426,6 +442,7 @@ function canonicalSemanticIrFromClosure(input) {
 }
 
 function canonicalBindingFromClosure(input) {
+  if (input.scan.typedSourceAuthority) return createTypedRequirementsSourceBinding(input);
   const candidateById = new Map(
     input.scan.sourceRootCandidates.map((candidate) => [candidate.sourceRootId, candidate])
   );
@@ -991,7 +1008,8 @@ async function continueAcceptedJudgeFailure(input) {
   if (existingDelta && sha256Stable(input.currentAuthority) !== existingDelta.beforeAuthorityHash) {
     throw new Error('requirements_contract_remediation_authority_recovery_mismatch');
   }
-  const semanticIr = readRecordJson(input.recordRoot, input.currentAuthority.activeSemanticIrPath);
+  const semanticIr = resolveRequirementsContractSemanticIrAuthority(
+    readRecordJson(input.recordRoot, input.currentAuthority.activeSemanticIrPath));
   const sourceBinding = readRecordJson(
     input.recordRoot,
     input.currentAuthority.activeSourceBindingPath
@@ -1212,6 +1230,7 @@ async function continueAuthoringFromContext(context, authoringContext, options =
     authoringAttemptId,
     premiseHash: scan.sourceList.sourceListHash,
     sourceRootCandidates: scan.sourceRootCandidates,
+    ...(scan.typedSourceAuthority ? { typedSourceAuthority: scan.typedSourceAuthority } : {}),
   });
   atomicNoClobberPublish({
     targetPath: path.join(stagingRoot, 'cp02-technical-planning-capability.json'),
@@ -1219,14 +1238,16 @@ async function continueAuthoringFromContext(context, authoringContext, options =
     role: 'requirements_technical_planning_capability',
   });
   const atoms = atomicMustsFromScan(scan);
-  const confirmedDecisions = confirmedDecisionsFromGrillResolution(options.grillResolution, atoms);
+  const confirmedDecisions = confirmedDecisionsFromGrillResolution(options.grillResolution, atoms, scan);
   const cp02Candidate = prepareRequirementsContractCp02PipelineStage({
     authoringRequestId: requestId,
     authoringAttemptId,
     atoms,
+    ...(scan.typedSourceAuthority ? { typedSourceIds: scan.sourceRootCandidates.map((candidate) => candidate.sourceRootId) } : {}),
     decisions: confirmedDecisions.map((decision) => ({
       decisionId: decision.id,
       affectedAtomIds: decision.affectedAtomIds,
+      ...(decision.affectedSourceRefs ? { affectedSourceRefs: decision.affectedSourceRefs } : {}),
       authorityPremiseHashes: decision.authorityPremiseHashes,
     })),
     technicalPlanning: capability,
@@ -1825,10 +1846,12 @@ async function resumeAuthorConfirmationReadySourceAction(context) {
                 'utf8'
               )
             );
-            const semanticIr = JSON.parse(
-              fs.readFileSync(
-                path.join(recordRoot, ...currentAuthority.activeSemanticIrPath.split('/')),
-                'utf8'
+            const semanticIr = resolveRequirementsContractSemanticIrAuthority(
+              JSON.parse(
+                fs.readFileSync(
+                  path.join(recordRoot, ...currentAuthority.activeSemanticIrPath.split('/')),
+                  'utf8'
+                )
               )
             );
             const nextBinding = canonicalBindingFromClosure({

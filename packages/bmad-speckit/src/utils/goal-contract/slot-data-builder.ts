@@ -152,6 +152,12 @@ function makeStructuredRegistries(obligations, taskObligations) {
 }
 
 function makeRegistries(obligations) {
+  if (obligations.some((obligation) => obligation.executionRole !== undefined)) {
+    if (obligations.some((obligation) => obligation.executionRole === undefined)) {
+      throw new Error('source_execution_semantics_incomplete');
+    }
+    return makeSemanticRegistries(obligations);
+  }
   const taskObligations = obligations.filter(
     (obligation) =>
       obligation.kind === 'declared_execution_task' && isExplicitTaskHeading(obligation)
@@ -161,7 +167,93 @@ function makeRegistries(obligations) {
     : legacyRegistries(obligations);
 }
 
+function semanticRecordId(obligation) {
+  return declaredRecordId(obligation) || obligation.id;
+}
+
+function makeSemanticRegistries(obligations) {
+  const tasks = obligations.filter((row) => row.executionRole === 'action');
+  const recordIds = (kind) => obligations.filter((row) => row.kind === kind).map(semanticRecordId);
+  const commandRecords = semanticCommandRecords(obligations);
+  const commandIds = new Set(commandRecords.map((command) => command.id));
+  // Acceptance criteria may be source declarations (for example FIX-* headings)
+  // that are intentionally excluded from the semantic obligation view. Their
+  // IDs remain valid registry targets when a source-backed action references
+  // them; command IDs are still sourced exclusively from declarations below.
+  const declaredAcceptanceCriteria = obligations.flatMap((row) => [
+    ...(row.acceptanceRefs || []),
+    ...(row.typedRefs || [])
+      .filter((ref) => ref.kind === 'acceptance' && ref.sourceBlockRefs?.length)
+      .map((ref) => ref.targetId),
+  ]);
+  const declaredEvidenceContracts = obligations.flatMap((row) => [
+    ...(row.evidenceRefs || []),
+    ...(row.typedRefs || [])
+      .filter((ref) => ref.kind === 'evidenced_by' && ref.sourceBlockRefs?.length)
+      .map((ref) => ref.targetId),
+  ]);
+  return {
+    projectionMode: 'semantic',
+    sourceObligations: obligations.map((row) => ({
+      ...row,
+      goalTaskRefs: [...new Set([...(row.taskRefs || []), ...(row.goalTaskRefs || []),
+        ...(row.executionRole === 'action' ? [semanticRecordId(row)] : [])])],
+      acceptanceRefs: [...(row.acceptanceRefs || [])],
+      commandRefs: [...new Set(row.commandRefs || [])].filter((ref) => commandIds.has(ref)),
+      evidenceRefs: [...(row.evidenceRefs || [])],
+    })),
+    tasks: tasks.map(semanticRecordId),
+    acceptance: [...new Set([...recordIds('acceptance_condition'), ...declaredAcceptanceCriteria])],
+    commands: [...commandIds],
+    commandRecords,
+    evidence: [...new Set([...recordIds('evidence_contract'), ...declaredEvidenceContracts])],
+  };
+}
+
+function semanticCommandRecords(obligations) {
+  const recordsById = new Map();
+  for (const row of obligations) {
+    for (const declaration of row.commandDeclarations || []) {
+      const candidate = {
+      ...row, id: declaration.id, declaredSourceId: declaration.id,
+      invocation: declaration.invocation, commandDeclaration: structuredClone(declaration),
+      sourceRootId: row.id, kind: 'verification_command', executionRole: 'binding',
+      };
+      const current = recordsById.get(declaration.id);
+      const candidateAdmissible = isAdmissibleProofCommand(candidate);
+      const candidateOwnsCommand = row.kind === 'verification_command';
+      const currentAdmissible = current && isAdmissibleProofCommand(current.record);
+      if (!current || (candidateOwnsCommand && !current.ownsCommand) ||
+        (candidateOwnsCommand === current.ownsCommand && candidateAdmissible && !currentAdmissible)) {
+        recordsById.set(declaration.id, { record: candidate, ownsCommand: candidateOwnsCommand });
+      }
+    }
+  }
+  return [...recordsById.values()].map(({ record }) => record);
+}
+
+function isAdmissibleProofCommand(command) {
+  return (
+    typeof command.invocation === 'string' &&
+    command.invocation.trim().length > 0 &&
+    !['may', 'should', 'descriptive'].includes(command.normativeStrength) &&
+    command.commandDeclaration?.polarity !== 'forbidden' &&
+    command.commandDeclaration?.authorization !== 'prohibited' &&
+    command.evidenceClassification !== 'coverage_only'
+  );
+}
+
+function requiresImplementationProof(obligation) {
+  if (obligation.executionRole === undefined) return true;
+  return (
+    obligation.executionRole === 'action' &&
+    (obligation.normativeStrength === 'must' || obligation.normativeStrength === 'mixed') &&
+    !['forbidden', 'permitted', 'descriptive'].includes(obligation.polarity)
+  );
+}
+
 function isCodeObligation(obligation) {
+  if (!requiresImplementationProof(obligation)) return false;
   const text = `${obligation.headingPath?.join(' ') || ''} ${obligation.text || ''} ${obligation.summary || ''}`;
   return /packages\/|_bmad\/|tests\/|\.js|\.ts|script|CLI|command|seam|receipt|safeWriteText|copyFileAtomic/u.test(
     text
@@ -177,7 +269,8 @@ function commandTextFromFence(text) {
 }
 
 function implementationProofAudit(sourceObligations) {
-  const commandBlocks = sourceObligations.filter(
+  const commandBlocks = sourceObligations.some((row) => row.executionRole !== undefined)
+    ? semanticCommandRecords(sourceObligations) : sourceObligations.filter(
     (obligation) =>
       obligation.kind === 'command_block' || obligation.kind === 'verification_command'
   );
@@ -187,6 +280,17 @@ function implementationProofAudit(sourceObligations) {
     blockingReasons.push(
       'code obligations require behavior, static seam, receipt field, or CLI output commands'
     );
+  }
+  for (const obligation of codeObligations.filter((row) => row.executionRole !== undefined)) {
+    const taskIds = new Set([semanticRecordId(obligation), ...(obligation.goalTaskRefs || []), ...(obligation.taskRefs || [])]);
+    const commandRefs = new Set(obligation.commandRefs || []);
+    const boundCommands = commandBlocks.filter((command) =>
+      isAdmissibleProofCommand(command) &&
+      (commandRefs.has(semanticRecordId(command)) ||
+        [...(command.goalTaskRefs || []), ...(command.taskRefs || [])].some((ref) => taskIds.has(ref))));
+    if (boundCommands.length === 0) {
+      blockingReasons.push(`${obligation.id} missing source-bound implementation proof command`);
+    }
   }
   return {
     decision: blockingReasons.length === 0 ? 'pass' : 'blocked',
@@ -238,12 +342,12 @@ function frontMatter(metadata) {
     'entryFlow: goal_contract_generate',
     `projectionMode: ${metadata.projectionMode}`,
     `taskRange: ${
-      metadata.projectionMode === 'typed'
+      metadata.projectionMode !== 'legacy'
         ? `${metadata.firstTaskId}..${metadata.lastTaskId}`
         : `G001-${metadata.lastTaskId}`
     }`,
     `acceptanceRange: ${
-      metadata.projectionMode === 'typed'
+      metadata.projectionMode !== 'legacy'
         ? `${metadata.firstAcceptanceId}..${metadata.lastAcceptanceId}`
         : `ACC001-${metadata.lastAcceptanceId}`
     }`,
@@ -293,6 +397,112 @@ function buildImplementationTasks(sourceObligations) {
         `<!-- source-order:${index + 1} -->`,
       ].join('\n');
     })
+    .join('\n\n');
+}
+
+function semanticSourceText(row) {
+  return String(row.exactText || row.text || '').split(/\r?\n/u).map((line) => `> ${line}`).join('\n');
+}
+
+function semanticNormativeMetadata(row) {
+  return [
+    `- Source: \`${row.id}\`; role: \`${row.executionRole}\`; strength: \`${row.normativeStrength}\`; polarity: \`${row.polarity}\`.`,
+    `- Source text hash: \`sourceTextHash=${row.textHash}\`.`,
+    `- Provenance: \`${(row.provenanceRefs || []).join(', ')}\`; clauses: \`${(row.clauseRefs || []).join(', ')}\`.`,
+    ...(row.conditions || []).map((condition) =>
+      [
+        '- Condition (unevaluated):',
+        '',
+        ...String(condition.text)
+          .split(/\r?\n/u)
+          .map((line) => `  > ${line}`),
+        '',
+      ].join('\n')
+    ),
+  ].join('\n');
+}
+
+function buildSemanticTasks(registries) {
+  return registries.sourceObligations.filter((row) => row.executionRole === 'action').map((row) => [
+    `### ${semanticRecordId(row)}`, '', semanticSourceText(row), '', semanticNormativeMetadata(row),
+    ...semanticTaskExecution(row.taskExecution),
+    `- Acceptance refs: \`${row.acceptanceRefs.join(', ')}\`.`,
+    `- Command refs: \`${row.commandRefs.join(', ')}\`.`,
+    `- Evidence refs: \`${row.evidenceRefs.join(', ')}\`.`,
+  ].join('\n')).join('\n\n');
+}
+
+function semanticTaskExecution(execution) {
+  if (!execution) return [];
+  return ['', `**Execution Class:** \`${execution.executionClass}\``,
+    `**Owned Production Paths:** ${execution.ownedProductionPaths}`,
+    ...(execution.executionClass === 'aggregate_only' ? [
+      `**Aggregate Gate Phase:** \`${execution.aggregateGatePhase}\``,
+      `**Aggregate Validation Commands:** ${execution.aggregateValidationCommandsValue}`,
+      '', '- Execute the source-declared aggregate validation commands at the declared aggregate gate phase.',
+      '- This task MUST NOT enter the executable child manifest.',
+      '- This task MUST NOT create an atomic child commit.',
+    ] : []), ''];
+}
+
+function buildSemanticNorms(registries) {
+  return registries.sourceObligations.filter((row) => row.executionRole !== 'action').map((row) => [
+    `#### ${row.id}`, '', semanticSourceText(row), '', semanticNormativeMetadata(row),
+  ].join('\n')).join('\n\n');
+}
+
+function headingDeclaresRecord(row, recordId) {
+  const pattern = new RegExp(`^${escapeRegExp(recordId)}\\b`, 'u');
+  return (row.headingPath || []).some((heading) => pattern.test(String(heading).trim()));
+}
+
+function resolveSemanticAcceptance(registries, acceptanceId) {
+  const exact = registries.sourceObligations.filter(
+    (row) => semanticRecordId(row) === acceptanceId
+  );
+  const headingMatches = registries.sourceObligations.filter(
+    (row) => row.executionRole === 'acceptance' && headingDeclaresRecord(row, acceptanceId)
+  );
+  const sourceRows = exact.length > 0 ? exact : headingMatches;
+  const bindingRows = registries.sourceObligations.filter(
+    (row) => (row.acceptanceRefs || []).includes(acceptanceId)
+  );
+  if (sourceRows.length === 0 && bindingRows.length === 0) {
+    const error = new Error('source_acceptance_reference_unresolved') as GoalContractBuilderError;
+    error.failureClass = 'source_acceptance_reference_unresolved';
+    throw error;
+  }
+  const taskRefs = [...new Set(bindingRows.flatMap((row) => row.goalTaskRefs || []))];
+  const commandRefs = [...new Set(bindingRows.flatMap((row) => row.commandRefs || []))];
+  const evidenceRefs = [...new Set([
+    ...bindingRows.flatMap((row) => row.evidenceRefs || []),
+    ...sourceRows.flatMap((row) => row.evidenceRefs || []),
+  ])];
+  return {
+    acceptanceId,
+    sourceRows,
+    taskRefs,
+    commandRefs,
+    evidenceRefs,
+  };
+}
+
+function buildSemanticAcceptance(registries) {
+  return registries.acceptance.map((acceptanceId) => {
+    const resolved = resolveSemanticAcceptance(registries, acceptanceId);
+    return [
+      `- ${acceptanceId}:`,
+      ...resolved.sourceRows.map((row) => semanticSourceText(row)),
+      `  - Tasks: \`${resolved.taskRefs.join(', ') || 'none'}\`.`,
+      `  - Commands: \`${resolved.commandRefs.join(', ') || 'none'}\`.`,
+      `  - Evidence: \`${resolved.evidenceRefs.join(', ') || 'none'}\`.`,
+    ].join('\n');
+  }).join('\n\n');
+}
+
+function buildSemanticCommands(registries) {
+  return registries.commandRecords.filter(isAdmissibleProofCommand).map((row) => [`### COMMAND ${row.id}`, '', '```', row.invocation, '```',
+    '', semanticNormativeMetadata(row), `- Command source: \`${row.sourceRootId}\`.`].join('\n'))
     .join('\n\n');
 }
 
@@ -533,12 +743,28 @@ function buildTypedTrace(registries) {
     '| Acceptance ID | Task IDs | Evidence command and artifact | Pass condition |',
     '| --- | --- | --- | --- |',
     ...registries.acceptance.map((acceptanceId) => {
+      if (registries.projectionMode === 'semantic') {
+        const resolved = resolveSemanticAcceptance(registries, acceptanceId);
+        const description = resolved.sourceRows
+          .map((row) => declaredRecordDescription(row, acceptanceId))
+          .filter(Boolean)
+          .join(' ');
+        return `| ${acceptanceId} | ${resolved.taskRefs.join(', ')} | ${resolved.commandRefs.join(
+          ', '
+        )}; ${resolved.evidenceRefs.join(', ')} | ${description || acceptanceId} |`;
+      }
       const acceptance = typedRecord(registries, acceptanceId, 'acceptance_condition');
-      return `| ${acceptanceId} | ${(acceptance.goalTaskRefs || []).join(
-        ', '
-      )} | ${(acceptance.commandRefs || []).join(', ')}; ${(acceptance.evidenceRefs || []).join(
-        ', '
-      )} | ${declaredRecordDescription(acceptance, acceptanceId)} |`;
+      if (!acceptance) {
+        const error = new Error('source_acceptance_reference_unresolved') as GoalContractBuilderError;
+        error.failureClass = 'source_acceptance_reference_unresolved';
+        throw error;
+      }
+      return `| ${acceptanceId} | ${(acceptance.goalTaskRefs || []).join(', ')} | ${(
+        acceptance.commandRefs || []
+      ).join(', ')}; ${(acceptance.evidenceRefs || []).join(', ')} | ${declaredRecordDescription(
+        acceptance,
+        acceptanceId
+      )} |`;
     }),
   ].join('\n');
 }
@@ -718,16 +944,22 @@ function buildSlotData({
     registries,
   });
   if (coverageAudit.decision !== 'pass') {
-    const error = new Error('source_coverage_unmapped') as GoalContractBuilderError;
+    const reasons = Array.isArray(coverageAudit.blockingReasons)
+      ? coverageAudit.blockingReasons.join('|')
+      : '';
+    const error = new Error(
+      reasons ? `source_coverage_unmapped:${reasons}` : 'source_coverage_unmapped'
+    ) as GoalContractBuilderError;
     error.code = 'source_coverage_unmapped';
     error.coverageAudit = coverageAudit;
     throw error;
   }
-  const firstTaskId = registries.tasks.at(0);
-  const lastTaskId = registries.tasks.at(-1);
-  const firstAcceptanceId = registries.acceptance.at(0);
-  const lastAcceptanceId = registries.acceptance.at(-1);
+  const firstTaskId = registries.tasks.at(0) || 'none';
+  const lastTaskId = registries.tasks.at(-1) || 'none';
+  const firstAcceptanceId = registries.acceptance.at(0) || 'none';
+  const lastAcceptanceId = registries.acceptance.at(-1) || 'none';
   const typedProjection = registries.projectionMode === 'typed';
+  const semanticProjection = registries.projectionMode === 'semantic';
   const supersessionTexts = authoritySupersessionTexts(registries);
   const projectionSlots = evidenceGraph ? buildProjectionSlotData(evidenceGraph) : null;
   const slotData = {
@@ -750,22 +982,24 @@ function buildSlotData({
     authorityModel: [
       `- \`${repoPath(outPath)}\` is the compatibility Markdown projection for this generated goal contract.`,
       `- \`${repoPath(`${outPath}.authority/goal/active-authority.json`)}\` selects the frozen Goal Execution IR and binding tuple.`,
-      `- \`${source.sourcePlanPath}\` is the semantic input for StandaloneGoalSemanticIR/v1.`,
+      `- \`${source.sourcePlanPath}\` is the semantic input for StandaloneGoalSemanticIR/${semanticProjection ? 'v2' : 'v1'}.`,
       `- \`sourcePlanHash=${source.sourcePlanHash}\` binds this contract to source bytes.`,
       `- \`entryScenario=${entryProfile.entryScenario}\` selects the standalone authority profile.`,
       `- \`finalArtifactAuthority=${entryProfile.finalArtifactAuthority}\` binds execution authority to the active tuple.`,
       '- The standalone Markdown contract is a GoalExecutionIR projection and cannot create or repair semantics.',
-      '- `GoalExecutionIR/v1 is the shared deterministic execution compilation` for both standalone and requirements-backed profiles.',
+      `- \`GoalExecutionIR/${semanticProjection ? 'v2' : 'v1'} is the shared deterministic execution compilation\` for both standalone and requirements-backed profiles.`,
       '- `model_packet.json is the machine-readable execution authority` only for the two four-artifact compilation entries.',
       '- `goal_execution.md is not execution authority`; the active GoalExecutionIR tuple is the execution source for this goal.',
       '- `/goal completion is not closeout proof`; completion requires command evidence and receipt evidence.',
       ...supersessionTexts.map((text) => `- Readiness supersession authority: ${text}`),
     ].join('\n'),
-    rootCause: [
+    rootCause: semanticProjection
+      ? 'Source-backed role, modality, conditions and declared references govern the execution projection.'
+      : [
       'The source plan requires source-plan-faithful goal execution generation with deterministic coverage proof.',
       'The generator must fail closed when any source obligation lacks generated task mapping, acceptance mapping, command mapping, evidence mapping.',
     ].join('\n\n'),
-    domainAddenda: [
+    domainAddenda: semanticProjection ? buildSemanticNorms(registries) : [
       '### Source coverage contract',
       '',
       `- Every source row MUST map to at least one ${
@@ -774,20 +1008,20 @@ function buildSlotData({
       '- Coverage receipt rows MUST match the Markdown `Source Coverage Matrix` rows.',
       '- `unmappedSourceObligations` MUST equal `0`.',
     ].join('\n'),
-    implementationTasks: typedProjection
+    implementationTasks: semanticProjection ? buildSemanticTasks(registries) : typedProjection
       ? buildTypedImplementationTasks(registries)
       : buildImplementationTasks(registries.sourceObligations),
     traceSliceTrackingMatrix:
       projectionSlots?.traceSliceTrackingMatrix ||
-      (typedProjection ? buildTypedTrace(registries) : buildTrace(registries.sourceObligations)),
+      (semanticProjection || typedProjection ? buildTypedTrace(registries) : buildTrace(registries.sourceObligations)),
     strictAcceptanceChecklist:
       projectionSlots?.strictAcceptanceChecklist ||
-      (typedProjection
+      (semanticProjection ? buildSemanticAcceptance(registries) : typedProjection
         ? buildTypedAcceptance(registries)
         : buildAcceptance(registries.sourceObligations)),
     acceptanceTraceabilityMatrix:
       projectionSlots?.acceptanceTraceabilityMatrix ||
-      (typedProjection ? buildTypedTrace(registries) : buildTrace(registries.sourceObligations)),
+      (semanticProjection || typedProjection ? buildTypedTrace(registries) : buildTrace(registries.sourceObligations)),
     sourceCoverageMatrix:
       projectionSlots?.sourceCoverageMatrix ||
       (registries.sourceObligations.some(({ canonicalIntentRecordId }) => canonicalIntentRecordId)
@@ -795,7 +1029,7 @@ function buildSlotData({
         : buildSourceCoverageMatrix({
             sourceObligations: registries.sourceObligations,
           })),
-    requiredTestCommands: typedProjection
+    requiredTestCommands: semanticProjection ? buildSemanticCommands(registries) : typedProjection
       ? buildTypedCommands(registries)
       : buildCommands(registries.sourceObligations, coverageReceiptPath),
     manualVerificationScenarios:
@@ -1136,6 +1370,9 @@ function partitionFrontMatter({
     `partitionSetHash: ${bindings.partitionSetHash}`,
     `partitionId: ${partition.partitionId}`,
     `partitionRole: ${partition.partitionRole}`,
+    ...(Number.isInteger(partition.estimatedClosureMinutes)
+      ? [`estimatedClosureMinutes: ${partition.estimatedClosureMinutes}`]
+      : []),
     `selectionSetHash: ${partition.selectionSetHash || bindings.selectionSetHash}`,
     `dependencyPartitionIds: ${JSON.stringify(partition.dependencyPartitionIds || [])}`,
     ...selectionAuthorityLines,
@@ -1236,10 +1473,17 @@ function buildPartitionSlotData({
     selectedScope.inheritedConstraints.length === 0
       ? '- None.'
       : selectedScope.inheritedConstraints
-          .map(
-            (constraint) =>
-              `- \`${constraint.constraintId}\`: non-executable inherited constraint from the validated Execution Projection.`
-          )
+          .map((constraint) => {
+            const rule = String(
+              constraint.semantic?.canonicalValue ||
+                constraint.semantic?.requiredOutcome ||
+                constraint.semantic?.statement ||
+                ''
+            ).trim();
+            return `- \`${constraint.constraintId}\`: non-executable inherited constraint from the validated Execution Projection${
+              rule ? `: ${rule}` : '.'
+            }`;
+          })
           .join('\n');
   const completionEvidencePacket = bindings.partitionPlanHash
     ? [

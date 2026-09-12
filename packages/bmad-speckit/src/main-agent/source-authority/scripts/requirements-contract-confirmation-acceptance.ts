@@ -32,7 +32,11 @@ import { artifactBytesHash, canonicalRequirementsJson } from './requirements-con
 import { atomicNoClobberPublish } from './requirements-contract-atomic-no-clobber-publisher';
 import { validateRequirementsContractBuildManifest } from './requirements-contract-authoring-manifest';
 import { validateRequirementsActiveAuthorityTuple } from './requirements-contract-authority-publication-committer';
-import { validateRequirementsContractSemanticIr } from './requirements-contract-semantic-ir';
+import {
+  validateRequirementsContractSemanticIr,
+  type RequirementsContractSemanticIr,
+} from './requirements-contract-semantic-ir';
+import { readRequirementsContractSemanticIrAuthority } from './requirements-contract-semantic-ir-reader';
 import { validateRequirementsContractSourceBindingCapsule } from './requirements-contract-source-binding-capsule';
 import { resolveEvidenceClaimAuthority } from './requirements-contract-span-registry';
 import { sha256Stable } from './requirements-contract-semantic-resolver';
@@ -77,7 +81,7 @@ interface ConfirmationInput {
 type RequirementsFinalRenderInput = {
   requestId: string;
   confirmationLanguage: string;
-  semanticIr: JsonObject;
+  semanticIr: RequirementsContractSemanticIr;
   resolvedEvidenceIndex: JsonObject;
   effectivePass: JsonObject;
   bindingRefresh?: {
@@ -192,6 +196,35 @@ function requirementsConfirmationText(input: RequirementsFinalRenderInput): stri
   ].join('\n');
 }
 
+function confirmationHtmlLabels(language: string) {
+  if (language === 'zh-CN') {
+    return {
+      title: '需求合同',
+      requirements: '需求',
+      requirementKind: '需求类型',
+      polarity: '极性',
+      negativeAssertion: '负向断言',
+      acceptanceOracle: '验收判据',
+      blocksCompletionWhen: '阻断完成条件',
+      confirmedDecisions: '已确认决策',
+      authorityCitations: '权威引用',
+      confirmation: '确认',
+    };
+  }
+  return {
+    title: 'Requirements Contract',
+    requirements: 'Requirements',
+    requirementKind: 'Requirement kind',
+    polarity: 'Polarity',
+    negativeAssertion: 'Negative assertion',
+    acceptanceOracle: 'Acceptance oracle',
+    blocksCompletionWhen: 'Blocks completion when',
+    confirmedDecisions: 'Confirmed Decisions',
+    authorityCitations: 'Authority Citations',
+    confirmation: 'Confirmation',
+  };
+}
+
 export function projectRequirementsContractFinalPages(
   input: RequirementsFinalRenderInput
 ): RequirementsFinalPages {
@@ -201,6 +234,7 @@ export function projectRequirementsContractFinalPages(
   const decisions = records(object(semantics).decisions);
   const claims = records(object(input.semanticIr.semanticPayload).evidenceClaims);
   const exactConfirmationText = requirementsConfirmationText(input);
+  const htmlLabels = confirmationHtmlLabels(input.confirmationLanguage);
   const markdown = [
     '# Requirements Contract',
     '',
@@ -263,29 +297,29 @@ export function projectRequirementsContractFinalPages(
   const html = [
     '<!doctype html>',
     `<html lang="${htmlEscape(input.confirmationLanguage)}">`,
-    '<head><meta charset="utf-8"><title>Requirements Contract</title></head>',
+    `<head><meta charset="utf-8"><title>${htmlLabels.title}</title></head>`,
     '<body>',
     `<main data-request-id="${htmlEscape(input.requestId)}" data-semantic-revision-id="${htmlEscape(input.semanticIr.semanticRevisionId)}">`,
-    '<h1>Requirements Contract</h1>',
-    '<section id="requirements"><h2>Requirements</h2>',
+    `<h1>${htmlLabels.title}</h1>`,
+    `<section id="requirements"><h2>${htmlLabels.requirements}</h2>`,
     ...requirements.map(
       (requirement) =>
-        `<article data-requirement-id="${htmlEscape(requirement.id)}" data-requirement-kind="${htmlEscape(requirement.requirementKind)}" data-requirement-polarity="${htmlEscape(requirement.polarity)}"><h3>${htmlEscape(requirement.id)}</h3><p data-requirement-classification><strong>Requirement kind:</strong> ${htmlEscape(requirement.requirementKind)} <strong>Polarity:</strong> ${htmlEscape(requirement.polarity)}</p><p data-requirement-text>${htmlEscape(requirement.text)}</p><p data-requirement-oracle${requirement.requirementKind === 'negative' ? ' data-negative-assertion' : ''}><strong>${requirement.requirementKind === 'negative' ? 'Negative assertion' : 'Acceptance oracle'}:</strong> ${htmlEscape(requirement.oracle)}</p>${requirement.requirementKind === 'negative' ? `<p data-blocking-condition><strong>Blocks completion when:</strong> ${htmlEscape(requirement.blockingCondition ?? requirement.oracle)}</p>` : ''}</article>`
+        `<article data-requirement-id="${htmlEscape(requirement.id)}" data-requirement-kind="${htmlEscape(requirement.requirementKind)}" data-requirement-polarity="${htmlEscape(requirement.polarity)}"><h3>${htmlEscape(requirement.id)}</h3><p data-requirement-classification><strong>${htmlLabels.requirementKind}:</strong> ${htmlEscape(requirement.requirementKind)} <strong>${htmlLabels.polarity}:</strong> ${htmlEscape(requirement.polarity)}</p><p data-requirement-text>${htmlEscape(requirement.text)}</p><p data-requirement-oracle${requirement.requirementKind === 'negative' ? ' data-negative-assertion' : ''}><strong>${requirement.requirementKind === 'negative' ? htmlLabels.negativeAssertion : htmlLabels.acceptanceOracle}:</strong> ${htmlEscape(requirement.oracle)}</p>${requirement.requirementKind === 'negative' ? `<p data-blocking-condition><strong>${htmlLabels.blocksCompletionWhen}:</strong> ${htmlEscape(requirement.blockingCondition ?? requirement.oracle)}</p>` : ''}</article>`
     ),
     '</section>',
-    '<section id="confirmed-decisions"><h2>Confirmed Decisions</h2>',
+    `<section id="confirmed-decisions"><h2>${htmlLabels.confirmedDecisions}</h2>`,
     ...decisions.map(
       (decision) =>
         `<article data-decision-receipt="${htmlEscape(decision.decisionReceiptRef)}"><h3>${htmlEscape(decision.questionId)}</h3><p>${htmlEscape(decision.question)}</p><p>${htmlEscape(strings(decision.affectedFieldIds).join(', '))}</p><pre>${htmlEscape(displayValue(decision.answerValue))}</pre></article>`
     ),
     '</section>',
-    '<section id="authority-citations"><h2>Authority Citations</h2><ul>',
+    `<section id="authority-citations"><h2>${htmlLabels.authorityCitations}</h2><ul>`,
     ...claims.map(
       (claim) =>
         `<li data-evidence-claim="${htmlEscape(claim.evidenceClaimId)}">${htmlEscape(claim.evidenceClaimId)}: ${htmlEscape(claim.authorityClass)}</li>`
     ),
     '</ul></section>',
-    `<section id="confirmation"><h2>Confirmation</h2><pre>${htmlEscape(exactConfirmationText)}</pre></section>`,
+    `<section id="confirmation"><h2>${htmlLabels.confirmation}</h2><pre>${htmlEscape(exactConfirmationText)}</pre></section>`,
     '</main>',
     '</body></html>',
     '',
@@ -479,7 +513,7 @@ export function stageRequirementsContractConfirmationBindingRefresh(input: {
   const activeAuthority = object(record.activeAuthority);
   const tupleValidation = validateRequirementsActiveAuthorityTuple(activeAuthority);
   if (tupleValidation.decision === 'block') throw new Error(tupleValidation.issueCodes[0]);
-  const semanticIr = readJson(
+  const semanticIr = readRequirementsContractSemanticIrAuthority(
     confinedRecordArtifact(recordRoot, text(activeAuthority.activeSemanticIrPath))
   );
   const sourceBinding = readJson(
@@ -538,8 +572,8 @@ export function stageRequirementsContractConfirmationBindingRefresh(input: {
     resolvedEvidenceIndex,
     effectivePass,
     bindingRefresh: {
-      auditedSourceBindingHash: promotion.sourceBindingHash,
-      currentSourceBindingHash: sourceBinding.sourceBindingHash,
+      auditedSourceBindingHash: text(promotion.sourceBindingHash),
+      currentSourceBindingHash: text(sourceBinding.sourceBindingHash),
     },
   };
   const pages = projectRequirementsContractFinalPages(renderInput);
@@ -550,7 +584,7 @@ export function stageRequirementsContractConfirmationBindingRefresh(input: {
     'confirmation',
     'staging',
     'binding-refresh',
-    sourceBinding.bindingRevisionId
+    text(sourceBinding.bindingRevisionId)
   );
   const stagedMarkdown = atomicNoClobberPublish({
     targetPath: path.join(stagingRoot, 'requirements.md'),
@@ -591,7 +625,7 @@ export function refreshRequirementsContractConfirmationBinding(input: {
   const activeAuthority = object(record.activeAuthority);
   const tupleValidation = validateRequirementsActiveAuthorityTuple(activeAuthority);
   if (tupleValidation.decision === 'block') throw new Error(tupleValidation.issueCodes[0]);
-  const semanticIr = readJson(
+  const semanticIr = readRequirementsContractSemanticIrAuthority(
     confinedRecordArtifact(recordRoot, text(activeAuthority.activeSemanticIrPath))
   );
   const sourceBinding = readJson(
@@ -640,7 +674,7 @@ export function refreshRequirementsContractConfirmationBinding(input: {
     'confirmation',
     'staging',
     'binding-refresh',
-    sourceBinding.bindingRevisionId
+    text(sourceBinding.bindingRevisionId)
   );
   const stagedMarkdownPath = path.join(stagingRoot, 'requirements.md');
   const stagedHtmlPath = path.join(stagingRoot, 'requirements.html');
@@ -678,15 +712,15 @@ export function refreshRequirementsContractConfirmationBinding(input: {
   const refreshReceipt = createRequirementsContractSourceBindingRefreshReceipt({
     semanticRevisionId: semanticIr.semanticRevisionId,
     scopeSemanticHash: semanticIr.scopeSemanticHash,
-    fromBindingRevisionId: parentBinding.bindingRevisionId,
-    toBindingRevisionId: sourceBinding.bindingRevisionId,
-    fromSourceBindingHash: parentBinding.sourceBindingHash,
-    toSourceBindingHash: sourceBinding.sourceBindingHash,
+    fromBindingRevisionId: text(parentBinding.bindingRevisionId),
+    toBindingRevisionId: text(sourceBinding.bindingRevisionId),
+    fromSourceBindingHash: text(parentBinding.sourceBindingHash),
+    toSourceBindingHash: text(sourceBinding.sourceBindingHash),
     fromSnapshotSetHash: sha256Stable(parentBinding.sourceArtifacts),
     toSnapshotSetHash: sha256Stable(sourceBinding.sourceArtifacts),
-    fromSourceSpanRegistryHash: parentBinding.sourceSpanRegistryHash,
-    toSourceSpanRegistryHash: sourceBinding.sourceSpanRegistryHash,
-    evidenceClaimRegistryHash: sourceBinding.evidenceClaimBindingRegistryHash,
+    fromSourceSpanRegistryHash: text(parentBinding.sourceSpanRegistryHash),
+    toSourceSpanRegistryHash: text(sourceBinding.sourceSpanRegistryHash),
+    evidenceClaimRegistryHash: text(sourceBinding.evidenceClaimBindingRegistryHash),
     pageEvidence: {
       confirmationPromotionReceiptRef: {
         path: 'confirmation/confirmation-promotion-receipt.json',
@@ -700,7 +734,7 @@ export function refreshRequirementsContractConfirmationBinding(input: {
     recordRoot,
     'authoring',
     'source-bindings',
-    sourceBinding.bindingRevisionId,
+    text(sourceBinding.bindingRevisionId),
     'source-binding-refresh-receipt.json'
   );
   const receiptPublication = atomicNoClobberPublish({
@@ -781,7 +815,7 @@ export function renderAndPromoteRequirementsContractConfirmation(input: {
   if (buildManifest.buildManifestHash !== activeAuthority.activeBuildManifestHash) {
     throw new Error('requirements_final_render_build_manifest_stale');
   }
-  const semanticIr = readJson(
+  const semanticIr = readRequirementsContractSemanticIrAuthority(
     confinedRecordArtifact(recordRoot, text(activeAuthority.activeSemanticIrPath))
   );
   const sourceBinding = readJson(
@@ -1113,9 +1147,9 @@ export function confirmRequirementsContractIrScope(input: {
     refreshReceipt.scopeSemanticHash === activeAuthority.activeScopeSemanticHash &&
     refreshReceipt.toBindingRevisionId === activeAuthority.activeBindingRevisionId &&
     refreshReceipt.toSourceBindingHash === activeAuthority.activeSourceBindingHash &&
-    refreshReceipt.confirmationPromotionReceiptRef?.path ===
+    object(refreshReceipt.confirmationPromotionReceiptRef).path ===
       'confirmation/confirmation-promotion-receipt.json' &&
-    refreshReceipt.confirmationPromotionReceiptRef?.hash ===
+    object(refreshReceipt.confirmationPromotionReceiptRef).hash ===
       artifactBytesHash({
         role: 'promotion_receipt',
         mediaType: 'application/json',
@@ -1215,7 +1249,7 @@ export function confirmRequirementsContractIrScope(input: {
   return {
     ok: true,
     action: 'confirm-scope' as const,
-    status: record.lifecycle === 'user_confirmed' ? 'confirmation_reused' : 'user_confirmed',
+    status: 'user_confirmed' as const,
     exitCode: 0,
     authority: 'main-agent-controlled-requirements-confirmation' as const,
     requestId: input.requestId,

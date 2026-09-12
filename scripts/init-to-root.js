@@ -46,6 +46,7 @@ delegateMetadataRequestToMainCli(args);
 const ROOT_PACKAGE_JSON = require(path.join(PKG_ROOT, 'package.json'));
 const RUNTIME_STATUS_DECISION_RECEIPT_SCHEMA_FILE =
   'requirements-contract-runtime-status-decision-receipt.schema.json';
+const FINAL_JUDGE_RESULT_SCHEMA_FILE = 'main-agent-execution-final-judge-result.schema.json';
 const { syncSpecifyMirror } = require(path.join(
   PKG_ROOT,
   '_bmad',
@@ -134,6 +135,30 @@ function copyRuntimeStatusDecisionReceiptSchemaToHookPeer(schemaSrc, hookDir) {
     path.dirname(hookDir),
     'schemas',
     RUNTIME_STATUS_DECISION_RECEIPT_SCHEMA_FILE
+  );
+  copyFileWithRetry(schemaSrc, schemaDest);
+  return true;
+}
+
+function resolveFinalJudgeResultSchema(pkgRoot) {
+  const candidates = [
+    path.join(pkgRoot, 'node_modules', '@bmad-speckit', 'runtime-emit', 'schemas',
+      FINAL_JUDGE_RESULT_SCHEMA_FILE),
+    path.join(pkgRoot, 'node_modules', 'bmad-speckit', 'node_modules', '@bmad-speckit',
+      'runtime-emit', 'schemas', FINAL_JUDGE_RESULT_SCHEMA_FILE),
+    path.join(pkgRoot, 'packages', 'runtime-emit', 'schemas', FINAL_JUDGE_RESULT_SCHEMA_FILE),
+    path.join(pkgRoot, 'packages', 'bmad-speckit', 'src', 'main-agent', 'source-authority',
+      'schemas', FINAL_JUDGE_RESULT_SCHEMA_FILE),
+  ];
+  return candidates.find((candidate) => fs.existsSync(candidate)) || null;
+}
+
+function copyFinalJudgeResultSchemaToHookPeer(schemaSrc, hookDir) {
+  if (!schemaSrc || !fs.existsSync(schemaSrc)) return false;
+  const schemaDest = path.join(
+    path.dirname(hookDir),
+    'schemas',
+    FINAL_JUDGE_RESULT_SCHEMA_FILE
   );
   copyFileWithRetry(schemaSrc, schemaDest);
   return true;
@@ -1058,6 +1083,7 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
   }
   const wrcSrc = path.join(path.dirname(emitSrc), '..', 'write-runtime-context.cjs');
   const runtimeStatusSchemaSrc = resolveRuntimeStatusDecisionReceiptSchema(pkgRoot);
+  const finalJudgeResultSchemaSrc = resolveFinalJudgeResultSchema(pkgRoot);
   const hookDirs = [
     path.join(targetDir, '.cursor', 'hooks'),
     path.join(targetDir, '.claude', 'hooks'),
@@ -1081,6 +1107,11 @@ function deployConsumerRuntimeEmitToHooks(pkgRoot, targetDir) {
     if (!copyRuntimeStatusDecisionReceiptSchemaToHookPeer(runtimeStatusSchemaSrc, d)) {
       console.warn(
         `runtime status decision receipt schema not found; emit-runtime-policy.cjs may fail in ${path.relative(targetDir, d)}.`
+      );
+    }
+    if (!copyFinalJudgeResultSchemaToHookPeer(finalJudgeResultSchemaSrc, d)) {
+      console.warn(
+        `final judge result schema not found; emit-runtime-policy.cjs may fail in ${path.relative(targetDir, d)}.`
       );
     }
     deployed += 1;

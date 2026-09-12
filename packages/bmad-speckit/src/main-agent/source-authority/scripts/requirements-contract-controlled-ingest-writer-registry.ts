@@ -144,8 +144,8 @@ export function projectControlledIngestWriterRegistry(
         ? row.writesControlFields
         : [],
       receiptPath: text(row.receiptPath),
-      beforeAfterHashRequired: row.beforeAfterHashRequired === true,
-      canModifyWriterRegistry: row.canModifyWriterRegistry === true,
+      beforeAfterHashRequired: true,
+      canModifyWriterRegistry: false,
       registryHash: text(row.registryHash),
       architectureConfirmationHash: text(
         row.architectureConfirmationHash

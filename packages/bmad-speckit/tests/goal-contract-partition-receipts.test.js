@@ -326,6 +326,17 @@ describe('strict partition receipts', () => {
       assert.equal(schema.properties.schemaVersion.const, `${id}/v1`);
       assert.ok(schema.required.includes('decision'));
       assert.ok(schema.required.includes('blockingReasons'));
+      if (
+        id === 'goal-contract-partition-child-coverage-receipt' ||
+        id === 'goal-contract-partition-child-generation-receipt'
+      ) {
+        assert.deepEqual(schema.properties.estimatedClosureMinutes, {
+          type: 'integer',
+          minimum: 1,
+          maximum: 239,
+        });
+        assert.equal(schema.required.includes('estimatedClosureMinutes'), false);
+      }
     }
   });
 

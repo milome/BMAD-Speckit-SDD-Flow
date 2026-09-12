@@ -1,10 +1,10 @@
 {
   "schemaVersion": "goal-contract-profile-lock/v1",
   "profileId": "bmad-speckit-goal-execution-contract",
-  "profileVersion": "3.0.0",
+  "profileVersion": "3.1.0",
   "templatePath": "_bmad/shared/goal-contract/goal-execution-contract-template.md",
   "templateHash": "sha256:0b2903baf933aa6f658ba7613ed314862624ca3c0db5d193b9effae977240d70",
-  "profileHash": "sha256:36004afb9cdc655243a2d0ee85e6e33cc109bc944415f6e28d22be787d182db0",
+  "profileHash": "sha256:ae347a66cd7e0c6ae62a866ff154e18300f1111dddfaa2bdbdf6f27d2a980ca7",
   "minimumRendererVersion": "1.0.0",
-  "updatedAt": "2026-08-15T05:10:08.379Z"
+  "updatedAt": "2026-09-08T08:49:04.470Z"
 }

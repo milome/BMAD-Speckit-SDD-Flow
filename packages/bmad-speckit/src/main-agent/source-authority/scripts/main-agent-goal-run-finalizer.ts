@@ -3,6 +3,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import { validateGoalContractSchema } from '../../../utils/goal-contract/control-plane/schema-registry';
+import { resolveGoalExecutionAuthority } from '../../../utils/goal-contract/control-plane/goal-execution-authority';
 import {
   compileExecutionFinalCandidate,
   validateExecutionFinalCandidate,
@@ -16,8 +17,9 @@ import {
   validateMainAgentExecutionFinalJudgeCampaignArtifacts,
   type ExecutionFinalAcceptedResult,
   type MainAgentExecutionActorIsolationReceipt,
-  type MainAgentExecutionFinalJudgeActorIntent,
+  type MainAgentExecutionFinalAcceptanceJudgeActorIntent,
   type MainAgentExecutionFinalJudgeResult,
+  type MainAgentExecutionReviewerActorIntent,
   type MainAgentExecutionReviewerResult,
 } from './main-agent-execution-final-judge-campaign';
 import { compileMainAgentExecutionFinalJudgeCampaignInput } from './main-agent-execution-final-judge-campaign-input';
@@ -31,6 +33,7 @@ import {
   createRuntimeStatusProjectionUpdate,
   runtimeStatusProjectionArtifactWrites,
   runtimeStatusProjectionRecordPatch,
+  validateRuntimeStatusDecisionReceipt,
   type RequirementsContractSixModelId,
   type RuntimeStatusBinding,
 } from './requirements-contract-runtime-status-decision-receipt';
@@ -75,10 +78,10 @@ export type GoalFinalizationResult = {
 export type GoalFinalizationDependencies = {
   resolveProviderRef: () => string;
   invokeReviewer: (
-    intent: MainAgentExecutionFinalJudgeActorIntent
+    intent: MainAgentExecutionReviewerActorIntent
   ) => Promise<MainAgentExecutionReviewerResult>;
   invokeFinalJudge: (
-    intent: MainAgentExecutionFinalJudgeActorIntent
+    intent: MainAgentExecutionFinalAcceptanceJudgeActorIntent
   ) => Promise<MainAgentExecutionFinalJudgeResult>;
   claimLeaseMs?: number;
   onStaleClaimObserved?: () => Promise<void>;
@@ -210,6 +213,13 @@ function readHashedRecord(input: {
   return record;
 }
 
+export function readGoalFinalizerExecutionAuthority(input: { projectRoot: string; ref: ArtifactRef }): JsonRecord {
+  const { record } = readCanonicalJson(input.projectRoot, input.ref.path);
+  const ir = resolveGoalExecutionAuthority(record);
+  if (ir.goalExecutionIRHash !== input.ref.hash) fail();
+  return ir;
+}
+
 function readSelfHashedRecord(input: {
   projectRoot: string;
   relativePath: string;
@@ -318,11 +328,9 @@ function resolveCampaignAuthority(input: {
     ),
     hash: goalExecutionAuthorityRef.hash,
   };
-  const goalExecutionIr = readHashedRecord({
+  const goalExecutionIr = readGoalFinalizerExecutionAuthority({
     projectRoot,
     ref: goalExecutionIrRef,
-    schemaName: 'goal-execution-ir.schema.json',
-    hashField: 'goalExecutionIRHash',
   });
   const scalarBindings = [
     'candidateRunId',
@@ -707,15 +715,15 @@ function statusReceiptMatches(
   const receiptEntry = runtimeDecisionReceipts(context.record).find(
     (entry) => entry.path === status.decisionReceiptRef
   );
-  if (!isRecord(receiptEntry?.receipt)) return false;
+  if (!validateRuntimeStatusDecisionReceipt(receiptEntry?.receipt)) return false;
   const receipt = receiptEntry.receipt;
   return (
     receipt.authorityClass === 'deterministic_gate' &&
     receipt.decision === 'pass' &&
-    stableHash(normalizedStatusBindings(records(receipt.stageInputs) as RuntimeStatusBinding[])) ===
+    stableHash(normalizedStatusBindings(receipt.stageInputs)) ===
       stableHash(normalizedStatusBindings(spec.stageInputs)) &&
     stableHash(
-      normalizedStatusBindings(records(receipt.deterministicGateOutputs) as RuntimeStatusBinding[])
+      normalizedStatusBindings(receipt.deterministicGateOutputs)
     ) === stableHash(normalizedStatusBindings(spec.deterministicGateOutputs))
   );
 }

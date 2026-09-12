@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { MODEL_IDS, loadAiTddProjectionManifests } = require('./projection-manifest');
+const { validateTypedModelPacket } = require('../../main-agent/source-authority/scripts/requirements-contract-typed-model-packet');
 const {
   resolveVerifiedSixModelStatus,
 } = require('../../main-agent/source-authority/scripts/requirements-contract-runtime-status-authority-core.cjs');
@@ -97,6 +98,7 @@ function validateCompiledImplementPacket(record, recordPath, packet) {
   const auditReceipt = readJson(artifacts.auditReceipt);
   const manifest = objectValue(modelPacket?.contractExecutionManifest);
   const receiptManifest = objectValue(auditReceipt?.contractExecutionManifest);
+  if (modelPacket) blockingReasons.push(...validateTypedModelPacket(modelPacket, auditReceipt ?? undefined));
   if (text(modelPacket?.artifactRole) !== 'execution_authority') {
     blockingReasons.push('model_packet_not_execution_authority');
   }
@@ -108,7 +110,8 @@ function validateCompiledImplementPacket(record, recordPath, packet) {
     blockingReasons.push('model_packet_current_hash_mismatch');
   }
   if (
-    text(manifest?.schemaVersion) !== 'contract-execution-manifest/v1' ||
+    text(manifest?.schemaVersion) !== (modelPacket?.typedSourceAuthority
+      ? 'contract-execution-manifest/v2' : 'contract-execution-manifest/v1') ||
     !text(manifest?.builderVersion) ||
     !text(manifest?.manifestHash) ||
     !text(manifest?.sourceProjectionHash) ||

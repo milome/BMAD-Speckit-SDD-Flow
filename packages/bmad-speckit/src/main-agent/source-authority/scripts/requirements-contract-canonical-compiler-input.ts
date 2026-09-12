@@ -27,13 +27,13 @@ export interface CanonicalPreCheckpointCompilerInput {
 
 export interface CanonicalFrozenRequirementsCompilerInput {
   semantic: {
-    source: 'requirements-contract-semantic-ir/v1';
+    source: RequirementsContractSemanticIr['schemaVersion'];
     semanticRevisionId: string;
     scopeSemanticHash: string;
     payload: RequirementsContractSemanticIr['semanticPayload'];
   };
   binding: {
-    source: 'requirements-contract-source-binding/v1';
+    source: RequirementsContractSourceBindingCapsule['schemaVersion'];
     bindingRevisionId: string;
     sourceBindingHash: string;
     semanticRevisionId: string;
@@ -53,13 +53,13 @@ export function buildCanonicalFrozenRequirementsCompilerInput(input: {
   }
   const payload = {
     semantic: {
-      source: 'requirements-contract-semantic-ir/v1' as const,
+      source: input.semanticIr.schemaVersion,
       semanticRevisionId: input.semanticIr.semanticRevisionId,
       scopeSemanticHash: input.semanticIr.scopeSemanticHash,
       payload: input.semanticIr.semanticPayload,
     },
     binding: {
-      source: 'requirements-contract-source-binding/v1' as const,
+      source: input.sourceBinding.schemaVersion,
       bindingRevisionId: input.sourceBinding.bindingRevisionId,
       sourceBindingHash: input.sourceBinding.sourceBindingHash,
       semanticRevisionId: input.sourceBinding.semanticRevisionId,
@@ -68,7 +68,9 @@ export function buildCanonicalFrozenRequirementsCompilerInput(input: {
   return {
     ...payload,
     compilerInputHash: requirementsContractDomainHash(
-      'requirements-contract-canonical-frozen-compiler-input/v1', payload
+      input.semanticIr.schemaVersion === 'requirements-contract-semantic-ir/v2'
+        ? 'requirements-contract-canonical-frozen-compiler-input/v2'
+        : 'requirements-contract-canonical-frozen-compiler-input/v1', payload
     ),
   };
 }

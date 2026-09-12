@@ -205,6 +205,8 @@ export function compiledPromptRunnerFor(
     const productionArgv = [
       process.execPath,
       value.paths.installedGeneratorPath,
+      '--entry',
+      'main_agent_compile',
       '--requirement-record',
       value.paths.recordPath,
       '--source-document',
@@ -242,6 +244,7 @@ export function compiledPromptRunnerFor(
       runnerControlledExecutionContext.commandCwd,
       '--command-receipt-root',
       runnerControlledExecutionContext.commandReceiptRoot,
+      ...(input.profileRefPath ? ['--execution-discipline-profile-ref', input.profileRefPath] : []),
     ];
     const stdoutPath = writeText(path.join(outDir, 'compiler.stdout.log'), '{"decision":"pass"}\n');
     const stderrPath = writeText(path.join(outDir, 'compiler.stderr.log'), '');

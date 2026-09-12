@@ -1,0 +1,15 @@
+{
+  "id": "red-acceptance-1",
+  "kind": "acceptance-red",
+  "status": "confirmed",
+  "headSha": "<git-head-sha>",
+  "command": "npm test -- active-phase",
+  "commandHash": "<lowercase-sha256-of-normalized-command>",
+  "inputHashes": {
+    "design.md": "<lowercase-sha256>",
+    "phase-plan.md": "<lowercase-sha256>"
+  },
+  "receiptPath": ".artifacts/governed-feature-delivery/red-acceptance-1.log",
+  "receiptHash": "<lowercase-sha256>",
+  "completedAt": "2026-01-01T00:00:00.000Z"
+}

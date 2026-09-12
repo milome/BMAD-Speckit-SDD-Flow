@@ -150,7 +150,7 @@ describe('requirements-backed Goal admission', () => {
       expect(() =>
         compileRequirementsBackedGoal({
           projectRoot: fixture.root,
-          requirementRecordPath: fixture.runtimeRecordPath,
+          requirementRecordPath: fixture.authorityRecordPath,
           outRoot: path.join(fixture.root, `goal-run-${role}-drift`),
         })
       ).toThrowError(issueCode);
@@ -198,7 +198,7 @@ describe('requirements-backed Goal admission', () => {
         expect(() =>
           compileRequirementsBackedGoal({
             projectRoot: fixture.root,
-            requirementRecordPath: fixture.runtimeRecordPath,
+            requirementRecordPath: fixture.authorityRecordPath,
             outRoot: path.join(fixture.root, `goal-run-duplicate-${role}`),
           })
         ).toThrowError('readiness_recheck_required:implementation_readiness');
@@ -228,7 +228,7 @@ describe('requirements-backed Goal admission', () => {
         expect(() =>
           compileRequirementsBackedGoal({
             projectRoot: fixture.root,
-            requirementRecordPath: fixture.runtimeRecordPath,
+            requirementRecordPath: fixture.authorityRecordPath,
             outRoot: path.join(fixture.root, `goal-run-${kind}-authority-drift`),
           })
         ).toThrowError('architecture_confirmation_authority_snapshot_hash_mismatch');
@@ -248,7 +248,7 @@ describe('requirements-backed Goal admission', () => {
       expect(() =>
         compileRequirementsBackedGoal({
           projectRoot: fixture.root,
-          requirementRecordPath: fixture.runtimeRecordPath,
+          requirementRecordPath: fixture.authorityRecordPath,
           outRoot: path.join(fixture.root, 'goal-run-initial-authority-drift'),
         })
       ).toThrowError('requirements_successor_required:semantic_authority');
@@ -263,7 +263,7 @@ describe('requirements-backed Goal admission', () => {
       expect(() =>
         compileRequirementsBackedGoal({
           projectRoot: fixture.root,
-          requirementRecordPath: fixture.runtimeRecordPath,
+          requirementRecordPath: fixture.authorityRecordPath,
           outRoot: path.join(fixture.root, 'goal-run'),
         })
       ).toThrowError('readiness_recheck_required:implementation_readiness');
@@ -276,7 +276,7 @@ describe('requirements-backed Goal admission', () => {
 
       const result = compileRequirementsBackedGoal({
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot: path.join(fixture.root, 'goal-run'),
       });
       const goalExecutionIr = JSON.parse(readFileSync(result.goalExecutionIrRef.path, 'utf8'));
@@ -296,6 +296,16 @@ describe('requirements-backed Goal admission', () => {
       expect(goalExecutionIr.schemaVersion).toBe('GoalExecutionIR/v1');
       expect(goalExecutionIr.profile).toBe('requirements_backed');
       expect(goalExecutionIr.requirementsLineage.scopeSemanticHash).toBe(fixture.scopeSemanticHash);
+      expect(goalExecutionIr.requirementsLineage.sourceBindingHash).toBe(
+        fixture.sourceBindingHash
+      );
+      expect(admissionSnapshot.requirementsLineage.sourceBindingHash).toBe(
+        fixture.sourceBindingHash
+      );
+      expect(adapterProjection.requirementsLineage.sourceBindingHash).toBe(
+        fixture.sourceBindingHash
+      );
+      expect(sourceBinding.requirementsSourceBindingHash).toBe(fixture.sourceBindingHash);
       expect(goalExecutionIr.goalExecutionIRHash).toBe(result.goalExecutionIRHash);
       expect(activeAuthority.goalExecutionIRHash).toBe(result.goalExecutionIRHash);
       expect(activeAuthority.profile).toBe('requirements_backed');
@@ -339,7 +349,7 @@ describe('requirements-backed Goal admission', () => {
       expect(() =>
         compileRequirementsBackedGoal({
           projectRoot: fixture.root,
-          requirementRecordPath: fixture.runtimeRecordPath,
+          requirementRecordPath: fixture.authorityRecordPath,
           outRoot: path.join(fixture.root, 'goal-run'),
           source: 'requirements.md',
         } as never)
@@ -347,11 +357,43 @@ describe('requirements-backed Goal admission', () => {
       expect(() =>
         compileRequirementsBackedGoal({
           projectRoot: fixture.root,
-          requirementRecordPath: fixture.runtimeRecordPath,
+          requirementRecordPath: fixture.authorityRecordPath,
           outRoot: path.join(fixture.root, 'goal-run'),
           scopeSemanticHash: fixture.scopeSemanticHash,
         } as never)
       ).toThrowError('requirements_backed_caller_derived_input_forbidden:scopeSemanticHash');
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('keeps canonical authority and six-model runtime record paths distinct', () => {
+    const fixture = materializeImplementationReadinessFixture();
+    try {
+      expect(fixture.authorityRecordPath).toBe(fixture.recordPath);
+      expect(fixture.runtimeRecordPath).not.toBe(fixture.authorityRecordPath);
+      expect(() =>
+        compileRequirementsBackedGoal({
+          projectRoot: fixture.root,
+          requirementRecordPath: fixture.runtimeRecordPath,
+          outRoot: path.join(fixture.root, 'goal-run-runtime-record-alias'),
+        })
+      ).toThrowError('requirements_backed_requirement_record_invalid');
+
+      const runtimeRecord = JSON.parse(readFileSync(fixture.runtimeRecordPath, 'utf8'));
+      runtimeRecord.recordId = `${fixture.requestId}-DRIFT`;
+      writeFileSync(
+        fixture.runtimeRecordPath,
+        `${JSON.stringify(runtimeRecord, null, 2)}\n`,
+        'utf8'
+      );
+      expect(() =>
+        compileRequirementsBackedGoal({
+          projectRoot: fixture.root,
+          requirementRecordPath: fixture.authorityRecordPath,
+          outRoot: path.join(fixture.root, 'goal-run-runtime-record-drift'),
+        })
+      ).toThrowError('requirements_backed_runtime_record_identity_mismatch');
     } finally {
       fixture.cleanup();
     }
@@ -376,7 +418,7 @@ describe('requirements-backed Goal admission', () => {
       expect(() =>
         compileRequirementsBackedGoal({
           projectRoot: fixture.root,
-          requirementRecordPath: fixture.runtimeRecordPath,
+          requirementRecordPath: fixture.authorityRecordPath,
           outRoot,
         })
       ).toThrowError('readiness_recheck_required:implementation_readiness');
@@ -402,7 +444,7 @@ describe('requirements-backed Goal admission', () => {
         expect(() =>
           compileRequirementsBackedGoal({
             projectRoot: fixture.root,
-            requirementRecordPath: fixture.runtimeRecordPath,
+            requirementRecordPath: fixture.authorityRecordPath,
             outRoot,
           })
         ).toThrowError('readiness_recheck_required:scoped_input_digest');
@@ -419,7 +461,7 @@ describe('requirements-backed Goal admission', () => {
       produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
       const input = {
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot: path.join(fixture.root, 'goal-run-successor'),
       };
       const first = compileRequirementsBackedGoal(input);
@@ -450,7 +492,7 @@ describe('requirements-backed Goal admission', () => {
       produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
       const input = {
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot: path.join(fixture.root, 'goal-run-concurrent-successor'),
       };
       const first = compileRequirementsBackedGoal(input);
@@ -493,7 +535,7 @@ describe('requirements-backed Goal admission', () => {
       produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
       const input = {
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot: path.join(fixture.root, 'goal-run-competing-successor'),
       };
       const first = compileRequirementsBackedGoal(input);
@@ -538,7 +580,7 @@ describe('requirements-backed Goal admission', () => {
       produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
       const input = {
         projectRoot: fixture.root,
-        requirementRecordPath: fixture.runtimeRecordPath,
+        requirementRecordPath: fixture.authorityRecordPath,
         outRoot: path.join(fixture.root, 'goal-run-lock-timeout'),
       };
       const first = compileRequirementsBackedGoal(input);
@@ -586,7 +628,7 @@ describe('requirements-backed Goal admission', () => {
         expect(() =>
           compileRequirementsBackedGoal({
             projectRoot: fixture.root,
-            requirementRecordPath: fixture.runtimeRecordPath,
+            requirementRecordPath: fixture.authorityRecordPath,
             outRoot,
           })
         ).toThrowError('readiness_recheck_required:implementation_readiness');
@@ -607,7 +649,7 @@ describe('requirements-backed Goal admission', () => {
         compileRequirementsBackedGoal(
           {
             projectRoot: fixture.root,
-            requirementRecordPath: fixture.runtimeRecordPath,
+            requirementRecordPath: fixture.authorityRecordPath,
             outRoot,
           },
           {
@@ -641,7 +683,7 @@ describe('requirements-backed Goal admission', () => {
         compileRequirementsBackedGoal(
           {
             projectRoot: fixture.root,
-            requirementRecordPath: fixture.runtimeRecordPath,
+            requirementRecordPath: fixture.authorityRecordPath,
             outRoot,
           },
           {
@@ -694,7 +736,7 @@ describe('requirements-backed Goal admission', () => {
           compileRequirementsBackedGoal(
             {
               projectRoot: fixture.root,
-              requirementRecordPath: fixture.runtimeRecordPath,
+              requirementRecordPath: fixture.authorityRecordPath,
               outRoot,
             },
             { beforeActiveAuthorityCommit: () => mutate(fixture) }

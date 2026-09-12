@@ -746,6 +746,11 @@
         "state": "retained_on_demand"
       },
       {
+        "ruleId": "governed-feature-delivery-skill-tests",
+        "pattern": "_bmad/skills/governed-feature-delivery/scripts/tests/**",
+        "state": "retained_on_demand"
+      },
+      {
         "ruleId": "scoring-package-tests",
         "pattern": "packages/scoring/**",
         "state": "retained_on_demand"

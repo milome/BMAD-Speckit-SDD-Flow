@@ -7,7 +7,10 @@ import {
   validateRequirementsContractBuildManifest,
   type RequirementsContractBuildManifest,
 } from './requirements-contract-authoring-manifest';
-import { validateRequirementsContractSemanticIr } from './requirements-contract-semantic-ir';
+import {
+  resolveRequirementsContractSemanticIrAuthority,
+  validateRequirementsContractSemanticIr,
+} from './requirements-contract-semantic-ir';
 import { validateRequirementsContractSourceBindingCapsule } from './requirements-contract-source-binding-capsule';
 
 export const REQUIREMENTS_AUTHORITY_PUBLICATION_COMMITTER_OWNER =
@@ -172,16 +175,15 @@ export function commitRequirementsContractAuthorityPublication(input: {
     input.buildManifest.bindingAuthorityRef.path !== manifestBindingAuthority.activeSourceBindingPath ||
     input.buildManifest.bindingAuthorityRef.hash !== manifestBindingAuthority.activeSourceBindingHash
   ) throw new Error('requirements_authority_build_manifest_identity_mismatch');
-  const semantic = readJsonArtifact(
+  const semantic = resolveRequirementsContractSemanticIrAuthority(readJsonArtifact(
     resolveConfinedRecordPath(input.recordRootPath, input.next.activeSemanticIrPath),
     'requirements_authority_semantic_readback_invalid'
-  );
+  ));
   const semanticValidation = validateRequirementsContractSemanticIr(semantic);
   if (semanticValidation.decision === 'block') throw new Error(semanticValidation.issueCodes[0]);
-  const semanticRecord = semantic as Record<string, unknown>;
   if (
-    semanticRecord.semanticRevisionId !== input.next.activeSemanticRevisionId ||
-    semanticRecord.scopeSemanticHash !== input.next.activeScopeSemanticHash
+    semantic.semanticRevisionId !== input.next.activeSemanticRevisionId ||
+    semantic.scopeSemanticHash !== input.next.activeScopeSemanticHash
   ) throw new Error('requirements_authority_semantic_readback_mismatch');
   const binding = readJsonArtifact(
     resolveConfinedRecordPath(input.recordRootPath, input.next.activeSourceBindingPath),

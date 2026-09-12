@@ -2,6 +2,7 @@ import {
   canonicalRequirementsJson,
   requirementsContractDomainHash,
 } from './requirements-contract-hash-domains';
+import { resolveTypedSourceAuthority, type RequirementsTypedSourceAuthority, type RequirementsTypedSourceGraph } from './requirements-contract-typed-source-semantics';
 
 export type RequirementsAuthorityClass = 'source_grounded' | 'human_confirmed' | 'derived';
 
@@ -14,6 +15,8 @@ export interface RequirementsSpecSpan {
   evidenceClaimRefs: string[];
   decisionReceiptRefs: string[];
   derivationReceiptRefs: string[];
+  boundTypedSourceGraphHash?: string;
+  originSpecSpanRef?: string;
 }
 
 export interface RequirementsSourceSpan {
@@ -47,11 +50,93 @@ function stableId(prefix: string, domain: string, payload: unknown): string {
 export function canonicalSpecSpanId(input: {
   normalizedClaimHash: string;
   obligationIds: string[];
+  boundTypedSourceGraphHash?: string;
 }): string {
-  return stableId('SPEC-SPAN', 'requirements-spec-span-id/v1', {
+  return stableId('SPEC-SPAN', input.boundTypedSourceGraphHash ? 'requirements-spec-span-id/v2' : 'requirements-spec-span-id/v1', {
     normalizedClaimHash: input.normalizedClaimHash,
     obligationIds: sortedUnique(input.obligationIds),
+    ...(input.boundTypedSourceGraphHash ? { boundTypedSourceGraphHash: input.boundTypedSourceGraphHash } : {}),
   });
+}
+
+export function resolveRequirementsSpecSpanSourceNodeIds(
+  span: RequirementsSpecSpan,
+  authority?: RequirementsTypedSourceAuthority,
+  resolvedGraph?: RequirementsTypedSourceGraph
+): string[] {
+  if (span.boundTypedSourceGraphHash === undefined) return [...span.boundObligationIds];
+  if (!authority || !SHA256.test(span.boundTypedSourceGraphHash) || span.boundTypedSourceGraphHash !== authority.graphHash ||
+    span.normalizedClaimHash !== authority.graphHash ||
+    (span.authorityClass !== 'source_grounded' &&
+      (span.authorityClass !== 'derived' || !span.originSpecSpanRef))) {
+    throw new Error('requirements_spec_span_typed_graph_binding_invalid');
+  }
+  const graph = resolvedGraph ?? resolveTypedSourceAuthority(authority);
+  const nodesById = new Map(graph.sourceNodes.map((node) => [node.sourceRootId, node]));
+  const sameSet = (left: string[], right: string[]) => canonicalRequirementsJson(sortedUnique(left)) === canonicalRequirementsJson(sortedUnique(right));
+  const nodeIds = sortedUnique(span.boundObligationIds);
+  if (nodeIds.length === 0 || nodeIds.some((id) => !nodesById.has(id))) {
+    throw new Error('requirements_spec_span_typed_direct_projection_mismatch');
+  }
+  const semanticNodeIds = nodeIds.flatMap((id) => [
+    id,
+    ...(nodesById.get(id)?.executionRole === 'action' ? [`${id}-A1`] : []),
+  ]);
+  if (!sameSet(span.boundSemanticNodeIds, semanticNodeIds)) {
+    throw new Error('requirements_spec_span_typed_direct_projection_mismatch');
+  }
+  return nodeIds;
+}
+
+export function expandRequirementsTypedSpecSpans(
+  spans: RequirementsSpecSpan[],
+  authority: RequirementsTypedSourceAuthority
+): RequirementsSpecSpan[] {
+  const graph = resolveTypedSourceAuthority(authority);
+  const actionIds = graph.sourceNodes
+    .filter((node) => node.executionRole === 'action')
+    .map((node) => node.sourceRootId);
+  const legacyAggregate = spans.length === 1 &&
+    canonicalRequirementsJson(sortedUnique(spans[0].boundObligationIds)) ===
+      canonicalRequirementsJson(sortedUnique(actionIds)) &&
+    canonicalRequirementsJson(sortedUnique(spans[0].boundSemanticNodeIds)) ===
+      canonicalRequirementsJson(sortedUnique([
+        ...actionIds,
+        ...actionIds.map((id) => `${id}-A1`),
+      ]));
+  const expanded = legacyAggregate
+    ? graph.sourceNodes.map((node) => ({
+        specSpanId: canonicalSpecSpanId({
+          normalizedClaimHash: authority.graphHash,
+          obligationIds: [node.sourceRootId],
+          boundTypedSourceGraphHash: authority.graphHash,
+        }),
+        authorityClass: 'derived' as const,
+        normalizedClaimHash: spans[0].normalizedClaimHash,
+        boundTypedSourceGraphHash: spans[0].boundTypedSourceGraphHash,
+        originSpecSpanRef: spans[0].specSpanId,
+        boundObligationIds: [node.sourceRootId],
+        boundSemanticNodeIds: [
+          node.sourceRootId,
+          ...(node.executionRole === 'action' ? [`${node.sourceRootId}-A1`] : []),
+        ],
+        evidenceClaimRefs: [...spans[0].evidenceClaimRefs],
+        decisionReceiptRefs: [...spans[0].decisionReceiptRefs],
+        derivationReceiptRefs: [...spans[0].derivationReceiptRefs],
+      }))
+    : spans.map((span) => structuredClone(span));
+  const coveredNodeIds = expanded.flatMap((span) =>
+    resolveRequirementsSpecSpanSourceNodeIds(span, authority, graph)
+  );
+  const expectedNodeIds = graph.sourceNodes.map((node) => node.sourceRootId);
+  if (
+    coveredNodeIds.length !== new Set(coveredNodeIds).size ||
+    canonicalRequirementsJson(sortedUnique(coveredNodeIds)) !==
+      canonicalRequirementsJson(sortedUnique(expectedNodeIds))
+  ) {
+    throw new Error('requirements_spec_span_typed_lineage_incomplete');
+  }
+  return expanded.sort((left, right) => left.specSpanId.localeCompare(right.specSpanId));
 }
 
 export function canonicalSourceSpanId(input: {
@@ -77,6 +162,7 @@ export function createSpecSpanRegistry(
     const expectedSpecSpanId = canonicalSpecSpanId({
       normalizedClaimHash: span.normalizedClaimHash,
       obligationIds: span.boundObligationIds,
+      ...(span.boundTypedSourceGraphHash ? { boundTypedSourceGraphHash: span.boundTypedSourceGraphHash } : {}),
     });
     const specSpanId = span.specSpanId ?? expectedSpecSpanId;
     if (LEGACY_SOURCE_SPAN.test(specSpanId)) {
@@ -84,6 +170,10 @@ export function createSpecSpanRegistry(
     }
     if (!SHA256.test(span.normalizedClaimHash)) {
       throw new Error('spec_span_normalized_claim_hash_invalid');
+    }
+    if (span.boundTypedSourceGraphHash !== undefined && (!SHA256.test(span.boundTypedSourceGraphHash) ||
+      span.boundTypedSourceGraphHash !== span.normalizedClaimHash || span.authorityClass !== 'source_grounded')) {
+      throw new Error('requirements_spec_span_typed_graph_binding_invalid');
     }
     if (specSpanId !== expectedSpecSpanId) {
       throw new Error('spec_span_identity_mismatch');
@@ -109,7 +199,7 @@ export function createSourceSpanRegistry(
   const registry = spans.map((span) => {
     const expectedSourceSpanId = canonicalSourceSpanId(span);
     const sourceSpanId = span.sourceSpanId ?? expectedSourceSpanId;
-    if (LEGACY_SOURCE_SPAN.test(sourceSpanId)) {
+    if (sourceSpanId !== expectedSourceSpanId && LEGACY_SOURCE_SPAN.test(sourceSpanId)) {
       throw new Error('legacy_source_span_identity_forbidden');
     }
     if (

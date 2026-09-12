@@ -1,0 +1,6 @@
+{
+  "authority": "repository-defined-design-owner",
+  "frozenAt": "2026-01-01T00:00:00.000Z",
+  "specHash": "<lowercase-sha256-of-design-spec>",
+  "successorPolicyHash": "<lowercase-canonical-policy-sha256>"
+}

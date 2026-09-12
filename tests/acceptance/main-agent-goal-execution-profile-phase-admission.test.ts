@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { produceImplementationReadiness } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-v2';
@@ -29,6 +29,15 @@ const GOAL_COMMAND = path.join(
   'commands',
   'goal-contract.ts'
 );
+const CANONICAL_SOURCE = path.join(
+  ROOT,
+  'packages',
+  'bmad-speckit',
+  'tests',
+  'fixtures',
+  'standalone-goal',
+  'canonical-source-plan-v1-minimal.md'
+);
 const ADMISSION_RUNNER = [
   'const runtime = require(process.argv[1]);',
   'const input = JSON.parse(Buffer.from(process.argv[3], "base64").toString("utf8"));',
@@ -42,18 +51,7 @@ const ADMISSION_RUNNER = [
 ].join('\n');
 const STANDALONE_RUNNER = [
   'const { goalContractCommand } = require(process.argv[1]);',
-  'const hash=(digit)=>`sha256:${digit.repeat(64)}`;',
-  'const prepareStandaloneGoalJudgeInvocation=async()=>({',
-  "configPath:'test',judgeRuntime:{},providerRef:'test-goal-judge',",
-  "provider:{transport:'openai-compatible',apiStyle:'responses',model:'test-model',requestPolicy:{}},",
-  "providerRegistryHash:hash('7'),credentialProviderRef:'test-goal-judge',credentialRevision:1,",
-  'invoke:async({request})=>({',
-  "schemaVersion:'requirements-contract-normalized-judge-response/v1',",
-  "providerRef:'test-goal-judge',transport:'openai-compatible',configuredModel:'test-model',returnedModel:'test-model',",
-  "decision:'pass',findings:[],challengeRequests:[],evidenceRefs:request.requiredCoverageRefs,",
-  "providerRequestId:'request-1',requestHash:hash('8'),responseHash:hash('9'),",
-  '}),});',
-  'Promise.resolve(goalContractCommand({prepareStandaloneGoalJudgeInvocation}, process.argv.slice(2)))',
+  'Promise.resolve(goalContractCommand({}, process.argv.slice(2)))',
   '.then((code)=>{process.exitCode=code;})',
   '.catch((error)=>{console.error(error);process.exitCode=2;});',
 ].join('');
@@ -84,7 +82,7 @@ function materializeRequirementsAuthority() {
   produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
   const generated = compileRequirementsBackedGoal({
     projectRoot: fixture.root,
-    requirementRecordPath: fixture.runtimeRecordPath,
+    requirementRecordPath: fixture.authorityRecordPath,
     outRoot: path.join(fixture.root, 'goal-run'),
   });
   return { fixture, generated };
@@ -102,33 +100,9 @@ function materializeStandaloneAuthority() {
   const fixture = materializeImplementationReadinessFixture();
   const source = path.join(fixture.root, 'standalone-goal.md');
   const out = path.join(fixture.root, 'standalone-goal-execution-plan.md');
-  writeFileSync(
-    source,
-    [
-      '# Standalone Goal',
-      '',
-      '## File Map',
-      '',
-      '- Modify `src/refund-worker.cjs`.',
-      '',
-      '## Implementation Task Breakdown',
-      '',
-      '- MUST implement the standalone refund worker.',
-      '- MUST NOT mutate `.git/**`.',
-      '',
-      '## Required Test Commands',
-      '',
-      '```powershell',
-      'node --test tests/refund-worker.test.cjs',
-      '```',
-      '',
-      '## Completion Evidence Packet',
-      '',
-      '- Preserve RED/GREEN output for the declared command.',
-      '',
-    ].join('\n'),
-    'utf8'
-  );
+  const canonicalSourceBytes = readFileSync(CANONICAL_SOURCE);
+  copyFileSync(CANONICAL_SOURCE, source);
+  expect(readFileSync(source)).toEqual(canonicalSourceBytes);
   const completed = spawnSync(
     process.execPath,
     [
@@ -151,7 +125,10 @@ function materializeStandaloneAuthority() {
     fixture.cleanup();
     throw new Error(completed.stderr || completed.stdout);
   }
-  return { fixture, generated: JSON.parse(completed.stdout) as Record<string, any> };
+  const generated = JSON.parse(completed.stdout) as Record<string, any>;
+  const frozenAuthority = JSON.parse(readFileSync(generated.activeAuthorityRef.path, 'utf8'));
+  expect(frozenAuthority).not.toHaveProperty('requirementsLineage');
+  return { fixture, generated };
 }
 
 describe('main-agent Goal execution profile-phase admission', () => {

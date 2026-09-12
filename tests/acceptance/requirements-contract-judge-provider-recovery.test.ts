@@ -22,6 +22,62 @@ function completeRequest() {
 }
 
 describe('requirements contract Judge provider capacity and recovery', () => {
+  it('classifies typed orphan transport evidence without weakening directory idempotency', async () => {
+    const orphan = Object.assign(new Error('codex_cli_judge_orphan_transport_failure'), {
+      name: 'CodexCliJudgeOrphanTransportFailure',
+      code: 'CODEX_CLI_JUDGE_ORPHAN_TRANSPORT_FAILURE',
+      issueCode: 'judge_provider_transport_failed',
+      orphanRecoveryEvidence: {
+        stdoutBytes: 377,
+        stdoutHash: `sha256:${'a'.repeat(64)}`,
+        stderrBytes: 0,
+        stderrHash: `sha256:${'b'.repeat(64)}`,
+      },
+    });
+    const result = await invokeRequirementsContractJudgeWithRecovery({
+      request: completeRequest(),
+      provider: { requestPolicy: {} },
+      attemptOrdinal: 1,
+      invoke: vi.fn().mockRejectedValue(orphan),
+    });
+
+    expect(result).toMatchObject({
+      state: 'audit_pending',
+      resumable: true,
+      issueCode: 'judge_provider_transport_failed',
+      attempt: {
+        attemptOrdinal: 1,
+        outcome: 'transport_failure',
+        issueCode: 'judge_provider_transport_failed',
+      },
+    });
+
+    await expect(invokeRequirementsContractJudgeWithRecovery({
+      request: completeRequest(),
+      provider: { requestPolicy: {} },
+      attemptOrdinal: 1,
+      invoke: vi.fn().mockRejectedValue(new Error('codex_cli_judge_output_dir_already_exists')),
+    })).rejects.toThrow('codex_cli_judge_output_dir_already_exists');
+
+    const malformed = Object.assign(new Error('codex_cli_judge_orphan_transport_failure'), {
+      name: 'CodexCliJudgeOrphanTransportFailure',
+      code: 'CODEX_CLI_JUDGE_ORPHAN_TRANSPORT_FAILURE',
+      issueCode: 'judge_provider_transport_failed',
+      orphanRecoveryEvidence: {
+        stdoutBytes: -1,
+        stdoutHash: `sha256:${'a'.repeat(64)}`,
+        stderrBytes: 0,
+        stderrHash: 'sha256:not-a-hash',
+      },
+    });
+    await expect(invokeRequirementsContractJudgeWithRecovery({
+      request: completeRequest(),
+      provider: { requestPolicy: {} },
+      attemptOrdinal: 1,
+      invoke: vi.fn().mockRejectedValue(malformed),
+    })).rejects.toBe(malformed);
+  });
+
   it('allows dispatch without guessing when the selected provider declares no capacity', () => {
     const result = assessRequirementsContractJudgeRequestCapacity({
       request: completeRequest(),

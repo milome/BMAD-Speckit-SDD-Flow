@@ -32,7 +32,7 @@ type JsonRecord = Record<string, unknown>;
 type ActorHost = 'codex' | 'claude';
 
 export interface GoalFinalizationActorResolverDependencies {
-  readConfig?: (projectRoot: string) => GovernanceRemediationConfig;
+  readConfig?: (projectRoot: string, config: string) => GovernanceRemediationConfig;
   resolveCredential?: (input: {
     projectRoot: string;
     config: string;
@@ -227,14 +227,15 @@ function normalizeTransportError(error: unknown, code: string): never {
 }
 
 export function createGoalFinalizationActorResolver(
-  input: { projectRoot: string },
+  input: { projectRoot: string; config?: string },
   dependencies: GoalFinalizationActorResolverDependencies = {}
 ): GoalFinalizationDependencies {
   const projectRoot = path.resolve(input.projectRoot);
+  const config = input.config?.trim() || '_bmad/_config/governance-remediation.yaml';
   let cachedSelection: ProviderSelection | null = null;
   const selection = () => {
     cachedSelection ??= resolveProvider(
-      (dependencies.readConfig ?? readGovernanceRemediationConfig)(projectRoot)
+      (dependencies.readConfig ?? readGovernanceRemediationConfig)(projectRoot, config)
     );
     return cachedSelection;
   };
@@ -246,15 +247,15 @@ export function createGoalFinalizationActorResolver(
     );
     if (authentication.type === 'claude_code_session') return Promise.resolve(undefined);
     cachedCredential ??= dependencies.resolveCredential
-      ? dependencies.resolveCredential({
+        ? dependencies.resolveCredential({
           projectRoot,
-          config: '_bmad/_config/governance-remediation.yaml',
+          config,
           selection: current,
         })
-      : resolveRequirementsContractJudgeCredential({
-          cwd: projectRoot,
-          config: '_bmad/_config/governance-remediation.yaml',
-        });
+        : resolveRequirementsContractJudgeCredential({
+            cwd: projectRoot,
+            config,
+          });
     return cachedCredential;
   };
   const transport = async (

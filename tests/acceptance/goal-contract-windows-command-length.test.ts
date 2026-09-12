@@ -1,55 +1,41 @@
 import { execFile } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { describe, expect, it } from 'vitest';
-import {
-  materializeStandaloneGoalJudgeHttpFixture,
-  type StandaloneGoalJudgeHttpFixture,
-} from '../helpers/standalone-goal-judge-http-fixture';
 
 const ROOT = process.cwd();
 const CLI = join(ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
 const execFileAsync = promisify(execFile);
+const fixtureTools = createRequire(import.meta.url)(
+  '../../packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-full-fixture.cjs'
+);
+const CANONICAL_LONG_IDENTIFIER = 'CORRESPONDING_AC_BEFORE_EACH_BYPASS_REMOVAL';
+const CANONICAL_BODY_SENTINEL =
+  '红灯命令：每条旁路删除前运行对应AC，确认测试能在旁路重新启用时失败；禁止源码字符串搜索作为唯一红灯。';
 
-function largeSourcePlan(): string {
-  const sections = Array.from({ length: 180 }, (_, index) =>
-    [
-      `## Execution Segment ${String(index + 1).padStart(3, '0')}`,
-      '',
-      `- Requirement ${index + 1}: write source-covered execution contract content without inline command payloads.`,
-      '',
-      '```powershell',
-      `node scripts/check-${String(index + 1).padStart(3, '0')}.js --json`,
-      '```',
-      '',
-    ].join('\n')
-  );
-  return [
-    '# Large Source Plan',
-    '',
-    '## File Map',
-    '',
-    '- Modify `packages/bmad-speckit/src/generated/large-source-plan.ts`.',
-    '',
-    ...sections,
-    '## Completion Criteria',
-    '',
-    '- Receipts must store paths and hashes only.',
-    '',
-  ].join('\n');
+function sha256(bytes: Buffer): string {
+  return createHash('sha256').update(bytes).digest('hex');
 }
 
 describe('goal-contract generate Windows command length regression', () => {
   it('uses path-only CLI arguments for large source documents', async () => {
     const root = mkdtempSync(join(tmpdir(), 'goal-contract-long-command-'));
-    let judge: StandaloneGoalJudgeHttpFixture | undefined;
     try {
-      judge = await materializeStandaloneGoalJudgeHttpFixture(root);
       const source = join(root, 'large-source-plan.md');
       const out = join(root, 'large-goal-execution-plan.md');
-      writeFileSync(source, largeSourcePlan(), 'utf8');
+      const fixture = fixtureTools.materializeFullFixture({ root });
+      const canonicalSourceBytes = readFileSync(fixture.canonicalSourcePath);
+      expect(canonicalSourceBytes.byteLength).toBeGreaterThanOrEqual(2_500_000);
+      copyFileSync(fixture.canonicalSourcePath, source);
+      const copiedSourceBytes = readFileSync(source);
+      expect(copiedSourceBytes).toEqual(canonicalSourceBytes);
+      expect(sha256(copiedSourceBytes)).toBe(sha256(canonicalSourceBytes));
+      expect(copiedSourceBytes.toString('utf8')).toContain(CANONICAL_LONG_IDENTIFIER);
+      expect(copiedSourceBytes.toString('utf8')).toContain(CANONICAL_BODY_SENTINEL);
 
       const { stdout } = await execFileAsync(
         process.execPath,
@@ -69,24 +55,22 @@ describe('goal-contract generate Windows command length regression', () => {
       );
       const payload = JSON.parse(stdout);
       const generationReceipt = JSON.parse(readFileSync(payload.generationReceiptPath, 'utf8'));
+      const serializedGenerationReceipt = JSON.stringify(generationReceipt);
 
       expect(payload.ok).toBe(true);
       expect(existsSync(out)).toBe(true);
-      expect(readFileSync(source, 'utf8').length).toBeGreaterThan(20_000);
-      expect(JSON.stringify(generationReceipt)).not.toContain('node -e');
-      expect(JSON.stringify(generationReceipt)).not.toContain('.tmp/*.cjs');
-      expect(JSON.stringify(generationReceipt)).not.toContain(
-        'write source-covered execution contract content without inline command payloads'.repeat(5)
-      );
+      expect(serializedGenerationReceipt).not.toContain('node -e');
+      expect(serializedGenerationReceipt).not.toContain('.tmp/*.cjs');
+      expect(serializedGenerationReceipt).not.toContain(CANONICAL_LONG_IDENTIFIER);
+      expect(serializedGenerationReceipt).not.toContain(CANONICAL_BODY_SENTINEL);
       expect(generationReceipt.sourcePlanPath).toBe(source.replace(/\\/g, '/'));
       expect(generationReceipt.goalContractHash).toMatch(/^sha256:/);
       expect(generationReceipt.writeReceipt.finalHash).toBe(
         generationReceipt.goalContractDocumentHash
       );
-      expect(payload.goalJudgeDispatchCount).toBe(1);
-      expect(judge.requests).toBe(1);
+      expect(payload.goalJudgeDispatchCount).toBe(0);
+      expect(existsSync(payload.internalSemanticGateRef.path)).toBe(true);
     } finally {
-      if (judge) await judge.close();
       rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
     }
   }, 120_000);

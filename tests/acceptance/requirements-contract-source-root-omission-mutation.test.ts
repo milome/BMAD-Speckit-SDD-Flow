@@ -85,7 +85,7 @@ describe('requirements contract Source Root omission mutation', () => {
     );
 
     expect(SOURCE_ROOT_CLASS_REGISTRY_VERSION).toBe(
-      'requirements-contract-source-root-class-registry/v2'
+      'requirements-contract-source-root-class-registry/v3'
     );
     expect([...registeredClasses].sort()).toEqual(
       expect.arrayContaining([...REQUIRED_ROOT_CLASSES].sort())
@@ -204,7 +204,16 @@ implementationConfirmation:
     expect(withoutProjection).toEqual(baseline);
     expect(projectionChanged).toEqual(baseline);
 
-    const requirementText = 'functional_requirement text 5';
+    const functionalIndex = REQUIREMENTS_CONTRACT_SOURCE_ROOT_CLASS_REGISTRY.findIndex(
+      (entry) => entry.rootClass === 'functional_requirement'
+    );
+    const requirementText = `functional_requirement text ${functionalIndex + 1}`;
+    const requirementId = baseline.find(
+      (root) => root.rootClass === 'functional_requirement'
+    )?.sourceRootId;
+    expect(functionalIndex).toBeGreaterThanOrEqual(0);
+    expect(requirementId).toBeTruthy();
+    expect(withProjection).toContain(requirementText);
     const authorityChanged = extractRegisteredSourceRootCandidates({
       sourcePath,
       sourceText: withProjection.replace(
@@ -213,9 +222,9 @@ implementationConfirmation:
       ),
     });
     expect(
-      authorityChanged.find((root) => root.sourceRootId === 'MUST-FR-105')?.semanticBody
+      authorityChanged.find((root) => root.sourceRootId === requirementId)?.semanticBody
     ).not.toEqual(
-      baseline.find((root) => root.sourceRootId === 'MUST-FR-105')?.semanticBody
+      baseline.find((root) => root.sourceRootId === requirementId)?.semanticBody
     );
   });
 

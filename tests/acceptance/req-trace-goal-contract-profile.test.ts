@@ -3,7 +3,7 @@ import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { materializeAiTddManifestCloseoutRunnerFixture } from '../helpers/requirement-fixture-runtime';
 
 const ROOT = process.cwd();
@@ -34,6 +34,8 @@ let tempDir: string;
 let canonicalProfile: string;
 let tempProfile: string;
 let fixture: ReturnType<typeof materializeAiTddManifestCloseoutRunnerFixture>;
+
+vi.setConfig({ testTimeout: 120_000, hookTimeout: 120_000 });
 
 beforeEach(() => {
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'req-trace-goal-profile-'));

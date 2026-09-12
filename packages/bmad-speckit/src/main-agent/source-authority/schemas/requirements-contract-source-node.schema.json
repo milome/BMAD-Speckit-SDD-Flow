@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-source-node.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["sourceRootId", "rootClass", "proposedAuthorityClass", "bodySchemaVersion", "semanticBody", "sourceBinding"],
+  "properties": {
+    "sourceRootId": { "type": "string", "minLength": 1 },
+    "rootClass": { "const": "typed_source_node" },
+    "proposedAuthorityClass": { "const": "source_authority" },
+    "bodySchemaVersion": { "const": "requirements-contract-source-node/v2" },
+    "semanticBody": {
+      "type": "object",
+      "required": ["schemaVersion", "executionRole", "text", "polarity", "normativeStrength", "conditions", "scope", "declaredIds"],
+      "properties": {
+        "schemaVersion": { "const": "requirements-contract-source-node/v2" },
+        "executionRole": { "enum": ["action", "requirement", "boundary", "acceptance", "guidance", "binding", "definition"] },
+        "text": { "type": "string", "minLength": 1 },
+        "polarity": { "enum": ["required", "forbidden", "permitted", "descriptive", "preserve", "mixed"] },
+        "normativeStrength": { "enum": ["must", "should", "may", "descriptive"] },
+        "conditions": { "type": "array" },
+        "scope": { "type": "object" },
+        "declaredIds": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "taskExecution": { "$ref": "#/$defs/taskExecution" }
+      }
+    },
+    "sourceBinding": {
+      "type": "object",
+      "required": ["sourceArtifactRef", "byteStart", "byteEnd"],
+      "properties": {
+        "sourceArtifactRef": { "type": "string", "minLength": 1 },
+        "byteStart": { "type": "integer", "minimum": 0 },
+        "byteEnd": { "type": "integer", "minimum": 1 }
+      }
+    }
+  },
+  "$defs": {
+    "taskExecution": {
+      "type": "object", "additionalProperties": false,
+      "required": ["executionClass", "ownedProductionPaths", "sourceRefs"],
+      "properties": {
+        "executionClass": { "enum": ["executable_child", "aggregate_only"] },
+        "ownedProductionPaths": { "type": "string", "minLength": 1 },
+        "aggregateGatePhase": { "enum": ["post_child_execution", "final_aggregate"] },
+        "aggregateValidationCommandsValue": { "type": "string", "minLength": 1 },
+        "aggregateValidationCommands": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "sourceRefs": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+      },
+      "allOf": [{ "if": { "properties": { "executionClass": { "const": "aggregate_only" } } },
+        "then": { "required": ["aggregateGatePhase", "aggregateValidationCommandsValue", "aggregateValidationCommands"] } }]
+    },
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "dictionary": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "nodes", "root", "expandedBytes", "expandedHash"],
+      "properties": {
+        "schemaVersion": { "const": "GoalSemanticDictionary/v1" },
+        "nodeEncoding": { "enum": ["GoalDictionaryNodes/base36-v1", "GoalDictionaryNodes/base36-run-v2"] },
+        "nodes": { "type": "array", "minItems": 1 },
+        "root": { "type": "integer", "minimum": 0 },
+        "expandedBytes": { "type": "integer", "minimum": 1, "maximum": 16777216 },
+        "expandedHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "authority": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "graph", "graphHash"],
+      "properties": {
+        "schemaVersion": { "const": "requirements-contract-typed-source-authority/v2" },
+        "graph": { "$ref": "#/$defs/dictionary" },
+        "graphHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "coverage": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "graphHash", "coverage", "coverageHash"],
+      "properties": {
+        "schemaVersion": { "const": "requirements-contract-typed-source-coverage/v2" },
+        "graphHash": { "$ref": "#/$defs/hash" },
+        "coverage": { "$ref": "#/$defs/dictionary" },
+        "coverageHash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

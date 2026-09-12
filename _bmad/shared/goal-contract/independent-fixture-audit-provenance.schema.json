@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/independent-fixture-audit-provenance.schema.json",
+  "title": "Independent fixture audit controlled provenance reference",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["recordPath", "eventLogPath", "receiptDir", "reportEventIds", "dispositionEventId"],
+  "properties": {
+    "recordPath": { "type": "string", "minLength": 1 },
+    "eventLogPath": { "type": "string", "minLength": 1 },
+    "receiptDir": { "type": "string", "minLength": 1 },
+    "reportEventIds": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "dispositionEventId": { "type": "string", "minLength": 1 }
+  }
+}

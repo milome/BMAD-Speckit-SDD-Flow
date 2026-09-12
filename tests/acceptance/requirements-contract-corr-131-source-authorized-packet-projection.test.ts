@@ -20,7 +20,6 @@ import {
   createSourceAuthorityProjectionDescriptor,
   createTempRoot,
   issueCodes,
-  readJson,
   removeTempRoot,
   renderSourceAuthorityProjection,
   runAuthoring,

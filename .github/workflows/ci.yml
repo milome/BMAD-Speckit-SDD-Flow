@@ -283,6 +283,28 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  governed-feature-delivery-skill-tests:
+    needs: classify
+    if: needs.classify.outputs.execution_allowed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.classify.outputs.commit_sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.1'
+
+      - name: Run governed feature delivery node:test suites
+        run: >-
+          node --test
+          _bmad/skills/governed-feature-delivery/scripts/tests/checkpoint-core.test.mjs
+          _bmad/skills/governed-feature-delivery/scripts/tests/governed-feature-delivery.test.mjs
+          _bmad/skills/governed-feature-delivery/scripts/tests/run-phase.test.mjs
+
   evidence-join:
     if: always() && needs.classify.outputs.execution_allowed == 'true'
     needs: [classify, execute-shard]
@@ -339,7 +361,7 @@ jobs:
   ci-result:
     name: CI required
     if: always()
-    needs: [classify, evidence-join]
+    needs: [classify, evidence-join, governed-feature-delivery-skill-tests]
     runs-on: ubuntu-latest
     steps:
       - name: Expose the only required CI result
@@ -348,6 +370,7 @@ jobs:
           CLASSIFY_RESULT: ${{ needs.classify.result }}
           EXECUTION_ALLOWED: ${{ needs.classify.outputs.execution_allowed }}
           EVIDENCE_JOIN_RESULT: ${{ needs.evidence-join.result }}
+          GOVERNED_FEATURE_DELIVERY_RESULT: ${{ needs.governed-feature-delivery-skill-tests.result }}
         run: |
           if [ "$CLASSIFY_RESULT" != "success" ]; then
             echo "::error::CI_CLASSIFY_FAILED:$CLASSIFY_RESULT"
@@ -359,5 +382,9 @@ jobs:
           fi
           if [ "$EVIDENCE_JOIN_RESULT" != "success" ]; then
             echo "::error::CI_EVIDENCE_JOIN_FAILED:$EVIDENCE_JOIN_RESULT"
+            exit 1
+          fi
+          if [ "$GOVERNED_FEATURE_DELIVERY_RESULT" != "success" ]; then
+            echo "::error::CI_GOVERNED_FEATURE_DELIVERY_FAILED:$GOVERNED_FEATURE_DELIVERY_RESULT"
             exit 1
           fi

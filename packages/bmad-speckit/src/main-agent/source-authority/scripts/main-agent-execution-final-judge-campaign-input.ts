@@ -167,5 +167,20 @@ export function validateMainAgentExecutionFinalJudgeCampaignInput(
   ) {
     fail('main_agent_execution_final_judge_campaign_input_stale');
   }
-  return value as MainAgentExecutionFinalJudgeCampaignInput;
+  return {
+    schemaVersion: 'main-agent-execution-final-judge-campaign-input/v1',
+    campaignId: String(record.campaignId),
+    campaignLineageKey: String(record.campaignLineageKey),
+    closureReceiptHash: String(record.closureReceiptHash),
+    candidateBytesHash: String(record.candidateBytesHash),
+    currentImplementationHash: String(record.currentImplementationHash),
+    currentEvidenceHash: String(record.currentEvidenceHash),
+    initialReviewAttemptKey: String(record.initialReviewAttemptKey),
+    reviewerActorClass: 'bounded_code_reviewer',
+    finalJudgeActorClass: 'final_acceptance_judge',
+    providerRef: String(record.providerRef),
+    ...(candidate ? { executionFinalCandidate: candidate } : {}),
+    actorBindingHash: String(record.actorBindingHash),
+    inputHash: String(record.inputHash),
+  };
 }

@@ -9,16 +9,64 @@ import {
 } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import Ajv2020 from 'ajv/dist/2020.js';
 import { describe, expect, it } from 'vitest';
 import {
   resolveRequirementsTechnicalPlanningCapability,
+  resolveTypedTechnicalDeclarations,
   validateRequirementsTechnicalPlanningCapabilityResult,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-technical-planning-capability';
 import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
+import { scanRequirementsContractConsumerAuthority } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-consumer-authority-scanner';
+import { compileRequirementsTypedSourceCandidate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-typed-source-compiler';
+import {
+  createTypedSourceAuthority,
+  resolveTypedSourceAuthority,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-typed-source-semantics';
+import { requirementsTypedSemanticSource } from '../../packages/bmad-speckit/src/utils/goal-contract/control-plane/goal-requirements-typed-bridge';
+import { createFullSourceBundle } from '../helpers/source-authority-full-source';
 
 const capabilityHash = sha256Stable('technical-planning-capability');
 const configHash = sha256Stable('technical-planning-config');
 const premiseHash = sha256Stable('technical-planning-premises');
+const countsBy = (values: Array<Record<string, unknown>>, field: string) => values.reduce<Record<string, number>>(
+  (counts, value) => ({ ...counts, [String(value[field])]: (counts[String(value[field])] ?? 0) + 1 }), {}
+);
+
+function legacyCommandAuthority(commandOverrides: Record<string, unknown> = {}) {
+  return createTypedSourceAuthority({
+    schemaVersion: 'requirements-contract-typed-source-graph/v2',
+    sourceNodes: [{
+      sourceRootId: 'WORK-COMPAT-001',
+      executionRole: 'action',
+      text: 'Execute the compatible command.',
+      polarity: 'required',
+      normativeStrength: 'must',
+      conditions: [],
+      scope: { kind: 'work' },
+      declaredIds: ['WORK-COMPAT-001'],
+    }],
+    sourceRelations: [],
+    sourceBlocks: [{ id: 'BLOCK-COMPAT-001' }],
+    commandDeclarations: [{
+      id: 'CMD-COMPAT-001',
+      blockId: 'BLOCK-COMPAT-001',
+      owner: 'WORK-COMPAT-001',
+      role: 'verification_command',
+      expression: 'node --test compatibility.test.js',
+      ...commandOverrides,
+    }],
+    workDeclarations: [{
+      id: 'WORK-COMPAT-001',
+      text: 'Execute the compatible command.',
+      pass: [{ text: 'The compatible command exits zero.' }],
+      commandIds: ['CMD-COMPAT-001'],
+    }],
+    scenarioDeclarations: [],
+    fixDeclarations: [],
+    sections: [],
+  });
+}
 
 function runProductionAuthor(root: string, semanticBody: Record<string, unknown>) {
   mkdirSync(path.join(root, 'docs'), { recursive: true });
@@ -89,6 +137,131 @@ function productionAttemptDir(root: string, requestId: string): string {
 }
 
 describe('requirements contract technical planning capability', () => {
+  it.each([
+    ['verification_command', 'required', 'verification_command'],
+    ['command_template', 'template', 'command_template'],
+    ['prohibited_command', 'prohibited', 'prohibited_command'],
+  ] as const)(
+    'deterministically derives missing normalized metadata for legacy role %s',
+    (role, modality, declarationRole) => {
+      const entries = resolveTypedTechnicalDeclarations(legacyCommandAuthority({ role }));
+      expect(entries).toEqual([
+        expect.objectContaining({
+          kind: 'CMD',
+          value: 'node --test compatibility.test.js',
+          modality,
+          coverageRole: role === 'verification_command' ? 'action_trace' : 'non_action_declaration',
+          declarationRole,
+        }),
+      ]);
+    }
+  );
+
+  it.each([
+    [
+      'partial metadata',
+      { commandDeclarationClass: 'executable_expression' },
+      'requirements_typed_source_command_declaration_metadata_invalid',
+    ],
+    [
+      'invalid role',
+      { role: 'unknown_role' },
+      'requirements_technical_source_declaration_role_invalid',
+    ],
+    [
+      'empty expression',
+      { expression: '' },
+      'requirements_technical_source_declaration_value_missing',
+    ],
+    [
+      'implicit source command set',
+      { role: 'source_command_set' },
+      'requirements_technical_source_declaration_metadata_required',
+    ],
+  ] as const)('fails closed for %s', (_name, command, failureClass) => {
+    expect(() => resolveTypedTechnicalDeclarations(legacyCommandAuthority(command)))
+      .toThrow(failureClass);
+  });
+
+  it('keeps full-source declaration classes consumable without partial canonical attestations', () => {
+    const fixture = createFullSourceBundle();
+    try {
+      const scan = scanRequirementsContractConsumerAuthority({ cwd: fixture.root,
+        intakeSource: fixture.intakeSource, authoritySources: fixture.authoritySources });
+      const compiled = compileRequirementsTypedSourceCandidate({ scan,
+        authoringRequestId: 'FULL-SOURCE-BRIDGE', authoringAttemptId: 'FULL-SOURCE-BRIDGE-ATTEMPT' });
+      const graph = resolveTypedSourceAuthority(compiled.semanticIr.semanticPayload.semantics.typedSourceAuthority);
+      expect(graph.sourceNodes).toHaveLength(2534);
+      expect(graph.sourceRelations).toHaveLength(2778);
+      expect(graph.commandDeclarations).toHaveLength(97);
+      expect(graph.sourceNodes.some((node) => node.typedReferences !== undefined)).toBe(false);
+      expect(graph.commandDeclarations.filter((command) =>
+        ['source_command_set', 'conditional_selector'].includes(String(command.commandDeclarationClass))))
+        .toHaveLength(4);
+      expect(resolveTypedTechnicalDeclarations(compiled.semanticIr.semanticPayload.semantics.typedSourceAuthority)
+        .some((entry) => entry.value.trim().length === 0)).toBe(false);
+      const semanticSource = requirementsTypedSemanticSource(compiled.semanticIr);
+      const projections = semanticSource.typedRelationProjections as Array<Record<string, unknown>>;
+      expect(countsBy(projections, 'disposition'))
+        .toEqual({ execution_projection: 840, authority_only: 1430, obligation_projection: 508 });
+      const mandatory = projections.filter((projection) => projection.mandatory === true);
+      expect(mandatory).toHaveLength(1348);
+      expect(mandatory.every((projection) => projection.disposition !== 'authority_only' &&
+        Array.isArray(projection.carrierRefs) && projection.carrierRefs.length > 0)).toBe(true);
+      expect(countsBy(projections.filter((projection) =>
+        projection.disposition === 'authority_only'), 'relationKind'))
+        .toEqual({ fix_facet: 600, defines: 277, source_mentions: 461, elaborates: 90, same_source_boundary: 2 });
+      const declarationConstraints = (semanticSource.typedExecutionConstraints as Array<Record<string, unknown>>)
+        .filter((constraint) => ['source_command_set', 'conditional_selector'].includes(String(constraint.declarationRole)));
+      expect(declarationConstraints).toHaveLength(4);
+      expect(declarationConstraints.find((constraint) => constraint.declarationRole === 'conditional_selector'))
+        .toMatchObject({ coverageRole: 'non_action_declaration', modality: 'context',
+          conditions: [expect.objectContaining({ sourceCondition: expect.any(String) })] });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  }, 120_000);
+
+  it('keeps AJV and runtime parity for v1 and v2 declaration metadata', () => {
+    const schema = JSON.parse(readFileSync(path.resolve(
+      'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-technical-planning-capability.schema.json'
+    ), 'utf8'));
+    const validateSchema = new Ajv2020({ strict: false, allErrors: true }).compile(schema);
+    const base = {
+      authoringRequestId: 'request-technical-planning', authoringAttemptId: 'attempt-technical-planning',
+      checkpointId: 'cp02' as const,
+      capability: { capabilityId: 'repository-technical-planner', status: 'available' as const,
+        capabilityHash, configHash }, premiseHash,
+    };
+    const v1 = resolveRequirementsTechnicalPlanningCapability({ ...base,
+      candidates: [{ kind: 'CMD', id: 'targeted-test', value: 'npm test -- owner.test.ts' }] });
+    const v1WithTypedFields = structuredClone(v1) as any;
+    Object.assign(v1WithTypedFields.executionRegistry.entries[0], {
+      coverageRole: 'action_trace', declarationRole: 'verification_command',
+    });
+    v1WithTypedFields.executionRegistry.registryHash = sha256Stable({
+      domain: 'requirements-contract-typed-execution-registry/v1',
+      entries: v1WithTypedFields.executionRegistry.entries,
+    });
+    const { resultHash: _v1ResultHash, ...v1Payload } = v1WithTypedFields;
+    v1WithTypedFields.resultHash = sha256Stable({
+      domain: 'requirements-contract-technical-planning-capability-result/v1', payload: v1Payload,
+    });
+    expect(validateSchema(v1WithTypedFields), JSON.stringify(validateSchema.errors)).toBe(false);
+    expect(validateRequirementsTechnicalPlanningCapabilityResult(v1WithTypedFields)).toBe(false);
+
+    const v2 = resolveRequirementsTechnicalPlanningCapability({ ...base,
+      schemaVersion: 'requirements-contract-technical-planning-input/v2',
+      candidates: [{ kind: 'CMD', id: 'targeted-test', value: 'npm test -- owner.test.ts',
+        authorityKind: 'source_declared', applicableSourceRefs: ['WORK-001'], premiseRefs: ['CMD-001'],
+        derivationReceiptRefs: [], sourceDeclarationRefs: ['CMD-001'], conditions: [],
+        scope: { kind: 'work', owner: 'WORK-001' }, modality: 'required',
+        coverageRole: 'action_trace', declarationRole: 'verification_command' }],
+    });
+    expect(validateSchema(v2), JSON.stringify(validateSchema.errors)).toBe(true);
+    expect(validateRequirementsTechnicalPlanningCapabilityResult(v2)).toBe(true);
+  });
+
   it('returns a stable resumable cp02 checkpoint when capability is unavailable', () => {
     const input = {
       authoringRequestId: 'request-technical-planning',

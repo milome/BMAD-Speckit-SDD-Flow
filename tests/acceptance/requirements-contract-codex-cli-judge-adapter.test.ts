@@ -138,6 +138,31 @@ function provider(): JsonRecord {
   };
 }
 
+function orphanJudgeInput(root: string, outputDir: string): JsonRecord {
+  const requestPath = path.join(root, 'request.json');
+  const evidencePath = path.join(root, 'evidence.txt');
+  writeFileSync(evidencePath, 'Independent local evidence.', 'utf8');
+  const request = { requestHash: `sha256:${'1'.repeat(64)}`, evidenceRef: 'evidence.txt' };
+  writeFileSync(requestPath, `${JSON.stringify(request)}\n`, 'utf8');
+  const selectedProvider = provider();
+  const providerRef = `provider-${randomUUID()}`;
+  return {
+    providerRef,
+    provider: selectedProvider,
+    credential: {
+      providerRef,
+      credentialRef: selectedProvider.credentialRef,
+      authenticationType: 'bearer',
+      credentialRevision: 1,
+    },
+    payload: {
+      systemPrompt: 'Audit the frozen evidence.',
+      request,
+      executionContext: { projectRoot: root, requestPath, outputDir },
+    },
+  };
+}
+
 async function loadAdapter(): Promise<JsonRecord | null> {
   expect(existsSync(ADAPTER_PATH), `Codex CLI Judge adapter is missing: ${ADAPTER_PATH}`).toBe(
     true
@@ -153,6 +178,136 @@ afterEach(() => {
 });
 
 describe('Codex CLI Judge adapter', () => {
+  it('recovers a terminal orphan transport failure without spawning or changing evidence', async () => {
+    const loaded = await loadAdapter();
+    if (!loaded) return;
+    const createAdapter = loaded.createCodexCliJudgeAdapter as CodexAdapterFactory | undefined;
+    expect(createAdapter).toBeTypeOf('function');
+    if (!createAdapter) return;
+
+    const root = createRoot();
+    const outputDir = path.join(root, 'runtime', 'provider-output', '1');
+    mkdirSync(outputDir, { recursive: true });
+    const stdoutPath = path.join(outputDir, 'codex-cli-stdout.jsonl');
+    const stderrPath = path.join(outputDir, 'codex-cli-stderr.log');
+    const stdout = [
+      { type: 'thread.started', thread_id: 'thread-orphan-1' },
+      { type: 'turn.started' },
+      { type: 'error', message: 'stream disconnected before completion: servers overloaded' },
+      { type: 'turn.failed', error: { message: 'stream disconnected before completion: servers overloaded' } },
+    ].map((event) => JSON.stringify(event)).join('\n') + '\n';
+    writeFileSync(stdoutPath, stdout, 'utf8');
+    writeFileSync(stderrPath, '', 'utf8');
+    const before = {
+      stdoutBytes: readFileSync(stdoutPath).byteLength,
+      stdoutHash: sha256File(stdoutPath),
+      stderrBytes: readFileSync(stderrPath).byteLength,
+      stderrHash: sha256File(stderrPath),
+    };
+    let invocationCount = 0;
+    const adapter = createAdapter({
+      readCredentialSecret: () => `secret-${randomUUID()}`,
+      executeCommand: async () => {
+        invocationCount += 1;
+        throw new Error('unexpected_transport_invocation');
+      },
+    });
+    const input = orphanJudgeInput(root, outputDir);
+
+    for (let recovery = 0; recovery < 2; recovery += 1) {
+      let recovered: unknown;
+      try {
+        await adapter.judge(input);
+      } catch (error) {
+        recovered = error;
+      }
+      expect(recovered).toMatchObject({
+        name: 'CodexCliJudgeOrphanTransportFailure',
+        code: 'CODEX_CLI_JUDGE_ORPHAN_TRANSPORT_FAILURE',
+        issueCode: 'judge_provider_transport_failed',
+        orphanRecoveryEvidence: before,
+      });
+      expect(invocationCount).toBe(0);
+      expect({
+        stdoutBytes: readFileSync(stdoutPath).byteLength,
+        stdoutHash: sha256File(stdoutPath),
+        stderrBytes: readFileSync(stderrPath).byteLength,
+        stderrHash: sha256File(stderrPath),
+      }).toEqual(before);
+    }
+  });
+
+  it.each([
+    {
+      name: 'an incomplete transcript',
+      files: { 'codex-cli-stdout.jsonl': `${JSON.stringify({ type: 'thread.started', thread_id: 'thread-incomplete' })}\n`, 'codex-cli-stderr.log': '' },
+      issue: 'codex_cli_judge_interrupted_unknown_outcome',
+    },
+    {
+      name: 'structured output without receipts',
+      files: {
+        'codex-cli-stdout.jsonl': `${JSON.stringify({ type: 'turn.failed', error: { message: 'servers overloaded' } })}\n`,
+        'codex-cli-stderr.log': '',
+        'structured-output.json': '{}\n',
+      },
+      issue: 'codex_cli_judge_orphan_recovery_state_invalid',
+    },
+    {
+      name: 'a mismatched receipt hash',
+      files: { 'judge-invocation-receipt.json': `${JSON.stringify({ receiptHash: `sha256:${'0'.repeat(64)}` })}\n` },
+      issue: 'codex_cli_judge_orphan_recovery_state_invalid',
+    },
+    {
+      name: 'an escaping receipt path',
+      files: { 'cli-judge-execution-receipt.json': `${JSON.stringify({ stdoutPath: '../outside.jsonl' })}\n` },
+      issue: 'codex_cli_judge_orphan_recovery_state_invalid',
+    },
+  ])('fails closed for $name without spawning or overwriting files', async ({ files, issue }) => {
+    const loaded = await loadAdapter();
+    if (!loaded) return;
+    const createAdapter = loaded.createCodexCliJudgeAdapter as CodexAdapterFactory | undefined;
+    expect(createAdapter).toBeTypeOf('function');
+    if (!createAdapter) return;
+
+    const root = createRoot();
+    const outputDir = path.join(root, 'runtime', 'provider-output', '1');
+    mkdirSync(outputDir, { recursive: true });
+    for (const [name, content] of Object.entries(files)) writeFileSync(path.join(outputDir, name), content, 'utf8');
+    const before = Object.fromEntries(Object.keys(files).map((name) => [name, sha256File(path.join(outputDir, name))]));
+    let invocationCount = 0;
+    const adapter = createAdapter({
+      executeCommand: async () => {
+        invocationCount += 1;
+        throw new Error('unexpected_transport_invocation');
+      },
+    });
+
+    await expect(adapter.judge(orphanJudgeInput(root, outputDir))).rejects.toThrow(issue);
+    expect(invocationCount).toBe(0);
+    expect(Object.fromEntries(Object.keys(files).map((name) => [name, sha256File(path.join(outputDir, name))]))).toEqual(before);
+  });
+
+  it('retains the ordinary output-directory idempotency error when no attempt evidence exists', async () => {
+    const loaded = await loadAdapter();
+    if (!loaded) return;
+    const createAdapter = loaded.createCodexCliJudgeAdapter as CodexAdapterFactory | undefined;
+    expect(createAdapter).toBeTypeOf('function');
+    if (!createAdapter) return;
+    const root = createRoot();
+    const outputDir = path.join(root, 'output');
+    mkdirSync(outputDir, { recursive: true });
+    let invocationCount = 0;
+    const adapter = createAdapter({ executeCommand: async () => {
+      invocationCount += 1;
+      throw new Error('unexpected_transport_invocation');
+    } });
+
+    await expect(adapter.judge(orphanJudgeInput(root, outputDir))).rejects.toThrow(
+      'codex_cli_judge_output_dir_already_exists'
+    );
+    expect(invocationCount).toBe(0);
+  });
+
   it('builds the real Codex non-interactive argv without Claude CLI flags', async () => {
     const loaded = await loadAdapter();
     if (!loaded) return;
@@ -550,9 +705,9 @@ describe('Codex CLI Judge adapter', () => {
     expect(invocationCount).toBe(0);
   });
 
-  it.runIf(codexCliAvailable())(
-    'sends the production schema through a real Codex CLI to a local Responses server',
-    async () => {
+  it.runIf(codexCliAvailable()).each(['default', 'native-requirements'] as const)(
+    'sends the %s production schema through a real Codex CLI to a local Responses server',
+    async (mode) => {
       const loaded = await loadAdapter();
       if (!loaded) return;
       const createAdapter = loaded.createCodexCliJudgeAdapter as CodexAdapterFactory | undefined;
@@ -560,7 +715,18 @@ describe('Codex CLI Judge adapter', () => {
       if (!createAdapter) return;
 
       const requests: Array<{ url: string; authorization: string; body: JsonRecord }> = [];
-      const responseText = JSON.stringify({
+      const nativeSchema = JSON.parse(readFileSync(path.resolve(
+        'packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-judge-response.schema.json'), 'utf8'));
+      const nativeResponse = { schemaVersion: 'requirements-contract-judge-response/v2',
+        judgeRequestHash: `sha256:${'2'.repeat(64)}`, verdict: 'fail', findings: [],
+        advisoryObservations: [{ arbitraryNestedRecord: { text: 'Test-only native advisory.', original: [false, 2, null] } }],
+        checkedDimensionIds: [], dimensionResults: [], reviewedArtifactRefs: [], reviewedMustRefs: [],
+        insufficientAuditReasons: ['Synthetic transport data, not a real audit.'] };
+      const responseText = JSON.stringify(mode === 'native-requirements' ? {
+        schemaVersion: 'requirements-contract-judge-json-response-envelope/v1',
+        nativeSchemaHash: `sha256:${createHash('sha256').update(JSON.stringify(nativeSchema)).digest('hex')}`,
+        responseJson: JSON.stringify(nativeResponse),
+      } : {
         decision: 'pass',
         findings: [],
         challengeRequests: [],
@@ -641,10 +807,12 @@ describe('Codex CLI Judge adapter', () => {
           payload: {
             systemPrompt: 'Return pass after inspecting the allowlisted evidence.',
             request,
+            ...(mode === 'native-requirements' ? { structuredOutputSchema: nativeSchema } : {}),
             executionContext: { projectRoot: root, requestPath, outputDir },
           },
         });
-        expect(result).toMatchObject({ decision: 'pass' });
+        if (mode === 'native-requirements') expect(result).toEqual(nativeResponse);
+        else expect(result).toMatchObject({ decision: 'pass' });
         expect(requests).toHaveLength(1);
         expect(requests[0]?.url).toBe('/responses');
         expect(requests[0]?.authorization).toBe('Bearer local-mock-secret');

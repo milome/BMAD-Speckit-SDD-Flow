@@ -54,7 +54,7 @@ describe('Main Agent Goal compile delegate', () => {
           '--entry',
           'requirements_backed_goal',
           '--requirements-record',
-          fixture.runtimeRecordPath,
+          fixture.authorityRecordPath,
           '--out',
           path.join(fixture.root, `goal-run-${runtimeName}`),
           '--json',
@@ -77,7 +77,7 @@ describe('Main Agent Goal compile delegate', () => {
     const fixture = materializeImplementationReadinessFixture();
     try {
       produceImplementationReadiness({ projectRoot: fixture.root, requestId: fixture.requestId });
-      const relativeRecordPath = path.relative(fixture.root, fixture.runtimeRecordPath);
+      const relativeRecordPath = path.relative(fixture.root, fixture.authorityRecordPath);
 
       for (const [runtimeName, runtime] of [
         ['source', SOURCE_RUNTIME],

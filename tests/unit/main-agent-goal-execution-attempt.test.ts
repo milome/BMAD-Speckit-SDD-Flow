@@ -342,7 +342,7 @@ function committedAttemptInput(outRoot: string) {
     produceImplementationReadiness({ projectRoot, requestId: fixture.requestId });
     const generated = compileRequirementsBackedGoal({
       projectRoot,
-      requirementRecordPath: fixture.runtimeRecordPath,
+      requirementRecordPath: fixture.authorityRecordPath,
       outRoot,
     });
     materializeGoalRunExecutionAdapter(outRoot);

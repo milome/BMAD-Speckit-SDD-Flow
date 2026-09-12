@@ -86,11 +86,13 @@ function sourceLines(fixture, binding) {
   const parentTaskRef = binding.parentTaskRefs[0];
   return [
     `# ${fixture.primaryNamespace}`,
-    `## ${parentTaskRef}`,
+    `## ${parentTaskRef}: Acceptance AC-${parentTaskRef}; Command CMD-${parentTaskRef}.`,
     `- PRIMARY-REQ: MUST preserve ${fixture.primarySourceArtifactId}.`,
     `- ${[binding.requiredRequirementIds[0], binding.requiredTaskIds[0]].join(
       ' and '
     )} MUST remain governed by ${parentTaskRef}.`,
+    `- AC-${parentTaskRef}: MUST prove ${parentTaskRef} completion.`,
+    `- CMD-${parentTaskRef}: Run \`node --version\`.`,
     '- PRIMARY-BOUNDARY: MUST NOT expand subordinate ownership.',
     '## Completion Evidence',
     '- PRIMARY-EVIDENCE: MUST record deterministic compilation evidence.',
@@ -101,7 +103,11 @@ function subordinateLines(binding) {
   return [
     `# ${binding.namespace}`,
     ...binding.requiredRequirementIds.map((id) => `- ${id}: MUST preserve requirement ${id}.`),
-    ...binding.requiredTaskIds.map((id) => `- ${id}: MUST preserve task ${id}.`),
+    ...binding.requiredTaskIds.flatMap((id) => [
+      `## ${id}: MUST preserve task ${id}. Acceptance AC-${id}; Command CMD-${id}.`,
+      `- AC-${id}: MUST prove ${id} completion.`,
+      `- CMD-${id}: Run \`node --version\`.`,
+    ]),
   ];
 }
 
@@ -340,7 +346,14 @@ function roleAwareGraph() {
 }
 
 function expectedSubordinateIds(input) {
-  return [...input.binding.requiredRequirementIds, ...input.binding.requiredTaskIds].sort();
+  return input.canonicalIntentBundle.canonicalIntentIR
+    .filter((record) =>
+      record.sourceArtifactId === input.binding.sourceArtifactId &&
+      record.ownership === 'owned_obligation' &&
+      typeof record.declaredSourceId === 'string'
+    )
+    .map((record) => record.declaredSourceId)
+    .sort();
 }
 
 function parentSelection(plan, parentTaskRef) {

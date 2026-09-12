@@ -10,9 +10,21 @@ const { hashControlPlaneValue } = require('./canonical-hash.ts');
 const { verifyIntentAuthorityEnvelope } = require('./intent-authority.ts');
 const { verifyOrderedSourceSnapshotSet } = require('./source-snapshot.ts');
 const { verifySourceCompositionPolicy } = require('./source-composition-policy.ts');
-const { compileSpecSpanRegistry, resolveSpecSpan } = require('./spec-span-registry.ts');
-const { extractSourceObligations } = require('../source-obligation-extractor.ts');
+const { compileSpecSpanRegistry, resolveSpecSpans } = require('./spec-span-registry.ts');
 
+
+function extractGoalContractSourceModel(input) {
+  const frozenBytes = Buffer.from(input?.snapshot?.frozenBytesBase64 || '', 'base64');
+  const canonical = frozenBytes.includes(
+    Buffer.from('sourcePlanVersion: standalone-source-plan/', 'utf8')
+  );
+  const module = canonical
+    ? require('../source-plan/source-model.ts')
+    : require('../source-obligation-extractor.ts');
+  return canonical
+    ? module.extractGoalContractSourceModel(input)
+    : module.extractSourceObligations(input);
+}
 export type GoalContractCanonicalIntentCompilerModule = never;
 
 interface CanonicalIntentRecordShape {
@@ -28,7 +40,7 @@ interface CanonicalIntentRecordShape {
     | 'context';
   ownership: 'owned_obligation' | 'cross_source_reference';
   referenceTargetId: string | null;
-  polarity: 'positive' | 'negative';
+  polarity: 'positive' | 'negative' | 'required' | 'forbidden' | 'permitted' | 'preserve' | 'mixed' | 'descriptive';
   requiredOutcome: string;
   semanticCoordinateKey: string;
   semanticOwnershipKey: string;
@@ -79,6 +91,15 @@ type CanonicalIntentBundleCore = Omit<
 >;
 
 const CANONICAL_INTENT_SCHEMA = 'goal-contract-canonical-intent-bundle.schema.json';
+// Frozen v1 authorities bind the LF schema from a4df0e09746fd2dbe605b6cb68ffd74eccb5de02.
+const FROZEN_V1_CANONICAL_SCHEMA_HASH = 'sha256:afbcdfebbf511ffe2c0962904e50a6e72f9cff8ccc5ad5dc97b6624afb8c9665';
+const SOURCE_SEMANTIC_FIELDS = [
+  'sourceRootId', 'normativeStrength', 'required', 'polarity', 'executionRole',
+  'conditions', 'applicability', 'applicabilityState', 'normativeClauses', 'provenanceRefs',
+  'taskRefs', 'acceptanceRefs', 'commandRefs', 'evidenceRefs', 'atomicGroupRefs',
+  'typedRefs', 'sourceBlockRefs', 'clauseRefs',
+  'commandDeclarations', 'taskExecution',
+];
 const SCHEMA_NAMES = [
   CANONICAL_INTENT_SCHEMA,
   'goal-contract-composite-source-authority-bundle.schema.json',
@@ -151,6 +172,10 @@ function stripDeclaredPrefix(text, declaredSourceId) {
 }
 
 function classifyRecord(obligation) {
+  if (obligation.executionRole !== undefined) {
+    if (obligation.executionRole === 'definition' || obligation.executionRole === 'guidance') return 'context';
+    if (obligation.executionRole === 'acceptance') return 'evidence';
+  }
   const heading = normalizedText(obligation.headingPath.join(' '));
   const text = normalizedText(obligation.exactText);
   const combined = `${heading} ${text}`;
@@ -181,6 +206,7 @@ function classifyRecord(obligation) {
   if (/\bapplicability\b|\bapplicable\b|\bapplies\b|sequence\s+mode/iu.test(combined)) {
     return 'applicability';
   }
+  if (obligation.executionRole === 'boundary') return 'negative';
   if (/\bMUST\s+NOT\b|\bSHALL\s+NOT\b|\bforbidden\b|\bdeny\b|\breject\b/iu.test(text)) {
     return 'negative';
   }
@@ -188,6 +214,7 @@ function classifyRecord(obligation) {
 }
 
 function semanticFields(obligation, classification) {
+  if (obligation.executionRole !== undefined) return sourceBackedSemanticFields(obligation, classification);
   const polarity = /\bMUST\s+NOT\b|\bSHALL\s+NOT\b|\bforbidden\b|\bdeny\b|\breject\b/iu.test(
     obligation.exactText
   )
@@ -240,7 +267,78 @@ function semanticFields(obligation, classification) {
   };
 }
 
-function extractSnapshotObligations(snapshot) {
+function canonicalIntentSemanticsProjection(record) {
+  if (record.executionRole === undefined) return {};
+  return Object.fromEntries(SOURCE_SEMANTIC_FIELDS.filter((field) => record[field] !== undefined)
+    .map((field) => [field, structuredClone(record[field])]));
+}
+
+function sourceBackedSemanticFields(obligation, classification) {
+  const sourceOutcome = stripDeclaredPrefix(
+    obligation.exactText,
+    obligation.declaredSourceId
+  ).replace(/^(?:MUST\s+NOT|SHALL\s+NOT|MUST|SHALL|SHOULD|MAY)\b\s*/iu, '');
+  const requiredOutcome = normalizedSemanticToken(
+    sourceOutcome,
+    `${obligation.namespace}:${classification}`
+  );
+  const [action, ...targetTokens] = requiredOutcome.split(' ');
+  const subject = normalizedSemanticToken(
+    obligation.headingPath.at(-1),
+    obligation.namespace.toLowerCase()
+  );
+  const scopeIdentity = (ref) => (ref === obligation.sourceRootId ? 'self' : ref);
+  const semanticApplicability = {
+    scope: obligation.applicability.scope,
+    ...(obligation.applicability.obligationRefs
+      ? { obligationRefs: obligation.applicability.obligationRefs.map(scopeIdentity) }
+      : {}),
+    ...(obligation.applicability.sourceScope
+      ? {
+          sourceScope: {
+            kind: obligation.applicability.sourceScope.kind,
+            ownerId: scopeIdentity(obligation.applicability.sourceScope.ownerId),
+          },
+        }
+      : {}),
+  };
+  const conditions = obligation.conditions.map(({ text, state, kind }) => ({ text, state, kind }));
+  const applicabilityCondition = JSON.stringify({
+    applicability: semanticApplicability,
+    conditions,
+  });
+  const coordinate = { subject, action, target: targetTokens.join(' '), applicabilityCondition };
+  const semantics = canonicalIntentSemanticsProjection(obligation);
+  return {
+    ...coordinate,
+    ...semantics,
+    requiredOutcome,
+    semanticCoordinateKey: hashControlPlaneValue(coordinate),
+    semanticOwnershipKey: hashControlPlaneValue({
+      ...coordinate,
+      requiredOutcome,
+      normativeStrength: obligation.normativeStrength,
+      polarity: obligation.polarity,
+      executionRole: obligation.executionRole,
+      required: obligation.required,
+    }),
+  };
+}
+
+const SNAPSHOT_MODEL_CACHE_LIMIT = 4;
+const snapshotModelCache = new Map<string, ReturnType<typeof extractGoalContractSourceModel>>();
+
+function snapshotModelCacheKey(snapshot) {
+  return [
+    snapshot.sourceSnapshotHash,
+    snapshot.sourceArtifactId,
+    snapshot.sourceRole,
+    snapshot.namespace,
+    snapshot.sourceOrder,
+  ].join(':');
+}
+
+function extractSnapshotModel(snapshot) {
   const extractorSnapshot =
     snapshot.sourceOrder === 0
       ? snapshot
@@ -248,10 +346,35 @@ function extractSnapshotObligations(snapshot) {
           ...snapshot,
           sourceOrder: 0,
         };
-  const extracted = extractSourceObligations({
+  const cacheKey = snapshotModelCacheKey(extractorSnapshot);
+  const cached = snapshotModelCache.get(cacheKey);
+  if (cached) {
+    snapshotModelCache.delete(cacheKey);
+    snapshotModelCache.set(cacheKey, cached);
+    return cached;
+  }
+  const extracted = extractGoalContractSourceModel({
     snapshot: extractorSnapshot,
   });
-  return extracted.sourceObligations.map((obligation) => ({
+  snapshotModelCache.set(cacheKey, extracted);
+  while (snapshotModelCache.size > SNAPSHOT_MODEL_CACHE_LIMIT) {
+    const oldestKey = snapshotModelCache.keys().next().value;
+    if (typeof oldestKey !== 'string') break;
+    snapshotModelCache.delete(oldestKey);
+  }
+  return extracted;
+}
+
+function extractSnapshotObligations(snapshot) {
+  const extracted = extractSnapshotModel(snapshot);
+  const semanticObligations = Array.isArray(extracted.semanticObligations)
+    ? extracted.semanticObligations
+    : extracted.sourceObligations;
+  const declarationsById = new Map(
+    extracted.sourceObligations.flatMap((row) => row.commandDeclarations || [])
+      .map((declaration) => [declaration.id, declaration])
+  );
+  return semanticObligations.map((obligation) => ({
     sourceRootId: obligation.id,
     declaredSourceId: obligation.declaredId ? obligation.id : null,
     sourceArtifactId: snapshot.sourceArtifactId,
@@ -265,6 +388,33 @@ function extractSnapshotObligations(snapshot) {
     startByte: obligation.startByte,
     endByteExclusive: obligation.endByteExclusive,
     dependencyRefs: [...obligation.dependencyRefs].sort(),
+    ...canonicalIntentSemanticsProjection(obligation),
+    commandDeclarations: [...new Map([
+      ...(obligation.commandDeclarations || []),
+      ...(obligation.commandRefs || []).map((ref) => declarationsById.get(ref)).filter(Boolean),
+    ].map((declaration) => [declaration.id, declaration])).values()],
+  }));
+}
+
+// Structural/association blocks are not obligations, but their explicit IDs
+// still establish source-backed cross-source references. Keep this view
+// separate so relationship discovery cannot inflate the semantic obligation set.
+function extractSnapshotRelationBases(snapshot) {
+  return extractSnapshotModel(snapshot).sourceObligations.map((obligation) => ({
+    sourceRootId: obligation.id,
+    declaredSourceId: obligation.declaredId ? obligation.id : null,
+    sourceArtifactId: snapshot.sourceArtifactId,
+    sourceSnapshotHash: snapshot.sourceSnapshotHash,
+    sourceRole: snapshot.sourceRole,
+    namespace: snapshot.namespace,
+    sourceOrder: snapshot.sourceOrder,
+    kind: obligation.kind,
+    exactText: obligation.exactText,
+    headingPath: [...obligation.headingPath],
+    startByte: obligation.startByte,
+    endByteExclusive: obligation.endByteExclusive,
+    dependencyRefs: [...obligation.dependencyRefs].sort(),
+    ...canonicalIntentSemanticsProjection(obligation),
   }));
 }
 
@@ -341,6 +491,7 @@ function compileVerifiedObligationBases(request, snapshotSet) {
       startByte: base.startByte,
       endByteExclusive: base.endByteExclusive,
       dependencyRefs: [...base.dependencyRefs].sort(),
+      ...canonicalIntentSemanticsProjection(base),
     };
     if (hashControlPlaneValue(verifiedBase) !== hashControlPlaneValue(extractedBases[index])) {
       throw failure('verified_obligation_base_authority_mismatch', {
@@ -450,6 +601,7 @@ function crossSourceDraft(base, targetId, owner, descriptor) {
       namespace: base.namespace,
       sourceOrder: base.sourceOrder,
       sourceKind: base.kind,
+      ...canonicalIntentSemanticsProjection({ ...base, executionRole: 'binding', sourceRootId: `${base.sourceRootId}:reference:${targetId}` }),
       polarity: owner.record.polarity,
       subject: owner.record.subject,
       action: 'reference',
@@ -639,12 +791,13 @@ function compileCoverage(bundle, records) {
   };
 }
 
-function compilerIdentity() {
+function compilerIdentity(version = 'v2') {
   const partial: Omit<CompilerIdentityShape, 'compilerIdentityHash'> = {
-    compilerVersion: 'goal-contract-canonical-intent-compiler/v1',
+    compilerVersion: `goal-contract-canonical-intent-compiler/${version}`,
     schemaArtifactHashes: SCHEMA_NAMES.map((schemaName) => ({
       schemaName,
-      schemaArtifactHash: goalContractSchemaArtifactHash(schemaName),
+      schemaArtifactHash: version === 'v1' && schemaName === CANONICAL_INTENT_SCHEMA
+        ? FROZEN_V1_CANONICAL_SCHEMA_HASH : goalContractSchemaArtifactHash(schemaName),
     })),
   };
   return {
@@ -655,7 +808,8 @@ function compilerIdentity() {
 
 function semanticPayload(bundle) {
   return {
-    schemaVersion: 'goal-contract-canonical-intent-semantics/v1',
+    schemaVersion: bundle.schemaVersion === 'goal-contract-canonical-intent-bundle/v2'
+      ? 'goal-contract-canonical-intent-semantics/v2' : 'goal-contract-canonical-intent-semantics/v1',
     sourceCompositionPolicyHash: bundle.sourceCompositionPolicyHash,
     orderedSourceSnapshotSetHash: bundle.orderedSourceSnapshotSetHash,
     sourceAuthorityBundleHash: bundle.sourceAuthorityBundleHash,
@@ -691,7 +845,7 @@ function verifyCoverageReceipt(coverage) {
   }
 }
 
-function verifyCompilerIdentity(identity) {
+function verifyCompilerIdentity(identity, version) {
   const partial: Omit<CompilerIdentityShape, 'compilerIdentityHash'> = {
     compilerVersion: identity.compilerVersion,
     schemaArtifactHashes: identity.schemaArtifactHashes,
@@ -699,8 +853,9 @@ function verifyCompilerIdentity(identity) {
   if (hashControlPlaneValue(partial) !== identity.compilerIdentityHash) {
     throw failure('compiler_identity_hash_mismatch');
   }
-  const expected = compilerIdentity();
+  const expected = compilerIdentity(version);
   if (
+    expected.compilerVersion !== identity.compilerVersion ||
     hashControlPlaneValue(expected.schemaArtifactHashes) !==
     hashControlPlaneValue(identity.schemaArtifactHashes)
   ) {
@@ -716,7 +871,7 @@ function verifyCanonicalIntentBundle(bundle: CanonicalIntentBundleShape) {
     throw failure('canonical_intent_bundle_hash_mismatch');
   }
   validateGoalContractSchema(CANONICAL_INTENT_SCHEMA, bundle);
-  verifyCompilerIdentity(bundle.compilerIdentity);
+  verifyCompilerIdentity(bundle.compilerIdentity, bundle.schemaVersion.endsWith('/v2') ? 'v2' : 'v1');
   verifyCoverageReceipt(bundle.subordinateCoverage);
   if (hashControlPlaneValue(bundle.sourceObligationGraph) !== bundle.sourceObligationGraphHash) {
     throw failure('source_obligation_graph_hash_mismatch');
@@ -725,6 +880,7 @@ function verifyCanonicalIntentBundle(bundle: CanonicalIntentBundleShape) {
     throw failure('canonical_intent_semantic_hash_mismatch');
   }
   const spanIds = new Set(bundle.specSpanRegistry.specSpans.map(({ specSpanId }) => specSpanId));
+  const referencedSpanIds = [];
   for (const record of bundle.canonicalIntentIR) {
     for (const specSpanId of record.specSpanRefs) {
       if (!spanIds.has(specSpanId)) {
@@ -732,12 +888,13 @@ function verifyCanonicalIntentBundle(bundle: CanonicalIntentBundleShape) {
           sourceObligationId: record.intentRecordId,
         });
       }
-      resolveSpecSpan({
-        registry: bundle.specSpanRegistry,
-        specSpanId,
-      });
+      referencedSpanIds.push(specSpanId);
     }
   }
+  resolveSpecSpans({
+    registry: bundle.specSpanRegistry,
+    specSpanIds: [...new Set(referencedSpanIds)],
+  });
   const ownedRecords = bundle.canonicalIntentIR.filter(
     ({ ownership }) => ownership === 'owned_obligation'
   );
@@ -759,6 +916,9 @@ function verifyCanonicalIntentBundle(bundle: CanonicalIntentBundleShape) {
   ) {
     throw failure('source_obligation_graph_projection_mismatch');
   }
+  if (bundle.schemaVersion === 'goal-contract-canonical-intent-bundle/v2') {
+    verifySourceBackedRecords(bundle);
+  }
   if (bundle.authorityState === 'authoritative') {
     const envelope = verifyIntentAuthorityEnvelope(bundle.intentAuthorityEnvelope);
     if (
@@ -773,6 +933,65 @@ function verifyCanonicalIntentBundle(bundle: CanonicalIntentBundleShape) {
     }
   }
   return deepFreeze(bundle);
+}
+
+function verifySourceBackedRecords(bundle) {
+  const bases = bundle.specSpanRegistry.sourceSnapshots.flatMap(extractSnapshotObligations);
+  const relationBases = bundle.specSpanRegistry.sourceSnapshots.flatMap(extractSnapshotRelationBases);
+  const receipts = bundle.subordinateCoverage.receipts || [bundle.subordinateCoverage];
+  const descriptors = new Map(receipts.map((receipt) => [receipt.sourceArtifactId, receipt]));
+  const delegatedIds = new Set(receipts.flatMap((receipt) => [...receipt.requiredRequirementIds, ...receipt.requiredTaskIds]));
+  const owned = bases.filter((base) => !(base.sourceRole === 'primary_implementation_authority' &&
+    base.declaredSourceId && delegatedIds.has(base.declaredSourceId))).map(ownedDraft);
+  const actualOwned = bundle.canonicalIntentIR.filter((row) => row.ownership === 'owned_obligation');
+  const identity = (row) => JSON.stringify([row.sourceArtifactId, row.sourceSnapshotHash, row.namespace, row.sourceRootId]);
+  const bySource = new Map(actualOwned.map((record) => [identity(record), record]));
+  if (bySource.size !== actualOwned.length || actualOwned.length !== owned.length ||
+    owned.some((draft) => !bySource.has(identity(draft.record)))) {
+    throw failure('canonical_intent_source_base_coverage_mismatch');
+  }
+  const spans = new Map(bundle.specSpanRegistry.specSpans.map((span) => [span.specSpanId, span]));
+  for (const draft of owned) {
+    verifySourceRecordProjection(draft, bySource.get(identity(draft.record)), spans, 'canonical_intent_source_semantics_mismatch');
+  }
+  const subordinateOwners = recordIndexByDeclaredId(owned.map((draft) => draft.record)
+    .filter((record) => record.sourceRole === 'subordinate_component_specification'));
+  const expectedReferences = [];
+  for (const base of relationBases.filter((row) => row.sourceRole === 'primary_implementation_authority')) {
+    for (const targetId of extractDeclaredIds(base.exactText)) {
+      const owners = subordinateOwners.get(targetId);
+      if (!owners) continue;
+      if (owners.length !== 1) throw failure('canonical_intent_cross_source_reference_mismatch');
+      const descriptor = descriptors.get(owners[0].sourceArtifactId);
+      if (!descriptor || descriptor.namespace !== owners[0].namespace) throw failure('canonical_intent_cross_source_reference_mismatch');
+      expectedReferences.push(crossSourceDraft(base, targetId, { record: owners[0] }, descriptor));
+    }
+  }
+  const actualReferences = bundle.canonicalIntentIR.filter((record) => record.ownership === 'cross_source_reference');
+  const byReference = new Map(actualReferences.map((record) => [record.intentRecordId, record]));
+  if (byReference.size !== actualReferences.length || actualReferences.length !== expectedReferences.length) {
+    throw failure('canonical_intent_cross_source_reference_mismatch');
+  }
+  for (const draft of expectedReferences) {
+    verifySourceRecordProjection(draft, byReference.get(draft.record.intentRecordId), spans, 'canonical_intent_cross_source_reference_mismatch');
+  }
+}
+
+function verifySourceRecordProjection(draft, actual, spans, failureClass) {
+  if (!actual) throw failure(failureClass);
+  const { specSpanRefs, ...payload } = actual;
+  if (hashControlPlaneValue(draft.record) !== hashControlPlaneValue(payload)) {
+    throw failure(failureClass, { intentRecordId: actual.intentRecordId });
+  }
+  for (const specSpanId of specSpanRefs) {
+    const span = spans.get(specSpanId);
+    const base = draft.base;
+    if (!span || span.sourceArtifactId !== base.sourceArtifactId || span.sourceSnapshotHash !== base.sourceSnapshotHash ||
+      span.namespace !== base.namespace || span.startByte !== base.startByte || span.endByteExclusive !== base.endByteExclusive ||
+      !span.sourceObligationIds.includes(actual.intentRecordId)) {
+      throw failure(failureClass, { intentRecordId: actual.intentRecordId });
+    }
+  }
 }
 
 function compileCanonicalIntent(request: unknown = {}) {
@@ -792,6 +1011,7 @@ function compileCanonicalIntent(request: unknown = {}) {
   }
 
   const bases = compileVerifiedObligationBases(request, snapshotSet);
+  const relationBases = snapshotSet.sourceSnapshots.flatMap(extractSnapshotRelationBases);
   const subordinateDescriptors = new Map(
     sourceAuthorityBundle.subordinateSources.map((descriptor) => [
       descriptor.sourceArtifactId,
@@ -846,7 +1066,7 @@ function compileCanonicalIntent(request: unknown = {}) {
   }
 
   const crossSourceDrafts = [];
-  for (const base of bases.filter(
+  for (const base of relationBases.filter(
     ({ sourceRole }) => sourceRole === 'primary_implementation_authority'
   )) {
     for (const targetId of extractDeclaredIds(base.exactText)) {
@@ -874,7 +1094,7 @@ function compileCanonicalIntent(request: unknown = {}) {
   const sourceObligationGraphHash = hashControlPlaneValue(sourceObligationGraph);
   const subordinateCoverage = compileCoverage(sourceAuthorityBundle, records);
   const partial: CanonicalIntentBundleCore = {
-    schemaVersion: 'goal-contract-canonical-intent-bundle/v1',
+    schemaVersion: 'goal-contract-canonical-intent-bundle/v2',
     authorityState,
     sourceCompositionPolicyHash: policy.sourceCompositionPolicyHash,
     orderedSourceSnapshotSetHash: snapshotSet.orderedSourceSnapshotSetHash,
@@ -938,6 +1158,7 @@ function compileCanonicalIntent(request: unknown = {}) {
 }
 
 module.exports = {
+  canonicalIntentSemanticsProjection,
   compileCanonicalIntent,
   verifyCanonicalIntentBundle,
 };

@@ -9,6 +9,9 @@ import {
   type RequirementsAuthorityClass,
   type RequirementsSourceSpan,
 } from './requirements-contract-span-registry';
+import { encodeGoalSemanticDictionary, decodeGoalSemanticDictionary, type GoalSemanticDictionary } from '../../../utils/goal-contract/control-plane/goal-semantic-dictionary';
+import { resolveTypedSourceAuthority, type RequirementsTypedSourceAuthority } from './requirements-contract-typed-source-semantics';
+import { sha256Stable, stableStringify } from './requirements-contract-semantic-resolver';
 
 export interface RequirementsSourceArtifactBinding {
   sourceArtifactId: string;
@@ -27,7 +30,7 @@ export interface RequirementsEvidenceClaimBinding {
 }
 
 export interface RequirementsContractSourceBindingCapsule {
-  schemaVersion: 'requirements-contract-source-binding/v1';
+  schemaVersion: 'requirements-contract-source-binding/v1' | 'requirements-contract-source-binding/v2';
   recordId: string;
   semanticRevisionId: string;
   scopeSemanticHash: string;
@@ -40,6 +43,79 @@ export interface RequirementsContractSourceBindingCapsule {
   sourceSpanRegistryHash: string;
   evidenceClaimBindings: RequirementsEvidenceClaimBinding[];
   evidenceClaimBindingRegistryHash: string;
+  typedSourceBindings?: RequirementsTypedSourceBindings;
+}
+
+export interface RequirementsTypedSourceBindings {
+  schemaVersion: 'requirements-contract-typed-source-bindings/v2';
+  graphHash: string;
+  mappings: GoalSemanticDictionary;
+  mappingsHash: string;
+}
+export interface RequirementsTypedSourceBindingMappings {
+  artifacts: Array<{ artifactId: string; path: string; bytes: number; sha256: string }>;
+  nodes: Array<{ sourceRootId: string; sourceSpanId: string; sourceBinding: Record<string, unknown> }>;
+  relations: Array<{ relationId: string; sourceLine: number }>;
+  contexts: Record<string, unknown>[];
+}
+
+export function createTypedSourceBindings(graphHash: string, mappings: RequirementsTypedSourceBindingMappings): RequirementsTypedSourceBindings {
+  const dictionary = encodeGoalSemanticDictionary(mappings);
+  return { schemaVersion: 'requirements-contract-typed-source-bindings/v2', graphHash,
+    mappings: dictionary, mappingsHash: dictionary.expandedHash };
+}
+
+export function resolveTypedSourceBindings(value: RequirementsTypedSourceBindings): RequirementsTypedSourceBindingMappings {
+  if (!value || value.schemaVersion !== 'requirements-contract-typed-source-bindings/v2' ||
+    !SHA256.test(value.graphHash) || value.mappingsHash !== value.mappings?.expandedHash ||
+    Object.keys(value).some((key) => !['schemaVersion', 'graphHash', 'mappings', 'mappingsHash'].includes(key))) {
+    throw new Error('typed_source_bindings_identity_invalid');
+  }
+  const mappings = decodeGoalSemanticDictionary(value.mappings) as unknown as RequirementsTypedSourceBindingMappings;
+  if (!mappings || !['artifacts', 'nodes', 'relations', 'contexts'].every((key) => Array.isArray((mappings as unknown as Record<string, unknown>)[key]))) {
+    throw new Error('typed_source_bindings_mappings_invalid');
+  }
+  return mappings;
+}
+
+export function assertTypedSourceBindingAuthority(capsule: RequirementsContractSourceBindingCapsule, authority: RequirementsTypedSourceAuthority): void {
+  const graph = resolveTypedSourceAuthority(authority);
+  if (capsule.schemaVersion !== 'requirements-contract-source-binding/v2' || capsule.typedSourceBindings?.graphHash !== authority.graphHash) {
+    throw new Error('typed_source_bindings_graph_hash_mismatch');
+  }
+  const mappings = resolveTypedSourceBindings(capsule.typedSourceBindings);
+  const actual = mappings.nodes.map((node) => node.sourceRootId).sort();
+  const expected = graph.sourceNodes.map((node) => node.sourceRootId).sort();
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error('typed_source_bindings_node_set_mismatch');
+  const spans = new Map(capsule.sourceSpanRegistry.map((span) => [span.sourceSpanId, span]));
+  const nodes = new Map(graph.sourceNodes.map((node) => [node.sourceRootId, node]));
+  for (const binding of mappings.nodes) {
+    const span = spans.get(binding.sourceSpanId);
+    const node = nodes.get(binding.sourceRootId)!;
+    if (!span || span.exactTextHash !== sha256Stable({ domain: 'requirements-source-exact-text/v1', content: node.text }) ||
+      span.normalizedTextHash !== sha256Stable({ domain: 'requirements-source-normalized-text/v1',
+        content: node.text.replace(/\r\n?/gu, '\n').normalize('NFC') })) throw new Error('typed_source_bindings_claim_text_mismatch');
+  }
+  const claims = capsule.evidenceClaimBindings.filter((claim) => claim.authorityClass === 'source_grounded');
+  if (claims.length !== 1 || claims[0].evidenceClaimId !== 'EVIDENCE-CLAIM-TYPED-SOURCE-GRAPH' ||
+    stableStringify(sortedUnique(claims[0].sourceSpanRefs)) !== stableStringify(sortedUnique(mappings.nodes.map((node) => node.sourceSpanId)))) {
+    throw new Error('typed_source_bindings_claim_node_span_conservation_failed');
+  }
+  const relationIds = new Set(graph.sourceRelations.map((relation) => relation.relationId));
+  if (mappings.relations.some((binding) => !relationIds.has(binding.relationId))) throw new Error('typed_source_bindings_relation_unknown');
+  const contextRefs = new Set<string>();
+  for (const binding of mappings.contexts) {
+    if (typeof binding.fieldRef !== 'string' || contextRefs.has(binding.fieldRef)) throw new Error('typed_source_bindings_context_identity_invalid');
+    contextRefs.add(binding.fieldRef);
+    let parent: unknown = graph;
+    const parts = binding.fieldRef.split('/');
+    if (parts.shift() !== '' || parts.length < 3) throw new Error('typed_source_bindings_context_path_invalid');
+    for (const part of parts.slice(0, -1)) {
+      if (!parent || typeof parent !== 'object' || !Object.prototype.hasOwnProperty.call(parent, part)) throw new Error('typed_source_bindings_context_path_unknown');
+      parent = (parent as Record<string, unknown>)[part];
+    }
+    if (!parent || typeof parent !== 'object' || Object.prototype.hasOwnProperty.call(parent, parts.at(-1)!)) throw new Error('typed_source_bindings_context_collision');
+  }
 }
 
 const SHA256 = /^sha256:[a-f0-9]{64}$/u;
@@ -54,6 +130,7 @@ export function createRequirementsContractSourceBindingCapsule(input: {
   sourceArtifacts: RequirementsSourceArtifactBinding[];
   sourceSpans: Array<Omit<RequirementsSourceSpan, 'sourceSpanId'> & { sourceSpanId?: string }>;
   evidenceClaimBindings: RequirementsEvidenceClaimBinding[];
+  typedSourceBindings?: RequirementsTypedSourceBindings;
 }): RequirementsContractSourceBindingCapsule {
   const sourceArtifacts = [...input.sourceArtifacts].sort(
     (left, right) => left.orderedPosition - right.orderedPosition || left.sourceArtifactId.localeCompare(right.sourceArtifactId)
@@ -72,6 +149,27 @@ export function createRequirementsContractSourceBindingCapsule(input: {
     }
   }
   const spanIds = new Set(sourceSpanRegistry.map((span) => span.sourceSpanId));
+  if (input.typedSourceBindings) {
+    const mappings = resolveTypedSourceBindings(input.typedSourceBindings);
+    const declared = new Map(mappings.artifacts.map((artifact) => [artifact.artifactId, artifact]));
+    if (declared.size !== mappings.artifacts.length) throw new Error('typed_source_bindings_artifact_duplicate');
+    const nodeIds = new Set<string>();
+    const spans = new Map(sourceSpanRegistry.map((span) => [span.sourceSpanId, span]));
+    for (const node of mappings.nodes) {
+      if (nodeIds.has(node.sourceRootId)) throw new Error('typed_source_bindings_node_duplicate');
+      nodeIds.add(node.sourceRootId);
+      const binding = node.sourceBinding;
+      const artifact = declared.get(String(binding.sourceArtifactRef));
+      const span = spans.get(node.sourceSpanId);
+      if (!artifact || !span || span.sourceArtifactId !== artifact.artifactId) throw new Error('typed_source_bindings_span_missing');
+      if (!Number.isSafeInteger(binding.byteStart) || !Number.isSafeInteger(binding.byteEnd) ||
+        Number(binding.byteStart) < 0 || Number(binding.byteEnd) <= Number(binding.byteStart) || Number(binding.byteEnd) > artifact.bytes ||
+        span.startByte !== binding.byteStart || span.endByteExclusive !== binding.byteEnd) throw new Error('typed_source_bindings_span_invalid');
+      if (span.sourceSnapshotHash !== `sha256:${artifact.sha256}`) throw new Error('typed_source_bindings_source_hash_mismatch');
+    }
+    const relationIds = mappings.relations.map((binding) => binding.relationId);
+    if (new Set(relationIds).size !== relationIds.length) throw new Error('typed_source_bindings_relation_duplicate');
+  }
   const consumedSpanIds = new Set<string>();
   const evidenceClaimBindings = input.evidenceClaimBindings
     .map((binding) => {
@@ -102,10 +200,11 @@ export function createRequirementsContractSourceBindingCapsule(input: {
     evidenceClaimBindingRegistryHash: requirementsContractDomainHash(
       'requirements-evidence-claim-binding-registry/v1', evidenceClaimBindings
     ),
+    ...(input.typedSourceBindings ? { typedSourceBindings: input.typedSourceBindings } : {}),
   };
-  const bindingHash = sourceBindingHash(bindingPayload);
+  const bindingHash = input.typedSourceBindings ? requirementsContractDomainHash('requirements-source-binding/v2', bindingPayload) : sourceBindingHash(bindingPayload);
   return {
-    schemaVersion: 'requirements-contract-source-binding/v1',
+    schemaVersion: input.typedSourceBindings ? 'requirements-contract-source-binding/v2' : 'requirements-contract-source-binding/v1',
     recordId: input.recordId,
     bindingRevisionId: bindingRevisionId({
       recordId: input.recordId,
@@ -129,9 +228,11 @@ export function validateRequirementsContractSourceBindingCapsule(value: unknown)
     'parentBindingRevisionId', 'sourceBindingHash', 'resolverIdentity', 'sourceArtifacts',
     'sourceSpanRegistry', 'sourceSpanRegistryHash', 'evidenceClaimBindings',
     'evidenceClaimBindingRegistryHash',
+    'typedSourceBindings',
   ]);
   if (Object.keys(capsule).some((key) => !allowed.has(key))) issueCodes.push('source_binding_unknown_field');
-  if (capsule.schemaVersion !== 'requirements-contract-source-binding/v1') issueCodes.push('source_binding_schema_version_invalid');
+  if (!['requirements-contract-source-binding/v1', 'requirements-contract-source-binding/v2'].includes(capsule.schemaVersion)) issueCodes.push('source_binding_schema_version_invalid');
+  if ((capsule.schemaVersion === 'requirements-contract-source-binding/v2') !== !!capsule.typedSourceBindings) issueCodes.push('source_binding_typed_version_invalid');
   if (![capsule.scopeSemanticHash, capsule.sourceBindingHash, capsule.sourceSpanRegistryHash, capsule.evidenceClaimBindingRegistryHash].every((hash) => SHA256.test(String(hash)))) {
     issueCodes.push('source_binding_hash_invalid');
   }
@@ -145,6 +246,7 @@ export function validateRequirementsContractSourceBindingCapsule(value: unknown)
       sourceArtifacts: capsule.sourceArtifacts,
       sourceSpans: capsule.sourceSpanRegistry,
       evidenceClaimBindings: capsule.evidenceClaimBindings,
+      ...(capsule.typedSourceBindings ? { typedSourceBindings: capsule.typedSourceBindings } : {}),
     });
     if (recreated.sourceBindingHash !== capsule.sourceBindingHash) issueCodes.push('source_binding_hash_mismatch');
     if (recreated.bindingRevisionId !== capsule.bindingRevisionId) issueCodes.push('binding_revision_id_mismatch');

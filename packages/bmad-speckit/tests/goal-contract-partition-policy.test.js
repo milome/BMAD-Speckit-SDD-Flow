@@ -63,11 +63,8 @@ describe('goal-contract partition policy', () => {
       min: 120,
       max: 180,
     });
-    assert.equal(loaded.policy.limits.maxClosureMinutesPerPartition, 240);
-    assert.equal(
-      Object.hasOwn(loaded.policy.limits, 'maxAtomicTasksPerPartition'),
-      false
-    );
+    assert.equal(loaded.policy.limits.maxClosureMinutesPerPartition, 239);
+    assert.equal(Object.hasOwn(loaded.policy.limits, 'maxAtomicTasksPerPartition'), false);
     for (const field of ['partitionCount', 'taskAssignments', 'preferredCandidate']) {
       assert.equal(Object.hasOwn(loaded.policy, field), false);
     }

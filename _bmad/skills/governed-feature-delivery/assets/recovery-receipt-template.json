@@ -1,0 +1,14 @@
+{
+  "authority": "repository-defined-recovery-owner",
+  "decidedAt": "2026-01-01T00:00:00.000Z",
+  "sourceHashes": {
+    ".artifacts/governed-feature-delivery/recovery-source.json": "<lowercase-sha256-of-source-receipt>"
+  },
+  "fieldSources": {
+    "featureId": ".artifacts/governed-feature-delivery/recovery-source.json",
+    "currentPhase": ".artifacts/governed-feature-delivery/recovery-source.json",
+    "headSha": ".artifacts/governed-feature-delivery/recovery-source.json",
+    "branch": ".artifacts/governed-feature-delivery/recovery-source.json"
+  },
+  "decision": "reconstructed"
+}

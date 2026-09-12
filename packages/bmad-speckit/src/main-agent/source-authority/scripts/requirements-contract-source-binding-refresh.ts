@@ -20,7 +20,10 @@ import {
   sha256Stable,
 } from './requirements-contract-semantic-resolver';
 import { verifyRequirementsContractCoreArtifactReadback } from './requirements-contract-semantic-conservation-verifier';
-import { validateRequirementsContractSourceBindingCapsule } from './requirements-contract-source-binding-capsule';
+import { validateRequirementsContractSourceBindingCapsule, assertTypedSourceBindingAuthority,
+  type RequirementsContractSourceBindingCapsule } from './requirements-contract-source-binding-capsule';
+import { resolveRequirementsContractSemanticIrAuthority } from './requirements-contract-semantic-ir';
+import type { RequirementsTypedSourceAuthority } from './requirements-contract-typed-source-semantics';
 
 export interface RequirementsContractSourceBindingRefreshPreflightInput {
   semanticRevisionId: string;
@@ -197,6 +200,15 @@ export function publishRequirementsContractSourceBindingRefresh(input: {
     currentBindingPath,
     'requirements_source_binding_refresh_binding_readback_invalid'
   );
+  if (semanticIr.schemaVersion === 'requirements-contract-semantic-ir/v2') throw new Error('requirements_semantic_authority_candidate_required');
+  if (semanticIr.schemaVersion === 'RequirementsSemanticCandidate/v2') {
+    const model = resolveRequirementsContractSemanticIrAuthority(semanticIr);
+    const authority = model.semanticPayload.semantics.typedSourceAuthority as RequirementsTypedSourceAuthority;
+    for (const binding of [currentBinding, input.sourceBinding]) {
+      if (validateRequirementsContractSourceBindingCapsule(binding).decision !== 'pass') throw new Error('requirements_source_binding_refresh_typed_binding_invalid');
+      assertTypedSourceBindingAuthority(binding as unknown as RequirementsContractSourceBindingCapsule, authority);
+    }
+  }
   if (
     semanticIr.semanticRevisionId !== input.preflight.semanticRevisionId ||
     semanticIr.scopeSemanticHash !== input.preflight.scopeSemanticHash ||

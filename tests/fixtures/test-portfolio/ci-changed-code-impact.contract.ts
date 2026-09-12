@@ -26,7 +26,14 @@ type PolicyFixture = MutableRecord & {
 };
 
 afterEach(() => {
-  for (const root of temporaryRoots.splice(0)) rmSync(root, { force: true, recursive: true });
+  for (const root of temporaryRoots.splice(0)) {
+    rmSync(root, {
+      force: true,
+      recursive: true,
+      maxRetries: 5,
+      retryDelay: 20,
+    });
+  }
 });
 
 function git(root: string, ...args: string[]) {

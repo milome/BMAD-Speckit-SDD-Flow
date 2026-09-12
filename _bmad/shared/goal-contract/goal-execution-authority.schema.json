@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/goal-execution-authority.schema.json",
+  "title": "Goal Execution Authority",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "projectionRecipe", "goalExecutionIRHash", "goal", "goalExecutionAuthorityHash"],
+  "properties": {
+    "schemaVersion": { "const": "GoalExecutionAuthority/v2" },
+    "projectionRecipe": { "enum": ["requirements_typed_obligations/v1", "standalone_obligation_aliases/v1", "full_goal/v1"] },
+    "goalExecutionIRHash": { "$ref": "#/$defs/hash" },
+    "goal": { "type": "object", "required": ["schemaVersion", "nodes", "root", "expandedBytes", "expandedHash"] },
+    "goalExecutionAuthorityHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": { "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" } }
+}

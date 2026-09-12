@@ -1,0 +1,131 @@
+{
+  "schemaVersion": "canonical-source-plan-confirmed-authority-fixture-receipt/v1",
+  "reviewStatus": "user_confirmed",
+  "confirmationLanguage": "zh-CN",
+  "requestId": "REQ-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05",
+  "semanticRevisionId": "SEMREV-0D5C8A146837319DFB3853D66228AAA41CA384E3698E534E55AD3AA0EB053153",
+  "scopeSemanticHash": "sha256:2ff9fb10cd4148882665a45db9bc6957a2d41c8ec3804940f0b39f1a1789e4f5",
+  "bindingRevisionId": "BINDREV-3B8F37598A3D57B79CD1496537657C94D9F7A0B9FE7D7928CFF36D64ED471018",
+  "requirementsEffectivePassHash": "sha256:9fa331e3a4158c09d2ad0c9b044287a1b8ff44ccd3eb0de5044aea898ade2f68",
+  "typedSourceGraphHash": "sha256:99dd3e6a1750c446e5e6b30487548bbd64ab3b73675aae0a4b9e76eecfbdfe6b",
+  "archive": {
+    "path": "canonical-source-plan-v1-full.confirmed-authority.tar.gz",
+    "bytes": 1469083,
+    "sha256": "sha256:8e93fd820f03307061294fbdef69834f6b12d39f6435424e9d57533d0f2f375f"
+  },
+  "fileCount": 22,
+  "totalUncompressedBytes": 4013714,
+  "files": [
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/authoring/semantic-revisions/SEMREV-0D5C8A146837319DFB3853D66228AAA41CA384E3698E534E55AD3AA0EB053153/semantic-ir.json",
+      "bytes": 957365,
+      "sha256": "sha256:c0329d750d2ec7b95adc15524f213050353be463aea9adcf299a5c7bbc69195c"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/authoring/source-bindings/BINDREV-3B8F37598A3D57B79CD1496537657C94D9F7A0B9FE7D7928CFF36D64ED471018/source-binding.json",
+      "bytes": 442048,
+      "sha256": "sha256:8ce996dacc13c510657691356d6964409614ace88074fc1d398b8d847cbc82e6"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/authoring/staging/ATTEMPT-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/contract-build-manifest.json",
+      "bytes": 4500,
+      "sha256": "sha256:acfa674cf96579c22d46207cae229dac28e1201c31f2b459a92058dbe5e8acdd"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/authoring/staging/ATTEMPT-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/cp05/confirmation-projection.json",
+      "bytes": 1214417,
+      "sha256": "sha256:b369b1da16f93ac97bad18f4efdf6cf332416cc261ad84ef804548ff9b29560b"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/authoring/staging/ATTEMPT-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/cp05/final-source.md",
+      "bytes": 1131736,
+      "sha256": "sha256:ad1600250733074492cdad6fdc95d08241fb536d670e2ec4fcb9386cd6fca7c5"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/authoring/staging/ATTEMPT-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/cp06/execution-manifest.json",
+      "bytes": 219807,
+      "sha256": "sha256:6f4121448f78240086970b549f1399d58e5c59654ecb8efdbfcf58818d67657a"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/authoring/staging/ATTEMPT-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/manifests/0-cp00.json",
+      "bytes": 1070,
+      "sha256": "sha256:7ab4c686b31a39cfce45f06649588c86edc823fe2f231060215a74f55b837b70"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/authoring/staging/ATTEMPT-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/manifests/1-cp01.json",
+      "bytes": 1704,
+      "sha256": "sha256:10607b89c01cc8fe0c274462df016303041c1a7379d801fbfae2df6b55a18968"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/authoring/staging/ATTEMPT-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/manifests/2-cp02.json",
+      "bytes": 2058,
+      "sha256": "sha256:0798eb6ac57cfbcadfec09c9165326377e089d62d04328d53fb7ce4effe26341"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/authoring/staging/ATTEMPT-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/manifests/3-cp03.json",
+      "bytes": 2058,
+      "sha256": "sha256:1b46f1ae66b71c5b58e0f08029f3b2f7c64b22d9e89018673e533ba955e13a30"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/authoring/staging/ATTEMPT-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/manifests/4-cp04.json",
+      "bytes": 2167,
+      "sha256": "sha256:da69d774a9807cd1253cf60dd0bbe551d16560ef166b8754049977cf03d59e06"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/authoring/staging/ATTEMPT-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/manifests/5-cp05.json",
+      "bytes": 1900,
+      "sha256": "sha256:7eefd10dfffe5b3437bb6fd9de79356a87f37f4d01e67d0faa8bac2b21461c9f"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/authoring/staging/ATTEMPT-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/manifests/6-cp06.json",
+      "bytes": 2216,
+      "sha256": "sha256:dc26987f048f70d287883823baf6781fa8bb6005bdbc142cfdd01f4e0d5b7178"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/authoring/staging/ATTEMPT-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/manifests/7-cp07.json",
+      "bytes": 1555,
+      "sha256": "sha256:0e701a4f2461b59f601eeb72018785cb411b2b65f56e42d4ec5abcb2ded7bf0a"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/authoring/staging/ATTEMPT-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/manifests/8-cp08.json",
+      "bytes": 3092,
+      "sha256": "sha256:0286e3a03626976cbdbb381a77c04bed3c61b771491feec6e5290146ef0b5962"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/confirmation/confirmation-event.json",
+      "bytes": 1263,
+      "sha256": "sha256:5fcb665fc39b173c89a200c4f565ab7b697ce88ced590ec62fd2c31b458f6fb0"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/confirmation/confirmation-promotion-receipt.json",
+      "bytes": 1907,
+      "sha256": "sha256:ecea1bf94cb0eb382bf627f2a668bba48768e805c4c922ebc561b68695f112a3"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/confirmation/confirmation-render-report.json",
+      "bytes": 1703,
+      "sha256": "sha256:aedb1180b24f0c81f2861a97ef69be5571b6eb3b079c92f2b9af673fca4acdd2"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/quality/requirements-effective-pass-receipt.json",
+      "bytes": 1766,
+      "sha256": "sha256:874f1370fa3ee4d209c9cc2a1d424699e1b0b10a5481dfd5841d5354cba7ad4c"
+    },
+    {
+      "path": "_bmad-output/runtime/requirement-records/REQ-GOAL-SOURCE-NORMALIZATION-FULL-20260908-05/record/requirement-record.json",
+      "bytes": 1724,
+      "sha256": "sha256:0a722bd5f726547643990eaa4132576d3356317534597edcc3df612640c473fe"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full.confirmed-requirements.zh-CN.html",
+      "bytes": 9604,
+      "sha256": "sha256:e00dd5d8f1cb7523c6d98914575c7bb03da6951e72a547f7a791ec699c77e8a6"
+    },
+    {
+      "path": "packages/bmad-speckit/tests/fixtures/standalone-goal/canonical-source-plan-v1-full.confirmed-requirements.zh-CN.md",
+      "bytes": 8054,
+      "sha256": "sha256:6f74b7c0245cf5fcb3535925c109f86e3daaaa5395f9896f946f976189390a1e"
+    }
+  ],
+  "receiptHash": "sha256:518f73b57482cc7579c659a4dd19899f4dfcf6145d5180c12a79d7577cbe98ca"
+}

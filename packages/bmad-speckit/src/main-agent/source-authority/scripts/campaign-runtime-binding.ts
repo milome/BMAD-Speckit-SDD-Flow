@@ -125,6 +125,76 @@ function readJson(filePath: string, label: string): JsonRecord {
   }
 }
 
+function bindingPathRef(value: unknown, label: string): { path: string } {
+  if (!isRecord(value) || typeof value.path !== 'string') {
+    throw new Error(`campaign_runtime_binding_ref_missing:${label}`);
+  }
+  return { path: value.path };
+}
+
+function bindingFileRef(value: unknown, label: string): CampaignRuntimeFileRef {
+  const pathRef = bindingPathRef(value, label);
+  return { ...pathRef, hash: requireSha((value as JsonRecord).hash, label) };
+}
+
+function bindingDependency(value: unknown, label: string): CampaignRuntimeDependencyRef {
+  if (!isRecord(value) || typeof value.exportName !== 'string' || value.exportName.length === 0) {
+    throw new Error(`campaign_runtime_binding_export_missing:${label}`);
+  }
+  return {
+    moduleRef: bindingFileRef(value.moduleRef, `${label}.moduleRef`),
+    exportName: value.exportName,
+  };
+}
+
+function parseCampaignRuntimeBinding(value: JsonRecord): CampaignRuntimeBinding {
+  if (value.schemaVersion !== 'main-agent-campaign-runtime-binding/v1') {
+    throw new Error('campaign_runtime_binding_schema_invalid');
+  }
+  if (!Array.isArray(value.children) || value.children.length === 0) {
+    throw new Error('campaign_runtime_binding_children_missing');
+  }
+  const children = value.children.map((child, index) => {
+    if (!isRecord(child) || typeof child.partitionId !== 'string') {
+      throw new Error('campaign_runtime_binding_children_invalid');
+    }
+    return {
+      partitionId: child.partitionId,
+      ...bindingFileRef(child, `children[${index}]`),
+    };
+  });
+  if (!isRecord(value.runtimeDependencies)) {
+    throw new Error('campaign_runtime_binding_dependencies_missing');
+  }
+  return {
+    schemaVersion: 'main-agent-campaign-runtime-binding/v1',
+    pointerRef: bindingPathRef(value.pointerRef, 'pointerRef'),
+    packetRef: bindingPathRef(value.packetRef, 'packetRef'),
+    certificationRef: bindingFileRef(value.certificationRef, 'certificationRef'),
+    packageRequestRef: bindingFileRef(value.packageRequestRef, 'packageRequestRef'),
+    partitionManifestRef: bindingFileRef(value.partitionManifestRef, 'partitionManifestRef'),
+    children,
+    runtimeDependencies: {
+      compileExecutionPackage: bindingDependency(
+        value.runtimeDependencies.compileExecutionPackage,
+        'runtimeDependencies.compileExecutionPackage'
+      ),
+      auditExecutionPackage: bindingDependency(
+        value.runtimeDependencies.auditExecutionPackage,
+        'runtimeDependencies.auditExecutionPackage'
+      ),
+      auditCompletedChild: bindingDependency(
+        value.runtimeDependencies.auditCompletedChild,
+        'runtimeDependencies.auditCompletedChild'
+      ),
+      auditCompletedCampaign: bindingDependency(
+        value.runtimeDependencies.auditCompletedCampaign,
+        'runtimeDependencies.auditCompletedCampaign'
+      ),
+    },
+  };
+}
+
 function verifyRef(ref: unknown, label: string): { path: string; hash: string; value: Buffer } {
   if (!isRecord(ref) || typeof ref.path !== 'string') {
     throw new Error(`campaign_runtime_binding_ref_missing:${label}`);
@@ -250,10 +320,7 @@ export function inspectCampaignRuntimeCertification(input: {
       throw new Error('campaign_runtime_binding_pointer_ref_invalid');
     }
     const bindingFile = verifyRef(pointerRef, 'campaignRuntimeBindingRef');
-    const binding = readJson(bindingFile.path, 'binding') as CampaignRuntimeBinding;
-    if (binding.schemaVersion !== 'main-agent-campaign-runtime-binding/v1') {
-      throw new Error('campaign_runtime_binding_schema_invalid');
-    }
+    const binding = parseCampaignRuntimeBinding(readJson(bindingFile.path, 'binding'));
     verifyPathRef(binding.pointerRef, input.pointerPath, 'binding.pointerRef');
     if (input.packetPath) {
       verifyPathRef(binding.packetRef, input.packetPath, 'binding.packetRef');
@@ -308,16 +375,15 @@ export function resolveCampaignRuntimeBinding(input: {
   }
   if (
     stableJson(pointerRef) !== stableJson(packetRef) ||
+    typeof pointerRef.path !== 'string' ||
+    typeof packetRef.path !== 'string' ||
     !samePath(pointerRef.path, packetRef.path) ||
     pointerRef.hash !== packetRef.hash
   ) {
     throw new Error('campaign_runtime_binding_pointer_packet_mismatch');
   }
   const bindingFile = verifyRef(pointerRef, 'campaignRuntimeBindingRef');
-  const binding = readJson(bindingFile.path, 'binding') as CampaignRuntimeBinding;
-  if (binding.schemaVersion !== 'main-agent-campaign-runtime-binding/v1') {
-    throw new Error('campaign_runtime_binding_schema_invalid');
-  }
+  const binding = parseCampaignRuntimeBinding(readJson(bindingFile.path, 'binding'));
   verifyPathRef(binding.pointerRef, input.pointerPath, 'binding.pointerRef');
   verifyPathRef(binding.packetRef, input.packetPath, 'binding.packetRef');
   const packageFile = verifyRef(binding.packageRequestRef, 'packageRequestRef');

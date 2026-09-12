@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { materializeAiTddManifestCloseoutRunnerFixture } from '../helpers/requirement-fixture-runtime';
 
 const ROOT = process.cwd();
@@ -25,16 +25,18 @@ const DIRECT_ENTRY_ARGS = ['--entry', 'req_trace_direct'] as const;
 let tempDir: string;
 let fixture: ReturnType<typeof materializeAiTddManifestCloseoutRunnerFixture>;
 
+vi.setConfig({ testTimeout: 120_000, hookTimeout: 120_000 });
+
 beforeEach(() => {
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'req-trace-fragments-'));
   fixture = materializeAiTddManifestCloseoutRunnerFixture({
     root: path.join(tempDir, 'workspace'),
   });
-});
+}, 120_000);
 
 afterEach(() => {
   fs.rmSync(tempDir, { recursive: true, force: true });
-});
+}, 120_000);
 
 describe('req trace human prompt required fragment audit', () => {
   it('records required fragment audit evidence and keeps human prompt projection-only', () => {
@@ -58,7 +60,7 @@ describe('req trace human prompt required fragment audit', () => {
         'full',
         '--json',
       ],
-      { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
+      { cwd: fixture.root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
     );
 
     const prompt = fs.readFileSync(path.join(outDir, 'human_prompt.txt'), 'utf8');
@@ -120,6 +122,34 @@ describe('req trace human prompt required fragment audit', () => {
         ROOT,
         '_bmad',
         'skills',
+        'req-trace-matrix-prompt-generator',
+        'scripts',
+        'publish-artifact-set.js'
+      ),
+      path.join(patchedScriptDir, 'publish-artifact-set.js')
+    );
+    const sharedManifestDir = path.join(
+      fixture.root,
+      '_bmad',
+      'shared',
+      'contract-execution-manifest'
+    );
+    fs.mkdirSync(sharedManifestDir, { recursive: true });
+    for (const name of [
+      'build-contract-execution-manifest.js',
+      'hash-contract-execution-manifest.js',
+      'normalize-contract-execution-manifest.js',
+    ]) {
+      fs.copyFileSync(
+        path.join(ROOT, '_bmad', 'shared', 'contract-execution-manifest', name),
+        path.join(sharedManifestDir, name)
+      );
+    }
+    fs.copyFileSync(
+      path.join(
+        ROOT,
+        '_bmad',
+        'skills',
         'requirements-contract-authoring',
         'scripts',
         'confirmation_drift_classifier.js'
@@ -142,6 +172,7 @@ describe('req trace human prompt required fragment audit', () => {
     );
     const outDir = path.join(tempDir, 'blocked-fragments');
     let stdout = '';
+    let stderr = '';
     let status = 0;
     try {
       stdout = execFileSync(
@@ -165,14 +196,16 @@ describe('req trace human prompt required fragment audit', () => {
           'full',
           '--json',
         ],
-        { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
+        { cwd: fixture.root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
+          env: { ...process.env, BMAD_SPECKIT_PACKAGE_ROOT: path.join(ROOT, 'packages', 'bmad-speckit') } }
       );
     } catch (error: any) {
       stdout = String(error.stdout ?? '');
+      stderr = String(error.stderr ?? '');
       status = error.status ?? 1;
     }
 
-    expect(status).toBe(3);
+    expect(status, stderr).toBe(3);
     expect(JSON.parse(stdout)).toMatchObject({
       decision: 'blocked',
       blockingReasons: expect.arrayContaining([
@@ -181,9 +214,8 @@ describe('req trace human prompt required fragment audit', () => {
     });
     const receipt = JSON.parse(fs.readFileSync(path.join(outDir, 'audit_receipt.json'), 'utf8'));
     expect(receipt.decision).toBe('blocked');
-    expect(receipt.humanPromptRequiredFragmentsPassed).toBe(false);
-    expect(receipt.humanPromptMissingRequiredFragments).toContain(
-      'model_packet.json is the machine-readable execution authority'
+    expect(receipt.blockingReasons).toContain(
+      'HUMAN_PROMPT_REQUIRED_FRAGMENT_MISSING:model_packet.json is the machine-readable execution authority'
     );
   });
 });

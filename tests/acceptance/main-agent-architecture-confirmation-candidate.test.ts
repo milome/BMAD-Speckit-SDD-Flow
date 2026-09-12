@@ -15,9 +15,15 @@ import { compileRequirementsEffectivePassReceiptV2 } from '../../packages/bmad-s
 import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 import {
   createRequirementsContractSemanticIr,
+  normalizeRequirementsContractSemanticIrAuthority,
   type RequirementsExecutionConstraint,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-ir';
 import { createRequirementsContractSourceBindingCapsule } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-source-binding-capsule';
+import {
+  createTypedSourceAuthority,
+  createTypedSourceCoverage,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-typed-source-semantics';
+import { resolveTypedTechnicalDeclarations } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-technical-planning-capability';
 import {
   deriveArchitectureConfirmationCandidate,
   resolveArchitectureConfirmationContext,
@@ -41,6 +47,135 @@ function authoritySnapshotHash(value: unknown): string {
   return sha256Stable({
     domain: 'requirements-source-snapshot/v1',
     content: jsonText(architectureAuthoritySource(value as Record<string, unknown>)),
+  });
+}
+
+function createTypedArchitectureSemanticIr(
+  requestId: string,
+  technicalValues: {
+    targetPath: string;
+    command: string;
+    forbiddenPath: string;
+  }
+) {
+  const actionId = 'MUST-ARCH-001';
+  const commandId = 'CMD-refund-worker-test';
+  const commandBlockId = 'B-CMD-REFUND-WORKER';
+  const stopBlockId = 'B-STOP-REFUND-WORKER';
+  const typedSourceAuthority = createTypedSourceAuthority({
+    schemaVersion: 'requirements-contract-typed-source-graph/v2',
+    sourceNodes: [
+      {
+        sourceRootId: actionId,
+        executionRole: 'action',
+        text: 'Implement the refund worker.',
+        polarity: 'required',
+        normativeStrength: 'must',
+        conditions: [],
+        scope: { kind: 'work', ownerId: actionId },
+        declaredIds: [actionId],
+      },
+    ],
+    sourceRelations: [],
+    sourceBlocks: [{ id: commandBlockId }, { id: stopBlockId }],
+    commandDeclarations: [
+      {
+        id: commandId,
+        blockId: commandBlockId,
+        owner: actionId,
+        role: 'verification_command',
+        expression: technicalValues.command,
+      },
+    ],
+    workDeclarations: [
+      {
+        id: actionId,
+        text: 'Implement the refund worker.',
+        pass: [{ text: 'The declared test passes.' }],
+        productPaths: [technicalValues.targetPath],
+        testPaths: [],
+        commandIds: [commandId],
+        stop: [{ blockId: stopBlockId, text: technicalValues.forbiddenPath }],
+      },
+    ],
+    scenarioDeclarations: [],
+    fixDeclarations: [],
+    sections: [],
+  });
+  const typedCoverage = createTypedSourceCoverage(typedSourceAuthority);
+  const executionConstraints: RequirementsExecutionConstraint[] = resolveTypedTechnicalDeclarations(
+    typedSourceAuthority
+  ).map((entry) => ({
+    constraintId: entry.id,
+    kind: entry.kind,
+    canonicalValue: entry.value,
+    applicableMustRefs: entry.applicableSourceRefs ?? [],
+    applicableAtomRefs: (entry.applicableSourceRefs ?? []).map((ref) => `${ref}-A1`),
+    premiseRefs: entry.premiseRefs ?? [],
+    derivationReceiptRefs: entry.derivationReceiptRefs ?? [],
+    disposition: 'proven',
+    authorityKind: entry.authorityKind,
+    applicableSourceRefs: entry.applicableSourceRefs,
+    conditions: entry.conditions,
+    scope: entry.scope,
+    modality: entry.modality,
+    sourceDeclarationRefs: entry.sourceDeclarationRefs,
+  }));
+  const sourceClaim = {
+    evidenceClaimId: 'EVIDENCE-CLAIM-TYPED-SOURCE-GRAPH',
+    authorityClass: 'source_grounded' as const,
+    normalizedClaimHash: typedSourceAuthority.graphHash,
+    sourceEvidenceRequired: true,
+    decisionReceiptRefs: [],
+    premiseRefs: [],
+    derivationReceiptRefs: [],
+  };
+  return createRequirementsContractSemanticIr({
+    recordId: requestId,
+    requestId,
+    parentSemanticRevisionId: null,
+    compilerVersion: 'requirements-contract-cp02-compiler/v2',
+    semantics: {
+      schemaVersion: 'requirements-contract-typed-source-semantics/v2',
+      typedSourceAuthority,
+      typedCoverage,
+      requirements: [
+        {
+          id: actionId,
+          text: 'Implement the refund worker.',
+          oracle: 'The declared test passes.',
+          requirementKind: 'functional',
+          polarity: 'positive',
+          executionRole: 'action',
+        },
+      ],
+      atoms: [
+        {
+          id: `${actionId}-A1`,
+          requirementRef: actionId,
+          authorityRefs: [actionId],
+          action: 'Implement the refund worker.',
+          oracle: 'The declared test passes.',
+          dependencies: [],
+        },
+      ],
+      decisions: [],
+    },
+    evidenceClaims: [sourceClaim],
+    specSpanRegistry: [
+      {
+        authorityClass: 'source_grounded',
+        normalizedClaimHash: typedSourceAuthority.graphHash,
+        boundSemanticNodeIds: [actionId, `${actionId}-A1`],
+        boundObligationIds: [actionId],
+        boundTypedSourceGraphHash: typedSourceAuthority.graphHash,
+        evidenceClaimRefs: [sourceClaim.evidenceClaimId],
+        decisionReceiptRefs: [],
+        derivationReceiptRefs: [],
+      },
+    ],
+    executionConstraints,
+    semanticProvenance: { [actionId]: typedSourceAuthority.graphHash },
   });
 }
 
@@ -78,6 +213,9 @@ function fixture(
     executionCheckpointCompilerIdentity?: string;
     executionPath?: string;
     directExecutionEntry?: 'matching' | 'absent' | 'conflicting';
+    semanticIrVersion?: 'v1' | 'v2';
+    executionManifestVersion?: 'v1' | 'v2';
+    omitExecutionConstraints?: boolean;
   } = {}
 ) {
   const requestId = 'REQ-ARCH-CANDIDATE-001';
@@ -161,34 +299,37 @@ function fixture(
       disposition: 'proven',
     },
   ];
-  const semanticIr = createRequirementsContractSemanticIr({
-    recordId: requestId,
-    requestId,
-    parentSemanticRevisionId: null,
-    compilerVersion: 'requirements-contract-cp02-compiler/v1',
-    semantics: {
-      requirements: [
-        {
-          id: 'MUST-ARCH-001',
-          text: 'Implement the refund worker.',
-          oracle: 'The declared test passes.',
-        },
-      ],
-      atoms: [
-        {
-          id: 'MUST-ARCH-001-A1',
-          requirementRef: 'MUST-ARCH-001',
-          action: 'Implement the worker.',
-          oracle: 'The declared test passes.',
-        },
-      ],
-      decisions: [],
-    },
-    evidenceClaims: [],
-    specSpanRegistry: [],
-    executionConstraints,
-    semanticProvenance: { 'MUST-ARCH-001': 'MUST-ARCH-001' },
-  });
+  const semanticIr =
+    overrides.semanticIrVersion === 'v2'
+      ? createTypedArchitectureSemanticIr(requestId, technicalValues)
+      : createRequirementsContractSemanticIr({
+          recordId: requestId,
+          requestId,
+          parentSemanticRevisionId: null,
+          compilerVersion: 'requirements-contract-cp02-compiler/v1',
+          semantics: {
+            requirements: [
+              {
+                id: 'MUST-ARCH-001',
+                text: 'Implement the refund worker.',
+                oracle: 'The declared test passes.',
+              },
+            ],
+            atoms: [
+              {
+                id: 'MUST-ARCH-001-A1',
+                requirementRef: 'MUST-ARCH-001',
+                action: 'Implement the worker.',
+                oracle: 'The declared test passes.',
+              },
+            ],
+            decisions: [],
+          },
+          evidenceClaims: [],
+          specSpanRegistry: [],
+          executionConstraints,
+          semanticProvenance: { 'MUST-ARCH-001': 'MUST-ARCH-001' },
+        });
   const repositoryAuthority = {
     schemaVersion: 'ArchitecturePremiseAuthority/v1',
     authorityKind: 'repository',
@@ -294,18 +435,23 @@ function fixture(
   const executionPath =
     overrides.executionPath ?? `authoring/staging/${activeAttemptId}/cp06/execution-manifest.json`;
   const buildPath = `authoring/staging/${activeAttemptId}/contract-build-manifest.json`;
-  writeJson(recordRoot, semanticPath, semanticIr);
+  writeJson(recordRoot, semanticPath, normalizeRequirementsContractSemanticIrAuthority(semanticIr));
   writeJson(recordRoot, bindingPath, sourceBinding);
+  const executionManifestVersion =
+    overrides.executionManifestVersion ??
+    (semanticIr.schemaVersion === 'requirements-contract-semantic-ir/v2' ? 'v2' : 'v1');
   const executionManifest = {
-    schemaVersion: 'requirements-contract-execution-manifest/v1',
+    schemaVersion: `requirements-contract-execution-manifest/${executionManifestVersion}`,
     semanticRevisionId: semanticIr.semanticRevisionId,
     scopeSemanticHash: semanticIr.scopeSemanticHash,
-    constraints: semanticIr.semanticPayload.executionConstraints,
+    ...(overrides.omitExecutionConstraints
+      ? {}
+      : { constraints: semanticIr.semanticPayload.executionConstraints }),
   };
   writeJson(recordRoot, executionPath, executionManifest);
   const executionEntry = {
     role: 'execution_manifest' as const,
-    schemaVersion: 'requirements-contract-execution-manifest/v1',
+    schemaVersion: executionManifest.schemaVersion,
     artifactId: 'execution-manifest',
     recordRelativePath: executionPath,
     artifactHash: sha256Stable(executionManifest),
@@ -556,6 +702,84 @@ describe('Main Agent architecture confirmation candidate', () => {
           context(root, 'prepare-architecture-confirmation', ['--request-id', input.requestId])
         )
       ).toMatchObject({ status: 'user_confirmable', exitCode: 0 });
+    } finally {
+      rmSync(root, { force: true, recursive: true });
+    }
+  });
+
+  it.each([
+    ['v1', 'v1'],
+    ['v2', 'v2'],
+  ] as const)(
+    'accepts a %s semantic authority with its matching execution manifest %s',
+    (semanticIrVersion, executionManifestVersion) => {
+      const root = mkdtempSync(path.join(os.tmpdir(), 'architecture-execution-version-'));
+      try {
+        const input = fixture(root, {
+          directExecutionEntry: 'absent',
+          semanticIrVersion,
+          executionManifestVersion,
+        });
+
+        const resolved = resolveArchitectureConfirmationContext({
+          projectRoot: root,
+          requestId: input.requestId,
+        });
+
+        expect(resolved.semanticIr.schemaVersion).toBe(
+          `requirements-contract-semantic-ir/${semanticIrVersion}`
+        );
+        expect(resolved.executionManifest.schemaVersion).toBe(
+          `requirements-contract-execution-manifest/${executionManifestVersion}`
+        );
+      } finally {
+        rmSync(root, { force: true, recursive: true });
+      }
+    }
+  );
+
+  it.each([
+    ['v1', 'v2'],
+    ['v2', 'v1'],
+  ] as const)(
+    'rejects a %s semantic authority mislabeled with execution manifest %s',
+    (semanticIrVersion, executionManifestVersion) => {
+      const root = mkdtempSync(path.join(os.tmpdir(), 'architecture-execution-mislabeled-'));
+      try {
+        const input = fixture(root, {
+          directExecutionEntry: 'absent',
+          semanticIrVersion,
+          executionManifestVersion,
+        });
+
+        expect(() =>
+          resolveArchitectureConfirmationContext({
+            projectRoot: root,
+            requestId: input.requestId,
+          })
+        ).toThrow('architecture_confirmation_execution_manifest_version_mismatch');
+      } finally {
+        rmSync(root, { force: true, recursive: true });
+      }
+    }
+  );
+
+  it('rejects an incomplete execution manifest v2 with valid checkpoint hashes', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'architecture-execution-incomplete-'));
+    try {
+      const input = fixture(root, {
+        directExecutionEntry: 'absent',
+        semanticIrVersion: 'v2',
+        executionManifestVersion: 'v2',
+        omitExecutionConstraints: true,
+      });
+
+      expect(() =>
+        resolveArchitectureConfirmationContext({
+          projectRoot: root,
+          requestId: input.requestId,
+        })
+      ).toThrow('architecture_confirmation_execution_manifest_invalid');
     } finally {
       rmSync(root, { force: true, recursive: true });
     }

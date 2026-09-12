@@ -1,0 +1,8 @@
+{
+  "designFreeze": ["design-owner"],
+  "recovery": ["recovery-owner"],
+  "scopeDelta": ["scope-owner"],
+  "review": ["reviewer"],
+  "successor": ["product-owner"],
+  "release": ["release-owner"]
+}

@@ -19,6 +19,12 @@ const { validateDeterministicSourceObligations } = require(
     ? './non-deterministic-source-validator.ts'
     : './non-deterministic-source-validator'
 );
+const { compileSourceBlocks, typedIdKind } = require(
+  __filename.endsWith('.ts') ? './source-normative-blocks.ts' : './source-normative-blocks'
+);
+const { attachSourceExecutionSemantics } = require(
+  __filename.endsWith('.ts') ? './source-execution-semantics.ts' : './source-execution-semantics'
+);
 
 export type GoalContractSourceObligationExtractorModule = never;
 
@@ -173,6 +179,7 @@ function parseDeclaredId(text) {
 
 function classifyDeclaredObligation(text, headingPath, fallbackKind) {
   const declaredId = parseDeclaredId(text);
+  if (typedIdKind(declaredId || '') === 'task') return 'declared_execution_task';
   if (/^AC-/u.test(declaredId || '')) return 'acceptance_condition';
   if (/^EVD-/u.test(declaredId || '')) return 'evidence_contract';
   if (/^CMD-/u.test(declaredId || '')) return 'verification_command';
@@ -215,6 +222,7 @@ function classifyDeclaredObligation(text, headingPath, fallbackKind) {
 
 function isExplicitTaskHeading(obligation) {
   if (!obligation.declaredId) return false;
+  if (typedIdKind(obligation.id) === 'task') return true;
   const escapedId = obligation.id.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
   return (
     new RegExp(`^Task\\s+${escapedId}\\b`, 'u').test(obligation.exactText) ||
@@ -237,6 +245,7 @@ function extractDependencyRefs(text, declaredId) {
   const relationPatterns = [
     /\bdepends?\s+on\s+([^.;\n]+)/giu,
     /\bdependencies?\s*:\s*([^.;\n]+)/giu,
+    /(?:前置(?:任务)?|依赖)\s*[:：]\s*([^。；\n]+)/gu,
   ];
   return [
     ...new Set(
@@ -362,7 +371,7 @@ function deterministicValidationKind(kind) {
 }
 
 function validateStructuredSourceObligations(sourceObligations) {
-  const validationObligations = sourceObligations.map((obligation) => ({
+  const validationObligations = sourceObligations.filter((obligation) => obligation.normativeStrength === 'must').map((obligation) => ({
     ...obligation,
     kind: deterministicValidationKind(obligation.kind),
   }));
@@ -375,22 +384,15 @@ function validateStructuredSourceObligations(sourceObligations) {
   }
 }
 
-function normativeStrength(text) {
-  if (/\b(MUST|SHALL|required)\b|\[[ xX]\]/u.test(text)) return 'must';
-  if (/\bSHOULD\b/iu.test(text)) return 'should';
-  if (/\bMAY\b/iu.test(text)) return 'may';
-  return 'must';
-}
-
 function makeObligation(index, base, snapshot, legacyIds) {
   const exactText = normalizeLineEndings(base.text).trim();
   const text = exactText;
   const identityText = normalizeLineEndings(base.authorityText || exactText).trim();
   const textHash = sha256Text(text);
   const sourceRef = `${base.sourcePlanPath}:${base.lineStart}-${base.lineEnd}`;
-  const declaredId = legacyIds ? null : parseDeclaredId(text);
-  const referencedIds = extractReferencedIds(text, declaredId);
-  const lower = text.toLowerCase();
+  const declaredId = legacyIds ? null : base.declaredId || parseDeclaredId(text);
+  const refsOfKind = (kind) => [...new Set((base.typedRefs || [])
+    .filter((ref) => ref.kind === kind).map((ref) => ref.targetId))].sort();
   const id = declaredId
     ? declaredId
     : legacyIds
@@ -402,7 +404,8 @@ function makeObligation(index, base, snapshot, legacyIds) {
     id,
     declaredId: Boolean(declaredId),
     kind: declaredId ? classifyDeclaredObligation(text, base.headingPath, base.kind) : base.kind,
-    normativeStrength: normativeStrength(text),
+    normativeStrength: base.semanticSummary.normativeStrength,
+    polarity: base.semanticSummary.polarity,
     sourcePlanPath: base.sourcePlanPath,
     sourceSnapshotHash: snapshot.aggregateHash,
     sourcePlanHash: snapshot.aggregateHash,
@@ -417,24 +420,49 @@ function makeObligation(index, base, snapshot, legacyIds) {
     headingPath: base.headingPath,
     textHash,
     exactText,
-    applicabilityState: 'applicable',
-    taskRefs: /\btask\b/u.test(lower) ? referencedIds : [],
-    acceptanceRefs: /\bacceptance\b/u.test(lower) ? referencedIds : [],
-    commandRefs: /\bcommand\b|\brun\b/u.test(lower) ? referencedIds : [],
-    evidenceRefs: /\bevidence\b|\breceipt\b/u.test(lower) ? referencedIds : [],
-    dependencyRefs: extractDependencyRefs(text, declaredId),
-    atomicGroupRefs: /\batomic\s+group\b/u.test(lower) ? referencedIds : [],
+    applicabilityState: base.semanticSummary.applicabilityState,
+    taskRefs: refsOfKind('task'),
+    acceptanceRefs: refsOfKind('acceptance'),
+    commandRefs: refsOfKind('command'),
+    evidenceRefs: refsOfKind('evidence'),
+    dependencyRefs: base.dependencyRefs || extractDependencyRefs(text, declaredId),
+    atomicGroupRefs: refsOfKind('atomic_group'),
     releaseRelevance: base.kind === 'release_gate',
     text,
     summary: `sourceRef=${sourceRef}; sourceKind=${base.kind}; sourceTextHash=${textHash}`,
-    required: true,
+    required: base.semanticSummary.required,
+    semanticResolution: base.semanticSummary.semanticResolution,
+    sourceBlockRefs: base.sourceBlockRefs || [],
+    clauseRefs: base.clauseRefs || [],
+    typedRefs: base.typedRefs || [],
   };
+}
+
+function aggregateBlockSemantics(block) {
+  const clauses = block.clauses;
+  const unresolved = clauses.some((clause) => clause.polarity === 'unresolved') || block.disposition === 'unresolved';
+  const conditional = clauses.some((clause) => clause.conditions.some((condition) =>
+    ['source_condition', 'source_confirmation_gate', 'current_authoring_round'].includes(condition.kind)));
+  const modes = [...new Set(clauses.map((clause) => clause.polarity))];
+  const polarity = unresolved ? 'unresolved' : modes.length > 1 ? 'mixed' : modes[0]
+    || (typedIdKind(block.declaredId || '') === 'task' ? 'required' : 'descriptive');
+  const strength = unresolved ? 'unresolved' : polarity === 'mixed' ? 'mixed'
+    : polarity === 'descriptive' ? 'descriptive' : /\bshould\b|建议/iu.test(block.text) ? 'should'
+      : polarity === 'permitted' ? 'may' : 'must';
+  const applicabilityState = unresolved ? 'unresolved' : conditional ? 'conditional' : 'applicable';
+  return { polarity, normativeStrength: strength, applicabilityState,
+    required: strength === 'must' && applicabilityState === 'applicable',
+    semanticResolution: { status: unresolved ? 'unresolved' : polarity === 'mixed' ? 'mixed' : 'source_backed',
+      sourceBlockRefs: [block.id], clauseRefs: clauses.map((clause) => clause.id),
+      ruleId: clauses.length ? 'aggregate-source-clause-modalities/v1' : 'declared-source-identity/v1' } };
 }
 
 function canonicalSourceObligationGraph({
   sourceSnapshotHash,
   sourceObligations,
   specSpanRegistryHash,
+  sourceCoverage = undefined,
+  sourceRelations = undefined,
 }) {
   if (typeof sourceSnapshotHash !== 'string' || !Array.isArray(sourceObligations)) {
     throw failure('source_obligation_graph_invalid');
@@ -456,6 +484,8 @@ function canonicalSourceObligationGraph({
     ...(effectiveSpecSpanRegistryHash
       ? { specSpanRegistryHash: effectiveSpecSpanRegistryHash }
       : {}),
+    ...(sourceCoverage ? { sourceCoverage } : {}),
+    ...(sourceRelations ? { sourceRelationsHash: sha256Text(stableStringify(sourceRelations)) } : {}),
     obligations: sourceObligations
       .map((obligation) => {
         const sourceBinding = obligation.sourceArtifactId
@@ -477,6 +507,8 @@ function canonicalSourceObligationGraph({
           declaredId: obligation.declaredId,
           kind: obligation.kind,
           normativeStrength: obligation.normativeStrength,
+          polarity: obligation.polarity,
+          semanticResolution: obligation.semanticResolution,
           sourcePlanPath: obligation.sourcePlanPath,
           lineStart: obligation.lineStart,
           lineEnd: obligation.lineEnd,
@@ -490,6 +522,9 @@ function canonicalSourceObligationGraph({
           dependencyRefs: [...obligation.dependencyRefs].sort(),
           atomicGroupRefs: [...obligation.atomicGroupRefs].sort(),
           releaseRelevance: obligation.releaseRelevance,
+          sourceBlockRefs: [...(obligation.sourceBlockRefs || [])].sort(),
+          clauseRefs: [...(obligation.clauseRefs || [])].sort(),
+          typedRefs: obligation.typedRefs || [],
           ...sourceBinding,
         };
       })
@@ -538,161 +573,28 @@ function extractSourceObligations(
     throw failure('source_snapshot_invalid');
   }
 
-  const classificationText = snapshot.segments[0].content;
   const snapshotSet = canonicalSnapshotSet(snapshot);
   snapshot = snapshotSet.sourceSnapshots[0];
   const sourceBytes = frozenSnapshotBytes(snapshot);
-  const sourceText = classificationText;
-  const normalized = normalizeLineEndings(sourceText);
-  const lines = normalized.split('\n');
   const sourcePlanPath = snapshot.sourcePath.split(path.sep).join('/');
-  const headingStack = [];
-  const rawObligations = [];
-  let inFence = false;
-  let fenceStart = 0;
-  let fenceLines = [];
-  let proseStart = 0;
-  let proseLines = [];
-
-  function currentHeadingPath() {
-    return headingStack.map((entry) => entry.title);
-  }
-
-  function pushText(lineStart, text, kind = null, lineEnd = lineStart) {
-    const trimmed = text.trim();
-    if (!trimmed) return;
-    const headingPath = currentHeadingPath();
-    const base = {
-      sourcePlanPath,
-      kind: kind || classifyText(trimmed, headingPath),
-      lineStart,
-      lineEnd,
-      headingPath,
-      text: trimmed,
-    };
-    rawObligations.push({
-      ...base,
-      ...sourceByteRange(snapshot, sourceBytes, base),
-    });
-  }
-
-  function isExtractableProse(text) {
-    return (
-      /^\s*\*{0,2}(?:依赖|dependencies?)\s*[:：]\*{0,2}/iu.test(text) ||
-      /^\s*Steps\s*[:：]/iu.test(text) ||
-      /^\s*Acceptance\s*[:：]/iu.test(text) ||
-      /^\s*`ER-[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+`\s+(?:is\b|requires\b)/u.test(
-        text
-      ) ||
-      /\b(MUST|must|Run|Create|Modify|Add|Fail|Stop|release|receipt|coverage)\b/u.test(
-        text
-      )
-    );
-  }
-
-  function flushProse(lineEnd) {
-    if (proseLines.length === 0) return;
-    const text = proseLines.join('\n');
-    if (isExtractableProse(text)) {
-      pushText(proseStart, text, null, lineEnd);
-    }
-    proseStart = 0;
-    proseLines = [];
-  }
-
-  lines.forEach((line, index) => {
-    const lineNumber = index + 1;
-    const fenceMatch = /^(```|~~~)/u.exec(line.trim());
-    if (fenceMatch) {
-      flushProse(lineNumber - 1);
-      if (!inFence) {
-        inFence = true;
-        fenceStart = lineNumber;
-        fenceLines = [line];
-      } else {
-        fenceLines.push(line);
-        const base = {
-          sourcePlanPath,
-          kind: 'command_block',
-          lineStart: fenceStart,
-          lineEnd: lineNumber,
-          headingPath: currentHeadingPath(),
-          text: fenceLines.join('\n'),
-        };
-        rawObligations.push({
-          ...base,
-          ...sourceByteRange(snapshot, sourceBytes, base),
-        });
-        inFence = false;
-        fenceLines = [];
-      }
-      return;
-    }
-    if (inFence) {
-      fenceLines.push(line);
-      return;
-    }
-
-    const heading = /^(#{1,6})\s+(.+?)\s*$/u.exec(line);
-    if (heading) {
-      flushProse(lineNumber - 1);
-      const level = heading[1].length;
-      const title = heading[2].trim();
-      while (headingStack.length > 0 && headingStack.at(-1).level >= level) headingStack.pop();
-      headingStack.push({ level, title });
-      const base = {
-        sourcePlanPath,
-        kind: classifyHeading(currentHeadingPath()),
-        lineStart: lineNumber,
-        lineEnd: lineNumber,
-        headingPath: currentHeadingPath(),
-        text: title,
-      };
-      rawObligations.push({
-        ...base,
-        ...sourceByteRange(snapshot, sourceBytes, base),
-      });
-      return;
-    }
-
-    if (line.trim() === '') {
-      flushProse(lineNumber - 1);
-    } else if (/^\s*>/u.test(line)) {
-      flushProse(lineNumber - 1);
-      pushText(lineNumber, line, 'heading_requirement');
-    } else if (isTaskExecutionMetadataLine(line)) {
-      flushProse(lineNumber - 1);
-      pushText(lineNumber, line, 'task_execution_role');
-    } else if (isReadinessSupersessionLine(line)) {
-      flushProse(lineNumber - 1);
-      pushText(lineNumber, line, 'authority_supersession');
-    } else if (/^\s*(?:[-*+]\s+|\d+[.)]\s+)/u.test(line)) {
-      flushProse(lineNumber - 1);
-      pushText(lineNumber, line);
-    } else if (/^\s*(?:[-*_]){3,}\s*$|^\s*\|/u.test(line)) {
-      flushProse(lineNumber - 1);
-    } else {
-      if (proseLines.length === 0) proseStart = lineNumber;
-      proseLines.push(line);
-    }
+  const { sourceBlocks, sourceRelations, sourceCoverage, sourceClauseCoverage, sourceClauseCoverageSummary } = compileSourceBlocks({ snapshot, sourceBytes });
+  const excluded = new Set(['metadata', 'layout', 'example', 'background', 'baseline_fact', 'observed_deviation',
+    'observed_user_issue', 'historical_evidence', 'review_pending']);
+  const rawObligations = sourceBlocks.filter((block) => !excluded.has(block.disposition)
+    && (block.disposition !== 'structure' || block.declaredId)).map((block) => {
+    const text = block.kind === 'heading' ? block.text.trim().replace(/^#+\s+/u, '') : block.text.trim();
+    let kind = block.disposition === 'command_declaration' ? block.kind === 'fence' ? 'command_block' : 'verification_command'
+      : block.kind === 'fence' ? 'normative_content' : classifyText(text, block.headingPath);
+    if (block.kind === 'blockquote') kind = 'heading_requirement';
+    if (isTaskExecutionMetadataLine(text)) kind = 'task_execution_role';
+    if (isReadinessSupersessionLine(text)) kind = 'authority_supersession';
+    const base = { sourcePlanPath, kind, text, declaredId: block.declaredId, headingPath: block.headingPath,
+      lineStart: block.sourceRef.lineStart, lineEnd: block.sourceRef.lineEnd,
+      sourceBlockRefs: [block.id], clauseRefs: block.clauses.map((clause) => clause.id), typedRefs: block.typedRefs,
+      semanticSummary: aggregateBlockSemantics(block),
+      dependencyRefs: block.fieldRole === 'dependencies' ? block.typedRefs.filter((ref) => ref.kind === 'dependency').map((ref) => ref.targetId) : undefined };
+    return { ...base, ...sourceByteRange(snapshot, sourceBytes, base) };
   });
-
-  flushProse(lines.length);
-
-  if (inFence) {
-    const base = {
-      sourcePlanPath,
-      kind: 'command_block',
-      lineStart: fenceStart,
-      lineEnd: lines.length,
-      headingPath: currentHeadingPath(),
-      text: fenceLines.join('\n'),
-    };
-    rawObligations.push({
-      ...base,
-      ...sourceByteRange(snapshot, sourceBytes, base),
-    });
-  }
 
   let sourceObligations = rawObligations
     .filter((item) => item.text && item.text.trim())
@@ -710,6 +612,26 @@ function extractSourceObligations(
     );
   }
   sourceObligations = projectArrowTaskDependencies(sourceObligations);
+  const refArrays = { task: 'taskRefs', acceptance: 'acceptanceRefs', command: 'commandRefs',
+    evidence: 'evidenceRefs', dependency: 'dependencyRefs', atomic_group: 'atomicGroupRefs' };
+  sourceObligations = sourceObligations.map((obligation) => {
+    const edges = sourceRelations.filter((edge) => edge.fromType === 'obligation' && edge.fromId === obligation.id);
+    const typedRefs = [...obligation.typedRefs];
+    for (const edge of edges) {
+      const ref = { kind: edge.kind, targetId: edge.toId, sourceBlockRefs: edge.sourceBlockRefs,
+        relation: edge.relation || 'declared', ...(edge.pathRole ? { pathRole: edge.pathRole } : {}),
+        ...(edge.declaredCommandRef ? { declaredCommandRef: edge.declaredCommandRef } : {}) };
+      if (!typedRefs.some((item) => stableStringify(item) === stableStringify(ref))) typedRefs.push(ref);
+    }
+    const updated = { ...obligation, typedRefs };
+    for (const [kind, field] of Object.entries(refArrays)) {
+      updated[field] = [...new Set([...obligation[field], ...edges.filter((edge) => edge.kind === kind).map((edge) => edge.toId)])].sort();
+    }
+    const resolvedCommandAliases = new Set(typedRefs.filter((ref) => ref.kind === 'command' && ref.declaredCommandRef)
+      .map((ref) => ref.declaredCommandRef));
+    updated.commandRefs = updated.commandRefs.filter((id) => !resolvedCommandAliases.has(id));
+    return updated;
+  });
 
   const declaredIds = sourceObligations.filter((item) => item.declaredId).map((item) => item.id);
   const duplicateIds = [
@@ -761,7 +683,7 @@ function extractSourceObligations(
   const spanByObligationId = new Map(
     specSpanRegistry.specSpans.flatMap((span) => span.sourceObligationIds.map((id) => [id, span]))
   );
-  const boundSourceObligations = sourceObligations.map((obligation) => {
+  const boundSourceObligations = attachSourceExecutionSemantics(sourceObligations.map((obligation) => {
     const span = spanByObligationId.get(obligation.id);
     if (!span) {
       throw failure('source_obligation_spec_span_missing', {
@@ -780,11 +702,20 @@ function extractSourceObligations(
         specSpanRegistryHash: specSpanRegistry.specSpanRegistryHash,
       },
     };
-  });
+  }), sourceBlocks);
+  // Source blocks and typed declarations remain lossless, but relationship-only
+  // declarations are not independent goal obligations. Keep them available for
+  // command/path/evidence binding while exposing the sparse semantic view to
+  // authority compilers.
+  const semanticObligations = boundSourceObligations.filter((obligation) =>
+    !['binding', 'definition'].includes(obligation.executionRole)
+  );
   const sourceObligationGraph = canonicalSourceObligationGraph({
     sourceSnapshotHash: snapshot.aggregateHash,
-    sourceObligations: boundSourceObligations,
+      sourceObligations: boundSourceObligations,
     specSpanRegistryHash: specSpanRegistry.specSpanRegistryHash,
+    sourceCoverage,
+    sourceRelations,
   });
   return {
     sourcePlanPath,
@@ -797,12 +728,22 @@ function extractSourceObligations(
     sourceBytes: snapshot.sourceBytes,
     sourceLines: snapshot.sourceLines,
     sourceObligations: boundSourceObligations,
+    semanticObligations,
     specSpanRegistry,
     specSpanRegistryHash: specSpanRegistry.specSpanRegistryHash,
     sourceObligationGraph,
     sourceObligationGraphHash: hashSourceObligationGraph(sourceObligationGraph),
+    sourceBlocks,
+    sourceRelations,
+    sourceCoverage,
+    sourceClauseCoverage,
+    sourceClauseCoverageSummary,
     diagnostics: {
       obligationCount: sourceObligations.length,
+      semanticObligationCount: semanticObligations.length,
+      sourceClauseCount: sourceClauseCoverage.length,
+      semanticClauseCount: semanticObligations.reduce((count, obligation) => count + (obligation.normativeClauses || []).length, 0),
+      excludedDeclarationCount: sourceObligations.length - semanticObligations.length,
     },
   };
 }

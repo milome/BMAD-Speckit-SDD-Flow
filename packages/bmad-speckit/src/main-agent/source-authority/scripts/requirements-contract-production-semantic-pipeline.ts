@@ -65,7 +65,8 @@ import {
   validateRequirementsContractInvocationAuthorityReceipt,
 } from './requirements-contract-invocation-authority-receipt';
 import { SOURCE_ROOT_CLASS_REGISTRY_HASH } from './requirements-contract-source-root-class-registry';
-import { validateRequirementsContractSemanticIr } from './requirements-contract-semantic-ir';
+import { validateRequirementsContractSemanticIr, normalizeRequirementsContractSemanticIrAuthority,
+  resolveRequirementsContractSemanticIrAuthority, type RequirementsContractSemanticIr } from './requirements-contract-semantic-ir';
 import { validateRequirementsContractSourceBindingCapsule } from './requirements-contract-source-binding-capsule';
 import {
   preflightRequirementsContractSourceBindingRefresh,
@@ -103,6 +104,9 @@ export interface ProductionSemanticSourceRoot {
   };
   authorityClass: string;
   relatedRequirementRefs?: string[];
+  sourceBinding?: import('./requirements-contract-typed-source-semantics').RequirementsTypedSourceBinding;
+  sourceArtifact?: import('./requirements-contract-full-source-bundle').RequirementsSourceArtifact;
+  bundlePath?: string;
 }
 
 export interface ProductionSemanticSourceRootCandidate
@@ -133,6 +137,7 @@ export interface RequirementsContractCp04FreezeStageResult {
     bindingRevisionId: string;
   };
   semanticIr: Record<string, unknown>;
+  semanticIrAuthority: Record<string, unknown>;
   sourceBinding: Record<string, unknown>;
   resolvedEvidenceIndex: Record<string, unknown>;
   freezes: {
@@ -156,7 +161,13 @@ export function prepareRequirementsContractCp04FreezeStage(input: {
   sourceBinding: Record<string, unknown>;
   resolvedEvidenceIndex: Record<string, unknown>;
 }): RequirementsContractCp04FreezeStageResult {
+  if (input.semanticIr.schemaVersion === 'RequirementsSemanticCandidate/v2') {
+    input = { ...input, semanticIr: resolveRequirementsContractSemanticIrAuthority(input.semanticIr) as unknown as Record<string, unknown> };
+  }
   const semanticValidation = validateRequirementsContractSemanticIr(input.semanticIr);
+  if (input.semanticIr.schemaVersion === 'requirements-contract-semantic-ir/v2' && semanticValidation.decision !== 'pass') {
+    throw new Error(semanticValidation.issueCodes[0] || 'requirements_typed_semantic_ir_invalid');
+  }
   const canonicalSemanticIr = semanticValidation.decision === 'pass';
   const scopeSemanticHash = canonicalSemanticIr
     ? String(input.semanticIr.scopeSemanticHash)
@@ -173,14 +184,17 @@ export function prepareRequirementsContractCp04FreezeStage(input: {
   const semanticIr = canonicalSemanticIr
     ? input.semanticIr
     : { ...input.semanticIr, ...semanticIdentity };
+  const semanticIrAuthority = semanticIr.schemaVersion === 'requirements-contract-semantic-ir/v2'
+    ? normalizeRequirementsContractSemanticIrAuthority(semanticIr as unknown as RequirementsContractSemanticIr) as unknown as Record<string, unknown>
+    : semanticIr;
   const semanticIrFreeze = createRequirementsContractCoreArtifactFreeze({
     stage: 'cp04',
     artifactRole: 'semantic-ir',
-    artifact: semanticIr,
+    artifact: semanticIrAuthority,
   });
   if (!verifyRequirementsContractCoreArtifactReadback({
     freeze: semanticIrFreeze,
-    artifact: semanticIr,
+    artifact: semanticIrAuthority,
   })) {
     throw new Error('requirements_cp04_semantic_ir_readback_mismatch');
   }
@@ -236,6 +250,7 @@ export function prepareRequirementsContractCp04FreezeStage(input: {
     semanticIdentity,
     bindingIdentity,
     semanticIr,
+    semanticIrAuthority,
     sourceBinding,
     resolvedEvidenceIndex,
     freezes: {
@@ -325,7 +340,7 @@ export function publishRequirementsContractCp04FreezeStage(input: {
   });
   const publications = {
     semanticIr: publishArtifact(
-      'semantic-ir', paths.semanticIr, input.stage.semanticIr, input.stage.freezes.semanticIr
+      'semantic-ir', paths.semanticIr, input.stage.semanticIrAuthority, input.stage.freezes.semanticIr
     ),
     sourceBinding: publishArtifact(
       'source-binding',
@@ -343,7 +358,7 @@ export function publishRequirementsContractCp04FreezeStage(input: {
   const artifactEntries = [
     {
       role: 'semantic_ir' as const,
-      schemaVersion: String(input.stage.semanticIr.schemaVersion ?? 'requirements-contract-semantic-ir/v1'),
+      schemaVersion: String(input.stage.semanticIrAuthority.schemaVersion ?? 'requirements-contract-semantic-ir/v1'),
       artifactId: semanticRevisionId,
       recordRelativePath: relativePaths.semanticIr,
       artifactHash: input.stage.freezes.semanticIr.artifactHash,

@@ -3,6 +3,9 @@ import path from 'node:path';
 import type { ProductionSemanticSourceRootCandidate } from './requirements-contract-production-semantic-pipeline';
 import { REQUIREMENTS_CONTRACT_SOURCE_ROOT_CLASS_REGISTRY } from './requirements-contract-source-root-class-registry';
 import { sha256Stable, sha256Text } from './requirements-contract-semantic-resolver';
+import { combineRequirementsSourceBundleGraphs, combineRequirementsSourceContextBindings, parseRequirementsSourceBundle, SOURCE_BUNDLE_VERSION,
+  type RequirementsSourceBundleResult } from './requirements-contract-full-source-bundle';
+import { createTypedSourceAuthority } from './requirements-contract-typed-source-semantics';
 
 export interface RequirementsContractConsumerAuthoritySourceEntry {
   path: string;
@@ -105,17 +108,19 @@ function normalizedRelativePath(cwd: string, candidatePath: string): string {
 function validatedFile(
   cwd: string,
   relativePath: string,
-  maxSourceBytes: number
+  maxSourceBytes: number,
+  allowedExtensions = ALLOWED_EXTENSIONS
 ): {
   absolutePath: string;
   content: string;
+  bytes: Buffer;
 } {
   const absolutePath = path.resolve(cwd, relativePath);
   if (!fs.existsSync(absolutePath)) throw new Error('requirements_authority_source_missing');
   const lstat = fs.lstatSync(absolutePath);
   if (lstat.isSymbolicLink()) throw new Error('requirements_authority_symlink_forbidden');
   if (!lstat.isFile()) throw new Error('requirements_authority_source_not_file');
-  if (!ALLOWED_EXTENSIONS.has(path.extname(absolutePath).toLowerCase())) {
+  if (!allowedExtensions.has(path.extname(absolutePath).toLowerCase())) {
     throw new Error('requirements_authority_extension_unknown');
   }
   if (lstat.size > maxSourceBytes) throw new Error('requirements_authority_source_bytes_exceeded');
@@ -125,7 +130,8 @@ function validatedFile(
   if (realRelative.startsWith('../') || path.isAbsolute(realRelative)) {
     throw new Error('requirements_authority_path_escape');
   }
-  return { absolutePath, content: fs.readFileSync(absolutePath, 'utf8') };
+  const bytes = fs.readFileSync(absolutePath);
+  return { absolutePath, content: bytes.toString('utf8'), bytes };
 }
 
 export function scanRequirementsContractConsumerAuthority(
@@ -166,6 +172,8 @@ export function scanRequirementsContractConsumerAuthority(
   const sourceRootCandidates: ProductionSemanticSourceRootCandidate[] = [];
   const architecturePremiseAuthorityCandidates: ArchitecturePremiseAuthoritySourceCandidate[] = [];
   const entryBodies: Record<string, unknown>[] = [];
+  const bundles: RequirementsSourceBundleResult[] = [];
+  const artifactBytesByPath = new Map<string, Buffer>();
   for (const entry of declaredEntries) {
     const definition = registryByRootClass.get(entry.rootClass);
     if (!entry.proposedAuthorityClass?.trim()) {
@@ -177,6 +185,32 @@ export function scanRequirementsContractConsumerAuthority(
       document = JSON.parse(source.content) as Record<string, unknown>;
     } catch {
       throw new Error('requirements_authority_source_json_invalid');
+    }
+    if (entry.rootClass === 'source_bundle') {
+      if (entry.bodySchemaVersion !== SOURCE_BUNDLE_VERSION || entry.proposedAuthorityClass !== 'source_authority') {
+        throw new Error('requirements_authority_bundle_schema_invalid');
+      }
+      const bundle = parseRequirementsSourceBundle({ document, bundlePath: entry.path, readArtifact(relative) {
+        const artifactPath = normalizedRelativePath(cwd, relative);
+        if (!artifactBytesByPath.has(artifactPath)) {
+          if (artifactBytesByPath.size >= maxSourceCount) throw new Error('requirements_authority_source_count_exceeded');
+          artifactBytesByPath.set(artifactPath, validatedFile(cwd, artifactPath, maxSourceBytes,
+            new Set(['.md', '.json', '.txt'])).bytes);
+        }
+        return artifactBytesByPath.get(artifactPath)!;
+      } });
+      bundles.push(bundle);
+      sourceRootCandidates.push(...bundle.candidates);
+      entryBodies.push(document);
+      continue;
+    }
+    if (document.schemaVersion === 'requirements-contract-authority-source/v1') {
+      const body = document.semanticBody as Record<string, unknown> | undefined;
+      if (['sourceRoots', 'sourceRelations', 'sourceNodes', 'typedSourceAuthority', 'typedSourceAuthorityRef']
+        .some((key) => key in document || (body && key in body)) ||
+        (body && (body.schemaVersion === 'requirements-contract-source-node/v2' || 'executionRole' in body))) {
+        throw new Error('requirements_authority_typed_bundle_version_required');
+      }
     }
     const architectureKind = ARCHITECTURE_PREMISE_AUTHORITY_ROOTS.get(
       entry.rootClass as 'repository_authority' | 'policy_authority'
@@ -271,6 +305,13 @@ export function scanRequirementsContractConsumerAuthority(
       sourceListHash: sha256Stable(sourceListPayload),
     },
     sourceRootCandidates,
+    ...(bundles.length ? {
+      typedSourceAuthority: createTypedSourceAuthority(combineRequirementsSourceBundleGraphs(bundles)),
+      sourceRelations: bundles.flatMap((bundle) => bundle.graph.sourceRelations),
+      sourceRelationBindings: bundles.flatMap((bundle) => bundle.relationBindings),
+      sourceContextBindings: combineRequirementsSourceContextBindings(bundles),
+      sourceArtifacts: [...new Map(bundles.map((bundle) => [bundle.artifact.artifactId, bundle.artifact])).values()],
+    } : {}),
     architecturePremiseAuthorityCandidates,
     facts: sourceRootCandidates.map((candidate) => ({
       factId: candidate.sourceRootId,

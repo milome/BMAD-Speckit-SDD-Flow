@@ -7,11 +7,15 @@ import {
 } from '../../../main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 import { probeGoalContractRenderability } from './goal-contract-renderability-probe';
 import { validateGoalContractSchema } from './schema-registry';
-import {
-  runStandaloneGoalAuthoringJudge,
-  type StandaloneGoalAuthoringJudgeDependencies,
-} from './standalone-goal-authoring-judge';
 import { compileStandaloneGoalExecution } from './standalone-goal-semantic-ir';
+import { standaloneTechnicalSnapshot } from './standalone-goal-technical-snapshot';
+import { canonicalSourcePlanTechnicalSnapshot } from '../source-plan/canonical-source-adapter';
+import { normalizeGoalExecutionAuthority } from './goal-execution-authority';
+import { renderNormativeDetails } from './goal-normative-renderer';
+import {
+  normalizeCanonicalRequirementGraph,
+  type CanonicalRequirementGraphV2,
+} from './canonical-requirement-graph';
 
 type JsonObject = Record<string, unknown>;
 
@@ -85,24 +89,6 @@ function publishActiveAuthority(targetPath: string, value: JsonObject): boolean 
   return true;
 }
 
-function commandInvocation(value: string): string {
-  return value
-    .split(/\r?\n/gu)
-    .filter((line) => !/^\s*(?:```|~~~)/u.test(line))
-    .join('\n')
-    .replace(/^\s*(?:[-*]\s+)?(?:Run\s+)?/iu, '')
-    .trim();
-}
-
-function logicalPaths(rows: JsonObject[]): string[] {
-  return sortedUnique(
-    rows
-      .flatMap((row) => [...text(row.exactText).matchAll(/`([^`]+)`/gu)].map((match) => match[1]))
-      .filter((value) => /(?:^|\/)[^/]+\.[A-Za-z0-9]+$/u.test(value.replace(/\\/gu, '/')))
-      .map((value) => value.replace(/\\/gu, '/'))
-  );
-}
-
 function renderParentGoal(ir: JsonObject): string {
   return [
     '# Goal Execution Contract',
@@ -112,8 +98,9 @@ function renderParentGoal(ir: JsonObject): string {
     '',
     '## Obligations',
     '',
-    ...objects(ir.obligations).map(
-      (row) => `- ${text(row.kind)} ${text(row.obligationId)}: ${text(row.text)}`
+    ...objects(ir.obligations).flatMap(
+      (row) => [`- ${text(row.kind)} ${text(row.obligationId)}: ${text(row.text)}`,
+        ...(['GoalExecutionIR/v2', 'GoalExecutionIR/v3'].includes(text(ir.schemaVersion)) ? renderNormativeDetails(row) : [])]
     ),
     '',
     '## Atomic Tasks',
@@ -132,8 +119,7 @@ export async function publishStandaloneGoalAuthority(
     canonicalIntentBundle: JsonObject;
     goalContractPath: string;
     projectRoot?: string;
-  },
-  dependencies: StandaloneGoalAuthoringJudgeDependencies = {}
+  }
 ) {
   const rawRows = objects(input.source.sourceObligations);
   const rawById = new Map(rawRows.map((row) => [text(row.id), row]));
@@ -150,7 +136,7 @@ export async function publishStandaloneGoalAuthority(
   const canonicalRecords = objects(input.canonicalIntentBundle.canonicalIntentIR).filter(
     (row) => text(row.ownership) === 'owned_obligation'
   );
-  const semanticRows = canonicalRecords.map((canonical) => {
+  const rawSemanticRows = canonicalRecords.map((canonical) => {
     const declaredSourceId = text(canonical.declaredSourceId);
     const spanMatches = strings(canonical.specSpanRefs).flatMap((specSpanRef) => {
       const span = canonicalSpanById.get(specSpanRef);
@@ -172,66 +158,218 @@ export async function publishStandaloneGoalAuthority(
       classification: text(canonical.classification) || 'positive',
       exactText: text(row.exactText) || text(row.text),
       requiredOutcome: text(canonical.requiredOutcome) || text(row.exactText) || text(row.text),
+      headingPath: strings(row.headingPath),
       specSpanRefs: sortedUnique(strings(canonical.specSpanRefs)),
+      sourceBlockRefs: strings(row.sourceBlockRefs),
+      clauseRefs: strings(row.clauseRefs),
+      typedRefs: objects(row.typedRefs),
+      normativeStrength: row.normativeStrength,
+      polarity: row.polarity,
+      executionRole: row.executionRole,
+      ...(row.taskExecution ? { taskExecution: structuredClone(row.taskExecution) } : {}),
+      conditions: row.conditions,
+      applicability: row.applicability,
+      normativeClauses: row.normativeClauses,
+      provenanceRefs: row.provenanceRefs,
+      applicabilityState: row.applicabilityState,
+      taskRefs: strings(row.taskRefs),
+      acceptanceRefs: strings(row.acceptanceRefs),
+      commandRefs: strings(row.commandRefs),
+      evidenceRefs: strings(row.evidenceRefs),
+      dependencyRefs: strings(row.dependencyRefs),
+      atomicGroupRefs: strings(row.atomicGroupRefs),
     };
   });
-  const targetPaths = logicalPaths(rawRows);
-  if (targetPaths.length === 0) {
-    throw new Error('standalone_goal_successor_required:logical_target_paths');
-  }
-  const commandRows = rawRows.filter((row) =>
-    ['command_block', 'verification_command'].includes(text(row.kind))
-  );
-  const commandRecords = commandRows
-    .map((row, index) => ({
-      commandId: strings(row.commandRefs)[0] || `CMD-standalone-${index + 1}`,
-      invocation: commandInvocation(text(row.exactText) || text(row.text)),
-    }))
-    .filter((row) => row.invocation);
-  if (commandRecords.length === 0) {
-    throw new Error('standalone_goal_successor_required:commands');
-  }
-  const logicalSpecSpans = semanticRows.flatMap((row) =>
-    row.specSpanRefs.map((specSpanId) => ({
-      specSpanId,
-      boundObligationIds: [row.id],
-      evidenceClaimRefs: [],
-    }))
-  );
-  const authorityRoot = path.resolve(`${input.goalContractPath}.authority`);
-  const compiled = await compileStandaloneGoalExecution(
-    {
-      sourcePlanHash: text(input.source.sourcePlanHash),
-      sourceSnapshotHash: text(input.source.sourceSnapshotHash),
-      sourceObligations: semanticRows,
-      logicalSpecSpans,
-      technicalSnapshot: {
-        targetPaths,
-        commandRecords,
-        artifactRecords: targetPaths.map((logicalPath, index) => ({
-          artifactId: `ART-standalone-${index + 1}`,
-          logicalPath,
-        })),
-        evidenceRecords: commandRecords.map((command, index) => ({
-          evidenceContractId: `EVDREQ-standalone-${index + 1}`,
-          requirement: `Observed RED/GREEN evidence for ${command.commandId}`,
-        })),
-        forbiddenPaths: ['.git/**'],
-        isolationMode: 'consumer_worktree',
-      },
-    },
-    {
-      authoringJudge: async (request) =>
-        runStandaloneGoalAuthoringJudge(
-          {
-            projectRoot: input.projectRoot ?? process.cwd(),
-            authorityRoot,
-            standaloneGoalSemanticIr: request.candidate,
-          },
-          dependencies
-        ),
+  const semanticIds = new Set(rawSemanticRows.map((row) => text(row.id)));
+  const declaredScopeMembers = new Map<string, Set<string>>();
+  for (const row of rawSemanticRows) {
+    for (const heading of strings(row.headingPath)) {
+      const declaredId = /^([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+)\b/u.exec(heading)?.[1];
+      if (!declaredId) continue;
+      const members = declaredScopeMembers.get(declaredId) ?? new Set<string>();
+      members.add(text(row.id));
+      declaredScopeMembers.set(declaredId, members);
     }
+  }
+  const semanticRows = rawSemanticRows.map((row) => {
+    const applicability = row.applicability && typeof row.applicability === 'object'
+      ? structuredClone(row.applicability) as JsonObject : {};
+    if (applicability.scope !== 'obligations') return row;
+    const declaredRefs = strings(applicability.obligationRefs);
+    const obligationRefs = sortedUnique(declaredRefs.flatMap((ref) =>
+      semanticIds.has(ref) ? [ref] : [...(declaredScopeMembers.get(ref) ?? [])]
+    ));
+    if (declaredRefs.length === 0 || obligationRefs.length === 0) {
+      throw new Error('standalone_goal_applicability_reference_unresolved');
+    }
+    return { ...row, applicability: { ...applicability, obligationRefs } };
+  });
+  const technicalSnapshot = input.source.canonicalRequirementGraph
+    ? canonicalSourcePlanTechnicalSnapshot(input.source, semanticRows)
+    : standaloneTechnicalSnapshot(input.source, semanticRows);
+  const documentGraph = input.source.sourceDocumentGraph && typeof input.source.sourceDocumentGraph === 'object'
+    ? input.source.sourceDocumentGraph as JsonObject : undefined;
+  const sourceCanonicalGraph = input.source.canonicalRequirementGraph &&
+    typeof input.source.canonicalRequirementGraph === 'object'
+    ? input.source.canonicalRequirementGraph as JsonObject
+    : undefined;
+  const normalizedCanonicalGraph: CanonicalRequirementGraphV2 | undefined = sourceCanonicalGraph
+    ? normalizeCanonicalRequirementGraph({
+        sourceAuthority: {
+          kind: 'standalone_source_plan',
+          schemaVersion: text(sourceCanonicalGraph.sourcePlanVersion),
+          authorityId: text(sourceCanonicalGraph.sourcePlanId),
+          authorityHash: text(input.source.sourceSnapshotHash),
+        },
+        standaloneGraph: sourceCanonicalGraph,
+      })
+    : undefined;
+  const documentSpans = objects(documentGraph?.spans);
+  const spanByRef = new Map<string, JsonObject>();
+  for (const span of documentSpans) {
+    const id = text(span.id);
+    const sourceBlockId = text(span.sourceBlockId);
+    if (id) spanByRef.set(id, span);
+    if (sourceBlockId) spanByRef.set(sourceBlockId, span);
+  }
+  for (const sourceBlock of objects(input.source.sourceBlocks)) {
+    const sourceBlockId = text(sourceBlock.id);
+    const sourceRef = sourceBlock.sourceRef && typeof sourceBlock.sourceRef === 'object'
+      ? sourceBlock.sourceRef as JsonObject
+      : undefined;
+    if (sourceBlockId && sourceRef) {
+      spanByRef.set(sourceBlockId, {
+        ...sourceRef,
+        id: sourceBlockId,
+        sourceBlockId,
+      });
+    }
+    for (const declaration of objects(sourceBlock.commandDeclarations)) {
+      const declarationId = text(declaration.id);
+      const declarationSource = declaration.sourceRef && typeof declaration.sourceRef === 'object'
+        ? declaration.sourceRef as JsonObject
+        : undefined;
+      if (declarationId && declarationSource) {
+        spanByRef.set(declarationId, {
+          ...declarationSource,
+          id: declarationId,
+          sourceBlockId,
+        });
+      }
+    }
+  }
+  const canonicalSpanRows = objects(
+    (input.canonicalIntentBundle.specSpanRegistry as JsonObject | undefined)?.specSpans
   );
+  for (const span of canonicalSpanRows) {
+    const specSpanId = text(span.specSpanId);
+    if (!specSpanId) continue;
+    const physical = documentSpans.find((candidate) =>
+      Number(candidate.startByte) === Number(span.startByte) &&
+      Number(candidate.endByteExclusive) === Number(span.endByteExclusive)
+    );
+    spanByRef.set(specSpanId, physical ? { ...physical, ...span } : span);
+  }
+  const logicalSpecSpanById = new Map<string, JsonObject>();
+  const addPhysicalSpan = (
+    specSpanId: string,
+    boundRefs: string[],
+    canonicalNodeRefs: string[],
+    declarationRefs: string[] = [],
+  ) => {
+    const physical = spanByRef.get(specSpanId);
+    if (!physical) throw new Error('standalone_goal_source_span_missing');
+    const current = logicalSpecSpanById.get(specSpanId);
+    const boundObligationIds = sortedUnique([...(current ? strings(current.boundObligationIds) : []), ...boundRefs]);
+    const boundDeclarationIds = sortedUnique([...(current ? strings(current.boundDeclarationIds) : []), ...declarationRefs]);
+    if ((boundObligationIds.length === 0) === (boundDeclarationIds.length === 0)) {
+      throw new Error('standalone_goal_source_span_owner_missing');
+    }
+    logicalSpecSpanById.set(specSpanId, {
+      ...(current ?? {}),
+      specSpanId,
+      sourceArtifactId: text(input.source.sourceArtifactId),
+      sourceSnapshotHash: text(input.source.sourceSnapshotHash),
+      startByte: Number(physical.startByte),
+      endByteExclusive: Number(physical.endByteExclusive),
+      lineStart: Number(physical.lineStart ?? physical.startLine),
+      lineEnd: Number(physical.lineEnd ?? physical.endLine),
+      exactTextHash: text(physical.exactTextHash ?? physical.expectedExactTextHash),
+      boundObligationIds,
+      ...(boundDeclarationIds.length ? { boundDeclarationIds } : {}),
+      canonicalNodeRefs: sortedUnique([...(current ? strings(current.canonicalNodeRefs) : []), ...canonicalNodeRefs]),
+      ...(documentGraph?.graphHash ? { sourceDocumentGraphHash: text(documentGraph.graphHash) } : {}),
+      ...(normalizedCanonicalGraph
+        ? { canonicalRequirementGraphHash: normalizedCanonicalGraph.graphHash } : {}),
+      evidenceClaimRefs: [],
+    });
+  };
+  for (const row of semanticRows) {
+    const authoritativeRefs = sortedUnique([
+      ...strings(row.specSpanRefs),
+      ...strings(row.provenanceRefs),
+      ...strings(row.sourceBlockRefs),
+    ]).filter((ref) => spanByRef.has(ref));
+    for (const specSpanId of authoritativeRefs) {
+      addPhysicalSpan(specSpanId, [text(row.id)], [text(row.id)]);
+    }
+  }
+  for (const binding of technicalSnapshot.constraintBindings ?? []) {
+    const declarationRefs = strings(binding.sourceRefs).filter((ref) => spanByRef.has(ref));
+    if (declarationRefs.length === 0) throw new Error('standalone_goal_constraint_source_span_missing');
+    const sourceBlockRefs = strings(binding.sourceDeclarationRefs).filter((ref) => spanByRef.has(ref));
+    const declarationOnly = binding.coverageRole === 'non_action_declaration' &&
+      strings(binding.applicableMustRefs).length === 0;
+    const physicalRefs = declarationOnly
+      ? (spanByRef.has(text(binding.constraintId)) ? [text(binding.constraintId)] : [])
+      : sortedUnique([...declarationRefs, ...sourceBlockRefs]);
+    if (physicalRefs.length === 0) throw new Error('standalone_goal_constraint_source_span_missing');
+    for (const ref of physicalRefs) {
+      addPhysicalSpan(
+        ref,
+        declarationOnly ? [] : strings(binding.applicableMustRefs),
+        [text(binding.constraintId), ...sourceBlockRefs],
+        declarationOnly ? [text(binding.constraintId)] : [],
+      );
+    }
+  }
+  const logicalSpecSpans = [...logicalSpecSpanById.values()].sort((left, right) =>
+    text(left.specSpanId).localeCompare(text(right.specSpanId))
+  );
+  const sourceLineageBase = {
+    schemaVersion: 'GoalExecutionSourceLineage/v1',
+    authorities: [{
+      authorityKind: 'standalone_source_document' as const,
+      authorityId: text(input.source.sourceArtifactId),
+      authorityHash: text(input.source.sourceSnapshotHash),
+      sourceSnapshotHash: text(input.source.sourceSnapshotHash),
+      ...(documentGraph?.graphHash ? { sourceDocumentGraphHash: text(documentGraph.graphHash) } : {}),
+      ...(normalizedCanonicalGraph
+        ? {
+            canonicalRequirementGraphHash: normalizedCanonicalGraph.graphHash,
+            canonicalSemanticHash: normalizedCanonicalGraph.semanticHash,
+            upstreamCanonicalRequirementGraphHash:
+              normalizedCanonicalGraph.upstreamCanonicalRequirementGraphHash,
+          }
+        : {}),
+      logicalSpecSpanRefs: logicalSpecSpans.map((span) => text(span.specSpanId)),
+    }],
+    logicalSpecSpanRefs: logicalSpecSpans.map((span) => text(span.specSpanId)),
+    logicalSpecSpanSetHash: sha256Stable(logicalSpecSpans),
+  };
+  const sourceLineage = { ...sourceLineageBase, lineageHash: sha256Stable(sourceLineageBase) };
+  const authorityRoot = path.resolve(`${input.goalContractPath}.authority`);
+  const compiled = await compileStandaloneGoalExecution({
+    sourcePlanHash: text(input.source.sourcePlanHash),
+    sourceSnapshotHash: text(input.source.sourceSnapshotHash),
+    sourceObligations: semanticRows,
+    ...(normalizedCanonicalGraph
+      ? { canonicalRequirementGraph: normalizedCanonicalGraph }
+      : {}),
+    logicalSpecSpans,
+    sourceLineage,
+    technicalSnapshot,
+  });
   const hashId = compiled.goalExecutionIr.goalExecutionIRHash.slice('sha256:'.length);
   const semanticPath = path.join(
     authorityRoot,
@@ -240,13 +378,13 @@ export async function publishStandaloneGoalAuthority(
     compiled.standaloneGoalSemanticIr.standaloneGoalSemanticIRHash.slice(7),
     'standalone-goal-semantic-ir.json'
   );
-  const passPath = path.join(
+  const internalGatePath = path.join(
     authorityRoot,
     'goal',
     'standalone-semantic',
     compiled.standaloneGoalSemanticIr.standaloneGoalSemanticIRHash.slice(7),
-    'authoring-judge',
-    'authoring-effective-pass.json'
+    'internal-semantic-gate',
+    'semantic-gate.json'
   );
   const irPath = path.join(authorityRoot, 'goal', 'ir', hashId, 'goal-execution-ir.json');
   const closurePath = path.join(
@@ -281,6 +419,7 @@ export async function publishStandaloneGoalAuthority(
     ...sourceBindingPayload,
     goalSourceBindingHash: sha256Stable(sourceBindingPayload),
   };
+  const specSpanIds = new Set(compiled.goalExecutionIr.logicalSpecSpans.map((span) => text(span.specSpanId)));
   const bindingPath = path.join(
     authorityRoot,
     'goal',
@@ -296,7 +435,8 @@ export async function publishStandaloneGoalAuthority(
     resolutions: compiled.goalExecutionIr.obligations.map((obligation) => ({
       goalObligationId: obligation.obligationId,
       logicalSpecSpanRefs: obligation.sourceRefs.filter(
-        (ref) => ref.startsWith('spec-span-') || ref.startsWith('SPAN-')
+        (ref) => ['GoalExecutionIR/v2', 'GoalExecutionIR/v3'].includes(compiled.goalExecutionIr.schemaVersion) ? specSpanIds.has(ref)
+          : ref.startsWith('spec-span-') || ref.startsWith('SPAN-')
       ),
       evidenceClaimRefs: obligation.evidenceClaimRefs,
     })),
@@ -327,9 +467,9 @@ export async function publishStandaloneGoalAuthority(
       path: path.relative(authorityRoot, semanticPath).replace(/\\/gu, '/'),
       hash: compiled.standaloneGoalSemanticIr.standaloneGoalSemanticIRHash,
     },
-    standaloneAuthoringEffectivePassRef: {
-      path: path.relative(authorityRoot, passPath).replace(/\\/gu, '/'),
-      hash: compiled.authoringEffectivePass.authoringEffectivePassHash,
+    standaloneInternalSemanticGateRef: {
+      path: path.relative(authorityRoot, internalGatePath).replace(/\\/gu, '/'),
+      hash: compiled.internalSemanticGate.gateHash,
     },
     goalExecutionIrRef: {
       path: path.relative(authorityRoot, irPath).replace(/\\/gu, '/'),
@@ -366,17 +506,19 @@ export async function publishStandaloneGoalAuthority(
   const active = { ...activePayload, activeAuthorityHash: sha256Stable(activePayload) };
   validateGoalContractSchema('goal-contract-active-authority.schema.json', active);
   const artifacts: Array<[string, Buffer]> = [
-    [irPath, canonicalBytes(compiled.goalExecutionIr)],
+    [semanticPath, canonicalBytes(compiled.standaloneGoalSemanticIr)],
+    [irPath, canonicalBytes(normalizeGoalExecutionAuthority(compiled.goalExecutionIr))],
     [closurePath, canonicalBytes(compiled.closure)],
     [bindingPath, canonicalBytes(sourceBinding)],
     [evidencePath, canonicalBytes(evidenceIndex)],
     [projectionPath, Buffer.from(parentProjection, 'utf8')],
     [renderabilityPath, renderabilityBytes],
   ];
-  let writeCount = compiled.authoringJudge.writeCount ?? 0;
+  let writeCount = 0;
   for (const [artifactPath, bytes] of artifacts) {
     if (publishImmutable(artifactPath, bytes)) writeCount += 1;
   }
+  if (publishImmutable(internalGatePath, canonicalBytes(compiled.internalSemanticGate))) writeCount += 1;
   if (publishActiveAuthority(activePath, active)) writeCount += 1;
   return Object.freeze({
     goalRunRoot: authorityRoot,
@@ -384,15 +526,8 @@ export async function publishStandaloneGoalAuthority(
     publicationStatus: writeCount === 0 ? 'reused' : 'published',
     writeCount,
     goalExecutionIRHash: compiled.goalExecutionIr.goalExecutionIRHash,
-    providerSelectionRef: compiled.authoringJudge.refs?.providerSelectionRef,
-    authoringJudgeRequestRef: compiled.authoringJudge.refs?.requestRef,
-    authoringJudgeResponseRef: compiled.authoringJudge.refs?.responseRef,
-    authoringJudgeAggregateRef: compiled.authoringJudge.refs?.aggregateRef,
+    internalSemanticGateRef: { path: internalGatePath, hash: refs.standaloneInternalSemanticGateRef.hash },
     standaloneGoalSemanticIrRef: { path: semanticPath, hash: refs.standaloneSemanticIrRef.hash },
-    standaloneAuthoringEffectivePassRef: {
-      path: passPath,
-      hash: refs.standaloneAuthoringEffectivePassRef.hash,
-    },
     goalExecutionIrRef: { path: irPath, hash: refs.goalExecutionIrRef.hash },
     sourceBindingRef: { path: bindingPath, hash: refs.sourceBindingRef.hash },
     resolvedEvidenceIndexRef: { path: evidencePath, hash: refs.resolvedEvidenceIndexRef.hash },

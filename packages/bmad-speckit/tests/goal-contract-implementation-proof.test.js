@@ -3,14 +3,11 @@ const assert = require('node:assert');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { execFile, spawnSync } = require('node:child_process');
-const { promisify } = require('node:util');
-const {
-  materializeStandaloneGoalJudgeHttpFixture,
-} = require('../../../tests/helpers/standalone-goal-judge-http-fixture.ts');
+const { spawnSync } = require('node:child_process');
+const { buildSourceSnapshot } = require('../src/utils/goal-contract/dual-view-derivation.ts');
+const { extractSourceObligations } = require('../src/utils/goal-contract/source-obligation-extractor.ts');
 
 const BIN = path.join(__dirname, '..', 'bin', 'bmad-speckit.js');
-const execFileAsync = promisify(execFile);
 
 function tempRoot() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'goal-contract-proof-'));
@@ -24,31 +21,8 @@ function runCli(args, options = {}) {
   });
 }
 
-async function runCliWithJudge(root, args) {
-  const judge = await materializeStandaloneGoalJudgeHttpFixture(root);
-  try {
-    try {
-      const { stdout, stderr } = await execFileAsync(
-        process.execPath,
-        [BIN, 'goal-contract', ...args],
-        {
-          cwd: root,
-          encoding: 'utf8',
-          maxBuffer: 20 * 1024 * 1024,
-        }
-      );
-      return { status: 0, signal: null, stdout, stderr };
-    } catch (error) {
-      return {
-        status: typeof error.code === 'number' ? error.code : 1,
-        signal: error.signal ?? null,
-        stdout: error.stdout ?? '',
-        stderr: error.stderr ?? String(error),
-      };
-    }
-  } finally {
-    await judge.close();
-  }
+async function runStandaloneCli(root, args) {
+  return runCli(args, { cwd: root });
 }
 
 function standaloneGenerateArgs(args) {
@@ -66,8 +40,18 @@ function generationPayload(result) {
   return JSON.parse(result.stdout);
 }
 
+function proofDeclarations(taskId) {
+  return [
+    `- REQ-${taskId}: ${taskId} MUST emit a deterministic implementation proof audit; Acceptance AC-${taskId}-01; Command CMD-${taskId}-01.`,
+    `- AC-${taskId}-01: ${taskId} MUST reject coverage-only code evidence for REQ-${taskId}.`,
+    `- EVD-${taskId}-01: ${taskId} MUST preserve the implementation proof test output.`,
+    `- CMD-${taskId}-01: ${taskId} MUST run \`node --test packages/bmad-speckit/tests/goal-contract-implementation-proof.test.js\`.`,
+    '',
+  ];
+}
+
 describe('goal-contract implementation proof audit', () => {
-  it('fails closed when source text contains an optional executable obligation', () => {
+  it('retains optional MAY guidance without inventing a mandatory executable obligation', () => {
     const root = tempRoot();
     const source = writePlan(root, [
       '# Ambiguous Plan',
@@ -81,6 +65,30 @@ describe('goal-contract implementation proof audit', () => {
     const result = runCli(standaloneGenerateArgs(['--source', source, '--out', out, '--json']));
     const payload = generationPayload(result);
 
+    assert.notEqual(result.status, 0);
+    assert.equal(payload.ok, false);
+    assert.equal(payload.failureClass, 'legacy_source_plan_authority_missing');
+    const extracted = extractSourceObligations({ snapshot: buildSourceSnapshot({ sourceType: 'source_plan',
+      sourcePath: source, rawBytes: fs.readFileSync(source) }) });
+    assert.equal(extracted.sourceObligations.length, 1);
+    const obligation = extracted.sourceObligations[0];
+    assert.equal(obligation.executionRole, 'guidance');
+    assert.equal(obligation.normativeStrength, 'may');
+    assert.equal(obligation.polarity, 'permitted');
+    assert.match(obligation.exactText, /Optional internal refactor may update/u);
+    assert.equal(extracted.sourceObligations.some(row => row.executionRole === 'action'), false);
+    assert.equal(fs.existsSync(out), false);
+  });
+
+  it('locates contradictory optional wording in a mandatory executable obligation', () => {
+    const root = tempRoot();
+    const source = writePlan(root, [
+      '# Contradictory Optional Plan', '', '## Implementation Task Breakdown', '',
+      '- Optional internal refactor MUST update `packages/bmad-speckit/src/utils/goal-contract/slot-data-builder.ts`.',
+    ]);
+    const out = path.join(root, 'goal-execution-plan.md');
+    const result = runCli(standaloneGenerateArgs(['--source', source, '--out', out, '--json']));
+    const payload = generationPayload(result);
     assert.notEqual(result.status, 0);
     assert.equal(payload.ok, false);
     assert.equal(payload.failureClass, 'source_obligation_classification_ambiguous');
@@ -130,8 +138,9 @@ describe('goal-contract implementation proof audit', () => {
       '',
       '## Implementation Task Breakdown',
       '',
-      '### Task 1: Add implementation proof audit',
+      '### Task TASK-PROOF-T01: Add implementation proof audit',
       '',
+      ...proofDeclarations('TASK-PROOF-T01'),
       '- MUST emit `implementationProofAudit.decision === "pass"` for deterministic code obligations.',
       '',
       'Run:',
@@ -142,7 +151,7 @@ describe('goal-contract implementation proof audit', () => {
     ]);
     const out = path.join(root, 'goal-execution-plan.md');
 
-    const result = await runCliWithJudge(
+    const result = await runStandaloneCli(
       root,
       standaloneGenerateArgs(['--source', source, '--out', out, '--json'])
     );
@@ -164,6 +173,9 @@ describe('goal-contract implementation proof audit', () => {
       '',
       '## Implementation Task Breakdown',
       '',
+      '### Task TASK-PROOF-T01: Add nondeterministic phrase detection',
+      '',
+      ...proofDeclarations('TASK-PROOF-T01'),
       '- Detect nondeterministic source wording that includes `optional`, `allowed`, `if refactoring`, `may`, `might`, `should`, `can`, `as needed`, `where appropriate`, and ambiguous `where applicable` cases without an explicit condition.',
       '',
       'Run:',
@@ -174,7 +186,7 @@ describe('goal-contract implementation proof audit', () => {
     ]);
     const out = path.join(root, 'goal-execution-plan.md');
 
-    const result = await runCliWithJudge(
+    const result = await runStandaloneCli(
       root,
       standaloneGenerateArgs(['--source', source, '--out', out, '--json'])
     );
@@ -196,8 +208,9 @@ describe('goal-contract implementation proof audit', () => {
       '',
       '## Implementation Task Breakdown',
       '',
-      '### Task 1: Add implementation proof audit',
+      '### Task TASK-PROOF-T01: Add implementation proof audit',
       '',
+      ...proofDeclarations('TASK-PROOF-T01'),
       '- MUST emit `implementationProofAudit.decision === "pass"` for deterministic code obligations.',
       '',
       'Run:',
@@ -208,7 +221,7 @@ describe('goal-contract implementation proof audit', () => {
     ]);
     const out = path.join(root, 'goal-execution-plan.md');
 
-    const result = await runCliWithJudge(
+    const result = await runStandaloneCli(
       root,
       standaloneGenerateArgs(['--source', source, '--out', out, '--json'])
     );

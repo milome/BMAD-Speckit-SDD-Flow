@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bmad-speckit.local/schemas/standalone-goal-internal-semantic-gate.schema.json",
+  "title": "Standalone Goal Internal Semantic Gate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "gateIdentity", "sourcePlanHash", "sourceSnapshotHash", "standaloneGoalSemanticIRHash", "decision", "issueCodes", "metrics", "gateHash"],
+  "properties": {
+    "schemaVersion": { "const": "StandaloneGoalInternalSemanticGate/v1" },
+    "gateIdentity": { "const": "standalone-source-oracle+deterministic-semantic-validator/v1" },
+    "sourcePlanHash": { "$ref": "#/$defs/hash" },
+    "sourceSnapshotHash": { "$ref": "#/$defs/hash" },
+    "standaloneGoalSemanticIRHash": { "$ref": "#/$defs/hash" },
+    "decision": { "enum": ["pass", "block"] },
+    "issueCodes": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceObligationCount", "candidateObligationCount", "actionCount", "atomCount", "constraintCount", "referenceCount", "candidateBytes", "nonGlobalObligationUniverseCount"],
+      "properties": {
+        "sourceObligationCount": { "type": "integer", "minimum": 0 },
+        "candidateObligationCount": { "type": "integer", "minimum": 0 },
+        "actionCount": { "type": "integer", "minimum": 0 },
+        "atomCount": { "type": "integer", "minimum": 0 },
+        "constraintCount": { "type": "integer", "minimum": 0 },
+        "referenceCount": { "type": "integer", "minimum": 0 },
+        "candidateBytes": { "type": "integer", "minimum": 1 },
+        "nonGlobalObligationUniverseCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "gateHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": { "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" } }
+}
