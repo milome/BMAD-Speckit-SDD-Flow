@@ -38,6 +38,14 @@ const runtimeBuildAuthorityReceiptPath = path.join(
   distRoot,
   'runtime-build-authority-receipt.json'
 );
+const packagedSemanticAuthorityManifestPath = path.join(
+  distRoot,
+  'requirements-contract-semantic-authority-manifest.json'
+);
+const packagedSemanticAuthorityReceiptPath = path.join(
+  distRoot,
+  'requirements-contract-semantic-authority-receipt.json'
+);
 const runtimeManifestEntries = [];
 
 const compilerOptions = {
@@ -799,6 +807,43 @@ function writeRuntimeManifest() {
   );
 }
 
+function writePackagedSemanticAuthority() {
+  const authority = require(
+    '../dist/main-agent/source-authority/scripts/requirements-contract-packaged-semantic-authority.js'
+  );
+  const packageMetadata = JSON.parse(
+    fs.readFileSync(path.join(packageRoot, 'package.json'), 'utf8')
+  );
+  const moduleNames = [
+    'requirements-contract-production-semantic-pipeline',
+    'requirements-contract-validation-facade',
+    'requirements-contract-semantic-resolver',
+    'lint-requirements-contract-source-prd',
+  ];
+  const result = authority.writePackagedSemanticAuthorityArtifacts({
+    packageRoot,
+    packageVersion: String(packageMetadata.version),
+    entries: moduleNames.map((moduleName) => ({
+      moduleId: moduleName,
+      sourcePath: `src/main-agent/source-authority/scripts/${moduleName}.ts`,
+      distPath: `dist/main-agent/source-authority/scripts/${moduleName}.js`,
+    })),
+  });
+  registerOutput({
+    source: __filename,
+    target: packagedSemanticAuthorityManifestPath,
+    purpose: 'packaged-semantic-authority-manifest',
+    consumer: 'source-authority-runtime',
+  });
+  registerOutput({
+    source: __filename,
+    target: packagedSemanticAuthorityReceiptPath,
+    purpose: 'packaged-semantic-authority-receipt',
+    consumer: 'source-authority-runtime',
+  });
+  return result;
+}
+
 function writeRuntimeBuildAuthorityReceipt() {
   const authority = require('../dist/main-agent/source-authority/scripts/requirements-contract-runtime-build-authority.js');
   const packageAssetEntries = packageBmadRequiredFiles
@@ -933,6 +978,7 @@ try {
       }
     );
 
+  writePackagedSemanticAuthority();
   writeRuntimeManifest();
   const buildAuthorityReceipt = writeRuntimeBuildAuthorityReceipt();
   const forbiddenPathHits = assertNoForbiddenDistPaths();
