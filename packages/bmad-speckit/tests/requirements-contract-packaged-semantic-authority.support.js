@@ -1,9 +1,7 @@
 const assert = require('node:assert/strict');
-const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { test } = require('node:test');
 
 const authority = require('../src/main-agent/source-authority/scripts/requirements-contract-packaged-semantic-authority.ts');
 const {
@@ -15,7 +13,6 @@ const {
 const {
   sha256Text,
 } = require('../src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver.ts');
-const { packFromHermeticStaging } = require('./helpers/hermetic-npm-pack.js');
 
 function tempPackage() {
   const packageRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'packaged-semantic-authority-'));
@@ -28,28 +25,6 @@ function tempPackage() {
     'utf8'
   );
   return packageRoot;
-}
-
-function run(command, args, options = {}) {
-  return spawnSync(command, args, {
-    cwd: options.cwd,
-    env: options.env ?? process.env,
-    encoding: 'utf8',
-    windowsHide: true,
-    maxBuffer: 64 * 1024 * 1024,
-    timeout: options.timeout ?? 300_000,
-  });
-}
-
-function runNpm(args, options) {
-  if (process.platform === 'win32') {
-    return run(
-      process.env.ComSpec ?? 'cmd.exe',
-      ['/d', '/s', '/c', 'call', 'npm.cmd', ...args],
-      options
-    );
-  }
-  return run('npm', args, options);
 }
 
 function fixtureInput(root) {
@@ -158,7 +133,7 @@ function fixtureInput(root) {
   };
 }
 
-test('runtime resolves immutable source identity after source tree is removed', () => {
+function assertAuthorityModuleContracts() {
   const packageRoot = tempPackage();
   const sourcePath = path.join(packageRoot, 'build-src', 'pipeline.ts');
   const distPath = path.join(
@@ -173,7 +148,7 @@ test('runtime resolves immutable source identity after source tree is removed', 
   fs.writeFileSync(sourcePath, 'export const pipeline = true;\n', 'utf8');
   fs.writeFileSync(distPath, 'module.exports = { pipeline: true };\n', 'utf8');
 
-  const written = authority.writePackagedSemanticAuthorityArtifacts({
+  const identityWritten = authority.writePackagedSemanticAuthorityArtifacts({
     packageRoot,
     packageVersion: '9.9.9',
     entries: [
@@ -189,30 +164,28 @@ test('runtime resolves immutable source identity after source tree is removed', 
   const identity = authority.resolvePackagedSemanticModuleIdentity({
     packageRoot,
     moduleId: 'requirements-contract-production-semantic-pipeline',
-    manifestPath: written.manifestPath,
-    receiptPath: written.receiptPath,
+    manifestPath: identityWritten.manifestPath,
+    receiptPath: identityWritten.receiptPath,
   });
 
   assert.equal(identity.id, 'requirements-contract-production-semantic-pipeline');
   assert.match(identity.hash, /^sha256:[a-f0-9]{64}$/u);
   assert.equal(identity.sourcePath, 'build-src/pipeline.ts');
-});
 
-test('runtime rejects a changed dist module', () => {
-  const packageRoot = tempPackage();
-  const sourcePath = path.join(packageRoot, 'pipeline.ts');
-  const distPath = path.join(
-    packageRoot,
+  const changedDistPackageRoot = tempPackage();
+  const changedDistSourcePath = path.join(changedDistPackageRoot, 'pipeline.ts');
+  const changedDistPath = path.join(
+    changedDistPackageRoot,
     'dist',
     'main-agent',
     'source-authority',
     'scripts',
     'pipeline.js'
   );
-  fs.writeFileSync(sourcePath, 'export const pipeline = true;\n', 'utf8');
-  fs.writeFileSync(distPath, 'module.exports = { pipeline: true };\n', 'utf8');
+  fs.writeFileSync(changedDistSourcePath, 'export const pipeline = true;\n', 'utf8');
+  fs.writeFileSync(changedDistPath, 'module.exports = { pipeline: true };\n', 'utf8');
   const written = authority.writePackagedSemanticAuthorityArtifacts({
-    packageRoot,
+    packageRoot: changedDistPackageRoot,
     packageVersion: '9.9.9',
     entries: [
       {
@@ -222,135 +195,86 @@ test('runtime rejects a changed dist module', () => {
       },
     ],
   });
-  fs.appendFileSync(distPath, 'module.exports.changed = true;\n', 'utf8');
+  fs.appendFileSync(changedDistPath, 'module.exports.changed = true;\n', 'utf8');
 
   assert.throws(
     () =>
       authority.resolvePackagedSemanticModuleIdentity({
-        packageRoot,
+        packageRoot: changedDistPackageRoot,
         moduleId: 'pipeline',
         manifestPath: written.manifestPath,
         receiptPath: written.receiptPath,
       }),
     /packaged_semantic_authority_dist_hash_mismatch/u
   );
-});
 
-test('runtime rejects missing packaged authority', () => {
-  const packageRoot = tempPackage();
+  const missingManifestPackageRoot = tempPackage();
   assert.throws(
-    () => authority.resolvePackagedSemanticModuleIdentity({ packageRoot, moduleId: 'pipeline' }),
+    () =>
+      authority.resolvePackagedSemanticModuleIdentity({
+        packageRoot: missingManifestPackageRoot,
+        moduleId: 'pipeline',
+      }),
     /packaged_semantic_authority_manifest_missing/u
   );
-});
+}
 
-test(
-  'hermetic tarball runs the semantic pipeline without a published source tree',
-  { timeout: 900_000 },
-  () => {
-    const packageRoot = path.resolve(__dirname, '..');
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'packaged-semantic-tarball-'));
-    const packRoot = path.join(tempRoot, 'pack');
-    const consumerRoot = path.join(tempRoot, 'consumer');
-    const npmCacheRoot = path.join(tempRoot, 'npm-cache');
-    fs.mkdirSync(consumerRoot, { recursive: true });
-    fs.writeFileSync(
-      path.join(consumerRoot, 'package.json'),
-      JSON.stringify({
-        name: 'packaged-semantic-authority-consumer',
-        version: '1.0.0',
-        private: true,
-      }),
-      'utf8'
-    );
-    const npmEnv = {
-      ...process.env,
-      npm_config_cache: npmCacheRoot,
-      npm_config_loglevel: 'error',
-    };
-    const pack = packFromHermeticStaging({
-      packageRoot,
-      packDestination: packRoot,
-      runNpm,
-      npmOptions: { env: npmEnv, timeout: 600_000 },
-    });
-    assert.equal(pack.status, 0, `${pack.stdout}\n${pack.stderr}`);
-    const packRecord = JSON.parse(pack.stdout)[0];
-    const tarballPath = path.join(packRoot, packRecord.filename);
-    const install = runNpm(
-      [
-        'install',
-        '--no-audit',
-        '--no-fund',
-        '--no-package-lock',
-        '--no-save',
-        '--install-links=false',
-        tarballPath,
-      ],
-      { cwd: consumerRoot, env: npmEnv, timeout: 600_000 }
-    );
-    assert.equal(install.status, 0, `${install.stdout}\n${install.stderr}`);
-    const installedRoot = path.join(consumerRoot, 'node_modules', 'bmad-speckit');
-    assert.equal(fs.existsSync(path.join(installedRoot, 'src')), false);
-    const installedPipelinePath = path.join(
-      installedRoot,
-      'dist',
-      'main-agent',
-      'source-authority',
-      'scripts',
-      'requirements-contract-production-semantic-pipeline.js'
-    );
-    const installedPipelineText = fs.readFileSync(installedPipelinePath, 'utf8');
-    assert.doesNotMatch(installedPipelineText, /canonicalModulePath|Canonical source module/u);
-    const pipeline = require(
+function assertInstalledSemanticPipeline({ installedRoot, consumerRoot }) {
+  assert.equal(fs.existsSync(path.join(installedRoot, 'src')), false);
+  const installedPipelinePath = path.join(
+    installedRoot,
+    'dist',
+    'main-agent',
+    'source-authority',
+    'scripts',
+    'requirements-contract-production-semantic-pipeline.js'
+  );
+  const installedPipelineText = fs.readFileSync(installedPipelinePath, 'utf8');
+  assert.doesNotMatch(installedPipelineText, /canonicalModulePath|Canonical source module/u);
+  const pipeline = require(installedPipelinePath);
+  const fixture = fixtureInput(consumerRoot);
+  const result = pipeline.runRequirementsContractProductionSemanticPipeline(fixture);
+  const manifest = JSON.parse(
+    fs.readFileSync(
       path.join(
         installedRoot,
         'dist',
         'main-agent',
-        'source-authority',
-        'scripts',
-        'requirements-contract-production-semantic-pipeline.js'
-      )
-    );
-    const fixture = fixtureInput(consumerRoot);
-    const result = pipeline.runRequirementsContractProductionSemanticPipeline(fixture);
-    const manifest = JSON.parse(
-      fs.readFileSync(
-        path.join(
-          installedRoot,
-          'dist',
-          'main-agent',
-          'requirements-contract-semantic-authority-manifest.json'
-        ),
-        'utf8'
-      )
-    );
-    const receipt = JSON.parse(
-      fs.readFileSync(
-        path.join(
-          installedRoot,
-          'dist',
-          'main-agent',
-          'requirements-contract-semantic-authority-receipt.json'
-        ),
-        'utf8'
-      )
-    );
-    assert.equal(manifest.schemaVersion, 'requirements-contract-packaged-semantic-authority/v1');
-    assert.equal(
-      receipt.schemaVersion,
-      'requirements-contract-packaged-semantic-authority-receipt/v1'
-    );
-    assert.equal(receipt.packageVersion, require(path.join(installedRoot, 'package.json')).version);
-    for (const entry of manifest.entries) {
-      assert.match(entry.sourceHash, /^sha256:[a-f0-9]{64}$/u);
-      assert.match(entry.distHash, /^sha256:[a-f0-9]{64}$/u);
-      assert.equal(entry.packageVersion, receipt.packageVersion);
-    }
-    const expectedHash = manifest.entries.find(
-      (entry) => entry.moduleId === 'requirements-contract-production-semantic-pipeline'
-    ).sourceHash;
-    assert.equal(result.semanticConservationManifest.canonicalRenderer.hash, expectedHash);
-    assert.equal(result.semanticConservationManifest.parser.hash, expectedHash);
+        'requirements-contract-semantic-authority-manifest.json'
+      ),
+      'utf8'
+    )
+  );
+  const receipt = JSON.parse(
+    fs.readFileSync(
+      path.join(
+        installedRoot,
+        'dist',
+        'main-agent',
+        'requirements-contract-semantic-authority-receipt.json'
+      ),
+      'utf8'
+    )
+  );
+  assert.equal(manifest.schemaVersion, 'requirements-contract-packaged-semantic-authority/v1');
+  assert.equal(
+    receipt.schemaVersion,
+    'requirements-contract-packaged-semantic-authority-receipt/v1'
+  );
+  assert.equal(receipt.packageVersion, require(path.join(installedRoot, 'package.json')).version);
+  for (const entry of manifest.entries) {
+    assert.match(entry.sourceHash, /^sha256:[a-f0-9]{64}$/u);
+    assert.match(entry.distHash, /^sha256:[a-f0-9]{64}$/u);
+    assert.equal(entry.packageVersion, receipt.packageVersion);
   }
-);
+  const expectedHash = manifest.entries.find(
+    (entry) => entry.moduleId === 'requirements-contract-production-semantic-pipeline'
+  ).sourceHash;
+  assert.equal(result.semanticConservationManifest.canonicalRenderer.hash, expectedHash);
+  assert.equal(result.semanticConservationManifest.parser.hash, expectedHash);
+}
+
+module.exports = {
+  assertAuthorityModuleContracts,
+  assertInstalledSemanticPipeline,
+};
