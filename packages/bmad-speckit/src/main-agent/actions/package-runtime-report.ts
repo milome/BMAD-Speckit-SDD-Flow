@@ -28,10 +28,55 @@ function packageRoot() {
 
 function sourceAuthorityRoots() {
   const root = packageRoot();
-  return [
-    path.join(root, 'dist', 'main-agent', 'source-authority', 'scripts'),
-    path.join(root, 'src', 'main-agent', 'source-authority', 'scripts'),
-  ];
+  return [path.join(root, 'dist', 'main-agent', 'source-authority', 'scripts')];
+}
+
+function packagedRuntimeAuthorityProof() {
+  const root = packageRoot();
+  if (fs.existsSync(path.join(root, 'src'))) {
+    return {
+      status: 'source_checkout_runtime_authority_deferred',
+      runtimePath: null,
+      usedSourceTree: true,
+    };
+  }
+  const manifestPath = path.join(root, 'dist', 'main-agent', 'runtime-asset-manifest.json');
+  const receiptPath = path.join(root, 'dist', 'main-agent', 'runtime-build-authority-receipt.json');
+  const authorityPath = path.join(
+    root,
+    'dist',
+    'main-agent',
+    'source-authority',
+    'scripts',
+    'requirements-contract-runtime-build-authority.js'
+  );
+  if (![manifestPath, receiptPath, authorityPath].every((filePath) => fs.existsSync(filePath))) {
+    return {
+      status: 'packaged_runtime_authority_missing',
+      runtimePath: null,
+      usedSourceTree: false,
+    };
+  }
+  try {
+    const authority = require(authorityPath);
+    authority.assertPackagedRuntimeBuildAuthorityCurrent({
+      receipt: JSON.parse(fs.readFileSync(receiptPath, 'utf8')),
+      packageRoot: root,
+      runtimeAssetManifestPath: manifestPath,
+    });
+    return {
+      status: 'packaged_runtime_authority_verified',
+      runtimePath: path.relative(root, authorityPath).replace(/\\/g, '/'),
+      usedSourceTree: false,
+    };
+  } catch (error) {
+    return {
+      status: 'packaged_runtime_authority_invalid',
+      runtimePath: path.relative(root, authorityPath).replace(/\\/g, '/'),
+      usedSourceTree: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
 function collectFiles(root) {
@@ -121,9 +166,21 @@ function replaySourceAuthorityRuntime(context, action) {
 function createPackageRuntimeReportAction({ action, checkSummary }) {
   return function packageRuntimeReportAction(context) {
     const sourceAuthorityRuntimeProof = replaySourceAuthorityRuntime(context, action);
-    const replayPassed =
+    const packagedAuthorityProof = packagedRuntimeAuthorityProof();
+    const packagedAuthorityPassed = [
+      'packaged_runtime_authority_verified',
+      'source_checkout_runtime_authority_deferred',
+    ].includes(packagedAuthorityProof.status);
+    const sourceReplayPassed =
       sourceAuthorityRuntimeProof.status === 'source_authority_runtime_replayed' &&
       sourceAuthorityRuntimeProof.exitCode === 0;
+    const replayPassed = sourceReplayPassed && packagedAuthorityPassed;
+    const failureCode = !sourceReplayPassed
+      ? 'source_authority_runtime_failed'
+      : 'packaged_runtime_authority_failed';
+    const failureStatus = !sourceReplayPassed
+      ? 'source_authority_runtime_failed'
+      : 'packaged_runtime_authority_failed';
     const report = {
       reportType: reportTypeFor(action),
       generatedAt: new Date().toISOString(),
@@ -137,28 +194,40 @@ function createPackageRuntimeReportAction({ action, checkSummary }) {
         usedTypeScriptRunner: false,
       },
       sourceAuthorityRuntimeProof,
+      packagedAuthorityProof,
       checks: [
         {
           id: 'package-source-authority-runtime-replay',
-          passed: replayPassed,
+          passed: sourceReplayPassed,
           summary: checkSummary,
+        },
+        {
+          id: 'packaged-runtime-build-authority',
+          passed: packagedAuthorityPassed,
+          summary:
+            packagedAuthorityProof.status === 'source_checkout_runtime_authority_deferred'
+              ? 'Source checkout defers to the build-time authority gate.'
+              : 'Consumer runtime authority is verified from published package assets only.',
         },
       ],
     };
     return {
       report,
       reportPath: maybeWriteReport(context, action, report),
-      status: replayPassed ? 'package_runtime_ready' : 'source_authority_runtime_failed',
+      status: replayPassed ? 'package_runtime_ready' : failureStatus,
       exitCode: replayPassed ? 0 : sourceAuthorityRuntimeProof.exitCode || 1,
       errors: replayPassed
         ? []
         : [
             {
-              code: 'source_authority_runtime_failed',
+              code: failureCode,
               message:
-                sourceAuthorityRuntimeProof.stderr ||
-                sourceAuthorityRuntimeProof.stdout ||
-                `source-authority runtime failed for ${action}`,
+                !sourceReplayPassed
+                  ? sourceAuthorityRuntimeProof.stderr ||
+                    sourceAuthorityRuntimeProof.stdout ||
+                    `source-authority runtime failed for ${action}`
+                  : packagedAuthorityProof.error ||
+                    `packaged runtime authority failed for ${action}`,
             },
           ],
     };

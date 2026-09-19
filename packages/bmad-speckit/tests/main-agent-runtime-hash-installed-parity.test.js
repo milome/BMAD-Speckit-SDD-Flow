@@ -8,19 +8,14 @@ const { after, before, test } = require('node:test');
 const {
   assertCurrentPartitionRuntimeEpoch,
 } = require('../src/utils/goal-contract/partition-receipts.ts');
-const {
-  packFromHermeticStaging,
-} = require('./helpers/hermetic-npm-pack.js');
+const { packFromHermeticStaging } = require('./helpers/hermetic-npm-pack.js');
+const packagedSemanticAuthority = require('./requirements-contract-packaged-semantic-authority.support.js');
 
 const packageRoot = path.resolve(__dirname, '..');
 let packageTestSession;
 
 function acquirePackageTestSessionLock(root) {
-  const lockDir = path.join(
-    root,
-    'node_modules',
-    '.package-test-session.lock'
-  );
+  const lockDir = path.join(root, 'node_modules', '.package-test-session.lock');
   fs.mkdirSync(path.dirname(lockDir), { recursive: true });
   const startedAt = Date.now();
   while (Date.now() - startedAt < 900_000) {
@@ -33,10 +28,7 @@ function acquirePackageTestSessionLock(root) {
       };
     } catch (error) {
       if (error.code !== 'EEXIST') throw error;
-      if (
-        fs.existsSync(lockDir) &&
-        Date.now() - fs.statSync(lockDir).mtimeMs > 7_200_000
-      ) {
+      if (fs.existsSync(lockDir) && Date.now() - fs.statSync(lockDir).mtimeMs > 7_200_000) {
         fs.rmSync(lockDir, { recursive: true, force: true });
         continue;
       }
@@ -141,9 +133,7 @@ test(
       );
       const tarballPath = path.join(packRoot, pack.filename);
       assert.ok(fs.statSync(tarballPath).mtimeMs >= packStartedAt, 'packed tarball is stale');
-      const tarballHash = createHash('sha256')
-        .update(fs.readFileSync(tarballPath))
-        .digest('hex');
+      const tarballHash = createHash('sha256').update(fs.readFileSync(tarballPath)).digest('hex');
       assert.match(tarballHash, /^[a-f0-9]{64}$/u);
       const packedPaths = pack.files.map((entry) => String(entry.path).replace(/\\/gu, '/'));
       assert.equal(
@@ -160,9 +150,7 @@ test(
         false
       );
       assert.equal(
-        packedPaths.some((entry) =>
-          entry.startsWith('dist/main-agent/source-authority/_bmad/')
-        ),
+        packedPaths.some((entry) => entry.startsWith('dist/main-agent/source-authority/_bmad/')),
         false
       );
       assert.equal(
@@ -184,17 +172,51 @@ test(
       const packedPackageRoot = path.join(extractedRoot, 'package');
       const buildAuthority = JSON.parse(
         fs.readFileSync(
-          path.join(
-            packedPackageRoot,
-            'dist/main-agent/runtime-build-authority-receipt.json'
-          ),
+          path.join(packedPackageRoot, 'dist/main-agent/runtime-build-authority-receipt.json'),
           'utf8'
         )
       );
-      const runtimeIndexModule = require(path.join(
-        packedPackageRoot,
-        'dist/main-agent/source-authority/scripts/requirements-contract-package-runtime-index.js'
-      ));
+      assert.equal(fs.existsSync(path.join(packedPackageRoot, 'src')), false);
+      const packagedRuntimeAuthority = require(
+        path.join(
+          packedPackageRoot,
+          'dist/main-agent/source-authority/scripts/requirements-contract-runtime-build-authority.js'
+        )
+      );
+      assert.equal(
+        typeof packagedRuntimeAuthority.assertPackagedRuntimeBuildAuthorityCurrent,
+        'function'
+      );
+      assert.doesNotThrow(() =>
+        packagedRuntimeAuthority.assertPackagedRuntimeBuildAuthorityCurrent({
+          receipt: buildAuthority,
+          packageRoot: packedPackageRoot,
+          runtimeAssetManifestPath: path.join(
+            packedPackageRoot,
+            'dist/main-agent/runtime-asset-manifest.json'
+          ),
+        })
+      );
+      assert.throws(
+        () =>
+          packagedRuntimeAuthority.assertRuntimeBuildAuthorityCurrent({
+            receipt: buildAuthority,
+            packageRoot: packedPackageRoot,
+            runtimeAssetManifestPath: path.join(
+              packedPackageRoot,
+              'dist/main-agent/runtime-asset-manifest.json'
+            ),
+            buildScriptPath: path.join(packedPackageRoot, 'scripts/build-main-agent-dist.cjs'),
+            dependencyLockPath: path.join(packedPackageRoot, 'package-lock.json'),
+          }),
+        /runtime_build_authority_source_missing:/u
+      );
+      const runtimeIndexModule = require(
+        path.join(
+          packedPackageRoot,
+          'dist/main-agent/source-authority/scripts/requirements-contract-package-runtime-index.js'
+        )
+      );
       const packedRuntimeHash = runtimeIndexModule.packageRuntimeHashFor(packedPackageRoot);
       const packedRuntimeFileCount =
         runtimeIndexModule.createPackageRuntimeIndex(packedPackageRoot).length;
@@ -218,12 +240,18 @@ test(
       assert.equal(fs.lstatSync(installedRoot).isSymbolicLink(), false);
       assert.equal(fs.existsSync(path.join(installedRoot, 'src')), false);
       assert.equal(fs.existsSync(path.join(installedRoot, 'tests')), false);
-      const installedRuntimeIndexModule = require(path.join(
+      packagedSemanticAuthority.assertAuthorityModuleContracts();
+      packagedSemanticAuthority.assertInstalledSemanticPipeline({
         installedRoot,
-        'dist/main-agent/source-authority/scripts/requirements-contract-package-runtime-index.js'
-      ));
-      const installedRuntimeHash =
-        installedRuntimeIndexModule.packageRuntimeHashFor(installedRoot);
+        consumerRoot,
+      });
+      const installedRuntimeIndexModule = require(
+        path.join(
+          installedRoot,
+          'dist/main-agent/source-authority/scripts/requirements-contract-package-runtime-index.js'
+        )
+      );
+      const installedRuntimeHash = installedRuntimeIndexModule.packageRuntimeHashFor(installedRoot);
       const installedRuntimeFileCount =
         installedRuntimeIndexModule.createPackageRuntimeIndex(installedRoot).length;
 
@@ -241,36 +269,47 @@ test(
       assert.ok(installedRuntimeFileCount > 0);
 
       const cli = expectSuccess(
-        run(
-          process.execPath,
-          [path.join(installedRoot, 'bin', 'bmad-speckit.js'), 'version'],
-          { cwd: consumerRoot }
-        ),
+        run(process.execPath, [path.join(installedRoot, 'bin', 'bmad-speckit.js'), 'version'], {
+          cwd: consumerRoot,
+        }),
         'installed CLI failed to load'
       );
       assert.match(cli.stdout, /\d+\.\d+\.\d+/u);
-      assert.doesNotThrow(() =>
-        require(path.join(installedRoot, 'dist/main-agent/index.js'))
+      const packagedRuntimeProbe = expectSuccess(
+        run(
+          process.execPath,
+          [
+            path.join(installedRoot, 'bin', 'bmad-speckit.js'),
+            'main-agent',
+            'adaptive-intake-governance-gate',
+            '--json',
+          ],
+          { cwd: consumerRoot }
+        ),
+        'installed package runtime authority probe failed'
       );
-      const installedGoalContract = require(path.join(
-        installedRoot,
-        'dist',
-        'commands',
-        'goal-contract.js'
-      ));
+      const packagedRuntimeProbeBody = JSON.parse(packagedRuntimeProbe.stdout);
+      assert.equal(packagedRuntimeProbeBody.status, 'package_runtime_ready');
+      assert.equal(
+        packagedRuntimeProbeBody.data.report.packagedAuthorityProof.status,
+        'packaged_runtime_authority_verified'
+      );
+      assert.doesNotThrow(() => require(path.join(installedRoot, 'dist/main-agent/index.js')));
+      const installedGoalContract = require(
+        path.join(installedRoot, 'dist', 'commands', 'goal-contract.js')
+      );
       assert.equal(typeof installedGoalContract.partition, 'function');
-      const classifier = require(path.join(
-        installedRoot,
-        'dist/main-agent/source-authority/scripts/requirements-contract-artifact-role-classifier.js'
-      ));
+      const classifier = require(
+        path.join(
+          installedRoot,
+          'dist/main-agent/source-authority/scripts/requirements-contract-artifact-role-classifier.js'
+        )
+      );
       const classification = classifier.classifyRequirementsContractArtifactRole({
         requestedArtifactRole: 'requirement_source_prd',
       });
       assert.equal(classification.ok, true);
-      assert.equal(
-        classification.classification.activationState,
-        'active_production_authority'
-      );
+      assert.equal(classification.classification.activationState, 'active_production_authority');
       assert.equal(fs.existsSync(path.join(installedRoot, '_bmad')), true);
       assert.equal(
         fs.existsSync(path.join(installedRoot, 'dist/main-agent/source-authority/_bmad')),
@@ -328,11 +367,7 @@ test(
         ),
         'next package install failed'
       );
-      const nextInstalledRoot = path.join(
-        nextConsumerRoot,
-        'node_modules',
-        'bmad-speckit'
-      );
+      const nextInstalledRoot = path.join(nextConsumerRoot, 'node_modules', 'bmad-speckit');
       const nextTarballHash = createHash('sha256')
         .update(fs.readFileSync(nextTarballPath))
         .digest('hex');
@@ -349,8 +384,7 @@ test(
             {
               path: nextInstalledRoot,
               type: 'directory',
-              freshnessMarker:
-                'dist/main-agent/runtime-build-authority-receipt.json',
+              freshnessMarker: 'dist/main-agent/runtime-build-authority-receipt.json',
             },
           ],
         })
@@ -364,18 +398,14 @@ test(
               artifacts: [
                 {
                   path: stalePath,
-                  type: fs.statSync(stalePath).isDirectory()
-                    ? 'directory'
-                    : 'file',
+                  type: fs.statSync(stalePath).isDirectory() ? 'directory' : 'file',
                   freshnessMarker: fs.statSync(stalePath).isDirectory()
                     ? 'dist/main-agent/runtime-build-authority-receipt.json'
                     : undefined,
                 },
               ],
             }),
-          (error) =>
-            error.failureClass ===
-            'partition_runtime_epoch_artifact_outside_root'
+          (error) => error.failureClass === 'partition_runtime_epoch_artifact_outside_root'
         );
       }
     } finally {
