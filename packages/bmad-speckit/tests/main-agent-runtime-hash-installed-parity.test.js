@@ -191,6 +191,42 @@ test(
           'utf8'
         )
       );
+      assert.equal(fs.existsSync(path.join(packedPackageRoot, 'src')), false);
+      const packagedRuntimeAuthority = require(path.join(
+        packedPackageRoot,
+        'dist/main-agent/source-authority/scripts/requirements-contract-runtime-build-authority.js'
+      ));
+      assert.equal(
+        typeof packagedRuntimeAuthority.assertPackagedRuntimeBuildAuthorityCurrent,
+        'function'
+      );
+      assert.doesNotThrow(() =>
+        packagedRuntimeAuthority.assertPackagedRuntimeBuildAuthorityCurrent({
+          receipt: buildAuthority,
+          packageRoot: packedPackageRoot,
+          runtimeAssetManifestPath: path.join(
+            packedPackageRoot,
+            'dist/main-agent/runtime-asset-manifest.json'
+          ),
+        })
+      );
+      assert.throws(
+        () =>
+          packagedRuntimeAuthority.assertRuntimeBuildAuthorityCurrent({
+            receipt: buildAuthority,
+            packageRoot: packedPackageRoot,
+            runtimeAssetManifestPath: path.join(
+              packedPackageRoot,
+              'dist/main-agent/runtime-asset-manifest.json'
+            ),
+            buildScriptPath: path.join(
+              packedPackageRoot,
+              'scripts/build-main-agent-dist.cjs'
+            ),
+            dependencyLockPath: path.join(packedPackageRoot, 'package-lock.json'),
+          }),
+        /runtime_build_authority_source_missing:/u
+      );
       const runtimeIndexModule = require(path.join(
         packedPackageRoot,
         'dist/main-agent/source-authority/scripts/requirements-contract-package-runtime-index.js'
@@ -249,6 +285,25 @@ test(
         'installed CLI failed to load'
       );
       assert.match(cli.stdout, /\d+\.\d+\.\d+/u);
+      const packagedRuntimeProbe = expectSuccess(
+        run(
+          process.execPath,
+          [
+            path.join(installedRoot, 'bin', 'bmad-speckit.js'),
+            'main-agent',
+            'adaptive-intake-governance-gate',
+            '--json',
+          ],
+          { cwd: consumerRoot }
+        ),
+        'installed package runtime authority probe failed'
+      );
+      const packagedRuntimeProbeBody = JSON.parse(packagedRuntimeProbe.stdout);
+      assert.equal(packagedRuntimeProbeBody.status, 'package_runtime_ready');
+      assert.equal(
+        packagedRuntimeProbeBody.data.report.packagedAuthorityProof.status,
+        'packaged_runtime_authority_verified'
+      );
       assert.doesNotThrow(() =>
         require(path.join(installedRoot, 'dist/main-agent/index.js'))
       );
