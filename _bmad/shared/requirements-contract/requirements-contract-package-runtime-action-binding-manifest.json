@@ -204,7 +204,7 @@
         {
           "role": "runtime-build-authority-validator",
           "packagePath": "dist/main-agent/source-authority/scripts/requirements-contract-runtime-build-authority.js",
-          "hash": "sha256:19723e5e17cccd90d3fc627da75401b4e01d90f7841132822c54c7e31cf8064b"
+          "hash": "sha256:bca1c6fb604a05dc9bb3f3fd23450fbd3926318dafa288fe6c53358a47c3e6c4"
         },
         {
           "role": "package-runtime-index",

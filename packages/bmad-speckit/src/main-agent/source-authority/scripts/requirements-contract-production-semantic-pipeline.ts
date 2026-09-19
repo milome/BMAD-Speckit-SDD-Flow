@@ -81,6 +81,10 @@ import {
   type RequirementContractModelV2,
   type RequirementContractSemanticNodeType,
 } from './requirements-contract-model';
+import {
+  packageRootFromRuntimeModule,
+  resolvePackagedSemanticModuleIdentity,
+} from './requirements-contract-packaged-semantic-authority';
 import { requirementsContractTraceEdgeTypeRegistryHash } from '../rules/requirements-contract-trace-edge-type-registry';
 import {
   createRequirementsContractLifecycleValidationReport,
@@ -492,30 +496,19 @@ function schemaPath(fileName: string): string {
   return path.resolve(__dirname, '..', 'schemas', fileName);
 }
 
-function canonicalModulePath(moduleName: string): string {
-  let current = path.resolve(__dirname);
-  for (;;) {
-    const candidate = path.join(
-      current,
-      'src',
-      'main-agent',
-      'source-authority',
-      'scripts',
-      `${moduleName}.ts`
-    );
-    if (existsSync(candidate)) return candidate;
-    const parent = path.dirname(current);
-    if (parent === current) break;
-    current = parent;
-  }
-  throw new Error(`Canonical source module is unavailable: ${moduleName}`);
-}
-
 function fileIdentity(id: string, filePath: string): { id: string; hash: string } {
   return {
     id,
     hash: sha256Text(readFileSync(filePath, 'utf8')),
   };
+}
+
+function packagedFileIdentity(id: string, moduleName: string): { id: string; hash: string } {
+  const identity = resolvePackagedSemanticModuleIdentity({
+    packageRoot: packageRootFromRuntimeModule(__dirname),
+    moduleId: moduleName,
+  });
+  return { id, hash: identity.hash };
 }
 
 function readJson(filePath: string): unknown {
@@ -1494,9 +1487,9 @@ export function runRequirementsContractProductionSemanticPipeline(input: {
     intentLineageLedger: input.intentLineageLedger,
     sourceRootCandidates: input.sourceRootCandidates,
   });
-  const parserIdentity = fileIdentity(
+  const parserIdentity = packagedFileIdentity(
     'requirements-contract-production-source-root-parser',
-    canonicalModulePath('requirements-contract-production-semantic-pipeline')
+    'requirements-contract-production-semantic-pipeline'
   );
   const intakeBindingHash = intakeAuthorityBindingHash(input.intakeReceipt);
   const lineageBindingHash = intentLineageAuthorityBindingHash(
@@ -1641,9 +1634,9 @@ export function runRequirementsContractProductionSemanticPipeline(input: {
       semanticIr,
       (candidate) => validateRequirementContractModelV2(candidate).ok
     );
-    const validationFacadeIdentity = fileIdentity(
+    const validationFacadeIdentity = packagedFileIdentity(
       'requirements-contract-validation-facade',
-      canonicalModulePath('requirements-contract-validation-facade')
+      'requirements-contract-validation-facade'
     );
     const lifecycleValidationReport =
       createRequirementsContractLifecycleValidationReport({
@@ -1727,18 +1720,18 @@ export function runRequirementsContractProductionSemanticPipeline(input: {
         ),
       unresolvedRootIds: [],
       semanticModelHash: semanticIr.semanticModelHash,
-      canonicalRenderer: fileIdentity(
+      canonicalRenderer: packagedFileIdentity(
         'requirements-contract-production-semantic-pipeline',
-        canonicalModulePath('requirements-contract-production-semantic-pipeline')
+        'requirements-contract-production-semantic-pipeline'
       ),
       parser: parserIdentity,
-      ruleRegistry: fileIdentity(
+      ruleRegistry: packagedFileIdentity(
         'requirements-contract-semantic-resolver',
-        canonicalModulePath('requirements-contract-semantic-resolver')
+        'requirements-contract-semantic-resolver'
       ),
-      lintProfileRegistry: fileIdentity(
+      lintProfileRegistry: packagedFileIdentity(
         'lint-requirements-contract-source-prd',
-        canonicalModulePath('lint-requirements-contract-source-prd')
+        'lint-requirements-contract-source-prd'
       ),
       validationFacade: validationFacadeIdentity,
       schemaHashes: [
