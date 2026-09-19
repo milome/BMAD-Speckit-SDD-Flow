@@ -1,7 +1,7 @@
 {
   "schemaVersion": "test-portfolio-policy/v1",
   "budgets": {
-    "executableTestCount": 1204,
+    "executableTestCount": 1200,
     "corePermanentCount": 120,
     "prP95Minutes": 10
   },
