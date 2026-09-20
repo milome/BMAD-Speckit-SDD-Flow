@@ -14,6 +14,12 @@ const { criticalAuditorIndependentProviderRunHash } =
   require('../../packages/bmad-speckit/dist/main-agent/source-authority/scripts/requirements-contract-critical-auditor-independence.js') as {
     criticalAuditorIndependentProviderRunHash: (value: Record<string, unknown>) => string;
   };
+const { extractImplementationConfirmation } =
+  require('../../_bmad/skills/requirements-contract-authoring/scripts/pre_render_definition_drilldown_lib.js') as {
+    extractImplementationConfirmation: (sourceText: string) => {
+      confirmation: Record<string, any>;
+    };
+  };
 
 function sha256Text(value: string): string {
   return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
@@ -84,7 +90,7 @@ function authoringPaths(root: string, recordId: string) {
   };
 }
 
-function writeSource(root: string, recordId: string): string {
+function writeSource(root: string, recordId: string, includePartialTaskProjection = false): string {
   const source = path.join(root, 'docs', 'requirements', 'dist-source.md');
   mkdirSync(path.dirname(source), { recursive: true });
   const text = [
@@ -92,7 +98,7 @@ function writeSource(root: string, recordId: string): string {
     '',
     'implementationConfirmation:',
     '  contractSchemaVersion: 1',
-    '  status: user_confirmed',
+    `  status: ${includePartialTaskProjection ? 'draft' : 'user_confirmed'}`,
     `  recordId: ${recordId}`,
     `  requirementSetId: ${recordId}-SET`,
     '  must:',
@@ -136,6 +142,29 @@ function writeSource(root: string, recordId: string): string {
     '      covers: ["MUST-001"]',
     '      evidenceRefs: ["EVD-001"]',
     '      commandRefs: ["CMD-001"]',
+    ...(includePartialTaskProjection
+      ? [
+          '  atomicImplementationTaskList:',
+          '    - id: TASK-001',
+          '      derivedFromMustRef: MUST-001',
+          '      text: "Preserve the source authority."',
+          '      targetFiles: [packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js]',
+          '      traceRows: [TRACE-001]',
+          '      evidenceRefs: [EVD-001]',
+          `      primaryObservableBehaviors: [${Array.from({ length: 13 }, (_, index) => `"Governed repair behavior ${index + 1} is recorded."`).join(', ')}]`,
+          `      primaryAcceptanceOracles: [${Array.from({ length: 13 }, (_, index) => `"Governed repair behavior ${index + 1} is recorded."`).join(', ')}]`,
+          '      redProofPlan: "Prove source authority preservation."',
+          '      atomicUnitIndex: 1',
+          '      atomicUnitCount: 1',
+          '  implementationTasks:',
+          '    - id: TASK-001',
+          '      title: "Preserve the source authority."',
+          '      requirementRefs: [MUST-001]',
+          '      targetPaths: [packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js]',
+          '      traceRefs: [TRACE-001]',
+          '      evidenceRefs: [EVD-001]',
+        ]
+      : []),
     '  e2eSuites: []',
     '  targetModificationPaths:',
     '    - id: TARGET-MOD-001',
@@ -362,6 +391,70 @@ function expectReceiptBinding(paths: ReturnType<typeof authoringPaths>, verdict:
 }
 
 describe('compiled dist authoring-repair verdict branching', () => {
+  it('materializes every atomic task into the canonical implementation task registry', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'dist-authoring-repair-task-resync-'));
+    try {
+      const recordId = 'REQ-DIST-AUTHORING-REPAIR-TASK-RESYNC';
+      ensureCriticalAuditorProviderConfig(root);
+      const source = writeSource(root, recordId, true);
+      writePromotionReceipt(root, source, recordId);
+
+      runMainAgentAuthoringRepair(root, {
+        source,
+        recordId,
+        requirementSetId: `${recordId}-SET`,
+        implementationAttemptId: `${recordId}-ATTEMPT-1`,
+        mode: 'preserve-existing',
+      });
+
+      const paths = authoringPaths(root, recordId);
+      const draft = readJson(
+        path.join(paths.dir, 'draft-implementation-confirmation.json')
+      ).implementationConfirmation;
+      const draftSource = extractImplementationConfirmation(
+        readFileSync(
+          path.join(paths.dir, 'authoring-repair-business-visual-proof-resync-source.md'),
+          'utf8'
+        )
+      ).confirmation;
+      const packet = readJson(
+        path.join(paths.dir, 'must_decomposition_packet.json')
+      ).must_decomposition_packet;
+      const atomicTaskIds = draft.atomicImplementationTaskList.map((row: any) => row.id);
+      const implementationTaskIds = draft.implementationTasks.map((row: any) => row.id);
+      const packetTaskIds = packet.mustPackets.flatMap((mustPacket: any) =>
+        mustPacket.mustAtomicTasks.map((row: any) => row.id)
+      );
+      expect(atomicTaskIds).toHaveLength(13);
+      expect(implementationTaskIds).toEqual(atomicTaskIds);
+      expect(draftSource.implementationTasks.map((row: any) => row.id)).toEqual(atomicTaskIds);
+      expect(packetTaskIds).toEqual(atomicTaskIds);
+      expect(implementationTaskIds[1]).not.toBe('TASK-001');
+      for (const task of draft.implementationTasks) {
+        expect(task.requirementRefs).toContain('MUST-001');
+        expect(task.traceRefs).toContain('TRACE-001');
+        expect(task.evidenceRefs).toContain('EVD-001');
+        expect(task.targetPaths).toContain(
+          'packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js'
+        );
+      }
+      const reconciliation = readJson(
+        path.join(paths.dir, 'must_packet_source_reconciliation_report.json')
+      );
+      expect(
+        reconciliation.issues.filter(
+          (issue: any) =>
+            (issue.code === 'packet_projection_points_to_missing_source_row' &&
+              String(issue.message).includes('implementationConfirmation.implementationTasks[')) ||
+            (issue.code === 'source_row_independently_invented' &&
+              String(issue.message).includes('implementationTasks['))
+        )
+      ).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('routes blocked without semantic gap materialization in package dist runtime', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'dist-authoring-repair-blocked-'));
     try {

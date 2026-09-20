@@ -20592,7 +20592,11 @@ function canonicalImplementationTasksForResync(
   confirmation: Record<string, unknown>
 ): Record<string, unknown>[] {
   const existingTasks = asRecordArray(confirmation.implementationTasks);
-  if (existingTasks.length > 0) return existingTasks;
+  const existingTasksById = new Map(
+    existingTasks
+      .map((row) => [normalizeText(row.id), row] as const)
+      .filter(([taskId]) => Boolean(taskId))
+  );
 
   const mustRowsById = new Map(
     asRecordArray(confirmation.must)
@@ -20611,6 +20615,7 @@ function canonicalImplementationTasksForResync(
       ...asStringArray(row.taskRefs),
       ...asStringArray(row.atomicTaskRefs),
     ]),
+    ...existingTasksById.keys(),
   ]);
   const targetRows = asRecordArray(confirmation.targetModificationPaths);
   const commandRows = asRecordArray(confirmation.requiredCommands);
@@ -20620,6 +20625,8 @@ function canonicalImplementationTasksForResync(
   ];
 
   return taskIds.map((taskId) => {
+    const existingTask = existingTasksById.get(taskId);
+    if (existingTask) return existingTask;
     const legacyTask = legacyTasksById.get(taskId) ?? {};
     const owningTraces = traceRows.filter((row) =>
       [...asStringArray(row.taskRefs), ...asStringArray(row.atomicTaskRefs)].includes(taskId)
@@ -20725,6 +20732,15 @@ function resyncExistingBusinessVisualProofClosure(
   let nextConfirmation: Record<string, unknown> = { ...confirmation };
   const changedViewIds = new Set<string>();
   let changed = false;
+  const atomicTaskResync = resyncExistingAtomicTaskDecomposition(nextConfirmation);
+  if (atomicTaskResync.changed) {
+    nextConfirmation = atomicTaskResync.confirmation;
+    changed = true;
+    changedViewIds.add('atomicImplementationTaskList');
+    changedViewIds.add('mustExecutionDecompositionMatrix');
+    changedViewIds.add('traceRows');
+    changedViewIds.add('aiTddContractExecutionManifestProjection');
+  }
   const canonicalImplementationTasks = canonicalImplementationTasksForResync(nextConfirmation);
   if (
     canonicalImplementationTasks.length > 0 &&
@@ -20734,15 +20750,6 @@ function resyncExistingBusinessVisualProofClosure(
     nextConfirmation.implementationTasks = canonicalImplementationTasks;
     changed = true;
     changedViewIds.add('implementationTasks');
-  }
-  const atomicTaskResync = resyncExistingAtomicTaskDecomposition(nextConfirmation);
-  if (atomicTaskResync.changed) {
-    nextConfirmation = atomicTaskResync.confirmation;
-    changed = true;
-    changedViewIds.add('atomicImplementationTaskList');
-    changedViewIds.add('mustExecutionDecompositionMatrix');
-    changedViewIds.add('traceRows');
-    changedViewIds.add('aiTddContractExecutionManifestProjection');
   }
   const preConfirmationDrilldown = recordObject(nextConfirmation.preConfirmationDrilldown);
   const criticalAuditor = recordObject(preConfirmationDrilldown.criticalAuditor);
