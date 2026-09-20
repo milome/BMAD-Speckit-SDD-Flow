@@ -22,6 +22,7 @@ import * as judgeLifecycle from '../../packages/bmad-speckit/src/main-agent/sour
 import { runRequirementsContractProductionJudgePipeline } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-production-judge-pipeline';
 import type { PreparedRequirementsContractJudgeInvocation } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-invocation';
 import { assertJudgePayloadBudget } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-payload-budget';
+import { hydrateRequirementsContractJudgeAuditPacket } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-audit-packet';
 
 const HASH = (digit: string) => `sha256:${digit.repeat(64)}`;
 
@@ -114,10 +115,15 @@ describe('requirements contract deterministic Judge repair orchestration', () =>
         recordRoot,
         ...String(activeAuthority.activeBuildManifestPath).split('/')
       ));
-      const auditPacket = readJson(path.join(
-        recordRoot,
-        ...String(buildManifest.auditPacketRef.path).split('/')
-      ));
+      const auditPacketEntry = buildManifest.artifactEntries.find(
+        (entry: Record<string, any>) => entry.role === 'judge_audit_packet'
+      );
+      const auditPacket = auditPacketEntry?.contentRef
+        ? readJson(path.join(recordRoot, ...String(auditPacketEntry.contentRef.recordRelativePath).split('/')))
+        : readJson(path.join(recordRoot, ...String(buildManifest.auditPacketRef.path).split('/')));
+      const hydratedAuditPacket = auditPacketEntry?.contentRef
+        ? hydrateRequirementsContractJudgeAuditPacket({ recordRoot, packetRef: auditPacketEntry.contentRef })
+        : auditPacket;
       const invoke = vi.fn(async ({ request }: { request: Record<string, any> }) => {
         const body = request.auditPacket.body;
         const finding = {
@@ -172,7 +178,7 @@ describe('requirements contract deterministic Judge repair orchestration', () =>
         auditPacket,
         judgePrompt: {
           systemPrompt: 'Audit the complete frozen Requirements contract.',
-          rubric: { mandatoryDimensionIds: auditPacket.body.mandatoryDimensionIds },
+          rubric: { mandatoryDimensionIds: hydratedAuditPacket.body?.mandatoryDimensionIds ?? [] },
           structuredOutputSchema: { type: 'object' },
           outputTokenReserve: 4096,
         },
@@ -198,7 +204,7 @@ describe('requirements contract deterministic Judge repair orchestration', () =>
       const resumeEnvelope = JSON.parse(resume.stdout) as Record<string, any>;
       expect(resumeEnvelope.data).toMatchObject({
         status: 'authoring_blocked',
-        issueCode: 'judge_remediation_no_progress',
+        issueCode: 'requirements_remediation_not_materializable',
         exitCode: 0,
         judgeRequestHash: requestHash,
         resumable: false,

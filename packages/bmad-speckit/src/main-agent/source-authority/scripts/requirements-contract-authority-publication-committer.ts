@@ -5,6 +5,7 @@ import {
 } from './requirements-contract-atomic-no-clobber-publisher';
 import {
   validateRequirementsContractBuildManifest,
+  validateRequirementsContractBuildManifestV2,
   type RequirementsContractBuildManifest,
 } from './requirements-contract-authoring-manifest';
 import {
@@ -38,6 +39,11 @@ export interface RequirementsActiveAuthorityTupleV2 {
   activeBuildManifestPath: string;
   previousBuildHash: string | null;
   previousBuildManifestPath: string | null;
+  /** Read-only compatibility paths for pre-v2 resume consumers. */
+  activeSemanticIrPath?: string;
+  activeSourceBindingPath?: string;
+  activeAuthoringAttemptId?: string;
+  activeBuildManifestHash?: string;
 }
 
 export type RequirementsAuthorityCommitRoute =
@@ -59,6 +65,10 @@ const V2_TUPLE_KEYS: Array<keyof RequirementsActiveAuthorityTupleV2> = [
   'activeBuildHash', 'activeBuildManifestPath',
   'previousBuildHash', 'previousBuildManifestPath',
 ];
+const V2_COMPATIBILITY_KEYS = new Set([
+  'activeSemanticIrPath', 'activeSourceBindingPath',
+  'activeAuthoringAttemptId', 'activeBuildManifestHash',
+]);
 const SEMANTIC_FIELDS: Array<keyof RequirementsActiveAuthorityTuple> = [
   'activeSemanticRevisionId', 'activeSemanticIrPath', 'activeScopeSemanticHash',
 ];
@@ -78,8 +88,8 @@ export function validateRequirementsActiveAuthorityTuple(value: unknown) {
   if ('activeBuildHash' in candidate) {
     const tuple = candidate as unknown as RequirementsActiveAuthorityTupleV2;
     if (
-      Object.keys(tuple).length !== V2_TUPLE_KEYS.length ||
-      Object.keys(tuple).some((key) => !V2_TUPLE_KEYS.includes(key as keyof RequirementsActiveAuthorityTupleV2))
+      Object.keys(tuple).some((key) => !V2_TUPLE_KEYS.includes(key as keyof RequirementsActiveAuthorityTupleV2) &&
+        !V2_COMPATIBILITY_KEYS.has(key))
     ) issueCodes.push('requirements_active_authority_tuple_field_set_invalid');
     if (
       !SAFE_ID.test(tuple.activeSemanticRevisionId) ||
@@ -98,6 +108,18 @@ export function validateRequirementsActiveAuthorityTuple(value: unknown) {
       (tuple.previousBuildHash !== null &&
         tuple.previousBuildManifestPath !== `authoring/builds/${tuple.previousBuildHash.slice('sha256:'.length)}/manifest.json`)
     ) issueCodes.push('requirements_previous_build_path_identity_mismatch');
+    if (tuple.activeSemanticIrPath !== undefined && !canonicalRecordPath(tuple.activeSemanticIrPath)) {
+      issueCodes.push('requirements_active_semantic_compatibility_path_invalid');
+    }
+    if (tuple.activeSourceBindingPath !== undefined && !canonicalRecordPath(tuple.activeSourceBindingPath)) {
+      issueCodes.push('requirements_active_binding_compatibility_path_invalid');
+    }
+    if (tuple.activeAuthoringAttemptId !== undefined && !SAFE_ID.test(tuple.activeAuthoringAttemptId)) {
+      issueCodes.push('requirements_active_authoring_attempt_compatibility_invalid');
+    }
+    if (tuple.activeBuildManifestHash !== undefined && tuple.activeBuildManifestHash !== tuple.activeBuildHash) {
+      issueCodes.push('requirements_active_build_compatibility_hash_mismatch');
+    }
     return { decision: issueCodes.length ? 'block' as const : 'pass' as const, issueCodes: [...new Set(issueCodes)].sort() };
   }
   const tuple = value as RequirementsActiveAuthorityTuple & Record<string, unknown>;
@@ -176,6 +198,12 @@ function resolveConfinedRecordPath(recordRootPath: string, recordRelativePath: s
   return target;
 }
 
+function canonicalRecordPath(value: unknown): value is string {
+  return typeof value === 'string' && Boolean(value) && !value.includes('\\') &&
+    !path.posix.isAbsolute(value) && path.posix.normalize(value) === value &&
+    value !== '..' && !value.startsWith('../');
+}
+
 function readJsonArtifact(absolutePath: string, code: string): unknown {
   try {
     return JSON.parse(fs.readFileSync(absolutePath, 'utf8'));
@@ -196,6 +224,27 @@ export function commitRequirementsContractAuthorityPublication(input: {
     next: RequirementsActiveAuthorityTuple
   ) => boolean;
 }) {
+  if ((input.buildManifest as unknown as Record<string, unknown>).schemaVersion ===
+      'requirements-contract-build-manifest/v2') {
+    if (input.route !== 'binding_refresh' || !validateRequirementsContractBuildManifestV2(input.buildManifest)) {
+      throw new Error('requirements_authority_build_manifest_invalid');
+    }
+    const current = input.current as unknown as RequirementsActiveAuthorityTupleV2;
+    const next = input.next as unknown as RequirementsActiveAuthorityTupleV2;
+    if (current.activeBuildHash !== next.activeBuildHash ||
+        current.activeBuildManifestPath !== next.activeBuildManifestPath ||
+        current.activeScopeSemanticHash !== next.activeScopeSemanticHash) {
+      throw new Error('requirements_binding_refresh_authority_mutation_forbidden');
+    }
+    if (current.activeBindingRevisionId === next.activeBindingRevisionId ||
+        current.activeSourceBindingHash === next.activeSourceBindingHash) {
+      throw new Error('requirements_binding_refresh_requires_binding_replacement');
+    }
+    if (!input.compareAndSwapAuthorityTuple(input.current, input.next)) {
+      throw new Error('requirements_authority_cas_mismatch');
+    }
+    return { activeAuthority: input.next };
+  }
   assertRequirementsAuthorityRouteTransition(input);
   const manifestValidation = validateRequirementsContractBuildManifest(input.buildManifest);
   if (manifestValidation.decision === 'block') throw new Error(manifestValidation.issueCodes[0]);

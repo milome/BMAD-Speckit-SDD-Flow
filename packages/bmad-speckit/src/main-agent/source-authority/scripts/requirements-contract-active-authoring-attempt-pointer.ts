@@ -57,11 +57,15 @@ export function validateActiveAuthoringAttemptPointer(value: unknown) {
   if (!canonicalRecordRelativePath(pointer.attemptManifestPath)) {
     issueCodes.push('active_authoring_attempt_manifest_path_invalid');
   } else {
-    const pattern = new RegExp(
-      `^authoring/staging/${attemptId.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}/manifests/[0-9]+-[A-Za-z0-9._-]+\\.json$`,
-      'u'
+    const escapedAttemptId = attemptId.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+    const stagingPattern = new RegExp(
+      `^authoring/staging/${escapedAttemptId}/manifests/[0-9]+-[A-Za-z0-9._-]+\\.json$`, 'u'
     );
-    if (!pattern.test(pointer.attemptManifestPath)) {
+    const compatibilityPattern = new RegExp(
+      `^authoring/operations/${escapedAttemptId}/compatibility-cp[0-8][0-8]-manifest\\.json$`, 'u'
+    );
+    if (!stagingPattern.test(pointer.attemptManifestPath) &&
+        !compatibilityPattern.test(pointer.attemptManifestPath)) {
       issueCodes.push('active_authoring_attempt_manifest_identity_mismatch');
     }
   }
@@ -117,8 +121,11 @@ export function publishActiveAuthoringAttemptPointer(input: {
   ) {
     throw new Error('active_authoring_attempt_manifest_readback_mismatch');
   }
-  const expectedPath = `authoring/staging/${record.authoringAttemptId}/manifests/${record.checkpointOrdinal}-${record.checkpointId}.json`;
-  if (input.pointer.attemptManifestPath !== expectedPath) {
+  const expectedPaths = [
+    `authoring/staging/${record.authoringAttemptId}/manifests/${record.checkpointOrdinal}-${record.checkpointId}.json`,
+    `authoring/operations/${record.authoringAttemptId}/compatibility-${record.checkpointId}-manifest.json`,
+  ];
+  if (!expectedPaths.includes(input.pointer.attemptManifestPath)) {
     throw new Error('active_authoring_attempt_manifest_path_identity_mismatch');
   }
   if (input.pointer.latestValidPredecessorCheckpoint !== record.latestValidPredecessorCheckpoint) {

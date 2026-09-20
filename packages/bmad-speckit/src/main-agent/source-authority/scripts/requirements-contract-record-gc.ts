@@ -76,6 +76,16 @@ function rootSnapshot(recordRoot: string, nowMs: number) {
   collectJsonPaths(record.currentPromotionEvidence, retained);
   collectJsonPaths(record.finalPromotionEvidence, retained);
   collectJsonPaths(record.confirmationEventRef, retained);
+  const activeAttemptPointer = jsonObject(path.join(
+    recordRoot, 'record', 'active-authoring-request.json'
+  ));
+  if (activeAttemptPointer) {
+    collectJsonPaths(activeAttemptPointer, retained);
+    const manifestPath = String(activeAttemptPointer.attemptManifestPath ?? '');
+    if (manifestPath) {
+      retained.add(path.posix.dirname(manifestPath));
+    }
+  }
   const liveOperations: JsonRecord[] = [];
   for (const operationPath of children(recordRoot, 'authoring/operations')) {
     const manifestPath = `${operationPath}/operation.json`;

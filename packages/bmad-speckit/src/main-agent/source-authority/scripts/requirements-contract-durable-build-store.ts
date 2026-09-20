@@ -41,11 +41,14 @@ export function deriveRequirementsContractActiveAuthority(input: {
   manifest: RequirementsContractBuildManifestV2;
   semanticRevisionId: string;
   bindingRevisionId: string;
+  authoringAttemptId?: string;
   currentAuthority?: RequirementsActiveAuthorityTupleV2 | null;
 }): RequirementsActiveAuthorityTupleV2 {
   if (input.currentAuthority?.activeBuildHash === input.manifest.buildHash) {
     return input.currentAuthority;
   }
+  const semanticEntry = input.manifest.artifactEntries.find((entry) => entry.role === 'semantic_ir');
+  const bindingEntry = input.manifest.artifactEntries.find((entry) => entry.role === 'source_binding');
   return {
     activeSemanticRevisionId: input.semanticRevisionId,
     activeScopeSemanticHash: input.manifest.scopeSemanticHash,
@@ -56,6 +59,10 @@ export function deriveRequirementsContractActiveAuthority(input: {
       `authoring/builds/${input.manifest.buildHash.slice('sha256:'.length)}/manifest.json`,
     previousBuildHash: input.currentAuthority?.activeBuildHash ?? null,
     previousBuildManifestPath: input.currentAuthority?.activeBuildManifestPath ?? null,
+    ...(semanticEntry ? { activeSemanticIrPath: semanticEntry.contentRef.recordRelativePath } : {}),
+    ...(bindingEntry ? { activeSourceBindingPath: bindingEntry.contentRef.recordRelativePath } : {}),
+    ...(input.authoringAttemptId ? { activeAuthoringAttemptId: input.authoringAttemptId } : {}),
+    activeBuildManifestHash: input.manifest.buildHash,
   };
 }
 

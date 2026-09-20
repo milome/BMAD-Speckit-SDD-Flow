@@ -29,12 +29,15 @@ export function measureFullSourceRequirementsJudgePreflight(input: { root: strin
       authentication: { type: 'bearer', sensitivity: 'secret', arbitraryNonEmptyValueAllowed: false },
       auditPolicy: { blindReview: true, allowPassAuthority: false, toolsAllowed: true, allowedTools: ['Read'], implementationWritesAllowed: false },
       requestPolicy: { timeoutMs: 1000, maximumAttempts: 1, transportByteLimit: 1048576 } };
+    const testBuildHash = sha256('test-only-build');
     const prepared = prepareRequirementsContractProductionJudgeRequest({
-      activeAuthority: { activeSemanticRevisionId: input.compiled.semanticIr.semanticRevisionId,
+      activeAuthority: { schemaVersion: 'requirements-active-authority/v2', activeSemanticRevisionId: input.compiled.semanticIr.semanticRevisionId,
         activeScopeSemanticHash: input.compiled.semanticIr.scopeSemanticHash,
         activeSemanticIrPath: 'TEST-ONLY/semantic-ir.json', activeSourceBindingPath: 'TEST-ONLY/source-binding.json',
-        activeSourceBindingHash: input.compiled.sourceBinding.sourceBindingHash, activeAuthoringAttemptId: 'TEST-ONLY-NOT-CONFIRMED' },
-      buildManifest: { artifactEntries: (input.native.auditPacketBody.artifactPayloadGroups as JsonObject[]).flatMap((group) =>
+        activeSourceBindingHash: input.compiled.sourceBinding.sourceBindingHash, activeAuthoringAttemptId: 'TEST-ONLY-NOT-CONFIRMED',
+        activeBuildHash: testBuildHash, previousBuildHash: null, previousBuildManifestPath: null,
+        activeBuildManifestPath: 'TEST-ONLY/build-manifest.json', activeBuildManifestHash: testBuildHash },
+      buildManifest: { buildManifestHash: testBuildHash, artifactEntries: (input.native.auditPacketBody.artifactPayloadGroups as JsonObject[]).flatMap((group) =>
         (group.artifactIds as string[]).map((artifactId) => ({ artifactId, role: artifactId, artifactHash: sha256(canonicalJson(group.payload)) }))) },
       auditPacket: input.native.auditPacket,
       judgePrompt: { ...configuredPrompt, rubric: { mandatoryDimensionIds: input.native.coverageManifest.mandatoryDimensionIds } },

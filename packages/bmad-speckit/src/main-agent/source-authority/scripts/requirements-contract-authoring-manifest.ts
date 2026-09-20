@@ -481,8 +481,11 @@ export function validateRequirementsContractCheckpointManifest(value: unknown) {
       if (previous.checkpointOrdinal !== manifest.checkpointOrdinal - 1) {
         issueCodes.push('authoring_checkpoint_previous_ordinal_invalid');
       }
-      const expectedPreviousPath = `authoring/staging/${manifest.authoringAttemptId}/manifests/${previous.checkpointOrdinal}-${previous.checkpointId}.json`;
-      if (previous.path !== expectedPreviousPath)
+      const expectedPreviousPaths = [
+        `authoring/staging/${manifest.authoringAttemptId}/manifests/${previous.checkpointOrdinal}-${previous.checkpointId}.json`,
+        `authoring/operations/${manifest.authoringAttemptId}/compatibility-${previous.checkpointId}-manifest.json`,
+      ];
+      if (!expectedPreviousPaths.includes(previous.path))
         issueCodes.push('authoring_checkpoint_previous_path_identity_mismatch');
       if (manifest.latestValidPredecessorCheckpoint !== previous.checkpointId) {
         issueCodes.push('authoring_checkpoint_latest_predecessor_mismatch');

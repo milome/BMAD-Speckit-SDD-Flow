@@ -148,7 +148,9 @@ export function createTypedRequirementsSourceBinding(input: { authoringRequestId
     throw new Error('requirements_typed_source_authority_missing');
   }
   const sourceArtifacts = input.scan.sourceArtifacts.map((artifact, index) => ({ sourceArtifactId: artifact.artifactId,
-    role: 'typed_source_authority', mediaType: 'text/markdown', sourceSnapshotHash: `sha256:${artifact.sha256}`,
+    role: 'typed_source_authority',
+    mediaType: artifact.sourceBlobRef?.mediaType ?? 'text/markdown',
+    sourceSnapshotHash: `sha256:${artifact.sha256}`,
     orderedPosition: index, immutableBlobRef: artifact.sourceBlobRef?.recordRelativePath ?? artifact.path,
     ...(artifact.sourceBlobRef ? { sourceBlobRef: artifact.sourceBlobRef } : {}) }));
   const artifactById = new Map(sourceArtifacts.map((artifact) => [artifact.sourceArtifactId, artifact]));

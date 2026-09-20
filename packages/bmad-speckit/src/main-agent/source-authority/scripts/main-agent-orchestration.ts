@@ -29990,7 +29990,8 @@ export function runMainAgentPreConfirmationDrilldown(
   let draftConfirmation =
     mustRequirements.length > 0 &&
     !hasForbiddenLineBasedMustRequirements &&
-    sourceProjectionAuthorityIssues.length === 0
+    (sourceProjectionAuthorityIssues.length === 0 ||
+      controlledCandidates.length === mustRequirements.length)
       ? buildPreConfirmationImplementationConfirmationDraft({
           root,
           sourcePath: semanticInputPath,
