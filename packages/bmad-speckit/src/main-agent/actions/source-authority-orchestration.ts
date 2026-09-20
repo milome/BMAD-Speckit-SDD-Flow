@@ -1187,6 +1187,7 @@ async function continueAuthoringFromContext(context, authoringContext, options =
   const authoritySources = readRequirementsContractDeclaredAuthoritySources(intakeSource);
   const scan = scanRequirementsContractConsumerAuthority({
     cwd: context.cwd,
+    recordRoot: authoringRecordRoot(context.cwd, requestId),
     intakeSource,
     authoritySources,
   });
@@ -1558,7 +1559,7 @@ async function authorConfirmationReadySourceAction(context) {
     const confirmationLanguage = String(context.args.confirmationLanguage || '').trim();
     if (!confirmationLanguage) throw new Error('requirements_confirmation_language_missing');
     const authoritySources = readRequirementsContractDeclaredAuthoritySources(intakeSource);
-    const scan = scanRequirementsContractConsumerAuthority({
+    let scan = scanRequirementsContractConsumerAuthority({
       cwd: context.cwd,
       intakeSource,
       authoritySources,
@@ -1579,6 +1580,12 @@ async function authorConfirmationReadySourceAction(context) {
       .filter((candidate) => candidate.rootClass === 'unresolved_decision')
       .sort((left, right) => left.sourceRootId.localeCompare(right.sourceRootId));
     const recordRoot = authoringRecordRoot(context.cwd, requestId);
+    scan = scanRequirementsContractConsumerAuthority({
+      cwd: context.cwd,
+      recordRoot,
+      intakeSource,
+      authoritySources,
+    });
     const stagingRoot = path.join(recordRoot, 'authoring', 'staging', authoringAttemptId);
     atomicNoClobberPublish({
       targetPath: path.join(stagingRoot, 'consumer-authority-source-list.json'),
@@ -1812,6 +1819,7 @@ async function resumeAuthorConfirmationReadySourceAction(context) {
       );
       const scan = scanRequirementsContractConsumerAuthority({
         cwd: context.cwd,
+        recordRoot,
         intakeSource,
         authoritySources: readRequirementsContractDeclaredAuthoritySources(intakeSource),
       });

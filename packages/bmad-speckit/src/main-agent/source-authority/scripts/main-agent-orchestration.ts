@@ -153,13 +153,17 @@ import {
   type ProductionSemanticSourceRoot,
   type ProductionSemanticSourceRootCandidate,
 } from './requirements-contract-production-semantic-pipeline';
+import { compactProductionSourceBacking } from './requirements-contract-production-source-view';
 import { createSameVolumeBoundedTempDirectory } from './requirements-contract-same-volume-bounded-temp';
 import {
   extractRequirementsContractImplementationConfirmation,
   implementationConfirmationHashFor as implementationConfirmationHashForContract,
   sourceDocumentHashFor as sourceDocumentHashForContract,
 } from './requirements-contract-implementation-confirmation-codec';
-import { projectionSetHash as projectionSetHashForContract } from './requirements-contract-hash-domains';
+import {
+  packetSemanticHash as packetSemanticHashForContract,
+  projectionSetHash as projectionSetHashForContract,
+} from './requirements-contract-hash-domains';
 import { parseRequirementsContractSourceText } from './requirements-contract-source-parser';
 import {
   CANONICAL_GENERATED_DEFINITION_OF_DONE_SECTION,
@@ -18647,16 +18651,28 @@ function buildPreserveExistingAuthoringArtifacts(input: {
   const implementationConfirmationHash = implementationConfirmationHashForPreConfirmation(
     input.extraction.confirmation
   );
-  const packetHash = sha256Json({
-    recordId: input.recordId,
-    sourceDocumentHash,
-    implementationConfirmationHash,
-    mode: 'preserve-existing',
-    mustRefs: mustRequirements.map((requirement) => requirement.id),
+  const packetHash = packetSemanticHashForContract({
+    musts: mustRequirements.map((requirement) => {
+      const atomicUnits = fullyDecomposedAtomicBehaviorOracleUnits(
+        requirement.text,
+        requirement.text
+      );
+      return {
+        mustId: requirement.id,
+        atoms: atomicUnits.map((unit, index) => ({
+          atomId: `${requirement.id}-A${index + 1}`,
+          action: unit,
+          oracle: unit,
+          dependencies: [],
+          coverageRefs: [requirement.id],
+        })),
+      };
+    }),
   });
   const sourceSnapshot = readCanonicalUtf8Source(input.sourcePath);
   const intakeAuthority = materializeFileEntryIntake({
     projectRoot: input.root,
+    recordRoot: input.paths.recordRoot,
     requirementSetId: input.requirementSetId,
     entrySource: 'source_prd_draft',
     source: sourceSnapshot,
@@ -18721,6 +18737,7 @@ function buildPreserveExistingAuthoringArtifacts(input: {
   });
   const semanticPipeline = runRequirementsContractProductionSemanticPipeline({
     projectRoot: input.root,
+    recordRoot: input.paths.recordRoot,
     recordId: input.recordId,
     requirementSetId: input.requirementSetId,
     intakeReceiptPath: input.paths.intakeReceipt,
@@ -29009,12 +29026,21 @@ function runSourcePrdSemanticRoundTrip(input: {
           : {}),
       };
     }
+    const {
+      sourceContent: _candidateSourceContent,
+      sourceBlobRef: _candidateSourceBlobRef,
+      sourceRange: _candidateSourceRange,
+      sourceBinding: _candidateSourceBinding,
+      sourceArtifact: _candidateSourceArtifact,
+      bundlePath: _candidateBundlePath,
+      ...candidateWithoutSourceBacking
+    } = candidate;
     return {
-      ...candidate,
+      ...candidateWithoutSourceBacking,
       semanticBody,
       sourcePath: baselineRoot.sourcePath,
-      sourceContent: baselineRoot.sourceContent,
       sourceSpan: baselineRoot.sourceSpan,
+      ...compactProductionSourceBacking(baselineRoot),
     };
   });
   const missingRootIds = [...baselineRootById.keys()].filter(
@@ -29044,6 +29070,7 @@ function runSourcePrdSemanticRoundTrip(input: {
   try {
     const roundTrip = runRequirementsContractProductionSemanticPipeline({
       projectRoot: input.root,
+      recordRoot: input.paths.recordRoot,
       recordId: input.recordId,
       requirementSetId: input.requirementSetId,
       intakeReceiptPath: input.paths.intakeReceipt,
@@ -29295,6 +29322,7 @@ export function runMainAgentPreConfirmationDrilldown(
     } else {
       entryIntakeAuthority = materializeFileEntryIntake({
         projectRoot: root,
+        recordRoot: paths.recordRoot,
         requirementSetId: identity.requirementSetId,
         entrySource: detectedEntrySource,
         source: authoritySourceSnapshot,
@@ -29352,17 +29380,6 @@ export function runMainAgentPreConfirmationDrilldown(
     lane: 'pre_confirmation_drilldown',
     seed: 'semantic-kernel',
   });
-  const packetHash = sha256Json({
-    recordId: identity.recordId,
-    sourcePath: toRootRelativePath(root, sourcePath),
-    lane: 'pre_confirmation_drilldown',
-    seed: 'must-decomposition-packet',
-  });
-  const receiptHashSeed = sha256Json({
-    recordId: identity.recordId,
-    packetHash,
-    seed: 'critical-auditor-receipt',
-  });
 
   let criticalAuditorExternalAdapterCommand: string[] | null = null;
   if (criticalAuditorProviderMode === 'external_adapter') {
@@ -29416,6 +29433,37 @@ export function runMainAgentPreConfirmationDrilldown(
     businessFailureAuthority,
   } = sourceAuthorityAnalysis;
   let mustRequirements = analyzedMustRequirements;
+  const packetProjectionAuthority = buildSourceMustProjectionAuthority({
+    blocks: structuredBlocks,
+    mustRequirements,
+    validationAuthorityRecords: validationAuthority.accepted,
+  });
+  const packetHash = packetSemanticHashForContract({
+    musts: mustRequirements.map((requirement, index) => {
+      const oracle = packetProjectionAuthority.get(requirement.id)?.oracle || requirement.text;
+      const atomicUnits = fullyDecomposedAtomicBehaviorOracleUnits(requirement.text, oracle);
+      const atomIds = atomicTaskIdsForMust(
+        index,
+        mustRequirements.length,
+        atomicUnits.length
+      );
+      return {
+        mustId: requirement.id,
+        atoms: atomicUnits.map((unit, unitIndex) => ({
+          atomId: atomIds[unitIndex],
+          action: unit,
+          oracle: unit,
+          dependencies: [],
+          coverageRefs: [requirement.id],
+        })),
+      };
+    }),
+  });
+  const receiptHashSeed = sha256Json({
+    recordId: identity.recordId,
+    packetHash,
+    seed: 'critical-auditor-receipt',
+  });
   writeRequirementCoverageLedgerArtifact(paths.requirementCoverageLedger, coverageLedger);
   let invocationEntryAuthority: InvocationEntryAuthority | null = null;
   if (explicitTargetPaths.length > 0 || explicitRequiredCommands.length > 0) {
@@ -29557,6 +29605,7 @@ export function runMainAgentPreConfirmationDrilldown(
     try {
       productionSemanticPipeline = runRequirementsContractProductionSemanticPipeline({
         projectRoot: root,
+        recordRoot: paths.recordRoot,
         recordId: identity.recordId,
         requirementSetId: identity.requirementSetId,
         intakeReceiptPath: paths.intakeReceipt,

@@ -9,6 +9,7 @@ import {
   installedRuntimeHash,
   normalizedTextHash,
   projectionSetHash,
+  requirementsContractDomainHash,
   requirementsContractHashDomainRegistry,
   semanticModelHash,
   sourceAuthorityHash,
@@ -65,7 +66,7 @@ describe('requirements-contract-hash-domains/v2', () => {
           recipe: 'canonical_object_hash',
         },
         projectionSetHash: {
-          domain: 'requirements-projection-set/v1',
+          domain: 'requirements-projection-set/v2',
           recipe: 'canonical_object_hash',
         },
         distManifestHash: {
@@ -115,7 +116,9 @@ describe('requirements-contract-hash-domains/v2', () => {
     const bytes = Buffer.from('runtime-bytes\r\n', 'utf8');
 
     expect(semanticModelHash(payload)).toBe(canonicalHash);
-    expect(projectionSetHash(payload)).toBe(canonicalHash);
+    expect(projectionSetHash(payload)).toBe(
+      requirementsContractDomainHash('requirements-projection-set/v2', payload)
+    );
     expect(distManifestHash(payload)).toBe(canonicalHash);
     expect(tarballBytesHash(bytes)).toBe(
       `sha256:${createHash('sha256').update(bytes).digest('hex')}`

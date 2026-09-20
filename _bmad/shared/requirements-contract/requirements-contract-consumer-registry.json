@@ -4,7 +4,7 @@
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-consumer-registry.ts",
     "hash": "sha256:b47954674d39d0dcd04287978039f1d99c25524603e16b4500858f709b581229"
   },
-  "registryHash": "sha256:d3d88d915f8584f9f4238425bec66e4188e1a685fb687a2ae2c9dbc72497cf20",
+  "registryHash": "sha256:65aad24cac224a3f9c4c617ec0fee49f2e9004ed87204ece8ce2f449d3d1a10d",
   "validationModes": [
     "draft",
     "confirmation-ready",
@@ -63,7 +63,7 @@
     {
       "consumerId": "full-typed-source-candidate-compiler",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-typed-source-compiler.ts",
-      "pathHash": "sha256:4129437806fb1de7c062ca1e0fdb1e2e760509a58f533e439ab6c8a7e914bf5c",
+      "pathHash": "sha256:9ae8a80b9c9644cdf6396e45ee29eba48bd8626542ff49d21471c971fcdd4ab1",
       "inputRole": "complete_typed_source_authority",
       "parserRef": "not_applicable",
       "schemaRef": "typed_semantic_ir_schema",
@@ -113,7 +113,7 @@
     {
       "consumerId": "direct-main-session-requirement-authoring",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
-      "pathHash": "sha256:f219fa8d48ed6d8984817c553110ac020d03bf6dac4328f778da650c2c7fd03d",
+      "pathHash": "sha256:832aa4de60207aaaa89b1fca4daae1862996fb54b348efa232ecee7d861e95a1",
       "inputRole": "authoring_request",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -232,7 +232,7 @@
     {
       "consumerId": "file-intake-receipt-producer",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-file-intake-receipt.ts",
-      "pathHash": "sha256:1edbd8cc8ce752abda4b657c485455975689de162d16291ba2a178a1ec572816",
+      "pathHash": "sha256:929a87bb8934516e949b5fd586e0dead20ee9786ea58c5939e950de83a10db61",
       "inputRole": "source_file",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",
@@ -251,7 +251,7 @@
     {
       "consumerId": "intent-lineage-producer",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-intent-lineage.ts",
-      "pathHash": "sha256:14daa2f7d907a1bb4ecc5c12247a48c1335081af5d1c15c73f20e79676b2e270",
+      "pathHash": "sha256:d5c7e85da99367d1c3104d169edf24645bce29556150e014531b24e3aecec3ff",
       "inputRole": "intake_receipt",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",

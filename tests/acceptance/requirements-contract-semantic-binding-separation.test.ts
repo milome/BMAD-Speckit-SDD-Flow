@@ -53,6 +53,31 @@ describe('semantic and source-binding authority separation', () => {
     expect(capsule.sourceBindingHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
   });
 
+  it('binds a traversable content ref and rejects a mismatched source object', () => {
+    const input = capsuleInput();
+    input.sourceArtifacts[0] = {
+      ...input.sourceArtifacts[0],
+      immutableBlobRef: `authoring/objects/sha256/${'2'.repeat(2)}/${'2'.repeat(62)}`,
+      sourceBlobRef: {
+        schemaVersion: 'requirements-content-ref/v1' as const,
+        contentHash: hash('2'),
+        byteLength: 4,
+        mediaType: 'text/markdown',
+        recordRelativePath: `authoring/objects/sha256/${'2'.repeat(2)}/${'2'.repeat(62)}`,
+      },
+    };
+    const capsule = createRequirementsContractSourceBindingCapsule(input);
+    expect(capsule.sourceArtifacts[0].sourceBlobRef).toEqual(input.sourceArtifacts[0].sourceBlobRef);
+
+    const mismatched = capsuleInput();
+    mismatched.sourceArtifacts[0] = {
+      ...input.sourceArtifacts[0],
+      sourceBlobRef: { ...input.sourceArtifacts[0].sourceBlobRef, contentHash: hash('5') },
+    };
+    expect(() => createRequirementsContractSourceBindingCapsule(mismatched))
+      .toThrow('source_binding_content_ref_mismatch');
+  });
+
   it('rejects fake physical spans for non-source authority', () => {
     expect(() => createRequirementsContractSourceBindingCapsule({
       recordId: 'REQ-001', semanticRevisionId: 'SEM-001', scopeSemanticHash: hash('1'),

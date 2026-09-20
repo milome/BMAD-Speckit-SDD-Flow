@@ -144,15 +144,22 @@ export function createTypedRequirementsSemanticIr(input: CandidateInput): Requir
 
 export function createTypedRequirementsSourceBinding(input: { authoringRequestId: string; scan: Scan;
   semanticIr: RequirementsContractSemanticIr; parentBindingRevisionId?: string }) {
-  if (!input.scan.typedSourceAuthority || !input.scan.sourceArtifacts) throw new Error('requirements_typed_source_authority_missing');
+  if (!input.scan.typedSourceAuthority || !input.scan.sourceArtifacts || !input.scan.sourceArtifactViews) {
+    throw new Error('requirements_typed_source_authority_missing');
+  }
   const sourceArtifacts = input.scan.sourceArtifacts.map((artifact, index) => ({ sourceArtifactId: artifact.artifactId,
     role: 'typed_source_authority', mediaType: 'text/markdown', sourceSnapshotHash: `sha256:${artifact.sha256}`,
-    orderedPosition: index, immutableBlobRef: artifact.path }));
+    orderedPosition: index, immutableBlobRef: artifact.sourceBlobRef?.recordRelativePath ?? artifact.path,
+    ...(artifact.sourceBlobRef ? { sourceBlobRef: artifact.sourceBlobRef } : {}) }));
   const artifactById = new Map(sourceArtifacts.map((artifact) => [artifact.sourceArtifactId, artifact]));
+  const sourceViewById = new Map(
+    input.scan.sourceArtifactViews.map((view) => [view.artifact.artifactId, view.bytes])
+  );
   const nodeBindings: Array<{ sourceRootId: string; sourceSpanId: string; sourceBinding: Record<string, unknown> }> = [];
   const mappedSpans = input.scan.sourceRootCandidates.map((candidate) => {
-    const raw = Buffer.from(candidate.sourceContent, 'utf8');
     const binding = candidate.sourceBinding!;
+    const raw = sourceViewById.get(binding.sourceArtifactRef);
+    if (!raw) throw new Error('requirements_typed_source_view_missing');
     const before = raw.subarray(0, binding.byteStart).toString('utf8');
     const through = raw.subarray(0, binding.byteEnd).toString('utf8');
     const excerpt = raw.subarray(binding.byteStart, binding.byteEnd).toString('utf8');

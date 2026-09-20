@@ -1,12 +1,42 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "requirements-contract-authoring-identity.schema.json",
-  "type": "object", "additionalProperties": false,
-  "required": ["authoringRequestId", "requestId", "grillSessionId", "authoringAttemptId", "semanticRevisionId", "judgeRequestHash", "remediationPlanHash", "remediationDeltaHash"],
-  "properties": {
-    "authoringRequestId": { "$ref": "#/$defs/id" }, "requestId": { "$ref": "#/$defs/id" },
-    "grillSessionId": { "$ref": "#/$defs/id" }, "authoringAttemptId": { "$ref": "#/$defs/id" },
-    "semanticRevisionId": { "$ref": "#/$defs/id" }, "judgeRequestHash": { "$ref": "#/$defs/hash" },
-    "remediationPlanHash": { "$ref": "#/$defs/hash" }, "remediationDeltaHash": { "$ref": "#/$defs/hash" }
-  },
-  "$defs": { "id": { "type": "string", "minLength": 1 }, "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" } }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-authoring-identity.schema.json",
+  "oneOf": [
+    { "$ref": "#/$defs/legacyV1" },
+    { "$ref": "#/$defs/identityV2" }
+  ],
+  "$defs": {
+    "id": { "type": "string", "minLength": 1 },
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "legacyV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authoringRequestId", "requestId", "grillSessionId", "authoringAttemptId", "semanticRevisionId", "judgeRequestHash", "remediationPlanHash", "remediationDeltaHash"],
+      "properties": {
+        "authoringRequestId": { "$ref": "#/$defs/id" },
+        "requestId": { "$ref": "#/$defs/id" },
+        "grillSessionId": { "$ref": "#/$defs/id" },
+        "authoringAttemptId": { "$ref": "#/$defs/id" },
+        "semanticRevisionId": { "$ref": "#/$defs/id" },
+        "judgeRequestHash": { "$ref": "#/$defs/hash" },
+        "remediationPlanHash": { "$ref": "#/$defs/hash" },
+        "remediationDeltaHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "identityV2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "scopeSemanticHash", "sourceBindingHash", "projectionSetHash", "buildHash", "judgeInputSemanticHash", "auditPolicyHash", "auditBindingHash"],
+      "properties": {
+        "schemaVersion": { "const": "requirements-contract-authoring-identity/v2" },
+        "scopeSemanticHash": { "$ref": "#/$defs/hash" },
+        "sourceBindingHash": { "$ref": "#/$defs/hash" },
+        "projectionSetHash": { "$ref": "#/$defs/hash" },
+        "buildHash": { "$ref": "#/$defs/hash" },
+        "judgeInputSemanticHash": { "$ref": "#/$defs/hash" },
+        "auditPolicyHash": { "$ref": "#/$defs/hash" },
+        "auditBindingHash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
 }

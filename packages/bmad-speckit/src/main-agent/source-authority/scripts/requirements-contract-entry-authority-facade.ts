@@ -7,9 +7,9 @@ import {
   validateRequirementsContractIntakeReceipt,
 } from './requirements-contract-intake-receipt';
 import {
-  createRequirementsContractFileIntakeReceipt,
+  createRequirementsContractFileIntakeReceiptV2,
   type FileIntakeEntrySource,
-  type RequirementsContractFileIntakeReceipt,
+  type RequirementsContractFileIntakeReceiptV2,
   validateRequirementsContractFileIntakeReceipt,
 } from './requirements-contract-file-intake-receipt';
 import {
@@ -20,7 +20,10 @@ import {
 } from './requirements-contract-invocation-authority-receipt';
 import {
   createRequirementsContractIntentLineageLedger,
+  createRequirementsContractIntentLineageLedgerV2,
+  deriveIntentLineageExcludedRanges,
   type RequirementsContractIntentLineageLedger,
+  type RequirementsContractIntentLineageLedgerV2,
   validateRequirementsContractIntentLineageLedger,
 } from './requirements-contract-intent-lineage';
 import { writeJsonAtomic } from './requirement-record-control-store';
@@ -49,8 +52,9 @@ export interface SessionEntryIntakeAuthority {
 
 export interface FileEntryIntakeAuthority {
   source: CanonicalUtf8SourceSnapshot;
+  recordRoot: string;
   intakeReceiptPath: string;
-  intakeReceipt: RequirementsContractFileIntakeReceipt;
+  intakeReceipt: RequirementsContractFileIntakeReceiptV2;
 }
 
 export type EntryIntakeAuthority = SessionEntryIntakeAuthority | FileEntryIntakeAuthority;
@@ -249,18 +253,21 @@ export function materializeSessionEntryIntake(input: {
 
 export function materializeFileEntryIntake(input: {
   projectRoot: string;
+  recordRoot: string;
   requirementSetId: string;
   entrySource: FileIntakeEntrySource;
   source: CanonicalUtf8SourceSnapshot;
   capturedAt: string;
   intakeReceiptPath: string;
 }): FileEntryIntakeAuthority {
-  const receipt = createRequirementsContractFileIntakeReceipt({
+  const receipt = createRequirementsContractFileIntakeReceiptV2({
+    recordRoot: input.recordRoot,
     requirementSetId: nonEmpty(input.requirementSetId, 'requirementSetId'),
     entrySource: input.entrySource,
     requestedArtifactRole: 'requirement_source_prd',
     sourcePath: normalizedRelativePath(input.projectRoot, input.source.sourcePath),
     sourceContent: input.source.sourceText,
+    materialRoots: [],
     capturedAt: nonEmpty(input.capturedAt, 'capturedAt'),
   });
   const intakeReceipt =
@@ -277,6 +284,7 @@ export function materializeFileEntryIntake(input: {
     );
   return {
     source: input.source,
+    recordRoot: input.recordRoot,
     intakeReceiptPath: normalizedRelativePath(input.projectRoot, input.intakeReceiptPath),
     intakeReceipt,
   };
@@ -327,8 +335,76 @@ export function materializeEntryLineage(input: {
   sourceRootRefs?: string[];
   sourceRoots?: EntryLineageSourceRoot[];
   lineageLedgerPath: string;
-}): RequirementsContractIntentLineageLedger {
+}): RequirementsContractIntentLineageLedger | RequirementsContractIntentLineageLedgerV2 {
   const sourceRoots = input.sourceRoots ?? [];
+  if (
+    input.authority.intakeReceipt.schemaVersion ===
+    'requirements-contract-file-intake-receipt/v2'
+  ) {
+    const initialReceipt = input.authority.intakeReceipt;
+    const materialSourceRoots = sourceRoots.filter(
+      (sourceRoot) => sourceRoot.authorityClass !== 'invocation_bound'
+    );
+    const mismatchedSourcePaths = materialSourceRoots
+      .filter(
+        (sourceRoot) =>
+          sourceRoot.sourcePath.replace(/\\/gu, '/') !== initialReceipt.sourcePath
+      )
+      .map((sourceRoot) => sourceRoot.sourceRootId);
+    if (mismatchedSourcePaths.length > 0) {
+      throw new Error(
+        `Entry lineage Source Roots reference a different source: ${mismatchedSourcePaths.join(', ')}`
+      );
+    }
+    const intakeReceipt = createRequirementsContractFileIntakeReceiptV2({
+      recordRoot: input.authority.recordRoot,
+      requirementSetId: initialReceipt.requirementSetId,
+      entrySource: initialReceipt.entrySource,
+      requestedArtifactRole: initialReceipt.requestedArtifactRole,
+      sourcePath: initialReceipt.sourcePath,
+      sourceContent: input.authority.source.sourceText,
+      materialRoots: materialSourceRoots.map((sourceRoot) => ({
+        sourceRootId: sourceRoot.sourceRootId,
+        startLine: sourceRoot.sourceSpan.startLine,
+        endLine: sourceRoot.sourceSpan.endLine,
+      })),
+      capturedAt: initialReceipt.capturedAt,
+    });
+    input.authority.intakeReceipt = persistValidatedArtifact(
+      path.resolve(input.projectRoot, input.authority.intakeReceiptPath),
+      intakeReceipt,
+      validateRequirementsContractFileIntakeReceipt,
+      sha256Stable(intakeReceipt)
+    );
+    const sourceBytes = Buffer.from(input.authority.source.sourceText, 'utf8');
+    const rangeByRootId = new Map(
+      intakeReceipt.materialExcerpts.map((excerpt) => [excerpt.sourceRootId, excerpt.range])
+    );
+    const materialRoots = materialSourceRoots.map((sourceRoot) => ({
+      sourceRootId: sourceRoot.sourceRootId,
+      disposition: 'source_root' as const,
+      sourceRange: rangeByRootId.get(sourceRoot.sourceRootId)!,
+      semanticNodeRefs: [sourceRoot.sourceRootId],
+    }));
+    const excludedRanges = deriveIntentLineageExcludedRanges({
+      sourceBytes,
+      materialRanges: materialRoots.map((root) => root.sourceRange),
+      exclusionRuleRef: 'non-semantic-source-range/v2',
+      reasonCode: 'non_semantic_source_range',
+    });
+    const ledger = createRequirementsContractIntentLineageLedgerV2({
+      receipt: intakeReceipt,
+      sourceBytes,
+      materialRoots,
+      excludedRanges,
+    });
+    return persistValidatedArtifact(
+      input.lineageLedgerPath,
+      ledger,
+      validateRequirementsContractIntentLineageLedger,
+      sha256Stable(ledger)
+    );
+  }
   const sourceRootRefs = [
     ...new Set(
       [
@@ -454,5 +530,9 @@ export function materializeSessionEntryLineage(input: {
   sourceRootRefs: string[];
   lineageLedgerPath: string;
 }): RequirementsContractIntentLineageLedger {
-  return materializeEntryLineage(input);
+  const ledger = materializeEntryLineage(input);
+  if (ledger.schemaVersion !== 'requirements-contract-intent-lineage-ledger/v1') {
+    throw new Error('Session entry lineage must use the legacy session ledger');
+  }
+  return ledger;
 }

@@ -313,6 +313,7 @@ function runSemanticPipelineForSourceRoots(
   writeFileSync(sourcePath, sourceContent, 'utf8');
   const intakeAuthority = materializeFileEntryIntake({
     projectRoot: root,
+    recordRoot: root,
     requirementSetId: descriptor.refs.requirementSetId,
     entrySource: 'source_prd_draft',
     source: readCanonicalUtf8Source(sourcePath),
@@ -327,9 +328,27 @@ function runSemanticPipelineForSourceRoots(
     sourceRoots: materializableRoots,
     lineageLedgerPath: intentLineageLedgerPath,
   });
+  expect(intakeAuthority.intakeReceipt.schemaVersion).toBe(
+    'requirements-contract-file-intake-receipt/v2'
+  );
+  expect(intentLineageLedger.schemaVersion).toBe(
+    'requirements-contract-intent-lineage-ledger/v2'
+  );
+  const compactControlJson = JSON.stringify({
+    intakeReceipt: intakeAuthority.intakeReceipt,
+    intentLineageLedger,
+  });
+  expect(compactControlJson).not.toContain(sourceContent);
+  expect(compactControlJson).not.toMatch(/"content":|classifications|classificationHash/u);
+  expect(
+    'materialRoots' in intentLineageLedger
+      ? intentLineageLedger.materialRoots.map((root) => root.sourceRootId).sort()
+      : []
+  ).toEqual(materializableRoots.map((root) => root.sourceRootId).sort());
   mkdirSync(semanticResolutionDir, { recursive: true });
-  return runRequirementsContractProductionSemanticPipeline({
+  const result = runRequirementsContractProductionSemanticPipeline({
     projectRoot: root,
+    recordRoot: root,
     recordId: descriptor.refs.recordId,
     requirementSetId: descriptor.refs.requirementSetId,
     intakeReceiptPath,
@@ -351,6 +370,9 @@ function runSemanticPipelineForSourceRoots(
         }
       : {}),
   });
+  expect(result.sourceRoots.every((sourceRoot) => !('sourceContent' in sourceRoot))).toBe(true);
+  expect(result.sourceRoots.every((sourceRoot) => 'sourceBlobRef' in sourceRoot)).toBe(true);
+  return result;
 }
 
 function semanticReceiptFileNames(

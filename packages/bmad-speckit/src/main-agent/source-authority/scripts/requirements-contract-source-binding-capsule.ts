@@ -12,6 +12,7 @@ import {
 import { encodeGoalSemanticDictionary, decodeGoalSemanticDictionary, type GoalSemanticDictionary } from '../../../utils/goal-contract/control-plane/goal-semantic-dictionary';
 import { resolveTypedSourceAuthority, type RequirementsTypedSourceAuthority } from './requirements-contract-typed-source-semantics';
 import { sha256Stable, stableStringify } from './requirements-contract-semantic-resolver';
+import type { RequirementsContentRef } from './requirements-contract-content-store';
 
 export interface RequirementsSourceArtifactBinding {
   sourceArtifactId: string;
@@ -20,6 +21,7 @@ export interface RequirementsSourceArtifactBinding {
   sourceSnapshotHash: string;
   orderedPosition: number;
   immutableBlobRef: string;
+  sourceBlobRef?: RequirementsContentRef;
 }
 
 export interface RequirementsEvidenceClaimBinding {
@@ -139,6 +141,17 @@ export function createRequirementsContractSourceBindingCapsule(input: {
   if (artifactById.size !== sourceArtifacts.length) throw new Error('source_binding_artifact_duplicate');
   for (const artifact of sourceArtifacts) {
     if (!SHA256.test(artifact.sourceSnapshotHash)) throw new Error('source_binding_artifact_snapshot_hash_invalid');
+    if (
+      artifact.sourceBlobRef &&
+      (artifact.sourceBlobRef.schemaVersion !== 'requirements-content-ref/v1' ||
+        artifact.sourceBlobRef.contentHash !== artifact.sourceSnapshotHash ||
+        artifact.sourceBlobRef.recordRelativePath !== artifact.immutableBlobRef ||
+        artifact.sourceBlobRef.mediaType !== artifact.mediaType ||
+        !Number.isSafeInteger(artifact.sourceBlobRef.byteLength) ||
+        artifact.sourceBlobRef.byteLength < 1)
+    ) {
+      throw new Error('source_binding_content_ref_mismatch');
+    }
   }
   const sourceSpanRegistry = createSourceSpanRegistry(input.sourceSpans);
   for (const span of sourceSpanRegistry) {
