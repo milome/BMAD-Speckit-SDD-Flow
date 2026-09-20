@@ -1246,12 +1246,19 @@ function remediationRepairSteps(plan) {
   return requirementsContractAutomaticRepairSteps(plan);
 }
 
-function discardUnpublishedRepairAttempt(recordRoot, attemptId) {
+function discardUnpublishedRepairAttempt(recordRoot, attemptId, candidatePaths = [], retainedPaths = []) {
+  const retained = new Set(retainedPaths.filter(Boolean).map((value) => path.isAbsolute(String(value))
+    ? path.resolve(String(value))
+    : path.resolve(recordRoot, ...String(value).split('/'))));
   for (const relativePath of [
     `authoring/staging/${attemptId}`,
     `authoring/operations/${attemptId}`,
+    ...candidatePaths,
   ]) {
-    const target = path.join(recordRoot, ...relativePath.split('/'));
+    const target = path.isAbsolute(String(relativePath))
+      ? path.resolve(String(relativePath))
+      : path.join(recordRoot, ...String(relativePath).split('/'));
+    if (retained.has(path.resolve(target))) continue;
     if (fs.existsSync(target)) fs.rmSync(target, { recursive: true, force: true });
   }
 }
@@ -1293,6 +1300,7 @@ function writeLatestRemediationFailureSummary(input) {
     scopeSemanticHash: String(input.currentAuthority.activeScopeSemanticHash || ''),
     auditBindingHash,
     judgeDecisionHash,
+    activeRequestHash: sha256Stable(input.activeRequest),
     issueCodes: [input.issueCode],
     remediationDecision,
   };
@@ -1306,7 +1314,7 @@ function persistClosedRemediationHalt(input) {
   if (!CLOSED_REMEDIATION_ISSUE_CODES.has(input.issueCode)) return null;
   const current = JSON.parse(fs.readFileSync(input.activeJudgeRequestPath, 'utf8'));
   if (
-    current.judgeRequestHash !== input.activeRequest.judgeRequestHash ||
+    sha256Stable(current) !== sha256Stable(input.activeRequest) ||
     current.status !== 'audited_fail' ||
     !current.acceptedEvaluation
   ) {
@@ -1345,6 +1353,7 @@ function readTerminalRemediationHalt(input) {
     if (!decision || decision.verdict !== 'audited_fail' ||
       summary.auditBindingHash !== decision.auditBindingHash ||
       summary.judgeDecisionHash !== decision.decisionHash ||
+      summary.activeRequestHash !== sha256Stable(input.activeRequest) ||
       summary.scopeSemanticHash !== input.currentAuthority.activeScopeSemanticHash) return null;
     return closedRemediationHaltResult({
       issueCode: summary.issueCodes[0],
@@ -1514,7 +1523,21 @@ async function continueAcceptedJudgeFailure(input) {
     sha256Stable(comparableProjectionArtifacts(currentBuildManifest)) ===
     sha256Stable(comparableProjectionArtifacts(nextBuildManifest))
   ) {
-    discardUnpublishedRepairAttempt(input.recordRoot, repairAttemptId);
+    discardUnpublishedRepairAttempt(
+      input.recordRoot,
+      repairAttemptId,
+      [
+        cp04Publication.paths.semanticIr,
+        cp04Publication.paths.sourceBinding,
+        cp04Publication.paths.resolvedEvidenceIndex,
+        cp04Publication.paths.checkpointManifest,
+      ],
+      [
+        input.currentAuthority.activeSemanticIrPath,
+        input.currentAuthority.activeSourceBindingPath,
+        `authoring/source-bindings/${input.currentAuthority.activeBindingRevisionId}/resolved-evidence-index.json`,
+      ]
+    );
     throw new Error('judge_remediation_no_progress');
   }
   const changedArtifacts = comparableProjectionArtifacts(nextBuildManifest).filter(
