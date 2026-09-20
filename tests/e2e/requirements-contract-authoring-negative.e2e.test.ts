@@ -146,18 +146,57 @@ describe('Requirements production-entry negative gates', () => {
       const first = await spawnMainAgent(root, 'author-confirmation-ready-source', authorArgs());
       expect(first.data.status).toBe('audit_pending');
       expect(provider.requests).toHaveLength(1);
-      const halted = await spawnMainAgent(root, 'resume-author-confirmation-ready-source', [
+      const recordRoot = path.join(
+        root,
+        '_bmad-output',
+        'runtime',
+        'requirement-records',
+        first.data.requestId
+      );
+      const beforeFiles = fs.readdirSync(recordRoot, { recursive: true }).sort();
+      const activeRequestPath = path.join(recordRoot, 'quality', 'active-request.json');
+      const beforeActiveRequest = fs.readFileSync(activeRequestPath);
+      const haltedResult = await spawnMainAgentResult(root, 'resume-author-confirmation-ready-source', [
         '--request-id',
         first.data.requestId,
         '--authoring-attempt-id',
         first.data.authoringAttemptId,
       ]);
+      const halted = haltedResult.envelope;
       expect(halted.data).toMatchObject({
         status: 'authoring_blocked',
-        issueCode: 'judge_remediation_no_progress',
+        issueCode: 'requirements_remediation_not_materializable',
         resumable: false,
       });
       expect(provider.requests).toHaveLength(1);
+      const afterFiles = fs.readdirSync(recordRoot, { recursive: true }).sort();
+      expect(afterFiles.filter((file) => !beforeFiles.includes(file)).map((file) => file.replaceAll('\\', '/'))).toEqual([
+        'quality/failures',
+        'quality/failures/latest.json',
+      ]);
+      expect(fs.readFileSync(activeRequestPath)).toEqual(beforeActiveRequest);
+      expect(
+        fs.existsSync(
+          path.join(
+            root,
+            '_bmad-output',
+            'runtime',
+            'requirement-records',
+            first.data.requestId,
+            'quality',
+            'failures',
+            'latest.json'
+          )
+        )
+      ).toBe(true);
+      const failureSummary = JSON.parse(
+        fs.readFileSync(path.join(recordRoot, 'quality', 'failures', 'latest.json'), 'utf8')
+      );
+      expect(failureSummary).toMatchObject({
+        schemaVersion: 'requirements-contract-failure-summary/v1',
+        issueCodes: ['requirements_remediation_not_materializable'],
+        remediationDecision: 'not_materializable',
+      });
     } finally {
       await provider.close();
     }

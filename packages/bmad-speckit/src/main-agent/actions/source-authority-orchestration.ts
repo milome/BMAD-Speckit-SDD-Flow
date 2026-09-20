@@ -1247,24 +1247,43 @@ const CLOSED_REMEDIATION_ISSUE_CODES = new Set([
   'judge_remediation_no_progress',
   'judge_remediation_limit_reached',
   'requirements_contract_remediation_blocked',
+  'requirements_remediation_not_materializable',
 ]);
+
+function writeLatestRemediationFailureSummary(input) {
+  const request = input.request && typeof input.request === 'object' ? input.request : {};
+  const auditBindingHash =
+    String(request.auditBindingHash || request.auditBinding?.auditBindingHash ||
+      input.activeRequest.auditBindingHash || sha256Stable({ judgeRequestHash: input.activeRequest.judgeRequestHash }));
+  const judgeDecisionHash = String(
+    input.activeRequest.judgeDecisionHash || input.activeRequest.responseRef?.hash ||
+      sha256Stable({ judgeRequestHash: input.activeRequest.judgeRequestHash })
+  );
+  const remediationDecision = input.issueCode === 'judge_remediation_no_progress'
+    ? 'no_progress'
+    : input.issueCode === 'judge_remediation_limit_reached'
+      ? 'budget_exhausted'
+      : input.issueCode === 'requirements_remediation_not_materializable' ||
+          input.issueCode === 'requirements_contract_remediation_blocked'
+        ? 'not_materializable'
+        : 'judge_failed';
+  const payload = {
+    schemaVersion: 'requirements-contract-failure-summary/v1',
+    scopeSemanticHash: String(input.currentAuthority.activeScopeSemanticHash || ''),
+    auditBindingHash,
+    judgeDecisionHash,
+    issueCodes: [input.issueCode],
+    remediationDecision,
+  };
+  writeJsonAtomic(
+    path.join(input.recordRoot, 'quality', 'failures', 'latest.json'),
+    { ...payload, summaryHash: sha256Stable({ domain: 'requirements-contract-failure-summary/v1', payload }) }
+  );
+}
 
 function persistClosedRemediationHalt(input) {
   if (!CLOSED_REMEDIATION_ISSUE_CODES.has(input.issueCode)) return null;
-  const current = JSON.parse(fs.readFileSync(input.activeJudgeRequestPath, 'utf8'));
-  if (current.judgeRequestHash !== input.activeRequest.judgeRequestHash) {
-    throw new Error('requirements_contract_judge_active_cas_conflict');
-  }
-  if (current.lastIssueCode !== input.issueCode) {
-    const next = advanceRequirementsContractJudgeActiveRequest(current, {
-      lastIssueCode: input.issueCode,
-    });
-    compareAndSwapRequirementsContractJudgeActiveRequest({
-      recordRoot: input.recordRoot,
-      expected: current,
-      next,
-    });
-  }
+  writeLatestRemediationFailureSummary(input);
   return closedRemediationHaltResult({
     issueCode: input.issueCode,
     authoringRequestId: input.requestId,
@@ -1290,10 +1309,7 @@ async function continueAcceptedJudgeFailure(input) {
     repairSteps,
   });
   if (remediationPreflight.decision !== 'publish') {
-    if (
-      remediationPreflight.decision === 'no_progress' ||
-      remediationPreflight.issueCodes.includes('requirements_remediation_not_materializable')
-    ) {
+    if (remediationPreflight.decision === 'no_progress') {
       throw new Error('judge_remediation_no_progress');
     }
     throw new Error(remediationPreflight.issueCodes[0]);
