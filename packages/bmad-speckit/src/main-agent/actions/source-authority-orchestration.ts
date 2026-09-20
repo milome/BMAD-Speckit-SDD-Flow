@@ -1290,6 +1290,12 @@ async function continueAcceptedJudgeFailure(input) {
     repairSteps,
   });
   if (remediationPreflight.decision !== 'publish') {
+    if (
+      remediationPreflight.decision === 'no_progress' ||
+      remediationPreflight.issueCodes.includes('requirements_remediation_not_materializable')
+    ) {
+      throw new Error('judge_remediation_no_progress');
+    }
     throw new Error(remediationPreflight.issueCodes[0]);
   }
   const repairAttemptId = stableId('ATTEMPT', {
@@ -1555,7 +1561,14 @@ async function continueAuthoringFromContext(context, authoringContext, options =
   if (fs.existsSync(requirementRecordPath)) {
     const requirementRecord = JSON.parse(fs.readFileSync(requirementRecordPath, 'utf8'));
     const activeAuthority = requirementRecord.activeAuthority;
-    if (activeAuthority?.activeBuildHash && requirementRecord.activeOperationId === authoringAttemptId) {
+    const activeJudgeRequestStatus = fs.existsSync(activeJudgeRequestPath)
+      ? JSON.parse(fs.readFileSync(activeJudgeRequestPath, 'utf8')).status
+      : null;
+    if (
+      activeAuthority?.activeBuildHash &&
+      requirementRecord.activeOperationId === authoringAttemptId &&
+      activeJudgeRequestStatus !== 'audited_fail'
+    ) {
       const buildManifest = readRecordJson(recordRoot, activeAuthority.activeBuildManifestPath);
       const packetEntry = (Array.isArray(buildManifest.artifactEntries) ? buildManifest.artifactEntries : [])
         .find((entry) => entry.role === 'judge_audit_packet');
