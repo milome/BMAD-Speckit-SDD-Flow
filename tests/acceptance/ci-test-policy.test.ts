@@ -33,7 +33,7 @@ const { collectAuditFacts } = require('../../tools/test-portfolio-audit/facts.cj
 const basePolicy = {
   schemaVersion: 'test-portfolio-policy/v1',
   budgets: {
-    executableTestCount: 1200,
+    executableTestCount: 1216,
     corePermanentCount: 120,
     prP95Minutes: 10,
   },

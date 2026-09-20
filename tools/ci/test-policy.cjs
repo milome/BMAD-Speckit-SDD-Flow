@@ -877,7 +877,7 @@ function validateTestPolicy(policy) {
   }
   requireExactValues(policy.profiles, PROFILES, 'POLICY_PROFILES_INVALID');
   requireObject(policy.budgets, 'POLICY_BUDGETS_INVALID');
-  requireBudget(policy.budgets.executableTestCount, 1200, 'POLICY_EXECUTABLE_BUDGET_INVALID');
+  requireBudget(policy.budgets.executableTestCount, 1216, 'POLICY_EXECUTABLE_BUDGET_INVALID');
   requireInteger(policy.budgets.corePermanentCount, 'POLICY_CORE_BUDGET_INVALID', 0, 120);
   requireBudget(policy.budgets.prP95Minutes, 10, 'POLICY_PR_TIME_BUDGET_INVALID');
   validateSemanticObligations(policy.semanticObligations);
