@@ -12,6 +12,7 @@ import {
   validateRequirementsContractSemanticIr,
 } from './requirements-contract-semantic-ir';
 import { validateRequirementsContractSourceBindingCapsule } from './requirements-contract-source-binding-capsule';
+import { acquireRequirementsFileLock, releaseRequirementsFileLock } from './requirements-contract-file-lock';
 
 export const REQUIREMENTS_AUTHORITY_PUBLICATION_COMMITTER_OWNER =
   'requirements-contract-authority-publication-committer.ts';
@@ -28,6 +29,17 @@ export interface RequirementsActiveAuthorityTuple {
   activeBuildManifestHash: string;
 }
 
+export interface RequirementsActiveAuthorityTupleV2 {
+  activeSemanticRevisionId: string;
+  activeScopeSemanticHash: string;
+  activeBindingRevisionId: string;
+  activeSourceBindingHash: string;
+  activeBuildHash: string;
+  activeBuildManifestPath: string;
+  previousBuildHash: string | null;
+  previousBuildManifestPath: string | null;
+}
+
 export type RequirementsAuthorityCommitRoute =
   | 'initial'
   | 'semantic_repair'
@@ -35,10 +47,17 @@ export type RequirementsAuthorityCommitRoute =
   | 'binding_refresh';
 
 const SHA256 = /^sha256:[a-f0-9]{64}$/u;
+const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9._-]*$/u;
 const TUPLE_KEYS: Array<keyof RequirementsActiveAuthorityTuple> = [
   'activeSemanticRevisionId', 'activeSemanticIrPath', 'activeScopeSemanticHash',
   'activeBindingRevisionId', 'activeSourceBindingPath', 'activeSourceBindingHash',
   'activeAuthoringAttemptId', 'activeBuildManifestPath', 'activeBuildManifestHash',
+];
+const V2_TUPLE_KEYS: Array<keyof RequirementsActiveAuthorityTupleV2> = [
+  'activeSemanticRevisionId', 'activeScopeSemanticHash',
+  'activeBindingRevisionId', 'activeSourceBindingHash',
+  'activeBuildHash', 'activeBuildManifestPath',
+  'previousBuildHash', 'previousBuildManifestPath',
 ];
 const SEMANTIC_FIELDS: Array<keyof RequirementsActiveAuthorityTuple> = [
   'activeSemanticRevisionId', 'activeSemanticIrPath', 'activeScopeSemanticHash',
@@ -54,6 +73,32 @@ export function validateRequirementsActiveAuthorityTuple(value: unknown) {
   const issueCodes: string[] = [];
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return { decision: 'block' as const, issueCodes: ['requirements_active_authority_tuple_invalid'] };
+  }
+  const candidate = value as Record<string, unknown>;
+  if ('activeBuildHash' in candidate) {
+    const tuple = candidate as unknown as RequirementsActiveAuthorityTupleV2;
+    if (
+      Object.keys(tuple).length !== V2_TUPLE_KEYS.length ||
+      Object.keys(tuple).some((key) => !V2_TUPLE_KEYS.includes(key as keyof RequirementsActiveAuthorityTupleV2))
+    ) issueCodes.push('requirements_active_authority_tuple_field_set_invalid');
+    if (
+      !SAFE_ID.test(tuple.activeSemanticRevisionId) ||
+      !SAFE_ID.test(tuple.activeBindingRevisionId) ||
+      !SHA256.test(String(tuple.activeScopeSemanticHash)) ||
+      !SHA256.test(String(tuple.activeSourceBindingHash)) ||
+      !SHA256.test(String(tuple.activeBuildHash)) ||
+      (tuple.previousBuildHash !== null && !SHA256.test(String(tuple.previousBuildHash)))
+    ) issueCodes.push('requirements_active_authority_tuple_hash_invalid');
+    const activeHex = String(tuple.activeBuildHash).slice('sha256:'.length);
+    if (tuple.activeBuildManifestPath !== `authoring/builds/${activeHex}/manifest.json`) {
+      issueCodes.push('requirements_active_build_path_identity_mismatch');
+    }
+    if (
+      (tuple.previousBuildHash === null) !== (tuple.previousBuildManifestPath === null) ||
+      (tuple.previousBuildHash !== null &&
+        tuple.previousBuildManifestPath !== `authoring/builds/${tuple.previousBuildHash.slice('sha256:'.length)}/manifest.json`)
+    ) issueCodes.push('requirements_previous_build_path_identity_mismatch');
+    return { decision: issueCodes.length ? 'block' as const : 'pass' as const, issueCodes: [...new Set(issueCodes)].sort() };
   }
   const tuple = value as RequirementsActiveAuthorityTuple & Record<string, unknown>;
   if (
@@ -208,8 +253,16 @@ export function commitRequirementsContractAuthorityPublication(input: {
       if (validation.decision === 'block') throw new Error(validation.issueCodes[0]);
     },
   });
-  if (!input.compareAndSwapAuthorityTuple(input.current, input.next)) {
-    throw new Error('requirements_active_authority_tuple_cas_conflict');
+  const authorityLock = acquireRequirementsFileLock({
+    lockPath: path.join(input.recordRootPath, 'record', 'requirement-record.json.authority.lock'),
+    busyCode: 'requirements_active_authority_tuple_busy',
+  });
+  try {
+    if (!input.compareAndSwapAuthorityTuple(input.current, input.next)) {
+      throw new Error('requirements_active_authority_tuple_cas_conflict');
+    }
+  } finally {
+    releaseRequirementsFileLock(authorityLock);
   }
   return { publication, activeAuthority: input.next };
 }

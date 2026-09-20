@@ -33,6 +33,68 @@ const SOURCE_ROW_GROUPS = [
 const VALID_NO_NEW_GAP_VERDICTS = new Set(['no_new_valid_gap', 'no_new_confirmation_blocking_gap']);
 const RESOLVED_GAP_STATUSES = new Set(['resolved', 'converted_to_out_boundary', 'converted_to_open_question', 'rejected']);
 const SHA256_PATTERN = /^sha256:[a-f0-9]{64}$/u;
+
+function validateContentAddressedPrepublication(input) {
+  const manifest = input.buildManifestV2;
+  const failures = [];
+  const entries = Array.isArray(manifest?.artifactEntries) ? manifest.artifactEntries : [];
+  const byRole = new Map(entries.map((entry) => [entry.role, entry]));
+  const requiredRoles = [
+    'semantic_ir', 'source_binding', 'resolved_evidence_index', 'confirmation_projection',
+    'final_markdown', 'execution_manifest', 'per_must_bundle', 'trace_matrix', 'diagram_set',
+    'projection_reconciliation_report', 'authority_resolution_report', 'renderability_probe_report',
+    'judge_audit_packet',
+  ];
+  const readEntry = (role) => {
+    const entry = byRole.get(role);
+    if (!entry) { failures.push(`prepublication_artifact_role_missing:${role}`); return null; }
+    const ref = entry.contentRef;
+    if (!ref || !/^authoring\/objects\/sha256\/[a-f0-9]{2}\/[a-f0-9]{62}$/u.test(String(ref.recordRelativePath ?? '')) ||
+      !SHA256_PATTERN.test(String(ref.contentHash ?? ''))) {
+      failures.push(`prepublication_artifact_ref_invalid:${role}`); return null;
+    }
+    const absolute = path.resolve(input.recordRoot, ...String(ref.recordRelativePath).split('/'));
+    const relative = path.relative(path.resolve(input.recordRoot), absolute);
+    if (relative.startsWith('..') || path.isAbsolute(relative) || !fs.existsSync(absolute)) {
+      failures.push(`prepublication_artifact_missing:${role}`); return null;
+    }
+    const bytes = fs.readFileSync(absolute);
+    if (`sha256:${crypto.createHash('sha256').update(bytes).digest('hex')}` !== ref.contentHash || bytes.length !== ref.byteLength) {
+      failures.push(`prepublication_artifact_hash_mismatch:${role}`); return null;
+    }
+    if (/^application\/json(?:;|$)/iu.test(String(ref.mediaType))) {
+      try {
+        const value = JSON.parse(bytes.toString('utf8'));
+        if (!value || typeof value !== 'object' || value.schemaVersion !== entry.schemaVersion) {
+          failures.push(`prepublication_artifact_schema_mismatch:${role}`);
+        }
+        return value;
+      } catch { failures.push(`prepublication_artifact_json_invalid:${role}`); return null; }
+    }
+    return bytes.toString('utf8');
+  };
+  if (!manifest || manifest.schemaVersion !== 'requirements-contract-build-manifest/v2') {
+    failures.push('prepublication_build_manifest_invalid');
+  }
+  for (const role of requiredRoles) readEntry(role);
+  const semanticIr = readEntry('semantic_ir');
+  if (!semanticIr || !['requirements-contract-semantic-ir/v1', 'requirements-contract-semantic-ir/v2'].includes(semanticIr.schemaVersion) ||
+    !SHA256_PATTERN.test(String(semanticIr.scopeSemanticHash ?? '')) ||
+    !semanticIr.semanticPayload || !Array.isArray(semanticIr.semanticPayload.specSpanRegistry) ||
+    !Array.isArray(semanticIr.semanticPayload.evidenceClaims)) failures.push('prepublication_semantic_ir_invalid');
+  for (const role of ['projection_reconciliation_report', 'authority_resolution_report', 'renderability_probe_report']) {
+    const value = readEntry(role);
+    if (value?.decision === 'block') failures.push(`prepublication_${role}_blocked`);
+  }
+  const packet = readEntry('judge_audit_packet');
+  if (!packet || packet.schemaVersion !== 'requirements-contract-judge-audit-packet/v3' ||
+    !SHA256_PATTERN.test(String(packet.packetHash ?? '')) || !Array.isArray(packet.semanticAuditSliceRefs) ||
+    packet.semanticAuditSliceRefs.length === 0) failures.push('prepublication_judge_audit_packet_invalid');
+  return { exitCode: failures.length ? 1 : 0, report: {
+    verdict: failures.length ? 'block' : 'pass', failedChecks: unique(failures), blockingIssues: unique(failures),
+    sourcePath: input.sourcePath, recordRoot: input.recordRoot,
+  } };
+}
 const ATTEMPT_POINTER_KEYS = new Set([
   'schemaVersion',
   'authoringAttemptId',
@@ -382,7 +444,16 @@ function cp08ArtifactIssues(entry, parsed) {
   ) {
     codes.push('prepublication_renderability_probe_blocked');
   }
-  if (entry.role === 'judge_audit_packet' && !isRecord(parsed?.body)) {
+  if (
+    entry.role === 'judge_audit_packet' &&
+    !isRecord(parsed?.body) &&
+    !(
+      parsed?.schemaVersion === 'requirements-contract-judge-audit-packet/v3' &&
+      isRecord(parsed?.semanticIrRef) &&
+      Array.isArray(parsed?.semanticAuditSliceRefs) &&
+      parsed.semanticAuditSliceRefs.length > 0
+    )
+  ) {
     codes.push('judge_audit_packet_coverage_gap');
   }
   if (
@@ -444,6 +515,7 @@ function validateCheckpointManifest(manifest, expected) {
 }
 
 function validatePrepublicationAttempt(input) {
+  if (input.buildManifestV2) return validateContentAddressedPrepublication(input);
   const sourcePath = path.resolve(input.sourcePath);
   const recordRoot = path.resolve(input.recordRoot);
   const blockingIssues = [];
@@ -642,9 +714,32 @@ function validatePrepublicationAttempt(input) {
         }
       }
       if (LOGICAL_IDENTITY_ROLES.has(entry.role) && isRecord(parsed)) {
+        let identityArtifact = parsed;
         if (
-          parsed.semanticRevisionId !== semanticRevisionId ||
-          parsed.scopeSemanticHash !== scopeSemanticHash
+          entry.role === 'judge_audit_packet' &&
+          parsed.schemaVersion === 'requirements-contract-judge-audit-packet/v3' &&
+          isRecord(parsed.semanticIrRef)
+        ) {
+          const semanticRefPath = confinedRecordPath(
+            recordRoot,
+            String(parsed.semanticIrRef.recordRelativePath ?? '')
+          );
+          const semanticRefRead = semanticRefPath?.path
+            ? readJsonSafe(semanticRefPath.path)
+            : { ok: false };
+          if (!semanticRefPath || semanticRefPath.error || !semanticRefRead.ok) {
+            blockingIssues.push(
+              prepublicationIssue('prepublication_projection_semantic_identity_mismatch', [
+                entry.artifactId,
+              ])
+            );
+          } else {
+            identityArtifact = semanticRefRead.value;
+          }
+        }
+        if (
+          identityArtifact.semanticRevisionId !== semanticRevisionId ||
+          identityArtifact.scopeSemanticHash !== scopeSemanticHash
         ) {
           blockingIssues.push(
             prepublicationIssue('prepublication_projection_semantic_identity_mismatch', [

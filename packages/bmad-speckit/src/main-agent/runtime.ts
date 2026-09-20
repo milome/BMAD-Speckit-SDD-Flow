@@ -84,6 +84,7 @@ const {
 const {
   submitRequirementsGrillResponseAction,
 } = require('./actions/submit-requirements-grill-response');
+const { rejudgePolicyUpgradeAction } = require('./actions/rejudge-policy-upgrade');
 const { resolveActiveRequirementAction } = require('./actions/resolve-active-requirement');
 const {
   runRequiredCommandsFromAiTddManifestAction,
@@ -200,6 +201,7 @@ const PACKAGE_RUNTIME_READY_ACTIONS = {
   'requirement-record-schema-evolution': requirementRecordSchemaEvolutionAction,
   'requirements-contract-source-intake': requirementsContractSourceIntakeAction,
   'submit-requirements-grill-response': submitRequirementsGrillResponseAction,
+  'rejudge-policy-upgrade': rejudgePolicyUpgradeAction,
   'author-confirmation-ready-source': authorConfirmationReadySourceAction,
   'resume-author-confirmation-ready-source': resumeAuthorConfirmationReadySourceAction,
   'resolve-active-requirement': resolveActiveRequirementAction,
@@ -337,8 +339,6 @@ const ORCHESTRATION_ACTIONS = new Set([
   'register_pre_confirmation_render',
   'author-confirmation-ready-source',
   'author_confirmation_ready_source',
-  'authoring-repair',
-  'authoring_repair',
   'post-close-defect-intake',
   'controlled-readiness-audit',
 ]);

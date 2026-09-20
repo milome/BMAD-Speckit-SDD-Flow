@@ -4,7 +4,7 @@
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-consumer-registry.ts",
     "hash": "sha256:b47954674d39d0dcd04287978039f1d99c25524603e16b4500858f709b581229"
   },
-  "registryHash": "sha256:65aad24cac224a3f9c4c617ec0fee49f2e9004ed87204ece8ce2f449d3d1a10d",
+  "registryHash": "sha256:e905d880d3b0745335d0c3692dc390c307f07f05d1e0d643ef3a294a175f1a86",
   "validationModes": [
     "draft",
     "confirmation-ready",
@@ -32,7 +32,7 @@
     {
       "consumerId": "native-cp05-cp08-typed-source-projection",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-cp05-cp08.ts",
-      "pathHash": "sha256:f06dc8c9fe6e7fab2995b9479edde4a96a53ed972a2dbba0267fd4131242d8a0",
+      "pathHash": "sha256:de3f7f60d600cdc15da04bbe045fa443f0e9b42f96dbba8d082e8abe0b23a886",
       "inputRole": "frozen_semantic_ir_source_projection",
       "parserRef": "not_applicable",
       "schemaRef": "typed_semantic_ir_schema",
@@ -113,7 +113,7 @@
     {
       "consumerId": "direct-main-session-requirement-authoring",
       "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts",
-      "pathHash": "sha256:832aa4de60207aaaa89b1fca4daae1862996fb54b348efa232ecee7d861e95a1",
+      "pathHash": "sha256:d96e2d4c79c67c1c8b60fc750143f30b80524650bf35bc263a4c6f62dbbfd769",
       "inputRole": "authoring_request",
       "parserRef": "canonical_parser",
       "schemaRef": "typed_semantic_ir_schema",

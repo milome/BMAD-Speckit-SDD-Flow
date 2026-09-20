@@ -140,10 +140,12 @@ describe('requirements contract semantic hash boundaries', () => {
       artifacts: [{
         role: 'semantic_ir',
         schemaVersion: 'requirements-contract-semantic-ir/v2',
+        semanticHash: `sha256:${'8'.repeat(64)}`,
         blobHash: `sha256:${'3'.repeat(64)}`,
       }, {
         role: 'trace_matrix',
         schemaVersion: 'requirements-contract-trace-matrix/v1',
+        semanticHash: `sha256:${'9'.repeat(64)}`,
         blobHash: `sha256:${'4'.repeat(64)}`,
       }],
       attemptId: 'ATTEMPT-A',

@@ -120,7 +120,7 @@ import {
   projectProductionImplementationConfirmation,
   selectRequirementsContractFrozenConfirmationSemantics,
 } from './requirements-contract-confirmation-projection-facade';
-import { createRequirementsContractCoreArtifactFreeze } from './requirements-contract-semantic-resolver';
+import { createRequirementsContractCoreArtifactFreeze, sha256Stable } from './requirements-contract-semantic-resolver';
 import {
   classifyRequirementAuthoringIssue,
   writeRepairRegistryUnclassifiedIssueReceipt,
@@ -29606,6 +29606,8 @@ export function runMainAgentPreConfirmationDrilldown(
       productionSemanticPipeline = runRequirementsContractProductionSemanticPipeline({
         projectRoot: root,
         recordRoot: paths.recordRoot,
+        operationId: stagingTransaction.transactionId,
+        planHash: sha256Stable({ packetHash, sourceHashBefore }),
         recordId: identity.recordId,
         requirementSetId: identity.requirementSetId,
         intakeReceiptPath: paths.intakeReceipt,

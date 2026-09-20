@@ -1,4 +1,5 @@
 import { canonicalJson, sha256 } from './requirements-contract-governed-write';
+import type { RequirementsContentRef } from './requirements-contract-content-store';
 
 type JsonRecord = Record<string, unknown>;
 
@@ -13,6 +14,11 @@ const REQUEST_INPUT_KEYS = new Set([
 const REQUEST_KEYS = new Set([...REQUEST_INPUT_KEYS, 'schemaVersion', 'judgeRequestHash']);
 const HASH_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 const DOMAIN_TAG = 'judgeRequestHash/v2\n';
+const V3_REQUEST_KEYS = new Set(['schemaVersion', 'auditBinding', 'auditPacketRef', 'providerSelection', 'prompt', 'remediation', 'judgeRequestHash']);
+
+function canonicalContentObjectPath(contentHash: string): string {
+  return `authoring/objects/sha256/${contentHash.slice('sha256:'.length, 'sha256:'.length + 2)}/${contentHash.slice('sha256:'.length + 2)}`;
+}
 
 export interface RequirementsContractJudgeRequestInput extends JsonRecord {
   authority: JsonRecord;
@@ -26,6 +32,45 @@ export interface RequirementsContractJudgeRequestInput extends JsonRecord {
 export interface RequirementsContractJudgeRequest extends RequirementsContractJudgeRequestInput {
   schemaVersion: 'requirements-contract-judge-request/v2';
   judgeRequestHash: string;
+}
+
+export interface RequirementsContractJudgeRequestV3 {
+  schemaVersion: 'requirements-contract-judge-request/v3';
+  auditBinding: Record<string, unknown>;
+  auditPacketRef: RequirementsContentRef;
+  providerSelection: Record<string, unknown>;
+  prompt: Record<string, unknown>;
+  remediation: Record<string, unknown> | null;
+  judgeRequestHash: string;
+}
+
+export function buildRequirementsContractJudgeRequestV3(input: Omit<RequirementsContractJudgeRequestV3, 'schemaVersion' | 'judgeRequestHash'>): RequirementsContractJudgeRequestV3 {
+  const payload = { schemaVersion: 'requirements-contract-judge-request/v3' as const, ...input };
+  return { ...payload, judgeRequestHash: requestHash(payload) };
+}
+
+export function verifyRequirementsContractJudgeRequestV3(value: unknown): RequirementsContractJudgeRequestV3 {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('requirements_contract_judge_request_invalid');
+  const request = value as RequirementsContractJudgeRequestV3;
+  if (
+    request.schemaVersion !== 'requirements-contract-judge-request/v3' ||
+    Object.keys(request).some((key) => !V3_REQUEST_KEYS.has(key)) ||
+    !request.auditBinding || typeof request.auditBinding !== 'object' || Array.isArray(request.auditBinding) ||
+    !request.auditPacketRef || typeof request.auditPacketRef !== 'object' || Array.isArray(request.auditPacketRef) ||
+    !request.providerSelection || typeof request.providerSelection !== 'object' || Array.isArray(request.providerSelection) ||
+    !request.prompt || typeof request.prompt !== 'object' || Array.isArray(request.prompt) ||
+    (request.remediation !== null && (!request.remediation || typeof request.remediation !== 'object' || Array.isArray(request.remediation))) ||
+    !HASH_PATTERN.test(String(request.judgeRequestHash ?? '')) ||
+    request.auditPacketRef.schemaVersion !== 'requirements-content-ref/v1' ||
+    !HASH_PATTERN.test(String(request.auditPacketRef.contentHash ?? '')) ||
+    !Number.isSafeInteger(request.auditPacketRef.byteLength) || request.auditPacketRef.byteLength < 0 ||
+    typeof request.auditPacketRef.mediaType !== 'string' || request.auditPacketRef.mediaType.trim().length === 0 ||
+    typeof request.auditPacketRef.recordRelativePath !== 'string' ||
+    request.auditPacketRef.recordRelativePath !== canonicalContentObjectPath(request.auditPacketRef.contentHash)
+  ) throw new Error('requirements_contract_judge_request_v3_invalid');
+  const { judgeRequestHash, ...payload } = request;
+  if (requestHash(payload) !== judgeRequestHash) throw new Error('requirements_contract_judge_request_hash_mismatch');
+  return request;
 }
 
 function record(value: unknown, code: string): JsonRecord {

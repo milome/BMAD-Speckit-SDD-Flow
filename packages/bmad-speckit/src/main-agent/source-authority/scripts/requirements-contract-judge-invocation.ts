@@ -19,8 +19,13 @@ import {
   createRequirementsContractJudgeSelectionReceipt,
   resolveRequirementsContractJudgeAdapterRef,
 } from './requirements-contract-judge-selection';
-import { verifyRequirementsContractJudgeRequest } from './requirements-contract-judge-request-identity';
+import {
+  verifyRequirementsContractJudgeRequest,
+  verifyRequirementsContractJudgeRequestV3,
+} from './requirements-contract-judge-request-identity';
 import { canonicalJson } from './requirements-contract-governed-write';
+import { sourceBytesHash } from './requirements-contract-hash-domains';
+import { hydrateRequirementsContractJudgeAuditPacket } from './requirements-contract-judge-audit-packet';
 import {
   assertJudgePayloadUnchanged,
   type JudgePayloadPreflight,
@@ -258,8 +263,43 @@ export function buildPreparedRequirementsContractJudgeInvocationPayload(input: {
   request: RequirementsContractJudgeJsonRecord;
   providerSelection: RequirementsContractJudgeJsonRecord;
   executionContext?: RequirementsContractJudgeJsonRecord;
+  hydratedAuditPacket?: RequirementsContractJudgeJsonRecord;
+  allowEphemeralAuditPacket?: boolean;
 }): RequirementsContractJudgeInvocationPayload {
-  const request = verifyRequirementsContractJudgeRequest(input.request);
+  const persistedRequest = input.request.schemaVersion === 'requirements-contract-judge-request/v3'
+    ? verifyRequirementsContractJudgeRequestV3(input.request)
+    : verifyRequirementsContractJudgeRequest(input.request);
+  let hydratedAuditPacket = input.hydratedAuditPacket;
+  let hydratedFromStore = false;
+  if (persistedRequest.schemaVersion === 'requirements-contract-judge-request/v3') {
+    const executionContext = input.executionContext ?? {};
+    const recordRoot = typeof executionContext.projectRoot === 'string' ? executionContext.projectRoot : '';
+    try {
+      if (recordRoot) {
+        hydratedAuditPacket = record(
+          hydrateRequirementsContractJudgeAuditPacket({
+            recordRoot,
+            packetRef: persistedRequest.auditPacketRef,
+          }),
+          'requirements_contract_judge_audit_packet_invalid'
+        );
+        hydratedFromStore = true;
+      }
+    } catch (error) {
+      if (!input.allowEphemeralAuditPacket || !hydratedAuditPacket) throw error;
+    }
+    if (!hydratedAuditPacket) throw new Error('requirements_contract_judge_audit_packet_hydration_required');
+    if (!hydratedFromStore) {
+      const bytes = Buffer.from(canonicalJson(hydratedAuditPacket), 'utf8');
+      if (
+        bytes.length !== persistedRequest.auditPacketRef.byteLength ||
+        sourceBytesHash(bytes) !== persistedRequest.auditPacketRef.contentHash
+      ) throw new Error('requirements_contract_judge_audit_packet_ref_mismatch');
+    }
+  }
+  const request = persistedRequest.schemaVersion === 'requirements-contract-judge-request/v3'
+    ? { ...persistedRequest, auditPacket: hydratedAuditPacket }
+    : persistedRequest;
   const provider = record(input.prepared.provider, 'requirements_contract_judge_provider_missing');
   const adapterRef = resolveRequirementsContractJudgeAdapterRef(provider);
   const expectedSelection = createRequirementsContractJudgeSelectionReceipt({
@@ -270,11 +310,11 @@ export function buildPreparedRequirementsContractJudgeInvocationPayload(input: {
   });
   if (
     canonicalJson(expectedSelection) !== canonicalJson(input.providerSelection) ||
-    canonicalJson(request.providerSelection) !== canonicalJson(input.providerSelection)
+    canonicalJson(persistedRequest.providerSelection) !== canonicalJson(input.providerSelection)
   ) {
     throw new Error('requirements_contract_judge_frozen_selection_mismatch');
   }
-  const prompt = record(request.prompt, 'requirements_contract_judge_request_prompt_invalid');
+  const prompt = record(persistedRequest.prompt, 'requirements_contract_judge_request_prompt_invalid');
   return {
     systemPrompt: requiredText(
       prompt.systemPrompt,

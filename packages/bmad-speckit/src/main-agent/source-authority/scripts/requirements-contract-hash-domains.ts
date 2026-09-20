@@ -228,11 +228,19 @@ export function buildHash(value: unknown): string {
         artifact.schemaVersion,
         'requirements_build_artifact_schema_invalid'
       ),
+      semanticHash: requiredString(
+        artifact.semanticHash,
+        'requirements_build_artifact_semantic_hash_invalid'
+      ),
       blobHash: requiredString(artifact.blobHash, 'requirements_build_artifact_blob_hash_invalid'),
+      ...(typeof artifact.mediaType === 'string' ? {
+        mediaType: requiredString(artifact.mediaType, 'requirements_build_artifact_media_type_invalid'),
+      } : {}),
+      ...(Number.isSafeInteger(artifact.byteLength) ? { byteLength: artifact.byteLength } : {}),
     };
   }).sort((left, right) =>
-    `${left.role}\0${left.schemaVersion}\0${left.blobHash}`.localeCompare(
-      `${right.role}\0${right.schemaVersion}\0${right.blobHash}`
+    `${left.role}\0${left.schemaVersion}\0${left.semanticHash}\0${left.blobHash}\0${left.mediaType ?? ''}\0${left.byteLength ?? ''}`.localeCompare(
+      `${right.role}\0${right.schemaVersion}\0${right.semanticHash}\0${right.blobHash}\0${right.mediaType ?? ''}\0${right.byteLength ?? ''}`
     )
   );
   return hashDomain(REQUIREMENTS_AUTHORING_HASH_DOMAINS.buildHash, {
@@ -249,6 +257,9 @@ export function buildHash(value: unknown): string {
       'requirements_build_compiler_identity_invalid'
     ),
     artifacts,
+    ...(typeof build.projectionSetHash === 'string' ? { projectionSetHash: requiredString(build.projectionSetHash, 'requirements_build_projection_set_hash_invalid') } : {}),
+    ...(typeof build.checkpointSummaryHash === 'string' ? { checkpointSummaryHash: requiredString(build.checkpointSummaryHash, 'requirements_build_checkpoint_summary_hash_invalid') } : {}),
+    ...(typeof build.validationHash === 'string' ? { validationHash: requiredString(build.validationHash, 'requirements_build_validation_hash_invalid') } : {}),
   });
 }
 

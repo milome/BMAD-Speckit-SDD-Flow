@@ -306,3 +306,64 @@ export function createRequirementsContractResolvedEvidenceIndex(input: {
     authority: 'none' as const,
   };
 }
+
+export function validateRequirementsContractResolvedEvidenceIndex(value: unknown) {
+  const issueCodes: string[] = [];
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return { decision: 'block' as const, issueCodes: ['resolved_evidence_index_invalid'] };
+  }
+  const index = value as Record<string, unknown>;
+  const allowed = new Set([
+    'schemaVersion', 'semanticRevisionId', 'scopeSemanticHash', 'bindingRevisionId', 'sourceBindingHash',
+    'resolutions', 'indexHash', 'authority',
+  ]);
+  if (Object.keys(index).some((key) => !allowed.has(key))) {
+    issueCodes.push('resolved_evidence_index_unknown_field');
+  }
+  if (
+    index.schemaVersion !== 'requirements-contract-resolved-evidence-index/v1' ||
+    index.authority !== 'none' ||
+    typeof index.semanticRevisionId !== 'string' || !index.semanticRevisionId ||
+    typeof index.bindingRevisionId !== 'string' || !index.bindingRevisionId ||
+    ('scopeSemanticHash' in index && !SHA256.test(String(index.scopeSemanticHash))) ||
+    !SHA256.test(String(index.sourceBindingHash)) ||
+    !SHA256.test(String(index.indexHash)) ||
+    !Array.isArray(index.resolutions)
+  ) {
+    issueCodes.push('resolved_evidence_index_invalid');
+  }
+  const resolutions = Array.isArray(index.resolutions) ? index.resolutions : [];
+  if (resolutions.some((resolution) => {
+    if (!resolution || typeof resolution !== 'object' || Array.isArray(resolution)) return true;
+    const entry = resolution as Record<string, unknown>;
+    const keys = new Set([
+      'evidenceClaimId', 'authorityClass', 'sourceSpanRefs', 'decisionReceiptRefs',
+      'premiseRefs', 'derivationReceiptRefs',
+    ]);
+    return Object.keys(entry).some((key) => !keys.has(key)) ||
+      typeof entry.evidenceClaimId !== 'string' || !entry.evidenceClaimId ||
+      typeof entry.authorityClass !== 'string' || !entry.authorityClass ||
+      ['sourceSpanRefs', 'decisionReceiptRefs', 'premiseRefs', 'derivationReceiptRefs']
+        .some((key) => !Array.isArray(entry[key]) || (entry[key] as unknown[]).some((item) => typeof item !== 'string'));
+  })) {
+    issueCodes.push('resolved_evidence_index_resolution_invalid');
+  }
+  if (issueCodes.length === 0) {
+    const recreated = createRequirementsContractResolvedEvidenceIndex({
+      semanticRevisionId: index.semanticRevisionId as string,
+      bindingRevisionId: index.bindingRevisionId as string,
+      sourceBindingHash: index.sourceBindingHash as string,
+      resolutions: resolutions as Parameters<typeof createRequirementsContractResolvedEvidenceIndex>[0]['resolutions'],
+    });
+    const canonicalCore = Object.fromEntries(
+      Object.keys(recreated).map((key) => [key, index[key]])
+    );
+    if (stableStringify(recreated) !== stableStringify(canonicalCore)) {
+      issueCodes.push('resolved_evidence_index_hash_mismatch');
+    }
+  }
+  return {
+    decision: issueCodes.length ? 'block' as const : 'pass' as const,
+    issueCodes: sortedUnique(issueCodes),
+  };
+}
