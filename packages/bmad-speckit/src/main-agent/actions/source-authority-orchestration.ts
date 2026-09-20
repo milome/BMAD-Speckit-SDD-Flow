@@ -64,6 +64,9 @@ const {
   resolveRequirementsContractJudgeAuditPacket,
 } = require('../source-authority/scripts/requirements-contract-judge-audit-packet');
 const {
+  readVerifiedRequirementsContractJudgeDecision,
+} = require('../source-authority/scripts/requirements-contract-judge-decision-store');
+const {
   canonicalRequirementsJson,
   requirementsContractDomainHash,
 } = require('../source-authority/scripts/requirements-contract-hash-domains');
@@ -1243,6 +1246,16 @@ function remediationRepairSteps(plan) {
   return requirementsContractAutomaticRepairSteps(plan);
 }
 
+function discardUnpublishedRepairAttempt(recordRoot, attemptId) {
+  for (const relativePath of [
+    `authoring/staging/${attemptId}`,
+    `authoring/operations/${attemptId}`,
+  ]) {
+    const target = path.join(recordRoot, ...relativePath.split('/'));
+    if (fs.existsSync(target)) fs.rmSync(target, { recursive: true, force: true });
+  }
+}
+
 const CLOSED_REMEDIATION_ISSUE_CODES = new Set([
   'judge_remediation_no_progress',
   'judge_remediation_limit_reached',
@@ -1255,10 +1268,18 @@ function writeLatestRemediationFailureSummary(input) {
   const auditBindingHash =
     String(request.auditBindingHash || request.auditBinding?.auditBindingHash ||
       input.activeRequest.auditBindingHash || sha256Stable({ judgeRequestHash: input.activeRequest.judgeRequestHash }));
-  const judgeDecisionHash = String(
-    input.activeRequest.judgeDecisionHash || input.activeRequest.responseRef?.hash ||
-      sha256Stable({ judgeRequestHash: input.activeRequest.judgeRequestHash })
-  );
+  const binding = request.auditBinding && typeof request.auditBinding === 'object'
+    ? request.auditBinding
+    : null;
+  if (!binding) throw new Error('requirements_judge_decision_binding_missing');
+  const decision = readVerifiedRequirementsContractJudgeDecision({
+    recordRoot: input.recordRoot,
+    binding,
+  });
+  if (!decision || decision.verdict !== 'audited_fail') {
+    throw new Error('requirements_judge_decision_missing');
+  }
+  const judgeDecisionHash = decision.decisionHash;
   const remediationDecision = input.issueCode === 'judge_remediation_no_progress'
     ? 'no_progress'
     : input.issueCode === 'judge_remediation_limit_reached'
@@ -1283,6 +1304,14 @@ function writeLatestRemediationFailureSummary(input) {
 
 function persistClosedRemediationHalt(input) {
   if (!CLOSED_REMEDIATION_ISSUE_CODES.has(input.issueCode)) return null;
+  const current = JSON.parse(fs.readFileSync(input.activeJudgeRequestPath, 'utf8'));
+  if (
+    current.judgeRequestHash !== input.activeRequest.judgeRequestHash ||
+    current.status !== 'audited_fail' ||
+    !current.acceptedEvaluation
+  ) {
+    throw new Error('requirements_contract_judge_active_cas_conflict');
+  }
   writeLatestRemediationFailureSummary(input);
   return closedRemediationHaltResult({
     issueCode: input.issueCode,
@@ -1291,6 +1320,42 @@ function persistClosedRemediationHalt(input) {
     judgeRequestHash: input.activeRequest.judgeRequestHash,
     automaticRemediationCount: input.request.remediation ? 1 : 0,
   });
+}
+
+function readTerminalRemediationHalt(input) {
+  const summaryPath = path.join(input.recordRoot, 'quality', 'failures', 'latest.json');
+  if (!fs.existsSync(summaryPath)) return null;
+  try {
+    const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
+    const { summaryHash, ...payload } = summary;
+    if (
+      summaryHash !== sha256Stable({ domain: 'requirements-contract-failure-summary/v1', payload }) ||
+      !Array.isArray(summary.issueCodes) || summary.issueCodes.length !== 1 ||
+      !CLOSED_REMEDIATION_ISSUE_CODES.has(String(summary.issueCodes[0]))
+    ) return null;
+    const request = readRecordJson(input.recordRoot, input.activeRequest.requestPath);
+    const binding = request.auditBinding && typeof request.auditBinding === 'object'
+      ? request.auditBinding
+      : null;
+    if (!binding) return null;
+    const decision = readVerifiedRequirementsContractJudgeDecision({
+      recordRoot: input.recordRoot,
+      binding,
+    });
+    if (!decision || decision.verdict !== 'audited_fail' ||
+      summary.auditBindingHash !== decision.auditBindingHash ||
+      summary.judgeDecisionHash !== decision.decisionHash ||
+      summary.scopeSemanticHash !== input.currentAuthority.activeScopeSemanticHash) return null;
+    return closedRemediationHaltResult({
+      issueCode: summary.issueCodes[0],
+      authoringRequestId: input.requestId,
+      authoringAttemptId: input.currentAuthority.activeAuthoringAttemptId,
+      judgeRequestHash: input.activeRequest.judgeRequestHash,
+      automaticRemediationCount: request.remediation ? 1 : 0,
+    });
+  } catch {
+    return null;
+  }
 }
 
 async function continueAcceptedJudgeFailure(input) {
@@ -1449,6 +1514,7 @@ async function continueAcceptedJudgeFailure(input) {
     sha256Stable(comparableProjectionArtifacts(currentBuildManifest)) ===
     sha256Stable(comparableProjectionArtifacts(nextBuildManifest))
   ) {
+    discardUnpublishedRepairAttempt(input.recordRoot, repairAttemptId);
     throw new Error('judge_remediation_no_progress');
   }
   const changedArtifacts = comparableProjectionArtifacts(nextBuildManifest).filter(
@@ -1580,6 +1646,16 @@ async function continueAuthoringFromContext(context, authoringContext, options =
     const activeJudgeRequestStatus = fs.existsSync(activeJudgeRequestPath)
       ? JSON.parse(fs.readFileSync(activeJudgeRequestPath, 'utf8')).status
       : null;
+    if (activeJudgeRequestStatus === 'audited_fail') {
+      const terminalRequest = JSON.parse(fs.readFileSync(activeJudgeRequestPath, 'utf8'));
+      const terminal = readTerminalRemediationHalt({
+        recordRoot,
+        requestId,
+        currentAuthority: activeAuthority,
+        activeRequest: terminalRequest,
+      });
+      if (terminal) return terminal;
+    }
     if (
       activeAuthority?.activeBuildHash &&
       requirementRecord.activeOperationId === authoringAttemptId &&

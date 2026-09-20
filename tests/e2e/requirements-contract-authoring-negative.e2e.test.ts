@@ -197,6 +197,39 @@ describe('Requirements production-entry negative gates', () => {
         issueCodes: ['requirements_remediation_not_materializable'],
         remediationDecision: 'not_materializable',
       });
+      const request = JSON.parse(
+        fs.readFileSync(
+          path.join(recordRoot, ...String(JSON.parse(fs.readFileSync(activeRequestPath, 'utf8')).requestPath).split('/')),
+          'utf8'
+        )
+      );
+      const decision = JSON.parse(
+        fs.readFileSync(
+          path.join(
+            recordRoot,
+            'quality',
+            'semantic-decisions',
+            request.auditBinding.auditBindingHash.slice('sha256:'.length),
+            'decision.json'
+          ),
+          'utf8'
+        )
+      );
+      expect(failureSummary.judgeDecisionHash).toBe(decision.decisionHash);
+      const failureSummaryPath = path.join(recordRoot, 'quality', 'failures', 'latest.json');
+      const failureSummaryMtime = fs.statSync(failureSummaryPath).mtimeMs;
+      const terminalResume = await spawnMainAgentResult(root, 'resume-author-confirmation-ready-source', [
+        '--request-id',
+        first.data.requestId,
+        '--authoring-attempt-id',
+        first.data.authoringAttemptId,
+      ]);
+      expect(terminalResume.envelope).toMatchObject({
+        status: 'authoring_blocked',
+        data: { issueCode: 'requirements_remediation_not_materializable', resumable: false },
+      });
+      expect(provider.requests).toHaveLength(1);
+      expect(fs.statSync(failureSummaryPath).mtimeMs).toBe(failureSummaryMtime);
     } finally {
       await provider.close();
     }
