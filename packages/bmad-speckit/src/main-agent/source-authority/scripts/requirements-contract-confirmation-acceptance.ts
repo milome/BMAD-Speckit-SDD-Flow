@@ -977,12 +977,6 @@ export function renderAndPromoteRequirementsContractConfirmation(input: {
   const targetMarkdownPath = resolveConfinedPathWithoutLinks(
     root, text(context.targetSource), 'requirements_final_render_target_path_escape'
   );
-  // Keep the rendered target available for crash recovery; confirmation still
-  // remains the only operation that publishes the durable promotion event.
-  fs.mkdirSync(path.dirname(targetMarkdownPath), { recursive: true });
-  replaceBytesAtomic(targetMarkdownPath, pages.markdown);
-  const targetHtmlPath = targetMarkdownPath.replace(/\.md$/iu, '.html');
-  replaceBytesAtomic(targetHtmlPath, pages.html);
   const reviewCandidate = {
     schemaVersion: 'requirements-contract-review-candidate/v1',
     requestId: input.requestId,
@@ -999,21 +993,8 @@ export function renderAndPromoteRequirementsContractConfirmation(input: {
     exactConfirmationText: pages.exactConfirmationText,
     candidateRef,
     targetPath: path.relative(root, targetMarkdownPath).replace(/\\/gu, '/'),
-    htmlTargetPath: path.relative(root, targetHtmlPath).replace(/\\/gu, '/'),
     markdownArtifactBytesHash,
     htmlArtifactBytesHash,
-    artifacts: [
-      {
-        role: 'final_markdown',
-        targetPath: path.relative(root, targetMarkdownPath).replace(/\\/gu, '/'),
-        artifactBytesHash: markdownArtifactBytesHash,
-      },
-      {
-        role: 'confirmation_html',
-        targetPath: path.relative(root, targetHtmlPath).replace(/\\/gu, '/'),
-        artifactBytesHash: htmlArtifactBytesHash,
-      },
-    ],
   };
   const promotionReceiptPath = path.join(recordRoot, 'confirmation', 'current-promotion.json');
   let promotionArtifactBytesHash = '';

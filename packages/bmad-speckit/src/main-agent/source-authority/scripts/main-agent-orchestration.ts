@@ -29990,8 +29990,7 @@ export function runMainAgentPreConfirmationDrilldown(
   let draftConfirmation =
     mustRequirements.length > 0 &&
     !hasForbiddenLineBasedMustRequirements &&
-    (sourceProjectionAuthorityIssues.length === 0 ||
-      controlledCandidates.length === mustRequirements.length)
+    (sourceProjectionAuthorityIssues.length === 0 || controlledCandidates.length > 0)
       ? buildPreConfirmationImplementationConfirmationDraft({
           root,
           sourcePath: semanticInputPath,
@@ -30071,7 +30070,7 @@ export function runMainAgentPreConfirmationDrilldown(
         sourcePrdInstanceLint: preStagingSourcePrdLint,
       });
     }
-    draftConfirmation = localization.confirmation;
+    draftConfirmation = localization.confirmation ?? draftConfirmation;
     if (localization.receipt) {
       writeJsonUtf8(paths.localizationMaterializationReceipt, localization.receipt);
     }
