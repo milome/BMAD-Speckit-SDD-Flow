@@ -1216,6 +1216,7 @@ function promoteRequirementsContractReviewCandidate(input: {
     reviewCandidateRef: { path: input.candidatePath, artifactBytesHash: input.candidateArtifactBytesHash },
     targetPath: path.relative(root, targetPath).replace(/\\/gu, '/'),
     artifactBytesHash: promotedHash,
+    htmlArtifactBytesHash: text(input.candidate.htmlArtifactBytesHash),
     exactConfirmationText: input.exactConfirmationText,
   };
   const finalPromotionPath = path.join(input.recordRoot, 'confirmation', 'final-promotion-receipt.json');

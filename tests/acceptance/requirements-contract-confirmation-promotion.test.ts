@@ -257,6 +257,14 @@ describe('Requirements confirmation promotion', () => {
       expect(first.confirmation.markdownArtifactBytesHash).toBe(artifactBytesHash({
         role: 'final_markdown', mediaType: 'text/markdown', bytes: promoted,
       }));
+      const finalPromotion = JSON.parse(readFileSync(
+        path.join(input.recordRoot, 'confirmation', 'final-promotion-receipt.json'),
+        'utf8'
+      )) as Record<string, unknown>;
+      expect(finalPromotion).toMatchObject({
+        schemaVersion: 'requirements-contract-confirmation-promotion-receipt/v2',
+        htmlArtifactBytesHash: first.confirmation.htmlArtifactBytesHash,
+      });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
