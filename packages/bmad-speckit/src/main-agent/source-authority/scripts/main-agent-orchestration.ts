@@ -20892,7 +20892,8 @@ function uniquelyDominantSemanticMustRef(input: {
 }
 
 function canonicalImplementationTasksForResync(
-  confirmation: Record<string, unknown>
+  confirmation: Record<string, unknown>,
+  packetHashHint = ''
 ): Record<string, unknown>[] {
   const existingTasks = asRecordArray(confirmation.implementationTasks);
   const existingTasksById = new Map(
@@ -20926,10 +20927,37 @@ function canonicalImplementationTasksForResync(
     ...asRecordArray(confirmation.acceptanceTests),
     ...asRecordArray(confirmation.e2eSuites),
   ];
+  const packetRef = recordObject(recordObject(confirmation.preConfirmationDrilldown).mustDecompositionPacketRef);
+  const packetHashCandidates = [
+    normalizeText(packetHashHint),
+    normalizeText(packetRef.hash),
+    normalizeText(packetRef.contentHash),
+    normalizeText(confirmation.mustDecompositionPacketHash),
+    normalizeText(confirmation.packetHash),
+    ...[
+      ...asRecordArray(confirmation.atomicImplementationTaskList),
+      ...asRecordArray(confirmation.implementationTasks),
+      ...asRecordArray(confirmation.must),
+      ...asRecordArray(confirmation.traceRows),
+      ...asRecordArray(confirmation.evidence),
+    ].map((row) => normalizeText(row.derivedFromPacketHash)),
+  ];
+  const packetHash = packetHashCandidates.find((value) => /^sha256:[a-f0-9]{64}$/u.test(value)) || '';
 
   return taskIds.map((taskId) => {
     const existingTask = existingTasksById.get(taskId);
-    if (existingTask) return existingTask;
+    if (existingTask) {
+      const requirementRefs = uniqueNonEmpty(asStringArray(existingTask.requirementRefs));
+      return {
+        ...existingTask,
+        ...(requirementRefs.length === 1 && !normalizeText(existingTask.derivedFromMustRef)
+          ? { derivedFromMustRef: requirementRefs[0] }
+          : {}),
+        ...(packetHash && !normalizeText(existingTask.derivedFromPacketHash)
+          ? { derivedFromPacketHash: packetHash, projectionStatus: 'synchronized' }
+          : {}),
+      };
+    }
     const legacyTask = legacyTasksById.get(taskId) ?? {};
     const owningTraces = traceRows.filter((row) =>
       [...asStringArray(row.taskRefs), ...asStringArray(row.atomicTaskRefs)].includes(taskId)
@@ -20986,6 +21014,10 @@ function canonicalImplementationTasksForResync(
       targetPaths,
       traceRefs,
       evidenceRefs,
+      ...(requirementRefs.length === 1 ? { derivedFromMustRef: requirementRefs[0] } : {}),
+      ...(packetHash
+        ? { derivedFromPacketHash: packetHash, projectionStatus: 'synchronized' }
+        : {}),
     };
   });
 }
@@ -21044,7 +21076,10 @@ function resyncExistingBusinessVisualProofClosure(
     changedViewIds.add('traceRows');
     changedViewIds.add('aiTddContractExecutionManifestProjection');
   }
-  const canonicalImplementationTasks = canonicalImplementationTasksForResync(nextConfirmation);
+  const canonicalImplementationTasks = canonicalImplementationTasksForResync(
+    nextConfirmation,
+    context?.packetHash
+  );
   if (
     canonicalImplementationTasks.length > 0 &&
     stableStringify(canonicalImplementationTasks) !==
@@ -21053,6 +21088,29 @@ function resyncExistingBusinessVisualProofClosure(
     nextConfirmation.implementationTasks = canonicalImplementationTasks;
     changed = true;
     changedViewIds.add('implementationTasks');
+  }
+  const implementationPacketHash =
+    normalizeText(context?.packetHash) ||
+    asRecordArray(nextConfirmation.atomicImplementationTaskList)
+      .map((row) => normalizeText(row.derivedFromPacketHash))
+      .find((value) => /^sha256:[a-f0-9]{64}$/u.test(value)) ||
+    '';
+  if (implementationPacketHash) {
+    const synchronizedTasks = asRecordArray(nextConfirmation.implementationTasks).map((row) => {
+      const requirementRefs = uniqueNonEmpty(asStringArray(row.requirementRefs));
+      const synchronized = {
+        ...row,
+        ...(requirementRefs.length === 1 ? { derivedFromMustRef: requirementRefs[0] } : {}),
+        derivedFromPacketHash: implementationPacketHash,
+        projectionStatus: 'synchronized',
+      };
+      return synchronized;
+    });
+    if (stableStringify(synchronizedTasks) !== stableStringify(asRecordArray(nextConfirmation.implementationTasks))) {
+      nextConfirmation.implementationTasks = synchronizedTasks;
+      changed = true;
+      changedViewIds.add('implementationTasks');
+    }
   }
   const preConfirmationDrilldown = recordObject(nextConfirmation.preConfirmationDrilldown);
   const criticalAuditor = recordObject(preConfirmationDrilldown.criticalAuditor);

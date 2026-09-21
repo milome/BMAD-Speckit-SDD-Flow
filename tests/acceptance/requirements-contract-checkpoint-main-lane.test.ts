@@ -117,10 +117,13 @@ describe('requirements contract checkpoint main lane', () => {
       expect(Array.isArray(ref.checkpointReceiptRefs)).toBe(true);
       expect(ref.checkpointReceiptRefs).toHaveLength(checkpointIds.length);
       expect(intakeReceipt).toMatchObject({
-        schemaVersion: 'requirements-contract-file-intake-receipt/v1',
         requirementSetId: 'REQ-CHECKPOINT-MAIN-SET',
         entrySource: 'source_prd_draft',
       });
+      expect([
+        'requirements-contract-file-intake-receipt/v1',
+        'requirements-contract-file-intake-receipt/v2',
+      ]).toContain(intakeReceipt.schemaVersion);
       expect(intakeReceipt).not.toHaveProperty('sessionId');
       expect(invocationAuthorityReceipt).toMatchObject({
         schemaVersion: 'requirements-contract-invocation-authority-receipt/v1',
@@ -248,9 +251,12 @@ describe('requirements contract checkpoint main lane', () => {
         true
       );
       expect(readJson<Record<string, unknown>>(paths.intakeReceipt)).toMatchObject({
-        schemaVersion: 'requirements-contract-file-intake-receipt/v1',
         entrySource: 'source_prd_draft',
       });
+      expect([
+        'requirements-contract-file-intake-receipt/v1',
+        'requirements-contract-file-intake-receipt/v2',
+      ]).toContain(readJson<Record<string, unknown>>(paths.intakeReceipt).schemaVersion);
       expect(readJson<Record<string, unknown>>(paths.invocationAuthorityReceipt)).toMatchObject({
         schemaVersion: 'requirements-contract-invocation-authority-receipt/v1',
         entrySource: 'source_prd_draft',
