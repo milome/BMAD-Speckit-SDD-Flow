@@ -30823,6 +30823,19 @@ export function runMainAgentPreConfirmationDrilldown(
       });
       writeJsonUtf8(criticalAuditorRequestPath(stagingTransaction, 1), freshRequest);
     }
+    writeControlledMustCandidateArtifacts({
+      root,
+      sourcePath: semanticInputPath,
+      paths,
+      recordId: identity.recordId,
+      requirementSetId: identity.requirementSetId,
+      createdAt,
+      sourceText,
+      candidates: controlledCandidates,
+      mustRequirements,
+      draftConfirmation: previewExtraction.confirmation,
+      decision: providerMissing ? 'draft_materialization_allowed' : 'pre_confirmation_gate_blocked',
+    });
     writeSourcePromotionBlockDecision({
       transaction: stagingTransaction,
       blockingStage: providerMissing

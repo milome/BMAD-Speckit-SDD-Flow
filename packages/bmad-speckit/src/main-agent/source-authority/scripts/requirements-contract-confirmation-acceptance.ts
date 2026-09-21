@@ -115,6 +115,26 @@ function records(value: unknown): JsonObject[] {
     : [];
 }
 
+function promotionPageArtifacts(promotion: JsonObject): {
+  markdown: JsonObject | null;
+  html: JsonObject | null;
+} {
+  const artifacts = records(promotion.artifacts);
+  return {
+    markdown: artifacts.find((artifact) => artifact.role === 'final_markdown') ??
+      (promotion.schemaVersion === 'requirements-contract-review-candidate/v1' &&
+      text(promotion.targetPath)
+        ? {
+            role: 'final_markdown',
+            mediaType: 'text/markdown',
+            targetPath: promotion.targetPath,
+            artifactBytesHash: promotion.markdownArtifactBytesHash,
+          }
+        : null),
+    html: artifacts.find((artifact) => artifact.role === 'confirmation_html') ?? null,
+  };
+}
+
 function strings(value: unknown): string[] {
   return Array.isArray(value)
     ? value.filter((entry): entry is string => typeof entry === 'string')
@@ -683,29 +703,94 @@ export function refreshRequirementsContractConfirmationBinding(input: {
   }
   const stagedMarkdown = fs.readFileSync(stagedMarkdownPath, 'utf8');
   const stagedHtml = fs.readFileSync(stagedHtmlPath, 'utf8');
-  const markdownArtifact = records(promotion.artifacts).find(
-    (artifact) => artifact.role === 'final_markdown'
-  );
-  const htmlArtifact = records(promotion.artifacts).find(
-    (artifact) => artifact.role === 'confirmation_html'
-  );
-  if (!markdownArtifact || !htmlArtifact) {
-    throw new Error('requirements_binding_refresh_promotion_artifacts_missing');
-  }
-  const targetMarkdownPath = resolvePath(root, text(markdownArtifact.targetPath));
-  const targetHtmlPath = resolvePath(root, text(htmlArtifact.targetPath));
-  const markdownReadback = replaceBytesAtomic(targetMarkdownPath, stagedMarkdown);
-  const htmlReadback = replaceBytesAtomic(targetHtmlPath, stagedHtml);
   const markdownArtifactBytesHash = artifactBytesHash({
     role: 'final_markdown',
     mediaType: 'text/markdown',
-    bytes: markdownReadback,
+    bytes: Buffer.from(stagedMarkdown, 'utf8'),
   });
   const htmlArtifactBytesHash = artifactBytesHash({
     role: 'confirmation_html',
     mediaType: 'text/html',
-    bytes: htmlReadback,
+    bytes: Buffer.from(stagedHtml, 'utf8'),
   });
+
+  // Before exact confirmation, keep the target untouched and move the
+  // refreshed candidate forward as the sole confirmable authority.
+  if (record.lifecycle !== 'user_confirmed' &&
+      promotion.schemaVersion === 'requirements-contract-review-candidate/v1') {
+    const candidateTargetPath = resolvePath(root, text(promotion.targetPath));
+    if (fs.existsSync(candidateTargetPath) && fs.lstatSync(candidateTargetPath).isDirectory()) {
+      throw new Error('requirements_binding_refresh_target_invalid');
+    }
+    const refreshReceiptPath = path.join(
+      recordRoot,
+      'authoring',
+      'source-bindings',
+      text(sourceBinding.bindingRevisionId),
+      'source-binding-refresh-receipt.json'
+    );
+    if (fs.existsSync(refreshReceiptPath) && fs.lstatSync(refreshReceiptPath).isDirectory()) {
+      throw new Error('requirements_binding_refresh_receipt_invalid');
+    }
+    const candidateRef = publishRequirementsContentObject({
+      recordRoot,
+      role: 'final_markdown',
+      mediaType: 'text/markdown',
+      bytes: Buffer.from(stagedMarkdown, 'utf8'),
+    });
+    const refreshedCandidate = {
+      ...promotion,
+      bindingRevisionId: sourceBinding.bindingRevisionId,
+      sourceBindingHash: sourceBinding.sourceBindingHash,
+      candidateRef,
+      exactConfirmationText: confirmationTextFromMarkdown(stagedMarkdown),
+      markdownArtifactBytesHash,
+      htmlArtifactBytesHash,
+    };
+    writeJsonAtomic(promotionPath, refreshedCandidate);
+    const refreshedPromotionHash = artifactBytesHash({
+      role: 'promotion_receipt',
+      mediaType: 'application/json',
+      bytes: fs.readFileSync(promotionPath),
+    });
+    const nextRecord = {
+      ...record,
+      lifecycle: 'user_confirmable',
+      currentPromotionEvidence: {
+        path: path.relative(recordRoot, promotionPath).replace(/\\/gu, '/'),
+        artifactBytesHash: refreshedPromotionHash,
+      },
+    };
+    if (canonicalRequirementsJson(nextRecord) !== canonicalRequirementsJson(record)) {
+      writeJsonAtomic(recordPath, nextRecord);
+    }
+    return {
+      status: 'user_confirmable' as const,
+      unresolvedDecisionCount: 0,
+      confirmation: {
+        exactConfirmationText: refreshedCandidate.exactConfirmationText,
+        markdownPath: path.relative(root, candidateTargetPath).replace(/\\/gu, '/'),
+        htmlPath: null,
+        markdownArtifactBytesHash,
+        htmlArtifactBytesHash,
+        promotionReceiptPath: path.relative(recordRoot, promotionPath).replace(/\\/gu, '/'),
+        promotionArtifactBytesHash: refreshedPromotionHash,
+      },
+    };
+  }
+
+  const { markdown: markdownArtifact, html: htmlArtifact } = promotionPageArtifacts(promotion);
+  if (!markdownArtifact) {
+    throw new Error('requirements_binding_refresh_promotion_artifacts_missing');
+  }
+  const targetMarkdownPath = resolvePath(root, text(markdownArtifact.targetPath));
+  const markdownReadback = replaceBytesAtomic(targetMarkdownPath, stagedMarkdown);
+  let targetHtmlPath: string | null = null;
+  let htmlReadback = stagedHtml;
+  if (htmlArtifact) {
+    targetHtmlPath = resolvePath(root, text(htmlArtifact.targetPath));
+    htmlReadback = replaceBytesAtomic(targetHtmlPath, stagedHtml);
+  }
   if (markdownReadback !== stagedMarkdown || htmlReadback !== stagedHtml) {
     throw new Error('requirements_binding_refresh_page_promotion_mismatch');
   }
@@ -760,7 +845,7 @@ export function refreshRequirementsContractConfirmationBinding(input: {
     confirmation: {
       exactConfirmationText: confirmationTextFromMarkdown(stagedMarkdown),
       markdownPath: path.relative(root, targetMarkdownPath).replace(/\\/gu, '/'),
-      htmlPath: path.relative(root, targetHtmlPath).replace(/\\/gu, '/'),
+      htmlPath: targetHtmlPath ? path.relative(root, targetHtmlPath).replace(/\\/gu, '/') : null,
       markdownArtifactBytesHash,
       htmlArtifactBytesHash,
       promotionReceiptPath: path.relative(recordRoot, refreshReceiptPath).replace(/\\/gu, '/'),
@@ -1337,31 +1422,31 @@ export function confirmRequirementsContractIrScope(input: {
       : null;
   if (refreshReceipt) validateRefreshReceiptHash(refreshReceipt);
   const promotion = refreshReceipt ? originalPromotion : currentPromotion;
-  const markdownArtifact = records(promotion.artifacts).find(
-    (artifact) => artifact.role === 'final_markdown'
-  );
-  const htmlArtifact = records(promotion.artifacts).find(
-    (artifact) => artifact.role === 'confirmation_html'
-  );
-  if (!markdownArtifact || !htmlArtifact) throw new Error('requirements_confirmation_page_missing');
+  const { markdown: markdownArtifact, html: htmlArtifact } = promotionPageArtifacts(promotion);
+  if (!markdownArtifact) throw new Error('requirements_confirmation_page_missing');
   const pageArtifacts = [
     {
       artifact: markdownArtifact,
-      role: 'final_markdown',
+      role: 'final_markdown' as const,
       mediaType: 'text/markdown',
       expectedHash: refreshReceipt
         ? refreshReceipt.pageArtifactBytesHash
         : markdownArtifact.artifactBytesHash,
     },
-    {
+    ...(htmlArtifact ? [{
       artifact: htmlArtifact,
-      role: 'confirmation_html',
+      role: 'confirmation_html' as const,
       mediaType: 'text/html',
       expectedHash: refreshReceipt
         ? refreshReceipt.htmlPageArtifactBytesHash
         : htmlArtifact.artifactBytesHash,
-    },
-  ];
+    }] : []),
+  ] as Array<{
+    artifact: JsonObject;
+    role: 'final_markdown' | 'confirmation_html';
+    mediaType: string;
+    expectedHash: string;
+  }>;
   const pageReadbacks = pageArtifacts.map((page) => {
     const targetPath = resolvePath(input.projectRoot, text(page.artifact.targetPath));
     const relative = path.relative(path.resolve(input.projectRoot), targetPath);

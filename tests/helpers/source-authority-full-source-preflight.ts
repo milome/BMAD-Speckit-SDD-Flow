@@ -31,7 +31,8 @@ export function measureFullSourceRequirementsJudgePreflight(input: { root: strin
       requestPolicy: { timeoutMs: 1000, maximumAttempts: 1, transportByteLimit: 1048576 } };
     const testBuildHash = sha256('test-only-build');
     const prepared = prepareRequirementsContractProductionJudgeRequest({
-      activeAuthority: { schemaVersion: 'requirements-active-authority/v2', activeSemanticRevisionId: input.compiled.semanticIr.semanticRevisionId,
+      recordRoot: input.root,
+      activeAuthority: { activeSemanticRevisionId: input.compiled.semanticIr.semanticRevisionId,
         activeScopeSemanticHash: input.compiled.semanticIr.scopeSemanticHash,
         activeBindingRevisionId: input.compiled.sourceBinding.bindingRevisionId,
         activeSourceBindingHash: input.compiled.sourceBinding.sourceBindingHash,
