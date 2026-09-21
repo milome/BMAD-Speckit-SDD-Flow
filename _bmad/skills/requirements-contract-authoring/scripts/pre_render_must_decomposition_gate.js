@@ -1164,6 +1164,12 @@ function buildReconciliationReport({
   const issues = [];
   const packetHash = packet?.packetHash ?? '';
   const projections = allPacketProjectionRows(packet ?? {});
+  const atomicTasksById = new Map(
+    sourceRowsForKey(confirmation, 'atomicImplementationTaskList').map((row, index) => [
+      rowId(row, String(index)),
+      row,
+    ])
+  );
   for (const projection of projections) {
     const targets = projectionMaterializedTargets(projection);
     if (!targets.length) {
@@ -1185,8 +1191,13 @@ function buildReconciliationReport({
 
   for (const group of SOURCE_ROW_GROUPS) {
     for (const [index, row] of sourceRowsForKey(confirmation, group.sourceKey).entries()) {
+      const canonicalAtomicTask =
+        group.sourceKey === 'implementationTasks'
+          ? atomicTasksById.get(rowId(row, String(index)))
+          : null;
       if (
         !isProjectionBacked(row, packetHash) &&
+        !(canonicalAtomicTask && isProjectionBacked(canonicalAtomicTask, packetHash)) &&
         !packetProjectionBacksSourceRow(projections, group.sourceKey, row, index)
       ) {
         issues.push(
