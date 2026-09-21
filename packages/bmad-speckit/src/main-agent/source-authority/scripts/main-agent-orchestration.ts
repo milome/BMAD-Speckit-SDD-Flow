@@ -15429,15 +15429,26 @@ function materializePreserveExistingBusinessVisualProofResync(input: {
       changedViewIds: string[];
     }
   | { ok: false; issues: PreConfirmationDrilldownIssue[]; artifacts: string[] } {
-  const resync = resyncExistingBusinessVisualProofClosure(input.confirmation, {
+  const packetHash = normalizeText(
+    recordObject(
+      recordObject(input.confirmation.preConfirmationDrilldown).mustDecompositionPacketRef
+    ).hash
+  );
+  const seededConfirmation = packetHash
+    ? {
+        ...input.confirmation,
+        implementationTasks: asRecordArray(input.confirmation.implementationTasks).map((row) => ({
+          ...row,
+          derivedFromPacketHash: packetHash,
+          projectionStatus: 'synchronized',
+        })),
+      }
+    : input.confirmation;
+  const resync = resyncExistingBusinessVisualProofClosure(seededConfirmation, {
     root: input.root,
     sourcePath: input.sourcePath,
     sourceText: input.sourceText,
-    packetHash: normalizeText(
-      recordObject(
-        recordObject(input.confirmation.preConfirmationDrilldown).mustDecompositionPacketRef
-      ).hash
-    ),
+    packetHash,
   });
   if (!resync.changed) {
     return { ok: true, changed: false, artifacts: [], changedViewIds: [] };
@@ -30132,6 +30143,21 @@ export function runMainAgentPreConfirmationDrilldown(
     if (localization.receipt) {
       writeJsonUtf8(paths.localizationMaterializationReceipt, localization.receipt);
     }
+  }
+  const draftPacketHash = normalizeText(packetHash);
+  if (draftPacketHash && asRecordArray(draftConfirmation.implementationTasks).length > 0) {
+    draftConfirmation = {
+      ...draftConfirmation,
+      implementationTasks: asRecordArray(draftConfirmation.implementationTasks).map((row) => {
+        const requirementRefs = uniqueNonEmpty(asStringArray(row.requirementRefs));
+        return {
+          ...row,
+          ...(requirementRefs.length === 1 ? { derivedFromMustRef: requirementRefs[0] } : {}),
+          derivedFromPacketHash: draftPacketHash,
+          projectionStatus: 'synchronized',
+        };
+      }),
+    };
   }
   const controlledMustArtifactDecision =
     initialIssues.length === 0
