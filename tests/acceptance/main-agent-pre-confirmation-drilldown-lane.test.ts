@@ -1659,6 +1659,7 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
         source,
         recordId: 'REQ-PRE-CONFIRMATION-FR-NFR-LEGACY-INLINE',
         requirementSetId: 'REQSET-PRE-CONFIRMATION-FR-NFR-LEGACY-INLINE',
+        implementationAttemptId: 'implementation-attempt-REQSET-PRE-CONFIRMATION-FR-NFR-LEGACY-INLINE',
         ...writeValidationAuthorityTarget(root),
       });
 
@@ -1684,10 +1685,10 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       const confirmation = draftProjection.implementationConfirmation;
       const intakeReceipt = readJson(paths.intakeReceipt);
       const intentLineageLedger = readJson(paths.intentLineageLedger);
-      const classificationBySpanId = new Map(
-        intentLineageLedger.classifications.map((classification: any) => [
-          classification.spanId,
-          classification,
+      const materialRootById = new Map(
+        intentLineageLedger.materialRoots.map((root: any) => [
+          root.sourceRootId,
+          root,
         ])
       );
 
@@ -1714,31 +1715,39 @@ describe('main-agent requirement_confirmation.pre_confirmation_drilldown lane', 
       expect(confirmation.must.map((row: any) => row.id)).toEqual(fixture.mustRequirementIds);
       expect(JSON.stringify(draftProjection)).not.toContain(fixture.staleMustId);
       for (const [index, sourceRequirementId] of fixture.sourceRequirementIds.entries()) {
-        const excerpt = intakeReceipt.excerpts.find((row: any) =>
-          row.content.includes(sourceRequirementId)
-        );
+        const excerpt = intakeReceipt.materialExcerpts.find((row: any) => {
+          const lines = readFileSync(source, 'utf8').split(/\r?\n/u);
+          return lines
+            .slice(row.range.startLine - 1, row.range.endLine)
+            .join('\n')
+            .includes(sourceRequirementId);
+        });
         expect(excerpt, `intake excerpt for ${sourceRequirementId}`).toBeTruthy();
-        expect(classificationBySpanId.get(excerpt.excerptId)).toMatchObject({
+        expect(materialRootById.get(excerpt.sourceRootId)).toMatchObject({
           disposition: 'source_root',
-          sourceRootRefs: [fixture.mustRequirementIds[index]],
+          semanticNodeRefs: [fixture.mustRequirementIds[index]],
         });
       }
-      const staleProjectionExcerpt = intakeReceipt.excerpts.find((row: any) =>
-        row.content.includes(fixture.staleMustId)
+      const sourceLines = readFileSync(source, 'utf8').split(/\r?\n/u);
+      const staleProjectionExcerpt = intakeReceipt.materialExcerpts.find((row: any) =>
+        sourceLines
+          .slice(row.range.startLine - 1, row.range.endLine)
+          .join('\n')
+          .includes(fixture.staleMustId)
       );
-      expect(staleProjectionExcerpt, 'stale projection intake excerpt').toBeTruthy();
-      expect(classificationBySpanId.get(staleProjectionExcerpt.excerptId)).toMatchObject({
-        disposition: 'excluded',
-        exclusionRuleRef: 'non-semantic-source-line/v1',
-      });
-      const titleExcerpt = intakeReceipt.excerpts.find((row: any) =>
-        row.content.includes('# Legacy Inline MUST With Source Tables')
-      );
-      expect(titleExcerpt, 'source title intake excerpt').toBeTruthy();
-      expect(classificationBySpanId.get(titleExcerpt.excerptId)).toMatchObject({
-        disposition: 'excluded',
-        exclusionRuleRef: 'non-semantic-source-line/v1',
-      });
+      expect(staleProjectionExcerpt, 'stale projection source range').toBeUndefined();
+      expect(intentLineageLedger.excludedRanges.some((range: any) =>
+        sourceLines
+          .slice(range.startLine - 1, range.endLine)
+          .join('\n')
+          .includes(fixture.staleMustId)
+      )).toBe(true);
+      expect(intentLineageLedger.excludedRanges.some((range: any) =>
+        sourceLines
+          .slice(range.startLine - 1, range.endLine)
+          .join('\n')
+          .includes('# Legacy Inline MUST With Source Tables')
+      )).toBe(true);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

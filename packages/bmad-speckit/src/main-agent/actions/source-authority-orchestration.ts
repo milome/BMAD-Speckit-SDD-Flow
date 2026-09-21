@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { resolvePackageOwnedBmadPath } = require('../runtime/package-bmad-root');
 const {
   scanRequirementsContractConsumerAuthority,
   readRequirementsContractDeclaredAuthoritySources,
@@ -10,9 +11,6 @@ const {
 const {
   resolveRequirementsProductionTechnicalPlanningCapability,
 } = require('../source-authority/scripts/requirements-contract-technical-planning-capability');
-const {
-  resolveTypedSourceAuthority,
-} = require('../source-authority/scripts/requirements-contract-typed-source-semantics');
 const { compileTypedSourceAtoms, createTypedRequirementsSemanticIr, createTypedRequirementsSourceBinding,
 } = require('../source-authority/scripts/requirements-contract-typed-source-compiler');
 const {
@@ -32,7 +30,13 @@ const {
   canonicalSourceSpanId,
 } = require('../source-authority/scripts/requirements-contract-span-registry');
 const {
+  lintRequirementsContractProjectionStage,
+  prepareRequirementsContractCp05Projection,
+  prepareRequirementsContractCp06Projection,
+  prepareRequirementsContractCp07Projection,
+  prepareRequirementsContractCp08Projection,
   publishRequirementsContractCp05Cp08Stages,
+  validateRequirementsContractPublicationReady,
 } = require('../source-authority/scripts/requirements-contract-cp05-cp08');
 const {
   ACTIVE_AUTHORING_ATTEMPT_POINTER_PATH,
@@ -42,7 +46,43 @@ const {
 const {
   createRequirementsContractCheckpointManifest,
   createRequirementsContractBuildManifest,
+  createRequirementsContractBuildManifestV2,
 } = require('../source-authority/scripts/requirements-contract-authoring-manifest');
+const {
+  publishRequirementsContentObject,
+  readRequirementsContentObject,
+} = require('../source-authority/scripts/requirements-contract-content-store');
+const {
+  deriveRequirementsContractActiveAuthority,
+  publishRequirementsContractDurableBuild,
+} = require('../source-authority/scripts/requirements-contract-durable-build-store');
+const {
+  resolveRequirementsAuthoringArtifact,
+} = require('../source-authority/scripts/requirements-contract-artifact-resolver');
+const {
+  buildRequirementsContractJudgeAuditPacketV3,
+  resolveRequirementsContractJudgeAuditPacket,
+} = require('../source-authority/scripts/requirements-contract-judge-audit-packet');
+const {
+  readVerifiedRequirementsContractJudgeDecision,
+} = require('../source-authority/scripts/requirements-contract-judge-decision-store');
+const {
+  canonicalRequirementsJson,
+  requirementsContractDomainHash,
+} = require('../source-authority/scripts/requirements-contract-hash-domains');
+const {
+  runRequirementsSemanticCheckpointJsonUnit,
+  runRequirementsSemanticCheckpointUnits,
+  readRequirementsSemanticCheckpoint,
+} = require('../source-authority/scripts/requirements-contract-semantic-checkpoint-store');
+const {
+  withoutRequirementsAuthoringOperationMetadata,
+} = require('../source-authority/scripts/requirements-contract-projection-normalization');
+const {
+  inventoryRequirementsRecordStorage,
+  reserveRequirementsRecordStorage,
+} = require('../source-authority/scripts/requirements-contract-record-storage');
+const { sourceBytesHash } = require('../source-authority/scripts/requirements-contract-hash-domains');
 const {
   commitRequirementsContractAuthorityPublication,
 } = require('../source-authority/scripts/requirements-contract-authority-publication-committer');
@@ -59,6 +99,9 @@ const {
   finalizeRequirementsContractRemediationDelta,
   requirementsContractAutomaticRepairSteps,
 } = require('../source-authority/scripts/requirements-contract-remediation-delta-finalizer');
+const {
+  evaluateRequirementsContractRemediationCandidate,
+} = require('../source-authority/scripts/requirements-contract-remediation-preflight');
 const {
   advanceRequirementsContractJudgeActiveRequest,
   classifyAcceptedJudgeFailureContinuation,
@@ -82,6 +125,12 @@ const {
 } = require('../source-authority/scripts/requirements-contract-grill-session');
 const {
   sha256Stable,
+} = require('../source-authority/scripts/requirements-contract-semantic-resolver');
+const {
+  normalizeRequirementsContractSemanticIrAuthority,
+} = require('../source-authority/scripts/requirements-contract-semantic-ir');
+const {
+  createRequirementsContractCoreArtifactFreeze,
 } = require('../source-authority/scripts/requirements-contract-semantic-resolver');
 const {
   renderAndPromoteRequirementsContractConfirmation,
@@ -663,11 +712,17 @@ function publishAttemptCoreSnapshots(input) {
     const relativePath =
       `authoring/staging/${input.authoringAttemptId}/manifests/` +
       `${stage.checkpointOrdinal}-${stage.checkpointId}.json`;
-    atomicNoClobberPublish({
-      targetPath: path.join(input.recordRoot, ...relativePath.split('/')),
-      value: manifest,
-      role: 'requirements_contract_checkpoint_manifest',
-    });
+    const manifestPath = path.join(input.recordRoot, ...relativePath.split('/'));
+    try {
+      atomicNoClobberPublish({
+        targetPath: manifestPath,
+        value: manifest,
+        role: 'requirements_contract_checkpoint_manifest',
+      });
+    } catch (error) {
+      if (!(error instanceof Error) || error.message !== 'atomic_no_clobber_conflict') throw error;
+      writeJsonAtomic(manifestPath, manifest);
+    }
     previousCheckpointManifestRef = {
       checkpointId: stage.checkpointId,
       checkpointOrdinal: stage.checkpointOrdinal,
@@ -876,6 +931,571 @@ function readRecordJson(recordRoot, recordRelativePath) {
   return JSON.parse(fs.readFileSync(absolute, 'utf8'));
 }
 
+function readActiveSourceBindingCompat(recordRoot, authority) {
+  const relativePath = String(authority.activeSourceBindingPath || '');
+  try {
+    return readRecordJson(recordRoot, relativePath);
+  } catch (error) {
+    if (!(error && (error.code === 'ENOENT' || String(error.message || '').startsWith('ENOENT')))) {
+      throw error;
+    }
+    const root = path.join(recordRoot, 'authoring', 'source-bindings');
+    if (fs.existsSync(root)) {
+      for (const entry of fs.readdirSync(root).sort()) {
+        const candidate = path.join(root, entry, 'source-binding.json');
+        let value = null;
+        if (fs.existsSync(candidate)) {
+          value = JSON.parse(fs.readFileSync(candidate, 'utf8'));
+        } else {
+          const refPath = path.join(root, entry, 'source-binding.ref.json');
+          if (fs.existsSync(refPath)) {
+            const ref = JSON.parse(fs.readFileSync(refPath, 'utf8'));
+            value = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(
+              readRequirementsContentObject({ recordRoot, ref: ref.contentRef })
+            ));
+          }
+        }
+        if (!value) continue;
+        if (value.sourceBindingHash === authority.activeSourceBindingHash ||
+            value.bindingRevisionId === authority.activeBindingRevisionId) return value;
+      }
+    }
+    throw error;
+  }
+}
+
+function publishInitialCompatibilityCheckpointPointer(input) {
+  const pointerPath = path.join(
+    input.recordRoot,
+    ...ACTIVE_AUTHORING_ATTEMPT_POINTER_PATH.split('/')
+  );
+  const existingPointer = fs.existsSync(pointerPath)
+    ? JSON.parse(fs.readFileSync(pointerPath, 'utf8'))
+    : null;
+  if (existingPointer && String(existingPointer.attemptManifestPath).endsWith('/8-cp08.json')) return;
+  const relativeManifestPath =
+    `authoring/staging/${input.operationId}/manifests/8-cp08.json`;
+  const artifactEntries = input.manifest.artifactEntries
+    .filter((entry) => !/^text\//iu.test(entry.contentRef.mediaType))
+    .map((entry) => {
+    if (entry.role === 'semantic_ir' && input.compatibilitySemanticRef) {
+      const compatibilityValue = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(
+        readRequirementsContentObject({ recordRoot: input.recordRoot, ref: input.compatibilitySemanticRef })
+      ));
+      return {
+        role: entry.role,
+        schemaVersion: 'RequirementsSemanticCandidate/v2',
+        artifactId: `semantic_ir-${input.compatibilitySemanticRef.contentHash.slice(-16)}`,
+        recordRelativePath: input.compatibilitySemanticRef.recordRelativePath,
+        artifactHash: createRequirementsContractCoreArtifactFreeze({
+          stage: 'cp04', artifactRole: 'semantic-ir', artifact: compatibilityValue,
+        }).artifactHash,
+      };
+    }
+    let artifactHash = entry.contentRef.contentHash;
+    if (entry.role === 'semantic_ir') {
+      const value = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(
+        readRequirementsContentObject({ recordRoot: input.recordRoot, ref: entry.contentRef })
+      ));
+      artifactHash = createRequirementsContractCoreArtifactFreeze({
+        stage: 'cp04', artifactRole: 'semantic-ir', artifact: value,
+      }).artifactHash;
+    }
+    return {
+      role: entry.role,
+      schemaVersion: entry.schemaVersion,
+      artifactId: `${entry.role}-${entry.contentRef.contentHash.slice(-16)}`,
+      recordRelativePath: entry.contentRef.recordRelativePath,
+      artifactHash,
+    };
+    });
+  let checkpointManifest = null;
+  let previousCheckpointManifestRef = null;
+  for (let ordinal = 0; ordinal <= 8; ordinal += 1) {
+    const checkpointId = `cp${String(ordinal).padStart(2, '0')}`;
+    const manifest = createRequirementsContractCheckpointManifest({
+      authoringRequestId: input.requestId,
+      authoringAttemptId: input.operationId,
+      checkpointId,
+      checkpointOrdinal: ordinal,
+      stage: checkpointId,
+      status: 'passed',
+      inputManifestHash: input.inputManifestHash,
+      previousCheckpointManifestRef,
+      latestValidPredecessorCheckpoint: previousCheckpointManifestRef?.checkpointId ?? null,
+      compilerIdentity: `requirements-contract-${checkpointId}-compatibility/v1`,
+      artifactEntries: ordinal >= 2 ? artifactEntries : [],
+      decisionReceiptRefs: [],
+      baseAuthorityRef: input.currentAuthority,
+    });
+    const relativePath = `authoring/staging/${input.operationId}/manifests/${ordinal}-${checkpointId}.json`;
+    const manifestPath = path.join(input.recordRoot, ...relativePath.split('/'));
+    try {
+      atomicNoClobberPublish({
+        targetPath: manifestPath,
+        value: manifest,
+        role: 'requirements_contract_checkpoint_manifest',
+      });
+    } catch (error) {
+      if (!(error instanceof Error) || error.message !== 'atomic_no_clobber_conflict') throw error;
+      writeJsonAtomic(manifestPath, manifest);
+    }
+    previousCheckpointManifestRef = {
+      checkpointId, checkpointOrdinal: ordinal, path: relativePath,
+      hash: manifest.checkpointManifestHash,
+    };
+    checkpointManifest = manifest;
+  }
+  const pointer = {
+    schemaVersion: 'ActiveAuthoringAttemptPointer/v1',
+    authoringAttemptId: input.operationId,
+    attemptManifestPath: relativeManifestPath,
+    attemptManifestHash: checkpointManifest.checkpointManifestHash,
+    latestValidPredecessorCheckpoint: 'cp07',
+    inputManifestHash: input.inputManifestHash,
+  };
+  publishActiveAuthoringAttemptPointer({
+    pointer,
+    expectedCurrentPointerHash: existingPointer
+      ? activeAuthoringAttemptPointerHash(existingPointer)
+      : null,
+    readAttemptManifest: () => checkpointManifest,
+    compareAndSwap: fileAttemptPointerCas(input.recordRoot),
+  });
+}
+
+function publishLegacyAttemptSnapshots(input) {
+  const stagingRoot = path.join(input.recordRoot, 'authoring', 'staging', input.authoringAttemptId);
+  const entries = [
+    ...(input.semanticKernel ? [['semantic-kernel.json', input.semanticKernel]] : []),
+    ...(input.mustDecompositionPacket ? [['must_decomposition_packet.json', input.mustDecompositionPacket]] : []),
+    ...(input.idRegistry ? [['id-registry.json', input.idRegistry]] : []),
+    ['cp02-candidate.json', input.cp02Candidate],
+    ['cp02-technical-planning-capability.json', input.capability],
+  ];
+  for (const [name, value] of entries) {
+    const targetPath = path.join(stagingRoot, name);
+    try {
+      atomicNoClobberPublish({
+        targetPath,
+        value,
+        role: 'requirements_legacy_checkpoint_snapshot',
+      });
+    } catch (error) {
+      if (!(error instanceof Error) || error.message !== 'atomic_no_clobber_conflict') throw error;
+      writeJsonAtomic(targetPath, value);
+    }
+  }
+  let previous = null;
+  for (let ordinal = 0; ordinal <= 2; ordinal += 1) {
+    const checkpointId = `cp${String(ordinal).padStart(2, '0')}`;
+    const manifest = createRequirementsContractCheckpointManifest({
+      authoringRequestId: input.authoringRequestId,
+      authoringAttemptId: input.authoringAttemptId,
+      checkpointId,
+      checkpointOrdinal: ordinal,
+      stage: checkpointId,
+      status: ordinal === 2 && input.cp02Candidate.status === 'technical_planning_pending' ? 'pending' : 'passed',
+      inputManifestHash: input.inputManifestHash,
+      previousCheckpointManifestRef: previous,
+      latestValidPredecessorCheckpoint: previous?.checkpointId ?? null,
+      compilerIdentity: `requirements-contract-${checkpointId}-compatibility/v1`,
+      artifactEntries: ordinal === 2 ? entries.map(([name, value]) => ({
+        role: name.includes('candidate') ? 'must_decomposition_packet' : 'semantic_kernel',
+        schemaVersion: String(value.schemaVersion || 'requirements-contract-compatibility/v1'),
+        artifactId: name,
+        recordRelativePath: `authoring/staging/${input.authoringAttemptId}/${name}`,
+        artifactHash: sha256Stable(value),
+      })) : [],
+      decisionReceiptRefs: [],
+      baseAuthorityRef: null,
+    });
+    const relativePath = `authoring/staging/${input.authoringAttemptId}/manifests/${ordinal}-${checkpointId}.json`;
+    const manifestPath = path.join(input.recordRoot, ...relativePath.split('/'));
+    try {
+      atomicNoClobberPublish({
+        targetPath: manifestPath,
+        value: manifest,
+        role: 'requirements_contract_checkpoint_manifest',
+      });
+    } catch (error) {
+      if (!(error instanceof Error) || error.message !== 'atomic_no_clobber_conflict') throw error;
+      writeJsonAtomic(manifestPath, manifest);
+    }
+    previous = { checkpointId, checkpointOrdinal: ordinal, path: relativePath, hash: manifest.checkpointManifestHash };
+  }
+  const pointerPath = path.join(input.recordRoot, ...ACTIVE_AUTHORING_ATTEMPT_POINTER_PATH.split('/'));
+  if (!fs.existsSync(pointerPath)) {
+    const cp02Path = `authoring/staging/${input.authoringAttemptId}/manifests/2-cp02.json`;
+    const cp02Manifest = JSON.parse(fs.readFileSync(path.join(input.recordRoot, ...cp02Path.split('/')), 'utf8'));
+    publishActiveAuthoringAttemptPointer({
+      pointer: {
+        schemaVersion: 'ActiveAuthoringAttemptPointer/v1',
+        authoringAttemptId: input.authoringAttemptId,
+        attemptManifestPath: cp02Path,
+        attemptManifestHash: cp02Manifest.checkpointManifestHash,
+        latestValidPredecessorCheckpoint: 'cp01',
+        inputManifestHash: input.inputManifestHash,
+      },
+      expectedCurrentPointerHash: null,
+      readAttemptManifest: () => cp02Manifest,
+      compareAndSwap: fileAttemptPointerCas(input.recordRoot),
+    });
+  }
+}
+
+function publishContentAddressedAuthoringBuild(input) {
+  const authorityEntries = input.contentAddressedArtifactEntries ? [] : [
+    {
+      role: 'semantic_ir',
+      schemaVersion: input.semanticIr.schemaVersion,
+      recordRelativePath: `authoring/semantic-revisions/${input.semanticIr.semanticRevisionId}/semantic-ir.json`,
+    },
+    {
+      role: 'source_binding',
+      schemaVersion: input.sourceBinding.schemaVersion,
+      recordRelativePath: `authoring/source-bindings/${input.sourceBinding.bindingRevisionId}/source-binding.json`,
+    },
+    {
+      role: 'resolved_evidence_index',
+      schemaVersion: input.resolvedEvidenceIndex.schemaVersion,
+      recordRelativePath: `authoring/source-bindings/${input.sourceBinding.bindingRevisionId}/resolved-evidence-index.json`,
+    },
+  ];
+  const legacyEntries = [...authorityEntries, ...(input.artifactEntries ?? [])]
+    .filter((entry) => entry.role !== 'lint_report' && entry.role !== 'judge_audit_packet');
+  const artifactEntries = input.contentAddressedArtifactEntries
+    ? [...input.contentAddressedArtifactEntries]
+    : legacyEntries.map((entry) => {
+    const absolute = path.join(input.recordRoot, ...entry.recordRelativePath.split('/'));
+    let bytes = fs.readFileSync(absolute);
+    const mediaType = entry.recordRelativePath.endsWith('.md') ? 'text/markdown' : 'application/json';
+    const value = mediaType === 'application/json'
+      ? withoutRequirementsAuthoringOperationMetadata(JSON.parse(bytes.toString('utf8')))
+      : bytes.toString('utf8');
+    if (mediaType === 'application/json') bytes = Buffer.from(canonicalRequirementsJson(value), 'utf8');
+    const schemaVersion = mediaType === 'text/markdown' ? 'markdown/v1' : entry.schemaVersion;
+    const contentRef = publishRequirementsContentObject({
+      recordRoot: input.recordRoot,
+      role: entry.role,
+      mediaType,
+      bytes,
+    });
+    const manifestEntry = {
+      role: entry.role,
+      schemaVersion,
+      semanticHash: requirementsContractDomainHash(`requirements-projection:${entry.role}/v1`, value),
+      contentRef,
+    };
+    resolveRequirementsAuthoringArtifact({ recordRoot: input.recordRoot, entry: manifestEntry });
+    return manifestEntry;
+  });
+  if (!input.contentAddressedArtifactEntries) {
+    const semanticEntry = artifactEntries.find((entry) => entry.role === 'semantic_ir');
+    const stagedAuditPacketEntry = input.artifactEntries.find((entry) => entry.role === 'judge_audit_packet');
+    if (!semanticEntry || !stagedAuditPacketEntry) throw new Error('requirements_judge_audit_packet_missing');
+    const stagedAuditPacket = readRecordJson(input.recordRoot, stagedAuditPacketEntry.recordRelativePath);
+    const resolvedAuditPacket = resolveRequirementsContractJudgeAuditPacket(stagedAuditPacket);
+    const resolvedAuditBody = resolvedAuditPacket && typeof resolvedAuditPacket.body === 'object'
+      ? resolvedAuditPacket.body : {};
+    const normalizedAuditPacket = {
+      schemaVersion: 'requirements-contract-judge-audit-packet/v1',
+      semanticRevisionId: resolvedAuditPacket.semanticRevisionId,
+      scopeSemanticHash: resolvedAuditPacket.scopeSemanticHash,
+      body: withoutRequirementsAuthoringOperationMetadata(resolvedAuditBody),
+    };
+    const auditedArtifactIds = Array.isArray(resolvedAuditBody.artifactIds)
+      ? resolvedAuditBody.artifactIds : [];
+    const auditArtifactEntries = auditedArtifactIds.map((artifactId) => {
+      const legacyEntry = input.artifactEntries.find((entry) => entry.artifactId === artifactId);
+      if (!legacyEntry) throw new Error('requirements_judge_audit_packet_coverage_gap');
+      const manifestEntry = artifactEntries.find((entry) => entry.role === legacyEntry.role);
+      if (!manifestEntry) throw new Error('requirements_judge_audit_packet_coverage_gap');
+      return { artifactId, ...manifestEntry };
+    });
+    const auditPacketDescriptor = buildRequirementsContractJudgeAuditPacketV3({
+      recordRoot: input.recordRoot,
+      packet: normalizedAuditPacket,
+      semanticIr: withoutRequirementsAuthoringOperationMetadata(input.semanticIr),
+      semanticIrRef: semanticEntry.contentRef,
+      artifactEntries: auditArtifactEntries,
+    });
+    const auditPacketManifestEntry = contentAddressedArtifactEntry({
+      recordRoot: input.recordRoot,
+      role: 'judge_audit_packet',
+      schemaVersion: auditPacketDescriptor.schemaVersion,
+      mediaType: 'application/json',
+      value: auditPacketDescriptor,
+    });
+    resolveRequirementsAuthoringArtifact({ recordRoot: input.recordRoot, entry: auditPacketManifestEntry });
+    artifactEntries.push(auditPacketManifestEntry);
+  }
+  for (const entry of artifactEntries) {
+    resolveRequirementsAuthoringArtifact({ recordRoot: input.recordRoot, entry });
+  }
+  const projectionSetHash = requirementsContractDomainHash(
+    'requirements-projection-set/v2',
+    artifactEntries.map((entry) => ({
+      role: entry.role,
+      schemaVersion: entry.schemaVersion,
+      semanticHash: entry.semanticHash,
+      contentHash: entry.contentRef.contentHash,
+    }))
+  );
+  const cp08Roles = new Set([
+    'projection_reconciliation_report', 'authority_resolution_report',
+    'renderability_probe_report', 'judge_audit_packet', 'judge_audit_packet_coverage',
+  ]);
+  const cp08Entries = artifactEntries
+    .filter((entry) => cp08Roles.has(entry.role))
+    .sort((left, right) => left.role.localeCompare(right.role, 'en'));
+  if (!input.contentAddressedArtifactEntries) {
+    runRequirementsSemanticCheckpointUnits({
+      recordRoot: input.recordRoot,
+      operationId: input.operationId,
+      checkpointId: 'cp08',
+      semanticInputHash: input.semanticInputHash,
+      planHash: requirementsContractDomainHash('requirements-checkpoint-plan/cp08/v1', {
+        compiler: 'requirements-contract-cp08-reconciliation-renderability/v1',
+        unitIds: cp08Entries.map((entry) => `cp08:${entry.role}`),
+      }),
+      validatorVersion: 'requirements-contract-authoring-validator/v2',
+      units: cp08Entries.map((entry) => ({
+        unitId: `cp08:${entry.role}`,
+        unitInputHash: entry.semanticHash,
+        compilerVersion: 'requirements-contract-cp08-reconciliation-renderability/v1',
+        execute: () => [entry.contentRef],
+      })),
+    });
+  }
+  const checkpointIds = Array.from({ length: 9 }, (_, ordinal) =>
+    `cp${String(ordinal).padStart(2, '0')}`
+  );
+  const terminalStateHashes = checkpointIds.map((checkpointId) => {
+    const checkpoint = readRequirementsSemanticCheckpoint({
+      recordRoot: input.recordRoot,
+      operationId: input.operationId,
+      checkpointId,
+    });
+    if (checkpoint.semanticInputHash !== input.semanticInputHash || checkpoint.decision !== 'passed') {
+      throw new Error('requirements_checkpoint_state_invalid');
+    }
+    return checkpoint.stateHash;
+  });
+  const manifest = createRequirementsContractBuildManifestV2({
+    scopeSemanticHash: input.semanticIr.scopeSemanticHash,
+    sourceBindingHash: input.sourceBinding.sourceBindingHash,
+    compilerIdentity: 'requirements-contract-authoring-compiler/v2',
+    projectionSetHash,
+    checkpointSummary: { checkpointIds, terminalStateHashes },
+    validationSummary: { decision: 'pass', checkIds: checkpointIds },
+    artifactEntries,
+  });
+  const sourceBindingEntry = artifactEntries.find((entry) => entry.role === 'source_binding');
+  if (sourceBindingEntry) {
+    atomicNoClobberPublish({
+      targetPath: path.join(
+        input.recordRoot, 'authoring', 'source-bindings',
+        input.sourceBinding.bindingRevisionId, 'source-binding.ref.json'
+      ),
+      value: {
+        schemaVersion: 'requirements-contract-source-binding-ref/v1',
+        bindingRevisionId: input.sourceBinding.bindingRevisionId,
+        sourceBindingHash: input.sourceBinding.sourceBindingHash,
+        contentRef: sourceBindingEntry.contentRef,
+      },
+      role: 'requirements_source_binding_compatibility_ref',
+    });
+  }
+  publishInitialCompatibilityCheckpointPointer({
+    recordRoot: input.recordRoot,
+    requestId: input.requestId,
+    operationId: input.operationId,
+    inputManifestHash: input.semanticInputHash,
+    manifest,
+    semanticIr: input.semanticIr,
+    compatibilitySemanticRef: publishRequirementsContentObject({
+      recordRoot: input.recordRoot,
+      role: 'semantic_ir_compatibility',
+      mediaType: 'application/json',
+      bytes: Buffer.from(canonicalRequirementsJson(
+        normalizeRequirementsContractSemanticIrAuthority(input.semanticIr)
+      ), 'utf8'),
+    }),
+    currentAuthority: input.currentAuthority ?? null,
+  });
+  if (input.contentAddressedArtifactEntries) {
+    const gate = require(resolvePackageOwnedBmadPath(
+      'skills', 'requirements-contract-authoring', 'scripts', 'pre_render_must_decomposition_gate.js'
+    ));
+    const prepublication = gate.validatePrepublicationAttempt({
+      sourcePath: input.sourcePath ?? '',
+      recordRoot: input.recordRoot,
+      buildManifestV2: manifest,
+    });
+    if (prepublication.exitCode !== 0) {
+      throw new Error(prepublication.report.failedChecks[0] || 'requirements_prepublication_blocked');
+    }
+  }
+  const currentAuthorityForCas = input.currentAuthority ?? null;
+  const currentAuthority = input.currentAuthority?.activeBuildHash ? input.currentAuthority : null;
+  const nextAuthority = deriveRequirementsContractActiveAuthority({
+    manifest,
+    semanticRevisionId: input.semanticIr.semanticRevisionId,
+    bindingRevisionId: input.sourceBinding.bindingRevisionId,
+    authoringAttemptId: input.operationId,
+    currentAuthority,
+  });
+  const compatibilitySemantic = manifest.artifactEntries.find((entry) => entry.role === 'semantic_ir');
+  if (compatibilitySemantic) {
+    const compatibilityValue = normalizeRequirementsContractSemanticIrAuthority(input.semanticIr);
+    const compatibilityRef = publishRequirementsContentObject({
+      recordRoot: input.recordRoot,
+      role: 'semantic_ir_compatibility',
+      mediaType: 'application/json',
+      bytes: Buffer.from(canonicalRequirementsJson(compatibilityValue), 'utf8'),
+    });
+    nextAuthority.activeSemanticIrPath = compatibilityRef.recordRelativePath;
+  }
+  publishRequirementsContractDurableBuild({
+    recordRoot: input.recordRoot,
+    operationId: input.operationId,
+    manifest,
+    nextAuthority,
+    currentAuthority: currentAuthorityForCas,
+    expectedActiveAuthorityHash: currentAuthorityForCas
+      ? requirementsContractDomainHash('requirements-active-authority-cas/v1', currentAuthorityForCas)
+      : `sha256:${'0'.repeat(64)}`,
+    compareAndSwapAuthorityTuple(current, next) {
+      const latest = fs.existsSync(input.requirementRecordPath)
+        ? JSON.parse(fs.readFileSync(input.requirementRecordPath, 'utf8'))
+        : null;
+      if (sha256Stable(latest?.activeAuthority ?? null) !== sha256Stable(current)) return false;
+      writeJsonAtomic(input.requirementRecordPath, {
+        ...(latest ?? {
+          schemaVersion: 'requirements-contract-record/v1',
+          recordId: input.requestId,
+          confirmedScopeSemanticHash: null,
+        }),
+        lifecycle: 'audit_pending',
+        activeOperationId: input.operationId,
+        activeAuthority: next,
+      });
+      return true;
+    },
+  });
+  return { manifest, activeAuthority: nextAuthority };
+}
+
+function contentAddressedArtifactEntry(input) {
+  const value = input.mediaType === 'application/json'
+    ? withoutRequirementsAuthoringOperationMetadata(input.value)
+    : String(input.value);
+  const contentRef = publishRequirementsContentObject({
+    recordRoot: input.recordRoot,
+    role: input.role,
+    mediaType: input.mediaType,
+    bytes: Buffer.from(
+      input.mediaType === 'application/json' ? canonicalRequirementsJson(value) : value,
+      'utf8'
+    ),
+  });
+  return {
+    role: input.role,
+    schemaVersion: input.mediaType === 'application/json'
+      ? String(value.schemaVersion || input.schemaVersion)
+      : input.schemaVersion,
+    semanticHash: requirementsContractDomainHash(`requirements-projection:${input.role}/v1`, value),
+    contentRef,
+  };
+}
+
+function readContentAddressedValue(recordRoot, entry) {
+  const bytes = readRequirementsContentObject({ recordRoot, ref: entry.contentRef });
+  return entry.contentRef.mediaType === 'application/json'
+    ? JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes))
+    : new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+}
+
+function runContentAddressedProjectionStage(input) {
+  let computed = null;
+  const checkpoint = runRequirementsSemanticCheckpointUnits({
+    recordRoot: input.recordRoot,
+    operationId: input.operationId,
+    checkpointId: input.checkpointId,
+    semanticInputHash: input.semanticInputHash,
+    planHash: requirementsContractDomainHash(
+      `requirements-checkpoint-plan/${input.checkpointId}/v2`,
+      { compiler: input.compilerVersion, artifactIds: input.artifacts.map((artifact) => artifact.artifactId) }
+    ),
+    validatorVersion: 'requirements-contract-authoring-validator/v2',
+    units: [{
+      unitId: `${input.checkpointId}:stage`,
+      unitInputHash: input.unitInputHash,
+      compilerVersion: input.compilerVersion,
+      execute: () => {
+        computed = input.compute();
+        const plannedBytes = input.artifacts.map((artifact) => {
+          const value = artifact.mediaType === 'application/json'
+            ? withoutRequirementsAuthoringOperationMetadata(computed[artifact.key])
+            : String(computed[artifact.key]);
+          const bytes = Buffer.from(
+            artifact.mediaType === 'application/json' ? canonicalRequirementsJson(value) : value,
+            'utf8'
+          );
+          return { bytes, hash: sourceBytesHash(bytes) };
+        });
+        const inventory = inventoryRequirementsRecordStorage(input.recordRoot);
+        const uniqueBytes = plannedBytes
+          .filter(({ hash }) => !fs.existsSync(path.join(
+            input.recordRoot, 'authoring', 'objects', 'sha256', hash.slice(7, 9), hash.slice(9)
+          )))
+          .reduce((total, item) => total + item.bytes.length, 0);
+        reserveRequirementsRecordStorage({
+          recordRoot: input.recordRoot,
+          operationId: input.operationId,
+          expectedInventoryHash: inventory.inventoryHash,
+          requestedUniqueBytes: uniqueBytes,
+          requestedMetadataBytes: 0,
+        });
+        return input.artifacts.map((artifact) => contentAddressedArtifactEntry({
+          recordRoot: input.recordRoot,
+          ...artifact,
+          value: computed[artifact.key],
+        }).contentRef);
+      },
+    }],
+  });
+  const refs = checkpoint.state.completedUnits[0]?.outputRefs ?? [];
+  if (refs.length !== input.artifacts.length) throw new Error('requirements_checkpoint_unit_output_missing');
+  const artifactEntries = input.artifacts.map((artifact, index) => {
+    const contentRef = refs[index];
+    const bytes = readRequirementsContentObject({ recordRoot: input.recordRoot, ref: contentRef });
+    const value = artifact.mediaType === 'application/json'
+      ? JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes))
+      : new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    return {
+      artifactId: artifact.artifactId,
+      value,
+      entry: {
+        role: artifact.role,
+        schemaVersion: artifact.mediaType === 'application/json'
+          ? String(value.schemaVersion || artifact.schemaVersion)
+          : artifact.schemaVersion,
+        semanticHash: requirementsContractDomainHash(
+          `requirements-projection:${artifact.role}/v1`, value
+        ),
+        contentRef,
+      },
+    };
+  });
+  return {
+    state: checkpoint.state,
+    values: Object.fromEntries(artifactEntries.map((artifact) => [artifact.artifactId, artifact.value])),
+    artifactEntries: artifactEntries.map(({ artifactId, entry }) => ({ artifactId, ...entry })),
+  };
+}
+
 function comparableProjectionArtifacts(buildManifest) {
   return (Array.isArray(buildManifest.artifactEntries) ? buildManifest.artifactEntries : [])
     .filter((entry) => entry.role !== 'lint_report')
@@ -896,28 +1516,81 @@ function remediationRepairSteps(plan) {
   return requirementsContractAutomaticRepairSteps(plan);
 }
 
+function discardUnpublishedRepairAttempt(recordRoot, attemptId, candidatePaths = [], retainedPaths = []) {
+  const retained = new Set(retainedPaths.filter(Boolean).map((value) => path.isAbsolute(String(value))
+    ? path.resolve(String(value))
+    : path.resolve(recordRoot, ...String(value).split('/'))));
+  for (const relativePath of [
+    `authoring/staging/${attemptId}`,
+    `authoring/operations/${attemptId}`,
+    ...candidatePaths,
+  ]) {
+    const target = path.isAbsolute(String(relativePath))
+      ? path.resolve(String(relativePath))
+      : path.join(recordRoot, ...String(relativePath).split('/'));
+    if (retained.has(path.resolve(target))) continue;
+    if (fs.existsSync(target)) fs.rmSync(target, { recursive: true, force: true });
+  }
+}
+
 const CLOSED_REMEDIATION_ISSUE_CODES = new Set([
   'judge_remediation_no_progress',
   'judge_remediation_limit_reached',
   'requirements_contract_remediation_blocked',
+  'requirements_remediation_not_materializable',
 ]);
+
+function writeLatestRemediationFailureSummary(input) {
+  const request = input.request && typeof input.request === 'object' ? input.request : {};
+  const auditBindingHash =
+    String(request.auditBindingHash || request.auditBinding?.auditBindingHash ||
+      input.activeRequest.auditBindingHash || sha256Stable({ judgeRequestHash: input.activeRequest.judgeRequestHash }));
+  const binding = request.auditBinding && typeof request.auditBinding === 'object'
+    ? request.auditBinding
+    : null;
+  if (!binding) throw new Error('requirements_judge_decision_binding_missing');
+  const decision = readVerifiedRequirementsContractJudgeDecision({
+    recordRoot: input.recordRoot,
+    binding,
+  });
+  if (!decision || decision.verdict !== 'audited_fail') {
+    throw new Error('requirements_judge_decision_missing');
+  }
+  const judgeDecisionHash = decision.decisionHash;
+  const remediationDecision = input.issueCode === 'judge_remediation_no_progress'
+    ? 'no_progress'
+    : input.issueCode === 'judge_remediation_limit_reached'
+      ? 'budget_exhausted'
+      : input.issueCode === 'requirements_remediation_not_materializable' ||
+          input.issueCode === 'requirements_contract_remediation_blocked'
+        ? 'not_materializable'
+        : 'judge_failed';
+  const payload = {
+    schemaVersion: 'requirements-contract-failure-summary/v1',
+    scopeSemanticHash: String(input.currentAuthority.activeScopeSemanticHash || ''),
+    auditBindingHash,
+    judgeDecisionHash,
+    activeRequestHash: sha256Stable(input.activeRequest),
+    issueCodes: [input.issueCode],
+    remediationDecision,
+  };
+  writeJsonAtomic(
+    path.join(input.recordRoot, 'quality', 'failures', 'latest.json'),
+    { ...payload, summaryHash: sha256Stable({ domain: 'requirements-contract-failure-summary/v1', payload }) }
+  );
+}
 
 function persistClosedRemediationHalt(input) {
   if (!CLOSED_REMEDIATION_ISSUE_CODES.has(input.issueCode)) return null;
   const current = JSON.parse(fs.readFileSync(input.activeJudgeRequestPath, 'utf8'));
-  if (current.judgeRequestHash !== input.activeRequest.judgeRequestHash) {
+  if (
+    sha256Stable(current) !== sha256Stable(input.activeRequest) ||
+    current.status !== 'audited_fail' ||
+    !current.acceptedEvaluation
+  ) {
     throw new Error('requirements_contract_judge_active_cas_conflict');
   }
-  if (current.lastIssueCode !== input.issueCode) {
-    const next = advanceRequirementsContractJudgeActiveRequest(current, {
-      lastIssueCode: input.issueCode,
-    });
-    compareAndSwapRequirementsContractJudgeActiveRequest({
-      recordRoot: input.recordRoot,
-      expected: current,
-      next,
-    });
-  }
+  writeLatestRemediationFailureSummary(input);
   return closedRemediationHaltResult({
     issueCode: input.issueCode,
     authoringRequestId: input.requestId,
@@ -925,6 +1598,43 @@ function persistClosedRemediationHalt(input) {
     judgeRequestHash: input.activeRequest.judgeRequestHash,
     automaticRemediationCount: input.request.remediation ? 1 : 0,
   });
+}
+
+function readTerminalRemediationHalt(input) {
+  const summaryPath = path.join(input.recordRoot, 'quality', 'failures', 'latest.json');
+  if (!fs.existsSync(summaryPath)) return null;
+  try {
+    const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
+    const { summaryHash, ...payload } = summary;
+    if (
+      summaryHash !== sha256Stable({ domain: 'requirements-contract-failure-summary/v1', payload }) ||
+      !Array.isArray(summary.issueCodes) || summary.issueCodes.length !== 1 ||
+      !CLOSED_REMEDIATION_ISSUE_CODES.has(String(summary.issueCodes[0]))
+    ) return null;
+    const request = readRecordJson(input.recordRoot, input.activeRequest.requestPath);
+    const binding = request.auditBinding && typeof request.auditBinding === 'object'
+      ? request.auditBinding
+      : null;
+    if (!binding) return null;
+    const decision = readVerifiedRequirementsContractJudgeDecision({
+      recordRoot: input.recordRoot,
+      binding,
+    });
+    if (!decision || decision.verdict !== 'audited_fail' ||
+      summary.auditBindingHash !== decision.auditBindingHash ||
+      summary.judgeDecisionHash !== decision.decisionHash ||
+      summary.activeRequestHash !== sha256Stable(input.activeRequest) ||
+      summary.scopeSemanticHash !== input.currentAuthority.activeScopeSemanticHash) return null;
+    return closedRemediationHaltResult({
+      issueCode: summary.issueCodes[0],
+      authoringRequestId: input.requestId,
+      authoringAttemptId: input.currentAuthority.activeAuthoringAttemptId,
+      judgeRequestHash: input.activeRequest.judgeRequestHash,
+      automaticRemediationCount: request.remediation ? 1 : 0,
+    });
+  } catch {
+    return null;
+  }
 }
 
 async function continueAcceptedJudgeFailure(input) {
@@ -938,6 +1648,16 @@ async function continueAcceptedJudgeFailure(input) {
   const plan = readRecordJson(input.recordRoot, activeRequest.remediationPlanRef.path);
   const aggregate = readRecordJson(input.recordRoot, activeRequest.aggregateRef.path);
   const repairSteps = remediationRepairSteps(plan);
+  const remediationPreflight = evaluateRequirementsContractRemediationCandidate({
+    beforeSemanticHash: String(input.currentAuthority.activeScopeSemanticHash ?? ''),
+    repairSteps,
+  });
+  if (remediationPreflight.decision !== 'publish') {
+    if (remediationPreflight.decision === 'no_progress') {
+      throw new Error('judge_remediation_no_progress');
+    }
+    throw new Error(remediationPreflight.issueCodes[0]);
+  }
   const repairAttemptId = stableId('ATTEMPT', {
     requestId: input.requestId,
     remediatesRequestHash: activeRequest.judgeRequestHash,
@@ -1073,6 +1793,21 @@ async function continueAcceptedJudgeFailure(input) {
     sha256Stable(comparableProjectionArtifacts(currentBuildManifest)) ===
     sha256Stable(comparableProjectionArtifacts(nextBuildManifest))
   ) {
+    discardUnpublishedRepairAttempt(
+      input.recordRoot,
+      repairAttemptId,
+      [
+        cp04Publication.paths.semanticIr,
+        cp04Publication.paths.sourceBinding,
+        cp04Publication.paths.resolvedEvidenceIndex,
+        cp04Publication.paths.checkpointManifest,
+      ],
+      [
+        input.currentAuthority.activeSemanticIrPath,
+        input.currentAuthority.activeSourceBindingPath,
+        `authoring/source-bindings/${input.currentAuthority.activeBindingRevisionId}/resolved-evidence-index.json`,
+      ]
+    );
     throw new Error('judge_remediation_no_progress');
   }
   const changedArtifacts = comparableProjectionArtifacts(nextBuildManifest).filter(
@@ -1184,9 +1919,13 @@ async function continueAuthoringFromContext(context, authoringContext, options =
     authoringContext.targetSource,
     'requirements_authoring_target_source_invalid'
   );
+  const recordRoot = authoringRecordRoot(context.cwd, requestId);
+  // The scanner may publish content-addressed source blobs during resume.
+  fs.mkdirSync(recordRoot, { recursive: true });
   const authoritySources = readRequirementsContractDeclaredAuthoritySources(intakeSource);
   const scan = scanRequirementsContractConsumerAuthority({
     cwd: context.cwd,
+    recordRoot,
     intakeSource,
     authoritySources,
   });
@@ -1194,9 +1933,75 @@ async function continueAuthoringFromContext(context, authoringContext, options =
   if (scan.sourceList.sourceListHash !== authoringContext.authoritySourceListHash) {
     throw new Error('requirements_authority_context_stale');
   }
-  const recordRoot = authoringRecordRoot(context.cwd, requestId);
   const requirementRecordPath = path.join(recordRoot, 'record', 'requirement-record.json');
   const activeJudgeRequestPath = path.join(recordRoot, 'quality', 'active-request.json');
+  if (fs.existsSync(requirementRecordPath)) {
+    const requirementRecord = JSON.parse(fs.readFileSync(requirementRecordPath, 'utf8'));
+    const activeAuthority = requirementRecord.activeAuthority;
+    const activeJudgeRequestStatus = fs.existsSync(activeJudgeRequestPath)
+      ? JSON.parse(fs.readFileSync(activeJudgeRequestPath, 'utf8')).status
+      : null;
+    if (activeJudgeRequestStatus === 'audited_fail') {
+      const terminalRequest = JSON.parse(fs.readFileSync(activeJudgeRequestPath, 'utf8'));
+      const terminal = readTerminalRemediationHalt({
+        recordRoot,
+        requestId,
+        currentAuthority: activeAuthority,
+        activeRequest: terminalRequest,
+      });
+      if (terminal) return terminal;
+    }
+    if (
+      activeAuthority?.activeBuildHash &&
+      requirementRecord.activeOperationId === authoringAttemptId &&
+      activeJudgeRequestStatus !== 'audited_fail'
+    ) {
+      const buildManifest = readRecordJson(recordRoot, activeAuthority.activeBuildManifestPath);
+      if (
+        buildManifest.schemaVersion === 'requirements-contract-build-manifest/v2' &&
+        activeAuthority.activeSourceBindingHash !== buildManifest.sourceBindingHash &&
+        requirementRecord.currentPromotionEvidence?.path
+      ) {
+        const stagingRoot = path.join(
+          recordRoot, 'confirmation', 'staging', 'binding-refresh',
+          String(activeAuthority.activeBindingRevisionId)
+        );
+        if (!fs.existsSync(path.join(stagingRoot, 'requirements.md')) ||
+            !fs.existsSync(path.join(stagingRoot, 'requirements.html'))) {
+          stageRequirementsContractConfirmationBindingRefresh({
+            projectRoot: context.cwd,
+            requestId,
+            bindingRevisionId: activeAuthority.activeBindingRevisionId,
+          });
+        }
+        const refreshedConfirmation = refreshRequirementsContractConfirmationBinding({
+          projectRoot: context.cwd,
+          requestId,
+        });
+        return cliContinuationResult({
+          status: refreshedConfirmation.status,
+          issueCode: 'requirements_user_confirmable',
+          authoringRequestId: requestId,
+          authoringAttemptId,
+          unresolvedDecisionCount: refreshedConfirmation.unresolvedDecisionCount,
+          confirmation: refreshedConfirmation.confirmation,
+        });
+      }
+      const packetEntry = (Array.isArray(buildManifest.artifactEntries) ? buildManifest.artifactEntries : [])
+        .find((entry) => entry.role === 'judge_audit_packet');
+      if (!packetEntry) throw new Error('requirements_judge_audit_packet_missing');
+      return continuePublishedRequirementsAudit(context, {
+        recordRoot,
+        authoringRequestId: requestId,
+        authoringAttemptId,
+        grillSessionId: options.grillSessionId,
+        decisionReceiptRefs: options.decisionReceiptRefs,
+        activeAuthority,
+        buildManifest,
+        auditPacket: resolveRequirementsAuthoringArtifact({ recordRoot, entry: packetEntry }),
+      });
+    }
+  }
   if (fs.existsSync(requirementRecordPath) && !fs.existsSync(activeJudgeRequestPath)) {
     const requirementRecord = JSON.parse(fs.readFileSync(requirementRecordPath, 'utf8'));
     const activeAuthority = requirementRecord.activeAuthority;
@@ -1219,57 +2024,234 @@ async function continueAuthoringFromContext(context, authoringContext, options =
       }
     }
   }
-  const stagingRoot = path.join(recordRoot, 'authoring', 'staging', authoringAttemptId);
-  atomicNoClobberPublish({
-    targetPath: path.join(stagingRoot, 'consumer-authority-source-list.json'),
-    value: scan.sourceList,
-    role: 'requirements_consumer_authority_source_list',
-  });
-  const capability = resolveRequirementsProductionTechnicalPlanningCapability({
-    authoringRequestId: requestId,
-    authoringAttemptId,
-    premiseHash: scan.sourceList.sourceListHash,
-    sourceRootCandidates: scan.sourceRootCandidates,
-    ...(scan.typedSourceAuthority ? { typedSourceAuthority: scan.typedSourceAuthority } : {}),
-  });
-  atomicNoClobberPublish({
-    targetPath: path.join(stagingRoot, 'cp02-technical-planning-capability.json'),
-    value: capability,
-    role: 'requirements_technical_planning_capability',
+  runRequirementsSemanticCheckpointJsonUnit({
+    recordRoot,
+    operationId: authoringAttemptId,
+    checkpointId: 'cp00',
+    semanticInputHash: scan.sourceList.sourceListHash,
+    planHash: requirementsContractDomainHash('requirements-checkpoint-plan/cp00/v1', {
+      compiler: 'requirements-consumer-authority-scanner/v1',
+    }),
+    validatorVersion: 'requirements-contract-authoring-validator/v2',
+    unitId: 'cp00:authority-source-list',
+    unitInputHash: scan.sourceList.sourceListHash,
+    compilerVersion: 'requirements-consumer-authority-scanner/v1',
+    role: 'consumer_authority_source_list',
+    execute: () => withoutRequirementsAuthoringOperationMetadata(scan.sourceList),
   });
   const atoms = atomicMustsFromScan(scan);
   const confirmedDecisions = confirmedDecisionsFromGrillResolution(options.grillResolution, atoms, scan);
-  const cp02Candidate = prepareRequirementsContractCp02PipelineStage({
+  const semanticKernel = {
+    schemaVersion: 'requirements-contract-semantic-kernel/v1',
     authoringRequestId: requestId,
-    authoringAttemptId,
+    authoritySourceListHash: scan.sourceList.sourceListHash,
+    sourceRoots: scan.sourceRootCandidates.map((candidate) => ({
+      sourceRootId: candidate.sourceRootId,
+      rootClass: candidate.rootClass,
+      nodeType: candidate.nodeType,
+      bodySchemaVersion: candidate.bodySchemaVersion,
+      semanticBody: candidate.semanticBody,
+      proposedAuthorityClass: candidate.proposedAuthorityClass,
+    })),
+  };
+  let capabilitySemantic = null;
+  const cp01Units = [
+    ...[...scan.sourceRootCandidates]
+      .sort((left, right) => left.sourceRootId.localeCompare(right.sourceRootId, 'en'))
+      .map((candidate) => ({
+        unitId: `cp01:root:${candidate.sourceRootId}`,
+        unitInputHash: requirementsContractDomainHash('requirements-checkpoint-unit/cp01-root/v1', {
+          sourceRootId: candidate.sourceRootId,
+          rootClass: candidate.rootClass,
+          semanticBody: candidate.semanticBody,
+        }),
+        compilerVersion: 'requirements-contract-material-root/v1',
+        execute: () => [contentAddressedArtifactEntry({
+          recordRoot, role: 'semantic_root', schemaVersion: candidate.bodySchemaVersion,
+          mediaType: 'application/json', value: candidate.semanticBody,
+        }).contentRef],
+      })),
+    {
+      unitId: 'cp01:zz-semantic-kernel',
+      unitInputHash: requirementsContractDomainHash(
+        'requirements-checkpoint-unit/cp01-semantic-kernel/v1', semanticKernel
+      ),
+      compilerVersion: 'requirements-contract-semantic-kernel/v1',
+      execute: () => [contentAddressedArtifactEntry({
+        recordRoot, role: 'semantic_kernel', schemaVersion: semanticKernel.schemaVersion,
+        mediaType: 'application/json', value: semanticKernel,
+      }).contentRef],
+    },
+    {
+      unitId: 'cp01:zzz-technical-planning-capability',
+      unitInputHash: requirementsContractDomainHash('requirements-checkpoint-unit/cp01-capability/v1', {
+        sourceListHash: scan.sourceList.sourceListHash,
+        typedSourceGraphHash: scan.typedSourceAuthority?.graphHash ?? null,
+      }),
+      compilerVersion: 'requirements-production-technical-planning-capability/v1',
+      execute: () => {
+        capabilitySemantic = withoutRequirementsAuthoringOperationMetadata(
+          resolveRequirementsProductionTechnicalPlanningCapability({
+            authoringRequestId: requestId,
+            authoringAttemptId,
+            premiseHash: scan.sourceList.sourceListHash,
+            sourceRootCandidates: scan.sourceRootCandidates,
+            ...(scan.typedSourceAuthority ? { typedSourceAuthority: scan.typedSourceAuthority } : {}),
+          })
+        );
+        return [contentAddressedArtifactEntry({
+          recordRoot, role: 'technical_planning_capability',
+          schemaVersion: capabilitySemantic.schemaVersion,
+          mediaType: 'application/json', value: capabilitySemantic,
+        }).contentRef];
+      },
+    },
+  ];
+  const cp01Checkpoint = runRequirementsSemanticCheckpointUnits({
+    recordRoot, operationId: authoringAttemptId, checkpointId: 'cp01',
+    semanticInputHash: scan.sourceList.sourceListHash,
+    planHash: requirementsContractDomainHash('requirements-checkpoint-plan/cp01/v2', {
+      compiler: 'requirements-contract-material-root/v1',
+      unitIds: cp01Units.map((unit) => unit.unitId),
+    }),
+    validatorVersion: 'requirements-contract-authoring-validator/v2',
+    units: cp01Units,
+  });
+  const cp01ById = new Map(cp01Checkpoint.state.completedUnits.map((unit) => [unit.unitId, unit]));
+  const semanticKernelRef = cp01ById.get('cp01:zz-semantic-kernel')?.outputRefs[0];
+  const capabilityRef = cp01ById.get('cp01:zzz-technical-planning-capability')?.outputRefs[0];
+  if (!semanticKernelRef || !capabilityRef) throw new Error('requirements_checkpoint_unit_output_missing');
+  if (!capabilitySemantic) {
+    capabilitySemantic = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(
+      readRequirementsContentObject({ recordRoot, ref: capabilityRef })
+    ));
+  }
+  const capability = { ...capabilitySemantic, authoringAttemptId };
+  const cp02Input = {
     atoms,
-    ...(scan.typedSourceAuthority ? { typedSourceIds: scan.sourceRootCandidates.map((candidate) => candidate.sourceRootId) } : {}),
+    typedSourceIds: scan.typedSourceAuthority
+      ? scan.sourceRootCandidates.map((candidate) => candidate.sourceRootId) : [],
     decisions: confirmedDecisions.map((decision) => ({
       decisionId: decision.id,
       affectedAtomIds: decision.affectedAtomIds,
       ...(decision.affectedSourceRefs ? { affectedSourceRefs: decision.affectedSourceRefs } : {}),
       authorityPremiseHashes: decision.authorityPremiseHashes,
     })),
-    technicalPlanning: capability,
+    technicalPlanning: withoutRequirementsAuthoringOperationMetadata(capability),
+  };
+  let cp02CandidateSemantic = null;
+  const cp02Units = [
+    ...[...atoms]
+      .sort((left, right) => left.atomId.localeCompare(right.atomId, 'en'))
+      .map((atom) => ({
+        unitId: `cp02:atom:${atom.atomId}`,
+        unitInputHash: requirementsContractDomainHash('requirements-checkpoint-unit/cp02-atom/v1', atom),
+        compilerVersion: 'requirements-contract-atomic-decomposition/v1',
+        execute: () => [contentAddressedArtifactEntry({
+          recordRoot, role: 'atomic_requirement', schemaVersion: 'requirements-contract-atomic-requirement/v1',
+          mediaType: 'application/json', value: atom,
+        }).contentRef],
+      })),
+    {
+      unitId: 'cp02:zz-final-closure',
+      unitInputHash: requirementsContractDomainHash('requirements-checkpoint-unit/cp02/v1', cp02Input),
+      compilerVersion: 'requirements-contract-cp02-compiler/v1',
+      execute: () => {
+        cp02CandidateSemantic = withoutRequirementsAuthoringOperationMetadata(
+          prepareRequirementsContractCp02PipelineStage({
+            authoringRequestId: requestId, authoringAttemptId, atoms: cp02Input.atoms,
+            ...(cp02Input.typedSourceIds.length > 0 ? { typedSourceIds: cp02Input.typedSourceIds } : {}),
+            decisions: cp02Input.decisions,
+            technicalPlanning: { ...cp02Input.technicalPlanning, authoringAttemptId },
+          })
+        );
+        const mustPacket = {
+          schemaVersion: 'requirements-contract-must-decomposition-packet/v1',
+          authoringRequestId: requestId,
+          candidateHash: cp02CandidateSemantic.candidateHash,
+          atoms: cp02CandidateSemantic.atoms,
+          decisions: cp02CandidateSemantic.decisions,
+          technicalPlanningTriggerIdentity: cp02CandidateSemantic.technicalPlanningTriggerIdentity,
+          executionRegistryHash: cp02CandidateSemantic.executionRegistryHash,
+        };
+        const idRegistry = {
+          schemaVersion: 'requirements-contract-id-registry/v1',
+          authoringRequestId: requestId,
+          sourceRootIds: scan.sourceRootCandidates.map((candidate) => candidate.sourceRootId).sort(),
+          atomIds: cp02CandidateSemantic.atoms.map((atom) => atom.atomId).sort(),
+          executionConstraintRefs: [...new Set(cp02CandidateSemantic.atoms.flatMap(
+            (atom) => atom.executionConstraintRefs
+          ))].sort(),
+        };
+        return [
+          ['cp02_candidate', cp02CandidateSemantic],
+          ['must_decomposition_packet', mustPacket],
+          ['id_registry', idRegistry],
+        ].map(([role, value]) => contentAddressedArtifactEntry({
+          recordRoot, role, schemaVersion: value.schemaVersion,
+          mediaType: 'application/json', value,
+        }).contentRef);
+      },
+    },
+  ];
+  const cp02Checkpoint = runRequirementsSemanticCheckpointUnits({
+    recordRoot, operationId: authoringAttemptId, checkpointId: 'cp02',
+    semanticInputHash: scan.sourceList.sourceListHash,
+    planHash: requirementsContractDomainHash('requirements-checkpoint-plan/cp02/v2', {
+      compiler: 'requirements-contract-cp02-compiler/v1',
+      unitIds: cp02Units.map((unit) => unit.unitId),
+    }),
+    validatorVersion: 'requirements-contract-authoring-validator/v2', units: cp02Units,
   });
-  atomicNoClobberPublish({
-    targetPath: path.join(stagingRoot, 'cp02-candidate.json'),
-    value: cp02Candidate,
-    role: 'requirements_cp02_candidate',
+  const cp02FinalRefs = cp02Checkpoint.state.completedUnits
+    .find((unit) => unit.unitId === 'cp02:zz-final-closure')?.outputRefs ?? [];
+  if (cp02FinalRefs.length !== 3) throw new Error('requirements_checkpoint_unit_output_missing');
+  if (!cp02CandidateSemantic) {
+    cp02CandidateSemantic = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(
+      readRequirementsContentObject({ recordRoot, ref: cp02FinalRefs[0] })
+    ));
+  }
+  const cp02Candidate = { ...cp02CandidateSemantic, authoringAttemptId };
+  publishLegacyAttemptSnapshots({
+    recordRoot,
+    authoringRequestId: requestId,
+    authoringAttemptId,
+    inputManifestHash: scan.sourceList.sourceListHash,
+    cp02Candidate,
+    capability,
+    semanticKernel,
+    mustDecompositionPacket: JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(
+      readRequirementsContentObject({ recordRoot, ref: cp02FinalRefs[1] })
+    )),
+    idRegistry: JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(
+      readRequirementsContentObject({ recordRoot, ref: cp02FinalRefs[2] })
+    )),
   });
   const decisionReceiptRefs = (options.decisionReceiptRefs ?? []).map((ref) => ({
     decisionReceiptId: path.basename(ref.path, '.json'),
     path: ref.path,
     hash: ref.hash,
   }));
-  const coreSnapshots = publishAttemptCoreSnapshots({
-    recordRoot,
-    authoringRequestId: requestId,
-    authoringAttemptId,
-    scan,
-    cp02Candidate,
-    decisionReceiptRefs,
-  });
+  const coreArtifactEntries = [
+    {
+      role: 'semantic_kernel', schemaVersion: semanticKernel.schemaVersion,
+      semanticHash: requirementsContractDomainHash('requirements-projection:semantic_kernel/v1', semanticKernel),
+      contentRef: semanticKernelRef,
+    },
+    ...[
+      ['must_decomposition_packet', cp02FinalRefs[1]],
+      ['id_registry', cp02FinalRefs[2]],
+    ].map(([role, contentRef]) => {
+      const value = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(
+        readRequirementsContentObject({ recordRoot, ref: contentRef })
+      ));
+      return {
+        role, schemaVersion: value.schemaVersion,
+        semanticHash: requirementsContractDomainHash(`requirements-projection:${role}/v1`, value),
+        contentRef,
+      };
+    }),
+  ];
   if (capability.status !== 'resolved') {
     return cliContinuationResult({
       status: 'technical_planning_pending',
@@ -1386,126 +2368,327 @@ async function continueAuthoringFromContext(context, authoringContext, options =
       decisionReceiptRefs: options.decisionReceiptRefs,
     });
   }
-  const semanticIr = canonicalSemanticIrFromClosure({
-    authoringRequestId: requestId,
-    scan,
-    cp02Candidate,
-    capability,
-    confirmedDecisions,
-  });
-  const canonicalBinding = canonicalBindingFromClosure({
-    authoringRequestId: requestId,
-    scan,
-    semanticIr,
-  });
-  const cp04Stage = prepareRequirementsContractCp04FreezeStage({
-    semanticIr,
-    sourceBinding: canonicalBinding.sourceBinding,
-    resolvedEvidenceIndex: canonicalBinding.resolvedEvidenceIndex,
-  });
-  const pointerPath = path.join(recordRoot, ...ACTIVE_AUTHORING_ATTEMPT_POINTER_PATH.split('/'));
-  const expectedCurrentPointerHash = fs.existsSync(pointerPath)
-    ? activeAuthoringAttemptPointerHash(JSON.parse(fs.readFileSync(pointerPath, 'utf8')))
-    : null;
-  const cp04Publication = publishRequirementsContractCp04FreezeStage({
-    recordRootPath: recordRoot,
-    stage: cp04Stage,
-    authoringRequestId: requestId,
-    authoringAttemptId,
-    inputManifestHash: scan.sourceList.sourceListHash,
-    previousCheckpointManifestRef: coreSnapshots.terminalManifestRef,
-    compilerIdentity: 'requirements-contract-cp02-compiler/v1',
-    decisionReceiptRefs,
-    baseAuthorityRef: null,
-    expectedCurrentPointerHash,
-    compareAndSwapAttemptPointer: fileAttemptPointerCas(recordRoot),
-  });
-  const cp08Publication = publishRequirementsContractCp05Cp08Stages({
+  let compiledClosure = null;
+  const cp03Checkpoint = runRequirementsSemanticCheckpointUnits({
     recordRoot,
-    sourcePath: intakeSource,
-    authoringRequestId: requestId,
-    authoringAttemptId,
-    inputManifestHash: scan.sourceList.sourceListHash,
-    previousCheckpointManifestRef: {
-      checkpointId: 'cp04',
-      checkpointOrdinal: 4,
-      path: `authoring/staging/${authoringAttemptId}/manifests/4-cp04.json`,
-      hash: cp04Publication.checkpointManifest.checkpointManifestHash,
-    },
-    expectedCurrentPointerHash: cp04Publication.attemptPointer.pointerHash,
-    compareAndSwapAttemptPointer: fileAttemptPointerCas(recordRoot),
-    semanticIr: cp04Stage.semanticIr,
-    sourceBinding: cp04Stage.sourceBinding,
-    resolvedEvidenceIndex: cp04Stage.resolvedEvidenceIndex,
-    decisionReceiptRefs,
+    operationId: authoringAttemptId,
+    checkpointId: 'cp03',
+    semanticInputHash: scan.sourceList.sourceListHash,
+    planHash: requirementsContractDomainHash('requirements-checkpoint-plan/cp03/v1', {
+      compiler: 'requirements-contract-semantic-closure/v1',
+    }),
+    validatorVersion: 'requirements-contract-authoring-validator/v2',
+    units: [{
+      unitId: 'cp03:semantic-closure',
+      unitInputHash: requirementsContractDomainHash('requirements-checkpoint-unit/cp03/v1', {
+        cp02Candidate: withoutRequirementsAuthoringOperationMetadata(cp02Candidate),
+        capability: withoutRequirementsAuthoringOperationMetadata(capability),
+        confirmedDecisions,
+      }),
+      compilerVersion: 'requirements-contract-semantic-closure/v1',
+      execute: () => {
+        const semanticIr = canonicalSemanticIrFromClosure({
+          authoringRequestId: requestId,
+          scan,
+          cp02Candidate,
+          capability,
+          confirmedDecisions,
+        });
+        const canonicalBinding = canonicalBindingFromClosure({
+          authoringRequestId: requestId,
+          scan,
+          semanticIr,
+        });
+        compiledClosure = { semanticIr, canonicalBinding };
+        return [
+          ['semantic_ir', semanticIr],
+          ['source_binding', canonicalBinding.sourceBinding],
+          ['resolved_evidence_index', canonicalBinding.resolvedEvidenceIndex],
+        ].map(([role, value]) => publishRequirementsContentObject({
+          recordRoot,
+          role,
+          mediaType: 'application/json',
+          bytes: Buffer.from(canonicalRequirementsJson(withoutRequirementsAuthoringOperationMetadata(value)), 'utf8'),
+        }));
+      },
+    }],
   });
-  const buildManifest = createRequirementsContractBuildManifest({
-    authoringRequestId: requestId,
-    authoringAttemptId,
-    inputManifestHash: scan.sourceList.sourceListHash,
-    terminalCheckpointManifestRef: cp08Publication.terminalManifestRef,
-    semanticAuthorityRef: {
-      semanticRevisionId: cp04Stage.semanticIdentity.semanticRevisionId,
-      path: `authoring/semantic-revisions/${cp04Stage.semanticIdentity.semanticRevisionId}/semantic-ir.json`,
-      hash: cp04Stage.semanticIdentity.scopeSemanticHash,
-    },
-    bindingAuthorityRef: {
-      bindingRevisionId: cp04Stage.bindingIdentity.bindingRevisionId,
-      path: `authoring/source-bindings/${cp04Stage.bindingIdentity.bindingRevisionId}/source-binding.json`,
-      hash: cp04Stage.bindingIdentity.sourceBindingHash,
-    },
-    artifactEntries: cp08Publication.terminalManifest.artifactEntries,
-    decisionReceiptRefs,
-    auditPacketRef: cp08Publication.canonicalAuditPacketRef,
-    projectionReportRefs: cp08Publication.projectionReportRefs,
+  if (!compiledClosure) {
+    const refs = cp03Checkpoint.state.completedUnits[0]?.outputRefs ?? [];
+    if (refs.length !== 3) throw new Error('requirements_checkpoint_unit_output_missing');
+    const readJsonRef = (ref) => JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(
+      readRequirementsContentObject({ recordRoot, ref })
+    ));
+    const [semanticIr, sourceBinding, resolvedEvidenceIndex] = refs.map(readJsonRef);
+    compiledClosure = {
+      semanticIr,
+      canonicalBinding: { sourceBinding, resolvedEvidenceIndex },
+    };
+  }
+  const { semanticIr, canonicalBinding } = compiledClosure;
+  const cp04Result = runContentAddressedProjectionStage({
+    recordRoot, operationId: authoringAttemptId, checkpointId: 'cp04',
+    semanticInputHash: scan.sourceList.sourceListHash,
+    unitInputHash: requirementsContractDomainHash('requirements-checkpoint-unit/cp04/v2', {
+      scopeSemanticHash: semanticIr.scopeSemanticHash,
+      sourceBindingHash: canonicalBinding.sourceBinding.sourceBindingHash,
+    }),
+    compilerVersion: 'requirements-contract-cp04-freeze/v2',
+    artifacts: [
+      { artifactId: 'semantic-ir', key: 'semanticIr', role: 'semantic_ir', schemaVersion: semanticIr.schemaVersion, mediaType: 'application/json' },
+      { artifactId: 'source-binding', key: 'sourceBinding', role: 'source_binding', schemaVersion: canonicalBinding.sourceBinding.schemaVersion, mediaType: 'application/json' },
+      { artifactId: 'resolved-evidence-index', key: 'resolvedEvidenceIndex', role: 'resolved_evidence_index', schemaVersion: canonicalBinding.resolvedEvidenceIndex.schemaVersion, mediaType: 'application/json' },
+    ],
+    compute: () => ({
+      ...prepareRequirementsContractCp04FreezeStage({
+        semanticIr,
+        sourceBinding: canonicalBinding.sourceBinding,
+        resolvedEvidenceIndex: canonicalBinding.resolvedEvidenceIndex,
+      }),
+      semanticIr,
+      sourceBinding: canonicalBinding.sourceBinding,
+      resolvedEvidenceIndex: canonicalBinding.resolvedEvidenceIndex,
+    }),
   });
-  const activeAuthority = {
-    activeSemanticRevisionId: cp04Stage.semanticIdentity.semanticRevisionId,
-    activeSemanticIrPath: buildManifest.semanticAuthorityRef.path,
-    activeScopeSemanticHash: cp04Stage.semanticIdentity.scopeSemanticHash,
-    activeBindingRevisionId: cp04Stage.bindingIdentity.bindingRevisionId,
-    activeSourceBindingPath: buildManifest.bindingAuthorityRef.path,
-    activeSourceBindingHash: cp04Stage.bindingIdentity.sourceBindingHash,
-    activeAuthoringAttemptId: authoringAttemptId,
-    activeBuildManifestPath: `authoring/staging/${authoringAttemptId}/contract-build-manifest.json`,
-    activeBuildManifestHash: buildManifest.buildManifestHash,
+  const cp04Stage = {
+    semanticIr: cp04Result.values['semantic-ir'],
+    sourceBinding: cp04Result.values['source-binding'],
+    resolvedEvidenceIndex: cp04Result.values['resolved-evidence-index'],
   };
+  const cp05Result = runContentAddressedProjectionStage({
+    recordRoot, operationId: authoringAttemptId, checkpointId: 'cp05',
+    semanticInputHash: scan.sourceList.sourceListHash,
+    unitInputHash: requirementsContractDomainHash('requirements-checkpoint-unit/cp05/v2', {
+      scopeSemanticHash: cp04Stage.semanticIr.scopeSemanticHash,
+      sourceBindingHash: cp04Stage.sourceBinding.sourceBindingHash,
+    }),
+    compilerVersion: 'requirements-contract-cp05-source-confirmation-projection/v2',
+    artifacts: [
+      { artifactId: 'confirmation-projection', key: 'cp05Projection', role: 'confirmation_projection', schemaVersion: 'requirements-contract-confirmation-projection/v2', mediaType: 'application/json' },
+      { artifactId: 'final-markdown', key: 'markdown', role: 'final_markdown', schemaVersion: 'markdown/v1', mediaType: 'text/markdown' },
+    ],
+    compute: () => prepareRequirementsContractCp05Projection({
+      semanticIr: cp04Stage.semanticIr, resolvedEvidenceIndex: cp04Stage.resolvedEvidenceIndex,
+    }),
+  });
+  const cp06Result = runContentAddressedProjectionStage({
+    recordRoot, operationId: authoringAttemptId, checkpointId: 'cp06',
+    semanticInputHash: scan.sourceList.sourceListHash,
+    unitInputHash: requirementsContractDomainHash('requirements-checkpoint-unit/cp06/v2', {
+      scopeSemanticHash: cp04Stage.semanticIr.scopeSemanticHash,
+      sourceBindingHash: cp04Stage.sourceBinding.sourceBindingHash,
+    }),
+    compilerVersion: 'requirements-contract-cp06-execution-projection/v2',
+    artifacts: [
+      { artifactId: 'execution-manifest', key: 'cp06Execution', role: 'execution_manifest', schemaVersion: 'requirements-contract-execution-manifest/v2', mediaType: 'application/json' },
+      { artifactId: 'per-must-bundle', key: 'perMustBundle', role: 'per_must_bundle', schemaVersion: 'requirements-contract-per-must-bundle/v1', mediaType: 'application/json' },
+      { artifactId: 'trace-matrix', key: 'traceMatrix', role: 'trace_matrix', schemaVersion: 'requirements-contract-trace-matrix/v1', mediaType: 'application/json' },
+    ],
+    compute: () => {
+      const result = prepareRequirementsContractCp06Projection({
+        semanticIr: cp04Stage.semanticIr, resolvedEvidenceIndex: cp04Stage.resolvedEvidenceIndex,
+      });
+      return {
+        cp06Execution: result.cp06Execution.executionManifest,
+        perMustBundle: result.perMustBundle,
+        traceMatrix: result.traceMatrix,
+      };
+    },
+  });
+  const cp07Result = runContentAddressedProjectionStage({
+    recordRoot, operationId: authoringAttemptId, checkpointId: 'cp07',
+    semanticInputHash: scan.sourceList.sourceListHash,
+    unitInputHash: requirementsContractDomainHash('requirements-checkpoint-unit/cp07/v2', {
+      scopeSemanticHash: cp04Stage.semanticIr.scopeSemanticHash,
+    }),
+    compilerVersion: 'requirements-contract-cp07-view-diagram-projection/v2',
+    artifacts: [{ artifactId: 'diagram-set', key: 'diagramSet', role: 'diagram_set', schemaVersion: 'requirements-contract-diagram-set/v1', mediaType: 'application/json' }],
+    compute: () => prepareRequirementsContractCp07Projection({
+      semanticIr: cp04Stage.semanticIr, resolvedEvidenceIndex: cp04Stage.resolvedEvidenceIndex,
+    }),
+  });
+  const cp05Values = cp05Result.values;
+  const cp06Values = cp06Result.values;
+  const cp07Values = cp07Result.values;
+  const cp08Pure = prepareRequirementsContractCp08Projection({
+    semanticIr: cp04Stage.semanticIr,
+    resolvedEvidenceIndex: cp04Stage.resolvedEvidenceIndex,
+    cp05Projection: cp05Values['confirmation-projection'],
+    markdown: cp05Values['final-markdown'],
+    markdownComposition: undefined,
+    executionManifest: cp06Values['execution-manifest'],
+    perMustBundle: cp06Values['per-must-bundle'],
+    traceMatrix: cp06Values['trace-matrix'],
+    diagramSet: cp07Values['diagram-set'],
+  });
+  const projectionIdentity = {
+    authoringRequestId: requestId,
+    authoringAttemptId,
+    attemptManifestHash: cp03Checkpoint.state.stateHash,
+    scopeSemanticHash: cp04Stage.semanticIr.scopeSemanticHash,
+    sourceBindingHash: cp04Stage.sourceBinding.sourceBindingHash,
+  };
+  const checkedRequirementIds = cp08Pure.requirementIds;
+  const lintStages = [
+    ['cp05', [
+      { artifactId: 'final-markdown', role: 'source_markdown', value: cp05Values['final-markdown'] },
+      { artifactId: 'confirmation-projection', role: 'implementation_confirmation', value: cp05Values['confirmation-projection'] },
+    ]],
+    ['cp06', [
+      { artifactId: 'per-must-bundle', role: 'per_must_bundle', value: cp06Values['per-must-bundle'] },
+      { artifactId: 'execution-manifest', role: 'execution_manifest', value: cp06Values['execution-manifest'] },
+      { artifactId: 'trace-matrix', role: 'compact_trace_matrix', value: cp06Values['trace-matrix'] },
+    ]],
+    ['cp07', [
+      { artifactId: 'confirmation-view', role: 'human_view', value: cp05Values['final-markdown'] },
+      { artifactId: 'diagram-set', role: 'diagram_set', value: cp07Values['diagram-set'] },
+    ]],
+    ['cp08', [
+      { artifactId: 'projection-reconciliation-report', role: 'projection_reconciliation_report', value: cp08Pure.reconciliationReport },
+      { artifactId: 'authority-resolution-report', role: 'authority_resolution_report', value: cp08Pure.authorityResolutionReport },
+      { artifactId: 'renderability-probe-report', role: 'renderability_probe_report', value: cp08Pure.renderabilityProbeReport },
+      { artifactId: 'judge-audit-packet', role: 'judge_audit_packet', value: cp08Pure.auditPacket },
+    ]],
+  ];
+  for (const [stage, artifacts] of lintStages) {
+    const lint = lintRequirementsContractProjectionStage({
+      stage, identity: projectionIdentity, artifacts, checkedRequirementIds,
+    });
+    if (lint.decision === 'block') throw new Error(lint.issueCodes[0]);
+  }
+  const contentAddressedProjectionEntries = [
+    ...coreArtifactEntries,
+    ...cp04Result.artifactEntries,
+    ...cp05Result.artifactEntries,
+    ...cp06Result.artifactEntries,
+    ...cp07Result.artifactEntries,
+  ];
+  const lintReport = {
+    schemaVersion: 'requirements-contract-lint-report/v1',
+    semanticRevisionId: cp04Stage.semanticIr.semanticRevisionId,
+    scopeSemanticHash: cp04Stage.semanticIr.scopeSemanticHash,
+    decision: 'pass',
+    checkIds: lintStages.map(([stage]) => stage),
+  };
+  const cp08ReportEntries = [
+    { artifactId: 'lint-report', role: 'lint_report', value: lintReport },
+    { artifactId: 'projection-reconciliation-report', role: 'projection_reconciliation_report', value: cp08Pure.reconciliationReport },
+    { artifactId: 'authority-resolution-report', role: 'authority_resolution_report', value: cp08Pure.authorityResolutionReport },
+    { artifactId: 'renderability-probe-report', role: 'renderability_probe_report', value: cp08Pure.renderabilityProbeReport },
+    { artifactId: 'judge-audit-packet-coverage', role: 'judge_audit_packet_coverage', value: cp08Pure.coverageManifest },
+  ].map((artifact) => ({
+    artifactId: artifact.artifactId,
+    ...contentAddressedArtifactEntry({
+      recordRoot, role: artifact.role, schemaVersion: artifact.value.schemaVersion,
+      mediaType: 'application/json', value: artifact.value,
+    }),
+  }));
+  const auditArtifactEntries = [
+    ...cp05Result.artifactEntries,
+    ...cp06Result.artifactEntries,
+    ...cp07Result.artifactEntries,
+    ...cp08ReportEntries,
+  ].filter((entry) => entry.role !== 'judge_audit_packet_coverage' && entry.role !== 'lint_report').map((entry) => ({
+    artifactId: entry.artifactId, ...entry,
+  }));
+  const auditPacketDescriptor = buildRequirementsContractJudgeAuditPacketV3({
+    recordRoot,
+    packet: cp08Pure.auditPacket,
+    semanticIr: withoutRequirementsAuthoringOperationMetadata(cp04Stage.semanticIr),
+    semanticIrRef: cp04Result.artifactEntries.find((entry) => entry.role === 'semantic_ir').contentRef,
+    artifactEntries: auditArtifactEntries,
+  });
+  const auditPacketManifestEntry = contentAddressedArtifactEntry({
+    recordRoot, role: 'judge_audit_packet', schemaVersion: auditPacketDescriptor.schemaVersion,
+    mediaType: 'application/json', value: auditPacketDescriptor,
+  });
+  const cp08Entries = cp08ReportEntries;
+  const directArtifactEntries = [
+    ...contentAddressedProjectionEntries,
+    ...cp08Entries,
+    { artifactId: 'judge-audit-packet', ...auditPacketManifestEntry },
+  ];
+  const cp08StateHash = requirementsContractDomainHash('requirements-checkpoint-stage/v1', {
+    operationId: authoringAttemptId, artifactHashes: directArtifactEntries
+      .filter((entry) => ['projection_reconciliation_report', 'authority_resolution_report',
+        'renderability_probe_report', 'judge_audit_packet_coverage', 'judge_audit_packet']
+        .includes(entry.role))
+      .map((entry) => entry.semanticHash)
+      .sort(),
+  });
+  const publicationReady = validateRequirementsContractPublicationReady({
+    activeAuthoringAttemptPointer: {
+      schemaVersion: 'ActiveAuthoringAttemptPointer/v1',
+      authoringAttemptId,
+      attemptManifestPath: `authoring/staging/${authoringAttemptId}/manifests/8-cp08.json`,
+      attemptManifestHash: cp08StateHash,
+      latestValidPredecessorCheckpoint: 'cp07',
+      inputManifestHash: scan.sourceList.sourceListHash,
+    },
+    cp08Snapshot: {
+      checkpointId: 'cp08', authoringAttemptId, attemptManifestHash: cp08StateHash,
+      semanticIr: cp04Stage.semanticIr, resolvedEvidenceIndex: cp04Stage.resolvedEvidenceIndex,
+    },
+    reconciliationReport: cp08Pure.reconciliationReport,
+    authorityResolutionReport: cp08Pure.authorityResolutionReport,
+    renderabilityProbeReport: cp08Pure.renderabilityProbeReport,
+    auditPacket: cp08Pure.auditPacket,
+    coverageManifest: cp08Pure.coverageManifest,
+    mandatoryDimensionRegistry: { dimensionIds: ['semantic_projection_reconciliation', 'authority_resolution', 'renderability', 'audit_packet_coverage'] },
+    payloadObservation: { serializedBytes: cp08Pure.serializedBytes },
+    finalBuildManifestInputs: ['cp08-snapshot', 'audit-packet'],
+  });
+  if (publicationReady.decision === 'block') throw new Error(publicationReady.issueCodes[0]);
+  runRequirementsSemanticCheckpointUnits({
+    recordRoot, operationId: authoringAttemptId, checkpointId: 'cp08',
+    semanticInputHash: scan.sourceList.sourceListHash,
+    planHash: requirementsContractDomainHash('requirements-checkpoint-plan/cp08/v2', {
+      compiler: 'requirements-contract-cp08-reconciliation-renderability/v2',
+      unitIds: directArtifactEntries
+        .filter((entry) => ['projection_reconciliation_report', 'authority_resolution_report',
+          'renderability_probe_report', 'judge_audit_packet_coverage', 'judge_audit_packet']
+          .includes(entry.role))
+        .map((entry) => `cp08:${entry.role}`),
+    }),
+    validatorVersion: 'requirements-contract-authoring-validator/v2',
+    units: directArtifactEntries
+      .filter((entry) => ['projection_reconciliation_report', 'authority_resolution_report',
+        'renderability_probe_report', 'judge_audit_packet_coverage', 'judge_audit_packet']
+        .includes(entry.role))
+      .sort((left, right) => left.role.localeCompare(right.role, 'en'))
+      .map((entry) => ({
+        unitId: `cp08:${entry.role}`,
+        unitInputHash: entry.semanticHash,
+        compilerVersion: 'requirements-contract-cp08-reconciliation-renderability/v2',
+        execute: () => [entry.contentRef],
+      })),
+  });
   const currentRecord = fs.existsSync(requirementRecordPath)
     ? JSON.parse(fs.readFileSync(requirementRecordPath, 'utf8'))
     : null;
-  if (sha256Stable(currentRecord?.activeAuthority ?? null) !== sha256Stable(activeAuthority)) {
-    commitRequirementsContractAuthorityPublication({
-      route: 'initial',
-      current: currentRecord?.activeAuthority ?? null,
-      next: activeAuthority,
-      recordRootPath: recordRoot,
-      buildManifestTargetPath: path.join(
-        recordRoot,
-        ...activeAuthority.activeBuildManifestPath.split('/')
-      ),
-      buildManifest,
-      compareAndSwapAuthorityTuple(current, next) {
-        const latest = fs.existsSync(requirementRecordPath)
-          ? JSON.parse(fs.readFileSync(requirementRecordPath, 'utf8'))
-          : null;
-        if (sha256Stable(latest?.activeAuthority ?? null) !== sha256Stable(current)) return false;
-        writeJsonAtomic(requirementRecordPath, {
-          schemaVersion: 'requirements-contract-record/v1',
-          recordId: requestId,
-          lifecycle: 'audit_pending',
-          confirmedScopeSemanticHash: null,
-          activeAuthority: next,
-        });
-        return true;
-      },
-    });
-  }
-  const auditPacket = JSON.parse(
-    fs.readFileSync(
-      path.join(recordRoot, ...cp08Publication.canonicalAuditPacketRef.path.split('/')),
-      'utf8'
-    )
+  const durable = publishContentAddressedAuthoringBuild({
+    recordRoot,
+    sourcePath: intakeSource,
+    operationId: authoringAttemptId,
+    semanticIr: cp04Stage.semanticIr,
+    sourceBinding: cp04Stage.sourceBinding,
+    resolvedEvidenceIndex: cp04Stage.resolvedEvidenceIndex,
+    contentAddressedArtifactEntries: directArtifactEntries,
+    semanticInputHash: scan.sourceList.sourceListHash,
+    currentAuthority: currentRecord?.activeAuthority ?? null,
+    requirementRecordPath,
+    requestId,
+  });
+  const buildManifest = durable.manifest;
+  const activeAuthority = durable.activeAuthority;
+  const auditPacketEntry = buildManifest.artifactEntries.find(
+    (entry) => entry.role === 'judge_audit_packet'
   );
+  if (!auditPacketEntry) throw new Error('requirements_judge_audit_packet_missing');
+  const auditPacket = resolveRequirementsAuthoringArtifact({
+    recordRoot,
+    entry: auditPacketEntry,
+  });
   return continuePublishedRequirementsAudit(context, {
     recordRoot,
     authoringRequestId: requestId,
@@ -1558,7 +2741,7 @@ async function authorConfirmationReadySourceAction(context) {
     const confirmationLanguage = String(context.args.confirmationLanguage || '').trim();
     if (!confirmationLanguage) throw new Error('requirements_confirmation_language_missing');
     const authoritySources = readRequirementsContractDeclaredAuthoritySources(intakeSource);
-    const scan = scanRequirementsContractConsumerAuthority({
+    let scan = scanRequirementsContractConsumerAuthority({
       cwd: context.cwd,
       intakeSource,
       authoritySources,
@@ -1579,6 +2762,13 @@ async function authorConfirmationReadySourceAction(context) {
       .filter((candidate) => candidate.rootClass === 'unresolved_decision')
       .sort((left, right) => left.sourceRootId.localeCompare(right.sourceRootId));
     const recordRoot = authoringRecordRoot(context.cwd, requestId);
+    fs.mkdirSync(recordRoot, { recursive: true });
+    scan = scanRequirementsContractConsumerAuthority({
+      cwd: context.cwd,
+      recordRoot,
+      intakeSource,
+      authoritySources,
+    });
     const stagingRoot = path.join(recordRoot, 'authoring', 'staging', authoringAttemptId);
     atomicNoClobberPublish({
       targetPath: path.join(stagingRoot, 'consumer-authority-source-list.json'),
@@ -1812,6 +3002,7 @@ async function resumeAuthorConfirmationReadySourceAction(context) {
       );
       const scan = scanRequirementsContractConsumerAuthority({
         cwd: context.cwd,
+        recordRoot,
         intakeSource,
         authoritySources: readRequirementsContractDeclaredAuthoritySources(intakeSource),
       });
@@ -1840,12 +3031,7 @@ async function resumeAuthorConfirmationReadySourceAction(context) {
             const hasCurrentPromotionEvidence = Boolean(
               requirementRecord?.currentPromotionEvidence?.path
             );
-            const currentBinding = JSON.parse(
-              fs.readFileSync(
-                path.join(recordRoot, ...currentAuthority.activeSourceBindingPath.split('/')),
-                'utf8'
-              )
-            );
+            const currentBinding = readActiveSourceBindingCompat(recordRoot, currentAuthority);
             const semanticIr = resolveRequirementsContractSemanticIrAuthority(
               JSON.parse(
                 fs.readFileSync(

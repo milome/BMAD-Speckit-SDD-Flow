@@ -98,6 +98,8 @@ describe('Requirements production-entry binding refresh', () => {
         consumerRoot,
         first.data.confirmation.markdownPath as string
       );
+      fs.mkdirSync(path.dirname(targetMarkdownPath), { recursive: true });
+      fs.writeFileSync(targetMarkdownPath, '# Existing target\n', 'utf8');
       const originalMarkdown = fs.readFileSync(targetMarkdownPath);
       rewriteAuthorityFormatting(consumerRoot);
 
@@ -152,7 +154,7 @@ describe('Requirements production-entry binding refresh', () => {
       expect(fs.readFileSync(stagedMarkdownPath)).toEqual(stagedMarkdown);
       expect(fs.readFileSync(stagedHtmlPath)).toEqual(stagedHtml);
       const promotedMarkdown = fs.readFileSync(targetMarkdownPath, 'utf8');
-      expect(promotedMarkdown).toContain('## Confirmation');
+      expect(promotedMarkdown).toEqual(originalMarkdown.toString('utf8'));
       expect(
         await spawnMainAgentResult(consumerRoot, 'confirm-scope', [
           '--request-id',

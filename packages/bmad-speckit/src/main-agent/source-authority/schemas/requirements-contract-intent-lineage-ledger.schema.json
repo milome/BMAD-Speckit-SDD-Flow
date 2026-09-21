@@ -2,69 +2,114 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://bmad-speckit.local/schemas/requirements-contract-intent-lineage-ledger.schema.json",
   "title": "Requirements Contract Intent Lineage Ledger",
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "schemaVersion",
-    "requirementSetId",
-    "intakeReceiptPath",
-    "intakeReceiptHash",
-    "materialSpanIds",
-    "classifications",
-    "classificationSetHash",
-    "ledgerHash"
-  ],
-  "properties": {
-    "schemaVersion": {
-      "const": "requirements-contract-intent-lineage-ledger/v1"
-    },
-    "requirementSetId": {
-      "$ref": "#/$defs/nonEmptyString"
-    },
-    "intakeReceiptPath": {
-      "$ref": "#/$defs/nonEmptyString"
-    },
-    "intakeReceiptHash": {
-      "$ref": "#/$defs/sha256"
-    },
-    "materialSpanIds": {
-      "type": "array",
-      "minItems": 1,
-      "uniqueItems": true,
-      "items": {
-        "$ref": "#/$defs/nonEmptyString"
-      }
-    },
-    "classifications": {
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "oneOf": [
-          {
-            "$ref": "#/$defs/sourceRootClassification"
-          },
-          {
-            "$ref": "#/$defs/duplicateClassification"
-          },
-          {
-            "$ref": "#/$defs/supersededClassification"
-          },
-          {
-            "$ref": "#/$defs/rejectedClassification"
-          },
-          {
-            "$ref": "#/$defs/excludedClassification"
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "requirementSetId",
+        "intakeReceiptPath",
+        "intakeReceiptHash",
+        "materialSpanIds",
+        "classifications",
+        "classificationSetHash",
+        "ledgerHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "requirements-contract-intent-lineage-ledger/v1"
+        },
+        "requirementSetId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "intakeReceiptPath": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "intakeReceiptHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "materialSpanIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
           }
-        ]
+        },
+        "classifications": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "oneOf": [
+              { "$ref": "#/$defs/sourceRootClassification" },
+              { "$ref": "#/$defs/duplicateClassification" },
+              { "$ref": "#/$defs/supersededClassification" },
+              { "$ref": "#/$defs/rejectedClassification" },
+              { "$ref": "#/$defs/excludedClassification" }
+            ]
+          }
+        },
+        "classificationSetHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "ledgerHash": {
+          "$ref": "#/$defs/sha256"
+        }
       }
     },
-    "classificationSetHash": {
-      "$ref": "#/$defs/sha256"
-    },
-    "ledgerHash": {
-      "$ref": "#/$defs/sha256"
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "requirementSetId",
+        "sourceId",
+        "sourceBlobRef",
+        "materialRoots",
+        "excludedRanges",
+        "coverageHash",
+        "ledgerHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "requirements-contract-intent-lineage-ledger/v2"
+        },
+        "requirementSetId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "sourceId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "sourceBlobRef": {
+          "$ref": "#/$defs/contentRef"
+        },
+        "materialRoots": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "$ref": "#/$defs/materialSourceRoot" },
+              { "$ref": "#/$defs/materialDuplicate" },
+              { "$ref": "#/$defs/materialSuperseded" },
+              { "$ref": "#/$defs/materialRejected" }
+            ]
+          }
+        },
+        "excludedRanges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/excludedRange"
+          }
+        },
+        "coverageHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "ledgerHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
     }
-  },
+  ],
   "$defs": {
     "nonEmptyString": {
       "type": "string",
@@ -73,6 +118,160 @@
     "sha256": {
       "type": "string",
       "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "contentRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "contentHash",
+        "byteLength",
+        "mediaType",
+        "recordRelativePath"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "requirements-content-ref/v1"
+        },
+        "contentHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "byteLength": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "mediaType": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "recordRelativePath": {
+          "type": "string",
+          "pattern": "^authoring/objects/sha256/[a-f0-9]{2}/[a-f0-9]{62}$"
+        }
+      }
+    },
+    "sourceRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "startUtf8Byte",
+        "endUtf8ByteExclusive",
+        "startLine",
+        "endLine",
+        "contentHash"
+      ],
+      "properties": {
+        "startUtf8Byte": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "endUtf8ByteExclusive": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "startLine": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "contentHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "semanticNodeRefs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/nonEmptyString"
+      }
+    },
+    "materialSourceRoot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceRootId", "disposition", "sourceRange", "semanticNodeRefs"],
+      "properties": {
+        "sourceRootId": { "$ref": "#/$defs/nonEmptyString" },
+        "disposition": { "const": "source_root" },
+        "sourceRange": { "$ref": "#/$defs/sourceRange" },
+        "semanticNodeRefs": { "$ref": "#/$defs/semanticNodeRefs" }
+      }
+    },
+    "materialDuplicate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceRootId",
+        "disposition",
+        "sourceRange",
+        "semanticNodeRefs",
+        "duplicateOfSourceRootRef"
+      ],
+      "properties": {
+        "sourceRootId": { "$ref": "#/$defs/nonEmptyString" },
+        "disposition": { "const": "duplicate" },
+        "sourceRange": { "$ref": "#/$defs/sourceRange" },
+        "semanticNodeRefs": { "$ref": "#/$defs/semanticNodeRefs" },
+        "duplicateOfSourceRootRef": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "materialSuperseded": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceRootId",
+        "disposition",
+        "sourceRange",
+        "semanticNodeRefs",
+        "supersededBySourceRootRef"
+      ],
+      "properties": {
+        "sourceRootId": { "$ref": "#/$defs/nonEmptyString" },
+        "disposition": { "const": "superseded" },
+        "sourceRange": { "$ref": "#/$defs/sourceRange" },
+        "semanticNodeRefs": { "$ref": "#/$defs/semanticNodeRefs" },
+        "supersededBySourceRootRef": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "materialRejected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceRootId",
+        "disposition",
+        "sourceRange",
+        "semanticNodeRefs",
+        "decisionReceiptRef"
+      ],
+      "properties": {
+        "sourceRootId": { "$ref": "#/$defs/nonEmptyString" },
+        "disposition": { "const": "rejected" },
+        "sourceRange": { "$ref": "#/$defs/sourceRange" },
+        "semanticNodeRefs": { "$ref": "#/$defs/semanticNodeRefs" },
+        "decisionReceiptRef": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "excludedRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "startUtf8Byte",
+        "endUtf8ByteExclusive",
+        "startLine",
+        "endLine",
+        "exclusionRuleRef",
+        "reasonCode"
+      ],
+      "properties": {
+        "startUtf8Byte": { "type": "integer", "minimum": 0 },
+        "endUtf8ByteExclusive": { "type": "integer", "minimum": 1 },
+        "startLine": { "type": "integer", "minimum": 1 },
+        "endLine": { "type": "integer", "minimum": 1 },
+        "exclusionRuleRef": { "$ref": "#/$defs/nonEmptyString" },
+        "reasonCode": { "$ref": "#/$defs/nonEmptyString" }
+      }
     },
     "sourceRootClassification": {
       "type": "object",

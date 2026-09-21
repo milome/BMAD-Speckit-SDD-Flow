@@ -4,7 +4,8 @@ import type {
 } from './requirements-contract-model';
 import type { ProductionSemanticSourceRoot } from './requirements-contract-production-semantic-pipeline';
 import type { RequirementsContractSemanticConservationManifest } from './requirements-contract-semantic-conservation-manifest';
-import { sha256Stable, sha256Text } from './requirements-contract-semantic-resolver';
+import { sha256Stable } from './requirements-contract-semantic-resolver';
+import { productionSourceDocumentHash } from './requirements-contract-production-source-view';
 import type { RequirementsContractSemanticIr } from './requirements-contract-semantic-ir';
 import type { RequirementsContractSourceBindingCapsule } from './requirements-contract-source-binding-capsule';
 import {
@@ -122,7 +123,7 @@ function canonicalBody(
 }
 
 function sourceProvenance(root: ProductionSemanticSourceRoot, sourceRequirementId: string) {
-  const sourceHash = sha256Text(root.sourceContent);
+  const sourceHash = productionSourceDocumentHash(root);
   return {
     sourceRequirementId,
     sourcePath: root.sourcePath,
@@ -285,7 +286,7 @@ export function buildCanonicalPreCheckpointCompilerInput(input: {
         sourceRequirementId,
         sourcePath: root.root.sourcePath,
         sourceSpan: root.root.sourceSpan,
-        sourceDocumentHash: sha256Text(root.root.sourceContent),
+        sourceDocumentHash: productionSourceDocumentHash(root.root),
         headingPath: Array.isArray(source.headingPath) ? source.headingPath.map(String) : [],
       };
     });

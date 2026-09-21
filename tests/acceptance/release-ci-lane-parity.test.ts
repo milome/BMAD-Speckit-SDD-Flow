@@ -281,6 +281,7 @@ describe('release evidence parity', () => {
     expect(result.runtimeMismatchCount).toBe(0);
     expect(result.evidencePathDistinct).toBe(true);
     expect(result.releaseFullFallbackCount).toBe(1);
+    expect(result.releaseCommitShaGuardCount).toBe(1);
     expect(result.releaseCancellationGuardCount).toBe(1);
     expect(result.fullSuiteRunProvenanceCheckCount).toBe(1);
     expect(result.serialReleaseFullRunCount).toBe(0);
@@ -292,6 +293,20 @@ describe('release evidence parity', () => {
       requested_profile: 'release-full',
       commit_sha: '${{ inputs.commit_sha }}',
     });
+    const commitGuard = releaseWorkflow.jobs['validate-release-commit'];
+    expect(commitGuard.steps).toHaveLength(1);
+    expect(commitGuard.steps[0].env).toMatchObject({
+      INPUT_COMMIT_SHA: '${{ inputs.commit_sha }}',
+      WORKFLOW_SHA: '${{ github.sha }}',
+    });
+    expect(commitGuard.steps[0].run).toContain('RELEASE_COMMIT_SHA_MISMATCH');
+    expect(releaseWorkflow.jobs['release-full-fallback'].needs).toEqual([
+      'validate-release-commit',
+    ]);
+    expect(releaseWorkflow.jobs.release.needs).toEqual([
+      'validate-release-commit',
+      'release-full-fallback',
+    ]);
     expect(releaseWorkflow.jobs.release.if).toContain('!cancelled()');
     expect(releaseWorkflow.jobs.release.if).not.toContain('always()');
     expect(provenanceChecks).toHaveLength(1);

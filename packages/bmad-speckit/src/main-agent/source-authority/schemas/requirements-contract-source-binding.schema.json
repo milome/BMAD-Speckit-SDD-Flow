@@ -47,7 +47,19 @@
       "properties": {
         "sourceArtifactId": { "$ref": "#/$defs/id" }, "role": { "$ref": "#/$defs/nonEmpty" },
         "mediaType": { "$ref": "#/$defs/nonEmpty" }, "sourceSnapshotHash": { "$ref": "#/$defs/hash" },
-        "orderedPosition": { "type": "integer", "minimum": 0 }, "immutableBlobRef": { "$ref": "#/$defs/path" }
+        "orderedPosition": { "type": "integer", "minimum": 0 }, "immutableBlobRef": { "$ref": "#/$defs/path" },
+        "sourceBlobRef": { "$ref": "#/$defs/contentRef" }
+      }
+    },
+    "contentRef": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "contentHash", "byteLength", "mediaType", "recordRelativePath"],
+      "properties": {
+        "schemaVersion": { "const": "requirements-content-ref/v1" },
+        "contentHash": { "$ref": "#/$defs/hash" },
+        "byteLength": { "type": "integer", "minimum": 1 },
+        "mediaType": { "$ref": "#/$defs/nonEmpty" },
+        "recordRelativePath": { "type": "string", "pattern": "^authoring/objects/sha256/[a-f0-9]{2}/[a-f0-9]{62}$" }
       }
     },
     "sourceSpan": {

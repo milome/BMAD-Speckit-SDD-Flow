@@ -115,20 +115,11 @@ function resolveProjectFile(projectRoot: string, relativePath: string, code: str
 }
 
 function resolveSchemaFile(packageRoot: string, schemaName: string): string {
-  const candidates = [
+  return resolvePackageFile(
+    packageRoot,
     path.join('dist', 'main-agent', 'source-authority', 'schemas', schemaName),
-    path.join('src', 'main-agent', 'source-authority', 'schemas', schemaName),
-  ];
-  for (const candidate of candidates) {
-    try {
-      return resolvePackageFile(packageRoot, candidate, 'judge_prompt_loader_schema_missing');
-    } catch (error) {
-      if (!(error instanceof Error) || error.message !== 'judge_prompt_loader_schema_missing') {
-        throw error;
-      }
-    }
-  }
-  throw new Error('judge_prompt_loader_schema_missing');
+    'judge_prompt_loader_schema_missing'
+  );
 }
 
 function parseFrontMatter(content: string): {

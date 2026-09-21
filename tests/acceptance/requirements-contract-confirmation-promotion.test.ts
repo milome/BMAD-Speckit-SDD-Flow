@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -230,7 +230,7 @@ function fixture(root: string) {
 }
 
 describe('Requirements confirmation promotion', () => {
-  it('renders, reads back and promotes once before exposing confirmation', () => {
+  it('keeps the target unchanged until exact confirmation promotes the candidate', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'requirements-promotion-'));
     try {
       const input = fixture(root);
@@ -245,17 +245,50 @@ describe('Requirements confirmation promotion', () => {
 
       expect(first).toMatchObject({ status: 'user_confirmable', unresolvedDecisionCount: 0 });
       expect(second).toEqual(first);
-      expect(readFileSync(path.join(root, 'docs', 'refund-requirements.md'), 'utf8')).toContain(
-        'MUST-FR-001'
-      );
+      expect(existsSync(path.join(root, 'docs', 'refund-requirements.md'))).toBe(false);
       expect(first.confirmation.exactConfirmationText).toContain(input.requestId);
-      expect(first.confirmation.markdownArtifactBytesHash).toBe(
-        artifactBytesHash({
-          role: 'final_markdown',
-          mediaType: 'text/markdown',
-          bytes: readFileSync(path.join(root, 'docs', 'refund-requirements.md')),
-        })
-      );
+      confirmRequirementsContractIrScope({
+        projectRoot: root,
+        requestId: input.requestId,
+        exactConfirmationText: first.confirmation.exactConfirmationText,
+      });
+      const promoted = readFileSync(path.join(root, 'docs', 'refund-requirements.md'));
+      expect(promoted.toString('utf8')).toContain('MUST-FR-001');
+      expect(first.confirmation.markdownArtifactBytesHash).toBe(artifactBytesHash({
+        role: 'final_markdown', mediaType: 'text/markdown', bytes: promoted,
+      }));
+      const finalPromotion = JSON.parse(readFileSync(
+        path.join(input.recordRoot, 'confirmation', 'final-promotion-receipt.json'),
+        'utf8'
+      )) as Record<string, unknown>;
+      expect(finalPromotion).toMatchObject({
+        schemaVersion: 'requirements-contract-confirmation-promotion-receipt/v2',
+        htmlArtifactBytesHash: first.confirmation.htmlArtifactBytesHash,
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects a confirmed replay whose exact confirmation text differs', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'requirements-promotion-'));
+    try {
+      const input = fixture(root);
+      const rendered = renderAndPromoteRequirementsContractConfirmation({
+        projectRoot: root,
+        requestId: input.requestId,
+      });
+      confirmRequirementsContractIrScope({
+        projectRoot: root,
+        requestId: input.requestId,
+        exactConfirmationText: rendered.confirmation.exactConfirmationText,
+      });
+
+      expect(() => confirmRequirementsContractIrScope({
+        projectRoot: root,
+        requestId: input.requestId,
+        exactConfirmationText: 'different confirmation text',
+      })).toThrowError('requirements_confirmation_exact_text_mismatch');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -341,10 +374,7 @@ describe('Requirements confirmation promotion', () => {
     }
   });
 
-  it.each([
-    ['final_markdown', 'docs/refund-requirements.md'],
-    ['confirmation_html', 'docs/refund-requirements.html'],
-  ])('rejects a stale %s page', (_role, relativePath) => {
+  it('rejects a stale review candidate before target promotion', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'requirements-promotion-'));
     try {
       const input = fixture(root);
@@ -352,7 +382,14 @@ describe('Requirements confirmation promotion', () => {
         projectRoot: root,
         requestId: input.requestId,
       });
-      writeFileSync(path.join(root, ...relativePath.split('/')), 'stale page\n', 'utf8');
+      const candidate = JSON.parse(readFileSync(
+        path.join(input.recordRoot, 'confirmation', 'current-promotion.json'), 'utf8'
+      ));
+      writeFileSync(
+        path.join(input.recordRoot, ...candidate.candidateRef.recordRelativePath.split('/')),
+        'stale page\n',
+        'utf8'
+      );
 
       expect(() =>
         confirmRequirementsContractIrScope({

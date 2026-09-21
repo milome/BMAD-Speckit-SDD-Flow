@@ -4,6 +4,8 @@ import {
   normalizeRequirementSourceInput,
   type RequirementSourceInput,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-model';
+import { sourceBytesHash } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-hash-domains';
+import { buildUtf8LineIndex, lineRangeToByteRange } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-utf8-source-index';
 
 const SOURCE_TEXT = [
   '# Session Intake',
@@ -43,8 +45,21 @@ describe('requirements contract source normalization', () => {
       expect(ast.sourceHash).toMatch(/^sha256:/);
       expect(ast.normalizedHash).toMatch(/^sha256:/);
       expect(ast.headings.map((heading) => heading.text)).toContain('Session Intake');
-      expect(ast.blocks.some((block) => block.span.startLine > 0 && block.hash.startsWith('sha256:'))).toBe(true);
+      expect(ast.blocks.some((block) => block.span.startLine > 0)).toBe(true);
       expect(ast.fences[0]).toMatchObject({ language: 'powershell' });
+      const sourceBytes = Buffer.from(SOURCE_TEXT, 'utf8');
+      for (const item of [...ast.blocks, ...ast.fences]) {
+        expect(item).not.toHaveProperty('text');
+        expect(item).not.toHaveProperty('hash');
+        expect(item.sourceRange.contentHash).toBe(
+          sourceBytesHash(
+            sourceBytes.subarray(
+              item.sourceRange.startUtf8Byte,
+              item.sourceRange.endUtf8ByteExclusive
+            )
+          )
+        );
+      }
       expect(ast.languageSignals).toMatchObject({
         primary: 'mixed',
         containsChinese: true,
@@ -93,5 +108,15 @@ describe('requirements contract source normalization', () => {
     });
     expect(ast.recoverableShapes).toContain('markdown_table_alignment');
     expect(ast.canonicalIds.map((id) => id.canonical)).toContain('FR-001');
+  });
+
+  it('indexes CR-only line endings without changing UTF-8 ranges', () => {
+    const bytes = Buffer.from('甲\r乙\r丙', 'utf8');
+    const index = buildUtf8LineIndex(bytes);
+    expect(index.lineStartOffsets).toHaveLength(3);
+    expect(lineRangeToByteRange(index, 2, 2)).toEqual({
+      startUtf8Byte: Buffer.byteLength('甲\r', 'utf8'),
+      endUtf8ByteExclusive: Buffer.byteLength('甲\r乙\r', 'utf8'),
+    });
   });
 });

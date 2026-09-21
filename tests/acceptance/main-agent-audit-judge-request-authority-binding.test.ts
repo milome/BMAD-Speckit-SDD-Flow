@@ -8,6 +8,7 @@ import {
   extractRequirementsContractImplementationConfirmation,
   sourceDocumentHashFor,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-implementation-confirmation-codec';
+import { projectionSetHash } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-hash-domains';
 
 function normalizeForHash(value: unknown): unknown {
   if (typeof value === 'string') {
@@ -123,7 +124,7 @@ function materializeHashBoundModelPacket() {
     modelPacketHash: rawFileHash(content),
     projectionGroups,
     projectionRefs,
-    projectionSetHash: canonicalObjectHash(projectionRefs),
+    projectionSetHash: projectionSetHash(projectionRefs),
   };
 }
 

@@ -270,6 +270,18 @@ function verifyReleaseWorkflowAuthority({ releaseSource, publishSource }) {
     fallback?.with?.commit_sha === '${{ inputs.commit_sha }}'
       ? 1
       : 0;
+  const releaseCommitShaGuardCount = (release.jobs?.['validate-release-commit']?.steps || []).filter(
+    (step) => {
+      const run = String(step?.run || '');
+      return (
+        step?.name === 'Verify release commit matches workflow SHA' &&
+        step?.env?.INPUT_COMMIT_SHA === '${{ inputs.commit_sha }}' &&
+        step?.env?.WORKFLOW_SHA === '${{ github.sha }}' &&
+        run.includes('RELEASE_COMMIT_SHA_INVALID') &&
+        run.includes('RELEASE_COMMIT_SHA_MISMATCH')
+      );
+    }
+  ).length;
   const releaseCancellationGuardCount =
     typeof releaseJob?.if === 'string' &&
     releaseJob.if.includes('!cancelled()') &&
@@ -294,6 +306,7 @@ function verifyReleaseWorkflowAuthority({ releaseSource, publishSource }) {
   if (independentPackAuthorityCount > 0) fail('CI_SECOND_PACKAGE_AUTHORITY');
   if (runtimeMismatchCount > 0 || versions.length === 0) fail('RELEASE_RUNTIME_MISMATCH');
   if (
+    releaseCommitShaGuardCount !== 1 ||
     releaseFullFallbackCount !== 1 ||
     releaseCancellationGuardCount !== 1 ||
     fullSuiteRunProvenanceCheckCount !== 1 ||
@@ -311,6 +324,7 @@ function verifyReleaseWorkflowAuthority({ releaseSource, publishSource }) {
   return {
     independentPublishAuthorityCount,
     independentPackAuthorityCount,
+    releaseCommitShaGuardCount,
     releaseFullFallbackCount,
     releaseCancellationGuardCount,
     fullSuiteRunProvenanceCheckCount,

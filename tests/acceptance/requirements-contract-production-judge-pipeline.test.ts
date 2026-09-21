@@ -162,7 +162,7 @@ describe('requirements production Judge pipeline', () => {
         structuredOutputSchema: judgePrompt.structuredOutputSchema,
       }));
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
     }
   });
 
@@ -212,6 +212,12 @@ describe('requirements production Judge pipeline', () => {
 
     expect(invoke).toHaveBeenCalledTimes(1);
     expect(result.request.prompt).toEqual(judgePrompt);
+    expect(result.request).not.toHaveProperty('auditPacket');
+    expect(result.request.auditPacketRef).toMatchObject({
+      schemaVersion: 'requirements-content-ref/v1',
+      contentHash: expect.stringMatching(/^sha256:/u),
+    });
+    expect(invoke.mock.calls[0]?.[0]).toHaveProperty('auditPacket.body');
     expect(result.status).toBe('audited_pass');
     expect(result.aggregate.decision).toBe('pass');
     expect(result.effectivePass.decision).toBe('pass');
@@ -266,7 +272,7 @@ describe('requirements production Judge pipeline', () => {
       expect(result.activeRequest.requestPath).not.toContain(':');
       expect(result.request.judgeRequestHash).toMatch(/^sha256:/u);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
     }
   });
 
@@ -321,7 +327,7 @@ describe('requirements production Judge pipeline', () => {
         activeRequest: { status: 'audit_pending', attemptCount: 1 },
       });
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
     }
   });
 
@@ -357,7 +363,7 @@ describe('requirements production Judge pipeline', () => {
       expect(second.activeRequest.lastAttemptPath).toMatch(/dispatch-attempts\/2\.json$/u);
       expect(existsSync(path.join(root, ...second.activeRequest.lastAttemptPath.split('/')))).toBe(true);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
     }
   });
 
@@ -397,7 +403,7 @@ describe('requirements production Judge pipeline', () => {
       expect(second).toMatchObject({ status: 'audited_pass', activeRequest: { attemptCount: 2 } });
       expect(invoke).toHaveBeenCalledTimes(2);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
     }
   });
 
@@ -428,7 +434,7 @@ describe('requirements production Judge pipeline', () => {
       expect(second.activeRequest).toEqual(first.activeRequest);
       expect(JSON.parse(readFileSync(path.join(root, 'quality', 'active-request.json'), 'utf8'))).toEqual(first.activeRequest);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
     }
   });
 
@@ -471,7 +477,8 @@ describe('requirements production Judge pipeline', () => {
         providerSelectionHash: baseline.request.providerSelection.providerSelectionHash,
         attemptOrdinal: 1, outcome: 'response_received', acceptedEvaluation: true,
         requestSerializedBytes: 1, auditPacketSerializedBytes: 1,
-        validationIssueCodes: [], nextEligibleAt: null, rawResponse: responseFor(baseline.request),
+        validationIssueCodes: [], nextEligibleAt: null,
+        rawResponse: responseFor({ ...baseline.request, auditPacket: common.auditPacket }),
       });
       invoke.mockClear();
 
@@ -479,7 +486,7 @@ describe('requirements production Judge pipeline', () => {
       expect(resumed).toMatchObject({ status: 'audited_pass', activeRequest: { attemptCount: 1 } });
       expect(invoke).not.toHaveBeenCalled();
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
     }
   });
 

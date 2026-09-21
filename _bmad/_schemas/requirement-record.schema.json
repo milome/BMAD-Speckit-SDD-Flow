@@ -1121,7 +1121,7 @@
         "confirmationPageHash": { "$ref": "#/$defs/sha256" },
         "confirmationText": { "$ref": "#/$defs/nonEmptyString" },
         "renderReportPath": { "$ref": "#/$defs/nonEmptyString" },
-        "htmlPath": { "$ref": "#/$defs/nonEmptyString" },
+        "htmlPath": { "type": ["string", "null"], "minLength": 1 },
         "entryFlow": { "enum": ["story", "bugfix", "standalone_tasks"] },
         "entryFlowClass": { "enum": ["full_story_entry", "corrective_entry", "task_packet_entry"] },
         "workflowAdapter": { "enum": ["bmad", "speckit", "direct", "legacy"] },

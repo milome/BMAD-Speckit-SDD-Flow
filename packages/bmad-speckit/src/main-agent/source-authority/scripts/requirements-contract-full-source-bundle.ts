@@ -12,11 +12,17 @@ export interface RequirementsSourceArtifact {
   path: string;
   bytes: number;
   sha256: string;
+  sourceBlobRef?: import('./requirements-contract-content-store').RequirementsContentRef;
+}
+export interface RequirementsSourceArtifactView {
+  artifact: RequirementsSourceArtifact;
+  bytes: Buffer;
 }
 export interface RequirementsSourceBundleResult {
   candidates: ProductionSemanticSourceRootCandidate[];
   graph: RequirementsTypedSourceGraph;
   artifact: RequirementsSourceArtifact;
+  sourceView: RequirementsSourceArtifactView;
   relationBindings: Array<{ relationId: string; sourceLine: number }>;
   contextBindings: Record<string, unknown>[];
 }
@@ -73,7 +79,7 @@ export function parseRequirementsSourceBundle(input: {
     graph.sourceNodes.push({ ...semanticBody, sourceRootId: value.sourceRootId } as RequirementsTypedSourceGraph['sourceNodes'][number]);
     candidates.push({ sourceRootId: value.sourceRootId, rootClass: 'typed_source_node', nodeType: 'requirement',
       bodySchemaVersion: SOURCE_NODE_VERSION, proposedAuthorityClass: 'source_authority', semanticBody,
-      sourcePath: artifact.path, sourceContent, sourceSpan: { startLine, endLine }, sourceBinding: { ...binding },
+      sourcePath: artifact.path, sourceSpan: { startLine, endLine }, sourceBinding: { ...binding },
       sourceArtifact: { ...artifact }, bundlePath: input.bundlePath } as ProductionSemanticSourceRootCandidate);
   }
   const relationBindings: RequirementsSourceBundleResult['relationBindings'] = [];
@@ -118,7 +124,14 @@ export function parseRequirementsSourceBundle(input: {
     } else if (!Number.isSafeInteger(binding.value) || Number(binding.value) < (key.startsWith('byte') ? 0 : 1) ||
       Number(binding.value) > (key.startsWith('byte') ? raw.length : lineCount)) fail('context_binding_location_invalid');
   }
-  return { candidates, graph, artifact, relationBindings, contextBindings };
+  return {
+    candidates,
+    graph,
+    artifact,
+    sourceView: { artifact: { ...artifact }, bytes: raw },
+    relationBindings,
+    contextBindings,
+  };
 }
 
 export function combineRequirementsSourceContextBindings(bundles: RequirementsSourceBundleResult[]): Record<string, unknown>[] {

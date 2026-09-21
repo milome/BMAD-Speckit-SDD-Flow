@@ -55,7 +55,7 @@ export function compileRequirementsEffectivePassReceiptV2(input: {
     input.activeAuthority.activeSemanticRevisionId !== aggregate.semanticRevisionId ||
     input.activeAuthority.activeScopeSemanticHash !== aggregate.scopeSemanticHash ||
     input.activeAuthority.activeSourceBindingHash !== aggregate.sourceBindingHash ||
-    input.activeAuthority.activeBuildManifestHash !== aggregate.buildManifestHash
+    (input.activeAuthority.activeBuildHash ?? input.activeAuthority.activeBuildManifestHash) !== aggregate.buildManifestHash
   ) {
     throw new Error('requirements_effective_pass_authority_stale');
   }

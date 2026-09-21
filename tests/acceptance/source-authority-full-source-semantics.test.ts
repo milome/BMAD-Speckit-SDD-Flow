@@ -21,13 +21,18 @@ import { measureFullSourceRequirementsJudgePreflight } from '../helpers/source-a
 import { canonicalJson, sha256 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-governed-write';
 
 describe('full source Requirements authority input, test-only without confirmation or Judge', () => {
-  it('counts source documents, not typed child declarations, against the unchanged 128-file budget', () => {
+  it('keeps dynamic material roots independent of source artifact count', () => {
     const fixture = createSmallBundle(129);
     try {
       const scanned = scanRequirementsContractConsumerAuthority({ cwd: fixture.root,
         intakeSource: fixture.intakeSource, authoritySources: fixture.authoritySources });
       expect(scanned.sourceList.entries).toHaveLength(1);
       expect(scanned.sourceRootCandidates).toHaveLength(129);
+      expect(scanned.sourceRootCandidates.every((candidate) => !('sourceContent' in candidate)))
+        .toBe(true);
+      expect(scanned.sourceArtifactViews).toHaveLength(1);
+      expect(new Set(scanned.sourceRootCandidates.map((candidate) => candidate.sourceArtifact?.artifactId)))
+        .toEqual(new Set([scanned.sourceArtifactViews[0].artifact.artifactId]));
       expect(scanned.sourceRootCandidates.map((candidate) => candidate.semanticBody))
         .toEqual(fixture.sourceRoots.map((candidate) => candidate.semanticBody));
       expect(scanned.sourceRootCandidates.filter((candidate) => candidate.semanticBody.executionRole === 'action')).toHaveLength(1);
@@ -49,6 +54,8 @@ describe('full source Requirements authority input, test-only without confirmati
       expect(JSON.stringify([...actual.values()])).not.toMatch(/"(?:sourceBinding|sourcePath|byteStart|byteEnd)":/u);
       expect(scanned.sourceRootCandidates.map((child: any) => child.sourceBinding))
         .toEqual(fixture.sourceRoots.map((child) => child.sourceBinding));
+      expect(scanned.sourceRootCandidates.every((child: any) => !('sourceContent' in child))).toBe(true);
+      expect(scanned.sourceArtifactViews).toHaveLength(1);
       expect(scanned.sourceRootCandidates.filter((child: any) => child.semanticBody.executionRole === 'action')
         .map((child: any) => child.sourceRootId).sort()).toEqual(fixture.expected.sections.flatMap((section: any) => section.works).map((work: any) => work.id).sort());
       expect(scanned.sourceRootCandidates.filter((child: any) => child.semanticBody.executionRole === 'definition')).toHaveLength(277);

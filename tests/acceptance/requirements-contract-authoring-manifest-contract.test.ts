@@ -12,6 +12,7 @@ import { atomicNoClobberPublish } from '../../packages/bmad-speckit/src/main-age
 import {
   assertRequirementsAuthorityRouteTransition,
   commitRequirementsContractAuthorityPublication,
+  validateRequirementsActiveAuthorityTuple,
   type RequirementsActiveAuthorityTuple,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-authority-publication-committer';
 import {
@@ -59,6 +60,29 @@ function authorityTuple(
 }
 
 describe('authoring checkpoint and build manifests', () => {
+  it('accepts durable v2 authority roots and rejects staging as active authority', () => {
+    const buildHash = hash('a');
+    const durable = {
+      activeSemanticRevisionId: 'SEM-001',
+      activeScopeSemanticHash: hash('1'),
+      activeBindingRevisionId: 'BIND-001',
+      activeSourceBindingHash: hash('2'),
+      activeBuildHash: buildHash,
+      activeBuildManifestPath: `authoring/builds/${buildHash.slice('sha256:'.length)}/manifest.json`,
+      previousBuildHash: null,
+      previousBuildManifestPath: null,
+    };
+    expect(validateRequirementsActiveAuthorityTuple(durable)).toEqual({ decision: 'pass', issueCodes: [] });
+    expect(validateRequirementsActiveAuthorityTuple({
+      ...durable,
+      activeBuildManifestPath: 'authoring/.staging/OP-1/manifest.json',
+    }).decision).toBe('block');
+    expect(validateRequirementsActiveAuthorityTuple({
+      ...durable,
+      activeSemanticRevisionId: '../../escape',
+    }).decision).toBe('block');
+  });
+
   it('normalizes closed typed entries and validates predecessor lineage', () => {
     const manifest = createRequirementsContractCheckpointManifest({
       authoringRequestId: 'REQUEST-001', authoringAttemptId: 'ATTEMPT-001', checkpointId: 'cp00', checkpointOrdinal: 0,

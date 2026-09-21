@@ -47,16 +47,75 @@ describe('Requirements production-entry confirmation', () => {
       const record = JSON.parse(
         fs.readFileSync(path.join(recordRoot, 'record', 'requirement-record.json'), 'utf8')
       );
+      const buildManifest = JSON.parse(fs.readFileSync(
+        path.join(recordRoot, ...record.activeAuthority.activeBuildManifestPath.split('/')), 'utf8'
+      ));
+      const checkpointStates = Array.from({ length: 9 }, (_, ordinal) => {
+        const checkpointId = `cp${String(ordinal).padStart(2, '0')}`;
+        return JSON.parse(fs.readFileSync(path.join(
+          recordRoot,
+          'authoring',
+          'operations',
+          record.activeOperationId,
+          'checkpoints',
+          `${checkpointId}.json`
+        ), 'utf8'));
+      });
+      expect(checkpointStates.map((state) => state.checkpointId)).toEqual(
+        Array.from({ length: 9 }, (_, ordinal) => `cp${String(ordinal).padStart(2, '0')}`)
+      );
+      expect(checkpointStates.every((state) => state.decision === 'passed')).toBe(true);
+      expect(checkpointStates[3].completedUnits[0].outputRefs).toHaveLength(3);
+      expect(buildManifest.checkpointSummary.terminalStateHashes).toEqual(
+        [...checkpointStates.map((state) => state.stateHash)].sort()
+      );
+      expect(JSON.stringify(checkpointStates)).not.toContain('projection payload stored once');
+      const entry = (role: string) => buildManifest.artifactEntries.find(
+        (candidate: Record<string, unknown>) => candidate.role === role
+      );
+      const semanticEntry = entry('semantic_ir');
       const semanticIr = JSON.parse(
         fs.readFileSync(
-          path.join(recordRoot, ...record.activeAuthority.activeSemanticIrPath.split('/')),
+          path.join(recordRoot, ...semanticEntry.contentRef.recordRelativePath.split('/')),
           'utf8'
         )
       );
-      const markdown = fs.readFileSync(
-        path.join(consumerRoot, envelope.data.confirmation.markdownPath),
+      const judgePacketEntry = entry('judge_audit_packet');
+      const judgePacketDescriptor = JSON.parse(fs.readFileSync(
+        path.join(recordRoot, ...judgePacketEntry.contentRef.recordRelativePath.split('/')),
+        'utf8'
+      ));
+      expect(judgePacketDescriptor.semanticIrRef).toEqual(semanticEntry.contentRef);
+      const artifactRoleById: Record<string, string> = {
+        'confirmation-projection': 'confirmation_projection',
+        'final-markdown': 'final_markdown',
+        'execution-manifest': 'execution_manifest',
+        'per-must-bundle': 'per_must_bundle',
+        'trace-matrix': 'trace_matrix',
+        'diagram-set': 'diagram_set',
+        'projection-reconciliation-report': 'projection_reconciliation_report',
+        'authority-resolution-report': 'authority_resolution_report',
+        'renderability-probe-report': 'renderability_probe_report',
+      };
+      for (const slice of judgePacketDescriptor.semanticAuditSliceRefs) {
+        if (slice.role === 'judge_metadata') continue;
+        expect(slice.contentRef).toEqual(entry(artifactRoleById[slice.role]).contentRef);
+      }
+      const metadataSlice = judgePacketDescriptor.semanticAuditSliceRefs.find(
+        (slice: Record<string, unknown>) => slice.role === 'judge_metadata'
+      );
+      expect(metadataSlice).toBeDefined();
+      const metadataBody = fs.readFileSync(
+        path.join(recordRoot, ...metadataSlice.contentRef.recordRelativePath.split('/')),
         'utf8'
       );
+      expect(metadataBody).not.toContain('artifactPayloadGroups');
+      const reviewCandidate = JSON.parse(fs.readFileSync(
+        path.join(recordRoot, 'confirmation', 'current-promotion.json'), 'utf8'
+      ));
+      const markdown = fs.readFileSync(path.join(
+        recordRoot, ...reviewCandidate.candidateRef.recordRelativePath.split('/')
+      ), 'utf8');
       for (const requirement of semanticIr.semanticPayload.semantics.requirements) {
         expect(markdown).toContain(requirement.id);
         expect(markdown).toContain(requirement.text);
@@ -94,9 +153,10 @@ describe('Requirements production-entry confirmation', () => {
       });
       expect(provider.requests).toHaveLength(1);
 
+      const sourceBindingEntry = entry('source_binding');
       const sourceBinding = JSON.parse(
         fs.readFileSync(
-          path.join(recordRoot, ...record.activeAuthority.activeSourceBindingPath.split('/')),
+          path.join(recordRoot, ...sourceBindingEntry.contentRef.recordRelativePath.split('/')),
           'utf8'
         )
       );
@@ -116,7 +176,7 @@ describe('Requirements production-entry confirmation', () => {
       );
       const semanticIrPath = path.join(
         recordRoot,
-        ...record.activeAuthority.activeSemanticIrPath.split('/')
+        ...semanticEntry.contentRef.recordRelativePath.split('/')
       );
       const semanticIrBeforeArchitecture = fs.readFileSync(semanticIrPath, 'utf8');
       const prepared = await spawnMainAgent(consumerRoot, 'prepare-architecture-confirmation', [

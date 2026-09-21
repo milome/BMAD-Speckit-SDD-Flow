@@ -62,7 +62,7 @@ function validateRequest(body: JsonRecord): JsonRecord {
   }
   const request = JSON.parse(user.content) as JsonRecord;
   if (
-    request.schemaVersion !== 'requirements-contract-judge-request/v2' ||
+    !['requirements-contract-judge-request/v2', 'requirements-contract-judge-request/v3'].includes(String(request.schemaVersion)) ||
     typeof request.judgeRequestHash !== 'string' ||
     ((request.prompt as JsonRecord | undefined)?.structuredOutputSchema as
       | JsonRecord
@@ -77,7 +77,9 @@ function validateRequest(body: JsonRecord): JsonRecord {
   const dimensions = requiredStrings(packetBody?.mandatoryDimensionIds, 'dimensions');
   const artifacts = requiredStrings(packetBody?.artifactIds, 'artifacts');
   const musts = requiredStrings(packetBody?.requirementIds, 'musts');
-  const manifestIds = requiredStrings(
+  const manifestIds = request.schemaVersion === 'requirements-contract-judge-request/v3'
+    ? artifacts
+    : requiredStrings(
     Array.isArray(request.auditPacketArtifactManifest)
       ? request.auditPacketArtifactManifest.map(
           (entry) => (entry as JsonRecord).artifactId

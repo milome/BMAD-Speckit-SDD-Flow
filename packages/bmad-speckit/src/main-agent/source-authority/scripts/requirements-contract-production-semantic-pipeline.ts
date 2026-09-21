@@ -76,6 +76,14 @@ import {
 import { validateRequirementsContractIntakeReceipt } from './requirements-contract-intake-receipt';
 import { validateRequirementsContractFileIntakeReceipt } from './requirements-contract-file-intake-receipt';
 import { validateRequirementsContractIntentLineageLedger } from './requirements-contract-intent-lineage';
+import type { RequirementsContentRef } from './requirements-contract-content-store';
+import {
+  compactProductionSourceBacking,
+  resolveProductionSourceDocument,
+  resolveProductionSourceContent,
+  type ProductionSourceArtifactView,
+  type ProductionSourceRange,
+} from './requirements-contract-production-source-view';
 import {
   validateRequirementContractModelV2,
   type RequirementContractModelV2,
@@ -101,7 +109,9 @@ export interface ProductionSemanticSourceRoot {
   bodySchemaVersion: string;
   semanticBody: Record<string, unknown>;
   sourcePath: string;
-  sourceContent: string;
+  sourceContent?: string;
+  sourceBlobRef?: RequirementsContentRef;
+  sourceRange?: ProductionSourceRange;
   sourceSpan: {
     startLine: number;
     endLine: number;
@@ -857,9 +867,77 @@ function validateLineageRootSet(input: {
 }): void {
   if (
     input.intakeReceipt.requirementSetId !== input.requirementSetId ||
-    input.intentLineageLedger.requirementSetId !== input.requirementSetId ||
-    input.intentLineageLedger.intakeReceiptHash !== input.intakeReceipt.receiptHash
+    input.intentLineageLedger.requirementSetId !== input.requirementSetId
   ) {
+    throw new Error('Intent Lineage identity does not match the current Intake Receipt');
+  }
+  const expectedRootRefs = new Set(
+    input.sourceRoots
+      .filter((root) => lineageAuthorityClass(root) !== 'invocation_bound')
+      .map((root) => root.sourceRootId)
+  );
+  if (
+    input.intentLineageLedger.schemaVersion ===
+    'requirements-contract-intent-lineage-ledger/v2'
+  ) {
+    if (
+      input.intakeReceipt.schemaVersion !== 'requirements-contract-file-intake-receipt/v2' ||
+      input.intentLineageLedger.sourceId !== input.intakeReceipt.sourceId ||
+      sha256Stable(input.intentLineageLedger.sourceBlobRef) !==
+        sha256Stable(input.intakeReceipt.sourceBlobRef) ||
+      !Array.isArray(input.intentLineageLedger.materialRoots) ||
+      !Array.isArray(input.intakeReceipt.materialExcerpts)
+    ) {
+      throw new Error('Intent Lineage v2 source binding does not match the current Intake Receipt');
+    }
+    const materialRootById = new Map<string, Record<string, unknown>>();
+    for (const value of input.intentLineageLedger.materialRoots) {
+      if (!isRecord(value) || typeof value.sourceRootId !== 'string') {
+        throw new Error('Intent Lineage v2 material root is malformed');
+      }
+      if (materialRootById.has(value.sourceRootId)) {
+        throw new Error('Intent Lineage v2 contains duplicate material roots');
+      }
+      materialRootById.set(value.sourceRootId, value);
+    }
+    if (
+      materialRootById.size !== expectedRootRefs.size ||
+      [...materialRootById.keys()].some((sourceRootId) => !expectedRootRefs.has(sourceRootId))
+    ) {
+      throw new Error('Intent Lineage Source Root refs do not match the source-derived root set');
+    }
+    const receiptRangeByRootId = new Map<string, unknown>();
+    for (const value of input.intakeReceipt.materialExcerpts) {
+      if (!isRecord(value) || typeof value.sourceRootId !== 'string' || !isRecord(value.range)) {
+        throw new Error('File Intake v2 material excerpt is malformed');
+      }
+      receiptRangeByRootId.set(value.sourceRootId, value.range);
+    }
+    if (
+      receiptRangeByRootId.size !== materialRootById.size ||
+      [...materialRootById].some(
+        ([sourceRootId, materialRoot]) =>
+          !isRecord(materialRoot.sourceRange) ||
+          sha256Stable(materialRoot.sourceRange) !==
+            sha256Stable(receiptRangeByRootId.get(sourceRootId))
+      )
+    ) {
+      throw new Error('Intent Lineage v2 ranges do not match the File Intake material excerpts');
+    }
+    for (const root of input.sourceRoots.filter((item) => lineageAuthorityClass(item) !== 'invocation_bound')) {
+      const materialRoot = materialRootById.get(root.sourceRootId);
+      if (
+        !materialRoot ||
+        !isRecord(materialRoot.sourceRange) ||
+        Number(materialRoot.sourceRange.startLine) !== root.sourceSpan.startLine ||
+        Number(materialRoot.sourceRange.endLine) !== root.sourceSpan.endLine
+      ) {
+        throw new Error(`Intent Lineage v2 Source Root span mismatch: ${root.sourceRootId}`);
+      }
+    }
+    return;
+  }
+  if (input.intentLineageLedger.intakeReceiptHash !== input.intakeReceipt.receiptHash) {
     throw new Error('Intent Lineage identity does not match the current Intake Receipt');
   }
   const classifications = Array.isArray(input.intentLineageLedger.classifications)
@@ -881,11 +959,6 @@ function validateLineageRootSet(input: {
     }
     for (const ref of refs as string[]) lineageRootRefs.add(ref);
   }
-  const expectedRootRefs = new Set(
-    input.sourceRoots
-      .filter((root) => lineageAuthorityClass(root) !== 'invocation_bound')
-      .map((root) => root.sourceRootId)
-  );
   if (
     lineageRootRefs.size !== expectedRootRefs.size ||
     [...lineageRootRefs].some((ref) => !expectedRootRefs.has(ref))
@@ -1439,6 +1512,7 @@ function buildCanonicalSemanticIr(input: {
 
 export function runRequirementsContractProductionSemanticPipeline(input: {
   projectRoot: string;
+  recordRoot?: string;
   recordId: string;
   requirementSetId: string;
   intakeReceiptPath: string;
@@ -1457,6 +1531,7 @@ export function runRequirementsContractProductionSemanticPipeline(input: {
     entries: ConservationExecutionRegistryEntry[];
   };
   executionConstraintRefsBySourceRootId?: Record<string, string[]>;
+  sourceArtifactViews?: ProductionSourceArtifactView[];
 }): ProductionSemanticPipelineResult {
   const lifecycleValidationReportPath = path.join(
     path.dirname(input.semanticConservationManifestPath),
@@ -1481,11 +1556,51 @@ export function runRequirementsContractProductionSemanticPipeline(input: {
   ) {
     throw new Error('Semantic pipeline requires a valid Invocation Authority Receipt');
   }
+  const materialRangeByRootId = new Map<string, ProductionSourceRange>();
+  if (
+    input.intakeReceipt.schemaVersion === 'requirements-contract-file-intake-receipt/v2' &&
+    Array.isArray(input.intakeReceipt.materialExcerpts)
+  ) {
+    for (const excerpt of input.intakeReceipt.materialExcerpts) {
+      if (isRecord(excerpt) && typeof excerpt.sourceRootId === 'string' && isRecord(excerpt.range)) {
+        materialRangeByRootId.set(
+          excerpt.sourceRootId,
+          excerpt.range as unknown as ProductionSourceRange
+        );
+      }
+    }
+  }
+  const compactCandidates = input.sourceRootCandidates.map((candidate) => {
+    const sourceRange = materialRangeByRootId.get(candidate.sourceRootId);
+    if (!sourceRange) return candidate;
+    if (!isRecord(input.intakeReceipt.sourceBlobRef)) {
+      throw new Error('File Intake v2 source blob ref is malformed');
+    }
+    const sourceBlobRef = input.intakeReceipt.sourceBlobRef as unknown as RequirementsContentRef;
+    if (
+      typeof candidate.sourceContent === 'string' &&
+      sha256Text(candidate.sourceContent) !== sourceBlobRef.contentHash
+    ) {
+      throw new Error('Production Source Root content does not match the File Intake source blob');
+    }
+    const { sourceContent: _sourceContent, ...withoutInlineSource } = candidate;
+    return { ...withoutInlineSource, sourceBlobRef, sourceRange };
+  });
+  const byteCache = new Map<string, Buffer>();
+  const resolvedCandidates = compactCandidates.map((candidate) => ({
+    ...candidate,
+    sourceContent: resolveProductionSourceDocument({
+      value: candidate,
+      recordRoot: input.recordRoot,
+      artifactViews: input.sourceArtifactViews,
+      byteCache,
+    }),
+  }));
   const sourceRoots = materializeProductionSemanticSourceRoots({
     requirementSetId: input.requirementSetId,
     intakeReceipt: input.intakeReceipt,
     intentLineageLedger: input.intentLineageLedger,
-    sourceRootCandidates: input.sourceRootCandidates,
+    sourceRootCandidates: resolvedCandidates,
   });
   const parserIdentity = packagedFileIdentity(
     'requirements-contract-production-source-root-parser',
@@ -1739,11 +1854,15 @@ export function runRequirementsContractProductionSemanticPipeline(input: {
         fileIdentity(SEMANTIC_RESOLUTION_SCHEMA, schemaPath(SEMANTIC_RESOLUTION_SCHEMA)),
         fileIdentity(SEMANTIC_CONSERVATION_SCHEMA, schemaPath(SEMANTIC_CONSERVATION_SCHEMA)),
         fileIdentity(
-          input.intakeReceipt.schemaVersion === 'requirements-contract-file-intake-receipt/v1'
+          String(input.intakeReceipt.schemaVersion).startsWith(
+            'requirements-contract-file-intake-receipt/'
+          )
             ? FILE_INTAKE_SCHEMA
             : SESSION_INTAKE_SCHEMA,
           schemaPath(
-            input.intakeReceipt.schemaVersion === 'requirements-contract-file-intake-receipt/v1'
+            String(input.intakeReceipt.schemaVersion).startsWith(
+              'requirements-contract-file-intake-receipt/'
+            )
               ? FILE_INTAKE_SCHEMA
               : SESSION_INTAKE_SCHEMA
           )
@@ -1815,8 +1934,28 @@ export function runRequirementsContractProductionSemanticPipeline(input: {
           ...bundleValidation,
         }),
     });
+    const compactBackingByRootId = new Map(
+      compactCandidates.map((candidate) => [
+        candidate.sourceRootId,
+        compactProductionSourceBacking(candidate),
+      ])
+    );
     return {
-      sourceRoots,
+      sourceRoots: sourceRoots.map((root) => {
+        const {
+          sourceContent: _sourceContent,
+          sourceBlobRef: _sourceBlobRef,
+          sourceRange: _sourceRange,
+          sourceBinding: _sourceBinding,
+          sourceArtifact: _sourceArtifact,
+          bundlePath: _bundlePath,
+          ...stableRoot
+        } = root;
+        return {
+          ...stableRoot,
+          ...compactBackingByRootId.get(root.sourceRootId),
+        } as ProductionSemanticSourceRoot;
+      }),
       semanticIr,
       lifecycleValidationReport,
       semanticResolutionReceipts: resolution.receipts,
