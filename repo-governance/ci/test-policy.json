@@ -736,7 +736,7 @@
       ],
       "bindTestsBySurvivalEvidence": true,
       "survivalEvidenceRefs": [
-        "target:packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-package-runtime-index.ts"
+        "target:packages/bmad-speckit/scripts/build-main-agent-dist.cjs"
       ],
       "requiredBehaviors": {}
     },
