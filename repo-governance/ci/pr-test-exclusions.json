@@ -317,11 +317,6 @@
       "observedAt": "2026-08-02T10:55:16.000Z"
     },
     {
-      "testPath": "tests/acceptance/requirements-contract-critical-auditor-independence.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
       "testPath": "tests/acceptance/requirements-contract-diagram-policy-registry.test.ts",
       "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
       "observedAt": "2026-08-02T10:55:16.000Z"
@@ -365,11 +360,6 @@
       "testPath": "tests/acceptance/requirements-contract-judge-prompt-template.test.ts",
       "reasonCode": "KNOWN_REQUIREMENT_SOURCE_HASH_DRIFT",
       "observedAt": "2026-08-01T20:51:19.000Z"
-    },
-    {
-      "testPath": "tests/acceptance/requirements-contract-minimal-fixture-authority.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
     },
     {
       "testPath": "tests/acceptance/requirements-contract-package-runtime-action-binding-surface-parity.test.ts",
