@@ -253,6 +253,16 @@
     },
     {
       "runnerId": "root-vitest",
+      "testPath": "tests/acceptance/requirements-contract-no-three-round-authority.test.ts",
+      "bindings": [
+        {
+          "evidenceRef": "trace:six-model/audit-review/fail-closed",
+          "evidenceKind": "direct"
+        }
+      ]
+    },
+    {
+      "runnerId": "root-vitest",
       "testPath": "tests/acceptance/requirements-contract-reverse-audit.test.ts",
       "bindings": [
         {
