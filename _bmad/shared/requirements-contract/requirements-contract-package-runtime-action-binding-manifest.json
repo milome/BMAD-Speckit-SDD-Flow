@@ -660,11 +660,11 @@
       "actionId": "requirements-contract-judge-run",
       "sourceHandlerRef": {
         "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-command.ts",
-        "hash": "sha256:3eb42cb82fee641c27613f5cda0711ea99ced28f42fc508c431cce1ec216e318"
+        "hash": "sha256:81d20dfd97b8529e6b0cb7367bc7acd3ec13ed932db46001d9ef032eb394e3c0"
       },
       "distHandlerRef": {
         "path": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/requirements-contract-judge-command.js",
-        "hash": "sha256:06ce133118e2a19ec02c31a09c189bff9226e2b319a1a913656657bf75fc8b05"
+        "hash": "sha256:1cfa755899cbb6c03d6bcf42418c089f6de9e8c1addbcaafe1545cd6fe945a37"
       },
       "semanticGate": {
         "gateId": "requirements-contract-judge-run:semantic-gate",
@@ -698,17 +698,17 @@
       "behaviorTestRefs": [
         {
           "path": "tests/acceptance/requirements-contract-judge-command.test.ts",
-          "hash": "sha256:13f1972035e1efa5167136b58688dff7ee3cb34b692b025007aff2c539550624"
+          "hash": "sha256:067bf133b6bc0f4937cc2cf9068e87a1b1d649cae53e5e4e4ed50f60f6735589"
         }
       ],
       "packageDistRef": {
         "path": "dist/main-agent/source-authority/scripts/requirements-contract-judge-command.js",
-        "hash": "sha256:06ce133118e2a19ec02c31a09c189bff9226e2b319a1a913656657bf75fc8b05"
+        "hash": "sha256:1cfa755899cbb6c03d6bcf42418c089f6de9e8c1addbcaafe1545cd6fe945a37"
       },
       "installedSurfaceRefs": [
         {
           "path": "dist/main-agent/source-authority/scripts/requirements-contract-judge-command.js",
-          "hash": "sha256:06ce133118e2a19ec02c31a09c189bff9226e2b319a1a913656657bf75fc8b05"
+          "hash": "sha256:1cfa755899cbb6c03d6bcf42418c089f6de9e8c1addbcaafe1545cd6fe945a37"
         }
       ],
       "runtimeRefs": [
@@ -959,12 +959,12 @@
         {
           "role": "installed-cli",
           "packagePath": "bin/bmad-speckit.js",
-          "hash": "sha256:9f75d04490a7a32d2073305d38abe40cde75d0b879479f3c97448ee352c0219a"
+          "hash": "sha256:a0b3879dcb85301574e83bca24146663acd4fc61b2cd5d1a96beb31d5320cb2e"
         },
         {
           "role": "installed-generator",
           "packagePath": "_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js",
-          "hash": "sha256:70e59959896b89bb4fda08e252eafd5dd5f19bf92fd0a9e5a64c02139ac1f214"
+          "hash": "sha256:6ec3455fb9d78f45f27c57df44232fee4fd7f4e298c29f5abc47c8e882ed8abf"
         },
         {
           "role": "installed-stage-registry",
@@ -974,7 +974,7 @@
         {
           "role": "installed-runner",
           "packagePath": "dist/main-agent/source-authority/scripts/main-agent-compiled-prompt-runner.js",
-          "hash": "sha256:25dc9d80a648c577dc2bd356c3daf5743ccb755e3aacf93ca4a447f3fe1093e7"
+          "hash": "sha256:389029cc98b4cba852c793f45927256b404bc69e065b5a1efb740a10afc9fe69"
         }
       ],
       "routingOnly": false
@@ -1265,7 +1265,7 @@
         {
           "role": "judge-provider-registry-projection",
           "packagePath": "_bmad/shared/requirements-contract/requirements-contract-judge-provider-registry.json",
-          "hash": "sha256:1c749d1edb2a5fc160a410dcfe6706bf53d609859139c23dacedc394ccce6a86"
+          "hash": "sha256:3b498cdc7edd65fb5214fbc480733b3595353d6ad8d94213a3caaba030049d24"
         }
       ],
       "routingOnly": false

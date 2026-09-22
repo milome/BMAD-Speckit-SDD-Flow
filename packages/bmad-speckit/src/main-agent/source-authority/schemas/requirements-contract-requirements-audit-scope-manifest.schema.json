@@ -32,8 +32,8 @@
     "schemaVersion": {
       "const": "requirements-contract-requirements-audit-scope-manifest/v1"
     },
-    "actorClass": { "const": "requirements_critical_auditor_judge" },
-    "judgeRole": { "const": "requirements_critical_auditor" },
+    "actorClass": { "const": "requirements_contract_judge" },
+    "judgeRole": { "const": "requirements_judge" },
     "purpose": { "$ref": "#/$defs/nonEmptyString" },
     "attemptId": { "$ref": "#/$defs/nonEmptyString" },
     "includedRequirementRefs": { "$ref": "#/$defs/stringSet" },

@@ -10,9 +10,9 @@ import {
   writeAuditTriadExecutionPlan,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-triad-orchestrator';
 import {
-  criticalAuditorIndependentProviderRunHash,
-  type CriticalAuditorIndependentProviderEvidence,
-} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-critical-auditor-independence';
+  auditProviderRunHash,
+  type AuditProviderEvidence,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-provider-independence';
 import { mainAuditReviewGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-audit-review-gate';
 import {
   createRuntimeStatusProjectionUpdate,
@@ -137,12 +137,12 @@ function establishExecutionClosureAuthority(
 
 function cleanRound(plan: AuditTriadExecutionPlan, roundId: string): AuditTriadRoundReceipt {
   const readonlyAuditorInvocationId = `readonly-${roundId}`;
-  const criticalAuditorRequestHash = sha256Json({
+  const auditTriadJudgeRequestHash = sha256Json({
     auditEpochId: plan.auditEpochId,
     roundId,
     role: 'llm_as_judge',
   });
-  const evidenceWithoutRunHash: Omit<CriticalAuditorIndependentProviderEvidence, 'runHash'> = {
+  const evidenceWithoutRunHash: Omit<AuditProviderEvidence, 'runHash'> = {
     ...plan.independentProviderBinding,
     requestedModel: plan.independentProviderBinding.model,
     model: `gateway-selected-${sha256Json({
@@ -152,7 +152,7 @@ function cleanRound(plan: AuditTriadExecutionPlan, roundId: string): AuditTriadR
     transactionId: plan.auditEpochId,
     auditAttemptId: plan.attemptId,
     providerRunId: `provider-${roundId}`,
-    requestHash: criticalAuditorRequestHash,
+    requestHash: auditTriadJudgeRequestHash,
     responseHash: sha256Json({ roundId, verdict: 'no_new_valid_gap' }),
     sourceDocumentHash: plan.sourceDocumentHash,
     semanticModelHash: plan.semanticModelHash,
@@ -170,7 +170,7 @@ function cleanRound(plan: AuditTriadExecutionPlan, roundId: string): AuditTriadR
     auditEpochId: plan.auditEpochId,
     auditTargetBundleHash: plan.auditTargetBundleHash,
     roundId,
-    requestHash: criticalAuditorRequestHash,
+    requestHash: auditTriadJudgeRequestHash,
   };
   const scoreWriterReceiptWithoutHash = {
     schemaVersion: 'run-auditor-host-score-writer-invocation-receipt/v1',
@@ -212,10 +212,10 @@ function cleanRound(plan: AuditTriadExecutionPlan, roundId: string): AuditTriadR
     requiredCheckItemSetHash: plan.requiredCheckItemSetHash,
     currentAttemptHash: plan.currentAttemptHash,
     currentEvidenceHash: plan.currentEvidenceHash,
-    criticalAuditorRequestHash,
+    auditTriadJudgeRequestHash,
     independentProviderEvidence: {
       ...evidenceWithoutRunHash,
-      runHash: criticalAuditorIndependentProviderRunHash(evidenceWithoutRunHash),
+      runHash: auditProviderRunHash(evidenceWithoutRunHash),
     },
     judgeExecutionReceiptRef: {
       path: `audit-triad/rounds/${roundId}/judge-execution-receipt.json`,
@@ -233,14 +233,14 @@ function cleanRound(plan: AuditTriadExecutionPlan, roundId: string): AuditTriadR
       receiptHash: sha256Json(scoreWriterReceiptWithoutHash),
     },
     providerInvocationReceiptRef: {
-      path: `audit-triad/rounds/${roundId}/judge-provider-invocation-receipt.json`,
+      path: `audit-triad/rounds/${roundId}/audit-provider-judge-invocation-receipt.json`,
       contentHash: sha256Json({
-        schemaVersion: 'critical-auditor-judge-invocation-receipt/v1',
+        schemaVersion: 'audit-provider-judge-invocation-receipt/v1',
         auditEpochId: plan.auditEpochId,
         roundId,
       }),
       receiptHash: sha256Json({
-        schemaVersion: 'critical-auditor-judge-invocation-receipt/v1',
+        schemaVersion: 'audit-provider-judge-invocation-receipt/v1',
         auditEpochId: plan.auditEpochId,
         roundId,
       }),
@@ -329,7 +329,7 @@ function materializeRoundProducerArtifacts(input: {
   };
   writeJson(path.join(absoluteRoundDir, 'readonly-auditor-response.json'), readonlyResponse);
   const judgeRequestWithoutHash = {
-    schemaVersion: 'critical-auditor-round-request/v1',
+    schemaVersion: 'audit-triad-judge-request/v1',
     auditEpochId: input.plan.auditEpochId,
     auditTargetBundleHash: input.plan.auditTargetBundleHash,
     readonlyAuditorResponseHash: readonlyResponse.responseHash,
@@ -353,16 +353,16 @@ function materializeRoundProducerArtifacts(input: {
   writeFileSync(readonlyStderrPath, '', 'utf8');
   writeFileSync(judgeStdoutPath, 'pass\n', 'utf8');
   writeFileSync(judgeStderrPath, '', 'utf8');
-  const providerResultPath = path.join(absoluteRoundDir, 'judge-provider-result.json');
-  writeJson(providerResultPath, { schemaVersion: 'critical-auditor-judge-provider-result/v1' });
+  const providerResultPath = path.join(absoluteRoundDir, 'audit-provider-judge-result.json');
+  writeJson(providerResultPath, { schemaVersion: 'audit-provider-judge-result/v1' });
   const transportEvidence = {
     command: 'claude',
     executorKind: 'native_spawn',
     exitCode: 0,
   };
-  const providerRef = writeAuditTriadReceiptRef(input.root, path.join(roundDir, 'judge-provider-invocation-receipt.json'), {
-    schemaVersion: 'critical-auditor-judge-invocation-receipt/v1',
-    requestHash: input.round.criticalAuditorRequestHash,
+  const providerRef = writeAuditTriadReceiptRef(input.root, path.join(roundDir, 'audit-provider-judge-invocation-receipt.json'), {
+    schemaVersion: 'audit-provider-judge-invocation-receipt/v1',
+    requestHash: input.round.auditTriadJudgeRequestHash,
     sourceDocumentHash: input.plan.sourceDocumentHash,
     semanticModelHash: input.plan.semanticModelHash,
     projectionSetHash: input.plan.projectionSetHash,
@@ -373,16 +373,16 @@ function materializeRoundProducerArtifacts(input: {
     transportEvidence,
     transportEvidenceHash: sha256Json(transportEvidence),
   });
-  writeSelfHashJson(path.join(absoluteRoundDir, 'judge-provider-invocation-state.json'), 'stateHash', {
+  writeSelfHashJson(path.join(absoluteRoundDir, 'audit-provider-judge-invocation-state.json'), 'stateHash', {
     status: 'committed',
     receiptHash: providerRef.receiptHash,
     receiptContentHash: providerRef.contentHash,
     resultContentHash: sha256Text(readFileSync(providerResultPath, 'utf8')),
   });
-  writeSelfHashJson(path.join(absoluteRoundDir, 'judge-provider-invocation-commit.json'), 'commitHash', {
+  writeSelfHashJson(path.join(absoluteRoundDir, 'audit-provider-judge-invocation-commit.json'), 'commitHash', {
     receiptHash: providerRef.receiptHash,
     receiptContentHash: providerRef.contentHash,
-    stateContentHash: sha256Text(readFileSync(path.join(absoluteRoundDir, 'judge-provider-invocation-state.json'), 'utf8')),
+    stateContentHash: sha256Text(readFileSync(path.join(absoluteRoundDir, 'audit-provider-judge-invocation-state.json'), 'utf8')),
     resultContentHash: sha256Text(readFileSync(providerResultPath, 'utf8')),
   });
   const judgeRef = writeAuditTriadReceiptRef(input.root, path.join(roundDir, 'judge-execution-receipt.json'), {

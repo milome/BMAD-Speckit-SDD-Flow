@@ -39,6 +39,10 @@ export function compileRequirementsContractRemediationPlan(input: {
       return {
         findingId: finding.findingId,
         classification: classificationFor(finding.authorityBasis),
+        ...(typeof finding.operation === 'string' ? { operation: finding.operation } : {}),
+        ...(typeof finding.targetNodeId === 'string' ? { targetNodeId: finding.targetNodeId } : {}),
+        ...(typeof finding.expectedBeforeHash === 'string' ? { expectedBeforeHash: finding.expectedBeforeHash } : {}),
+        ...(finding.replacement !== undefined ? { replacement: finding.replacement } : {}),
         severity: finding.severity,
         summary: finding.summary,
         affectedMustRefs: Array.isArray(finding.affectedMustRefs)

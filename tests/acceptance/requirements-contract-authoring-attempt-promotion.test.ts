@@ -4,6 +4,8 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import * as buildModule from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-durable-build-store';
 import { createRequirementsContractBuildManifestV2 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-authoring-manifest';
+import { publishRequirementsContentObject } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-content-store';
+import { requirementsContractDomainHash } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-hash-domains';
 
 const roots: string[] = [];
 function recordRoot(): string {
@@ -159,6 +161,55 @@ describe('requirements durable build promotion', () => {
       bindingRevisionId: current.activeBindingRevisionId,
       currentAuthority: current,
     })).toEqual(current);
+  });
+
+  it('resolves an active artifact only through the durable manifest role and content ref', () => {
+    const root = recordRoot();
+    const markdown = '# Canonical requirements\n';
+    const contentRef = publishRequirementsContentObject({
+      recordRoot: root,
+      role: 'final_markdown',
+      mediaType: 'text/markdown; charset=utf-8',
+      bytes: Buffer.from(markdown, 'utf8'),
+    });
+    const manifest = createRequirementsContractBuildManifestV2({
+      scopeSemanticHash: `sha256:${'4'.repeat(64)}`,
+      sourceBindingHash: `sha256:${'5'.repeat(64)}`,
+      compilerIdentity: 'compiler/v1',
+      projectionSetHash: `sha256:${'6'.repeat(64)}`,
+      checkpointSummary: { checkpointIds: [], terminalStateHashes: [] },
+      validationSummary: { decision: 'pass', checkIds: [] },
+      artifactEntries: [{
+        role: 'final_markdown',
+        schemaVersion: 'markdown/v1',
+        semanticHash: requirementsContractDomainHash(
+          'requirements-projection:final_markdown/v1',
+          markdown
+        ),
+        contentRef,
+      }],
+    });
+    const activeAuthority = authority(manifest);
+    const publish = requiredFunction<(input: Record<string, unknown>) => Record<string, unknown>>(
+      buildModule,
+      'publishRequirementsContractDurableBuild'
+    );
+    publish({
+      recordRoot: root,
+      operationId: 'OP-RESOLVE',
+      manifest,
+      nextAuthority: activeAuthority,
+      expectedActiveAuthorityHash: `sha256:${'0'.repeat(64)}`,
+    });
+    const resolve = requiredFunction<(input: Record<string, unknown>) => Record<string, unknown>>(
+      buildModule,
+      'resolveRequirementsActiveArtifact'
+    );
+
+    expect(resolve({ recordRoot: root, activeAuthority, role: 'final_markdown' }))
+      .toMatchObject({ value: markdown, entry: { role: 'final_markdown', contentRef } });
+    expect(() => resolve({ recordRoot: root, activeAuthority, role: 'semantic_ir' }))
+      .toThrow('requirements_active_artifact_missing');
   });
 
   it('requires a new build to retain the current active build as predecessor', () => {

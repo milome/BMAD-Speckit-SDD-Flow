@@ -237,10 +237,12 @@ describe('Requirements confirmation promotion', () => {
       const first = renderAndPromoteRequirementsContractConfirmation({
         projectRoot: root,
         requestId: input.requestId,
+        targetSource: 'docs/refund-requirements.md',
       });
       const second = renderAndPromoteRequirementsContractConfirmation({
         projectRoot: root,
         requestId: input.requestId,
+        targetSource: 'docs/refund-requirements.md',
       });
 
       expect(first).toMatchObject({ status: 'user_confirmable', unresolvedDecisionCount: 0 });
@@ -277,6 +279,7 @@ describe('Requirements confirmation promotion', () => {
       const rendered = renderAndPromoteRequirementsContractConfirmation({
         projectRoot: root,
         requestId: input.requestId,
+        targetSource: 'docs/refund-requirements.md',
       });
       confirmRequirementsContractIrScope({
         projectRoot: root,
@@ -316,6 +319,7 @@ describe('Requirements confirmation promotion', () => {
       const rendered = renderAndPromoteRequirementsContractConfirmation({
         projectRoot: root,
         requestId: input.requestId,
+        targetSource: 'docs/refund-requirements.md',
       });
       const recordPath = path.join(input.recordRoot, 'record', 'requirement-record.json');
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
@@ -356,6 +360,7 @@ describe('Requirements confirmation promotion', () => {
       const rendered = renderAndPromoteRequirementsContractConfirmation({
         projectRoot: root,
         requestId: input.requestId,
+        targetSource: 'docs/refund-requirements.md',
       });
       const recordPath = path.join(input.recordRoot, 'record', 'requirement-record.json');
       const record = JSON.parse(readFileSync(recordPath, 'utf8'));
@@ -381,6 +386,7 @@ describe('Requirements confirmation promotion', () => {
       const rendered = renderAndPromoteRequirementsContractConfirmation({
         projectRoot: root,
         requestId: input.requestId,
+        targetSource: 'docs/refund-requirements.md',
       });
       const candidate = JSON.parse(readFileSync(
         path.join(input.recordRoot, 'confirmation', 'current-promotion.json'), 'utf8'

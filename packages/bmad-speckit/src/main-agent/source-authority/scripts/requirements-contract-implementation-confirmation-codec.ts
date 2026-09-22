@@ -73,14 +73,6 @@ function normalizePreConfirmationDrilldownForHash(semantic: Record<string, unkno
       normalized[refKey] = withoutHash;
     }
   }
-  const auditor = normalized.criticalAuditor;
-  if (isRecord(auditor)) {
-    const withoutReceiptBookkeeping = { ...auditor };
-    delete withoutReceiptBookkeeping.consecutiveNoNewGapRounds;
-    delete withoutReceiptBookkeeping.latestReceiptHash;
-    delete withoutReceiptBookkeeping.convergenceVerdict;
-    normalized.criticalAuditor = withoutReceiptBookkeeping;
-  }
   semantic.preConfirmationDrilldown = normalized;
 }
 

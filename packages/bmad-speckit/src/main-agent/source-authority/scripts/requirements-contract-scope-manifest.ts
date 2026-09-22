@@ -38,8 +38,8 @@ const REQUIREMENTS_INPUT_FIELDS = new Set([
 type SchemaRecord = Record<string, unknown>;
 
 export interface RequirementsContractCommonScopeManifest {
-  actorClass: 'requirements_critical_auditor_judge';
-  judgeRole: 'requirements_critical_auditor';
+  actorClass: 'requirements_contract_judge';
+  judgeRole: 'requirements_judge';
   purpose: string;
   attemptId: string;
   includedRequirementRefs: string[];
@@ -61,8 +61,8 @@ export interface RequirementsAuditKernelImplementationLineage {
 
 export interface RequirementsAuditScopeManifest extends RequirementsContractCommonScopeManifest {
   schemaVersion: 'requirements-contract-requirements-audit-scope-manifest/v1';
-  actorClass: 'requirements_critical_auditor_judge';
-  judgeRole: 'requirements_critical_auditor';
+  actorClass: 'requirements_contract_judge';
+  judgeRole: 'requirements_judge';
   sourceDocumentHash: string;
   semanticModelHash: string;
   projectionSetHash: string;
@@ -265,8 +265,8 @@ export function compileRequirementsAuditScopeManifest(
   rejectUntrustedInput(input, REQUIREMENTS_INPUT_FIELDS);
   const { payload } = commonPayload(input);
   if (
-    payload.actorClass !== 'requirements_critical_auditor_judge' ||
-    payload.judgeRole !== 'requirements_critical_auditor'
+    payload.actorClass !== 'requirements_contract_judge' ||
+    payload.judgeRole !== 'requirements_judge'
   ) {
     fail('scope_manifest_role_mismatch');
   }
@@ -294,8 +294,8 @@ export function validateRequirementsAuditScopeManifest(
 ): RequirementsAuditScopeManifest {
   return validateManifest(value, current, {
     schemaVersion: 'requirements-contract-requirements-audit-scope-manifest/v1',
-    actorClass: 'requirements_critical_auditor_judge',
-    judgeRole: 'requirements_critical_auditor',
+    actorClass: 'requirements_contract_judge',
+    judgeRole: 'requirements_judge',
     schemaFile: 'requirements-contract-requirements-audit-scope-manifest.schema.json',
   }) as unknown as RequirementsAuditScopeManifest;
 }

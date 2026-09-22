@@ -105,7 +105,6 @@ describe('requirements contract cp02 deterministic closure', () => {
         targetPath,
         '--confirmation-language',
         'en-US',
-        '--legacy-orchestration',
         '--json',
       ], { cwd: process.cwd(), encoding: 'utf8', windowsHide: true });
 

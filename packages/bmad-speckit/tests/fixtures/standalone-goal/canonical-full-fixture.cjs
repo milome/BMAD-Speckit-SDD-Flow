@@ -89,7 +89,13 @@ function materializeFullFixture({ root = null, copyOracleHelpers = false } = {})
     const source = path.join(FIXTURE_ROOT, '..', '..', '..', '..', '..', relative);
     const target = path.join(materializedRoot, relative);
     fs.mkdirSync(path.dirname(target), { recursive: true });
-    if (fs.existsSync(source)) fs.copyFileSync(source, target);
+    if (fs.existsSync(source)) {
+      if (relative.endsWith('.proof-generator.cjs')) {
+        fs.writeFileSync(target, fs.readFileSync(source, 'utf8').replace(/\r\n/gu, '\n'), 'utf8');
+      } else {
+        fs.copyFileSync(source, target);
+      }
+    }
     if (!fs.existsSync(target)) throw new Error(`canonical_full_fixture_overlay_missing:${relative}`);
   }
   if (copyOracleHelpers) {

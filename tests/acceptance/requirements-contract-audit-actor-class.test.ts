@@ -9,13 +9,13 @@ import {
 describe('requirements contract audit actor classes', () => {
   it('exports exactly the four canonical actor classes and two Judge actors', () => {
     expect(REQUIREMENTS_CONTRACT_AUDIT_ACTOR_CLASSES).toEqual([
-      'requirements_critical_auditor_judge',
+      'requirements_contract_judge',
       'bounded_code_reviewer',
       'final_acceptance_judge',
       'slice_independent_auditor',
     ]);
     expect(REQUIREMENTS_CONTRACT_JUDGE_ACTOR_CLASSES).toEqual([
-      'requirements_critical_auditor_judge',
+      'requirements_contract_judge',
       'final_acceptance_judge',
     ]);
   });

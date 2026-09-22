@@ -707,9 +707,9 @@ function safetyReason(
 }
 
 function nextSafeActionFor(input) {
-  if (input.reconfirmation.required) return 'requirements-contract-authoring authoring-repair-preserve-existing';
+  if (input.reconfirmation.required) return 'open_reconfirmation';
   if (input.reason === 'stale_hash' || input.reason === 'stale_attempt') {
-    return 'requirements-contract-authoring authoring-repair-preserve-existing';
+    return 'inspect_requirement_record';
   }
   if (input.reason === 'delivery_closeout_blocker') return 'run_delivery_closeout';
   if (input.delivery.awaiting) return 'confirm-closeout-acceptance';

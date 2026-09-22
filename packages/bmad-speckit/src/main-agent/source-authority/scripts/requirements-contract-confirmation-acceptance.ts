@@ -31,26 +31,28 @@ import {
 import { artifactBytesHash, canonicalRequirementsJson } from './requirements-contract-hash-domains';
 import { atomicNoClobberPublish } from './requirements-contract-atomic-no-clobber-publisher';
 import {
-  validateRequirementsContractBuildManifest,
-  validateRequirementsContractBuildManifestV2,
-} from './requirements-contract-authoring-manifest';
-import { validateRequirementsActiveAuthorityTuple } from './requirements-contract-authority-publication-committer';
+  validateRequirementsActiveAuthorityTuple,
+  type RequirementsActiveAuthorityTupleV3,
+} from './requirements-contract-authority-publication-committer';
 import {
   validateRequirementsContractSemanticIr,
   type RequirementsContractSemanticIr,
 } from './requirements-contract-semantic-ir';
-import { readRequirementsContractSemanticIrAuthority } from './requirements-contract-semantic-ir-reader';
 import { validateRequirementsContractSourceBindingCapsule } from './requirements-contract-source-binding-capsule';
 import { resolveEvidenceClaimAuthority } from './requirements-contract-span-registry';
 import { sha256Stable } from './requirements-contract-semantic-resolver';
-import { createRequirementsContractSourceBindingRefreshReceipt } from './requirements-contract-source-binding-refresh';
+import { createRequirementsContractSourceBindingRefreshReceipt } from './requirements-contract-source-binding-preflight';
 import {
   publishRequirementsContentObject,
   readRequirementsContentObject,
   type RequirementsContentRef,
 } from './requirements-contract-content-store';
 import { acquireRequirementsFileLock, releaseRequirementsFileLock } from './requirements-contract-file-lock';
-import { resolveRequirementsAuthoringArtifact } from './requirements-contract-artifact-resolver';
+import {
+  readRequirementsActiveBuildManifest,
+  resolveRequirementsActiveArtifact,
+} from './requirements-contract-durable-build-store';
+import { openRequirementsContractRecord } from './requirements-contract-record-boundary';
 
 const CONFIRMATION_WRITER_ID = 'requirements-confirmation-ingest';
 const SAFE_REQUEST_ID = /^[A-Za-z0-9][A-Za-z0-9._-]*$/u;
@@ -539,18 +541,18 @@ export function stageRequirementsContractConfirmationBindingRefresh(input: {
     input.requestId
   );
   const recordPath = path.join(recordRoot, 'record', 'requirement-record.json');
-  const record = readJson(recordPath);
-  const activeAuthority = object(record.activeAuthority);
+  const record = openRequirementsContractRecord(recordPath);
+  const activeAuthority = object(
+    record.activeAuthority
+  ) as unknown as RequirementsActiveAuthorityTupleV3;
   const tupleValidation = validateRequirementsActiveAuthorityTuple(activeAuthority);
   if (tupleValidation.decision === 'block') throw new Error(tupleValidation.issueCodes[0]);
-  const semanticIr = readRequirementsContractSemanticIrAuthority(
-    confinedRecordArtifact(recordRoot, text(activeAuthority.activeSemanticIrPath))
-  );
-  const sourceBinding = readActiveSourceBinding(recordRoot, {
-    activeSourceBindingPath: `authoring/source-bindings/${input.bindingRevisionId}/source-binding.json`,
-    activeBindingRevisionId: input.bindingRevisionId,
-    activeSourceBindingHash: '',
-  });
+  const semanticIr = resolveRequirementsActiveArtifact({
+    recordRoot,
+    activeAuthority,
+    role: 'semantic_ir',
+  }).value as RequirementsContractSemanticIr;
+  const sourceBinding = readSourceBindingRevision(recordRoot, input.bindingRevisionId);
   const resolvedEvidenceIndex = readJson(
     path.join(
       recordRoot,
@@ -574,7 +576,7 @@ export function stageRequirementsContractConfirmationBindingRefresh(input: {
     promotion.requestId !== input.requestId ||
     promotion.semanticRevisionId !== activeAuthority.activeSemanticRevisionId ||
     promotion.scopeSemanticHash !== activeAuthority.activeScopeSemanticHash ||
-    promotion.buildManifestHash !== activeAuthority.activeBuildManifestHash ||
+    promotion.buildManifestHash !== activeAuthority.activeBuildHash ||
     promotion.requirementsEffectivePassHash !== effectivePass.requirementsEffectivePassHash ||
     promotion.sourceBindingHash !== effectivePass.sourceBindingHash ||
     sourceBinding.semanticRevisionId !== semanticIr.semanticRevisionId ||
@@ -582,18 +584,9 @@ export function stageRequirementsContractConfirmationBindingRefresh(input: {
   ) {
     throw new Error('requirements_binding_refresh_promotion_stale');
   }
-  const context = readJson(
-    path.join(
-      recordRoot,
-      'authoring',
-      'staging',
-      text(activeAuthority.activeAuthoringAttemptId),
-      'authoring-context.json'
-    )
-  );
   const renderInput: RequirementsFinalRenderInput = {
     requestId: input.requestId,
-    confirmationLanguage: text(context.confirmationLanguage) || 'en-US',
+    confirmationLanguage: 'en-US',
     semanticIr,
     resolvedEvidenceIndex,
     effectivePass,
@@ -647,21 +640,25 @@ export function refreshRequirementsContractConfirmationBinding(input: {
     input.requestId
   );
   const recordPath = path.join(recordRoot, 'record', 'requirement-record.json');
-  const record = readJson(recordPath);
-  const activeAuthority = object(record.activeAuthority);
+  const record = openRequirementsContractRecord(recordPath);
+  const activeAuthority = object(
+    record.activeAuthority
+  ) as unknown as RequirementsActiveAuthorityTupleV3;
   const tupleValidation = validateRequirementsActiveAuthorityTuple(activeAuthority);
   if (tupleValidation.decision === 'block') throw new Error(tupleValidation.issueCodes[0]);
-  const semanticIr = readRequirementsContractSemanticIrAuthority(
-    confinedRecordArtifact(recordRoot, text(activeAuthority.activeSemanticIrPath))
-  );
-  const sourceBinding = readActiveSourceBinding(recordRoot, activeAuthority);
+  const semanticIr = resolveRequirementsActiveArtifact({
+    recordRoot,
+    activeAuthority,
+    role: 'semantic_ir',
+  }).value as RequirementsContractSemanticIr;
+  const sourceBinding = object(resolveRequirementsActiveArtifact({
+    recordRoot,
+    activeAuthority,
+    role: 'source_binding',
+  }).value);
   const parentBindingRevisionId = text(sourceBinding.parentBindingRevisionId);
   if (!parentBindingRevisionId) throw new Error('requirements_binding_refresh_parent_missing');
-  const parentBinding = readActiveSourceBinding(recordRoot, {
-    activeBindingRevisionId: parentBindingRevisionId,
-    activeSourceBindingPath: `authoring/source-bindings/${parentBindingRevisionId}/source-binding.json`,
-    activeSourceBindingHash: '',
-  });
+  const parentBinding = readSourceBindingRevision(recordRoot, parentBindingRevisionId);
   const effectivePass = readJson(
     path.join(recordRoot, 'quality', 'requirements-effective-pass-receipt.json')
   );
@@ -681,7 +678,7 @@ export function refreshRequirementsContractConfirmationBinding(input: {
     promotion.requestId !== input.requestId ||
     promotion.semanticRevisionId !== activeAuthority.activeSemanticRevisionId ||
     promotion.scopeSemanticHash !== activeAuthority.activeScopeSemanticHash ||
-    promotion.buildManifestHash !== activeAuthority.activeBuildManifestHash ||
+    promotion.buildManifestHash !== activeAuthority.activeBuildHash ||
     promotion.requirementsEffectivePassHash !== effectivePass.requirementsEffectivePassHash ||
     promotion.sourceBindingHash !== effectivePass.sourceBindingHash ||
     sourceBinding.semanticRevisionId !== semanticIr.semanticRevisionId ||
@@ -862,32 +859,19 @@ function confinedRecordArtifact(recordRoot: string, recordRelativePath: string):
   );
 }
 
-function readActiveSourceBinding(recordRoot: string, activeAuthority: JsonObject): JsonObject {
-  const relativePath = text(activeAuthority.activeSourceBindingPath);
-  const primary = confinedRecordArtifact(recordRoot, relativePath);
-  if (fs.existsSync(primary)) return readJson(primary);
-  const bindingsRoot = path.join(recordRoot, 'authoring', 'source-bindings');
-  if (fs.existsSync(bindingsRoot) && fs.lstatSync(bindingsRoot).isDirectory()) {
-    for (const entry of fs.readdirSync(bindingsRoot).sort()) {
-      const candidate = path.join(bindingsRoot, entry, 'source-binding.json');
-      let value: JsonObject | null = null;
-      if (fs.existsSync(candidate) && fs.lstatSync(candidate).isFile()) {
-        value = readJson(candidate);
-      } else {
-        const refPath = path.join(bindingsRoot, entry, 'source-binding.ref.json');
-        if (fs.existsSync(refPath)) {
-          const ref = readJson(refPath);
-          value = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(
-            readRequirementsContentObject({ recordRoot, ref: ref.contentRef as RequirementsContentRef })
-          ));
-        }
-      }
-      if (!value) continue;
-      if (value.sourceBindingHash === activeAuthority.activeSourceBindingHash ||
-          value.bindingRevisionId === activeAuthority.activeBindingRevisionId) return value;
-    }
-  }
-  throw new Error(`ENOENT: no such file or directory, open '${primary}'`);
+function readSourceBindingRevision(recordRoot: string, bindingRevisionId: string): JsonObject {
+  const bindingRoot = path.join(recordRoot, 'authoring', 'source-bindings', bindingRevisionId);
+  const bindingPath = confinedRecordArtifact(
+    recordRoot,
+    `authoring/source-bindings/${bindingRevisionId}/source-binding.json`
+  );
+  if (fs.existsSync(bindingPath)) return readJson(bindingPath);
+  const refPath = path.join(bindingRoot, 'source-binding.ref.json');
+  if (!fs.existsSync(refPath)) throw new Error('requirements_source_binding_revision_missing');
+  const ref = readJson(refPath);
+  return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(
+    readRequirementsContentObject({ recordRoot, ref: ref.contentRef as RequirementsContentRef })
+  )) as JsonObject;
 }
 
 function resolveConfinedPathWithoutLinks(root: string, value: string, code: string): string {
@@ -924,6 +908,7 @@ function validateEffectivePassV2(value: JsonObject): void {
 export function renderAndPromoteRequirementsContractConfirmation(input: {
   projectRoot: string;
   requestId: string;
+  targetSource: string;
 }) {
   const root = path.resolve(input.projectRoot);
   const recordRoot = path.join(
@@ -934,41 +919,28 @@ export function renderAndPromoteRequirementsContractConfirmation(input: {
     input.requestId
   );
   const requirementRecordPath = path.join(recordRoot, 'record', 'requirement-record.json');
-  const requirementRecord = readJson(requirementRecordPath);
-  const activeAuthority = object(requirementRecord.activeAuthority);
+  const requirementRecord = openRequirementsContractRecord(requirementRecordPath);
+  const activeAuthority = object(
+    requirementRecord.activeAuthority
+  ) as unknown as RequirementsActiveAuthorityTupleV3;
   const tupleValidation = validateRequirementsActiveAuthorityTuple(activeAuthority);
   if (tupleValidation.decision === 'block') throw new Error(tupleValidation.issueCodes[0]);
-  const buildManifest = readJson(
-    confinedRecordArtifact(recordRoot, text(activeAuthority.activeBuildManifestPath))
-  );
-  const durableBuild = buildManifest.schemaVersion === 'requirements-contract-build-manifest/v2';
-  if (durableBuild) {
-    if (!validateRequirementsContractBuildManifestV2(buildManifest)) {
-      throw new Error('requirements_final_render_build_manifest_invalid');
-    }
-  } else {
-    const buildValidation = validateRequirementsContractBuildManifest(buildManifest);
-    if (buildValidation.decision === 'block') throw new Error(buildValidation.issueCodes[0]);
-  }
-  const activeBuildHash = text(activeAuthority.activeBuildHash ?? activeAuthority.activeBuildManifestHash);
-  const manifestBuildHash = text(buildManifest.buildHash ?? buildManifest.buildManifestHash);
+  const buildManifest = readRequirementsActiveBuildManifest({ recordRoot, activeAuthority });
+  const activeBuildHash = activeAuthority.activeBuildHash;
+  const manifestBuildHash = buildManifest.buildHash;
   if (manifestBuildHash !== activeBuildHash) {
     throw new Error('requirements_final_render_build_manifest_stale');
   }
-  const v2Entries = records(buildManifest.artifactEntries);
-  const resolveV2Role = (role: string) => {
-    const entry = v2Entries.find((candidate) => candidate.role === role);
-    if (!entry) throw new Error(`requirements_final_render_${role}_missing`);
-    return resolveRequirementsAuthoringArtifact({ recordRoot, entry: entry as never });
-  };
-  const semanticIr = durableBuild
-    ? resolveV2Role('semantic_ir') as RequirementsContractSemanticIr
-    : readRequirementsContractSemanticIrAuthority(
-        confinedRecordArtifact(recordRoot, text(activeAuthority.activeSemanticIrPath))
-      );
-  const sourceBinding = durableBuild
-    ? object(resolveV2Role('source_binding'))
-    : readJson(confinedRecordArtifact(recordRoot, text(activeAuthority.activeSourceBindingPath)));
+  const semanticIr = resolveRequirementsActiveArtifact({
+    recordRoot,
+    activeAuthority,
+    role: 'semantic_ir',
+  }).value as RequirementsContractSemanticIr;
+  const sourceBinding = object(resolveRequirementsActiveArtifact({
+    recordRoot,
+    activeAuthority,
+    role: 'source_binding',
+  }).value);
   const bindingValidation = validateRequirementsContractSourceBindingCapsule(sourceBinding);
   if (bindingValidation.decision === 'block') throw new Error(bindingValidation.issueCodes[0]);
   if (
@@ -979,12 +951,11 @@ export function renderAndPromoteRequirementsContractConfirmation(input: {
   ) {
     throw new Error('requirements_final_render_active_authority_stale');
   }
-  const resolvedEvidenceIndex = durableBuild
-    ? object(resolveV2Role('resolved_evidence_index'))
-    : readJson(path.join(
-        recordRoot, 'authoring', 'source-bindings',
-        text(activeAuthority.activeBindingRevisionId), 'resolved-evidence-index.json'
-      ));
+  const resolvedEvidenceIndex = object(resolveRequirementsActiveArtifact({
+    recordRoot,
+    activeAuthority,
+    role: 'resolved_evidence_index',
+  }).value);
   const effectivePass = readJson(
     path.join(recordRoot, 'quality', 'requirements-effective-pass-receipt.json')
   );
@@ -992,18 +963,9 @@ export function renderAndPromoteRequirementsContractConfirmation(input: {
   if (effectivePass.buildManifestHash !== manifestBuildHash) {
     throw new Error('requirements_final_render_effective_pass_stale');
   }
-  const context = readJson(
-    path.join(
-      recordRoot,
-      'authoring',
-      'staging',
-      text(activeAuthority.activeAuthoringAttemptId ?? requirementRecord.activeOperationId),
-      'authoring-context.json'
-    )
-  );
   const renderInput: RequirementsFinalRenderInput = {
     requestId: input.requestId,
-    confirmationLanguage: text(context.confirmationLanguage) || 'en-US',
+    confirmationLanguage: 'en-US',
     semanticIr,
     resolvedEvidenceIndex,
     effectivePass,
@@ -1060,7 +1022,7 @@ export function renderAndPromoteRequirementsContractConfirmation(input: {
     mediaType: 'application/json',
   });
   const targetMarkdownPath = resolveConfinedPathWithoutLinks(
-    root, text(context.targetSource), 'requirements_final_render_target_path_escape'
+    root, input.targetSource, 'requirements_final_render_target_path_escape'
   );
   const reviewCandidate = {
     schemaVersion: 'requirements-contract-review-candidate/v1',
@@ -1088,7 +1050,7 @@ export function renderAndPromoteRequirementsContractConfirmation(input: {
     busyCode: 'requirements_confirmation_authority_busy',
   });
   try {
-    const latestRecord = readJson(requirementRecordPath);
+    const latestRecord = openRequirementsContractRecord(requirementRecordPath);
     if (canonicalRequirementsJson(latestRecord.activeAuthority) !== canonicalRequirementsJson(activeAuthority)) {
       throw new Error('requirements_confirmation_promotion_stale');
     }
@@ -1143,7 +1105,7 @@ function promoteRequirementsContractReviewCandidate(input: {
     busyCode: 'requirements_confirmation_authority_busy',
   });
   try {
-  const latestRecord = readJson(input.recordPath);
+  const latestRecord = openRequirementsContractRecord(input.recordPath);
   if (
     canonicalRequirementsJson(latestRecord.activeAuthority) !== canonicalRequirementsJson(input.activeAuthority) ||
     canonicalRequirementsJson(latestRecord.currentPromotionEvidence) !== canonicalRequirementsJson(input.record.currentPromotionEvidence) ||
@@ -1156,7 +1118,7 @@ function promoteRequirementsContractReviewCandidate(input: {
     input.candidate.bindingRevisionId !== input.activeAuthority.activeBindingRevisionId ||
     input.candidate.sourceBindingHash !== input.activeAuthority.activeSourceBindingHash ||
     input.candidate.buildManifestHash !==
-      (input.activeAuthority.activeBuildHash ?? input.activeAuthority.activeBuildManifestHash) ||
+      input.activeAuthority.activeBuildHash ||
     input.candidate.requirementsEffectivePassHash !== input.effectivePass.requirementsEffectivePassHash
   ) throw new Error('requirements_confirmation_promotion_stale');
   let candidateBytes: Buffer;
@@ -1211,7 +1173,7 @@ function promoteRequirementsContractReviewCandidate(input: {
     scopeSemanticHash: input.activeAuthority.activeScopeSemanticHash,
     bindingRevisionId: input.activeAuthority.activeBindingRevisionId,
     sourceBindingHash: input.activeAuthority.activeSourceBindingHash,
-    buildManifestHash: input.activeAuthority.activeBuildHash ?? input.activeAuthority.activeBuildManifestHash,
+    buildManifestHash: input.activeAuthority.activeBuildHash,
     requirementsEffectivePassHash: input.effectivePass.requirementsEffectivePassHash,
     reviewCandidateRef: { path: input.candidatePath, artifactBytesHash: input.candidateArtifactBytesHash },
     targetPath: path.relative(root, targetPath).replace(/\\/gu, '/'),
@@ -1291,7 +1253,7 @@ export function confirmRequirementsContractIrScope(input: {
     input.requestId
   );
   const recordPath = path.join(recordRoot, 'record', 'requirement-record.json');
-  const record = readJson(recordPath);
+  const record = openRequirementsContractRecord(recordPath);
   if (record.lifecycle !== 'user_confirmable' && record.lifecycle !== 'user_confirmed') {
     throw new Error('requirements_confirmation_not_confirmable');
   }
@@ -1319,7 +1281,7 @@ export function confirmRequirementsContractIrScope(input: {
     effectivePass.semanticRevisionId !== activeAuthority.activeSemanticRevisionId ||
     effectivePass.scopeSemanticHash !== activeAuthority.activeScopeSemanticHash ||
     effectivePass.buildManifestHash !==
-      (activeAuthority.activeBuildHash ?? activeAuthority.activeBuildManifestHash)
+      activeAuthority.activeBuildHash
   ) {
     throw new Error('requirements_confirmation_effective_pass_invalid');
   }
@@ -1506,7 +1468,7 @@ export function confirmRequirementsContractIrScope(input: {
   ) {
     throw new Error('requirements_confirmation_effective_pass_invalid');
   }
-  if (record.lifecycle === 'user_confirmed') {
+  if (String(record.lifecycle) === 'user_confirmed') {
     const eventRef = object(record.confirmationEventRef);
     if (
       record.confirmedScopeSemanticHash !== activeAuthority.activeScopeSemanticHash ||

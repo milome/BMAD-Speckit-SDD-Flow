@@ -1,7 +1,7 @@
 import { sha256Stable } from './requirements-contract-semantic-resolver';
 import { createRequirementsContractJudgeProviderRegistry } from './requirements-contract-judge-provider-registry';
 
-export interface CriticalAuditorIndependentProviderExpectation {
+export interface AuditProviderExpectation {
   transactionId?: string;
   auditAttemptId?: string;
   providerId: string;
@@ -21,7 +21,7 @@ export interface CriticalAuditorIndependentProviderExpectation {
   projectionSetHash: string;
 }
 
-export interface CriticalAuditorIndependentProviderEvidence {
+export interface AuditProviderEvidence {
   transactionId?: string;
   auditAttemptId?: string;
   providerId: string;
@@ -45,12 +45,12 @@ export interface CriticalAuditorIndependentProviderEvidence {
   runHash: string;
 }
 
-export interface CriticalAuditorIndependentProviderValidation {
+export interface AuditProviderValidation {
   ok: boolean;
   issueCodes: string[];
 }
 
-export interface CriticalAuditorJudgeRuntimeBinding extends Record<string, unknown> {
+export interface AuditTriadJudgeRuntimeBinding extends Record<string, unknown> {
   providerId: string;
   model: string | null;
   transport: string;
@@ -62,13 +62,13 @@ export interface CriticalAuditorJudgeRuntimeBinding extends Record<string, unkno
   providerConfigurationHash: string;
 }
 
-export interface CriticalAuditorJudgeRuntimeBindingResult {
-  binding: CriticalAuditorJudgeRuntimeBinding | null;
+export interface AuditTriadJudgeRuntimeBindingResult {
+  binding: AuditTriadJudgeRuntimeBinding | null;
   issueCodes: string[];
 }
 
-export interface CriticalAuditorIndependentProviderExpectationResult {
-  expectation: CriticalAuditorIndependentProviderExpectation | null;
+export interface AuditProviderExpectationResult {
+  expectation: AuditProviderExpectation | null;
   issueCodes: string[];
 }
 
@@ -162,21 +162,21 @@ function configuredAdapterRef(provider: JsonRecord): string {
   return '';
 }
 
-function isCriticalAuditorCliTransport(value: unknown): boolean {
+function isAuditProviderCliTransport(value: unknown): boolean {
   return value === 'cli' || value === 'claude-code-cli';
 }
 
-export function criticalAuditorIndependentProviderRunHash(
-  evidence: Omit<CriticalAuditorIndependentProviderEvidence, 'runHash'> | JsonRecord
+export function auditProviderRunHash(
+  evidence: Omit<AuditProviderEvidence, 'runHash'> | JsonRecord
 ): string {
   const canonical = { ...evidence } as JsonRecord;
   delete canonical.runHash;
   return sha256Stable(canonical);
 }
 
-export function buildCriticalAuditorJudgeRuntimeBinding(
+export function buildAuditTriadJudgeRuntimeBinding(
   providerRegistry: unknown
-): CriticalAuditorJudgeRuntimeBindingResult {
+): AuditTriadJudgeRuntimeBindingResult {
   const issueCodes: string[] = [];
   if (!isRecord(providerRegistry)) {
     return {
@@ -284,7 +284,7 @@ export function buildCriticalAuditorJudgeRuntimeBinding(
   const transport = text(provider.transport);
   const apiStyle = text(provider.apiStyle);
   const adapterRef = configuredAdapterRef(provider);
-  if (!isCriticalAuditorCliTransport(provider.transport)) {
+  if (!isAuditProviderCliTransport(provider.transport)) {
     issueCodes.push('critical_auditor_judge_provider_transport_mismatch');
   }
   compareText(
@@ -437,14 +437,14 @@ export function buildCriticalAuditorJudgeRuntimeBinding(
   };
 }
 
-export function buildCriticalAuditorIndependentProviderExpectationFromJudgeRuntime(input: {
+export function buildAuditProviderExpectationFromJudgeRuntime(input: {
   providerRegistry: unknown;
   requestHash: string;
   sourceDocumentHash: string;
   semanticModelHash: string;
   projectionSetHash: string;
-}): CriticalAuditorIndependentProviderExpectationResult {
-  const binding = buildCriticalAuditorJudgeRuntimeBinding(input.providerRegistry);
+}): AuditProviderExpectationResult {
+  const binding = buildAuditTriadJudgeRuntimeBinding(input.providerRegistry);
   const issueCodes = [...binding.issueCodes];
   for (const [hash, issueCode] of [
     [input.requestHash, 'critical_auditor_request_hash_invalid'],
@@ -469,7 +469,7 @@ export function buildCriticalAuditorIndependentProviderExpectationFromJudgeRunti
   };
 }
 
-export function buildCriticalAuditorIndependentProviderExpectationFromJudgeSelection(input: {
+export function buildAuditProviderExpectationFromJudgeSelection(input: {
   providerRegistry: unknown;
   capabilityReceipt: unknown;
   selectionReceipt: unknown;
@@ -479,7 +479,7 @@ export function buildCriticalAuditorIndependentProviderExpectationFromJudgeSelec
   sourceDocumentHash: string;
   semanticModelHash: string;
   projectionSetHash: string;
-}): CriticalAuditorIndependentProviderExpectationResult {
+}): AuditProviderExpectationResult {
   const issueCodes: string[] = [];
   for (const [hash, issueCode] of [
     [input.requestHash, 'critical_auditor_request_hash_invalid'],
@@ -586,7 +586,7 @@ export function buildCriticalAuditorIndependentProviderExpectationFromJudgeSelec
       'critical_auditor_judge_selected_provider_disabled',
       issueCodes
     );
-    if (!isCriticalAuditorCliTransport(provider.transport)) {
+    if (!isAuditProviderCliTransport(provider.transport)) {
       issueCodes.push('critical_auditor_judge_provider_transport_mismatch');
     }
     compareText(
@@ -865,10 +865,10 @@ export function buildCriticalAuditorIndependentProviderExpectationFromJudgeSelec
   };
 }
 
-export function validateCriticalAuditorIndependentProviderEvidence(input: {
-  expected: CriticalAuditorIndependentProviderExpectation;
+export function validateAuditProviderEvidence(input: {
+  expected: AuditProviderExpectation;
   evidence: unknown;
-}): CriticalAuditorIndependentProviderValidation {
+}): AuditProviderValidation {
   if (!isRecord(input.evidence)) {
     return {
       ok: false,
@@ -878,7 +878,7 @@ export function validateCriticalAuditorIndependentProviderEvidence(input: {
   const evidence = input.evidence;
   const issueCodes: string[] = [];
   const compare = (
-    field: keyof CriticalAuditorIndependentProviderExpectation,
+    field: keyof AuditProviderExpectation,
     issueCode: string
   ) => {
     const expected = input.expected[field];
@@ -927,7 +927,7 @@ export function validateCriticalAuditorIndependentProviderEvidence(input: {
   const runHash = text(evidence.runHash);
   if (
     !SHA256_PATTERN.test(runHash) ||
-    runHash !== criticalAuditorIndependentProviderRunHash(evidence)
+    runHash !== auditProviderRunHash(evidence)
   ) {
     issueCodes.push('critical_auditor_provider_run_hash_mismatch');
   }

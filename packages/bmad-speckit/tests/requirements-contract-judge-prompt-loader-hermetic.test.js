@@ -14,7 +14,7 @@ const LOADER_PATH = path.join(
   'requirements-contract-judge-prompt-loader.js'
 );
 const PROMPT_RELATIVE_PATH =
-  '_bmad/shared/requirements-contract/judge-prompts/requirements-contract-critical-auditor.prompt.md';
+  '_bmad/shared/requirements-contract/judge-prompts/requirements-contract-judge.prompt.md';
 const SCHEMA_RELATIVE_PATH =
   'dist/main-agent/source-authority/schemas/requirements-contract-judge-response.schema.json';
 const SRC_SCHEMA_RELATIVE_PATH =
@@ -49,7 +49,7 @@ describe('Requirements Judge prompt loader hermetic runtime', () => {
         () =>
           loader.loadRequirementsContractJudgePromptAsset({
             packageRoot: root,
-            judgeRole: 'requirements_critical_auditor',
+            judgeRole: 'requirements_judge',
           }),
         /judge_prompt_loader_schema_missing/u
       );
@@ -64,7 +64,7 @@ describe('Requirements Judge prompt loader hermetic runtime', () => {
     try {
       const asset = loader.loadRequirementsContractJudgePromptAsset({
         packageRoot: root,
-        judgeRole: 'requirements_critical_auditor',
+        judgeRole: 'requirements_judge',
       });
       assert.equal(asset.schema.path, SCHEMA_RELATIVE_PATH);
     } finally {

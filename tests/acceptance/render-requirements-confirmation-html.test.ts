@@ -5025,20 +5025,20 @@ sequenceDiagram
     expect(report.confirmability).toBe('blocked');
     expect(report.renderedSections).toContain('pre-confirmation-semantic-drilldown');
     expect(report.blockingIssues.map((issue: any) => issue.code)).toContain(
-      'pre_confirmation_authoring_repair_required'
+      'pre_confirmation_authoring_resume_required'
     );
     expect(
       report.blockingIssues.find(
-        (issue: any) => issue.code === 'pre_confirmation_authoring_repair_required'
+        (issue: any) => issue.code === 'pre_confirmation_authoring_resume_required'
       )
     ).toMatchObject({
-      repairAction: 'run_authoring_repair_preserve_existing',
+      repairAction: 'resume_author_confirmation_ready_source',
     });
     expect(
       report.blockingIssues.find(
-        (issue: any) => issue.code === 'pre_confirmation_authoring_repair_required'
+        (issue: any) => issue.code === 'pre_confirmation_authoring_resume_required'
       )?.repairCommand
-    ).toContain('main-agent-orchestration --action authoring-repair --mode preserve-existing');
+    ).toContain('main-agent-orchestration --action resume-author-confirmation-ready-source');
     expect(html).toContain('Pre-Confirmation Semantic Drilldown');
   });
 
@@ -5082,12 +5082,12 @@ sequenceDiagram
       'Atomicity Drivers',
       'Atomic Task Baseline',
       'Projection Coverage',
-      'Critical Auditor Convergence',
       'Gap History',
       'Packet-To-Source Reconciliation',
     ]) {
       expect(html).toContain(heading);
     }
+    expect(html).not.toContain('Critical Auditor Convergence');
   });
 
   it('can be invoked through the documented node CLI and prints machine-readable summary with --json', () => {

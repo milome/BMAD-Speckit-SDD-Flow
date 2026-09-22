@@ -21,6 +21,17 @@ export interface RequirementsRecordStorageInventory {
   inventoryHash: string;
 }
 
+export interface RequirementsStorageReservation {
+  schemaVersion: 'requirements-record-storage-reservation/v1';
+  operationId: string;
+  expectedInventoryHash: string;
+  requestedUniqueBytes: number;
+  requestedMetadataBytes: number;
+  reservedBytes: number;
+  consumedUniqueBytes?: number;
+  reservationHash: string;
+}
+
 function inventoryDirectory(
   root: string,
   current: string,
@@ -110,6 +121,7 @@ export function reserveRequirementsRecordStorage(input: {
     };
     const reservation = {
       ...payload,
+      consumedUniqueBytes: 0,
       reservationHash: requirementsContractDomainHash('requirements-record-storage-reservation/v1', payload),
     };
     writeJsonAtomic(

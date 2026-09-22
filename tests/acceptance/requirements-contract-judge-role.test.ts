@@ -11,13 +11,13 @@ import {
 describe('requirements contract Judge role authority', () => {
   it('exports exactly the two canonical Judge roles', () => {
     expect(REQUIREMENTS_CONTRACT_JUDGE_ROLES).toEqual([
-      'requirements_critical_auditor',
+      'requirements_judge',
       'final_acceptance_judge',
     ]);
   });
 
   it.each([
-    ['requirements_critical_auditor_judge', 'requirements_critical_auditor'],
+    ['requirements_contract_judge', 'requirements_judge'],
     ['final_acceptance_judge', 'final_acceptance_judge'],
   ] as const)('accepts the exact Judge pair %s -> %s', (actorClass, judgeRole) => {
     const counters = createRequirementsContractAuthorityCounters();
@@ -49,7 +49,7 @@ describe('requirements contract Judge role authority', () => {
 
   it('rejects every invalid actor and role pairing before side effects', () => {
     const validPairs = new Set([
-      'requirements_critical_auditor_judge:requirements_critical_auditor',
+      'requirements_contract_judge:requirements_judge',
       'final_acceptance_judge:final_acceptance_judge',
     ]);
 
@@ -73,7 +73,7 @@ describe('requirements contract Judge role authority', () => {
 
   it.each([
     [{}, 'audit_actor_class_missing'],
-    [{ actorClass: 'requirements_critical_auditor_judge' }, 'judge_role_missing'],
+    [{ actorClass: 'requirements_contract_judge' }, 'judge_role_missing'],
     [
       { actorClass: 'final_acceptance_judge', judgeRole: 'requirements_auditor' },
       'judge_role_unknown',
@@ -97,8 +97,8 @@ describe('requirements contract Judge role authority', () => {
   ])('rejects the inference channel %s before provider or persistence', (field) => {
     const counters = createRequirementsContractAuthorityCounters();
     const input = {
-      actorClass: 'requirements_critical_auditor_judge',
-      judgeRole: 'requirements_critical_auditor',
+      actorClass: 'requirements_contract_judge',
+      judgeRole: 'requirements_judge',
       [field]: 'final_acceptance_judge',
     };
 

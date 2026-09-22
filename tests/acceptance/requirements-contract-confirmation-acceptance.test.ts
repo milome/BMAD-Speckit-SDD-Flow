@@ -54,8 +54,8 @@ function effectivePassInput(overrides: Record<string, unknown> = {}) {
   const coverageUnitRefs = ['coverage/dimension', 'coverage/must', 'coverage/projection'];
   return {
     request: {
-      actorClass: 'requirements_critical_auditor_judge',
-      judgeRole: 'requirements_critical_auditor',
+      actorClass: 'requirements_contract_judge',
+      judgeRole: 'requirements_judge',
       requestHash: EFFECTIVE_PASS_HASHES.request,
       attemptKeyHash: EFFECTIVE_PASS_HASHES.attempt,
       scopeManifestHash: EFFECTIVE_PASS_HASHES.scope,
@@ -70,8 +70,8 @@ function effectivePassInput(overrides: Record<string, unknown> = {}) {
     },
     assessment: {
       schemaVersion: 'critical-auditor-judge-assessment/v1',
-      actorClass: 'requirements_critical_auditor_judge',
-      judgeRole: 'requirements_critical_auditor',
+      actorClass: 'requirements_contract_judge',
+      judgeRole: 'requirements_judge',
       verdict: 'no_new_valid_gap',
       validatedGaps: [],
     },
@@ -132,7 +132,7 @@ function writeConfirmationFixture(root: string, options: ConfirmationFixtureOpti
     runtimeRoot,
     recordId,
     'judge',
-    'requirements_critical_auditor',
+    'requirements_judge',
     'requirements-effective-pass.receipt.json'
   );
   mkdirSync(path.dirname(effectivePassReceiptPath), { recursive: true });

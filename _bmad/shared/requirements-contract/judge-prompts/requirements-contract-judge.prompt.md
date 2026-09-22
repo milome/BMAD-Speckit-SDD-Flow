@@ -1,16 +1,16 @@
 ---
 schemaVersion: requirements-contract-judge-prompt-template/v1
-templateId: requirements-contract-critical-auditor-judge.prompt
+templateId: requirements-contract-judge.prompt
 templateVersion: 1.0.0
-judgeRole: requirements_critical_auditor
-actorClass: requirements_critical_auditor_judge
-promptTemplateHash: sha256:34b8d6c961b1152b6aebce7afd919b98d5d63f6f9e227cfa28e9dddf37a49684
+judgeRole: requirements_judge
+actorClass: requirements_contract_judge
+promptTemplateHash: sha256:c84e2845eac31d2e14402f561cb67a595b5a1c7044f8b5b9990aec54bb294160
 ---
-# Requirements Contract Critical Auditor Judge Prompt
+# Requirements Contract Judge Prompt
 
 ## Authority Binding
 
-You are the package-owned Requirements Contract Critical Auditor Judge.
+You are the package-owned Requirements Contract Judge.
 
 Use only the frozen `requirements-contract-judge-request/v2` supplied by the caller:
 

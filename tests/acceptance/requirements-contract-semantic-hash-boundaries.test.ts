@@ -60,65 +60,20 @@ describe('requirements contract semantic hash boundaries', () => {
     }
   });
 
-  it('hashes packet semantics instead of packet bookkeeping', () => {
-    const packetSemanticHash = Reflect.get(hashDomains, 'packetSemanticHash') as
-      | ((value: unknown) => string)
-      | undefined;
-    expect(packetSemanticHash).toBeTypeOf('function');
-    if (!packetSemanticHash) return;
-
-    const packet = {
-      musts: [{
-        mustId: 'MUST-FR-002',
-        atoms: [{
-          atomId: 'ATOM-002',
-          action: 'Render the order.',
-          oracle: 'The rendered order matches the committed order.',
-          dependencies: ['ATOM-001', 'ATOM-000'],
-          coverageRefs: ['TRACE-002', 'TRACE-001'],
-        }],
-      }, {
-        mustId: 'MUST-FR-001',
-        atoms: [{
-          atomId: 'ATOM-001',
-          action: 'Persist the order.',
-          oracle: 'The committed order is readable.',
-          dependencies: [],
-          coverageRefs: ['TRACE-001'],
-        }],
-      }],
-      packetPath: 'authoring/staging/packet-a.json',
-      receiptRefs: ['receipt-a.json'],
-      createdAt: '2026-09-20T00:00:00.000Z',
-    };
-    const baseline = packetSemanticHash(packet);
-    const reordered = packetSemanticHash({
-      ...packet,
-      musts: [...packet.musts].reverse().map((must) => ({
-        ...must,
-        atoms: [...must.atoms].reverse().map((atom) => ({
-          ...atom,
-          dependencies: [...atom.dependencies].reverse(),
-          coverageRefs: [...atom.coverageRefs].reverse(),
-        })),
-      })),
-      packetPath: 'authoring/staging/packet-b.json',
-      receiptRefs: ['receipt-b.json'],
+  it('hashes canonical semantics instead of retired packet bookkeeping', () => {
+    const payload = semanticInput();
+    const baseline = hashDomains.scopeSemanticHash(payload);
+    const bookkeepingOnly = hashDomains.scopeSemanticHash({
+      ...payload,
+      sourcePath: 'authoring/.staging/source-b.md',
       createdAt: '2026-09-21T00:00:00.000Z',
+      language: 'zh-CN',
+      renderer: 'renderer/v99',
+      receiptRefs: ['receipt-b.json'],
     });
-    expect(reordered).toBe(baseline);
 
-    for (const atom of [
-      { ...packet.musts[0].atoms[0], action: 'Render the settled order.' },
-      { ...packet.musts[0].atoms[0], oracle: 'The rendered order has the canonical bytes.' },
-      { ...packet.musts[0].atoms[0], dependencies: ['ATOM-099'] },
-      { ...packet.musts[0].atoms[0], coverageRefs: ['TRACE-099'] },
-    ]) {
-      expect(packetSemanticHash({
-        ...packet,
-        musts: [{ ...packet.musts[0], atoms: [atom] }, packet.musts[1]],
-      })).not.toBe(baseline);
-    }
+    expect(bookkeepingOnly).toBe(baseline);
+    expect(Reflect.get(hashDomains, 'packetSemanticHash')).toBeUndefined();
   });
 
   it('separates stable build and authoring identities from operation metadata', () => {

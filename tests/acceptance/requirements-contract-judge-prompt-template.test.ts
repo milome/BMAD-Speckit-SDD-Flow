@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-type PromptRole = 'requirements_critical_auditor' | 'final_acceptance_judge';
+type PromptRole = 'requirements_judge' | 'final_acceptance_judge';
 
 interface PromptContract {
   path: string;
@@ -19,11 +19,11 @@ interface PromptContract {
 
 const prompts: PromptContract[] = [
   {
-    path: '_bmad/shared/requirements-contract/judge-prompts/requirements-contract-critical-auditor.prompt.md',
-    templateId: 'requirements-contract-critical-auditor-judge.prompt',
+    path: '_bmad/shared/requirements-contract/judge-prompts/requirements-contract-judge.prompt.md',
+    templateId: 'requirements-contract-judge.prompt',
     templateVersion: '1.0.0',
-    judgeRole: 'requirements_critical_auditor',
-    actorClass: 'requirements_critical_auditor_judge',
+    judgeRole: 'requirements_judge',
+    actorClass: 'requirements_contract_judge',
     forbiddenTerms: [
       /final acceptance judge/iu,
       /implementation approval/iu,
@@ -127,7 +127,7 @@ describe('requirements contract Judge prompt templates', () => {
 
     expect(new Set(manifests.map((manifest) => manifest.hash)).size).toBe(manifests.length);
     expect(manifests.map((manifest) => manifest.role)).toEqual([
-      'requirements_critical_auditor',
+      'requirements_judge',
       'final_acceptance_judge',
     ]);
   });

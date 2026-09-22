@@ -6,21 +6,16 @@ import {
   type RequirementsContractValidationMode,
 } from './requirements-contract-validation-facade';
 import { readRequirementsContractV2Bundle } from './requirements-contract-v2-read-adapter';
-import {
-  readRequirementsContractV1Source,
-  resolveRequirementsContractV1ReadEligibility,
-} from './requirements-contract-v1-read-adapter';
 
 export interface RequirementsContractReadEnvelope {
   requirementSetId: string;
   sourcePath: string;
   sourceHash: string;
-  sourceFormatVersion: 'requirement-contract-model/v2' | 'requirement-contract-source-prd/v1';
+  sourceFormatVersion: 'requirement-contract-model/v2';
   activeBundleRevision: string;
   bundleManifestPath?: string;
   semanticModelHash: string;
   traceGraphHash: string;
-  cutoverId?: string;
 }
 
 export const REQUIREMENTS_CONTRACT_CANONICAL_PROJECTION_ROLES = [
@@ -75,7 +70,6 @@ export interface RequirementsContractReadIssue {
     | 'source_missing'
     | 'source_hash_mismatch'
     | 'unsupported_source_format'
-    | 'adapter_eligibility_blocked'
     | 'adapter_blocked'
     | 'lifecycle_validation_blocked'
     | 'canonical_projection_missing'
@@ -239,26 +233,17 @@ function consumerContractMatches(input: {
   mode: RequirementsContractValidationMode;
   sourceFormatVersion: RequirementsContractReadEnvelope['sourceFormatVersion'];
 }): boolean {
-  const expectedAdapterRefs =
-    input.sourceFormatVersion === 'requirement-contract-model/v2'
-      ? new Set([
-          'requirements-contract-v2-read-adapter',
-          'requirements-contract-v2-read-adapter/v1',
-        ])
-      : new Set([
-          'requirements-contract-v1-read-adapter',
-          'requirements-contract-v1-read-adapter/v1',
-        ]);
-  const expectedSourceFormatVersions =
-    input.sourceFormatVersion === 'requirement-contract-model/v2'
-      ? new Set(['v2', 'requirement-contract-model/v2'])
-      : new Set(['v1', 'requirement-contract-source-prd/v1']);
   return (
     new Set(['requirements-contract-read-facade', 'requirements-contract-read-facade/v1']).has(
       String(input.consumer.readFacadeRef)
     ) &&
-    expectedAdapterRefs.has(String(input.consumer.adapterRef)) &&
-    expectedSourceFormatVersions.has(String(input.consumer.sourceFormatVersion)) &&
+    new Set([
+      'requirements-contract-v2-read-adapter',
+      'requirements-contract-v2-read-adapter/v1',
+    ]).has(String(input.consumer.adapterRef)) &&
+    new Set(['v2', 'requirement-contract-model/v2']).has(
+      String(input.consumer.sourceFormatVersion)
+    ) &&
     consumerModes(input.consumer).includes(input.mode)
   );
 }
@@ -273,9 +258,7 @@ function validateSourceEnvelope(
     !envelope.sourcePath.trim() ||
     !/^sha256:[a-f0-9]{64}$/u.test(envelope.sourceHash) ||
     !/^sha256:[a-f0-9]{64}$/u.test(envelope.semanticModelHash) ||
-    !/^sha256:[a-f0-9]{64}$/u.test(envelope.traceGraphHash) ||
-    (envelope.sourceFormatVersion === 'requirement-contract-source-prd/v1' &&
-      !envelope.cutoverId?.trim())
+    !/^sha256:[a-f0-9]{64}$/u.test(envelope.traceGraphHash)
   ) {
     issues.push({
       code: 'source_envelope_invalid',
@@ -447,99 +430,6 @@ export function readRequirementsContract(
       logicalModel: adapter.logicalModel,
       traceGraph: adapter.traceGraph,
       projections: projectionRead.projections,
-    });
-  }
-
-  if (input.envelope.sourceFormatVersion === 'requirement-contract-source-prd/v1') {
-    const requiredFields = [
-      'legacyEligibilitySourceRef',
-      'legacyEligibilitySourceHash',
-      'legacyInventoryFreezeReceiptRef',
-      'legacyInventoryFreezeReceiptHash',
-      'v1FormatProofHash',
-      'cutoverPredecessorHash',
-      'legacyInventoryWriterHash',
-      'legacyInventoryG00BaselineHash',
-      'legacyInventoryFreezeTransactionId',
-    ] as const;
-    if (
-      consumer.eligibilityAuthority !== 'frozen_inventory' ||
-      requiredFields.some(
-        (field) => typeof consumer[field] !== 'string' || String(consumer[field]).length === 0
-      )
-    ) {
-      return blocked(
-        'consumer_contract_mismatch',
-        registryPath,
-        'registered V1 consumer eligibility contract is incomplete'
-      );
-    }
-    const eligibility = resolveRequirementsContractV1ReadEligibility({
-      projectRoot,
-      source: {
-        path: input.envelope.sourcePath,
-        hash: input.envelope.sourceHash,
-        requirementSetId: input.envelope.requirementSetId,
-        cutoverId: input.envelope.cutoverId ?? '',
-      },
-      expected: {
-        v1FormatProofHash: String(consumer.v1FormatProofHash),
-        cutoverPredecessorHash: String(consumer.cutoverPredecessorHash),
-        writerHash: String(consumer.legacyInventoryWriterHash),
-        g00BaselineHash: String(consumer.legacyInventoryG00BaselineHash),
-        freezeTransactionId: String(consumer.legacyInventoryFreezeTransactionId),
-      },
-      authority: {
-        kind: 'frozen_inventory',
-        inventoryRef: {
-          path: String(consumer.legacyEligibilitySourceRef),
-          hash: String(consumer.legacyEligibilitySourceHash),
-        },
-        freezeReceiptRef: {
-          path: String(consumer.legacyInventoryFreezeReceiptRef),
-          hash: String(consumer.legacyInventoryFreezeReceiptHash),
-        },
-      },
-    });
-    if (!eligibility.ok) {
-      return blockedWithIssues({
-        adapterInvoked: false,
-        issues: eligibility.issues.map((issue) => ({
-          code: 'adapter_eligibility_blocked',
-          path: issue.path,
-          message: `${issue.code}:${issue.message}`,
-        })),
-      });
-    }
-    const adapter = readRequirementsContractV1Source({
-      projectRoot,
-      eligibility,
-    });
-    if (!adapter.ok || !adapter.logicalModel) {
-      return blockedWithIssues({
-        adapterInvoked: true,
-        issues: adapter.issues.map((issue) => ({
-          code: 'adapter_blocked',
-          path: issue.path,
-          message: `${issue.code}:${issue.message}`,
-        })),
-      });
-    }
-    if (
-      adapter.logicalModel.semanticModelHash !== input.envelope.semanticModelHash ||
-      adapter.traceGraph?.traceGraphHash !== input.envelope.traceGraphHash
-    ) {
-      return blocked(
-        'adapter_blocked',
-        input.envelope.sourcePath,
-        'normalized V1 model or Trace Graph hash does not match the source envelope'
-      );
-    }
-    return lifecycleResult({
-      mode: input.mode,
-      logicalModel: adapter.logicalModel as unknown as Record<string, unknown>,
-      traceGraph: adapter.traceGraph,
-      projections: emptyProjections(),
     });
   }
 

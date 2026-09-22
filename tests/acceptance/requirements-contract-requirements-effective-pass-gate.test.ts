@@ -34,8 +34,8 @@ function validInput(overrides: JsonRecord = {}) {
   const coverageUnitRefs = ['coverage/dimension', 'coverage/must', 'coverage/projection'];
   return {
     request: {
-      actorClass: 'requirements_critical_auditor_judge',
-      judgeRole: 'requirements_critical_auditor',
+      actorClass: 'requirements_contract_judge',
+      judgeRole: 'requirements_judge',
       requestHash: HASHES.request,
       attemptKeyHash: HASHES.attempt,
       scopeManifestHash: HASHES.scope,
@@ -50,8 +50,8 @@ function validInput(overrides: JsonRecord = {}) {
     },
     assessment: {
       schemaVersion: 'critical-auditor-judge-assessment/v1',
-      actorClass: 'requirements_critical_auditor_judge',
-      judgeRole: 'requirements_critical_auditor',
+      actorClass: 'requirements_contract_judge',
+      judgeRole: 'requirements_judge',
       verdict: 'no_new_valid_gap',
       validatedGaps: [],
     },

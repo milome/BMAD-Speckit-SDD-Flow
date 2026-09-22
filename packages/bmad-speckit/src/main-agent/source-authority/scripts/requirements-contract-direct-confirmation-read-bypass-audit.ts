@@ -17,7 +17,6 @@ export interface DirectConfirmationReadAuditResult {
 
 const ALLOWED_OWNER_SUFFIXES = [
   '/requirements-contract-read-facade.ts',
-  '/requirements-contract-v1-read-adapter.ts',
   '/requirements-contract-v2-read-adapter.ts',
 ];
 

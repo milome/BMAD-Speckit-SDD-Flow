@@ -148,6 +148,12 @@ function assertLogicalFinding(value: unknown): JsonRecord {
     'affectedMustRefs',
     'affectedArtifactRefs',
     'logicalEvidenceRefs',
+    'authorityBasis',
+    'earliestAffectedStage',
+    'operation',
+    'targetNodeId',
+    'expectedBeforeHash',
+    'replacement',
   ]);
   if (Object.keys(finding).some((key) => !allowed.has(key))) {
     throw new Error('requirements_contract_judge_finding_field_set_invalid');

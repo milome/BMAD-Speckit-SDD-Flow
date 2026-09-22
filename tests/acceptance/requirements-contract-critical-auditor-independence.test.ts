@@ -1,35 +1,23 @@
-import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
-  buildCriticalAuditorJudgeRuntimeBinding,
-  buildCriticalAuditorIndependentProviderExpectationFromJudgeRuntime,
-  buildCriticalAuditorIndependentProviderExpectationFromJudgeSelection,
-  criticalAuditorIndependentProviderRunHash,
-  type CriticalAuditorIndependentProviderEvidence,
-  type CriticalAuditorIndependentProviderExpectation,
-  validateCriticalAuditorIndependentProviderEvidence,
-} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-critical-auditor-independence';
+  buildAuditTriadJudgeRuntimeBinding,
+  buildAuditProviderExpectationFromJudgeRuntime,
+  buildAuditProviderExpectationFromJudgeSelection,
+  auditProviderRunHash,
+  type AuditProviderEvidence,
+  type AuditProviderExpectation,
+  validateAuditProviderEvidence,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-provider-independence';
 import { readGovernanceRemediationConfig } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-config';
 import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 
 const projectRoot = path.resolve(__dirname, '../..');
-const writerPath = path.join(
-  projectRoot,
-  '_bmad',
-  'skills',
-  'requirements-contract-authoring',
-  'scripts',
-  'write-critical-auditor-no-new-gap-response.js'
-);
-const temporaryRoots: string[] = [];
 const transactionId = 'CATX-CRITICAL-AUDITOR-INDEPENDENCE';
 const auditAttemptId = 'AUDIT-CRITICAL-AUDITOR-INDEPENDENCE';
 
-function independentProviderExpectation(): CriticalAuditorIndependentProviderExpectation {
+function independentProviderExpectation(): AuditProviderExpectation {
   return {
     transactionId,
     auditAttemptId,
@@ -155,7 +143,7 @@ function judgeSelectionReceipt(
     'local-sonnet-judge'
   ];
   const lineage = independentProviderExpectation();
-  const runtimeBinding = buildCriticalAuditorJudgeRuntimeBinding(registry);
+  const runtimeBinding = buildAuditTriadJudgeRuntimeBinding(registry);
   if (!runtimeBinding.binding || runtimeBinding.issueCodes.length > 0) {
     return withReceiptHash({
       schemaVersion: 'requirements-contract-judge-selection-receipt/v1',
@@ -213,7 +201,7 @@ function buildExpectationFromJudgeSelection(input?: {
       ? input.selectionReceipt
       : judgeSelectionReceipt(providerRegistry, capabilityReceipt);
   const lineage = independentProviderExpectation();
-  return buildCriticalAuditorIndependentProviderExpectationFromJudgeSelection({
+  return buildAuditProviderExpectationFromJudgeSelection({
     providerRegistry,
     capabilityReceipt,
     selectionReceipt,
@@ -227,8 +215,8 @@ function buildExpectationFromJudgeSelection(input?: {
 }
 
 function independentProviderEvidence(
-  overrides: Partial<CriticalAuditorIndependentProviderEvidence> = {}
-): CriticalAuditorIndependentProviderEvidence {
+  overrides: Partial<AuditProviderEvidence> = {}
+): AuditProviderEvidence {
   const expected = independentProviderExpectation();
   const evidenceWithoutRunHash = {
     ...expected,
@@ -240,83 +228,13 @@ function independentProviderEvidence(
   };
   return {
     ...evidenceWithoutRunHash,
-    runHash: criticalAuditorIndependentProviderRunHash(evidenceWithoutRunHash),
+    runHash: auditProviderRunHash(evidenceWithoutRunHash),
   };
 }
 
-function createAuthoringRequest(): { authoringDir: string; responsePath: string } {
-  const authoringDir = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'critical-auditor-independence-')
-  );
-  temporaryRoots.push(authoringDir);
-  const requestPath = path.join(authoringDir, 'critical-auditor-round-request-1.json');
-  const responsePath = path.join(authoringDir, 'critical-auditor-round-response-1.json');
-  fs.writeFileSync(
-    requestPath,
-    `${JSON.stringify(
-      {
-        schemaVersion: 'critical-auditor-round-request/v1',
-        requestHash: 'sha256:request-current',
-        recordId: 'REQ-CRITICAL-AUDITOR-INDEPENDENCE',
-        roundIndex: 1,
-        transactionId: 'CATX-CRITICAL-AUDITOR-INDEPENDENCE',
-        namespaceVersion: 'critical-auditor-namespace/current',
-        sourceDocumentHash: 'sha256:source-current',
-        implementationConfirmationHash: 'sha256:confirmation-current',
-        packetHash: 'sha256:packet-current',
-        mustRefs: ['MUST-001'],
-        packetProjectionSummary: {
-          projectionGroups: ['mustAcceptanceProjection'],
-          projectionRefs: ['MUST-001:ACC-001'],
-        },
-        projectionQualityGate: {
-          requiredRuleCodes: ['projection_per_must_acceptance_not_independent'],
-        },
-        gateDryRun: {
-          gateDryRunHash: 'sha256:gate-current',
-          actionableBlockingIssueCount: 0,
-          actionableBlockingIssues: [],
-          reconciliation: {
-            issueCount: 0,
-          },
-        },
-      },
-      null,
-      2
-    )}\n`,
-    'utf8'
-  );
-  return { authoringDir, responsePath };
-}
-
-afterEach(() => {
-  for (const root of temporaryRoots.splice(0)) {
-    fs.rmSync(root, { recursive: true, force: true });
-  }
-});
-
 describe('S127 Critical Auditor independence', () => {
-  it('rejects deterministic no-gap synthesis without independent provider evidence', () => {
-    const { authoringDir, responsePath } = createAuthoringRequest();
-    const execution = spawnSync(
-      process.execPath,
-      [writerPath, '--authoring-dir', authoringDir, '--round', '1', '--json'],
-      { cwd: projectRoot, encoding: 'utf8' }
-    );
-    const result = JSON.parse(execution.stdout || execution.stderr) as {
-      ok?: boolean;
-      failureClass?: string;
-    };
-
-    expect(result.ok).toBe(false);
-    expect(result.failureClass).toBe(
-      'critical_auditor_independent_provider_evidence_required'
-    );
-    expect(fs.existsSync(responsePath)).toBe(false);
-  });
-
   it('rejects a no-gap response that omits independent provider run evidence', () => {
-    const validation = validateCriticalAuditorIndependentProviderEvidence({
+    const validation = validateAuditProviderEvidence({
       expected: independentProviderExpectation(),
       evidence: null,
     });
@@ -328,7 +246,7 @@ describe('S127 Critical Auditor independence', () => {
   });
 
   it('accepts exact configured independent provider and current lineage evidence', () => {
-    const validation = validateCriticalAuditorIndependentProviderEvidence({
+    const validation = validateAuditProviderEvidence({
       expected: independentProviderExpectation(),
       evidence: independentProviderEvidence(),
     });
@@ -338,23 +256,23 @@ describe('S127 Critical Auditor independence', () => {
 
   it('treats the configured model as a routing hint and binds a different returned model', () => {
     const expected = independentProviderExpectation();
-    const validation = validateCriticalAuditorIndependentProviderEvidence({
+    const validation = validateAuditProviderEvidence({
       expected,
       evidence: independentProviderEvidence({
         requestedModel: expected.model,
         model: 'gateway-returned-model',
-      } as Partial<CriticalAuditorIndependentProviderEvidence>),
+      } as Partial<AuditProviderEvidence>),
     });
 
     expect(validation).toEqual({ ok: true, issueCodes: [] });
   });
 
   it('rejects requested model drift independently of the returned model identity', () => {
-    const validation = validateCriticalAuditorIndependentProviderEvidence({
+    const validation = validateAuditProviderEvidence({
       expected: independentProviderExpectation(),
       evidence: independentProviderEvidence({
         requestedModel: 'different-routing-hint',
-      } as Partial<CriticalAuditorIndependentProviderEvidence>),
+      } as Partial<AuditProviderEvidence>),
     });
 
     expect(validation.ok).toBe(false);
@@ -423,7 +341,7 @@ describe('S127 Critical Auditor independence', () => {
   ] as const)(
     'rejects %s drift independently',
     (field, value, expectedIssueCode) => {
-      const validation = validateCriticalAuditorIndependentProviderEvidence({
+      const validation = validateAuditProviderEvidence({
         expected: independentProviderExpectation(),
         evidence: independentProviderEvidence({ [field]: value }),
       });
@@ -435,7 +353,7 @@ describe('S127 Critical Auditor independence', () => {
 
   it('rejects missing run identity, malformed response hash, and a stale run hash', () => {
     const evidence = independentProviderEvidence();
-    const validation = validateCriticalAuditorIndependentProviderEvidence({
+    const validation = validateAuditProviderEvidence({
       expected: independentProviderExpectation(),
       evidence: {
         ...evidence,
@@ -457,12 +375,12 @@ describe('S127 Critical Auditor independence', () => {
   });
 
   it('rejects credential material in independent provider evidence', () => {
-    const validation = validateCriticalAuditorIndependentProviderEvidence({
+    const validation = validateAuditProviderEvidence({
       expected: independentProviderExpectation(),
       evidence: {
         ...independentProviderEvidence(),
         authorization: 'Bearer forbidden',
-      } as CriticalAuditorIndependentProviderEvidence,
+      } as AuditProviderEvidence,
     });
 
     expect(validation.ok).toBe(false);
@@ -490,10 +408,10 @@ describe('S127 Critical Auditor independence', () => {
     const config = readGovernanceRemediationConfig(projectRoot);
     expect(config.judgeRuntime).toBeDefined();
     const registry = config.judgeRuntime as unknown as Record<string, unknown>;
-    const bindingResult = buildCriticalAuditorJudgeRuntimeBinding(registry);
+    const bindingResult = buildAuditTriadJudgeRuntimeBinding(registry);
     const lineage = independentProviderExpectation();
     const expectationResult =
-      buildCriticalAuditorIndependentProviderExpectationFromJudgeRuntime({
+      buildAuditProviderExpectationFromJudgeRuntime({
         providerRegistry: registry,
         requestHash: lineage.requestHash,
         sourceDocumentHash: lineage.sourceDocumentHash,
@@ -535,7 +453,7 @@ describe('S127 Critical Auditor independence', () => {
       },
     };
 
-    const result = buildCriticalAuditorJudgeRuntimeBinding(registry);
+    const result = buildAuditTriadJudgeRuntimeBinding(registry);
 
     expect(result.issueCodes).toEqual([]);
     expect(result.binding).toMatchObject({
@@ -551,7 +469,7 @@ describe('S127 Critical Auditor independence', () => {
     const expected = {
       ...independentProviderExpectation(),
       model: null,
-    } as unknown as CriticalAuditorIndependentProviderExpectation;
+    } as unknown as AuditProviderExpectation;
     const evidenceWithoutRunHash = {
       ...expected,
       requestedModel: null,
@@ -562,19 +480,19 @@ describe('S127 Critical Auditor independence', () => {
     };
     const evidence = {
       ...evidenceWithoutRunHash,
-      runHash: criticalAuditorIndependentProviderRunHash(
+      runHash: auditProviderRunHash(
         evidenceWithoutRunHash as unknown as Omit<
-          CriticalAuditorIndependentProviderEvidence,
+          AuditProviderEvidence,
           'runHash'
         >
       ),
-    } as unknown as CriticalAuditorIndependentProviderEvidence;
+    } as unknown as AuditProviderEvidence;
 
     expect(
-      validateCriticalAuditorIndependentProviderEvidence({ expected, evidence })
+      validateAuditProviderEvidence({ expected, evidence })
     ).toEqual({ ok: true, issueCodes: [] });
     expect(
-      validateCriticalAuditorIndependentProviderEvidence({
+      validateAuditProviderEvidence({
         expected,
         evidence: { ...evidence, requestedModel: undefined },
       })
@@ -597,7 +515,7 @@ describe('S127 Critical Auditor independence', () => {
     const requestPolicy = provider.requestPolicy as Record<string, unknown>;
     requestPolicy.timeoutMs = 300_000;
 
-    const result = buildCriticalAuditorJudgeRuntimeBinding(registry);
+    const result = buildAuditTriadJudgeRuntimeBinding(registry);
 
     expect(result.issueCodes).not.toContain('critical_auditor_judge_timeout_mismatch');
     expect(result.binding).not.toBeNull();

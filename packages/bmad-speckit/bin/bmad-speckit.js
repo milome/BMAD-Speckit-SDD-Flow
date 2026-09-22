@@ -799,7 +799,6 @@ program
   .allowExcessArguments(true)
   .action((_options, _command) =>
     runRuntimeModule('../dist/main-agent/index.js', 'mainAgentRuntimeCommand', [
-      '--legacy-orchestration',
       ...rawArgsAfterCommandName('main-agent-orchestration'),
     ])
   );
@@ -814,7 +813,6 @@ program
   .allowExcessArguments(true)
   .action(() =>
     runRuntimeModule('../dist/main-agent/index.js', 'mainAgentRuntimeCommand', [
-      '--legacy-orchestration',
       '--action',
       'confirm-scope',
       ...rawArgsAfterCommandName('confirm-scope'),
@@ -829,7 +827,6 @@ program
   .allowExcessArguments(true)
   .action(() =>
     runRuntimeModule('../dist/main-agent/index.js', 'mainAgentRuntimeCommand', [
-      '--legacy-orchestration',
       '--action',
       'confirm-scope',
       ...rawArgsAfterCommandName('main-agent:confirm-scope'),

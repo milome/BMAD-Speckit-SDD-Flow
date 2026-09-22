@@ -121,17 +121,6 @@ function normalizePreConfirmationDrilldownForHash(semantic) {
     delete mustDecompositionPacketRef.hash;
     drilldown.mustDecompositionPacketRef = mustDecompositionPacketRef;
   }
-  if (
-    drilldown.criticalAuditor &&
-    typeof drilldown.criticalAuditor === 'object' &&
-    !Array.isArray(drilldown.criticalAuditor)
-  ) {
-    const criticalAuditor = { ...drilldown.criticalAuditor };
-    delete criticalAuditor.consecutiveNoNewGapRounds;
-    delete criticalAuditor.latestReceiptHash;
-    delete criticalAuditor.convergenceVerdict;
-    drilldown.criticalAuditor = criticalAuditor;
-  }
   semantic.preConfirmationDrilldown = drilldown;
 }
 

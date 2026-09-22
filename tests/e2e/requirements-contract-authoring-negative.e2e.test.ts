@@ -165,7 +165,7 @@ describe('Requirements production-entry negative gates', () => {
       const halted = haltedResult.envelope;
       expect(halted.data).toMatchObject({
         status: 'authoring_blocked',
-        issueCode: 'requirements_remediation_not_materializable',
+      issueCode: 'requirements_remediation_not_materializable',
         resumable: false,
       });
       expect(provider.requests).toHaveLength(1);

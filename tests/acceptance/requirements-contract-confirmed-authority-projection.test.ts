@@ -15,8 +15,8 @@ function effectivePassReceipt() {
   const coverageUnitRefs = ['coverage/dimension', 'coverage/must', 'coverage/projection'];
   return compileRequirementsEffectivePassReceipt({
     request: {
-      actorClass: 'requirements_critical_auditor_judge',
-      judgeRole: 'requirements_critical_auditor',
+      actorClass: 'requirements_contract_judge',
+      judgeRole: 'requirements_judge',
       requestHash: hash('1'),
       attemptKeyHash: hash('2'),
       scopeManifestHash: hash('3'),
@@ -31,8 +31,8 @@ function effectivePassReceipt() {
     },
     assessment: {
       schemaVersion: 'critical-auditor-judge-assessment/v1',
-      actorClass: 'requirements_critical_auditor_judge',
-      judgeRole: 'requirements_critical_auditor',
+      actorClass: 'requirements_contract_judge',
+      judgeRole: 'requirements_judge',
       verdict: 'no_new_valid_gap',
       validatedGaps: [],
     },
@@ -102,7 +102,7 @@ function projectionInput() {
       },
     },
     requirementsEffectivePassReceiptRef: {
-      path: '_bmad-output/runtime/requirement-records/REQ-CONFIRMED-AUTHORITY/judge/requirements_critical_auditor/requirements-effective-pass.receipt.json',
+      path: '_bmad-output/runtime/requirement-records/REQ-CONFIRMED-AUTHORITY/judge/requirements_judge/requirements-effective-pass.receipt.json',
       schemaVersion: 'requirements-effective-pass-receipt/v1',
       receiptHash: receipt.receiptHash,
     },

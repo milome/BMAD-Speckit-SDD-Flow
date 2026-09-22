@@ -51,7 +51,6 @@ const REQUIRED_PRE_CONFIRMATION_DRILLDOWN_SECTIONS = [
   'Atomicity Drivers',
   'Atomic Task Baseline',
   'Projection Coverage',
-  'Critical Auditor Convergence',
   'Gap History',
   'Packet-To-Source Reconciliation',
 ];
@@ -608,12 +607,12 @@ function defaultPreRenderMustGateReportPath(recordId) {
   return path.join(defaultAuthoringDir(recordId), 'pre-render-must-decomposition-gate-report.json');
 }
 
-function authoringRepairIssue(message, refs = []) {
+function authoringResumeIssue(message, refs = []) {
   return {
-    ...blocking('pre_confirmation_authoring_repair_required', message, refs),
-    legacyCode: 'missing_pre_confirmation_semantic_drilldown_gate_report',
-    repairAction: 'run_authoring_repair_preserve_existing',
-    repairCommand: 'main-agent-orchestration --action authoring-repair --mode preserve-existing --source <source> --json',
+    ...blocking('pre_confirmation_authoring_resume_required', message, refs),
+    repairAction: 'resume_author_confirmation_ready_source',
+    repairCommand:
+      'main-agent-orchestration --action resume-author-confirmation-ready-source --source <source> --json',
   };
 }
 
@@ -627,7 +626,7 @@ function loadPreConfirmationSemanticDrilldown(args, confirmation, hashes) {
   const reportPath = explicitPath || (confirmation.recordId ? defaultPreRenderMustGateReportPath(confirmation.recordId) : '');
   const issues = [];
   if (!reportPath) {
-    issues.push(authoringRepairIssue('pre-render MUST decomposition gate report is required before confirmation HTML'));
+    issues.push(authoringResumeIssue('pre-render MUST decomposition gate report is required before confirmation HTML'));
     return {
       status: 'missing',
       reportPath: '',
@@ -641,7 +640,7 @@ function loadPreConfirmationSemanticDrilldown(args, confirmation, hashes) {
   if (!read.ok) {
     issues.push(
       read.missing
-        ? authoringRepairIssue(
+        ? authoringResumeIssue(
             read.error ?? 'pre-render MUST decomposition gate report is missing or unreadable',
             [normalizePathForReport(path.resolve(reportPath))]
           )
@@ -684,15 +683,12 @@ function loadPreConfirmationSemanticDrilldown(args, confirmation, hashes) {
       issues.push(blocking('pre_confirmation_semantic_drilldown_gate_failed', 'drilldown gate verdict is not PASS'));
     }
   }
-  if ((report.criticalAuditor?.consecutiveNoNewGapRounds ?? 0) < 3) {
-    issues.push(blocking('pre_confirmation_semantic_drilldown_less_than_three_critic_rounds', 'Critical Auditor convergence is below three no-new-gap rounds'));
-  }
   if (report.packetSourceReconciliation?.verdict && report.packetSourceReconciliation.verdict !== 'pass') {
     issues.push(blocking('pre_confirmation_semantic_drilldown_reconciliation_failed', 'packet/source reconciliation did not pass'));
   }
   if (issues.length) {
     issues.push(
-      authoringRepairIssue('pre-confirmation authoring repair must be rerun before rendering confirmation HTML', [
+      authoringResumeIssue('pre-confirmation authoring must be resumed before rendering confirmation HTML', [
         normalizePathForReport(path.resolve(reportPath)),
       ])
     );
@@ -7574,7 +7570,6 @@ function renderPreConfirmationSemanticDrilldown(drilldown) {
   const nestedGate = report.mustDecompositionGate ?? {};
   const packet = report.mustDecompositionPacketRef ?? nestedGate.mustDecompositionPacketRef ?? {};
   const kernel = report.semanticKernelRef ?? nestedGate.semanticKernelRef ?? {};
-  const critic = report.criticalAuditor ?? nestedGate.criticalAuditor ?? {};
   const reconciliation = report.packetSourceReconciliation ?? nestedGate.packetSourceReconciliation ?? {};
   const failedChecks = asArray(report.failedChecks);
   return `<section class="card" id="pre-confirmation-semantic-drilldown">
@@ -7586,7 +7581,6 @@ function renderPreConfirmationSemanticDrilldown(drilldown) {
       ['Semantic kernel hash', kernel.hash ?? 'missing'],
       ['Packet hash', packet.hash ?? 'missing'],
       ['Packet status', packet.status ?? 'missing'],
-      ['Critical Auditor rounds', String(critic.consecutiveNoNewGapRounds ?? critic.rounds ?? 0)],
       ['Reconciliation verdict', reconciliation.verdict ?? 'missing'],
       ['Failed checks', failedChecks.join(', ') || 'none'],
     ])}
@@ -7610,13 +7604,6 @@ function renderPreConfirmationSemanticDrilldown(drilldown) {
     <p class="muted">expectedTaskCount 与 actualTaskCount 必须一致；任何 covers 多个独立行为面或多个独立 oracle 的 task 会被判定为 over-broad。</p>
     <h3>Projection Coverage</h3>
     <p class="muted">EVD / TRACE / ACC / E2E / failure / edge / currentTarget / AI-TDD / artifacts / commands / closeout 均必须从 packet projection 物化，不允许 source row 独立发明。</p>
-    <h3>Critical Auditor Convergence</h3>
-    ${renderTable(['Field', 'Value'], [
-      ['minimumRounds', String(critic.minimumRounds ?? 3)],
-      ['consecutiveNoNewGapRounds', String(critic.consecutiveNoNewGapRounds ?? 0)],
-      ['latestReceiptHash', critic.latestReceiptHash ?? 'missing'],
-      ['convergenceVerdict', critic.convergenceVerdict ?? 'blocked'],
-    ])}
     <h3>Gap History</h3>
     <p class="muted">${failedChecks.length ? failedChecks.map(escapeHtml).join(', ') : 'No unresolved validated gap in the loaded drilldown gate report.'}</p>
     <h3>Packet-To-Source Reconciliation</h3>

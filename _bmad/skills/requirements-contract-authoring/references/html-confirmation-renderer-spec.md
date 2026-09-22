@@ -14,7 +14,7 @@ Use this reference when implementing or invoking `<skill-dir>/scripts/render-req
 
 The renderer is a generic read-only confirmation view generator. It reads an implementation source document and its inline `implementationConfirmation`; it renders HTML plus machine-readable summaries. It must not create, infer, rewrite, merge, shrink, confirm, or mutate requirements.
 
-The renderer must not produce confirmable HTML until the pre-confirmation atomic decomposition loop has completed. It must consume the `preConfirmationDrilldown` metadata and the current pre-render MUST decomposition gate report generated from `semantic-kernel.json`, `must_decomposition_packet.json`, Critical Auditor receipts, packet/source reconciliation, and `pre_render_must_decomposition_gate.js`.
+The renderer must not produce confirmable HTML until the pre-confirmation atomic decomposition workflow has completed. It must consume the `preConfirmationDrilldown` metadata and the current pre-render MUST decomposition gate report generated from `semantic-kernel.json`, `must_decomposition_packet.json`, packet/source reconciliation, and `pre_render_must_decomposition_gate.js`.
 
 The source-level `preConfirmationDrilldown` metadata must include `semanticKernelRef`, `mustDecompositionPacketRef`, `packetSourceReconciliation`, and `preRenderGateReportPath`. These references point to `semantic-kernel.json`, `must_decomposition_packet.json`, `must_packet_source_reconciliation_report.json`, and `pre-render-must-decomposition-gate-report.json`; the renderer treats stale or missing references as confirmation blockers.
 
@@ -151,7 +151,6 @@ Write all runtime outputs under the same confirmation directory:
       "Atomicity Drivers",
       "Atomic Task Baseline",
       "Projection Coverage",
-      "Critical Auditor Convergence",
       "Gap History",
       "Packet-To-Source Reconciliation"
     ]
@@ -447,7 +446,6 @@ Required top-level section headings:
 - Atomicity Drivers
 - Atomic Task Baseline
 - Projection Coverage
-- Critical Auditor Convergence
 - Gap History
 - Packet-To-Source Reconciliation
 
@@ -458,7 +456,6 @@ The section must answer:
 - How each `MUST-*` was split into atomic tasks.
 - Whether `expectedTaskCount` and `actualTaskCount` match.
 - Which gaps were found, rejected, fixed, moved to `OUT-*`, or converted to blocking `openQuestions`.
-- Whether Critical Auditor convergence is derived from three current, hash-bound no-new-gap receipt files.
 - Whether all `EVD-*`, `TRACE-*`, `ACC-*`, `E2E-*`, `currentTargetMap`, and AI-TDD rows are same-origin packet projections.
 - Whether packet/source reconciliation passed in both directions.
 
@@ -466,7 +463,6 @@ Blocking examples:
 
 - missing pre-confirmation semantic drilldown gate report -> confirmability=blocked
 - stale packet -> confirmability=blocked
-- less than 3 rounds -> confirmability=blocked
 - unresolved gap -> confirmability=blocked
 - missing coverage -> confirmability=blocked
 - missing rendered drilldown section -> confirmability=blocked
@@ -593,7 +589,6 @@ Set `confirmability: blocked` if any of these is true:
 - Mermaid runtime is missing or invalid and Mermaid blocks exist.
 - missing semantic kernel.
 - missing must_decomposition_packet.
-- missing Critical Auditor convergence.
 - missing packet/source reconciliation.
 - pre-confirmation semantic drilldown gate report is missing or stale.
 - renderer did not show drilldown sections.
@@ -628,7 +623,6 @@ The page must clearly answer:
 10. How did the model self-question the requirement and resolve or expose gaps?
 11. How was each `MUST-*` decomposed into atomic tasks?
 12. Do `expectedTaskCount` and `actualTaskCount` match?
-13. Did Critical Auditor reach three consecutive no-new-valid-gap rounds?
-14. Are all EVD/TRACE/ACC/E2E/currentTarget/AI-TDD rows same-origin projections?
+13. Are all EVD/TRACE/ACC/E2E/currentTarget/AI-TDD rows same-origin projections?
 
 The user confirms only the requirements scope. The HTML must not imply implementation completion, delivery readiness, closeout readiness, or merge readiness unless separate stage-specific evidence proves those states. `deliveryReadiness must not be represented as ready` when the page is only proving contract confirmability audit.

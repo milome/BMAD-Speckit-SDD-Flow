@@ -4,6 +4,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import Ajv2020 from 'ajv/dist/2020.js';
 import { afterEach, describe, expect, it } from 'vitest';
+import { inventoryRequirementsRecordStorage, reserveRequirementsRecordStorage } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-record-storage';
 
 const temporaryRoots: string[] = [];
 const modulePath = path.resolve(
@@ -35,6 +36,32 @@ describe('requirements contract content store', () => {
     for (const root of temporaryRoots.splice(0)) {
       rmSync(root, { recursive: true, force: true });
     }
+  });
+
+  it('consumes a storage reservation for new bytes and leaves duplicates free', async () => {
+    const store = await loadStore();
+    if (!store) return;
+    const recordRoot = createRecordRoot();
+    const bytes = Buffer.from('{"payload":"reserved"}', 'utf8');
+    const inventory = inventoryRequirementsRecordStorage(recordRoot);
+    const reservation = reserveRequirementsRecordStorage({
+      recordRoot,
+      operationId: 'OP-RESERVE',
+      expectedInventoryHash: inventory.inventoryHash,
+      requestedUniqueBytes: bytes.length,
+      requestedMetadataBytes: 0,
+    });
+    store.publishRequirementsContentObject({
+      recordRoot, role: 'reserved', mediaType: 'application/json', bytes, reservation,
+    } as never);
+    store.publishRequirementsContentObject({
+      recordRoot, role: 'reserved-again', mediaType: 'application/json', bytes, reservation,
+    } as never);
+    const updated = JSON.parse(readFileSync(
+      path.join(recordRoot, 'authoring', 'operations', 'OP-RESERVE', 'storage-reservation.json'),
+      'utf8'
+    ));
+    expect(updated.consumedUniqueBytes).toBe(bytes.length);
   });
 
   it('stores identical raw bytes once across logical roles and media bindings', async () => {

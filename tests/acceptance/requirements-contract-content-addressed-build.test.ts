@@ -28,6 +28,43 @@ describe('requirements content-addressed builds', () => {
     for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
   });
 
+  it('rejects transport-only artifactId fields from durable v2 manifests', () => {
+    const createManifest = requiredFunction<(input: Record<string, unknown>) => Record<string, unknown>>(
+      manifestModule,
+      'createRequirementsContractBuildManifestV2'
+    );
+    const validateManifest = requiredFunction<(value: unknown) => boolean>(
+      manifestModule,
+      'validateRequirementsContractBuildManifestV2'
+    );
+    const artifactEntry = {
+      role: 'final_markdown',
+      schemaVersion: 'markdown/v1',
+      semanticHash: `sha256:${'4'.repeat(64)}`,
+      contentRef: {
+        schemaVersion: 'requirements-content-ref/v1',
+        contentHash: `sha256:${'5'.repeat(64)}`,
+        byteLength: 0,
+        mediaType: 'text/markdown',
+        recordRelativePath: `authoring/objects/sha256/55/${'5'.repeat(62)}`,
+      },
+      artifactId: 'transport-only',
+    };
+    const manifest = createManifest({
+      scopeSemanticHash: `sha256:${'1'.repeat(64)}`,
+      sourceBindingHash: `sha256:${'2'.repeat(64)}`,
+      compilerIdentity: 'compiler/v3',
+      projectionSetHash: `sha256:${'3'.repeat(64)}`,
+      checkpointSummary: { checkpointIds: [], terminalStateHashes: [] },
+      validationSummary: { decision: 'pass', checkIds: [] },
+      artifactEntries: [artifactEntry],
+    });
+    expect(validateManifest({
+      ...manifest,
+      artifactEntries: [{ ...manifest.artifactEntries[0], artifactId: 'transport-only' }],
+    })).toBe(false);
+  });
+
   it('atomically replaces one fixed checkpoint state and resumes pending units', () => {
     const root = recordRoot();
     const save = requiredFunction<(input: Record<string, unknown>) => Record<string, unknown>>(

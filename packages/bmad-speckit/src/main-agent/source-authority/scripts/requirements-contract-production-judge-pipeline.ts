@@ -23,8 +23,6 @@ import { compileRequirementsContractRemediationPlan } from './requirements-contr
 import {
   publishRequirementsContractJudgeAuditPacketRef,
   hydrateRequirementsContractJudgeAuditPacket,
-  resolveRequirementsContractJudgeAuditPacket,
-  REQUIREMENTS_JUDGE_AUDIT_PACKET_PROTOCOL,
   REQUIREMENTS_JUDGE_AUDIT_PACKET_V3_PROTOCOL,
 } from './requirements-contract-judge-audit-packet';
 import { createRequirementsContractAuditBinding } from './requirements-contract-audit-binding';
@@ -32,12 +30,10 @@ import {
   publishRequirementsContractJudgeDecision,
   readVerifiedRequirementsContractJudgeDecision,
 } from './requirements-contract-judge-decision-store';
-import {
-  validateRequirementsContractBuildManifest,
-  validateRequirementsContractBuildManifestV2,
-} from './requirements-contract-authoring-manifest';
+import { validateRequirementsContractBuildManifestV2 } from './requirements-contract-authoring-manifest';
 import { validateRequirementsActiveAuthorityTuple } from './requirements-contract-authority-publication-committer';
 import { resolveRequirementsAuthoringArtifact } from './requirements-contract-artifact-resolver';
+import { writeJsonAtomic } from './requirement-record-control-store';
 
 type JsonRecord = Record<string, unknown>;
 type JudgeInvocation = Awaited<ReturnType<typeof invokeRequirementsContractJudgeWithRecovery>>;
@@ -172,41 +168,27 @@ export function prepareRequirementsContractProductionJudgeRequest(input: Pick<Re
   'recordRoot' | 'activeAuthority' | 'buildManifest' | 'auditPacket' | 'judgePrompt' | 'providerSelection' | 'remediation' | 'persist'>) {
   const authorityValidation = validateRequirementsActiveAuthorityTuple(input.activeAuthority);
   if (authorityValidation.decision === 'block') throw new Error(authorityValidation.issueCodes[0]);
-  const durableBuild = input.buildManifest.schemaVersion === 'requirements-contract-build-manifest/v2';
-  if (durableBuild) {
-    if (!validateRequirementsContractBuildManifestV2(input.buildManifest)) {
-      throw new Error('requirements_contract_judge_build_manifest_invalid');
-    }
-  } else if (input.buildManifest.schemaVersion === 'requirements-contract-build-manifest/v1') {
-    const validation = validateRequirementsContractBuildManifest(input.buildManifest);
-    if (validation.decision === 'block') throw new Error(validation.issueCodes[0]);
+  if (!validateRequirementsContractBuildManifestV2(input.buildManifest)) {
+    throw new Error('requirements_contract_judge_build_manifest_invalid');
   }
-  const activeBuildHash = input.activeAuthority.activeBuildHash ?? input.activeAuthority.activeBuildManifestHash;
-  const manifestBuildHash = input.buildManifest.buildHash ?? input.buildManifest.buildManifestHash;
   if (
-    activeBuildHash !== manifestBuildHash ||
-    input.activeAuthority.activeScopeSemanticHash !==
-      (input.buildManifest.scopeSemanticHash ?? input.activeAuthority.activeScopeSemanticHash) ||
-    input.activeAuthority.activeSourceBindingHash !==
-      (input.buildManifest.sourceBindingHash ?? input.activeAuthority.activeSourceBindingHash)
+    input.activeAuthority.activeBuildHash !== input.buildManifest.buildHash ||
+    input.activeAuthority.activeScopeSemanticHash !== input.buildManifest.scopeSemanticHash ||
+    input.activeAuthority.activeSourceBindingHash !== input.buildManifest.sourceBindingHash
   ) throw new Error('requirements_contract_judge_active_build_mismatch');
-  const durablePacketEntry = durableBuild
-    ? (input.buildManifest.artifactEntries as JsonRecord[]).find((entry) => entry.role === 'judge_audit_packet')
-    : null;
-  const resolvedAuditPacket = input.auditPacket.schemaVersion === 'requirements-contract-judge-audit-packet/v3'
-    ? hydrateRequirementsContractJudgeAuditPacket({
-        recordRoot: input.recordRoot,
-        packetRef: (durablePacketEntry?.contentRef ?? {}) as never,
-      }) as JsonRecord
-    : resolveRequirementsContractJudgeAuditPacket(input.auditPacket);
-  const protocol = resolvedAuditPacket.schemaVersion === 'requirements-contract-judge-audit-packet/v2'
-    ? REQUIREMENTS_JUDGE_AUDIT_PACKET_PROTOCOL
-    : resolvedAuditPacket.schemaVersion === 'requirements-contract-judge-audit-packet/v3-hydrated'
-      ? REQUIREMENTS_JUDGE_AUDIT_PACKET_V3_PROTOCOL
-      : '';
-  const judgePrompt = protocol
-    ? { ...input.judgePrompt, systemPrompt: `${input.judgePrompt.systemPrompt}\n\n${protocol}` }
-    : input.judgePrompt;
+  if (input.auditPacket.schemaVersion !== 'requirements-contract-judge-audit-packet/v3') {
+    throw new Error('requirements_contract_judge_audit_packet_invalid');
+  }
+  const durablePacketEntry = (input.buildManifest.artifactEntries as JsonRecord[])
+    .find((entry) => entry.role === 'judge_audit_packet');
+  const resolvedAuditPacket = hydrateRequirementsContractJudgeAuditPacket({
+    recordRoot: input.recordRoot,
+    packetRef: (durablePacketEntry?.contentRef ?? {}) as never,
+  }) as JsonRecord;
+  const judgePrompt = {
+    ...input.judgePrompt,
+    systemPrompt: `${input.judgePrompt.systemPrompt}\n\n${REQUIREMENTS_JUDGE_AUDIT_PACKET_V3_PROTOCOL}`,
+  };
   const selection = createRequirementsContractJudgeSelectionReceipt(input.providerSelection);
   const packetBytes = Buffer.from(canonicalJson(input.auditPacket), 'utf8');
   const packetHash = sourceBytesHash(packetBytes);
@@ -222,17 +204,15 @@ export function prepareRequirementsContractProductionJudgeRequest(input: Pick<Re
         recordRelativePath: `authoring/objects/sha256/${packetHex.slice(0, 2)}/${packetHex.slice(2)}`,
       }
     : publishRequirementsContractJudgeAuditPacketRef({ recordRoot: input.recordRoot, packet: input.auditPacket });
-  if (durableBuild) {
-    if (!durablePacketEntry || canonicalRequirementsJson(durablePacketEntry.contentRef) !== canonicalRequirementsJson(auditPacketRef)) {
+  if (!durablePacketEntry || canonicalRequirementsJson(durablePacketEntry.contentRef) !== canonicalRequirementsJson(auditPacketRef)) {
+    throw new Error('requirements_contract_judge_active_packet_mismatch');
+  }
+  if (input.persist !== false) {
+    const activePacket = resolveRequirementsAuthoringArtifact({
+      recordRoot: input.recordRoot, entry: durablePacketEntry as never,
+    });
+    if (canonicalJson(activePacket) !== canonicalJson(input.auditPacket)) {
       throw new Error('requirements_contract_judge_active_packet_mismatch');
-    }
-    if (input.persist !== false) {
-      const activePacket = resolveRequirementsAuthoringArtifact({
-        recordRoot: input.recordRoot, entry: durablePacketEntry as never,
-      });
-      if (canonicalJson(activePacket) !== canonicalJson(input.auditPacket)) {
-        throw new Error('requirements_contract_judge_active_packet_mismatch');
-      }
     }
   }
   const body = resolvedAuditPacket.body && typeof resolvedAuditPacket.body === 'object'
@@ -241,7 +221,7 @@ export function prepareRequirementsContractProductionJudgeRequest(input: Pick<Re
     scopeSemanticHash: String(input.activeAuthority.activeScopeSemanticHash),
     semanticAuditSlices: [{
       role: 'judge_audit_packet',
-      schemaVersion: String(input.auditPacket.schemaVersion ?? 'requirements-contract-judge-audit-packet/v1'),
+      schemaVersion: String(input.auditPacket.schemaVersion ?? 'requirements-contract-judge-audit-packet/v3'),
       semanticHash: requirementsContractDomainHash('requirements-audit-slice:judge-packet/v1', resolvedAuditPacket),
     }],
     mandatoryDimensionIds: Array.isArray(body.mandatoryDimensionIds)
@@ -267,7 +247,35 @@ export function prepareRequirementsContractProductionJudgeRequest(input: Pick<Re
 
 export async function runRequirementsContractProductionJudgePipeline(input: RequirementsContractProductionJudgePipelineInput) {
   const persist = input.persist !== false;
-  const { resolvedAuditPacket, selection, request, auditBinding, auditPolicyHash } = prepareRequirementsContractProductionJudgeRequest(input);
+  let pinnedJudgePrompt = input.judgePrompt;
+  if (persist) {
+    const pinnedActiveRequestPath = path.join(input.recordRoot, 'quality', 'active-request.json');
+    if (fs.existsSync(pinnedActiveRequestPath)) {
+      try {
+        const pinnedActiveRequest = JSON.parse(fs.readFileSync(pinnedActiveRequestPath, 'utf8')) as JsonRecord;
+        const pinnedRequestPath = String(pinnedActiveRequest.requestPath ?? '');
+        if (pinnedRequestPath) {
+          const pinnedRequest = readRecordArtifact(input.recordRoot, pinnedRequestPath);
+          if (pinnedRequest.prompt && typeof pinnedRequest.prompt === 'object' && !Array.isArray(pinnedRequest.prompt)) {
+            const storedPrompt = pinnedRequest.prompt as typeof input.judgePrompt;
+            const protocolSuffix = `\n\n${REQUIREMENTS_JUDGE_AUDIT_PACKET_V3_PROTOCOL}`;
+            pinnedJudgePrompt = {
+              ...storedPrompt,
+              systemPrompt: storedPrompt.systemPrompt.endsWith(protocolSuffix)
+                ? storedPrompt.systemPrompt.slice(0, -protocolSuffix.length)
+                : storedPrompt.systemPrompt,
+            };
+          }
+        }
+      } catch {
+        // The normal identity and readback checks below remain authoritative.
+      }
+    }
+  }
+  const { resolvedAuditPacket, selection, request, auditBinding, auditPolicyHash } = prepareRequirementsContractProductionJudgeRequest({
+    ...input,
+    judgePrompt: pinnedJudgePrompt,
+  });
   const reusable = persist
     ? readVerifiedRequirementsContractJudgeDecision({ recordRoot: input.recordRoot, binding: auditBinding })
     : null;
@@ -359,9 +367,9 @@ export async function runRequirementsContractProductionJudgePipeline(input: Requ
         requestPath,
       }));
   const maxAttempts = maximumAttempts(input.providerSelection.provider);
-  const attemptOrdinal = activeRequest.attemptCount + 1;
-  const attemptPath = `${requestDirectory}/dispatch-attempts/${attemptOrdinal}.json`;
-  const existingAttempt = persist && fs.existsSync(path.join(input.recordRoot, ...attemptPath.split('/')))
+  let attemptOrdinal = activeRequest.attemptCount + 1;
+  let attemptPath = `${requestDirectory}/dispatch-attempts/${attemptOrdinal}.json`;
+  let existingAttempt = persist && fs.existsSync(path.join(input.recordRoot, ...attemptPath.split('/')))
     ? readRecordArtifact(input.recordRoot, attemptPath) : null;
   if (existingAttempt && (existingAttempt.judgeRequestHash !== request.judgeRequestHash ||
     existingAttempt.providerSelectionHash !== selection.providerSelectionHash ||
@@ -369,6 +377,45 @@ export async function runRequirementsContractProductionJudgePipeline(input: Requ
     throw new Error('requirements_contract_judge_attempt_identity_mismatch');
   }
   const replayedAttempt = existingAttempt?.outcome === 'response_received';
+  if (existingAttempt?.outcome === 'dispatch_started') {
+    return {
+      status: 'audit_pending' as const,
+      issueCode: 'judge_dispatch_recovery_required' as const,
+      request,
+      activeRequest,
+    };
+  }
+  if (
+    existingAttempt &&
+    (existingAttempt.outcome === 'transport_failure' || existingAttempt.outcome === 'response_validation_failure') &&
+    activeRequest.attemptCount < attemptOrdinal
+  ) {
+    const issueCode = String(
+      Array.isArray(existingAttempt.validationIssueCodes)
+        ? existingAttempt.validationIssueCodes[0]
+        : 'judge_provider_transport_failed'
+    );
+    const recovered = applyRequirementsContractJudgeLifecycleEvent(activeRequest, {
+      type: existingAttempt.outcome === 'transport_failure' ? 'transport_failed' : 'response_rejected',
+      attemptOrdinal,
+      attemptPath,
+      issueCode,
+      retryScheduled: attemptOrdinal < maxAttempts,
+    });
+    if (persist) {
+      compareAndSwapRequirementsContractJudgeActiveRequest({
+        recordRoot: input.recordRoot,
+        expected: persistedActiveRequest,
+        next: recovered,
+      });
+      persistedActiveRequest = recovered;
+    }
+    activeRequest = recovered;
+    attemptOrdinal = activeRequest.attemptCount + 1;
+    attemptPath = `${requestDirectory}/dispatch-attempts/${attemptOrdinal}.json`;
+    existingAttempt = persist && fs.existsSync(path.join(input.recordRoot, ...attemptPath.split('/')))
+      ? readRecordArtifact(input.recordRoot, attemptPath) : null;
+  }
   if (existingAttempt && !replayedAttempt) {
     throw new Error('requirements_contract_judge_attempt_recovery_state_invalid');
   }
@@ -449,6 +496,26 @@ export async function runRequirementsContractProductionJudgePipeline(input: Requ
       activeRequest,
     };
   }
+  if (!replayedAttempt && persist) {
+    publish(input.recordRoot, attemptPath, {
+      schemaVersion: 'requirements-contract-judge-attempt/v1',
+      judgeRequestHash: request.judgeRequestHash,
+      providerSelectionHash: selection.providerSelectionHash,
+      attemptOrdinal,
+      outcome: 'dispatch_started',
+      acceptedEvaluation: false,
+      requestSerializedBytes: capacityBeforePublication.actual.requestSerializedBytes,
+      auditPacketSerializedBytes: capacityBeforePublication.actual.auditPacketSerializedBytes,
+      validationIssueCodes: [],
+      nextEligibleAt: null,
+      rawResponse: null,
+    }, true);
+  }
+  const persistAttempt = (attempt: JsonRecord) => {
+    if (persist) {
+      writeJsonAtomic(path.join(input.recordRoot, ...attemptPath.split('/')), attempt);
+    }
+  };
   const invocation: JudgeInvocation | ReplayedJudgeInvocation = replayedAttempt
     ? {
         state: 'response_received',
@@ -464,6 +531,7 @@ export async function runRequirementsContractProductionJudgePipeline(input: Requ
     : await invokeRequirementsContractJudgeWithRecovery({
         request: invocationPayload.request,
         provider: input.providerSelection.provider,
+        capacityAssessment: capacityBeforePublication,
         attemptOrdinal,
         invoke: () => input.preparedInvocation.invoke(invocationPayload),
       });
@@ -498,7 +566,7 @@ export async function runRequirementsContractProductionJudgePipeline(input: Requ
       nextEligibleAt: retryScheduled ? new Date().toISOString() : null,
       rawResponse: null,
     };
-    publish(input.recordRoot, attemptPath, attempt, persist);
+    persistAttempt(attempt);
     const next = applyRequirementsContractJudgeLifecycleEvent(activeRequest, {
       type: 'transport_failed',
       attemptOrdinal,
@@ -545,7 +613,7 @@ export async function runRequirementsContractProductionJudgePipeline(input: Requ
       nextEligibleAt: retryScheduled ? new Date().toISOString() : null,
       rawResponse,
     };
-    publish(input.recordRoot, attemptPath, attempt, persist);
+    persistAttempt(attempt);
     const next = applyRequirementsContractJudgeLifecycleEvent(activeRequest, {
       type: 'response_rejected',
       attemptOrdinal,
@@ -580,7 +648,7 @@ export async function runRequirementsContractProductionJudgePipeline(input: Requ
     nextEligibleAt: null,
     rawResponse: response,
   };
-  if (!replayedAttempt) publish(input.recordRoot, attemptPath, attempt, persist);
+  if (!replayedAttempt) persistAttempt(attempt);
   const responsePath = `${requestDirectory}/judge-response.json`;
   publish(input.recordRoot, responsePath, response, persist);
   const auditedRequest = applyRequirementsContractJudgeLifecycleEvent(activeRequest, {
