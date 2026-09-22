@@ -17,11 +17,11 @@
       "const": "requirements-contract-package-runtime-action-binding-manifest/v2"
     },
     "actionUniverseHash": {
-      "const": "sha256:54316a5458e7f1afd1ef94c3725a067960c82ab38b8eab44d1074b816f028bdf"
+      "const": "sha256:361deebed22208d9269b81d2028f14cc3ad00ffca9c54b3343a640d6f0d52c00"
     },
     "actions": {
       "type": "array",
-      "minItems": 25,
+      "minItems": 23,
       "maxItems": 25,
       "uniqueItems": true,
       "items": {
