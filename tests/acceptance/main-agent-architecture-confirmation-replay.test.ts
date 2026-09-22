@@ -14,15 +14,16 @@ import { describe, expect, it } from 'vitest';
 import { runIngestArchitectureConfirmation } from '../../packages/bmad-speckit/src/main-agent/actions/ingest-architecture-confirmation';
 import { runPrepareArchitectureConfirmation } from '../../packages/bmad-speckit/src/main-agent/actions/prepare-architecture-confirmation';
 import {
-  createRequirementsContractBuildManifest,
-  createRequirementsContractCheckpointManifest,
+  createRequirementsContractBuildManifestV2,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-authoring-manifest';
+import { publishRequirementsContentObject } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-content-store';
 import { artifactBytesHash } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-hash-domains';
+import { requirementsContractDomainHash } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-hash-domains';
 import { compileRequirementsEffectivePassReceiptV2 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-requirements-effective-pass-gate';
 import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 import { createRequirementsContractSemanticIr } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-ir';
 import { createRequirementsContractSourceBindingCapsule } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-source-binding-capsule';
-import { createRequirementsContractSourceBindingRefreshReceipt } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-source-binding-refresh';
+import { createRequirementsContractSourceBindingRefreshReceipt } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-source-binding-preflight';
 import { createRuntimeStatusDecisionReceipt } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-runtime-status-decision-receipt';
 
 const hash = (digit: string) => `sha256:${digit.repeat(64)}`;
@@ -63,6 +64,7 @@ function writeText(root: string, relativePath: string, value: string): string {
 function fixture(root: string) {
   const requestId = 'REQ-ARCH-REPLAY-001';
   const recordRoot = path.join(root, '_bmad-output/runtime/requirement-records', requestId);
+  mkdirSync(recordRoot, { recursive: true });
   const semanticIr = createRequirementsContractSemanticIr({
     recordId: requestId,
     requestId,
@@ -198,97 +200,76 @@ function fixture(root: string) {
     sourceSpans: [],
     evidenceClaimBindings: [],
   });
-  const semanticPath = `authoring/semantic-revisions/${semanticIr.semanticRevisionId}/semantic-ir.json`;
-  const bindingPath = `authoring/source-bindings/${binding.bindingRevisionId}/source-binding.json`;
-  const executionPath = 'authoring/staging/ATTEMPT-001/cp06/execution-manifest.json';
-  const buildPath = 'authoring/staging/ATTEMPT-001/contract-build-manifest.json';
-  writeJson(recordRoot, semanticPath, semanticIr);
-  writeJson(recordRoot, bindingPath, binding);
   const executionManifest = {
     schemaVersion: 'requirements-contract-execution-manifest/v1',
     semanticRevisionId: semanticIr.semanticRevisionId,
     scopeSemanticHash: semanticIr.scopeSemanticHash,
     constraints: semanticIr.semanticPayload.executionConstraints,
   };
-  writeJson(recordRoot, executionPath, executionManifest);
-  const executionEntry = {
-    role: 'execution_manifest' as const,
-    schemaVersion: 'requirements-contract-execution-manifest/v1',
-    artifactId: 'execution-manifest',
-    recordRelativePath: executionPath,
-    artifactHash: sha256Stable(executionManifest),
-  };
-  const profileIds: Record<number, string> = {
-    6: 'requirements-contract-cp06-execution-projection/v1',
-    7: 'requirements-contract-cp07-view-diagram-projection/v1',
-    8: 'requirements-contract-cp08-reconciliation-renderability/v1',
-  };
-  let previousCheckpointManifestRef = {
-    checkpointId: 'cp05',
-    checkpointOrdinal: 5,
-    path: 'authoring/staging/ATTEMPT-001/manifests/5-cp05.json',
-    hash: hash('3'),
-  };
-  for (const ordinal of [6, 7, 8]) {
-    const checkpointId = `cp${String(ordinal).padStart(2, '0')}`;
-    const checkpoint = createRequirementsContractCheckpointManifest({
-      authoringRequestId: requestId,
-      authoringAttemptId: 'ATTEMPT-001',
-      checkpointId,
-      checkpointOrdinal: ordinal,
-      stage: checkpointId,
-      status: 'passed',
-      inputManifestHash: hash('2'),
-      previousCheckpointManifestRef,
-      latestValidPredecessorCheckpoint: previousCheckpointManifestRef.checkpointId,
-      compilerIdentity: profileIds[ordinal],
-      artifactEntries: ordinal === 6 ? [executionEntry] : [],
-      decisionReceiptRefs: [],
-      baseAuthorityRef: null,
+  const publishProjection = (
+    role: 'semantic_ir' | 'source_binding' | 'execution_manifest',
+    schemaVersion: string,
+    value: Record<string, unknown>,
+  ) => {
+    const contentRef = publishRequirementsContentObject({
+      recordRoot,
+      role,
+      mediaType: 'application/json',
+      bytes: Buffer.from(jsonText(value), 'utf8'),
     });
-    previousCheckpointManifestRef = {
-      checkpointId,
-      checkpointOrdinal: ordinal,
-      path: `authoring/staging/ATTEMPT-001/manifests/${ordinal}-${checkpointId}.json`,
-      hash: checkpoint.checkpointManifestHash,
+    return {
+      role,
+      schemaVersion,
+      semanticHash: requirementsContractDomainHash(`requirements-projection:${role}/v1`, value),
+      contentRef,
     };
-    writeJson(recordRoot, previousCheckpointManifestRef.path, checkpoint);
-  }
-  const buildManifest = createRequirementsContractBuildManifest({
-    authoringRequestId: requestId,
-    authoringAttemptId: 'ATTEMPT-001',
-    inputManifestHash: hash('2'),
-    terminalCheckpointManifestRef: previousCheckpointManifestRef,
-    semanticAuthorityRef: {
-      semanticRevisionId: semanticIr.semanticRevisionId,
-      path: semanticPath,
-      hash: semanticIr.scopeSemanticHash,
+  };
+  const semanticEntry = publishProjection(
+    'semantic_ir',
+    semanticIr.schemaVersion,
+    semanticIr as unknown as Record<string, unknown>,
+  );
+  const bindingEntry = publishProjection(
+    'source_binding',
+    binding.schemaVersion,
+    binding as unknown as Record<string, unknown>,
+  );
+  const executionEntry = publishProjection(
+    'execution_manifest',
+    executionManifest.schemaVersion,
+    executionManifest,
+  );
+  const buildManifest = createRequirementsContractBuildManifestV2({
+    scopeSemanticHash: semanticIr.scopeSemanticHash,
+    sourceBindingHash: binding.sourceBindingHash,
+    compilerIdentity: 'requirements-contract-cp00-cp08-compiler/v3',
+    projectionSetHash: sha256Stable({
+      semantic: semanticEntry.semanticHash,
+      binding: bindingEntry.semanticHash,
+      execution: executionEntry.semanticHash,
+    }),
+    checkpointSummary: {
+      checkpointIds: ['cp06', 'cp07', 'cp08'],
+      terminalStateHashes: [hash('6'), hash('7'), hash('8')],
     },
-    bindingAuthorityRef: {
-      bindingRevisionId: binding.bindingRevisionId,
-      path: bindingPath,
-      hash: binding.sourceBindingHash,
+    validationSummary: {
+      decision: 'pass',
+      checkIds: ['semantic_ir', 'source_binding', 'execution_manifest'],
     },
-    artifactEntries: [executionEntry],
-    decisionReceiptRefs: [],
-    auditPacketRef: {
-      artifactId: 'judge-audit-packet',
-      path: 'authoring/staging/ATTEMPT-001/judge-audit-packet.json',
-      hash: hash('5'),
-    },
-    projectionReportRefs: [],
+    artifactEntries: [semanticEntry, bindingEntry, executionEntry],
   });
+  const buildPath = `authoring/builds/${buildManifest.buildHash.slice('sha256:'.length)}/manifest.json`;
   writeJson(recordRoot, buildPath, buildManifest);
+  const semanticPath = semanticEntry.contentRef.recordRelativePath;
   const activeAuthority = {
     activeSemanticRevisionId: semanticIr.semanticRevisionId,
-    activeSemanticIrPath: semanticPath,
     activeScopeSemanticHash: semanticIr.scopeSemanticHash,
     activeBindingRevisionId: binding.bindingRevisionId,
-    activeSourceBindingPath: bindingPath,
     activeSourceBindingHash: binding.sourceBindingHash,
-    activeAuthoringAttemptId: 'ATTEMPT-001',
+    activeBuildHash: buildManifest.buildHash,
     activeBuildManifestPath: buildPath,
-    activeBuildManifestHash: buildManifest.buildManifestHash,
+    previousBuildHash: null,
+    previousBuildManifestPath: null,
   };
   const effectivePass = compileRequirementsEffectivePassReceiptV2({
     activeAuthority,
@@ -297,7 +278,7 @@ function fixture(root: string) {
       semanticRevisionId: semanticIr.semanticRevisionId,
       scopeSemanticHash: semanticIr.scopeSemanticHash,
       sourceBindingHash: binding.sourceBindingHash,
-      buildManifestHash: buildManifest.buildManifestHash,
+      buildManifestHash: buildManifest.buildHash,
       providerSelectionHash: hash('6'),
       judgeRequestHash: hash('7'),
       judgeResponseHash: hash('8'),
@@ -339,7 +320,7 @@ function fixture(root: string) {
     scopeSemanticHash: semanticIr.scopeSemanticHash,
     bindingRevisionId: binding.bindingRevisionId,
     sourceBindingHash: binding.sourceBindingHash,
-    buildManifestHash: buildManifest.buildManifestHash,
+    buildManifestHash: buildManifest.buildHash,
     requirementsEffectivePassHash: effectivePass.requirementsEffectivePassHash,
     exactConfirmationText,
     artifacts: [
@@ -386,7 +367,7 @@ function fixture(root: string) {
     exactConfirmationText,
   });
   const recordPath = writeJson(recordRoot, 'record/requirement-record.json', {
-    schemaVersion: 'requirements-contract-record/v1',
+    schemaVersion: 'requirements-contract-record/v3',
     recordId: requestId,
     lifecycle: 'user_confirmed',
     confirmedScopeSemanticHash: semanticIr.scopeSemanticHash,
@@ -422,6 +403,117 @@ function fixture(root: string) {
     repositoryAuthority,
     policyAuthority,
   };
+}
+
+function publishBindingSuccessor(
+  input: ReturnType<typeof fixture>,
+  nextBinding: Record<string, any>,
+) {
+  const currentManifest = JSON.parse(
+    readFileSync(path.join(input.recordRoot, ...input.activeAuthority.activeBuildManifestPath.split('/')), 'utf8'),
+  ) as Record<string, any>;
+  const bindingRef = publishRequirementsContentObject({
+    recordRoot: input.recordRoot,
+    role: 'source_binding',
+    mediaType: 'application/json',
+    bytes: Buffer.from(jsonText(nextBinding), 'utf8'),
+  });
+  const bindingEntry = {
+    role: 'source_binding',
+    schemaVersion: nextBinding.schemaVersion,
+    semanticHash: requirementsContractDomainHash('requirements-projection:source_binding/v1', nextBinding),
+    contentRef: bindingRef,
+  };
+  const artifactEntries = currentManifest.artifactEntries.map((entry: Record<string, any>) =>
+    entry.role === 'source_binding' ? bindingEntry : entry
+  );
+  const nextManifest = createRequirementsContractBuildManifestV2({
+    scopeSemanticHash: input.semanticIr.scopeSemanticHash,
+    sourceBindingHash: nextBinding.sourceBindingHash,
+    compilerIdentity: currentManifest.compilerIdentity,
+    projectionSetHash: currentManifest.projectionSetHash,
+    checkpointSummary: currentManifest.checkpointSummary,
+    validationSummary: {
+      decision: 'pass',
+      checkIds: currentManifest.validationSummary.checkIds,
+    },
+    artifactEntries,
+  });
+  const buildPath = `authoring/builds/${nextManifest.buildHash.slice('sha256:'.length)}/manifest.json`;
+  writeJson(input.recordRoot, buildPath, nextManifest);
+  return {
+    ...input.activeAuthority,
+    activeBindingRevisionId: nextBinding.bindingRevisionId,
+    activeSourceBindingHash: nextBinding.sourceBindingHash,
+    activeBuildHash: nextManifest.buildHash,
+    activeBuildManifestPath: buildPath,
+    previousBuildHash: input.activeAuthority.activeBuildHash,
+    previousBuildManifestPath: input.activeAuthority.activeBuildManifestPath,
+  };
+}
+
+function refreshEffectivePass(
+  input: ReturnType<typeof fixture>,
+  activeAuthority: Record<string, any>,
+) {
+  const receiptPath = path.join(
+    input.recordRoot,
+    'quality',
+    'requirements-effective-pass-receipt.json',
+  );
+  const current = JSON.parse(readFileSync(receiptPath, 'utf8')) as Record<string, any>;
+  const aggregate = {
+    schemaVersion: 'requirements-contract-requirements-audit-aggregate/v2',
+    semanticRevisionId: current.semanticRevisionId,
+    scopeSemanticHash: activeAuthority.activeScopeSemanticHash,
+    sourceBindingHash: activeAuthority.activeSourceBindingHash,
+    buildManifestHash: activeAuthority.activeBuildHash,
+    providerSelectionHash: current.providerSelectionHash,
+    judgeRequestHash: current.judgeRequestHash,
+    judgeResponseHash: current.judgeResponseHash,
+    requirementsAuditAggregateHash: current.requirementsAuditAggregateHash,
+    validatedDimensionIds: current.validatedDimensionIds,
+    reviewedArtifactRefs: current.reviewedArtifactRefs,
+    reviewedMustRefs: current.reviewedMustRefs,
+    findings: [],
+    issueCodes: [],
+    decision: 'pass',
+  };
+  const effectivePass = compileRequirementsEffectivePassReceiptV2({ activeAuthority, aggregate });
+  writeJson(input.recordRoot, 'quality/requirements-effective-pass-receipt.json', effectivePass);
+  const eventPath = path.join(input.recordRoot, 'confirmation', 'confirmation-event.json');
+  const event = JSON.parse(readFileSync(eventPath, 'utf8')) as Record<string, any>;
+  event.requirementsEffectivePassRef = {
+    path: 'quality/requirements-effective-pass-receipt.json',
+    hash: effectivePass.requirementsEffectivePassHash,
+  };
+  writeJson(input.recordRoot, 'confirmation/confirmation-event.json', event);
+  const promotionPath = path.join(input.recordRoot, 'confirmation', 'confirmation-promotion-receipt.json');
+  const promotion = JSON.parse(readFileSync(promotionPath, 'utf8')) as Record<string, any>;
+  promotion.bindingRevisionId = activeAuthority.activeBindingRevisionId;
+  promotion.sourceBindingHash = activeAuthority.activeSourceBindingHash;
+  promotion.buildManifestHash = activeAuthority.activeBuildHash;
+  promotion.requirementsEffectivePassHash = effectivePass.requirementsEffectivePassHash;
+  writeFileSync(promotionPath, jsonText(promotion), 'utf8');
+  event.promotionEvidenceRef = {
+    path: 'confirmation/confirmation-promotion-receipt.json',
+    artifactBytesHash: artifactBytesHash({
+      role: 'promotion_receipt',
+      mediaType: 'application/json',
+      bytes: readFileSync(promotionPath),
+    }),
+  };
+  writeJson(input.recordRoot, 'confirmation/confirmation-event.json', event);
+  const record = JSON.parse(readFileSync(input.recordPath, 'utf8')) as Record<string, any>;
+  record.confirmationEventRef = {
+    path: 'confirmation/confirmation-event.json',
+    artifactBytesHash: artifactBytesHash({
+      role: 'requirements_confirmation_event',
+      mediaType: 'application/json',
+      bytes: readFileSync(eventPath),
+    }),
+  };
+  writeFileSync(input.recordPath, jsonText(record), 'utf8');
 }
 
 const actionContext = (root: string, action: string, args: string[]) => ({
@@ -941,14 +1033,15 @@ describe('Main Agent architecture confirmation replay', () => {
         'policy/worker-refreshed.json',
         architectureAuthoritySource(input.policyAuthority)
       );
-      const bindingPath = `authoring/source-bindings/${refreshedBinding.bindingRevisionId}/source-binding.json`;
-      writeJson(input.recordRoot, bindingPath, refreshedBinding);
-      const activeAuthority = {
-        ...input.activeAuthority,
-        activeBindingRevisionId: refreshedBinding.bindingRevisionId,
-        activeSourceBindingPath: bindingPath,
-        activeSourceBindingHash: refreshedBinding.sourceBindingHash,
-      };
+      const activeAuthority = publishBindingSuccessor(input, refreshedBinding);
+      refreshEffectivePass(input, activeAuthority);
+      const refreshedPromotionHash = artifactBytesHash({
+        role: 'promotion_receipt',
+        mediaType: 'application/json',
+        bytes: readFileSync(
+          path.join(input.recordRoot, 'confirmation', 'confirmation-promotion-receipt.json'),
+        ),
+      });
       const refreshedExactConfirmationText = input.exactConfirmationText.replace(
         `bindingRevisionId=${input.binding.bindingRevisionId}`,
         `bindingRevisionId=${refreshedBinding.bindingRevisionId}`
@@ -978,7 +1071,7 @@ describe('Main Agent architecture confirmation replay', () => {
         pageEvidence: {
           confirmationPromotionReceiptRef: {
             path: input.promotionPath,
-            hash: input.promotionArtifactBytesHash,
+            hash: refreshedPromotionHash,
           },
           pageArtifactBytesHash: artifactBytesHash({
             role: 'final_markdown',
@@ -1032,8 +1125,18 @@ describe('Main Agent architecture confirmation replay', () => {
         'policy/worker-refreshed-again.json',
         architectureAuthoritySource(input.policyAuthority)
       );
-      const secondBindingPath = `authoring/source-bindings/${secondBinding.bindingRevisionId}/source-binding.json`;
-      writeJson(input.recordRoot, secondBindingPath, secondBinding);
+      const secondAuthority = publishBindingSuccessor(
+        { ...input, activeAuthority },
+        secondBinding,
+      );
+      refreshEffectivePass(input, secondAuthority);
+      const secondPromotionHash = artifactBytesHash({
+        role: 'promotion_receipt',
+        mediaType: 'application/json',
+        bytes: readFileSync(
+          path.join(input.recordRoot, 'confirmation', 'confirmation-promotion-receipt.json'),
+        ),
+      });
       const secondRefreshReceipt = createRequirementsContractSourceBindingRefreshReceipt({
         semanticRevisionId: input.semanticIr.semanticRevisionId,
         scopeSemanticHash: input.semanticIr.scopeSemanticHash,
@@ -1047,7 +1150,10 @@ describe('Main Agent architecture confirmation replay', () => {
         toSourceSpanRegistryHash: secondBinding.sourceSpanRegistryHash,
         evidenceClaimRegistryHash: secondBinding.evidenceClaimBindingRegistryHash,
         pageEvidence: {
-          confirmationPromotionReceiptRef: refreshReceipt.confirmationPromotionReceiptRef!,
+          confirmationPromotionReceiptRef: {
+            path: input.promotionPath,
+            hash: secondPromotionHash,
+          },
           pageArtifactBytesHash: refreshReceipt.pageArtifactBytesHash!,
           htmlPageArtifactBytesHash: refreshReceipt.htmlPageArtifactBytesHash!,
         },
@@ -1058,13 +1164,9 @@ describe('Main Agent architecture confirmation replay', () => {
         secondRefreshPath,
         secondRefreshReceipt
       );
-      refreshedRecord.activeAuthority = {
-        ...activeAuthority,
-        activeBindingRevisionId: secondBinding.bindingRevisionId,
-        activeSourceBindingPath: secondBindingPath,
-        activeSourceBindingHash: secondBinding.sourceBindingHash,
-      };
-      refreshedRecord.currentPromotionEvidence = {
+      const finalRecord = JSON.parse(readFileSync(input.recordPath, 'utf8')) as Record<string, any>;
+      finalRecord.activeAuthority = secondAuthority;
+      finalRecord.currentPromotionEvidence = {
         path: secondRefreshPath,
         artifactBytesHash: artifactBytesHash({
           role: 'source-binding-refresh-receipt',
@@ -1072,7 +1174,7 @@ describe('Main Agent architecture confirmation replay', () => {
           bytes: readFileSync(secondRefreshTarget),
         }),
       };
-      writeFileSync(input.recordPath, `${JSON.stringify(refreshedRecord, null, 2)}\n`, 'utf8');
+      writeFileSync(input.recordPath, `${JSON.stringify(finalRecord, null, 2)}\n`, 'utf8');
       const recordBytes = readFileSync(input.recordPath);
 
       const replayed = runPrepareArchitectureConfirmation(

@@ -57,12 +57,26 @@ function canonicalBytes(value: unknown): Buffer {
   return Buffer.from(`${stableStringify(value)}\n`, 'utf8');
 }
 
-function semanticAuthorityPath(fixture: ImplementationReadinessFixture): string {
+function activeArtifactPath(
+  fixture: ImplementationReadinessFixture,
+  role: 'semantic_ir' | 'source_binding',
+): string {
   const authoringRecord = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
+  const manifest = JSON.parse(
+    readFileSync(
+      path.join(fixture.recordRoot, ...authoringRecord.activeAuthority.activeBuildManifestPath.split('/')),
+      'utf8',
+    ),
+  );
+  const entry = manifest.artifactEntries.find((candidate: { role: string }) => candidate.role === role);
   return path.join(
     fixture.recordRoot,
-    ...authoringRecord.activeAuthority.activeSemanticIrPath.split('/')
+    ...entry.contentRef.recordRelativePath.split('/'),
   );
+}
+
+function semanticAuthorityPath(fixture: ImplementationReadinessFixture): string {
+  return activeArtifactPath(fixture, 'semantic_ir');
 }
 
 async function startActiveAuthorityWinner(input: {
@@ -213,11 +227,7 @@ describe('requirements-backed Goal admission', () => {
     (kind) => {
       const fixture = materializeImplementationReadinessFixture();
       try {
-        const record = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
-        const sourceBindingPath = path.join(
-          fixture.recordRoot,
-          ...record.activeAuthority.activeSourceBindingPath.split('/')
-        );
+        const sourceBindingPath = activeArtifactPath(fixture, 'source_binding');
         const binding = JSON.parse(readFileSync(sourceBindingPath, 'utf8'));
         const authority = binding.sourceArtifacts.find(
           (entry: { role: string }) => entry.role === `${kind}_authority`
@@ -251,7 +261,7 @@ describe('requirements-backed Goal admission', () => {
           requirementRecordPath: fixture.authorityRecordPath,
           outRoot: path.join(fixture.root, 'goal-run-initial-authority-drift'),
         })
-      ).toThrowError('requirements_successor_required:semantic_authority');
+      ).toThrowError('requirements_content_object_length_mismatch');
     } finally {
       fixture.cleanup();
     }
@@ -696,7 +706,7 @@ describe('requirements-backed Goal admission', () => {
             },
           }
         )
-      ).toThrowError('requirements_successor_required:semantic_authority');
+      ).toThrowError('requirements_content_object_length_mismatch');
       expect(existsSync(path.join(outRoot, 'goal', 'active-authority.json'))).toBe(false);
     } finally {
       fixture.cleanup();
@@ -715,7 +725,7 @@ describe('requirements-backed Goal admission', () => {
     ],
     [
       'requirements lineage',
-      'requirements_successor_required:semantic_authority',
+      'requirements_content_object_length_mismatch',
       (fixture: ImplementationReadinessFixture) => {
         const semanticPath = semanticAuthorityPath(fixture);
         const semanticIr = JSON.parse(readFileSync(semanticPath, 'utf8'));

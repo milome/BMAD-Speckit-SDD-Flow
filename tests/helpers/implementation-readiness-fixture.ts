@@ -4,10 +4,13 @@ import path from 'node:path';
 import { runIngestArchitectureConfirmation } from '../../packages/bmad-speckit/src/main-agent/actions/ingest-architecture-confirmation';
 import { runPrepareArchitectureConfirmation } from '../../packages/bmad-speckit/src/main-agent/actions/prepare-architecture-confirmation';
 import {
-  createRequirementsContractBuildManifest,
-  createRequirementsContractCheckpointManifest,
+  createRequirementsContractBuildManifestV2,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-authoring-manifest';
-import { artifactBytesHash } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-hash-domains';
+import { publishRequirementsContentObject } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-content-store';
+import {
+  artifactBytesHash,
+  requirementsContractDomainHash,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-hash-domains';
 import { compileRequirementsEffectivePassReceiptV2 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-requirements-effective-pass-gate';
 import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 import {
@@ -98,8 +101,8 @@ export function materializeImplementationReadinessFixture(
 ): ImplementationReadinessFixture {
   const root = input.root ?? mkdtempSync(path.join(os.tmpdir(), 'implementation-readiness-'));
   const requestId = input.requestId ?? 'REQ-READINESS-V2-001';
-  const activeAttemptId = 'ATTEMPT-READINESS-V2-001';
   const recordRoot = path.join(root, '_bmad-output', 'runtime', 'requirement-records', requestId);
+  mkdirSync(recordRoot, { recursive: true });
   const defaultInvocation = input.invocation ?? 'node --test tests/refund-worker.test.cjs';
   const invocations = input.invocations ?? [
     defaultInvocation,
@@ -258,98 +261,75 @@ export function materializeImplementationReadinessFixture(
     sourceSpans: [],
     evidenceClaimBindings: [],
   });
-  const semanticPath = `authoring/semantic-revisions/${semanticIr.semanticRevisionId}/semantic-ir.json`;
-  const bindingPath = `authoring/source-bindings/${sourceBinding.bindingRevisionId}/source-binding.json`;
-  const executionPath = `authoring/staging/${activeAttemptId}/cp06/execution-manifest.json`;
-  const buildPath = `authoring/staging/${activeAttemptId}/contract-build-manifest.json`;
-  writeJson(recordRoot, semanticPath, semanticIr);
-  writeJson(recordRoot, bindingPath, sourceBinding);
   const executionManifest = {
     schemaVersion: 'requirements-contract-execution-manifest/v1',
     semanticRevisionId: semanticIr.semanticRevisionId,
     scopeSemanticHash: semanticIr.scopeSemanticHash,
     constraints: semanticIr.semanticPayload.executionConstraints,
   };
-  writeJson(recordRoot, executionPath, executionManifest);
-  const executionEntry = {
-    role: 'execution_manifest' as const,
-    schemaVersion: 'requirements-contract-execution-manifest/v1',
-    artifactId: 'execution-manifest',
-    recordRelativePath: executionPath,
-    artifactHash: sha256Stable(executionManifest),
-  };
-  let previousCheckpointManifestRef = {
-    checkpointId: 'cp05',
-    checkpointOrdinal: 5,
-    path: `authoring/staging/${activeAttemptId}/manifests/5-cp05.json`,
-    hash: hash('4'),
-  };
-  const compilerProfiles: Record<number, string> = {
-    6: 'requirements-contract-cp06-execution-projection/v1',
-    7: 'requirements-contract-cp07-view-diagram-projection/v1',
-    8: 'requirements-contract-cp08-reconciliation-renderability/v1',
-  };
-  for (const ordinal of [6, 7, 8]) {
-    const checkpointId = `cp${String(ordinal).padStart(2, '0')}`;
-    const checkpoint = createRequirementsContractCheckpointManifest({
-      authoringRequestId: requestId,
-      authoringAttemptId: activeAttemptId,
-      checkpointId,
-      checkpointOrdinal: ordinal,
-      stage: checkpointId,
-      status: 'passed',
-      inputManifestHash: hash('3'),
-      previousCheckpointManifestRef,
-      latestValidPredecessorCheckpoint: previousCheckpointManifestRef.checkpointId,
-      compilerIdentity: compilerProfiles[ordinal],
-      artifactEntries: ordinal === 6 ? [executionEntry] : [],
-      decisionReceiptRefs: [],
-      baseAuthorityRef: null,
+  const publishProjection = (
+    role: 'semantic_ir' | 'source_binding' | 'execution_manifest',
+    schemaVersion: string,
+    value: Record<string, unknown>,
+  ) => {
+    const contentRef = publishRequirementsContentObject({
+      recordRoot,
+      role,
+      mediaType: 'application/json',
+      bytes: Buffer.from(jsonText(value), 'utf8'),
     });
-    const checkpointRef = {
-      checkpointId,
-      checkpointOrdinal: ordinal,
-      path: `authoring/staging/${activeAttemptId}/manifests/${ordinal}-${checkpointId}.json`,
-      hash: checkpoint.checkpointManifestHash,
+    return {
+      role,
+      schemaVersion,
+      semanticHash: requirementsContractDomainHash(`requirements-projection:${role}/v1`, value),
+      contentRef,
     };
-    writeJson(recordRoot, checkpointRef.path, checkpoint);
-    previousCheckpointManifestRef = checkpointRef;
-  }
-  const buildManifest = createRequirementsContractBuildManifest({
-    authoringRequestId: requestId,
-    authoringAttemptId: activeAttemptId,
-    inputManifestHash: hash('3'),
-    terminalCheckpointManifestRef: previousCheckpointManifestRef,
-    semanticAuthorityRef: {
-      semanticRevisionId: semanticIr.semanticRevisionId,
-      path: semanticPath,
-      hash: semanticIr.scopeSemanticHash,
+  };
+  const semanticEntry = publishProjection(
+    'semantic_ir',
+    semanticIr.schemaVersion,
+    semanticIr as unknown as Record<string, unknown>,
+  );
+  const bindingEntry = publishProjection(
+    'source_binding',
+    sourceBinding.schemaVersion,
+    sourceBinding as unknown as Record<string, unknown>,
+  );
+  const executionEntry = publishProjection(
+    'execution_manifest',
+    executionManifest.schemaVersion,
+    executionManifest,
+  );
+  const buildManifest = createRequirementsContractBuildManifestV2({
+    scopeSemanticHash: semanticIr.scopeSemanticHash,
+    sourceBindingHash: sourceBinding.sourceBindingHash,
+    compilerIdentity: 'requirements-contract-cp00-cp08-compiler/v3',
+    projectionSetHash: sha256Stable({
+      semantic: semanticEntry.semanticHash,
+      binding: bindingEntry.semanticHash,
+      execution: executionEntry.semanticHash,
+    }),
+    checkpointSummary: {
+      checkpointIds: ['cp06', 'cp07', 'cp08'],
+      terminalStateHashes: [hash('6'), hash('7'), hash('8')],
     },
-    bindingAuthorityRef: {
-      bindingRevisionId: sourceBinding.bindingRevisionId,
-      path: bindingPath,
-      hash: sourceBinding.sourceBindingHash,
+    validationSummary: {
+      decision: 'pass',
+      checkIds: ['semantic_ir', 'source_binding', 'execution_manifest'],
     },
-    artifactEntries: [executionEntry],
-    decisionReceiptRefs: [],
-    auditPacketRef: {
-      artifactId: 'judge-audit-packet',
-      path: `authoring/staging/${activeAttemptId}/judge-audit-packet.json`,
-      hash: hash('5'),
-    },
-    projectionReportRefs: [],
+    artifactEntries: [semanticEntry, bindingEntry, executionEntry],
   });
+  const buildPath = `authoring/builds/${buildManifest.buildHash.slice('sha256:'.length)}/manifest.json`;
   writeJson(recordRoot, buildPath, buildManifest);
   const activeAuthority = {
     activeSemanticRevisionId: semanticIr.semanticRevisionId,
-    activeSemanticIrPath: semanticPath,
     activeScopeSemanticHash: semanticIr.scopeSemanticHash,
     activeBindingRevisionId: sourceBinding.bindingRevisionId,
-    activeSourceBindingPath: bindingPath,
     activeSourceBindingHash: sourceBinding.sourceBindingHash,
-    activeAuthoringAttemptId: activeAttemptId,
+    activeBuildHash: buildManifest.buildHash,
     activeBuildManifestPath: buildPath,
-    activeBuildManifestHash: buildManifest.buildManifestHash,
+    previousBuildHash: null,
+    previousBuildManifestPath: null,
   };
   const effectivePass = compileRequirementsEffectivePassReceiptV2({
     activeAuthority,
@@ -358,13 +338,13 @@ export function materializeImplementationReadinessFixture(
       semanticRevisionId: semanticIr.semanticRevisionId,
       scopeSemanticHash: semanticIr.scopeSemanticHash,
       sourceBindingHash: sourceBinding.sourceBindingHash,
-      buildManifestHash: buildManifest.buildManifestHash,
+      buildManifestHash: buildManifest.buildHash,
       providerSelectionHash: hash('6'),
       judgeRequestHash: hash('7'),
       judgeResponseHash: hash('8'),
       requirementsAuditAggregateHash: hash('9'),
       validatedDimensionIds: ['authority'],
-      reviewedArtifactRefs: ['judge-audit-packet'],
+      reviewedArtifactRefs: ['execution_manifest'],
       reviewedMustRefs: ['MUST-READINESS-001'],
       findings: [],
       issueCodes: [],
@@ -396,7 +376,7 @@ export function materializeImplementationReadinessFixture(
     scopeSemanticHash: semanticIr.scopeSemanticHash,
     bindingRevisionId: sourceBinding.bindingRevisionId,
     sourceBindingHash: sourceBinding.sourceBindingHash,
-    buildManifestHash: buildManifest.buildManifestHash,
+    buildManifestHash: buildManifest.buildHash,
     requirementsEffectivePassHash: effectivePass.requirementsEffectivePassHash,
     exactConfirmationText,
     artifacts: [
@@ -443,7 +423,7 @@ export function materializeImplementationReadinessFixture(
     exactConfirmationText,
   });
   const recordPath = writeJson(recordRoot, 'record/requirement-record.json', {
-    schemaVersion: 'requirements-contract-record/v1',
+    schemaVersion: 'requirements-contract-record/v3',
     recordId: requestId,
     requirementSetId: requestId,
     lifecycle: 'user_confirmed',

@@ -14,9 +14,16 @@ import {
   type RequirementsActiveAuthorityTupleV3,
 } from './requirements-contract-authority-publication-committer';
 import {
+  validateRequirementsContractBuildManifestV2,
+} from './requirements-contract-authoring-manifest';
+import {
   readRequirementsActiveBuildManifest,
   resolveRequirementsActiveArtifact,
 } from './requirements-contract-durable-build-store';
+import {
+  readRequirementsContentObject,
+  type RequirementsContentRef,
+} from './requirements-contract-content-store';
 import {
   artifactBytesHash,
   canonicalRequirementsJson,
@@ -248,12 +255,40 @@ function readValidatedSourceBinding(
   recordRoot: string,
   bindingRevisionId: string
 ): RequirementsContractSourceBindingCapsule {
-  const binding = readJson(
-    confinedArtifact(
-      recordRoot,
-      `authoring/source-bindings/${bindingRevisionId}/source-binding.json`
-    )
-  ) as unknown as RequirementsContractSourceBindingCapsule;
+  let binding: RequirementsContractSourceBindingCapsule | null = null;
+  const buildsRoot = confinedArtifact(recordRoot, 'authoring/builds');
+  if (fs.existsSync(buildsRoot)) {
+    for (const buildDirectory of fs.readdirSync(buildsRoot, { withFileTypes: true })) {
+      if (!buildDirectory.isDirectory()) continue;
+      const manifestPath = path.join(buildsRoot, buildDirectory.name, 'manifest.json');
+      if (!fs.existsSync(manifestPath)) continue;
+      let manifest: JsonObject;
+      try {
+        manifest = readJson(manifestPath);
+      } catch {
+        continue;
+      }
+      const entry = objects(manifest.artifactEntries).find(
+        (candidate) => candidate.role === 'source_binding'
+      );
+      if (!entry?.contentRef || typeof entry.contentRef !== 'object' || Array.isArray(entry.contentRef)) {
+        continue;
+      }
+      const contentRef = entry.contentRef as unknown as RequirementsContentRef;
+      try {
+        const candidate = JSON.parse(
+          readRequirementsContentObject({ recordRoot, ref: contentRef }).toString('utf8')
+        ) as unknown as RequirementsContractSourceBindingCapsule;
+        if (candidate.bindingRevisionId === bindingRevisionId) {
+          binding = candidate;
+          break;
+        }
+      } catch {
+        continue;
+      }
+    }
+  }
+  if (!binding) throw new Error('requirements_confirmation_source_binding_missing');
   const validation = validateRequirementsContractSourceBindingCapsule(binding);
   if (validation.decision !== 'pass') {
     throw new Error(`architecture_confirmation_source_binding_invalid:${validation.issueCodes[0]}`);
@@ -493,7 +528,7 @@ export function resolveArchitectureConfirmationContext(input: {
     }
   }
   const promotion = promotionReceipt ?? {};
-  requireCurrent(
+  const confirmationCurrent =
     confirmationEventHash === text(confirmationRef.artifactBytesHash) &&
       confirmationEvent.schemaVersion === 'requirements-contract-confirmation-event/v1' &&
       text(confirmationEvent.requestId) === input.requestId &&
@@ -511,22 +546,25 @@ export function resolveArchitectureConfirmationContext(input: {
       text(promotion.requestId) === input.requestId &&
       text(promotion.semanticRevisionId) === semanticIr.semanticRevisionId &&
       text(promotion.scopeSemanticHash) === semanticIr.scopeSemanticHash &&
-      text(promotion.bindingRevisionId) === text(confirmationEvent.bindingRevisionId) &&
+      text(promotion.bindingRevisionId) === text(sourceBinding.bindingRevisionId) &&
       text(promotion.sourceBindingHash) === text(effectivePass.sourceBindingHash) &&
       text(promotion.buildManifestHash) === activeAuthority.activeBuildHash &&
       text(promotion.requirementsEffectivePassHash) ===
         text(effectivePass.requirementsEffectivePassHash) &&
       text(promotion.requirementsEffectivePassHash) === text(effectivePassRef.hash) &&
-      promotion.exactConfirmationText === confirmationEvent.exactConfirmationText,
-    'requirements_confirmation_event_stale'
+      promotion.exactConfirmationText === confirmationEvent.exactConfirmationText;
+  requireCurrent(confirmationCurrent, 'requirements_confirmation_event_stale');
+  const confirmationBinding = readValidatedSourceBinding(
+    recordRoot,
+    text(confirmationEvent.bindingRevisionId)
   );
   const confirmationBindingAncestry = resolveCompatibleBindingAncestry({
     recordRoot,
     semanticRevisionId: semanticIr.semanticRevisionId,
     scopeSemanticHash: semanticIr.scopeSemanticHash,
     currentBinding: sourceBinding,
-    ancestorBindingRevisionId: text(promotion.bindingRevisionId),
-    ancestorSourceBindingHash: text(promotion.sourceBindingHash),
+    ancestorBindingRevisionId: confirmationBinding.bindingRevisionId,
+    ancestorSourceBindingHash: confirmationBinding.sourceBindingHash,
     issueCode: 'requirements_confirmation_event_stale',
   });
   const currentPromotionEvidence = object(record.currentPromotionEvidence);
@@ -1182,6 +1220,9 @@ export function readCurrentArchitectureConfirmationAcceptance(input: {
   } catch {
     acceptedBindingIsCompatible = false;
   }
+  const bindingRefreshed =
+    acceptedBindingIsCompatible &&
+    acceptedBindingRevisionId !== input.context.sourceBinding.bindingRevisionId;
   const expectedPageBytes = Buffer.from(projection.pageBytes, 'utf8');
   const candidateHashId = input.candidate.architectureConfirmationCandidateHash.slice(
     'sha256:'.length
@@ -1244,6 +1285,58 @@ export function readCurrentArchitectureConfirmationAcceptance(input: {
   const requirementsEffectivePassHash = text(
     input.context.effectivePass.requirementsEffectivePassHash
   );
+  const pageIntegrityValid = bindingRefreshed
+    ? pageBytes !== null && pageArtifactBytesHash === text(pageRef.artifactBytesHash)
+    : text(pageRef.path) === expectedPageRef.path &&
+      text(pageRef.artifactBytesHash) === expectedPageRef.artifactBytesHash &&
+      Boolean(pageBytes?.equals(expectedPageBytes));
+  const historicalBuildValid = (() => {
+    if (!HASH.test(requirementsBuildHash)) return false;
+    try {
+      const historicalBuildPath = confinedArtifact(
+        input.context.recordRoot,
+        `authoring/builds/${requirementsBuildHash.slice('sha256:'.length)}/manifest.json`
+      );
+      if (!fs.existsSync(historicalBuildPath)) return false;
+      const historicalManifest = readJson(historicalBuildPath);
+      return validateRequirementsContractBuildManifestV2(historicalManifest) &&
+        historicalManifest.buildHash === requirementsBuildHash &&
+        historicalManifest.scopeSemanticHash === input.context.semanticIr.scopeSemanticHash;
+    } catch {
+      return false;
+    }
+  })();
+  const buildBindingValid = bindingRefreshed
+    ? historicalBuildValid
+    : requirementsBuildHash === input.context.activeAuthority.activeBuildHash;
+  const eventReceiptValid = bindingRefreshed
+    ? text(eventGateOutput?.path) === eventRef.path && HASH.test(text(eventGateOutput?.hash))
+    : text(eventGateOutput?.path) === eventRef.path &&
+      text(eventGateOutput?.hash) === eventRef.artifactBytesHash;
+  const confirmationStageValid = bindingRefreshed
+    ? text(requirementsConfirmationStageInput?.path) === text(currentRequirementsConfirmationRef.path) &&
+      text(requirementsConfirmationStageInput?.hash) ===
+        text(requirementsConfirmationEventRef.artifactBytesHash)
+    : text(requirementsConfirmationStageInput?.path) === text(currentRequirementsConfirmationRef.path) &&
+      text(requirementsConfirmationStageInput?.hash) === input.context.confirmationEventHash;
+  const effectivePassStageValid = bindingRefreshed
+    ? text(requirementsEffectivePassStageInput?.path) ===
+        'quality/requirements-effective-pass-receipt.json' &&
+      text(requirementsEffectivePassStageInput?.hash) === text(requirementsEffectivePassRef.hash)
+    : text(requirementsEffectivePassStageInput?.path) ===
+        'quality/requirements-effective-pass-receipt.json' &&
+      text(requirementsEffectivePassStageInput?.hash) === requirementsEffectivePassHash;
+  const confirmationEventRefValid = bindingRefreshed
+    ? text(requirementsConfirmationEventRef.path) === text(currentRequirementsConfirmationRef.path) &&
+      HASH.test(text(requirementsConfirmationEventRef.artifactBytesHash))
+    : text(requirementsConfirmationEventRef.path) === text(currentRequirementsConfirmationRef.path) &&
+      text(requirementsConfirmationEventRef.artifactBytesHash) === input.context.confirmationEventHash;
+  const architectureEffectivePassRefValid = bindingRefreshed
+    ? text(requirementsEffectivePassRef.path) === 'quality/requirements-effective-pass-receipt.json' &&
+      HASH.test(text(requirementsEffectivePassRef.hash))
+    : text(requirementsEffectivePassRef.path) ===
+        'quality/requirements-effective-pass-receipt.json' &&
+      text(requirementsEffectivePassRef.hash) === requirementsEffectivePassHash;
   const valid =
     event.schemaVersion === 'architecture-confirmation-event/v1' &&
     event.eventType === 'architecture_confirmation_recorded' &&
@@ -1252,7 +1345,7 @@ export function readCurrentArchitectureConfirmationAcceptance(input: {
     text(event.scopeSemanticHash) === input.context.semanticIr.scopeSemanticHash &&
     text(event.architectureConfirmationCandidateHash) ===
       input.candidate.architectureConfirmationCandidateHash &&
-    requirementsBuildHash === input.context.activeAuthority.activeBuildHash &&
+    buildBindingValid &&
     Boolean(acceptedBindingRevisionId) &&
     Boolean(acceptedSourceBindingHash) &&
     acceptedBindingIsCompatible &&
@@ -1260,15 +1353,9 @@ export function readCurrentArchitectureConfirmationAcceptance(input: {
     event.decision === 'pass' &&
     text(candidateRef.path) === expectedCandidateRef.path &&
     text(candidateRef.artifactBytesHash) === expectedCandidateRef.artifactBytesHash &&
-    text(pageRef.path) === expectedPageRef.path &&
-    text(pageRef.artifactBytesHash) === expectedPageRef.artifactBytesHash &&
-    Boolean(pageBytes?.equals(expectedPageBytes)) &&
-    text(requirementsConfirmationEventRef.path) === text(currentRequirementsConfirmationRef.path) &&
-    text(requirementsConfirmationEventRef.artifactBytesHash) ===
-      input.context.confirmationEventHash &&
-    text(requirementsEffectivePassRef.path) ===
-      'quality/requirements-effective-pass-receipt.json' &&
-    text(requirementsEffectivePassRef.hash) === requirementsEffectivePassHash &&
+    pageIntegrityValid &&
+    confirmationEventRefValid &&
+    architectureEffectivePassRefValid &&
     pageArtifactBytesHash === text(pageRef.artifactBytesHash) &&
     runtimeReceipt !== null &&
     validateRuntimeStatusDecisionReceipt(runtimeReceipt) &&
@@ -1278,16 +1365,11 @@ export function readCurrentArchitectureConfirmationAcceptance(input: {
     runtimeReceipt.semanticModelHash === input.context.semanticIr.scopeSemanticHash &&
     runtimeReceipt.decision === 'pass' &&
     runtimeReceipt.effectiveStatus === 'pass' &&
-    text(eventGateOutput?.path) === eventRef.path &&
-    text(eventGateOutput?.hash) === eventRef.artifactBytesHash &&
+    eventReceiptValid &&
     text(candidateStageInput?.path) === expectedCandidateRef.path &&
     text(candidateStageInput?.hash) === input.candidate.architectureConfirmationCandidateHash &&
-    text(requirementsConfirmationStageInput?.path) ===
-      text(currentRequirementsConfirmationRef.path) &&
-    text(requirementsConfirmationStageInput?.hash) === input.context.confirmationEventHash &&
-    text(requirementsEffectivePassStageInput?.path) ===
-      'quality/requirements-effective-pass-receipt.json' &&
-    text(requirementsEffectivePassStageInput?.hash) === requirementsEffectivePassHash;
+    confirmationStageValid &&
+    effectivePassStageValid;
   if (!valid) throw new Error('architecture_confirmation_acceptance_event_invalid');
   return {
     event,
