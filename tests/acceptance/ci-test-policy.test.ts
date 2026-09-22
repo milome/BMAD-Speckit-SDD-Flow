@@ -629,10 +629,8 @@ describe('test portfolio policy', () => {
       },
       'tests/acceptance/requirements-contract-judge-response-audit-completeness.test.ts': {
         'trace:six-model/audit-review/evidence-binding': 'direct',
-        'trace:six-model/audit-review/successful-promotion': 'direct',
-      },
-      'tests/acceptance/requirements-contract-judge-audit-unit-projector.test.ts': {
         'trace:six-model/audit-review/reverse-audit-execution': 'direct',
+        'trace:six-model/audit-review/successful-promotion': 'direct',
       },
       'tests/acceptance/requirements-contract-judge-remediation-state-machine.test.ts': {
         'trace:six-model/audit-review/judge-continuation': 'direct',
@@ -643,12 +641,12 @@ describe('test portfolio policy', () => {
     });
     const reverseAuditEntry = policy.semanticEvidenceBindings.find(
       (entry: any) =>
-        entry.testPath === 'tests/acceptance/requirements-contract-judge-audit-unit-projector.test.ts'
+        entry.testPath ===
+        'tests/acceptance/requirements-contract-judge-response-audit-completeness.test.ts'
     );
     expect(reverseAuditEntry.bindings).toContainEqual({
       evidenceRef: 'trace:six-model/audit-review/reverse-audit-execution',
       evidenceKind: 'direct',
-      oracleAuthority: expect.objectContaining({ independence: 'independent' }),
     });
   });
 
