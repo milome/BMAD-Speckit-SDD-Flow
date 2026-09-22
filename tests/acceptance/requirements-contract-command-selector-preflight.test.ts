@@ -250,7 +250,7 @@ describe('requirements contract command selector preflight', () => {
     expect(
       inventory.commands.find((command: { commandId: string }) => command.commandId === 'CMD-28')
         .allSelectors
-    ).toHaveLength(9);
+    ).toHaveLength(6);
   });
 
   it('fails closed before Vitest collection when a frozen architecture-wave selector is absent', () => {

@@ -186,10 +186,20 @@ function prepareNativeGoalImportFixture(
       fs.unlinkSync(absoluteReceiptPath);
     }
   }
+  const taskReportPath = path.join(
+    fixture.root,
+    '_bmad-output',
+    'runtime',
+    'governance',
+    'task-reports',
+    packet.parentSessionId,
+    `${packet.packetId}.json`
+  );
   return {
     packetPath,
     packet,
     compiledPromptRef: packet.compiledPromptRef,
+    taskReportPath,
     requiredCommandId: String(modelPacket.requiredCommands?.[0]?.id ?? ''),
   };
 }
@@ -480,10 +490,12 @@ describe('main-agent automatic run-loop', () => {
         ]),
         { cwd: process.cwd(), encoding: 'utf8' }
       );
-      const dispatch = parsePackageOrLegacyJson<{ taskType: string; packetId: string }>(dispatchOutput);
+      const dispatch = parsePackageOrLegacyJson<{
+        dispatchInstruction: { taskType: string; packetId: string };
+      }>(dispatchOutput);
 
-      expect(dispatch.taskType).toBe('implement');
-      expect(dispatch.packetId).toMatch(/^implement-/);
+      expect(dispatch.dispatchInstruction.taskType).toBe('implement');
+      expect(dispatch.dispatchInstruction.packetId).toMatch(/^implement-/);
     } finally {
       cleanupRequirementWorkspace(root);
     }
@@ -808,7 +820,7 @@ describe('main-agent automatic run-loop', () => {
     const root = fixture.root;
     try {
       const compiled = prepareNativeGoalImportFixture(fixture);
-      const taskReportPath = compiled.packet.compiledPromptRef.taskReportPath!;
+      const taskReportPath = compiled.taskReportPath;
       writeImportTaskReport(taskReportPath, compiled.packet.packetId);
       refreshNativeGoalImportProvenance(fixture, compiled, taskReportPath);
       const beforeImport = JSON.parse(fs.readFileSync(fixture.recordPath, 'utf8'));
@@ -985,7 +997,7 @@ describe('main-agent automatic run-loop', () => {
               : undefined,
           omitReceipt: testCase.omitReceipt,
         });
-        const taskReportPath = compiled.packet.compiledPromptRef.taskReportPath!;
+        const taskReportPath = compiled.taskReportPath;
         testCase.configure(fixture, taskReportPath, compiled.packet.packetId);
         refreshNativeGoalImportProvenance(fixture, compiled, taskReportPath);
 
@@ -1024,7 +1036,7 @@ describe('main-agent automatic run-loop', () => {
       const root = fixture.root;
       try {
         const compiled = prepareNativeGoalImportFixture(fixture);
-        const taskReportPath = compiled.packet.compiledPromptRef.taskReportPath!;
+        const taskReportPath = compiled.taskReportPath;
         writeImportTaskReport(taskReportPath, compiled.packet.packetId, { status });
         refreshNativeGoalImportProvenance(fixture, compiled, taskReportPath);
 
@@ -1069,7 +1081,9 @@ describe('main-agent automatic run-loop', () => {
         ]),
         { cwd: process.cwd(), encoding: 'utf8' }
       );
-      const dispatch = parsePackageOrLegacyJson<{ packetId: string }>(dispatchOutput);
+      const dispatch = parsePackageOrLegacyJson<{
+        dispatchInstruction: { packetId: string };
+      }>(dispatchOutput);
       const reportPath = path.join(
         root,
         '_bmad-output',
@@ -1082,7 +1096,7 @@ describe('main-agent automatic run-loop', () => {
         reportPath,
         JSON.stringify(
           {
-            packetId: dispatch.packetId,
+            packetId: dispatch.dispatchInstruction.packetId,
             status: 'done',
             filesChanged: ['tests/external-real-report.test.ts'],
             validationsRun: ['external-real-validation'],
