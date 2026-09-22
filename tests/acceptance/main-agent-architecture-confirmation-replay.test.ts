@@ -984,6 +984,62 @@ describe('Main Agent architecture confirmation replay', () => {
     }
   });
 
+  it('rejects an accepted event whose binding id is not in the active source lineage', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'architecture-replay-'));
+    try {
+      const input = fixture(root);
+      const prepared = runPrepareArchitectureConfirmation(
+        actionContext(root, 'prepare-architecture-confirmation', ['--request-id', input.requestId])
+      ) as Record<string, any>;
+      const ingested = runIngestArchitectureConfirmation(
+        actionContext(root, 'ingest-architecture-confirmation', [
+          '--request-id',
+          input.requestId,
+          '--architecture-confirmation-candidate-hash',
+          prepared.result.architectureConfirmationCandidateHash,
+          '--exact-confirmation-text',
+          prepared.result.exactConfirmationText,
+        ])
+      ) as Record<string, any>;
+      expect(ingested.exitCode, JSON.stringify(ingested, null, 2)).toBe(0);
+
+      const forgedBindingRevisionId = 'binding-forged';
+      const promotionPath = path.join(input.recordRoot, ...input.promotionPath.split('/'));
+      const promotion = JSON.parse(readFileSync(promotionPath, 'utf8')) as Record<string, any>;
+      promotion.bindingRevisionId = forgedBindingRevisionId;
+      writeFileSync(promotionPath, jsonText(promotion), 'utf8');
+      const promotionArtifactBytesHash = artifactBytesHash({
+        role: 'promotion_receipt',
+        mediaType: 'application/json',
+        bytes: readFileSync(promotionPath),
+      });
+
+      const record = JSON.parse(readFileSync(input.recordPath, 'utf8')) as Record<string, any>;
+      const eventPath = path.join(
+        input.recordRoot,
+        ...record.confirmationEventRef.path.split('/')
+      );
+      const event = JSON.parse(readFileSync(eventPath, 'utf8')) as Record<string, any>;
+      event.bindingRevisionId = forgedBindingRevisionId;
+      event.promotionEvidenceRef.artifactBytesHash = promotionArtifactBytesHash;
+      writeFileSync(eventPath, jsonText(event), 'utf8');
+      record.confirmationEventRef.artifactBytesHash = artifactBytesHash({
+        role: 'requirements_confirmation_event',
+        mediaType: 'application/json',
+        bytes: readFileSync(eventPath),
+      });
+      writeFileSync(input.recordPath, jsonText(record), 'utf8');
+
+      const replayed = runPrepareArchitectureConfirmation(
+        actionContext(root, 'prepare-architecture-confirmation', ['--request-id', input.requestId])
+      ) as Record<string, any>;
+      expect(replayed.exitCode, JSON.stringify(replayed, null, 2)).toBe(1);
+      expect(replayed.result.issueCodes).toEqual(['requirements_confirmation_event_stale']);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('reuses the accepted candidate after consecutive locator-only Requirements binding refreshes', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'architecture-replay-'));
     try {

@@ -536,7 +536,7 @@ describe('test portfolio policy', () => {
       'judge-audit-reverse-audit-continuation': [auditTarget],
       'cli-startup-boundary': ['target:scripts/bmad-speckit-cli.js'],
       'canonical-package-runtime-boundary': [
-        sourceAuthorityTarget('requirements-contract-package-runtime-index.ts'),
+        'target:packages/bmad-speckit/scripts/build-main-agent-dist.cjs',
       ],
       'persistence-boundary': [sourceAuthorityTarget('governance-packet-execution-store.ts')],
       'encoding-boundary': [sourceAuthorityTarget('requirements-contract-intake-receipt.ts')],

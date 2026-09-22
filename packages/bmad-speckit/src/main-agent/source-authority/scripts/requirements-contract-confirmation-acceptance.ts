@@ -583,6 +583,104 @@ function validateRefreshReceiptHash(receipt: JsonObject): void {
   }
 }
 
+function readBindingRevisionForAudit(
+  recordRoot: string,
+  bindingRevisionId: string
+): JsonObject | null {
+  const buildsRoot = confinedRecordArtifact(recordRoot, 'authoring/builds');
+  if (!fs.existsSync(buildsRoot)) return null;
+  for (const entry of fs.readdirSync(buildsRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const manifestPath = path.join(buildsRoot, entry.name, 'manifest.json');
+    if (!fs.existsSync(manifestPath)) continue;
+    let manifest: JsonObject;
+    try {
+      manifest = readJson(manifestPath);
+    } catch {
+      continue;
+    }
+    const sourceBindingEntry = records(manifest.artifactEntries).find(
+      (candidate) => text(candidate.role) === 'source_binding'
+    );
+    if (!sourceBindingEntry?.contentRef || typeof sourceBindingEntry.contentRef !== 'object') {
+      continue;
+    }
+    try {
+      const candidate = JSON.parse(
+        readRequirementsContentObject({
+          recordRoot,
+          ref: sourceBindingEntry.contentRef as unknown as RequirementsContentRef,
+        }).toString('utf8')
+      ) as JsonObject;
+      const validation = validateRequirementsContractSourceBindingCapsule(candidate as never);
+      if (
+        validation.decision === 'pass' &&
+        text(candidate.bindingRevisionId) === bindingRevisionId
+      ) {
+        return candidate;
+      }
+    } catch {
+      // Ignore unrelated or incomplete predecessor builds while resolving the active chain.
+    }
+  }
+  return null;
+}
+
+function bindingLineageContains(input: {
+  recordRoot: string;
+  event: JsonObject;
+  activeAuthority: RequirementsActiveAuthorityTupleV3;
+}): boolean {
+  const ancestorBindingRevisionId = text(input.event.bindingRevisionId);
+  let currentBindingRevisionId = input.activeAuthority.activeBindingRevisionId;
+  let currentBinding = readBindingRevisionForAudit(input.recordRoot, currentBindingRevisionId);
+  const visited = new Set<string>();
+  while (currentBindingRevisionId !== ancestorBindingRevisionId) {
+    if (!currentBinding || visited.has(currentBindingRevisionId)) return false;
+    visited.add(currentBindingRevisionId);
+    const parentBindingRevisionId = text(currentBinding.parentBindingRevisionId);
+    if (!parentBindingRevisionId) return false;
+    let refreshReceipt: JsonObject;
+    try {
+      refreshReceipt = readJson(
+        confinedRecordArtifact(
+          input.recordRoot,
+          `authoring/source-bindings/${currentBindingRevisionId}/source-binding-refresh-receipt.json`
+        )
+      );
+      validateRefreshReceiptHash(refreshReceipt);
+    } catch {
+      return false;
+    }
+    const parentBinding = readBindingRevisionForAudit(
+      input.recordRoot,
+      parentBindingRevisionId
+    );
+    if (!parentBinding) return false;
+    if (
+      text(refreshReceipt.semanticRevisionId) !== input.activeAuthority.activeSemanticRevisionId ||
+      text(refreshReceipt.scopeSemanticHash) !== input.activeAuthority.activeScopeSemanticHash ||
+      text(refreshReceipt.fromBindingRevisionId) !== parentBindingRevisionId ||
+      text(refreshReceipt.toBindingRevisionId) !== currentBindingRevisionId ||
+      text(refreshReceipt.fromSourceBindingHash) !== text(parentBinding.sourceBindingHash) ||
+      text(refreshReceipt.toSourceBindingHash) !== text(currentBinding.sourceBindingHash) ||
+      text(refreshReceipt.fromSnapshotSetHash) !== sha256Stable(parentBinding.sourceArtifacts) ||
+      text(refreshReceipt.toSnapshotSetHash) !== sha256Stable(currentBinding.sourceArtifacts) ||
+      text(refreshReceipt.fromSourceSpanRegistryHash) !==
+        text(parentBinding.sourceSpanRegistryHash) ||
+      text(refreshReceipt.toSourceSpanRegistryHash) !==
+        text(currentBinding.sourceSpanRegistryHash) ||
+      text(refreshReceipt.evidenceClaimRegistryHash) !==
+        text(currentBinding.evidenceClaimBindingRegistryHash)
+    ) {
+      return false;
+    }
+    currentBindingRevisionId = parentBindingRevisionId;
+    currentBinding = parentBinding;
+  }
+  return Boolean(currentBinding);
+}
+
 export function confirmationAuditBindingIsCurrent(input: {
   recordRoot: string;
   record: JsonObject;
@@ -608,6 +706,11 @@ export function confirmationAuditBindingIsCurrent(input: {
     const promotionPath = confinedRecordArtifact(input.recordRoot, text(promotionRef.path));
     const promotionBytes = fs.readFileSync(promotionPath);
     const promotion = JSON.parse(promotionBytes.toString('utf8')) as JsonObject;
+    const promotionBindingRevisionId = text(promotion.bindingRevisionId);
+    const eventBindingRevisionId = text(input.event.bindingRevisionId);
+    const promotionMatchesEventBinding = promotionBindingRevisionId === eventBindingRevisionId;
+    const promotionMatchesActiveBinding =
+      promotionBindingRevisionId === input.activeAuthority.activeBindingRevisionId;
     if (
       artifactBytesHash({
         role: 'promotion_receipt',
@@ -617,7 +720,12 @@ export function confirmationAuditBindingIsCurrent(input: {
       text(promotion.requestId) !== text(input.event.requestId) ||
       text(promotion.semanticRevisionId) !== input.activeAuthority.activeSemanticRevisionId ||
       text(promotion.scopeSemanticHash) !== input.activeAuthority.activeScopeSemanticHash ||
-      text(promotion.bindingRevisionId) !== text(input.event.bindingRevisionId) ||
+      (!promotionMatchesEventBinding && !promotionMatchesActiveBinding) ||
+      !bindingLineageContains({
+        recordRoot: input.recordRoot,
+        event: input.event,
+        activeAuthority: input.activeAuthority,
+      }) ||
       text(promotion.requirementsEffectivePassHash) !==
         text(input.effectivePass.requirementsEffectivePassHash) ||
       path.resolve(currentPromotionPath(input.recordRoot, input.record)) !==
