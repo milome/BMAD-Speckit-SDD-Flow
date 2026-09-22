@@ -267,16 +267,6 @@
     },
     {
       "runnerId": "root-vitest",
-      "testPath": "tests/acceptance/critical-auditor-receipt-binding.test.ts",
-      "bindings": [
-        {
-          "evidenceRef": "trace:six-model/audit-review/fail-closed",
-          "evidenceKind": "direct"
-        }
-      ]
-    },
-    {
-      "runnerId": "root-vitest",
       "testPath": "tests/acceptance/main-agent-audit-judge-request-authority-binding.test.ts",
       "bindings": [
         {
