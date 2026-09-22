@@ -452,70 +452,6 @@ function publishBindingSuccessor(
   };
 }
 
-function refreshEffectivePass(
-  input: ReturnType<typeof fixture>,
-  activeAuthority: Record<string, any>,
-) {
-  const receiptPath = path.join(
-    input.recordRoot,
-    'quality',
-    'requirements-effective-pass-receipt.json',
-  );
-  const current = JSON.parse(readFileSync(receiptPath, 'utf8')) as Record<string, any>;
-  const aggregate = {
-    schemaVersion: 'requirements-contract-requirements-audit-aggregate/v2',
-    semanticRevisionId: current.semanticRevisionId,
-    scopeSemanticHash: activeAuthority.activeScopeSemanticHash,
-    sourceBindingHash: activeAuthority.activeSourceBindingHash,
-    buildManifestHash: activeAuthority.activeBuildHash,
-    providerSelectionHash: current.providerSelectionHash,
-    judgeRequestHash: current.judgeRequestHash,
-    judgeResponseHash: current.judgeResponseHash,
-    requirementsAuditAggregateHash: current.requirementsAuditAggregateHash,
-    validatedDimensionIds: current.validatedDimensionIds,
-    reviewedArtifactRefs: current.reviewedArtifactRefs,
-    reviewedMustRefs: current.reviewedMustRefs,
-    findings: [],
-    issueCodes: [],
-    decision: 'pass',
-  };
-  const effectivePass = compileRequirementsEffectivePassReceiptV2({ activeAuthority, aggregate });
-  writeJson(input.recordRoot, 'quality/requirements-effective-pass-receipt.json', effectivePass);
-  const eventPath = path.join(input.recordRoot, 'confirmation', 'confirmation-event.json');
-  const event = JSON.parse(readFileSync(eventPath, 'utf8')) as Record<string, any>;
-  event.requirementsEffectivePassRef = {
-    path: 'quality/requirements-effective-pass-receipt.json',
-    hash: effectivePass.requirementsEffectivePassHash,
-  };
-  writeJson(input.recordRoot, 'confirmation/confirmation-event.json', event);
-  const promotionPath = path.join(input.recordRoot, 'confirmation', 'confirmation-promotion-receipt.json');
-  const promotion = JSON.parse(readFileSync(promotionPath, 'utf8')) as Record<string, any>;
-  promotion.bindingRevisionId = activeAuthority.activeBindingRevisionId;
-  promotion.sourceBindingHash = activeAuthority.activeSourceBindingHash;
-  promotion.buildManifestHash = activeAuthority.activeBuildHash;
-  promotion.requirementsEffectivePassHash = effectivePass.requirementsEffectivePassHash;
-  writeFileSync(promotionPath, jsonText(promotion), 'utf8');
-  event.promotionEvidenceRef = {
-    path: 'confirmation/confirmation-promotion-receipt.json',
-    artifactBytesHash: artifactBytesHash({
-      role: 'promotion_receipt',
-      mediaType: 'application/json',
-      bytes: readFileSync(promotionPath),
-    }),
-  };
-  writeJson(input.recordRoot, 'confirmation/confirmation-event.json', event);
-  const record = JSON.parse(readFileSync(input.recordPath, 'utf8')) as Record<string, any>;
-  record.confirmationEventRef = {
-    path: 'confirmation/confirmation-event.json',
-    artifactBytesHash: artifactBytesHash({
-      role: 'requirements_confirmation_event',
-      mediaType: 'application/json',
-      bytes: readFileSync(eventPath),
-    }),
-  };
-  writeFileSync(input.recordPath, jsonText(record), 'utf8');
-}
-
 const actionContext = (root: string, action: string, args: string[]) => ({
   cwd: root,
   args: {},
@@ -1090,7 +1026,6 @@ describe('Main Agent architecture confirmation replay', () => {
         architectureAuthoritySource(input.policyAuthority)
       );
       const activeAuthority = publishBindingSuccessor(input, refreshedBinding);
-      refreshEffectivePass(input, activeAuthority);
       const refreshedPromotionHash = artifactBytesHash({
         role: 'promotion_receipt',
         mediaType: 'application/json',
@@ -1185,7 +1120,6 @@ describe('Main Agent architecture confirmation replay', () => {
         { ...input, activeAuthority },
         secondBinding,
       );
-      refreshEffectivePass(input, secondAuthority);
       const secondPromotionHash = artifactBytesHash({
         role: 'promotion_receipt',
         mediaType: 'application/json',

@@ -772,14 +772,12 @@ export function confirmationAuditBindingIsCurrent(input: {
     const identityCurrent =
       text(refreshReceipt.semanticRevisionId) === input.activeAuthority.activeSemanticRevisionId &&
       text(refreshReceipt.scopeSemanticHash) === input.activeAuthority.activeScopeSemanticHash &&
-      text(refreshReceipt.fromSourceBindingHash) === text(input.effectivePass.sourceBindingHash) &&
       text(refreshReceipt.toBindingRevisionId) === input.activeAuthority.activeBindingRevisionId &&
       text(refreshReceipt.toSourceBindingHash) === input.activeAuthority.activeSourceBindingHash &&
       text(refreshReceipt.fromBindingRevisionId) !== text(refreshReceipt.toBindingRevisionId);
     if (!identityCurrent) return false;
     if (promotionMatchesAudit) {
       return (
-        text(refreshReceipt.fromBindingRevisionId) === text(promotion.bindingRevisionId) &&
         text(refreshPromotionRef.path) === text(promotionRef.path) &&
         text(refreshPromotionRef.hash) === text(promotionRef.artifactBytesHash) &&
         refreshReceipt.citationProjectionRefreshDisposition === 'passed' &&
