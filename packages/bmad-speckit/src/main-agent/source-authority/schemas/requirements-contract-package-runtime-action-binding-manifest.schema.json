@@ -53,7 +53,6 @@
               "requirements-contract-eval",
               "requirements-contract-evidence-verify",
               "requirements-contract-finalization-safe-write",
-              "requirements-contract-gap-closure-readonly-auditor-adapter",
               "requirements-contract-judge-credentials-init",
               "requirements-contract-judge-provider-smoke",
               "requirements-contract-judge-run",

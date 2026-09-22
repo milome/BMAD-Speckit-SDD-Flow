@@ -59,7 +59,7 @@ function canonicalBytes(value: unknown): Buffer {
 
 function activeArtifactPath(
   fixture: ImplementationReadinessFixture,
-  role: 'semantic_ir' | 'source_binding',
+  role: 'semantic_ir' | 'source_binding' | 'execution_manifest',
 ): string {
   const authoringRecord = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
   const manifest = JSON.parse(
@@ -247,21 +247,23 @@ describe('requirements-backed Goal admission', () => {
       }
     }
   );
-  it('normalizes initial architecture authority drift to a requirements successor', () => {
+  it.each([
+    ['semantic_ir', 'requirements_successor_required:semantic_authority'],
+    ['source_binding', 'requirements_successor_required:source_binding'],
+    ['execution_manifest', 'requirements_successor_required:build_manifest'],
+  ] as const)('normalizes corrupted %s content to its owning successor', (role, issueCode) => {
     const fixture = materializeImplementationReadinessFixture();
     try {
-      const semanticPath = semanticAuthorityPath(fixture);
-      const semanticIr = JSON.parse(readFileSync(semanticPath, 'utf8'));
-      semanticIr.semanticPayload.semantics.requirements[0].text = 'Tampered before admission.';
-      writeFileSync(semanticPath, `${JSON.stringify(semanticIr, null, 2)}\n`, 'utf8');
+      const artifactPath = activeArtifactPath(fixture, role);
+      writeFileSync(artifactPath, `${readFileSync(artifactPath, 'utf8')}\n`, 'utf8');
 
       expect(() =>
         compileRequirementsBackedGoal({
           projectRoot: fixture.root,
           requirementRecordPath: fixture.authorityRecordPath,
-          outRoot: path.join(fixture.root, 'goal-run-initial-authority-drift'),
+          outRoot: path.join(fixture.root, `goal-run-${role}-content-corruption`),
         })
-      ).toThrowError('requirements_content_object_length_mismatch');
+      ).toThrowError(issueCode);
     } finally {
       fixture.cleanup();
     }
@@ -706,7 +708,7 @@ describe('requirements-backed Goal admission', () => {
             },
           }
         )
-      ).toThrowError('requirements_content_object_length_mismatch');
+      ).toThrowError('requirements_successor_required:semantic_authority');
       expect(existsSync(path.join(outRoot, 'goal', 'active-authority.json'))).toBe(false);
     } finally {
       fixture.cleanup();
@@ -725,7 +727,7 @@ describe('requirements-backed Goal admission', () => {
     ],
     [
       'requirements lineage',
-      'requirements_content_object_length_mismatch',
+      'requirements_successor_required:semantic_authority',
       (fixture: ImplementationReadinessFixture) => {
         const semanticPath = semanticAuthorityPath(fixture);
         const semanticIr = JSON.parse(readFileSync(semanticPath, 'utf8'));

@@ -2,9 +2,9 @@
   "schemaVersion": "requirements-contract-canonical-assets-manifest/v2",
   "owner": {
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-canonical-assets-manifest.ts",
-    "hash": "sha256:2bf1a50ff5336144d8f6dd7de063e73221a1bc680034b0505ab2bdde618c25b4"
+    "hash": "sha256:d4863323823a3ddfd7d0f4e76ae4680ac754d3c15e61a0f225c3baeeeb11dccf"
   },
-  "manifestHash": "sha256:ae290c5a59117e15d12e2664205051dc8ad01008819e903db6c9f7aeae21c273",
+  "manifestHash": "sha256:641fcccd1f8aaf62c0990368ebdff7a30ed947629b11ddcb236bd696e2d9bd33",
   "assets": [
     {
       "assetId": "semantic_ir_schema",
@@ -669,51 +669,6 @@
       "assetKind": "schema",
       "authorityClass": "deterministic_contract",
       "sha256": "sha256:896b640f4f0c032c3c21a63781c83d0da289e5e81b2a5f48181764832900d98d"
-    },
-    {
-      "assetId": "gap_closure_readonly_auditor_adapter_input_schema",
-      "version": "requirements-contract-gap-closure-readonly-auditor-adapter-input/v1",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-gap-closure-readonly-auditor-adapter-input.schema.json",
-      "role": "gap_closure_readonly_auditor_adapter_input_schema",
-      "assetKind": "schema",
-      "authorityClass": "deterministic_contract",
-      "sha256": "sha256:f68ba0e0912694cbbb5b474aa986f2555cd6db5f8379e9d329d75f0e4ffee05b"
-    },
-    {
-      "assetId": "gap_closure_independent_audit_request_schema",
-      "version": "requirements-contract-gap-closure-independent-audit-request/v1",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-gap-closure-independent-audit-request.schema.json",
-      "role": "gap_closure_independent_audit_request_schema",
-      "assetKind": "schema",
-      "authorityClass": "deterministic_contract",
-      "sha256": "sha256:3474f935a99e88dbf6a045ec42c3a9651430ae933d5168747c39f986301e16a7"
-    },
-    {
-      "assetId": "gap_closure_independent_audit_assessment_schema",
-      "version": "requirements-contract-gap-closure-independent-audit-assessment/v1",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-gap-closure-independent-audit-assessment.schema.json",
-      "role": "gap_closure_independent_audit_assessment_schema",
-      "assetKind": "schema",
-      "authorityClass": "deterministic_contract",
-      "sha256": "sha256:d54ff1bd15993986cc992793c80b90a8acf194c03b06c53f69c0493f75002563"
-    },
-    {
-      "assetId": "gap_closure_independent_audit_result_schema",
-      "version": "requirements-contract-gap-closure-independent-audit-result/v1",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-gap-closure-independent-audit-result.schema.json",
-      "role": "gap_closure_independent_audit_result_schema",
-      "assetKind": "schema",
-      "authorityClass": "deterministic_contract",
-      "sha256": "sha256:629fae79f9798fb5a2876005f2f1eff39fba707d4e5df04dfaf6a814cf6fb44f"
-    },
-    {
-      "assetId": "gap_closure_readonly_auditor_adapter",
-      "version": "requirements-contract-gap-closure-readonly-auditor-adapter/v1",
-      "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-gap-closure-readonly-auditor-adapter.ts",
-      "role": "gap_closure_readonly_auditor_adapter",
-      "assetKind": "adapter",
-      "authorityClass": "deterministic_contract",
-      "sha256": "sha256:67c698b5e2c78c2a349c4e5e629b64ad3b6d9e30273beb263160b41ee2091974"
     },
     {
       "assetId": "critical_auditor_profile",

@@ -41,6 +41,7 @@ import {
 } from './requirements-contract-source-binding-capsule';
 import { validateRuntimeStatusDecisionReceipt } from './requirements-contract-runtime-status-decision-receipt';
 import { openRequirementsContractRecord } from './requirements-contract-record-boundary';
+import { confirmationAuditBindingIsCurrent } from './requirements-contract-confirmation-acceptance';
 import {
   REQUIREMENTS_TYPED_SEMANTIC_VERSION,
   requirementsTypedSemanticSource,
@@ -396,11 +397,20 @@ export function resolveArchitectureConfirmationContext(input: {
   );
 
   const buildManifest = readRequirementsActiveBuildManifest({ recordRoot, activeAuthority });
-  const semanticIr = resolveRequirementsActiveArtifact({
-    recordRoot,
-    activeAuthority,
-    role: 'semantic_ir',
-  }).value as RequirementsContractSemanticIr;
+  let semanticIr: RequirementsContractSemanticIr;
+  try {
+    semanticIr = resolveRequirementsActiveArtifact({
+      recordRoot,
+      activeAuthority,
+      role: 'semantic_ir',
+    }).value as RequirementsContractSemanticIr;
+  } catch (error) {
+    const issue = error instanceof Error ? error.message : String(error);
+    if (issue.startsWith('requirements_content_object_')) {
+      throw new Error(`architecture_confirmation_semantic_ir_invalid:${issue}`);
+    }
+    throw error;
+  }
   const semanticValidation = validateRequirementsContractSemanticIr(semanticIr);
   if (semanticValidation.decision !== 'pass') {
     throw new Error(
@@ -415,11 +425,20 @@ export function resolveArchitectureConfirmationContext(input: {
     'requirements_successor_required:semantic_authority'
   );
 
-  const sourceBindingValue = resolveRequirementsActiveArtifact({
-    recordRoot,
-    activeAuthority,
-    role: 'source_binding',
-  }).value;
+  let sourceBindingValue: unknown;
+  try {
+    sourceBindingValue = resolveRequirementsActiveArtifact({
+      recordRoot,
+      activeAuthority,
+      role: 'source_binding',
+    }).value;
+  } catch (error) {
+    const issue = error instanceof Error ? error.message : String(error);
+    if (issue.startsWith('requirements_content_object_')) {
+      throw new Error(`architecture_confirmation_source_binding_invalid:${issue}`);
+    }
+    throw error;
+  }
   const sourceBinding = sourceBindingValue as RequirementsContractSourceBindingCapsule;
   const bindingValidation = validateRequirementsContractSourceBindingCapsule(sourceBinding);
   if (bindingValidation.decision !== 'pass') {
@@ -440,11 +459,20 @@ export function resolveArchitectureConfirmationContext(input: {
     'requirements_successor_required:build_manifest'
   );
 
-  const executionArtifact = resolveRequirementsActiveArtifact({
-    recordRoot,
-    activeAuthority,
-    role: 'execution_manifest',
-  });
+  let executionArtifact: ReturnType<typeof resolveRequirementsActiveArtifact>;
+  try {
+    executionArtifact = resolveRequirementsActiveArtifact({
+      recordRoot,
+      activeAuthority,
+      role: 'execution_manifest',
+    });
+  } catch (error) {
+    const issue = error instanceof Error ? error.message : String(error);
+    if (issue.startsWith('requirements_content_object_')) {
+      throw new Error(`architecture_confirmation_build_manifest_invalid:${issue}`);
+    }
+    throw error;
+  }
   const executionEntry = executionArtifact.entry;
   const executionManifest = object(executionArtifact.value);
   const expectedExecutionManifestVersion =
@@ -493,8 +521,7 @@ export function resolveArchitectureConfirmationContext(input: {
   requireCurrent(
     text(effectivePass.decision) === 'pass' &&
       text(effectivePass.semanticRevisionId) === semanticIr.semanticRevisionId &&
-      text(effectivePass.scopeSemanticHash) === semanticIr.scopeSemanticHash &&
-      text(effectivePass.buildManifestHash) === activeAuthority.activeBuildHash,
+      text(effectivePass.scopeSemanticHash) === semanticIr.scopeSemanticHash,
     'requirements_effective_pass_required'
   );
 
@@ -546,13 +573,17 @@ export function resolveArchitectureConfirmationContext(input: {
       text(promotion.requestId) === input.requestId &&
       text(promotion.semanticRevisionId) === semanticIr.semanticRevisionId &&
       text(promotion.scopeSemanticHash) === semanticIr.scopeSemanticHash &&
-      text(promotion.bindingRevisionId) === text(sourceBinding.bindingRevisionId) &&
-      text(promotion.sourceBindingHash) === text(effectivePass.sourceBindingHash) &&
-      text(promotion.buildManifestHash) === activeAuthority.activeBuildHash &&
       text(promotion.requirementsEffectivePassHash) ===
         text(effectivePass.requirementsEffectivePassHash) &&
       text(promotion.requirementsEffectivePassHash) === text(effectivePassRef.hash) &&
-      promotion.exactConfirmationText === confirmationEvent.exactConfirmationText;
+      promotion.exactConfirmationText === confirmationEvent.exactConfirmationText &&
+      confirmationAuditBindingIsCurrent({
+        recordRoot,
+        record,
+        event: confirmationEvent,
+        effectivePass,
+        activeAuthority,
+      });
   requireCurrent(confirmationCurrent, 'requirements_confirmation_event_stale');
   const confirmationBinding = readValidatedSourceBinding(
     recordRoot,
@@ -574,7 +605,11 @@ export function resolveArchitectureConfirmationContext(input: {
   requireCurrent(fs.existsSync(currentPromotionPath), 'requirements_confirmation_event_stale');
   const currentPromotionBytes = fs.readFileSync(currentPromotionPath);
   const currentPromotion = JSON.parse(currentPromotionBytes.toString('utf8')) as JsonObject;
-  const currentPromotionRole = confirmationBindingAncestry.latestRefreshReceipt
+  const latestRefreshPromotionRef = object(
+    confirmationBindingAncestry.latestRefreshReceipt?.confirmationPromotionReceiptRef
+  );
+  const refreshOwnsCurrentPromotion = Boolean(text(latestRefreshPromotionRef.path));
+  const currentPromotionRole = refreshOwnsCurrentPromotion
     ? 'source-binding-refresh-receipt'
     : 'promotion_receipt';
   const currentPromotionHash = artifactBytesHash({
@@ -582,17 +617,14 @@ export function resolveArchitectureConfirmationContext(input: {
     mediaType: 'application/json',
     bytes: currentPromotionBytes,
   });
-  const expectedCurrentPromotionPath = confirmationBindingAncestry.latestRefreshReceipt
+  const expectedCurrentPromotionPath = refreshOwnsCurrentPromotion
     ? `authoring/source-bindings/${sourceBinding.bindingRevisionId}/source-binding-refresh-receipt.json`
     : promotionRelativePath;
-  const latestRefreshPromotionRef = object(
-    confirmationBindingAncestry.latestRefreshReceipt?.confirmationPromotionReceiptRef
-  );
   requireCurrent(
     text(record.confirmedScopeSemanticHash) === semanticIr.scopeSemanticHash &&
       currentPromotionRelativePath === expectedCurrentPromotionPath &&
       currentPromotionHash === text(currentPromotionEvidence.artifactBytesHash) &&
-      (confirmationBindingAncestry.latestRefreshReceipt
+      (refreshOwnsCurrentPromotion
         ? text(currentPromotion.receiptHash) ===
             text(confirmationBindingAncestry.latestRefreshReceipt.receiptHash) &&
           text(latestRefreshPromotionRef.path) === promotionRelativePath &&

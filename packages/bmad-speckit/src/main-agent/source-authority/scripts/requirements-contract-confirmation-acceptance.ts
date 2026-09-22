@@ -122,6 +122,8 @@ function promotionPageArtifacts(promotion: JsonObject): {
   html: JsonObject | null;
 } {
   const artifacts = records(promotion.artifacts);
+  const isFinalPromotion =
+    promotion.schemaVersion === 'requirements-contract-confirmation-promotion-receipt/v2';
   return {
     markdown: artifacts.find((artifact) => artifact.role === 'final_markdown') ??
       (promotion.schemaVersion === 'requirements-contract-review-candidate/v1' &&
@@ -132,9 +134,73 @@ function promotionPageArtifacts(promotion: JsonObject): {
             targetPath: promotion.targetPath,
             artifactBytesHash: promotion.markdownArtifactBytesHash,
           }
-        : null),
+        : isFinalPromotion && text(promotion.targetPath)
+          ? {
+              role: 'final_markdown',
+              mediaType: 'text/markdown',
+              targetPath: promotion.targetPath,
+              artifactBytesHash: promotion.artifactBytesHash,
+            }
+          : null),
     html: artifacts.find((artifact) => artifact.role === 'confirmation_html') ?? null,
   };
+}
+
+function currentPromotionPath(recordRoot: string, record: JsonObject): string {
+  const evidence = object(record.currentPromotionEvidence);
+  const evidencePath = text(evidence.path);
+  const expectedHash = text(evidence.artifactBytesHash);
+  if (!evidencePath || !expectedHash) {
+    throw new Error('requirements_confirmation_promotion_evidence_missing');
+  }
+  const resolved = confinedRecordArtifact(recordRoot, evidencePath);
+  const bytes = fs.readFileSync(resolved);
+  const value = JSON.parse(bytes.toString('utf8')) as JsonObject;
+  const isRefresh = value.schemaVersion === 'requirements-source-binding-refresh-receipt/v2';
+  const role = isRefresh ? 'source-binding-refresh-receipt' : 'promotion_receipt';
+  if (artifactBytesHash({ role, mediaType: 'application/json', bytes }) !== expectedHash) {
+    throw new Error('requirements_confirmation_promotion_evidence_stale');
+  }
+  if (!isRefresh) {
+    if (![
+      'requirements-contract-review-candidate/v1',
+      'requirements-contract-confirmation-promotion-receipt/v1',
+      'requirements-contract-confirmation-promotion-receipt/v2',
+    ].includes(text(value.schemaVersion))) {
+      throw new Error('requirements_confirmation_promotion_stale');
+    }
+    return resolved;
+  }
+  validateRefreshReceiptHash(value);
+  const promotionRef = object(value.confirmationPromotionReceiptRef);
+  const promotionPath = confinedRecordArtifact(recordRoot, text(promotionRef.path));
+  const promotionBytes = fs.readFileSync(promotionPath);
+  if (
+    artifactBytesHash({
+      role: 'promotion_receipt',
+      mediaType: 'application/json',
+      bytes: promotionBytes,
+    }) !== text(promotionRef.hash)
+  ) {
+    throw new Error('requirements_confirmation_promotion_evidence_stale');
+  }
+  return promotionPath;
+}
+
+function promotionMatchesAuditedOrActiveBinding(input: {
+  promotion: JsonObject;
+  effectivePass: JsonObject;
+  activeAuthority: RequirementsActiveAuthorityTupleV3;
+}): boolean {
+  const promotionBuildHash = text(input.promotion.buildManifestHash);
+  const promotionSourceBindingHash = text(input.promotion.sourceBindingHash);
+  return (
+    promotionBuildHash === text(input.effectivePass.buildManifestHash) &&
+    promotionSourceBindingHash === text(input.effectivePass.sourceBindingHash)
+  ) || (
+    promotionBuildHash === input.activeAuthority.activeBuildHash &&
+    promotionSourceBindingHash === input.activeAuthority.activeSourceBindingHash
+  );
 }
 
 function strings(value: unknown): string[] {
@@ -517,6 +583,115 @@ function validateRefreshReceiptHash(receipt: JsonObject): void {
   }
 }
 
+export function confirmationAuditBindingIsCurrent(input: {
+  recordRoot: string;
+  record: JsonObject;
+  event: JsonObject;
+  effectivePass: JsonObject;
+  activeAuthority: RequirementsActiveAuthorityTupleV3;
+}): boolean {
+  try {
+    readRequirementsActiveBuildManifest({
+      recordRoot: input.recordRoot,
+      activeAuthority: input.activeAuthority,
+    });
+    const effectivePassRef = object(input.event.requirementsEffectivePassRef);
+    const promotionRef = object(input.event.promotionEvidenceRef);
+    if (
+      text(effectivePassRef.path) !== 'quality/requirements-effective-pass-receipt.json' ||
+      text(effectivePassRef.hash) !== text(input.effectivePass.requirementsEffectivePassHash) ||
+      !text(promotionRef.path) ||
+      !text(promotionRef.artifactBytesHash)
+    ) {
+      return false;
+    }
+    const promotionPath = confinedRecordArtifact(input.recordRoot, text(promotionRef.path));
+    const promotionBytes = fs.readFileSync(promotionPath);
+    const promotion = JSON.parse(promotionBytes.toString('utf8')) as JsonObject;
+    if (
+      artifactBytesHash({
+        role: 'promotion_receipt',
+        mediaType: 'application/json',
+        bytes: promotionBytes,
+      }) !== text(promotionRef.artifactBytesHash) ||
+      text(promotion.requestId) !== text(input.event.requestId) ||
+      text(promotion.semanticRevisionId) !== input.activeAuthority.activeSemanticRevisionId ||
+      text(promotion.scopeSemanticHash) !== input.activeAuthority.activeScopeSemanticHash ||
+      text(promotion.bindingRevisionId) !== text(input.event.bindingRevisionId) ||
+      text(promotion.requirementsEffectivePassHash) !==
+        text(input.effectivePass.requirementsEffectivePassHash) ||
+      path.resolve(currentPromotionPath(input.recordRoot, input.record)) !==
+        path.resolve(promotionPath)
+    ) {
+      return false;
+    }
+    const promotionMatchesAudit =
+      text(promotion.buildManifestHash) === text(input.effectivePass.buildManifestHash) &&
+      text(promotion.sourceBindingHash) === text(input.effectivePass.sourceBindingHash);
+    const promotionMatchesActive =
+      text(promotion.buildManifestHash) === input.activeAuthority.activeBuildHash &&
+      text(promotion.sourceBindingHash) === input.activeAuthority.activeSourceBindingHash;
+    if (
+      promotionMatchesActive &&
+      text(input.effectivePass.buildManifestHash) === input.activeAuthority.activeBuildHash &&
+      text(input.effectivePass.sourceBindingHash) === input.activeAuthority.activeSourceBindingHash
+    ) {
+      return true;
+    }
+    if (!promotionMatchesAudit && !promotionMatchesActive) return false;
+
+    const auditedManifestPath = confinedRecordArtifact(
+      input.recordRoot,
+      `authoring/builds/${text(input.effectivePass.buildManifestHash).slice('sha256:'.length)}/manifest.json`
+    );
+    const auditedManifest = readJson(auditedManifestPath);
+    if (
+      text(auditedManifest.buildHash) !== text(input.effectivePass.buildManifestHash) ||
+      text(auditedManifest.scopeSemanticHash) !== input.activeAuthority.activeScopeSemanticHash ||
+      text(auditedManifest.sourceBindingHash) !== text(input.effectivePass.sourceBindingHash)
+    ) {
+      return false;
+    }
+    const refreshPath = confinedRecordArtifact(
+      input.recordRoot,
+      `authoring/source-bindings/${input.activeAuthority.activeBindingRevisionId}/` +
+        'source-binding-refresh-receipt.json'
+    );
+    const refreshBytes = fs.readFileSync(refreshPath);
+    const refreshReceipt = JSON.parse(refreshBytes.toString('utf8')) as JsonObject;
+    validateRefreshReceiptHash(refreshReceipt);
+    const refreshPromotionRef = object(refreshReceipt.confirmationPromotionReceiptRef);
+    const identityCurrent =
+      text(refreshReceipt.semanticRevisionId) === input.activeAuthority.activeSemanticRevisionId &&
+      text(refreshReceipt.scopeSemanticHash) === input.activeAuthority.activeScopeSemanticHash &&
+      text(refreshReceipt.fromSourceBindingHash) === text(input.effectivePass.sourceBindingHash) &&
+      text(refreshReceipt.toBindingRevisionId) === input.activeAuthority.activeBindingRevisionId &&
+      text(refreshReceipt.toSourceBindingHash) === input.activeAuthority.activeSourceBindingHash &&
+      text(refreshReceipt.fromBindingRevisionId) !== text(refreshReceipt.toBindingRevisionId);
+    if (!identityCurrent) return false;
+    if (promotionMatchesAudit) {
+      return (
+        text(refreshReceipt.fromBindingRevisionId) === text(promotion.bindingRevisionId) &&
+        text(refreshPromotionRef.path) === text(promotionRef.path) &&
+        text(refreshPromotionRef.hash) === text(promotionRef.artifactBytesHash) &&
+        refreshReceipt.citationProjectionRefreshDisposition === 'passed' &&
+        refreshReceipt.pageReadbackDisposition === 'passed' &&
+        refreshReceipt.pagePromotionDisposition === 'promoted'
+      );
+    }
+    return (
+      text(refreshReceipt.toBindingRevisionId) === text(promotion.bindingRevisionId) &&
+      text(refreshPromotionRef.path) === text(promotionRef.path) &&
+      text(refreshPromotionRef.hash) === text(promotionRef.artifactBytesHash) &&
+      refreshReceipt.citationProjectionRefreshDisposition === 'passed' &&
+      refreshReceipt.pageReadbackDisposition === 'passed' &&
+      refreshReceipt.pagePromotionDisposition === 'promoted'
+    );
+  } catch {
+    return false;
+  }
+}
+
 function confirmationTextFromMarkdown(markdown: string): string {
   const marker = '## Confirmation\n\n```text\n';
   const start = markdown.indexOf(marker);
@@ -552,33 +727,28 @@ export function stageRequirementsContractConfirmationBindingRefresh(input: {
     activeAuthority,
     role: 'semantic_ir',
   }).value as RequirementsContractSemanticIr;
-  const sourceBinding = readSourceBindingRevision(recordRoot, input.bindingRevisionId);
-  const resolvedEvidenceIndex = readJson(
-    path.join(
-      recordRoot,
-      'authoring',
-      'source-bindings',
-      input.bindingRevisionId,
-      'resolved-evidence-index.json'
-    )
+  const sourceBinding = readSourceBindingRevision(
+    recordRoot,
+    input.bindingRevisionId,
+    activeAuthority.activeBuildManifestPath
   );
+  const resolvedEvidenceIndex = resolveRequirementsActiveArtifact({
+    recordRoot,
+    activeAuthority,
+    role: 'resolved_evidence_index',
+  }).value as JsonObject;
   const effectivePass = readJson(
     path.join(recordRoot, 'quality', 'requirements-effective-pass-receipt.json')
   );
   validateEffectivePassV2(effectivePass);
-  const promotionPath = fs.existsSync(path.join(
-    recordRoot, 'confirmation', 'confirmation-promotion-receipt.json'
-  ))
-    ? path.join(recordRoot, 'confirmation', 'confirmation-promotion-receipt.json')
-    : path.join(recordRoot, 'confirmation', 'current-promotion.json');
+  const promotionPath = currentPromotionPath(recordRoot, record);
   const promotion = readJson(promotionPath);
   if (
     promotion.requestId !== input.requestId ||
     promotion.semanticRevisionId !== activeAuthority.activeSemanticRevisionId ||
     promotion.scopeSemanticHash !== activeAuthority.activeScopeSemanticHash ||
-    promotion.buildManifestHash !== activeAuthority.activeBuildHash ||
     promotion.requirementsEffectivePassHash !== effectivePass.requirementsEffectivePassHash ||
-    promotion.sourceBindingHash !== effectivePass.sourceBindingHash ||
+    !promotionMatchesAuditedOrActiveBinding({ promotion, effectivePass, activeAuthority }) ||
     sourceBinding.semanticRevisionId !== semanticIr.semanticRevisionId ||
     sourceBinding.scopeSemanticHash !== semanticIr.scopeSemanticHash
   ) {
@@ -591,7 +761,7 @@ export function stageRequirementsContractConfirmationBindingRefresh(input: {
     resolvedEvidenceIndex,
     effectivePass,
     bindingRefresh: {
-      auditedSourceBindingHash: text(promotion.sourceBindingHash),
+      auditedSourceBindingHash: text(effectivePass.sourceBindingHash),
       currentSourceBindingHash: text(sourceBinding.sourceBindingHash),
     },
   };
@@ -658,16 +828,16 @@ export function refreshRequirementsContractConfirmationBinding(input: {
   }).value);
   const parentBindingRevisionId = text(sourceBinding.parentBindingRevisionId);
   if (!parentBindingRevisionId) throw new Error('requirements_binding_refresh_parent_missing');
-  const parentBinding = readSourceBindingRevision(recordRoot, parentBindingRevisionId);
+  const parentBinding = readSourceBindingRevision(
+    recordRoot,
+    parentBindingRevisionId,
+    activeAuthority.previousBuildManifestPath
+  );
   const effectivePass = readJson(
     path.join(recordRoot, 'quality', 'requirements-effective-pass-receipt.json')
   );
   validateEffectivePassV2(effectivePass);
-  const promotionPath = fs.existsSync(path.join(
-    recordRoot, 'confirmation', 'confirmation-promotion-receipt.json'
-  ))
-    ? path.join(recordRoot, 'confirmation', 'confirmation-promotion-receipt.json')
-    : path.join(recordRoot, 'confirmation', 'current-promotion.json');
+  const promotionPath = currentPromotionPath(recordRoot, record);
   const promotion = readJson(promotionPath);
   const promotionArtifactBytesHash = artifactBytesHash({
     role: 'promotion_receipt',
@@ -678,9 +848,8 @@ export function refreshRequirementsContractConfirmationBinding(input: {
     promotion.requestId !== input.requestId ||
     promotion.semanticRevisionId !== activeAuthority.activeSemanticRevisionId ||
     promotion.scopeSemanticHash !== activeAuthority.activeScopeSemanticHash ||
-    promotion.buildManifestHash !== activeAuthority.activeBuildHash ||
     promotion.requirementsEffectivePassHash !== effectivePass.requirementsEffectivePassHash ||
-    promotion.sourceBindingHash !== effectivePass.sourceBindingHash ||
+    !promotionMatchesAuditedOrActiveBinding({ promotion, effectivePass, activeAuthority }) ||
     sourceBinding.semanticRevisionId !== semanticIr.semanticRevisionId ||
     sourceBinding.scopeSemanticHash !== semanticIr.scopeSemanticHash
   ) {
@@ -715,7 +884,11 @@ export function refreshRequirementsContractConfirmationBinding(input: {
   // refreshed candidate forward as the sole confirmable authority.
   if (record.lifecycle !== 'user_confirmed' &&
       promotion.schemaVersion === 'requirements-contract-review-candidate/v1') {
-    const candidateTargetPath = resolvePath(root, text(promotion.targetPath));
+    const candidateTargetPath = resolveConfinedPathWithoutLinks(
+      root,
+      text(promotion.targetPath),
+      'requirements_final_render_target_path_escape'
+    );
     if (fs.existsSync(candidateTargetPath) && fs.lstatSync(candidateTargetPath).isDirectory()) {
       throw new Error('requirements_binding_refresh_target_invalid');
     }
@@ -739,6 +912,7 @@ export function refreshRequirementsContractConfirmationBinding(input: {
       ...promotion,
       bindingRevisionId: sourceBinding.bindingRevisionId,
       sourceBindingHash: sourceBinding.sourceBindingHash,
+      buildManifestHash: activeAuthority.activeBuildHash,
       candidateRef,
       exactConfirmationText: confirmationTextFromMarkdown(stagedMarkdown),
       markdownArtifactBytesHash,
@@ -753,6 +927,7 @@ export function refreshRequirementsContractConfirmationBinding(input: {
     const nextRecord = {
       ...record,
       lifecycle: 'user_confirmable',
+      activeOperationId: null,
       currentPromotionEvidence: {
         path: path.relative(recordRoot, promotionPath).replace(/\\/gu, '/'),
         artifactBytesHash: refreshedPromotionHash,
@@ -780,12 +955,20 @@ export function refreshRequirementsContractConfirmationBinding(input: {
   if (!markdownArtifact) {
     throw new Error('requirements_binding_refresh_promotion_artifacts_missing');
   }
-  const targetMarkdownPath = resolvePath(root, text(markdownArtifact.targetPath));
+  const targetMarkdownPath = resolveConfinedPathWithoutLinks(
+    root,
+    text(markdownArtifact.targetPath),
+    'requirements_final_render_target_path_escape'
+  );
   const markdownReadback = replaceBytesAtomic(targetMarkdownPath, stagedMarkdown);
   let targetHtmlPath: string | null = null;
   let htmlReadback = stagedHtml;
   if (htmlArtifact) {
-    targetHtmlPath = resolvePath(root, text(htmlArtifact.targetPath));
+    targetHtmlPath = resolveConfinedPathWithoutLinks(
+      root,
+      text(htmlArtifact.targetPath),
+      'requirements_final_render_target_path_escape'
+    );
     htmlReadback = replaceBytesAtomic(targetHtmlPath, stagedHtml);
   }
   if (markdownReadback !== stagedMarkdown || htmlReadback !== stagedHtml) {
@@ -828,6 +1011,7 @@ export function refreshRequirementsContractConfirmationBinding(input: {
   const nextRecord = {
     ...record,
     lifecycle: record.lifecycle === 'user_confirmed' ? 'user_confirmed' : 'user_confirmable',
+    activeOperationId: null,
     currentPromotionEvidence: {
       path: path.relative(recordRoot, refreshReceiptPath).replace(/\\/gu, '/'),
       artifactBytesHash: receiptPublication.artifactBytesHash,
@@ -859,7 +1043,11 @@ function confinedRecordArtifact(recordRoot: string, recordRelativePath: string):
   );
 }
 
-function readSourceBindingRevision(recordRoot: string, bindingRevisionId: string): JsonObject {
+function readSourceBindingRevision(
+  recordRoot: string,
+  bindingRevisionId: string,
+  predecessorManifestPath?: string | null
+): JsonObject {
   const bindingRoot = path.join(recordRoot, 'authoring', 'source-bindings', bindingRevisionId);
   const bindingPath = confinedRecordArtifact(
     recordRoot,
@@ -867,11 +1055,30 @@ function readSourceBindingRevision(recordRoot: string, bindingRevisionId: string
   );
   if (fs.existsSync(bindingPath)) return readJson(bindingPath);
   const refPath = path.join(bindingRoot, 'source-binding.ref.json');
-  if (!fs.existsSync(refPath)) throw new Error('requirements_source_binding_revision_missing');
-  const ref = readJson(refPath);
-  return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(
-    readRequirementsContentObject({ recordRoot, ref: ref.contentRef as RequirementsContentRef })
+  if (fs.existsSync(refPath)) {
+    const ref = readJson(refPath);
+    return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(
+      readRequirementsContentObject({ recordRoot, ref: ref.contentRef as RequirementsContentRef })
+    )) as JsonObject;
+  }
+  if (!predecessorManifestPath) throw new Error('requirements_source_binding_revision_missing');
+  const predecessorManifest = readJson(
+    confinedRecordArtifact(recordRoot, predecessorManifestPath)
+  );
+  const entries = records(predecessorManifest.artifactEntries).filter(
+    (entry) => text(entry.role) === 'source_binding'
+  );
+  if (entries.length !== 1) throw new Error('requirements_source_binding_revision_missing');
+  const binding = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(
+    readRequirementsContentObject({
+      recordRoot,
+      ref: entries[0].contentRef as RequirementsContentRef,
+    })
   )) as JsonObject;
+  if (text(binding.bindingRevisionId) !== bindingRevisionId) {
+    throw new Error('requirements_source_binding_revision_missing');
+  }
+  return binding;
 }
 
 function resolveConfinedPathWithoutLinks(root: string, value: string, code: string): string {
@@ -1139,6 +1346,31 @@ function promoteRequirementsContractReviewCandidate(input: {
     input.exactConfirmationText !== input.candidate.exactConfirmationText ||
     input.exactConfirmationText !== confirmationTextFromMarkdown(markdown)
   ) throw new Error('requirements_confirmation_exact_text_mismatch');
+  let bindingRefresh: { current: JsonObject; parent: JsonObject } | null = null;
+  if (
+    text(input.effectivePass.buildManifestHash) !== input.activeAuthority.activeBuildHash ||
+    text(input.effectivePass.sourceBindingHash) !== input.activeAuthority.activeSourceBindingHash
+  ) {
+    const current = object(resolveRequirementsActiveArtifact({
+      recordRoot: input.recordRoot,
+      activeAuthority: input.activeAuthority as unknown as RequirementsActiveAuthorityTupleV3,
+      role: 'source_binding',
+    }).value);
+    const parentBindingRevisionId = text(current.parentBindingRevisionId);
+    if (!parentBindingRevisionId) throw new Error('requirements_confirmation_promotion_stale');
+    const parent = readSourceBindingRevision(
+      input.recordRoot,
+      parentBindingRevisionId,
+      text(input.activeAuthority.previousBuildManifestPath)
+    );
+    if (
+      text(input.activeAuthority.previousBuildHash) !== text(input.effectivePass.buildManifestHash) ||
+      text(parent.sourceBindingHash) !== text(input.effectivePass.sourceBindingHash)
+    ) {
+      throw new Error('requirements_confirmation_promotion_stale');
+    }
+    bindingRefresh = { current, parent };
+  }
   const root = path.resolve(input.projectRoot);
   const targetPath = resolveConfinedPathWithoutLinks(
     root, text(input.candidate.targetPath), 'requirements_final_render_target_path_escape'
@@ -1186,6 +1418,48 @@ function promoteRequirementsContractReviewCandidate(input: {
   const finalPromotionHash = artifactBytesHash({
     role: 'promotion_receipt', mediaType: 'application/json', bytes: fs.readFileSync(finalPromotionPath),
   });
+  let bindingRefreshEvidence: { path: string; artifactBytesHash: string } | null = null;
+  if (bindingRefresh) {
+    const { current: currentBinding, parent: parentBinding } = bindingRefresh;
+    const refreshReceipt = createRequirementsContractSourceBindingRefreshReceipt({
+      semanticRevisionId: input.activeAuthority.activeSemanticRevisionId,
+      scopeSemanticHash: input.activeAuthority.activeScopeSemanticHash,
+      fromBindingRevisionId: text(parentBinding.bindingRevisionId),
+      toBindingRevisionId: text(currentBinding.bindingRevisionId),
+      fromSourceBindingHash: text(parentBinding.sourceBindingHash),
+      toSourceBindingHash: text(currentBinding.sourceBindingHash),
+      fromSnapshotSetHash: sha256Stable(parentBinding.sourceArtifacts),
+      toSnapshotSetHash: sha256Stable(currentBinding.sourceArtifacts),
+      fromSourceSpanRegistryHash: text(parentBinding.sourceSpanRegistryHash),
+      toSourceSpanRegistryHash: text(currentBinding.sourceSpanRegistryHash),
+      evidenceClaimRegistryHash: text(currentBinding.evidenceClaimBindingRegistryHash),
+      pageEvidence: {
+        confirmationPromotionReceiptRef: {
+          path: 'confirmation/final-promotion-receipt.json',
+          hash: finalPromotionHash,
+        },
+        pageArtifactBytesHash: promotedHash,
+        htmlPageArtifactBytesHash: text(input.candidate.htmlArtifactBytesHash),
+      },
+    });
+    const refreshReceiptPath = path.join(
+      input.recordRoot,
+      'authoring',
+      'source-bindings',
+      text(currentBinding.bindingRevisionId),
+      'source-binding-refresh-receipt.json'
+    );
+    const refreshPublication = atomicNoClobberPublish({
+      targetPath: refreshReceiptPath,
+      value: refreshReceipt,
+      role: 'source-binding-refresh-receipt',
+      mediaType: 'application/json',
+    });
+    bindingRefreshEvidence = {
+      path: path.relative(input.recordRoot, refreshReceiptPath).replace(/\\/gu, '/'),
+      artifactBytesHash: refreshPublication.artifactBytesHash,
+    };
+  }
   const event = {
     schemaVersion: 'requirements-contract-confirmation-event/v1',
     requestId: input.requestId,
@@ -1206,9 +1480,11 @@ function promoteRequirementsContractReviewCandidate(input: {
   writeJsonAtomic(input.recordPath, {
     ...latestRecord,
     lifecycle: 'user_confirmed',
+    activeOperationId: null,
     confirmedScopeSemanticHash: input.activeAuthority.activeScopeSemanticHash,
     finalPromotionEvidence: { path: 'confirmation/final-promotion-receipt.json', artifactBytesHash: finalPromotionHash },
-    currentPromotionEvidence: { path: 'confirmation/final-promotion-receipt.json', artifactBytesHash: finalPromotionHash },
+    currentPromotionEvidence: bindingRefreshEvidence ??
+      { path: 'confirmation/final-promotion-receipt.json', artifactBytesHash: finalPromotionHash },
     confirmationEventRef: { path: 'confirmation/confirmation-event.json', artifactBytesHash: eventPublication.artifactBytesHash },
   });
   fs.rmSync(path.join(input.recordRoot, 'confirmation', 'staging'), { recursive: true, force: true });
@@ -1279,9 +1555,7 @@ export function confirmRequirementsContractIrScope(input: {
   }
   if (
     effectivePass.semanticRevisionId !== activeAuthority.activeSemanticRevisionId ||
-    effectivePass.scopeSemanticHash !== activeAuthority.activeScopeSemanticHash ||
-    effectivePass.buildManifestHash !==
-      activeAuthority.activeBuildHash
+    effectivePass.scopeSemanticHash !== activeAuthority.activeScopeSemanticHash
   ) {
     throw new Error('requirements_confirmation_effective_pass_invalid');
   }
@@ -1304,13 +1578,25 @@ export function confirmRequirementsContractIrScope(input: {
       event.schemaVersion !== 'requirements-contract-confirmation-event/v1' ||
       event.requestId !== input.requestId ||
       event.semanticRevisionId !== activeAuthority.activeSemanticRevisionId ||
-      event.scopeSemanticHash !== activeAuthority.activeScopeSemanticHash
+      event.scopeSemanticHash !== activeAuthority.activeScopeSemanticHash ||
+      !confirmationAuditBindingIsCurrent({
+        recordRoot,
+        record,
+        event,
+        effectivePass,
+        activeAuthority: activeAuthority as unknown as RequirementsActiveAuthorityTupleV3,
+      })
     ) throw new Error('requirements_confirmation_promotion_stale');
     if (event.exactConfirmationText !== input.exactConfirmationText) {
-      const candidatePath = path.join(recordRoot, 'confirmation', 'current-promotion.json');
-      if (!fs.existsSync(candidatePath)) throw new Error('requirements_confirmation_exact_text_mismatch');
-      const candidate = readJson(candidatePath);
-      const targetPath = resolvePath(input.projectRoot, text(candidate.targetPath));
+      const finalPromotionPath = confinedRecordArtifact(
+        recordRoot,
+        text(object(record.finalPromotionEvidence).path) || 'confirmation/final-promotion-receipt.json'
+      );
+      if (!fs.existsSync(finalPromotionPath)) {
+        throw new Error('requirements_confirmation_exact_text_mismatch');
+      }
+      const finalPromotion = readJson(finalPromotionPath);
+      const targetPath = resolvePath(input.projectRoot, text(finalPromotion.targetPath));
       if (!fs.existsSync(targetPath) ||
           confirmationTextFromMarkdown(fs.readFileSync(targetPath, 'utf8')) !== input.exactConfirmationText) {
         throw new Error('requirements_confirmation_exact_text_mismatch');
@@ -1464,7 +1750,9 @@ export function confirmRequirementsContractIrScope(input: {
   }
   if (
     promotion.requirementsEffectivePassHash !== effectivePass.requirementsEffectivePassHash ||
-    (!refreshReceipt && effectivePass.sourceBindingHash !== activeAuthority.activeSourceBindingHash)
+    (!refreshReceipt &&
+      promotion.schemaVersion !== 'requirements-contract-review-candidate/v1' &&
+      effectivePass.sourceBindingHash !== activeAuthority.activeSourceBindingHash)
   ) {
     throw new Error('requirements_confirmation_effective_pass_invalid');
   }

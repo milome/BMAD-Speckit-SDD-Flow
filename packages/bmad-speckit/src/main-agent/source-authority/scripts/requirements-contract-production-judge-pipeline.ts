@@ -309,21 +309,23 @@ export async function runRequirementsContractProductionJudgePipeline(input: Requ
     validateRequirementsContractJudgeActiveRequest(currentActiveRequest);
     if (currentActiveRequest.acceptedEvaluation) {
       if (!input.remediation) {
-        if (
-          currentActiveRequest.semanticRevisionId !==
-            input.activeAuthority.activeSemanticRevisionId ||
-          currentActiveRequest.auditPolicyHash !== auditPolicyHash
-        ) {
+        if (currentActiveRequest.semanticRevisionId ===
+            input.activeAuthority.activeSemanticRevisionId &&
+            currentActiveRequest.auditPolicyHash !== auditPolicyHash) {
           throw new Error('requirements_contract_judge_terminal_policy_mismatch');
         }
-        return terminalResult(input.recordRoot, currentActiveRequest);
+        if (currentActiveRequest.semanticRevisionId ===
+            input.activeAuthority.activeSemanticRevisionId) {
+          return terminalResult(input.recordRoot, currentActiveRequest);
+        }
       }
       if (
-        currentActiveRequest.status !== 'audited_fail' ||
-        currentActiveRequest.judgeRequestHash !== input.remediation.remediatesRequestHash ||
-        currentActiveRequest.aggregateRef?.hash !== input.remediation.remediationAggregateHash ||
-        currentActiveRequest.remediationDeltaRef?.hash !== input.remediation.remediationDeltaHash ||
-        !currentActiveRequest.remediationPlanRef
+        input.remediation &&
+        (currentActiveRequest.status !== 'audited_fail' ||
+          currentActiveRequest.judgeRequestHash !== input.remediation.remediatesRequestHash ||
+          currentActiveRequest.aggregateRef?.hash !== input.remediation.remediationAggregateHash ||
+          currentActiveRequest.remediationDeltaRef?.hash !== input.remediation.remediationDeltaHash ||
+          !currentActiveRequest.remediationPlanRef)
       ) {
         throw new Error('requirements_contract_judge_successor_lineage_invalid');
       }
@@ -343,8 +345,11 @@ export async function runRequirementsContractProductionJudgePipeline(input: Requ
       throw new Error('requirements_contract_judge_pending_request_mismatch');
     }
   }
-  const successorPredecessor =
-    currentActiveRequest?.acceptedEvaluation && input.remediation ? currentActiveRequest : null;
+  const successorPredecessor = currentActiveRequest?.acceptedEvaluation &&
+    (Boolean(input.remediation) ||
+      currentActiveRequest.semanticRevisionId !== input.activeAuthority.activeSemanticRevisionId)
+    ? currentActiveRequest
+    : null;
   let persistedActiveRequest = currentActiveRequest;
   let activeRequest = successorPredecessor
     ? createRequirementsContractJudgeActiveRequest({
@@ -711,7 +716,9 @@ export async function runRequirementsContractProductionJudgePipeline(input: Requ
     aggregate,
   });
   const passPath = 'quality/requirements-effective-pass-receipt.json';
-  publish(input.recordRoot, passPath, effectivePass, persist);
+  if (persist) {
+    writeJsonAtomic(path.join(input.recordRoot, ...passPath.split('/')), effectivePass);
+  }
   activeRequest = {
     ...activeRequest,
     effectivePassRef: { path: passPath, hash: effectivePass.requirementsEffectivePassHash },

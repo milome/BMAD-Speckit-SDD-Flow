@@ -1866,7 +1866,7 @@ async function continueAuthoringFromContext(context, authoringContext, options =
       ...(decision.affectedSourceRefs ? { affectedSourceRefs: decision.affectedSourceRefs } : {}),
       authorityPremiseHashes: decision.authorityPremiseHashes,
     })),
-    technicalPlanning: withoutRequirementsAuthoringOperationMetadata(capability),
+    technicalPlanning: capability,
   };
   let cp02CandidateSemantic = null;
   const cp02Units = [
@@ -1891,7 +1891,7 @@ async function continueAuthoringFromContext(context, authoringContext, options =
             authoringRequestId: requestId, authoringAttemptId, atoms: cp02Input.atoms,
             ...(cp02Input.typedSourceIds.length > 0 ? { typedSourceIds: cp02Input.typedSourceIds } : {}),
             decisions: cp02Input.decisions,
-            technicalPlanning: { ...cp02Input.technicalPlanning, authoringAttemptId },
+            technicalPlanning: cp02Input.technicalPlanning,
           })
         );
         const mustPacket = {
@@ -2725,10 +2725,16 @@ async function resumeAuthorConfirmationReadySourceAction(context) {
         authoritySources: readRequirementsContractDeclaredAuthoritySources(intakeSource),
       });
       if (scan.conflicts.length > 0) throw new Error('requirements_authority_conflict');
-      if (scan.sourceList.sourceListHash === currentContext.authoritySourceListHash) {
-        const requirementRecord = fs.existsSync(requirementRecordPath)
-          ? openRequirementsContractRecord(requirementRecordPath)
-          : null;
+      const requirementRecord = fs.existsSync(requirementRecordPath)
+        ? openRequirementsContractRecord(requirementRecordPath)
+        : null;
+      const bindingRefreshRecovery =
+        typeof requirementRecord?.activeOperationId === 'string' &&
+        requirementRecord.activeOperationId.startsWith('BINDING-');
+      if (
+        scan.sourceList.sourceListHash === currentContext.authoritySourceListHash ||
+        bindingRefreshRecovery
+      ) {
         const currentAuthority = requirementRecord?.activeAuthority;
         if (currentAuthority) {
           const hasCurrentPromotionEvidence = Boolean(
@@ -2771,6 +2777,37 @@ async function resumeAuthorConfirmationReadySourceAction(context) {
             beforeLocatorHash,
             afterLocatorHash,
           });
+          if (bindingRefreshRecovery && preflight.decision === 'no_change') {
+            stageRequirementsContractConfirmationBindingRefresh({
+              projectRoot: context.cwd,
+              requestId,
+              bindingRevisionId: currentBinding.bindingRevisionId,
+            });
+            const refreshedConfirmation = refreshRequirementsContractConfirmationBinding({
+              projectRoot: context.cwd,
+              requestId,
+            });
+            return cliContinuationResult({
+              status: refreshedConfirmation.status,
+              issueCode: 'requirements_user_confirmable',
+              authoringRequestId: requestId,
+              authoringAttemptId: requirementRecord.activeOperationId,
+              unresolvedDecisionCount: refreshedConfirmation.unresolvedDecisionCount,
+              confirmation: refreshedConfirmation.confirmation,
+            });
+          }
+          if (
+            preflight.decision === 'no_change' &&
+            requirementRecord?.lifecycle === 'user_confirmed'
+          ) {
+            return cliContinuationResult({
+              status: 'user_confirmed',
+              issueCode: 'requirements_user_confirmed',
+              authoringRequestId: requestId,
+              authoringAttemptId,
+              unresolvedDecisionCount: 0,
+            });
+          }
           if (preflight.decision !== 'refresh_binding') {
             return await continueAuthoringFromContext(context, currentContext);
           }

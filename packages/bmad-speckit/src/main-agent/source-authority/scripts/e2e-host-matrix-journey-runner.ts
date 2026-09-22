@@ -331,6 +331,7 @@ function runInspectCheck(
     projectRoot,
     '--action',
     'inspect',
+    '--json',
     ...(options.recordId ? ['--record-id', options.recordId] : []),
     ...(options.requirementSetId ? ['--requirement-set-id', options.requirementSetId] : []),
     ...(options.runId ? ['--run-id', options.runId] : []),
