@@ -174,6 +174,7 @@ describe('requirements confirmation ingest scale corpus', () => {
         [
           path.join(ROOT, 'packages/bmad-speckit/bin/bmad-speckit.js'),
           'main-agent:confirm-scope',
+          '--json',
           '--cwd',
           ROOT,
           '--source',
@@ -197,7 +198,7 @@ describe('requirements confirmation ingest scale corpus', () => {
       expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
       expect(result.stderr).not.toMatch(/Maximum call stack|RangeError/iu);
       const output = JSON.parse(result.stdout);
-      expect(output).toMatchObject({ ok: true, action: 'confirm-scope' });
+      expect(output).toMatchObject({ action: 'confirm-scope', data: { ok: true } });
       const updated = extractRequirementsContractImplementationConfirmation(
         fs.readFileSync(sourcePath, 'utf8')
       );

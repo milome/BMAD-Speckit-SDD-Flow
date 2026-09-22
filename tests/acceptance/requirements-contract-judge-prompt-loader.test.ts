@@ -26,7 +26,7 @@ function packageFixture(): string {
   mkdirSync(path.join(root, '_bmad', 'shared', 'requirements-contract', 'judge-prompts'), {
     recursive: true,
   });
-  mkdirSync(path.join(root, 'src', 'main-agent', 'source-authority', 'schemas'), {
+  mkdirSync(path.join(root, 'dist', 'main-agent', 'source-authority', 'schemas'), {
     recursive: true,
   });
   for (const fileName of [
@@ -43,7 +43,7 @@ function packageFixture(): string {
     'requirements-contract-judge-response.schema.json',
   ]) {
     writeFileSync(
-      path.join(root, 'src', 'main-agent', 'source-authority', 'schemas', fileName),
+      path.join(root, 'dist', 'main-agent', 'source-authority', 'schemas', fileName),
       readFileSync(path.join(schemaRoot, fileName), 'utf8'),
       'utf8'
     );
@@ -79,7 +79,7 @@ describe('requirements contract Judge prompt loader', () => {
     const root = packageFixture();
     const responseSchemaPath = path.join(
       root,
-      'src',
+      'dist',
       'main-agent',
       'source-authority',
       'schemas',
