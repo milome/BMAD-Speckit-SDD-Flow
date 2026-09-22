@@ -2,9 +2,9 @@
   "schemaVersion": "requirements-contract-safe-write-target-registry/v1",
   "owner": {
     "path": "packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-safe-write-target-registry.ts",
-    "hash": "sha256:158c5e26a46762f7b8881eabca99d356fdb401fc439e520962a22db64c010505"
+    "hash": "sha256:b5e266c9d065d96de72c6f34dcd0bec8e476e5a9b4097ddf2ff57a625315cabd"
   },
-  "registryHash": "sha256:bce64f1274a91ac98eddbe806db39b9cf4dde541ed84abe4b992e39d5b80da05",
+  "registryHash": "sha256:cd9cb2da6c6bc5829d1e1a938e849adbf968641a1fcc3680bc8fdd8877527530",
   "targetSetSchemaVersion": "requirements-contract-safe-write-target-set/v1",
   "targetOrdering": "normalized_path_lexicographic",
   "fixedTargetDescriptors": [
@@ -112,11 +112,6 @@
       "targetId": "requirements_contract_evaluation_report",
       "resolution": "evidence_relative",
       "relativePath": "requirements-contract-evaluation-report.json"
-    },
-    {
-      "targetId": "legacy_prd_migration_receipt",
-      "resolution": "evidence_relative",
-      "relativePath": "legacy-prd-migration-receipt.json"
     },
     {
       "targetId": "consumer_migration",

@@ -146,7 +146,7 @@ function commandSelectorInventory(root, commandId, expectedCount = null, options
 }
 
 function cmd08SelectorInventory(root, options = {}) {
-  return commandSelectorInventory(root, 'CMD-08', 6, options);
+  return commandSelectorInventory(root, 'CMD-08', 5, options);
 }
 
 function cmd31SelectorInventory(root, options = {}) {

@@ -9,7 +9,7 @@ function authority() {
     activeSemanticRevisionId: 'SEM-FINAL',
     activeScopeSemanticHash: hash('scope'),
     activeSourceBindingHash: hash('source'),
-    activeBuildManifestHash: hash('build'),
+    activeBuildHash: hash('build'),
   };
 }
 
@@ -63,7 +63,7 @@ describe('requirements contract final acceptance effective pass gate', () => {
 
     expect(() =>
       compileRequirementsEffectivePassReceiptV2({
-        activeAuthority: { ...authority(), activeBuildManifestHash: hash('stale') },
+        activeAuthority: { ...authority(), activeBuildHash: hash('stale') },
         aggregate: aggregate(),
       })
     ).toThrow('requirements_effective_pass_authority_stale');

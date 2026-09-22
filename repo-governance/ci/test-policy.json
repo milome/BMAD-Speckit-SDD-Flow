@@ -121,8 +121,13 @@
       "transition": "ingress_to_record_closed",
       "applicability": "applicable",
       "minimumEvidenceKind": "indirect",
-      "anyOfEvidenceRefs": ["trace:six-model/full-e2e/record-closed"],
-      "affectedTargetRefs": ["capability:six-model-state-machine", "transition:record-closed"],
+      "anyOfEvidenceRefs": [
+        "trace:six-model/full-e2e/record-closed"
+      ],
+      "affectedTargetRefs": [
+        "capability:six-model-state-machine",
+        "transition:record-closed"
+      ],
       "remediationOwner": "dev"
     }
   ],
@@ -239,38 +244,10 @@
     },
     {
       "runnerId": "root-vitest",
-      "testPath": "tests/acceptance/audit-triad-closed-loop-e2e.test.ts",
-      "bindings": [
-        {
-          "evidenceRef": "trace:six-model/audit-review/successful-promotion",
-          "evidenceKind": "direct"
-        },
-        {
-          "evidenceRef": "trace:six-model/audit-review/evidence-binding",
-          "evidenceKind": "direct"
-        }
-      ]
-    },
-    {
-      "runnerId": "root-vitest",
       "testPath": "tests/acceptance/requirements-contract-no-three-round-authority.test.ts",
       "bindings": [
         {
           "evidenceRef": "trace:six-model/audit-review/fail-closed",
-          "evidenceKind": "direct"
-        }
-      ]
-    },
-    {
-      "runnerId": "root-vitest",
-      "testPath": "tests/acceptance/requirements-contract-reverse-audit.test.ts",
-      "bindings": [
-        {
-          "evidenceRef": "trace:six-model/audit-review/reverse-audit-execution",
-          "evidenceKind": "direct"
-        },
-        {
-          "evidenceRef": "trace:six-model/audit-review/judge-continuation",
           "evidenceKind": "direct"
         }
       ]
@@ -622,13 +599,19 @@
   "protectedCapabilities": [
     {
       "capabilityId": "consumer-install-boundary",
-      "selectionRefs": ["script:test:consumer-install-final"],
-      "survivalEvidenceRefs": ["target:scripts/init-to-root.js"],
+      "selectionRefs": [
+        "script:test:consumer-install-final"
+      ],
+      "survivalEvidenceRefs": [
+        "target:scripts/init-to-root.js"
+      ],
       "requiredBehaviors": {}
     },
     {
       "capabilityId": "consumer-runtime-boundary",
-      "selectionRefs": ["script:test:consumer-runtime-final"],
+      "selectionRefs": [
+        "script:test:consumer-runtime-final"
+      ],
       "survivalEvidenceRefs": [
         "target:packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-real-consumer-journey.ts"
       ],
@@ -636,7 +619,9 @@
     },
     {
       "capabilityId": "six-model-state-machine",
-      "selectionRefs": ["script:test:ci:codex"],
+      "selectionRefs": [
+        "script:test:ci:codex"
+      ],
       "survivalEvidenceRefs": [
         "target:packages/bmad-speckit/src/main-agent/source-authority/scripts/orchestration-state.ts"
       ],
@@ -645,7 +630,9 @@
     },
     {
       "capabilityId": "runtime-policy-security-boundary",
-      "selectionRefs": ["script:test:runtime-policy-inject"],
+      "selectionRefs": [
+        "script:test:runtime-policy-inject"
+      ],
       "survivalEvidenceRefs": [
         "target:packages/bmad-speckit/src/main-agent/source-authority/scripts/stable-runtime-policy-json.ts"
       ],
@@ -653,7 +640,9 @@
     },
     {
       "capabilityId": "sprint-status-write-security-boundary",
-      "selectionRefs": ["script:test:main-agent-sprint-status-write-gate"],
+      "selectionRefs": [
+        "script:test:main-agent-sprint-status-write-gate"
+      ],
       "survivalEvidenceRefs": [
         "target:packages/bmad-speckit/src/main-agent/source-authority/scripts/sprint-status-authorized-update.ts"
       ],
@@ -661,7 +650,9 @@
     },
     {
       "capabilityId": "governance-proof-round-1",
-      "selectionRefs": ["script:test:governance-audit:round1"],
+      "selectionRefs": [
+        "script:test:governance-audit:round1"
+      ],
       "survivalEvidenceRefs": [
         "target:packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-runner.ts"
       ],
@@ -669,7 +660,9 @@
     },
     {
       "capabilityId": "governance-proof-round-2",
-      "selectionRefs": ["script:test:governance-audit:round2"],
+      "selectionRefs": [
+        "script:test:governance-audit:round2"
+      ],
       "survivalEvidenceRefs": [
         "target:packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-remediation-artifact.ts"
       ],
@@ -677,7 +670,9 @@
     },
     {
       "capabilityId": "requirement-record-authority",
-      "selectionRefs": ["script:core:requirement-record-authority"],
+      "selectionRefs": [
+        "script:core:requirement-record-authority"
+      ],
       "bindTestsBySurvivalEvidence": true,
       "survivalEvidenceRefs": [
         "target:packages/bmad-speckit/src/main-agent/source-authority/scripts/requirement-record-control-store.ts"
@@ -686,7 +681,9 @@
     },
     {
       "capabilityId": "judge-audit-reverse-audit-continuation",
-      "selectionRefs": ["script:core:judge-audit-reverse-audit-continuation"],
+      "selectionRefs": [
+        "script:core:judge-audit-reverse-audit-continuation"
+      ],
       "bindTestsBySurvivalEvidence": true,
       "survivalEvidenceRefs": [
         "target:packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-triad-orchestrator.ts"
@@ -695,14 +692,20 @@
     },
     {
       "capabilityId": "cli-startup-boundary",
-      "selectionRefs": ["script:core:cli-startup-boundary"],
+      "selectionRefs": [
+        "script:core:cli-startup-boundary"
+      ],
       "bindTestsBySurvivalEvidence": true,
-      "survivalEvidenceRefs": ["target:scripts/bmad-speckit-cli.js"],
+      "survivalEvidenceRefs": [
+        "target:scripts/bmad-speckit-cli.js"
+      ],
       "requiredBehaviors": {}
     },
     {
       "capabilityId": "canonical-package-runtime-boundary",
-      "selectionRefs": ["script:core:canonical-package-runtime-boundary"],
+      "selectionRefs": [
+        "script:core:canonical-package-runtime-boundary"
+      ],
       "bindTestsBySurvivalEvidence": true,
       "survivalEvidenceRefs": [
         "target:packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-package-runtime-index.ts"
@@ -711,7 +714,9 @@
     },
     {
       "capabilityId": "persistence-boundary",
-      "selectionRefs": ["script:core:persistence-boundary"],
+      "selectionRefs": [
+        "script:core:persistence-boundary"
+      ],
       "bindTestsBySurvivalEvidence": true,
       "survivalEvidenceRefs": [
         "target:packages/bmad-speckit/src/main-agent/source-authority/scripts/governance-packet-execution-store.ts"
@@ -720,7 +725,9 @@
     },
     {
       "capabilityId": "encoding-boundary",
-      "selectionRefs": ["script:core:encoding-boundary"],
+      "selectionRefs": [
+        "script:core:encoding-boundary"
+      ],
       "bindTestsBySurvivalEvidence": true,
       "survivalEvidenceRefs": [
         "target:packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-intake-receipt.ts"
@@ -781,7 +788,11 @@
     ]
   },
   "selection": {
-    "expansionOrder": ["trace_capability", "feature", "package"],
+    "expansionOrder": [
+      "trace_capability",
+      "feature",
+      "package"
+    ],
     "highDiffusionPathRules": [
       "packages/bmad-speckit/src/main-agent/**",
       "packages/bmad-speckit/src/utils/main-agent/**",

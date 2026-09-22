@@ -113,7 +113,7 @@ function publicationReadyFixture() {
     })),
   };
   const auditPacket = {
-    schemaVersion: 'requirements-contract-judge-audit-packet/v1',
+    schemaVersion: 'requirements-contract-judge-audit-draft/v1',
     semanticRevisionId: semanticIr.semanticRevisionId,
     scopeSemanticHash: semanticIr.scopeSemanticHash,
     body: packetBody,
@@ -124,7 +124,17 @@ function publicationReadyFixture() {
       schemaVersion: 'requirements-contract-build-input/v2',
       scopeSemanticHash: semanticIr.scopeSemanticHash,
       sourceBindingHash: hash('3'),
-      artifactRoles: ['confirmation_projection', 'final_markdown', 'judge_audit_packet'],
+      artifactRoles: [
+        'confirmation_projection',
+        'final_markdown',
+        'execution_manifest',
+        'per_must_bundle',
+        'trace_matrix',
+        'diagram_set',
+        'projection_reconciliation_report',
+        'authority_resolution_report',
+        'renderability_probe_report',
+      ],
     },
     semanticIr,
     resolvedEvidenceIndex: {
@@ -170,7 +180,17 @@ function publicationReadyFixture() {
       dimensionIds: [...REQUIREMENTS_CONTRACT_PREPUBLICATION_DIMENSIONS],
     },
     payloadObservation: { serializedBytes },
-    buildArtifactRoles: ['confirmation_projection', 'final_markdown', 'judge_audit_packet'],
+    buildArtifactRoles: [
+      'confirmation_projection',
+      'final_markdown',
+      'execution_manifest',
+      'per_must_bundle',
+      'trace_matrix',
+      'diagram_set',
+      'projection_reconciliation_report',
+      'authority_resolution_report',
+      'renderability_probe_report',
+    ],
   };
 }
 

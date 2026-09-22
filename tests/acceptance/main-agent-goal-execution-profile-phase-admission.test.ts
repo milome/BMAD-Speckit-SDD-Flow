@@ -90,9 +90,19 @@ function materializeRequirementsAuthority() {
 
 function semanticAuthorityPath(fixture: ImplementationReadinessFixture): string {
   const authoringRecord = JSON.parse(readFileSync(fixture.recordPath, 'utf8'));
+  const manifest = JSON.parse(
+    readFileSync(
+      path.join(
+        fixture.recordRoot,
+        ...authoringRecord.activeAuthority.activeBuildManifestPath.split('/')
+      ),
+      'utf8'
+    )
+  );
+  const entry = manifest.artifactEntries.find((candidate: { role: string }) => candidate.role === 'semantic_ir');
   return path.join(
     fixture.recordRoot,
-    ...String(authoringRecord.activeAuthority.activeSemanticIrPath).split('/')
+    ...entry.contentRef.recordRelativePath.split('/')
   );
 }
 

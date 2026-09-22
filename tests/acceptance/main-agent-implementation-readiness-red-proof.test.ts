@@ -101,14 +101,16 @@ describe('Main Agent implementation readiness real RED proof', () => {
         decision: 'pass',
         effectiveStatus: 'pass',
       });
+      const record = JSON.parse(readFileSync(fixture.runtimeRecordPath, 'utf8'));
+      const activeBuildHash = JSON.parse(readFileSync(fixture.recordPath, 'utf8')).activeAuthority.activeBuildHash;
       expect(
         readinessReceipt.stageInputs,
         JSON.stringify(readinessReceipt.stageInputs, null, 2)
       ).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            role: 'requirements_semantic_ir',
-            hash: fixture.scopeSemanticHash,
+            role: 'requirements_active_build',
+            hash: activeBuildHash,
           }),
           expect.objectContaining({
             role: 'architecture_confirmation_candidate',
@@ -116,7 +118,6 @@ describe('Main Agent implementation readiness real RED proof', () => {
           }),
         ])
       );
-      const record = JSON.parse(readFileSync(fixture.runtimeRecordPath, 'utf8'));
       expect(
         record.runtimeStatusDecisionReceipts.map(
           (entry: { receipt: { modelId: string } }) => entry.receipt.modelId

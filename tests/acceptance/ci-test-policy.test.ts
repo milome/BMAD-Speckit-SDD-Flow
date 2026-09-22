@@ -605,12 +605,6 @@ describe('test portfolio policy', () => {
         'trace:six-model/implementation-readiness/stale-evidence-rejection': 'direct',
         'trace:six-model/execution-closure/invalidation': 'indirect',
       },
-      'tests/acceptance/critical-auditor-receipt-binding.test.ts': {
-        'trace:six-model/audit-review/fail-closed': 'direct',
-      },
-      'tests/acceptance/requirements-contract-reverse-audit.test.ts': {
-        'trace:six-model/audit-review/judge-continuation': 'direct',
-      },
       'tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts': {
         'trace:six-model/audit-review/state-entry': 'indirect',
         'trace:six-model/delivery-confirmation/fail-closed': 'indirect',
