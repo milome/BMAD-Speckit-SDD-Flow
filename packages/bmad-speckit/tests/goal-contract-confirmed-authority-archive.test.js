@@ -12,7 +12,20 @@ const FIXTURE_SCRIPT = path.join(
   'standalone-goal',
   'canonical-source-plan-v1-full.confirmed-authority-fixture.cjs'
 );
+const FIXTURE_ARCHIVE = path.join(
+  __dirname,
+  'fixtures',
+  'standalone-goal',
+  'canonical-source-plan-v1-full.confirmed-authority.tar.gz'
+);
+const FIXTURE_RECEIPT = path.join(
+  __dirname,
+  'fixtures',
+  'standalone-goal',
+  'canonical-source-plan-v1-full.confirmation-receipt.json'
+);
 const {
+  listArchiveMembers,
   validateArchiveMemberPaths,
   verifyArchiveReceipt,
 } = require(FIXTURE_SCRIPT);
@@ -47,6 +60,22 @@ async function archiveFixture(entries = ['a.txt', 'nested/b.txt']) {
 }
 
 describe('confirmed authority archive receipt verification', () => {
+  it('stores only durable v3 authority roots and the final promotion', async () => {
+    const receipt = JSON.parse(fs.readFileSync(FIXTURE_RECEIPT, 'utf8'));
+    const members = await listArchiveMembers(FIXTURE_ARCHIVE);
+    const paths = members.map((entry) => entry.path);
+
+    assert.equal(
+      receipt.requirementsEffectivePassHash,
+      'sha256:152c66819a93445621dc1be0432cfda2e378482b2d3be38e14cebe31a4d6ccd4'
+    );
+    assert.ok(paths.some((entry) => /\/authoring\/builds\/[a-f0-9]{64}\/manifest\.json$/u.test(entry)));
+    assert.ok(paths.some((entry) => /\/authoring\/objects\/sha256\/[a-f0-9]{2}\/[a-f0-9]{62}$/u.test(entry)));
+    assert.ok(paths.some((entry) => entry.endsWith('/confirmation/final-promotion-receipt.json')));
+    assert.equal(paths.some((entry) => entry.includes('/authoring/staging/')), false);
+    assert.equal(paths.some((entry) => entry.includes('/authoring/semantic-revisions/')), false);
+  });
+
   it('accepts an exact safe member set', async () => {
     const value = await archiveFixture();
     await verifyArchiveReceipt(value);

@@ -44,18 +44,6 @@
       "expectedBlocker": "must_packet_over_broad_atomic_task"
     },
     {
-      "id": "missing-critic-receipt",
-      "kind": "missing critic receipt",
-      "generator": "writeMustGateFixture('MISSING_CRITIC')",
-      "expectedBlocker": "critical_auditor_receipt_missing"
-    },
-    {
-      "id": "less-than-3-rounds",
-      "kind": "less than 3 rounds",
-      "generator": "writeMustGateFixture('LESS_THAN_3_ROUNDS')",
-      "expectedBlocker": "critical_auditor_less_than_three_no_new_gap_rounds"
-    },
-    {
       "id": "source-invented-trace-row",
       "kind": "source invented trace row",
       "generator": "writeMustGateFixture('SOURCE_INVENTED_TRACE_ROW')",

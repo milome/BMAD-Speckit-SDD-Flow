@@ -8,14 +8,14 @@ import {
 } from './requirements-contract-audit-actor-class';
 
 export const REQUIREMENTS_CONTRACT_JUDGE_ROLES = [
-  'requirements_critical_auditor',
+  'requirements_judge',
   'final_acceptance_judge',
 ] as const;
 
 export type RequirementsContractJudgeRole = (typeof REQUIREMENTS_CONTRACT_JUDGE_ROLES)[number];
 
 const JUDGE_ROLE_BY_ACTOR = {
-  requirements_critical_auditor_judge: 'requirements_critical_auditor',
+  requirements_contract_judge: 'requirements_judge',
   final_acceptance_judge: 'final_acceptance_judge',
 } as const satisfies Record<RequirementsContractJudgeActorClass, RequirementsContractJudgeRole>;
 

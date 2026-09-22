@@ -799,7 +799,6 @@ program
   .allowExcessArguments(true)
   .action((_options, _command) =>
     runRuntimeModule('../dist/main-agent/index.js', 'mainAgentRuntimeCommand', [
-      '--legacy-orchestration',
       ...rawArgsAfterCommandName('main-agent-orchestration'),
     ])
   );
@@ -814,7 +813,6 @@ program
   .allowExcessArguments(true)
   .action(() =>
     runRuntimeModule('../dist/main-agent/index.js', 'mainAgentRuntimeCommand', [
-      '--legacy-orchestration',
       '--action',
       'confirm-scope',
       ...rawArgsAfterCommandName('confirm-scope'),
@@ -829,7 +827,6 @@ program
   .allowExcessArguments(true)
   .action(() =>
     runRuntimeModule('../dist/main-agent/index.js', 'mainAgentRuntimeCommand', [
-      '--legacy-orchestration',
       '--action',
       'confirm-scope',
       ...rawArgsAfterCommandName('main-agent:confirm-scope'),
@@ -1050,42 +1047,6 @@ program
   );
 
 program
-  .command('requirements-contract-production-bypass-evidence-materialize')
-  .description('Materialize current production bypass evidence aggregates')
-  .requiredOption('--requirement-record <path>', 'Current Requirement Record')
-  .requiredOption('--transaction-id <id>', 'Current transaction id')
-  .requiredOption('--implementation-attempt-id <id>', 'Current implementation attempt id')
-  .requiredOption('--attempt-context <path>', 'Current attempt context receipt')
-  .requiredOption('--pointer-receipt <path>', 'Current dispatch pointer receipt')
-  .requiredOption('--implementation-evidence <path>', 'Current implementation evidence index')
-  .requiredOption('--evidence-root <path>', 'Target directory for verifier evidence')
-  .requiredOption('--contract-hash <hash>', 'Current frozen contract hash')
-  .requiredOption('--source-hash <hash>', 'Current source document hash')
-  .requiredOption('--semantic-model-hash <hash>', 'Current semantic model hash')
-  .option('--json', 'Print machine-readable JSON summary')
-  .action((opts) =>
-    runCommandPromise(
-      'requirements-contract-production-bypass-evidence-materialize',
-      loadCommand(
-        '../dist/main-agent/source-authority/scripts/requirements-contract-production-bypass-evidence-materializer.js',
-        'requirementsContractProductionBypassEvidenceMaterializeCommand'
-      )({
-        requirementRecordPath: opts.requirementRecord,
-        transactionId: opts.transactionId,
-        implementationAttemptId: opts.implementationAttemptId,
-        attemptContextPath: opts.attemptContext,
-        pointerReceiptPath: opts.pointerReceipt,
-        implementationEvidencePath: opts.implementationEvidence,
-        evidenceRoot: opts.evidenceRoot,
-        contractHash: opts.contractHash,
-        sourceHash: opts.sourceHash,
-        semanticModelHash: opts.semanticModelHash,
-        json: Boolean(opts.json),
-      })
-    )
-  );
-
-program
   .command('requirements-contract-production-bypass-verify')
   .description('Verify production bypass closure from current authoritative evidence')
   .requiredOption('--evidence-root <path>', 'Directory containing current closure evidence')
@@ -1207,27 +1168,6 @@ program
         phaseAuditAttemptId: opts.phaseAuditAttemptId,
         tarball: opts.tarball,
         receipt: opts.receipt,
-        json: Boolean(opts.json),
-      })
-    )
-  );
-
-program
-  .command('requirements-contract-gap-closure-readonly-auditor-adapter')
-  .description('Run the package-owned readonly independent gap closure auditor adapter')
-  .requiredOption('--project-root <path>', 'Project root containing the closure evidence request')
-  .requiredOption('--request <path>', 'Gap closure independent audit request')
-  .option('--json', 'Print machine-readable JSON')
-  .action((opts) =>
-    runCommandPromise(
-      'requirements-contract-gap-closure-readonly-auditor-adapter',
-      loadCommand(
-        '../dist/main-agent/source-authority/scripts/requirements-contract-gap-closure-readonly-auditor-adapter.js',
-        'requirementsContractGapClosureReadonlyAuditorAdapterCommand'
-      )({
-        cwd: opts.projectRoot,
-        projectRoot: opts.projectRoot,
-        request: opts.request,
         json: Boolean(opts.json),
       })
     )

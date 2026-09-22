@@ -104,7 +104,7 @@ export function installJudgeRuntime(root: string, baseUrl: string): void {
       'shared',
       'requirements-contract',
       'judge-prompts',
-      'requirements-contract-critical-auditor.prompt.md'
+      'requirements-contract-judge.prompt.md'
     ),
     path.join(
       root,
@@ -112,7 +112,7 @@ export function installJudgeRuntime(root: string, baseUrl: string): void {
       'shared',
       'requirements-contract',
       'judge-prompts',
-      'requirements-contract-critical-auditor.prompt.md'
+      'requirements-contract-judge.prompt.md'
     )
   );
   fs.writeFileSync(
@@ -124,7 +124,7 @@ export function installJudgeRuntime(root: string, baseUrl: string): void {
         activeProviderRef: 'deterministic-local-judge',
         promptConfig: {
           systemPromptPath:
-            '_bmad/shared/requirements-contract/judge-prompts/requirements-contract-critical-auditor.prompt.md',
+            '_bmad/shared/requirements-contract/judge-prompts/requirements-contract-judge.prompt.md',
           outputTokenReserve: 4096,
         },
         selectionPolicy: {

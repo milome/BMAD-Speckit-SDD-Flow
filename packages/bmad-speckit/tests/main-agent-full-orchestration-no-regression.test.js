@@ -93,7 +93,7 @@ describe('main-agent full orchestration no-regression bridge', () => {
     }
   });
 
-  it('routes pre-confirmation render registration aliases through source-authority orchestration', async () => {
+  it('rejects retired pre-confirmation render registration aliases', async () => {
     const root = makeConsumerRoot();
     try {
       for (const action of [
@@ -104,11 +104,7 @@ describe('main-agent full orchestration no-regression bridge', () => {
         const output = `${result.stdout}\n${result.stderr}`;
 
         assert.notEqual(result.exitCode, 0);
-        assert.doesNotMatch(output, /unsupported_main_agent_action/);
-        assert.match(
-          output,
-          /register-pre-confirmation-render requires --source, --render-report, and --requirement-record/
-        );
+        assert.match(output, /unsupported_main_agent_action/);
       }
     } finally {
       fs.rmSync(root, { recursive: true, force: true });

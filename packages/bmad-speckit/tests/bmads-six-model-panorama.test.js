@@ -666,7 +666,7 @@ describe('bmads Six Mental Models panorama', () => {
       const text = renderBmads(buildBmadsOutput({ projectRoot: root, budget: 'expanded' }));
 
       assert.match(text, /The system is waiting for reconfirmation: SOURCE_SEMANTIC_HASH_CHANGED/);
-      assert.match(text, /requirements-contract-authoring authoring-repair-preserve-existing/);
+      assert.match(text, /Next safe action: open_reconfirmation/);
       assert.match(text, /source hash drift/);
       assert.match(text, /post-close defect/);
     } finally {
@@ -732,7 +732,7 @@ describe('bmads Six Mental Models panorama', () => {
       assert.equal(output.aiTdd.primaryRecord.primaryReasonToken, 'stale_attempt');
       assert.equal(
         output.aiTdd.primaryRecord.nextSafeAction,
-        'requirements-contract-authoring authoring-repair-preserve-existing'
+        'inspect_requirement_record'
       );
       assert.notEqual(output.aiTdd.primaryRecord.nextSafeAction, 'confirm-closeout-acceptance');
     } finally {

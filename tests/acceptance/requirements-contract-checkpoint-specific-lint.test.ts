@@ -1,15 +1,12 @@
-import * as fs from 'node:fs';
-import * as os from 'node:os';
-import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   lintRequirementsContractProjectionStage,
-  publishRequirementsContractCp05Cp08Stages,
   REQUIREMENTS_CONTRACT_PREPUBLICATION_DIMENSIONS,
   REQUIREMENTS_CONTRACT_PROJECTION_CHECKPOINT_PROFILES,
   validateRequirementsContractPublicationReady,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-cp05-cp08';
 import { createRequirementsContractSemanticIr } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-ir';
+import { canonicalJson } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-governed-write';
 
 const hash = (digit: string) => `sha256:${digit.repeat(64)}`;
 
@@ -116,30 +113,35 @@ function publicationReadyFixture() {
     })),
   };
   const auditPacket = {
-    schemaVersion: 'requirements-contract-judge-audit-packet/v1',
+    schemaVersion: 'requirements-contract-judge-audit-draft/v1',
     semanticRevisionId: semanticIr.semanticRevisionId,
     scopeSemanticHash: semanticIr.scopeSemanticHash,
     body: packetBody,
   };
-  const serializedBytes = Buffer.byteLength(JSON.stringify(auditPacket), 'utf8');
+  const serializedBytes = Buffer.byteLength(canonicalJson(auditPacket), 'utf8');
   return {
-    activeAuthoringAttemptPointer: {
-      schemaVersion: 'ActiveAuthoringAttemptPointer/v1',
-      authoringAttemptId: 'ATTEMPT-001',
-      attemptManifestPath: 'authoring/staging/ATTEMPT-001/manifests/8-cp08.json',
-      attemptManifestHash: hash('1'),
-      latestValidPredecessorCheckpoint: 'cp07',
-      inputManifestHash: hash('2'),
+    buildIdentity: {
+      schemaVersion: 'requirements-contract-build-input/v2',
+      scopeSemanticHash: semanticIr.scopeSemanticHash,
+      sourceBindingHash: hash('3'),
+      artifactRoles: [
+        'confirmation_projection',
+        'final_markdown',
+        'execution_manifest',
+        'per_must_bundle',
+        'trace_matrix',
+        'diagram_set',
+        'projection_reconciliation_report',
+        'authority_resolution_report',
+        'renderability_probe_report',
+      ],
     },
-    cp08Snapshot: {
-      checkpointId: 'cp08',
-      authoringAttemptId: 'ATTEMPT-001',
-      attemptManifestHash: hash('1'),
-      semanticIr,
-      resolvedEvidenceIndex: {
-        semanticRevisionId: semanticIr.semanticRevisionId,
-        resolutions: [authorityResolution],
-      },
+    semanticIr,
+    resolvedEvidenceIndex: {
+      semanticRevisionId: semanticIr.semanticRevisionId,
+      scopeSemanticHash: semanticIr.scopeSemanticHash,
+      sourceBindingHash: hash('3'),
+      resolutions: [authorityResolution],
     },
     reconciliationReport: {
       schemaVersion: 'requirements-contract-projection-reconciliation-report/v1',
@@ -178,7 +180,17 @@ function publicationReadyFixture() {
       dimensionIds: [...REQUIREMENTS_CONTRACT_PREPUBLICATION_DIMENSIONS],
     },
     payloadObservation: { serializedBytes },
-    finalBuildManifestInputs: ['cp08-snapshot', 'audit-packet'],
+    buildArtifactRoles: [
+      'confirmation_projection',
+      'final_markdown',
+      'execution_manifest',
+      'per_must_bundle',
+      'trace_matrix',
+      'diagram_set',
+      'projection_reconciliation_report',
+      'authority_resolution_report',
+      'renderability_probe_report',
+    ],
   };
 }
 
@@ -241,7 +253,7 @@ describe('checkpoint-specific projection lint', () => {
     largePacket.body.artifactPayloadGroups[0].payload = {
       body: '批量退款审批'.repeat(400_000),
     };
-    const largePacketBytes = Buffer.byteLength(JSON.stringify(largePacket), 'utf8');
+    const largePacketBytes = Buffer.byteLength(canonicalJson(largePacket), 'utf8');
     expect(largePacketBytes).toBeGreaterThan(2 * 1024 * 1024);
     expect(
       validateRequirementsContractPublicationReady({
@@ -289,10 +301,10 @@ describe('checkpoint-specific projection lint', () => {
       },
     },
     {
-      name: 'cp08 snapshot does not bind the active manifest hash',
-      issueCode: 'requirements_publication_ready_cp08_snapshot_identity_invalid',
+      name: 'build input does not bind the semantic and source identities',
+      issueCode: 'requirements_publication_ready_build_identity_invalid',
       mutate(base: ReturnType<typeof publicationReadyFixture>) {
-        base.cp08Snapshot.attemptManifestHash = hash('9');
+        base.buildIdentity.sourceBindingHash = hash('9');
       },
     },
   ])('blocks publication when $name', ({ issueCode, mutate }) => {
@@ -305,51 +317,6 @@ describe('checkpoint-specific projection lint', () => {
       providerInvocationCount: 0,
       committerInvocationCount: 0,
     });
-  });
-
-  it('does not activate the cp08 pointer when publication lint cannot be published', () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'requirements-cp08-publication-'));
-    const base = publicationReadyFixture();
-    const lintPath = path.join(
-      root,
-      'authoring',
-      'staging',
-      'ATTEMPT-001',
-      'publication-ready-lint.json'
-    );
-    fs.mkdirSync(path.dirname(lintPath), { recursive: true });
-    fs.writeFileSync(lintPath, JSON.stringify({ conflict: true }), 'utf8');
-    let casCalls = 0;
-
-    try {
-      expect(() =>
-        publishRequirementsContractCp05Cp08Stages({
-          recordRoot: root,
-          sourcePath: path.join(root, 'source.md'),
-          authoringRequestId: 'REQUEST-001',
-          authoringAttemptId: 'ATTEMPT-001',
-          inputManifestHash: hash('8'),
-          previousCheckpointManifestRef: {
-            checkpointId: 'cp04',
-            checkpointOrdinal: 4,
-            path: 'authoring/staging/ATTEMPT-001/manifests/4-cp04.json',
-            hash: hash('9'),
-          },
-          expectedCurrentPointerHash: hash('0'),
-          compareAndSwapAttemptPointer() {
-            casCalls += 1;
-            return true;
-          },
-          semanticIr: base.cp08Snapshot.semanticIr,
-          sourceBinding: { sourceBindingHash: hash('3') },
-          resolvedEvidenceIndex: base.cp08Snapshot.resolvedEvidenceIndex,
-          decisionReceiptRefs: [],
-        })
-      ).toThrow('atomic_no_clobber_conflict');
-      expect(casCalls).toBe(0);
-    } finally {
-      fs.rmSync(root, { recursive: true, force: true });
-    }
   });
 
   it.each([
@@ -422,8 +389,8 @@ describe('checkpoint-specific projection lint', () => {
       issueCode: 'requirements_publication_ready_authority_resolution_invalid',
       mutate(base: ReturnType<typeof publicationReadyFixture>) {
         delete (
-          base.cp08Snapshot.resolvedEvidenceIndex.resolutions[0] as Partial<
-            (typeof base.cp08Snapshot.resolvedEvidenceIndex.resolutions)[number]
+          base.resolvedEvidenceIndex.resolutions[0] as Partial<
+            (typeof base.resolvedEvidenceIndex.resolutions)[number]
           >
         ).sourceSpanRefs;
       },
@@ -433,8 +400,8 @@ describe('checkpoint-specific projection lint', () => {
       issueCode: 'requirements_publication_ready_frozen_semantic_ir_invalid',
       mutate(base: ReturnType<typeof publicationReadyFixture>) {
         delete (
-          base.cp08Snapshot.semanticIr.semanticPayload.specSpanRegistry[0] as Partial<
-            (typeof base.cp08Snapshot.semanticIr.semanticPayload.specSpanRegistry)[number]
+          base.semanticIr.semanticPayload.specSpanRegistry[0] as Partial<
+            (typeof base.semanticIr.semanticPayload.specSpanRegistry)[number]
           >
         ).boundObligationIds;
       },

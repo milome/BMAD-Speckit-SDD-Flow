@@ -36,10 +36,6 @@ function confirmation() {
       mustDecompositionPacketRef: {
         path: 'authoring/must-decomposition.json', hash: hash('4'), status: 'synchronized',
       },
-      criticalAuditor: {
-        minimumRounds: 3, consecutiveNoNewGapRounds: 3,
-        latestReceiptHash: hash('5'), convergenceVerdict: 'bounded_no_new_gap',
-      },
       packetSourceReconciliation: { reportPath: 'authoring/reconciliation.json', verdict: 'pass' },
       preRenderGateReportPath: 'authoring/pre-render-gate.json',
     },
@@ -106,6 +102,12 @@ describe('implementation confirmation schema', () => {
 
     const unknown = { ...confirmation(), inventedBusinessTruth: true };
     expect(validate(unknown)).toBe(false);
+
+    const retiredRoundState = confirmation();
+    (retiredRoundState.preConfirmationDrilldown as Record<string, unknown>).criticalAuditor = {
+      minimumRounds: 3,
+    };
+    expect(validate(retiredRoundState)).toBe(false);
 
     const missingReason = confirmation();
     delete (missingReason.applicability.governanceEvents as { reasonCode?: string }).reasonCode;

@@ -30,7 +30,7 @@ function packageFixture(): string {
     recursive: true,
   });
   for (const fileName of [
-    'requirements-contract-critical-auditor.prompt.md',
+    'requirements-contract-judge.prompt.md',
   ]) {
     const source = path.join(promptRoot, fileName);
     writeFileSync(
@@ -60,7 +60,7 @@ describe('requirements contract Judge prompt loader', () => {
   it('loads both role assets from the package-owned prompt and schema roots', () => {
     const loaded = loadRequirementsContractJudgePromptAssets({ packageRoot: packageFixture() });
 
-    expect(loaded.map((asset) => asset.judgeRole)).toEqual(['requirements_critical_auditor']);
+    expect(loaded.map((asset) => asset.judgeRole)).toEqual(['requirements_judge']);
     for (const asset of loaded) {
       expect(asset.schemaVersion).toBe('requirements-contract-judge-prompt-asset/v1');
       expect(asset.prompt.path).toMatch(/^_bmad\/shared\/requirements-contract\/judge-prompts\//u);
@@ -93,10 +93,10 @@ describe('requirements contract Judge prompt loader', () => {
 
     const loaded = loadRequirementsContractJudgePromptAsset({
       packageRoot: root,
-      judgeRole: 'requirements_critical_auditor',
+      judgeRole: 'requirements_judge',
     });
 
-    expect(loaded.systemPrompt).toContain('Requirements Contract Critical Auditor Judge');
+    expect(loaded.systemPrompt).toContain('Requirements Contract Judge');
     expect(loaded.structuredOutputSchema).toMatchObject({
       properties: {
         schemaVersion: { const: 'requirements-contract-judge-response/v2' },
@@ -142,9 +142,9 @@ describe('requirements contract Judge prompt loader', () => {
     expect(() =>
       loadRequirementsContractJudgePromptAsset({
         packageRoot: packageFixture(),
-        judgeRole: 'requirements_critical_auditor',
+        judgeRole: 'requirements_judge',
         promptPath: path.resolve(
-          '_bmad/shared/requirements-contract/judge-prompts/requirements-contract-critical-auditor.prompt.md'
+          '_bmad/shared/requirements-contract/judge-prompts/requirements-contract-judge.prompt.md'
         ),
       } as JsonRecord)
     ).toThrow(/judge_prompt_loader_path_override_forbidden/u);
@@ -152,7 +152,7 @@ describe('requirements contract Judge prompt loader', () => {
     expect(() =>
       loadRequirementsContractJudgePromptAsset({
         packageRoot: process.cwd(),
-        judgeRole: 'requirements_critical_auditor',
+        judgeRole: 'requirements_judge',
       })
     ).toThrow(/judge_prompt_loader_package_root_invalid/u);
 
@@ -163,13 +163,13 @@ describe('requirements contract Judge prompt loader', () => {
       'shared',
       'requirements-contract',
       'judge-prompts',
-      'requirements-contract-critical-auditor.prompt.md'
+      'requirements-contract-judge.prompt.md'
     );
     writeFileSync(stalePrompt, `${readFileSync(stalePrompt, 'utf8')}\n`, 'utf8');
     expect(() =>
       loadRequirementsContractJudgePromptAsset({
         packageRoot: staleRoot,
-        judgeRole: 'requirements_critical_auditor',
+        judgeRole: 'requirements_judge',
         expectedPromptHash: sha256('stale'),
       })
     ).toThrow(/judge_prompt_loader_stale_hash/u);
@@ -181,12 +181,12 @@ describe('requirements contract Judge prompt loader', () => {
       'shared',
       'requirements-contract',
       'judge-prompts',
-      'requirements-contract-critical-auditor.prompt.md'
+      'requirements-contract-judge.prompt.md'
     );
     writeFileSync(
       mismatchPrompt,
       readFileSync(mismatchPrompt, 'utf8').replace(
-        'judgeRole: requirements_critical_auditor',
+        'judgeRole: requirements_judge',
         'judgeRole: final_acceptance_judge'
       ),
       'utf8'
@@ -194,7 +194,7 @@ describe('requirements contract Judge prompt loader', () => {
     expect(() =>
       loadRequirementsContractJudgePromptAsset({
         packageRoot: mismatchRoot,
-        judgeRole: 'requirements_critical_auditor',
+        judgeRole: 'requirements_judge',
       })
     ).toThrow(/judge_prompt_loader_role_mismatch/u);
 
@@ -205,19 +205,19 @@ describe('requirements contract Judge prompt loader', () => {
       'shared',
       'requirements-contract',
       'judge-prompts',
-      'requirements-contract-critical-auditor.prompt.md'
+      'requirements-contract-judge.prompt.md'
     );
     writeFileSync(`${mutablePrompt}.include.md`, 'mutable include', 'utf8');
     writeFileSync(`${mutablePrompt}.hash`, 'mutable hash sidecar', 'utf8');
     writeFileSync(
       mutablePrompt,
-      `${readFileSync(mutablePrompt, 'utf8')}\n@include ./requirements-contract-critical-auditor.prompt.md.include.md\n`,
+      `${readFileSync(mutablePrompt, 'utf8')}\n@include ./requirements-contract-judge.prompt.md.include.md\n`,
       'utf8'
     );
     expect(() =>
       loadRequirementsContractJudgePromptAsset({
         packageRoot: mutableRoot,
-        judgeRole: 'requirements_critical_auditor',
+        judgeRole: 'requirements_judge',
       })
     ).toThrow(/judge_prompt_loader_mutable_include_forbidden/u);
   });

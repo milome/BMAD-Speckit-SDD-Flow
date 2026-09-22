@@ -847,7 +847,7 @@ function buildScaleRoutingDecision({ sourcePath, initial, postPacket, postMateri
       ? 'continue_pre_render_readiness'
       : blockingState === 'blocked_by_missing_packet_source_reconciliation' || blockingState === 'blocked_by_packet_source_drift'
         ? 'run_packet_source_reconciliation'
-        : 'run_checkpoint_persistence_or_authoring_repair',
+        : 'run_checkpoint_persistence_or_automatic_remediation',
     checkpointPersistenceSatisfied,
     checkpointPersistenceRef: checkpointPersistence?.checkpointPersistenceRef ?? null,
     createdBy: 'requirements-contract-authoring',

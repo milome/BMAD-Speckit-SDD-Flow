@@ -105,7 +105,6 @@ interface ConsumerDefinition {
   readFacadeRef?: string;
   adapterRef?: string;
   sourceFormatVersion?: 'v1' | 'v2' | 'v1_or_v2' | 'discovery';
-  legacyReadEligibility?: 'not_applicable' | 'registered_inventory_only';
 }
 
 const SIX_MODEL_DISCOVERY_ROOTS = [
@@ -539,22 +538,6 @@ const CONSUMER_DEFINITIONS: readonly ConsumerDefinition[] = [
     fileName: 'strict-closeout-proof-gate.ts',
     inputRole: 'canonical_closeout_proof',
     supportedModes: ['closeout'],
-  },
-  {
-    consumerId: 'v1-read-adapter',
-    fileName: 'requirements-contract-v1-read-adapter.ts',
-    inputRole: 'registered_v1_source',
-    supportedModes: REQUIREMENTS_CONTRACT_VALIDATION_MODES,
-    adapterRef: 'self',
-    sourceFormatVersion: 'v1',
-    legacyReadEligibility: 'registered_inventory_only',
-  },
-  {
-    consumerId: 'v1-legacy-inventory-writer',
-    fileName: 'requirements-contract-v1-legacy-inventory.ts',
-    inputRole: 'g00_baseline_source_prd_inventory',
-    supportedModes: ['draft', 'confirmation-ready'],
-    sourceFormatVersion: 'v1',
   },
   {
     consumerId: 'v2-read-adapter',
@@ -1234,7 +1217,6 @@ export function createRequirementsContractConsumerRegistry(root = process.cwd())
       readFacadeRef: definition.readFacadeRef ?? 'requirements-contract-read-facade',
       adapterRef: definition.adapterRef ?? 'requirements-contract-v2-read-adapter',
       sourceFormatVersion: definition.sourceFormatVersion ?? 'v2',
-      legacyReadEligibility: definition.legacyReadEligibility ?? 'not_applicable',
       ...(definition.supportedModes.includes('confirmation-ready')
         ? { confirmationComposition: { ...CONFIRMATION_COMPOSITION } }
         : {}),

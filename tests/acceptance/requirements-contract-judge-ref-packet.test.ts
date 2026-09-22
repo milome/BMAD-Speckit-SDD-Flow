@@ -44,7 +44,7 @@ describe('requirements contract Judge reference packet', () => {
   it('persists one packet ref and hydrates only for provider invocation', () => {
     const root = recordRoot();
     const semanticIr = validSemanticIr();
-    const packet = { schemaVersion: 'requirements-contract-judge-audit-packet/v1', semanticRevisionId: semanticIr.semanticRevisionId, scopeSemanticHash: semanticIr.scopeSemanticHash, body: { sentinel: 'only once', requirementIds: ['MUST-1'], artifactIds: ['A-1'], mandatoryDimensionIds: ['complete'], semanticIr } };
+    const packet = { schemaVersion: 'requirements-contract-judge-audit-draft/v1', semanticRevisionId: semanticIr.semanticRevisionId, scopeSemanticHash: semanticIr.scopeSemanticHash, body: { sentinel: 'only once', requirementIds: ['MUST-1'], artifactIds: ['A-1'], mandatoryDimensionIds: ['complete'], semanticIr } };
     const build = requiredFunction<(input: Record<string, unknown>) => Record<string, unknown>>('buildRequirementsContractJudgeAuditPacketV3');
     const publish = requiredFunction<(input: Record<string, unknown>) => Record<string, unknown>>('publishRequirementsContractJudgeAuditPacketRef');
     const hydrate = requiredFunction<(input: Record<string, unknown>) => unknown>('hydrateRequirementsContractJudgeAuditPacket');
@@ -83,7 +83,7 @@ describe('requirements contract Judge reference packet', () => {
       bytes: Buffer.from(JSON.stringify(projection), 'utf8'),
     });
     const packet = {
-      schemaVersion: 'requirements-contract-judge-audit-packet/v1',
+      schemaVersion: 'requirements-contract-judge-audit-draft/v1',
       semanticRevisionId: semanticIr.semanticRevisionId,
       scopeSemanticHash: semanticIr.scopeSemanticHash,
       body: {
@@ -138,7 +138,7 @@ describe('requirements contract Judge reference packet', () => {
   it('blocks tampered refs before dispatch', () => {
     const root = recordRoot();
     const semanticIr = validSemanticIr();
-    const packet = { schemaVersion: 'requirements-contract-judge-audit-packet/v1', semanticRevisionId: semanticIr.semanticRevisionId, scopeSemanticHash: semanticIr.scopeSemanticHash, body: { sentinel: 'only once', requirementIds: ['MUST-1'], artifactIds: ['A-1'], mandatoryDimensionIds: ['complete'], semanticIr } };
+    const packet = { schemaVersion: 'requirements-contract-judge-audit-draft/v1', semanticRevisionId: semanticIr.semanticRevisionId, scopeSemanticHash: semanticIr.scopeSemanticHash, body: { sentinel: 'only once', requirementIds: ['MUST-1'], artifactIds: ['A-1'], mandatoryDimensionIds: ['complete'], semanticIr } };
     const build = requiredFunction<(input: Record<string, unknown>) => Record<string, unknown>>('buildRequirementsContractJudgeAuditPacketV3');
     const publish = requiredFunction<(input: Record<string, unknown>) => Record<string, unknown>>('publishRequirementsContractJudgeAuditPacketRef');
     const hydrate = requiredFunction<(input: Record<string, unknown>) => unknown>('hydrateRequirementsContractJudgeAuditPacket');
@@ -149,6 +149,22 @@ describe('requirements contract Judge reference packet', () => {
   });
 
   it('rejects malformed v3 request refs before provider dispatch', () => {
+    const validateDraft = requiredFunction<(value: unknown) => unknown>(
+      'validateRequirementsContractJudgeAuditDraft'
+    );
+    expect(() => validateDraft({
+      schemaVersion: 'requirements-contract-judge-audit-packet/v1',
+      semanticRevisionId: 'SEM-RETIRED',
+      scopeSemanticHash: `sha256:${'1'.repeat(64)}`,
+      body: {},
+    })).toThrow('requirements_judge_audit_packet_draft_invalid');
+    expect(() => validateDraft({
+      schemaVersion: 'requirements-contract-judge-audit-packet/v2',
+      semanticRevisionId: 'SEM-RETIRED',
+      scopeSemanticHash: `sha256:${'1'.repeat(64)}`,
+      body: {},
+    })).toThrow('requirements_judge_audit_packet_draft_invalid');
+
     const root = recordRoot();
     const packetRef = publishRequirementsContentObject({
       recordRoot: root,

@@ -108,4 +108,39 @@ describe('requirements record mark-and-sweep GC', () => {
     expect(() => executeRequirementsContractRecordGc({ recordRoot, plan, now: '2026-09-21T00:00:00.000Z' }))
       .toThrow('requirements_record_gc_path_invalid');
   });
+
+  it('sweeps unreachable content objects and retired quality/confirmation artifacts', () => {
+    const recordRoot = root();
+    const active = hash('a');
+    const keptObject = path.join(recordRoot, 'authoring', 'objects', 'sha256', 'aa', 'kept');
+    const staleObject = path.join(recordRoot, 'authoring', 'objects', 'sha256', 'bb', 'stale');
+    mkdirSync(path.dirname(keptObject), { recursive: true });
+    mkdirSync(path.dirname(staleObject), { recursive: true });
+    writeFileSync(keptObject, 'kept', 'utf8');
+    writeFileSync(staleObject, 'stale', 'utf8');
+    json(recordRoot, 'record/requirement-record.json', {
+      activeAuthority: {
+        activeBuildHash: active,
+        activeBuildManifestPath: `authoring/builds/${active.slice(7)}/manifest.json`,
+      },
+    });
+    json(recordRoot, `authoring/builds/${active.slice(7)}/manifest.json`, {
+      artifactEntries: [{ contentRef: {
+        recordRelativePath: 'authoring/objects/sha256/aa/kept',
+      } }],
+    });
+    json(recordRoot, 'quality/requests/old/judge-request.json', {});
+    json(recordRoot, 'confirmation/staging/old/requirements.md', {});
+
+    const plan = planRequirementsContractRecordGc({ recordRoot, now: '2026-09-21T00:00:00.000Z' });
+
+    expect(plan.deletionPaths).toEqual(expect.arrayContaining([
+      'authoring/objects/sha256/bb/stale',
+      'quality/requests/old',
+      'confirmation/staging',
+    ]));
+    executeRequirementsContractRecordGc({ recordRoot, plan, now: '2026-09-21T00:00:00.000Z' });
+    expect(() => readFileSync(staleObject, 'utf8')).toThrow();
+    expect(readFileSync(keptObject, 'utf8')).toBe('kept');
+  });
 });

@@ -340,9 +340,16 @@ type SourceRangeInput = Omit<RequirementsSourceRange, 'contentHash'> & {
   contentHash?: string;
 };
 
-type MaterialRootInput = Omit<IntentLineageMaterialRootV2, 'sourceRange'> & {
+type MaterialRootInput = {
+  sourceRootId: string;
+  semanticNodeRefs: string[];
   sourceRange: SourceRangeInput;
-};
+} & (
+  | { disposition: 'source_root' }
+  | { disposition: 'duplicate'; duplicateOfSourceRootRef: string }
+  | { disposition: 'superseded'; supersededBySourceRootRef: string }
+  | { disposition: 'rejected'; decisionReceiptRef: string }
+);
 
 function requiredString(value: unknown, code: string): string {
   if (typeof value !== 'string' || !value.trim()) throw new Error(code);
@@ -567,13 +574,12 @@ function materialRootFromInput(
   }
   const base = {
     sourceRootId,
-    disposition: value.disposition,
     sourceRange: { ...value.sourceRange, contentHash },
     semanticNodeRefs: [...value.semanticNodeRefs],
   };
   switch (value.disposition) {
     case 'source_root':
-      return base;
+      return { ...base, disposition: 'source_root' };
     case 'duplicate':
       return {
         ...base,
@@ -825,7 +831,7 @@ export function migrateIntentLineageV1ToV2(input: {
 
 function validateIntentLineageLedgerV2(
   value: Record<string, unknown>
-): value is unknown & RequirementsContractIntentLineageLedgerV2 {
+): value is Record<string, unknown> & RequirementsContractIntentLineageLedgerV2 {
   if (
     value.schemaVersion !== 'requirements-contract-intent-lineage-ledger/v2' ||
     !isRecord(value.sourceBlobRef) ||

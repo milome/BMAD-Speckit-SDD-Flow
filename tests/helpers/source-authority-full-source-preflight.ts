@@ -12,7 +12,7 @@ type JudgeFailure = Partial<Record<'message' | 'failureClass' | 'totalBytes' | '
 
 export function measureFullSourceRequirementsJudgePreflight(input: { root: string; compiled: JsonObject; native: JsonObject }) {
   const configuredPrompt = loadConfiguredRequirementsContractJudgePrompt({ projectRoot: path.resolve('.'), promptConfig: {
-    systemPromptPath: '_bmad/shared/requirements-contract/judge-prompts/requirements-contract-critical-auditor.prompt.md', outputTokenReserve: 4096,
+    systemPromptPath: '_bmad/shared/requirements-contract/judge-prompts/requirements-contract-judge.prompt.md', outputTokenReserve: 4096,
   } });
   let dispatchCount = 0;
   const executeCommand = async () => { dispatchCount++; throw new Error('test_only_no_judge_invocation'); };

@@ -23,7 +23,6 @@ import {
   resolveMainAgentOrchestrationSurface,
   writeMainAgentRunLoopTaskReport,
   buildMainAgentCanonicalJudgeRunDispatch,
-  executeCriticalAuditorJudgeAdapter,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import { runUnifiedIngressAsync } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-unified-ingress';
 import { mainImplementationReadinessGate } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-implementation-readiness-gate';
@@ -640,7 +639,7 @@ describe('main-agent orchestration consumer', () => {
       projectRoot: 'repo',
       config: '_bmad/_config/governance-remediation.yaml',
       request: requestPath,
-      role: 'requirements_critical_auditor',
+      role: 'requirements_judge',
       attemptId: 'requirements-attempt-001',
       outputDir,
       controlledDispatchRef: {
@@ -652,7 +651,7 @@ describe('main-agent orchestration consumer', () => {
     expect(dispatch).toMatchObject({
       schemaVersion: 'main-agent-canonical-judge-run-dispatch/v1',
       command: 'bmad-speckit judge run',
-      role: 'requirements_critical_auditor',
+      role: 'requirements_judge',
       roleInference: false,
       directAdapterDispatch: false,
       callerAuthorityInjection: false,
@@ -668,7 +667,7 @@ describe('main-agent orchestration consumer', () => {
       '--request',
       requestPath,
       '--role',
-      'requirements_critical_auditor',
+      'requirements_judge',
       '--attempt-id',
       'requirements-attempt-001',
       '--output-dir',
@@ -686,40 +685,6 @@ describe('main-agent orchestration consumer', () => {
         controlledDispatchRef: { packetId: 'packet-final', packetKind: 'execution' },
       })
     ).toThrow('main_agent_judge_run_role_explicit_required');
-  });
-
-  it('fails closed instead of dispatching the legacy Critical Auditor adapter helper', () => {
-    expect(() =>
-      executeCriticalAuditorJudgeAdapter({
-        projectRoot: 'repo',
-        requestPath: 'requests/judge-request.json',
-        outputDir: 'out/judge-provider-invocation',
-        roundIndex: 1,
-        expected: {
-          providerId: 'provider-1',
-          model: 'model-1',
-          transport: 'cli',
-          adapterRef: 'CodexCliJudgeAdapter',
-          apiStyle: 'cli',
-          configuredBaseUrlHash:
-            'sha256:0000000000000000000000000000000000000000000000000000000000000000',
-          independenceClass: 'different_provider_different_model',
-          providerRegistryHash:
-            'sha256:1111111111111111111111111111111111111111111111111111111111111111',
-          providerConfigurationHash:
-            'sha256:2222222222222222222222222222222222222222222222222222222222222222',
-          transactionId: 'transaction-1',
-          auditAttemptId: 'attempt-1',
-          requestHash: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
-          sourceDocumentHash:
-            'sha256:4444444444444444444444444444444444444444444444444444444444444444',
-          semanticModelHash:
-            'sha256:5555555555555555555555555555555555555555555555555555555555555555',
-          projectionSetHash:
-            'sha256:6666666666666666666666666666666666666666666666666666666666666666',
-        },
-      })
-    ).toThrow('main_agent_judge_legacy_direct_adapter_forbidden');
   });
 
   it('keeps audit finalization bound to the gate-owned commit snapshot', () => {

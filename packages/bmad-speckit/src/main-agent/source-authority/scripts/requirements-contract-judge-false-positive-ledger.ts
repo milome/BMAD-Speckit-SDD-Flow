@@ -5,8 +5,8 @@ import { sha256Stable } from './requirements-contract-semantic-resolver';
 
 type JsonRecord = Record<string, unknown>;
 
-const REQUIREMENTS_ACTOR = 'requirements_critical_auditor_judge';
-const REQUIREMENTS_ROLE = 'requirements_critical_auditor';
+const REQUIREMENTS_ACTOR = 'requirements_contract_judge';
+const REQUIREMENTS_ROLE = 'requirements_judge';
 const HASH_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 const FORBIDDEN_CALLER_FIELDS = new Set([
   'pass',

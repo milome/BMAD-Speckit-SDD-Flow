@@ -15,23 +15,15 @@ import {
   readCanonicalUtf8Source,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-entry-authority-facade';
 import { runRequirementsContractProductionSemanticPipeline } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-production-semantic-pipeline';
-import { runMainAgentPreConfirmationDrilldown } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration';
 import { validateRequirementsContractSemanticConservationManifest } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-conservation-manifest';
 import {
   sha256Stable,
   sha256Text,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-resolver';
 import {
-  artifacts,
-  cleanCriticalAuditorRound,
-  readJson,
-  runPreConfirmationWithGovernedCriticalAuditorFixture,
-} from './helpers/requirements-contract-authoring-fixture';
-import {
   buildInteractionSourceRoots,
   createInteractionSourceRoot,
   createInteractionFixtureDescriptor,
-  writeProductionInteractionSource,
   type InteractionFixtureDescriptor,
 } from './helpers/requirements-contract-interaction-fixture';
 
@@ -61,13 +53,6 @@ const ALTERNATE_INTERACTION_FIXTURE = createInteractionFixtureDescriptor({
   correlationKey: 'variantCorrelationKey',
   deadlineMs: 1750,
 });
-
-interface SemanticIrProjection {
-  sourceAuthorityHash: string;
-  semanticBodies: Record<string, Record<string, unknown>>;
-  nodes: Record<string, { nodeType: string; bodySchemaVersion: string; bodyHash: string }>;
-  edges: Record<string, { fromRef: string; toRef: string }>;
-}
 
 interface InteractionResolutionProjection {
   authorized: Array<{
@@ -109,177 +94,8 @@ function semanticResolutionAuthorityBinding(receipt: Record<string, unknown>) {
   };
 }
 
-type CoreInteractionKind = 'participant' | 'step' | 'branch' | 'ordering' | 'temporal';
-
-interface ExpectedInteractionEntry {
-  kind: CoreInteractionKind;
-  id: string;
-  body: Record<string, unknown>;
-}
-
-function semanticBodyFor(
-  semanticIr: SemanticIrProjection,
-  nodeId: string
-): Record<string, unknown> {
-  const node = semanticIr.nodes[nodeId];
-  if (!node) throw new Error(`expected semantic IR node: ${nodeId}`);
-  const body = semanticIr.semanticBodies[node.bodyHash];
-  if (!body) throw new Error(`expected semantic body for node: ${nodeId}`);
-  return body;
-}
-
 function literalCount(source: string, value: string): number {
   return source.split(value).length - 1;
-}
-
-function expectedInteractionEntries(
-  descriptor: InteractionFixtureDescriptor
-): ExpectedInteractionEntry[] {
-  const { refs, semantics, timing } = descriptor;
-  const requirementRefs = [refs.mustRequirementId, refs.nonFunctionalMustRequirementId];
-  return [
-    {
-      kind: 'participant',
-      id: refs.actorParticipantId,
-      body: {
-        id: refs.actorParticipantId,
-        kind: 'human_actor',
-        label: semantics.actorLabel,
-        owningSystem: semantics.owningSystem,
-        requirementRefs,
-      },
-    },
-    {
-      kind: 'participant',
-      id: refs.componentParticipantId,
-      body: {
-        id: refs.componentParticipantId,
-        kind: 'runtime_component',
-        label: semantics.componentLabel,
-        owningSystem: semantics.owningSystem,
-        requirementRefs,
-      },
-    },
-    {
-      kind: 'step',
-      id: refs.commandStepId,
-      body: {
-        id: refs.commandStepId,
-        order: 1,
-        type: 'command',
-        from: refs.actorParticipantId,
-        to: refs.componentParticipantId,
-        operation: semantics.commandOperation,
-        owningSystem: semantics.owningSystem,
-        integrationBoundaryRef: null,
-        requirementRefs,
-      },
-    },
-    {
-      kind: 'step',
-      id: refs.resultStepId,
-      body: {
-        id: refs.resultStepId,
-        order: 2,
-        type: 'user_visible_result',
-        from: refs.componentParticipantId,
-        to: refs.actorParticipantId,
-        operation: semantics.resultOperation,
-        owningSystem: semantics.owningSystem,
-        integrationBoundaryRef: null,
-        requirementRefs,
-      },
-    },
-    {
-      kind: 'branch',
-      id: refs.branchId,
-      body: {
-        id: refs.branchId,
-        condition: semantics.branchCondition,
-        testScenarioRefs: [refs.branchTestId],
-        owningSystem: semantics.owningSystem,
-        requirementRefs,
-      },
-    },
-    {
-      kind: 'ordering',
-      id: refs.orderingId,
-      body: {
-        id: refs.orderingId,
-        before: refs.commandStepId,
-        after: refs.resultStepId,
-        reason: semantics.orderingReason,
-        oracleRef: refs.orderingOracleId,
-        testRefs: [refs.orderingTestId],
-        owningSystem: semantics.owningSystem,
-        requirementRefs,
-      },
-    },
-    {
-      kind: 'temporal',
-      id: refs.temporalId,
-      body: {
-        id: refs.temporalId,
-        stepRef: refs.resultStepId,
-        correlationKey: semantics.correlationKey,
-        deadlineMs: timing.deadlineMs,
-        eventualConsistencyWindowMs: timing.eventualConsistencyWindowMs,
-        duplicatePolicy: timing.duplicatePolicy,
-        orderingPolicy: timing.orderingPolicy,
-        oracleRef: refs.temporalOracleId,
-        testRefs: [refs.temporalTestId],
-        owningSystem: semantics.owningSystem,
-        requirementRefs,
-      },
-    },
-  ];
-}
-
-function expectDescriptorProjection(
-  semanticIr: SemanticIrProjection,
-  interactionResolution: InteractionResolutionProjection,
-  descriptor: InteractionFixtureDescriptor
-): void {
-  const entries = expectedInteractionEntries(descriptor);
-  const expectedIds = entries.map((entry) => entry.id);
-  const interactionEdges = Object.values(semanticIr.edges).filter((edge) =>
-    expectedIds.includes(edge.toRef)
-  );
-  const expectedEdgePairs = entries
-    .flatMap((entry) =>
-      (entry.body.requirementRefs as string[]).map(
-        (requirementRef) => `${requirementRef}->${entry.id}`
-      )
-    )
-    .sort();
-  const observedEdgePairs = interactionEdges.map((edge) => `${edge.fromRef}->${edge.toRef}`).sort();
-  const resolvedInteractions = interactionResolution.sequenceModelAfter.resolvedInteractions ?? {};
-
-  expect(interactionResolution.unresolved).toEqual([]);
-  expect(interactionResolution.authorized.map((entry) => entry.fieldRef).sort()).toEqual(
-    entries.map((entry) => `/resolvedInteractions/${entry.kind}/${entry.id}`).sort()
-  );
-  expect(Object.keys(semanticIr.nodes)).toEqual(expect.arrayContaining(expectedIds));
-  expect(observedEdgePairs).toEqual(expectedEdgePairs);
-  for (const entry of entries) {
-    expect(semanticBodyFor(semanticIr, entry.id)).toEqual(entry.body);
-    for (const requirementRef of entry.body.requirementRefs as string[]) {
-      expect(
-        interactionEdges.some((edge) => edge.fromRef === requirementRef && edge.toRef === entry.id)
-      ).toBe(true);
-    }
-    expect(resolvedInteractions[entry.kind]?.[entry.id]).toEqual(entry.body);
-  }
-}
-
-function withSuppressedStderr<T>(operation: () => T): T {
-  const originalWrite = process.stderr.write;
-  process.stderr.write = (() => true) as typeof process.stderr.write;
-  try {
-    return operation();
-  } finally {
-    process.stderr.write = originalWrite;
-  }
 }
 
 function runSemanticPipelineForSourceRoots(
@@ -331,9 +147,7 @@ function runSemanticPipelineForSourceRoots(
   expect(intakeAuthority.intakeReceipt.schemaVersion).toBe(
     'requirements-contract-file-intake-receipt/v2'
   );
-  expect(intentLineageLedger.schemaVersion).toBe(
-    'requirements-contract-intent-lineage-ledger/v2'
-  );
+  expect(intentLineageLedger.schemaVersion).toBe('requirements-contract-intent-lineage-ledger/v2');
   const compactControlJson = JSON.stringify({
     intakeReceipt: intakeAuthority.intakeReceipt,
     intentLineageLedger,
@@ -449,7 +263,9 @@ describe('production interaction candidate extraction', () => {
   });
 
   it('conserves typed execution refs through the production semantic pipeline', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'requirements-contract-execution-conservation-'));
+    const root = mkdtempSync(
+      path.join(os.tmpdir(), 'requirements-contract-execution-conservation-')
+    );
     try {
       const sourceRoots = buildInteractionSourceRoots(PRIMARY_INTERACTION_FIXTURE);
       const result = runSemanticPipelineForSourceRoots(
@@ -458,11 +274,14 @@ describe('production interaction candidate extraction', () => {
         sourceRoots,
         {
           registry: {
-            entries: [{
-              kind: 'CMD',
-              id: 'interaction-targeted-test',
-              value: 'npm test -- requirements-contract-production-interaction-extraction.test.ts',
-            }],
+            entries: [
+              {
+                kind: 'CMD',
+                id: 'interaction-targeted-test',
+                value:
+                  'npm test -- requirements-contract-production-interaction-extraction.test.ts',
+              },
+            ],
           },
           refsBySourceRootId: {
             [sourceRoots[0].sourceRootId]: ['CMD:interaction-targeted-test'],
@@ -486,26 +305,25 @@ describe('production interaction candidate extraction', () => {
     try {
       const sourceRoots = buildInteractionSourceRoots(PRIMARY_INTERACTION_FIXTURE);
       expect(() =>
-        runSemanticPipelineForSourceRoots(
-          root,
-          PRIMARY_INTERACTION_FIXTURE,
-          sourceRoots,
-          {
-            registry: {
-              entries: [{
+        runSemanticPipelineForSourceRoots(root, PRIMARY_INTERACTION_FIXTURE, sourceRoots, {
+          registry: {
+            entries: [
+              {
                 kind: 'CMD',
                 id: 'interaction-targeted-test',
-                value: 'npm test -- requirements-contract-production-interaction-extraction.test.ts',
-              }],
-            },
-            refsBySourceRootId: {
-              [sourceRoots[0].sourceRootId]: ['CMD:missing'],
-            },
-          }
-        )
+                value:
+                  'npm test -- requirements-contract-production-interaction-extraction.test.ts',
+              },
+            ],
+          },
+          refsBySourceRootId: {
+            [sourceRoots[0].sourceRootId]: ['CMD:missing'],
+          },
+        })
       ).toThrow(/requirements_execution_constraint_unknown/u);
-      expect(() => readFileSync(path.join(root, 'authoring', 'semantic-ir.json'), 'utf8'))
-        .toThrow();
+      expect(() =>
+        readFileSync(path.join(root, 'authoring', 'semantic-ir.json'), 'utf8')
+      ).toThrow();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -733,212 +551,6 @@ describe('production interaction candidate extraction', () => {
           sourceRoots,
         })
       ).toThrow(/source authority hash/u);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it('routes explicit Source PRD interaction tables through the real orchestration semantic pipeline', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'requirements-contract-interaction-source-'));
-    try {
-      const { refs } = PRIMARY_INTERACTION_FIXTURE;
-      const source = writeProductionInteractionSource(root, PRIMARY_INTERACTION_FIXTURE);
-
-      runMainAgentPreConfirmationDrilldown(root, {
-        source: source.sourcePath,
-        recordId: refs.recordId,
-        requirementSetId: refs.requirementSetId,
-        targetPath: source.targetPath,
-        requiredCommand: source.command,
-        ...source.authoringOptions,
-        noAutoRepair: true,
-        maxCriticalAuditorRounds: 1,
-      });
-
-      const authoringDir = path.join(
-        root,
-        '_bmad-output',
-        'runtime',
-        'requirement-records',
-        refs.recordId,
-        'authoring'
-      );
-      const interactionResolution = JSON.parse(
-        readFileSync(path.join(authoringDir, 'interaction-resolution.json'), 'utf8')
-      ) as InteractionResolutionProjection;
-      const semanticIr = JSON.parse(
-        readFileSync(path.join(authoringDir, 'semantic-ir.json'), 'utf8')
-      ) as SemanticIrProjection;
-
-      expectDescriptorProjection(semanticIr, interactionResolution, PRIMARY_INTERACTION_FIXTURE);
-      expect(
-        interactionResolution.authorized
-          .map((candidate) => String(candidate.interactionKind))
-          .sort()
-      ).toEqual(['branch', 'ordering', 'participant', 'participant', 'step', 'step', 'temporal']);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it('carries FR, NFR, negative, boundary, and interaction authority through cp-00..cp-08', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'requirements-contract-complete-semantic-'));
-    const descriptor = PRIMARY_INTERACTION_FIXTURE;
-    const { nonFunctionalMustRequirementId, outOfScopeId } = descriptor.refs;
-    try {
-      expect(nonFunctionalMustRequirementId).toMatch(/^MUST-NFR-/u);
-      expect(outOfScopeId).toMatch(/^OUT-/u);
-      const source = writeProductionInteractionSource(root, descriptor);
-      const result = withSuppressedStderr(() =>
-        runPreConfirmationWithGovernedCriticalAuditorFixture(root, descriptor.refs.recordId, {
-          source: source.sourcePath,
-          recordId: descriptor.refs.recordId,
-          requirementSetId: descriptor.refs.requirementSetId,
-          targetPath: source.targetPath,
-          requiredCommand: source.command,
-          ...source.authoringOptions,
-          criticalAuditorRound: cleanCriticalAuditorRound,
-          confirmationLanguage: 'en-US',
-        })
-      );
-      const paths = artifacts(root, descriptor.refs.recordId, descriptor.refs.requirementSetId);
-      const semanticIr = readJson<SemanticIrProjection>(paths.semanticIr);
-      const compiledModel = readJson<{
-        must: Array<{ id: string }>;
-        notDone: Array<{ id: string }>;
-        outOfScope: Array<{ id: string }>;
-      }>(paths.compiledModel);
-      const semanticManifest = readJson<Record<string, unknown>>(
-        paths.semanticConservationManifest
-      );
-      const expectedRequirementIds = [
-        descriptor.refs.mustRequirementId,
-        nonFunctionalMustRequirementId,
-        descriptor.refs.negativeRequirementId,
-        outOfScopeId,
-      ];
-
-      expect(result.blockingIssues).toEqual([]);
-      expect(Object.keys(semanticIr.nodes)).toEqual(expect.arrayContaining(expectedRequirementIds));
-      expect(compiledModel.must.map((row) => row.id).sort()).toEqual(
-        [descriptor.refs.mustRequirementId, nonFunctionalMustRequirementId].sort()
-      );
-      expect(compiledModel.notDone.map((row) => row.id)).toContain(
-        descriptor.refs.negativeRequirementId
-      );
-      expect(compiledModel.outOfScope.map((row) => row.id)).toContain(outOfScopeId);
-      for (const [index, receiptPath] of paths.checkpointReceiptPaths.entries()) {
-        expect(readJson<Record<string, unknown>>(receiptPath)).toMatchObject({
-          checkpointId: `cp-${String(index).padStart(2, '0')}${
-            [
-              '-semantic-kernel',
-              '-must-decomposition-packet',
-              '-deterministic-atomic-closure',
-              '-packet-to-source-materialization',
-              '-id-freeze',
-              '-implementation-confirmation-core',
-              '-projections',
-              '-human-readable-views',
-              '-pre-render-global-reconciliation',
-            ][index]
-          }`,
-          persistenceStatus: 'committed',
-          semanticValidationStatus: 'pass',
-          semanticModelHash: semanticManifest.semanticModelHash,
-          semanticConservationManifestHash: semanticManifest.manifestHash,
-        });
-      }
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  }, 120_000);
-
-  it('accepts an alternate interaction fixture descriptor without retaining default identities', () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'requirements-contract-interaction-variant-'));
-    const descriptor = ALTERNATE_INTERACTION_FIXTURE;
-    try {
-      const source = writeProductionInteractionSource(root, descriptor);
-      const sourceText = readFileSync(source.sourcePath, 'utf8');
-      const targetText = readFileSync(path.join(root, source.targetPath), 'utf8');
-
-      expect(path.basename(source.sourcePath)).toBe(descriptor.paths.sourceFileName);
-      expect(source.targetPath).toBe(descriptor.paths.targetPath);
-      expect(source.command).toBe(`npx vitest run ${descriptor.paths.testPath}`);
-      expect(targetText).toContain(descriptor.semantics.targetExportName);
-      for (const value of [
-        descriptor.refs.actorParticipantId,
-        descriptor.refs.componentParticipantId,
-        descriptor.refs.commandStepId,
-        descriptor.refs.resultStepId,
-        descriptor.refs.branchId,
-        descriptor.refs.orderingId,
-        descriptor.refs.temporalId,
-        descriptor.semantics.actorLabel,
-        descriptor.semantics.componentLabel,
-        descriptor.semantics.owningSystem,
-        descriptor.semantics.commandOperation,
-        descriptor.semantics.resultOperation,
-        descriptor.semantics.branchCondition,
-        descriptor.semantics.correlationKey,
-        descriptor.semantics.orderingReason,
-        String(descriptor.timing.deadlineMs),
-        descriptor.timing.duplicatePolicy,
-        descriptor.timing.orderingPolicy,
-        descriptor.paths.targetPath,
-        descriptor.paths.testPath,
-        source.command,
-      ]) {
-        expect(sourceText).toContain(value);
-      }
-
-      runMainAgentPreConfirmationDrilldown(root, {
-        source: source.sourcePath,
-        recordId: descriptor.refs.recordId,
-        requirementSetId: descriptor.refs.requirementSetId,
-        targetPath: source.targetPath,
-        requiredCommand: source.command,
-        ...source.authoringOptions,
-        noAutoRepair: true,
-        maxCriticalAuditorRounds: 1,
-      });
-
-      const semanticIr = JSON.parse(
-        readFileSync(
-          path.join(
-            root,
-            '_bmad-output',
-            'runtime',
-            'requirement-records',
-            descriptor.refs.recordId,
-            'authoring',
-            'semantic-ir.json'
-          ),
-          'utf8'
-        )
-      ) as SemanticIrProjection;
-      const interactionResolution = JSON.parse(
-        readFileSync(
-          path.join(
-            root,
-            '_bmad-output',
-            'runtime',
-            'requirement-records',
-            descriptor.refs.recordId,
-            'authoring',
-            'interaction-resolution.json'
-          ),
-          'utf8'
-        )
-      ) as InteractionResolutionProjection;
-      const nodeIds = Object.keys(semanticIr.nodes);
-
-      expectDescriptorProjection(semanticIr, interactionResolution, descriptor);
-      const resolvedInteractions =
-        interactionResolution.sequenceModelAfter.resolvedInteractions ?? {};
-      for (const primaryEntry of expectedInteractionEntries(PRIMARY_INTERACTION_FIXTURE)) {
-        expect(nodeIds).not.toContain(primaryEntry.id);
-        expect(resolvedInteractions[primaryEntry.kind]).not.toHaveProperty(primaryEntry.id);
-      }
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

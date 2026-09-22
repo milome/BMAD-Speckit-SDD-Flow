@@ -120,7 +120,7 @@ function materializeControlledAuditBinding(root: string, reportPath: string, _ar
     exitCode: 0,
   });
   const judgeProviderInvocationReceiptRef = writeReceipt(root, path.join(receiptDir, 'judge-provider.json'), {
-    schemaVersion: 'critical-auditor-judge-invocation-receipt/v1',
+    schemaVersion: 'audit-provider-judge-invocation-receipt/v1',
     requestHash: judgeRequestHash,
     sourceDocumentHash,
     semanticModelHash,

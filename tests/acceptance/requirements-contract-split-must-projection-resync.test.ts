@@ -1,8 +1,5 @@
-import { createRequire } from 'node:module';
 import { describe, expect, it } from 'vitest';
-
-const require = createRequire(import.meta.url);
-const runtime = require('../../packages/bmad-speckit/dist/main-agent/source-authority/scripts/main-agent-orchestration.js');
+import * as runtime from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-split-must-projection-resync';
 
 function confirmation() {
   return {

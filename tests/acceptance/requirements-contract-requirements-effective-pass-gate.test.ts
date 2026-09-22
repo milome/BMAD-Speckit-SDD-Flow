@@ -34,8 +34,8 @@ function validInput(overrides: JsonRecord = {}) {
   const coverageUnitRefs = ['coverage/dimension', 'coverage/must', 'coverage/projection'];
   return {
     request: {
-      actorClass: 'requirements_critical_auditor_judge',
-      judgeRole: 'requirements_critical_auditor',
+      actorClass: 'requirements_contract_judge',
+      judgeRole: 'requirements_judge',
       requestHash: HASHES.request,
       attemptKeyHash: HASHES.attempt,
       scopeManifestHash: HASHES.scope,
@@ -50,8 +50,8 @@ function validInput(overrides: JsonRecord = {}) {
     },
     assessment: {
       schemaVersion: 'critical-auditor-judge-assessment/v1',
-      actorClass: 'requirements_critical_auditor_judge',
-      judgeRole: 'requirements_critical_auditor',
+      actorClass: 'requirements_contract_judge',
+      judgeRole: 'requirements_judge',
       verdict: 'no_new_valid_gap',
       validatedGaps: [],
     },
@@ -101,14 +101,13 @@ describe('Requirements EffectivePass gate', () => {
       activeSemanticRevisionId: 'SEM-V2',
       activeScopeSemanticHash: HASHES.scope,
       activeSourceBindingHash: HASHES.evidence,
-      activeBuildManifestHash: HASHES.providerInvocation,
+      activeBuildHash: HASHES.providerInvocation,
     };
     const aggregate = compileRequirementsAuditAggregateV2({
       activeAuthority,
       buildManifest: {
-        buildManifestHash: HASHES.providerInvocation,
-        auditPacketRef: { hash: HASHES.ledger },
-        projectionReportRefs: [],
+        buildHash: HASHES.providerInvocation,
+        artifactEntries: [{ role: 'judge_audit_packet', contentRef: { contentHash: HASHES.ledger } }],
       },
       request: {
         judgeRequestHash: HASHES.request,
@@ -138,7 +137,7 @@ describe('Requirements EffectivePass gate', () => {
   it('blocks the production v2 pass for fail findings or stale authority', () => {
     const authority = {
       activeSemanticRevisionId: 'SEM-V2', activeScopeSemanticHash: HASHES.scope,
-      activeSourceBindingHash: HASHES.evidence, activeBuildManifestHash: HASHES.providerInvocation,
+      activeSourceBindingHash: HASHES.evidence, activeBuildHash: HASHES.providerInvocation,
     };
     const aggregate = {
       schemaVersion: 'requirements-contract-requirements-audit-aggregate/v2',
@@ -152,7 +151,7 @@ describe('Requirements EffectivePass gate', () => {
     expect(() => compileRequirementsEffectivePassReceiptV2({ activeAuthority: authority, aggregate }))
       .toThrow('requirements_effective_pass_blocked');
     expect(() => compileRequirementsEffectivePassReceiptV2({
-      activeAuthority: { ...authority, activeBuildManifestHash: HASHES.prompt },
+      activeAuthority: { ...authority, activeBuildHash: HASHES.prompt },
       aggregate: { ...aggregate, findings: [], decision: 'pass' },
     })).toThrow('requirements_effective_pass_authority_stale');
   });
@@ -161,12 +160,11 @@ describe('Requirements EffectivePass gate', () => {
     const aggregate = compileRequirementsAuditAggregateV2({
       activeAuthority: {
         activeSemanticRevisionId: 'SEM-V2', activeScopeSemanticHash: HASHES.scope,
-        activeSourceBindingHash: HASHES.evidence, activeBuildManifestHash: HASHES.providerInvocation,
+        activeSourceBindingHash: HASHES.evidence, activeBuildHash: HASHES.providerInvocation,
       },
       buildManifest: {
-        buildManifestHash: HASHES.providerInvocation,
-        auditPacketRef: { hash: HASHES.ledger },
-        projectionReportRefs: [],
+        buildHash: HASHES.providerInvocation,
+        artifactEntries: [{ role: 'judge_audit_packet', contentRef: { contentHash: HASHES.ledger } }],
       },
       request: {
         judgeRequestHash: HASHES.request,

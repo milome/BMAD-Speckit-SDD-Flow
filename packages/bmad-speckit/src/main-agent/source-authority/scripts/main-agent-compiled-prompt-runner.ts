@@ -170,7 +170,17 @@ export function resolveConfirmedSource(input: {
     return { status: 'no_confirmed_source', reason: 'record_path_missing' };
   }
   const record = readJson(input.recordPath);
-  if (text(record.schemaVersion) === 'requirements-contract-record/v1') {
+  if (
+    text(record.schemaVersion).startsWith('requirements-contract-record/') &&
+    text(record.schemaVersion) !== 'requirements-contract-record/v3'
+  ) {
+    return {
+      status: 'confirmed_source_unresolvable',
+      reason: 'confirmed_source_unresolvable',
+      blockingReasons: ['requirements_authoring_record_version_unsupported'],
+    };
+  }
+  if (text(record.schemaVersion) === 'requirements-contract-record/v3') {
     try {
       const authority = resolveConfirmedRequirementsAuthority({
         projectRoot: input.projectRoot,

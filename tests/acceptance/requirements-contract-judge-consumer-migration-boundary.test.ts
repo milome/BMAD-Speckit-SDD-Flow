@@ -56,25 +56,4 @@ describe('requirements contract Judge consumer migration boundary', () => {
     }
   });
 
-  it('preserves deferred consumer migration assets without making them Judge authority', () => {
-    const consumerRegistry = JSON.parse(
-      readFileSync(
-        path.join(ROOT, '_bmad/shared/requirements-contract/requirements-contract-consumer-registry.json'),
-        'utf8'
-      )
-    ) as Record<string, unknown>;
-    const projectionRegistry = JSON.parse(
-      readFileSync(
-        path.join(ROOT, '_bmad/shared/requirements-contract/requirements-contract-projection-registry.json'),
-        'utf8'
-      )
-    ) as Record<string, unknown>;
-    const serializedConsumer = JSON.stringify(consumerRegistry);
-    const serializedProjection = JSON.stringify(projectionRegistry);
-
-    expect(serializedConsumer).toContain('requirements-contract');
-    expect(serializedProjection).toContain('requirements-contract');
-    expect(serializedConsumer).not.toContain('"judgeRole":"requirements_critical_auditor"');
-    expect(serializedProjection).not.toContain('"judgeRole":"final_acceptance_judge"');
-  });
 });

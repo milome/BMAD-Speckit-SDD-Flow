@@ -76,15 +76,10 @@ function rootSnapshot(recordRoot: string, nowMs: number) {
   collectJsonPaths(record.currentPromotionEvidence, retained);
   collectJsonPaths(record.finalPromotionEvidence, retained);
   collectJsonPaths(record.confirmationEventRef, retained);
-  const activeAttemptPointer = jsonObject(path.join(
-    recordRoot, 'record', 'active-authoring-request.json'
-  ));
-  if (activeAttemptPointer) {
-    collectJsonPaths(activeAttemptPointer, retained);
-    const manifestPath = String(activeAttemptPointer.attemptManifestPath ?? '');
-    if (manifestPath) {
-      retained.add(path.posix.dirname(manifestPath));
-    }
+  for (const manifestPath of [authority?.activeBuildManifestPath, authority?.previousBuildManifestPath]) {
+    if (typeof manifestPath !== 'string' || !manifestPath) continue;
+    const manifest = jsonObject(path.join(recordRoot, ...manifestPath.split('/')));
+    if (manifest) collectJsonPaths(manifest, retained);
   }
   const liveOperations: JsonRecord[] = [];
   for (const operationPath of children(recordRoot, 'authoring/operations')) {
@@ -136,6 +131,26 @@ export function planRequirementsContractRecordGc(input: {
   }
   for (const operationPath of children(input.recordRoot, 'authoring/operations')) {
     if (!retained.has(operationPath)) deletion.add(operationPath);
+  }
+  for (const objectPath of children(input.recordRoot, 'authoring/objects/sha256')) {
+    for (const leafPath of children(input.recordRoot, objectPath)) {
+      if (!retained.has(leafPath)) deletion.add(leafPath);
+    }
+  }
+  for (const requestPath of children(input.recordRoot, 'quality/requests')) {
+    if (!retained.has(requestPath) && ![...retained].some((root) => root.startsWith(`${requestPath}/`))) {
+      deletion.add(requestPath);
+    }
+  }
+  for (const selectionPath of children(input.recordRoot, 'quality/selections')) {
+    if (!retained.has(selectionPath) && ![...retained].some((root) => root.startsWith(`${selectionPath}/`))) {
+      deletion.add(selectionPath);
+    }
+  }
+  for (const confirmationPath of children(input.recordRoot, 'confirmation')) {
+    if (!retained.has(confirmationPath) && ![...retained].some((root) => root.startsWith(`${confirmationPath}/`))) {
+      deletion.add(confirmationPath);
+    }
   }
   for (const stagingPath of children(input.recordRoot, 'authoring/.staging')) {
     const operationId = path.posix.basename(stagingPath);

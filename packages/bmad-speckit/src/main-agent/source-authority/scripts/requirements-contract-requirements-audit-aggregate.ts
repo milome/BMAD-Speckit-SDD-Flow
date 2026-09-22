@@ -4,8 +4,8 @@ type JsonRecord = Record<string, unknown>;
 type RequirementsAuditDecision = 'pass' | 'block';
 
 const HASH_PATTERN = /^sha256:[a-f0-9]{64}$/u;
-const REQUIREMENTS_ACTOR = 'requirements_critical_auditor_judge';
-const REQUIREMENTS_ROLE = 'requirements_critical_auditor';
+const REQUIREMENTS_ACTOR = 'requirements_contract_judge';
+const REQUIREMENTS_ROLE = 'requirements_judge';
 
 export interface RequirementsAuditAggregate {
   schemaVersion: 'requirements-contract-requirements-audit-aggregate/v1';
@@ -57,8 +57,8 @@ export function compileRequirementsAuditAggregateV2(input: {
   if (input.response.verdict === 'fail' && findings.length === 0) {
     issueCodes.push('requirements_judge_fail_without_findings');
   }
-  const activeBuildHash = input.activeAuthority.activeBuildHash ?? input.activeAuthority.activeBuildManifestHash;
-  const manifestBuildHash = input.buildManifest.buildHash ?? input.buildManifest.buildManifestHash;
+  const activeBuildHash = input.activeAuthority.activeBuildHash;
+  const manifestBuildHash = input.buildManifest.buildHash;
   if (activeBuildHash !== manifestBuildHash) {
     issueCodes.push('requirements_active_build_manifest_stale');
   }

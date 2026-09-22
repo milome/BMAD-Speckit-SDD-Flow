@@ -2,6 +2,9 @@ import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { sourceBytesHash } from './requirements-contract-hash-domains';
+import { readJson, writeJsonAtomic } from './requirement-record-control-store';
+import { requirementsContractDomainHash } from './requirements-contract-hash-domains';
+import type { RequirementsStorageReservation } from './requirements-contract-record-storage';
 
 const SHA256 = /^sha256:[a-f0-9]{64}$/u;
 
@@ -100,6 +103,7 @@ export function publishRequirementsContentObject(input: {
   role: string;
   mediaType: string;
   bytes: Buffer;
+  reservation?: RequirementsStorageReservation;
 }): RequirementsContentRef {
   nonEmpty(input.role, 'requirements_content_object_role_invalid');
   const mediaType = nonEmpty(input.mediaType, 'requirements_content_object_media_type_invalid');
@@ -126,6 +130,24 @@ export function publishRequirementsContentObject(input: {
     return ref;
   }
 
+  let reservationRecord: RequirementsStorageReservation | null = null;
+  if (input.reservation) {
+    const reservationPath = path.join(
+      input.recordRoot, 'authoring', 'operations', input.reservation.operationId,
+      'storage-reservation.json'
+    );
+    if (!fs.existsSync(reservationPath)) throw new Error('requirements_storage_reservation_missing');
+    reservationRecord = readJson(reservationPath) as unknown as RequirementsStorageReservation;
+    const { consumedUniqueBytes: _consumed, reservationHash, ...payload } = reservationRecord;
+    if (
+      reservationHash !== requirementsContractDomainHash('requirements-record-storage-reservation/v1', payload) ||
+      reservationRecord.operationId !== input.reservation.operationId ||
+      reservationRecord.requestedUniqueBytes !== input.reservation.requestedUniqueBytes ||
+      !Number.isSafeInteger(reservationRecord.consumedUniqueBytes ?? 0) ||
+      Number(reservationRecord.consumedUniqueBytes ?? 0) + input.bytes.length > reservationRecord.requestedUniqueBytes
+    ) throw new Error('requirements_storage_reservation_invalid');
+  }
+
   const temporary = path.join(parent, `.${path.basename(target)}.${process.pid}.${randomUUID()}.tmp`);
   try {
     fs.writeFileSync(temporary, input.bytes, { flag: 'wx' });
@@ -138,6 +160,12 @@ export function publishRequirementsContentObject(input: {
       verifyRequirementsContentRef({ recordRoot: input.recordRoot, ref });
     }
     verifyRequirementsContentRef({ recordRoot: input.recordRoot, ref });
+    if (reservationRecord) {
+      writeJsonAtomic(
+        path.join(input.recordRoot, 'authoring', 'operations', reservationRecord.operationId, 'storage-reservation.json'),
+        { ...reservationRecord, consumedUniqueBytes: Number(reservationRecord.consumedUniqueBytes ?? 0) + input.bytes.length }
+      );
+    }
     return ref;
   } finally {
     if (fs.existsSync(temporary)) fs.rmSync(temporary, { force: true });

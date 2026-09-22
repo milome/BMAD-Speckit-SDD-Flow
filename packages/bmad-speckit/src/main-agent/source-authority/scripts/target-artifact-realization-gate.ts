@@ -310,25 +310,6 @@ function semanticConfirmationForHash(confirmation: JsonObject): JsonObject {
       semantic[key] = stripProjectionHashBookkeeping(value);
     }
   }
-  if (
-    semantic.preConfirmationDrilldown &&
-    typeof semantic.preConfirmationDrilldown === 'object' &&
-    !Array.isArray(semantic.preConfirmationDrilldown)
-  ) {
-    const drilldown: JsonObject = { ...(semantic.preConfirmationDrilldown as JsonObject) };
-    if (
-      drilldown.criticalAuditor &&
-      typeof drilldown.criticalAuditor === 'object' &&
-      !Array.isArray(drilldown.criticalAuditor)
-    ) {
-      const criticalAuditor: JsonObject = { ...(drilldown.criticalAuditor as JsonObject) };
-      delete criticalAuditor.consecutiveNoNewGapRounds;
-      delete criticalAuditor.latestReceiptHash;
-      delete criticalAuditor.convergenceVerdict;
-      drilldown.criticalAuditor = criticalAuditor;
-    }
-    semantic.preConfirmationDrilldown = drilldown;
-  }
   return semantic;
 }
 

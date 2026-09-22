@@ -88,7 +88,7 @@ The contract confirmability audit answers only whether the requirements scope ca
    - Flag direct `MUST` versus `OUT` contradictions and linked `NEG`/failure-path contradictions as blockers.
    - Flag external side effects that lack timeout, failure, idempotency, recovery, or evidence assertion semantics as blockers.
    - Use `reverse_audit_contract.js --definition-only` only as a compatibility alias for the standalone pre-render drilldown gate.
-   - Stop by convergence metadata, not by manually increasing drilldown rounds: stable `fingerprint`, `clusterId`, `--previous-report`, `--resolutions`, `--changed-only`, `--max-new-blockers`, and `--emit-decision-packet`.
+   - Stop by convergence metadata, not by repeatedly rerunning the same drilldown: stable `fingerprint`, `clusterId`, `--previous-report`, `--resolutions`, `--changed-only`, `--max-new-blockers`, and `--emit-decision-packet`.
    - Treat resolution ledger entries as suppressing only when status is `resolved`, `waived`, `converted_to_open_question`, or `converted_to_out_boundary` and the entry matches current source, implementationConfirmation, and context hashes.
    - Preserve total/new/suppressed/truncated blocker counts in `convergence` even when emitted blockers are limited.
    - Stop after deterministic checks and decision packet emission; do not run unbounded recursive questioning.
@@ -98,10 +98,9 @@ The contract confirmability audit answers only whether the requirements scope ca
    - Treat warning-only grill findings as warnings in reverse audit output.
 12. Pre-confirmation semantic drilldown:
    - Consume the embedded `preConfirmationSemanticDrilldown` report reference or explicit `--drilldown-gate-report`.
-   - Fail closed on missing kernel, missing packet, missing critic convergence, missing reconciliation, stale hashes, failed gate verdict, or renderer did not show drilldown sections.
+   - Fail closed on missing kernel, missing packet, missing reconciliation, stale hashes, failed gate verdict, or renderer did not show drilldown sections.
    - Verify `semantic-kernel.json` is current.
    - Verify `must_decomposition_packet.json` is synchronized and current.
-   - Verify Critical Auditor convergence is derived from three current, hash-bound no-new-gap receipt files.
    - Verify packet/source reconciliation passed.
    - Verify `MUST -> packet -> projections -> source rows`.
    - Verify `packet projection -> implementationConfirmation row`.
@@ -237,7 +236,7 @@ The gate writes:
 - `must_packet_source_reconciliation_report.json`
 - `pre-render-must-decomposition-gate-report.json`
 
-The gate must block on missing semantic kernel, missing must_decomposition_packet, stale packet hash, missing Critical Auditor receipt, fewer than three no-new-gap rounds, unresolved validated gap, incomplete question coverage, `actualTaskCount < expectedTaskCount`, over-broad atomic task, missing packet projection, source row independently invented, packet projection not materialized, missing packet/source reconciliation, per-MUST projection quality failures, renderer missing drilldown sections, or stale gate hashes.
+The gate must block on missing semantic kernel, missing must_decomposition_packet, stale packet hash, incomplete question coverage, `actualTaskCount < expectedTaskCount`, over-broad atomic task, missing packet projection, source row independently invented, packet projection not materialized, missing packet/source reconciliation, per-MUST projection quality failures, renderer missing drilldown sections, or stale gate hashes.
 
 Convergence fields:
 

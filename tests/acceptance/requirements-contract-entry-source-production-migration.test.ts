@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import * as productionSemanticPipeline from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-production-semantic-pipeline';
 import { validateRequirementsContractSemanticIr } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-ir';
 import { validateRequirementsContractSourceBindingCapsule } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-source-binding-capsule';
-import { validateRequirementsContractBuildManifest } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-authoring-manifest';
+import { validateRequirementsContractBuildManifestV2 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-authoring-manifest';
 
 const PROJECT_ROOT = process.cwd();
 const PACKAGE_CLI = path.join(PROJECT_ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js');
@@ -220,11 +220,13 @@ function activeAuthoringArtifacts(root: string, requirementSetId: string) {
   const activeAuthority = requirementRecord.activeAuthority as Record<string, string>;
   const resolveRecordPath = (recordRelativePath: string) =>
     path.join(recordRoot, ...recordRelativePath.split('/'));
-  const semanticIrPath = resolveRecordPath(activeAuthority.activeSemanticIrPath);
-  const sourceBindingPath = resolveRecordPath(activeAuthority.activeSourceBindingPath);
   const buildManifestPath = resolveRecordPath(activeAuthority.activeBuildManifestPath);
   const buildManifest = JSON.parse(readFileSync(buildManifestPath, 'utf8')) as Record<string, any>;
-  const terminalManifestPath = resolveRecordPath(buildManifest.terminalCheckpointManifestRef.path);
+  const semanticEntry = buildManifest.artifactEntries.find((entry: Record<string, any>) => entry.role === 'semantic_ir');
+  const sourceBindingEntry = buildManifest.artifactEntries.find((entry: Record<string, any>) => entry.role === 'source_binding');
+  if (!semanticEntry || !sourceBindingEntry) throw new Error('active_build_core_artifacts_missing');
+  const semanticIrPath = resolveRecordPath(semanticEntry.contentRef.recordRelativePath);
+  const sourceBindingPath = resolveRecordPath(sourceBindingEntry.contentRef.recordRelativePath);
   return {
     recordRoot,
     requirementRecordPath,
@@ -236,8 +238,6 @@ function activeAuthoringArtifacts(root: string, requirementSetId: string) {
     sourceBinding: JSON.parse(readFileSync(sourceBindingPath, 'utf8')) as Record<string, any>,
     buildManifestPath,
     buildManifest,
-    terminalManifestPath,
-    terminalManifest: JSON.parse(readFileSync(terminalManifestPath, 'utf8')) as Record<string, any>,
   };
 }
 
@@ -254,30 +254,25 @@ function expectPublishedAuthority(
   });
   const paths = activeAuthoringArtifacts(root, fixture.sessionAuthority.requirementSetId);
   expect(paths.requirementRecord.activeAuthority).toMatchObject({
-    activeSemanticIrPath: expect.stringMatching(
-      /^authoring\/semantic-revisions\/[^/]+\/semantic-ir\.json$/u
-    ),
-    activeSourceBindingPath: expect.stringMatching(
-      /^authoring\/source-bindings\/[^/]+\/source-binding\.json$/u
-    ),
     activeBuildManifestPath: expect.stringMatching(
-      /^authoring\/staging\/[^/]+\/contract-build-manifest\.json$/u
+      /^authoring\/builds\/[a-f0-9]{64}\/manifest\.json$/u
     ),
   });
   expect(validateRequirementsContractSemanticIr(paths.semanticIr).decision).toBe('pass');
   expect(validateRequirementsContractSourceBindingCapsule(paths.sourceBinding).decision).toBe(
     'pass'
   );
-  expect(validateRequirementsContractBuildManifest(paths.buildManifest).decision).toBe('pass');
-  expect(paths.buildManifest.terminalCheckpointManifestRef.checkpointId).toBe('cp08');
-  expect(paths.terminalManifest.checkpointId).toBe('cp08');
-  expect(paths.terminalManifest.status).toBe('passed');
-  expect(paths.activeAuthority.activeSemanticIrPath).toBe(
-    paths.buildManifest.semanticAuthorityRef.path
+  expect(validateRequirementsContractBuildManifestV2(paths.buildManifest)).toBe(true);
+  expect(paths.buildManifest.checkpointSummary.checkpointIds).toEqual(
+    Array.from({ length: 9 }, (_, ordinal) => `cp${String(ordinal).padStart(2, '0')}`)
   );
-  expect(paths.activeAuthority.activeSourceBindingPath).toBe(
-    paths.buildManifest.bindingAuthorityRef.path
-  );
+  expect(paths.buildManifest.checkpointSummary.terminalStateHashes).toHaveLength(9);
+  expect(paths.buildManifest.validationSummary).toMatchObject({
+    decision: 'pass',
+    checkIds: Array.from({ length: 9 }, (_, ordinal) =>
+      `cp${String(ordinal).padStart(2, '0')}`
+    ),
+  });
   const requirements = (paths.semanticIr.semanticPayload?.semantics?.requirements ?? []) as Array<
     Record<string, string>
   >;
@@ -332,7 +327,7 @@ function runProductionEntry(
 
 describe('requirement entry-source production migration', () => {
   it('materializes validated Intent Lineage before planning semantic Source Root candidates', () => {
-    const orchestrationSource = readFileSync(
+    const pipelineSource = readFileSync(
       path.join(
         PROJECT_ROOT,
         'packages',
@@ -341,28 +336,23 @@ describe('requirement entry-source production migration', () => {
         'main-agent',
         'source-authority',
         'scripts',
-        'main-agent-orchestration.ts'
+        'requirements-contract-production-semantic-pipeline.ts'
       ),
       'utf8'
     );
-    const sectionStart = orchestrationSource.indexOf(
-      'let productionSemanticPipeline: ProductionSemanticPipelineResult | null = null;'
+    const validationStart = pipelineSource.indexOf('const validIntakeReceipt =');
+    const lineageValidationIndex = pipelineSource.indexOf(
+      'validateRequirementsContractIntentLineageLedger(intentLineageLedger)',
+      validationStart
     );
-    const sectionEnd = orchestrationSource.indexOf(
-      'const projectionSanity = projectionDomainSanityCheck',
-      sectionStart
-    );
-    const productionSection = orchestrationSource.slice(sectionStart, sectionEnd);
-    const lineageIndex = productionSection.indexOf('materializeEntryLineage({');
-    const candidatePlanningIndex = productionSection.indexOf(
-      'planProductionSemanticSourceRootCandidates({'
+    const sourceRootMaterializationIndex = pipelineSource.indexOf(
+      'validateSourceRootCandidates(input.sourceRootCandidates)',
+      validationStart
     );
 
-    expect(sectionStart).toBeGreaterThanOrEqual(0);
-    expect(sectionEnd).toBeGreaterThan(sectionStart);
-    expect(lineageIndex).toBeGreaterThanOrEqual(0);
-    expect(candidatePlanningIndex).toBeGreaterThanOrEqual(0);
-    expect(lineageIndex).toBeLessThan(candidatePlanningIndex);
+    expect(validationStart).toBeGreaterThanOrEqual(0);
+    expect(lineageValidationIndex).toBeGreaterThan(validationStart);
+    expect(sourceRootMaterializationIndex).toBeGreaterThan(lineageValidationIndex);
   });
 
   it('keeps authority-bearing Source Root materialization behind validated Intent Lineage', () => {
@@ -392,9 +382,11 @@ describe('requirement entry-source production migration', () => {
       const result = runProductionEntry(root, sourcePath, targetPath, fixture.sessionAuthority);
       const paths = expectPublishedAuthority(result, fixture, root);
       expect(paths.semanticIr.semanticPayload.specSpanRegistry.length).toBeGreaterThan(0);
-      expect(paths.buildManifest.auditPacketRef.path).toMatch(
-        /^authoring\/staging\/[^/]+\/judge-audit-packet\.json$/u
-      );
+      expect(
+        paths.buildManifest.artifactEntries.find(
+          (entry: Record<string, any>) => entry.role === 'judge_audit_packet'
+        )?.contentRef.recordRelativePath
+      ).toMatch(/^authoring\/objects\/sha256\/[a-f0-9]{2}\/[a-f0-9]{62}$/u);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -409,11 +401,12 @@ describe('requirement entry-source production migration', () => {
       materializeEntrySourceFixture(root, sourcePath, fixture);
       const result = runProductionEntry(root, sourcePath, targetPath, fixture.sessionAuthority);
       const paths = expectPublishedAuthority(result, fixture, root);
+      const resultPayload = (result.json?.data ?? result.json) as Record<string, any>;
       const sourceListPath = path.join(
         paths.recordRoot,
         'authoring',
         'staging',
-        paths.activeAuthority.activeAuthoringAttemptId,
+        resultPayload.authoringAttemptId,
         'consumer-authority-source-list.json'
       );
       expect(existsSync(sourceListPath)).toBe(true);
@@ -534,9 +527,7 @@ describe('requirement entry-source production migration', () => {
       expect(semantics.atoms.map((row: { requirementRef: string }) => row.requirementRef)).toEqual(
         expect.arrayContaining(expectedMustIds)
       );
-      expect(paths.buildManifest.semanticAuthorityRef.hash).toBe(
-        paths.semanticIr.scopeSemanticHash
-      );
+      expect(paths.buildManifest.scopeSemanticHash).toBe(paths.semanticIr.scopeSemanticHash);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

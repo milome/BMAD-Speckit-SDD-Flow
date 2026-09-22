@@ -10,12 +10,20 @@ import {
 } from './architecture-premise-authority';
 import { atomicNoClobberPublish } from './requirements-contract-atomic-no-clobber-publisher';
 import {
-  validateRequirementsContractBuildManifest,
+  validateRequirementsActiveAuthorityTuple,
+  type RequirementsActiveAuthorityTupleV3,
+} from './requirements-contract-authority-publication-committer';
+import {
   validateRequirementsContractBuildManifestV2,
-  validateRequirementsContractCheckpointManifest,
 } from './requirements-contract-authoring-manifest';
-import { resolveRequirementsAuthoringArtifact } from './requirements-contract-artifact-resolver';
-import { validateRequirementsActiveAuthorityTuple } from './requirements-contract-authority-publication-committer';
+import {
+  readRequirementsActiveBuildManifest,
+  resolveRequirementsActiveArtifact,
+} from './requirements-contract-durable-build-store';
+import {
+  readRequirementsContentObject,
+  type RequirementsContentRef,
+} from './requirements-contract-content-store';
 import {
   artifactBytesHash,
   canonicalRequirementsJson,
@@ -27,12 +35,13 @@ import {
   type RequirementsContractSemanticIr,
   type RequirementsExecutionConstraint,
 } from './requirements-contract-semantic-ir';
-import { readRequirementsContractSemanticIrAuthority } from './requirements-contract-semantic-ir-reader';
 import {
   validateRequirementsContractSourceBindingCapsule,
   type RequirementsContractSourceBindingCapsule,
 } from './requirements-contract-source-binding-capsule';
 import { validateRuntimeStatusDecisionReceipt } from './requirements-contract-runtime-status-decision-receipt';
+import { openRequirementsContractRecord } from './requirements-contract-record-boundary';
+import { confirmationAuditBindingIsCurrent } from './requirements-contract-confirmation-acceptance';
 import {
   REQUIREMENTS_TYPED_SEMANTIC_VERSION,
   requirementsTypedSemanticSource,
@@ -57,7 +66,7 @@ export interface ArchitectureConfirmationContext {
   recordRoot: string;
   recordPath: string;
   record: JsonObject;
-  activeAuthority: JsonObject;
+  activeAuthority: RequirementsActiveAuthorityTupleV3;
   semanticIr: RequirementsContractSemanticIr;
   sourceBinding: RequirementsContractSourceBindingCapsule;
   executionManifest: JsonObject;
@@ -68,10 +77,6 @@ export interface ArchitectureConfirmationContext {
 
 const SAFE_REQUEST_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/u;
 const HASH = /^sha256:[a-f0-9]{64}$/u;
-const EXECUTION_MANIFEST_SCHEMA_VERSIONS = new Set([
-  'requirements-contract-execution-manifest/v1',
-  'requirements-contract-execution-manifest/v2',
-]);
 const ARCHITECTURE_CONFIRMATION_BLOCK_ISSUE_CODES = [
   'requirements_confirmation_record_missing',
   'requirements_confirmation_required',
@@ -222,92 +227,6 @@ function requireCurrent(value: boolean, issueCode: string): void {
   if (!value) throw new ArchitectureConfirmationBlock(issueCode);
 }
 
-function resolveBuildArtifactEntry(input: {
-  recordRoot: string;
-  buildManifest: JsonObject;
-  role: string;
-}): JsonObject {
-  const directEntries = objects(input.buildManifest.artifactEntries).filter(
-    (item) => text(item.role) === input.role
-  );
-  if (directEntries.length > 1) {
-    throw new Error('architecture_confirmation_build_artifact_duplicate');
-  }
-
-  let checkpointRef = object(input.buildManifest.terminalCheckpointManifestRef);
-  const visited = new Set<string>();
-  while (text(checkpointRef.path)) {
-    const checkpointPath = text(checkpointRef.path);
-    if (visited.has(checkpointPath)) {
-      throw new Error('architecture_confirmation_checkpoint_manifest_lineage_invalid');
-    }
-    visited.add(checkpointPath);
-    const checkpoint = readJson(confinedArtifact(input.recordRoot, checkpointPath));
-    const validation = validateRequirementsContractCheckpointManifest(checkpoint);
-    if (validation.decision !== 'pass') {
-      throw new Error(
-        `architecture_confirmation_checkpoint_manifest_invalid:${validation.issueCodes[0]}`
-      );
-    }
-    if (
-      text(checkpoint.checkpointId) !== text(checkpointRef.checkpointId) ||
-      checkpoint.checkpointOrdinal !== checkpointRef.checkpointOrdinal ||
-      text(checkpoint.checkpointManifestHash) !== text(checkpointRef.hash) ||
-      text(checkpoint.authoringRequestId) !== text(input.buildManifest.authoringRequestId) ||
-      text(checkpoint.authoringAttemptId) !== text(input.buildManifest.authoringAttemptId) ||
-      text(checkpoint.inputManifestHash) !== text(input.buildManifest.inputManifestHash)
-    ) {
-      throw new Error('architecture_confirmation_checkpoint_manifest_identity_mismatch');
-    }
-    const entries = objects(checkpoint.artifactEntries).filter(
-      (item) => text(item.role) === input.role
-    );
-    if (entries.length > 1) {
-      throw new Error('architecture_confirmation_checkpoint_artifact_duplicate');
-    }
-    if (text(checkpoint.checkpointId) !== 'cp06' && entries.length > 0) {
-      throw new Error('architecture_confirmation_execution_manifest_stage_mismatch');
-    }
-    if (text(checkpoint.checkpointId) === 'cp06') {
-      const previous = object(checkpoint.previousCheckpointManifestRef);
-      if (
-        checkpoint.checkpointOrdinal !== 6 ||
-        text(checkpoint.status) !== 'passed' ||
-        text(checkpoint.compilerIdentity) !==
-          'requirements-contract-cp06-execution-projection/v1' ||
-        text(previous.checkpointId) !== 'cp05' ||
-        previous.checkpointOrdinal !== 5 ||
-        text(checkpoint.latestValidPredecessorCheckpoint) !== 'cp05'
-      ) {
-        throw new Error('architecture_confirmation_execution_manifest_checkpoint_invalid');
-      }
-      const entry = entries[0];
-      if (!entry) {
-        throw new ArchitectureConfirmationBlock(`architecture_successor_required:${input.role}`);
-      }
-      const expectedPath = `authoring/staging/${text(
-        input.buildManifest.authoringAttemptId
-      )}/cp06/execution-manifest.json`;
-      if (
-        !EXECUTION_MANIFEST_SCHEMA_VERSIONS.has(text(entry.schemaVersion)) ||
-        text(entry.artifactId) !== 'execution-manifest' ||
-        text(entry.recordRelativePath) !== expectedPath
-      ) {
-        throw new Error('architecture_confirmation_execution_manifest_entry_invalid');
-      }
-      if (
-        directEntries[0] &&
-        canonicalRequirementsJson(directEntries[0]) !== canonicalRequirementsJson(entry)
-      ) {
-        throw new Error('architecture_confirmation_execution_manifest_entry_mismatch');
-      }
-      return entry;
-    }
-    checkpointRef = object(checkpoint.previousCheckpointManifestRef);
-  }
-  throw new ArchitectureConfirmationBlock(`architecture_successor_required:${input.role}`);
-}
-
 function validateRequirementsEffectivePassV2(value: JsonObject): JsonObject {
   const { requirementsEffectivePassHash, ...payload } = value;
   const requiredHashes = [
@@ -337,12 +256,40 @@ function readValidatedSourceBinding(
   recordRoot: string,
   bindingRevisionId: string
 ): RequirementsContractSourceBindingCapsule {
-  const binding = readJson(
-    confinedArtifact(
-      recordRoot,
-      `authoring/source-bindings/${bindingRevisionId}/source-binding.json`
-    )
-  ) as unknown as RequirementsContractSourceBindingCapsule;
+  let binding: RequirementsContractSourceBindingCapsule | null = null;
+  const buildsRoot = confinedArtifact(recordRoot, 'authoring/builds');
+  if (fs.existsSync(buildsRoot)) {
+    for (const buildDirectory of fs.readdirSync(buildsRoot, { withFileTypes: true })) {
+      if (!buildDirectory.isDirectory()) continue;
+      const manifestPath = path.join(buildsRoot, buildDirectory.name, 'manifest.json');
+      if (!fs.existsSync(manifestPath)) continue;
+      let manifest: JsonObject;
+      try {
+        manifest = readJson(manifestPath);
+      } catch {
+        continue;
+      }
+      const entry = objects(manifest.artifactEntries).find(
+        (candidate) => candidate.role === 'source_binding'
+      );
+      if (!entry?.contentRef || typeof entry.contentRef !== 'object' || Array.isArray(entry.contentRef)) {
+        continue;
+      }
+      const contentRef = entry.contentRef as unknown as RequirementsContentRef;
+      try {
+        const candidate = JSON.parse(
+          readRequirementsContentObject({ recordRoot, ref: contentRef }).toString('utf8')
+        ) as unknown as RequirementsContractSourceBindingCapsule;
+        if (candidate.bindingRevisionId === bindingRevisionId) {
+          binding = candidate;
+          break;
+        }
+      } catch {
+        continue;
+      }
+    }
+  }
+  if (!binding) throw new Error('requirements_confirmation_source_binding_missing');
   const validation = validateRequirementsContractSourceBindingCapsule(binding);
   if (validation.decision !== 'pass') {
     throw new Error(`architecture_confirmation_source_binding_invalid:${validation.issueCodes[0]}`);
@@ -434,11 +381,12 @@ export function resolveArchitectureConfirmationContext(input: {
   if (!fs.existsSync(recordPath)) {
     throw new ArchitectureConfirmationBlock('requirements_confirmation_record_missing');
   }
-  const record = readJson(recordPath);
-  const activeAuthority = object(record.activeAuthority);
+  const record = openRequirementsContractRecord(recordPath);
+  const activeAuthority = object(
+    record.activeAuthority
+  ) as unknown as RequirementsActiveAuthorityTupleV3;
   requireCurrent(
-    record.schemaVersion === 'requirements-contract-record/v1' &&
-      text(record.recordId) === input.requestId &&
+    text(record.recordId) === input.requestId &&
       text(record.lifecycle) === 'user_confirmed',
     'requirements_confirmation_required'
   );
@@ -448,32 +396,21 @@ export function resolveArchitectureConfirmationContext(input: {
     'requirements_successor_required:active_authority_tuple'
   );
 
-  const buildPath = confinedArtifact(recordRoot, text(activeAuthority.activeBuildManifestPath));
-  const buildManifest = readJson(buildPath);
-  const durableBuild = buildManifest.schemaVersion === 'requirements-contract-build-manifest/v2';
-  if (durableBuild) {
-    if (!validateRequirementsContractBuildManifestV2(buildManifest)) {
-      throw new Error('architecture_confirmation_build_manifest_invalid');
+  const buildManifest = readRequirementsActiveBuildManifest({ recordRoot, activeAuthority });
+  let semanticIr: RequirementsContractSemanticIr;
+  try {
+    semanticIr = resolveRequirementsActiveArtifact({
+      recordRoot,
+      activeAuthority,
+      role: 'semantic_ir',
+    }).value as RequirementsContractSemanticIr;
+  } catch (error) {
+    const issue = error instanceof Error ? error.message : String(error);
+    if (issue.startsWith('requirements_content_object_')) {
+      throw new Error(`architecture_confirmation_semantic_ir_invalid:${issue}`);
     }
-  } else {
-    const buildValidation = validateRequirementsContractBuildManifest(buildManifest);
-    if (buildValidation.decision !== 'pass') {
-      throw new Error(
-        `architecture_confirmation_build_manifest_invalid:${buildValidation.issueCodes[0]}`
-      );
-    }
+    throw error;
   }
-  const v2Entries = objects(buildManifest.artifactEntries);
-  const v2Artifact = (role: string): unknown => {
-    const entry = v2Entries.find((candidate) => candidate.role === role);
-    if (!entry) throw new Error(`architecture_confirmation_${role}_missing`);
-    return resolveRequirementsAuthoringArtifact({ recordRoot, entry: entry as never });
-  };
-  const semanticIr = durableBuild
-    ? v2Artifact('semantic_ir') as RequirementsContractSemanticIr
-    : readRequirementsContractSemanticIrAuthority(
-        confinedArtifact(recordRoot, text(activeAuthority.activeSemanticIrPath))
-      );
   const semanticValidation = validateRequirementsContractSemanticIr(semanticIr);
   if (semanticValidation.decision !== 'pass') {
     throw new Error(
@@ -488,9 +425,20 @@ export function resolveArchitectureConfirmationContext(input: {
     'requirements_successor_required:semantic_authority'
   );
 
-  const sourceBindingValue = durableBuild
-    ? v2Artifact('source_binding')
-    : readJson(confinedArtifact(recordRoot, text(activeAuthority.activeSourceBindingPath)));
+  let sourceBindingValue: unknown;
+  try {
+    sourceBindingValue = resolveRequirementsActiveArtifact({
+      recordRoot,
+      activeAuthority,
+      role: 'source_binding',
+    }).value;
+  } catch (error) {
+    const issue = error instanceof Error ? error.message : String(error);
+    if (issue.startsWith('requirements_content_object_')) {
+      throw new Error(`architecture_confirmation_source_binding_invalid:${issue}`);
+    }
+    throw error;
+  }
   const sourceBinding = sourceBindingValue as RequirementsContractSourceBindingCapsule;
   const bindingValidation = validateRequirementsContractSourceBindingCapsule(sourceBinding);
   if (bindingValidation.decision !== 'pass') {
@@ -506,40 +454,27 @@ export function resolveArchitectureConfirmationContext(input: {
     'requirements_successor_required:source_binding'
   );
 
-  if (!durableBuild) {
-    const buildBindingAuthority = object(buildManifest.bindingAuthorityRef);
-    resolveCompatibleBindingAncestry({
-      recordRoot,
-      semanticRevisionId: semanticIr.semanticRevisionId,
-      scopeSemanticHash: semanticIr.scopeSemanticHash,
-      currentBinding: sourceBinding,
-      ancestorBindingRevisionId: text(buildBindingAuthority.bindingRevisionId),
-      ancestorSourceBindingHash: text(buildBindingAuthority.hash),
-      issueCode: 'requirements_successor_required:build_manifest',
-    });
-  }
   requireCurrent(
-    text(buildManifest.buildHash ?? buildManifest.buildManifestHash) ===
-        text(activeAuthority.activeBuildHash ?? activeAuthority.activeBuildManifestHash) &&
-      (durableBuild || (
-        text(buildManifest.authoringRequestId) === input.requestId &&
-        text(buildManifest.authoringAttemptId) === text(activeAuthority.activeAuthoringAttemptId) &&
-        text(object(buildManifest.semanticAuthorityRef).semanticRevisionId) === semanticIr.semanticRevisionId &&
-        text(object(buildManifest.semanticAuthorityRef).hash) === semanticIr.scopeSemanticHash
-      )),
+    buildManifest.buildHash === activeAuthority.activeBuildHash,
     'requirements_successor_required:build_manifest'
   );
 
-  const executionEntry = durableBuild ? v2Entries.find((entry) => entry.role === 'execution_manifest') : resolveBuildArtifactEntry({
-    recordRoot, buildManifest, role: 'execution_manifest',
-  });
-  if (!executionEntry) throw new Error('architecture_confirmation_execution_manifest_missing');
-  const executionManifest = durableBuild
-    ? object(resolveRequirementsAuthoringArtifact({ recordRoot, entry: executionEntry as never }))
-    : readJson(confinedArtifact(recordRoot, text(executionEntry.recordRelativePath)));
-  if (!durableBuild && text(executionEntry.artifactHash) !== sha256Stable(executionManifest)) {
-    throw new Error('architecture_confirmation_execution_manifest_hash_mismatch');
+  let executionArtifact: ReturnType<typeof resolveRequirementsActiveArtifact>;
+  try {
+    executionArtifact = resolveRequirementsActiveArtifact({
+      recordRoot,
+      activeAuthority,
+      role: 'execution_manifest',
+    });
+  } catch (error) {
+    const issue = error instanceof Error ? error.message : String(error);
+    if (issue.startsWith('requirements_content_object_')) {
+      throw new Error(`architecture_confirmation_build_manifest_invalid:${issue}`);
+    }
+    throw error;
   }
+  const executionEntry = executionArtifact.entry;
+  const executionManifest = object(executionArtifact.value);
   const expectedExecutionManifestVersion =
     semanticIr.schemaVersion === 'requirements-contract-semantic-ir/v2'
       ? 'requirements-contract-execution-manifest/v2'
@@ -586,9 +521,7 @@ export function resolveArchitectureConfirmationContext(input: {
   requireCurrent(
     text(effectivePass.decision) === 'pass' &&
       text(effectivePass.semanticRevisionId) === semanticIr.semanticRevisionId &&
-      text(effectivePass.scopeSemanticHash) === semanticIr.scopeSemanticHash &&
-      text(effectivePass.buildManifestHash) ===
-        text(activeAuthority.activeBuildHash ?? activeAuthority.activeBuildManifestHash),
+      text(effectivePass.scopeSemanticHash) === semanticIr.scopeSemanticHash,
     'requirements_effective_pass_required'
   );
 
@@ -622,7 +555,7 @@ export function resolveArchitectureConfirmationContext(input: {
     }
   }
   const promotion = promotionReceipt ?? {};
-  requireCurrent(
+  const confirmationCurrent =
     confirmationEventHash === text(confirmationRef.artifactBytesHash) &&
       confirmationEvent.schemaVersion === 'requirements-contract-confirmation-event/v1' &&
       text(confirmationEvent.requestId) === input.requestId &&
@@ -640,23 +573,29 @@ export function resolveArchitectureConfirmationContext(input: {
       text(promotion.requestId) === input.requestId &&
       text(promotion.semanticRevisionId) === semanticIr.semanticRevisionId &&
       text(promotion.scopeSemanticHash) === semanticIr.scopeSemanticHash &&
-      text(promotion.bindingRevisionId) === text(confirmationEvent.bindingRevisionId) &&
-      text(promotion.sourceBindingHash) === text(effectivePass.sourceBindingHash) &&
-      text(promotion.buildManifestHash) ===
-        text(activeAuthority.activeBuildHash ?? activeAuthority.activeBuildManifestHash) &&
       text(promotion.requirementsEffectivePassHash) ===
         text(effectivePass.requirementsEffectivePassHash) &&
       text(promotion.requirementsEffectivePassHash) === text(effectivePassRef.hash) &&
-      promotion.exactConfirmationText === confirmationEvent.exactConfirmationText,
-    'requirements_confirmation_event_stale'
+      promotion.exactConfirmationText === confirmationEvent.exactConfirmationText &&
+      confirmationAuditBindingIsCurrent({
+        recordRoot,
+        record,
+        event: confirmationEvent,
+        effectivePass,
+        activeAuthority,
+      });
+  requireCurrent(confirmationCurrent, 'requirements_confirmation_event_stale');
+  const confirmationBinding = readValidatedSourceBinding(
+    recordRoot,
+    text(confirmationEvent.bindingRevisionId)
   );
   const confirmationBindingAncestry = resolveCompatibleBindingAncestry({
     recordRoot,
     semanticRevisionId: semanticIr.semanticRevisionId,
     scopeSemanticHash: semanticIr.scopeSemanticHash,
     currentBinding: sourceBinding,
-    ancestorBindingRevisionId: text(promotion.bindingRevisionId),
-    ancestorSourceBindingHash: text(promotion.sourceBindingHash),
+    ancestorBindingRevisionId: confirmationBinding.bindingRevisionId,
+    ancestorSourceBindingHash: confirmationBinding.sourceBindingHash,
     issueCode: 'requirements_confirmation_event_stale',
   });
   const currentPromotionEvidence = object(record.currentPromotionEvidence);
@@ -666,7 +605,11 @@ export function resolveArchitectureConfirmationContext(input: {
   requireCurrent(fs.existsSync(currentPromotionPath), 'requirements_confirmation_event_stale');
   const currentPromotionBytes = fs.readFileSync(currentPromotionPath);
   const currentPromotion = JSON.parse(currentPromotionBytes.toString('utf8')) as JsonObject;
-  const currentPromotionRole = confirmationBindingAncestry.latestRefreshReceipt
+  const latestRefreshPromotionRef = object(
+    confirmationBindingAncestry.latestRefreshReceipt?.confirmationPromotionReceiptRef
+  );
+  const refreshOwnsCurrentPromotion = Boolean(text(latestRefreshPromotionRef.path));
+  const currentPromotionRole = refreshOwnsCurrentPromotion
     ? 'source-binding-refresh-receipt'
     : 'promotion_receipt';
   const currentPromotionHash = artifactBytesHash({
@@ -674,17 +617,14 @@ export function resolveArchitectureConfirmationContext(input: {
     mediaType: 'application/json',
     bytes: currentPromotionBytes,
   });
-  const expectedCurrentPromotionPath = confirmationBindingAncestry.latestRefreshReceipt
+  const expectedCurrentPromotionPath = refreshOwnsCurrentPromotion
     ? `authoring/source-bindings/${sourceBinding.bindingRevisionId}/source-binding-refresh-receipt.json`
     : promotionRelativePath;
-  const latestRefreshPromotionRef = object(
-    confirmationBindingAncestry.latestRefreshReceipt?.confirmationPromotionReceiptRef
-  );
   requireCurrent(
     text(record.confirmedScopeSemanticHash) === semanticIr.scopeSemanticHash &&
       currentPromotionRelativePath === expectedCurrentPromotionPath &&
       currentPromotionHash === text(currentPromotionEvidence.artifactBytesHash) &&
-      (confirmationBindingAncestry.latestRefreshReceipt
+      (refreshOwnsCurrentPromotion
         ? text(currentPromotion.receiptHash) ===
             text(confirmationBindingAncestry.latestRefreshReceipt.receiptHash) &&
           text(latestRefreshPromotionRef.path) === promotionRelativePath &&
@@ -1312,6 +1252,9 @@ export function readCurrentArchitectureConfirmationAcceptance(input: {
   } catch {
     acceptedBindingIsCompatible = false;
   }
+  const bindingRefreshed =
+    acceptedBindingIsCompatible &&
+    acceptedBindingRevisionId !== input.context.sourceBinding.bindingRevisionId;
   const expectedPageBytes = Buffer.from(projection.pageBytes, 'utf8');
   const candidateHashId = input.candidate.architectureConfirmationCandidateHash.slice(
     'sha256:'.length
@@ -1350,7 +1293,8 @@ export function readCurrentArchitectureConfirmationAcceptance(input: {
         bytes: pageBytes,
       })
     : '';
-  const attemptId = text(event.requirementsAuthoringAttemptId);
+  const requirementsBuildHash = text(event.requirementsBuildHash);
+  const attemptId = `build-${requirementsBuildHash.slice('sha256:'.length)}`;
   const runtimeReceiptRelativePath = projectRelative(
     input.context.recordRoot,
     projection.runtimeReceiptPath
@@ -1373,6 +1317,58 @@ export function readCurrentArchitectureConfirmationAcceptance(input: {
   const requirementsEffectivePassHash = text(
     input.context.effectivePass.requirementsEffectivePassHash
   );
+  const pageIntegrityValid = bindingRefreshed
+    ? pageBytes !== null && pageArtifactBytesHash === text(pageRef.artifactBytesHash)
+    : text(pageRef.path) === expectedPageRef.path &&
+      text(pageRef.artifactBytesHash) === expectedPageRef.artifactBytesHash &&
+      Boolean(pageBytes?.equals(expectedPageBytes));
+  const historicalBuildValid = (() => {
+    if (!HASH.test(requirementsBuildHash)) return false;
+    try {
+      const historicalBuildPath = confinedArtifact(
+        input.context.recordRoot,
+        `authoring/builds/${requirementsBuildHash.slice('sha256:'.length)}/manifest.json`
+      );
+      if (!fs.existsSync(historicalBuildPath)) return false;
+      const historicalManifest = readJson(historicalBuildPath);
+      return validateRequirementsContractBuildManifestV2(historicalManifest) &&
+        historicalManifest.buildHash === requirementsBuildHash &&
+        historicalManifest.scopeSemanticHash === input.context.semanticIr.scopeSemanticHash;
+    } catch {
+      return false;
+    }
+  })();
+  const buildBindingValid = bindingRefreshed
+    ? historicalBuildValid
+    : requirementsBuildHash === input.context.activeAuthority.activeBuildHash;
+  const eventReceiptValid = bindingRefreshed
+    ? text(eventGateOutput?.path) === eventRef.path && HASH.test(text(eventGateOutput?.hash))
+    : text(eventGateOutput?.path) === eventRef.path &&
+      text(eventGateOutput?.hash) === eventRef.artifactBytesHash;
+  const confirmationStageValid = bindingRefreshed
+    ? text(requirementsConfirmationStageInput?.path) === text(currentRequirementsConfirmationRef.path) &&
+      text(requirementsConfirmationStageInput?.hash) ===
+        text(requirementsConfirmationEventRef.artifactBytesHash)
+    : text(requirementsConfirmationStageInput?.path) === text(currentRequirementsConfirmationRef.path) &&
+      text(requirementsConfirmationStageInput?.hash) === input.context.confirmationEventHash;
+  const effectivePassStageValid = bindingRefreshed
+    ? text(requirementsEffectivePassStageInput?.path) ===
+        'quality/requirements-effective-pass-receipt.json' &&
+      text(requirementsEffectivePassStageInput?.hash) === text(requirementsEffectivePassRef.hash)
+    : text(requirementsEffectivePassStageInput?.path) ===
+        'quality/requirements-effective-pass-receipt.json' &&
+      text(requirementsEffectivePassStageInput?.hash) === requirementsEffectivePassHash;
+  const confirmationEventRefValid = bindingRefreshed
+    ? text(requirementsConfirmationEventRef.path) === text(currentRequirementsConfirmationRef.path) &&
+      HASH.test(text(requirementsConfirmationEventRef.artifactBytesHash))
+    : text(requirementsConfirmationEventRef.path) === text(currentRequirementsConfirmationRef.path) &&
+      text(requirementsConfirmationEventRef.artifactBytesHash) === input.context.confirmationEventHash;
+  const architectureEffectivePassRefValid = bindingRefreshed
+    ? text(requirementsEffectivePassRef.path) === 'quality/requirements-effective-pass-receipt.json' &&
+      HASH.test(text(requirementsEffectivePassRef.hash))
+    : text(requirementsEffectivePassRef.path) ===
+        'quality/requirements-effective-pass-receipt.json' &&
+      text(requirementsEffectivePassRef.hash) === requirementsEffectivePassHash;
   const valid =
     event.schemaVersion === 'architecture-confirmation-event/v1' &&
     event.eventType === 'architecture_confirmation_recorded' &&
@@ -1381,7 +1377,7 @@ export function readCurrentArchitectureConfirmationAcceptance(input: {
     text(event.scopeSemanticHash) === input.context.semanticIr.scopeSemanticHash &&
     text(event.architectureConfirmationCandidateHash) ===
       input.candidate.architectureConfirmationCandidateHash &&
-    Boolean(attemptId) &&
+    buildBindingValid &&
     Boolean(acceptedBindingRevisionId) &&
     Boolean(acceptedSourceBindingHash) &&
     acceptedBindingIsCompatible &&
@@ -1389,15 +1385,9 @@ export function readCurrentArchitectureConfirmationAcceptance(input: {
     event.decision === 'pass' &&
     text(candidateRef.path) === expectedCandidateRef.path &&
     text(candidateRef.artifactBytesHash) === expectedCandidateRef.artifactBytesHash &&
-    text(pageRef.path) === expectedPageRef.path &&
-    text(pageRef.artifactBytesHash) === expectedPageRef.artifactBytesHash &&
-    Boolean(pageBytes?.equals(expectedPageBytes)) &&
-    text(requirementsConfirmationEventRef.path) === text(currentRequirementsConfirmationRef.path) &&
-    text(requirementsConfirmationEventRef.artifactBytesHash) ===
-      input.context.confirmationEventHash &&
-    text(requirementsEffectivePassRef.path) ===
-      'quality/requirements-effective-pass-receipt.json' &&
-    text(requirementsEffectivePassRef.hash) === requirementsEffectivePassHash &&
+    pageIntegrityValid &&
+    confirmationEventRefValid &&
+    architectureEffectivePassRefValid &&
     pageArtifactBytesHash === text(pageRef.artifactBytesHash) &&
     runtimeReceipt !== null &&
     validateRuntimeStatusDecisionReceipt(runtimeReceipt) &&
@@ -1407,16 +1397,11 @@ export function readCurrentArchitectureConfirmationAcceptance(input: {
     runtimeReceipt.semanticModelHash === input.context.semanticIr.scopeSemanticHash &&
     runtimeReceipt.decision === 'pass' &&
     runtimeReceipt.effectiveStatus === 'pass' &&
-    text(eventGateOutput?.path) === eventRef.path &&
-    text(eventGateOutput?.hash) === eventRef.artifactBytesHash &&
+    eventReceiptValid &&
     text(candidateStageInput?.path) === expectedCandidateRef.path &&
     text(candidateStageInput?.hash) === input.candidate.architectureConfirmationCandidateHash &&
-    text(requirementsConfirmationStageInput?.path) ===
-      text(currentRequirementsConfirmationRef.path) &&
-    text(requirementsConfirmationStageInput?.hash) === input.context.confirmationEventHash &&
-    text(requirementsEffectivePassStageInput?.path) ===
-      'quality/requirements-effective-pass-receipt.json' &&
-    text(requirementsEffectivePassStageInput?.hash) === requirementsEffectivePassHash;
+    confirmationStageValid &&
+    effectivePassStageValid;
   if (!valid) throw new Error('architecture_confirmation_acceptance_event_invalid');
   return {
     event,

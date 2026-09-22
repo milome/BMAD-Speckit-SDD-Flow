@@ -59,6 +59,12 @@ export interface FileEntryIntakeAuthority {
 
 export type EntryIntakeAuthority = SessionEntryIntakeAuthority | FileEntryIntakeAuthority;
 
+function isFileEntryIntakeAuthority(
+  authority: EntryIntakeAuthority
+): authority is FileEntryIntakeAuthority {
+  return authority.intakeReceipt.schemaVersion === 'requirements-contract-file-intake-receipt/v2';
+}
+
 export interface InvocationEntryAuthority {
   source: CanonicalUtf8SourceSnapshot;
   receiptPath: string;
@@ -131,6 +137,41 @@ function reusableCapturedAuthorityArtifact<T extends object>(
     sha256Stable(withoutCaptureIdentity(candidate))
     ? (existing as T)
     : null;
+}
+
+function reusableFileIntakeReceipt(
+  filePath: string,
+  candidate: RequirementsContractFileIntakeReceiptV2
+): RequirementsContractFileIntakeReceiptV2 | null {
+  let existing: unknown;
+  try {
+    existing = readJson(filePath);
+  } catch {
+    return null;
+  }
+  if (
+    !validateRequirementsContractFileIntakeReceipt(existing) ||
+    !existing ||
+    typeof existing !== 'object' ||
+    Array.isArray(existing) ||
+    (existing as RequirementsContractFileIntakeReceiptV2).schemaVersion !==
+      'requirements-contract-file-intake-receipt/v2'
+  ) {
+    return null;
+  }
+  const current = existing as RequirementsContractFileIntakeReceiptV2;
+  if (
+    current.requirementSetId !== candidate.requirementSetId ||
+    current.entrySource !== candidate.entrySource ||
+    current.requestedArtifactRole !== candidate.requestedArtifactRole ||
+    current.sourcePath !== candidate.sourcePath ||
+    current.sourceBytesHash !== candidate.sourceBytesHash ||
+    current.sourceByteLength !== candidate.sourceByteLength ||
+    current.sourceBlobRef.contentHash !== candidate.sourceBlobRef.contentHash
+  ) {
+    return null;
+  }
+  return current;
 }
 
 export function readCanonicalUtf8Source(sourcePath: string): CanonicalUtf8SourceSnapshot {
@@ -271,6 +312,7 @@ export function materializeFileEntryIntake(input: {
     capturedAt: nonEmpty(input.capturedAt, 'capturedAt'),
   });
   const intakeReceipt =
+    reusableFileIntakeReceipt(input.intakeReceiptPath, receipt) ??
     reusableCapturedAuthorityArtifact(
       input.intakeReceiptPath,
       receipt,
@@ -337,10 +379,7 @@ export function materializeEntryLineage(input: {
   lineageLedgerPath: string;
 }): RequirementsContractIntentLineageLedger | RequirementsContractIntentLineageLedgerV2 {
   const sourceRoots = input.sourceRoots ?? [];
-  if (
-    input.authority.intakeReceipt.schemaVersion ===
-    'requirements-contract-file-intake-receipt/v2'
-  ) {
+  if (isFileEntryIntakeAuthority(input.authority)) {
     const initialReceipt = input.authority.intakeReceipt;
     const materialSourceRoots = sourceRoots.filter(
       (sourceRoot) => sourceRoot.authorityClass !== 'invocation_bound'
@@ -413,88 +452,52 @@ export function materializeEntryLineage(input: {
       ].map((value) => value.trim())
     ),
   ].filter(Boolean);
-  const classifications =
-    input.authority.intakeReceipt.schemaVersion === 'requirements-contract-file-intake-receipt/v1'
-      ? input.authority.intakeReceipt.excerpts.map((excerpt) => {
-          const rootRefs = sourceRoots
-            .filter(
-              (sourceRoot) =>
-                sourceRoot.authorityClass !== 'invocation_bound' &&
-                sourceRoot.sourcePath.replace(/\\/gu, '/') ===
-                  excerpt.boundary.sourcePath.replace(/\\/gu, '/') &&
-                sourceRoot.sourceSpan.startLine <= excerpt.boundary.startLine &&
-                sourceRoot.sourceSpan.endLine >= excerpt.boundary.endLine
-            )
-            .map((sourceRoot) => sourceRoot.sourceRootId)
-            .sort();
-          if (rootRefs.length > 0) {
-            return {
-              spanId: excerpt.excerptId,
-              disposition: 'source_root' as const,
-              classificationRule: 'file-entry-source-span-mapping/v1',
-              sourceRootRefs: rootRefs,
-            };
-          }
-          const exclusionRuleRef = 'non-semantic-source-line/v1';
-          const exclusionReason =
-            'The source line does not materialize a canonical semantic Source Root.';
-          return {
-            spanId: excerpt.excerptId,
-            disposition: 'excluded' as const,
-            classificationRule: 'file-entry-source-span-mapping/v1',
-            exclusionRuleRef,
-            exclusionReason,
-            decisionHash: sha256Stable({
-              spanId: excerpt.excerptId,
-              sourceHash: excerpt.contentHash,
-              exclusionRuleRef,
-              exclusionReason,
-            }),
-          };
-        })
-      : input.authority.intakeReceipt.excerpts.map((excerpt) => {
-          const rootRefs = sourceRoots
-            .filter(
-              (sourceRoot) =>
-                sourceRoot.authorityClass !== 'invocation_bound' &&
-                sourceRoot.sourceSpan.startLine <= excerpt.order &&
-                sourceRoot.sourceSpan.endLine >= excerpt.order
-            )
-            .map((sourceRoot) => sourceRoot.sourceRootId)
-            .sort();
-          if (rootRefs.length > 0) {
-            return {
-              spanId: excerpt.excerptId,
-              disposition: 'source_root' as const,
-              classificationRule: 'session-entry-source-span-mapping/v1',
-              sourceRootRefs: rootRefs,
-            };
-          }
-          if (sourceRoots.length === 0 && sourceRootRefs.length > 0) {
-            return {
-              spanId: excerpt.excerptId,
-              disposition: 'source_root' as const,
-              classificationRule: 'session-entry-source-root-mapping/v1',
-              sourceRootRefs,
-            };
-          }
-          const exclusionRuleRef = 'non-semantic-source-line/v1';
-          const exclusionReason =
-            'The session source line does not materialize a canonical semantic Source Root.';
-          return {
-            spanId: excerpt.excerptId,
-            disposition: 'excluded' as const,
-            classificationRule: 'session-entry-source-span-mapping/v1',
-            exclusionRuleRef,
-            exclusionReason,
-            decisionHash: sha256Stable({
-              spanId: excerpt.excerptId,
-              sourceHash: excerpt.contentHash,
-              exclusionRuleRef,
-              exclusionReason,
-            }),
-          };
-        });
+  const sessionAuthority = input.authority;
+  if (isFileEntryIntakeAuthority(sessionAuthority)) {
+    throw new Error('Entry file intake authority must use the v2 materialization branch');
+  }
+  const classifications = sessionAuthority.intakeReceipt.excerpts.map((excerpt) => {
+    const rootRefs = sourceRoots
+      .filter(
+        (sourceRoot) =>
+          sourceRoot.authorityClass !== 'invocation_bound' &&
+          sourceRoot.sourceSpan.startLine <= excerpt.order &&
+          sourceRoot.sourceSpan.endLine >= excerpt.order
+      )
+      .map((sourceRoot) => sourceRoot.sourceRootId)
+      .sort();
+    if (rootRefs.length > 0) {
+      return {
+        spanId: excerpt.excerptId,
+        disposition: 'source_root' as const,
+        classificationRule: 'session-entry-source-span-mapping/v1',
+        sourceRootRefs: rootRefs,
+      };
+    }
+    if (sourceRoots.length === 0 && sourceRootRefs.length > 0) {
+      return {
+        spanId: excerpt.excerptId,
+        disposition: 'source_root' as const,
+        classificationRule: 'session-entry-source-root-mapping/v1',
+        sourceRootRefs,
+      };
+    }
+    const exclusionRuleRef = 'non-semantic-source-line/v1';
+    const exclusionReason = 'The session source line does not materialize a canonical semantic Source Root.';
+    return {
+      spanId: excerpt.excerptId,
+      disposition: 'excluded' as const,
+      classificationRule: 'session-entry-source-span-mapping/v1',
+      exclusionRuleRef,
+      exclusionReason,
+      decisionHash: sha256Stable({
+        spanId: excerpt.excerptId,
+        sourceHash: excerpt.contentHash,
+        exclusionRuleRef,
+        exclusionReason,
+      }),
+    };
+  });
   if (sourceRoots.length > 0) {
     const mappedRootRefs = new Set(
       classifications.flatMap((classification) =>

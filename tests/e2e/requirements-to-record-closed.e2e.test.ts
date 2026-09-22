@@ -458,9 +458,19 @@ describe('requirements-backed Goal source-to-closeout production chain', () => {
       const sourceRecordPath = path.join(recordRoot, 'record', 'requirement-record.json');
       const runtimeRecordPath = path.join(recordRoot, 'requirement-record.json');
       const preArchitectureRecord = readJson(sourceRecordPath);
+      const activeBuildManifest = readJson(
+        path.join(
+          recordRoot,
+          ...preArchitectureRecord.activeAuthority.activeBuildManifestPath.split('/')
+        )
+      );
+      const semanticIrEntry = (activeBuildManifest.artifactEntries as JsonRecord[]).find(
+        (entry) => entry.role === 'semantic_ir'
+      );
+      expect(semanticIrEntry).toBeDefined();
       const semanticIrPath = path.join(
         recordRoot,
-        ...preArchitectureRecord.activeAuthority.activeSemanticIrPath.split('/')
+        ...((semanticIrEntry?.contentRef as JsonRecord).recordRelativePath as string).split('/')
       );
       const semanticIrBytes = fs.readFileSync(semanticIrPath);
 

@@ -117,7 +117,7 @@ needs_input | validating | audit_pending | ready_to_confirm | confirmed | blocke
 | Responsibility | Primary files |
 |---|---|
 | Production author/repair state machine | `packages/bmad-speckit/src/main-agent/actions/source-authority-orchestration.ts` |
-| Legacy repair hard-cut and compatibility reads | `packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts` |
+| Retired requirements-authoring surface deletion and unsupported-version rejection | `packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts` |
 | Canonical semantic identity | `packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-production-semantic-pipeline.ts` |
 | Judge lifecycle and request identity | `packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-lifecycle.ts`, `requirements-contract-judge-request-identity.ts`, `requirements-contract-production-judge-pipeline.ts` |
 | Intake and lineage compaction | `requirements-contract-file-intake-receipt.ts`, `requirements-contract-entry-authority-facade.ts`, `requirements-contract-intent-lineage.ts` |
@@ -136,7 +136,6 @@ Identity 必须按职责分域，禁止一个 hash 同时承担语义身份、�
 | Identity | Canonical input | Must exclude | Consumer |
 |---|---|---|---|
 | `scopeSemanticHash` | normalized requirements, atoms, action, oracle, dependencies, constraints, evidence semantics | path, offsets, language, timestamps, renderer, projection refs | semantic revision, Judge binding |
-| `packetSemanticHash` | legacy packet action/oracle/dependency/coverage semantic projection | packet path, receipt refs, createdAt | legacy read-only validation during migration |
 | `sourceBindingHash` | source blob hash, source IDs, offsets/ranges, binding relationships | absolute path, createdAt | source rebinding and locator validation |
 | `projectionSetHash` | role + schema + canonical projection content hash | output path, timestamps | deterministic projection cache |
 | `buildHash` | semantic hash + binding hash + compiler identity + sorted artifact blob refs | attempt ID, staging path, createdAt | durable build address |
@@ -147,7 +146,7 @@ Identity 必须按职责分域，禁止一个 hash 同时承担语义身份、�
 | `contentHash` | raw SHA-256 of exact bytes | none | content-object path, physical deduplication and readback |
 | `artifactBytesHash` | role + media type + raw content hash | paths and timestamps | logical artifact/media binding, never object addressing |
 
-### Task 1: Make semantic and packet hashes content-complete
+### Task 1: Make semantic hashes content-complete
 
 **Files:**
 
@@ -191,7 +190,7 @@ Run:
 npm exec -- vitest run tests/acceptance/requirements-contract-semantic-hash-boundaries.test.ts --reporter=dot
 ```
 
-Expected: FAIL because the current test fixture cannot project an explicit semantic allowlist and non-semantic mutations still enter legacy confirmation identity.
+Expected: FAIL because the current test fixture cannot project an explicit semantic allowlist and non-semantic mutations still enter confirmation identity.
 
 - [ ] **Step 3: Add explicit hash domains and canonical projectors**
 
@@ -200,30 +199,11 @@ Extend `REQUIREMENTS_AUTHORING_HASH_DOMAINS` and export domain functions. Do not
 ```ts
 export const REQUIREMENTS_AUTHORING_HASH_DOMAINS = {
   ...existingDomains,
-  packetSemanticHash: 'requirements-packet-semantic/v1',
   projectionSetHash: 'requirements-projection-set/v2',
   buildHash: 'requirements-authoring-build/v2',
   auditPolicyHash: 'requirements-audit-policy/v1',
   auditBindingHash: 'requirements-audit-binding/v1',
 } as const;
-
-export function packetSemanticHash(payload: {
-  musts: Array<{
-    mustId: string;
-    atoms: Array<{
-      atomId: string;
-      action: string;
-      oracle: string;
-      dependencies: string[];
-      coverageRefs: string[];
-    }>;
-  }>;
-}): string {
-  return requirementsContractDomainHash(
-    REQUIREMENTS_AUTHORING_HASH_DOMAINS.packetSemanticHash,
-    payload
-  );
-}
 
 export function buildHash(payload: {
   scopeSemanticHash: string;
@@ -243,9 +223,9 @@ export function buildHash(payload: {
 
 The canonical semantic projector must use an allowlist already owned by `RequirementsContractSemanticIr.semanticPayload`. It must reject physical keys through the existing `PHYSICAL_KEYS` check instead of deleting them after hashing.
 
-- [ ] **Step 4: Replace legacy packet identity at its source**
+- [ ] **Step 4: Delete retired packet identity and compatibility readers**
 
-In the legacy compatibility reader, derive `packetSemanticHash` from normalized MUST and atom content. Stop treating `recordId + sourcePath + lane + seed` as packet content identity. Keep the old `packetHash` only as `legacyPacketEnvelopeHash` when reading historical artifacts; no new artifact may write it as `contentHash` or `auditInputHash`.
+Delete `packetHash`, `packetSemanticHash`, historical envelope hashing and every requirements-authoring compatibility reader. Current v3 compilation derives semantic identity only from the canonical `RequirementsContractSemanticIr.semanticPayload`; source location remains isolated in `sourceBindingHash`. A record with a retired top-level schema version fails at the record boundary with `requirements_authoring_record_version_unsupported` before any nested receipt, checkpoint or CATX artifact is opened.
 
 - [ ] **Step 5: Update authoring identity schema**
 
@@ -503,8 +483,9 @@ After this task:
 - deterministic gates prove structure, referential integrity, materialization and renderability;
 - one production Judge proves semantic quality for the active `auditBindingHash`;
 - renderer and confirmation gates consume the verified Judge decision;
-- historical three-round artifacts are readable only as legacy diagnostics and never satisfy a current gate;
-- internal automatic repair runs inside the production resume action; public `authoring-repair` and `authoring_repair` aliases return `requirements_authoring_legacy_action_removed` and cannot enter either production repair or legacy orchestration.
+- historical three-round artifacts have no reader, migration adapter or diagnostic compatibility path in v3;
+- an unsupported record version is rejected from top-level metadata before any nested receipt, checkpoint or CATX artifact is opened;
+- internal automatic repair runs inside the production resume action; public `authoring-repair` and `authoring_repair` aliases return `requirements_authoring_legacy_action_removed` and cannot enter production repair.
 
 ### Task 3: Hard-cut the legacy Auditor loop and make Judge the only audit authority
 
@@ -513,7 +494,6 @@ After this task:
 - Modify: `packages/bmad-speckit/src/main-agent/runtime.ts`
 - Modify: `packages/bmad-speckit/src/main-agent/actions/source-authority-orchestration.ts`
 - Modify: `packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts`
-- Create: `packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-legacy-audit-reader.ts`
 - Modify: `_bmad/skills/requirements-contract-authoring/SKILL.md`
 - Modify: `_bmad/skills/requirements-contract-authoring/references/contract-template.md`
 - Modify: `_bmad/skills/requirements-contract-authoring/references/implementation-confirmation-reference.md`
@@ -557,7 +537,7 @@ it.each(canonicalAuthoringSources)('%s has no three-round authority', (file) => 
 });
 ```
 
-The allowlist for `requirements-contract-legacy-audit-reader.ts` may contain historical JSON fields, schema IDs and filename tokens needed to locate legacy artifacts. The hard-cut test must assert that this file does not import a writer, validator, Judge decision store, authority committer or promotion API, and never returns a current-pass field.
+There is no allowlist for historical fields. The hard-cut test must assert that no requirements-authoring source, dist bundle or packed consumer contains a legacy audit reader, migration action, retired receipt schema, round writer or compatibility export. Generic Story/Speckit audit assets are outside this prohibition but must use neutral audit-triad naming rather than requirements-authoring protocol names.
 
 - [ ] **Step 2: Freeze the deterministic gate baseline before deleting runtime code**
 
@@ -617,23 +597,7 @@ Remove both legacy spellings from executable action maps. Public calls return a 
 
 - [ ] **Step 6: Delete the executable legacy round implementation**
 
-Remove the CATX round dispatcher, request/response/receipt builders, consecutive-round counters, stale round archive, and the `authoring-repair` action branch from `main-agent-orchestration.ts`. Preserve unrelated Auditor workflows. Extract historical parsing into:
-
-```ts
-export interface LegacyRequirementsAuditSummary {
-  schemaVersion: 'requirements-contract-legacy-audit-summary/v1';
-  source: 'three_round_critical_auditor';
-  historicalOnly: true;
-  artifactCount: number;
-  artifactHashes: string[];
-}
-
-export function readLegacyRequirementsAuditSummary(
-  transactionRoot: string
-): LegacyRequirementsAuditSummary;
-```
-
-The return type intentionally has no `pass`, `converged`, `current` or `effective` field.
+Remove the CATX round dispatcher, request/response/receipt builders, consecutive-round counters, stale round archive, the `authoring-repair` action branch and every historical parser from `main-agent-orchestration.ts`. Preserve unrelated generic audit-triad workflows only after renaming their protocol, modules and symbols to neutral audit-triad/Judge terminology. Do not retain a throwing compatibility stub, deprecated export, schema alias or read-only summary API.
 
 - [ ] **Step 7: Replace round convergence with the Judge decision at gates**
 
@@ -930,7 +894,7 @@ Run:
 npm exec -- vitest run tests/acceptance/requirements-contract-content-store.test.ts tests/acceptance/requirements-contract-file-intake-range.test.ts tests/acceptance/requirements-contract-scanner-resource-budget.test.ts tests/acceptance/requirements-contract-authoring-source-normalization.test.ts tests/acceptance/requirements-contract-authoring-session-prompt-intake.test.ts --reporter=dot
 ```
 
-Expected: all tests PASS; Unicode byte ranges and legacy reads are lossless.
+Expected: all tests PASS; Unicode byte ranges and current source-range reads are lossless.
 
 - [ ] **Step 11: Commit source compaction**
 
@@ -1934,160 +1898,82 @@ Expected: all tests PASS; root changes block deletion and terminal operations le
 git commit -m "feat(requirements): 增加有界存储与自动清理"
 ```
 
-## 13. Migrate Legacy Records and Preserve the Full Deterministic Gate Suite
+## 13. Reject Retired Records and Preserve the Full Deterministic Gate Suite
 
-This is a hard-cut migration. Old artifacts remain inspectable for one major release, but no old receipt, checkpoint, CATX or Critical Auditor result can be upgraded into a current pass.
+Version 3 is a true hard cut. It has no requirements-authoring legacy reader, inspector, migration action, migration schema, CLI command, alias or artifact upgrader. Historical files remain user-owned bytes on disk, but no v3 runtime path parses, traverses, hashes, copies, promotes or garbage-collects their nested receipt/checkpoint/CATX contents.
 
 The change is released as `3.0.0`. It must not be bundled into the existing `2.2.3` patch because public CLI arguments, persisted schemas, install surfaces and confirmation evidence change incompatibly.
 
-### Task 11: Add read-only legacy inspection and controlled record migration
+### Task 11: Delete legacy compatibility and reject unsupported record versions
 
 **Files:**
 
-- Create: `packages/bmad-speckit/src/main-agent/actions/migrate-requirements-authoring-record.ts`
-- Modify: `packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-legacy-audit-reader.ts`
-- Create: `packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-record-migration.ts`
-- Create: `packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-migration-operation.ts`
-- Create: `packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-migration-operation.schema.json`
 - Modify: `packages/bmad-speckit/src/main-agent/runtime.ts`
 - Modify: `packages/bmad-speckit/bin/bmad-speckit.js`
+- Modify: `packages/bmad-speckit/src/main-agent/source-authority/scripts/main-agent-orchestration.ts`
 - Modify: `packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-package-runtime-action-binding-manifest.ts`
-- Create: `packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-projection-registry.ts`
 - Modify: `packages/bmad-speckit/src/main-agent/source-authority/rules/requirements-contract-consumer-registry.ts`
-- Create: `tests/acceptance/requirements-contract-record-migration.test.ts`
-- Modify: `tests/acceptance/requirements-contract-judge-consumer-migration-boundary.test.ts`
-- Create: `tests/e2e/requirements-contract-legacy-record-migration.e2e.test.ts`
+- Create: `tests/acceptance/requirements-contract-retired-record-hard-cut.test.ts`
+- Create: `tests/e2e/requirements-contract-fresh-v3-record.e2e.test.ts`
+- Delete if present: `packages/bmad-speckit/src/main-agent/actions/migrate-requirements-authoring-record.ts`
+- Delete if present: `packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-legacy-audit-reader.ts`
+- Delete if present: `packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-record-migration.ts`
+- Delete if present: `packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-migration-operation.ts`
+- Delete if present: `packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-migration-operation.schema.json`
 
-- [ ] **Step 1: Write failing migration-boundary tests**
+- [ ] **Step 1: Write a failing source/dist/package hard-cut test**
 
-```ts
-it('allows inspect but blocks legacy write and confirmation', async () => {
-  const record = installLegacyThreeRoundRecord();
-  expect(await inspect(record)).toMatchObject({
-    legacyAudit: { authoritative: false, migrationRequired: true },
-  });
-  expect(await confirm(record)).toMatchObject({
-    status: 'migration_required',
-    issueCode: 'legacy_requirements_audit_read_only',
-  });
-});
+Assert that canonical source, built dist and the packed consumer contain none of these requirements-authoring compatibility surfaces:
 
-it('recompiles and runs one Judge instead of upgrading legacy pass', async () => {
-  const migrated = await migrateLegacyRecord();
-  expect(migrated.providerRequestCount).toBe(1);
-  expect(migrated.newDecision.judgeRequestHash)
-    .not.toBe(migrated.legacySummary.latestReceiptHash);
-  expect(migrated.newRecord.activeBuildManifestPath)
-    .toMatch(/^authoring\/builds\//u);
-});
+```text
+requirements-contract-legacy-audit-reader
+migrate-requirements-authoring-record
+requirements-contract-record-migration
+requirements-contract-migration-operation
+requirements-contract-legacy-audit-summary
+requirements-contract-legacy-record-inspection
+legacy_requirements_audit_read_only
+requirements migrate
 ```
 
-- [ ] **Step 2: Run migration tests and verify they fail**
+The test must inspect exported action names, CLI help, canonical asset manifests and package contents. It must not add an exclusion file or rename an old reader behind a neutral facade.
+
+- [ ] **Step 2: Write a failing unsupported-version boundary test**
+
+Create a record whose top-level metadata declares a retired schema version and whose nested artifact path is a sentinel that fails the test if opened. Assert:
+
+```ts
+await expect(openRequirementsRecord(recordRoot)).rejects.toMatchObject({
+  issueCode: 'requirements_authoring_record_version_unsupported',
+});
+expect(sentinelNestedArtifact.readCount).toBe(0);
+expect(inventoryWrites(recordRoot)).toEqual([]);
+```
+
+The response contains only the unsupported top-level version and the instruction to author a fresh v3 record from the formal source. It exposes no receipt counts, historical hashes, pass/convergence fields, migration state or next-action migration alias.
+
+- [ ] **Step 3: Delete every compatibility implementation and export**
+
+Remove reader/migration modules, schemas, CLI commands, action bindings, manifests, adapters, tests and documentation. Delete old public exports instead of restoring them as throwing stubs. The generic top-level record decoder may compare the declared schema version to the current version; it must fail before loading any generation-specific child path.
+
+- [ ] **Step 4: Prove fresh v3 authoring is independent of retired artifacts**
+
+Author a fresh v3 record from the formal source in a clean record root and run all deterministic gates plus one Judge. A different path containing retired artifacts must not be scanned, imported, copied or deleted. Reusing a path that already contains an unsupported record fails closed; the runtime does not attempt in-place migration.
+
+- [ ] **Step 5: Run hard-cut tests**
 
 Run:
 
 ```powershell
-npm exec -- vitest run tests/acceptance/requirements-contract-record-migration.test.ts tests/acceptance/requirements-contract-judge-consumer-migration-boundary.test.ts tests/e2e/requirements-contract-legacy-record-migration.e2e.test.ts --reporter=dot
+npm exec -- vitest run tests/acceptance/requirements-contract-retired-record-hard-cut.test.ts tests/acceptance/requirements-contract-judge-consumer-migration-boundary.test.ts tests/e2e/requirements-contract-fresh-v3-record.e2e.test.ts --reporter=dot
 ```
 
-Expected: FAIL because legacy repair remains executable and there is no v2 build migration.
+Expected: all tests PASS; no source, dist or consumer exposes a legacy reader/migration surface, and unsupported records are rejected without nested artifact reads or writes.
 
-- [ ] **Step 3: Implement read-only legacy inspection**
-
-```ts
-interface LegacyRequirementsRecordInspection {
-  schemaVersion: 'requirements-contract-legacy-record-inspection/v1';
-  authoritative: false;
-  migrationRequired: true;
-  sourcePath: string;
-  sourceBytesHash: string;
-  legacyActiveAuthorityHash: string;
-  legacyArtifactCounts: Record<string, number>;
-  legacyArtifactBytes: number;
-}
-```
-
-Inspection may list legacy hashes and counts. It cannot emit `pass`, `effectivePass`, `converged` or a current audit binding.
-
-- [ ] **Step 4: Implement migration as a new authoring operation**
-
-Migration performs:
-
-```text
-read and hash current formal source
--> compile canonical Semantic IR v2
--> publish one source blob and compact lineage
--> compile one content-addressed build
--> run deterministic validation
--> run one production Judge
--> publish record-scoped review candidate
--> wait for explicit confirmation
--> promote target and active authority
--> run legacy GC
-```
-
-It does not mutate or rename legacy artifacts before confirmation succeeds.
-
-Persist one migration operation with states:
-
-```ts
-type RequirementsMigrationState =
-  | 'preparing'
-  | 'compiling'
-  | 'audit_pending'
-  | 'ready_to_confirm'
-  | 'promoting'
-  | 'confirmed'
-  | 'blocked';
-
-interface RequirementsMigrationOperation {
-  operationId: string;
-  requestId: string;
-  legacyRecordHash: string;
-  workspacePath: string;
-  state: RequirementsMigrationState;
-  checkpointRefs: RequirementsContentRef[];
-  candidateRef: RequirementsContentRef | null;
-  auditBindingHash: string | null;
-  exactConfirmationTextHash: string | null;
-  operationHash: string;
-}
-```
-
-`start`, `resume` and `confirm` re-read `legacyRecordHash` and CAS the operation state. Crash tests cover every state transition.
-
-- [ ] **Step 5: Handle records already above 32 MiB**
-
-An oversized legacy record is immutable input and is not allowed to borrow bytes that have not been deleted. Build the new compact record in a sibling migration workspace with its own 32 MiB cap; peak-disk accounting is `legacyBytes + migrationWorkspaceBytes` and must be reported explicitly.
-
-After confirmation, acquire the record-parent lock, rename the legacy record to a quarantine sibling, rename the verified workspace to the canonical record path, verify readback, then delete quarantine immediately. If the second rename/readback fails, rename quarantine back before releasing the lock. No formula may subtract legacy bytes before physical deletion.
-
-- [ ] **Step 6: Make migration automatic to the main-agent user**
-
-The package action returns structured `migration_required` with `nextAction: recompile_and_run_requirements_judge`. Main-agent dispatch executes the migration action directly; users are not asked to inspect internal files or manually delete old receipts.
-
-The diagnostic CLI is:
-
-```text
-bmad-speckit requirements migrate --request-id <REQ-ID>
-```
-
-It supports `--resume <operationId>` and confirmation through the normal `confirm-scope --request-id ... --exact-confirmation-text ...` action. Package action bindings, projection registry and consumer registry must expose the start/resume/status envelope; installed `requirements migrate --help` is an acceptance test.
-
-- [ ] **Step 7: Run migration tests**
-
-Run:
+- [ ] **Step 6: Commit the compatibility hard cut**
 
 ```powershell
-npm exec -- vitest run tests/acceptance/requirements-contract-record-migration.test.ts tests/acceptance/requirements-contract-judge-consumer-migration-boundary.test.ts tests/e2e/requirements-contract-legacy-record-migration.e2e.test.ts --reporter=dot
-```
-
-Expected: all tests PASS; legacy pass evidence never becomes a current Judge decision.
-
-- [ ] **Step 8: Commit record migration**
-
-```powershell
-git commit -m "feat(requirements): 迁移旧需求记录到单Judge链"
+git commit -m "refactor(requirements)!: 删除旧记录兼容链"
 ```
 
 ### Task 12: Remove only three-round audit state and preserve every lint/gate
@@ -2197,7 +2083,7 @@ It lists the complete gate registry and makes clear that Judge replaces only the
 
 - [ ] **Step 6: Version Judge and EffectivePass schemas**
 
-New writer schemas bind `auditBindingHash`, `scopeSemanticHash`, Judge request/response hashes and decision hash. Old three-round receipts remain accepted only by the legacy inspection reader.
+New writer schemas bind `auditBindingHash`, `scopeSemanticHash`, Judge request/response hashes and decision hash. Retired three-round receipt schemas are neither read nor accepted by v3.
 
 - [ ] **Step 7: Remove retired public round parameters**
 
@@ -2235,8 +2121,8 @@ npm install --package-lock-only --ignore-scripts
 
 Do not change the independently versioned `@bmad-speckit/*` support workspaces. Release notes must state:
 
-- old three-round records require one recompile/Judge migration;
-- no legacy receipt is upgraded into pass;
+- old three-round records are unsupported and must be re-authored from the formal source into a fresh v3 record;
+- v3 contains no legacy receipt reader, migration action or artifact upgrader;
 - new record storage is content-addressed and bounded;
 - old authoring parameters and Skill-local runtime are removed.
 
@@ -2266,7 +2152,7 @@ The task numbers group responsibilities. Implementation follows this dependency 
 1. **PR A - Identity and source storage:** Task 1, Task 4, Task 5.
 2. **PR B - Resumable checkpoints and content-addressed builds:** Task 6, Task 7, Task 9.
 3. **PR C - Judge reuse, storage reservations and bounded repair:** Task 2, Task 10, Task 8.
-4. **PR D - Legacy record migration:** Task 11.
+4. **PR D - Retired compatibility hard cut:** Task 11.
 5. **PR E - Audit hard-cut and gate-preserving public surface update:** Task 3, Task 12.
 
 Each PR must pass its targeted tests, `npm run build:main-agent-dist`, lint and encoding checks before the next PR starts. Dual-write is allowed only inside a PR's tests; no merged production path may write both old and new artifact families.
@@ -2336,10 +2222,10 @@ npm exec -- vitest run tests/acceptance/requirements-contract-content-addressed-
 npm exec -- vitest run tests/acceptance/requirements-contract-remediation-preflight.test.ts tests/acceptance/requirements-contract-authoring-repair-budget.test.ts tests/acceptance/requirements-contract-authoring-attempt-promotion.test.ts tests/acceptance/requirements-contract-record-gc.test.ts tests/acceptance/requirements-contract-storage-budget.test.ts --reporter=dot
 ```
 
-### Audit hard-cut and migration
+### Audit hard-cut and retired-record rejection
 
 ```powershell
-npm exec -- vitest run tests/acceptance/requirements-contract-no-three-round-authority.test.ts tests/acceptance/requirements-contract-cp02-no-auditor.test.ts tests/acceptance/requirements-contract-judge-hard-cut.test.ts tests/acceptance/requirements-contract-record-migration.test.ts tests/acceptance/requirements-contract-judge-consumer-migration-boundary.test.ts --reporter=dot
+npm exec -- vitest run tests/acceptance/requirements-contract-no-three-round-authority.test.ts tests/acceptance/requirements-contract-cp02-no-auditor.test.ts tests/acceptance/requirements-contract-judge-hard-cut.test.ts tests/acceptance/requirements-contract-retired-record-hard-cut.test.ts tests/acceptance/requirements-contract-judge-consumer-migration-boundary.test.ts --reporter=dot
 
 npm exec -- vitest run tests/acceptance/requirements-contract-authoring-gate-preservation.test.ts tests/acceptance/requirements-contract-authoring-skill-contract.test.ts tests/acceptance/reverse-audit-contract.test.ts tests/acceptance/render-requirements-confirmation-html.test.ts --reporter=dot
 ```
@@ -2347,7 +2233,7 @@ npm exec -- vitest run tests/acceptance/requirements-contract-authoring-gate-pre
 ### E2E
 
 ```powershell
-npm exec -- vitest run tests/e2e/requirements-contract-authoring-confirmation.e2e.test.ts tests/e2e/requirements-contract-authoring-negative.e2e.test.ts tests/e2e/requirements-contract-authoring-live-judge.e2e.test.ts tests/e2e/requirements-contract-authoring-repair-single-judge.e2e.test.ts tests/e2e/requirements-contract-legacy-record-migration.e2e.test.ts --reporter=dot
+npm exec -- vitest run tests/e2e/requirements-contract-authoring-confirmation.e2e.test.ts tests/e2e/requirements-contract-authoring-negative.e2e.test.ts tests/e2e/requirements-contract-authoring-live-judge.e2e.test.ts tests/e2e/requirements-contract-authoring-repair-single-judge.e2e.test.ts tests/e2e/requirements-contract-fresh-v3-record.e2e.test.ts --reporter=dot
 ```
 
 ### Build, install and consumer parity
@@ -2380,7 +2266,7 @@ Expected: `findings=0`.
 | AC-02 | Initial fail plus one changed-semantic repair permits one additional Judge; second failure is terminal blocked. | Repair budget E2E. |
 | AC-02A | Changing only `operationId` cannot reset binding-level repair exhaustion or create a third Judge request. | Operation-ID reset attack test. |
 | AC-03 | Source path, timestamp, language, renderer and derived projection metadata do not change semantic identity or trigger Judge. | Metamorphic hash and reuse tests. |
-| AC-04 | Action, oracle and dependency mutations change semantic and legacy packet semantic hashes. | Semantic boundary tests. |
+| AC-04 | Action, oracle and dependency mutations change the canonical semantic hash. | Semantic boundary tests. |
 | AC-04A | Any canonical semantic audit-slice, coverage semantic or required audit-policy change produces a new `judgeInputSemanticHash`/binding; path/content-ref relocation does not. | Judge input metamorphic tests. |
 | AC-05 | CP00-08 and bounded root batches are durably resumable without recomputing completed work. | Interruption matrix across every checkpoint and batch. |
 | AC-06 | Checkpoint persistence contains refs/progress only; state files are fixed-count and bounded by `65_536 + R * 512` bytes for dynamic material-root count `R`. | Checkpoint inventory assertions over parameterized and randomized `R`. |
@@ -2398,8 +2284,8 @@ Expected: `findings=0`.
 | AC-15A | Every new content object consumes a CAS-protected storage reservation; duplicate raw bytes across roles consume zero additional bytes. | Content-store reservation and cross-role dedup tests. |
 | AC-16 | The current 62 KiB regression fixture (`R=109`) remains below 8 MiB durable storage, while additional `R=1/129/1000` and randomized cases prove the runtime contains no `109` or `128` root-count dependency. | End-to-end compaction and scanner-budget metrics. |
 | AC-17 | No new source, dist, package or installed consumer contains the retired three-round requirements-authoring protocol. | Hard-cut source/dist/pack scans. |
-| AC-18 | Legacy records are inspect-only until recompiled and audited once; legacy receipts never become current pass evidence. | Migration boundary tests. |
-| AC-18A | Legacy migration uses a separately capped sibling workspace, persists start/resume/confirm state, reports peak disk, and atomically swaps only after confirmation. | Migration crash-state and workspace quota tests. |
+| AC-18 | Source, dist and packed consumers contain no requirements-authoring legacy reader, inspector, migration action/schema/CLI, alias or artifact upgrader. | Retired-record hard-cut scans. |
+| AC-18A | An unsupported record version is rejected from top-level metadata before any nested artifact read or write; fresh v3 authoring never scans or imports retired artifacts. | Unsupported-version sentinel and fresh-record E2E tests. |
 | AC-19 | Repository-local Skill mirrors, dist runtime and packed consumer are synchronized. | Sync, build, pack and install tests. |
 | AC-20 | UTF-8 integrity remains clean across source and generated surfaces. | Encoding guardian output with zero findings. |
 | AC-21 | Every pre-existing deterministic requirements lint/gate and every non-round blocking issue code remains present and executes; only three-round convergence checks are removed. | Gate registry set-equality and execution coverage tests. |
@@ -2407,13 +2293,13 @@ Expected: `findings=0`.
 
 ## 16. Rollout and Failure Handling
 
-1. Merge PR A and PR B with the old public route still active, while tests exercise the new store/checkpoint path directly.
-2. Merge PR C and activate Judge reuse plus bounded repair for newly created v2 records.
-3. Merge PR D and migrate the real 62 KiB requirement in a copied consumer fixture; record before/after file count, bytes, peak migration workspace bytes, Judge calls and retained roots.
+1. Merge PR A and PR B with only the current public authoring route active, while tests exercise the new store/checkpoint path directly.
+2. Merge PR C and activate Judge reuse plus bounded repair for newly created v3 records.
+3. Merge PR D and delete all requirements-authoring legacy reader/migration surfaces; verify unsupported records fail before nested artifact access.
 4. Merge PR E, remove only the three-round writer/state, preserve and rebind the complete gate suite, regenerate dist/surfaces, then publish `3.0.0`.
-5. Do not downgrade a migrated v3 record to a v2 writer. Rollback the package only for records that have not started migration.
-6. A failed migration leaves the existing source and active legacy record untouched; it deletes migration staging and returns a compact failure summary.
-7. A failed GC never changes active authority. Root-set CAS failure aborts deletion and the next inspect recomputes the plan.
+5. Do not downgrade a v3 record or provide an in-place upgrader. Retired records must be re-authored from their formal source into a fresh v3 record root.
+6. Unsupported records remain byte-for-byte untouched; rejection creates no migration staging, receipt, summary or compatibility artifact.
+7. A failed GC never changes active authority. Root-set CAS failure aborts deletion and the next current-version operation recomputes the plan.
 
 ## 17. Plan Self-Review
 
@@ -2423,5 +2309,5 @@ Expected: `findings=0`.
 - **Retention consistency:** active + one predecessor + latest failure summary is the only durable history; 24-hour retention applies only to interrupted orphan staging.
 - **Authority consistency:** deterministic validators prove structure; one Judge proves semantic quality; user confirmation authorizes final promotion.
 - **Gate preservation:** all existing lint/gate families and non-round blocker codes remain set-equal; only round-count/round-receipt checks are deleted.
-- **No fake migration:** legacy no-gap receipts remain historical diagnostics and cannot satisfy new Judge or EffectivePass gates.
+- **No migration tail:** v3 has no requirements-authoring legacy reader, inspector, migrator, schema alias or artifact upgrader; retired records fail at the top-level version boundary.
 - **No unbounded fixtures:** size tests generate temporary data and inject small limits; the repository does not commit 32 MiB fixtures.

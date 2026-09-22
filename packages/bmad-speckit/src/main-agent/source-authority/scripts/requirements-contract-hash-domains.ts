@@ -66,7 +66,6 @@ function hashDomain(domain: string, payload: unknown): string {
 
 export const REQUIREMENTS_AUTHORING_HASH_DOMAINS = {
   scopeSemanticHash: 'scopeSemanticHash/v3',
-  packetSemanticHash: 'requirements-packet-semantic/v1',
   buildHash: 'requirements-authoring-build/v2',
   sourceBindingHash: 'sourceBindingHash/v1',
   semanticRevisionId: 'semanticRevisionId/v1',
@@ -75,8 +74,6 @@ export const REQUIREMENTS_AUTHORING_HASH_DOMAINS = {
   judgeRequestHash: 'judgeRequestHash/v2',
   remediationPlanHash: 'requirements-remediation-plan/v1',
   remediationDeltaHash: 'requirements-remediation-delta/v1',
-  checkpointManifestHash: 'requirements-contract-authoring-checkpoint-manifest/v1',
-  buildManifestHash: 'requirements-contract-build-manifest/v1',
   lintReportHash: 'requirements-contract-lint-report/v1',
 } as const;
 
@@ -179,42 +176,6 @@ function requiredRecord(value: unknown, code: string): Record<string, unknown> {
 function requiredString(value: unknown, code: string): string {
   if (typeof value !== 'string' || value.trim().length === 0) throw new Error(code);
   return normalizeTextForHash(value);
-}
-
-function sortedStringSet(value: unknown, code: string): string[] {
-  if (!Array.isArray(value)) throw new Error(code);
-  return [...new Set(value.map((item) => requiredString(item, code)))].sort((left, right) =>
-    left.localeCompare(right)
-  );
-}
-
-export function packetSemanticHash(value: unknown): string {
-  const packet = requiredRecord(value, 'requirements_packet_semantic_invalid');
-  if (!Array.isArray(packet.musts)) throw new Error('requirements_packet_musts_invalid');
-  const musts = packet.musts.map((mustValue) => {
-    const must = requiredRecord(mustValue, 'requirements_packet_must_invalid');
-    if (!Array.isArray(must.atoms)) throw new Error('requirements_packet_atoms_invalid');
-    return {
-      mustId: requiredString(must.mustId, 'requirements_packet_must_id_invalid'),
-      atoms: must.atoms.map((atomValue) => {
-        const atom = requiredRecord(atomValue, 'requirements_packet_atom_invalid');
-        return {
-          atomId: requiredString(atom.atomId, 'requirements_packet_atom_id_invalid'),
-          action: requiredString(atom.action, 'requirements_packet_atom_action_invalid'),
-          oracle: requiredString(atom.oracle, 'requirements_packet_atom_oracle_invalid'),
-          dependencies: sortedStringSet(
-            atom.dependencies,
-            'requirements_packet_atom_dependencies_invalid'
-          ),
-          coverageRefs: sortedStringSet(
-            atom.coverageRefs,
-            'requirements_packet_atom_coverage_invalid'
-          ),
-        };
-      }).sort((left, right) => left.atomId.localeCompare(right.atomId)),
-    };
-  }).sort((left, right) => left.mustId.localeCompare(right.mustId));
-  return hashDomain(REQUIREMENTS_AUTHORING_HASH_DOMAINS.packetSemanticHash, { musts });
 }
 
 export function buildHash(value: unknown): string {

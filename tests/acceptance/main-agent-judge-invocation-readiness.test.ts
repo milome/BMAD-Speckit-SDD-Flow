@@ -53,14 +53,14 @@ describe('main agent Requirements Judge invocation readiness', () => {
       projectRoot: 'repo',
       config: '_bmad/_config/governance-remediation.yaml',
       request: `quality/requests/${request.judgeRequestHash.replace(':', '-')}/judge-request.json`,
-      role: 'requirements_critical_auditor',
+      role: 'requirements_judge',
       attemptId: 'attempt-001',
       outputDir: 'quality/provider-output/attempt-001',
       controlledDispatchRef: { packetId: 'packet-001', packetKind: 'execution' },
     });
 
     expect(dispatch).toMatchObject({
-      role: 'requirements_critical_auditor',
+      role: 'requirements_judge',
       roleInference: false,
       directAdapterDispatch: false,
       callerAuthorityInjection: false,
@@ -74,7 +74,7 @@ describe('main agent Requirements Judge invocation readiness', () => {
         projectRoot: 'repo',
         config: '_bmad/_config/governance-remediation.yaml',
         request: 'quality/requests/request.json',
-        role: 'requirements_critical_auditor',
+        role: 'requirements_judge',
         attemptId: 'attempt-001',
         outputDir: 'quality/provider-output/attempt-001',
         controlledDispatchRef: { packetId: 'packet-001', packetKind: 'execution' },

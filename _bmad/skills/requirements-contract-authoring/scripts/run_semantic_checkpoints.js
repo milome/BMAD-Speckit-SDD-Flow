@@ -498,9 +498,9 @@ function validateCheckpointAuthoringEvidence({ sourcePath, checkpoint, progressP
   if (!evidence.kernel || evidence.kernel.schemaVersion !== 'semantic-kernel/v1') {
     issue(
       'semantic_kernel_required_before_checkpoint',
-      'semantic-kernel.json must be created by authoring-repair before checkpoint materialization can continue',
+      'semantic-kernel.json must be created by author-confirmation-ready-source before checkpoint materialization can continue',
       [evidence.semanticKernel],
-      'run_authoring_repair_preserve_existing'
+      'resume_author_confirmation_ready_source'
     );
   }
   if (evidence.kernel && evidence.kernel.sourceDocumentHash !== evidence.sourceDocumentHash) {
@@ -508,7 +508,7 @@ function validateCheckpointAuthoringEvidence({ sourcePath, checkpoint, progressP
       'semantic_kernel_hash_mismatch_before_checkpoint',
       'semantic-kernel.json is not bound to the current source document hash',
       [evidence.semanticKernel],
-      'run_authoring_repair_preserve_existing'
+      'resume_author_confirmation_ready_source'
     );
   }
   if (checkpoint.id === 'cp-00-semantic-kernel') {
@@ -667,9 +667,9 @@ function validateCheckpointAuthoringEvidence({ sourcePath, checkpoint, progressP
   ) {
     issue(
       'must_decomposition_packet_required_before_checkpoint',
-      'synchronized must_decomposition_packet.json must be produced by authoring-repair before this checkpoint can be recorded',
+      'synchronized must_decomposition_packet.json must be produced by author-confirmation-ready-source before this checkpoint can be recorded',
       [evidence.mustDecompositionPacket],
-      'run_authoring_repair_preserve_existing'
+      'resume_author_confirmation_ready_source'
     );
   }
   if (
@@ -681,7 +681,7 @@ function validateCheckpointAuthoringEvidence({ sourcePath, checkpoint, progressP
       'must_decomposition_packet_hash_mismatch_before_checkpoint',
       'must_decomposition_packet.json is not bound to the current source document hash',
       [evidence.mustDecompositionPacket],
-      'run_authoring_repair_preserve_existing'
+      'resume_author_confirmation_ready_source'
     );
   }
   if (checkpoint.id === 'cp-02-deterministic-atomic-closure') {
@@ -1188,7 +1188,7 @@ function humanWhyFor(result = {}) {
 
 function humanNextActionFor(result = {}) {
   const action = nextSafeActionFor(result);
-  if (action === 'run_authoring_repair_preserve_existing') {
+  if (action === 'resume_author_confirmation_ready_source') {
     return '先由 authoring lane 更新源文档并刷新 materialization receipt，然后再继续 checkpoint。';
   }
   if (action === 'create_semantic_kernel') {
@@ -2063,10 +2063,10 @@ function commitCheckpoint({ sourcePath, checkpointId, progressPath, assessment =
   if (add.status !== 0) return fail('git_add_failed', add.stderr || 'git add failed');
   const staged = stagedPaths();
   if (staged.length === 0) {
-    return fail('checkpoint_source_edit_missing', 'checkpoint runner does not author semantic content; run authoring-repair or complete the checkpoint source materialization before recording progress', {
+    return fail('checkpoint_source_edit_missing', 'checkpoint runner does not author semantic content; resume author-confirmation-ready-source or complete the checkpoint source materialization before recording progress', {
       checkpoint: checkpoint.id,
       failedCheckpoint: checkpoint.id,
-      nextAction: 'run_authoring_repair_preserve_existing',
+      nextAction: 'resume_author_confirmation_ready_source',
     });
   }
   if (staged.length !== 1 || staged[0] !== targetRel) {
