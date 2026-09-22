@@ -254,6 +254,46 @@
     },
     {
       "runnerId": "root-vitest",
+      "testPath": "tests/acceptance/requirements-contract-judge-response-audit-completeness.test.ts",
+      "bindings": [
+        {
+          "evidenceRef": "trace:six-model/audit-review/evidence-binding",
+          "evidenceKind": "direct"
+        },
+        {
+          "evidenceRef": "trace:six-model/audit-review/successful-promotion",
+          "evidenceKind": "direct"
+        }
+      ]
+    },
+    {
+      "runnerId": "root-vitest",
+      "testPath": "tests/acceptance/requirements-contract-judge-audit-unit-projector.test.ts",
+      "bindings": [
+        {
+          "evidenceRef": "trace:six-model/audit-review/reverse-audit-execution",
+          "evidenceKind": "direct",
+          "oracleAuthority": {
+            "independence": "independent",
+            "evidenceRefs": [
+              "source:tests/acceptance/requirements-contract-judge-audit-unit-projector.test.ts#test:projects%20associated%20roots%20and%20standalone%20roots%20with%20complete%20bidirectional%20parity:case:1:assertion:1"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "runnerId": "root-vitest",
+      "testPath": "tests/acceptance/requirements-contract-judge-remediation-state-machine.test.ts",
+      "bindings": [
+        {
+          "evidenceRef": "trace:six-model/audit-review/judge-continuation",
+          "evidenceKind": "direct"
+        }
+      ]
+    },
+    {
+      "runnerId": "root-vitest",
       "testPath": "tests/acceptance/main-agent-audit-judge-request-authority-binding.test.ts",
       "bindings": [
         {

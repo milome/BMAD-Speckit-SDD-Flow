@@ -627,9 +627,28 @@ describe('test portfolio policy', () => {
         'trace:six-model/delivery-confirmation/stale-evidence-rejection': 'indirect',
         'trace:six-model/delivery-confirmation/successful-promotion': 'direct',
       },
+      'tests/acceptance/requirements-contract-judge-response-audit-completeness.test.ts': {
+        'trace:six-model/audit-review/evidence-binding': 'direct',
+        'trace:six-model/audit-review/successful-promotion': 'direct',
+      },
+      'tests/acceptance/requirements-contract-judge-audit-unit-projector.test.ts': {
+        'trace:six-model/audit-review/reverse-audit-execution': 'direct',
+      },
+      'tests/acceptance/requirements-contract-judge-remediation-state-machine.test.ts': {
+        'trace:six-model/audit-review/judge-continuation': 'direct',
+      },
       'tests/acceptance/ai-tdd-contract-gate.test.ts': {
         'trace:six-model/execution-closure/stale-evidence-rejection': 'indirect',
       },
+    });
+    const reverseAuditEntry = policy.semanticEvidenceBindings.find(
+      (entry: any) =>
+        entry.testPath === 'tests/acceptance/requirements-contract-judge-audit-unit-projector.test.ts'
+    );
+    expect(reverseAuditEntry.bindings).toContainEqual({
+      evidenceRef: 'trace:six-model/audit-review/reverse-audit-execution',
+      evidenceKind: 'direct',
+      oracleAuthority: expect.objectContaining({ independence: 'independent' }),
     });
   });
 
