@@ -238,14 +238,6 @@ describe('npm pack root package → clean install → CLI', () => {
         'scripts',
         'prepare-current-source-promotion.js'
       );
-      const installedWriteCriticalAuditorNoNewGapResponseScript = join(
-        rootInstallDir,
-        '_bmad',
-        'skills',
-        'requirements-contract-authoring',
-        'scripts',
-        'write-critical-auditor-no-new-gap-response.js'
-      );
       const installedProjectionQualityGateScript = join(
         rootInstallDir,
         '_bmad',
@@ -258,7 +250,6 @@ describe('npm pack root package → clean install → CLI', () => {
       expect(existsSync(installedManifestScript)).toBe(true);
       expect(existsSync(installedNormalizeScript)).toBe(true);
       expect(existsSync(installedPrepareCurrentSourcePromotionScript)).toBe(true);
-      expect(existsSync(installedWriteCriticalAuditorNoNewGapResponseScript)).toBe(true);
       expect(existsSync(installedProjectionQualityGateScript)).toBe(true);
       expect(readFileSync(installedProjectionQualityGateScript, 'utf8')).toContain(
         'projection_per_must_acceptance_not_independent'

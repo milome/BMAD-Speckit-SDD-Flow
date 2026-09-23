@@ -8,7 +8,6 @@ const ACTIONS = [
   'requirements-contract-consumer-cli-capability-observe',
   'requirements-contract-eval',
   'requirements-contract-prompt-transaction-publish',
-  'requirements-contract-production-bypass-evidence-materialize',
   'requirements-contract-production-bypass-verify',
   'requirements-contract-recovery-bootstrap',
   'requirements-contract-recovery-finalize',

@@ -45,16 +45,14 @@ const FROZEN_ACTION_IDS = [
   'requirements-contract-clean-materialization',
   'requirements-contract-judge-credentials-init',
   'requirements-contract-judge-run',
-  'requirements-contract-gap-closure-readonly-auditor-adapter',
   'requirements-contract-eval',
   'requirements-contract-candidate-package',
   'requirements-contract-changed-path-manifest',
   'requirements-contract-detached-test-rerun',
-  'requirements-contract-reverse-audit',
   'requirements-contract-evidence-verify',
   'requirements-contract-bundle-publish',
   'requirements-contract-production-activate',
-  'requirements-contract-production-bypass-evidence-materialize',
+  'requirements-contract-reverse-audit',
   'requirements-contract-production-bypass-verify',
   'requirements-contract-judge-provider-smoke',
   'requirements-contract-stage-five-star-audit',
@@ -62,7 +60,7 @@ const FROZEN_ACTION_IDS = [
   'requirements-contract-consumer-cli-capability-observe',
 ].sort();
 const ACTION_UNIVERSE_HASH =
-  'sha256:54316a5458e7f1afd1ef94c3725a067960c82ab38b8eab44d1074b816f028bdf';
+  'sha256:361deebed22208d9269b81d2028f14cc3ad00ffca9c54b3343a640d6f0d52c00';
 
 const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
   {
@@ -294,24 +292,6 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
     ],
   },
   {
-    actionId: 'requirements-contract-gap-closure-readonly-auditor-adapter',
-    sourcePath: `${SCRIPT_ROOT}/requirements-contract-gap-closure-readonly-auditor-adapter.ts`,
-    distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-gap-closure-readonly-auditor-adapter.js`,
-    gateSymbol: 'requirementsContractGapClosureReadonlyAuditorAdapterCommand',
-    inputSchemas: [
-      `${SCHEMA_ROOT}/requirements-contract-gap-closure-readonly-auditor-adapter-input.schema.json`,
-      `${SCHEMA_ROOT}/requirements-contract-gap-closure-independent-audit-request.schema.json`,
-    ],
-    outputSchemas: [
-      `${SCHEMA_ROOT}/requirements-contract-gap-closure-independent-audit-assessment.schema.json`,
-      `${SCHEMA_ROOT}/requirements-contract-gap-closure-independent-audit-result.schema.json`,
-    ],
-    behaviorTests: [
-      'tests/acceptance/requirements-contract-gap-closure-readonly-auditor-adapter.test.ts',
-      'tests/acceptance/main-agent-gap-closure-evidence-gate.test.ts',
-    ],
-  },
-  {
     actionId: 'requirements-contract-judge-credentials-init',
     sourcePath: `${SCRIPT_ROOT}/requirements-contract-judge-credential-initializer.ts`,
     distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-judge-credential-initializer.js`,
@@ -384,21 +364,6 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
     ],
   },
   {
-    actionId: 'requirements-contract-production-bypass-evidence-materialize',
-    sourcePath: `${SCRIPT_ROOT}/requirements-contract-production-bypass-evidence-materializer.ts`,
-    distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-production-bypass-evidence-materializer.js`,
-    gateSymbol: 'requirementsContractProductionBypassEvidenceMaterializeCommand',
-    inputSchemas: [
-      `${SCHEMA_ROOT}/requirements-contract-production-bypass-evidence-materializer-input.schema.json`,
-    ],
-    outputSchemas: [
-      `${SCHEMA_ROOT}/requirements-contract-production-bypass-evidence-materializer-report.schema.json`,
-    ],
-    behaviorTests: [
-      'tests/acceptance/requirements-contract-production-bypass-evidence-materializer.test.ts',
-    ],
-  },
-  {
     actionId: 'requirements-contract-production-bypass-verify',
     sourcePath: `${SCRIPT_ROOT}/requirements-contract-production-bypass-verifier.ts`,
     distPath: `${DIST_SCRIPT_ROOT}/requirements-contract-production-bypass-verifier.js`,
@@ -458,7 +423,7 @@ const ACTION_BINDING_SPECS: ActionBindingSpec[] = [
       `${SCHEMA_ROOT}/requirements-contract-judge-challenge-tests.schema.json`,
       `${SCHEMA_ROOT}/requirements-contract-test-source-audit.schema.json`,
     ],
-    behaviorTests: ['tests/acceptance/requirements-contract-reverse-audit.test.ts'],
+    behaviorTests: ['tests/acceptance/requirements-contract-judge-command.test.ts'],
     runtimeRefs: [
       {
         role: 'judge-credential-resolver',

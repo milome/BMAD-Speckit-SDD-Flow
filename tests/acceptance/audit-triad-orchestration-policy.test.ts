@@ -6,9 +6,9 @@ import {
   type AuditTriadRoundReceipt,
 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/audit-triad-orchestrator';
 import {
-  criticalAuditorIndependentProviderRunHash,
-  type CriticalAuditorIndependentProviderEvidence,
-} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-critical-auditor-independence';
+  auditProviderRunHash,
+  type AuditProviderEvidence,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-provider-independence';
 import {
   cleanupRequirementWorkspace,
   materializeRequirementFixture,
@@ -24,12 +24,12 @@ function makeRound(
     auditEpochId: plan.auditEpochId,
     roundId,
   }).slice('sha256:'.length, 'sha256:'.length + 16)}`;
-  const criticalAuditorRequestHash = sha256Json({
+  const auditTriadJudgeRequestHash = sha256Json({
     auditEpochId: plan.auditEpochId,
     roundId,
     role: 'llm_as_judge',
   });
-  const evidenceWithoutRunHash: Omit<CriticalAuditorIndependentProviderEvidence, 'runHash'> = {
+  const evidenceWithoutRunHash: Omit<AuditProviderEvidence, 'runHash'> = {
     ...plan.independentProviderBinding,
     requestedModel: plan.independentProviderBinding.model,
     model: `gateway-selected-${sha256Json({
@@ -39,7 +39,7 @@ function makeRound(
     transactionId: plan.auditEpochId,
     auditAttemptId: plan.attemptId,
     providerRunId: `provider-${roundId}`,
-    requestHash: criticalAuditorRequestHash,
+    requestHash: auditTriadJudgeRequestHash,
     responseHash: sha256Json({ roundId, verdict: 'no_new_valid_gap' }),
     sourceDocumentHash: plan.sourceDocumentHash,
     semanticModelHash: plan.semanticModelHash,
@@ -76,10 +76,10 @@ function makeRound(
     requiredCheckItemSetHash: plan.requiredCheckItemSetHash,
     currentAttemptHash: plan.currentAttemptHash,
     currentEvidenceHash: plan.currentEvidenceHash,
-    criticalAuditorRequestHash,
+    auditTriadJudgeRequestHash,
     independentProviderEvidence: {
       ...evidenceWithoutRunHash,
-      runHash: criticalAuditorIndependentProviderRunHash(evidenceWithoutRunHash),
+      runHash: auditProviderRunHash(evidenceWithoutRunHash),
     },
     scoreReceiptRefs: [`score-${roundId}.json`],
     runAuditorHostReceiptRefs: [`host-${roundId}.json`],
@@ -116,7 +116,7 @@ function makeFullyBoundRound(
     roundId,
   };
   const providerReceiptWithoutHash = {
-    schemaVersion: 'critical-auditor-judge-invocation-receipt/v1',
+    schemaVersion: 'audit-provider-judge-invocation-receipt/v1',
     auditEpochId: plan.auditEpochId,
     roundId,
   };
@@ -140,7 +140,7 @@ function makeFullyBoundRound(
       },
     }),
     providerInvocationReceiptRef: {
-      path: `rounds/${roundId}/judge-provider-invocation-receipt.json`,
+      path: `rounds/${roundId}/audit-provider-judge-invocation-receipt.json`,
       contentHash: sha256Json(providerReceiptWithoutHash),
       receiptHash: sha256Json(providerReceiptWithoutHash),
     },
@@ -404,7 +404,7 @@ describe('Audit triad closed-loop orchestration policy', () => {
         ...roundTwoBase,
         independentProviderEvidence: {
           ...roundTwoEvidenceWithoutRunHash,
-          runHash: criticalAuditorIndependentProviderRunHash(roundTwoEvidenceWithoutRunHash),
+          runHash: auditProviderRunHash(roundTwoEvidenceWithoutRunHash),
         },
         judgeExecutionReceiptRef: roundOne.judgeExecutionReceiptRef,
         readonlyAuditorHostInvocationReceiptRef:
@@ -603,7 +603,7 @@ describe('Audit triad closed-loop orchestration policy', () => {
         ...roundFourBase,
         independentProviderEvidence: {
           ...replayedEvidenceWithoutRunHash,
-          runHash: criticalAuditorIndependentProviderRunHash(replayedEvidenceWithoutRunHash),
+          runHash: auditProviderRunHash(replayedEvidenceWithoutRunHash),
         },
         judgeExecutionReceiptRef: roundOne.judgeExecutionReceiptRef,
         readonlyAuditorHostInvocationReceiptRef:

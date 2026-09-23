@@ -195,7 +195,7 @@ function authorityBound(
     unclassifiedTestCount: 0,
     protectedCapabilityWithoutCoreTestCount: 0,
     executableTestCount: catalogValue.tests.length,
-    executableTestBudget: 1200,
+    executableTestBudget: 1216,
     executableBudgetStatus: 'within_budget',
     corePermanentCount: 0,
     reconciliationErrorCount: 0,

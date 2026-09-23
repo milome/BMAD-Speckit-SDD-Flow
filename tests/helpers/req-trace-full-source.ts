@@ -232,7 +232,11 @@ export function materializeFullSourceReqTraceFixture(
     authoringAttemptId: attemptId, confirmationLanguage: 'en-US', intakeSource: 'test-only-full-source',
     targetSource: 'docs/test-only-full-source-confirmed.md', authoritySourceListHash: inputManifestHash,
   });
-  const rendered = renderAndPromoteRequirementsContractConfirmation({ projectRoot, requestId });
+  const rendered = renderAndPromoteRequirementsContractConfirmation({
+    projectRoot,
+    requestId,
+    targetSource: 'docs/test-only-full-source-confirmed.md',
+  });
   confirmRequirementsContractIrScope({ projectRoot, requestId,
     exactConfirmationText: rendered.confirmation.exactConfirmationText });
   const sourcePath = path.join(projectRoot, ...rendered.confirmation.markdownPath.split('/'));

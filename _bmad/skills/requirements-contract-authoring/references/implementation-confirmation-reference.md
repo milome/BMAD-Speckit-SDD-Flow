@@ -77,11 +77,6 @@ implementationConfirmation:
       path: "_bmad-output/runtime/requirement-records/<recordId>/authoring/must_decomposition_packet.json"
       hash: "sha256:..."
       status: synchronized
-    criticalAuditor:
-      minimumRounds: 3
-      consecutiveNoNewGapRounds: "<derived-from-current-critical-auditor-receipts>"
-      latestReceiptHash: "<latest-current-receipt-hash>"
-      convergenceVerdict: "<audit_not_run|blocked|bounded_no_new_gap>"
     packetSourceReconciliation:
       reportPath: "_bmad-output/runtime/requirement-records/<recordId>/authoring/must_packet_source_reconciliation_report.json"
       verdict: pass
@@ -642,13 +637,12 @@ implementationConfirmation:
 
 Only explicit chat confirmation with matching hashes may change `status` to `user_confirmed`.
 
-`preConfirmationDrilldown` is drilldown metadata only. Final confirmation authority remains the inline `implementationConfirmation` block; the metadata only proves the source block was materialized from the semantic kernel, synchronized `must_decomposition_packet.json`, Critical Auditor receipts, and packet/source reconciliation.
+`preConfirmationDrilldown` is drilldown metadata only. Final confirmation authority remains the inline `implementationConfirmation` block; the metadata only proves the source block was materialized from the semantic kernel, synchronized `must_decomposition_packet.json`, and packet/source reconciliation.
 
 The template assumes the pre-confirmation atomic decomposition loop has already produced:
 
 - `_bmad-output/runtime/requirement-records/<recordId>/authoring/semantic-kernel.json`
 - `_bmad-output/runtime/requirement-records/<recordId>/authoring/must_decomposition_packet.json`
-- `_bmad-output/runtime/requirement-records/<recordId>/authoring/critical-auditor-receipt-round-*.json`
 - `_bmad-output/runtime/requirement-records/<recordId>/authoring/must_decomposition_receipt.json`
 - `_bmad-output/runtime/requirement-records/<recordId>/authoring/must_packet_source_reconciliation_report.json`
 - `_bmad-output/runtime/requirement-records/<recordId>/authoring/pre-render-must-decomposition-gate-report.json`
@@ -660,8 +654,6 @@ Run the deterministic gate before rendering:
 ```text
 node <skill-dir>/scripts/pre_render_must_decomposition_gate.js --source <source-document.md> --authoring-dir _bmad-output/runtime/requirement-records/<recordId>/authoring --json
 ```
-
-Critical Auditor receipt convergence is represented only by a value derived from three current, hash-bound Critical Auditor receipt files. Fewer rounds, unresolved validated gaps, stale input hashes, synthetic `bounded_no_new_gap` claims, or author claims without critic disposition block confirmation.
 
 ## Applicability Domains
 

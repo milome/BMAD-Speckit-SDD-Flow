@@ -153,19 +153,6 @@ function semanticConfirmationForHash(confirmation) {
       delete mustDecompositionPacketRef.hash;
       drilldown.mustDecompositionPacketRef = mustDecompositionPacketRef;
     }
-    const criticalAuditor =
-      drilldown.criticalAuditor &&
-      typeof drilldown.criticalAuditor === 'object' &&
-      !Array.isArray(drilldown.criticalAuditor)
-        ? { ...drilldown.criticalAuditor }
-        : null;
-    if (criticalAuditor) {
-      delete criticalAuditor.consecutiveNoNewGapRounds;
-      delete criticalAuditor.latestReceiptHash;
-      delete criticalAuditor.convergenceVerdict;
-      drilldown.criticalAuditor = criticalAuditor;
-      semantic.preConfirmationDrilldown = drilldown;
-    }
     semantic.preConfirmationDrilldown = drilldown;
   }
   return semantic;

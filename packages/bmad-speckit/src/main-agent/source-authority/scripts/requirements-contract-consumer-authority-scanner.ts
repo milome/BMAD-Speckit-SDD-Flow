@@ -1,11 +1,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { TextDecoder } from 'node:util';
 import type { ProductionSemanticSourceRootCandidate } from './requirements-contract-production-semantic-pipeline';
 import { REQUIREMENTS_CONTRACT_SOURCE_ROOT_CLASS_REGISTRY } from './requirements-contract-source-root-class-registry';
 import { sha256Stable, sha256Text } from './requirements-contract-semantic-resolver';
 import { combineRequirementsSourceBundleGraphs, combineRequirementsSourceContextBindings, parseRequirementsSourceBundle, SOURCE_BUNDLE_VERSION,
   type RequirementsSourceBundleResult } from './requirements-contract-full-source-bundle';
 import { createTypedSourceAuthority } from './requirements-contract-typed-source-semantics';
+import { publishRequirementsContentObject } from './requirements-contract-content-store';
+import {
+  DEFAULT_REQUIREMENTS_SOURCE_RESOURCE_LIMITS,
+  type RequirementsSourceResourceLimits,
+} from './requirements-authoring-limits';
 
 export interface RequirementsContractConsumerAuthoritySourceEntry {
   path: string;
@@ -16,10 +22,10 @@ export interface RequirementsContractConsumerAuthoritySourceEntry {
 
 export interface RequirementsContractConsumerAuthorityScanInput {
   cwd: string;
+  recordRoot?: string;
   intakeSource: string;
   authoritySources: RequirementsContractConsumerAuthoritySourceEntry[];
-  maxSourceBytes?: number;
-  maxSourceCount?: number;
+  resourceLimits?: RequirementsSourceResourceLimits;
 }
 
 export interface ArchitecturePremiseAuthoritySourceCandidate {
@@ -131,7 +137,21 @@ function validatedFile(
     throw new Error('requirements_authority_path_escape');
   }
   const bytes = fs.readFileSync(absolutePath);
+  if (bytes.length > maxSourceBytes) throw new Error('requirements_authority_source_bytes_exceeded');
+  try {
+    new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    throw new Error('requirements_authority_source_utf8_invalid');
+  }
   return { absolutePath, content: bytes.toString('utf8'), bytes };
+}
+
+function validateResourceLimits(limits: RequirementsSourceResourceLimits): void {
+  for (const value of Object.values(limits)) {
+    if (!Number.isSafeInteger(value) || value < 1) {
+      throw new Error('requirements_authority_resource_limit_invalid');
+    }
+  }
 }
 
 export function scanRequirementsContractConsumerAuthority(
@@ -147,10 +167,10 @@ export function scanRequirementsContractConsumerAuthority(
   if (!intakeStat.isFile() || intakeStat.isSymbolicLink()) {
     throw new Error('requirements_authority_intake_invalid');
   }
-  const maxSourceCount = input.maxSourceCount ?? 128;
-  const maxSourceBytes = input.maxSourceBytes ?? 1024 * 1024;
-  if (!Array.isArray(input.authoritySources) || input.authoritySources.length > maxSourceCount) {
-    throw new Error('requirements_authority_source_count_exceeded');
+  const resourceLimits = input.resourceLimits ?? DEFAULT_REQUIREMENTS_SOURCE_RESOURCE_LIMITS;
+  validateResourceLimits(resourceLimits);
+  if (!Array.isArray(input.authoritySources)) {
+    throw new Error('requirements_authority_sources_declaration_invalid');
   }
   const registryByRootClass = new Map<
     string,
@@ -174,12 +194,27 @@ export function scanRequirementsContractConsumerAuthority(
   const entryBodies: Record<string, unknown>[] = [];
   const bundles: RequirementsSourceBundleResult[] = [];
   const artifactBytesByPath = new Map<string, Buffer>();
+  let totalSourceBytes = 0;
+  const registerArtifactBytes = (artifactPath: string, bytes: Buffer): Buffer => {
+    const existing = artifactBytesByPath.get(artifactPath);
+    if (existing) return existing;
+    if (bytes.length > resourceLimits.maxSingleSourceBytes) {
+      throw new Error('requirements_authority_source_bytes_exceeded');
+    }
+    if (totalSourceBytes + bytes.length > resourceLimits.maxTotalSourceBytes) {
+      throw new Error('requirements_total_source_bytes_exceeded');
+    }
+    artifactBytesByPath.set(artifactPath, bytes);
+    totalSourceBytes += bytes.length;
+    return bytes;
+  };
   for (const entry of declaredEntries) {
     const definition = registryByRootClass.get(entry.rootClass);
     if (!entry.proposedAuthorityClass?.trim()) {
       throw new Error('requirements_authority_class_invalid');
     }
-    const source = validatedFile(cwd, entry.path, maxSourceBytes);
+    const source = validatedFile(cwd, entry.path, resourceLimits.maxSingleSourceBytes);
+    registerArtifactBytes(entry.path, source.bytes);
     let document: Record<string, unknown>;
     try {
       document = JSON.parse(source.content) as Record<string, unknown>;
@@ -193,12 +228,37 @@ export function scanRequirementsContractConsumerAuthority(
       const bundle = parseRequirementsSourceBundle({ document, bundlePath: entry.path, readArtifact(relative) {
         const artifactPath = normalizedRelativePath(cwd, relative);
         if (!artifactBytesByPath.has(artifactPath)) {
-          if (artifactBytesByPath.size >= maxSourceCount) throw new Error('requirements_authority_source_count_exceeded');
-          artifactBytesByPath.set(artifactPath, validatedFile(cwd, artifactPath, maxSourceBytes,
-            new Set(['.md', '.json', '.txt'])).bytes);
+          registerArtifactBytes(
+            artifactPath,
+            validatedFile(
+              cwd,
+              artifactPath,
+              resourceLimits.maxSingleSourceBytes,
+              new Set(['.md', '.json', '.txt'])
+            ).bytes
+          );
         }
         return artifactBytesByPath.get(artifactPath)!;
       } });
+      if (input.recordRoot) {
+        const sourceBlobRef = publishRequirementsContentObject({
+          recordRoot: input.recordRoot,
+          role: 'typed_source_authority',
+          mediaType: 'text/markdown; charset=utf-8',
+          bytes: bundle.sourceView.bytes,
+        });
+        bundle.artifact = { ...bundle.artifact, sourceBlobRef };
+        bundle.sourceView = { ...bundle.sourceView, artifact: bundle.artifact };
+        bundle.candidates = bundle.candidates.map((candidate) => ({
+          ...candidate,
+          sourceArtifact: {
+            artifactId: bundle.artifact.artifactId,
+            path: bundle.artifact.path,
+            bytes: bundle.artifact.bytes,
+            sha256: bundle.artifact.sha256,
+          },
+        }));
+      }
       bundles.push(bundle);
       sourceRootCandidates.push(...bundle.candidates);
       entryBodies.push(document);
@@ -279,6 +339,12 @@ export function scanRequirementsContractConsumerAuthority(
     ...sourceRootCandidates.map((candidate) => candidate.sourceRootId),
     ...architecturePremiseAuthorityCandidates.map((candidate) => candidate.authorityId),
   ];
+  if (sourceRootIds.length > resourceLimits.maxSemanticNodes) {
+    throw new Error('requirements_semantic_node_count_exceeded');
+  }
+  if (sourceRootIds.length > resourceLimits.maxSourceSpans) {
+    throw new Error('requirements_source_span_count_exceeded');
+  }
   const duplicates = [
     ...new Set(
       sourceRootIds.filter((sourceRootId, index) => sourceRootIds.indexOf(sourceRootId) !== index)
@@ -311,8 +377,16 @@ export function scanRequirementsContractConsumerAuthority(
       sourceRelationBindings: bundles.flatMap((bundle) => bundle.relationBindings),
       sourceContextBindings: combineRequirementsSourceContextBindings(bundles),
       sourceArtifacts: [...new Map(bundles.map((bundle) => [bundle.artifact.artifactId, bundle.artifact])).values()],
+      sourceArtifactViews: [...new Map(
+        bundles.map((bundle) => [bundle.sourceView.artifact.artifactId, bundle.sourceView])
+      ).values()],
     } : {}),
     architecturePremiseAuthorityCandidates,
+    capacity: {
+      sourceArtifactCount: artifactBytesByPath.size,
+      sourceRootCount: sourceRootIds.length,
+      totalSourceBytes,
+    },
     facts: sourceRootCandidates.map((candidate) => ({
       factId: candidate.sourceRootId,
       rootClass: candidate.rootClass,

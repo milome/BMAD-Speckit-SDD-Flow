@@ -427,40 +427,6 @@ describe('target artifact realization gate', () => {
     expect(implementationConfirmationHash(confirmation)).toBe(confirmationRecipeHash(confirmation));
   });
 
-  it('keeps Critical Auditor run-derived proof fields out of the semantic confirmation hash', () => {
-    const confirmation = {
-      status: 'user_confirmed',
-      must: [{ id: 'MUST-001', text: 'Keep semantic hash stable.' }],
-      preConfirmationDrilldown: {
-        semanticKernelRef: { path: 'semantic-kernel.json', hash: 'sha256:kernel' },
-        criticalAuditor: {
-          minimumRounds: 3,
-          consecutiveNoNewGapRounds: 3,
-          latestReceiptHash: 'sha256:receipt-current',
-          convergenceVerdict: 'bounded_no_new_gap',
-        },
-      },
-    };
-    const rerunConfirmation = {
-      ...confirmation,
-      preConfirmationDrilldown: {
-        ...confirmation.preConfirmationDrilldown,
-        criticalAuditor: {
-          ...confirmation.preConfirmationDrilldown.criticalAuditor,
-          consecutiveNoNewGapRounds: 4,
-          latestReceiptHash: 'sha256:receipt-rerun',
-          convergenceVerdict: 'bounded_no_new_gap_after_rerun',
-        },
-      },
-    };
-
-    expect(confirmationRecipeHash(confirmation)).toBe(confirmationRecipeHash(rerunConfirmation));
-    expect(implementationConfirmationHash(confirmation)).toBe(
-      implementationConfirmationHash(rerunConfirmation)
-    );
-    expect(implementationConfirmationHash(confirmation)).toBe(confirmationRecipeHash(confirmation));
-  });
-
   it('passes declared targets without hardcoded requirement fields', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'target-artifact-pass-'));
     try {

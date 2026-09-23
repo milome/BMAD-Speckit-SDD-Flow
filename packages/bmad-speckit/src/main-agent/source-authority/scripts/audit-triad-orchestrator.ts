@@ -10,12 +10,12 @@ import {
 } from './critical-auditor-profile';
 import { readGovernanceRemediationConfig } from './governance-remediation-config';
 import {
-  buildCriticalAuditorJudgeRuntimeBinding,
-  type CriticalAuditorIndependentProviderEvidence,
-  type CriticalAuditorIndependentProviderExpectation,
-  type CriticalAuditorJudgeRuntimeBinding,
-  validateCriticalAuditorIndependentProviderEvidence,
-} from './requirements-contract-critical-auditor-independence';
+  buildAuditTriadJudgeRuntimeBinding,
+  type AuditProviderEvidence,
+  type AuditProviderExpectation,
+  type AuditTriadJudgeRuntimeBinding,
+  validateAuditProviderEvidence,
+} from './requirements-contract-judge-provider-independence';
 
 export const AUDIT_PROJECTION_QUALITY_RULE_CODES = [
   'projection_per_must_acceptance_not_independent',
@@ -63,7 +63,7 @@ export interface AuditTriadExecutionPlan {
   requiredCheckItemSetHash: string;
   vetoItemIds: string[];
   priorRepairReceiptRefs: Array<{ path: string; contentHash: string }>;
-  independentProviderBinding: CriticalAuditorJudgeRuntimeBinding;
+  independentProviderBinding: AuditTriadJudgeRuntimeBinding;
   readonlyAuditorExecution: {
     producerMode: 'codex_exec_readonly';
     producerCount: 1;
@@ -123,8 +123,8 @@ export interface AuditTriadRoundReceipt {
   requiredCheckItemSetHash: string;
   currentAttemptHash: string;
   currentEvidenceHash: string;
-  criticalAuditorRequestHash: string;
-  independentProviderEvidence?: CriticalAuditorIndependentProviderEvidence;
+  auditTriadJudgeRequestHash: string;
+  independentProviderEvidence?: AuditProviderEvidence;
   providerInvocationReceiptRef?: AuditTriadBoundReceiptRef;
   judgeExecutionReceiptRef?: AuditTriadBoundReceiptRef;
   readonlyAuditorHostInvocationReceiptRef?: AuditTriadBoundReceiptRef;
@@ -216,7 +216,7 @@ export function createAuditTriadExecutionPlan(input: {
   const qualityRuleSetHash = sha256Json(qualityRuleCodes);
   const priorRepairReceiptRefs = [...(input.priorRepairReceiptRefs ?? [])];
   const judgeRuntime = readGovernanceRemediationConfig(input.projectRoot).judgeRuntime;
-  const providerBinding = buildCriticalAuditorJudgeRuntimeBinding(judgeRuntime);
+  const providerBinding = buildAuditTriadJudgeRuntimeBinding(judgeRuntime);
   if (!providerBinding.binding || providerBinding.issueCodes.length > 0) {
     throw new Error(
       `audit_triad_judge_binding_invalid:${providerBinding.issueCodes.join(',') || 'judge_runtime_missing'}`
@@ -610,7 +610,7 @@ export function auditTriadRoundHistoryIssues(
     register(prefix, round.roundId, seen.roundId, 'round_id_replayed');
     register(
       prefix,
-      round.criticalAuditorRequestHash,
+      round.auditTriadJudgeRequestHash,
       seen.requestHash,
       'critical_auditor_request_hash_replayed'
     );
@@ -839,16 +839,16 @@ export function evaluateAuditTriadConvergence(input: {
       blockers.push(`${prefix}_stage_profile_hash_mismatch`);
     if (!same(round.requiredCheckItemSetHash, input.plan.requiredCheckItemSetHash))
       blockers.push(`${prefix}_check_item_set_hash_mismatch`);
-    if (!isSha256Hash(round.criticalAuditorRequestHash)) {
+    if (!isSha256Hash(round.auditTriadJudgeRequestHash)) {
       blockers.push(`${prefix}_critical_auditor_request_hash_invalid`);
-    } else if (seenRequestHashes.has(round.criticalAuditorRequestHash)) {
+    } else if (seenRequestHashes.has(round.auditTriadJudgeRequestHash)) {
       blockers.push(`${prefix}_critical_auditor_request_hash_replayed`);
     } else {
-      seenRequestHashes.add(round.criticalAuditorRequestHash);
+      seenRequestHashes.add(round.auditTriadJudgeRequestHash);
     }
     if (!round.independentProviderEvidence) {
       blockers.push(`${prefix}_independent_provider_evidence_missing`);
-    } else if (isSha256Hash(round.criticalAuditorRequestHash)) {
+    } else if (isSha256Hash(round.auditTriadJudgeRequestHash)) {
       const providerRunId =
         typeof round.independentProviderEvidence.providerRunId === 'string'
           ? round.independentProviderEvidence.providerRunId.trim()
@@ -860,16 +860,16 @@ export function evaluateAuditTriadConvergence(input: {
       } else {
         seenProviderRunIds.add(providerRunId);
       }
-      const expectedProviderEvidence: CriticalAuditorIndependentProviderExpectation = {
+      const expectedProviderEvidence: AuditProviderExpectation = {
         ...input.plan.independentProviderBinding,
         transactionId: input.plan.auditEpochId,
         auditAttemptId: input.plan.attemptId,
-        requestHash: round.criticalAuditorRequestHash,
+        requestHash: round.auditTriadJudgeRequestHash,
         sourceDocumentHash: input.plan.sourceDocumentHash,
         semanticModelHash: input.plan.semanticModelHash,
         projectionSetHash: input.plan.projectionSetHash,
       };
-      const providerValidation = validateCriticalAuditorIndependentProviderEvidence({
+      const providerValidation = validateAuditProviderEvidence({
         expected: expectedProviderEvidence,
         evidence: round.independentProviderEvidence,
       });

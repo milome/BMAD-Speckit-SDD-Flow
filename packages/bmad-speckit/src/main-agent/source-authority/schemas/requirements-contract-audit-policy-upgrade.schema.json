@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-audit-policy-upgrade.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "operationId", "fromPolicyVersion", "fromAuditPolicyHash", "toPolicyVersion", "toAuditPolicyHash", "scopeSemanticHash", "supersedesDecisionHash", "state", "operationHash"],
+  "properties": {
+    "schemaVersion": { "const": "requirements-contract-audit-policy-upgrade/v1" },
+    "operationId": { "type": "string", "minLength": 1 },
+    "fromPolicyVersion": { "type": "integer", "minimum": 0 },
+    "fromAuditPolicyHash": { "$ref": "#/$defs/hash" },
+    "toPolicyVersion": { "type": "integer", "minimum": 1 },
+    "toAuditPolicyHash": { "$ref": "#/$defs/hash" },
+    "scopeSemanticHash": { "$ref": "#/$defs/hash" },
+    "supersedesDecisionHash": { "$ref": "#/$defs/hash" },
+    "state": { "enum": ["requested", "audit_pending", "terminal", "blocked"] },
+    "operationHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": { "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" } }
+}

@@ -7,9 +7,9 @@ import {
   validateRequirementsContractIntakeReceipt,
 } from './requirements-contract-intake-receipt';
 import {
-  createRequirementsContractFileIntakeReceipt,
+  createRequirementsContractFileIntakeReceiptV2,
   type FileIntakeEntrySource,
-  type RequirementsContractFileIntakeReceipt,
+  type RequirementsContractFileIntakeReceiptV2,
   validateRequirementsContractFileIntakeReceipt,
 } from './requirements-contract-file-intake-receipt';
 import {
@@ -20,7 +20,10 @@ import {
 } from './requirements-contract-invocation-authority-receipt';
 import {
   createRequirementsContractIntentLineageLedger,
+  createRequirementsContractIntentLineageLedgerV2,
+  deriveIntentLineageExcludedRanges,
   type RequirementsContractIntentLineageLedger,
+  type RequirementsContractIntentLineageLedgerV2,
   validateRequirementsContractIntentLineageLedger,
 } from './requirements-contract-intent-lineage';
 import { writeJsonAtomic } from './requirement-record-control-store';
@@ -49,11 +52,18 @@ export interface SessionEntryIntakeAuthority {
 
 export interface FileEntryIntakeAuthority {
   source: CanonicalUtf8SourceSnapshot;
+  recordRoot: string;
   intakeReceiptPath: string;
-  intakeReceipt: RequirementsContractFileIntakeReceipt;
+  intakeReceipt: RequirementsContractFileIntakeReceiptV2;
 }
 
 export type EntryIntakeAuthority = SessionEntryIntakeAuthority | FileEntryIntakeAuthority;
+
+function isFileEntryIntakeAuthority(
+  authority: EntryIntakeAuthority
+): authority is FileEntryIntakeAuthority {
+  return authority.intakeReceipt.schemaVersion === 'requirements-contract-file-intake-receipt/v2';
+}
 
 export interface InvocationEntryAuthority {
   source: CanonicalUtf8SourceSnapshot;
@@ -127,6 +137,41 @@ function reusableCapturedAuthorityArtifact<T extends object>(
     sha256Stable(withoutCaptureIdentity(candidate))
     ? (existing as T)
     : null;
+}
+
+function reusableFileIntakeReceipt(
+  filePath: string,
+  candidate: RequirementsContractFileIntakeReceiptV2
+): RequirementsContractFileIntakeReceiptV2 | null {
+  let existing: unknown;
+  try {
+    existing = readJson(filePath);
+  } catch {
+    return null;
+  }
+  if (
+    !validateRequirementsContractFileIntakeReceipt(existing) ||
+    !existing ||
+    typeof existing !== 'object' ||
+    Array.isArray(existing) ||
+    (existing as RequirementsContractFileIntakeReceiptV2).schemaVersion !==
+      'requirements-contract-file-intake-receipt/v2'
+  ) {
+    return null;
+  }
+  const current = existing as RequirementsContractFileIntakeReceiptV2;
+  if (
+    current.requirementSetId !== candidate.requirementSetId ||
+    current.entrySource !== candidate.entrySource ||
+    current.requestedArtifactRole !== candidate.requestedArtifactRole ||
+    current.sourcePath !== candidate.sourcePath ||
+    current.sourceBytesHash !== candidate.sourceBytesHash ||
+    current.sourceByteLength !== candidate.sourceByteLength ||
+    current.sourceBlobRef.contentHash !== candidate.sourceBlobRef.contentHash
+  ) {
+    return null;
+  }
+  return current;
 }
 
 export function readCanonicalUtf8Source(sourcePath: string): CanonicalUtf8SourceSnapshot {
@@ -249,21 +294,25 @@ export function materializeSessionEntryIntake(input: {
 
 export function materializeFileEntryIntake(input: {
   projectRoot: string;
+  recordRoot: string;
   requirementSetId: string;
   entrySource: FileIntakeEntrySource;
   source: CanonicalUtf8SourceSnapshot;
   capturedAt: string;
   intakeReceiptPath: string;
 }): FileEntryIntakeAuthority {
-  const receipt = createRequirementsContractFileIntakeReceipt({
+  const receipt = createRequirementsContractFileIntakeReceiptV2({
+    recordRoot: input.recordRoot,
     requirementSetId: nonEmpty(input.requirementSetId, 'requirementSetId'),
     entrySource: input.entrySource,
     requestedArtifactRole: 'requirement_source_prd',
     sourcePath: normalizedRelativePath(input.projectRoot, input.source.sourcePath),
     sourceContent: input.source.sourceText,
+    materialRoots: [],
     capturedAt: nonEmpty(input.capturedAt, 'capturedAt'),
   });
   const intakeReceipt =
+    reusableFileIntakeReceipt(input.intakeReceiptPath, receipt) ??
     reusableCapturedAuthorityArtifact(
       input.intakeReceiptPath,
       receipt,
@@ -277,6 +326,7 @@ export function materializeFileEntryIntake(input: {
     );
   return {
     source: input.source,
+    recordRoot: input.recordRoot,
     intakeReceiptPath: normalizedRelativePath(input.projectRoot, input.intakeReceiptPath),
     intakeReceipt,
   };
@@ -327,8 +377,73 @@ export function materializeEntryLineage(input: {
   sourceRootRefs?: string[];
   sourceRoots?: EntryLineageSourceRoot[];
   lineageLedgerPath: string;
-}): RequirementsContractIntentLineageLedger {
+}): RequirementsContractIntentLineageLedger | RequirementsContractIntentLineageLedgerV2 {
   const sourceRoots = input.sourceRoots ?? [];
+  if (isFileEntryIntakeAuthority(input.authority)) {
+    const initialReceipt = input.authority.intakeReceipt;
+    const materialSourceRoots = sourceRoots.filter(
+      (sourceRoot) => sourceRoot.authorityClass !== 'invocation_bound'
+    );
+    const mismatchedSourcePaths = materialSourceRoots
+      .filter(
+        (sourceRoot) =>
+          sourceRoot.sourcePath.replace(/\\/gu, '/') !== initialReceipt.sourcePath
+      )
+      .map((sourceRoot) => sourceRoot.sourceRootId);
+    if (mismatchedSourcePaths.length > 0) {
+      throw new Error(
+        `Entry lineage Source Roots reference a different source: ${mismatchedSourcePaths.join(', ')}`
+      );
+    }
+    const intakeReceipt = createRequirementsContractFileIntakeReceiptV2({
+      recordRoot: input.authority.recordRoot,
+      requirementSetId: initialReceipt.requirementSetId,
+      entrySource: initialReceipt.entrySource,
+      requestedArtifactRole: initialReceipt.requestedArtifactRole,
+      sourcePath: initialReceipt.sourcePath,
+      sourceContent: input.authority.source.sourceText,
+      materialRoots: materialSourceRoots.map((sourceRoot) => ({
+        sourceRootId: sourceRoot.sourceRootId,
+        startLine: sourceRoot.sourceSpan.startLine,
+        endLine: sourceRoot.sourceSpan.endLine,
+      })),
+      capturedAt: initialReceipt.capturedAt,
+    });
+    input.authority.intakeReceipt = persistValidatedArtifact(
+      path.resolve(input.projectRoot, input.authority.intakeReceiptPath),
+      intakeReceipt,
+      validateRequirementsContractFileIntakeReceipt,
+      sha256Stable(intakeReceipt)
+    );
+    const sourceBytes = Buffer.from(input.authority.source.sourceText, 'utf8');
+    const rangeByRootId = new Map(
+      intakeReceipt.materialExcerpts.map((excerpt) => [excerpt.sourceRootId, excerpt.range])
+    );
+    const materialRoots = materialSourceRoots.map((sourceRoot) => ({
+      sourceRootId: sourceRoot.sourceRootId,
+      disposition: 'source_root' as const,
+      sourceRange: rangeByRootId.get(sourceRoot.sourceRootId)!,
+      semanticNodeRefs: [sourceRoot.sourceRootId],
+    }));
+    const excludedRanges = deriveIntentLineageExcludedRanges({
+      sourceBytes,
+      materialRanges: materialRoots.map((root) => root.sourceRange),
+      exclusionRuleRef: 'non-semantic-source-range/v2',
+      reasonCode: 'non_semantic_source_range',
+    });
+    const ledger = createRequirementsContractIntentLineageLedgerV2({
+      receipt: intakeReceipt,
+      sourceBytes,
+      materialRoots,
+      excludedRanges,
+    });
+    return persistValidatedArtifact(
+      input.lineageLedgerPath,
+      ledger,
+      validateRequirementsContractIntentLineageLedger,
+      sha256Stable(ledger)
+    );
+  }
   const sourceRootRefs = [
     ...new Set(
       [
@@ -337,88 +452,52 @@ export function materializeEntryLineage(input: {
       ].map((value) => value.trim())
     ),
   ].filter(Boolean);
-  const classifications =
-    input.authority.intakeReceipt.schemaVersion === 'requirements-contract-file-intake-receipt/v1'
-      ? input.authority.intakeReceipt.excerpts.map((excerpt) => {
-          const rootRefs = sourceRoots
-            .filter(
-              (sourceRoot) =>
-                sourceRoot.authorityClass !== 'invocation_bound' &&
-                sourceRoot.sourcePath.replace(/\\/gu, '/') ===
-                  excerpt.boundary.sourcePath.replace(/\\/gu, '/') &&
-                sourceRoot.sourceSpan.startLine <= excerpt.boundary.startLine &&
-                sourceRoot.sourceSpan.endLine >= excerpt.boundary.endLine
-            )
-            .map((sourceRoot) => sourceRoot.sourceRootId)
-            .sort();
-          if (rootRefs.length > 0) {
-            return {
-              spanId: excerpt.excerptId,
-              disposition: 'source_root' as const,
-              classificationRule: 'file-entry-source-span-mapping/v1',
-              sourceRootRefs: rootRefs,
-            };
-          }
-          const exclusionRuleRef = 'non-semantic-source-line/v1';
-          const exclusionReason =
-            'The source line does not materialize a canonical semantic Source Root.';
-          return {
-            spanId: excerpt.excerptId,
-            disposition: 'excluded' as const,
-            classificationRule: 'file-entry-source-span-mapping/v1',
-            exclusionRuleRef,
-            exclusionReason,
-            decisionHash: sha256Stable({
-              spanId: excerpt.excerptId,
-              sourceHash: excerpt.contentHash,
-              exclusionRuleRef,
-              exclusionReason,
-            }),
-          };
-        })
-      : input.authority.intakeReceipt.excerpts.map((excerpt) => {
-          const rootRefs = sourceRoots
-            .filter(
-              (sourceRoot) =>
-                sourceRoot.authorityClass !== 'invocation_bound' &&
-                sourceRoot.sourceSpan.startLine <= excerpt.order &&
-                sourceRoot.sourceSpan.endLine >= excerpt.order
-            )
-            .map((sourceRoot) => sourceRoot.sourceRootId)
-            .sort();
-          if (rootRefs.length > 0) {
-            return {
-              spanId: excerpt.excerptId,
-              disposition: 'source_root' as const,
-              classificationRule: 'session-entry-source-span-mapping/v1',
-              sourceRootRefs: rootRefs,
-            };
-          }
-          if (sourceRoots.length === 0 && sourceRootRefs.length > 0) {
-            return {
-              spanId: excerpt.excerptId,
-              disposition: 'source_root' as const,
-              classificationRule: 'session-entry-source-root-mapping/v1',
-              sourceRootRefs,
-            };
-          }
-          const exclusionRuleRef = 'non-semantic-source-line/v1';
-          const exclusionReason =
-            'The session source line does not materialize a canonical semantic Source Root.';
-          return {
-            spanId: excerpt.excerptId,
-            disposition: 'excluded' as const,
-            classificationRule: 'session-entry-source-span-mapping/v1',
-            exclusionRuleRef,
-            exclusionReason,
-            decisionHash: sha256Stable({
-              spanId: excerpt.excerptId,
-              sourceHash: excerpt.contentHash,
-              exclusionRuleRef,
-              exclusionReason,
-            }),
-          };
-        });
+  const sessionAuthority = input.authority;
+  if (isFileEntryIntakeAuthority(sessionAuthority)) {
+    throw new Error('Entry file intake authority must use the v2 materialization branch');
+  }
+  const classifications = sessionAuthority.intakeReceipt.excerpts.map((excerpt) => {
+    const rootRefs = sourceRoots
+      .filter(
+        (sourceRoot) =>
+          sourceRoot.authorityClass !== 'invocation_bound' &&
+          sourceRoot.sourceSpan.startLine <= excerpt.order &&
+          sourceRoot.sourceSpan.endLine >= excerpt.order
+      )
+      .map((sourceRoot) => sourceRoot.sourceRootId)
+      .sort();
+    if (rootRefs.length > 0) {
+      return {
+        spanId: excerpt.excerptId,
+        disposition: 'source_root' as const,
+        classificationRule: 'session-entry-source-span-mapping/v1',
+        sourceRootRefs: rootRefs,
+      };
+    }
+    if (sourceRoots.length === 0 && sourceRootRefs.length > 0) {
+      return {
+        spanId: excerpt.excerptId,
+        disposition: 'source_root' as const,
+        classificationRule: 'session-entry-source-root-mapping/v1',
+        sourceRootRefs,
+      };
+    }
+    const exclusionRuleRef = 'non-semantic-source-line/v1';
+    const exclusionReason = 'The session source line does not materialize a canonical semantic Source Root.';
+    return {
+      spanId: excerpt.excerptId,
+      disposition: 'excluded' as const,
+      classificationRule: 'session-entry-source-span-mapping/v1',
+      exclusionRuleRef,
+      exclusionReason,
+      decisionHash: sha256Stable({
+        spanId: excerpt.excerptId,
+        sourceHash: excerpt.contentHash,
+        exclusionRuleRef,
+        exclusionReason,
+      }),
+    };
+  });
   if (sourceRoots.length > 0) {
     const mappedRootRefs = new Set(
       classifications.flatMap((classification) =>
@@ -454,5 +533,9 @@ export function materializeSessionEntryLineage(input: {
   sourceRootRefs: string[];
   lineageLedgerPath: string;
 }): RequirementsContractIntentLineageLedger {
-  return materializeEntryLineage(input);
+  const ledger = materializeEntryLineage(input);
+  if (ledger.schemaVersion !== 'requirements-contract-intent-lineage-ledger/v1') {
+    throw new Error('Session entry lineage must use the legacy session ledger');
+  }
+  return ledger;
 }

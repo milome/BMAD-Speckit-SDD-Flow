@@ -98,10 +98,10 @@ function text(value: unknown, code: string): string {
 
 function judgeRole(value: unknown, missingCode: string): RequirementsContractJudgeRole {
   const role = text(value, missingCode);
-  if (role !== 'requirements_critical_auditor') {
+  if (role !== 'requirements_judge') {
     throw new Error('requirements_contract_judge_command_role_pin_mismatch');
   }
-  return 'requirements_critical_auditor';
+  return 'requirements_judge';
 }
 
 function rejectObjectOverrides(input: JsonRecord): void {

@@ -180,13 +180,14 @@ export async function invokeRequirementsContractJudgeWithRecovery(input: {
   request: JsonRecord;
   provider: JsonRecord;
   providerInputTokens?: number;
+  capacityAssessment?: RequirementsContractJudgeCapacityAssessment;
   attemptOrdinal: number;
   invoke: (request: JsonRecord) => Promise<unknown>;
 }) {
   if (!Number.isSafeInteger(input.attemptOrdinal) || input.attemptOrdinal < 1) {
     throw new Error('requirements_contract_judge_attempt_ordinal_invalid');
   }
-  const capacity = assessRequirementsContractJudgeRequestCapacity(input);
+  const capacity = input.capacityAssessment ?? assessRequirementsContractJudgeRequestCapacity(input);
   if (capacity.decision === 'capacity_blocked') {
     return { ...capacity, acceptedEvaluation: false as const, attempt: null };
   }

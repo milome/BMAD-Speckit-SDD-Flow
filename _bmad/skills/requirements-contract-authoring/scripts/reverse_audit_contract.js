@@ -221,7 +221,7 @@ function confirmationRenderBookkeepingSeverity(driftClassification) {
     : 'blocker';
 }
 
-function authoringRepairIssue(sourcePath, message, refs = []) {
+function authoringResumeIssue(sourcePath, message, refs = []) {
   return {
     ...issue(
       'missing_pre_confirmation_semantic_drilldown_gate_report',
@@ -230,8 +230,8 @@ function authoringRepairIssue(sourcePath, message, refs = []) {
       'blocker',
       'pre_confirmation_semantic_drilldown'
     ),
-    repairAction: 'run_authoring_repair_preserve_existing',
-    repairCommand: `main-agent-orchestration --action authoring-repair --mode preserve-existing --source ${sourcePath || '<source>'} --json`,
+    repairAction: 'resume_author_confirmation_ready_source',
+    repairCommand: `main-agent-orchestration --action resume-author-confirmation-ready-source --source ${sourcePath || '<source>'} --json`,
   };
 }
 
@@ -696,9 +696,7 @@ function hasModernDrilldownShape(renderReport) {
   return (
     report.verdict === 'PASS' &&
     report.confirmability === 'confirmable' &&
-    report.packetSourceReconciliation?.verdict === 'pass' &&
-    Number(report.criticalAuditor?.consecutiveNoNewGapRounds ?? 0) >=
-      Number(report.criticalAuditor?.minimumRounds ?? 3)
+    report.packetSourceReconciliation?.verdict === 'pass'
   );
 }
 
@@ -1146,7 +1144,7 @@ function collectPreConfirmationSemanticDrilldownIssues(args, renderReport, hashe
   const findings = [];
   if (!reportPath) {
     findings.push(
-      authoringRepairIssue(
+      authoringResumeIssue(
         args.source,
         'pre-render MUST decomposition gate report is required for contract confirmability audit',
         ['preConfirmationSemanticDrilldown']
@@ -1170,7 +1168,7 @@ function collectPreConfirmationSemanticDrilldownIssues(args, renderReport, hashe
   }
   if (!report) {
     findings.push(
-      authoringRepairIssue(
+      authoringResumeIssue(
         args.source,
         'pre-render MUST decomposition gate report path does not exist',
         [reportPath]
@@ -1224,17 +1222,6 @@ function collectPreConfirmationSemanticDrilldownIssues(args, renderReport, hashe
         )
       );
     }
-  }
-  if ((report.criticalAuditor?.consecutiveNoNewGapRounds ?? 0) < 3) {
-    findings.push(
-      issue(
-        'missing_critic_convergence',
-        'Critical Auditor convergence must have three consecutive no-new-gap rounds',
-        ['criticalAuditor.consecutiveNoNewGapRounds'],
-        'blocker',
-        'pre_confirmation_semantic_drilldown'
-      )
-    );
   }
   if (report.packetSourceReconciliation?.verdict !== 'pass') {
     findings.push(

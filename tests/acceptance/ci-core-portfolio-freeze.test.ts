@@ -94,7 +94,7 @@ function policy(corePermanentCount = 120) {
   return {
     schemaVersion: 'test-portfolio-policy/v1',
     budgets: {
-      executableTestCount: 1200,
+      executableTestCount: 1216,
       corePermanentCount,
       prP95Minutes: 10,
     },

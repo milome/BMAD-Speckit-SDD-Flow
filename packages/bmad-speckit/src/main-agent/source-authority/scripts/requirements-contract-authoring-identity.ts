@@ -1,67 +1,44 @@
-import {
-  judgeRequestHash,
-  requirementsContractDomainHash,
-  semanticRevisionId,
-} from './requirements-contract-hash-domains';
-import {
-  validateRequirementsContractRemediationDelta,
-  type RequirementsContractRemediationDelta,
-} from './requirements-contract-remediation-delta';
-import {
-  validateRequirementsContractRemediationPlan,
-  type RequirementsContractRemediationPlan,
-} from './requirements-contract-remediation-plan';
+const SHA256 = /^sha256:[a-f0-9]{64}$/u;
+const AUTHORING_IDENTITY_V2_HASH_FIELDS = [
+  'scopeSemanticHash',
+  'sourceBindingHash',
+  'projectionSetHash',
+  'buildHash',
+  'judgeInputSemanticHash',
+  'auditPolicyHash',
+  'auditBindingHash',
+] as const;
 
-function identity(prefix: string, domain: string, payload: unknown): string {
-  return `${prefix}-${requirementsContractDomainHash(domain, payload)
-    .slice('sha256:'.length)
-    .toUpperCase()}`;
+export interface RequirementsContractAuthoringIdentityV2 {
+  schemaVersion: 'requirements-contract-authoring-identity/v2';
+  scopeSemanticHash: string;
+  sourceBindingHash: string;
+  projectionSetHash: string;
+  buildHash: string;
+  judgeInputSemanticHash: string;
+  auditPolicyHash: string;
+  auditBindingHash: string;
 }
 
-export function createRequirementsContractAuthoringIdentity(input: {
-  recordId: string;
-  requestNonce: string;
-  grillGraphHash: string;
-  attemptNonce: string;
-  parentSemanticRevisionId: string | null;
-  scopeSemanticHash: string;
-  compilerVersion: string;
-  judgeRequestPayload: unknown;
-  remediationPlan: RequirementsContractRemediationPlan;
-  remediationDelta: RequirementsContractRemediationDelta;
-}) {
-  const planValidation = validateRequirementsContractRemediationPlan(input.remediationPlan);
-  if (planValidation.decision === 'block') throw new Error(planValidation.issueCodes[0]);
-  const deltaValidation = validateRequirementsContractRemediationDelta(input.remediationDelta, {
-    remediationPlan: input.remediationPlan,
-  });
-  if (deltaValidation.decision === 'block') throw new Error(deltaValidation.issueCodes[0]);
-  const authoringRequestId = identity('AUTHORING', 'requirements-authoring-request-id/v1', {
-    recordId: input.recordId,
-    requestNonce: input.requestNonce,
-  });
+export function createRequirementsContractAuthoringIdentityV2(
+  input: Omit<RequirementsContractAuthoringIdentityV2, 'schemaVersion'>
+): RequirementsContractAuthoringIdentityV2 {
+  const keys = Object.keys(input).sort();
+  const expectedKeys = [...AUTHORING_IDENTITY_V2_HASH_FIELDS].sort();
+  if (keys.length !== expectedKeys.length || keys.some((key, index) => key !== expectedKeys[index])) {
+    throw new Error('requirements_authoring_identity_v2_field_set_invalid');
+  }
+  for (const field of AUTHORING_IDENTITY_V2_HASH_FIELDS) {
+    if (!SHA256.test(input[field])) {
+      throw new Error(`requirements_authoring_identity_v2_${field}_invalid`);
+    }
+  }
   return {
-    authoringRequestId,
-    requestId: authoringRequestId,
-    grillSessionId: identity('GRILL', 'requirements-grill-session-id/v1', {
-      authoringRequestId,
-      grillGraphHash: input.grillGraphHash,
-    }),
-    authoringAttemptId: identity('ATTEMPT', 'requirements-authoring-attempt-id/v1', {
-      authoringRequestId,
-      attemptNonce: input.attemptNonce,
-    }),
-    semanticRevisionId: semanticRevisionId({
-      recordId: input.recordId,
-      parentSemanticRevisionId: input.parentSemanticRevisionId,
-      scopeSemanticHash: input.scopeSemanticHash,
-      compilerVersion: input.compilerVersion,
-    }),
-    judgeRequestHash: judgeRequestHash(input.judgeRequestPayload),
-    remediationPlanHash: input.remediationPlan.remediationPlanHash,
-    remediationDeltaHash: input.remediationDelta.remediationDeltaHash,
+    schemaVersion: 'requirements-contract-authoring-identity/v2',
+    ...input,
   };
 }
+
 
 export function classifyRequirementsContractStaleness(input: {
   previousScopeSemanticHash: string;

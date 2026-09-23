@@ -277,20 +277,20 @@ function validateProviderCommitArtifacts(
     'provider_result',
     text(provider.value.resultPath)
       ? text(provider.value.resultPath)
-      : path.join(providerDir, 'judge-provider-result.json')
+      : path.join(providerDir, 'audit-provider-judge-result.json')
   );
   const state = readJsonArtifact(
     context,
     'provider_state',
-    path.join(providerDir, 'judge-provider-invocation-state.json')
+    path.join(providerDir, 'audit-provider-judge-invocation-state.json')
   );
   const commit = readJsonArtifact(
     context,
     'provider_commit',
-    path.join(providerDir, 'judge-provider-invocation-commit.json')
+    path.join(providerDir, 'audit-provider-judge-invocation-commit.json')
   );
   if (result) {
-    if (text(result.value.schemaVersion) !== 'critical-auditor-judge-provider-result/v1') {
+    if (text(result.value.schemaVersion) !== 'audit-provider-judge-result/v1') {
       addIssue(context, `${context.prefix}_provider_result_schema_invalid`);
     }
     requireEqual(
@@ -386,7 +386,7 @@ function validateRoundRequestArtifacts(
     requireEqual(context, response.value.responseHash, sha256Json(withoutField(response.value, 'responseHash')), 'readonly_auditor_response_self_hash_invalid');
   }
   if (judgeRequest) {
-    if (text(judgeRequest.value.schemaVersion) !== 'critical-auditor-round-request/v1') {
+    if (text(judgeRequest.value.schemaVersion) !== 'audit-triad-judge-request/v1') {
       addIssue(context, `${context.prefix}_judge_request_schema_invalid`);
     }
     const expectedHash = { ...judgeRequest.value, requestHash: null };
@@ -508,7 +508,7 @@ export function validateAuditTriadProducerArtifacts(input: {
     context,
     'provider_invocation_receipt',
     input.round.providerInvocationReceiptRef,
-    'critical-auditor-judge-invocation-receipt/v1'
+    'audit-provider-judge-invocation-receipt/v1'
   );
   const judge = validateBoundReceipt(
     context,
@@ -573,7 +573,7 @@ export function validateAuditTriadProducerArtifacts(input: {
 
   if (provider) {
     const evidence = object(input.round.independentProviderEvidence);
-    requireEqual(context, provider.value.requestHash, input.round.criticalAuditorRequestHash, 'provider_request_hash_mismatch');
+    requireEqual(context, provider.value.requestHash, input.round.auditTriadJudgeRequestHash, 'provider_request_hash_mismatch');
     requireEqual(context, provider.value.sourceDocumentHash, input.plan.sourceDocumentHash, 'provider_source_hash_mismatch');
     requireEqual(context, provider.value.semanticModelHash, input.plan.semanticModelHash, 'provider_semantic_hash_mismatch');
     requireEqual(context, provider.value.projectionSetHash, input.plan.projectionSetHash, 'provider_projection_hash_mismatch');

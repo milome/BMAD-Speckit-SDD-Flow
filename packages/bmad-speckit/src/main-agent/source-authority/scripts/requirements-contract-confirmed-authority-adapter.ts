@@ -1,16 +1,13 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {
-  validateRequirementsContractBuildManifest,
-  validateRequirementsContractCheckpointManifest,
-  type RequirementsContractCheckpointManifest,
-} from './requirements-contract-authoring-manifest';
 import { resolveArchitectureConfirmationContext } from './prepare-architecture-confirmation';
-import {
-  sha256Stable,
-  sha256Text,
-} from './requirements-contract-semantic-resolver';
+import { sha256Stable } from './requirements-contract-semantic-resolver';
 import type { RequirementsContractSemanticIr } from './requirements-contract-semantic-ir';
+import { openRequirementsContractRecord } from './requirements-contract-record-boundary';
+import {
+  readRequirementsActiveBuildManifest,
+  resolveRequirementsActiveArtifact,
+} from './requirements-contract-durable-build-store';
 import {
   assertTypedConfirmationProjection,
   resolveTypedSourceAuthority,
@@ -29,7 +26,7 @@ export interface ConfirmedRequirementsAuthorityLineage extends JsonObject {
   bindingRevisionId: string;
   sourceBindingHash: string;
   buildManifestHash: string;
-  terminalCheckpointManifestHash: string;
+  checkpointSummaryHash: string;
   confirmationProjectionHash: string;
   implementationConfirmationHash: string;
   finalMarkdownHash: string;
@@ -58,11 +55,6 @@ export interface ConfirmedRequirementsAuthority extends JsonObject {
   architectureContext: ReturnType<typeof resolveArchitectureConfirmationContext>;
 }
 
-const CHECKPOINT_IDS = Array.from(
-  { length: 9 },
-  (_, ordinal) => `cp${String(ordinal).padStart(2, '0')}`
-);
-
 function text(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
@@ -82,14 +74,6 @@ function objects(value: unknown): JsonObject[] {
     : [];
 }
 
-function readJson(filePath: string): JsonObject {
-  const value = JSON.parse(fs.readFileSync(filePath, 'utf8')) as unknown;
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new Error('requirements_confirmed_json_object_required');
-  }
-  return value as JsonObject;
-}
-
 function confined(recordRoot: string, relativePath: string): string {
   if (!relativePath || path.isAbsolute(relativePath)) {
     throw new Error('requirements_confirmed_artifact_path_invalid');
@@ -104,61 +88,6 @@ function confined(recordRoot: string, relativePath: string): string {
 
 function sameValue(left: unknown, right: unknown): boolean {
   return sha256Stable(left) === sha256Stable(right);
-}
-
-function singleArtifact(
-  manifest: RequirementsContractCheckpointManifest,
-  role: string
-): JsonObject {
-  const entries = objects(manifest.artifactEntries).filter((entry) => text(entry.role) === role);
-  if (entries.length !== 1) {
-    throw new Error(`requirements_confirmed_${role}_entry_invalid`);
-  }
-  return entries[0];
-}
-
-function readCheckpointChain(input: {
-  recordRoot: string;
-  buildManifest: JsonObject;
-}): RequirementsContractCheckpointManifest[] {
-  const manifests: RequirementsContractCheckpointManifest[] = [];
-  const visited = new Set<string>();
-  let checkpointRef = object(input.buildManifest.terminalCheckpointManifestRef);
-  let expectedOrdinal = 8;
-
-  while (text(checkpointRef.path)) {
-    const relativePath = text(checkpointRef.path);
-    if (visited.has(relativePath)) {
-      throw new Error('requirements_confirmed_checkpoint_lineage_cycle');
-    }
-    visited.add(relativePath);
-    const manifest = readJson(confined(input.recordRoot, relativePath));
-    const validation = validateRequirementsContractCheckpointManifest(manifest);
-    if (validation.decision !== 'pass') {
-      throw new Error(
-        `requirements_confirmed_checkpoint_manifest_invalid:${validation.issueCodes[0]}`
-      );
-    }
-    if (
-      text(manifest.checkpointId) !== text(checkpointRef.checkpointId) ||
-      Number(manifest.checkpointOrdinal) !== Number(checkpointRef.checkpointOrdinal) ||
-      text(manifest.checkpointManifestHash) !== text(checkpointRef.hash) ||
-      Number(manifest.checkpointOrdinal) !== expectedOrdinal ||
-      text(manifest.checkpointId) !== CHECKPOINT_IDS[expectedOrdinal] ||
-      text(manifest.authoringRequestId) !== text(input.buildManifest.authoringRequestId) ||
-      text(manifest.authoringAttemptId) !== text(input.buildManifest.authoringAttemptId) ||
-      text(manifest.inputManifestHash) !== text(input.buildManifest.inputManifestHash)
-    ) {
-      throw new Error('requirements_confirmed_checkpoint_lineage_invalid');
-    }
-    manifests.push(manifest as unknown as RequirementsContractCheckpointManifest);
-    checkpointRef = object(manifest.previousCheckpointManifestRef);
-    expectedOrdinal -= 1;
-  }
-  if (expectedOrdinal !== -1) {
-    throw new Error('requirements_confirmed_checkpoint_lineage_incomplete');
-  }
-  return manifests;
 }
 
 export function hydrateConfirmedImplementationConfirmation(input: {
@@ -258,7 +187,7 @@ export function resolveConfirmedRequirementsAuthority(input: {
     throw new Error('requirements_confirmed_record_path_invalid');
   }
 
-  const record = readJson(requirementRecordPath);
+  const record = openRequirementsContractRecord(requirementRecordPath);
   const requestId = text(record.recordId);
   const recordRoot = path.join(recordsRoot, requestId);
   const expectedRecordPath = path.join(recordRoot, 'record', 'requirement-record.json');
@@ -270,40 +199,23 @@ export function resolveConfirmedRequirementsAuthority(input: {
   if (path.resolve(architectureContext.recordPath) !== requirementRecordPath) {
     throw new Error('requirements_confirmed_record_path_invalid');
   }
-  const activeAuthority = object(record.activeAuthority);
-  const buildManifest = readJson(
-    confined(recordRoot, text(activeAuthority.activeBuildManifestPath))
+  const activeAuthority = architectureContext.activeAuthority;
+  const buildManifest = readRequirementsActiveBuildManifest({ recordRoot, activeAuthority });
+  const projectionArtifact = resolveRequirementsActiveArtifact({
+    recordRoot,
+    activeAuthority,
+    role: 'confirmation_projection',
+  });
+  const finalMarkdownArtifact = resolveRequirementsActiveArtifact({
+    recordRoot,
+    activeAuthority,
+    role: 'final_markdown',
+  });
+  const confirmationProjection = object(projectionArtifact.value);
+  const sourceDocumentPath = confined(
+    recordRoot,
+    finalMarkdownArtifact.entry.contentRef.recordRelativePath
   );
-  const buildValidation = validateRequirementsContractBuildManifest(buildManifest);
-  if (buildValidation.decision !== 'pass') {
-    throw new Error(
-      `requirements_confirmed_build_manifest_invalid:${buildValidation.issueCodes[0]}`
-    );
-  }
-  const checkpoints = readCheckpointChain({ recordRoot, buildManifest });
-  const cp05 = checkpoints.find((manifest) => manifest.checkpointId === 'cp05');
-  if (
-    !cp05 ||
-    cp05.status !== 'passed' ||
-    cp05.checkpointOrdinal !== 5 ||
-    cp05.compilerIdentity !== 'requirements-contract-cp05-source-confirmation-projection/v1'
-  ) {
-    throw new Error('requirements_confirmed_cp05_manifest_invalid');
-  }
-
-  const projectionEntry = singleArtifact(cp05, 'confirmation_projection');
-  const finalMarkdownEntry = singleArtifact(cp05, 'final_markdown');
-  const projectionPath = confined(recordRoot, text(projectionEntry.recordRelativePath));
-  const sourceDocumentPath = confined(recordRoot, text(finalMarkdownEntry.recordRelativePath));
-  const confirmationProjection = readJson(projectionPath);
-  if (sha256Stable(confirmationProjection) !== text(projectionEntry.artifactHash)) {
-    throw new Error('requirements_confirmed_projection_hash_mismatch');
-  }
-  if (
-    sha256Text(fs.readFileSync(sourceDocumentPath, 'utf8')) !== text(finalMarkdownEntry.artifactHash)
-  ) {
-    throw new Error('requirements_confirmed_final_markdown_hash_mismatch');
-  }
 
   const hydrated = hydrateConfirmedImplementationConfirmation({
     semanticIr: architectureContext.semanticIr,
@@ -316,13 +228,13 @@ export function resolveConfirmedRequirementsAuthority(input: {
     scopeSemanticHash: architectureContext.semanticIr.scopeSemanticHash,
     bindingRevisionId: architectureContext.sourceBinding.bindingRevisionId,
     sourceBindingHash: architectureContext.sourceBinding.sourceBindingHash,
-    buildManifestHash: text(activeAuthority.activeBuildManifestHash),
-    terminalCheckpointManifestHash: text(object(buildManifest.terminalCheckpointManifestRef).hash),
-    confirmationProjectionHash: text(projectionEntry.artifactHash),
+    buildManifestHash: activeAuthority.activeBuildHash,
+    checkpointSummaryHash: buildManifest.checkpointSummary.checkpointSummaryHash,
+    confirmationProjectionHash: projectionArtifact.entry.semanticHash,
     implementationConfirmationHash: sha256Stable(
       object(confirmationProjection.implementationConfirmation)
     ),
-    finalMarkdownHash: text(finalMarkdownEntry.artifactHash),
+    finalMarkdownHash: finalMarkdownArtifact.entry.contentRef.contentHash,
     requirementsEffectivePassHash: text(
       architectureContext.effectivePass.requirementsEffectivePassHash
     ),
@@ -330,7 +242,7 @@ export function resolveConfirmedRequirementsAuthority(input: {
     promotionEvidenceHash: text(object(record.currentPromotionEvidence).artifactBytesHash),
     typedSourceGraphHash: hydrated.typedSourceAuthority.graphHash,
     typedCoverageHash: hydrated.typedCoverage.coverageHash,
-    checkpointIds: checkpoints.map((manifest) => manifest.checkpointId).reverse(),
+    checkpointIds: buildManifest.checkpointSummary.checkpointIds,
   };
 
   return Object.freeze({

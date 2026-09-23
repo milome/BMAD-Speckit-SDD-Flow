@@ -25,6 +25,12 @@ export interface RequirementSourceSpan {
   endLine: number;
 }
 
+export interface RequirementSourceRange extends RequirementSourceSpan {
+  startUtf8Byte: number;
+  endUtf8ByteExclusive: number;
+  contentHash: string;
+}
+
 export interface RequirementSourceHeading {
   depth: number;
   text: string;
@@ -33,17 +39,15 @@ export interface RequirementSourceHeading {
 
 export interface RequirementSourceBlock {
   kind: 'heading' | 'table_row' | 'list_item' | 'fenced_code' | 'paragraph';
-  text: string;
   span: RequirementSourceSpan;
+  sourceRange: RequirementSourceRange;
   headingPath: string[];
-  hash: string;
 }
 
 export interface RequirementSourceFence {
   language: string | null;
-  text: string;
   span: RequirementSourceSpan;
-  hash: string;
+  sourceRange: RequirementSourceRange;
 }
 
 export interface RequirementSourceIdNormalization {
@@ -133,7 +137,50 @@ function classifyBlock(line: string): RequirementSourceBlock['kind'] {
   return 'paragraph';
 }
 
-function extractFences(lines: string[]): RequirementSourceFence[] {
+function sourceLineByteRanges(sourceText: string): Array<{
+  startUtf8Byte: number;
+  endUtf8ByteExclusive: number;
+}> {
+  const ranges: Array<{ startUtf8Byte: number; endUtf8ByteExclusive: number }> = [];
+  const pattern = /[^\r\n]*(?:\r\n|\n|\r|$)/gu;
+  let startUtf8Byte = 0;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(sourceText)) !== null) {
+    if (!match[0]) break;
+    const endUtf8ByteExclusive = startUtf8Byte + Buffer.byteLength(match[0], 'utf8');
+    ranges.push({ startUtf8Byte, endUtf8ByteExclusive });
+    startUtf8Byte = endUtf8ByteExclusive;
+  }
+  return ranges;
+}
+
+function sourceRangeForLines(input: {
+  sourceBytes: Buffer;
+  lineByteRanges: ReturnType<typeof sourceLineByteRanges>;
+  startLine: number;
+  endLine: number;
+}): RequirementSourceRange {
+  const start = input.lineByteRanges[input.startLine - 1];
+  const end = input.lineByteRanges[input.endLine - 1];
+  if (!start || !end) throw new Error('Requirement source line range is outside source bytes');
+  const startUtf8Byte = start.startUtf8Byte;
+  const endUtf8ByteExclusive = end.endUtf8ByteExclusive;
+  return {
+    startLine: input.startLine,
+    endLine: input.endLine,
+    startUtf8Byte,
+    endUtf8ByteExclusive,
+    contentHash: sourceHash(
+      input.sourceBytes.subarray(startUtf8Byte, endUtf8ByteExclusive).toString('utf8')
+    ),
+  };
+}
+
+function extractFences(
+  lines: string[],
+  sourceBytes: Buffer,
+  lineByteRanges: ReturnType<typeof sourceLineByteRanges>
+): RequirementSourceFence[] {
   const fences: RequirementSourceFence[] = [];
   let start = -1;
   let language: string | null = null;
@@ -146,12 +193,15 @@ function extractFences(lines: string[]): RequirementSourceFence[] {
       language = fence[1] || null;
       continue;
     }
-    const text = lines.slice(start + 1, index).join('\n');
     fences.push({
       language,
-      text,
       span: { startLine: start + 1, endLine: index + 1 },
-      hash: sourceHash(text),
+      sourceRange: sourceRangeForLines({
+        sourceBytes,
+        lineByteRanges,
+        startLine: start + 1,
+        endLine: index + 1,
+      }),
     });
     start = -1;
     language = null;
@@ -307,9 +357,12 @@ function languageSignals(text: string): RequirementSourceLanguageSignals {
 export function normalizeRequirementSourceInput(
   input: RequirementSourceInput
 ): RequirementSourceAst {
-  const sourceText = normalizeLineEndings(input.sourceText);
-  const lines = sourceText.split('\n');
-  const fences = extractFences(lines);
+  const sourceText = input.sourceText;
+  const normalizedText = normalizeLineEndings(sourceText);
+  const lines = normalizedText.split('\n');
+  const sourceBytes = Buffer.from(sourceText, 'utf8');
+  const lineByteRanges = sourceLineByteRanges(sourceText);
+  const fences = extractFences(lines, sourceBytes, lineByteRanges);
   const headings: RequirementSourceHeading[] = [];
   const headingStack: Array<{ depth: number; text: string }> = [];
   const blocks: RequirementSourceBlock[] = [];
@@ -330,10 +383,14 @@ export function normalizeRequirementSourceInput(
     const headingPath = headingStack.map((item) => item.text);
     blocks.push({
       kind: lineInsideFence(lineNumber, fences) ? 'fenced_code' : classifyBlock(line),
-      text: line,
       span: { startLine: lineNumber, endLine: lineNumber },
+      sourceRange: sourceRangeForLines({
+        sourceBytes,
+        lineByteRanges,
+        startLine: lineNumber,
+        endLine: lineNumber,
+      }),
       headingPath,
-      hash: sourceHash(line),
     });
   });
 
@@ -343,9 +400,9 @@ export function normalizeRequirementSourceInput(
     inputChannel: input.inputChannel ?? 'memory',
     sourcePath: input.sourcePath ?? null,
     sourceHash: sourceHash(sourceText),
-    normalizedHash: sourceHash(sourceText.trim()),
+    normalizedHash: sourceHash(normalizedText.trim()),
     lineCount: lines.length,
-    byteLength: Buffer.byteLength(sourceText, 'utf8'),
+    byteLength: sourceBytes.length,
     headings,
     blocks,
     fences,

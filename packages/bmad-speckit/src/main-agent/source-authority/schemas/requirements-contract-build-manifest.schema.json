@@ -1,26 +1,338 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "requirements-contract-build-manifest.schema.json",
-  "type": "object", "additionalProperties": false,
-  "required": ["schemaVersion", "authoringRequestId", "authoringAttemptId", "inputManifestHash", "terminalCheckpointManifestRef", "semanticAuthorityRef", "bindingAuthorityRef", "artifactEntries", "decisionReceiptRefs", "auditPacketRef", "projectionReportRefs", "buildManifestHash"],
-  "properties": {
-    "schemaVersion": { "const": "requirements-contract-build-manifest/v1" },
-    "authoringRequestId": { "$ref": "#/$defs/id" }, "authoringAttemptId": { "$ref": "#/$defs/id" }, "inputManifestHash": { "$ref": "#/$defs/hash" },
-    "terminalCheckpointManifestRef": { "$ref": "#/$defs/checkpointRef" },
-    "semanticAuthorityRef": { "$ref": "#/$defs/semanticRef" }, "bindingAuthorityRef": { "$ref": "#/$defs/bindingRef" },
-    "artifactEntries": { "type": "array", "items": { "$ref": "#/$defs/artifact" } },
-    "decisionReceiptRefs": { "type": "array", "items": { "$ref": "#/$defs/decisionRef" } },
-    "auditPacketRef": { "$ref": "#/$defs/artifactRef" }, "projectionReportRefs": { "type": "array", "items": { "$ref": "#/$defs/artifactRef" } },
-    "buildManifestHash": { "$ref": "#/$defs/hash" }
-  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-build-manifest.schema.json",
   "$defs": {
-    "id": { "type": "string", "minLength": 1 }, "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
-    "path": { "type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+$" },
-    "artifactRole": { "enum": ["semantic_kernel", "decision_graph", "must_decomposition_packet", "id_registry", "semantic_ir", "semantic_ir_freeze_receipt", "source_binding", "source_binding_freeze_receipt", "resolved_evidence_index", "lint_report", "confirmation_projection", "per_must_bundle", "trace_matrix", "acceptance_contracts", "failure_matrix", "edge_matrix", "diagram_set", "projection_reconciliation_report", "authority_resolution_report", "renderability_probe_report", "judge_audit_packet", "judge_audit_packet_coverage", "remediation_plan", "remediation_delta", "effective_pass_receipt", "final_markdown", "confirmation_html", "confirmation_summary", "promotion_receipt"] },
-    "artifact": { "type": "object", "additionalProperties": false, "required": ["role", "schemaVersion", "artifactId", "recordRelativePath", "artifactHash"], "properties": { "role": { "$ref": "#/$defs/artifactRole" }, "schemaVersion": { "$ref": "#/$defs/id" }, "artifactId": { "$ref": "#/$defs/id" }, "recordRelativePath": { "$ref": "#/$defs/path" }, "artifactHash": { "$ref": "#/$defs/hash" } } },
-    "checkpointRef": { "type": "object", "additionalProperties": false, "required": ["checkpointId", "checkpointOrdinal", "path", "hash"], "properties": { "checkpointId": { "$ref": "#/$defs/id" }, "checkpointOrdinal": { "type": "integer", "minimum": 0 }, "path": { "$ref": "#/$defs/path" }, "hash": { "$ref": "#/$defs/hash" } } },
-    "semanticRef": { "type": "object", "additionalProperties": false, "required": ["semanticRevisionId", "path", "hash"], "properties": { "semanticRevisionId": { "$ref": "#/$defs/id" }, "path": { "$ref": "#/$defs/path" }, "hash": { "$ref": "#/$defs/hash" } } },
-    "bindingRef": { "type": "object", "additionalProperties": false, "required": ["bindingRevisionId", "path", "hash"], "properties": { "bindingRevisionId": { "$ref": "#/$defs/id" }, "path": { "$ref": "#/$defs/path" }, "hash": { "$ref": "#/$defs/hash" } } },
-    "artifactRef": { "type": "object", "additionalProperties": false, "required": ["artifactId", "path", "hash"], "properties": { "artifactId": { "$ref": "#/$defs/id" }, "path": { "$ref": "#/$defs/path" }, "hash": { "$ref": "#/$defs/hash" } } },
-    "decisionRef": { "type": "object", "additionalProperties": false, "required": ["decisionReceiptId", "path", "hash"], "properties": { "decisionReceiptId": { "$ref": "#/$defs/id" }, "path": { "$ref": "#/$defs/path" }, "hash": { "$ref": "#/$defs/hash" } } }
-  }
+    "manifestV2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "scopeSemanticHash",
+        "sourceBindingHash",
+        "compilerIdentity",
+        "projectionSetHash",
+        "checkpointSummary",
+        "validationSummary",
+        "artifactEntries",
+        "buildHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "requirements-contract-build-manifest/v2"
+        },
+        "scopeSemanticHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "sourceBindingHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "compilerIdentity": {
+          "$ref": "#/$defs/id"
+        },
+        "projectionSetHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "checkpointSummary": {
+          "$ref": "#/$defs/checkpointSummary"
+        },
+        "validationSummary": {
+          "$ref": "#/$defs/validationSummary"
+        },
+        "artifactEntries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/artifactV2"
+          }
+        },
+        "buildHash": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "path": {
+      "type": "string",
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+$"
+    },
+    "artifactRole": {
+      "enum": [
+        "semantic_kernel",
+        "decision_graph",
+        "must_decomposition_packet",
+        "id_registry",
+        "semantic_ir",
+        "semantic_ir_freeze_receipt",
+        "source_binding",
+        "source_binding_freeze_receipt",
+        "resolved_evidence_index",
+        "lint_report",
+        "confirmation_projection",
+        "per_must_bundle",
+        "trace_matrix",
+        "execution_manifest",
+        "acceptance_contracts",
+        "failure_matrix",
+        "edge_matrix",
+        "diagram_set",
+        "projection_reconciliation_report",
+        "authority_resolution_report",
+        "renderability_probe_report",
+        "judge_audit_packet",
+        "judge_audit_packet_coverage",
+        "remediation_plan",
+        "remediation_delta",
+        "effective_pass_receipt",
+        "final_markdown",
+        "confirmation_html",
+        "confirmation_summary",
+        "promotion_receipt"
+      ]
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "schemaVersion",
+        "artifactId",
+        "recordRelativePath",
+        "artifactHash"
+      ],
+      "properties": {
+        "role": {
+          "$ref": "#/$defs/artifactRole"
+        },
+        "schemaVersion": {
+          "$ref": "#/$defs/id"
+        },
+        "artifactId": {
+          "$ref": "#/$defs/id"
+        },
+        "recordRelativePath": {
+          "$ref": "#/$defs/path"
+        },
+        "artifactHash": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "checkpointRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkpointId",
+        "checkpointOrdinal",
+        "path",
+        "hash"
+      ],
+      "properties": {
+        "checkpointId": {
+          "$ref": "#/$defs/id"
+        },
+        "checkpointOrdinal": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "path": {
+          "$ref": "#/$defs/path"
+        },
+        "hash": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "semanticRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "semanticRevisionId",
+        "path",
+        "hash"
+      ],
+      "properties": {
+        "semanticRevisionId": {
+          "$ref": "#/$defs/id"
+        },
+        "path": {
+          "$ref": "#/$defs/path"
+        },
+        "hash": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "bindingRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bindingRevisionId",
+        "path",
+        "hash"
+      ],
+      "properties": {
+        "bindingRevisionId": {
+          "$ref": "#/$defs/id"
+        },
+        "path": {
+          "$ref": "#/$defs/path"
+        },
+        "hash": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "artifactRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifactId",
+        "path",
+        "hash"
+      ],
+      "properties": {
+        "artifactId": {
+          "$ref": "#/$defs/id"
+        },
+        "path": {
+          "$ref": "#/$defs/path"
+        },
+        "hash": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "decisionRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decisionReceiptId",
+        "path",
+        "hash"
+      ],
+      "properties": {
+        "decisionReceiptId": {
+          "$ref": "#/$defs/id"
+        },
+        "path": {
+          "$ref": "#/$defs/path"
+        },
+        "hash": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "contentRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "contentHash",
+        "byteLength",
+        "mediaType",
+        "recordRelativePath"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "requirements-content-ref/v1"
+        },
+        "contentHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "byteLength": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mediaType": {
+          "$ref": "#/$defs/id"
+        },
+        "recordRelativePath": {
+          "$ref": "#/$defs/path"
+        }
+      }
+    },
+    "artifactV2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "schemaVersion",
+        "semanticHash",
+        "contentRef"
+      ],
+      "properties": {
+        "role": {
+          "$ref": "#/$defs/artifactRole"
+        },
+        "schemaVersion": {
+          "$ref": "#/$defs/id"
+        },
+        "semanticHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "contentRef": {
+          "$ref": "#/$defs/contentRef"
+        }
+      }
+    },
+    "checkpointSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkpointIds",
+        "terminalStateHashes",
+        "checkpointSummaryHash"
+      ],
+      "properties": {
+        "checkpointIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "terminalStateHashes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/hash"
+          }
+        },
+        "checkpointSummaryHash": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "validationSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision",
+        "checkIds",
+        "validationHash"
+      ],
+      "properties": {
+        "decision": {
+          "const": "pass"
+        },
+        "checkIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "validationHash": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    }
+  },
+  "$ref": "#/$defs/manifestV2"
 }

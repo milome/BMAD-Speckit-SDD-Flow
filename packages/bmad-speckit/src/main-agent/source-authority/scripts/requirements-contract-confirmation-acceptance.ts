@@ -30,17 +30,29 @@ import {
 } from './requirements-contract-requirements-effective-pass-gate';
 import { artifactBytesHash, canonicalRequirementsJson } from './requirements-contract-hash-domains';
 import { atomicNoClobberPublish } from './requirements-contract-atomic-no-clobber-publisher';
-import { validateRequirementsContractBuildManifest } from './requirements-contract-authoring-manifest';
-import { validateRequirementsActiveAuthorityTuple } from './requirements-contract-authority-publication-committer';
+import {
+  validateRequirementsActiveAuthorityTuple,
+  type RequirementsActiveAuthorityTupleV3,
+} from './requirements-contract-authority-publication-committer';
 import {
   validateRequirementsContractSemanticIr,
   type RequirementsContractSemanticIr,
 } from './requirements-contract-semantic-ir';
-import { readRequirementsContractSemanticIrAuthority } from './requirements-contract-semantic-ir-reader';
 import { validateRequirementsContractSourceBindingCapsule } from './requirements-contract-source-binding-capsule';
 import { resolveEvidenceClaimAuthority } from './requirements-contract-span-registry';
 import { sha256Stable } from './requirements-contract-semantic-resolver';
-import { createRequirementsContractSourceBindingRefreshReceipt } from './requirements-contract-source-binding-refresh';
+import { createRequirementsContractSourceBindingRefreshReceipt } from './requirements-contract-source-binding-preflight';
+import {
+  publishRequirementsContentObject,
+  readRequirementsContentObject,
+  type RequirementsContentRef,
+} from './requirements-contract-content-store';
+import { acquireRequirementsFileLock, releaseRequirementsFileLock } from './requirements-contract-file-lock';
+import {
+  readRequirementsActiveBuildManifest,
+  resolveRequirementsActiveArtifact,
+} from './requirements-contract-durable-build-store';
+import { openRequirementsContractRecord } from './requirements-contract-record-boundary';
 
 const CONFIRMATION_WRITER_ID = 'requirements-confirmation-ingest';
 const SAFE_REQUEST_ID = /^[A-Za-z0-9][A-Za-z0-9._-]*$/u;
@@ -103,6 +115,92 @@ function records(value: unknown): JsonObject[] {
           Boolean(entry) && typeof entry === 'object' && !Array.isArray(entry)
       )
     : [];
+}
+
+function promotionPageArtifacts(promotion: JsonObject): {
+  markdown: JsonObject | null;
+  html: JsonObject | null;
+} {
+  const artifacts = records(promotion.artifacts);
+  const isFinalPromotion =
+    promotion.schemaVersion === 'requirements-contract-confirmation-promotion-receipt/v2';
+  return {
+    markdown: artifacts.find((artifact) => artifact.role === 'final_markdown') ??
+      (promotion.schemaVersion === 'requirements-contract-review-candidate/v1' &&
+      text(promotion.targetPath)
+        ? {
+            role: 'final_markdown',
+            mediaType: 'text/markdown',
+            targetPath: promotion.targetPath,
+            artifactBytesHash: promotion.markdownArtifactBytesHash,
+          }
+        : isFinalPromotion && text(promotion.targetPath)
+          ? {
+              role: 'final_markdown',
+              mediaType: 'text/markdown',
+              targetPath: promotion.targetPath,
+              artifactBytesHash: promotion.artifactBytesHash,
+            }
+          : null),
+    html: artifacts.find((artifact) => artifact.role === 'confirmation_html') ?? null,
+  };
+}
+
+function currentPromotionPath(recordRoot: string, record: JsonObject): string {
+  const evidence = object(record.currentPromotionEvidence);
+  const evidencePath = text(evidence.path);
+  const expectedHash = text(evidence.artifactBytesHash);
+  if (!evidencePath || !expectedHash) {
+    throw new Error('requirements_confirmation_promotion_evidence_missing');
+  }
+  const resolved = confinedRecordArtifact(recordRoot, evidencePath);
+  const bytes = fs.readFileSync(resolved);
+  const value = JSON.parse(bytes.toString('utf8')) as JsonObject;
+  const isRefresh = value.schemaVersion === 'requirements-source-binding-refresh-receipt/v2';
+  const role = isRefresh ? 'source-binding-refresh-receipt' : 'promotion_receipt';
+  if (artifactBytesHash({ role, mediaType: 'application/json', bytes }) !== expectedHash) {
+    throw new Error('requirements_confirmation_promotion_evidence_stale');
+  }
+  if (!isRefresh) {
+    if (![
+      'requirements-contract-review-candidate/v1',
+      'requirements-contract-confirmation-promotion-receipt/v1',
+      'requirements-contract-confirmation-promotion-receipt/v2',
+    ].includes(text(value.schemaVersion))) {
+      throw new Error('requirements_confirmation_promotion_stale');
+    }
+    return resolved;
+  }
+  validateRefreshReceiptHash(value);
+  const promotionRef = object(value.confirmationPromotionReceiptRef);
+  const promotionPath = confinedRecordArtifact(recordRoot, text(promotionRef.path));
+  const promotionBytes = fs.readFileSync(promotionPath);
+  if (
+    artifactBytesHash({
+      role: 'promotion_receipt',
+      mediaType: 'application/json',
+      bytes: promotionBytes,
+    }) !== text(promotionRef.hash)
+  ) {
+    throw new Error('requirements_confirmation_promotion_evidence_stale');
+  }
+  return promotionPath;
+}
+
+function promotionMatchesAuditedOrActiveBinding(input: {
+  promotion: JsonObject;
+  effectivePass: JsonObject;
+  activeAuthority: RequirementsActiveAuthorityTupleV3;
+}): boolean {
+  const promotionBuildHash = text(input.promotion.buildManifestHash);
+  const promotionSourceBindingHash = text(input.promotion.sourceBindingHash);
+  return (
+    promotionBuildHash === text(input.effectivePass.buildManifestHash) &&
+    promotionSourceBindingHash === text(input.effectivePass.sourceBindingHash)
+  ) || (
+    promotionBuildHash === input.activeAuthority.activeBuildHash &&
+    promotionSourceBindingHash === input.activeAuthority.activeSourceBindingHash
+  );
 }
 
 function strings(value: unknown): string[] {
@@ -485,6 +583,221 @@ function validateRefreshReceiptHash(receipt: JsonObject): void {
   }
 }
 
+function readBindingRevisionForAudit(
+  recordRoot: string,
+  bindingRevisionId: string
+): JsonObject | null {
+  const buildsRoot = confinedRecordArtifact(recordRoot, 'authoring/builds');
+  if (!fs.existsSync(buildsRoot)) return null;
+  for (const entry of fs.readdirSync(buildsRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const manifestPath = path.join(buildsRoot, entry.name, 'manifest.json');
+    if (!fs.existsSync(manifestPath)) continue;
+    let manifest: JsonObject;
+    try {
+      manifest = readJson(manifestPath);
+    } catch {
+      continue;
+    }
+    const sourceBindingEntry = records(manifest.artifactEntries).find(
+      (candidate) => text(candidate.role) === 'source_binding'
+    );
+    if (!sourceBindingEntry?.contentRef || typeof sourceBindingEntry.contentRef !== 'object') {
+      continue;
+    }
+    try {
+      const candidate = JSON.parse(
+        readRequirementsContentObject({
+          recordRoot,
+          ref: sourceBindingEntry.contentRef as unknown as RequirementsContentRef,
+        }).toString('utf8')
+      ) as JsonObject;
+      const validation = validateRequirementsContractSourceBindingCapsule(candidate as never);
+      if (
+        validation.decision === 'pass' &&
+        text(candidate.bindingRevisionId) === bindingRevisionId
+      ) {
+        return candidate;
+      }
+    } catch {
+      // Ignore unrelated or incomplete predecessor builds while resolving the active chain.
+    }
+  }
+  return null;
+}
+
+function bindingLineageContains(input: {
+  recordRoot: string;
+  event: JsonObject;
+  activeAuthority: RequirementsActiveAuthorityTupleV3;
+}): boolean {
+  const ancestorBindingRevisionId = text(input.event.bindingRevisionId);
+  let currentBindingRevisionId = input.activeAuthority.activeBindingRevisionId;
+  let currentBinding = readBindingRevisionForAudit(input.recordRoot, currentBindingRevisionId);
+  const visited = new Set<string>();
+  while (currentBindingRevisionId !== ancestorBindingRevisionId) {
+    if (!currentBinding || visited.has(currentBindingRevisionId)) return false;
+    visited.add(currentBindingRevisionId);
+    const parentBindingRevisionId = text(currentBinding.parentBindingRevisionId);
+    if (!parentBindingRevisionId) return false;
+    let refreshReceipt: JsonObject;
+    try {
+      refreshReceipt = readJson(
+        confinedRecordArtifact(
+          input.recordRoot,
+          `authoring/source-bindings/${currentBindingRevisionId}/source-binding-refresh-receipt.json`
+        )
+      );
+      validateRefreshReceiptHash(refreshReceipt);
+    } catch {
+      return false;
+    }
+    const parentBinding = readBindingRevisionForAudit(
+      input.recordRoot,
+      parentBindingRevisionId
+    );
+    if (!parentBinding) return false;
+    if (
+      text(refreshReceipt.semanticRevisionId) !== input.activeAuthority.activeSemanticRevisionId ||
+      text(refreshReceipt.scopeSemanticHash) !== input.activeAuthority.activeScopeSemanticHash ||
+      text(refreshReceipt.fromBindingRevisionId) !== parentBindingRevisionId ||
+      text(refreshReceipt.toBindingRevisionId) !== currentBindingRevisionId ||
+      text(refreshReceipt.fromSourceBindingHash) !== text(parentBinding.sourceBindingHash) ||
+      text(refreshReceipt.toSourceBindingHash) !== text(currentBinding.sourceBindingHash) ||
+      text(refreshReceipt.fromSnapshotSetHash) !== sha256Stable(parentBinding.sourceArtifacts) ||
+      text(refreshReceipt.toSnapshotSetHash) !== sha256Stable(currentBinding.sourceArtifacts) ||
+      text(refreshReceipt.fromSourceSpanRegistryHash) !==
+        text(parentBinding.sourceSpanRegistryHash) ||
+      text(refreshReceipt.toSourceSpanRegistryHash) !==
+        text(currentBinding.sourceSpanRegistryHash) ||
+      text(refreshReceipt.evidenceClaimRegistryHash) !==
+        text(currentBinding.evidenceClaimBindingRegistryHash)
+    ) {
+      return false;
+    }
+    currentBindingRevisionId = parentBindingRevisionId;
+    currentBinding = parentBinding;
+  }
+  return Boolean(currentBinding);
+}
+
+export function confirmationAuditBindingIsCurrent(input: {
+  recordRoot: string;
+  record: JsonObject;
+  event: JsonObject;
+  effectivePass: JsonObject;
+  activeAuthority: RequirementsActiveAuthorityTupleV3;
+}): boolean {
+  try {
+    readRequirementsActiveBuildManifest({
+      recordRoot: input.recordRoot,
+      activeAuthority: input.activeAuthority,
+    });
+    const effectivePassRef = object(input.event.requirementsEffectivePassRef);
+    const promotionRef = object(input.event.promotionEvidenceRef);
+    if (
+      text(effectivePassRef.path) !== 'quality/requirements-effective-pass-receipt.json' ||
+      text(effectivePassRef.hash) !== text(input.effectivePass.requirementsEffectivePassHash) ||
+      !text(promotionRef.path) ||
+      !text(promotionRef.artifactBytesHash)
+    ) {
+      return false;
+    }
+    const promotionPath = confinedRecordArtifact(input.recordRoot, text(promotionRef.path));
+    const promotionBytes = fs.readFileSync(promotionPath);
+    const promotion = JSON.parse(promotionBytes.toString('utf8')) as JsonObject;
+    const promotionBindingRevisionId = text(promotion.bindingRevisionId);
+    const eventBindingRevisionId = text(input.event.bindingRevisionId);
+    const promotionMatchesEventBinding = promotionBindingRevisionId === eventBindingRevisionId;
+    const promotionMatchesActiveBinding =
+      promotionBindingRevisionId === input.activeAuthority.activeBindingRevisionId;
+    if (
+      artifactBytesHash({
+        role: 'promotion_receipt',
+        mediaType: 'application/json',
+        bytes: promotionBytes,
+      }) !== text(promotionRef.artifactBytesHash) ||
+      text(promotion.requestId) !== text(input.event.requestId) ||
+      text(promotion.semanticRevisionId) !== input.activeAuthority.activeSemanticRevisionId ||
+      text(promotion.scopeSemanticHash) !== input.activeAuthority.activeScopeSemanticHash ||
+      (!promotionMatchesEventBinding && !promotionMatchesActiveBinding) ||
+      !bindingLineageContains({
+        recordRoot: input.recordRoot,
+        event: input.event,
+        activeAuthority: input.activeAuthority,
+      }) ||
+      text(promotion.requirementsEffectivePassHash) !==
+        text(input.effectivePass.requirementsEffectivePassHash) ||
+      path.resolve(currentPromotionPath(input.recordRoot, input.record)) !==
+        path.resolve(promotionPath)
+    ) {
+      return false;
+    }
+    const promotionMatchesAudit =
+      text(promotion.buildManifestHash) === text(input.effectivePass.buildManifestHash) &&
+      text(promotion.sourceBindingHash) === text(input.effectivePass.sourceBindingHash);
+    const promotionMatchesActive =
+      text(promotion.buildManifestHash) === input.activeAuthority.activeBuildHash &&
+      text(promotion.sourceBindingHash) === input.activeAuthority.activeSourceBindingHash;
+    if (
+      promotionMatchesActive &&
+      text(input.effectivePass.buildManifestHash) === input.activeAuthority.activeBuildHash &&
+      text(input.effectivePass.sourceBindingHash) === input.activeAuthority.activeSourceBindingHash
+    ) {
+      return true;
+    }
+    if (!promotionMatchesAudit && !promotionMatchesActive) return false;
+
+    const auditedManifestPath = confinedRecordArtifact(
+      input.recordRoot,
+      `authoring/builds/${text(input.effectivePass.buildManifestHash).slice('sha256:'.length)}/manifest.json`
+    );
+    const auditedManifest = readJson(auditedManifestPath);
+    if (
+      text(auditedManifest.buildHash) !== text(input.effectivePass.buildManifestHash) ||
+      text(auditedManifest.scopeSemanticHash) !== input.activeAuthority.activeScopeSemanticHash ||
+      text(auditedManifest.sourceBindingHash) !== text(input.effectivePass.sourceBindingHash)
+    ) {
+      return false;
+    }
+    const refreshPath = confinedRecordArtifact(
+      input.recordRoot,
+      `authoring/source-bindings/${input.activeAuthority.activeBindingRevisionId}/` +
+        'source-binding-refresh-receipt.json'
+    );
+    const refreshBytes = fs.readFileSync(refreshPath);
+    const refreshReceipt = JSON.parse(refreshBytes.toString('utf8')) as JsonObject;
+    validateRefreshReceiptHash(refreshReceipt);
+    const refreshPromotionRef = object(refreshReceipt.confirmationPromotionReceiptRef);
+    const identityCurrent =
+      text(refreshReceipt.semanticRevisionId) === input.activeAuthority.activeSemanticRevisionId &&
+      text(refreshReceipt.scopeSemanticHash) === input.activeAuthority.activeScopeSemanticHash &&
+      text(refreshReceipt.toBindingRevisionId) === input.activeAuthority.activeBindingRevisionId &&
+      text(refreshReceipt.toSourceBindingHash) === input.activeAuthority.activeSourceBindingHash &&
+      text(refreshReceipt.fromBindingRevisionId) !== text(refreshReceipt.toBindingRevisionId);
+    if (!identityCurrent) return false;
+    if (promotionMatchesAudit) {
+      return (
+        text(refreshPromotionRef.path) === text(promotionRef.path) &&
+        text(refreshPromotionRef.hash) === text(promotionRef.artifactBytesHash) &&
+        refreshReceipt.citationProjectionRefreshDisposition === 'passed' &&
+        refreshReceipt.pageReadbackDisposition === 'passed' &&
+        refreshReceipt.pagePromotionDisposition === 'promoted'
+      );
+    }
+    return (
+      text(refreshReceipt.toBindingRevisionId) === text(promotion.bindingRevisionId) &&
+      text(refreshPromotionRef.path) === text(promotionRef.path) &&
+      text(refreshPromotionRef.hash) === text(promotionRef.artifactBytesHash) &&
+      refreshReceipt.citationProjectionRefreshDisposition === 'passed' &&
+      refreshReceipt.pageReadbackDisposition === 'passed' &&
+      refreshReceipt.pagePromotionDisposition === 'promoted'
+    );
+  } catch {
+    return false;
+  }
+}
+
 function confirmationTextFromMarkdown(markdown: string): string {
   const marker = '## Confirmation\n\n```text\n';
   const start = markdown.indexOf(marker);
@@ -509,70 +822,52 @@ export function stageRequirementsContractConfirmationBindingRefresh(input: {
     input.requestId
   );
   const recordPath = path.join(recordRoot, 'record', 'requirement-record.json');
-  const record = readJson(recordPath);
-  const activeAuthority = object(record.activeAuthority);
+  const record = openRequirementsContractRecord(recordPath);
+  const activeAuthority = object(
+    record.activeAuthority
+  ) as unknown as RequirementsActiveAuthorityTupleV3;
   const tupleValidation = validateRequirementsActiveAuthorityTuple(activeAuthority);
   if (tupleValidation.decision === 'block') throw new Error(tupleValidation.issueCodes[0]);
-  const semanticIr = readRequirementsContractSemanticIrAuthority(
-    confinedRecordArtifact(recordRoot, text(activeAuthority.activeSemanticIrPath))
+  const semanticIr = resolveRequirementsActiveArtifact({
+    recordRoot,
+    activeAuthority,
+    role: 'semantic_ir',
+  }).value as RequirementsContractSemanticIr;
+  const sourceBinding = readSourceBindingRevision(
+    recordRoot,
+    input.bindingRevisionId,
+    activeAuthority.activeBuildManifestPath
   );
-  const sourceBinding = readJson(
-    path.join(
-      recordRoot,
-      'authoring',
-      'source-bindings',
-      input.bindingRevisionId,
-      'source-binding.json'
-    )
-  );
-  const resolvedEvidenceIndex = readJson(
-    path.join(
-      recordRoot,
-      'authoring',
-      'source-bindings',
-      input.bindingRevisionId,
-      'resolved-evidence-index.json'
-    )
-  );
+  const resolvedEvidenceIndex = resolveRequirementsActiveArtifact({
+    recordRoot,
+    activeAuthority,
+    role: 'resolved_evidence_index',
+  }).value as JsonObject;
   const effectivePass = readJson(
     path.join(recordRoot, 'quality', 'requirements-effective-pass-receipt.json')
   );
   validateEffectivePassV2(effectivePass);
-  const promotionPath = path.join(
-    recordRoot,
-    'confirmation',
-    'confirmation-promotion-receipt.json'
-  );
+  const promotionPath = currentPromotionPath(recordRoot, record);
   const promotion = readJson(promotionPath);
   if (
     promotion.requestId !== input.requestId ||
     promotion.semanticRevisionId !== activeAuthority.activeSemanticRevisionId ||
     promotion.scopeSemanticHash !== activeAuthority.activeScopeSemanticHash ||
-    promotion.buildManifestHash !== activeAuthority.activeBuildManifestHash ||
     promotion.requirementsEffectivePassHash !== effectivePass.requirementsEffectivePassHash ||
-    promotion.sourceBindingHash !== effectivePass.sourceBindingHash ||
+    !promotionMatchesAuditedOrActiveBinding({ promotion, effectivePass, activeAuthority }) ||
     sourceBinding.semanticRevisionId !== semanticIr.semanticRevisionId ||
     sourceBinding.scopeSemanticHash !== semanticIr.scopeSemanticHash
   ) {
     throw new Error('requirements_binding_refresh_promotion_stale');
   }
-  const context = readJson(
-    path.join(
-      recordRoot,
-      'authoring',
-      'staging',
-      text(activeAuthority.activeAuthoringAttemptId),
-      'authoring-context.json'
-    )
-  );
   const renderInput: RequirementsFinalRenderInput = {
     requestId: input.requestId,
-    confirmationLanguage: text(context.confirmationLanguage) || 'en-US',
+    confirmationLanguage: 'en-US',
     semanticIr,
     resolvedEvidenceIndex,
     effectivePass,
     bindingRefresh: {
-      auditedSourceBindingHash: text(promotion.sourceBindingHash),
+      auditedSourceBindingHash: text(effectivePass.sourceBindingHash),
       currentSourceBindingHash: text(sourceBinding.sourceBindingHash),
     },
   };
@@ -621,36 +916,34 @@ export function refreshRequirementsContractConfirmationBinding(input: {
     input.requestId
   );
   const recordPath = path.join(recordRoot, 'record', 'requirement-record.json');
-  const record = readJson(recordPath);
-  const activeAuthority = object(record.activeAuthority);
+  const record = openRequirementsContractRecord(recordPath);
+  const activeAuthority = object(
+    record.activeAuthority
+  ) as unknown as RequirementsActiveAuthorityTupleV3;
   const tupleValidation = validateRequirementsActiveAuthorityTuple(activeAuthority);
   if (tupleValidation.decision === 'block') throw new Error(tupleValidation.issueCodes[0]);
-  const semanticIr = readRequirementsContractSemanticIrAuthority(
-    confinedRecordArtifact(recordRoot, text(activeAuthority.activeSemanticIrPath))
-  );
-  const sourceBinding = readJson(
-    confinedRecordArtifact(recordRoot, text(activeAuthority.activeSourceBindingPath))
-  );
+  const semanticIr = resolveRequirementsActiveArtifact({
+    recordRoot,
+    activeAuthority,
+    role: 'semantic_ir',
+  }).value as RequirementsContractSemanticIr;
+  const sourceBinding = object(resolveRequirementsActiveArtifact({
+    recordRoot,
+    activeAuthority,
+    role: 'source_binding',
+  }).value);
   const parentBindingRevisionId = text(sourceBinding.parentBindingRevisionId);
   if (!parentBindingRevisionId) throw new Error('requirements_binding_refresh_parent_missing');
-  const parentBinding = readJson(
-    path.join(
-      recordRoot,
-      'authoring',
-      'source-bindings',
-      parentBindingRevisionId,
-      'source-binding.json'
-    )
+  const parentBinding = readSourceBindingRevision(
+    recordRoot,
+    parentBindingRevisionId,
+    activeAuthority.previousBuildManifestPath
   );
   const effectivePass = readJson(
     path.join(recordRoot, 'quality', 'requirements-effective-pass-receipt.json')
   );
   validateEffectivePassV2(effectivePass);
-  const promotionPath = path.join(
-    recordRoot,
-    'confirmation',
-    'confirmation-promotion-receipt.json'
-  );
+  const promotionPath = currentPromotionPath(recordRoot, record);
   const promotion = readJson(promotionPath);
   const promotionArtifactBytesHash = artifactBytesHash({
     role: 'promotion_receipt',
@@ -661,9 +954,8 @@ export function refreshRequirementsContractConfirmationBinding(input: {
     promotion.requestId !== input.requestId ||
     promotion.semanticRevisionId !== activeAuthority.activeSemanticRevisionId ||
     promotion.scopeSemanticHash !== activeAuthority.activeScopeSemanticHash ||
-    promotion.buildManifestHash !== activeAuthority.activeBuildManifestHash ||
     promotion.requirementsEffectivePassHash !== effectivePass.requirementsEffectivePassHash ||
-    promotion.sourceBindingHash !== effectivePass.sourceBindingHash ||
+    !promotionMatchesAuditedOrActiveBinding({ promotion, effectivePass, activeAuthority }) ||
     sourceBinding.semanticRevisionId !== semanticIr.semanticRevisionId ||
     sourceBinding.scopeSemanticHash !== semanticIr.scopeSemanticHash
   ) {
@@ -683,29 +975,108 @@ export function refreshRequirementsContractConfirmationBinding(input: {
   }
   const stagedMarkdown = fs.readFileSync(stagedMarkdownPath, 'utf8');
   const stagedHtml = fs.readFileSync(stagedHtmlPath, 'utf8');
-  const markdownArtifact = records(promotion.artifacts).find(
-    (artifact) => artifact.role === 'final_markdown'
-  );
-  const htmlArtifact = records(promotion.artifacts).find(
-    (artifact) => artifact.role === 'confirmation_html'
-  );
-  if (!markdownArtifact || !htmlArtifact) {
-    throw new Error('requirements_binding_refresh_promotion_artifacts_missing');
-  }
-  const targetMarkdownPath = resolvePath(root, text(markdownArtifact.targetPath));
-  const targetHtmlPath = resolvePath(root, text(htmlArtifact.targetPath));
-  const markdownReadback = replaceBytesAtomic(targetMarkdownPath, stagedMarkdown);
-  const htmlReadback = replaceBytesAtomic(targetHtmlPath, stagedHtml);
   const markdownArtifactBytesHash = artifactBytesHash({
     role: 'final_markdown',
     mediaType: 'text/markdown',
-    bytes: markdownReadback,
+    bytes: Buffer.from(stagedMarkdown, 'utf8'),
   });
   const htmlArtifactBytesHash = artifactBytesHash({
     role: 'confirmation_html',
     mediaType: 'text/html',
-    bytes: htmlReadback,
+    bytes: Buffer.from(stagedHtml, 'utf8'),
   });
+
+  // Before exact confirmation, keep the target untouched and move the
+  // refreshed candidate forward as the sole confirmable authority.
+  if (record.lifecycle !== 'user_confirmed' &&
+      promotion.schemaVersion === 'requirements-contract-review-candidate/v1') {
+    const candidateTargetPath = resolveConfinedPathWithoutLinks(
+      root,
+      text(promotion.targetPath),
+      'requirements_final_render_target_path_escape'
+    );
+    if (fs.existsSync(candidateTargetPath) && fs.lstatSync(candidateTargetPath).isDirectory()) {
+      throw new Error('requirements_binding_refresh_target_invalid');
+    }
+    const refreshReceiptPath = path.join(
+      recordRoot,
+      'authoring',
+      'source-bindings',
+      text(sourceBinding.bindingRevisionId),
+      'source-binding-refresh-receipt.json'
+    );
+    if (fs.existsSync(refreshReceiptPath) && fs.lstatSync(refreshReceiptPath).isDirectory()) {
+      throw new Error('requirements_binding_refresh_receipt_invalid');
+    }
+    const candidateRef = publishRequirementsContentObject({
+      recordRoot,
+      role: 'final_markdown',
+      mediaType: 'text/markdown',
+      bytes: Buffer.from(stagedMarkdown, 'utf8'),
+    });
+    const refreshedCandidate = {
+      ...promotion,
+      bindingRevisionId: sourceBinding.bindingRevisionId,
+      sourceBindingHash: sourceBinding.sourceBindingHash,
+      buildManifestHash: activeAuthority.activeBuildHash,
+      candidateRef,
+      exactConfirmationText: confirmationTextFromMarkdown(stagedMarkdown),
+      markdownArtifactBytesHash,
+      htmlArtifactBytesHash,
+    };
+    writeJsonAtomic(promotionPath, refreshedCandidate);
+    const refreshedPromotionHash = artifactBytesHash({
+      role: 'promotion_receipt',
+      mediaType: 'application/json',
+      bytes: fs.readFileSync(promotionPath),
+    });
+    const nextRecord = {
+      ...record,
+      lifecycle: 'user_confirmable',
+      activeOperationId: null,
+      currentPromotionEvidence: {
+        path: path.relative(recordRoot, promotionPath).replace(/\\/gu, '/'),
+        artifactBytesHash: refreshedPromotionHash,
+      },
+    };
+    if (canonicalRequirementsJson(nextRecord) !== canonicalRequirementsJson(record)) {
+      writeJsonAtomic(recordPath, nextRecord);
+    }
+    return {
+      status: 'user_confirmable' as const,
+      unresolvedDecisionCount: 0,
+      confirmation: {
+        exactConfirmationText: refreshedCandidate.exactConfirmationText,
+        markdownPath: path.relative(root, candidateTargetPath).replace(/\\/gu, '/'),
+        htmlPath: null,
+        markdownArtifactBytesHash,
+        htmlArtifactBytesHash,
+        promotionReceiptPath: path.relative(recordRoot, promotionPath).replace(/\\/gu, '/'),
+        promotionArtifactBytesHash: refreshedPromotionHash,
+      },
+    };
+  }
+
+  const { markdown: markdownArtifact, html: htmlArtifact } = promotionPageArtifacts(promotion);
+  if (!markdownArtifact) {
+    throw new Error('requirements_binding_refresh_promotion_artifacts_missing');
+  }
+  const targetMarkdownPath = resolveConfinedPathWithoutLinks(
+    root,
+    text(markdownArtifact.targetPath),
+    'requirements_final_render_target_path_escape'
+  );
+  const markdownReadback = replaceBytesAtomic(targetMarkdownPath, stagedMarkdown);
+  let targetHtmlPath: string | null = null;
+  let htmlReadback = stagedHtml;
+  if (htmlArtifact) {
+    targetHtmlPath = resolveConfinedPathWithoutLinks(
+      root,
+      text(htmlArtifact.targetPath),
+      'requirements_final_render_target_path_escape'
+    );
+    htmlReadback = replaceBytesAtomic(targetHtmlPath, stagedHtml);
+  }
   if (markdownReadback !== stagedMarkdown || htmlReadback !== stagedHtml) {
     throw new Error('requirements_binding_refresh_page_promotion_mismatch');
   }
@@ -723,7 +1094,7 @@ export function refreshRequirementsContractConfirmationBinding(input: {
     evidenceClaimRegistryHash: text(sourceBinding.evidenceClaimBindingRegistryHash),
     pageEvidence: {
       confirmationPromotionReceiptRef: {
-        path: 'confirmation/confirmation-promotion-receipt.json',
+        path: path.relative(recordRoot, promotionPath).replace(/\\/gu, '/'),
         hash: promotionArtifactBytesHash,
       },
       pageArtifactBytesHash: markdownArtifactBytesHash,
@@ -746,6 +1117,7 @@ export function refreshRequirementsContractConfirmationBinding(input: {
   const nextRecord = {
     ...record,
     lifecycle: record.lifecycle === 'user_confirmed' ? 'user_confirmed' : 'user_confirmable',
+    activeOperationId: null,
     currentPromotionEvidence: {
       path: path.relative(recordRoot, refreshReceiptPath).replace(/\\/gu, '/'),
       artifactBytesHash: receiptPublication.artifactBytesHash,
@@ -760,7 +1132,7 @@ export function refreshRequirementsContractConfirmationBinding(input: {
     confirmation: {
       exactConfirmationText: confirmationTextFromMarkdown(stagedMarkdown),
       markdownPath: path.relative(root, targetMarkdownPath).replace(/\\/gu, '/'),
-      htmlPath: path.relative(root, targetHtmlPath).replace(/\\/gu, '/'),
+      htmlPath: targetHtmlPath ? path.relative(root, targetHtmlPath).replace(/\\/gu, '/') : null,
       markdownArtifactBytesHash,
       htmlArtifactBytesHash,
       promotionReceiptPath: path.relative(recordRoot, refreshReceiptPath).replace(/\\/gu, '/'),
@@ -770,10 +1142,66 @@ export function refreshRequirementsContractConfirmationBinding(input: {
 }
 
 function confinedRecordArtifact(recordRoot: string, recordRelativePath: string): string {
-  const resolved = path.resolve(recordRoot, ...recordRelativePath.split('/'));
-  const relative = path.relative(recordRoot, resolved);
-  if (!recordRelativePath || relative.startsWith('..') || path.isAbsolute(relative)) {
-    throw new Error('requirements_confirmation_artifact_path_escape');
+  return resolveConfinedPathWithoutLinks(
+    recordRoot,
+    recordRelativePath,
+    'requirements_confirmation_artifact_path_escape'
+  );
+}
+
+function readSourceBindingRevision(
+  recordRoot: string,
+  bindingRevisionId: string,
+  predecessorManifestPath?: string | null
+): JsonObject {
+  const bindingRoot = path.join(recordRoot, 'authoring', 'source-bindings', bindingRevisionId);
+  const bindingPath = confinedRecordArtifact(
+    recordRoot,
+    `authoring/source-bindings/${bindingRevisionId}/source-binding.json`
+  );
+  if (fs.existsSync(bindingPath)) return readJson(bindingPath);
+  const refPath = path.join(bindingRoot, 'source-binding.ref.json');
+  if (fs.existsSync(refPath)) {
+    const ref = readJson(refPath);
+    return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(
+      readRequirementsContentObject({ recordRoot, ref: ref.contentRef as RequirementsContentRef })
+    )) as JsonObject;
+  }
+  if (!predecessorManifestPath) throw new Error('requirements_source_binding_revision_missing');
+  const predecessorManifest = readJson(
+    confinedRecordArtifact(recordRoot, predecessorManifestPath)
+  );
+  const entries = records(predecessorManifest.artifactEntries).filter(
+    (entry) => text(entry.role) === 'source_binding'
+  );
+  if (entries.length !== 1) throw new Error('requirements_source_binding_revision_missing');
+  const binding = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(
+    readRequirementsContentObject({
+      recordRoot,
+      ref: entries[0].contentRef as RequirementsContentRef,
+    })
+  )) as JsonObject;
+  if (text(binding.bindingRevisionId) !== bindingRevisionId) {
+    throw new Error('requirements_source_binding_revision_missing');
+  }
+  return binding;
+}
+
+function resolveConfinedPathWithoutLinks(root: string, value: string, code: string): string {
+  const resolvedRoot = path.resolve(root);
+  const resolved = path.isAbsolute(value) ? path.resolve(value) : path.resolve(resolvedRoot, value);
+  const relative = path.relative(resolvedRoot, resolved);
+  if (!value || relative.startsWith('..') || path.isAbsolute(relative)) throw new Error(code);
+  const realRoot = fs.realpathSync.native(resolvedRoot);
+  let cursor = resolvedRoot;
+  for (const segment of relative.split(path.sep)) {
+    if (!segment) continue;
+    cursor = path.join(cursor, segment);
+    if (!fs.existsSync(cursor)) continue;
+    if (fs.lstatSync(cursor).isSymbolicLink()) throw new Error(code);
+    const realCursor = fs.realpathSync.native(cursor);
+    const realRelative = path.relative(realRoot, realCursor);
+    if (realRelative.startsWith('..') || path.isAbsolute(realRelative)) throw new Error(code);
   }
   return resolved;
 }
@@ -793,6 +1221,7 @@ function validateEffectivePassV2(value: JsonObject): void {
 export function renderAndPromoteRequirementsContractConfirmation(input: {
   projectRoot: string;
   requestId: string;
+  targetSource: string;
 }) {
   const root = path.resolve(input.projectRoot);
   const recordRoot = path.join(
@@ -803,24 +1232,28 @@ export function renderAndPromoteRequirementsContractConfirmation(input: {
     input.requestId
   );
   const requirementRecordPath = path.join(recordRoot, 'record', 'requirement-record.json');
-  const requirementRecord = readJson(requirementRecordPath);
-  const activeAuthority = object(requirementRecord.activeAuthority);
+  const requirementRecord = openRequirementsContractRecord(requirementRecordPath);
+  const activeAuthority = object(
+    requirementRecord.activeAuthority
+  ) as unknown as RequirementsActiveAuthorityTupleV3;
   const tupleValidation = validateRequirementsActiveAuthorityTuple(activeAuthority);
   if (tupleValidation.decision === 'block') throw new Error(tupleValidation.issueCodes[0]);
-  const buildManifest = readJson(
-    confinedRecordArtifact(recordRoot, text(activeAuthority.activeBuildManifestPath))
-  );
-  const buildValidation = validateRequirementsContractBuildManifest(buildManifest);
-  if (buildValidation.decision === 'block') throw new Error(buildValidation.issueCodes[0]);
-  if (buildManifest.buildManifestHash !== activeAuthority.activeBuildManifestHash) {
+  const buildManifest = readRequirementsActiveBuildManifest({ recordRoot, activeAuthority });
+  const activeBuildHash = activeAuthority.activeBuildHash;
+  const manifestBuildHash = buildManifest.buildHash;
+  if (manifestBuildHash !== activeBuildHash) {
     throw new Error('requirements_final_render_build_manifest_stale');
   }
-  const semanticIr = readRequirementsContractSemanticIrAuthority(
-    confinedRecordArtifact(recordRoot, text(activeAuthority.activeSemanticIrPath))
-  );
-  const sourceBinding = readJson(
-    confinedRecordArtifact(recordRoot, text(activeAuthority.activeSourceBindingPath))
-  );
+  const semanticIr = resolveRequirementsActiveArtifact({
+    recordRoot,
+    activeAuthority,
+    role: 'semantic_ir',
+  }).value as RequirementsContractSemanticIr;
+  const sourceBinding = object(resolveRequirementsActiveArtifact({
+    recordRoot,
+    activeAuthority,
+    role: 'source_binding',
+  }).value);
   const bindingValidation = validateRequirementsContractSourceBindingCapsule(sourceBinding);
   if (bindingValidation.decision === 'block') throw new Error(bindingValidation.issueCodes[0]);
   if (
@@ -831,34 +1264,21 @@ export function renderAndPromoteRequirementsContractConfirmation(input: {
   ) {
     throw new Error('requirements_final_render_active_authority_stale');
   }
-  const resolvedEvidenceIndex = readJson(
-    path.join(
-      recordRoot,
-      'authoring',
-      'source-bindings',
-      text(activeAuthority.activeBindingRevisionId),
-      'resolved-evidence-index.json'
-    )
-  );
+  const resolvedEvidenceIndex = object(resolveRequirementsActiveArtifact({
+    recordRoot,
+    activeAuthority,
+    role: 'resolved_evidence_index',
+  }).value);
   const effectivePass = readJson(
     path.join(recordRoot, 'quality', 'requirements-effective-pass-receipt.json')
   );
   validateEffectivePassV2(effectivePass);
-  if (effectivePass.buildManifestHash !== buildManifest.buildManifestHash) {
+  if (effectivePass.buildManifestHash !== manifestBuildHash) {
     throw new Error('requirements_final_render_effective_pass_stale');
   }
-  const context = readJson(
-    path.join(
-      recordRoot,
-      'authoring',
-      'staging',
-      text(activeAuthority.activeAuthoringAttemptId),
-      'authoring-context.json'
-    )
-  );
   const renderInput: RequirementsFinalRenderInput = {
     requestId: input.requestId,
-    confirmationLanguage: text(context.confirmationLanguage) || 'en-US',
+    confirmationLanguage: 'en-US',
     semanticIr,
     resolvedEvidenceIndex,
     effectivePass,
@@ -866,20 +1286,17 @@ export function renderAndPromoteRequirementsContractConfirmation(input: {
   const pages = projectRequirementsContractFinalPages(renderInput);
   const lint = validateRequirementsContractFinalRenderProjection({ ...renderInput, pages });
   if (lint.decision === 'block') throw new Error(lint.issueCodes[0]);
-  const stagingRoot = path.join(recordRoot, 'confirmation', 'staging');
-  const stagedMarkdownPath = path.join(stagingRoot, 'requirements.md');
-  const stagedHtmlPath = path.join(stagingRoot, 'requirements.html');
-  const stagedMarkdown = atomicNoClobberPublish({
-    targetPath: stagedMarkdownPath,
-    bytes: pages.markdown,
+  const candidateRef = publishRequirementsContentObject({
+    recordRoot,
     role: 'final_markdown',
     mediaType: 'text/markdown',
+    bytes: Buffer.from(pages.markdown, 'utf8'),
   });
-  const stagedHtml = atomicNoClobberPublish({
-    targetPath: stagedHtmlPath,
-    bytes: pages.html,
-    role: 'confirmation_html',
-    mediaType: 'text/html',
+  const markdownArtifactBytesHash = artifactBytesHash({
+    role: 'final_markdown', mediaType: 'text/markdown', bytes: Buffer.from(pages.markdown, 'utf8'),
+  });
+  const htmlArtifactBytesHash = artifactBytesHash({
+    role: 'confirmation_html', mediaType: 'text/html', bytes: Buffer.from(pages.html, 'utf8'),
   });
   const report = {
     schemaVersion: 'requirements-contract-confirmation-render-report/v1',
@@ -888,7 +1305,7 @@ export function renderAndPromoteRequirementsContractConfirmation(input: {
     scopeSemanticHash: semanticIr.scopeSemanticHash,
     bindingRevisionId: sourceBinding.bindingRevisionId,
     sourceBindingHash: sourceBinding.sourceBindingHash,
-    buildManifestHash: buildManifest.buildManifestHash,
+    buildManifestHash: manifestBuildHash,
     requirementsEffectivePassHash: effectivePass.requirementsEffectivePassHash,
     decision: 'pass',
     issueCodes: [],
@@ -897,16 +1314,16 @@ export function renderAndPromoteRequirementsContractConfirmation(input: {
       {
         role: 'final_markdown',
         mediaType: 'text/markdown',
-        stagingPath: path.relative(recordRoot, stagedMarkdownPath).replace(/\\/gu, '/'),
-        artifactBytesHash: stagedMarkdown.artifactBytesHash,
-        byteLength: stagedMarkdown.byteLength,
+        contentRef: candidateRef,
+        artifactBytesHash: markdownArtifactBytesHash,
+        byteLength: candidateRef.byteLength,
       },
       {
         role: 'confirmation_html',
         mediaType: 'text/html',
-        stagingPath: path.relative(recordRoot, stagedHtmlPath).replace(/\\/gu, '/'),
-        artifactBytesHash: stagedHtml.artifactBytesHash,
-        byteLength: stagedHtml.byteLength,
+        artifactBytesHash: htmlArtifactBytesHash,
+        byteLength: Buffer.byteLength(pages.html, 'utf8'),
+        disposition: 'render_on_demand',
       },
     ],
   };
@@ -917,72 +1334,56 @@ export function renderAndPromoteRequirementsContractConfirmation(input: {
     role: 'confirmation_render_report',
     mediaType: 'application/json',
   });
-  const targetMarkdownPath = resolvePath(root, text(context.targetSource));
-  const relativeTarget = path.relative(root, targetMarkdownPath);
-  if (relativeTarget.startsWith('..') || path.isAbsolute(relativeTarget)) {
-    throw new Error('requirements_final_render_target_path_escape');
-  }
-  const targetHtmlPath = targetMarkdownPath.replace(/\.[^.]+$/u, '') + '.html';
-  const markdownPromotion = atomicNoClobberPublish({
-    targetPath: targetMarkdownPath,
-    bytes: pages.markdown,
-    role: 'final_markdown',
-    mediaType: 'text/markdown',
-  });
-  const htmlPromotion = atomicNoClobberPublish({
-    targetPath: targetHtmlPath,
-    bytes: pages.html,
-    role: 'confirmation_html',
-    mediaType: 'text/html',
-  });
-  const promotionReceipt = {
-    schemaVersion: 'requirements-contract-confirmation-promotion-receipt/v1',
+  const targetMarkdownPath = resolveConfinedPathWithoutLinks(
+    root, input.targetSource, 'requirements_final_render_target_path_escape'
+  );
+  const reviewCandidate = {
+    schemaVersion: 'requirements-contract-review-candidate/v1',
     requestId: input.requestId,
     semanticRevisionId: semanticIr.semanticRevisionId,
     scopeSemanticHash: semanticIr.scopeSemanticHash,
     bindingRevisionId: sourceBinding.bindingRevisionId,
     sourceBindingHash: sourceBinding.sourceBindingHash,
-    buildManifestHash: buildManifest.buildManifestHash,
+    buildManifestHash: manifestBuildHash,
     requirementsEffectivePassHash: effectivePass.requirementsEffectivePassHash,
     renderReportRef: {
       path: path.relative(recordRoot, reportPath).replace(/\\/gu, '/'),
       artifactBytesHash: reportPublication.artifactBytesHash,
     },
     exactConfirmationText: pages.exactConfirmationText,
-    artifacts: [
-      {
-        role: 'final_markdown',
-        targetPath: path.relative(root, targetMarkdownPath).replace(/\\/gu, '/'),
-        artifactBytesHash: markdownPromotion.artifactBytesHash,
-      },
-      {
-        role: 'confirmation_html',
-        targetPath: path.relative(root, targetHtmlPath).replace(/\\/gu, '/'),
-        artifactBytesHash: htmlPromotion.artifactBytesHash,
-      },
-    ],
+    candidateRef,
+    targetPath: path.relative(root, targetMarkdownPath).replace(/\\/gu, '/'),
+    markdownArtifactBytesHash,
+    htmlArtifactBytesHash,
   };
-  const promotionReceiptPath = path.join(
-    recordRoot,
-    'confirmation',
-    'confirmation-promotion-receipt.json'
-  );
-  const promotionPublication = atomicNoClobberPublish({
-    targetPath: promotionReceiptPath,
-    value: promotionReceipt,
-    role: 'promotion_receipt',
-    mediaType: 'application/json',
+  const promotionReceiptPath = path.join(recordRoot, 'confirmation', 'current-promotion.json');
+  let promotionArtifactBytesHash = '';
+  const candidateLock = acquireRequirementsFileLock({
+    lockPath: `${requirementRecordPath}.authority.lock`,
+    busyCode: 'requirements_confirmation_authority_busy',
   });
-  const nextRecord = {
-    ...requirementRecord,
-    lifecycle: 'user_confirmable',
-    currentPromotionEvidence: {
-      path: 'confirmation/confirmation-promotion-receipt.json',
-      artifactBytesHash: promotionPublication.artifactBytesHash,
-    },
-  };
-  if (canonicalRequirementsJson(nextRecord) !== canonicalRequirementsJson(requirementRecord)) {
-    writeJsonAtomic(requirementRecordPath, nextRecord);
+  try {
+    const latestRecord = openRequirementsContractRecord(requirementRecordPath);
+    if (canonicalRequirementsJson(latestRecord.activeAuthority) !== canonicalRequirementsJson(activeAuthority)) {
+      throw new Error('requirements_confirmation_promotion_stale');
+    }
+    writeJsonAtomic(promotionReceiptPath, reviewCandidate);
+    promotionArtifactBytesHash = artifactBytesHash({
+      role: 'promotion_receipt', mediaType: 'application/json', bytes: fs.readFileSync(promotionReceiptPath),
+    });
+    const nextRecord = {
+      ...latestRecord,
+      lifecycle: 'user_confirmable',
+      currentPromotionEvidence: {
+        path: 'confirmation/current-promotion.json',
+        artifactBytesHash: promotionArtifactBytesHash,
+      },
+    };
+    if (canonicalRequirementsJson(nextRecord) !== canonicalRequirementsJson(latestRecord)) {
+      writeJsonAtomic(requirementRecordPath, nextRecord);
+    }
+  } finally {
+    releaseRequirementsFileLock(candidateLock);
   }
   return {
     status: 'user_confirmable' as const,
@@ -990,13 +1391,232 @@ export function renderAndPromoteRequirementsContractConfirmation(input: {
     confirmation: {
       exactConfirmationText: pages.exactConfirmationText,
       markdownPath: path.relative(root, targetMarkdownPath).replace(/\\/gu, '/'),
-      htmlPath: path.relative(root, targetHtmlPath).replace(/\\/gu, '/'),
-      markdownArtifactBytesHash: markdownPromotion.artifactBytesHash,
-      htmlArtifactBytesHash: htmlPromotion.artifactBytesHash,
-      promotionReceiptPath: 'confirmation/confirmation-promotion-receipt.json',
-      promotionArtifactBytesHash: promotionPublication.artifactBytesHash,
+      htmlPath: null,
+      markdownArtifactBytesHash,
+      htmlArtifactBytesHash,
+      promotionReceiptPath: 'confirmation/current-promotion.json',
+      promotionArtifactBytesHash,
     },
   };
+}
+
+function promoteRequirementsContractReviewCandidate(input: {
+  projectRoot: string;
+  requestId: string;
+  recordRoot: string;
+  recordPath: string;
+  record: JsonObject;
+  activeAuthority: JsonObject;
+  effectivePass: JsonObject;
+  candidate: JsonObject;
+  candidatePath: string;
+  candidateArtifactBytesHash: string;
+  exactConfirmationText: string;
+}) {
+  const authorityLock = acquireRequirementsFileLock({
+    lockPath: `${input.recordPath}.authority.lock`,
+    busyCode: 'requirements_confirmation_authority_busy',
+  });
+  try {
+  const latestRecord = openRequirementsContractRecord(input.recordPath);
+  if (
+    canonicalRequirementsJson(latestRecord.activeAuthority) !== canonicalRequirementsJson(input.activeAuthority) ||
+    canonicalRequirementsJson(latestRecord.currentPromotionEvidence) !== canonicalRequirementsJson(input.record.currentPromotionEvidence) ||
+    latestRecord.lifecycle !== input.record.lifecycle
+  ) throw new Error('requirements_confirmation_promotion_stale');
+  if (
+    input.candidate.requestId !== input.requestId ||
+    input.candidate.semanticRevisionId !== input.activeAuthority.activeSemanticRevisionId ||
+    input.candidate.scopeSemanticHash !== input.activeAuthority.activeScopeSemanticHash ||
+    input.candidate.bindingRevisionId !== input.activeAuthority.activeBindingRevisionId ||
+    input.candidate.sourceBindingHash !== input.activeAuthority.activeSourceBindingHash ||
+    input.candidate.buildManifestHash !==
+      input.activeAuthority.activeBuildHash ||
+    input.candidate.requirementsEffectivePassHash !== input.effectivePass.requirementsEffectivePassHash
+  ) throw new Error('requirements_confirmation_promotion_stale');
+  let candidateBytes: Buffer;
+  try {
+    candidateBytes = readRequirementsContentObject({
+      recordRoot: input.recordRoot,
+      ref: object(input.candidate.candidateRef) as unknown as RequirementsContentRef,
+    });
+  } catch {
+    throw new Error('requirements_confirmation_page_stale');
+  }
+  if (
+    artifactBytesHash({ role: 'final_markdown', mediaType: 'text/markdown', bytes: candidateBytes }) !==
+    input.candidate.markdownArtifactBytesHash
+  ) throw new Error('requirements_confirmation_page_stale');
+  const markdown = candidateBytes.toString('utf8');
+  if (
+    input.exactConfirmationText !== input.candidate.exactConfirmationText ||
+    input.exactConfirmationText !== confirmationTextFromMarkdown(markdown)
+  ) throw new Error('requirements_confirmation_exact_text_mismatch');
+  let bindingRefresh: { current: JsonObject; parent: JsonObject } | null = null;
+  if (
+    text(input.effectivePass.buildManifestHash) !== input.activeAuthority.activeBuildHash ||
+    text(input.effectivePass.sourceBindingHash) !== input.activeAuthority.activeSourceBindingHash
+  ) {
+    const current = object(resolveRequirementsActiveArtifact({
+      recordRoot: input.recordRoot,
+      activeAuthority: input.activeAuthority as unknown as RequirementsActiveAuthorityTupleV3,
+      role: 'source_binding',
+    }).value);
+    const parentBindingRevisionId = text(current.parentBindingRevisionId);
+    if (!parentBindingRevisionId) throw new Error('requirements_confirmation_promotion_stale');
+    const parent = readSourceBindingRevision(
+      input.recordRoot,
+      parentBindingRevisionId,
+      text(input.activeAuthority.previousBuildManifestPath)
+    );
+    if (
+      text(input.activeAuthority.previousBuildHash) !== text(input.effectivePass.buildManifestHash) ||
+      text(parent.sourceBindingHash) !== text(input.effectivePass.sourceBindingHash)
+    ) {
+      throw new Error('requirements_confirmation_promotion_stale');
+    }
+    bindingRefresh = { current, parent };
+  }
+  const root = path.resolve(input.projectRoot);
+  const targetPath = resolveConfinedPathWithoutLinks(
+    root, text(input.candidate.targetPath), 'requirements_final_render_target_path_escape'
+  );
+  if (input.record.lifecycle === 'user_confirmed') {
+    const eventRef = object(input.record.confirmationEventRef);
+    const eventPath = confinedRecordArtifact(input.recordRoot, text(eventRef.path));
+    const eventBytes = fs.readFileSync(eventPath);
+    return {
+      ok: true,
+      action: 'confirm-scope' as const,
+      status: 'confirmation_reused' as const,
+      exitCode: 0,
+      authority: 'main-agent-controlled-requirements-confirmation' as const,
+      requestId: input.requestId,
+      semanticRevisionId: input.activeAuthority.activeSemanticRevisionId,
+      confirmationEventId: artifactBytesHash({ role: 'requirements_confirmation_event', mediaType: 'application/json', bytes: eventBytes }),
+      eventPath: path.relative(root, eventPath).replace(/\\/gu, '/'),
+    };
+  }
+  const promoted = replaceBytesAtomic(targetPath, markdown);
+  const promotedHash = artifactBytesHash({
+    role: 'final_markdown', mediaType: 'text/markdown', bytes: Buffer.from(promoted, 'utf8'),
+  });
+  if (promotedHash !== input.candidate.markdownArtifactBytesHash) {
+    throw new Error('requirements_confirmation_page_stale');
+  }
+  const finalPromotion = {
+    schemaVersion: 'requirements-contract-confirmation-promotion-receipt/v2',
+    requestId: input.requestId,
+    semanticRevisionId: input.activeAuthority.activeSemanticRevisionId,
+    scopeSemanticHash: input.activeAuthority.activeScopeSemanticHash,
+    bindingRevisionId: input.activeAuthority.activeBindingRevisionId,
+    sourceBindingHash: input.activeAuthority.activeSourceBindingHash,
+    buildManifestHash: input.activeAuthority.activeBuildHash,
+    requirementsEffectivePassHash: input.effectivePass.requirementsEffectivePassHash,
+    reviewCandidateRef: { path: input.candidatePath, artifactBytesHash: input.candidateArtifactBytesHash },
+    targetPath: path.relative(root, targetPath).replace(/\\/gu, '/'),
+    artifactBytesHash: promotedHash,
+    htmlArtifactBytesHash: text(input.candidate.htmlArtifactBytesHash),
+    exactConfirmationText: input.exactConfirmationText,
+  };
+  const finalPromotionPath = path.join(input.recordRoot, 'confirmation', 'final-promotion-receipt.json');
+  writeJsonAtomic(finalPromotionPath, finalPromotion);
+  const finalPromotionHash = artifactBytesHash({
+    role: 'promotion_receipt', mediaType: 'application/json', bytes: fs.readFileSync(finalPromotionPath),
+  });
+  let bindingRefreshEvidence: { path: string; artifactBytesHash: string } | null = null;
+  if (bindingRefresh) {
+    const { current: currentBinding, parent: parentBinding } = bindingRefresh;
+    const refreshReceipt = createRequirementsContractSourceBindingRefreshReceipt({
+      semanticRevisionId: input.activeAuthority.activeSemanticRevisionId,
+      scopeSemanticHash: input.activeAuthority.activeScopeSemanticHash,
+      fromBindingRevisionId: text(parentBinding.bindingRevisionId),
+      toBindingRevisionId: text(currentBinding.bindingRevisionId),
+      fromSourceBindingHash: text(parentBinding.sourceBindingHash),
+      toSourceBindingHash: text(currentBinding.sourceBindingHash),
+      fromSnapshotSetHash: sha256Stable(parentBinding.sourceArtifacts),
+      toSnapshotSetHash: sha256Stable(currentBinding.sourceArtifacts),
+      fromSourceSpanRegistryHash: text(parentBinding.sourceSpanRegistryHash),
+      toSourceSpanRegistryHash: text(currentBinding.sourceSpanRegistryHash),
+      evidenceClaimRegistryHash: text(currentBinding.evidenceClaimBindingRegistryHash),
+      pageEvidence: {
+        confirmationPromotionReceiptRef: {
+          path: 'confirmation/final-promotion-receipt.json',
+          hash: finalPromotionHash,
+        },
+        pageArtifactBytesHash: promotedHash,
+        htmlPageArtifactBytesHash: text(input.candidate.htmlArtifactBytesHash),
+      },
+    });
+    const refreshReceiptPath = path.join(
+      input.recordRoot,
+      'authoring',
+      'source-bindings',
+      text(currentBinding.bindingRevisionId),
+      'source-binding-refresh-receipt.json'
+    );
+    const refreshPublication = atomicNoClobberPublish({
+      targetPath: refreshReceiptPath,
+      value: refreshReceipt,
+      role: 'source-binding-refresh-receipt',
+      mediaType: 'application/json',
+    });
+    bindingRefreshEvidence = {
+      path: path.relative(input.recordRoot, refreshReceiptPath).replace(/\\/gu, '/'),
+      artifactBytesHash: refreshPublication.artifactBytesHash,
+    };
+  }
+  const event = {
+    schemaVersion: 'requirements-contract-confirmation-event/v1',
+    requestId: input.requestId,
+    semanticRevisionId: input.activeAuthority.activeSemanticRevisionId,
+    scopeSemanticHash: input.activeAuthority.activeScopeSemanticHash,
+    bindingRevisionId: input.activeAuthority.activeBindingRevisionId,
+    requirementsEffectivePassRef: {
+      path: 'quality/requirements-effective-pass-receipt.json',
+      hash: input.effectivePass.requirementsEffectivePassHash,
+    },
+    promotionEvidenceRef: { path: 'confirmation/final-promotion-receipt.json', artifactBytesHash: finalPromotionHash },
+    exactConfirmationText: input.exactConfirmationText,
+  };
+  const eventPath = path.join(input.recordRoot, 'confirmation', 'confirmation-event.json');
+  const eventPublication = atomicNoClobberPublish({
+    targetPath: eventPath, value: event, role: 'requirements_confirmation_event', mediaType: 'application/json',
+  });
+  writeJsonAtomic(input.recordPath, {
+    ...latestRecord,
+    lifecycle: 'user_confirmed',
+    activeOperationId: null,
+    confirmedScopeSemanticHash: input.activeAuthority.activeScopeSemanticHash,
+    finalPromotionEvidence: { path: 'confirmation/final-promotion-receipt.json', artifactBytesHash: finalPromotionHash },
+    currentPromotionEvidence: bindingRefreshEvidence ??
+      { path: 'confirmation/final-promotion-receipt.json', artifactBytesHash: finalPromotionHash },
+    confirmationEventRef: { path: 'confirmation/confirmation-event.json', artifactBytesHash: eventPublication.artifactBytesHash },
+  });
+  fs.rmSync(path.join(input.recordRoot, 'confirmation', 'staging'), { recursive: true, force: true });
+  try {
+    const { executeRequirementsContractRecordGc, planRequirementsContractRecordGc } =
+      require('./requirements-contract-record-gc') as typeof import('./requirements-contract-record-gc');
+    const now = new Date().toISOString();
+    const gcPlan = planRequirementsContractRecordGc({ recordRoot: input.recordRoot, now });
+    executeRequirementsContractRecordGc({ recordRoot: input.recordRoot, plan: gcPlan, now });
+  } catch {
+    // Confirmation remains durable; the next inspect/resume retries bounded GC.
+  }
+  return {
+    ok: true,
+    action: 'confirm-scope' as const,
+    status: 'user_confirmed' as const,
+    exitCode: 0,
+    authority: 'main-agent-controlled-requirements-confirmation' as const,
+    requestId: input.requestId,
+    semanticRevisionId: input.activeAuthority.activeSemanticRevisionId,
+    confirmationEventId: eventPublication.artifactBytesHash,
+    eventPath: path.relative(root, eventPath).replace(/\\/gu, '/'),
+  };
+  } finally {
+    releaseRequirementsFileLock(authorityLock);
+  }
 }
 
 export function confirmRequirementsContractIrScope(input: {
@@ -1015,7 +1635,7 @@ export function confirmRequirementsContractIrScope(input: {
     input.requestId
   );
   const recordPath = path.join(recordRoot, 'record', 'requirement-record.json');
-  const record = readJson(recordPath);
+  const record = openRequirementsContractRecord(recordPath);
   if (record.lifecycle !== 'user_confirmable' && record.lifecycle !== 'user_confirmed') {
     throw new Error('requirements_confirmation_not_confirmable');
   }
@@ -1041,27 +1661,68 @@ export function confirmRequirementsContractIrScope(input: {
   }
   if (
     effectivePass.semanticRevisionId !== activeAuthority.activeSemanticRevisionId ||
-    effectivePass.scopeSemanticHash !== activeAuthority.activeScopeSemanticHash ||
-    effectivePass.buildManifestHash !== activeAuthority.activeBuildManifestHash
+    effectivePass.scopeSemanticHash !== activeAuthority.activeScopeSemanticHash
   ) {
     throw new Error('requirements_confirmation_effective_pass_invalid');
   }
-  const originalPromotionPath = path.join(
-    recordRoot,
-    'confirmation',
-    'confirmation-promotion-receipt.json'
-  );
-  const originalPromotion = readJson(originalPromotionPath);
+  if (record.lifecycle === 'user_confirmed') {
+    const eventRef = object(record.confirmationEventRef);
+    const eventPath = confinedRecordArtifact(recordRoot, text(eventRef.path));
+    if (!fs.existsSync(eventPath)) throw new Error('requirements_confirmation_promotion_stale');
+    const eventBytes = fs.readFileSync(eventPath);
+    const eventHash = artifactBytesHash({
+      role: 'requirements_confirmation_event', mediaType: 'application/json', bytes: eventBytes,
+    });
+    if (eventHash !== eventRef.artifactBytesHash) throw new Error('requirements_confirmation_promotion_stale');
+    let event: JsonObject;
+    try {
+      event = JSON.parse(eventBytes.toString('utf8')) as JsonObject;
+    } catch {
+      throw new Error('requirements_confirmation_promotion_stale');
+    }
+    if (
+      event.schemaVersion !== 'requirements-contract-confirmation-event/v1' ||
+      event.requestId !== input.requestId ||
+      event.semanticRevisionId !== activeAuthority.activeSemanticRevisionId ||
+      event.scopeSemanticHash !== activeAuthority.activeScopeSemanticHash ||
+      !confirmationAuditBindingIsCurrent({
+        recordRoot,
+        record,
+        event,
+        effectivePass,
+        activeAuthority: activeAuthority as unknown as RequirementsActiveAuthorityTupleV3,
+      })
+    ) throw new Error('requirements_confirmation_promotion_stale');
+    if (event.exactConfirmationText !== input.exactConfirmationText) {
+      const finalPromotionPath = confinedRecordArtifact(
+        recordRoot,
+        text(object(record.finalPromotionEvidence).path) || 'confirmation/final-promotion-receipt.json'
+      );
+      if (!fs.existsSync(finalPromotionPath)) {
+        throw new Error('requirements_confirmation_exact_text_mismatch');
+      }
+      const finalPromotion = readJson(finalPromotionPath);
+      const targetPath = resolvePath(input.projectRoot, text(finalPromotion.targetPath));
+      if (!fs.existsSync(targetPath) ||
+          confirmationTextFromMarkdown(fs.readFileSync(targetPath, 'utf8')) !== input.exactConfirmationText) {
+        throw new Error('requirements_confirmation_exact_text_mismatch');
+      }
+    }
+    return {
+      ok: true,
+      action: 'confirm-scope' as const,
+      status: 'confirmation_reused' as const,
+      exitCode: 0,
+      authority: 'main-agent-controlled-requirements-confirmation' as const,
+      requestId: input.requestId,
+      semanticRevisionId: activeAuthority.activeSemanticRevisionId,
+      confirmationEventId: eventHash,
+      eventPath: path.relative(input.projectRoot, eventPath).replace(/\\/gu, '/'),
+    };
+  }
   const currentPromotionEvidence = object(record.currentPromotionEvidence);
   if (!text(currentPromotionEvidence.path) || !text(currentPromotionEvidence.artifactBytesHash)) {
     throw new Error('requirements_confirmation_promotion_evidence_missing');
-  }
-  if (
-    text(currentPromotionEvidence.path) === 'confirmation/confirmation-promotion-receipt.json' &&
-    (originalPromotion.bindingRevisionId !== activeAuthority.activeBindingRevisionId ||
-      originalPromotion.sourceBindingHash !== activeAuthority.activeSourceBindingHash)
-  ) {
-    throw new Error('citation_binding_stale');
   }
   const currentPromotionPath = confinedRecordArtifact(
     recordRoot,
@@ -1082,37 +1743,65 @@ export function confirmRequirementsContractIrScope(input: {
   ) {
     throw new Error('requirements_confirmation_promotion_evidence_stale');
   }
+  if (currentPromotion.schemaVersion === 'requirements-contract-review-candidate/v1') {
+    return promoteRequirementsContractReviewCandidate({
+      projectRoot: input.projectRoot,
+      requestId: input.requestId,
+      recordRoot,
+      recordPath,
+      record,
+      activeAuthority,
+      effectivePass,
+      candidate: currentPromotion,
+      candidatePath: path.relative(recordRoot, currentPromotionPath).replace(/\\/gu, '/'),
+      candidateArtifactBytesHash: currentPromotionHash,
+      exactConfirmationText: input.exactConfirmationText,
+    });
+  }
+  const originalPromotionPath = fs.existsSync(path.join(
+    recordRoot, 'confirmation', 'confirmation-promotion-receipt.json'
+  ))
+    ? path.join(recordRoot, 'confirmation', 'confirmation-promotion-receipt.json')
+    : path.join(recordRoot, 'confirmation', 'current-promotion.json');
+  const originalPromotion = readJson(originalPromotionPath);
+  if (
+    text(currentPromotionEvidence.path) === 'confirmation/confirmation-promotion-receipt.json' &&
+    (originalPromotion.bindingRevisionId !== activeAuthority.activeBindingRevisionId ||
+      originalPromotion.sourceBindingHash !== activeAuthority.activeSourceBindingHash)
+  ) {
+    throw new Error('citation_binding_stale');
+  }
   const refreshReceipt =
     currentPromotion.schemaVersion === 'requirements-source-binding-refresh-receipt/v2'
       ? currentPromotion
       : null;
   if (refreshReceipt) validateRefreshReceiptHash(refreshReceipt);
   const promotion = refreshReceipt ? originalPromotion : currentPromotion;
-  const markdownArtifact = records(promotion.artifacts).find(
-    (artifact) => artifact.role === 'final_markdown'
-  );
-  const htmlArtifact = records(promotion.artifacts).find(
-    (artifact) => artifact.role === 'confirmation_html'
-  );
-  if (!markdownArtifact || !htmlArtifact) throw new Error('requirements_confirmation_page_missing');
+  const { markdown: markdownArtifact, html: htmlArtifact } = promotionPageArtifacts(promotion);
+  if (!markdownArtifact) throw new Error('requirements_confirmation_page_missing');
   const pageArtifacts = [
     {
       artifact: markdownArtifact,
-      role: 'final_markdown',
+      role: 'final_markdown' as const,
       mediaType: 'text/markdown',
       expectedHash: refreshReceipt
         ? refreshReceipt.pageArtifactBytesHash
         : markdownArtifact.artifactBytesHash,
     },
-    {
+    ...(htmlArtifact ? [{
       artifact: htmlArtifact,
-      role: 'confirmation_html',
+      role: 'confirmation_html' as const,
       mediaType: 'text/html',
       expectedHash: refreshReceipt
         ? refreshReceipt.htmlPageArtifactBytesHash
         : htmlArtifact.artifactBytesHash,
-    },
-  ];
+    }] : []),
+  ] as Array<{
+    artifact: JsonObject;
+    role: 'final_markdown' | 'confirmation_html';
+    mediaType: string;
+    expectedHash: string;
+  }>;
   const pageReadbacks = pageArtifacts.map((page) => {
     const targetPath = resolvePath(input.projectRoot, text(page.artifact.targetPath));
     const relative = path.relative(path.resolve(input.projectRoot), targetPath);
@@ -1148,7 +1837,7 @@ export function confirmRequirementsContractIrScope(input: {
     refreshReceipt.toBindingRevisionId === activeAuthority.activeBindingRevisionId &&
     refreshReceipt.toSourceBindingHash === activeAuthority.activeSourceBindingHash &&
     object(refreshReceipt.confirmationPromotionReceiptRef).path ===
-      'confirmation/confirmation-promotion-receipt.json' &&
+      path.relative(recordRoot, originalPromotionPath).replace(/\\/gu, '/') &&
     object(refreshReceipt.confirmationPromotionReceiptRef).hash ===
       artifactBytesHash({
         role: 'promotion_receipt',
@@ -1167,11 +1856,13 @@ export function confirmRequirementsContractIrScope(input: {
   }
   if (
     promotion.requirementsEffectivePassHash !== effectivePass.requirementsEffectivePassHash ||
-    (!refreshReceipt && effectivePass.sourceBindingHash !== activeAuthority.activeSourceBindingHash)
+    (!refreshReceipt &&
+      promotion.schemaVersion !== 'requirements-contract-review-candidate/v1' &&
+      effectivePass.sourceBindingHash !== activeAuthority.activeSourceBindingHash)
   ) {
     throw new Error('requirements_confirmation_effective_pass_invalid');
   }
-  if (record.lifecycle === 'user_confirmed') {
+  if (String(record.lifecycle) === 'user_confirmed') {
     const eventRef = object(record.confirmationEventRef);
     if (
       record.confirmedScopeSemanticHash !== activeAuthority.activeScopeSemanticHash ||

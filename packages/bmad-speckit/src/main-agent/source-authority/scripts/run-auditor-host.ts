@@ -368,7 +368,7 @@ function resolveControlledAuditContext(input: {
   const judgeProvider = readBoundReceipt({
     projectRoot: input.projectRoot,
     ref: binding.judgeProviderInvocationReceiptRef,
-    expectedSchemaVersion: 'critical-auditor-judge-invocation-receipt/v1',
+    expectedSchemaVersion: 'audit-provider-judge-invocation-receipt/v1',
     errorCode: 'run_auditor_host_controlled_judge_provider_receipt',
   }).receipt;
   if (

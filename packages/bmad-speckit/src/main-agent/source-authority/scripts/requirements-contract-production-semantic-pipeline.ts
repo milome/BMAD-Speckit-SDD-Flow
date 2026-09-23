@@ -10,21 +10,6 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 import { writeJsonAtomic } from './requirement-record-control-store';
-import {
-  atomicNoClobberPublish,
-  type AtomicNoClobberPhase,
-} from './requirements-contract-atomic-no-clobber-publisher';
-import {
-  createRequirementsContractCheckpointManifest,
-  validateRequirementsContractCheckpointManifest,
-  type RequirementsCheckpointManifestRef,
-  type RequirementsContractCheckpointManifest,
-} from './requirements-contract-authoring-manifest';
-import {
-  activeAuthoringAttemptPointerHash,
-  publishActiveAuthoringAttemptPointer,
-  type ActiveAuthoringAttemptPointer,
-} from './requirements-contract-active-authoring-attempt-pointer';
 import { createSameVolumeBoundedTempDirectory } from './requirements-contract-same-volume-bounded-temp';
 import {
   compileRequirementsContractCp02Candidate,
@@ -72,10 +57,18 @@ import {
   preflightRequirementsContractSourceBindingRefresh,
   type RequirementsContractSourceBindingRefreshPreflight,
   type RequirementsContractSourceBindingRefreshPreflightInput,
-} from './requirements-contract-source-binding-refresh';
+} from './requirements-contract-source-binding-preflight';
 import { validateRequirementsContractIntakeReceipt } from './requirements-contract-intake-receipt';
 import { validateRequirementsContractFileIntakeReceipt } from './requirements-contract-file-intake-receipt';
 import { validateRequirementsContractIntentLineageLedger } from './requirements-contract-intent-lineage';
+import type { RequirementsContentRef } from './requirements-contract-content-store';
+import {
+  compactProductionSourceBacking,
+  resolveProductionSourceDocument,
+  resolveProductionSourceContent,
+  type ProductionSourceArtifactView,
+  type ProductionSourceRange,
+} from './requirements-contract-production-source-view';
 import {
   validateRequirementContractModelV2,
   type RequirementContractModelV2,
@@ -101,7 +94,9 @@ export interface ProductionSemanticSourceRoot {
   bodySchemaVersion: string;
   semanticBody: Record<string, unknown>;
   sourcePath: string;
-  sourceContent: string;
+  sourceContent?: string;
+  sourceBlobRef?: RequirementsContentRef;
+  sourceRange?: ProductionSourceRange;
   sourceSpan: {
     startLine: number;
     endLine: number;
@@ -117,6 +112,16 @@ export interface ProductionSemanticSourceRootCandidate
   extends Omit<ProductionSemanticSourceRoot, 'authorityClass'> {
   proposedAuthorityClass: string;
 }
+
+type HydratedProductionSemanticSourceRoot = Omit<
+  ProductionSemanticSourceRoot,
+  'sourceContent'
+> & { sourceContent: string };
+
+type HydratedProductionSemanticSourceRootCandidate = Omit<
+  ProductionSemanticSourceRootCandidate,
+  'sourceContent'
+> & { sourceContent: string };
 
 export function prepareRequirementsContractCp02PipelineStage(
   input: RequirementsContractCp02CompilerInput
@@ -270,208 +275,6 @@ export function prepareRequirementsContractCp04FreezeStage(input: {
   };
 }
 
-export function publishRequirementsContractCp04FreezeStage(input: {
-  recordRootPath: string;
-  stage: RequirementsContractCp04FreezeStageResult;
-  authoringRequestId: string;
-  authoringAttemptId: string;
-  inputManifestHash: string;
-  previousCheckpointManifestRef: RequirementsCheckpointManifestRef;
-  compilerIdentity: string;
-  decisionReceiptRefs: RequirementsContractCheckpointManifest['decisionReceiptRefs'];
-  baseAuthorityRef: Record<string, unknown> | null;
-  expectedCurrentPointerHash: string | null;
-  compareAndSwapAttemptPointer: Parameters<
-    typeof publishActiveAuthoringAttemptPointer
-  >[0]['compareAndSwap'];
-  deferAttemptPointerActivation?: boolean;
-  onArtifactPhase?: (
-    role: 'semantic-ir' | 'source-binding' | 'resolved-evidence-index',
-    phase: AtomicNoClobberPhase
-  ) => void;
-}) {
-  const recordRootPath = path.resolve(input.recordRootPath);
-  const semanticRevisionId = input.stage.semanticIdentity.semanticRevisionId;
-  const bindingRevisionId = input.stage.bindingIdentity.bindingRevisionId;
-  const safeIdentity = /^[A-Za-z0-9][A-Za-z0-9._-]*$/u;
-  if (
-    !safeIdentity.test(semanticRevisionId) ||
-    !safeIdentity.test(bindingRevisionId) ||
-    !safeIdentity.test(input.authoringAttemptId)
-  ) {
-    throw new Error('requirements_cp04_publication_identity_invalid');
-  }
-  const relativePaths = {
-    semanticIr: `authoring/semantic-revisions/${semanticRevisionId}/semantic-ir.json`,
-    sourceBinding: `authoring/source-bindings/${bindingRevisionId}/source-binding.json`,
-    resolvedEvidenceIndex:
-      `authoring/source-bindings/${bindingRevisionId}/resolved-evidence-index.json`,
-    checkpointManifest:
-      `authoring/staging/${input.authoringAttemptId}/manifests/4-cp04.json`,
-  };
-  const paths = Object.fromEntries(
-    Object.entries(relativePaths).map(([key, value]) => [
-      key,
-      path.join(recordRootPath, ...value.split('/')),
-    ])
-  ) as Record<keyof typeof relativePaths, string>;
-  const publishArtifact = (
-    role: 'semantic-ir' | 'source-binding' | 'resolved-evidence-index',
-    targetPath: string,
-    artifact: Record<string, unknown>,
-    freeze: RequirementsContractCoreArtifactFreeze
-  ) => atomicNoClobberPublish({
-    targetPath,
-    value: artifact,
-    role,
-    mediaType: 'application/json',
-    onPhase: input.onArtifactPhase
-      ? (phase) => input.onArtifactPhase?.(role, phase)
-      : undefined,
-    validateReadback(value) {
-      if (
-        !value ||
-        typeof value !== 'object' ||
-        Array.isArray(value) ||
-        !verifyRequirementsContractCoreArtifactReadback({
-          freeze,
-          artifact: value as Record<string, unknown>,
-        })
-      ) {
-        throw new Error(`requirements_cp04_${role.replace(/-/gu, '_')}_readback_mismatch`);
-      }
-    },
-  });
-  const publications = {
-    semanticIr: publishArtifact(
-      'semantic-ir', paths.semanticIr, input.stage.semanticIrAuthority, input.stage.freezes.semanticIr
-    ),
-    sourceBinding: publishArtifact(
-      'source-binding',
-      paths.sourceBinding,
-      input.stage.sourceBinding,
-      input.stage.freezes.sourceBinding
-    ),
-    resolvedEvidenceIndex: publishArtifact(
-      'resolved-evidence-index',
-      paths.resolvedEvidenceIndex,
-      input.stage.resolvedEvidenceIndex,
-      input.stage.freezes.resolvedEvidenceIndex
-    ),
-  };
-  const artifactEntries = [
-    {
-      role: 'semantic_ir' as const,
-      schemaVersion: String(input.stage.semanticIrAuthority.schemaVersion ?? 'requirements-contract-semantic-ir/v1'),
-      artifactId: semanticRevisionId,
-      recordRelativePath: relativePaths.semanticIr,
-      artifactHash: input.stage.freezes.semanticIr.artifactHash,
-    },
-    {
-      role: 'source_binding' as const,
-      schemaVersion: String(input.stage.sourceBinding.schemaVersion ?? 'requirements-contract-source-binding/v1'),
-      artifactId: bindingRevisionId,
-      recordRelativePath: relativePaths.sourceBinding,
-      artifactHash: input.stage.freezes.sourceBinding.artifactHash,
-    },
-    {
-      role: 'resolved_evidence_index' as const,
-      schemaVersion: String(
-        input.stage.resolvedEvidenceIndex.schemaVersion ??
-          'requirements-contract-resolved-evidence-index/v1'
-      ),
-      artifactId: `resolved-evidence-index-${bindingRevisionId}`,
-      recordRelativePath: relativePaths.resolvedEvidenceIndex,
-      artifactHash: input.stage.freezes.resolvedEvidenceIndex.artifactHash,
-    },
-  ];
-  const checkpointManifest = createRequirementsContractCheckpointManifest({
-    authoringRequestId: input.authoringRequestId,
-    authoringAttemptId: input.authoringAttemptId,
-    checkpointId: 'cp04',
-    checkpointOrdinal: 4,
-    stage: 'cp04',
-    status: 'passed',
-    inputManifestHash: input.inputManifestHash,
-    previousCheckpointManifestRef: input.previousCheckpointManifestRef,
-    latestValidPredecessorCheckpoint: input.previousCheckpointManifestRef.checkpointId,
-    compilerIdentity: input.compilerIdentity,
-    artifactEntries,
-    decisionReceiptRefs: input.decisionReceiptRefs,
-    baseAuthorityRef: input.baseAuthorityRef,
-  });
-  const checkpointManifestPublication = atomicNoClobberPublish({
-    targetPath: paths.checkpointManifest,
-    value: checkpointManifest,
-    role: 'requirements_contract_checkpoint_manifest',
-    mediaType: 'application/json',
-    validateReadback(value) {
-      const validation = validateRequirementsContractCheckpointManifest(value);
-      if (validation.decision === 'block') throw new Error(validation.issueCodes[0]);
-    },
-  });
-  const readbackArtifact = (
-    targetPath: string,
-    freeze: RequirementsContractCoreArtifactFreeze
-  ) => {
-    const artifact = JSON.parse(readFileSync(targetPath, 'utf8')) as Record<string, unknown>;
-    if (!verifyRequirementsContractCoreArtifactReadback({ freeze, artifact })) {
-      throw new Error('requirements_cp04_filesystem_readback_mismatch');
-    }
-    return true as const;
-  };
-  const checkpointManifestReadback = JSON.parse(
-    readFileSync(paths.checkpointManifest, 'utf8')
-  );
-  const checkpointManifestValidation = validateRequirementsContractCheckpointManifest(
-    checkpointManifestReadback
-  );
-  if (checkpointManifestValidation.decision === 'block') {
-    throw new Error(checkpointManifestValidation.issueCodes[0]);
-  }
-  const pointer: ActiveAuthoringAttemptPointer = {
-    schemaVersion: 'ActiveAuthoringAttemptPointer/v1',
-    authoringAttemptId: input.authoringAttemptId,
-    attemptManifestPath: relativePaths.checkpointManifest,
-    attemptManifestHash: checkpointManifest.checkpointManifestHash,
-    latestValidPredecessorCheckpoint: checkpointManifest.latestValidPredecessorCheckpoint,
-    inputManifestHash: input.inputManifestHash,
-  };
-  const attemptPointer = input.deferAttemptPointerActivation
-    ? {
-        pointer,
-        pointerHash: activeAuthoringAttemptPointerHash(pointer),
-        readbackVerified: true as const,
-        deferred: true as const,
-      }
-    : publishActiveAuthoringAttemptPointer({
-        pointer,
-        expectedCurrentPointerHash: input.expectedCurrentPointerHash,
-        readAttemptManifest(recordRelativePath) {
-          if (recordRelativePath !== relativePaths.checkpointManifest) {
-            throw new Error('requirements_cp04_checkpoint_manifest_path_mismatch');
-          }
-          return JSON.parse(readFileSync(paths.checkpointManifest, 'utf8'));
-        },
-        compareAndSwap: input.compareAndSwapAttemptPointer,
-      });
-  return {
-    status: 'published' as const,
-    paths,
-    publications: { ...publications, checkpointManifest: checkpointManifestPublication },
-    checkpointManifest,
-    attemptPointer,
-    readback: {
-      semanticIr: readbackArtifact(paths.semanticIr, input.stage.freezes.semanticIr),
-      sourceBinding: readbackArtifact(paths.sourceBinding, input.stage.freezes.sourceBinding),
-      resolvedEvidenceIndex: readbackArtifact(
-        paths.resolvedEvidenceIndex,
-        input.stage.freezes.resolvedEvidenceIndex
-      ),
-      checkpointManifest: true as const,
-    },
-  };
-}
 
 export interface ProductionSemanticPipelineResult {
   sourceRoots: ProductionSemanticSourceRoot[];
@@ -780,7 +583,9 @@ function semanticResolutionAuthorityBindingHash(receipt: SemanticResolutionRecei
   });
 }
 
-function validateSourceRoots(sourceRoots: ProductionSemanticSourceRoot[]): void {
+function validateSourceRoots(
+  sourceRoots: ProductionSemanticSourceRoot[]
+): asserts sourceRoots is HydratedProductionSemanticSourceRoot[] {
   if (sourceRoots.length === 0) throw new Error('Semantic pipeline requires Source Roots');
   const ids = new Set<string>();
   for (const root of sourceRoots) {
@@ -794,6 +599,9 @@ function validateSourceRoots(sourceRoots: ProductionSemanticSourceRoot[]): void 
     if (!/^[a-z][a-z0-9-]*\/v[0-9]+$/u.test(root.bodySchemaVersion)) {
       throw new Error(`Invalid semantic body schema version: ${root.bodySchemaVersion}`);
     }
+    if (typeof root.sourceContent !== 'string') {
+      throw new Error(`Semantic Source Root backing is missing: ${root.sourceRootId}`);
+    }
     try {
       exactSourceExcerpt(root.sourceContent, root.sourceSpan);
     } catch (error) {
@@ -806,7 +614,7 @@ function validateSourceRoots(sourceRoots: ProductionSemanticSourceRoot[]): void 
 
 function validateSourceRootCandidates(
   sourceRootCandidates: ProductionSemanticSourceRootCandidate[]
-): void {
+): asserts sourceRootCandidates is HydratedProductionSemanticSourceRootCandidate[] {
   if (sourceRootCandidates.length === 0) {
     throw new Error('Semantic pipeline requires Source Root candidates');
   }
@@ -823,6 +631,9 @@ function validateSourceRootCandidates(
     }
     if (!/^[a-z][a-z0-9-]*\/v[0-9]+$/u.test(candidate.bodySchemaVersion)) {
       throw new Error(`Invalid semantic body schema version: ${candidate.bodySchemaVersion}`);
+    }
+    if (typeof candidate.sourceContent !== 'string') {
+      throw new Error(`Semantic Source Root candidate backing is missing: ${candidate.sourceRootId}`);
     }
     try {
       exactSourceExcerpt(candidate.sourceContent, candidate.sourceSpan);
@@ -857,9 +668,77 @@ function validateLineageRootSet(input: {
 }): void {
   if (
     input.intakeReceipt.requirementSetId !== input.requirementSetId ||
-    input.intentLineageLedger.requirementSetId !== input.requirementSetId ||
-    input.intentLineageLedger.intakeReceiptHash !== input.intakeReceipt.receiptHash
+    input.intentLineageLedger.requirementSetId !== input.requirementSetId
   ) {
+    throw new Error('Intent Lineage identity does not match the current Intake Receipt');
+  }
+  const expectedRootRefs = new Set(
+    input.sourceRoots
+      .filter((root) => lineageAuthorityClass(root) !== 'invocation_bound')
+      .map((root) => root.sourceRootId)
+  );
+  if (
+    input.intentLineageLedger.schemaVersion ===
+    'requirements-contract-intent-lineage-ledger/v2'
+  ) {
+    if (
+      input.intakeReceipt.schemaVersion !== 'requirements-contract-file-intake-receipt/v2' ||
+      input.intentLineageLedger.sourceId !== input.intakeReceipt.sourceId ||
+      sha256Stable(input.intentLineageLedger.sourceBlobRef) !==
+        sha256Stable(input.intakeReceipt.sourceBlobRef) ||
+      !Array.isArray(input.intentLineageLedger.materialRoots) ||
+      !Array.isArray(input.intakeReceipt.materialExcerpts)
+    ) {
+      throw new Error('Intent Lineage v2 source binding does not match the current Intake Receipt');
+    }
+    const materialRootById = new Map<string, Record<string, unknown>>();
+    for (const value of input.intentLineageLedger.materialRoots) {
+      if (!isRecord(value) || typeof value.sourceRootId !== 'string') {
+        throw new Error('Intent Lineage v2 material root is malformed');
+      }
+      if (materialRootById.has(value.sourceRootId)) {
+        throw new Error('Intent Lineage v2 contains duplicate material roots');
+      }
+      materialRootById.set(value.sourceRootId, value);
+    }
+    if (
+      materialRootById.size !== expectedRootRefs.size ||
+      [...materialRootById.keys()].some((sourceRootId) => !expectedRootRefs.has(sourceRootId))
+    ) {
+      throw new Error('Intent Lineage Source Root refs do not match the source-derived root set');
+    }
+    const receiptRangeByRootId = new Map<string, unknown>();
+    for (const value of input.intakeReceipt.materialExcerpts) {
+      if (!isRecord(value) || typeof value.sourceRootId !== 'string' || !isRecord(value.range)) {
+        throw new Error('File Intake v2 material excerpt is malformed');
+      }
+      receiptRangeByRootId.set(value.sourceRootId, value.range);
+    }
+    if (
+      receiptRangeByRootId.size !== materialRootById.size ||
+      [...materialRootById].some(
+        ([sourceRootId, materialRoot]) =>
+          !isRecord(materialRoot.sourceRange) ||
+          sha256Stable(materialRoot.sourceRange) !==
+            sha256Stable(receiptRangeByRootId.get(sourceRootId))
+      )
+    ) {
+      throw new Error('Intent Lineage v2 ranges do not match the File Intake material excerpts');
+    }
+    for (const root of input.sourceRoots.filter((item) => lineageAuthorityClass(item) !== 'invocation_bound')) {
+      const materialRoot = materialRootById.get(root.sourceRootId);
+      if (
+        !materialRoot ||
+        !isRecord(materialRoot.sourceRange) ||
+        Number(materialRoot.sourceRange.startLine) !== root.sourceSpan.startLine ||
+        Number(materialRoot.sourceRange.endLine) !== root.sourceSpan.endLine
+      ) {
+        throw new Error(`Intent Lineage v2 Source Root span mismatch: ${root.sourceRootId}`);
+      }
+    }
+    return;
+  }
+  if (input.intentLineageLedger.intakeReceiptHash !== input.intakeReceipt.receiptHash) {
     throw new Error('Intent Lineage identity does not match the current Intake Receipt');
   }
   const classifications = Array.isArray(input.intentLineageLedger.classifications)
@@ -881,11 +760,6 @@ function validateLineageRootSet(input: {
     }
     for (const ref of refs as string[]) lineageRootRefs.add(ref);
   }
-  const expectedRootRefs = new Set(
-    input.sourceRoots
-      .filter((root) => lineageAuthorityClass(root) !== 'invocation_bound')
-      .map((root) => root.sourceRootId)
-  );
   if (
     lineageRootRefs.size !== expectedRootRefs.size ||
     [...lineageRootRefs].some((ref) => !expectedRootRefs.has(ref))
@@ -1011,7 +885,7 @@ export function materializeProductionSemanticSourceRoots(input: {
   intakeReceipt: unknown;
   intentLineageLedger: unknown;
   sourceRootCandidates: ProductionSemanticSourceRootCandidate[];
-}): ProductionSemanticSourceRoot[] {
+}): HydratedProductionSemanticSourceRoot[] {
   const intakeReceipt = input.intakeReceipt;
   const intentLineageLedger = input.intentLineageLedger;
   const validIntakeReceipt =
@@ -1043,7 +917,7 @@ export function materializeProductionSemanticSourceRoots(input: {
 }
 
 function semanticResolutionReceipts(input: {
-  sourceRoots: ProductionSemanticSourceRoot[];
+  sourceRoots: HydratedProductionSemanticSourceRoot[];
   semanticResolutionDir: string;
   parserIdentity: { id: string; hash: string };
   resolutionRunId: string;
@@ -1229,9 +1103,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function resolvedSourceRootsFromSemanticModel(input: {
-  sourceRoots: ProductionSemanticSourceRoot[];
+  sourceRoots: HydratedProductionSemanticSourceRoot[];
   resolvedSourceRoots: Record<string, unknown>;
-}): ProductionSemanticSourceRoot[] {
+}): HydratedProductionSemanticSourceRoot[] {
   const expectedIds = [...input.sourceRoots.map((root) => root.sourceRootId)].sort();
   const actualIds = Object.keys(input.resolvedSourceRoots).sort();
   if (
@@ -1439,6 +1313,7 @@ function buildCanonicalSemanticIr(input: {
 
 export function runRequirementsContractProductionSemanticPipeline(input: {
   projectRoot: string;
+  recordRoot?: string;
   recordId: string;
   requirementSetId: string;
   intakeReceiptPath: string;
@@ -1457,6 +1332,7 @@ export function runRequirementsContractProductionSemanticPipeline(input: {
     entries: ConservationExecutionRegistryEntry[];
   };
   executionConstraintRefsBySourceRootId?: Record<string, string[]>;
+  sourceArtifactViews?: ProductionSourceArtifactView[];
 }): ProductionSemanticPipelineResult {
   const lifecycleValidationReportPath = path.join(
     path.dirname(input.semanticConservationManifestPath),
@@ -1481,11 +1357,51 @@ export function runRequirementsContractProductionSemanticPipeline(input: {
   ) {
     throw new Error('Semantic pipeline requires a valid Invocation Authority Receipt');
   }
+  const materialRangeByRootId = new Map<string, ProductionSourceRange>();
+  if (
+    input.intakeReceipt.schemaVersion === 'requirements-contract-file-intake-receipt/v2' &&
+    Array.isArray(input.intakeReceipt.materialExcerpts)
+  ) {
+    for (const excerpt of input.intakeReceipt.materialExcerpts) {
+      if (isRecord(excerpt) && typeof excerpt.sourceRootId === 'string' && isRecord(excerpt.range)) {
+        materialRangeByRootId.set(
+          excerpt.sourceRootId,
+          excerpt.range as unknown as ProductionSourceRange
+        );
+      }
+    }
+  }
+  const compactCandidates = input.sourceRootCandidates.map((candidate) => {
+    const sourceRange = materialRangeByRootId.get(candidate.sourceRootId);
+    if (!sourceRange) return candidate;
+    if (!isRecord(input.intakeReceipt.sourceBlobRef)) {
+      throw new Error('File Intake v2 source blob ref is malformed');
+    }
+    const sourceBlobRef = input.intakeReceipt.sourceBlobRef as unknown as RequirementsContentRef;
+    if (
+      typeof candidate.sourceContent === 'string' &&
+      sha256Text(candidate.sourceContent) !== sourceBlobRef.contentHash
+    ) {
+      throw new Error('Production Source Root content does not match the File Intake source blob');
+    }
+    const { sourceContent: _sourceContent, ...withoutInlineSource } = candidate;
+    return { ...withoutInlineSource, sourceBlobRef, sourceRange };
+  });
+  const byteCache = new Map<string, Buffer>();
+  const resolvedCandidates: HydratedProductionSemanticSourceRootCandidate[] = compactCandidates.map((candidate) => ({
+    ...candidate,
+    sourceContent: resolveProductionSourceDocument({
+      value: candidate,
+      recordRoot: input.recordRoot,
+      artifactViews: input.sourceArtifactViews,
+      byteCache,
+    }),
+  }));
   const sourceRoots = materializeProductionSemanticSourceRoots({
     requirementSetId: input.requirementSetId,
     intakeReceipt: input.intakeReceipt,
     intentLineageLedger: input.intentLineageLedger,
-    sourceRootCandidates: input.sourceRootCandidates,
+    sourceRootCandidates: resolvedCandidates,
   });
   const parserIdentity = packagedFileIdentity(
     'requirements-contract-production-source-root-parser',
@@ -1739,11 +1655,15 @@ export function runRequirementsContractProductionSemanticPipeline(input: {
         fileIdentity(SEMANTIC_RESOLUTION_SCHEMA, schemaPath(SEMANTIC_RESOLUTION_SCHEMA)),
         fileIdentity(SEMANTIC_CONSERVATION_SCHEMA, schemaPath(SEMANTIC_CONSERVATION_SCHEMA)),
         fileIdentity(
-          input.intakeReceipt.schemaVersion === 'requirements-contract-file-intake-receipt/v1'
+          String(input.intakeReceipt.schemaVersion).startsWith(
+            'requirements-contract-file-intake-receipt/'
+          )
             ? FILE_INTAKE_SCHEMA
             : SESSION_INTAKE_SCHEMA,
           schemaPath(
-            input.intakeReceipt.schemaVersion === 'requirements-contract-file-intake-receipt/v1'
+            String(input.intakeReceipt.schemaVersion).startsWith(
+              'requirements-contract-file-intake-receipt/'
+            )
               ? FILE_INTAKE_SCHEMA
               : SESSION_INTAKE_SCHEMA
           )
@@ -1815,8 +1735,28 @@ export function runRequirementsContractProductionSemanticPipeline(input: {
           ...bundleValidation,
         }),
     });
+    const compactBackingByRootId = new Map(
+      compactCandidates.map((candidate) => [
+        candidate.sourceRootId,
+        compactProductionSourceBacking(candidate),
+      ])
+    );
     return {
-      sourceRoots,
+      sourceRoots: sourceRoots.map((root) => {
+        const {
+          sourceContent: _sourceContent,
+          sourceBlobRef: _sourceBlobRef,
+          sourceRange: _sourceRange,
+          sourceBinding: _sourceBinding,
+          sourceArtifact: _sourceArtifact,
+          bundlePath: _bundlePath,
+          ...stableRoot
+        } = root;
+        return {
+          ...stableRoot,
+          ...compactBackingByRootId.get(root.sourceRootId),
+        } as ProductionSemanticSourceRoot;
+      }),
       semanticIr,
       lifecycleValidationReport,
       semanticResolutionReceipts: resolution.receipts,

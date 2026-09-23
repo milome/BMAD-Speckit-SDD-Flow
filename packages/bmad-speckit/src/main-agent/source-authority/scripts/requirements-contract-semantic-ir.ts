@@ -1,4 +1,5 @@
 import {
+  legacyScopeSemanticHash,
   requirementsContractDomainHash,
   scopeSemanticHash,
   semanticRevisionId,
@@ -58,6 +59,7 @@ export interface RequirementsContractSemanticIr {
   semanticRevisionId: string;
   parentSemanticRevisionId: string | null;
   compilerVersion: string;
+  semanticHashVersion?: 'scopeSemanticHash/v3';
   scopeSemanticHash: string;
   semanticPayload: {
     semantics: Record<string, unknown>;
@@ -370,6 +372,7 @@ export function createRequirementsContractSemanticIr(input: {
     }),
     parentSemanticRevisionId: input.parentSemanticRevisionId,
     compilerVersion: input.compilerVersion,
+    semanticHashVersion: 'scopeSemanticHash/v3',
     scopeSemanticHash: semanticHash,
     semanticPayload,
   };
@@ -384,7 +387,7 @@ export function validateRequirementsContractSemanticIr(value: unknown) {
   const ir = value as Partial<RequirementsContractSemanticIr> & Record<string, unknown>;
   const allowed = new Set([
     'schemaVersion', 'recordId', 'requestId', 'semanticRevisionId', 'parentSemanticRevisionId',
-    'compilerVersion', 'scopeSemanticHash', 'semanticPayload',
+    'compilerVersion', 'semanticHashVersion', 'scopeSemanticHash', 'semanticPayload',
   ]);
   if (Object.keys(ir).some((key) => !allowed.has(key))) issueCodes.push('semantic_ir_unknown_field');
   if (!['requirements-contract-semantic-ir/v1', 'requirements-contract-semantic-ir/v2'].includes(String(ir.schemaVersion))) {
@@ -407,7 +410,10 @@ export function validateRequirementsContractSemanticIr(value: unknown) {
     if (ir.schemaVersion === 'requirements-contract-semantic-ir/v1' && payload.specSpanRegistry?.some((span) => span.boundTypedSourceGraphHash !== undefined)) {
       issueCodes.push('semantic_ir_typed_span_version_required');
     }
-    if (ir.scopeSemanticHash !== scopeSemanticHash(payload)) issueCodes.push('semantic_ir_scope_hash_mismatch');
+    const expectedScopeSemanticHash = ir.semanticHashVersion === 'scopeSemanticHash/v3'
+      ? scopeSemanticHash(payload)
+      : legacyScopeSemanticHash(payload);
+    if (ir.scopeSemanticHash !== expectedScopeSemanticHash) issueCodes.push('semantic_ir_scope_hash_mismatch');
     const constraints = validateExecutionConstraintRegistry(payload);
     issueCodes.push(...constraints.issueCodes);
   }

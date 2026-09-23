@@ -141,11 +141,6 @@ const FIXED_TARGET_DESCRIPTORS = [
     relativePath: 'requirements-contract-evaluation-report.json',
   },
   {
-    targetId: 'legacy_prd_migration_receipt',
-    resolution: 'evidence_relative',
-    relativePath: 'legacy-prd-migration-receipt.json',
-  },
-  {
     targetId: 'consumer_migration',
     resolution: 'evidence_relative',
     relativePath: 'G14-consumer-migration.json',

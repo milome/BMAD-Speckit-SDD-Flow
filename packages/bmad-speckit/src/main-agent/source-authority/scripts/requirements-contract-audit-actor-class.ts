@@ -1,5 +1,5 @@
 export const REQUIREMENTS_CONTRACT_AUDIT_ACTOR_CLASSES = [
-  'requirements_critical_auditor_judge',
+  'requirements_contract_judge',
   'bounded_code_reviewer',
   'final_acceptance_judge',
   'slice_independent_auditor',
@@ -9,7 +9,7 @@ export type RequirementsContractAuditActorClass =
   (typeof REQUIREMENTS_CONTRACT_AUDIT_ACTOR_CLASSES)[number];
 
 export const REQUIREMENTS_CONTRACT_JUDGE_ACTOR_CLASSES = [
-  'requirements_critical_auditor_judge',
+  'requirements_contract_judge',
   'final_acceptance_judge',
 ] as const satisfies readonly RequirementsContractAuditActorClass[];
 

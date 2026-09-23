@@ -18,7 +18,7 @@ const { commandBindingsForTarget } = require('./test-command-bindings.cjs');
 const GENERATED_PATH = '.artifacts/test-portfolio/test-catalog.json';
 // The catalog records the complete retained inventory; PR runtime is governed
 // by profile selection and shard budgets, not by deleting catalog entries.
-const EXECUTABLE_TEST_BUDGET = 1200;
+const EXECUTABLE_TEST_BUDGET = 1216;
 const POLICY_FIELDS = Object.freeze([
   'state',
   'packageId',

@@ -195,7 +195,7 @@ function writeAuthoringPromotionGuard(
     nextAction:
       routeDecision === 'single_pass_final_allowed'
         ? 'continue_pre_render_readiness'
-        : 'run_checkpoint_persistence_or_authoring_repair',
+        : 'run_checkpoint_persistence_or_automatic_remediation',
     checkpointPersistenceSatisfied: false,
     initialAssessmentRef: {
       path: scaleAssessmentPath.replace(/\\/g, '/'),

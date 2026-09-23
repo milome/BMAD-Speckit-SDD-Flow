@@ -48,31 +48,21 @@ If older project material says "requirements contract", treat it as a legacy ali
 - Business-scoped visual views are first-class contract projections, not decorative diagrams. Every `scope: business` visual view must declare `visualKind: happy|failure|state|flow|edge`, plus `traceRows[]` or `traceRefs[]`, `evidenceRefs[]`, and `acceptanceRefs[]`; `failure` views must also declare `failurePathRefs[]`, and `edge` views must declare `edgeCaseRefs[]`. The linked `TRACE-*` row must reciprocally reference the view through `sequenceViewRefs[]`, `flowViewRefs[]`, `edgeCaseViewRefs[]`, `viewRefs[]`, or `diagramRefs[]`, and the linked trace must share at least one evidence ref and one ACC/E2E ref with the view.
 - A `MUST-*` is not allowed to be only a sentence-level claim. Every `MUST-*` must first enter `must_decomposition_packet.json`, where it is split into atomic tasks, atomicity drivers, question coverage, and projection rows.
 - `EVD-*`, `TRACE-*`, `ACC-*`, `E2E-*`, `failurePaths[]`, `edgeCases[]`, `currentTargetMap`, and `aiTddContractExecutionManifestProjection` must be same-origin projections from the synchronized `must_decomposition_packet.json`; they must not be independently invented in the source document.
-- Critical Auditor is mandatory for confirmation-ready authoring. The convergence condition is `3` consecutive no-new-valid-gap receipts bound to the current input hash, plus deterministic `pre_render_must_decomposition_gate` `PASS`, plus packet/source reconciliation `pass`. Receipt count alone is not convergence.
-- Every Critical Auditor round must consume a current deterministic gate dry-run before the request is written. The request must include the dry-run report path, dry-run hash, actionable blocker count, failed checks, reconciliation issue count, checked projection groups, and packet projection refs. If the dry-run exposes actionable blockers, a `no_new_*` response is forbidden unless `falsePositiveProofs[]` covers every blocker with machine-verifiable evidence.
-- Critical Auditor rounds must use fixed attack perspectives instead of repeating the same generic prompt: round 1 checks MUST atomicity, over-broad tasks, and missing decomposition; round 2 checks EVD / TRACE / ACC / E2E / FAIL / EDGE / artifact / command / AI-TDD projection materialization plus per-MUST projection quality (`projection_per_must_acceptance_not_independent`, `projection_shared_evidence_without_per_must_oracle`, `required_command_all_cover_all_without_per_must_assertions`, `target_modification_path_all_cover_all`, `current_target_map_not_product_specific`, `business_visual_generic_or_compressed`); round 3 checks stale hash, authority bypass, negative boundary, reconfirmation, and delivery-vs-confirmation confusion.
-- Critical Auditor responses are fail-closed. A no-new-gap response must include non-empty `reviewedProjectionRefs`, the current `gateDryRunHash`, the dry-run `reconciliationIssueCount`, all required `checkedProjectionGroups`, and `priorFindingsDisposition[]` entries classified only as `new`, `resolved`, `unchanged`, or `rejected`.
-- `staging-first authoring transaction`: `author-confirmation-ready-source` must generate and rework `authoring/staging/draft-source.md`, staging `semantic-kernel.json`, staging `must_decomposition_packet.json`, round request/response/receipt files, and `source-promotion-decision.json` before any source document mutation. Source materialization is the final promotion step, never the first audit target.
-- `source PRD entry normalization`: authoring accepts `entrySource=bmad_prd`, `entrySource=session_requirements`, and `entrySource=source_prd_draft`. All three entry sources must run source PRD instance lint, enter the same staging-first authoring lane, and preserve source PRD draft status below confirmation readiness.
-- `authoring gap-fill boundary`: authoring may generate or fill missing source PRD sections only inside `authoring/staging/draft-source.md`. New rows must carry source refs. Content that cannot be derived from the input becomes a blocking question, open question, or `OUT-*` boundary. Authoring must not fabricate `ACC-*`, `E2E-*`, `CMD-*`, `TRACE-*`, `PATH-*`, or `CTM-*` rows.
-- `BMAD source refs are inputs, not PASS evidence`: BMAD discovery, elicitation, and source refs can seed authoring, but Critical Auditor, packet/source reconciliation, source PRD instance lint, and pre-render gates must re-verify them before materialization or confirmation readiness.
-- `provider missing continuation`: when the raw CLI has no Critical Auditor provider, it must return `blockingStage: "critical_auditor_provider_mode_required"`, `nextRequiredAction: "run_main_session_critical_auditor_round"`, and `sourceMutationPerformed: false`; it may write staging or advisory diagnostics, but it must not write the source document, `promotion-receipt.json`, or legacy `source-materialization-receipt.json`.
-- `/goal main session owns Critical Auditor response generation, staging rework, receipt writing, and source promotion`. Long-running requirements-contract authoring work must stay visible in the main session; subagents and external adapters cannot be the authority that mutates source, packet, receipt, or requirement-record state.
-- `subagent provider modes are read-only response providers`: `codex_subagent_readonly`, `claude_subagent_readonly`, and `external_adapter` may return only a `critical-auditor-round-response/v1` compatible object for the main session to validate. They must not write source documents, packets, receipts, requirement records, source promotion decisions, or convergence claims.
-- `large-document-writer is transport only and is not semantic owner for requirements contracts`: requirements-contract-authoring owns semantic extraction, controlled MUST rows, audit convergence, packet/source reconciliation, and confirmation readiness. Large-document-writer may only perform safe UTF-8 draft promotion after this workflow authorizes a write.
-- `pre_materialization_advisory_scan`: before source materialization, host-level multi-role or subagent work is allowed only as a short-window, read-only coverage suggestion pass. It MUST be labeled `purpose=pre_materialization_advisory_scan`, MUST emit or record `not_audit_evidence`, MUST NOT write audit artifacts, MUST NOT run as a loop, MUST NOT be called checkpoint, MUST NOT be called Critical Auditor, and MUST NOT count as convergence evidence.
+- `checkpointed authoring build`: `author-confirmation-ready-source` must checkpoint semantic inputs and content references before any source document mutation. Temporary compiler state belongs under the record's private `.staging` directory and is never an active authority.
+- `source PRD entry normalization`: authoring accepts `entrySource=bmad_prd`, `entrySource=session_requirements`, and `entrySource=source_prd_draft`. All three entry sources must run source PRD instance lint, enter the same checkpointed authoring build, and preserve source PRD draft status below confirmation readiness.
+- `authoring gap-fill boundary`: authoring may generate or fill missing source PRD sections only in the current checkpoint build. New rows must carry source refs. Content that cannot be derived from the input becomes a blocking question, open question, or `OUT-*` boundary. Authoring must not fabricate `ACC-*`, `E2E-*`, `CMD-*`, `TRACE-*`, `PATH-*`, or `CTM-*` rows.
+- `BMAD source refs are inputs, not PASS evidence`: BMAD discovery, elicitation, and source refs can seed authoring, but packet/source reconciliation, source PRD instance lint, and pre-render gates must re-verify them before materialization or confirmation readiness.
+- `/goal main session owns checkpoint rework and source promotion`. Long-running requirements-contract authoring work must stay visible in the main session; subagents and external adapters cannot be the authority that mutates source, packet, requirement-record, or source-promotion state.
+- `large-document-writer is transport only and is not semantic owner for requirements contracts`: requirements-contract-authoring owns semantic extraction, controlled MUST rows, packet/source reconciliation, and confirmation readiness. Large-document-writer may only perform safe UTF-8 draft promotion after this workflow authorizes a write.
+- `pre_materialization_advisory_scan`: before source materialization, host-level multi-role or subagent work is allowed only as a short-window, read-only coverage suggestion pass. It MUST be labeled `purpose=pre_materialization_advisory_scan`, MUST emit or record `not_audit_evidence`, MUST NOT write audit artifacts, MUST NOT run as a loop, and MUST NOT be called checkpoint.
 - When that advisory pass is offered in an interactive terminal, render the opt-in prompt to the current session's `stderr` immediately after the authoring lane banner and scale-assessment output, before any subagent spawn. The prompt is plain text, not a popup or file write, and it appears only once with a 10-second yes/no countdown. Skip it entirely in non-TTY, CI, `--json`, `--quiet`, or piped sessions; default to `No` on timeout. Only an explicit `Yes` may spawn exactly 3 read-only subagents, each labeled `purpose=pre_materialization_advisory_scan`; print compressed summaries from all 3, then merge them into a single revision suggestion. The prompt output is transient terminal state only and MUST NOT be treated as audit evidence, checkpoint evidence, or a loop.
-- `pre_write_blocking_gate`: `author-confirmation-ready-source` MUST NOT mutate the implementation source document until `source-mutation-decision.json.finalDecision` is `allow_source_materialization`. This gate must evaluate the current `draft-source-preview.md`, controlled MUST candidates, requirement coverage ledger, target authority, validation authority, projection-domain sanity, scale routing, checkpoint persistence when required, real Critical Auditor receipts, packet/source reconciliation, pre-render MUST decomposition, and pre-render global consistency. Any blocker MUST leave the source document unchanged and may persist only diagnostic authoring artifacts under `_bmad-output`.
+- `pre_write_blocking_gate`: `author-confirmation-ready-source` MUST NOT mutate the implementation source document until `source-mutation-decision.json.finalDecision` is `allow_source_materialization`. This gate must evaluate the current `draft-source-preview.md`, controlled MUST candidates, requirement coverage ledger, target authority, validation authority, projection-domain sanity, scale routing, checkpoint persistence when required, packet/source reconciliation, pre-render MUST decomposition, and pre-render global consistency. Any blocker MUST leave the source document unchanged and may persist only diagnostic authoring artifacts under `_bmad-output`.
 - `post_materialization_deep_audit`: after source promotion, deep audit work MUST be labeled separately from advisory work and MUST require the current source hash, inline `implementationConfirmation`, `promotion-receipt.json`, and `source-mutation-decision.json.finalDecision: allow_source_materialization` before request generation. Post-materialization deep audit MUST NOT retroactively satisfy a missing pre-write blocking gate. Legacy `source-materialization-receipt.json` is not a valid current source write receipt.
-- `critical_auditor_round`: Critical Auditor request generation MUST require the current gate dry-run hash, current source hash, current implementationConfirmation hash, and current packet hash.
-- `authoring-repair preserve-existing` MUST audit existing inline `implementationConfirmation` content only and MUST NOT create a new `implementationConfirmation` block. `grill-with-docs` / `docs-review` may review written source files or the persisted `draft-source-preview.md` and authoring artifacts, but chat-only drafts are not valid audit targets.
-- If the source document, inline `implementationConfirmation`, semantic kernel, or packet hash changes, `authoring-repair` must automatically archive stale Critical Auditor requests, responses, receipts, and dry-run artifacts, then restart the three-round loop from round 1. Do not ask the user to manually delete or move stale audit artifacts.
-- If the user asks to update an existing implementation source document and the edit changes `implementationConfirmation.must[]`, `notDone[]`, `evidence[]`, `traceRows[]`, `acceptanceTests[]`, `requiredCommands[]`, `currentTargetMap`, `aiTddContractExecutionManifestProjection`, governance event semantics, controlled ingest semantics, or closeout semantics, the agent MUST run `main-agent-orchestration --action authoring-repair --mode preserve-existing --source <source> --json` before reporting completion, unless the user explicitly requested draft-only editing.
+- If the user asks to update an existing implementation source document and the edit changes `implementationConfirmation.must[]`, `notDone[]`, `evidence[]`, `traceRows[]`, `acceptanceTests[]`, `requiredCommands[]`, `currentTargetMap`, `aiTddContractExecutionManifestProjection`, governance event semantics, controlled ingest semantics, or closeout semantics, the agent MUST rerun the authoring validation lane, packet/source reconciliation, and deterministic pre-render gates before reporting completion, unless the user explicitly requested draft-only editing.
 - Draft-only output after a semantic source edit must be labeled exactly as not confirmation-ready:
   - `status: draft_updated_not_confirmation_ready`
   - `missing: pre-confirmation drilldown artifacts`
-  - `next: main-agent-orchestration --action authoring-repair --mode preserve-existing --source <source> --json`
-- Scripts may generate Critical Auditor round requests and validate response artifacts, but they must not fabricate no-new-gap receipts without a main-agent/LLM `critical-auditor-round-response-<n>.json` artifact.
+  - `next: rerun author-confirmation-ready-source validation for the updated source`
 - When governance events apply, require `governanceEventTypeRegistryPolicy` plus `governanceEventTypeRegistry[]`; every event type needs a `payloadContract` that passes the policy.
 - `governanceEventTypeRegistryPolicy` must define `controlFieldVocabulary[]`, `payloadKindContracts[]`, `controlWriteModePolicies[]`, and `eventSpecificRequirements[]`; renderer, ingest, gates, hooks, workers, and tests must not keep a second hardcoded event or payload rule list.
 - `controlFieldVocabulary[]` is the only policy-level vocabulary for control-shaped fields. A transport envelope that carries any vocabulary field at top level or under `payload` must be rejected unless the current event type lists that field in `writesControlFields[]`.
@@ -121,8 +111,8 @@ User wording must be normalized before any authoring, repair, render, or audit r
 - `更新文档为详细需求契约文档` routes to `author-confirmation-ready-source`.
 - `补 implementationConfirmation` routes to `author-confirmation-ready-source` when the source document lacks inline `implementationConfirmation`.
 - `完善需求合同` routes to `author-confirmation-ready-source`.
-- A source document without inline `implementationConfirmation` MUST NOT route to `authoring-repair preserve-existing`.
-- A semantic update to an existing inline `implementationConfirmation` MUST enter the visible `author-confirmation-ready-source` lane first; after the source document is written, `authoring-repair preserve-existing` may audit the already materialized contract.
+- A source document without inline `implementationConfirmation` MUST route to `author-confirmation-ready-source`.
+- A semantic update to an existing inline `implementationConfirmation` MUST enter the visible `author-confirmation-ready-source` lane and rerun deterministic validation after the source document is written.
 - Confirmation language selection and confirmation HTML rendering are post-authoring steps. They must not be treated as entry prerequisites for `author-confirmation-ready-source`.
 - Missing confirmation language MUST remain `null` or `not_selected` until the user explicitly selects `zh-CN`, `en-US`, or `bilingual`.
 - Missing confirmation language MUST NOT skip lane selection, scale assessment, controlled MUST candidate detection, packet planning, or pre-write blocking gates.
@@ -205,7 +195,7 @@ Authoring-draft promotion is guarded. Before target replacement, `promote-draft-
 
 If any guarded artifact is missing or stale, promotion MUST stop before target replacement with `authoring_promotion_gate_failed` and MUST return `nextRequiredActions[]`. The target document must not be created or modified. A stale `source-mutation-decision.json` includes any mismatch between `sourceDocumentHashBefore` and the current target raw hash, any mismatch between `sourceDocumentHashAfter` and the normalized draft manifest raw hash, any mismatch between `semanticSourceHashAfter` and the current draft semantic `sourceDocumentHash`, any mismatch between `semanticSourceHashBefore` and a parseable current target semantic `sourceDocumentHash`, a target that exists while the decision declares new-file creation, or a missing target that lacks `sourceDocumentExistedBefore: false`.
 
-Use `--auto-repair` when the caller wants deterministic correction before the final decision. `--auto-repair` may generate missing `scale-assessment-initial.json`, `scale-routing-decision.json`, `encoding-report.json`, and a default `promotion-receipt.json` path. It may generate `source-mutation-decision.json` only through `prepare-current-source-promotion.js`, and only when the current target file exists and its raw hash exactly matches the normalized draft manifest hash; this refreshes stale receipt binding without authorizing a semantic source edit. It MUST NOT synthesize `source-mutation-decision.json` for changed drafts, Critical Auditor convergence, packet/source reconciliation, or checkpoint persistence. Those semantic artifacts must come from the main-session authoring orchestration path. Missing or stale semantic artifacts must remain visible as `nextRequiredActions[]`, and the returned `authoringPromotionGate` must include `currentTargetState`, `expectedDraftHash`, `expectedSemanticSourceHash`, `expectedImplementationConfirmationHash`, and source-mutation decision binding details so the next main-session iteration can re-run the correct authoring step instead of guessing.
+Use `--auto-repair` when the caller wants deterministic correction before the final decision. `--auto-repair` may generate missing `scale-assessment-initial.json`, `scale-routing-decision.json`, `encoding-report.json`, and a default `promotion-receipt.json` path. It may generate `source-mutation-decision.json` only through `prepare-current-source-promotion.js`, and only when the current target file exists and its raw hash exactly matches the normalized draft manifest hash; this refreshes stale receipt binding without authorizing a semantic source edit. It MUST NOT synthesize `source-mutation-decision.json` for changed drafts, packet/source reconciliation, or checkpoint persistence. Those semantic artifacts must come from the main-session authoring orchestration path. Missing or stale semantic artifacts must remain visible as `nextRequiredActions[]`, and the returned `authoringPromotionGate` must include `currentTargetState`, `expectedDraftHash`, `expectedSemanticSourceHash`, `expectedImplementationConfirmationHash`, and source-mutation decision binding details so the next main-session iteration can re-run the correct authoring step instead of guessing.
 
 For a stale receipt when the source document is already current, use the skill-local current-source prep command. Do not create `prepare-current-source-promotion*.cjs` or similar helpers inside `_bmad-output/.../authoring`.
 
@@ -213,15 +203,6 @@ For a stale receipt when the source document is already current, use the skill-l
 node <skill-dir>/scripts/prepare-current-source-promotion.js \
   --source <source-document.md> \
   --authoring-dir <authoring-dir> \
-  --json
-```
-
-Do not use a deterministic script as Critical Auditor no-new-gap authority. The skill-local `write-critical-auditor-no-new-gap-response.js` path is retained only as a fail-closed compatibility probe: it consumes the current request and returns `critical_auditor_independent_provider_evidence_required`. It never writes receipt files or response files. Obtain the response from an independently bound provider/model identity and ingest it through the controlled authoring flow. Do not create executable helpers inside `_bmad-output/.../authoring`.
-
-```bash
-node <skill-dir>/scripts/write-critical-auditor-no-new-gap-response.js \
-  --authoring-dir <authoring-dir> \
-  --round <n> \
   --json
 ```
 
@@ -239,9 +220,9 @@ Do not collapse these modes into one long execution chain. "Generate requirement
 Internal stages are mandatory workflow phases, not user-facing manual commands:
 
 - `semantic-kernel-authoring`: produce `_bmad-output/runtime/requirement-records/<recordId>/authoring/semantic-kernel.json`.
-- `atomic-decomposition-loop`: produce `_bmad-output/runtime/requirement-records/<recordId>/authoring/must_decomposition_packet.json`, invoke Critical Auditor with a current gate dry-run and the fixed round attack perspective, and iterate until three current-hash, receipt-bound consecutive no-new-gap rounds are derived from real Critical Auditor receipt files. Do not write a fixed convergence count by hand.
+- `atomic-decomposition-workflow`: produce `_bmad-output/runtime/requirement-records/<recordId>/authoring/must_decomposition_packet.json`, materialize same-origin projections, and resolve deterministic packet, projection-quality, and reconciliation blockers.
 - `packet-source-materialization`: materialize only synchronized packet projections into inline `implementationConfirmation`.
-- `pre-render-drilldown-gate`: run `pre_render_must_decomposition_gate.js` after three bound no-new-gap receipts and block HTML rendering until the gate returns `PASS` and packet/source reconciliation returns `pass`.
+- `pre-render-drilldown-gate`: run `pre_render_must_decomposition_gate.js` and block HTML rendering until the gate returns `PASS` and packet/source reconciliation returns `pass`.
 
 ## Confirmation-Ready Authoring Target
 
@@ -369,11 +350,6 @@ implementationConfirmation:
       path: _bmad-output/runtime/requirement-records/<recordId>/authoring/must_decomposition_packet.json
       hash: sha256:...
       status: synchronized
-    criticalAuditor:
-      minimumRounds: 3
-      consecutiveNoNewGapRounds: <derived-from-current-critical-auditor-receipts>
-      latestReceiptHash: <latest-current-receipt-hash>
-      convergenceVerdict: <audit_not_run|blocked|bounded_no_new_gap>
     packetSourceReconciliation:
       reportPath: _bmad-output/runtime/requirement-records/<recordId>/authoring/must_packet_source_reconciliation_report.json
       verdict: pass
@@ -672,7 +648,7 @@ Rules:
 
 Before rendering HTML, verify the source document against confirmation-page blocking rules:
 
-Run the pre-confirmation atomic decomposition workflow first. Its pre-write phase performs packet planning, source edit planning, real Critical Auditor convergence, packet/source reconciliation, and deterministic pre-render gates against `draft-source-preview.md` by producing `semantic-kernel.json`, synchronized `must_decomposition_packet.json`, Critical Auditor requests/responses/receipts, per-round deterministic gate dry-run reports, `must_packet_source_reconciliation_report.json`, and `pre-render-must-decomposition-gate-report.json`; this phase may use quick scan and `pre_materialization_advisory_scan` only as read-only, non-audit guidance. Source materialization is allowed only after `source-mutation-decision.json.finalDecision` is `allow_source_materialization`; its post-materialization phase verifies the written source, receipt, and current hashes before render or deep audit. This workflow is mandatory for both checkpoint and single_pass scale decisions.
+Run the pre-confirmation atomic decomposition workflow first. Its pre-write phase performs packet planning, source edit planning, packet/source reconciliation, and deterministic pre-render gates against `draft-source-preview.md` by producing `semantic-kernel.json`, synchronized `must_decomposition_packet.json`, `must_packet_source_reconciliation_report.json`, and `pre-render-must-decomposition-gate-report.json`; this phase may use quick scan and `pre_materialization_advisory_scan` only as read-only, non-audit guidance. Source materialization is allowed only after `source-mutation-decision.json.finalDecision` is `allow_source_materialization`; its post-materialization phase verifies the written source, receipt, and current hashes before render or deep audit. This workflow is mandatory for both checkpoint and single_pass scale decisions.
 
 Run the deterministic definition drilldown first:
 
@@ -724,21 +700,9 @@ node <skill-dir>/scripts/pre_render_must_decomposition_gate.js \
   --json
 ```
 
-The gate reads `semantic-kernel.json`, `must_decomposition_packet.json`, `critical-auditor-receipt-round-*.json`, inline `implementationConfirmation`, and packet/source reconciliation state. The final gate writes `must_decomposition_receipt.json`, `must_packet_source_reconciliation_report.json`, and `pre-render-must-decomposition-gate-report.json`. Per-round Critical Auditor dry-runs must write round-scoped dry-run files and must not be treated as final confirmation readiness.
+The gate reads `semantic-kernel.json`, `must_decomposition_packet.json`, inline `implementationConfirmation`, and packet/source reconciliation state. The final gate writes `must_decomposition_receipt.json`, `must_packet_source_reconciliation_report.json`, and `pre-render-must-decomposition-gate-report.json`.
 
-The gate is deterministic and fail-closed. It verifies schema, source hashes, task split, question coverage, packet projection materialization, projection quality, Critical Auditor convergence, and two-way packet/source reconciliation. It must block on missing semantic kernel, missing packet, stale packet hash, missing Critical Auditor receipt, fewer than three no-new-gap rounds, unresolved validated gap, incomplete question coverage, `actualTaskCount < expectedTaskCount`, over-broad atomic task, missing packet projection, source row independently invented, packet projection not materialized, per-MUST projection compression, missing packet/source reconciliation, or any stale gate report.
-
-Each Critical Auditor request must embed the current dry-run summary:
-
-- `gateDryRunHash`
-- dry-run `verdict`, `failedChecks`, `actionableBlockingIssueCount`, and blocker refs
-- reconciliation `verdict`, `issueCount`, and `checkedGroups`
-- all packet projection groups and projection refs
-- the fixed round attack perspective
-
-Each response must echo the dry-run binding and checked surfaces. The response is invalid if `reviewedProjectionRefs[]` is empty, `gateDryRunHash` does not match the request, `reconciliationIssueCount` differs from the dry-run, any required projection group is missing from `checkedProjectionGroups[]`, or `priorFindingsDisposition[]` is absent or uses a value outside `new/resolved/unchanged/rejected`.
-
-Do not count stale or unbound receipts. When source, `implementationConfirmation`, semantic kernel, or packet hash changes, archive existing `critical-auditor-round-request-*.json`, `critical-auditor-round-response-*.json`, `critical-auditor-receipt-round-*.json`, and round dry-run artifacts under a stale Critical Auditor archive directory, then restart at round 1.
+The gate is deterministic and fail-closed. It verifies schema, source hashes, task split, question coverage, packet projection materialization, projection quality, and two-way packet/source reconciliation. It must block on missing semantic kernel, missing packet, stale packet hash, incomplete question coverage, `actualTaskCount < expectedTaskCount`, over-broad atomic task, missing packet projection, source row independently invented, packet projection not materialized, per-MUST projection compression, missing packet/source reconciliation, or any stale gate report.
 
 ```bash
 node <skill-dir>/scripts/pre_render_definition_drilldown.js \
@@ -754,7 +718,7 @@ node <skill-dir>/scripts/pre_render_definition_drilldown.js \
 
 Treat unresolved blocking findings as authoring blockers before HTML render. This is the deterministic automation equivalent of a `grill-with-docs` pass: it checks root/source-local/`CONTEXT-MAP.md` glossary conflicts, vague terms, unresolved command authority refs, direct contradiction matrix findings, and external side effects that lack timeout/failure/idempotency/recovery/evidence semantics.
 
-Do not increase drilldown rounds to chase the same blocker repeatedly. The pre-render gate must converge by stable finding fingerprints, a resolution ledger, blocker clusters, and explicit stop reasons:
+Do not repeat the same drilldown to chase an unchanged blocker. The pre-render gate must converge by stable finding fingerprints, a resolution ledger, blocker clusters, and explicit stop reasons:
 
 - Every finding and question has a stable `fingerprint` and `clusterId`.
 - `--previous-report` plus `--changed-only` reports only newly discovered blockers and suppresses unchanged fingerprints from the previous report.
@@ -808,7 +772,7 @@ Rules:
 - Preserve the selected language for this source document's confirmation flow.
 - If the implementation source document is later changed semantically and confirmation must be regenerated, reuse the previously selected language unless the user asks to change it.
 - For `zh-CN` or `bilingual`, every renderer-checked Chinese projection must be a semantically equivalent translation authored by the main-session authoring agent. A fixed Chinese prefix wrapped around the source text is not a translation.
-- If genuine Chinese projections are missing, fail closed before Critical Auditor execution, hashing, source promotion, or rendering. Do not fall back to English and do not synthesize CJK marker text.
+- If genuine Chinese projections are missing, fail closed before hashing, source promotion, or rendering. Do not fall back to English and do not synthesize CJK marker text.
 - `author-confirmation-ready-source` may return `localization_translation_required` and write `authoring/localization-request.json`. The authoring agent must translate every request entry, preserve its `sourceTextHash`, attest semantic equivalence, and write a `requirements-contract-localization-response/v1` response.
 - Resume the same transaction with `--localization-response <response.json>`. A stale, partial, non-CJK, source-identical, or synthetic-wrapper response must remain blocked.
 
@@ -838,7 +802,7 @@ Required outputs:
 - `confirmation-summary.json`
 - `confirmation-render-report.json`
 
-When HTML rendering runs after `authoring-repair`, transaction recovery, or another
+When HTML rendering runs after deterministic repair, transaction recovery, or another
 post-promotion repair path, the main agent must register the current render through the
 controlled orchestration action before presenting the page:
 

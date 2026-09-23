@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as crypto from 'node:crypto';
-import type { CriticalAuditorJudgeRuntimeBinding } from './requirements-contract-critical-auditor-independence';
+import type { AuditTriadJudgeRuntimeBinding } from './requirements-contract-judge-provider-independence';
 
 export type OrchestrationHost = 'cursor' | 'claude' | 'codex';
 export type OrchestrationFlow = 'story' | 'bugfix' | 'standalone_tasks';
@@ -131,7 +131,7 @@ export interface AuditExecutionProfile {
   projectionSetHash: string;
   checkedProjectionQualityRuleCodes: string[];
   qualityRuleSetHash: string;
-  independentProviderBinding: CriticalAuditorJudgeRuntimeBinding;
+  independentProviderBinding: AuditTriadJudgeRuntimeBinding;
   perspectives: string[];
   auditScoringConvergencePolicy: AuditScoringConvergencePolicy;
   runAuditorHostArgs: {
@@ -491,7 +491,7 @@ export function createExecutionPacket(input: ExecutionPacket): ExecutionPacket {
       throw new Error('auditExecutionProfile checkedProjectionQualityRuleCodes are required');
     }
     const independentProviderBinding =
-      input.auditExecutionProfile.independentProviderBinding as CriticalAuditorJudgeRuntimeBinding &
+      input.auditExecutionProfile.independentProviderBinding as AuditTriadJudgeRuntimeBinding &
         Record<string, unknown>;
     const configuredModel = independentProviderBinding.model;
     if (

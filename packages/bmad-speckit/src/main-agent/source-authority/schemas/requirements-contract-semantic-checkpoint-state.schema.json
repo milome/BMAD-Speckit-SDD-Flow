@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-contract-semantic-checkpoint-state.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "operationId", "checkpointId", "semanticInputHash", "planHash", "completedUnits", "pendingUnitIds", "validatorVersion", "decision", "stateHash"],
+  "properties": {
+    "schemaVersion": { "const": "requirements-semantic-checkpoint-state/v1" },
+    "operationId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$" },
+    "checkpointId": { "pattern": "^cp0[0-8]$" },
+    "semanticInputHash": { "$ref": "#/$defs/hash" },
+    "planHash": { "$ref": "#/$defs/hash" },
+    "completedUnits": { "type": "array", "items": { "$ref": "#/$defs/unit" } },
+    "pendingUnitIds": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "validatorVersion": { "type": "string", "minLength": 1 },
+    "decision": { "enum": ["in_progress", "passed", "blocked"] },
+    "stateHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "unit": {
+      "type": "object", "additionalProperties": false,
+      "required": ["unitId", "unitInputHash", "compilerVersion", "outputRefs"],
+      "properties": {
+        "unitId": { "type": "string", "minLength": 1 },
+        "unitInputHash": { "$ref": "#/$defs/hash" },
+        "compilerVersion": { "type": "string", "minLength": 1 },
+        "outputRefs": { "type": "array", "items": { "type": "object" } }
+      }
+    }
+  }
+}

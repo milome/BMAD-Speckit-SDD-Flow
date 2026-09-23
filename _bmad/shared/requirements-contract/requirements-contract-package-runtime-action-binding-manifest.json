@@ -1,6 +1,6 @@
 {
   "schemaVersion": "requirements-contract-package-runtime-action-binding-manifest/v2",
-  "actionUniverseHash": "sha256:54316a5458e7f1afd1ef94c3725a067960c82ab38b8eab44d1074b816f028bdf",
+  "actionUniverseHash": "sha256:361deebed22208d9269b81d2028f14cc3ad00ffca9c54b3343a640d6f0d52c00",
   "actions": [
     {
       "actionId": "requirements-contract-bundle-publish",
@@ -499,64 +499,6 @@
       "routingOnly": false
     },
     {
-      "actionId": "requirements-contract-gap-closure-readonly-auditor-adapter",
-      "sourceHandlerRef": {
-        "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-gap-closure-readonly-auditor-adapter.ts",
-        "hash": "sha256:67c698b5e2c78c2a349c4e5e629b64ad3b6d9e30273beb263160b41ee2091974"
-      },
-      "distHandlerRef": {
-        "path": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/requirements-contract-gap-closure-readonly-auditor-adapter.js",
-        "hash": "sha256:3bcedde0ce6e2a5b49c939e39f7ef67751de847519dfc1ac962a31df1e11ee16"
-      },
-      "semanticGate": {
-        "gateId": "requirements-contract-gap-closure-readonly-auditor-adapter:semantic-gate",
-        "sourceSymbol": "requirementsContractGapClosureReadonlyAuditorAdapterCommand",
-        "distSymbol": "requirementsContractGapClosureReadonlyAuditorAdapterCommand"
-      },
-      "inputSchemaRefs": [
-        {
-          "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-gap-closure-readonly-auditor-adapter-input.schema.json",
-          "hash": "sha256:f68ba0e0912694cbbb5b474aa986f2555cd6db5f8379e9d329d75f0e4ffee05b"
-        },
-        {
-          "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-gap-closure-independent-audit-request.schema.json",
-          "hash": "sha256:3474f935a99e88dbf6a045ec42c3a9651430ae933d5168747c39f986301e16a7"
-        }
-      ],
-      "outputSchemaRefs": [
-        {
-          "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-gap-closure-independent-audit-assessment.schema.json",
-          "hash": "sha256:d54ff1bd15993986cc992793c80b90a8acf194c03b06c53f69c0493f75002563"
-        },
-        {
-          "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-gap-closure-independent-audit-result.schema.json",
-          "hash": "sha256:629fae79f9798fb5a2876005f2f1eff39fba707d4e5df04dfaf6a814cf6fb44f"
-        }
-      ],
-      "behaviorTestRefs": [
-        {
-          "path": "tests/acceptance/requirements-contract-gap-closure-readonly-auditor-adapter.test.ts",
-          "hash": "sha256:4372854e8ccf801c3c40b7b59a236da9e9a396d1784cce9dc0f52e27692765bd"
-        },
-        {
-          "path": "tests/acceptance/main-agent-gap-closure-evidence-gate.test.ts",
-          "hash": "sha256:99f5306af5670d0869a1d90c4c3e83b373cfe7ef34632e196c68236332e76552"
-        }
-      ],
-      "packageDistRef": {
-        "path": "dist/main-agent/source-authority/scripts/requirements-contract-gap-closure-readonly-auditor-adapter.js",
-        "hash": "sha256:3bcedde0ce6e2a5b49c939e39f7ef67751de847519dfc1ac962a31df1e11ee16"
-      },
-      "installedSurfaceRefs": [
-        {
-          "path": "dist/main-agent/source-authority/scripts/requirements-contract-gap-closure-readonly-auditor-adapter.js",
-          "hash": "sha256:3bcedde0ce6e2a5b49c939e39f7ef67751de847519dfc1ac962a31df1e11ee16"
-        }
-      ],
-      "runtimeRefs": [],
-      "routingOnly": false
-    },
-    {
       "actionId": "requirements-contract-judge-credentials-init",
       "sourceHandlerRef": {
         "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-credential-initializer.ts",
@@ -660,11 +602,11 @@
       "actionId": "requirements-contract-judge-run",
       "sourceHandlerRef": {
         "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-command.ts",
-        "hash": "sha256:3eb42cb82fee641c27613f5cda0711ea99ced28f42fc508c431cce1ec216e318"
+        "hash": "sha256:81d20dfd97b8529e6b0cb7367bc7acd3ec13ed932db46001d9ef032eb394e3c0"
       },
       "distHandlerRef": {
         "path": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/requirements-contract-judge-command.js",
-        "hash": "sha256:06ce133118e2a19ec02c31a09c189bff9226e2b319a1a913656657bf75fc8b05"
+        "hash": "sha256:1cfa755899cbb6c03d6bcf42418c089f6de9e8c1addbcaafe1545cd6fe945a37"
       },
       "semanticGate": {
         "gateId": "requirements-contract-judge-run:semantic-gate",
@@ -698,17 +640,17 @@
       "behaviorTestRefs": [
         {
           "path": "tests/acceptance/requirements-contract-judge-command.test.ts",
-          "hash": "sha256:13f1972035e1efa5167136b58688dff7ee3cb34b692b025007aff2c539550624"
+          "hash": "sha256:067bf133b6bc0f4937cc2cf9068e87a1b1d649cae53e5e4e4ed50f60f6735589"
         }
       ],
       "packageDistRef": {
         "path": "dist/main-agent/source-authority/scripts/requirements-contract-judge-command.js",
-        "hash": "sha256:06ce133118e2a19ec02c31a09c189bff9226e2b319a1a913656657bf75fc8b05"
+        "hash": "sha256:1cfa755899cbb6c03d6bcf42418c089f6de9e8c1addbcaafe1545cd6fe945a37"
       },
       "installedSurfaceRefs": [
         {
           "path": "dist/main-agent/source-authority/scripts/requirements-contract-judge-command.js",
-          "hash": "sha256:06ce133118e2a19ec02c31a09c189bff9226e2b319a1a913656657bf75fc8b05"
+          "hash": "sha256:1cfa755899cbb6c03d6bcf42418c089f6de9e8c1addbcaafe1545cd6fe945a37"
         }
       ],
       "runtimeRefs": [
@@ -798,52 +740,6 @@
         {
           "path": "dist/main-agent/source-authority/scripts/requirements-contract-production-activate.js",
           "hash": "sha256:531d0d0cde82bd3645edc73eec55a17d59419a6d02d753fe88a16634e3446d0c"
-        }
-      ],
-      "runtimeRefs": [],
-      "routingOnly": false
-    },
-    {
-      "actionId": "requirements-contract-production-bypass-evidence-materialize",
-      "sourceHandlerRef": {
-        "path": "packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-production-bypass-evidence-materializer.ts",
-        "hash": "sha256:b06b03a547e6878f9d1d683dc7c42d504fbeb82b66bf768ce1f561c2879490a6"
-      },
-      "distHandlerRef": {
-        "path": "packages/bmad-speckit/dist/main-agent/source-authority/scripts/requirements-contract-production-bypass-evidence-materializer.js",
-        "hash": "sha256:df5633c36f377f74963a87bb2b64f15f9812623a588ea9049cfae4534e3ed7b8"
-      },
-      "semanticGate": {
-        "gateId": "requirements-contract-production-bypass-evidence-materialize:semantic-gate",
-        "sourceSymbol": "requirementsContractProductionBypassEvidenceMaterializeCommand",
-        "distSymbol": "requirementsContractProductionBypassEvidenceMaterializeCommand"
-      },
-      "inputSchemaRefs": [
-        {
-          "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-production-bypass-evidence-materializer-input.schema.json",
-          "hash": "sha256:01c1a36399eb87f7dbaddd5f2d6bce0f00e5e7c9ec4d7d6874fa0b1726592435"
-        }
-      ],
-      "outputSchemaRefs": [
-        {
-          "path": "packages/bmad-speckit/src/main-agent/source-authority/schemas/requirements-contract-production-bypass-evidence-materializer-report.schema.json",
-          "hash": "sha256:8628c52bd90a8ad4ef823172ad2361b06a6ccf56d1765fc3eab2f0eb7b927a9d"
-        }
-      ],
-      "behaviorTestRefs": [
-        {
-          "path": "tests/acceptance/requirements-contract-production-bypass-evidence-materializer.test.ts",
-          "hash": "sha256:1c1137d3fb4a4bd29499b57b333f7f7618e5fb6bbdc98bfbc3ac1a1b7ff1a9ac"
-        }
-      ],
-      "packageDistRef": {
-        "path": "dist/main-agent/source-authority/scripts/requirements-contract-production-bypass-evidence-materializer.js",
-        "hash": "sha256:df5633c36f377f74963a87bb2b64f15f9812623a588ea9049cfae4534e3ed7b8"
-      },
-      "installedSurfaceRefs": [
-        {
-          "path": "dist/main-agent/source-authority/scripts/requirements-contract-production-bypass-evidence-materializer.js",
-          "hash": "sha256:df5633c36f377f74963a87bb2b64f15f9812623a588ea9049cfae4534e3ed7b8"
         }
       ],
       "runtimeRefs": [],
@@ -959,12 +855,12 @@
         {
           "role": "installed-cli",
           "packagePath": "bin/bmad-speckit.js",
-          "hash": "sha256:9f75d04490a7a32d2073305d38abe40cde75d0b879479f3c97448ee352c0219a"
+          "hash": "sha256:f7078b56356b28ba22496636cb9ac876aaa08948bba60d3a69fc2e7cfa3497d2"
         },
         {
           "role": "installed-generator",
           "packagePath": "_bmad/skills/req-trace-matrix-prompt-generator/scripts/generate_prompt.js",
-          "hash": "sha256:70e59959896b89bb4fda08e252eafd5dd5f19bf92fd0a9e5a64c02139ac1f214"
+          "hash": "sha256:6ec3455fb9d78f45f27c57df44232fee4fd7f4e298c29f5abc47c8e882ed8abf"
         },
         {
           "role": "installed-stage-registry",
@@ -974,7 +870,7 @@
         {
           "role": "installed-runner",
           "packagePath": "dist/main-agent/source-authority/scripts/main-agent-compiled-prompt-runner.js",
-          "hash": "sha256:25dc9d80a648c577dc2bd356c3daf5743ccb755e3aacf93ca4a447f3fe1093e7"
+          "hash": "sha256:389029cc98b4cba852c793f45927256b404bc69e065b5a1efb740a10afc9fe69"
         }
       ],
       "routingOnly": false
@@ -1217,8 +1113,8 @@
       ],
       "behaviorTestRefs": [
         {
-          "path": "tests/acceptance/requirements-contract-reverse-audit.test.ts",
-          "hash": "sha256:a0cc60cd161d2972d5a9bdd56f49e82aaa8269cbfd03f9e68b1b90b7684d3eba"
+          "path": "tests/acceptance/requirements-contract-judge-command.test.ts",
+          "hash": "sha256:067bf133b6bc0f4937cc2cf9068e87a1b1d649cae53e5e4e4ed50f60f6735589"
         }
       ],
       "packageDistRef": {
@@ -1265,7 +1161,7 @@
         {
           "role": "judge-provider-registry-projection",
           "packagePath": "_bmad/shared/requirements-contract/requirements-contract-judge-provider-registry.json",
-          "hash": "sha256:1c749d1edb2a5fc160a410dcfe6706bf53d609859139c23dacedc394ccce6a86"
+          "hash": "sha256:3b498cdc7edd65fb5214fbc480733b3595353d6ad8d94213a3caaba030049d24"
         }
       ],
       "routingOnly": false

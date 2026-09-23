@@ -92,7 +92,6 @@
         "readFacadeRef",
         "adapterRef",
         "sourceFormatVersion",
-        "legacyReadEligibility",
         "directConfirmationFieldRead",
         "authority"
       ],
@@ -114,7 +113,6 @@
         "readFacadeRef": { "type": "string", "minLength": 1 },
         "adapterRef": { "type": "string", "minLength": 1 },
         "sourceFormatVersion": { "enum": ["v1", "v2", "v1_or_v2", "discovery"] },
-        "legacyReadEligibility": { "enum": ["not_applicable", "registered_inventory_only"] },
         "confirmationComposition": { "$ref": "#/$defs/confirmationComposition" },
         "closeoutComposition": { "$ref": "#/$defs/closeoutComposition" },
         "directConfirmationFieldRead": { "const": false },

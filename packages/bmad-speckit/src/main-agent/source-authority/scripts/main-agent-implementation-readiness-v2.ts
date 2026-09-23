@@ -2472,15 +2472,16 @@ export function produceImplementationReadiness(
       recordId: input.requestId,
       requirementSetId: text(context.record.requirementSetId) || input.requestId,
       modelId: 'implementation_readiness',
-      implementationAttemptId: text(context.activeAuthority.activeAuthoringAttemptId),
+      implementationAttemptId:
+        `build-${context.activeAuthority.activeBuildHash.slice('sha256:'.length)}`,
       sourceDocumentHash: context.semanticIr.scopeSemanticHash,
       implementationConfirmationHash: context.semanticIr.scopeSemanticHash,
       semanticModelHash: context.semanticIr.scopeSemanticHash,
       stageInputs: [
         {
-          role: 'requirements_semantic_ir',
-          path: text(context.activeAuthority.activeSemanticIrPath),
-          hash: context.semanticIr.scopeSemanticHash,
+          role: 'requirements_active_build',
+          path: context.activeAuthority.activeBuildManifestPath,
+          hash: context.activeAuthority.activeBuildHash,
         },
         {
           role: 'architecture_confirmation_candidate',

@@ -4,7 +4,6 @@
 const FIXED_PERSPECTIVES = ['product_intent', 'model_projection', 'main_agent_execution'];
 const ALLOWED_PROFILE_IDS = [
   'main-agent-six-mental-model-critical-auditor',
-  'requirements-contract-critical-auditor',
 ];
 const REQUIRED_STAGE_PROFILES = [
   'requirements_compiler',

@@ -721,6 +721,7 @@ ${largePadding}${sourceText.slice(firstViewIndex)}`,
     fs.writeFileSync(confirmationTextFile, report.confirmInstruction, 'utf8');
     const result = runNode(path.join(ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js'), [
       'main-agent:confirm-scope',
+      '--json',
       '--cwd',
       ROOT,
       '--source',
@@ -742,8 +743,8 @@ ${largePadding}${sourceText.slice(firstViewIndex)}`,
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
     const output = JSON.parse(result.stdout);
     expect(output.action).toBe('confirm-scope');
-    expect(output.ok).toBe(true);
-    expect(output.delegatedEntry).toContain('requirements-contract-confirmation-acceptance.js');
+    expect(output.data).toMatchObject({ ok: true });
+    expect(output.data.authority).toBe('main-agent-controlled-confirmation');
     const record = JSON.parse(
       fs.readFileSync(
         path.join(
@@ -797,6 +798,7 @@ ${largePadding}${sourceText.slice(firstViewIndex)}`,
     fs.writeFileSync(confirmationTextFile, report.confirmInstruction, 'utf8');
     const result = runNode(path.join(ROOT, 'packages', 'bmad-speckit', 'bin', 'bmad-speckit.js'), [
       'confirm-scope',
+      '--json',
       '--cwd',
       ROOT,
       '--source',
@@ -818,7 +820,7 @@ ${largePadding}${sourceText.slice(firstViewIndex)}`,
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
     const output = JSON.parse(result.stdout);
     expect(output.action).toBe('confirm-scope');
-    expect(output.ok).toBe(true);
+    expect(output.data).toMatchObject({ ok: true });
     const record = JSON.parse(
       fs.readFileSync(
         path.join(

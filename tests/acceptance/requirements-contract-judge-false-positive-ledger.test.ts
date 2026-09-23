@@ -23,8 +23,8 @@ function withTempDir<T>(run: (dir: string) => T): T {
 
 function entryInput(overrides: Record<string, unknown> = {}) {
   return {
-    actorClass: 'requirements_critical_auditor_judge',
-    judgeRole: 'requirements_critical_auditor',
+    actorClass: 'requirements_contract_judge',
+    judgeRole: 'requirements_judge',
     entryId: 'fp-gap-auth-001',
     attemptKeyHash: h('attempt'),
     scopeManifestHash: h('scope'),

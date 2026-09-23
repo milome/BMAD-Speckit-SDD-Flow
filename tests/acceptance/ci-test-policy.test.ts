@@ -33,7 +33,7 @@ const { collectAuditFacts } = require('../../tools/test-portfolio-audit/facts.cj
 const basePolicy = {
   schemaVersion: 'test-portfolio-policy/v1',
   budgets: {
-    executableTestCount: 1200,
+    executableTestCount: 1216,
     corePermanentCount: 120,
     prP95Minutes: 10,
   },
@@ -536,7 +536,7 @@ describe('test portfolio policy', () => {
       'judge-audit-reverse-audit-continuation': [auditTarget],
       'cli-startup-boundary': ['target:scripts/bmad-speckit-cli.js'],
       'canonical-package-runtime-boundary': [
-        sourceAuthorityTarget('requirements-contract-package-runtime-index.ts'),
+        'target:packages/bmad-speckit/scripts/build-main-agent-dist.cjs',
       ],
       'persistence-boundary': [sourceAuthorityTarget('governance-packet-execution-store.ts')],
       'encoding-boundary': [sourceAuthorityTarget('requirements-contract-intake-receipt.ts')],
@@ -605,12 +605,6 @@ describe('test portfolio policy', () => {
         'trace:six-model/implementation-readiness/stale-evidence-rejection': 'direct',
         'trace:six-model/execution-closure/invalidation': 'indirect',
       },
-      'tests/acceptance/critical-auditor-receipt-binding.test.ts': {
-        'trace:six-model/audit-review/fail-closed': 'direct',
-      },
-      'tests/acceptance/requirements-contract-reverse-audit.test.ts': {
-        'trace:six-model/audit-review/judge-continuation': 'direct',
-      },
       'tests/acceptance/requirements-contract-six-model-runtime-bridge-authority.test.ts': {
         'trace:six-model/audit-review/state-entry': 'indirect',
         'trace:six-model/delivery-confirmation/fail-closed': 'indirect',
@@ -633,9 +627,26 @@ describe('test portfolio policy', () => {
         'trace:six-model/delivery-confirmation/stale-evidence-rejection': 'indirect',
         'trace:six-model/delivery-confirmation/successful-promotion': 'direct',
       },
+      'tests/acceptance/requirements-contract-judge-response-audit-completeness.test.ts': {
+        'trace:six-model/audit-review/evidence-binding': 'direct',
+        'trace:six-model/audit-review/reverse-audit-execution': 'direct',
+        'trace:six-model/audit-review/successful-promotion': 'direct',
+      },
+      'tests/acceptance/requirements-contract-judge-remediation-state-machine.test.ts': {
+        'trace:six-model/audit-review/judge-continuation': 'direct',
+      },
       'tests/acceptance/ai-tdd-contract-gate.test.ts': {
         'trace:six-model/execution-closure/stale-evidence-rejection': 'indirect',
       },
+    });
+    const reverseAuditEntry = policy.semanticEvidenceBindings.find(
+      (entry: any) =>
+        entry.testPath ===
+        'tests/acceptance/requirements-contract-judge-response-audit-completeness.test.ts'
+    );
+    expect(reverseAuditEntry.bindings).toContainEqual({
+      evidenceRef: 'trace:six-model/audit-review/reverse-audit-execution',
+      evidenceKind: 'direct',
     });
   });
 

@@ -26,8 +26,8 @@
   ],
   "properties": {
     "schemaVersion": { "const": "requirements-effective-pass-receipt/v1" },
-    "actorClass": { "const": "requirements_critical_auditor_judge" },
-    "judgeRole": { "const": "requirements_critical_auditor" },
+    "actorClass": { "const": "requirements_contract_judge" },
+    "judgeRole": { "const": "requirements_judge" },
     "attemptKeyHash": { "$ref": "#/$defs/hash" },
     "requestHash": { "$ref": "#/$defs/hash" },
     "scopeManifestHash": { "$ref": "#/$defs/hash" },

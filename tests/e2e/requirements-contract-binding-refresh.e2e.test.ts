@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { startOpenAICompatibleJudgeProvider } from './helpers/openai-compatible-judge-provider';
+import { createRequirementsContractBuildManifestV2 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-authoring-manifest';
+import { artifactBytesHash } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-hash-domains';
 import {
   advanceToUserConfirmable,
   createRequirementsConsumerRoot,
@@ -21,6 +23,34 @@ function rewriteAuthorityFormatting(consumerRoot: string): void {
   const authorityPath = path.join(consumerRoot, 'policy', 'refund-approval-policy.json');
   const unchangedAuthority = JSON.parse(fs.readFileSync(authorityPath, 'utf8'));
   fs.writeFileSync(authorityPath, `${JSON.stringify(unchangedAuthority, null, 4)}\n`, 'utf8');
+}
+
+function rewriteAuthoritySemantics(consumerRoot: string): void {
+  const authorityPath = path.join(consumerRoot, 'policy', 'refund-approval-policy.json');
+  const authority = JSON.parse(fs.readFileSync(authorityPath, 'utf8'));
+  authority.semanticBody.text = `${authority.semanticBody.text} The decision is recorded durably.`;
+  fs.writeFileSync(authorityPath, `${JSON.stringify(authority, null, 2)}\n`, 'utf8');
+}
+
+function replacePromotionTarget(input: {
+  recordRoot: string;
+  recordPath: string;
+  targetPath: string;
+}): void {
+  const record = JSON.parse(fs.readFileSync(input.recordPath, 'utf8'));
+  const promotionPath = path.join(
+    input.recordRoot,
+    ...record.currentPromotionEvidence.path.split('/')
+  );
+  const promotion = JSON.parse(fs.readFileSync(promotionPath, 'utf8'));
+  promotion.targetPath = input.targetPath;
+  fs.writeFileSync(promotionPath, `${JSON.stringify(promotion, null, 2)}\n`, 'utf8');
+  record.currentPromotionEvidence.artifactBytesHash = artifactBytesHash({
+    role: 'promotion_receipt',
+    mediaType: 'application/json',
+    bytes: fs.readFileSync(promotionPath),
+  });
+  fs.writeFileSync(input.recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
 }
 
 describe('Requirements production-entry binding refresh', () => {
@@ -61,7 +91,7 @@ describe('Requirements production-entry binding refresh', () => {
       expect(afterRecord.activeAuthority).toMatchObject({
         activeSemanticRevisionId: beforeAuthority.activeSemanticRevisionId,
         activeScopeSemanticHash: beforeAuthority.activeScopeSemanticHash,
-        activeBuildManifestHash: beforeAuthority.activeBuildManifestHash,
+        activeBuildHash: expect.any(String),
       });
       expect(afterRecord.activeAuthority.activeBindingRevisionId).not.toBe(
         beforeAuthority.activeBindingRevisionId
@@ -78,6 +108,29 @@ describe('Requirements production-entry binding refresh', () => {
         refreshed.data.confirmation.exactConfirmationText,
       ]);
       expect(confirmed.status).toBe('user_confirmed');
+      const resumed = await spawnMainAgent(
+        consumerRoot,
+        'resume-author-confirmation-ready-source',
+        ['--request-id', requestId, '--authoring-attempt-id', attemptId]
+      );
+      expect(resumed.status).toBe('user_confirmed');
+      expect(provider.requests).toHaveLength(1);
+      const replayed = await spawnMainAgent(
+        consumerRoot,
+        'resume-author-confirmation-ready-source',
+        ['--request-id', requestId, '--authoring-attempt-id', attemptId]
+      );
+      expect(replayed.status).toBe('user_confirmed');
+      expect(provider.requests).toHaveLength(1);
+
+      rewriteAuthoritySemantics(consumerRoot);
+      const semanticSuccessor = await spawnMainAgent(
+        consumerRoot,
+        'resume-author-confirmation-ready-source',
+        ['--request-id', requestId, '--authoring-attempt-id', attemptId]
+      );
+      expect(semanticSuccessor.data.authoringAttemptId).toMatch(/^ATTEMPT-/u);
+      expect(provider.requests).toHaveLength(2);
     } finally {
       await provider.close();
     }
@@ -98,6 +151,8 @@ describe('Requirements production-entry binding refresh', () => {
         consumerRoot,
         first.data.confirmation.markdownPath as string
       );
+      fs.mkdirSync(path.dirname(targetMarkdownPath), { recursive: true });
+      fs.writeFileSync(targetMarkdownPath, '# Existing target\n', 'utf8');
       const originalMarkdown = fs.readFileSync(targetMarkdownPath);
       rewriteAuthorityFormatting(consumerRoot);
 
@@ -142,6 +197,7 @@ describe('Requirements production-entry binding refresh', () => {
         refreshedBindingRevisionId,
         'source-binding-refresh-receipt.json'
       );
+      fs.mkdirSync(path.dirname(refreshReceiptPath), { recursive: true });
       fs.mkdirSync(refreshReceiptPath);
       const receiptCrash = await spawnMainAgentResult(
         consumerRoot,
@@ -152,7 +208,7 @@ describe('Requirements production-entry binding refresh', () => {
       expect(fs.readFileSync(stagedMarkdownPath)).toEqual(stagedMarkdown);
       expect(fs.readFileSync(stagedHtmlPath)).toEqual(stagedHtml);
       const promotedMarkdown = fs.readFileSync(targetMarkdownPath, 'utf8');
-      expect(promotedMarkdown).toContain('## Confirmation');
+      expect(promotedMarkdown).toEqual(originalMarkdown.toString('utf8'));
       expect(
         await spawnMainAgentResult(consumerRoot, 'confirm-scope', [
           '--request-id',
@@ -234,6 +290,126 @@ describe('Requirements production-entry binding refresh', () => {
       expect(fs.readFileSync(confirmationEventPath)).toEqual(confirmationEvent);
     } finally {
       await provider.close();
+    }
+  });
+
+  it('rejects confirmation reuse after an unrelated active build replaces the audited build', async () => {
+    const consumerRoot = createRequirementsConsumerRoot();
+    temporaryRoots.push(consumerRoot);
+    const provider = await startOpenAICompatibleJudgeProvider();
+    installJudgeRuntime(consumerRoot, provider.baseUrl);
+    try {
+      const first = await advanceToUserConfirmable(consumerRoot, provider);
+      const requestId = first.data.requestId as string;
+      const recordRoot = recordRootFor(consumerRoot, requestId);
+      const recordPath = path.join(recordRoot, 'record', 'requirement-record.json');
+      await spawnMainAgent(consumerRoot, 'confirm-scope', [
+        '--request-id',
+        requestId,
+        '--exact-confirmation-text',
+        first.data.confirmation.exactConfirmationText,
+      ]);
+
+      const record = JSON.parse(fs.readFileSync(recordPath, 'utf8'));
+      const previousAuthority = record.activeAuthority;
+      const previousManifest = JSON.parse(
+        fs.readFileSync(
+          path.join(recordRoot, ...previousAuthority.activeBuildManifestPath.split('/')),
+          'utf8'
+        )
+      );
+      const unrelatedManifest = createRequirementsContractBuildManifestV2({
+        ...previousManifest,
+        compilerIdentity: `${previousManifest.compilerIdentity}:unrelated`,
+        checkpointSummary: previousManifest.checkpointSummary,
+        validationSummary: previousManifest.validationSummary,
+      });
+      const unrelatedManifestPath = path.join(
+        recordRoot,
+        'authoring',
+        'builds',
+        unrelatedManifest.buildHash.slice('sha256:'.length),
+        'manifest.json'
+      );
+      fs.mkdirSync(path.dirname(unrelatedManifestPath), { recursive: true });
+      fs.writeFileSync(unrelatedManifestPath, `${JSON.stringify(unrelatedManifest, null, 2)}\n`, 'utf8');
+      record.activeAuthority = {
+        ...previousAuthority,
+        activeBuildHash: unrelatedManifest.buildHash,
+        activeBuildManifestPath: path
+          .relative(recordRoot, unrelatedManifestPath)
+          .replace(/\\/gu, '/'),
+        previousBuildHash: previousAuthority.activeBuildHash,
+        previousBuildManifestPath: previousAuthority.activeBuildManifestPath,
+      };
+      fs.writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+
+      const replay = await spawnMainAgentResult(consumerRoot, 'confirm-scope', [
+        '--request-id',
+        requestId,
+        '--exact-confirmation-text',
+        first.data.confirmation.exactConfirmationText,
+      ]);
+      expect(replay.code).toBe(2);
+      expect(`${replay.stdout}\n${replay.stderr}`).toContain(
+        'requirements_confirmation_promotion_stale'
+      );
+      expect(provider.requests).toHaveLength(1);
+    } finally {
+      await provider.close();
+    }
+  });
+
+  it('confines confirmed binding-refresh promotion targets after evidence rehash', async () => {
+    const consumerRoot = createRequirementsConsumerRoot();
+    temporaryRoots.push(consumerRoot);
+    const provider = await startOpenAICompatibleJudgeProvider();
+    const externalRoot = fs.mkdtempSync(path.join(process.cwd(), '.tmp-binding-escape-'));
+    installJudgeRuntime(consumerRoot, provider.baseUrl);
+    try {
+      const first = await advanceToUserConfirmable(consumerRoot, provider);
+      const requestId = first.data.requestId as string;
+      const attemptId = first.data.authoringAttemptId as string;
+      const recordRoot = recordRootFor(consumerRoot, requestId);
+      const recordPath = path.join(recordRoot, 'record', 'requirement-record.json');
+      await spawnMainAgent(consumerRoot, 'confirm-scope', [
+        '--request-id',
+        requestId,
+        '--exact-confirmation-text',
+        first.data.confirmation.exactConfirmationText,
+      ]);
+      rewriteAuthorityFormatting(consumerRoot);
+
+      const absoluteVictim = path.join(externalRoot, 'absolute-victim.md');
+      fs.writeFileSync(absoluteVictim, 'unchanged\n', 'utf8');
+      replacePromotionTarget({ recordRoot, recordPath, targetPath: absoluteVictim });
+      const absoluteAttempt = await spawnMainAgentResult(
+        consumerRoot,
+        'resume-author-confirmation-ready-source',
+        ['--request-id', requestId, '--authoring-attempt-id', attemptId]
+      );
+      expect(absoluteAttempt.code).not.toBe(0);
+      expect(fs.readFileSync(absoluteVictim, 'utf8')).toBe('unchanged\n');
+
+      const symlinkTarget = path.join(externalRoot, 'symlink-victim.md');
+      fs.writeFileSync(symlinkTarget, 'unchanged\n', 'utf8');
+      const symlinkParent = path.join(consumerRoot, 'linked-outside');
+      fs.symlinkSync(externalRoot, symlinkParent, process.platform === 'win32' ? 'junction' : 'dir');
+      replacePromotionTarget({
+        recordRoot,
+        recordPath,
+        targetPath: 'linked-outside/symlink-victim.md',
+      });
+      const symlinkAttempt = await spawnMainAgentResult(
+        consumerRoot,
+        'resume-author-confirmation-ready-source',
+        ['--request-id', requestId, '--authoring-attempt-id', attemptId]
+      );
+      expect(symlinkAttempt.code).not.toBe(0);
+      expect(fs.readFileSync(symlinkTarget, 'utf8')).toBe('unchanged\n');
+    } finally {
+      await provider.close();
+      fs.rmSync(externalRoot, { recursive: true, force: true });
     }
   });
 });

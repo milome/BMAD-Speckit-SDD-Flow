@@ -2,58 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://bmad-speckit.local/schemas/requirements-contract-file-intake-receipt.schema.json",
   "title": "Requirements Contract File Intake Receipt",
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "schemaVersion",
-    "requirementSetId",
-    "entrySource",
-    "requestedArtifactRole",
-    "sourcePath",
-    "sourceContentHash",
-    "sourceByteLength",
-    "excerpts",
-    "capturedAt",
-    "receiptHash"
+  "oneOf": [
+    { "$ref": "#/$defs/receiptV1" },
+    { "$ref": "#/$defs/receiptV2" }
   ],
-  "properties": {
-    "schemaVersion": {
-      "const": "requirements-contract-file-intake-receipt/v1"
-    },
-    "requirementSetId": {
-      "$ref": "#/$defs/nonEmptyString"
-    },
-    "entrySource": {
-      "enum": ["bmad_prd", "source_prd_draft"]
-    },
-    "requestedArtifactRole": {
-      "enum": ["product_prd", "requirement_source_prd"]
-    },
-    "sourcePath": {
-      "$ref": "#/$defs/nonEmptyString"
-    },
-    "sourceContentHash": {
-      "$ref": "#/$defs/sha256"
-    },
-    "sourceByteLength": {
-      "type": "integer",
-      "minimum": 1
-    },
-    "excerpts": {
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "$ref": "#/$defs/excerpt"
-      }
-    },
-    "capturedAt": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "receiptHash": {
-      "$ref": "#/$defs/sha256"
-    }
-  },
   "$defs": {
     "nonEmptyString": {
       "type": "string",
@@ -63,7 +15,90 @@
       "type": "string",
       "pattern": "^sha256:[a-f0-9]{64}$"
     },
-    "excerpt": {
+    "commonProperties": {
+      "schemaVersion": {},
+      "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },
+      "entrySource": { "enum": ["bmad_prd", "source_prd_draft"] },
+      "requestedArtifactRole": { "enum": ["product_prd", "requirement_source_prd"] },
+      "sourcePath": { "$ref": "#/$defs/nonEmptyString" },
+      "sourceByteLength": { "type": "integer", "minimum": 1 },
+      "capturedAt": { "type": "string", "format": "date-time" },
+      "receiptHash": { "$ref": "#/$defs/sha256" }
+    },
+    "receiptV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "requirementSetId", "entrySource", "requestedArtifactRole", "sourcePath", "sourceContentHash", "sourceByteLength", "excerpts", "capturedAt", "receiptHash"],
+      "properties": {
+        "schemaVersion": { "const": "requirements-contract-file-intake-receipt/v1" },
+        "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },
+        "entrySource": { "enum": ["bmad_prd", "source_prd_draft"] },
+        "requestedArtifactRole": { "enum": ["product_prd", "requirement_source_prd"] },
+        "sourcePath": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceContentHash": { "$ref": "#/$defs/sha256" },
+        "sourceByteLength": { "type": "integer", "minimum": 1 },
+        "excerpts": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/excerptV1" } },
+        "capturedAt": { "type": "string", "format": "date-time" },
+        "receiptHash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "receiptV2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "requirementSetId", "entrySource", "requestedArtifactRole", "sourceId", "sourcePath", "sourceBlobRef", "sourceBytesHash", "sourceByteLength", "lineCount", "materialExcerpts", "materialExcerptSetHash", "capturedAt", "receiptHash"],
+      "properties": {
+        "schemaVersion": { "const": "requirements-contract-file-intake-receipt/v2" },
+        "requirementSetId": { "$ref": "#/$defs/nonEmptyString" },
+        "entrySource": { "enum": ["bmad_prd", "source_prd_draft"] },
+        "requestedArtifactRole": { "enum": ["product_prd", "requirement_source_prd"] },
+        "sourceId": { "$ref": "#/$defs/nonEmptyString" },
+        "sourcePath": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceBlobRef": { "$ref": "#/$defs/contentRef" },
+        "sourceBytesHash": { "$ref": "#/$defs/sha256" },
+        "sourceByteLength": { "type": "integer", "minimum": 1 },
+        "lineCount": { "type": "integer", "minimum": 1 },
+        "materialExcerpts": { "type": "array", "items": { "$ref": "#/$defs/materialExcerpt" } },
+        "materialExcerptSetHash": { "$ref": "#/$defs/sha256" },
+        "capturedAt": { "type": "string", "format": "date-time" },
+        "receiptHash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "contentRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "contentHash", "byteLength", "mediaType", "recordRelativePath"],
+      "properties": {
+        "schemaVersion": { "const": "requirements-content-ref/v1" },
+        "contentHash": { "$ref": "#/$defs/sha256" },
+        "byteLength": { "type": "integer", "minimum": 0 },
+        "mediaType": { "$ref": "#/$defs/nonEmptyString" },
+        "recordRelativePath": { "type": "string", "pattern": "^authoring/objects/sha256/[a-f0-9]{2}/[a-f0-9]{62}$" }
+      }
+    },
+    "materialExcerpt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["order", "excerptId", "sourceRootId", "range"],
+      "properties": {
+        "order": { "type": "integer", "minimum": 1 },
+        "excerptId": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceRootId": { "$ref": "#/$defs/nonEmptyString" },
+        "range": { "$ref": "#/$defs/range" }
+      }
+    },
+    "range": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["startUtf8Byte", "endUtf8ByteExclusive", "startLine", "endLine", "contentHash"],
+      "properties": {
+        "startUtf8Byte": { "type": "integer", "minimum": 0 },
+        "endUtf8ByteExclusive": { "type": "integer", "minimum": 1 },
+        "startLine": { "type": "integer", "minimum": 1 },
+        "endLine": { "type": "integer", "minimum": 1 },
+        "contentHash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "excerptV1": {
       "type": "object",
       "additionalProperties": false,
       "required": [

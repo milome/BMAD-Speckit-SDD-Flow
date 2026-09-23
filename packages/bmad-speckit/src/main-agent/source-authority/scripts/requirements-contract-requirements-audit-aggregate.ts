@@ -4,8 +4,8 @@ type JsonRecord = Record<string, unknown>;
 type RequirementsAuditDecision = 'pass' | 'block';
 
 const HASH_PATTERN = /^sha256:[a-f0-9]{64}$/u;
-const REQUIREMENTS_ACTOR = 'requirements_critical_auditor_judge';
-const REQUIREMENTS_ROLE = 'requirements_critical_auditor';
+const REQUIREMENTS_ACTOR = 'requirements_contract_judge';
+const REQUIREMENTS_ROLE = 'requirements_judge';
 
 export interface RequirementsAuditAggregate {
   schemaVersion: 'requirements-contract-requirements-audit-aggregate/v1';
@@ -57,7 +57,9 @@ export function compileRequirementsAuditAggregateV2(input: {
   if (input.response.verdict === 'fail' && findings.length === 0) {
     issueCodes.push('requirements_judge_fail_without_findings');
   }
-  if (input.activeAuthority.activeBuildManifestHash !== input.buildManifest.buildManifestHash) {
+  const activeBuildHash = input.activeAuthority.activeBuildHash;
+  const manifestBuildHash = input.buildManifest.buildHash;
+  if (activeBuildHash !== manifestBuildHash) {
     issueCodes.push('requirements_active_build_manifest_stale');
   }
   const requirementIds = new Set(uniqueSorted(body.requirementIds));
@@ -89,8 +91,14 @@ export function compileRequirementsAuditAggregateV2(input: {
     semanticRevisionId: text(input.activeAuthority.activeSemanticRevisionId),
     scopeSemanticHash: requireHash(input.activeAuthority.activeScopeSemanticHash, 'scopeSemanticHash', issueCodes),
     sourceBindingHash: requireHash(input.activeAuthority.activeSourceBindingHash, 'sourceBindingHash', issueCodes),
-    buildManifestHash: requireHash(input.buildManifest.buildManifestHash, 'buildManifestHash', issueCodes),
-    auditPacketHash: requireHash(input.buildManifest.auditPacketRef && (input.buildManifest.auditPacketRef as JsonRecord).hash, 'auditPacketHash', issueCodes),
+    buildManifestHash: requireHash(manifestBuildHash, 'buildManifestHash', issueCodes),
+    auditPacketHash: requireHash(
+      input.buildManifest.auditPacketRef && (input.buildManifest.auditPacketRef as JsonRecord).hash ||
+      (Array.isArray(input.buildManifest.artifactEntries)
+        ? (input.buildManifest.artifactEntries as JsonRecord[]).find((entry) => entry.role === 'judge_audit_packet')?.contentRef as JsonRecord | undefined
+        : undefined)?.contentHash,
+      'auditPacketHash', issueCodes
+    ),
     providerSelectionHash: requireHash((input.request.providerSelection as JsonRecord)?.providerSelectionHash, 'providerSelectionHash', issueCodes),
     judgeRequestHash: requireHash(input.request.judgeRequestHash, 'judgeRequestHash', issueCodes),
     judgeResponseHash: sha256Stable(input.response),

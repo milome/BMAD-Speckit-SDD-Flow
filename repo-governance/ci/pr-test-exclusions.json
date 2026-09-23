@@ -162,11 +162,6 @@
       "observedAt": "2026-08-02T10:55:16.000Z"
     },
     {
-      "testPath": "tests/acceptance/main-agent-authoring-repair-preserve-existing.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
       "testPath": "tests/acceptance/main-agent-child-result-e2e.test.ts",
       "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
       "observedAt": "2026-08-02T10:55:16.000Z"
@@ -175,11 +170,6 @@
       "testPath": "tests/acceptance/main-agent-churn-routing-score.test.ts",
       "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
       "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
-      "testPath": "tests/acceptance/main-agent-dist-authoring-repair-verdict-branching.test.ts",
-      "reasonCode": "KNOWN_REQUIREMENT_SOURCE_AUTHORITY_GAP",
-      "observedAt": "2026-08-01T20:25:00.000Z"
     },
     {
       "testPath": "tests/acceptance/main-agent-dist-consumer-runtime.test.ts",
@@ -257,11 +247,6 @@
       "observedAt": "2026-08-02T10:55:16.000Z"
     },
     {
-      "testPath": "tests/acceptance/main-agent-source-materialization-before-audit.test.ts",
-      "reasonCode": "KNOWN_FAILING_TEST_FIXTURE_DRIFT",
-      "observedAt": "2026-08-01T11:09:57.276Z"
-    },
-    {
       "testPath": "tests/acceptance/main-agent-state-idempotency.test.ts",
       "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
       "observedAt": "2026-08-02T10:55:16.000Z"
@@ -297,37 +282,7 @@
       "observedAt": "2026-08-02T10:55:16.000Z"
     },
     {
-      "testPath": "tests/acceptance/requirements-contract-authoring-authority-grounding.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
-      "testPath": "tests/acceptance/requirements-contract-authoring-auto-repair-loop.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
       "testPath": "tests/acceptance/requirements-contract-authoring-business-coverage.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
-      "testPath": "tests/acceptance/requirements-contract-authoring-business-view-materialization.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
-      "testPath": "tests/acceptance/requirements-contract-authoring-compiler-invariant-closure.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
-      "testPath": "tests/acceptance/requirements-contract-authoring-localization-materialization.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
-      "testPath": "tests/acceptance/requirements-contract-authoring-prepromotion-render.test.ts",
       "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
       "observedAt": "2026-08-02T10:55:16.000Z"
     },
@@ -347,22 +302,7 @@
       "observedAt": "2026-08-02T10:55:16.000Z"
     },
     {
-      "testPath": "tests/acceptance/requirements-contract-checkpoint-main-lane.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
-      "testPath": "tests/acceptance/requirements-contract-checkpoint-progress-consistency.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
       "testPath": "tests/acceptance/requirements-contract-clean-materialization.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
-      "testPath": "tests/acceptance/requirements-contract-cli-provider-mode.test.ts",
       "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
       "observedAt": "2026-08-02T10:55:16.000Z"
     },
@@ -373,21 +313,6 @@
     },
     {
       "testPath": "tests/acceptance/requirements-contract-consumer-registry.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
-      "testPath": "tests/acceptance/requirements-contract-corr-131-source-authorized-packet-projection.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
-      "testPath": "tests/acceptance/requirements-contract-critical-auditor-independence.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
-      "testPath": "tests/acceptance/requirements-contract-critical-auditor-provider.test.ts",
       "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
       "observedAt": "2026-08-02T10:55:16.000Z"
     },
@@ -417,27 +342,12 @@
       "observedAt": "2026-08-01T20:51:19.000Z"
     },
     {
-      "testPath": "tests/acceptance/requirements-contract-existing-source-promotion.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
       "testPath": "tests/acceptance/requirements-contract-finalization-safe-writer-installed-cli.test.ts",
       "reasonCode": "KNOWN_MISSING_PACKAGE_ASSET_ROOT",
       "observedAt": "2026-08-01T18:09:08.069Z"
     },
     {
       "testPath": "tests/acceptance/requirements-contract-gold-template-render.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
-      "testPath": "tests/acceptance/requirements-contract-intake-first-authoring.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
-      "testPath": "tests/acceptance/requirements-contract-intake-promotion.test.ts",
       "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
       "observedAt": "2026-08-02T10:55:16.000Z"
     },
@@ -450,11 +360,6 @@
       "testPath": "tests/acceptance/requirements-contract-judge-prompt-template.test.ts",
       "reasonCode": "KNOWN_REQUIREMENT_SOURCE_HASH_DRIFT",
       "observedAt": "2026-08-01T20:51:19.000Z"
-    },
-    {
-      "testPath": "tests/acceptance/requirements-contract-minimal-fixture-authority.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
     },
     {
       "testPath": "tests/acceptance/requirements-contract-package-runtime-action-binding-surface-parity.test.ts",
@@ -527,11 +432,6 @@
       "observedAt": "2026-08-01T20:25:00.000Z"
     },
     {
-      "testPath": "tests/acceptance/requirements-contract-render-roundtrip.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
       "testPath": "tests/acceptance/requirements-contract-runtime-action-survival.test.ts",
       "reasonCode": "KNOWN_FAILING_TEST_FIXTURE_DRIFT",
       "observedAt": "2026-08-01T20:51:19.000Z"
@@ -543,16 +443,6 @@
     },
     {
       "testPath": "tests/acceptance/requirements-contract-six-model-verified-status-facade.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
-      "testPath": "tests/acceptance/requirements-contract-source-mutation-gate.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
-      "testPath": "tests/acceptance/requirements-contract-staging-transaction.test.ts",
       "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
       "observedAt": "2026-08-02T10:55:16.000Z"
     },
@@ -588,11 +478,6 @@
     },
     {
       "testPath": "tests/acceptance/six-mental-model-routing-e2e.test.ts",
-      "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
-      "observedAt": "2026-08-02T10:55:16.000Z"
-    },
-    {
-      "testPath": "tests/acceptance/source-prd-authoring-entry-source-lint.test.ts",
       "reasonCode": "KNOWN_FAILING_RESTORED_BASELINE",
       "observedAt": "2026-08-02T10:55:16.000Z"
     },

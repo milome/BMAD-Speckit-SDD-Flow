@@ -60,7 +60,6 @@ const requireForGate = createRequire(import.meta.url);
 const {
   extractImplementationConfirmation,
   sourceDocumentHashFor,
-  implementationConfirmationHashFor,
 } = requireForGate(
   path.join(
     ROOT,
@@ -71,7 +70,7 @@ const {
     'pre_render_definition_drilldown_lib.js'
   )
 );
-const { buildAuditInputHash } = requireForGate(PRE_RENDER_MUST_GATE);
+const { buildReconciliationReport } = requireForGate(PRE_RENDER_MUST_GATE);
 
 beforeEach(() => {
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'requirements-checkpoint-automation-'));
@@ -476,7 +475,6 @@ function writeMustGateFixture(overrides = '') {
     extracted.blockText,
     extracted.confirmation
   );
-  const implementationConfirmationHash = implementationConfirmationHashFor(extracted.confirmation);
   const kernelHash = fixedHash('b');
   const kernel = {
     schemaVersion: 'semantic-kernel/v1',
@@ -609,47 +607,6 @@ function writeMustGateFixture(overrides = '') {
     JSON.stringify({ must_decomposition_packet: packet }, null, 2),
     'utf8'
   );
-  const auditInputHash = buildAuditInputHash({
-    sourceDocumentHash,
-    implementationConfirmationHash,
-    kernel,
-    packet,
-  });
-  if (!overrides.includes('MISSING_CRITIC')) {
-    const rounds = overrides.includes('LESS_THAN_3_ROUNDS') ? 2 : 3;
-    for (let index = 1; index <= rounds; index += 1) {
-      const receipt = {
-        criticalAuditorReceipt: {
-          schemaVersion: 'critical-auditor-receipt/v1',
-          roundIndex: index,
-          inputHash: overrides.includes('STALE_CRITIC') ? fixedHash('e') : auditInputHash,
-          attackVectors: ['missing_projection'],
-          gapCandidates: [],
-          validatedGaps:
-            overrides.includes('UNRESOLVED_GAP') && index === rounds
-              ? [{ id: 'GAP-001', status: 'open' }]
-              : [],
-          rejectedGapCandidates: [{ id: `REJ-${index}` }],
-          mutationPressureFindings: [],
-          overBroadTaskFindings: [],
-          missingProjectionFindings: [],
-          invalidProofFindings: [],
-          legacyBypassFindings: [],
-          sourceMaterializationFindings: [],
-          noNewGapRationale: 'No new valid gap in fixture.',
-          convergenceDecision: {
-            verdict: 'no_new_valid_gap',
-            resetsConvergenceCounter: false,
-          },
-        },
-      };
-      fs.writeFileSync(
-        path.join(authoringDir, `critical-auditor-receipt-round-${index}.json`),
-        JSON.stringify(receipt, null, 2),
-        'utf8'
-      );
-    }
-  }
   return { source, authoringDir };
 }
 
@@ -659,7 +616,6 @@ function writeValidMustGateArtifactsForSource(source: string, authoringDir: stri
   const extracted = extractImplementationConfirmation(text);
   const confirmation = extracted.confirmation;
   let sourceDocumentHash = sourceDocumentHashFor(text, extracted.blockText, confirmation);
-  let implementationConfirmationHash = implementationConfirmationHashFor(confirmation);
   const packetHash = fixedHash('a');
   const kernelHash = fixedHash('b');
   const kernel = {
@@ -669,7 +625,7 @@ function writeValidMustGateArtifactsForSource(source: string, authoringDir: stri
     sourceDocumentHash,
     goal: 'Validate semantic pre-render gate.',
     currentState: ['Legacy global consistency is the only gate.'],
-    targetState: ['MUST packet and critic convergence gate HTML rendering.'],
+    targetState: ['MUST packet and deterministic gate HTML rendering.'],
     kernelHash,
   };
   const mustRows = asArray(confirmation.must);
@@ -838,15 +794,8 @@ function writeValidMustGateArtifactsForSource(source: string, authoringDir: stri
     finalExtracted.blockText,
     finalExtracted.confirmation
   );
-  implementationConfirmationHash = implementationConfirmationHashFor(finalExtracted.confirmation);
   kernel.sourceDocumentHash = sourceDocumentHash;
   packet.sourceDocumentHash = sourceDocumentHash;
-  const auditInputHash = buildAuditInputHash({
-    sourceDocumentHash,
-    implementationConfirmationHash,
-    kernel,
-    packet,
-  });
   fs.writeFileSync(
     path.join(authoringDir, 'semantic-kernel.json'),
     JSON.stringify({ semanticKernel: kernel }, null, 2),
@@ -857,58 +806,10 @@ function writeValidMustGateArtifactsForSource(source: string, authoringDir: stri
     JSON.stringify({ must_decomposition_packet: packet }, null, 2),
     'utf8'
   );
-  for (let roundIndex = 1; roundIndex <= 3; roundIndex += 1) {
-    fs.writeFileSync(
-      path.join(authoringDir, `critical-auditor-receipt-round-${roundIndex}.json`),
-      JSON.stringify(
-        {
-          criticalAuditorReceipt: {
-            schemaVersion: 'critical-auditor-receipt/v1',
-            roundIndex,
-            inputHash: auditInputHash,
-            attackVectors: [],
-            gapCandidates: [],
-            validatedGaps: [],
-            rejectedGapCandidates: [],
-            mutationPressureFindings: [],
-            overBroadTaskFindings: [],
-            missingProjectionFindings: [],
-            invalidProofFindings: [],
-            legacyBypassFindings: [],
-            sourceMaterializationFindings: [],
-            noNewGapRationale: 'Fixture has no new valid gap.',
-            convergenceDecision: { verdict: 'no_new_valid_gap', resetsConvergenceCounter: false },
-          },
-        },
-        null,
-        2
-      ),
-      'utf8'
-    );
-  }
   const sourceBytesHash = fileHash(source);
   const createdAt = '2026-05-25T00:00:00.000Z';
   const candidateArtifactPath = path.join(authoringDir, 'controlled-must-candidates.json');
   const draftConfirmationPath = path.join(authoringDir, 'draft-implementation-confirmation.json');
-  fs.writeFileSync(
-    path.join(authoringDir, 'critical-auditor-checkpoint-outcome.json'),
-    JSON.stringify(
-      {
-        schemaVersion: 'critical-auditor-checkpoint-outcome/v1',
-        recordId: finalExtracted.confirmation.recordId,
-        requirementSetId: finalExtracted.confirmation.requirementSetId,
-        auditInputHash,
-        sourceDocumentHash,
-        verdict: 'no_new_valid_gap',
-        consecutiveNoNewGapRounds: 3,
-        decision: 'pass',
-        blockingIssues: [],
-      },
-      null,
-      2
-    ),
-    'utf8'
-  );
   fs.writeFileSync(
     candidateArtifactPath,
     JSON.stringify(
@@ -1808,6 +1709,54 @@ function authoringDirForGlobalGateRecord(root = tempDir): string {
 }
 
 describe('requirements contract checkpoint automation', () => {
+  it('accepts a projected implementation task backed by a same-id canonical atomic task', () => {
+    const packetHash = 'sha256:' + 'a'.repeat(64);
+    const taskId = 'TASK-001-001-9F2C7A';
+    const report = buildReconciliationReport({
+      confirmation: {
+        implementationTasks: [{ id: taskId, action: 'projected task' }],
+        atomicImplementationTaskList: [
+          {
+            id: taskId,
+            action: 'canonical task',
+            derivedFromPacketHash: packetHash,
+            derivedFromMustRef: 'MUST-001',
+          },
+        ],
+      },
+      packet: { packetHash, mustPackets: [] },
+    });
+
+    expect(report.verdict).toBe('pass');
+    expect(report.issues).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'source_row_independently_invented' }),
+      ])
+    );
+  });
+
+  it('inherits canonical packet lineage when resyncing a dynamically split task id', () => {
+    const packetHash = 'sha256:' + 'b'.repeat(64);
+    const taskId = 'TASK-002-001-9F2C7A';
+    const report = buildReconciliationReport({
+      confirmation: {
+        implementationTasks: [{ id: taskId, requirementRefs: ['MUST-002'] }],
+        atomicImplementationTaskList: [
+          {
+            id: taskId,
+            requirementRefs: ['MUST-002'],
+            derivedFromMustRef: 'MUST-002',
+            derivedFromPacketHash: packetHash,
+            projectionStatus: 'synchronized',
+          },
+        ],
+      },
+      packet: { packetHash, mustPackets: [] },
+    });
+
+    expect(report.verdict).toBe('pass');
+  });
+
   const SEMANTIC_CHECKPOINT_IDS = [
     'cp-00-semantic-kernel',
     'cp-01-must-decomposition-packet',
@@ -2182,13 +2131,6 @@ describe('requirements contract checkpoint automation', () => {
       ['missing semantic kernel', 'MISSING_KERNEL', 'missing_semantic_kernel'],
       ['missing must_decomposition_packet', 'MISSING_PACKET', 'missing_must_decomposition_packet'],
       ['stale packet hash', 'STALE_PACKET', 'must_packet_source_hash_stale'],
-      ['missing Critical Auditor receipt', 'MISSING_CRITIC', 'critical_auditor_receipt_missing'],
-      [
-        'less than three no-new-gap rounds',
-        'LESS_THAN_3_ROUNDS',
-        'critical_auditor_less_than_three_no_new_gap_rounds',
-      ],
-      ['unresolved validated gap', 'UNRESOLVED_GAP', 'critical_auditor_validated_gap_unresolved'],
       [
         'question coverage incomplete',
         'INCOMPLETE_QUESTION',
@@ -2243,7 +2185,7 @@ describe('requirements contract checkpoint automation', () => {
     }
   });
 
-  it('marks complete kernel, packet, critic receipts, and reconciliation as confirmable', () => {
+  it('marks complete kernel, packet, deterministic gates, and reconciliation as confirmable', () => {
     const fixture = writeMustGateFixture();
 
     const { result, json } = runNode(PRE_RENDER_MUST_GATE, [
@@ -2265,9 +2207,8 @@ describe('requirements contract checkpoint automation', () => {
     expect(result.status).toBe(0);
     expect(json.verdict).toBe('PASS');
     expect(json.confirmability).toBe('confirmable');
-    expect(json.criticalAuditor.consecutiveNoNewGapRounds).toBe(3);
     expect(json.packetSourceReconciliation.verdict).toBe('pass');
-    expect(receipt.criticalAuditor.convergenceVerdict).toBe('bounded_no_new_gap');
+    expect(receipt.failedChecks).toEqual([]);
     expect(reconciliation.verdict).toBe('pass');
   });
 
@@ -2371,87 +2312,6 @@ describe('requirements contract checkpoint automation', () => {
     expect(resume.result.stderr).toContain('为什么继续：');
     expect(resume.result.stderr).toContain('下一安全动作：');
     expect(resume.result.stderr).toContain('机器信息：');
-  });
-
-  it('explains checkpoint_source_edit_missing in human language and suppresses it with --quiet', () => {
-    initGitRepo(tempDir);
-    const source = writeGloballyConsistentSource(tempDir);
-    const authoringDir = authoringDirForGlobalGateRecord(tempDir);
-    const progress = path.join(authoringDir, 'semantic-checkpoint-progress.json');
-    writeValidMustGateArtifactsForSource(source, authoringDir);
-    for (const receiptPath of [
-      path.join(authoringDir, 'critical-auditor-receipt-round-1.json'),
-      path.join(authoringDir, 'critical-auditor-receipt-round-2.json'),
-      path.join(authoringDir, 'critical-auditor-receipt-round-3.json'),
-    ]) {
-      fs.rmSync(receiptPath, { force: true });
-    }
-    spawnSync('git', ['add', 'docs/requirements/source.md'], { cwd: tempDir, encoding: 'utf8' });
-    spawnSync('git', ['commit', '-m', 'docs: seed requirement source'], {
-      cwd: tempDir,
-      encoding: 'utf8',
-    });
-    const documentHash = fileHash(source);
-    fs.writeFileSync(
-      progress,
-      JSON.stringify(
-        {
-          schemaVersion: 'semantic-checkpoint-progress/v1',
-          source,
-          documentHash,
-          mode: 'checkpoint_required',
-          modeDecision: 'checkpoint_required',
-          lastCompletedCheckpoint: 'cp-00-semantic-kernel',
-          currentCheckpoint: 'cp-01-must-decomposition-packet',
-          next: 'cp-01-must-decomposition-packet',
-          checkpoints: [
-            {
-              id: 'cp-00-semantic-kernel',
-              name: 'semantic kernel',
-              status: 'passed',
-              documentHash,
-            },
-          ],
-        },
-        null,
-        2
-      ),
-      'utf8'
-    );
-
-    const blocked = runNode(
-      CHECKPOINTS,
-      ['--source', source, '--progress', progress, '--mode', 'run'],
-      tempDir
-    );
-    expect(blocked.result.status).toBe(1);
-    expect(blocked.json.code).toBe('checkpoint_source_edit_missing');
-    expect(blocked.result.stderr).toContain('当前源文档还没有写入本 checkpoint 需要保存的内容');
-    expect(blocked.result.stderr).toContain('不会替代需求契约编写');
-    expect(blocked.result.stderr).toContain('不能伪造进度');
-    expect(blocked.result.stderr).toContain('blockingReason=checkpoint_source_edit_missing');
-
-    const quiet = spawnSync(
-      process.execPath,
-      [
-        CHECKPOINTS,
-        '--source',
-        source,
-        '--progress',
-        progress,
-        '--mode',
-        'run',
-        '--json',
-        '--quiet',
-      ],
-      {
-        cwd: tempDir,
-        encoding: 'utf8',
-      }
-    );
-    expect(quiet.status).toBe(1);
-    expect(() => JSON.parse(quiet.stdout)).not.toThrow();
-    expect(quiet.stderr).toBe('');
   });
 
   it('fails closed when unrelated staged files exist before checkpoint commit', () => {
@@ -2738,7 +2598,7 @@ describe('requirements contract checkpoint automation', () => {
     expect(fs.existsSync(progress)).toBe(false);
   });
 
-  it('blocks full checkpoint run when semantic kernel, packet, critic, and reconciliation are missing', () => {
+  it('blocks full checkpoint run when semantic kernel, packet, and reconciliation are missing', () => {
     initGitRepo(tempDir);
     const source = writeGloballyConsistentSource(tempDir);
     const progress = path.join(tempDir, 'progress.json');

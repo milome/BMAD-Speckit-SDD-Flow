@@ -9,6 +9,13 @@ import { sha256Stable } from '../../packages/bmad-speckit/src/main-agent/source-
 import type { PreparedRequirementsContractJudgeInvocation } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-invocation';
 import { assertJudgePayloadBudget } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-payload-budget';
 import { OpenAICompatibleJudgeAdapter } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-openai-compatible-judge-adapter';
+import { createRequirementsContractSemanticIr } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-semantic-ir';
+import {
+  buildRequirementsContractJudgeAuditPacketV3,
+  publishRequirementsContractJudgeAuditPacketRef,
+} from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-judge-audit-packet';
+import { createRequirementsContractBuildManifestV2 } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-authoring-manifest';
+import { requirementsContractDomainHash } from '../../packages/bmad-speckit/src/main-agent/source-authority/scripts/requirements-contract-hash-domains';
 
 const HASH = (value: string) => sha256Stable({ value });
 
@@ -90,6 +97,106 @@ function writeCanonicalJson(filePath: string, value: unknown) {
   writeFileSync(filePath, canonicalJson(value), 'utf8');
 }
 
+function v3JudgeInput(input: {
+  recordRoot: string;
+  label: string;
+  invoke: PreparedRequirementsContractJudgeInvocation['invoke'];
+  provider?: Record<string, any>;
+  providerRef?: string;
+  invocationProvider?: Record<string, any>;
+  judgePrompt?: ReturnType<typeof configuredJudgePrompt>;
+  artifactIds?: string[];
+  body?: Record<string, unknown>;
+  persist?: boolean;
+}) {
+  const provider = input.provider ?? {
+    transport: 'openai-compatible',
+    apiStyle: 'chat_completions',
+    model: 'judge-model',
+    requestPolicy: {},
+  };
+  const semanticIr = createRequirementsContractSemanticIr({
+    recordId: `REC-${input.label}`,
+    requestId: `REQ-${input.label}`,
+    parentSemanticRevisionId: null,
+    compilerVersion: 'compiler/v3',
+    semantics: {
+      requirements: [{
+        id: 'MUST-001', text: 'Persist the confirmed requirement.',
+        oracle: 'The confirmation projection includes MUST-001.',
+        requirementKind: 'functional', polarity: 'positive',
+      }],
+      atoms: [{
+        id: 'MUST-001-A1', action: 'Persist the confirmed requirement.',
+        oracle: 'The confirmation projection includes MUST-001.', requirementRef: 'MUST-001',
+      }],
+      decisions: [],
+    },
+    evidenceClaims: [], specSpanRegistry: [], executionConstraints: [],
+    semanticProvenance: { 'MUST-001': 'MUST-001' },
+  });
+  const auditPacket = buildRequirementsContractJudgeAuditPacketV3({
+    recordRoot: input.recordRoot,
+    packet: {
+      schemaVersion: 'requirements-contract-judge-audit-draft/v1',
+      semanticRevisionId: semanticIr.semanticRevisionId,
+      scopeSemanticHash: semanticIr.scopeSemanticHash,
+      body: {
+        artifactIds: input.artifactIds ?? ['final-markdown'],
+        requirementIds: ['MUST-001'],
+        mandatoryDimensionIds: ['completeness'],
+        semanticIr,
+        ...input.body,
+      },
+    },
+  });
+  const packetRef = publishRequirementsContractJudgeAuditPacketRef({
+    recordRoot: input.recordRoot,
+    packet: auditPacket,
+  });
+  const buildManifest = createRequirementsContractBuildManifestV2({
+    scopeSemanticHash: semanticIr.scopeSemanticHash,
+    sourceBindingHash: HASH(`${input.label}-source-binding`),
+    compilerIdentity: 'compiler/v3',
+    projectionSetHash: HASH(`${input.label}-projection-set`),
+    checkpointSummary: { checkpointIds: [], terminalStateHashes: [] },
+    validationSummary: { decision: 'pass', checkIds: [] },
+    artifactEntries: [{
+      role: 'judge_audit_packet',
+      schemaVersion: String(auditPacket.schemaVersion),
+      semanticHash: requirementsContractDomainHash(
+        'requirements-projection:judge_audit_packet/v1',
+        auditPacket
+      ),
+      contentRef: packetRef,
+    }],
+  });
+  const activeAuthority = {
+    activeSemanticRevisionId: semanticIr.semanticRevisionId,
+    activeScopeSemanticHash: semanticIr.scopeSemanticHash,
+    activeBindingRevisionId: `BIND-${input.label}`,
+    activeSourceBindingHash: buildManifest.sourceBindingHash,
+    activeBuildHash: buildManifest.buildHash,
+    activeBuildManifestPath: `authoring/builds/${buildManifest.buildHash.slice('sha256:'.length)}/manifest.json`,
+    previousBuildHash: null,
+    previousBuildManifestPath: null,
+  };
+  return {
+    authoringRequestId: `REQ-${input.label}`,
+    recordRoot: input.recordRoot,
+    activeAuthority,
+    buildManifest,
+    auditPacket,
+    judgePrompt: input.judgePrompt ?? configuredJudgePrompt(input.label),
+    providerSelection: {
+      providerRef: input.providerRef ?? 'judge-a', provider,
+      adapterRef: 'OpenAICompatibleJudgeAdapter', providerRegistryHash: HASH('registry'),
+    },
+    preparedInvocation: preparedInvocation(input.invoke, input.invocationProvider ?? provider),
+    ...(input.persist === undefined ? {} : { persist: input.persist }),
+  };
+}
+
 describe('requirements production Judge pipeline', () => {
   it('rejects the actual final payload before publishing authority and repeats without dispatch', async () => {
     const root = mkdtempSync(path.join(tmpdir(), 'requirements-judge-final-budget-'));
@@ -98,7 +205,6 @@ describe('requirements production Judge pipeline', () => {
       requestPolicy: { maximumAttempts: 1, transportByteLimit: 8192 },
     };
     const invoke = vi.fn(async ({ request }: { request: Record<string, any> }) => responseFor(request));
-    const prepared = preparedInvocation(invoke, provider);
     const unpublishedPaths = ['quality/selections', 'quality/requests', 'quality/active-request.json'];
     // Test-only invocation uses the actual pure HTTP preflight and never contacts a Judge.
     const preflight = vi.fn<PreparedRequirementsContractJudgeInvocation['preflight']>((payload) => {
@@ -108,39 +214,12 @@ describe('requirements production Judge pipeline', () => {
       }
       return OpenAICompatibleJudgeAdapter.preflight({ provider, credential: undefined, payload });
     });
-    prepared.preflight = preflight;
     const judgePrompt = configuredJudgePrompt('test-only-final-budget');
     judgePrompt.systemPrompt = 'x'.repeat(4096);
-    const input = {
-      authoringRequestId: 'REQ-FINAL-BUDGET', recordRoot: root,
-      activeAuthority: {
-        activeSemanticRevisionId: 'SEM-FINAL-BUDGET',
-        activeSemanticIrPath: 'authoring/semantic-revisions/SEM-FINAL-BUDGET/semantic-ir.json',
-        activeScopeSemanticHash: HASH('final-budget-scope'),
-        activeBindingRevisionId: 'BIND-FINAL-BUDGET',
-        activeSourceBindingPath: 'authoring/source-bindings/BIND-FINAL-BUDGET/source-binding.json',
-        activeSourceBindingHash: HASH('final-budget-binding'),
-        activeAuthoringAttemptId: 'ATTEMPT-FINAL-BUDGET',
-        activeBuildManifestPath: 'authoring/staging/ATTEMPT-FINAL-BUDGET/contract-build-manifest.json',
-        activeBuildManifestHash: HASH('final-budget-build'),
-      },
-      buildManifest: {
-        buildManifestHash: HASH('final-budget-build'), artifactEntries: [],
-        auditPacketRef: { artifactId: 'judge-audit-packet', path: 'packet.json', hash: HASH('final-budget-packet') },
-        projectionReportRefs: [],
-      },
-      auditPacket: {
-        schemaVersion: 'requirements-contract-judge-audit-packet/v1',
-        semanticRevisionId: 'SEM-FINAL-BUDGET', scopeSemanticHash: HASH('final-budget-scope'),
-        body: { artifactIds: ['final-markdown'], requirementIds: ['MUST-001'], mandatoryDimensionIds: ['completeness'] },
-      },
-      judgePrompt,
-      providerSelection: {
-        providerRef: 'judge-a', provider, adapterRef: 'OpenAICompatibleJudgeAdapter',
-        providerRegistryHash: HASH('registry'),
-      },
-      preparedInvocation: prepared,
-    };
+    const input = v3JudgeInput({
+      recordRoot: root, label: 'FINAL-BUDGET', invoke, provider, judgePrompt,
+    });
+    input.preparedInvocation.preflight = preflight;
     try {
       for (let attempt = 0; attempt < 2; attempt += 1) {
         const failure = await runRequirementsContractProductionJudgePipeline(input).then(
@@ -157,137 +236,97 @@ describe('requirements production Judge pipeline', () => {
       }
       expect(preflight).toHaveBeenCalledTimes(2);
       expect(preflight).toHaveBeenCalledWith(expect.objectContaining({
-        systemPrompt: judgePrompt.systemPrompt,
+        systemPrompt: expect.stringContaining(judgePrompt.systemPrompt),
         executionContext: expect.objectContaining({ requestPath: expect.any(String) }),
         structuredOutputSchema: judgePrompt.structuredOutputSchema,
       }));
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
     }
   });
 
   it('uses the selected production provider and creates a real aggregate and EffectivePass', async () => {
-    const invoke = vi.fn(async (request: Record<string, any>) => responseFor(request));
+    const root = mkdtempSync(path.join(tmpdir(), 'requirements-judge-provider-'));
+    const invoke = vi.fn(async ({ request }: { request: Record<string, any> }) => responseFor(request));
     const judgePrompt = configuredJudgePrompt('fixture-a');
-    const result = await runRequirementsContractProductionJudgePipeline({
-      authoringRequestId: 'REQ-001',
-      recordRoot: 'unused-by-in-memory-test',
-      activeAuthority: {
-        activeSemanticRevisionId: 'SEM-001',
-        activeSemanticIrPath: 'authoring/semantic-revisions/SEM-001/semantic-ir.json',
-        activeScopeSemanticHash: HASH('scope'),
-        activeBindingRevisionId: 'BIND-001',
-        activeSourceBindingPath: 'authoring/source-bindings/BIND-001/source-binding.json',
-        activeSourceBindingHash: HASH('binding'),
-        activeAuthoringAttemptId: 'ATTEMPT-001',
-        activeBuildManifestPath: 'authoring/staging/ATTEMPT-001/contract-build-manifest.json',
-        activeBuildManifestHash: HASH('build'),
-      },
-      buildManifest: {
-        buildManifestHash: HASH('build'),
-        artifactEntries: [],
-        auditPacketRef: { artifactId: 'judge-audit-packet', path: 'packet.json', hash: HASH('packet') },
-        projectionReportRefs: [],
-      },
-      auditPacket: {
-        schemaVersion: 'requirements-contract-judge-audit-packet/v1',
-        semanticRevisionId: 'SEM-001',
-        scopeSemanticHash: HASH('scope'),
-        body: {
-          artifactIds: ['final-markdown'],
-          requirementIds: ['MUST-001'],
-          mandatoryDimensionIds: ['business-rule-completeness'],
-        },
-      },
-      judgePrompt,
-      providerSelection: {
-        providerRef: 'judge-a',
-        provider: { transport: 'openai-compatible', apiStyle: 'chat_completions', model: 'judge-model', requestPolicy: {} },
-        adapterRef: 'OpenAICompatibleJudgeAdapter',
-        providerRegistryHash: HASH('registry'),
-      },
-      preparedInvocation: preparedInvocation(async ({ request }) => invoke(request)),
-      persist: false,
-    });
+    try {
+      const result = await runRequirementsContractProductionJudgePipeline(v3JudgeInput({
+        recordRoot: root, label: 'PROVIDER', invoke, judgePrompt, persist: false,
+      }));
 
-    expect(invoke).toHaveBeenCalledTimes(1);
-    expect(result.request.prompt).toEqual(judgePrompt);
-    expect(result.status).toBe('audited_pass');
-    expect(result.aggregate.decision).toBe('pass');
-    expect(result.effectivePass.decision).toBe('pass');
-    expect(result.activeRequest.status).toBe('audited_pass');
+      expect(invoke).toHaveBeenCalledTimes(1);
+      expect(result.request.prompt).toMatchObject({
+        rubric: judgePrompt.rubric,
+        structuredOutputSchema: judgePrompt.structuredOutputSchema,
+        outputTokenReserve: judgePrompt.outputTokenReserve,
+      });
+      expect(result.request.prompt.systemPrompt).toContain(judgePrompt.systemPrompt);
+      expect(result.request).not.toHaveProperty('auditPacket');
+      expect(result.request.auditPacketRef).toMatchObject({
+        schemaVersion: 'requirements-content-ref/v1',
+        contentHash: expect.stringMatching(/^sha256:/u),
+      });
+      expect(invoke.mock.calls[0]?.[0]).toHaveProperty('request.auditPacket.body');
+      expect(result.status).toBe('audited_pass');
+      expect(result.aggregate.decision).toBe('pass');
+      expect(result.effectivePass.decision).toBe('pass');
+      expect(result.activeRequest.status).toBe('audited_pass');
+    } finally {
+      rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+    }
   });
 
   it('does not invoke a provider whose declared capacity is too small', async () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'requirements-judge-small-capacity-'));
     const invoke = vi.fn();
-    const result = await runRequirementsContractProductionJudgePipeline({
-      authoringRequestId: 'REQ-002',
-      recordRoot: 'unused-by-in-memory-test',
-      activeAuthority: {
-        activeSemanticRevisionId: 'SEM-002', activeSemanticIrPath: 'authoring/semantic-revisions/SEM-002/semantic-ir.json', activeScopeSemanticHash: HASH('scope-2'),
-        activeBindingRevisionId: 'BIND-002', activeSourceBindingPath: 'authoring/source-bindings/BIND-002/source-binding.json', activeSourceBindingHash: HASH('binding-2'),
-        activeAuthoringAttemptId: 'ATTEMPT-002', activeBuildManifestPath: 'authoring/staging/ATTEMPT-002/contract-build-manifest.json', activeBuildManifestHash: HASH('build-2'),
-      },
-      buildManifest: { buildManifestHash: HASH('build-2'), artifactEntries: [], auditPacketRef: { artifactId: 'judge-audit-packet', path: 'packet.json', hash: HASH('packet-2') }, projectionReportRefs: [] },
-      auditPacket: { schemaVersion: 'requirements-contract-judge-audit-packet/v1', semanticRevisionId: 'SEM-002', scopeSemanticHash: HASH('scope-2'), body: { artifactIds: ['a'], requirementIds: ['M'], mandatoryDimensionIds: ['D'], payload: 'x'.repeat(1000) } },
-      judgePrompt: configuredJudgePrompt('fixture-b'),
-      providerSelection: { providerRef: 'judge-a', provider: { transport: 'openai-compatible', apiStyle: 'chat_completions', model: 'judge-model', requestPolicy: { transportByteLimit: 128 } }, adapterRef: 'OpenAICompatibleJudgeAdapter', providerRegistryHash: HASH('registry') },
-      preparedInvocation: preparedInvocation(async ({ request }) => invoke(request), {
+    const provider = {
         transport: 'openai-compatible', apiStyle: 'chat_completions', model: 'judge-model',
         requestPolicy: { transportByteLimit: 128 },
-      }),
-      persist: false,
-    });
+      };
+    try {
+      const result = await runRequirementsContractProductionJudgePipeline(v3JudgeInput({
+        recordRoot: root, label: 'SMALL-CAPACITY',
+        invoke: async ({ request }) => invoke(request), provider,
+        body: { payload: 'x'.repeat(1000) }, persist: false,
+      }));
 
-    expect(invoke).not.toHaveBeenCalled();
-    expect(result.status).toBe('audit_pending');
-    expect(result.issueCode).toBe('judge_provider_capacity_exceeded');
-    expect(result.capacity.actual.requestSerializedBytes).toBeGreaterThan(128);
+      expect(invoke).not.toHaveBeenCalled();
+      expect(result.status).toBe('audit_pending');
+      expect(result.issueCode).toBe('judge_provider_capacity_exceeded');
+      expect(result.capacity.actual.requestSerializedBytes).toBeGreaterThan(128);
+    } finally {
+      rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+    }
   });
 
   it('persists the same hash identity through Windows-safe physical path segments', async () => {
     const root = mkdtempSync(path.join(tmpdir(), 'requirements-judge-path-'));
     try {
-      const result = await runRequirementsContractProductionJudgePipeline({
-        authoringRequestId: 'REQ-003', recordRoot: root,
-        activeAuthority: {
-          activeSemanticRevisionId: 'SEM-003', activeSemanticIrPath: 'authoring/semantic-revisions/SEM-003/semantic-ir.json', activeScopeSemanticHash: HASH('scope-3'),
-          activeBindingRevisionId: 'BIND-003', activeSourceBindingPath: 'authoring/source-bindings/BIND-003/source-binding.json', activeSourceBindingHash: HASH('binding-3'),
-          activeAuthoringAttemptId: 'ATTEMPT-003', activeBuildManifestPath: 'authoring/staging/ATTEMPT-003/contract-build-manifest.json', activeBuildManifestHash: HASH('build-3'),
-        },
-        buildManifest: { buildManifestHash: HASH('build-3'), artifactEntries: [], auditPacketRef: { artifactId: 'judge-audit-packet', path: 'packet.json', hash: HASH('packet-3') }, projectionReportRefs: [] },
-        auditPacket: { schemaVersion: 'requirements-contract-judge-audit-packet/v1', semanticRevisionId: 'SEM-003', scopeSemanticHash: HASH('scope-3'), body: { artifactIds: ['a'], requirementIds: ['M'], mandatoryDimensionIds: ['D'] } },
-        judgePrompt: configuredJudgePrompt('fixture-c'),
-        providerSelection: { providerRef: 'judge-a', provider: { transport: 'openai-compatible', apiStyle: 'chat_completions', model: 'judge-model', requestPolicy: {} }, adapterRef: 'OpenAICompatibleJudgeAdapter', providerRegistryHash: HASH('registry') },
-        preparedInvocation: preparedInvocation(async ({ request }) => responseFor(request)),
-      });
+      const result = await runRequirementsContractProductionJudgePipeline(v3JudgeInput({
+        recordRoot: root,
+        label: 'PATH',
+        invoke: async ({ request }) => responseFor(request),
+      }));
 
       expect(result.activeRequest.requestPath).toMatch(/^quality\/requests\/sha256-[a-f0-9]{64}\/judge-request\.json$/u);
       expect(result.activeRequest.requestPath).not.toContain(':');
       expect(result.request.judgeRequestHash).toMatch(/^sha256:/u);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
     }
   });
 
   it('preserves the Judge request and attempt when the provider rejects payload by status', async () => {
     const root = mkdtempSync(path.join(tmpdir(), 'requirements-judge-capacity-recovery-'));
     try {
-      const result = await runRequirementsContractProductionJudgePipeline({
-        authoringRequestId: 'REQ-004', recordRoot: root,
-        activeAuthority: {
-          activeSemanticRevisionId: 'SEM-004', activeSemanticIrPath: 'authoring/semantic-revisions/SEM-004/semantic-ir.json', activeScopeSemanticHash: HASH('scope-4'),
-          activeBindingRevisionId: 'BIND-004', activeSourceBindingPath: 'authoring/source-bindings/BIND-004/source-binding.json', activeSourceBindingHash: HASH('binding-4'),
-          activeAuthoringAttemptId: 'ATTEMPT-004', activeBuildManifestPath: 'authoring/staging/ATTEMPT-004/contract-build-manifest.json', activeBuildManifestHash: HASH('build-4'),
-        },
-        buildManifest: { buildManifestHash: HASH('build-4'), artifactEntries: [], auditPacketRef: { artifactId: 'judge-audit-packet', path: 'packet.json', hash: HASH('packet-4') }, projectionReportRefs: [] },
-        auditPacket: { schemaVersion: 'requirements-contract-judge-audit-packet/v1', semanticRevisionId: 'SEM-004', scopeSemanticHash: HASH('scope-4'), body: { artifactIds: ['a'], requirementIds: ['M'], mandatoryDimensionIds: ['D'] } },
-        judgePrompt: configuredJudgePrompt('fixture-d'),
-        providerSelection: { providerRef: 'judge-a', provider: { transport: 'openai-compatible', apiStyle: 'chat_completions', model: 'judge-model', requestPolicy: {} }, adapterRef: 'OpenAICompatibleJudgeAdapter', providerRegistryHash: HASH('registry') },
-        preparedInvocation: preparedInvocation(async () => {
+      const common = v3JudgeInput({
+        recordRoot: root,
+        label: 'PROVIDER-REJECT',
+        invoke: async () => {
           throw Object.assign(new Error('provider rejected request'), { status: 413 });
-        }),
+        },
       });
+      const result = await runRequirementsContractProductionJudgePipeline(common);
 
       expect(result).toMatchObject({
         status: 'audit_pending',
@@ -301,19 +340,10 @@ describe('requirements production Judge pipeline', () => {
         },
       });
       const resumed = await runRequirementsContractProductionJudgePipeline({
-        authoringRequestId: 'REQ-004', recordRoot: root,
-        activeAuthority: {
-          activeSemanticRevisionId: 'SEM-004', activeSemanticIrPath: 'authoring/semantic-revisions/SEM-004/semantic-ir.json', activeScopeSemanticHash: HASH('scope-4'),
-          activeBindingRevisionId: 'BIND-004', activeSourceBindingPath: 'authoring/source-bindings/BIND-004/source-binding.json', activeSourceBindingHash: HASH('binding-4'),
-          activeAuthoringAttemptId: 'ATTEMPT-004', activeBuildManifestPath: 'authoring/staging/ATTEMPT-004/contract-build-manifest.json', activeBuildManifestHash: HASH('build-4'),
-        },
-        buildManifest: { buildManifestHash: HASH('build-4'), artifactEntries: [], auditPacketRef: { artifactId: 'judge-audit-packet', path: 'packet.json', hash: HASH('packet-4') }, projectionReportRefs: [] },
-        auditPacket: { schemaVersion: 'requirements-contract-judge-audit-packet/v1', semanticRevisionId: 'SEM-004', scopeSemanticHash: HASH('scope-4'), body: { artifactIds: ['a'], requirementIds: ['M'], mandatoryDimensionIds: ['D'] } },
-        judgePrompt: configuredJudgePrompt('fixture-d'),
-        providerSelection: { providerRef: 'judge-a', provider: { transport: 'openai-compatible', apiStyle: 'chat_completions', model: 'judge-model', requestPolicy: {} }, adapterRef: 'OpenAICompatibleJudgeAdapter', providerRegistryHash: HASH('registry') },
+        ...common,
         preparedInvocation: preparedInvocation(async () => {
           throw new Error('provider must not be called after exhaustion');
-        }),
+        }, common.providerSelection.provider),
       });
       expect(resumed).toMatchObject({
         status: 'audit_pending',
@@ -321,7 +351,7 @@ describe('requirements production Judge pipeline', () => {
         activeRequest: { status: 'audit_pending', attemptCount: 1 },
       });
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
     }
   });
 
@@ -332,20 +362,7 @@ describe('requirements production Judge pipeline', () => {
       .fn()
       .mockRejectedValueOnce(Object.assign(new Error('connection reset'), { code: 'ECONNRESET' }))
       .mockImplementationOnce(async ({ request }) => responseFor(request));
-    const common = {
-      authoringRequestId: 'REQ-004-RESUME',
-      recordRoot: root,
-      activeAuthority: {
-        activeSemanticRevisionId: 'SEM-004-RESUME', activeSemanticIrPath: 'authoring/semantic-revisions/SEM-004-RESUME/semantic-ir.json', activeScopeSemanticHash: HASH('scope-4-resume'),
-        activeBindingRevisionId: 'BIND-004-RESUME', activeSourceBindingPath: 'authoring/source-bindings/BIND-004-RESUME/source-binding.json', activeSourceBindingHash: HASH('binding-4-resume'),
-        activeAuthoringAttemptId: 'ATTEMPT-004-RESUME', activeBuildManifestPath: 'authoring/staging/ATTEMPT-004-RESUME/contract-build-manifest.json', activeBuildManifestHash: HASH('build-4-resume'),
-      },
-      buildManifest: { buildManifestHash: HASH('build-4-resume'), artifactEntries: [], auditPacketRef: { artifactId: 'judge-audit-packet', path: 'packet.json', hash: HASH('packet-4-resume') }, projectionReportRefs: [] },
-      auditPacket: { schemaVersion: 'requirements-contract-judge-audit-packet/v1', semanticRevisionId: 'SEM-004-RESUME', scopeSemanticHash: HASH('scope-4-resume'), body: { artifactIds: ['a'], requirementIds: ['M'], mandatoryDimensionIds: ['D'] } },
-      judgePrompt: configuredJudgePrompt('fixture-d-resume'),
-      providerSelection: { providerRef: 'judge-a', provider, adapterRef: 'OpenAICompatibleJudgeAdapter', providerRegistryHash: HASH('registry') },
-      preparedInvocation: preparedInvocation(invoke, provider),
-    };
+    const common = v3JudgeInput({ recordRoot: root, label: 'RESUME', invoke, provider });
     try {
       const first = await runRequirementsContractProductionJudgePipeline(common);
       const second = await runRequirementsContractProductionJudgePipeline(common);
@@ -357,7 +374,7 @@ describe('requirements production Judge pipeline', () => {
       expect(second.activeRequest.lastAttemptPath).toMatch(/dispatch-attempts\/2\.json$/u);
       expect(existsSync(path.join(root, ...second.activeRequest.lastAttemptPath.split('/')))).toBe(true);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
     }
   });
 
@@ -371,19 +388,7 @@ describe('requirements production Judge pipeline', () => {
         reviewedArtifactRefs: [],
       }))
       .mockImplementationOnce(async ({ request }) => responseFor(request));
-    const common = {
-      authoringRequestId: 'REQ-004-VALIDATION', recordRoot: root,
-      activeAuthority: {
-        activeSemanticRevisionId: 'SEM-004-VALIDATION', activeSemanticIrPath: 'authoring/semantic-revisions/SEM-004-VALIDATION/semantic-ir.json', activeScopeSemanticHash: HASH('scope-4-validation'),
-        activeBindingRevisionId: 'BIND-004-VALIDATION', activeSourceBindingPath: 'authoring/source-bindings/BIND-004-VALIDATION/source-binding.json', activeSourceBindingHash: HASH('binding-4-validation'),
-        activeAuthoringAttemptId: 'ATTEMPT-004-VALIDATION', activeBuildManifestPath: 'authoring/staging/ATTEMPT-004-VALIDATION/contract-build-manifest.json', activeBuildManifestHash: HASH('build-4-validation'),
-      },
-      buildManifest: { buildManifestHash: HASH('build-4-validation'), artifactEntries: [], auditPacketRef: { artifactId: 'judge-audit-packet', path: 'packet.json', hash: HASH('packet-4-validation') }, projectionReportRefs: [] },
-      auditPacket: { schemaVersion: 'requirements-contract-judge-audit-packet/v1', semanticRevisionId: 'SEM-004-VALIDATION', scopeSemanticHash: HASH('scope-4-validation'), body: { artifactIds: ['a'], requirementIds: ['M'], mandatoryDimensionIds: ['D'] } },
-      judgePrompt: configuredJudgePrompt('fixture-d-validation'),
-      providerSelection: { providerRef: 'judge-a', provider, adapterRef: 'OpenAICompatibleJudgeAdapter', providerRegistryHash: HASH('registry') },
-      preparedInvocation: preparedInvocation(invoke, provider),
-    };
+    const common = v3JudgeInput({ recordRoot: root, label: 'VALIDATION', invoke, provider });
     try {
       const first = await runRequirementsContractProductionJudgePipeline(common);
       expect(first).toMatchObject({
@@ -397,27 +402,14 @@ describe('requirements production Judge pipeline', () => {
       expect(second).toMatchObject({ status: 'audited_pass', activeRequest: { attemptCount: 2 } });
       expect(invoke).toHaveBeenCalledTimes(2);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
     }
   });
 
   it('reuses an accepted terminal evaluation without invoking the provider again', async () => {
     const root = mkdtempSync(path.join(tmpdir(), 'requirements-judge-one-shot-'));
     const invoke = vi.fn(async ({ request }) => responseFor(request));
-    const common = {
-      authoringRequestId: 'REQ-004-ONE-SHOT',
-      recordRoot: root,
-      activeAuthority: {
-        activeSemanticRevisionId: 'SEM-004-ONE-SHOT', activeSemanticIrPath: 'authoring/semantic-revisions/SEM-004-ONE-SHOT/semantic-ir.json', activeScopeSemanticHash: HASH('scope-4-one-shot'),
-        activeBindingRevisionId: 'BIND-004-ONE-SHOT', activeSourceBindingPath: 'authoring/source-bindings/BIND-004-ONE-SHOT/source-binding.json', activeSourceBindingHash: HASH('binding-4-one-shot'),
-        activeAuthoringAttemptId: 'ATTEMPT-004-ONE-SHOT', activeBuildManifestPath: 'authoring/staging/ATTEMPT-004-ONE-SHOT/contract-build-manifest.json', activeBuildManifestHash: HASH('build-4-one-shot'),
-      },
-      buildManifest: { buildManifestHash: HASH('build-4-one-shot'), artifactEntries: [], auditPacketRef: { artifactId: 'judge-audit-packet', path: 'packet.json', hash: HASH('packet-4-one-shot') }, projectionReportRefs: [] },
-      auditPacket: { schemaVersion: 'requirements-contract-judge-audit-packet/v1', semanticRevisionId: 'SEM-004-ONE-SHOT', scopeSemanticHash: HASH('scope-4-one-shot'), body: { artifactIds: ['a'], requirementIds: ['M'], mandatoryDimensionIds: ['D'] } },
-      judgePrompt: configuredJudgePrompt('fixture-d-one-shot'),
-      providerSelection: { providerRef: 'judge-a', provider: { transport: 'openai-compatible', apiStyle: 'chat_completions', model: 'judge-model', requestPolicy: {} }, adapterRef: 'OpenAICompatibleJudgeAdapter', providerRegistryHash: HASH('registry') },
-      preparedInvocation: preparedInvocation(invoke),
-    };
+    const common = v3JudgeInput({ recordRoot: root, label: 'ONE-SHOT', invoke });
     try {
       const first = await runRequirementsContractProductionJudgePipeline(common);
       const second = await runRequirementsContractProductionJudgePipeline(common);
@@ -428,26 +420,14 @@ describe('requirements production Judge pipeline', () => {
       expect(second.activeRequest).toEqual(first.activeRequest);
       expect(JSON.parse(readFileSync(path.join(root, 'quality', 'active-request.json'), 'utf8'))).toEqual(first.activeRequest);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
     }
   });
 
   it('replays a durable valid raw response without redispatch after an active-pointer crash', async () => {
     const root = mkdtempSync(path.join(tmpdir(), 'requirements-judge-raw-replay-'));
     const invoke = vi.fn(async ({ request }) => responseFor(request));
-    const common = {
-      authoringRequestId: 'REQ-004-RAW-REPLAY', recordRoot: root,
-      activeAuthority: {
-        activeSemanticRevisionId: 'SEM-004-RAW-REPLAY', activeSemanticIrPath: 'authoring/semantic-revisions/SEM-004-RAW-REPLAY/semantic-ir.json', activeScopeSemanticHash: HASH('scope-4-raw-replay'),
-        activeBindingRevisionId: 'BIND-004-RAW-REPLAY', activeSourceBindingPath: 'authoring/source-bindings/BIND-004-RAW-REPLAY/source-binding.json', activeSourceBindingHash: HASH('binding-4-raw-replay'),
-        activeAuthoringAttemptId: 'ATTEMPT-004-RAW-REPLAY', activeBuildManifestPath: 'authoring/staging/ATTEMPT-004-RAW-REPLAY/contract-build-manifest.json', activeBuildManifestHash: HASH('build-4-raw-replay'),
-      },
-      buildManifest: { buildManifestHash: HASH('build-4-raw-replay'), artifactEntries: [], auditPacketRef: { artifactId: 'judge-audit-packet', path: 'packet.json', hash: HASH('packet-4-raw-replay') }, projectionReportRefs: [] },
-      auditPacket: { schemaVersion: 'requirements-contract-judge-audit-packet/v1', semanticRevisionId: 'SEM-004-RAW-REPLAY', scopeSemanticHash: HASH('scope-4-raw-replay'), body: { artifactIds: ['a'], requirementIds: ['M'], mandatoryDimensionIds: ['D'] } },
-      judgePrompt: configuredJudgePrompt('fixture-d-raw-replay'),
-      providerSelection: { providerRef: 'judge-a', provider: { transport: 'openai-compatible', apiStyle: 'chat_completions', model: 'judge-model', requestPolicy: {} }, adapterRef: 'OpenAICompatibleJudgeAdapter', providerRegistryHash: HASH('registry') },
-      preparedInvocation: preparedInvocation(invoke),
-    };
+    const common = v3JudgeInput({ recordRoot: root, label: 'RAW-REPLAY', invoke });
     try {
       const baseline = await runRequirementsContractProductionJudgePipeline({ ...common, persist: false });
       const requestDirectory = path.join(root, 'quality', 'requests', baseline.request.judgeRequestHash.replace(':', '-'));
@@ -471,7 +451,8 @@ describe('requirements production Judge pipeline', () => {
         providerSelectionHash: baseline.request.providerSelection.providerSelectionHash,
         attemptOrdinal: 1, outcome: 'response_received', acceptedEvaluation: true,
         requestSerializedBytes: 1, auditPacketSerializedBytes: 1,
-        validationIssueCodes: [], nextEligibleAt: null, rawResponse: responseFor(baseline.request),
+        validationIssueCodes: [], nextEligibleAt: null,
+        rawResponse: baseline.response,
       });
       invoke.mockClear();
 
@@ -479,53 +460,56 @@ describe('requirements production Judge pipeline', () => {
       expect(resumed).toMatchObject({ status: 'audited_pass', activeRequest: { attemptCount: 1 } });
       expect(invoke).not.toHaveBeenCalled();
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
     }
   });
 
   it('rejects a frozen selection that does not match the canonical invocation provider', async () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'requirements-judge-selection-mismatch-'));
     const invoke = vi.fn();
-    await expect(runRequirementsContractProductionJudgePipeline({
-      authoringRequestId: 'REQ-005', recordRoot: 'unused-by-in-memory-test',
-      activeAuthority: {
-        activeSemanticRevisionId: 'SEM-005', activeSemanticIrPath: 'authoring/semantic-revisions/SEM-005/semantic-ir.json', activeScopeSemanticHash: HASH('scope-5'),
-        activeBindingRevisionId: 'BIND-005', activeSourceBindingPath: 'authoring/source-bindings/BIND-005/source-binding.json', activeSourceBindingHash: HASH('binding-5'),
-        activeAuthoringAttemptId: 'ATTEMPT-005', activeBuildManifestPath: 'authoring/staging/ATTEMPT-005/contract-build-manifest.json', activeBuildManifestHash: HASH('build-5'),
-      },
-      buildManifest: { buildManifestHash: HASH('build-5'), artifactEntries: [], auditPacketRef: { artifactId: 'judge-audit-packet', path: 'packet.json', hash: HASH('packet-5') }, projectionReportRefs: [] },
-      auditPacket: { schemaVersion: 'requirements-contract-judge-audit-packet/v1', semanticRevisionId: 'SEM-005', scopeSemanticHash: HASH('scope-5'), body: { artifactIds: ['a'], requirementIds: ['M'], mandatoryDimensionIds: ['D'] } },
-      judgePrompt: configuredJudgePrompt('fixture-e'),
-      providerSelection: { providerRef: 'judge-b', provider: { transport: 'openai-compatible', apiStyle: 'chat_completions', model: 'other-model', requestPolicy: {} }, adapterRef: 'OpenAICompatibleJudgeAdapter', providerRegistryHash: HASH('registry') },
-      preparedInvocation: preparedInvocation(invoke),
-      persist: false,
-    })).rejects.toThrow('requirements_contract_judge_frozen_selection_mismatch');
-    expect(invoke).not.toHaveBeenCalled();
+    try {
+      await expect(runRequirementsContractProductionJudgePipeline(v3JudgeInput({
+        recordRoot: root,
+        label: 'SELECTION-MISMATCH',
+        invoke,
+        providerRef: 'judge-b',
+        provider: {
+          transport: 'openai-compatible', apiStyle: 'chat_completions',
+          model: 'other-model', requestPolicy: {},
+        },
+        invocationProvider: {
+          transport: 'openai-compatible', apiStyle: 'chat_completions',
+          model: 'judge-model', requestPolicy: {},
+        },
+        persist: false,
+      }))).rejects.toThrow('requirements_contract_judge_frozen_selection_mismatch');
+      expect(invoke).not.toHaveBeenCalled();
+    } finally {
+      rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+    }
   });
 
   it('classifies an accepted fail into a repair plan without creating EffectivePass', async () => {
-    const result = await runRequirementsContractProductionJudgePipeline({
-      authoringRequestId: 'REQ-006', recordRoot: 'unused-by-in-memory-test',
-      activeAuthority: {
-        activeSemanticRevisionId: 'SEM-006', activeSemanticIrPath: 'authoring/semantic-revisions/SEM-006/semantic-ir.json', activeScopeSemanticHash: HASH('scope-6'),
-        activeBindingRevisionId: 'BIND-006', activeSourceBindingPath: 'authoring/source-bindings/BIND-006/source-binding.json', activeSourceBindingHash: HASH('binding-6'),
-        activeAuthoringAttemptId: 'ATTEMPT-006', activeBuildManifestPath: 'authoring/staging/ATTEMPT-006/contract-build-manifest.json', activeBuildManifestHash: HASH('build-6'),
-      },
-      buildManifest: { buildManifestHash: HASH('build-6'), artifactEntries: [], auditPacketRef: { artifactId: 'judge-audit-packet', path: 'packet.json', hash: HASH('packet-6') }, projectionReportRefs: [] },
-      auditPacket: { schemaVersion: 'requirements-contract-judge-audit-packet/v1', semanticRevisionId: 'SEM-006', scopeSemanticHash: HASH('scope-6'), body: { artifactIds: ['final-markdown'], requirementIds: ['MUST-001'], mandatoryDimensionIds: ['completeness'] } },
-      judgePrompt: configuredJudgePrompt('fixture-f'),
-      providerSelection: { providerRef: 'judge-a', provider: { transport: 'openai-compatible', apiStyle: 'chat_completions', model: 'judge-model', requestPolicy: {} }, adapterRef: 'OpenAICompatibleJudgeAdapter', providerRegistryHash: HASH('registry') },
-      preparedInvocation: preparedInvocation(async ({ request }) => failResponseFor(request, {
-        findingId: 'F-1', severity: 'Major', summary: 'Frozen rule missing from projection',
-        affectedMustRefs: ['MUST-001'], affectedArtifactRefs: ['final-markdown'],
-        logicalEvidenceRefs: ['MUST-001'],
-      })),
-      persist: false,
-    });
-    expect(result).toMatchObject({
-      status: 'repair_planned',
-      activeRequest: { status: 'audited_fail', acceptedEvaluation: true, effectivePassRef: null },
-      remediationPlan: { state: 'repair_planned', repairSteps: [{ classification: 'projection_repair' }] },
-    });
-    expect(result).not.toHaveProperty('effectivePass');
+    const root = mkdtempSync(path.join(tmpdir(), 'requirements-judge-fail-repair-'));
+    try {
+      const result = await runRequirementsContractProductionJudgePipeline(v3JudgeInput({
+        recordRoot: root,
+        label: 'FAIL-REPAIR',
+        invoke: async ({ request }) => failResponseFor(request, {
+          findingId: 'F-1', severity: 'Major', summary: 'Frozen rule missing from projection',
+          affectedMustRefs: ['MUST-001'], affectedArtifactRefs: ['final-markdown'],
+          logicalEvidenceRefs: ['MUST-001'],
+        }),
+        persist: false,
+      }));
+      expect(result).toMatchObject({
+        status: 'repair_planned',
+        activeRequest: { status: 'audited_fail', acceptedEvaluation: true, effectivePassRef: null },
+        remediationPlan: { state: 'repair_planned', repairSteps: [{ classification: 'projection_repair' }] },
+      });
+      expect(result).not.toHaveProperty('effectivePass');
+    } finally {
+      rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+    }
   });
 });

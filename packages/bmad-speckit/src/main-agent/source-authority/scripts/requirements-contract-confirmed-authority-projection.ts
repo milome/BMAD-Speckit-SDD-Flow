@@ -20,8 +20,8 @@ export interface RequirementsEffectivePassReceiptRef {
   path: string;
   schemaVersion: 'requirements-effective-pass-receipt/v1';
   receiptHash: string;
-  actorClass: 'requirements_critical_auditor_judge';
-  judgeRole: 'requirements_critical_auditor';
+  actorClass: 'requirements_contract_judge';
+  judgeRole: 'requirements_judge';
   decision: 'pass';
 }
 

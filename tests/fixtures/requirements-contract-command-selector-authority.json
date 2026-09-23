@@ -1,28 +1,39 @@
 {
   "schemaVersion": "requirements-contract-command-selector-authority/v1",
   "commandCount": 28,
-  "selectorCount": 271,
+  "selectorCount": 241,
   "commands": [
     {
       "commandId": "CMD-01",
       "allSelectors": [],
       "commandSelectors": [],
-      "acceptanceRefs": ["AC-03", "AC-46", "AC-196"]
+      "acceptanceRefs": [
+        "AC-03",
+        "AC-46",
+        "AC-196"
+      ]
     },
     {
       "commandId": "CMD-02",
-      "allSelectors": ["tests/acceptance/requirements-contract-evidence-closure-baseline.test.ts"],
+      "allSelectors": [
+        "tests/acceptance/requirements-contract-evidence-closure-baseline.test.ts"
+      ],
       "commandSelectors": [
         "tests/acceptance/requirements-contract-evidence-closure-baseline.test.ts"
       ],
-      "acceptanceRefs": ["AC-01", "AC-02", "AC-03", "AC-46", "AC-196"]
+      "acceptanceRefs": [
+        "AC-01",
+        "AC-02",
+        "AC-03",
+        "AC-46",
+        "AC-196"
+      ]
     },
     {
       "commandId": "CMD-03",
       "allSelectors": [
         "tests/acceptance/requirements-contract-semantic-ir-v2.test.ts",
         "tests/acceptance/requirements-contract-compiler-unresolved-semantics.test.ts",
-        "tests/acceptance/requirements-contract-authoring-compiler-invariant-closure.test.ts",
         "tests/acceptance/requirements-contract-closure-measurement.test.ts",
         "tests/acceptance/requirements-contract-authoring-source-normalization.test.ts",
         "tests/acceptance/requirements-contract-authoring-metamorphic.test.ts",
@@ -43,7 +54,6 @@
         "tests/acceptance/requirements-contract-terminal-command-receipt-schema.test.ts",
         "tests/acceptance/requirements-contract-finalization-safe-write-receipt-schema.test.ts",
         "tests/acceptance/requirements-contract-prompt-transaction-schema.test.ts",
-        "tests/acceptance/requirements-contract-v1-legacy-inventory-schema.test.ts",
         "tests/acceptance/requirements-contract-trace-edge-type-registry.test.ts",
         "tests/acceptance/requirements-contract-amend05-safe-write-target-registry.test.ts",
         "tests/acceptance/requirements-contract-source-hash-domain.test.ts",
@@ -60,7 +70,6 @@
       "commandSelectors": [
         "tests/acceptance/requirements-contract-semantic-ir-v2.test.ts",
         "tests/acceptance/requirements-contract-compiler-unresolved-semantics.test.ts",
-        "tests/acceptance/requirements-contract-authoring-compiler-invariant-closure.test.ts",
         "tests/acceptance/requirements-contract-closure-measurement.test.ts",
         "tests/acceptance/requirements-contract-authoring-source-normalization.test.ts",
         "tests/acceptance/requirements-contract-authoring-metamorphic.test.ts",
@@ -81,7 +90,6 @@
         "tests/acceptance/requirements-contract-terminal-command-receipt-schema.test.ts",
         "tests/acceptance/requirements-contract-finalization-safe-write-receipt-schema.test.ts",
         "tests/acceptance/requirements-contract-prompt-transaction-schema.test.ts",
-        "tests/acceptance/requirements-contract-v1-legacy-inventory-schema.test.ts",
         "tests/acceptance/requirements-contract-trace-edge-type-registry.test.ts",
         "tests/acceptance/requirements-contract-amend05-safe-write-target-registry.test.ts",
         "tests/acceptance/requirements-contract-source-hash-domain.test.ts",
@@ -141,13 +149,7 @@
     {
       "commandId": "CMD-04",
       "allSelectors": [
-        "tests/acceptance/requirements-contract-authoring-authority-grounding.test.ts",
-        "tests/acceptance/requirements-contract-critical-auditor-provider.test.ts",
-        "tests/acceptance/main-agent-pre-confirmation-drilldown-lane.test.ts",
-        "tests/acceptance/requirements-contract-auditor-semantic-authority.test.ts",
         "tests/acceptance/requirements-contract-authoring-business-coverage.test.ts",
-        "tests/acceptance/requirements-contract-validation-authority.test.ts",
-        "tests/acceptance/requirements-contract-consumer-target-authority.test.ts",
         "tests/acceptance/requirements-contract-trace-graph.test.ts",
         "tests/acceptance/requirements-contract-red-qualification.test.ts",
         "tests/acceptance/requirements-contract-red-freeze.test.ts",
@@ -162,13 +164,7 @@
         "tests/acceptance/requirements-contract-source-root-omission-mutation.test.ts"
       ],
       "commandSelectors": [
-        "tests/acceptance/requirements-contract-authoring-authority-grounding.test.ts",
-        "tests/acceptance/requirements-contract-critical-auditor-provider.test.ts",
-        "tests/acceptance/main-agent-pre-confirmation-drilldown-lane.test.ts",
-        "tests/acceptance/requirements-contract-auditor-semantic-authority.test.ts",
         "tests/acceptance/requirements-contract-authoring-business-coverage.test.ts",
-        "tests/acceptance/requirements-contract-validation-authority.test.ts",
-        "tests/acceptance/requirements-contract-consumer-target-authority.test.ts",
         "tests/acceptance/requirements-contract-trace-graph.test.ts",
         "tests/acceptance/requirements-contract-red-qualification.test.ts",
         "tests/acceptance/requirements-contract-red-freeze.test.ts",
@@ -223,23 +219,24 @@
         "tests/acceptance/implementation-evidence-independent-oracle.test.ts",
         "tests/acceptance/main-agent-native-goal-closeout-gate.test.ts"
       ],
-      "acceptanceRefs": ["AC-19", "AC-20", "AC-21", "AC-46"]
+      "acceptanceRefs": [
+        "AC-19",
+        "AC-20",
+        "AC-21",
+        "AC-46"
+      ]
     },
     {
       "commandId": "CMD-06",
-      "allSelectors": [
-        "tests/acceptance/requirements-contract-staging-transaction.test.ts",
-        "tests/acceptance/requirements-contract-critical-auditor-provider.test.ts",
-        "tests/acceptance/critical-auditor-receipt-binding.test.ts",
-        "tests/acceptance/req-trace-confirmation-block-generator.test.ts"
-      ],
-      "commandSelectors": [
-        "tests/acceptance/requirements-contract-staging-transaction.test.ts",
-        "tests/acceptance/requirements-contract-critical-auditor-provider.test.ts",
-        "tests/acceptance/critical-auditor-receipt-binding.test.ts",
-        "tests/acceptance/req-trace-confirmation-block-generator.test.ts"
-      ],
-      "acceptanceRefs": ["AC-22", "AC-23", "AC-24", "AC-43", "AC-46"]
+      "allSelectors": [],
+      "commandSelectors": [],
+      "acceptanceRefs": [
+        "AC-22",
+        "AC-23",
+        "AC-24",
+        "AC-43",
+        "AC-46"
+      ]
     },
     {
       "commandId": "CMD-07",
@@ -255,12 +252,16 @@
         "tests/acceptance/main-agent-delivery-truth-gate.test.ts",
         "tests/acceptance/main-agent-closeout-source-authority.test.ts"
       ],
-      "acceptanceRefs": ["AC-25", "AC-26", "AC-27", "AC-46"]
+      "acceptanceRefs": [
+        "AC-25",
+        "AC-26",
+        "AC-27",
+        "AC-46"
+      ]
     },
     {
       "commandId": "CMD-08",
       "allSelectors": [
-        "tests/acceptance/req-trace-confirmation-block-generator.test.ts",
         "tests/acceptance/req-trace-main-agent-dispatch-integration.test.ts",
         "tests/acceptance/req-trace-anti-replay-transaction.test.ts",
         "tests/acceptance/req-trace-model-packet-contract-parity.test.ts",
@@ -268,7 +269,6 @@
         "tests/acceptance/requirements-contract-prompt-transaction-production-publication.test.ts"
       ],
       "commandSelectors": [
-        "tests/acceptance/req-trace-confirmation-block-generator.test.ts",
         "tests/acceptance/req-trace-main-agent-dispatch-integration.test.ts",
         "tests/acceptance/req-trace-anti-replay-transaction.test.ts",
         "tests/acceptance/req-trace-model-packet-contract-parity.test.ts",
@@ -295,7 +295,6 @@
       "allSelectors": [
         "tests/acceptance/requirements-contract-gold-template-render.test.ts",
         "tests/acceptance/requirements-contract-authoring-skill-contract.test.ts",
-        "tests/acceptance/req-trace-confirmation-block-generator.test.ts",
         "tests/acceptance/requirements-contract-grill-protocol.test.ts",
         "tests/acceptance/requirements-contract-grill-session.test.ts",
         "tests/acceptance/requirements-contract-decision-receipt.test.ts",
@@ -326,17 +325,14 @@
         "tests/acceptance/requirements-contract-intake-receipt.test.ts",
         "tests/acceptance/requirements-contract-intent-lineage.test.ts",
         "tests/acceptance/requirements-contract-semantic-conservation-manifest.test.ts",
-        "tests/acceptance/requirements-contract-render-roundtrip.test.ts",
         "tests/acceptance/requirements-contract-discovery-envelope-template.test.ts",
         "tests/acceptance/requirements-contract-entry-source-session.test.ts",
         "tests/acceptance/bmad-create-prd-source-prd-lint.test.ts",
-        "tests/acceptance/source-prd-instance-to-confirmation-html.test.ts",
-        "tests/acceptance/source-prd-authoring-entry-source-lint.test.ts"
+        "tests/acceptance/source-prd-instance-to-confirmation-html.test.ts"
       ],
       "commandSelectors": [
         "tests/acceptance/requirements-contract-gold-template-render.test.ts",
         "tests/acceptance/requirements-contract-authoring-skill-contract.test.ts",
-        "tests/acceptance/req-trace-confirmation-block-generator.test.ts",
         "tests/acceptance/requirements-contract-grill-protocol.test.ts",
         "tests/acceptance/requirements-contract-grill-session.test.ts",
         "tests/acceptance/requirements-contract-decision-receipt.test.ts",
@@ -367,12 +363,10 @@
         "tests/acceptance/requirements-contract-intake-receipt.test.ts",
         "tests/acceptance/requirements-contract-intent-lineage.test.ts",
         "tests/acceptance/requirements-contract-semantic-conservation-manifest.test.ts",
-        "tests/acceptance/requirements-contract-render-roundtrip.test.ts",
         "tests/acceptance/requirements-contract-discovery-envelope-template.test.ts",
         "tests/acceptance/requirements-contract-entry-source-session.test.ts",
         "tests/acceptance/bmad-create-prd-source-prd-lint.test.ts",
-        "tests/acceptance/source-prd-instance-to-confirmation-html.test.ts",
-        "tests/acceptance/source-prd-authoring-entry-source-lint.test.ts"
+        "tests/acceptance/source-prd-instance-to-confirmation-html.test.ts"
       ],
       "acceptanceRefs": [
         "AC-31",
@@ -438,13 +432,11 @@
         "tests/acceptance/requirements-contract-grill-eval.test.ts",
         "tests/acceptance/requirements-contract-bmad-discovery-eval.test.ts",
         "tests/acceptance/requirements-contract-multi-prd-routing-eval.test.ts",
-        "tests/acceptance/requirements-contract-legacy-prd-migration-eval.test.ts",
         "tests/acceptance/requirements-contract-interaction-compiler-eval.test.ts",
         "tests/acceptance/requirements-contract-diagram-golden-corpus.test.ts",
         "tests/acceptance/requirements-contract-observed-sequence-eval.test.ts",
         "tests/acceptance/requirements-contract-sequence-ordering.test.ts",
         "tests/acceptance/requirements-contract-sequence-compensation.test.ts",
-        "tests/acceptance/requirements-contract-entry-source-conservation-eval.test.ts",
         "tests/acceptance/requirements-contract-source-root-omission-eval.test.ts",
         "tests/acceptance/requirements-contract-lint-profile-mutation-eval.test.ts",
         "tests/acceptance/requirements-contract-source-prd-surface-eval.test.ts"
@@ -462,13 +454,11 @@
         "tests/acceptance/requirements-contract-grill-eval.test.ts",
         "tests/acceptance/requirements-contract-bmad-discovery-eval.test.ts",
         "tests/acceptance/requirements-contract-multi-prd-routing-eval.test.ts",
-        "tests/acceptance/requirements-contract-legacy-prd-migration-eval.test.ts",
         "tests/acceptance/requirements-contract-interaction-compiler-eval.test.ts",
         "tests/acceptance/requirements-contract-diagram-golden-corpus.test.ts",
         "tests/acceptance/requirements-contract-observed-sequence-eval.test.ts",
         "tests/acceptance/requirements-contract-sequence-ordering.test.ts",
         "tests/acceptance/requirements-contract-sequence-compensation.test.ts",
-        "tests/acceptance/requirements-contract-entry-source-conservation-eval.test.ts",
         "tests/acceptance/requirements-contract-source-root-omission-eval.test.ts",
         "tests/acceptance/requirements-contract-lint-profile-mutation-eval.test.ts",
         "tests/acceptance/requirements-contract-source-prd-surface-eval.test.ts"
@@ -534,7 +524,6 @@
         "tests/acceptance/requirements-contract-planning-artifact-resolver.test.ts",
         "tests/acceptance/requirements-contract-requirement-source-registry.test.ts",
         "tests/acceptance/requirements-contract-bmad-consumer-registry.test.ts",
-        "tests/acceptance/requirements-contract-legacy-prd-migration.test.ts",
         "tests/acceptance/requirements-contract-project-profile-manifest.test.ts",
         "tests/acceptance/requirements-contract-diagram-policy-registry.test.ts",
         "tests/acceptance/requirements-contract-interaction-surface-parity.test.ts",
@@ -545,9 +534,8 @@
         "tests/acceptance/requirement-record-live-schema-surface-parity.test.ts",
         "tests/acceptance/requirements-contract-read-facade.test.ts",
         "tests/acceptance/requirements-contract-read-adapter-parity.test.ts",
-        "tests/acceptance/requirements-contract-v1-read-eligibility.test.ts",
+        "tests/acceptance/requirements-contract-v1-compatibility-hard-cut.test.ts",
         "tests/acceptance/requirements-contract-direct-confirmation-read-bypass.test.ts",
-        "tests/acceptance/requirements-contract-structured-source-extraction.test.ts",
         "tests/acceptance/requirements-contract-source-prd-parser-adversarial.test.ts",
         "tests/acceptance/requirements-contract-lint-profile.test.ts",
         "tests/acceptance/requirements-contract-project-profile-resolver.test.ts",
@@ -556,8 +544,6 @@
         "tests/acceptance/requirements-contract-diagram-validation-facade.test.ts",
         "tests/acceptance/requirements-contract-trace-edge-type-registry-surface-parity.test.ts",
         "tests/acceptance/requirements-contract-amend05-safe-write-target-registry-surface-parity.test.ts",
-        "tests/acceptance/requirements-contract-v1-legacy-inventory-freeze.test.ts",
-        "tests/acceptance/requirements-contract-v1-legacy-inventory-mutation-rejection.test.ts",
         "tests/acceptance/requirements-contract-terminal-command-supervisor.test.ts",
         "tests/acceptance/requirements-contract-terminal-command-supervisor-installed-cli.test.ts",
         "tests/acceptance/requirements-contract-finalization-safe-writer.test.ts",
@@ -592,7 +578,6 @@
         "tests/acceptance/requirements-contract-planning-artifact-resolver.test.ts",
         "tests/acceptance/requirements-contract-requirement-source-registry.test.ts",
         "tests/acceptance/requirements-contract-bmad-consumer-registry.test.ts",
-        "tests/acceptance/requirements-contract-legacy-prd-migration.test.ts",
         "tests/acceptance/requirements-contract-project-profile-manifest.test.ts",
         "tests/acceptance/requirements-contract-diagram-policy-registry.test.ts",
         "tests/acceptance/requirements-contract-interaction-surface-parity.test.ts",
@@ -603,9 +588,8 @@
         "tests/acceptance/requirement-record-live-schema-surface-parity.test.ts",
         "tests/acceptance/requirements-contract-read-facade.test.ts",
         "tests/acceptance/requirements-contract-read-adapter-parity.test.ts",
-        "tests/acceptance/requirements-contract-v1-read-eligibility.test.ts",
+        "tests/acceptance/requirements-contract-v1-compatibility-hard-cut.test.ts",
         "tests/acceptance/requirements-contract-direct-confirmation-read-bypass.test.ts",
-        "tests/acceptance/requirements-contract-structured-source-extraction.test.ts",
         "tests/acceptance/requirements-contract-source-prd-parser-adversarial.test.ts",
         "tests/acceptance/requirements-contract-lint-profile.test.ts",
         "tests/acceptance/requirements-contract-project-profile-resolver.test.ts",
@@ -614,8 +598,6 @@
         "tests/acceptance/requirements-contract-diagram-validation-facade.test.ts",
         "tests/acceptance/requirements-contract-trace-edge-type-registry-surface-parity.test.ts",
         "tests/acceptance/requirements-contract-amend05-safe-write-target-registry-surface-parity.test.ts",
-        "tests/acceptance/requirements-contract-v1-legacy-inventory-freeze.test.ts",
-        "tests/acceptance/requirements-contract-v1-legacy-inventory-mutation-rejection.test.ts",
         "tests/acceptance/requirements-contract-terminal-command-supervisor.test.ts",
         "tests/acceptance/requirements-contract-terminal-command-supervisor-installed-cli.test.ts",
         "tests/acceptance/requirements-contract-finalization-safe-writer.test.ts",
@@ -706,9 +688,20 @@
     },
     {
       "commandId": "CMD-12",
-      "allSelectors": ["packages/bmad-speckit/tests/main-agent-build-dist.test.js"],
-      "commandSelectors": ["packages/bmad-speckit/tests/main-agent-build-dist.test.js"],
-      "acceptanceRefs": ["AC-43", "AC-45", "AC-46", "AC-186", "AC-205", "AC-216"]
+      "allSelectors": [
+        "packages/bmad-speckit/tests/main-agent-build-dist.test.js"
+      ],
+      "commandSelectors": [
+        "packages/bmad-speckit/tests/main-agent-build-dist.test.js"
+      ],
+      "acceptanceRefs": [
+        "AC-43",
+        "AC-45",
+        "AC-46",
+        "AC-186",
+        "AC-205",
+        "AC-216"
+      ]
     },
     {
       "commandId": "CMD-13",
@@ -718,7 +711,6 @@
         "tests/acceptance/requirements-contract-normalized-package-scale.test.ts",
         "tests/acceptance/requirements-confirmation-ingest-scale.test.ts",
         "tests/acceptance/requirements-contract-normalized-package-cross-product-static-audit.test.ts",
-        "tests/acceptance/requirements-contract-entry-source-conservation-eval.test.ts",
         "tests/acceptance/requirements-contract-source-root-omission-eval.test.ts",
         "tests/acceptance/requirements-contract-lint-profile-mutation-eval.test.ts",
         "tests/acceptance/requirements-contract-source-prd-surface-eval.test.ts",
@@ -733,7 +725,6 @@
         "tests/acceptance/requirements-contract-normalized-package-scale.test.ts",
         "tests/acceptance/requirements-confirmation-ingest-scale.test.ts",
         "tests/acceptance/requirements-contract-normalized-package-cross-product-static-audit.test.ts",
-        "tests/acceptance/requirements-contract-entry-source-conservation-eval.test.ts",
         "tests/acceptance/requirements-contract-source-root-omission-eval.test.ts",
         "tests/acceptance/requirements-contract-lint-profile-mutation-eval.test.ts",
         "tests/acceptance/requirements-contract-source-prd-surface-eval.test.ts",
@@ -781,38 +772,51 @@
       "commandId": "CMD-14",
       "allSelectors": [],
       "commandSelectors": [],
-      "acceptanceRefs": ["AC-46"]
+      "acceptanceRefs": [
+        "AC-46"
+      ]
     },
     {
       "commandId": "CMD-15",
       "allSelectors": [],
       "commandSelectors": [],
-      "acceptanceRefs": ["AC-46"]
+      "acceptanceRefs": [
+        "AC-46"
+      ]
     },
     {
       "commandId": "CMD-16",
       "allSelectors": [],
       "commandSelectors": [],
-      "acceptanceRefs": ["AC-45", "AC-46"]
+      "acceptanceRefs": [
+        "AC-45",
+        "AC-46"
+      ]
     },
     {
       "commandId": "CMD-17",
       "allSelectors": [],
       "commandSelectors": [],
-      "acceptanceRefs": ["AC-39", "AC-46", "AC-60", "AC-65", "AC-195", "AC-200", "AC-216", "AC-218"]
+      "acceptanceRefs": [
+        "AC-39",
+        "AC-46",
+        "AC-60",
+        "AC-65",
+        "AC-195",
+        "AC-200",
+        "AC-216",
+        "AC-218"
+      ]
     },
     {
       "commandId": "CMD-18",
       "allSelectors": [
         "tests/acceptance/requirements-contract-read-facade-production-migration.test.ts",
-        "tests/acceptance/requirements-contract-v1-output-hard-cut.test.ts",
         "tests/acceptance/requirements-contract-production-consumer-inventory.test.ts",
         "tests/acceptance/requirements-contract-production-activation.test.ts",
         "tests/acceptance/requirements-contract-production-activation-plan.test.ts",
         "tests/acceptance/requirements-contract-production-activate-command.test.ts",
         "tests/acceptance/requirements-contract-production-activate-installed-cli.test.ts",
-        "tests/acceptance/requirements-contract-intake-promotion.test.ts",
-        "tests/acceptance/requirements-contract-checkpoint-main-lane.test.ts",
         "tests/acceptance/requirements-contract-evidence-verify-command.test.ts",
         "tests/acceptance/requirements-contract-interaction-consumer-migration.test.ts",
         "tests/acceptance/ai-tdd-contract-gate.test.ts",
@@ -824,7 +828,6 @@
         "tests/acceptance/prepare-architecture-confirmation-page.test.ts",
         "tests/acceptance/bmad-create-prd-source-prd-lint.test.ts",
         "tests/acceptance/source-prd-instance-to-confirmation-html.test.ts",
-        "tests/acceptance/source-prd-authoring-entry-source-lint.test.ts",
         "tests/acceptance/main-agent-bmad-artifact-hardcut.test.ts",
         "tests/acceptance/requirements-contract-entry-source-production-migration.test.ts",
         "tests/acceptance/requirements-contract-post-cutover-v1-source-prd-output.test.ts",
@@ -832,14 +835,11 @@
       ],
       "commandSelectors": [
         "tests/acceptance/requirements-contract-read-facade-production-migration.test.ts",
-        "tests/acceptance/requirements-contract-v1-output-hard-cut.test.ts",
         "tests/acceptance/requirements-contract-production-consumer-inventory.test.ts",
         "tests/acceptance/requirements-contract-production-activation.test.ts",
         "tests/acceptance/requirements-contract-production-activation-plan.test.ts",
         "tests/acceptance/requirements-contract-production-activate-command.test.ts",
         "tests/acceptance/requirements-contract-production-activate-installed-cli.test.ts",
-        "tests/acceptance/requirements-contract-intake-promotion.test.ts",
-        "tests/acceptance/requirements-contract-checkpoint-main-lane.test.ts",
         "tests/acceptance/requirements-contract-evidence-verify-command.test.ts",
         "tests/acceptance/requirements-contract-interaction-consumer-migration.test.ts",
         "tests/acceptance/ai-tdd-contract-gate.test.ts",
@@ -851,7 +851,6 @@
         "tests/acceptance/prepare-architecture-confirmation-page.test.ts",
         "tests/acceptance/bmad-create-prd-source-prd-lint.test.ts",
         "tests/acceptance/source-prd-instance-to-confirmation-html.test.ts",
-        "tests/acceptance/source-prd-authoring-entry-source-lint.test.ts",
         "tests/acceptance/main-agent-bmad-artifact-hardcut.test.ts",
         "tests/acceptance/requirements-contract-entry-source-production-migration.test.ts",
         "tests/acceptance/requirements-contract-post-cutover-v1-source-prd-output.test.ts"
@@ -1039,7 +1038,15 @@
       "commandId": "CMD-26",
       "allSelectors": [],
       "commandSelectors": [],
-      "acceptanceRefs": ["AC-46", "AC-113", "AC-114", "AC-120", "AC-125", "AC-128", "AC-129"]
+      "acceptanceRefs": [
+        "AC-46",
+        "AC-113",
+        "AC-114",
+        "AC-120",
+        "AC-125",
+        "AC-128",
+        "AC-129"
+      ]
     },
     {
       "commandId": "CMD-27",
@@ -1062,26 +1069,20 @@
     {
       "commandId": "CMD-28",
       "allSelectors": [
-        "tests/acceptance/requirements-contract-checkpoint-semantic-validation.test.ts",
-        "tests/acceptance/requirements-contract-checkpoint-progress-consistency.test.ts",
         "tests/acceptance/requirements-contract-source-prd-lint-state-machine.test.ts",
         "tests/acceptance/requirements-contract-six-model-runtime-status-authority.test.ts",
         "tests/acceptance/requirements-contract-task-report-untrusted-claim.test.ts",
         "tests/acceptance/requirements-contract-command-execution-receipt.test.ts",
         "tests/acceptance/requirements-contract-evidence-artifact-readback.test.ts",
-        "tests/acceptance/requirements-contract-current-dispatch-pointer.test.ts",
-        "tests/acceptance/requirements-contract-critical-auditor-independence.test.ts"
+        "tests/acceptance/requirements-contract-current-dispatch-pointer.test.ts"
       ],
       "commandSelectors": [
-        "tests/acceptance/requirements-contract-checkpoint-semantic-validation.test.ts",
-        "tests/acceptance/requirements-contract-checkpoint-progress-consistency.test.ts",
         "tests/acceptance/requirements-contract-source-prd-lint-state-machine.test.ts",
         "tests/acceptance/requirements-contract-six-model-runtime-status-authority.test.ts",
         "tests/acceptance/requirements-contract-task-report-untrusted-claim.test.ts",
         "tests/acceptance/requirements-contract-command-execution-receipt.test.ts",
         "tests/acceptance/requirements-contract-evidence-artifact-readback.test.ts",
-        "tests/acceptance/requirements-contract-current-dispatch-pointer.test.ts",
-        "tests/acceptance/requirements-contract-critical-auditor-independence.test.ts"
+        "tests/acceptance/requirements-contract-current-dispatch-pointer.test.ts"
       ],
       "acceptanceRefs": [
         "AC-46",
@@ -1116,7 +1117,14 @@
         "tests/acceptance/requirements-contract-package-runtime-action-binding-surface-parity.test.ts",
         "tests/acceptance/accept-install-consumer-cli.test.ts"
       ],
-      "acceptanceRefs": ["AC-46", "AC-150", "AC-152", "AC-153", "AC-154", "AC-216"]
+      "acceptanceRefs": [
+        "AC-46",
+        "AC-150",
+        "AC-152",
+        "AC-153",
+        "AC-154",
+        "AC-216"
+      ]
     },
     {
       "commandId": "CMD-30",

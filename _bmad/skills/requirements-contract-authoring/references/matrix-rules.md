@@ -86,7 +86,7 @@ Hard blockers:
 - `visual_view_trace_not_reciprocal`: every linked `TRACE-*` row must reciprocally reference the business visual view through a view/diagram ref field.
 - `visual_view_trace_evidence_not_shared` and `visual_view_trace_acceptance_not_shared`: linked views and trace rows must share at least one evidence ref and one ACC/E2E ref so the visual row cannot drift away from its proof chain.
 
-These checks run in `projection_quality_gate.js` and are consumed by the pre-render MUST decomposition gate, the pre-render global consistency gate, reverse audit, and Critical Auditor round requests.
+These checks run in `projection_quality_gate.js` and are consumed by the pre-render MUST decomposition gate, the pre-render global consistency gate, and reverse audit.
 
 ## Reverse Coverage Checklist
 

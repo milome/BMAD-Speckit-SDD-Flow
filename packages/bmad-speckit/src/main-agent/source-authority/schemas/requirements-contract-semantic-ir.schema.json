@@ -12,6 +12,7 @@
     "semanticRevisionId": { "pattern": "^SEMREV-[A-F0-9]{64}$", "type": "string" },
     "parentSemanticRevisionId": { "oneOf": [{ "pattern": "^SEMREV-[A-F0-9]{64}$", "type": "string" }, { "type": "null" }] },
     "compilerVersion": { "$ref": "#/$defs/nonEmpty" },
+    "semanticHashVersion": { "const": "scopeSemanticHash/v3" },
     "scopeSemanticHash": { "$ref": "#/$defs/hash" },
     "semanticPayload": {
       "type": "object",

@@ -945,16 +945,36 @@ function requirementsConfirmationRuntimeInput(
   const artifacts = objects(promotion.artifacts);
   const markdown = artifacts.find((entry) => text(entry.role) === 'final_markdown');
   const html = artifacts.find((entry) => text(entry.role) === 'confirmation_html');
+  let confirmationPageHash = text(html?.artifactBytesHash) || text(promotion.htmlArtifactBytesHash);
+  if (!/^sha256:[a-f0-9]{64}$/u.test(confirmationPageHash)) {
+    const reviewCandidatePath = text(object(promotion.reviewCandidateRef).path);
+    if (reviewCandidatePath) {
+      const resolvedReviewCandidate = path.resolve(context.recordRoot, reviewCandidatePath);
+      const relativeReviewCandidate = path.relative(context.recordRoot, resolvedReviewCandidate);
+      if (
+        !relativeReviewCandidate.startsWith('..') &&
+        !path.isAbsolute(relativeReviewCandidate) &&
+        fs.existsSync(resolvedReviewCandidate)
+      ) {
+        try {
+          confirmationPageHash = text(readJson(resolvedReviewCandidate).htmlArtifactBytesHash);
+        } catch {
+          confirmationPageHash = '';
+        }
+      }
+    }
+  }
   const sourcePath =
-    text(markdown?.targetPath) || text(context.activeAuthority.activeSemanticIrPath);
-  const htmlPath = text(html?.targetPath);
-  const confirmationPageHash = text(html?.artifactBytesHash);
-  if (!sourcePath || !htmlPath || !/^sha256:[a-f0-9]{64}$/u.test(confirmationPageHash)) {
+    text(markdown?.targetPath) ||
+    text(promotion.targetPath) ||
+    context.activeAuthority.activeBuildManifestPath;
+  const htmlPath = text(html?.targetPath) || text(promotion.htmlPath) || null;
+  if (!sourcePath || !/^sha256:[a-f0-9]{64}$/u.test(confirmationPageHash)) {
     throw new Error('requirements_confirmation_runtime_projection_missing');
   }
   const recordId = text(context.record.recordId);
   const requirementSetId = text(context.record.requirementSetId) || recordId;
-  const attemptId = text(context.activeAuthority.activeAuthoringAttemptId);
+  const attemptId = `build-${context.activeAuthority.activeBuildHash.slice('sha256:'.length)}`;
   const confirmationText = text(context.confirmationEvent.exactConfirmationText);
   const confirmation = {
     eventType: 'confirmation_recorded',
@@ -1016,9 +1036,9 @@ function requirementsConfirmationRuntimeInput(
     semanticModelHash: context.semanticIr.scopeSemanticHash,
     stageInputs: [
       {
-        role: 'requirements_semantic_ir',
-        path: text(context.activeAuthority.activeSemanticIrPath),
-        hash: context.semanticIr.scopeSemanticHash,
+        role: 'requirements_active_build',
+        path: context.activeAuthority.activeBuildManifestPath,
+        hash: context.activeAuthority.activeBuildHash,
       },
     ],
     deterministicGateOutputs: [
@@ -1058,7 +1078,8 @@ function ensureRequirementsConfirmationRuntime(
     if (
       verified.effectiveStatus === 'pass' &&
       text(current.semanticModelHash) === context.semanticIr.scopeSemanticHash &&
-      text(current.currentAttemptId) === text(context.activeAuthority.activeAuthoringAttemptId)
+      text(current.currentAttemptId) ===
+        `build-${context.activeAuthority.activeBuildHash.slice('sha256:'.length)}`
     ) {
       return input.recordPath;
     }
@@ -1286,7 +1307,7 @@ function ingestPreparedArchitectureConfirmation(args: ParsedArgs): {
     'architecture-confirmation-exact-text/v1',
     projection.exactConfirmationText
   );
-  const attemptId = text(context.activeAuthority.activeAuthoringAttemptId);
+  const attemptId = `build-${context.activeAuthority.activeBuildHash.slice('sha256:'.length)}`;
   const event = {
     schemaVersion: 'architecture-confirmation-event/v1',
     eventType: 'architecture_confirmation_recorded',
@@ -1294,7 +1315,7 @@ function ingestPreparedArchitectureConfirmation(args: ParsedArgs): {
     semanticRevisionId: context.semanticIr.semanticRevisionId,
     scopeSemanticHash: context.semanticIr.scopeSemanticHash,
     architectureConfirmationCandidateHash: candidateHash,
-    requirementsAuthoringAttemptId: attemptId,
+    requirementsBuildHash: context.activeAuthority.activeBuildHash,
     requirementsBindingRevisionId: context.sourceBinding.bindingRevisionId,
     requirementsSourceBindingHash: context.sourceBinding.sourceBindingHash,
     requirementsConfirmationEventRef: {
@@ -1359,9 +1380,9 @@ function ingestPreparedArchitectureConfirmation(args: ParsedArgs): {
     semanticModelHash: context.semanticIr.scopeSemanticHash,
     stageInputs: [
       {
-        role: 'requirements_semantic_ir',
-        path: text(context.activeAuthority.activeSemanticIrPath),
-        hash: context.semanticIr.scopeSemanticHash,
+        role: 'requirements_active_build',
+        path: context.activeAuthority.activeBuildManifestPath,
+        hash: context.activeAuthority.activeBuildHash,
       },
       {
         role: 'requirements_confirmation_event',

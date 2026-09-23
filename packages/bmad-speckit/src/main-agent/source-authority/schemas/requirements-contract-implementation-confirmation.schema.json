@@ -445,36 +445,12 @@
       "required": [
         "semanticKernelRef",
         "mustDecompositionPacketRef",
-        "criticalAuditor",
         "packetSourceReconciliation",
         "preRenderGateReportPath"
       ],
       "properties": {
         "semanticKernelRef": { "$ref": "#/$defs/artifactRef" },
         "mustDecompositionPacketRef": { "$ref": "#/$defs/packetRef" },
-        "criticalAuditor": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "minimumRounds",
-            "consecutiveNoNewGapRounds",
-            "latestReceiptHash",
-            "convergenceVerdict"
-          ],
-          "properties": {
-            "minimumRounds": { "type": "integer", "minimum": 1 },
-            "consecutiveNoNewGapRounds": { "type": "integer", "minimum": 0 },
-            "latestReceiptHash": { "$ref": "#/$defs/sha256" },
-            "convergenceVerdict": {
-              "enum": [
-                "audit_not_run",
-                "blocked",
-                "blocked_by_validated_gap_fix",
-                "bounded_no_new_gap"
-              ]
-            }
-          }
-        },
         "packetSourceReconciliation": {
           "type": "object",
           "additionalProperties": false,

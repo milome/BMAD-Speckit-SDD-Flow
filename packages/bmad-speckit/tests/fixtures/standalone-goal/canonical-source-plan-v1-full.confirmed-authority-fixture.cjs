@@ -12,11 +12,13 @@ const SCOPE_SEMANTIC_HASH =
 const BINDING_REVISION_ID =
   'BINDREV-3B8F37598A3D57B79CD1496537657C94D9F7A0B9FE7D7928CFF36D64ED471018';
 const REQUIREMENTS_EFFECTIVE_PASS_HASH =
-  'sha256:9fa331e3a4158c09d2ad0c9b044287a1b8ff44ccd3eb0de5044aea898ade2f68';
+  'sha256:152c66819a93445621dc1be0432cfda2e378482b2d3be38e14cebe31a4d6ccd4';
 const TYPED_SOURCE_GRAPH_HASH =
   'sha256:99dd3e6a1750c446e5e6b30487548bbd64ab3b73675aae0a4b9e76eecfbdfe6b';
 
-const projectRoot = path.resolve(__dirname, '../../../../..');
+const projectRoot = process.env.CONFIRMED_AUTHORITY_FIXTURE_PROJECT_ROOT
+  ? path.resolve(process.env.CONFIRMED_AUTHORITY_FIXTURE_PROJECT_ROOT)
+  : path.resolve(__dirname, '../../../../..');
 const fixtureRoot = __dirname;
 const recordProjectRelative = path.posix.join(
   '_bmad-output/runtime/requirement-records',
@@ -56,61 +58,83 @@ function collectAuthorityFiles() {
   const record = readJson(recordPath('record/requirement-record.json'));
   const authority = record.activeAuthority;
   if (
+    record.schemaVersion !== 'requirements-contract-record/v3' ||
     record.recordId !== REQUEST_ID ||
     record.lifecycle !== 'user_confirmed' ||
     authority.activeSemanticRevisionId !== SEMANTIC_REVISION_ID ||
     authority.activeScopeSemanticHash !== SCOPE_SEMANTIC_HASH ||
-    authority.activeBindingRevisionId !== BINDING_REVISION_ID
+    authority.activeBindingRevisionId !== BINDING_REVISION_ID ||
+    typeof authority.activeBuildHash !== 'string' ||
+    typeof authority.activeBuildManifestPath !== 'string' ||
+    authority.activeBuildManifestPath.includes('/staging/') ||
+    'activeSemanticIrPath' in authority ||
+    'activeSourceBindingPath' in authority
   ) {
     throw new Error('confirmed_fixture_record_identity_mismatch');
   }
 
   const recordRelativePaths = new Set([
     'record/requirement-record.json',
-    authority.activeSemanticIrPath,
-    authority.activeSourceBindingPath,
     authority.activeBuildManifestPath,
     'quality/requirements-effective-pass-receipt.json',
     record.confirmationEventRef.path,
     record.currentPromotionEvidence.path,
-    'confirmation/confirmation-render-report.json',
   ]);
   const buildManifest = readJson(recordPath(authority.activeBuildManifestPath));
-  let confirmationProjectionPath = '';
-  let checkpointRef = buildManifest.terminalCheckpointManifestRef;
-  while (checkpointRef?.path) {
-    recordRelativePaths.add(checkpointRef.path);
-    const checkpoint = readJson(recordPath(checkpointRef.path));
-    for (const entry of checkpoint.artifactEntries ?? []) {
-      if (
-        ['confirmation_projection', 'execution_manifest', 'final_markdown'].includes(entry.role)
-      ) {
-        recordRelativePaths.add(entry.recordRelativePath);
-        if (entry.role === 'confirmation_projection') {
-          confirmationProjectionPath = entry.recordRelativePath;
-        }
-      }
-    }
-    checkpointRef = checkpoint.previousCheckpointManifestRef;
+  if (
+    buildManifest.schemaVersion !== 'requirements-contract-build-manifest/v2' ||
+    buildManifest.buildHash !== authority.activeBuildHash
+  ) {
+    throw new Error('confirmed_fixture_build_identity_mismatch');
   }
-
-  let binding = readJson(recordPath(authority.activeSourceBindingPath));
-  while (binding.parentBindingRevisionId) {
-    const parentPath = `authoring/source-bindings/${binding.parentBindingRevisionId}/source-binding.json`;
-    recordRelativePaths.add(parentPath);
-    binding = readJson(recordPath(parentPath));
+  for (const entry of buildManifest.artifactEntries ?? []) {
+    const contentPath = entry.contentRef?.recordRelativePath;
+    if (!contentPath || contentPath.includes('/staging/')) {
+      throw new Error('confirmed_fixture_content_ref_invalid');
+    }
+    recordRelativePaths.add(contentPath);
   }
 
   const promotion = readJson(recordPath(record.currentPromotionEvidence.path));
-  const pagePaths = (promotion.artifacts ?? []).map((entry) => projectRelative(entry.targetPath));
-  if (pagePaths.length !== 2) throw new Error('confirmed_fixture_page_set_invalid');
+  if (
+    promotion.schemaVersion !== 'requirements-contract-confirmation-promotion-receipt/v2' ||
+    record.currentPromotionEvidence.path !== 'confirmation/final-promotion-receipt.json' ||
+    record.finalPromotionEvidence?.path !== record.currentPromotionEvidence.path
+  ) {
+    throw new Error('confirmed_fixture_final_promotion_invalid');
+  }
+  const pagePaths = [projectRelative(promotion.targetPath)];
 
   const effectivePass = readJson(recordPath('quality/requirements-effective-pass-receipt.json'));
-  const confirmationProjection = readJson(recordPath(confirmationProjectionPath));
+  const confirmationProjectionEntry = buildManifest.artifactEntries.find(
+    (entry) => entry.role === 'confirmation_projection'
+  );
+  if (!confirmationProjectionEntry) {
+    throw new Error('confirmed_fixture_confirmation_projection_missing');
+  }
+  const confirmationProjection = readJson(
+    recordPath(confirmationProjectionEntry.contentRef.recordRelativePath)
+  );
   const typedAuthority = confirmationProjection.typedSourceAuthority;
+  const event = readJson(recordPath(record.confirmationEventRef.path));
+  const expectedConfirmationText = [
+    '确认以上需求范围进入下一阶段',
+    `requestId=${REQUEST_ID}`,
+    `semanticRevisionId=${SEMANTIC_REVISION_ID}`,
+    `scopeSemanticHash=${SCOPE_SEMANTIC_HASH}`,
+    `bindingRevisionId=${BINDING_REVISION_ID}`,
+    `requirementsEffectivePassHash=${REQUIREMENTS_EFFECTIVE_PASS_HASH}`,
+  ].join('\n');
+  const targetMarkdown = fs.readFileSync(path.resolve(projectRoot, promotion.targetPath), 'utf8');
   if (
     effectivePass.requirementsEffectivePassHash !== REQUIREMENTS_EFFECTIVE_PASS_HASH ||
-    typedAuthority?.graphHash !== TYPED_SOURCE_GRAPH_HASH
+    effectivePass.buildManifestHash !== authority.activeBuildHash ||
+    typedAuthority?.graphHash !== TYPED_SOURCE_GRAPH_HASH ||
+    promotion.requirementsEffectivePassHash !== REQUIREMENTS_EFFECTIVE_PASS_HASH ||
+    event.requirementsEffectivePassRef?.hash !== REQUIREMENTS_EFFECTIVE_PASS_HASH ||
+    promotion.exactConfirmationText !== expectedConfirmationText ||
+    event.exactConfirmationText !== expectedConfirmationText ||
+    !targetMarkdown.includes(expectedConfirmationText)
   ) {
     throw new Error('confirmed_fixture_semantic_identity_mismatch');
   }

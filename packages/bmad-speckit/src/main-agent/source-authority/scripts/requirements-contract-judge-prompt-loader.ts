@@ -4,7 +4,7 @@ import * as path from 'node:path';
 
 type JsonRecord = Record<string, unknown>;
 
-export type RequirementsContractJudgeRole = 'requirements_critical_auditor';
+export type RequirementsContractJudgeRole = 'requirements_judge';
 
 interface PromptDefinition {
   judgeRole: RequirementsContractJudgeRole;
@@ -33,12 +33,12 @@ interface PromptFrontMatter {
 
 const PROMPT_DEFINITIONS: PromptDefinition[] = [
   {
-    judgeRole: 'requirements_critical_auditor',
-    actorClass: 'requirements_critical_auditor_judge',
+    judgeRole: 'requirements_judge',
+    actorClass: 'requirements_contract_judge',
     promptPath:
-      '_bmad/shared/requirements-contract/judge-prompts/requirements-contract-critical-auditor.prompt.md',
+      '_bmad/shared/requirements-contract/judge-prompts/requirements-contract-judge.prompt.md',
     schemaName: 'requirements-contract-judge-response.schema.json',
-    templateId: 'requirements-contract-critical-auditor-judge.prompt',
+    templateId: 'requirements-contract-judge.prompt',
     templateVersion: '1.0.0',
   },
 ];
@@ -115,20 +115,11 @@ function resolveProjectFile(projectRoot: string, relativePath: string, code: str
 }
 
 function resolveSchemaFile(packageRoot: string, schemaName: string): string {
-  const candidates = [
+  return resolvePackageFile(
+    packageRoot,
     path.join('dist', 'main-agent', 'source-authority', 'schemas', schemaName),
-    path.join('src', 'main-agent', 'source-authority', 'schemas', schemaName),
-  ];
-  for (const candidate of candidates) {
-    try {
-      return resolvePackageFile(packageRoot, candidate, 'judge_prompt_loader_schema_missing');
-    } catch (error) {
-      if (!(error instanceof Error) || error.message !== 'judge_prompt_loader_schema_missing') {
-        throw error;
-      }
-    }
-  }
-  throw new Error('judge_prompt_loader_schema_missing');
+    'judge_prompt_loader_schema_missing'
+  );
 }
 
 function parseFrontMatter(content: string): {
@@ -195,7 +186,7 @@ function definitionFor(role: RequirementsContractJudgeRole): PromptDefinition {
 }
 
 export function loadRequirementsContractJudgePromptAsset(input: LoaderInput) {
-  rejectCallerPathOverrides(input as JsonRecord);
+  rejectCallerPathOverrides(input as unknown as JsonRecord);
   const definition = definitionFor(input.judgeRole);
   const packageRoot = resolvePackageRoot(input.packageRoot);
   const promptPath = resolvePackageFile(

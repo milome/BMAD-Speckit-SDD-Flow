@@ -18,8 +18,8 @@ const FORBIDDEN_CALLER_FIELDS = new Set([
 
 export interface RequirementsEffectivePassReceipt {
   schemaVersion: 'requirements-effective-pass-receipt/v1';
-  actorClass: 'requirements_critical_auditor_judge';
-  judgeRole: 'requirements_critical_auditor';
+  actorClass: 'requirements_contract_judge';
+  judgeRole: 'requirements_judge';
   attemptKeyHash: string;
   requestHash: string;
   scopeManifestHash: string;
@@ -55,7 +55,7 @@ export function compileRequirementsEffectivePassReceiptV2(input: {
     input.activeAuthority.activeSemanticRevisionId !== aggregate.semanticRevisionId ||
     input.activeAuthority.activeScopeSemanticHash !== aggregate.scopeSemanticHash ||
     input.activeAuthority.activeSourceBindingHash !== aggregate.sourceBindingHash ||
-    input.activeAuthority.activeBuildManifestHash !== aggregate.buildManifestHash
+    input.activeAuthority.activeBuildHash !== aggregate.buildManifestHash
   ) {
     throw new Error('requirements_effective_pass_authority_stale');
   }
@@ -198,8 +198,8 @@ export function compileRequirementsEffectivePassReceipt(
   }
   const payload = {
     schemaVersion: 'requirements-effective-pass-receipt/v1' as const,
-    actorClass: 'requirements_critical_auditor_judge' as const,
-    judgeRole: 'requirements_critical_auditor' as const,
+    actorClass: 'requirements_contract_judge' as const,
+    judgeRole: 'requirements_judge' as const,
     attemptKeyHash: requireHash(aggregate.attemptKeyHash, 'attempt_key_invalid'),
     requestHash: requireHash(aggregate.requestHash, 'request_hash_invalid'),
     scopeManifestHash: requireHash(aggregate.scopeManifestHash, 'scope_manifest_hash_invalid'),

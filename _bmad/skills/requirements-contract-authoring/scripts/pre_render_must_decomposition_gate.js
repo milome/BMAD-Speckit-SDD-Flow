@@ -30,57 +30,7 @@ const SOURCE_ROW_GROUPS = [
   { sourceKey: 'requiredCommands', projectionKey: 'mustCommandProjection' },
 ];
 
-const VALID_NO_NEW_GAP_VERDICTS = new Set(['no_new_valid_gap', 'no_new_confirmation_blocking_gap']);
-const RESOLVED_GAP_STATUSES = new Set(['resolved', 'converted_to_out_boundary', 'converted_to_open_question', 'rejected']);
 const SHA256_PATTERN = /^sha256:[a-f0-9]{64}$/u;
-const ATTEMPT_POINTER_KEYS = new Set([
-  'schemaVersion',
-  'authoringAttemptId',
-  'attemptManifestPath',
-  'attemptManifestHash',
-  'latestValidPredecessorCheckpoint',
-  'inputManifestHash',
-]);
-const PREPUBLICATION_REQUIRED_ROLES = new Map([
-  ['cp04', ['semantic_ir', 'source_binding', 'resolved_evidence_index']],
-  ['cp05', ['confirmation_projection', 'final_markdown']],
-  ['cp06', ['execution_manifest', 'per_must_bundle', 'trace_matrix']],
-  ['cp07', ['diagram_set']],
-  [
-    'cp08',
-    [
-      'projection_reconciliation_report',
-      'authority_resolution_report',
-      'renderability_probe_report',
-      'judge_audit_packet',
-      'judge_audit_packet_coverage',
-    ],
-  ],
-]);
-const PREPUBLICATION_FORBIDDEN_ROLES = new Set([
-  'remediation_plan',
-  'remediation_delta',
-  'effective_pass_receipt',
-  'promotion_receipt',
-]);
-
-function usage(exitCode = 0) {
-  console.log(`Usage:
-  node pre_render_must_decomposition_gate.js --source <source-document.md> [options]
-
-Options:
-  --semantic-kernel <semantic-kernel.json>
-  --must-decomposition-packet <must_decomposition_packet.json>
-  --authoring-dir <dir>
-  --prepublication-attempt
-  --record-root <requirement-record-root>
-  --out <pre-render-must-decomposition-gate-report.json>
-  --receipt <must_decomposition_receipt.json>
-  --reconciliation-report <must_packet_source_reconciliation_report.json>
-  --json
-  --help`);
-  process.exit(exitCode);
-}
 
 function parseArgs(argv) {
   const args = {
@@ -97,7 +47,6 @@ function parseArgs(argv) {
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg === '--help' || arg === '-h') usage(0);
     if (arg === '--json') {
       args.json = true;
       continue;
@@ -118,7 +67,7 @@ function parseArgs(argv) {
     ) {
       const next = argv[i + 1];
       if (!next || next.startsWith('--')) return { error: `missing value for ${arg}` };
-      args[arg.slice(2).replace(/-([a-z])/g, (_m, c) => c.toUpperCase())] = next;
+      args[arg.slice(2).replace(/-([a-z])/g, (_match, character) => character.toUpperCase())] = next;
       i += 1;
       continue;
     }
@@ -138,561 +87,89 @@ function hashObject(value) {
   return sha256(stableStringify(value));
 }
 
-function hashDomain(domain, value) {
-  return sha256(`${domain}\n${stableStringify(value)}\n`);
-}
-
-function hashBytes(value) {
-  return `sha256:${crypto.createHash('sha256').update(value).digest('hex')}`;
-}
-
-function isRecord(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function hasExactKeys(value, keys) {
-  return isRecord(value) &&
-    Object.keys(value).length === keys.size &&
-    Object.keys(value).every((key) => keys.has(key));
-}
-
-function canonicalRecordRelativePath(value) {
-  if (typeof value !== 'string' || !value || value.includes('\\') || path.posix.isAbsolute(value)) {
-    return false;
-  }
-  const normalized = path.posix.normalize(value);
-  return normalized === value && value !== '..' && !value.startsWith('../');
-}
-
-function confinedRecordPath(recordRoot, relativePath) {
-  if (!canonicalRecordRelativePath(relativePath)) return null;
-  const root = path.resolve(recordRoot);
-  const absolute = path.resolve(root, ...relativePath.split('/'));
-  const relative = path.relative(root, absolute);
-  if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) return null;
-  const components = relative.split(path.sep).filter(Boolean);
-  let current = root;
-  if (fs.existsSync(current) && fs.lstatSync(current).isSymbolicLink()) {
-    return { error: 'authoring_record_path_reparse_forbidden', path: absolute };
-  }
-  for (const component of components) {
-    current = path.join(current, component);
-    if (!fs.existsSync(current)) break;
-    if (fs.lstatSync(current).isSymbolicLink()) {
-      return { error: 'authoring_record_path_reparse_forbidden', path: absolute };
+function validateContentAddressedPrepublication(input) {
+  const manifest = input.buildManifestV2;
+  const failures = [];
+  const entries = Array.isArray(manifest?.artifactEntries) ? manifest.artifactEntries : [];
+  const byRole = new Map(entries.map((entry) => [entry.role, entry]));
+  const requiredRoles = [
+    'semantic_ir', 'source_binding', 'resolved_evidence_index', 'confirmation_projection',
+    'final_markdown', 'execution_manifest', 'per_must_bundle', 'trace_matrix', 'diagram_set',
+    'projection_reconciliation_report', 'authority_resolution_report', 'renderability_probe_report',
+    'judge_audit_packet',
+  ];
+  const readEntry = (role) => {
+    const entry = byRole.get(role);
+    if (!entry) { failures.push(`prepublication_artifact_role_missing:${role}`); return null; }
+    const ref = entry.contentRef;
+    if (!ref || !/^authoring\/objects\/sha256\/[a-f0-9]{2}\/[a-f0-9]{62}$/u.test(String(ref.recordRelativePath ?? '')) ||
+      !SHA256_PATTERN.test(String(ref.contentHash ?? ''))) {
+      failures.push(`prepublication_artifact_ref_invalid:${role}`); return null;
     }
-  }
-  if (fs.existsSync(absolute)) {
-    const realRoot = fs.realpathSync(root);
-    const realTarget = fs.realpathSync(absolute);
-    const realRelative = path.relative(realRoot, realTarget);
-    if (realRelative.startsWith('..') || path.isAbsolute(realRelative)) {
-      return { error: 'authoring_record_path_reparse_forbidden', path: absolute };
+    const absolute = path.resolve(input.recordRoot, ...String(ref.recordRelativePath).split('/'));
+    const relative = path.relative(path.resolve(input.recordRoot), absolute);
+    if (relative.startsWith('..') || path.isAbsolute(relative) || !fs.existsSync(absolute)) {
+      failures.push(`prepublication_artifact_missing:${role}`); return null;
     }
-  }
-  return { error: null, path: absolute };
-}
-
-function pathReparseError(targetPath) {
-  const absolute = path.resolve(targetPath);
-  const parsed = path.parse(absolute);
-  let current = parsed.root;
-  if (fs.existsSync(current) && fs.lstatSync(current).isSymbolicLink()) {
-    return 'authoring_record_path_reparse_forbidden';
-  }
-  for (const component of path.relative(parsed.root, absolute).split(path.sep).filter(Boolean)) {
-    current = path.join(current, component);
-    if (!fs.existsSync(current)) break;
-    if (fs.lstatSync(current).isSymbolicLink()) {
-      return 'authoring_record_path_reparse_forbidden';
+    const bytes = fs.readFileSync(absolute);
+    if (`sha256:${crypto.createHash('sha256').update(bytes).digest('hex')}` !== ref.contentHash || bytes.length !== ref.byteLength) {
+      failures.push(`prepublication_artifact_hash_mismatch:${role}`); return null;
     }
-  }
-  if (fs.existsSync(absolute)) {
-    const realTarget = fs.realpathSync(absolute);
-    const realRelative = path.relative(path.resolve(parsed.root), realTarget);
-    if (realRelative.startsWith('..') || path.isAbsolute(realRelative)) {
-      return 'authoring_record_path_reparse_forbidden';
+    if (/^application\/json(?:;|$)/iu.test(String(ref.mediaType))) {
+      try {
+        const value = JSON.parse(bytes.toString('utf8'));
+        if (!value || typeof value !== 'object' || value.schemaVersion !== entry.schemaVersion) {
+          failures.push(`prepublication_artifact_schema_mismatch:${role}`);
+        }
+        return value;
+      } catch { failures.push(`prepublication_artifact_json_invalid:${role}`); return null; }
     }
-  }
-  return null;
-}
-
-function prepublicationFailureReport({ sourcePath, recordRoot, pointerPath, blockingIssues }) {
-  const report = {
-    schemaVersion: 'requirements-contract-prepublication-render-gate-report/v1',
-    verdict: 'FAIL',
-    sourcePath: normalizePathForReport(sourcePath),
-    recordRoot: normalizePathForReport(recordRoot),
-    pointerPath: normalizePathForReport(pointerPath),
-    manifestPaths: [],
-    artifactRefs: [],
-    semanticRevisionId: null,
-    scopeSemanticHash: null,
-    sourceHashBefore: null,
-    sourceHashAfter: null,
-    sourceHashPreserved: false,
-    failedChecks: unique(blockingIssues.map((item) => item.code)),
-    blockingIssues,
+    return bytes.toString('utf8');
   };
-  report.contentHash = hashObject({ ...report, contentHash: null });
-  return { exitCode: 1, report };
+  if (!manifest || manifest.schemaVersion !== 'requirements-contract-build-manifest/v2') {
+    failures.push('prepublication_build_manifest_invalid');
+  }
+  for (const role of requiredRoles) readEntry(role);
+  const semanticIr = readEntry('semantic_ir');
+  if (!semanticIr || !['requirements-contract-semantic-ir/v1', 'requirements-contract-semantic-ir/v2'].includes(semanticIr.schemaVersion) ||
+    !SHA256_PATTERN.test(String(semanticIr.scopeSemanticHash ?? '')) ||
+    !semanticIr.semanticPayload || !Array.isArray(semanticIr.semanticPayload.specSpanRegistry) ||
+    !Array.isArray(semanticIr.semanticPayload.evidenceClaims)) failures.push('prepublication_semantic_ir_invalid');
+  for (const role of ['projection_reconciliation_report', 'authority_resolution_report', 'renderability_probe_report']) {
+    const value = readEntry(role);
+    if (value?.decision === 'block') failures.push(`prepublication_${role}_blocked`);
+  }
+  const packet = readEntry('judge_audit_packet');
+  if (!packet || packet.schemaVersion !== 'requirements-contract-judge-audit-packet/v3' ||
+    !SHA256_PATTERN.test(String(packet.packetHash ?? '')) || !Array.isArray(packet.semanticAuditSliceRefs) ||
+    packet.semanticAuditSliceRefs.length === 0) failures.push('prepublication_judge_audit_packet_invalid');
+  return { exitCode: failures.length ? 1 : 0, report: {
+    verdict: failures.length ? 'block' : 'pass', failedChecks: unique(failures), blockingIssues: unique(failures),
+    sourcePath: input.sourcePath, recordRoot: input.recordRoot,
+  } };
 }
-
 function prepublicationIssue(code, refs = []) {
-  return issue(code, code.replace(/_/gu, ' '), refs, 'blocker', 'prepublication_attempt_gate');
-}
-
-function validateAttemptPointer(pointer) {
-  const codes = [];
-  if (!hasExactKeys(pointer, ATTEMPT_POINTER_KEYS)) {
-    return ['active_authoring_attempt_pointer_shape_invalid'];
-  }
-  if (pointer.schemaVersion !== 'ActiveAuthoringAttemptPointer/v1') {
-    codes.push('active_authoring_attempt_pointer_schema_invalid');
-  }
-  if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/u.test(String(pointer.authoringAttemptId ?? ''))) {
-    codes.push('active_authoring_attempt_id_invalid');
-  }
-  if (!canonicalRecordRelativePath(pointer.attemptManifestPath)) {
-    codes.push('active_authoring_attempt_manifest_path_invalid');
-  } else if (
-    pointer.attemptManifestPath !==
-      `authoring/staging/${pointer.authoringAttemptId}/manifests/8-cp08.json`
-  ) {
-    codes.push('active_authoring_attempt_cp08_path_identity_mismatch');
-  }
-  if (!SHA256_PATTERN.test(String(pointer.attemptManifestHash ?? ''))) {
-    codes.push('active_authoring_attempt_manifest_hash_invalid');
-  }
-  if (!SHA256_PATTERN.test(String(pointer.inputManifestHash ?? ''))) {
-    codes.push('active_authoring_attempt_input_manifest_hash_invalid');
-  }
-  if (pointer.latestValidPredecessorCheckpoint !== 'cp07') {
-    codes.push('active_authoring_attempt_predecessor_mismatch');
-  }
-  return unique(codes);
-}
-
-const CHECKPOINT_MANIFEST_KEYS = new Set([
-  'schemaVersion',
-  'authoringRequestId',
-  'authoringAttemptId',
-  'checkpointId',
-  'checkpointOrdinal',
-  'stage',
-  'status',
-  'inputManifestHash',
-  'previousCheckpointManifestRef',
-  'latestValidPredecessorCheckpoint',
-  'compilerIdentity',
-  'artifactEntries',
-  'decisionReceiptRefs',
-  'baseAuthorityRef',
-  'checkpointManifestHash',
-]);
-const CHECKPOINT_REF_KEYS = new Set(['checkpointId', 'checkpointOrdinal', 'path', 'hash']);
-const ARTIFACT_ENTRY_KEYS = new Set([
-  'role',
-  'schemaVersion',
-  'artifactId',
-  'recordRelativePath',
-  'artifactHash',
-]);
-const PREPUBLICATION_ALLOWED_ROLES = new Map([
-  ['cp04', new Set(['semantic_ir', 'source_binding', 'resolved_evidence_index', 'lint_report'])],
-  ['cp05', new Set(['confirmation_projection', 'final_markdown', 'lint_report'])],
-  [
-    'cp06',
-    new Set([
-      'execution_manifest',
-      'per_must_bundle',
-      'trace_matrix',
-      'acceptance_contracts',
-      'failure_matrix',
-      'edge_matrix',
-      'lint_report',
-    ]),
-  ],
-  ['cp07', new Set(['diagram_set', 'confirmation_html', 'confirmation_summary', 'lint_report'])],
-  [
-    'cp08',
-    new Set([
-      'projection_reconciliation_report',
-      'authority_resolution_report',
-      'renderability_probe_report',
-      'judge_audit_packet',
-      'judge_audit_packet_coverage',
-      'lint_report',
-    ]),
-  ],
-]);
-const LOGICAL_IDENTITY_ROLES = new Set([
-  'confirmation_projection',
-  'execution_manifest',
-  'per_must_bundle',
-  'trace_matrix',
-  'acceptance_contracts',
-  'failure_matrix',
-  'edge_matrix',
-  'diagram_set',
-  'projection_reconciliation_report',
-  'authority_resolution_report',
-  'renderability_probe_report',
-  'judge_audit_packet',
-  'judge_audit_packet_coverage',
-]);
-
-function checkpointArtifactHashCandidates(stage, entry, bytes, parsed) {
-  const candidates = new Set();
-  if (stage === 'cp04' && parsed !== null) {
-    const coreRole = {
-      semantic_ir: 'semantic-ir',
-      source_binding: 'source-binding',
-      resolved_evidence_index: 'resolved-evidence-index',
-    }[entry.role];
-    if (coreRole) {
-      candidates.add(
-        hashObject({
-          domain: 'requirements-contract-core-artifact/v1',
-          checkpointId: 'cp-04-id-freeze',
-          profileId: 'requirements-contract-cp04-freeze-publication/v1',
-          artifactRole: coreRole,
-          artifact: parsed,
-        })
-      );
-    }
-    return candidates;
-  }
-  candidates.add(hashBytes(bytes));
-  if (parsed !== null) candidates.add(hashObject(parsed));
-  return candidates;
-}
-
-function cp08ArtifactIssues(entry, parsed) {
-  const codes = [];
-  if (
-    ['projection_reconciliation_report', 'authority_resolution_report'].includes(entry.role) &&
-    parsed?.decision !== 'pass'
-  ) {
-    codes.push(`prepublication_${entry.role}_blocked`);
-  }
-  if (
-    entry.role === 'renderability_probe_report' &&
-    (parsed?.decision !== 'pass' || parsed?.promotable !== false)
-  ) {
-    codes.push('prepublication_renderability_probe_blocked');
-  }
-  if (entry.role === 'judge_audit_packet' && !isRecord(parsed?.body)) {
-    codes.push('judge_audit_packet_coverage_gap');
-  }
-  if (
-    entry.role === 'judge_audit_packet_coverage' &&
-    (parsed?.allApplicableArtifactsIncluded !== true ||
-      !Array.isArray(parsed?.omittedArtifactIds) ||
-      parsed.omittedArtifactIds.length > 0)
-  ) {
-    codes.push('judge_audit_packet_coverage_gap');
-  }
-  return codes;
-}
-
-function validateCheckpointManifest(manifest, expected) {
-  const codes = [];
-  if (!hasExactKeys(manifest, CHECKPOINT_MANIFEST_KEYS)) {
-    return ['authoring_checkpoint_manifest_shape_invalid'];
-  }
-  if (manifest.schemaVersion !== 'requirements-contract-authoring-checkpoint-manifest/v1') {
-    codes.push('authoring_checkpoint_manifest_schema_invalid');
-  }
-  if (
-    manifest.authoringAttemptId !== expected.authoringAttemptId ||
-    manifest.inputManifestHash !== expected.inputManifestHash ||
-    manifest.checkpointId !== expected.stage ||
-    manifest.stage !== expected.stage ||
-    manifest.checkpointOrdinal !== expected.ordinal ||
-    manifest.status !== 'passed'
-  ) {
-    codes.push('authoring_checkpoint_manifest_identity_mismatch');
-  }
-  const { checkpointManifestHash, ...payload } = manifest;
-  if (
-    checkpointManifestHash !== expected.hash ||
-    checkpointManifestHash !==
-      hashDomain('requirements-contract-authoring-checkpoint-manifest/v1', payload)
-  ) {
-    codes.push('authoring_checkpoint_manifest_hash_mismatch');
-  }
-  const previous = manifest.previousCheckpointManifestRef;
-  if (!hasExactKeys(previous, CHECKPOINT_REF_KEYS)) {
-    codes.push('authoring_checkpoint_previous_lineage_invalid');
-  } else {
-    const previousOrdinal = expected.ordinal - 1;
-    const previousId = `cp${String(previousOrdinal).padStart(2, '0')}`;
-    const previousPath =
-      `authoring/staging/${expected.authoringAttemptId}/manifests/${previousOrdinal}-${previousId}.json`;
-    if (
-      previous.checkpointId !== previousId ||
-      previous.checkpointOrdinal !== previousOrdinal ||
-      previous.path !== previousPath ||
-      !SHA256_PATTERN.test(String(previous.hash ?? '')) ||
-      manifest.latestValidPredecessorCheckpoint !== previousId
-    ) {
-      codes.push('authoring_checkpoint_previous_lineage_invalid');
-    }
-  }
-  return unique(codes);
+  return issue(code, code.replace(/_/gu, ' '), refs, 'blocker', 'prepublication_build_gate');
 }
 
 function validatePrepublicationAttempt(input) {
-  const sourcePath = path.resolve(input.sourcePath);
-  const recordRoot = path.resolve(input.recordRoot);
-  const blockingIssues = [];
-  const pointerPath = path.join(recordRoot, 'record', 'active-authoring-request.json');
-  const sourceReparseError = pathReparseError(sourcePath);
-  if (sourceReparseError) {
-    blockingIssues.push(prepublicationIssue(sourceReparseError, [sourcePath]));
+  if (!input.buildManifestV2) {
+    const finding = prepublicationIssue('prepublication_build_manifest_required');
+    return {
+      exitCode: 1,
+      report: {
+        schemaVersion: 'requirements-contract-prepublication-render-gate-report/v2',
+        verdict: 'FAIL',
+        sourcePath: normalizePathForReport(input.sourcePath),
+        recordRoot: normalizePathForReport(input.recordRoot),
+        failedChecks: [finding.code],
+        blockingIssues: [finding],
+      },
+    };
   }
-  const pointerPathValidation = confinedRecordPath(
-    recordRoot,
-    'record/active-authoring-request.json'
-  );
-  if (!pointerPathValidation || pointerPathValidation.error) {
-    blockingIssues.push(
-      prepublicationIssue(
-        pointerPathValidation?.error ?? 'authoring_checkpoint_manifest_path_escape',
-        [pointerPath]
-      )
-    );
-  }
-  if (blockingIssues.length > 0) {
-    return prepublicationFailureReport({ sourcePath, recordRoot, pointerPath, blockingIssues });
-  }
-  const sourceBefore = fs.readFileSync(sourcePath);
-  const pointerRead = input.attemptPointer
-    ? { ok: true, value: input.attemptPointer }
-    : readJsonSafe(pointerPath);
-  if (!pointerRead.ok) {
-    blockingIssues.push(
-      prepublicationIssue(
-        pointerRead.missing
-          ? 'active_authoring_attempt_pointer_missing'
-          : 'active_authoring_attempt_pointer_unreadable',
-        [pointerPath]
-      )
-    );
-  }
-  const pointer = pointerRead.ok ? pointerRead.value : null;
-  for (const code of validateAttemptPointer(pointer)) {
-    blockingIssues.push(prepublicationIssue(code, [pointerPath]));
-  }
-
-  const manifests = [];
-  const artifacts = [];
-  if (blockingIssues.length === 0) {
-    let manifestPath = pointer.attemptManifestPath;
-    let manifestHash = pointer.attemptManifestHash;
-    for (let ordinal = 8; ordinal >= 4; ordinal -= 1) {
-      const stage = `cp${String(ordinal).padStart(2, '0')}`;
-      const confinedManifest = confinedRecordPath(recordRoot, manifestPath);
-      if (!confinedManifest) {
-        blockingIssues.push(
-          prepublicationIssue('authoring_checkpoint_manifest_path_escape', [manifestPath])
-        );
-        break;
-      }
-      if (confinedManifest.error) {
-        blockingIssues.push(prepublicationIssue(confinedManifest.error, [manifestPath]));
-        break;
-      }
-      const absoluteManifestPath = confinedManifest.path;
-      const read = readJsonSafe(absoluteManifestPath);
-      if (!read.ok) {
-        blockingIssues.push(
-          prepublicationIssue(
-            read.missing
-              ? 'authoring_checkpoint_manifest_missing'
-              : 'authoring_checkpoint_manifest_unreadable',
-            [manifestPath]
-          )
-        );
-        break;
-      }
-      const manifest = read.value;
-      const manifestCodes = validateCheckpointManifest(manifest, {
-        stage,
-        ordinal,
-        hash: manifestHash,
-        authoringAttemptId: pointer.authoringAttemptId,
-        inputManifestHash: pointer.inputManifestHash,
-      });
-      for (const code of manifestCodes) {
-        blockingIssues.push(prepublicationIssue(code, [manifestPath]));
-      }
-      manifests.push({ stage, path: manifestPath, manifest });
-      if (manifestCodes.length > 0) break;
-      manifestPath = manifest.previousCheckpointManifestRef.path;
-      manifestHash = manifest.previousCheckpointManifestRef.hash;
-    }
-  }
-
-  let semanticRevisionId = '';
-  let scopeSemanticHash = '';
-  for (const { stage, manifest } of [...manifests].reverse()) {
-    const allowedRoles = PREPUBLICATION_ALLOWED_ROLES.get(stage) ?? new Set();
-    const entries = Array.isArray(manifest.artifactEntries) ? manifest.artifactEntries : [];
-    const roles = new Set(entries.map((entry) => entry?.role));
-    for (const requiredRole of PREPUBLICATION_REQUIRED_ROLES.get(stage) ?? []) {
-      if (!roles.has(requiredRole)) {
-        blockingIssues.push(
-          prepublicationIssue(`prepublication_${stage}_artifact_role_missing:${requiredRole}`)
-        );
-      }
-    }
-    for (const entry of entries) {
-      if (!hasExactKeys(entry, ARTIFACT_ENTRY_KEYS)) {
-        blockingIssues.push(prepublicationIssue('authoring_checkpoint_artifact_shape_invalid'));
-        continue;
-      }
-      if (
-        typeof entry.schemaVersion !== 'string' ||
-        !entry.schemaVersion ||
-        typeof entry.artifactId !== 'string' ||
-        !entry.artifactId
-      ) {
-        blockingIssues.push(
-          prepublicationIssue('authoring_checkpoint_artifact_identity_invalid')
-        );
-        continue;
-      }
-      if (!allowedRoles.has(entry.role) || PREPUBLICATION_FORBIDDEN_ROLES.has(entry.role)) {
-        blockingIssues.push(
-          prepublicationIssue(`prepublication_${stage}_artifact_role_forbidden:${entry.role}`)
-        );
-        continue;
-      }
-      if (
-        !canonicalRecordRelativePath(entry.recordRelativePath) ||
-        !SHA256_PATTERN.test(String(entry.artifactHash ?? ''))
-      ) {
-        blockingIssues.push(
-          prepublicationIssue('authoring_checkpoint_artifact_ref_invalid', [entry.artifactId])
-        );
-        continue;
-      }
-      if (
-        stage !== 'cp04' &&
-        !entry.recordRelativePath.startsWith(
-          `authoring/staging/${pointer.authoringAttemptId}/`
-        )
-      ) {
-        blockingIssues.push(
-          prepublicationIssue('authoring_checkpoint_staged_artifact_path_mismatch', [entry.artifactId])
-        );
-        continue;
-      }
-      const confinedArtifact = confinedRecordPath(recordRoot, entry.recordRelativePath);
-      if (confinedArtifact?.error) {
-        blockingIssues.push(
-          prepublicationIssue(confinedArtifact.error, [entry.artifactId])
-        );
-        continue;
-      }
-      const absoluteArtifactPath = confinedArtifact?.path;
-      if (!absoluteArtifactPath || !fs.existsSync(absoluteArtifactPath)) {
-        blockingIssues.push(
-          prepublicationIssue('authoring_checkpoint_artifact_missing', [entry.artifactId])
-        );
-        continue;
-      }
-      const bytes = fs.readFileSync(absoluteArtifactPath);
-      let parsed = null;
-      if (/\.json$/u.test(entry.recordRelativePath)) {
-        try {
-          parsed = JSON.parse(bytes.toString('utf8'));
-        } catch {
-          blockingIssues.push(
-            prepublicationIssue('authoring_checkpoint_artifact_json_invalid', [entry.artifactId])
-          );
-          continue;
-        }
-        if (!isRecord(parsed) || parsed.schemaVersion !== entry.schemaVersion) {
-          blockingIssues.push(
-            prepublicationIssue('authoring_checkpoint_artifact_schema_mismatch', [entry.artifactId])
-          );
-        }
-      }
-      if (!checkpointArtifactHashCandidates(stage, entry, bytes, parsed).has(entry.artifactHash)) {
-        blockingIssues.push(
-          prepublicationIssue('authoring_checkpoint_artifact_hash_mismatch', [entry.artifactId])
-        );
-      }
-      if (stage === 'cp04' && entry.role === 'semantic_ir' && isRecord(parsed)) {
-        semanticRevisionId = String(parsed.semanticRevisionId ?? '');
-        scopeSemanticHash = String(parsed.scopeSemanticHash ?? '');
-        if (!semanticRevisionId || !SHA256_PATTERN.test(scopeSemanticHash)) {
-          blockingIssues.push(prepublicationIssue('prepublication_cp04_semantic_identity_invalid'));
-        }
-      }
-      if (stage === 'cp04' && entry.role === 'source_binding' && isRecord(parsed)) {
-        if (
-          parsed.semanticRevisionId !== semanticRevisionId ||
-          parsed.scopeSemanticHash !== scopeSemanticHash
-        ) {
-          blockingIssues.push(prepublicationIssue('prepublication_cp04_binding_identity_mismatch'));
-        }
-      }
-      if (LOGICAL_IDENTITY_ROLES.has(entry.role) && isRecord(parsed)) {
-        if (
-          parsed.semanticRevisionId !== semanticRevisionId ||
-          parsed.scopeSemanticHash !== scopeSemanticHash
-        ) {
-          blockingIssues.push(
-            prepublicationIssue('prepublication_projection_semantic_identity_mismatch', [
-              entry.artifactId,
-            ])
-          );
-        }
-      }
-      if (stage === 'cp08') {
-        for (const code of cp08ArtifactIssues(entry, parsed)) {
-          blockingIssues.push(prepublicationIssue(code, [entry.artifactId]));
-        }
-      }
-      artifacts.push({
-        stage,
-        role: entry.role,
-        artifactId: entry.artifactId,
-        path: entry.recordRelativePath,
-        hash: entry.artifactHash,
-      });
-    }
-  }
-
-  const sourceAfter = fs.readFileSync(sourcePath);
-  const sourceHashBefore = hashBytes(sourceBefore);
-  const sourceHashAfter = hashBytes(sourceAfter);
-  if (!sourceBefore.equals(sourceAfter)) {
-    blockingIssues.push(prepublicationIssue('prepublication_probe_source_bytes_changed'));
-  }
-  const report = {
-    schemaVersion: 'requirements-contract-prepublication-render-gate-report/v1',
-    verdict: blockingIssues.length === 0 ? 'PASS' : 'FAIL',
-    sourcePath: normalizePathForReport(sourcePath),
-    recordRoot: normalizePathForReport(recordRoot),
-    pointerPath: normalizePathForReport(pointerPath),
-    manifestPaths: manifests.map((item) => item.path),
-    artifactRefs: artifacts,
-    semanticRevisionId: semanticRevisionId || null,
-    scopeSemanticHash: scopeSemanticHash || null,
-    sourceHashBefore,
-    sourceHashAfter,
-    sourceHashPreserved: sourceBefore.equals(sourceAfter),
-    failedChecks: unique(blockingIssues.map((item) => item.code)),
-    blockingIssues,
-  };
-  report.contentHash = hashObject({ ...report, contentHash: null });
-  return { exitCode: report.verdict === 'PASS' ? 0 : 1, report };
+  return validateContentAddressedPrepublication(input);
 }
+
 
 function readJsonFile(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -733,10 +210,6 @@ function unwrapPacket(value) {
   return value?.must_decomposition_packet ?? value?.mustDecompositionPacket ?? value;
 }
 
-function unwrapReceipt(value) {
-  return value?.criticalAuditorReceipt ?? value;
-}
-
 function defaultAuthoringDir(sourcePath, confirmation) {
   const recordId = String(confirmation?.recordId ?? '').trim();
   if (recordId) {
@@ -744,15 +217,6 @@ function defaultAuthoringDir(sourcePath, confirmation) {
   }
   const base = path.basename(sourcePath, path.extname(sourcePath)).replace(/[^A-Za-z0-9_.-]+/g, '-');
   return path.join(process.cwd(), '_bmad-output', 'runtime', 'requirement-records', base, 'authoring');
-}
-
-function collectReceiptPaths(authoringDir) {
-  if (!fs.existsSync(authoringDir)) return [];
-  return fs
-    .readdirSync(authoringDir)
-    .filter((fileName) => /^critical-auditor-receipt-round-\d+\.json$/u.test(fileName))
-    .map((fileName) => path.join(authoringDir, fileName))
-    .sort();
 }
 
 function rowId(row, fallback = '') {
@@ -1002,62 +466,6 @@ function collectContractExecutionManifestIssues(confirmation) {
   }
 }
 
-function buildAuditInputHash({ sourceDocumentHash, implementationConfirmationHash, kernel, packet }) {
-  return hashObject({
-    sourceDocumentHash,
-    semanticModelHash: packet?.semanticModelHash ?? kernel?.semanticModelHash ?? null,
-    implementationConfirmationHash,
-    semanticKernelHash: kernel?.kernelHash ?? null,
-    packetHash: packet?.packetHash ?? null,
-  });
-}
-
-function collectCriticalAuditorIssues({ receiptReads, auditInputHash }) {
-  const issues = [];
-  const receipts = [];
-  for (const read of receiptReads) {
-    if (!read.ok) {
-      issues.push(issue('critical_auditor_receipt_unreadable', read.error ?? 'Critical Auditor receipt is unreadable', [read.path]));
-      continue;
-    }
-    receipts.push(unwrapReceipt(read.value));
-  }
-  if (!receipts.length) {
-    issues.push(issue('critical_auditor_receipt_missing', 'Critical Auditor receipts are missing'));
-    return { issues, receipts: [], consecutiveNoNewGapRounds: 0, latestReceiptHash: null };
-  }
-  receipts.sort((a, b) => Number(a.roundIndex ?? 0) - Number(b.roundIndex ?? 0));
-  let consecutive = 0;
-  let latestReceiptHash = null;
-  for (const receipt of receipts) {
-    latestReceiptHash = hashObject(receipt);
-    if (receipt.schemaVersion !== 'critical-auditor-receipt/v1') {
-      issues.push(issue('critical_auditor_receipt_schema_invalid', `round ${receipt.roundIndex ?? '?'} has invalid schemaVersion`));
-    }
-    if (receipt.inputHash !== auditInputHash) {
-      issues.push(issue('critical_auditor_receipt_input_hash_stale', `round ${receipt.roundIndex ?? '?'} inputHash is stale`, ['inputHash']));
-    }
-    const verdict = receipt.convergenceDecision?.verdict;
-    if (verdict === 'insufficient_audit') {
-      issues.push(issue('critical_auditor_insufficient_audit', `round ${receipt.roundIndex ?? '?'} is insufficient_audit`));
-    }
-    if (verdict === 'blocked') {
-      issues.push(issue('critical_auditor_blocked', `round ${receipt.roundIndex ?? '?'} is blocked`));
-    }
-    for (const gap of asArray(receipt.validatedGaps)) {
-      const status = String(gap.status ?? gap.resolutionStatus ?? '').trim();
-      if (!RESOLVED_GAP_STATUSES.has(status)) {
-        issues.push(issue('critical_auditor_validated_gap_unresolved', `validated gap ${gap.id ?? gap.code ?? 'unknown'} is unresolved`, [gap.id ?? gap.code ?? 'gap']));
-      }
-    }
-    consecutive = VALID_NO_NEW_GAP_VERDICTS.has(verdict) ? consecutive + 1 : 0;
-  }
-  if (consecutive < 3) {
-    issues.push(issue('critical_auditor_less_than_three_no_new_gap_rounds', 'Critical Auditor has fewer than three consecutive no-new-gap rounds'));
-  }
-  return { issues, receipts, consecutiveNoNewGapRounds: consecutive, latestReceiptHash };
-}
-
 function buildReconciliationReport({
   confirmation,
   packet,
@@ -1069,6 +477,12 @@ function buildReconciliationReport({
   const issues = [];
   const packetHash = packet?.packetHash ?? '';
   const projections = allPacketProjectionRows(packet ?? {});
+  const atomicTasksById = new Map(
+    asArray(confirmation.atomicImplementationTaskList).map((row, index) => [
+      rowId(row, String(index)),
+      row,
+    ])
+  );
   for (const projection of projections) {
     const targets = projectionMaterializedTargets(projection);
     if (!targets.length) {
@@ -1090,8 +504,13 @@ function buildReconciliationReport({
 
   for (const group of SOURCE_ROW_GROUPS) {
     for (const [index, row] of sourceRowsForKey(confirmation, group.sourceKey).entries()) {
+      const canonicalAtomicTask =
+        group.sourceKey === 'implementationTasks'
+          ? atomicTasksById.get(rowId(row, String(index)))
+          : null;
       if (
         !isProjectionBacked(row, packetHash) &&
+        !(canonicalAtomicTask && isProjectionBacked(canonicalAtomicTask, packetHash)) &&
         !packetProjectionBacksSourceRow(projections, group.sourceKey, row, index)
       ) {
         issues.push(
@@ -1188,8 +607,6 @@ function runGate(args) {
   const packetRead = readJsonSafe(packetPath);
   const kernel = kernelRead.ok ? unwrapKernel(kernelRead.value) : null;
   const packet = packetRead.ok ? unwrapPacket(packetRead.value) : null;
-  const auditInputHash = buildAuditInputHash({ sourceDocumentHash, implementationConfirmationHash, kernel, packet });
-  const receiptReads = collectReceiptPaths(authoringDir).map((receiptFile) => readJsonSafe(receiptFile));
 
   const blockingIssues = [
     ...(kernelRead.ok ? [] : [issue(kernelRead.missing ? 'missing_semantic_kernel' : 'semantic_kernel_unreadable', kernelRead.error ?? 'semantic-kernel.json is missing or unreadable', [kernelPath])]),
@@ -1202,9 +619,6 @@ function runGate(args) {
     }),
     ...collectContractExecutionManifestIssues(confirmation),
   ];
-
-  const auditor = collectCriticalAuditorIssues({ receiptReads, auditInputHash });
-  blockingIssues.push(...auditor.issues);
 
   const reconciliation = buildReconciliationReport({
     confirmation,
@@ -1237,14 +651,6 @@ function runGate(args) {
     ],
     semanticKernelHash: kernel?.kernelHash ?? null,
     packetHash: packet?.packetHash ?? null,
-    auditInputHash,
-    criticalAuditor: {
-      receiptCount: auditor.receipts.length,
-      minimumRounds: 3,
-      consecutiveNoNewGapRounds: auditor.consecutiveNoNewGapRounds,
-      latestReceiptHash: auditor.latestReceiptHash,
-      convergenceVerdict: auditor.consecutiveNoNewGapRounds >= 3 ? 'bounded_no_new_gap' : 'blocked',
-    },
     reconciliationReportPath: normalizePathForReport(reconciliationPath),
     failedChecks: unique(blockingIssues.map((item) => item.code)),
   };
@@ -1274,7 +680,6 @@ function runGate(args) {
       reportPath: normalizePathForReport(reconciliationPath),
       verdict: reconciliation.verdict,
     },
-    criticalAuditor: receipt.criticalAuditor,
     failedChecks: receipt.failedChecks,
     blockingIssues,
   };
@@ -1315,6 +720,5 @@ module.exports = {
   parseArgs,
   runGate,
   validatePrepublicationAttempt,
-  buildAuditInputHash,
   buildReconciliationReport,
 };

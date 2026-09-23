@@ -1,31 +1,20 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import {
-  atomicNoClobberPublish,
-} from './requirements-contract-atomic-no-clobber-publisher';
-import {
-  validateRequirementsContractBuildManifest,
-  type RequirementsContractBuildManifest,
+  validateRequirementsContractBuildManifestV2,
+  type RequirementsContractBuildManifestV2,
 } from './requirements-contract-authoring-manifest';
-import {
-  resolveRequirementsContractSemanticIrAuthority,
-  validateRequirementsContractSemanticIr,
-} from './requirements-contract-semantic-ir';
-import { validateRequirementsContractSourceBindingCapsule } from './requirements-contract-source-binding-capsule';
 
 export const REQUIREMENTS_AUTHORITY_PUBLICATION_COMMITTER_OWNER =
   'requirements-contract-authority-publication-committer.ts';
 
-export interface RequirementsActiveAuthorityTuple {
+export interface RequirementsActiveAuthorityTupleV3 {
   activeSemanticRevisionId: string;
-  activeSemanticIrPath: string;
   activeScopeSemanticHash: string;
   activeBindingRevisionId: string;
-  activeSourceBindingPath: string;
   activeSourceBindingHash: string;
-  activeAuthoringAttemptId: string;
+  activeBuildHash: string;
   activeBuildManifestPath: string;
-  activeBuildManifestHash: string;
+  previousBuildHash: string | null;
+  previousBuildManifestPath: string | null;
 }
 
 export type RequirementsAuthorityCommitRoute =
@@ -35,70 +24,77 @@ export type RequirementsAuthorityCommitRoute =
   | 'binding_refresh';
 
 const SHA256 = /^sha256:[a-f0-9]{64}$/u;
-const TUPLE_KEYS: Array<keyof RequirementsActiveAuthorityTuple> = [
-  'activeSemanticRevisionId', 'activeSemanticIrPath', 'activeScopeSemanticHash',
-  'activeBindingRevisionId', 'activeSourceBindingPath', 'activeSourceBindingHash',
-  'activeAuthoringAttemptId', 'activeBuildManifestPath', 'activeBuildManifestHash',
-];
-const SEMANTIC_FIELDS: Array<keyof RequirementsActiveAuthorityTuple> = [
-  'activeSemanticRevisionId', 'activeSemanticIrPath', 'activeScopeSemanticHash',
-];
-const BINDING_FIELDS: Array<keyof RequirementsActiveAuthorityTuple> = [
-  'activeBindingRevisionId', 'activeSourceBindingPath', 'activeSourceBindingHash',
-];
-const BUILD_FIELDS: Array<keyof RequirementsActiveAuthorityTuple> = [
-  'activeAuthoringAttemptId', 'activeBuildManifestPath', 'activeBuildManifestHash',
-];
+const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9._-]*$/u;
+const TUPLE_KEYS = [
+  'activeSemanticRevisionId',
+  'activeScopeSemanticHash',
+  'activeBindingRevisionId',
+  'activeSourceBindingHash',
+  'activeBuildHash',
+  'activeBuildManifestPath',
+  'previousBuildHash',
+  'previousBuildManifestPath',
+] as const satisfies readonly (keyof RequirementsActiveAuthorityTupleV3)[];
 
 export function validateRequirementsActiveAuthorityTuple(value: unknown) {
   const issueCodes: string[] = [];
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return { decision: 'block' as const, issueCodes: ['requirements_active_authority_tuple_invalid'] };
+    return {
+      decision: 'block' as const,
+      issueCodes: ['requirements_active_authority_tuple_invalid'],
+    };
   }
-  const tuple = value as RequirementsActiveAuthorityTuple & Record<string, unknown>;
+  const tuple = value as RequirementsActiveAuthorityTupleV3 & Record<string, unknown>;
   if (
     Object.keys(tuple).length !== TUPLE_KEYS.length ||
-    Object.keys(tuple).some((key) => !TUPLE_KEYS.includes(key as keyof RequirementsActiveAuthorityTuple))
-  ) issueCodes.push('requirements_active_authority_tuple_field_set_invalid');
-  if (!SHA256.test(String(tuple.activeScopeSemanticHash)) ||
-      !SHA256.test(String(tuple.activeSourceBindingHash)) ||
-      !SHA256.test(String(tuple.activeBuildManifestHash))) {
+    Object.keys(tuple).some(
+      (key) => !TUPLE_KEYS.includes(key as keyof RequirementsActiveAuthorityTupleV3)
+    )
+  ) {
+    issueCodes.push('requirements_active_authority_tuple_field_set_invalid');
+  }
+  if (
+    !SAFE_ID.test(String(tuple.activeSemanticRevisionId)) ||
+    !SAFE_ID.test(String(tuple.activeBindingRevisionId)) ||
+    !SHA256.test(String(tuple.activeScopeSemanticHash)) ||
+    !SHA256.test(String(tuple.activeSourceBindingHash)) ||
+    !SHA256.test(String(tuple.activeBuildHash)) ||
+    (tuple.previousBuildHash !== null && !SHA256.test(String(tuple.previousBuildHash)))
+  ) {
     issueCodes.push('requirements_active_authority_tuple_hash_invalid');
   }
-  if (tuple.activeSemanticIrPath !== `authoring/semantic-revisions/${tuple.activeSemanticRevisionId}/semantic-ir.json`) {
-    issueCodes.push('requirements_active_semantic_path_identity_mismatch');
-  }
-  if (tuple.activeSourceBindingPath !== `authoring/source-bindings/${tuple.activeBindingRevisionId}/source-binding.json`) {
-    issueCodes.push('requirements_active_binding_path_identity_mismatch');
-  }
-  if (tuple.activeBuildManifestPath !== `authoring/staging/${tuple.activeAuthoringAttemptId}/contract-build-manifest.json`) {
+  const activeHex = String(tuple.activeBuildHash).slice('sha256:'.length);
+  if (tuple.activeBuildManifestPath !== 'authoring/builds/' + activeHex + '/manifest.json') {
     issueCodes.push('requirements_active_build_path_identity_mismatch');
   }
-  return { decision: issueCodes.length ? 'block' as const : 'pass' as const, issueCodes: [...new Set(issueCodes)].sort() };
+  if (
+    (tuple.previousBuildHash === null) !== (tuple.previousBuildManifestPath === null) ||
+    (tuple.previousBuildHash !== null &&
+      tuple.previousBuildManifestPath !==
+        'authoring/builds/' +
+          String(tuple.previousBuildHash).slice('sha256:'.length) +
+          '/manifest.json')
+  ) {
+    issueCodes.push('requirements_previous_build_path_identity_mismatch');
+  }
+  return {
+    decision: issueCodes.length ? ('block' as const) : ('pass' as const),
+    issueCodes: [...new Set(issueCodes)].sort(),
+  };
 }
 
-function assertSameFields(
-  current: RequirementsActiveAuthorityTuple,
-  next: RequirementsActiveAuthorityTuple,
-  fields: Array<keyof RequirementsActiveAuthorityTuple>,
-  code: string
-): void {
-  if (fields.some((field) => current[field] !== next[field])) throw new Error(code);
-}
-
-function assertChangedFields(
-  current: RequirementsActiveAuthorityTuple,
-  next: RequirementsActiveAuthorityTuple,
-  fields: Array<keyof RequirementsActiveAuthorityTuple>,
-  code: string
-): void {
-  if (fields.some((field) => current[field] === next[field])) throw new Error(code);
+function changed(
+  current: RequirementsActiveAuthorityTupleV3,
+  next: RequirementsActiveAuthorityTupleV3,
+  fields: Array<keyof RequirementsActiveAuthorityTupleV3>
+): boolean {
+  return fields.some((field) => current[field] !== next[field]);
 }
 
 export function assertRequirementsAuthorityRouteTransition(input: {
   route: RequirementsAuthorityCommitRoute;
-  current: RequirementsActiveAuthorityTuple | null;
-  next: RequirementsActiveAuthorityTuple;
+  current: RequirementsActiveAuthorityTupleV3 | null;
+  next: RequirementsActiveAuthorityTupleV3;
 }): void {
   const validation = validateRequirementsActiveAuthorityTuple(input.next);
   if (validation.decision === 'block') throw new Error(validation.issueCodes[0]);
@@ -109,107 +105,62 @@ export function assertRequirementsAuthorityRouteTransition(input: {
   if (!input.current) throw new Error('requirements_authority_current_required');
   const currentValidation = validateRequirementsActiveAuthorityTuple(input.current);
   if (currentValidation.decision === 'block') throw new Error(currentValidation.issueCodes[0]);
-  if (input.route === 'semantic_repair') {
-    assertChangedFields(input.current, input.next, TUPLE_KEYS, 'requirements_semantic_repair_requires_full_replacement');
+  if (
+    input.next.previousBuildHash !== input.current.activeBuildHash ||
+    input.next.previousBuildManifestPath !== input.current.activeBuildManifestPath
+  ) {
+    throw new Error('requirements_authority_predecessor_mismatch');
   }
-  if (input.route === 'projection_repair') {
-    assertSameFields(input.current, input.next, [...SEMANTIC_FIELDS, ...BINDING_FIELDS], 'requirements_projection_repair_authority_mutation_forbidden');
-    assertChangedFields(input.current, input.next, BUILD_FIELDS, 'requirements_projection_repair_requires_build_replacement');
+  const semanticChanged = changed(input.current, input.next, [
+    'activeSemanticRevisionId',
+    'activeScopeSemanticHash',
+  ]);
+  const bindingChanged = changed(input.current, input.next, [
+    'activeBindingRevisionId',
+    'activeSourceBindingHash',
+  ]);
+  const buildChanged = changed(input.current, input.next, [
+    'activeBuildHash',
+    'activeBuildManifestPath',
+  ]);
+  if (input.route === 'semantic_repair' && (!semanticChanged || !buildChanged)) {
+    throw new Error('requirements_semantic_repair_requires_semantic_successor');
   }
-  if (input.route === 'binding_refresh') {
-    assertSameFields(input.current, input.next, [...SEMANTIC_FIELDS, ...BUILD_FIELDS], 'requirements_binding_refresh_authority_mutation_forbidden');
-    assertChangedFields(input.current, input.next, BINDING_FIELDS, 'requirements_binding_refresh_requires_binding_replacement');
+  if (input.route === 'projection_repair' && (semanticChanged || bindingChanged || !buildChanged)) {
+    throw new Error('requirements_projection_repair_authority_mutation_invalid');
   }
-}
-
-function resolveConfinedRecordPath(recordRootPath: string, recordRelativePath: string): string {
-  const root = path.resolve(recordRootPath);
-  const target = path.resolve(root, ...recordRelativePath.split('/'));
-  if (target === root || !target.startsWith(`${root}${path.sep}`)) {
-    throw new Error('requirements_authority_record_path_escape');
-  }
-  return target;
-}
-
-function readJsonArtifact(absolutePath: string, code: string): unknown {
-  try {
-    return JSON.parse(fs.readFileSync(absolutePath, 'utf8'));
-  } catch {
-    throw new Error(code);
+  if (input.route === 'binding_refresh' && (semanticChanged || !bindingChanged || !buildChanged)) {
+    throw new Error('requirements_binding_refresh_authority_mutation_invalid');
   }
 }
 
 export function commitRequirementsContractAuthorityPublication(input: {
   route: RequirementsAuthorityCommitRoute;
-  current: RequirementsActiveAuthorityTuple | null;
-  next: RequirementsActiveAuthorityTuple;
-  recordRootPath: string;
-  buildManifestTargetPath: string;
-  buildManifest: RequirementsContractBuildManifest;
+  current: RequirementsActiveAuthorityTupleV3 | null;
+  next: RequirementsActiveAuthorityTupleV3;
+  buildManifest: RequirementsContractBuildManifestV2;
   compareAndSwapAuthorityTuple: (
-    current: RequirementsActiveAuthorityTuple | null,
-    next: RequirementsActiveAuthorityTuple
+    current: RequirementsActiveAuthorityTupleV3 | null,
+    next: RequirementsActiveAuthorityTupleV3
   ) => boolean;
 }) {
   assertRequirementsAuthorityRouteTransition(input);
-  const manifestValidation = validateRequirementsContractBuildManifest(input.buildManifest);
-  if (manifestValidation.decision === 'block') throw new Error(manifestValidation.issueCodes[0]);
-  const expectedBuildManifestTargetPath = resolveConfinedRecordPath(
-    input.recordRootPath,
-    input.next.activeBuildManifestPath
-  );
-  if (path.resolve(input.buildManifestTargetPath) !== expectedBuildManifestTargetPath) {
-    throw new Error('requirements_authority_build_manifest_target_mismatch');
+  if (!validateRequirementsContractBuildManifestV2(input.buildManifest)) {
+    throw new Error('requirements_authority_build_manifest_invalid');
   }
-  const manifestBindingAuthority = input.route === 'binding_refresh'
-    ? input.current
-    : input.next;
   if (
-    input.buildManifest.authoringAttemptId !== input.next.activeAuthoringAttemptId ||
-    input.buildManifest.buildManifestHash !== input.next.activeBuildManifestHash ||
-    input.buildManifest.semanticAuthorityRef.semanticRevisionId !== input.next.activeSemanticRevisionId ||
-    input.buildManifest.semanticAuthorityRef.path !== input.next.activeSemanticIrPath ||
-    input.buildManifest.semanticAuthorityRef.hash !== input.next.activeScopeSemanticHash ||
-    !manifestBindingAuthority ||
-    input.buildManifest.bindingAuthorityRef.bindingRevisionId !== manifestBindingAuthority.activeBindingRevisionId ||
-    input.buildManifest.bindingAuthorityRef.path !== manifestBindingAuthority.activeSourceBindingPath ||
-    input.buildManifest.bindingAuthorityRef.hash !== manifestBindingAuthority.activeSourceBindingHash
-  ) throw new Error('requirements_authority_build_manifest_identity_mismatch');
-  const semantic = resolveRequirementsContractSemanticIrAuthority(readJsonArtifact(
-    resolveConfinedRecordPath(input.recordRootPath, input.next.activeSemanticIrPath),
-    'requirements_authority_semantic_readback_invalid'
-  ));
-  const semanticValidation = validateRequirementsContractSemanticIr(semantic);
-  if (semanticValidation.decision === 'block') throw new Error(semanticValidation.issueCodes[0]);
-  if (
-    semantic.semanticRevisionId !== input.next.activeSemanticRevisionId ||
-    semantic.scopeSemanticHash !== input.next.activeScopeSemanticHash
-  ) throw new Error('requirements_authority_semantic_readback_mismatch');
-  const binding = readJsonArtifact(
-    resolveConfinedRecordPath(input.recordRootPath, input.next.activeSourceBindingPath),
-    'requirements_authority_binding_readback_invalid'
-  );
-  const bindingValidation = validateRequirementsContractSourceBindingCapsule(binding);
-  if (bindingValidation.decision === 'block') throw new Error(bindingValidation.issueCodes[0]);
-  const bindingRecord = binding as Record<string, unknown>;
-  if (
-    bindingRecord.bindingRevisionId !== input.next.activeBindingRevisionId ||
-    bindingRecord.sourceBindingHash !== input.next.activeSourceBindingHash ||
-    bindingRecord.semanticRevisionId !== input.next.activeSemanticRevisionId ||
-    bindingRecord.scopeSemanticHash !== input.next.activeScopeSemanticHash
-  ) throw new Error('requirements_authority_binding_readback_mismatch');
-  const publication = atomicNoClobberPublish({
-    targetPath: expectedBuildManifestTargetPath,
-    value: input.buildManifest,
-    role: 'contract_build_manifest',
-    mediaType: 'application/json',
-    validateReadback(value) {
-      const validation = validateRequirementsContractBuildManifest(value);
-      if (validation.decision === 'block') throw new Error(validation.issueCodes[0]);
-    },
-  });
+    input.next.activeBuildHash !== input.buildManifest.buildHash ||
+    input.next.activeBuildManifestPath !==
+      'authoring/builds/' +
+        input.buildManifest.buildHash.slice('sha256:'.length) +
+        '/manifest.json' ||
+    input.next.activeScopeSemanticHash !== input.buildManifest.scopeSemanticHash ||
+    input.next.activeSourceBindingHash !== input.buildManifest.sourceBindingHash
+  ) {
+    throw new Error('requirements_authority_build_manifest_identity_mismatch');
+  }
   if (!input.compareAndSwapAuthorityTuple(input.current, input.next)) {
-    throw new Error('requirements_active_authority_tuple_cas_conflict');
+    throw new Error('requirements_authority_cas_mismatch');
   }
-  return { publication, activeAuthority: input.next };
+  return { activeAuthority: input.next };
 }

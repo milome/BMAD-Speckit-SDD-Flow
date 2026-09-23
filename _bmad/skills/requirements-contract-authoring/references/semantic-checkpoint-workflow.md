@@ -24,7 +24,7 @@ The script should automate the manual steps in this reference where possible. Au
 one semantic checkpoint -> one bounded source-document edit -> validation -> forced single-file commit -> receipt with diff and hash
 ```
 
-`run_semantic_checkpoints.js` is not the semantic authoring engine. It must not invent requirements, fill missing `implementationConfirmation` fields, append status-only checkpoint logs, or mutate the source document to manufacture a checkpoint diff. The source edit for each checkpoint must already exist from `authoring-repair`, pre-confirmation drilldown materialization, or an explicitly reviewed manual source edit before the runner records progress.
+`run_semantic_checkpoints.js` is not the semantic authoring engine. It must not invent requirements, fill missing `implementationConfirmation` fields, append status-only checkpoint logs, or mutate the source document to manufacture a checkpoint diff. The source edit for each checkpoint must already exist from deterministic repair, pre-confirmation drilldown materialization, or an explicitly reviewed manual source edit before the runner records progress.
 
 ## Purpose
 
@@ -59,9 +59,9 @@ Use these semantic checkpoints in order. A later checkpoint may refine earlier t
 
 The checkpoint runner's `--until pre-render-ready` scope covers cp-00 through cp-08 and then stops before HTML render. For compatibility with older references, this is also the replacement for the historical statement: The checkpoint runner's `--until pre-render-ready` scope covers checkpoints 1-8. HTML render, user confirmation, confirmation ingest, readiness, delivery verification, and closeout remain separate skill modes.
 
-Checkpoint does not perform segmented reasoning. Checkpointing is only persistence, recovery, single-file commit, and receipt strategy. The atomic decomposition loop is where the author and Critical Auditor resolve semantic gaps.
+Checkpoint does not perform segmented reasoning. Checkpointing is only persistence, recovery, single-file commit, and receipt strategy. The atomic decomposition workflow must resolve semantic gaps before checkpoint persistence records the result.
 
-The checkpoint runner does not spawn subagents. Checkpoint mode does not review, audit, reason over semantic gaps, run three-perspective analysis, or perform Critical Auditor convergence. It persists only source edits that were already materialized by `authoring-repair`, pre-confirmation drilldown materialization, or an explicitly reviewed manual source edit.
+The checkpoint runner does not spawn subagents. Checkpoint mode does not review, audit, reason over semantic gaps, or run three-perspective analysis. It persists only source edits that were already materialized by deterministic repair, pre-confirmation drilldown materialization, or an explicitly reviewed manual source edit.
 
 For `plan`, `status`, `run`, and `resume`, the checkpoint runner must print a human-readable status page to `stderr` unless `--quiet` is set. That status page must lead with what is happening now, why the runner stopped or continues, the next safe action, and then machine fields. The human-readable page must not replace JSON `stdout`.
 
@@ -69,7 +69,7 @@ Checkpoint artifacts:
 
 - cp-00 writes or validates `semantic-kernel.json`.
 - cp-01 writes or validates `must_decomposition_packet.json`.
-- cp-02 records Critical Auditor receipts until three current-hash no-new-gap rounds are derived from real receipt files.
+- cp-02 validates current-hash decomposition and projection evidence before source materialization.
 - cp-03 materializes packet projections into the inline source.
 - cp-04 freezes IDs after source materialization.
 - cp-05 fills implementationConfirmation core and `applicability.*`.
@@ -100,7 +100,7 @@ For ignored requirement documents under `docs/requirements/`, expect to stage wi
 
 This edit must be a real source-document authoring step. It may add or refine the checkpoint's semantic section, ID matrix rows, views, evidence, commands, or human-readable explanations. It must not degrade into writing only a status marker.
 
-When automation is used, this source edit is produced before `run_semantic_checkpoints.js` records the checkpoint. If the corresponding source materialization does not exist, the runner must fail closed with a next action such as `run_authoring_repair_preserve_existing`; it must not append `Status: passed` or any other marker to create a diff.
+When automation is used, this source edit is produced before `run_semantic_checkpoints.js` records the checkpoint. If the corresponding source materialization does not exist, the runner must fail closed with `nextAction: resume_author_confirmation_ready_source`; it must not append `Status: passed` or any other marker to create a diff.
 
 ### 3. After Editing
 
@@ -193,19 +193,19 @@ Required automation behavior:
 - `checkpoint-persistence` mode is evidence-only. It verifies cp-00 through cp-08 progress, current document hash, pre-render MUST decomposition gate `PASS`, pre-render global consistency gate `PASS`, packet/source reconciliation `pass`, and the route decision hash. It never emits `single_pass_final_allowed`.
 - The authoring lane may rerun `assess_contract_authoring_scale.js --checkpoint-persistence-evidence <checkpoint-persistence-evidence.json>` after validating same-run output and current disk hashes. Only that rerun may write the final `single_pass_final_allowed` route decision.
 - `plan` and `status` are read-only.
-- `plan` and `status` must show semantic kernel status, packet status, Critical Auditor rounds, convergence counter, packet/source reconciliation, and next action.
+- `plan` and `status` must show semantic kernel status, packet status, packet/source reconciliation, and next action.
 - `run` without `--checkpoint` starts at the first incomplete checkpoint and continues until `pre-render-ready`.
 - `run` without `--checkpoint` is idempotent when cp-00 through cp-08 are already passed and `next: null`: it must rerun the hard pre-render gates and return `pre_render_ready` on `PASS` instead of falling back to cp-00.
 - If upstream authoring has already materialized the current source and the current progress hash matches the active document hash, cp-01 through cp-08 may be recorded as evidence-only checkpoints when the combined pre-render gate returns `PASS`. The runner must not require or manufacture an additional source diff in this state.
 - `resume` starts from the progress record's next checkpoint when the current document hash matches the progress record.
-- `resume` must reload semantic kernel, must_decomposition_packet, Critical Auditor receipts, packet/source reconciliation, and checkpoint progress instead of restarting.
+- `resume` must reload semantic kernel, must_decomposition_packet, packet/source reconciliation, and checkpoint progress instead of restarting.
 - Explicit `--checkpoint` records only that checkpoint after controlled manual repair or upstream source materialization has already changed the active source document.
 - A completed checkpoint either creates a separate single-file source commit or records current-hash evidence-only progress for cp-01 through cp-08 after pre-render gates pass.
 - A checkpoint commit must contain a real source materialization diff. If the target document has no staged or stageable source edit and current pre-render evidence is not sufficient for evidence-only progress, the runner must fail closed before commit.
 - The runner must stop before commit if staged paths contain anything other than the active target requirements document.
 - The runner must not silently overwrite manual edits when the current document hash differs from the latest progress record.
 - The runner must fail closed when source hash and progress hash mismatch.
-- The runner must fail closed when current-hash upstream authoring evidence is missing. Required evidence includes the semantic kernel, synchronized must decomposition packet, required Critical Auditor receipts, and pre-render drilldown gate artifacts as applicable to the checkpoint.
+- The runner must fail closed when current-hash upstream authoring evidence is missing. Required evidence includes the semantic kernel, synchronized must decomposition packet, and pre-render drilldown gate artifacts as applicable to the checkpoint.
 - Progress corruption may be recovered from a backup or Git checkpoint only when the current source hash is safe to trust.
 - The runner must write progress and receipts sufficient for resume and user review.
 - The runner must preserve checkpoint authoring semantics: each checkpoint is a bounded document edit, not merely a progress status update.
@@ -221,7 +221,7 @@ node <skill-dir>/scripts/pre_render_must_decomposition_gate.js \
 ```
 
 - It must output `must_decomposition_receipt.json`, `must_packet_source_reconciliation_report.json`, and `pre-render-must-decomposition-gate-report.json`.
-- It must block on missing semantic kernel, missing must_decomposition_packet, stale packet hash, missing Critical Auditor receipt, fewer than three no-new-gap rounds, unresolved validated gap, incomplete question coverage, under-split MUST, over-broad atomic task, missing packet projection, source row independently invented, packet projection not materialized, missing packet/source reconciliation, or stale gate hashes.
+- It must block on missing semantic kernel, missing must_decomposition_packet, stale packet hash, incomplete question coverage, under-split MUST, over-broad atomic task, missing packet projection, source row independently invented, packet projection not materialized, missing packet/source reconciliation, or stale gate hashes.
 - The global consistency gate must fail closed when `implementationConfirmation` cannot be parsed, any required core array is missing, any ID is duplicated, any `MUST` or `NEG` lacks reciprocal `traceRows` coverage, any `traceRows[]` item references missing evidence, any evidence or trace command reference is undefined, any failure/edge/view reference is unresolved, or deterministic definition drilldown still has blockers.
 - The gate must write `_bmad-output/runtime/requirement-records/<recordId>/authoring/pre-render-global-consistency-report.json` or the progress-local equivalent, update progress validation as `globalConsistency: pass|fail`, and block HTML render on any finding.
 - The explicit command for this hard gate is:

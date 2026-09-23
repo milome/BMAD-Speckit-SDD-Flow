@@ -17,7 +17,6 @@ const { promptTransactionPublishAction } = require('./actions/prompt-transaction
 const {
   confirmScopeAction,
   confirmScopeMissingReason,
-  legacyConfirmScopeAction,
 } = require('./actions/confirm-scope');
 const { controlPlaneIsolationCheckAction } = require('./actions/control-plane-isolation-check');
 const { runControlledCloseoutAction } = require('./actions/controlled-closeout');
@@ -38,7 +37,6 @@ const { e2eHostMatrixJourneyRunnerAction } = require('./actions/e2e-host-matrix-
 const { finalCloseoutEvidenceRunnerAction } = require('./actions/final-closeout-evidence-runner');
 const { functionalResumeCheckAction } = require('./actions/functional-resume-check');
 const { governedDataProductsAction } = require('./actions/governed-data-products');
-const { gapClosureEvidenceAction } = require('./actions/gap-closure-evidence');
 const {
   governancePacketDispatchWorkerAction,
 } = require('./actions/governance-packet-dispatch-worker');
@@ -47,7 +45,7 @@ const { implementationReadinessGateAction } = require('./actions/implementation-
 const {
   initializeSixModelRequirementConfirmationAction,
 } = require('./actions/initialize-six-model-requirement-confirmation');
-const { hasRuntimeState, inspectRuntimeState, legacyInspectSurface } = require('./actions/inspect');
+const { hasRuntimeState, inspectRuntimeState } = require('./actions/inspect');
 const { liveSmokeMainAgentRuntimeAction } = require('./actions/live-smoke-main-agent-runtime');
 const {
   orchestrationDispatchContractAction,
@@ -84,6 +82,7 @@ const {
 const {
   submitRequirementsGrillResponseAction,
 } = require('./actions/submit-requirements-grill-response');
+const { rejudgePolicyUpgradeAction } = require('./actions/rejudge-policy-upgrade');
 const { resolveActiveRequirementAction } = require('./actions/resolve-active-requirement');
 const {
   runRequiredCommandsFromAiTddManifestAction,
@@ -182,7 +181,6 @@ const PACKAGE_RUNTIME_READY_ACTIONS = {
   'entryflow-traceability-check': entryflowTraceabilityCheckAction,
   'execution-closure-gate': executionClosureGateAction,
   'functional-resume-check': functionalResumeCheckAction,
-  'gap-closure-evidence': gapClosureEvidenceAction,
   'governed-data-products': governedDataProductsAction,
   'production-loop-ready-check': productionLoopReadyCheckAction,
   'runtime-policy-snapshot-check': runtimePolicySnapshotCheckAction,
@@ -200,6 +198,7 @@ const PACKAGE_RUNTIME_READY_ACTIONS = {
   'requirement-record-schema-evolution': requirementRecordSchemaEvolutionAction,
   'requirements-contract-source-intake': requirementsContractSourceIntakeAction,
   'submit-requirements-grill-response': submitRequirementsGrillResponseAction,
+  'rejudge-policy-upgrade': rejudgePolicyUpgradeAction,
   'author-confirmation-ready-source': authorConfirmationReadySourceAction,
   'resume-author-confirmation-ready-source': resumeAuthorConfirmationReadySourceAction,
   'resolve-active-requirement': resolveActiveRequirementAction,
@@ -333,12 +332,7 @@ const ORCHESTRATION_ACTIONS = new Set([
   'confirmation-drift-route',
   'repair-confirmation-bookkeeping',
   'confirmation-bookkeeping-repair',
-  'register-pre-confirmation-render',
-  'register_pre_confirmation_render',
   'author-confirmation-ready-source',
-  'author_confirmation_ready_source',
-  'authoring-repair',
-  'authoring_repair',
   'post-close-defect-intake',
   'controlled-readiness-audit',
 ]);
@@ -389,7 +383,6 @@ function parseRuntimeArgs(argv) {
     args,
     cwd: path.resolve(String(args.cwd || process.cwd())),
     json: args.json === 'true',
-    legacyOrchestration: args.legacyOrchestration === 'true',
     rawArgv,
     rootArgv,
   };
@@ -522,16 +515,6 @@ function requireRuntimeState(context) {
 }
 
 async function runMainAgentRuntime(context) {
-  if (
-    context.legacyOrchestration &&
-    ORCHESTRATION_ACTIONS.has(context.action) &&
-    context.action !== 'author-confirmation-ready-source' &&
-    context.action !== 'inspect' &&
-    context.action !== 'confirm-scope'
-  ) {
-    return emitPackageOrchestration(context);
-  }
-
   if (!SUPPORTED_ACTIONS.has(context.action) && ORCHESTRATION_ACTIONS.has(context.action)) {
     return emitPackageOrchestration(context);
   }
@@ -549,12 +532,6 @@ async function runMainAgentRuntime(context) {
   }
 
   if (context.action === 'inspect') {
-    if (context.legacyOrchestration) {
-      return emitLegacyResult({
-        exitCode: 0,
-        payload: legacyInspectSurface(context.cwd, context.args),
-      });
-    }
     return emitResponse(context, envelope(context, 'ok', 0, inspectRuntimeState(context.cwd)));
   }
 
@@ -573,7 +550,6 @@ async function runMainAgentRuntime(context) {
   if (context.action === 'confirm-scope') {
     const reason = confirmScopeMissingReason(context.args);
     if (reason) return emitResponse(context, missingRuntimeState(context, reason));
-    if (context.legacyOrchestration) return emitLegacyResult(legacyConfirmScopeAction(context));
     const result = confirmScopeAction(
       context,
       hasRuntimeState(context.cwd) ? inspectRuntimeState(context.cwd) : null

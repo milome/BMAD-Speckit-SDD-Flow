@@ -783,8 +783,8 @@ describe('main-agent dist build', () => {
     );
     assert.equal(
       typeof distOrchestration.refreshCurrentSourceCheckpointPersistence,
-      'function',
-      'dist orchestration must export the current-source checkpoint refresh Facade'
+      'undefined',
+      'dist orchestration must not restore the retired current-source checkpoint refresh facade'
     );
 
     for (const expectedImport of EXPECTED_SOURCE_AUTHORITY_RUNTIME_IMPORTS) {
